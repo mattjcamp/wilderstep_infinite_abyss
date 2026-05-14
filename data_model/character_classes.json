@@ -1,0 +1,119 @@
+{
+  "_comment": "Character class catalog (real data drives the schema). Each class carries HP/MP growth, movement range, XP curve, allowed races, optional MP source rules, and a list of non-spell class_abilities. Dropped from v1: _comment, allowed_weapons, allowed_armor, spell_type, mp_source.percentage, mp_regen_multiplier — all parsed but unread by v1's TS implementation. Spell access lives on Spell.allowable_classes (and Spell.class_min_levels for per-class level overrides), not here. `allowed_races` is kept even though v1's TS hardcoded the race-gate table — it's design-intent data and v2 should drive from JSON.",
+  "character_classes": [
+    {
+      "id": "fighter",
+      "name": "Fighter",
+      "hp_per_level": 15,
+      "mp_per_level": 0,
+      "range": 4,
+      "exp_per_level": 1500,
+      "allowed_races": ["human", "dwarf", "halfling", "elf", "gnome"],
+      "mp_source": null
+    },
+    {
+      "id": "thief",
+      "name": "Thief",
+      "hp_per_level": 5,
+      "mp_per_level": 0,
+      "range": 6,
+      "exp_per_level": 1500,
+      "allowed_races": ["human", "dwarf", "halfling", "elf", "gnome"],
+      "mp_source": null
+    },
+    {
+      "id": "cleric",
+      "name": "Cleric",
+      "hp_per_level": 6,
+      "mp_per_level": 10,
+      "range": 2,
+      "exp_per_level": 1500,
+      "allowed_races": ["human", "dwarf", "halfling", "elf", "gnome"],
+      "mp_source": { "ability": "wisdom" }
+    },
+    {
+      "id": "wizard",
+      "name": "Wizard",
+      "hp_per_level": 4,
+      "mp_per_level": 15,
+      "range": 2,
+      "exp_per_level": 1500,
+      "allowed_races": ["human", "elf", "gnome"],
+      "mp_source": { "ability": "intelligence" }
+    },
+    {
+      "id": "druid",
+      "name": "Druid",
+      "hp_per_level": 5,
+      "mp_per_level": 8,
+      "range": 2,
+      "exp_per_level": 1500,
+      "allowed_races": ["human", "dwarf", "halfling", "elf", "gnome"],
+      "mp_source": {
+        "abilities": ["intelligence", "wisdom"],
+        "mode": "average"
+      }
+    },
+    {
+      "id": "paladin",
+      "name": "Paladin",
+      "hp_per_level": 10,
+      "mp_per_level": 5,
+      "range": 4,
+      "exp_per_level": 1500,
+      "allowed_races": ["human", "dwarf", "halfling", "elf", "gnome"],
+      "mp_source": { "ability": "wisdom" },
+      "class_abilities": [
+        {
+          "name": "Turn Undead",
+          "min_level": 5,
+          "description": "From level 5, a Paladin can channel holy energy to Turn Undead: every undead on the battlefield must make a Wisdom save or be destroyed; those that succeed still take 50% of their HP in radiant damage."
+        }
+      ]
+    },
+    {
+      "id": "ranger",
+      "name": "Ranger",
+      "hp_per_level": 10,
+      "mp_per_level": 3,
+      "range": 6,
+      "exp_per_level": 1500,
+      "allowed_races": ["human", "dwarf", "halfling", "elf", "gnome"],
+      "mp_source": { "ability": "wisdom" },
+      "class_abilities": [
+        {
+          "name": "Herbalism",
+          "min_level": 1,
+          "description": "Keen knowledge of flora lets Rangers spot reagents in the wild. When the party examines a tile, each Ranger rolls an INT save (d20 + INT mod vs DC 13) — success identifies a potion reagent."
+        },
+        {
+          "name": "Pick Locks",
+          "min_level": 3,
+          "description": "From level 3, a Ranger can pick locked doors and chests (d20 + DEX mod vs DC 12), consuming one lockpick per attempt — same mechanic as a Thief."
+        },
+        {
+          "name": "Detect Traps",
+          "min_level": 3,
+          "description": "From level 3, a Ranger's woodcraft reveals hidden traps before the party steps on them."
+        }
+      ]
+    },
+    {
+      "id": "alchemist",
+      "name": "Alchemist",
+      "hp_per_level": 4,
+      "mp_per_level": 8,
+      "range": 4,
+      "exp_per_level": 1500,
+      "allowed_races": ["human", "dwarf", "halfling", "elf", "gnome"],
+      "mp_source": { "ability": "intelligence" },
+      "class_abilities": [
+        {
+          "name": "Herbalism",
+          "min_level": 1,
+          "description": "Expert knowledge of ingredients doubles the chance of finding reagents when examining the wilderness."
+        }
+      ]
+    }
+  ]
+}

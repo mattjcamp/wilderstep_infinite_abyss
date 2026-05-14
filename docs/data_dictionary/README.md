@@ -19,17 +19,17 @@ The v2 codebase is just being built. The **Used?** column is `TBD` everywhere fo
 | Effect | [effect.md](effect.md) | Unified model for abilities, statuses, passives, and on-hit triggers; ported from v1 and decoupled from its granters |
 | Spell | [spell.md](spell.md) | Castable spell-actions (damage, heal, apply_effect, summon, etc.); ported from v1 |
 | Recipe | [recipe.md](recipe.md) | Brew options as id + name + reagents-map; ported from v1 (DC/result deferred) |
-| Item | [item.md](item.md) | Items including weapons, armor, consumables; potions are a subtype |
-| Counter | [counter.md](counter.md) | TBD |
-| Monster | [monster.md](monster.md) | TBD |
-| Race | [race.md](race.md) | TBD |
-| Character Class | [character_class.md](character_class.md) | TBD |
+| Item | [item.md](item.md) | Weapons, armor, consumables, reagents, scrolls, keys, quest items; ported from v1 |
+| Counter | [counter.md](counter.md) | Shops and temples — stock lists or service menus; ported from v1 |
+| Monster | [monster.md](monster.md) | Monster catalog with stats, spells (inline), Effect-id passives + on-hit triggers; ported from v1 |
+| Race | [race.md](race.md) | Playable races — stat modifiers, optional XP override, racial ability Effect ids; ported from v1 |
+| Character Class | [character_class.md](character_class.md) | The eight playable classes — HP/MP growth, allowed races, MP source, non-spell class abilities; ported from v1 |
 | Character | [character.md](character.md) | TBD |
-| Party | [party.md](party.md) | TBD |
+| Party | [party.md](party.md) | Starting party seed (singleton) — roster, gold, gear, effect slots, inventory; ported from v1 |
 | NPC | [npc.md](npc.md) | TBD |
-| Encounter | [encounter.md](encounter.md) | TBD |
-| Spawn | [spawn.md](spawn.md) | TBD |
-| Map Tile | [map_tile.md](map_tile.md) | TBD |
+| Encounter | [encounter.md](encounter.md) | Named monster rosters for the random-encounter sampler, with area discriminator; ported from v1 |
+| Spawn | [spawn.md](spawn.md) | Monster-lair behavior bound to a map tile id; ported from v1 |
+| Map Tile | [map_tile.md](map_tile.md) | The tile catalog — display, walkability, sprite, lighting flags, interaction metadata; ported from v1 |
 | Map | [map.md](map.md) | Unified model for authored maps (overworld, towns, buildings, detail screens, battle screens) |
 | Dungeon Config | [dungeon_config.md](dungeon_config.md) | Procedural dungeon generator inputs (not authored tile data) |
 | Quest Step | [quest_step.md](quest_step.md) | TBD |

@@ -1,0 +1,1114 @@
+{
+  "_comment": "Encounter catalog (real data drives the schema). Each encounter is a named monster roster used by the random-encounter sampler. `area` is the discriminator: \"dungeon\", \"house_basement\", or \"overworld\". `level` is the difficulty band (1–8); the sampler filters by min/max level. `weight` controls the relative pick probability inside an eligible band. `monster_party_tile` is the lead monster shown on the overworld sprite (empty falls back to monsters[0]). v1 nested encounters under area-bucket keys; v2 flattens them into one array. Some v1 encounters share names across areas — those get area-suffixed ids here. Dropped: `terrain` (parsed but no v1 consumer).",
+  "encounters": [
+    {
+      "id": "cellar_rats",
+      "area": "dungeon",
+      "name": "Cellar Rats",
+      "level": 1,
+      "weight": 30,
+      "monster_party_tile": "Giant Rat",
+      "monsters": [
+        "Giant Rat"
+      ]
+    },
+    {
+      "id": "rat_nest",
+      "area": "dungeon",
+      "name": "Rat Nest",
+      "level": 1,
+      "weight": 30,
+      "monster_party_tile": "Giant Rat",
+      "monsters": [
+        "Giant Rat",
+        "Giant Rat"
+      ]
+    },
+    {
+      "id": "stray_goblin",
+      "area": "dungeon",
+      "name": "Stray Goblin",
+      "level": 1,
+      "weight": 25,
+      "monster_party_tile": "Goblin",
+      "monsters": [
+        "Goblin"
+      ]
+    },
+    {
+      "id": "goblin_squatters",
+      "area": "dungeon",
+      "name": "Goblin Squatters",
+      "level": 1,
+      "weight": 15,
+      "monster_party_tile": "Goblin",
+      "monsters": [
+        "Goblin",
+        "Giant Rat"
+      ]
+    },
+    {
+      "id": "goblin_ambush",
+      "area": "dungeon",
+      "name": "Goblin Ambush",
+      "level": 2,
+      "weight": 30,
+      "monster_party_tile": "Goblin",
+      "monsters": [
+        "Goblin",
+        "Goblin",
+        "Goblin"
+      ]
+    },
+    {
+      "id": "wolf_pack",
+      "area": "dungeon",
+      "name": "Wolf Pack",
+      "level": 2,
+      "weight": 25,
+      "monster_party_tile": "Wolf",
+      "monsters": [
+        "Wolf",
+        "Wolf"
+      ]
+    },
+    {
+      "id": "goblin_raiders",
+      "area": "dungeon",
+      "name": "Goblin Raiders",
+      "level": 2,
+      "weight": 25,
+      "monster_party_tile": "Goblin",
+      "monsters": [
+        "Goblin",
+        "Goblin",
+        "Wolf"
+      ]
+    },
+    {
+      "id": "rat_swarm",
+      "area": "dungeon",
+      "name": "Rat Swarm",
+      "level": 2,
+      "weight": 20,
+      "monster_party_tile": "Giant Rat",
+      "monsters": [
+        "Giant Rat",
+        "Giant Rat",
+        "Giant Rat",
+        "Giant Rat"
+      ]
+    },
+    {
+      "id": "skeleton_patrol",
+      "area": "dungeon",
+      "name": "Skeleton Patrol",
+      "level": 3,
+      "weight": 30,
+      "monster_party_tile": "Skeleton",
+      "monsters": [
+        "Skeleton",
+        "Skeleton"
+      ]
+    },
+    {
+      "id": "shambling_dead",
+      "area": "dungeon",
+      "name": "Shambling Dead",
+      "level": 3,
+      "weight": 25,
+      "monster_party_tile": "Zombie",
+      "monsters": [
+        "Zombie",
+        "Zombie"
+      ]
+    },
+    {
+      "id": "skeleton_archers",
+      "area": "dungeon",
+      "name": "Skeleton Archers",
+      "level": 3,
+      "weight": 20,
+      "monster_party_tile": "Skeleton",
+      "monsters": [
+        "Skeleton Archer",
+        "Skeleton Archer"
+      ]
+    },
+    {
+      "id": "wolves_and_goblins",
+      "area": "dungeon",
+      "name": "Wolves and Goblins",
+      "level": 3,
+      "weight": 20,
+      "monster_party_tile": "Wolf",
+      "monsters": [
+        "Wolf",
+        "Wolf",
+        "Goblin",
+        "Goblin"
+      ]
+    },
+    {
+      "id": "shaman_s_guard",
+      "area": "dungeon",
+      "name": "Shaman's Guard",
+      "level": 3,
+      "weight": 15,
+      "monster_party_tile": "Orc",
+      "monsters": [
+        "Orc Shaman",
+        "Goblin",
+        "Goblin"
+      ]
+    },
+    {
+      "id": "undead_horde",
+      "area": "dungeon",
+      "name": "Undead Horde",
+      "level": 4,
+      "weight": 25,
+      "monster_party_tile": "Skeleton",
+      "monsters": [
+        "Skeleton",
+        "Skeleton",
+        "Zombie"
+      ]
+    },
+    {
+      "id": "undead_warband",
+      "area": "dungeon",
+      "name": "Undead Warband",
+      "level": 4,
+      "weight": 20,
+      "monster_party_tile": "Skeleton",
+      "monsters": [
+        "Skeleton",
+        "Skeleton Archer",
+        "Zombie"
+      ]
+    },
+    {
+      "id": "orc_scouts",
+      "area": "dungeon",
+      "name": "Orc Scouts",
+      "level": 4,
+      "weight": 25,
+      "monster_party_tile": "Orc",
+      "monsters": [
+        "Orc",
+        "Orc"
+      ]
+    },
+    {
+      "id": "mixed_patrol",
+      "area": "dungeon",
+      "name": "Mixed Patrol",
+      "level": 4,
+      "weight": 20,
+      "monster_party_tile": "Orc",
+      "monsters": [
+        "Orc",
+        "Skeleton",
+        "Wolf"
+      ]
+    },
+    {
+      "id": "wild_pack",
+      "area": "dungeon",
+      "name": "Wild Pack",
+      "level": 4,
+      "weight": 15,
+      "monster_party_tile": "Wolf",
+      "monsters": [
+        "Wolf",
+        "Wolf",
+        "Wolf"
+      ]
+    },
+    {
+      "id": "orc_warband",
+      "area": "dungeon",
+      "name": "Orc Warband",
+      "level": 5,
+      "weight": 25,
+      "monster_party_tile": "Orc",
+      "monsters": [
+        "Orc",
+        "Orc",
+        "Orc"
+      ]
+    },
+    {
+      "id": "orc_raiding_party",
+      "area": "dungeon",
+      "name": "Orc Raiding Party",
+      "level": 5,
+      "weight": 20,
+      "monster_party_tile": "Orc",
+      "monsters": [
+        "Orc",
+        "Orc",
+        "Orc Shaman"
+      ]
+    },
+    {
+      "id": "dark_coven",
+      "area": "dungeon",
+      "name": "Dark Coven",
+      "level": 5,
+      "weight": 15,
+      "monster_party_tile": "Dark Mage",
+      "monsters": [
+        "Dark Mage",
+        "Skeleton Archer",
+        "Skeleton"
+      ]
+    },
+    {
+      "id": "archer_s_nest",
+      "area": "dungeon",
+      "name": "Archer's Nest",
+      "level": 5,
+      "weight": 15,
+      "monster_party_tile": "Skeleton",
+      "monsters": [
+        "Skeleton Archer",
+        "Skeleton Archer",
+        "Skeleton Archer"
+      ]
+    },
+    {
+      "id": "troll_den",
+      "area": "dungeon",
+      "name": "Troll Den",
+      "level": 5,
+      "weight": 10,
+      "monster_party_tile": "Troll",
+      "monsters": [
+        "Troll"
+      ]
+    },
+    {
+      "id": "orc_with_wolves",
+      "area": "dungeon",
+      "name": "Orc with Wolves",
+      "level": 6,
+      "weight": 20,
+      "monster_party_tile": "Orc",
+      "monsters": [
+        "Orc",
+        "Orc",
+        "Wolf",
+        "Wolf"
+      ]
+    },
+    {
+      "id": "troll_and_minions",
+      "area": "dungeon",
+      "name": "Troll and Minions",
+      "level": 6,
+      "weight": 20,
+      "monster_party_tile": "Troll",
+      "monsters": [
+        "Troll",
+        "Goblin",
+        "Goblin"
+      ]
+    },
+    {
+      "id": "dark_patrol",
+      "area": "dungeon",
+      "name": "Dark Patrol",
+      "level": 6,
+      "weight": 20,
+      "monster_party_tile": "Dark Mage",
+      "monsters": [
+        "Dark Mage",
+        "Orc",
+        "Skeleton Archer"
+      ]
+    },
+    {
+      "id": "cursed_battalion",
+      "area": "dungeon",
+      "name": "Cursed Battalion",
+      "level": 6,
+      "weight": 15,
+      "monster_party_tile": "Skeleton",
+      "monsters": [
+        "Skeleton",
+        "Skeleton",
+        "Skeleton Archer",
+        "Zombie",
+        "Zombie"
+      ]
+    },
+    {
+      "id": "orc_siege",
+      "area": "dungeon",
+      "name": "Orc Siege",
+      "level": 6,
+      "weight": 15,
+      "monster_party_tile": "Orc",
+      "monsters": [
+        "Orc",
+        "Orc",
+        "Orc",
+        "Orc Shaman"
+      ]
+    },
+    {
+      "id": "troll_warband",
+      "area": "dungeon",
+      "name": "Troll Warband",
+      "level": 7,
+      "weight": 20,
+      "monster_party_tile": "Troll",
+      "monsters": [
+        "Troll",
+        "Troll"
+      ]
+    },
+    {
+      "id": "dark_conclave",
+      "area": "dungeon",
+      "name": "Dark Conclave",
+      "level": 7,
+      "weight": 20,
+      "monster_party_tile": "Dark Mage",
+      "monsters": [
+        "Dark Mage",
+        "Dark Mage",
+        "Orc Shaman"
+      ]
+    },
+    {
+      "id": "orc_legion",
+      "area": "dungeon",
+      "name": "Orc Legion",
+      "level": 7,
+      "weight": 20,
+      "monster_party_tile": "Orc",
+      "monsters": [
+        "Orc",
+        "Orc",
+        "Orc",
+        "Orc",
+        "Orc Shaman"
+      ]
+    },
+    {
+      "id": "necromancer_s_guard",
+      "area": "dungeon",
+      "name": "Necromancer's Guard",
+      "level": 7,
+      "weight": 15,
+      "monster_party_tile": "Dark Mage",
+      "monsters": [
+        "Dark Mage",
+        "Skeleton",
+        "Skeleton",
+        "Skeleton Archer",
+        "Skeleton Archer"
+      ]
+    },
+    {
+      "id": "troll_ambush",
+      "area": "dungeon",
+      "name": "Troll Ambush",
+      "level": 7,
+      "weight": 15,
+      "monster_party_tile": "Troll",
+      "monsters": [
+        "Troll",
+        "Orc",
+        "Orc"
+      ]
+    },
+    {
+      "id": "troll_horde",
+      "area": "dungeon",
+      "name": "Troll Horde",
+      "level": 8,
+      "weight": 20,
+      "monster_party_tile": "Troll",
+      "monsters": [
+        "Troll",
+        "Troll",
+        "Troll"
+      ]
+    },
+    {
+      "id": "shadow_army",
+      "area": "dungeon",
+      "name": "Shadow Army",
+      "level": 8,
+      "weight": 20,
+      "monster_party_tile": "Dark Mage",
+      "monsters": [
+        "Dark Mage",
+        "Dark Mage",
+        "Troll",
+        "Orc Shaman"
+      ]
+    },
+    {
+      "id": "undead_apocalypse",
+      "area": "dungeon",
+      "name": "Undead Apocalypse",
+      "level": 8,
+      "weight": 15,
+      "monster_party_tile": "Skeleton",
+      "monsters": [
+        "Skeleton",
+        "Skeleton",
+        "Skeleton Archer",
+        "Skeleton Archer",
+        "Zombie",
+        "Zombie"
+      ]
+    },
+    {
+      "id": "orc_warchief_s_guard",
+      "area": "dungeon",
+      "name": "Orc Warchief's Guard",
+      "level": 8,
+      "weight": 15,
+      "monster_party_tile": "Orc",
+      "monsters": [
+        "Orc",
+        "Orc",
+        "Orc",
+        "Orc",
+        "Orc Shaman",
+        "Orc Shaman"
+      ]
+    },
+    {
+      "id": "troll_kings",
+      "area": "dungeon",
+      "name": "Troll Kings",
+      "level": 8,
+      "weight": 10,
+      "monster_party_tile": "Troll",
+      "monsters": [
+        "Troll",
+        "Troll",
+        "Orc Shaman",
+        "Dark Mage"
+      ]
+    },
+    {
+      "id": "ancient_dragon",
+      "area": "dungeon",
+      "name": "Ancient Dragon",
+      "level": 8,
+      "weight": 10,
+      "monster_party_tile": "Dragon",
+      "monsters": [
+        "Dragon"
+      ]
+    },
+    {
+      "id": "dragon_cultists",
+      "area": "dungeon",
+      "name": "Dragon Cultists",
+      "level": 4,
+      "weight": 10,
+      "monster_party_tile": "Dark Mage",
+      "monsters": [
+        "Dark Mage",
+        "Dark Mage",
+        "Skeleton Archer"
+      ]
+    },
+    {
+      "id": "drake_pack",
+      "area": "dungeon",
+      "name": "Drake Pack",
+      "level": 7,
+      "weight": 10,
+      "monster_party_tile": "Wyvern",
+      "monsters": [
+        "Wyvern",
+        "Wyvern"
+      ]
+    },
+    {
+      "id": "drake_and_keeper",
+      "area": "dungeon",
+      "name": "Drake and Keeper",
+      "level": 6,
+      "weight": 10,
+      "monster_party_tile": "Wyvern",
+      "monsters": [
+        "Wyvern",
+        "Orc Shaman"
+      ]
+    },
+    {
+      "id": "wyrm_blooded_cultists",
+      "area": "dungeon",
+      "name": "Wyrm-blooded Cultists",
+      "level": 6,
+      "weight": 10,
+      "monster_party_tile": "Dark Mage",
+      "monsters": [
+        "Dark Mage",
+        "Dark Mage",
+        "Troll"
+      ]
+    },
+    {
+      "id": "bone_pit_horde",
+      "area": "dungeon",
+      "name": "Bone Pit Horde",
+      "level": 5,
+      "weight": 10,
+      "monster_party_tile": "Skeleton",
+      "monsters": [
+        "Skeleton",
+        "Skeleton",
+        "Skeleton Archer",
+        "Zombie",
+        "Zombie"
+      ]
+    },
+    {
+      "id": "lone_ogre",
+      "area": "dungeon",
+      "name": "Lone Ogre",
+      "level": 5,
+      "weight": 18,
+      "monster_party_tile": "Ogre",
+      "monsters": [
+        "Ogre"
+      ]
+    },
+    {
+      "id": "ogre_and_drake",
+      "area": "dungeon",
+      "name": "Ogre and Drake",
+      "level": 6,
+      "weight": 12,
+      "monster_party_tile": "Ogre",
+      "monsters": [
+        "Ogre",
+        "Wyvern"
+      ]
+    },
+    {
+      "id": "ogre_brutes",
+      "area": "dungeon",
+      "name": "Ogre Brutes",
+      "level": 7,
+      "weight": 12,
+      "monster_party_tile": "Ogre",
+      "monsters": [
+        "Ogre",
+        "Ogre"
+      ]
+    },
+    {
+      "id": "ogre_warband",
+      "area": "dungeon",
+      "name": "Ogre Warband",
+      "level": 8,
+      "weight": 10,
+      "monster_party_tile": "Ogre",
+      "monsters": [
+        "Ogre",
+        "Ogre",
+        "Ogre"
+      ]
+    },
+    {
+      "id": "wailing_spirit",
+      "area": "dungeon",
+      "name": "Wailing Spirit",
+      "level": 5,
+      "weight": 15,
+      "monster_party_tile": "Banshee",
+      "monsters": [
+        "Banshee"
+      ]
+    },
+    {
+      "id": "banshee_pair",
+      "area": "dungeon",
+      "name": "Banshee Pair",
+      "level": 6,
+      "weight": 12,
+      "monster_party_tile": "Banshee",
+      "monsters": [
+        "Banshee",
+        "Banshee"
+      ]
+    },
+    {
+      "id": "lich_and_banshee",
+      "area": "dungeon",
+      "name": "Lich and Banshee",
+      "level": 7,
+      "weight": 10,
+      "monster_party_tile": "Lich",
+      "monsters": [
+        "Lich",
+        "Banshee"
+      ]
+    },
+    {
+      "id": "banshee_choir",
+      "area": "dungeon",
+      "name": "Banshee Choir",
+      "level": 7,
+      "weight": 10,
+      "monster_party_tile": "Banshee",
+      "monsters": [
+        "Banshee",
+        "Banshee",
+        "Banshee"
+      ]
+    },
+    {
+      "id": "cursed_manor",
+      "area": "dungeon",
+      "name": "Cursed Manor",
+      "level": 8,
+      "weight": 8,
+      "monster_party_tile": "Banshee",
+      "monsters": [
+        "Banshee",
+        "Banshee",
+        "Lich"
+      ]
+    },
+    {
+      "id": "haunted_trail",
+      "area": "dungeon",
+      "name": "Haunted Trail",
+      "level": 6,
+      "weight": 10,
+      "monster_party_tile": "Banshee",
+      "monsters": [
+        "Banshee",
+        "Man Eater"
+      ]
+    },
+    {
+      "id": "predator_s_den",
+      "area": "dungeon",
+      "name": "Predator's Den",
+      "level": 7,
+      "weight": 8,
+      "monster_party_tile": "Man Eater",
+      "monsters": [
+        "Man Eater",
+        "Man Eater",
+        "Wyvern"
+      ]
+    },
+    {
+      "id": "mind_flayer",
+      "area": "dungeon",
+      "name": "Mind Flayer",
+      "level": 7,
+      "weight": 12,
+      "monster_party_tile": "Mind Flayer",
+      "monsters": [
+        "Mind Flayer"
+      ]
+    },
+    {
+      "id": "mind_flayer_conclave",
+      "area": "dungeon",
+      "name": "Mind Flayer Conclave",
+      "level": 8,
+      "weight": 8,
+      "monster_party_tile": "Mind Flayer",
+      "monsters": [
+        "Mind Flayer",
+        "Mind Flayer"
+      ]
+    },
+    {
+      "id": "vampire_lord",
+      "area": "dungeon",
+      "name": "Vampire Lord",
+      "level": 7,
+      "weight": 10,
+      "monster_party_tile": "Vampire Lord",
+      "monsters": [
+        "Vampire Lord"
+      ]
+    },
+    {
+      "id": "vampire_s_court",
+      "area": "dungeon",
+      "name": "Vampire's Court",
+      "level": 8,
+      "weight": 6,
+      "monster_party_tile": "Vampire Lord",
+      "monsters": [
+        "Vampire Lord",
+        "Vampire Lord"
+      ]
+    },
+    {
+      "id": "stone_sentinel",
+      "area": "dungeon",
+      "name": "Stone Sentinel",
+      "level": 7,
+      "weight": 12,
+      "monster_party_tile": "Stone Golem",
+      "monsters": [
+        "Stone Golem"
+      ]
+    },
+    {
+      "id": "twin_sentinels",
+      "area": "dungeon",
+      "name": "Twin Sentinels",
+      "level": 8,
+      "weight": 8,
+      "monster_party_tile": "Stone Golem",
+      "monsters": [
+        "Stone Golem",
+        "Stone Golem"
+      ]
+    },
+    {
+      "id": "lurking_hydra",
+      "area": "dungeon",
+      "name": "Lurking Hydra",
+      "level": 7,
+      "weight": 10,
+      "monster_party_tile": "Hydra",
+      "monsters": [
+        "Hydra"
+      ]
+    },
+    {
+      "id": "ancient_hydra",
+      "area": "dungeon",
+      "name": "Ancient Hydra",
+      "level": 8,
+      "weight": 6,
+      "monster_party_tile": "Hydra",
+      "monsters": [
+        "Hydra",
+        "Stone Golem"
+      ]
+    },
+    {
+      "id": "death_s_heralds",
+      "area": "dungeon",
+      "name": "Death's Heralds",
+      "level": 8,
+      "weight": 6,
+      "monster_party_tile": "Vampire Lord",
+      "monsters": [
+        "Vampire Lord",
+        "Mind Flayer"
+      ]
+    },
+    {
+      "id": "the_apocalypse",
+      "area": "dungeon",
+      "name": "The Apocalypse",
+      "level": 8,
+      "weight": 3,
+      "monster_party_tile": "Hydra",
+      "monsters": [
+        "Hydra",
+        "Vampire Lord",
+        "Mind Flayer"
+      ]
+    },
+    {
+      "id": "cellar_rats_house_basement",
+      "area": "house_basement",
+      "name": "Cellar Rats",
+      "level": 1,
+      "weight": 40,
+      "monster_party_tile": "Giant Rat",
+      "monsters": [
+        "Giant Rat"
+      ]
+    },
+    {
+      "id": "rat_infestation",
+      "area": "house_basement",
+      "name": "Rat Infestation",
+      "level": 1,
+      "weight": 30,
+      "monster_party_tile": "Giant Rat",
+      "monsters": [
+        "Giant Rat",
+        "Giant Rat"
+      ]
+    },
+    {
+      "id": "stray_goblin_house_basement",
+      "area": "house_basement",
+      "name": "Stray Goblin",
+      "level": 1,
+      "weight": 20,
+      "monster_party_tile": "Goblin",
+      "monsters": [
+        "Goblin"
+      ]
+    },
+    {
+      "id": "goblin_squatters_house_basement",
+      "area": "house_basement",
+      "name": "Goblin Squatters",
+      "level": 2,
+      "weight": 10,
+      "monster_party_tile": "Goblin",
+      "monsters": [
+        "Goblin",
+        "Giant Rat"
+      ]
+    },
+    {
+      "id": "stray_wolves",
+      "area": "overworld",
+      "name": "Stray Wolves",
+      "level": 1,
+      "weight": 30,
+      "monster_party_tile": "Wolf",
+      "monsters": [
+        "Wolf"
+      ]
+    },
+    {
+      "id": "goblin_scouts",
+      "area": "overworld",
+      "name": "Goblin Scouts",
+      "level": 1,
+      "weight": 30,
+      "monster_party_tile": "Goblin",
+      "monsters": [
+        "Goblin",
+        "Goblin"
+      ]
+    },
+    {
+      "id": "field_rats",
+      "area": "overworld",
+      "name": "Field Rats",
+      "level": 1,
+      "weight": 25,
+      "monster_party_tile": "Giant Rat",
+      "monsters": [
+        "Giant Rat",
+        "Giant Rat"
+      ]
+    },
+    {
+      "id": "wolf_pack_overworld",
+      "area": "overworld",
+      "name": "Wolf Pack",
+      "level": 2,
+      "weight": 30,
+      "monster_party_tile": "Wolf",
+      "monsters": [
+        "Wolf",
+        "Wolf"
+      ]
+    },
+    {
+      "id": "goblin_raiding_party",
+      "area": "overworld",
+      "name": "Goblin Raiding Party",
+      "level": 2,
+      "weight": 30,
+      "monster_party_tile": "Goblin",
+      "monsters": [
+        "Goblin",
+        "Goblin",
+        "Goblin"
+      ]
+    },
+    {
+      "id": "orc_scouts_overworld",
+      "area": "overworld",
+      "name": "Orc Scouts",
+      "level": 3,
+      "weight": 30,
+      "monster_party_tile": "Orc",
+      "monsters": [
+        "Orc",
+        "Orc"
+      ]
+    },
+    {
+      "id": "wolves_and_goblins_overworld",
+      "area": "overworld",
+      "name": "Wolves and Goblins",
+      "level": 3,
+      "weight": 25,
+      "monster_party_tile": "Wolf",
+      "monsters": [
+        "Wolf",
+        "Wolf",
+        "Goblin"
+      ]
+    },
+    {
+      "id": "orc_warband_overworld",
+      "area": "overworld",
+      "name": "Orc Warband",
+      "level": 4,
+      "weight": 30,
+      "monster_party_tile": "Orc",
+      "monsters": [
+        "Orc",
+        "Orc",
+        "Orc"
+      ]
+    },
+    {
+      "id": "orc_with_wolves_overworld",
+      "area": "overworld",
+      "name": "Orc with Wolves",
+      "level": 4,
+      "weight": 25,
+      "monster_party_tile": "Orc",
+      "monsters": [
+        "Orc",
+        "Wolf",
+        "Wolf"
+      ]
+    },
+    {
+      "id": "orc_raiders",
+      "area": "overworld",
+      "name": "Orc Raiders",
+      "level": 5,
+      "weight": 25,
+      "monster_party_tile": "Orc",
+      "monsters": [
+        "Orc",
+        "Orc",
+        "Orc Shaman"
+      ]
+    },
+    {
+      "id": "lone_troll",
+      "area": "overworld",
+      "name": "Lone Troll",
+      "level": 5,
+      "weight": 15,
+      "monster_party_tile": "Troll",
+      "monsters": [
+        "Troll"
+      ]
+    },
+    {
+      "id": "troll_and_wolves",
+      "area": "overworld",
+      "name": "Troll and Wolves",
+      "level": 6,
+      "weight": 20,
+      "monster_party_tile": "Troll",
+      "monsters": [
+        "Troll",
+        "Wolf",
+        "Wolf"
+      ]
+    },
+    {
+      "id": "dark_riders",
+      "area": "overworld",
+      "name": "Dark Riders",
+      "level": 6,
+      "weight": 20,
+      "monster_party_tile": "Dark Mage",
+      "monsters": [
+        "Dark Mage",
+        "Orc",
+        "Orc"
+      ]
+    },
+    {
+      "id": "troll_warband_overworld",
+      "area": "overworld",
+      "name": "Troll Warband",
+      "level": 7,
+      "weight": 20,
+      "monster_party_tile": "Troll",
+      "monsters": [
+        "Troll",
+        "Troll"
+      ]
+    },
+    {
+      "id": "orc_war_host",
+      "area": "overworld",
+      "name": "Orc War Host",
+      "level": 7,
+      "weight": 20,
+      "monster_party_tile": "Orc",
+      "monsters": [
+        "Orc",
+        "Orc",
+        "Orc",
+        "Orc Shaman"
+      ]
+    },
+    {
+      "id": "shadow_vanguard",
+      "area": "overworld",
+      "name": "Shadow Vanguard",
+      "level": 8,
+      "weight": 15,
+      "monster_party_tile": "Dark Mage",
+      "monsters": [
+        "Dark Mage",
+        "Troll",
+        "Orc",
+        "Orc"
+      ]
+    },
+    {
+      "id": "troll_horde_overworld",
+      "area": "overworld",
+      "name": "Troll Horde",
+      "level": 8,
+      "weight": 15,
+      "monster_party_tile": "Troll",
+      "monsters": [
+        "Troll",
+        "Troll",
+        "Troll"
+      ]
+    },
+    {
+      "id": "lich_with_minions",
+      "area": "overworld",
+      "name": "Lich with Minions",
+      "level": 4,
+      "weight": 10,
+      "monster_party_tile": "",
+      "monsters": [
+        "Lich",
+        "Skeleton",
+        "Skeleton"
+      ]
+    },
+    {
+      "id": "mind_flayer_overworld",
+      "area": "overworld",
+      "name": "Mind Flayer",
+      "level": 5,
+      "weight": 10,
+      "monster_party_tile": "",
+      "monsters": [
+        "Mind Flayer"
+      ]
+    }
+  ]
+}

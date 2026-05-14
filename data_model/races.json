@@ -1,0 +1,71 @@
+{
+  "_comment": "Race catalog (real data drives the schema). Each race has stat modifiers applied at character creation, an optional XP curve override, and an optional list of innate Effect ids granted to members. Effect references map to ids in effects.json; refs that don't resolve there (pickpocket, galadriel_light, tinker) are kept from v1 as a record of design intent — those Effects don't exist yet in v2.",
+  "races": [
+    {
+      "id": "human",
+      "name": "Human",
+      "description": "Versatile and adaptable, humans excel in no single area but have no weaknesses. They learn quickly and level up faster than other races.",
+      "stat_modifiers": {
+        "strength": 0,
+        "dexterity": 0,
+        "constitution": 0,
+        "intelligence": 0,
+        "wisdom": 0
+      },
+      "exp_per_level": 1125,
+      "effects": []
+    },
+    {
+      "id": "dwarf",
+      "name": "Dwarf",
+      "description": "Stout and hardy, dwarves are natural miners and warriors with keen underground senses.",
+      "stat_modifiers": {
+        "strength": 2,
+        "dexterity": -1,
+        "constitution": 2,
+        "intelligence": 0,
+        "wisdom": 1
+      },
+      "effects": ["infravision"]
+    },
+    {
+      "id": "halfling",
+      "name": "Halfling",
+      "description": "Small and nimble, halflings are surprisingly resilient and hard to hit.",
+      "stat_modifiers": {
+        "strength": -2,
+        "dexterity": 2,
+        "constitution": 0,
+        "intelligence": 0,
+        "wisdom": 1
+      },
+      "effects": ["pickpocket"]
+    },
+    {
+      "id": "elf",
+      "name": "Elf",
+      "description": "Graceful and keen-minded, elves have a natural affinity for magic and sharp senses.",
+      "stat_modifiers": {
+        "strength": -1,
+        "dexterity": 1,
+        "constitution": -1,
+        "intelligence": 2,
+        "wisdom": 0
+      },
+      "effects": ["galadriel_light"]
+    },
+    {
+      "id": "gnome",
+      "name": "Gnome",
+      "description": "Clever and curious, gnomes combine a knack for tinkering with innate magical talent.",
+      "stat_modifiers": {
+        "strength": -1,
+        "dexterity": 0,
+        "constitution": 0,
+        "intelligence": 2,
+        "wisdom": 1
+      },
+      "effects": ["tinker"]
+    }
+  ]
+}
