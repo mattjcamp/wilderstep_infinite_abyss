@@ -6,6 +6,7 @@
 
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { MapsBrowse } from "@/editor/MapsBrowse";
 import { ModelView } from "@/editor/ModelView";
 import {
   ALL_MODEL_KEYS,
@@ -42,10 +43,14 @@ export default function ModelBrowsePage({
           ({def.fileName} · /modules/{params.moduleId}/)
         </span>
       </nav>
-      <ModelView
-        moduleId={params.moduleId}
-        modelKey={params.modelKey as ModelKey}
-      />
+      {params.modelKey === "maps" ? (
+        <MapsBrowse moduleId={params.moduleId} />
+      ) : (
+        <ModelView
+          moduleId={params.moduleId}
+          modelKey={params.modelKey as ModelKey}
+        />
+      )}
     </div>
   );
 }

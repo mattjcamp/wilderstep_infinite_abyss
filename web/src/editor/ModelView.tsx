@@ -35,8 +35,6 @@
  * merge layer.
  */
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { StaticModuleSource } from "@/data_model/StaticModuleSource";
 import {
@@ -499,7 +497,6 @@ export function ModelView({
                       showProvenance={showProvenance}
                       hasSpriteColumn={hasSpriteColumn}
                       modelKey={modelKey}
-                      moduleId={moduleId}
                       onToggle={() => {
                         if (isEditing) return;
                         setOpenId(isOpen ? null : id);
@@ -852,7 +849,6 @@ function RowGroup({
   showProvenance,
   hasSpriteColumn,
   modelKey,
-  moduleId,
   onToggle,
   onStartEdit,
   onCancelEdit,
@@ -868,8 +864,6 @@ function RowGroup({
   showProvenance: boolean;
   hasSpriteColumn: boolean;
   modelKey?: string;
-  /** Needed so map rows can link into the visual map editor. */
-  moduleId?: string;
   onToggle: () => void;
   onStartEdit: () => void;
   onCancelEdit: () => void;
@@ -878,24 +872,13 @@ function RowGroup({
   def: (typeof MODELS)[ModelKey];
   template: Record_;
 }) {
-  const router = useRouter();
-  // Map rows lead straight into the visual editor — that's the primary
-  // workflow for maps. Other models still click-to-expand into JSON.
-  const isMapRow = modelKey === "maps" && !!moduleId && !!record.id;
-  const onRowClick = () => {
-    if (isMapRow) {
-      router.push(`/editor/${moduleId}/maps/${String(record.id)}`);
-    } else {
-      onToggle();
-    }
-  };
   return (
     <>
       <tr
         className={`cursor-pointer border-t border-parchment/5 ${
           isOpen ? "bg-ember/10" : "hover:bg-ink/30"
         }`}
-        onClick={onRowClick}
+        onClick={onToggle}
       >
         <td className="px-2 py-1 text-parchment/50">{isOpen ? "▾" : "▸"}</td>
         {hasSpriteColumn ? (
@@ -916,30 +899,7 @@ function RowGroup({
           );
         })}
         <td className="px-2 py-1 text-right">
-          <div className="flex items-center justify-end gap-2">
-            {showProvenance ? <ProvenanceBadge kind={provenance} /> : null}
-            {modelKey === "maps" && record.id ? (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  if (
-                    typeof window !== "undefined" &&
-                    !window.confirm(
-                      `Delete map "${record.id}"?\n\nThis removes it from this module's maps file. The change saves to the draft until you Publish.`,
-                    )
-                  )
-                    return;
-                  onRevert();
-                }}
-                className="rounded border border-parchment/20 px-2 py-0.5 text-xs text-parchment/60 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
-                title="Delete this map from the module's maps file."
-              >
-                Delete
-              </button>
-            ) : null}
-          </div>
+          {showProvenance ? <ProvenanceBadge kind={provenance} /> : null}
         </td>
       </tr>
       {isOpen && (
@@ -971,16 +931,6 @@ function RowGroup({
                   >
                     Edit
                   </button>
-                  {modelKey === "maps" && record.id && moduleId ? (
-                    <Link
-                      href={`/editor/${moduleId}/maps/${String(record.id)}`}
-                      onClick={(e) => e.stopPropagation()}
-                      className="rounded border border-ember/40 bg-ember/15 px-3 py-1 text-sm text-parchment hover:bg-ember/30"
-                      title="Open in the visual map editor (canvas + paint)."
-                    >
-                      Open Map Editor →
-                    </Link>
-                  ) : null}
                   {showProvenance && provenance === "overridden" ? (
                     <button
                       type="button"
@@ -994,17 +944,25 @@ function RowGroup({
                       Revert to inherited
                     </button>
                   ) : null}
-                  {showProvenance && provenance === "new" ? (
+                  {provenance === "new" ? (
                     <button
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
+                        if (
+                          typeof window !== "undefined" &&
+                          !window.confirm(
+                            `Delete record "${String(record.id ?? "")}"?\n\n` +
+                              `Removes it from this module's ${def.fileName}. Saves to the draft until you Publish.`,
+                          )
+                        )
+                          return;
                         onRevert();
                       }}
-                      className="rounded border border-parchment/30 px-3 py-1 text-sm text-parchment/80 hover:bg-ink/40"
-                      title="Remove this record from the module's overlay."
+                      className="rounded border border-parchment/30 px-3 py-1 text-sm text-parchment/80 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
+                      title="Delete this record from this module's file."
                     >
-                      Remove
+                      Delete
                     </button>
                   ) : null}
                 </div>

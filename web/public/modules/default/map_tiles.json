@@ -1,5 +1,5 @@
 {
-  "_comment": "Tile Palette — reusable tile types used to paint maps. Each tile carries: `id` (the cell reference), display `name`, `sprite` (path under /sprites/map/), and the behavioral attributes — `walkable` (blocks movement when false), `obstructs` (blocks light + ranged line-of-sight when true), `locked` (gates passage/interaction until unlocked), `light_source` (the tile emits light), `light_range` (light radius in cells), `animation` (visual effect — \"none\" | \"torch\" | \"fire\" | \"fairy\" | \"smoke\"), `counter` (id from counters.json — empty for none), `encounter` (id from encounters.json — empty for none; the encounter's monster_party_tile sprite renders as an overlay on the cell), and `spawn` (id from spawns.json — empty for none). Optional `link` is a one-way portal — when the party steps on a cell painted with this tile, they teleport to `{ \"map_id\": \"<target>\", \"x\": <col>, \"y\": <row> }`. Two visually-identical tiles with different destinations are two separate entries. Map cells are full copies of palette entries; palette edits don't auto-propagate to painted cells.",
+  "_comment": "Tile Palette — reusable tile types used to paint maps. Each tile carries: `id` (the cell reference), display `name`, `tag` (string used to group tiles in the editor palette panel — empty for untagged), `sprite` (path under /sprites/map/), and the behavioral attributes — `walkable` (blocks movement when false), `obstructs` (blocks light + ranged line-of-sight when true), `locked` (gates passage/interaction until unlocked), `light_source` (the tile emits light), `light_range` (light radius in cells), `animation` (visual effect — \"none\" | \"torch\" | \"fire\" | \"fairy\" | \"smoke\"), `counter` (id from counters.json — empty for none), `encounter` (id from encounters.json — empty for none; the encounter sprite renders as an overlay), and `spawn` (id from spawns.json — empty for none). Optional `link` is a one-way portal: `{ \"map_id\": \"<target>\", \"x\": <col>, \"y\": <row> }`. Map cells are full copies of palette entries; palette edits don't auto-propagate to painted cells.",
   "map_tiles": [
     {
       "id": "grass",
@@ -13,7 +13,8 @@
       "counter": "",
       "encounter": "",
       "spawn": "",
-      "sprite": "map/grass1.png"
+      "sprite": "map/grass1.png",
+      "tag": "outdoor"
     },
     {
       "id": "water",
@@ -24,10 +25,11 @@
       "light_source": false,
       "light_range": 0,
       "animation": "none",
-      "counter": "",
-      "encounter": "",
-      "spawn": "",
-      "sprite": "map/water.png"
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "map/water.png",
+      "tag": "water"
     },
     {
       "id": "mountain",
@@ -41,7 +43,8 @@
       "counter": "",
       "encounter": "",
       "spawn": "",
-      "sprite": "map/mountains.png"
+      "sprite": "map/mountains.png",
+      "tag": "outdoor"
     },
     {
       "id": "path",
@@ -52,10 +55,11 @@
       "light_source": false,
       "light_range": 0,
       "animation": "none",
-      "counter": "",
-      "encounter": "",
-      "spawn": "",
-      "sprite": "map/path.png"
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "map/path.png",
+      "tag": "terrain"
     },
     {
       "id": "floor",
@@ -66,10 +70,11 @@
       "light_source": false,
       "light_range": 0,
       "animation": "none",
-      "counter": "",
-      "encounter": "",
-      "spawn": "",
-      "sprite": "map/town_floor.png"
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "map/town_floor.png",
+      "tag": "floor"
     },
     {
       "id": "wall",
@@ -80,10 +85,11 @@
       "light_source": false,
       "light_range": 0,
       "animation": "none",
-      "counter": "",
-      "encounter": "",
-      "spawn": "",
-      "sprite": "map/brick_wall_red.png"
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "map/brick_wall_red.png",
+      "tag": "wall"
     },
     {
       "id": "town",
@@ -97,7 +103,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/town.png"
+      "sprite": "map/town.png",
+      "tag": "outdoor"
     },
     {
       "id": "forest",
@@ -111,7 +118,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/forest2.png"
+      "sprite": "map/forest2.png",
+      "tag": "outdoor"
     },
     {
       "id": "castle",
@@ -125,7 +133,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/ruined_tower.png"
+      "sprite": "map/ruined_tower.png",
+      "tag": "outdoor"
     },
     {
       "id": "wall_brown",
@@ -139,7 +148,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/brick_wall_brown.png"
+      "sprite": "map/brick_wall_brown.png",
+      "tag": "wall"
     },
     {
       "id": "building_abandoned",
@@ -153,7 +163,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/abandoned_building.png"
+      "sprite": "map/abandoned_building.png",
+      "tag": "outdoor"
     },
     {
       "id": "dungeon_entrance",
@@ -167,7 +178,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/dungeon_entrance.png"
+      "sprite": "map/dungeon_entrance.png",
+      "tag": "outdoor"
     },
     {
       "id": "alter",
@@ -181,7 +193,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/altar.png"
+      "sprite": "map/altar.png",
+      "tag": "indoor"
     },
     {
       "id": "counter",
@@ -195,7 +208,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/counter.png"
+      "sprite": "map/counter.png",
+      "tag": "indoor"
     },
     {
       "id": "door",
@@ -209,7 +223,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/dungeon_door.png"
+      "sprite": "map/dungeon_door.png",
+      "tag": "town"
     },
     {
       "id": "floor_brown",
@@ -223,7 +238,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/floor_brown.png"
+      "sprite": "map/floor_brown.png",
+      "tag": "floor"
     },
     {
       "id": "floor_gray",
@@ -237,7 +253,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/floor_gray.png"
+      "sprite": "map/floor_gray.png",
+      "tag": "floor"
     },
     {
       "id": "grass2",
@@ -251,7 +268,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/grass2.png"
+      "sprite": "map/grass2.png",
+      "tag": "terrain"
     },
     {
       "id": "brick_wall_brown",
@@ -265,7 +283,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/brick_wall_brown.png"
+      "sprite": "map/brick_wall_brown.png",
+      "tag": "wall"
     },
     {
       "id": "wall_stone",
@@ -279,7 +298,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/stone_wall.png"
+      "sprite": "map/stone_wall.png",
+      "tag": "wall"
     },
     {
       "id": "wall_gray",
@@ -293,7 +313,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/wall_light.png"
+      "sprite": "map/wall_light.png",
+      "tag": "wall"
     },
     {
       "id": "gate",
@@ -307,7 +328,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/gate.png"
+      "sprite": "map/gate.png",
+      "tag": "town"
     },
     {
       "id": "shrine",
@@ -321,7 +343,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/shrine.png"
+      "sprite": "map/shrine.png",
+      "tag": "town"
     },
     {
       "id": "ship_frigate",
@@ -335,7 +358,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/ship_frigate.png"
+      "sprite": "map/ship_frigate.png",
+      "tag": "outdoor"
     },
     {
       "id": "ship_pirate",
@@ -349,7 +373,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/ship_pirate.png"
+      "sprite": "map/ship_pirate.png",
+      "tag": "outdoor"
     },
     {
       "id": "graveyard",
@@ -363,7 +388,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/graveyard.png"
+      "sprite": "map/graveyard.png",
+      "tag": "outdoor"
     },
     {
       "id": "village",
@@ -377,7 +403,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/village.png"
+      "sprite": "map/village.png",
+      "tag": "outdoor"
     },
     {
       "id": "water_shallow",
@@ -391,7 +418,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/water_shallow.png"
+      "sprite": "map/water_shallow.png",
+      "tag": "water"
     },
     {
       "id": "window",
@@ -405,7 +433,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/window.png"
+      "sprite": "map/window.png",
+      "tag": "town"
     },
     {
       "id": "lava1",
@@ -419,7 +448,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/lava_vent.png"
+      "sprite": "map/lava_vent.png",
+      "tag": "dungeon"
     },
     {
       "id": "lava2",
@@ -433,7 +463,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/poison_swamp.png"
+      "sprite": "map/poison_swamp.png",
+      "tag": "dungeon"
     },
     {
       "id": "stone_circle",
@@ -447,7 +478,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/stone_circle.png"
+      "sprite": "map/stone_circle.png",
+      "tag": "outdoor"
     },
     {
       "id": "sand_dense",
@@ -461,7 +493,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/sand_copy.png"
+      "sprite": "map/sand_copy.png",
+      "tag": "terrain"
     },
     {
       "id": "palm_tree",
@@ -475,7 +508,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/island_jungle.png"
+      "sprite": "map/island_jungle.png",
+      "tag": "outdoor"
     },
     {
       "id": "portal1",
@@ -484,12 +518,13 @@
       "obstructs": false,
       "locked": false,
       "light_source": true,
-      "light_range": -1,
-      "animation": null,
+      "light_range": 3,
+      "animation": "fairy",
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/portal.png"
+      "sprite": "map/portal.png",
+      "tag": "dungeon"
     },
     {
       "id": "portal2",
@@ -503,7 +538,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/portal_open.png"
+      "sprite": "map/portal_open.png",
+      "tag": "dungeon"
     },
     {
       "id": "machine",
@@ -517,7 +553,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/machine.png"
+      "sprite": "map/machine.png",
+      "tag": "dungeon"
     },
     {
       "id": "door_locked",
@@ -531,7 +568,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/locked_door.png"
+      "sprite": "map/locked_door.png",
+      "tag": "dungeon"
     },
     {
       "id": "keyslot",
@@ -545,7 +583,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/keyslot.png"
+      "sprite": "map/keyslot.png",
+      "tag": "dungeon"
     },
     {
       "id": "swamp",
@@ -559,7 +598,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/swamp.png"
+      "sprite": "map/swamp.png",
+      "tag": "terrain"
     },
     {
       "id": "moongate",
@@ -573,7 +613,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/moongate.png"
+      "sprite": "map/moongate.png",
+      "tag": "dungeon"
     },
     {
       "id": "shop_sign",
@@ -587,7 +628,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/shop_sign.png"
+      "sprite": "map/shop_sign.png",
+      "tag": "town"
     },
     {
       "id": "whirlpool1",
@@ -601,7 +643,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/whirlpool1.png"
+      "sprite": "map/whirlpool1.png",
+      "tag": "water"
     },
     {
       "id": "whirlpool2",
@@ -615,7 +658,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/whirlpool2.png"
+      "sprite": "map/whirlpool2.png",
+      "tag": "water"
     },
     {
       "id": "stars",
@@ -629,7 +673,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/night_sky_stars.png"
+      "sprite": "map/night_sky_stars.png",
+      "tag": "dungeon"
     },
     {
       "id": "sand",
@@ -643,7 +688,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/sand.png"
+      "sprite": "map/sand.png",
+      "tag": "terrain"
     }
   ]
 }

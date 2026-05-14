@@ -74,14 +74,6 @@
       "effects": [
         "tinker"
       ]
-    },
-    {
-      "id": "cat",
-      "name": "Cat",
-      "description": "Meow",
-      "stat_modifiers": {},
-      "exp_per_level": 1,
-      "effects": []
     }
   ]
 }
