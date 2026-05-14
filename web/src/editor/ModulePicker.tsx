@@ -16,16 +16,23 @@ import { useCallback, useEffect, useState } from "react";
 import { StaticModuleSource } from "@/data_model/StaticModuleSource";
 import {
   discardAllDraftsFor,
+  discardDraft,
   discardIndexDraft,
   downloadJson,
   hasDraft,
   hasIndexDraft,
+  listDraftKeys,
+  loadDraft,
   loadIndexDraft,
   MANIFEST_KEY,
   saveIndexDraft,
 } from "@/data_model/draft";
+import { ALL_MODEL_KEYS, MODELS, type ModelKey } from "@/data_model/models";
 import type { ModuleSummary } from "@/data_model/ModuleSource";
+import { publishItems, type PublishItem } from "@/data_model/publishClient";
+import { withBasePath } from "@/util/basePath";
 import { NewModuleForm } from "./NewModuleForm";
+import { usePublishServer } from "./usePublishServer";
 
 interface IndexEntry {
   id: string;
@@ -44,24 +51,32 @@ type State =
       kind: "ok";
       modules: ModuleSummary[];
       indexDraftActive: boolean;
+      anyDraftActive: boolean;
+      draftCount: number;
     }
   | { kind: "error"; message: string };
 
 export function ModulePicker() {
+  const { available: publishAvailable } = usePublishServer();
   const [state, setState] = useState<State>({ kind: "loading" });
   const [creating, setCreating] = useState(false);
+  const [publishing, setPublishing] = useState(false);
 
   const refresh = useCallback(() => {
     const src = new StaticModuleSource();
     src
       .list()
-      .then((modules) =>
+      .then((modules) => {
+        const drafts = listDraftKeys();
+        const indexDraftActive = hasIndexDraft();
         setState({
           kind: "ok",
           modules,
-          indexDraftActive: hasIndexDraft(),
-        }),
-      )
+          indexDraftActive,
+          anyDraftActive: drafts.length > 0 || indexDraftActive,
+          draftCount: drafts.length + (indexDraftActive ? 1 : 0),
+        });
+      })
       .catch((e: unknown) =>
         setState({
           kind: "error",
@@ -91,6 +106,158 @@ export function ModulePicker() {
       return;
     }
     discardIndexDraft();
+    refresh();
+  };
+
+  /** Gather every pending draft + the index draft + any folder
+   *  deletions implied by the draft index → publish payload. */
+  const buildPublishPayload = async (): Promise<{
+    items: PublishItem[];
+    summary: { writes: number; deletes: number; deletedIds: string[] };
+  }> => {
+    const items: PublishItem[] = [];
+    const knownModelKeys = new Set<string>(ALL_MODEL_KEYS);
+
+    for (const { moduleId, modelKey } of listDraftKeys()) {
+      const content = loadDraft<unknown>(moduleId, modelKey);
+      if (content === null || content === undefined) continue;
+      if (modelKey === MANIFEST_KEY) {
+        items.push({ kind: "manifest", moduleId, content });
+      } else if (knownModelKeys.has(modelKey)) {
+        const def = MODELS[modelKey as ModelKey];
+        items.push({
+          kind: "model",
+          moduleId,
+          modelKey,
+          fileName: def.fileName,
+          content,
+        });
+      }
+    }
+
+    const indexDraft = loadIndexDraft<{ modules?: { id: string }[] }>();
+    if (indexDraft !== null) {
+      items.push({ kind: "index", content: indexDraft });
+    }
+
+    // Deletions: modules on disk but not in the draft index (when
+    // there is a draft index). Skip "default" — server refuses anyway.
+    const deletedIds: string[] = [];
+    if (indexDraft !== null) {
+      try {
+        const r = await fetch(withBasePath("/modules/index.json"), {
+          cache: "no-store",
+        });
+        if (r.ok) {
+          const onDisk = (await r.json()) as {
+            modules?: { id: string }[];
+          };
+          const draftIds = new Set(
+            (indexDraft.modules ?? []).map((e) => e.id),
+          );
+          for (const entry of onDisk.modules ?? []) {
+            if (
+              entry.id &&
+              entry.id !== "default" &&
+              !draftIds.has(entry.id)
+            ) {
+              deletedIds.push(entry.id);
+              items.push({ kind: "delete-module", moduleId: entry.id });
+            }
+          }
+        }
+      } catch {
+        // No on-disk index — nothing to delete.
+      }
+    }
+
+    return {
+      items,
+      summary: {
+        writes: items.filter((i) => i.kind !== "delete-module").length,
+        deletes: deletedIds.length,
+        deletedIds,
+      },
+    };
+  };
+
+  const onPublishAll = async () => {
+    if (typeof window === "undefined") return;
+    const { items, summary } = await buildPublishPayload();
+    if (items.length === 0) {
+      window.alert("No drafts to publish.");
+      return;
+    }
+    const lines = [
+      `Publish ${summary.writes} file write${summary.writes === 1 ? "" : "s"}` +
+        (summary.deletes
+          ? ` and ${summary.deletes} folder deletion${summary.deletes === 1 ? "" : "s"}`
+          : "") +
+        "?",
+      "",
+      "This will write directly to web/public/modules/.",
+    ];
+    if (summary.deletes > 0) {
+      lines.push("");
+      lines.push(`Folders to delete: ${summary.deletedIds.join(", ")}`);
+    }
+    if (!window.confirm(lines.join("\n"))) return;
+
+    setPublishing(true);
+    try {
+      const res = await publishItems(items);
+      // Clear drafts for items that succeeded.
+      for (const r of res.results) {
+        if (!r.ok) continue;
+        const it = r.item;
+        if (it.kind === "manifest") discardDraft(it.moduleId, MANIFEST_KEY);
+        else if (it.kind === "model") discardDraft(it.moduleId, it.modelKey);
+        else if (it.kind === "index") discardIndexDraft();
+        else if (it.kind === "delete-module")
+          discardAllDraftsFor(it.moduleId);
+      }
+      const failures = res.results.filter((r) => !r.ok);
+      if (failures.length > 0) {
+        const detail = failures
+          .map((f) => {
+            const it = f.item;
+            const idPart =
+              "moduleId" in it && it.moduleId
+                ? `${it.moduleId} `
+                : "";
+            return `• ${idPart}(${it.kind}): ${f.error}`;
+          })
+          .join("\n");
+        window.alert(`Some items failed:\n${detail}`);
+      }
+      refresh();
+    } catch (e) {
+      window.alert(
+        `Publish error: ${e instanceof Error ? e.message : String(e)}`,
+      );
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const onDiscardAll = () => {
+    if (typeof window === "undefined") return;
+    const drafts = listDraftKeys();
+    const indexActive = hasIndexDraft();
+    const total = drafts.length + (indexActive ? 1 : 0);
+    if (total === 0) {
+      window.alert("No drafts to discard.");
+      return;
+    }
+    const ok = window.confirm(
+      `Discard ${total} pending draft${total === 1 ? "" : "s"}? ` +
+        `This wipes every uncommitted change in your browser and cannot be undone.`,
+    );
+    if (!ok) return;
+    for (const { moduleId, modelKey } of drafts) {
+      discardDraft(moduleId, modelKey);
+    }
+    if (indexActive) discardIndexDraft();
     refresh();
   };
 
@@ -151,6 +318,12 @@ export function ModulePicker() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-parchment/60">
           {modules.length} module{modules.length === 1 ? "" : "s"} known.
+          {state.draftCount > 0 ? (
+            <span className="ml-2 text-parchment/45">
+              · {state.draftCount} pending draft
+              {state.draftCount === 1 ? "" : "s"}
+            </span>
+          ) : null}
         </p>
         <div className="flex items-center gap-2">
           {state.indexDraftActive ? (
@@ -163,7 +336,7 @@ export function ModulePicker() {
                 onClick={onDiscardIndex}
                 className="rounded border border-parchment/20 px-2 py-0.5 text-xs text-parchment/70 hover:bg-ink/40"
               >
-                Discard
+                Discard index
               </button>
               <button
                 type="button"
@@ -174,6 +347,27 @@ export function ModulePicker() {
                 ⬇ Export index.json
               </button>
             </>
+          ) : null}
+          {state.anyDraftActive && publishAvailable === true ? (
+            <button
+              type="button"
+              onClick={onPublishAll}
+              disabled={publishing}
+              className="rounded border border-ember/60 bg-ember/30 px-3 py-1 text-sm text-parchment hover:bg-ember/50 disabled:cursor-not-allowed disabled:opacity-40"
+              title="Write every pending draft directly to disk via the local publish-server."
+            >
+              {publishing ? "Publishing…" : "Publish all drafts"}
+            </button>
+          ) : null}
+          {state.anyDraftActive ? (
+            <button
+              type="button"
+              onClick={onDiscardAll}
+              className="rounded border border-parchment/20 px-3 py-1 text-sm text-parchment/70 hover:bg-ink/40"
+              title="Wipe every pending draft in your browser. Cannot be undone."
+            >
+              Discard all drafts
+            </button>
           ) : null}
           {!creating ? (
             <button

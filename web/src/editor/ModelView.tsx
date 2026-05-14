@@ -47,7 +47,9 @@ import {
 import { extractRecords, mergeModel } from "@/data_model/merge";
 import { MODELS, type ModelKey } from "@/data_model/models";
 import type { LibraryCatalogEntry } from "@/data_model/ModuleSource";
+import { publishItems } from "@/data_model/publishClient";
 import { RecordForm } from "./RecordForm";
+import { usePublishServer } from "./usePublishServer";
 
 type Record_ = Record<string, unknown>;
 
@@ -78,10 +80,12 @@ export function ModelView({
   modelKey: ModelKey;
 }) {
   const def = MODELS[modelKey];
+  const { available: publishAvailable } = usePublishServer();
   const [state, setState] = useState<LoadState>({ kind: "loading" });
   const [openId, setOpenId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [publishing, setPublishing] = useState(false);
 
   // Load layers + library catalog in parallel.
   useEffect(() => {
@@ -283,6 +287,55 @@ export function ModelView({
     downloadJson(def.fileName, payload);
   };
 
+  const onPublish = async () => {
+    if (state.kind !== "ok" || !derived) return;
+    const payload = derived.ownEffective;
+    if (payload === null) return;
+    setPublishing(true);
+    try {
+      const res = await publishItems([
+        {
+          kind: "model",
+          moduleId,
+          modelKey,
+          fileName: def.fileName,
+          content: payload,
+        },
+      ]);
+      const result = res.results[0];
+      if (!result.ok) {
+        window.alert(`Publish failed: ${result.error}`);
+        return;
+      }
+      // Successful write — clear the draft so the editor reloads from
+      // the on-disk file we just wrote. Re-fetch via the source so
+      // the layered view reflects the new ownFile.
+      discardDraft(moduleId, modelKey);
+      const src = new StaticModuleSource();
+      const fresh = await src.loadModelLayers(moduleId, modelKey);
+      setState((s) =>
+        s.kind === "ok"
+          ? {
+              ...s,
+              layers: {
+                inherited: (fresh.inherited as Record_ | null) ?? null,
+                ownFile: (fresh.ownFile as Record_ | null) ?? null,
+                parentId: fresh.parentId,
+                usedLibraryIds: fresh.usedLibraryIds ?? [],
+              },
+              ownDraft: null,
+            }
+          : s,
+      );
+    } catch (e) {
+      window.alert(
+        `Publish error: ${e instanceof Error ? e.message : String(e)}`,
+      );
+    } finally {
+      setPublishing(false);
+    }
+  };
+
   // ── render ────────────────────────────────────────────────────────
   if (state.kind === "loading")
     return <p className="p-4 text-parchment/60">Loading {def.label}…</p>;
@@ -348,6 +401,8 @@ export function ModelView({
         usedLibraryIds={state.layers.usedLibraryIds}
         showProvenance={showProvenance}
         canExport={canExport}
+        canPublish={canExport && publishAvailable === true && derived.isDraft}
+        publishing={publishing}
         onAdd={
           def.collectionKey === null
             ? undefined
@@ -359,6 +414,7 @@ export function ModelView({
         }
         onDiscardDraft={derived.isDraft ? onDiscardDraft : undefined}
         onExport={onExport}
+        onPublish={onPublish}
       />
 
       {/* Singleton */}
@@ -520,9 +576,12 @@ function Header({
   usedLibraryIds,
   showProvenance,
   canExport,
+  canPublish,
+  publishing,
   onAdd,
   onDiscardDraft,
   onExport,
+  onPublish,
 }: {
   def: (typeof MODELS)[ModelKey];
   counts: { total: number; inherited: number; overridden: number; own: number };
@@ -532,9 +591,12 @@ function Header({
   usedLibraryIds: string[];
   showProvenance: boolean;
   canExport: boolean;
+  canPublish: boolean;
+  publishing: boolean;
   onAdd?: () => void;
   onDiscardDraft?: () => void;
   onExport: () => void;
+  onPublish: () => void;
 }) {
   return (
     <header className="flex flex-wrap items-baseline justify-between gap-3">
@@ -620,6 +682,17 @@ function Header({
         >
           ⬇ Export
         </button>
+        {canPublish ? (
+          <button
+            type="button"
+            onClick={onPublish}
+            disabled={publishing}
+            title="Write this model's overlay directly to disk via the local publish-server."
+            className="rounded border border-ember/60 bg-ember/30 px-3 py-1 text-sm text-parchment hover:bg-ember/50 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {publishing ? "Publishing…" : "Publish"}
+          </button>
+        ) : null}
       </div>
     </header>
   );

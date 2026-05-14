@@ -25,6 +25,8 @@ import {
   saveDraft,
 } from "@/data_model/draft";
 import type { ModuleSummary } from "@/data_model/ModuleSource";
+import { publishItems } from "@/data_model/publishClient";
+import { usePublishServer } from "./usePublishServer";
 
 type Manifest = Record<string, unknown> & { uses?: string[] };
 
@@ -39,8 +41,10 @@ type State =
   | { kind: "error"; message: string };
 
 export function LibrariesPanel({ moduleId }: { moduleId: string }) {
+  const { available: publishAvailable } = usePublishServer();
   const [state, setState] = useState<State>({ kind: "loading" });
   const [picking, setPicking] = useState<string>("");
+  const [publishing, setPublishing] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -138,6 +142,29 @@ export function LibrariesPanel({ moduleId }: { moduleId: string }) {
     downloadJson("module.json", state.manifest);
   };
 
+  const onPublish = async () => {
+    if (state.kind !== "ok") return;
+    setPublishing(true);
+    try {
+      const res = await publishItems([
+        { kind: "manifest", moduleId, content: state.manifest },
+      ]);
+      const r = res.results[0];
+      if (!r.ok) {
+        window.alert(`Publish failed: ${r.error}`);
+        return;
+      }
+      discardDraft(moduleId, MANIFEST_KEY);
+      setState({ ...state, isDraft: false });
+    } catch (e) {
+      window.alert(
+        `Publish error: ${e instanceof Error ? e.message : String(e)}`,
+      );
+    } finally {
+      setPublishing(false);
+    }
+  };
+
   const onDiscardDraft = () => {
     if (!hasDraft(moduleId, MANIFEST_KEY)) return;
     if (
@@ -200,6 +227,17 @@ export function LibrariesPanel({ moduleId }: { moduleId: string }) {
           >
             ⬇ Export module.json
           </button>
+          {state.isDraft && publishAvailable === true ? (
+            <button
+              type="button"
+              onClick={onPublish}
+              disabled={publishing}
+              className="rounded border border-ember/60 bg-ember/30 px-2 py-0.5 text-xs text-parchment hover:bg-ember/50 disabled:cursor-not-allowed disabled:opacity-40"
+              title="Write the manifest directly to disk via the local publish-server."
+            >
+              {publishing ? "Publishing…" : "Publish"}
+            </button>
+          ) : null}
         </div>
       </header>
 

@@ -1,0 +1,10 @@
+{
+  "_comment": "Draft module created in the editor. Export this file and drop it into web/public/modules/test/module.json.",
+  "id": "test",
+  "title": "Test",
+  "description": "test",
+  "author": "test",
+  "version": "0.1.0",
+  "role": "playable",
+  "extends": "default"
+}
