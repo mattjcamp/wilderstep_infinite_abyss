@@ -545,7 +545,9 @@ function recordHasSpriteField(record: Record_): boolean {
 
 /** Renders a small sprite thumbnail for a row, resolved from the
  *  record's first known sprite field. Renders an empty slot when the
- *  record has no sprite field or the value doesn't resolve. */
+ *  record has no sprite field or the value doesn't resolve. Tracks
+ *  broken-image state in React (not via direct DOM mutation) so the
+ *  hidden flag clears when src changes to a working URL. */
 function RecordSpriteThumb({ record }: { record: Record_ }) {
   let src: string | null = null;
   let alt = "";
@@ -559,9 +561,13 @@ function RecordSpriteThumb({ record }: { record: Record_ }) {
       break;
     }
   }
+  const [broken, setBroken] = useState(false);
+  useEffect(() => {
+    setBroken(false);
+  }, [src]);
   return (
     <div className="relative h-8 w-8 shrink-0 rounded border border-parchment/10 bg-ink/80">
-      {src ? (
+      {src && !broken ? (
         <img
           src={src}
           alt={alt}
@@ -569,9 +575,7 @@ function RecordSpriteThumb({ record }: { record: Record_ }) {
           height={32}
           style={{ imageRendering: "pixelated" }}
           className="h-8 w-8 object-contain"
-          onError={(e) => {
-            (e.currentTarget as HTMLImageElement).style.visibility = "hidden";
-          }}
+          onError={() => setBroken(true)}
         />
       ) : null}
     </div>

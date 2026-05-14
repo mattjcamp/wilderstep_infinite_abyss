@@ -1,9 +1,22 @@
 {
-  "_comment": "Party seed (singleton). Party state is party-wide concerns only — where the party spawns, shared gold pool, which characters are available to swap in (roster), which four are currently adventuring (active_party), the four party-wide effect slots, the shared inventory stash, and the step-counter resources. Character-specific data (stats, equipped gear, personal inventory) lives in characters.json; this file references Characters by id. A large roster is supported — roster can grow well beyond active_party as the player recruits or rolls more characters.",
-  "start_position": { "col": 14, "row": 16 },
+  "start_position": {
+    "col": 14,
+    "row": 16
+  },
+  "avatar": "person/fighter18.png",
   "gold": 50,
-  "roster": ["aldric", "pippin", "selina", "elminster"],
-  "active_party": ["aldric", "pippin", "selina", "elminster"],
+  "roster": [
+    "aldric",
+    "pippin",
+    "selina",
+    "elminster"
+  ],
+  "active_party": [
+    "aldric",
+    "pippin",
+    "selina",
+    "elminster"
+  ],
   "party_effects": {
     "effect_1": null,
     "effect_2": null,
@@ -11,9 +24,18 @@
     "effect_4": null
   },
   "inventory": [
-    { "item": "Torch", "charges": 1 },
-    { "item": "Rock", "charges": 20 },
-    { "item": "Lockpick", "charges": 10 }
+    {
+      "item": "Torch",
+      "charges": 1
+    },
+    {
+      "item": "Rock",
+      "charges": 20
+    },
+    {
+      "item": "Lockpick",
+      "charges": 10
+    }
   ],
   "torch_steps": 0,
   "galadriels_light_steps": 0

@@ -38,6 +38,10 @@ interface FieldSpec {
 }
 
 function inferKind(key: string, value: unknown, sample?: unknown): FieldKind {
+  // Known sprite-typed fields are always strings, so the picker can
+  // render even when the field is currently null/empty (e.g., a
+  // freshly-added `avatar` on Party).
+  if (getSpriteFieldConfig(key) !== null) return "string";
   // Prefer the actual record's value; fall back to a sample peer.
   const v = value ?? sample;
   if (Array.isArray(v) || (v !== null && typeof v === "object")) return "json";

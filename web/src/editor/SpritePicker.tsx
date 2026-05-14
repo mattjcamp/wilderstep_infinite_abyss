@@ -65,6 +65,10 @@ export function SpritePicker({
   }, [open, indexState.kind]);
 
   const thumbSrc = resolveSpritePath(value, config);
+  const [thumbBroken, setThumbBroken] = useState(false);
+  useEffect(() => {
+    setThumbBroken(false);
+  }, [thumbSrc]);
 
   const handlePick = (category: string, filename: string) => {
     onChange(formatPickedValue(category, filename, config));
@@ -75,7 +79,7 @@ export function SpritePicker({
     <div>
       <div className="flex items-center gap-2">
         <div className="relative h-9 w-9 shrink-0 rounded border border-parchment/20 bg-ink/80">
-          {thumbSrc ? (
+          {thumbSrc && !thumbBroken ? (
             <img
               src={thumbSrc}
               alt=""
@@ -83,11 +87,7 @@ export function SpritePicker({
               height={36}
               style={{ imageRendering: "pixelated" }}
               className="h-9 w-9 object-contain"
-              onError={(e) => {
-                // Hide the broken thumb but keep the empty slot.
-                (e.currentTarget as HTMLImageElement).style.visibility =
-                  "hidden";
-              }}
+              onError={() => setThumbBroken(true)}
             />
           ) : null}
         </div>

@@ -7,7 +7,7 @@
       "name": "Cellar Rats",
       "level": 1,
       "weight": 30,
-      "monster_party_tile": "Giant Rat",
+      "monster_party_tile": "monster/giant_rat.png",
       "monsters": [
         "Giant Rat"
       ]
@@ -18,7 +18,7 @@
       "name": "Rat Nest",
       "level": 1,
       "weight": 30,
-      "monster_party_tile": "Giant Rat",
+      "monster_party_tile": "monster/giant_rat.png",
       "monsters": [
         "Giant Rat",
         "Giant Rat"
@@ -30,7 +30,7 @@
       "name": "Stray Goblin",
       "level": 1,
       "weight": 25,
-      "monster_party_tile": "Goblin",
+      "monster_party_tile": "monster/goblin.png",
       "monsters": [
         "Goblin"
       ]
@@ -41,7 +41,7 @@
       "name": "Goblin Squatters",
       "level": 1,
       "weight": 15,
-      "monster_party_tile": "Goblin",
+      "monster_party_tile": "monster/goblin.png",
       "monsters": [
         "Goblin",
         "Giant Rat"
@@ -53,7 +53,7 @@
       "name": "Goblin Ambush",
       "level": 2,
       "weight": 30,
-      "monster_party_tile": "Goblin",
+      "monster_party_tile": "monster/goblin.png",
       "monsters": [
         "Goblin",
         "Goblin",
@@ -66,7 +66,7 @@
       "name": "Wolf Pack",
       "level": 2,
       "weight": 25,
-      "monster_party_tile": "Wolf",
+      "monster_party_tile": "monster/wolf.png",
       "monsters": [
         "Wolf",
         "Wolf"
@@ -78,7 +78,7 @@
       "name": "Goblin Raiders",
       "level": 2,
       "weight": 25,
-      "monster_party_tile": "Goblin",
+      "monster_party_tile": "monster/goblin.png",
       "monsters": [
         "Goblin",
         "Goblin",
@@ -91,7 +91,7 @@
       "name": "Rat Swarm",
       "level": 2,
       "weight": 20,
-      "monster_party_tile": "Giant Rat",
+      "monster_party_tile": "monster/giant_rat.png",
       "monsters": [
         "Giant Rat",
         "Giant Rat",
@@ -105,7 +105,7 @@
       "name": "Skeleton Patrol",
       "level": 3,
       "weight": 30,
-      "monster_party_tile": "Skeleton",
+      "monster_party_tile": "monster/skeleton2.png",
       "monsters": [
         "Skeleton",
         "Skeleton"
@@ -117,7 +117,7 @@
       "name": "Shambling Dead",
       "level": 3,
       "weight": 25,
-      "monster_party_tile": "Zombie",
+      "monster_party_tile": "monster/zombie.png",
       "monsters": [
         "Zombie",
         "Zombie"
@@ -129,7 +129,7 @@
       "name": "Skeleton Archers",
       "level": 3,
       "weight": 20,
-      "monster_party_tile": "Skeleton",
+      "monster_party_tile": "monster/skeleton2.png",
       "monsters": [
         "Skeleton Archer",
         "Skeleton Archer"
@@ -141,7 +141,7 @@
       "name": "Wolves and Goblins",
       "level": 3,
       "weight": 20,
-      "monster_party_tile": "Wolf",
+      "monster_party_tile": "monster/wolf.png",
       "monsters": [
         "Wolf",
         "Wolf",
@@ -155,7 +155,7 @@
       "name": "Shaman's Guard",
       "level": 3,
       "weight": 15,
-      "monster_party_tile": "Orc",
+      "monster_party_tile": "monster/orc2.png",
       "monsters": [
         "Orc Shaman",
         "Goblin",
@@ -168,7 +168,7 @@
       "name": "Undead Horde",
       "level": 4,
       "weight": 25,
-      "monster_party_tile": "Skeleton",
+      "monster_party_tile": "monster/skeleton2.png",
       "monsters": [
         "Skeleton",
         "Skeleton",
@@ -181,7 +181,7 @@
       "name": "Undead Warband",
       "level": 4,
       "weight": 20,
-      "monster_party_tile": "Skeleton",
+      "monster_party_tile": "monster/skeleton2.png",
       "monsters": [
         "Skeleton",
         "Skeleton Archer",
@@ -194,7 +194,7 @@
       "name": "Orc Scouts",
       "level": 4,
       "weight": 25,
-      "monster_party_tile": "Orc",
+      "monster_party_tile": "monster/orc1.png",
       "monsters": [
         "Orc",
         "Orc"
@@ -206,7 +206,7 @@
       "name": "Mixed Patrol",
       "level": 4,
       "weight": 20,
-      "monster_party_tile": "Orc",
+      "monster_party_tile": "monster/orc1.png",
       "monsters": [
         "Orc",
         "Skeleton",
@@ -219,7 +219,7 @@
       "name": "Wild Pack",
       "level": 4,
       "weight": 15,
-      "monster_party_tile": "Wolf",
+      "monster_party_tile": "monster/wolf.png",
       "monsters": [
         "Wolf",
         "Wolf",
@@ -232,7 +232,7 @@
       "name": "Orc Warband",
       "level": 5,
       "weight": 25,
-      "monster_party_tile": "Orc",
+      "monster_party_tile": "monster/orc1.png",
       "monsters": [
         "Orc",
         "Orc",
@@ -245,7 +245,7 @@
       "name": "Orc Raiding Party",
       "level": 5,
       "weight": 20,
-      "monster_party_tile": "Orc",
+      "monster_party_tile": "monster/orc1.png",
       "monsters": [
         "Orc",
         "Orc",
@@ -258,7 +258,7 @@
       "name": "Dark Coven",
       "level": 5,
       "weight": 15,
-      "monster_party_tile": "Dark Mage",
+      "monster_party_tile": "monster/dark_mage.png",
       "monsters": [
         "Dark Mage",
         "Skeleton Archer",
@@ -271,7 +271,7 @@
       "name": "Archer's Nest",
       "level": 5,
       "weight": 15,
-      "monster_party_tile": "Skeleton",
+      "monster_party_tile": "monster/skeleton2.png",
       "monsters": [
         "Skeleton Archer",
         "Skeleton Archer",
@@ -284,7 +284,7 @@
       "name": "Troll Den",
       "level": 5,
       "weight": 10,
-      "monster_party_tile": "Troll",
+      "monster_party_tile": "monster/troll.png",
       "monsters": [
         "Troll"
       ]
@@ -295,7 +295,7 @@
       "name": "Orc with Wolves",
       "level": 6,
       "weight": 20,
-      "monster_party_tile": "Orc",
+      "monster_party_tile": "monster/orc1.png",
       "monsters": [
         "Orc",
         "Orc",
@@ -309,7 +309,7 @@
       "name": "Troll and Minions",
       "level": 6,
       "weight": 20,
-      "monster_party_tile": "Troll",
+      "monster_party_tile": "monster/troll.png",
       "monsters": [
         "Troll",
         "Goblin",
@@ -322,7 +322,7 @@
       "name": "Dark Patrol",
       "level": 6,
       "weight": 20,
-      "monster_party_tile": "Dark Mage",
+      "monster_party_tile": "monster/dark_mage.png",
       "monsters": [
         "Dark Mage",
         "Orc",
@@ -335,7 +335,7 @@
       "name": "Cursed Battalion",
       "level": 6,
       "weight": 15,
-      "monster_party_tile": "Skeleton",
+      "monster_party_tile": "monster/skeleton2.png",
       "monsters": [
         "Skeleton",
         "Skeleton",
@@ -350,7 +350,7 @@
       "name": "Orc Siege",
       "level": 6,
       "weight": 15,
-      "monster_party_tile": "Orc",
+      "monster_party_tile": "monster/orc1.png",
       "monsters": [
         "Orc",
         "Orc",
@@ -364,7 +364,7 @@
       "name": "Troll Warband",
       "level": 7,
       "weight": 20,
-      "monster_party_tile": "Troll",
+      "monster_party_tile": "monster/troll.png",
       "monsters": [
         "Troll",
         "Troll"
@@ -376,7 +376,7 @@
       "name": "Dark Conclave",
       "level": 7,
       "weight": 20,
-      "monster_party_tile": "Dark Mage",
+      "monster_party_tile": "monster/dark_mage.png",
       "monsters": [
         "Dark Mage",
         "Dark Mage",
@@ -389,7 +389,7 @@
       "name": "Orc Legion",
       "level": 7,
       "weight": 20,
-      "monster_party_tile": "Orc",
+      "monster_party_tile": "monster/orc1.png",
       "monsters": [
         "Orc",
         "Orc",
@@ -404,7 +404,7 @@
       "name": "Necromancer's Guard",
       "level": 7,
       "weight": 15,
-      "monster_party_tile": "Dark Mage",
+      "monster_party_tile": "monster/dark_mage.png",
       "monsters": [
         "Dark Mage",
         "Skeleton",
@@ -419,7 +419,7 @@
       "name": "Troll Ambush",
       "level": 7,
       "weight": 15,
-      "monster_party_tile": "Troll",
+      "monster_party_tile": "monster/troll.png",
       "monsters": [
         "Troll",
         "Orc",
@@ -432,7 +432,7 @@
       "name": "Troll Horde",
       "level": 8,
       "weight": 20,
-      "monster_party_tile": "Troll",
+      "monster_party_tile": "monster/troll.png",
       "monsters": [
         "Troll",
         "Troll",
@@ -445,7 +445,7 @@
       "name": "Shadow Army",
       "level": 8,
       "weight": 20,
-      "monster_party_tile": "Dark Mage",
+      "monster_party_tile": "monster/dark_mage.png",
       "monsters": [
         "Dark Mage",
         "Dark Mage",
@@ -459,7 +459,7 @@
       "name": "Undead Apocalypse",
       "level": 8,
       "weight": 15,
-      "monster_party_tile": "Skeleton",
+      "monster_party_tile": "monster/skeleton2.png",
       "monsters": [
         "Skeleton",
         "Skeleton",
@@ -475,7 +475,7 @@
       "name": "Orc Warchief's Guard",
       "level": 8,
       "weight": 15,
-      "monster_party_tile": "Orc",
+      "monster_party_tile": "monster/orc1.png",
       "monsters": [
         "Orc",
         "Orc",
@@ -491,7 +491,7 @@
       "name": "Troll Kings",
       "level": 8,
       "weight": 10,
-      "monster_party_tile": "Troll",
+      "monster_party_tile": "monster/troll.png",
       "monsters": [
         "Troll",
         "Troll",
@@ -505,7 +505,7 @@
       "name": "Ancient Dragon",
       "level": 8,
       "weight": 10,
-      "monster_party_tile": "Dragon",
+      "monster_party_tile": "monster/dragon2.png",
       "monsters": [
         "Dragon"
       ]
@@ -516,7 +516,7 @@
       "name": "Dragon Cultists",
       "level": 4,
       "weight": 10,
-      "monster_party_tile": "Dark Mage",
+      "monster_party_tile": "monster/dark_mage.png",
       "monsters": [
         "Dark Mage",
         "Dark Mage",
@@ -529,7 +529,7 @@
       "name": "Drake Pack",
       "level": 7,
       "weight": 10,
-      "monster_party_tile": "Wyvern",
+      "monster_party_tile": "monster/dragon1.png",
       "monsters": [
         "Wyvern",
         "Wyvern"
@@ -541,7 +541,7 @@
       "name": "Drake and Keeper",
       "level": 6,
       "weight": 10,
-      "monster_party_tile": "Wyvern",
+      "monster_party_tile": "monster/dragon1.png",
       "monsters": [
         "Wyvern",
         "Orc Shaman"
@@ -553,7 +553,7 @@
       "name": "Wyrm-blooded Cultists",
       "level": 6,
       "weight": 10,
-      "monster_party_tile": "Dark Mage",
+      "monster_party_tile": "monster/dark_mage.png",
       "monsters": [
         "Dark Mage",
         "Dark Mage",
@@ -566,7 +566,7 @@
       "name": "Bone Pit Horde",
       "level": 5,
       "weight": 10,
-      "monster_party_tile": "Skeleton",
+      "monster_party_tile": "monster/skeleton2.png",
       "monsters": [
         "Skeleton",
         "Skeleton",
@@ -581,7 +581,7 @@
       "name": "Lone Ogre",
       "level": 5,
       "weight": 18,
-      "monster_party_tile": "Ogre",
+      "monster_party_tile": "person/fighter14.png",
       "monsters": [
         "Ogre"
       ]
@@ -592,7 +592,7 @@
       "name": "Ogre and Drake",
       "level": 6,
       "weight": 12,
-      "monster_party_tile": "Ogre",
+      "monster_party_tile": "person/fighter14.png",
       "monsters": [
         "Ogre",
         "Wyvern"
@@ -604,7 +604,7 @@
       "name": "Ogre Brutes",
       "level": 7,
       "weight": 12,
-      "monster_party_tile": "Ogre",
+      "monster_party_tile": "person/fighter14.png",
       "monsters": [
         "Ogre",
         "Ogre"
@@ -616,7 +616,7 @@
       "name": "Ogre Warband",
       "level": 8,
       "weight": 10,
-      "monster_party_tile": "Ogre",
+      "monster_party_tile": "person/fighter14.png",
       "monsters": [
         "Ogre",
         "Ogre",
@@ -629,7 +629,7 @@
       "name": "Wailing Spirit",
       "level": 5,
       "weight": 15,
-      "monster_party_tile": "Banshee",
+      "monster_party_tile": "monster/lark_f2.png",
       "monsters": [
         "Banshee"
       ]
@@ -640,7 +640,7 @@
       "name": "Banshee Pair",
       "level": 6,
       "weight": 12,
-      "monster_party_tile": "Banshee",
+      "monster_party_tile": "monster/lark_f2.png",
       "monsters": [
         "Banshee",
         "Banshee"
@@ -652,7 +652,7 @@
       "name": "Lich and Banshee",
       "level": 7,
       "weight": 10,
-      "monster_party_tile": "Lich",
+      "monster_party_tile": "monster/lich.png",
       "monsters": [
         "Lich",
         "Banshee"
@@ -664,7 +664,7 @@
       "name": "Banshee Choir",
       "level": 7,
       "weight": 10,
-      "monster_party_tile": "Banshee",
+      "monster_party_tile": "monster/lark_f2.png",
       "monsters": [
         "Banshee",
         "Banshee",
@@ -677,7 +677,7 @@
       "name": "Cursed Manor",
       "level": 8,
       "weight": 8,
-      "monster_party_tile": "Banshee",
+      "monster_party_tile": "monster/lark_f2.png",
       "monsters": [
         "Banshee",
         "Banshee",
@@ -690,7 +690,7 @@
       "name": "Haunted Trail",
       "level": 6,
       "weight": 10,
-      "monster_party_tile": "Banshee",
+      "monster_party_tile": "monster/lark_f2.png",
       "monsters": [
         "Banshee",
         "Man Eater"
@@ -702,7 +702,7 @@
       "name": "Predator's Den",
       "level": 7,
       "weight": 8,
-      "monster_party_tile": "Man Eater",
+      "monster_party_tile": "monster/man_thing1.png",
       "monsters": [
         "Man Eater",
         "Man Eater",
@@ -715,7 +715,7 @@
       "name": "Mind Flayer",
       "level": 7,
       "weight": 12,
-      "monster_party_tile": "Mind Flayer",
+      "monster_party_tile": "monster/daemon1.png",
       "monsters": [
         "Mind Flayer"
       ]
@@ -726,7 +726,7 @@
       "name": "Mind Flayer Conclave",
       "level": 8,
       "weight": 8,
-      "monster_party_tile": "Mind Flayer",
+      "monster_party_tile": "monster/daemon1.png",
       "monsters": [
         "Mind Flayer",
         "Mind Flayer"
@@ -738,7 +738,7 @@
       "name": "Vampire Lord",
       "level": 7,
       "weight": 10,
-      "monster_party_tile": "Vampire Lord",
+      "monster_party_tile": "person/wizard5.png",
       "monsters": [
         "Vampire Lord"
       ]
@@ -749,7 +749,7 @@
       "name": "Vampire's Court",
       "level": 8,
       "weight": 6,
-      "monster_party_tile": "Vampire Lord",
+      "monster_party_tile": "person/wizard5.png",
       "monsters": [
         "Vampire Lord",
         "Vampire Lord"
@@ -761,7 +761,7 @@
       "name": "Stone Sentinel",
       "level": 7,
       "weight": 12,
-      "monster_party_tile": "Stone Golem",
+      "monster_party_tile": "monster/lark_f1.png",
       "monsters": [
         "Stone Golem"
       ]
@@ -772,7 +772,7 @@
       "name": "Twin Sentinels",
       "level": 8,
       "weight": 8,
-      "monster_party_tile": "Stone Golem",
+      "monster_party_tile": "monster/lark_f1.png",
       "monsters": [
         "Stone Golem",
         "Stone Golem"
@@ -784,7 +784,7 @@
       "name": "Lurking Hydra",
       "level": 7,
       "weight": 10,
-      "monster_party_tile": "Hydra",
+      "monster_party_tile": "monster/giant_octopus.png",
       "monsters": [
         "Hydra"
       ]
@@ -795,7 +795,7 @@
       "name": "Ancient Hydra",
       "level": 8,
       "weight": 6,
-      "monster_party_tile": "Hydra",
+      "monster_party_tile": "monster/giant_octopus.png",
       "monsters": [
         "Hydra",
         "Stone Golem"
@@ -807,7 +807,7 @@
       "name": "Death's Heralds",
       "level": 8,
       "weight": 6,
-      "monster_party_tile": "Vampire Lord",
+      "monster_party_tile": "person/wizard5.png",
       "monsters": [
         "Vampire Lord",
         "Mind Flayer"
@@ -819,7 +819,7 @@
       "name": "The Apocalypse",
       "level": 8,
       "weight": 3,
-      "monster_party_tile": "Hydra",
+      "monster_party_tile": "monster/giant_octopus.png",
       "monsters": [
         "Hydra",
         "Vampire Lord",
@@ -832,7 +832,7 @@
       "name": "Cellar Rats",
       "level": 1,
       "weight": 40,
-      "monster_party_tile": "Giant Rat",
+      "monster_party_tile": "monster/giant_rat.png",
       "monsters": [
         "Giant Rat"
       ]
@@ -843,7 +843,7 @@
       "name": "Rat Infestation",
       "level": 1,
       "weight": 30,
-      "monster_party_tile": "Giant Rat",
+      "monster_party_tile": "monster/giant_rat.png",
       "monsters": [
         "Giant Rat",
         "Giant Rat"
@@ -855,7 +855,7 @@
       "name": "Stray Goblin",
       "level": 1,
       "weight": 20,
-      "monster_party_tile": "Goblin",
+      "monster_party_tile": "monster/goblin.png",
       "monsters": [
         "Goblin"
       ]
@@ -866,7 +866,7 @@
       "name": "Goblin Squatters",
       "level": 2,
       "weight": 10,
-      "monster_party_tile": "Goblin",
+      "monster_party_tile": "monster/goblin.png",
       "monsters": [
         "Goblin",
         "Giant Rat"
@@ -878,7 +878,7 @@
       "name": "Stray Wolves",
       "level": 1,
       "weight": 30,
-      "monster_party_tile": "Wolf",
+      "monster_party_tile": "monster/wolf.png",
       "monsters": [
         "Wolf"
       ]
@@ -889,7 +889,7 @@
       "name": "Goblin Scouts",
       "level": 1,
       "weight": 30,
-      "monster_party_tile": "Goblin",
+      "monster_party_tile": "monster/goblin.png",
       "monsters": [
         "Goblin",
         "Goblin"
@@ -901,7 +901,7 @@
       "name": "Field Rats",
       "level": 1,
       "weight": 25,
-      "monster_party_tile": "Giant Rat",
+      "monster_party_tile": "monster/giant_rat.png",
       "monsters": [
         "Giant Rat",
         "Giant Rat"
@@ -913,7 +913,7 @@
       "name": "Wolf Pack",
       "level": 2,
       "weight": 30,
-      "monster_party_tile": "Wolf",
+      "monster_party_tile": "monster/wolf.png",
       "monsters": [
         "Wolf",
         "Wolf"
@@ -925,7 +925,7 @@
       "name": "Goblin Raiding Party",
       "level": 2,
       "weight": 30,
-      "monster_party_tile": "Goblin",
+      "monster_party_tile": "monster/goblin.png",
       "monsters": [
         "Goblin",
         "Goblin",
@@ -938,7 +938,7 @@
       "name": "Orc Scouts",
       "level": 3,
       "weight": 30,
-      "monster_party_tile": "Orc",
+      "monster_party_tile": "monster/orc1.png",
       "monsters": [
         "Orc",
         "Orc"
@@ -950,7 +950,7 @@
       "name": "Wolves and Goblins",
       "level": 3,
       "weight": 25,
-      "monster_party_tile": "Wolf",
+      "monster_party_tile": "monster/wolf.png",
       "monsters": [
         "Wolf",
         "Wolf",
@@ -963,7 +963,7 @@
       "name": "Orc Warband",
       "level": 4,
       "weight": 30,
-      "monster_party_tile": "Orc",
+      "monster_party_tile": "monster/orc1.png",
       "monsters": [
         "Orc",
         "Orc",
@@ -976,7 +976,7 @@
       "name": "Orc with Wolves",
       "level": 4,
       "weight": 25,
-      "monster_party_tile": "Orc",
+      "monster_party_tile": "monster/orc1.png",
       "monsters": [
         "Orc",
         "Wolf",
@@ -989,7 +989,7 @@
       "name": "Orc Raiders",
       "level": 5,
       "weight": 25,
-      "monster_party_tile": "Orc",
+      "monster_party_tile": "monster/orc1.png",
       "monsters": [
         "Orc",
         "Orc",
@@ -1002,7 +1002,7 @@
       "name": "Lone Troll",
       "level": 5,
       "weight": 15,
-      "monster_party_tile": "Troll",
+      "monster_party_tile": "monster/troll.png",
       "monsters": [
         "Troll"
       ]
@@ -1013,7 +1013,7 @@
       "name": "Troll and Wolves",
       "level": 6,
       "weight": 20,
-      "monster_party_tile": "Troll",
+      "monster_party_tile": "monster/troll.png",
       "monsters": [
         "Troll",
         "Wolf",
@@ -1026,7 +1026,7 @@
       "name": "Dark Riders",
       "level": 6,
       "weight": 20,
-      "monster_party_tile": "Dark Mage",
+      "monster_party_tile": "monster/dark_mage.png",
       "monsters": [
         "Dark Mage",
         "Orc",
@@ -1039,7 +1039,7 @@
       "name": "Troll Warband",
       "level": 7,
       "weight": 20,
-      "monster_party_tile": "Troll",
+      "monster_party_tile": "monster/troll.png",
       "monsters": [
         "Troll",
         "Troll"
@@ -1051,7 +1051,7 @@
       "name": "Orc War Host",
       "level": 7,
       "weight": 20,
-      "monster_party_tile": "Orc",
+      "monster_party_tile": "monster/orc1.png",
       "monsters": [
         "Orc",
         "Orc",
@@ -1065,7 +1065,7 @@
       "name": "Shadow Vanguard",
       "level": 8,
       "weight": 15,
-      "monster_party_tile": "Dark Mage",
+      "monster_party_tile": "monster/dark_mage.png",
       "monsters": [
         "Dark Mage",
         "Troll",
@@ -1079,7 +1079,7 @@
       "name": "Troll Horde",
       "level": 8,
       "weight": 15,
-      "monster_party_tile": "Troll",
+      "monster_party_tile": "monster/troll.png",
       "monsters": [
         "Troll",
         "Troll",
@@ -1092,7 +1092,7 @@
       "name": "Lich with Minions",
       "level": 4,
       "weight": 10,
-      "monster_party_tile": "",
+      "monster_party_tile": "monster/lich.png",
       "monsters": [
         "Lich",
         "Skeleton",
@@ -1105,7 +1105,7 @@
       "name": "Mind Flayer",
       "level": 5,
       "weight": 10,
-      "monster_party_tile": "",
+      "monster_party_tile": "monster/daemon1.png",
       "monsters": [
         "Mind Flayer"
       ]

@@ -36,6 +36,10 @@ const FIELDS: Record<string, SpriteFieldConfig> = {
   sprite: { category: "person", format: "path" },
   icon: { category: "item", format: "stem" },
   monster_party_tile: { category: "monster", format: "path" },
+  // Party's overworld representation. Distinct from Character.sprite
+  // (per-character portrait) — the party avatar is what's drawn on
+  // the world map for the group as a whole.
+  avatar: { category: "person", format: "path" },
 };
 
 /** Returns the picker config for a field, or null if the field isn't
