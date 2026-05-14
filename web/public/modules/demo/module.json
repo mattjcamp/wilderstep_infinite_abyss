@@ -6,6 +6,5 @@
   "author": "Matt",
   "version": "0.1.0",
   "role": "playable",
-  "extends": "default",
-  "uses": ["tiefling-pack"]
+  "extends": "default"
 }

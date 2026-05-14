@@ -26,7 +26,9 @@
         "intelligence": 0,
         "wisdom": 1
       },
-      "effects": ["infravision"]
+      "effects": [
+        "infravision"
+      ]
     },
     {
       "id": "halfling",
@@ -39,7 +41,9 @@
         "intelligence": 0,
         "wisdom": 1
       },
-      "effects": ["pickpocket"]
+      "effects": [
+        "pickpocket"
+      ]
     },
     {
       "id": "elf",
@@ -52,7 +56,9 @@
         "intelligence": 2,
         "wisdom": 0
       },
-      "effects": ["galadriel_light"]
+      "effects": [
+        "galadriel_light"
+      ]
     },
     {
       "id": "gnome",
@@ -65,7 +71,17 @@
         "intelligence": 2,
         "wisdom": 1
       },
-      "effects": ["tinker"]
+      "effects": [
+        "tinker"
+      ]
+    },
+    {
+      "id": "cat",
+      "name": "Cat",
+      "description": "Meow",
+      "stat_modifiers": {},
+      "exp_per_level": 1,
+      "effects": []
     }
   ]
 }

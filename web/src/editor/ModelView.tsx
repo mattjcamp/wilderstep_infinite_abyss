@@ -49,6 +49,10 @@ import { MODELS, type ModelKey } from "@/data_model/models";
 import type { LibraryCatalogEntry } from "@/data_model/ModuleSource";
 import { publishItems } from "@/data_model/publishClient";
 import { RecordForm } from "./RecordForm";
+import {
+  getSpriteFieldConfig,
+  resolveSpritePath,
+} from "./spriteFields";
 import { usePublishServer } from "./usePublishServer";
 
 type Record_ = Record<string, unknown>;
@@ -360,6 +364,11 @@ export function ModelView({
   const template =
     derived.records[0] ?? inheritedRecordsForTemplate[0] ?? undefined;
   const canExport = derived.ownEffective !== null;
+  // Whether the table should grow a leading thumbnail column. Yes if
+  // any displayed record or the template has a known sprite field.
+  const hasSpriteColumn =
+    derived.records.some(recordHasSpriteField) ||
+    (template ? recordHasSpriteField(template) : false);
   // Suppress per-row provenance when there's no extends parent —
   // every record would be "new" and the badges would be noise. Used
   // libraries don't affect provenance because their records aren't
@@ -460,6 +469,9 @@ export function ModelView({
               <thead className="bg-ink/60 text-parchment/70">
                 <tr>
                   <th className="w-6 px-2 py-1"></th>
+                  {hasSpriteColumn ? (
+                    <th className="w-12 px-2 py-1"></th>
+                  ) : null}
                   {def.columns.map((c) => (
                     <th key={c.field} className="px-2 py-1 font-semibold">
                       {c.label}
@@ -481,6 +493,7 @@ export function ModelView({
                       isEditing={isEditing}
                       provenance={derived.rowProv.get(id) ?? "inherited"}
                       showProvenance={showProvenance}
+                      hasSpriteColumn={hasSpriteColumn}
                       onToggle={() => {
                         if (isEditing) return;
                         setOpenId(isOpen ? null : id);
@@ -517,6 +530,50 @@ export function ModelView({
           ) : null}
         </>
       )}
+    </div>
+  );
+}
+
+/** Does this record have any known sprite-typed field with a value?
+ *  Used to decide whether the browse table grows a thumbnail column. */
+function recordHasSpriteField(record: Record_): boolean {
+  for (const key of Object.keys(record)) {
+    if (getSpriteFieldConfig(key) !== null) return true;
+  }
+  return false;
+}
+
+/** Renders a small sprite thumbnail for a row, resolved from the
+ *  record's first known sprite field. Renders an empty slot when the
+ *  record has no sprite field or the value doesn't resolve. */
+function RecordSpriteThumb({ record }: { record: Record_ }) {
+  let src: string | null = null;
+  let alt = "";
+  for (const [key, value] of Object.entries(record)) {
+    const config = getSpriteFieldConfig(key);
+    if (!config) continue;
+    if (typeof value !== "string" || !value.trim()) continue;
+    src = resolveSpritePath(value, config);
+    if (src) {
+      alt = value;
+      break;
+    }
+  }
+  return (
+    <div className="relative h-8 w-8 shrink-0 rounded border border-parchment/10 bg-ink/80">
+      {src ? (
+        <img
+          src={src}
+          alt={alt}
+          width={32}
+          height={32}
+          style={{ imageRendering: "pixelated" }}
+          className="h-8 w-8 object-contain"
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).style.visibility = "hidden";
+          }}
+        />
+      ) : null}
     </div>
   );
 }
@@ -773,6 +830,7 @@ function RowGroup({
   isEditing,
   provenance,
   showProvenance,
+  hasSpriteColumn,
   onToggle,
   onStartEdit,
   onCancelEdit,
@@ -786,6 +844,7 @@ function RowGroup({
   isEditing: boolean;
   provenance: RowProvenance;
   showProvenance: boolean;
+  hasSpriteColumn: boolean;
   onToggle: () => void;
   onStartEdit: () => void;
   onCancelEdit: () => void;
@@ -803,6 +862,11 @@ function RowGroup({
         onClick={onToggle}
       >
         <td className="px-2 py-1 text-parchment/50">{isOpen ? "▾" : "▸"}</td>
+        {hasSpriteColumn ? (
+          <td className="px-2 py-1">
+            <RecordSpriteThumb record={record} />
+          </td>
+        ) : null}
         {def.columns.map((c) => {
           const v = record[c.field];
           const display = c.format ? c.format(v) : v == null ? "" : String(v);
@@ -822,6 +886,7 @@ function RowGroup({
       {isOpen && (
         <tr className="border-t border-parchment/5">
           <td></td>
+          {hasSpriteColumn ? <td></td> : null}
           <td colSpan={def.columns.length + 1} className="px-2 pb-3">
             {isEditing ? (
               <RecordForm
@@ -901,6 +966,11 @@ function LibraryCatalog({
   onImport: (record: Record_) => void;
 }) {
   const total = entries.reduce((sum, e) => sum + e.records.length, 0);
+  // Same column heuristic as the main table: show the thumb column
+  // if any library record carries a known sprite field.
+  const hasSpriteColumn = entries.some((e) =>
+    e.records.some(recordHasSpriteField),
+  );
   return (
     <section className="mt-6">
       <h2 className="mb-2 text-xs uppercase tracking-wide text-parchment/45">
@@ -924,6 +994,9 @@ function LibraryCatalog({
             <table className="w-full text-left text-sm">
               <thead className="text-parchment/55">
                 <tr>
+                  {hasSpriteColumn ? (
+                    <th className="w-12 px-2 py-1"></th>
+                  ) : null}
                   {def.columns.map((c) => (
                     <th key={c.field} className="px-2 py-1 font-normal">
                       {c.label}
@@ -937,6 +1010,11 @@ function LibraryCatalog({
                   const id = String(r.id ?? `lib-${entry.libraryId}-${i}`);
                   return (
                     <tr key={id} className="border-t border-parchment/5">
+                      {hasSpriteColumn ? (
+                        <td className="px-2 py-1">
+                          <RecordSpriteThumb record={r} />
+                        </td>
+                      ) : null}
                       {def.columns.map((c) => {
                         const v = r[c.field];
                         const display = c.format

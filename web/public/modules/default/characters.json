@@ -16,9 +16,12 @@
       "constitution": 12,
       "intelligence": 8,
       "wisdom": 8,
-      "equipped": { "right_hand": "Club", "body": "Cloth" },
+      "equipped": {
+        "right_hand": "Club",
+        "body": "Cloth"
+      },
       "inventory": [],
-      "sprite": "characters/fighter.png"
+      "sprite": "person/fighter6.png"
     },
     {
       "id": "pippin",
@@ -35,9 +38,12 @@
       "constitution": 13,
       "intelligence": 8,
       "wisdom": 9,
-      "equipped": { "right_hand": "Club", "body": "Cloth" },
+      "equipped": {
+        "right_hand": "Club",
+        "body": "Cloth"
+      },
       "inventory": [],
-      "sprite": "npcs/villager_child.png"
+      "sprite": "person/hobbit1.png"
     },
     {
       "id": "selina",
@@ -54,9 +60,12 @@
       "constitution": 12,
       "intelligence": 8,
       "wisdom": 16,
-      "equipped": { "right_hand": "Club", "body": "Cloth" },
+      "equipped": {
+        "right_hand": "Club",
+        "body": "Cloth"
+      },
       "inventory": [],
-      "sprite": "characters/cleric.png"
+      "sprite": "person/cleric1.png"
     },
     {
       "id": "elminster",
@@ -73,9 +82,12 @@
       "constitution": 10,
       "intelligence": 17,
       "wisdom": 8,
-      "equipped": { "right_hand": "Club", "body": "Cloth" },
+      "equipped": {
+        "right_hand": "Club",
+        "body": "Cloth"
+      },
       "inventory": [],
-      "sprite": "characters/illusionist.png"
+      "sprite": "person/wizard4.png"
     }
   ]
 }

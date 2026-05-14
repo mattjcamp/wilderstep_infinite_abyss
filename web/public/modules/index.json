@@ -1,8 +1,20 @@
 {
-  "_comment": "List of every module known to this build. The play picker filters by role (core/library hidden, playable shown); the editor shows all. Hand-maintained for now — add an entry when you add a module folder. A future build script can regenerate this by scanning web/public/modules/*/module.json.",
+  "_comment": "Modules index — managed by the editor in draft form; export and drop into web/public/modules/index.json to commit.",
   "modules": [
-    { "id": "default", "title": "Default Module", "role": "core" },
-    { "id": "tiefling-pack", "title": "Tiefling Pack", "role": "library" },
-    { "id": "demo", "title": "Demo Module", "role": "playable" }
+    {
+      "id": "default",
+      "title": "Default Module",
+      "role": "core"
+    },
+    {
+      "id": "tiefling-pack",
+      "title": "Tiefling Pack",
+      "role": "library"
+    },
+    {
+      "id": "demo",
+      "title": "Demo Module",
+      "role": "playable"
+    }
   ]
 }

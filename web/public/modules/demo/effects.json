@@ -1,0 +1,21 @@
+{
+  "_comment": "Demo overrides for the effect catalog. Adds a single new effect (`hellfire_aura`) to demonstrate inheritance + addition. Every effect defined in default/effects.json is inherited unchanged.",
+  "effects": [
+    {
+      "id": "hellfire_aura",
+      "name": "Hellfire Aura",
+      "description": "Wreathes the bearer in faint infernal flame; nearby foes take a small amount of fire damage at the start of their turn.",
+      "duration": "permanent",
+      "params": {
+        "damage_per_turn": 1
+      }
+    },
+    {
+      "id": "detect_traps",
+      "name": "Detect Traps!",
+      "description": "Traps are revealed before the party steps on them.",
+      "duration": "permanent",
+      "params": null
+    }
+  ]
+}

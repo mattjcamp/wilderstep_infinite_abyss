@@ -3,7 +3,7 @@
   "races": [
     {
       "id": "tiefling",
-      "name": "Tiefling",
+      "name": "Tiefling2",
       "description": "Touched by infernal heritage — bears a faint heat-shimmer in dim light and is unsettled by holy ground.",
       "stat_modifiers": {
         "strength": 0,
@@ -13,7 +13,9 @@
         "wisdom": -1
       },
       "exp_per_level": 1300,
-      "effects": ["infravision"]
+      "effects": [
+        "infravision"
+      ]
     }
   ]
 }

@@ -21,6 +21,8 @@
  */
 
 import { useMemo, useState } from "react";
+import { SpritePicker } from "./SpritePicker";
+import { getSpriteFieldConfig } from "./spriteFields";
 
 type FieldKind =
   | "string"
@@ -263,6 +265,31 @@ function FieldRow({
           {error ? (
             <p className="mt-1 text-xs text-ember">{error}</p>
           ) : null}
+        </div>
+      </div>
+    );
+  }
+
+  // Sprite-typed string fields get a picker instead of a plain text
+  // input. The picker still lets the user type into the text input as
+  // a fallback, but offers a thumbnail + browsable grid of sprites
+  // from the module's sprite library.
+  const spriteConfig =
+    spec.kind === "string" ? getSpriteFieldConfig(spec.key) : null;
+  if (spriteConfig) {
+    return (
+      <div className="flex items-start gap-3">
+        <label htmlFor={spec.key} className={labelClasses}>
+          {spec.key}
+          <span className="block text-[10px] text-parchment/40">sprite</span>
+        </label>
+        <div className="flex-1">
+          <SpritePicker
+            value={value}
+            config={spriteConfig}
+            onChange={onChange}
+          />
+          {error ? <p className="mt-1 text-xs text-ember">{error}</p> : null}
         </div>
       </div>
     );

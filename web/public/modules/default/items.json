@@ -26,7 +26,7 @@
       "category": "weapons",
       "name": "Club",
       "description": "A simple wooden club. Cheap but sturdy.",
-      "icon": "club",
+      "icon": "rock",
       "item_type": "club",
       "power": 1,
       "ranged": false,

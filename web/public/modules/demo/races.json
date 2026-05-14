@@ -1,20 +1,6 @@
 {
-  "_comment": "Demo overrides + imports for the race catalog. `human` is an override of default's record (note the rewritten description). `tiefling` was imported from the tiefling-pack library — once imported, the record is native to this module (no link back to the library, no future tracking). Library content that hasn't been imported (like additional races the library might add later) won't appear here automatically; the editor surfaces it in the catalog instead.",
+  "_comment": "Demo overrides for the race catalog. `human` matches an id in default/races.json so it overrides the canonical record (note the new description). `tiefling` is a new id so it's added to the merged list. All other races (dwarf, elf, halfling, gnome, ...) inherit from default unchanged.",
   "races": [
-    {
-      "id": "human",
-      "name": "Human",
-      "description": "Adaptable and ambitious — the demo module recasts humans as restless wanderers, quick to learn and quicker to leave.",
-      "stat_modifiers": {
-        "strength": 0,
-        "dexterity": 0,
-        "constitution": 0,
-        "intelligence": 0,
-        "wisdom": 0
-      },
-      "exp_per_level": 1125,
-      "effects": []
-    },
     {
       "id": "tiefling",
       "name": "Tiefling",
@@ -27,7 +13,9 @@
         "wisdom": -1
       },
       "exp_per_level": 1300,
-      "effects": ["infravision"]
+      "effects": [
+        "infravision"
+      ]
     }
   ]
 }
