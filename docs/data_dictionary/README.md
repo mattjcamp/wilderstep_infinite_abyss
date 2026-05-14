@@ -2,7 +2,7 @@
 
 This folder documents the canonical data models for Wilderstep: Infinite Abyss (v2). Each model gets its own markdown doc describing what the model is for, what its fields mean, how it relates to other models, and an example record.
 
-The canonical schema stubs themselves live in `data_model/` at the repo root. The on-disk JSON files that ship inside a module (collections of records of each model type) are described in `docs/dev_guides/game_architecture_plan.md`.
+The data files themselves live in `data_model/` at the repo root. Files there hold real data and the data drives the schema — there is no separate schema spec layer (the dictionary docs in this folder play that role for humans). Per-module instance files are described in `docs/dev_guides/game_architecture_plan.md`; models that have been fully populated may be promoted to per-module files later.
 
 ## How to read these docs
 
@@ -16,9 +16,9 @@ The v2 codebase is just being built. The **Used?** column is `TBD` everywhere fo
 
 | Model | Doc | Purpose |
 |---|---|---|
-| Effect | [effect.md](effect.md) | TBD |
-| Spell | [spell.md](spell.md) | TBD |
-| Recipe | [recipe.md](recipe.md) | Crafting recipes — ingredients, tools/stations, and the resulting Item |
+| Effect | [effect.md](effect.md) | Unified model for abilities, statuses, passives, and on-hit triggers; ported from v1 and decoupled from its granters |
+| Spell | [spell.md](spell.md) | Castable spell-actions (damage, heal, apply_effect, summon, etc.); ported from v1 |
+| Recipe | [recipe.md](recipe.md) | Brew options as id + name + reagents-map; ported from v1 (DC/result deferred) |
 | Item | [item.md](item.md) | Items including weapons, armor, consumables; potions are a subtype |
 | Counter | [counter.md](counter.md) | TBD |
 | Monster | [monster.md](monster.md) | TBD |

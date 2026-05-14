@@ -1,0 +1,55 @@
+{
+  "_comment": "Recipe catalog (real data drives the schema). Each recipe is an option the player can pick from the alchemy / brew UI. The record names what it is and lists the reagents required; DC, result production, and other crafting mechanics are intentionally deferred and will land on Recipe (or an adjacent model) when the brew-execution path is implemented. See docs/data_dictionary/recipe.md.",
+  "recipes": [
+    {
+      "id": "healing_potion",
+      "name": "Healing Potion",
+      "reagents": { "Moonpetal": 1, "Spring Water": 1 }
+    },
+    {
+      "id": "mana_potion",
+      "name": "Mana Potion",
+      "reagents": { "Glowcap Mushroom": 1, "Spring Water": 1 }
+    },
+    {
+      "id": "antidote",
+      "name": "Antidote",
+      "reagents": { "Serpent Root": 1, "Spring Water": 1 }
+    },
+    {
+      "id": "fire_oil",
+      "name": "Fire Oil",
+      "reagents": { "Brimite Ore": 1, "Glowcap Mushroom": 1 }
+    },
+    {
+      "id": "elixir_of_strength",
+      "name": "Elixir of Strength",
+      "reagents": { "Moonpetal": 1, "Serpent Root": 1, "Brimite Ore": 1 }
+    },
+    {
+      "id": "elixir_of_warding",
+      "name": "Elixir of Warding",
+      "reagents": { "Moonpetal": 2, "Spring Water": 1 }
+    },
+    {
+      "id": "poison_vial",
+      "name": "Poison Vial",
+      "reagents": { "Serpent Root": 2, "Spring Water": 1 }
+    },
+    {
+      "id": "paralytic_poison",
+      "name": "Paralytic Poison",
+      "reagents": { "Serpent Root": 1, "Glowcap Mushroom": 1, "Spring Water": 1 }
+    },
+    {
+      "id": "weakening_poison",
+      "name": "Weakening Poison",
+      "reagents": { "Serpent Root": 1, "Brimite Ore": 1, "Spring Water": 1 }
+    },
+    {
+      "id": "lingering_venom",
+      "name": "Lingering Venom",
+      "reagents": { "Serpent Root": 2, "Moonpetal": 1, "Spring Water": 1 }
+    }
+  ]
+}
