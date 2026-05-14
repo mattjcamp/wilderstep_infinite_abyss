@@ -255,7 +255,7 @@ const DEFS: Record<ModelKey, ModelDef> = {
   },
   map_tiles: {
     key: "map_tiles",
-    label: "Map Tiles",
+    label: "Maps",
     scope: "shared",
     fileName: "map_tiles.json",
     collectionKey: "map_tiles",

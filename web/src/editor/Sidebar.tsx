@@ -48,9 +48,6 @@ export function Sidebar({ moduleId }: { moduleId: string }) {
       </p>
       <ul className="mb-4 space-y-0.5">{MODULE_MODELS.map(renderLink)}</ul>
 
-      <p className="mb-1 mt-2 text-xs uppercase tracking-wide text-parchment/40">
-        Shared
-      </p>
       <ul className="mb-4 space-y-0.5">{SHARED_MODELS.map(renderLink)}</ul>
 
       <p className="mb-1 mt-2 text-xs uppercase tracking-wide text-parchment/40">
