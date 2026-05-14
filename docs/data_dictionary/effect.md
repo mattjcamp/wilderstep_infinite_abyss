@@ -21,7 +21,7 @@ This decoupling means a single `detect_traps` Effect can be granted by a class a
 
 ## Location
 
-Effect catalog: `data_model/effects.json` — currently the canonical source. When effects ship inside a real module, this file (or a per-module variant) will live at `modules/<module_id>/effects.json` per `docs/dev_guides/game_architecture_plan.md`.
+Effect catalog: `web/public/modules/default/effects.json` — currently the canonical source. When effects ship inside a real module, this file (or a per-module variant) will live at `modules/<module_id>/effects.json` per `docs/dev_guides/game_architecture_plan.md`.
 
 ## Scope of this document
 
@@ -62,7 +62,7 @@ Each record:
 
 ## `params` shape by effect
 
-`params` is a free-form object whose keys depend on the effect's runtime handler. See `data_model/effects.json` for concrete shapes. Common parameter idioms across the ported v1 catalog:
+`params` is a free-form object whose keys depend on the effect's runtime handler. See `web/public/modules/default/effects.json` for concrete shapes. Common parameter idioms across the ported v1 catalog:
 
 | Parameter | Type | Used by (examples) |
 |---|---|---|

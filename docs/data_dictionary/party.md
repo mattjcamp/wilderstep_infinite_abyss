@@ -10,7 +10,7 @@ Ported from v1's `data/party.json`, then refactored: in v1 the `roster[]` was an
 
 ## Location
 
-`data_model/party.json` — real data drives the schema.
+`web/public/modules/default/party.json` — real data drives the schema.
 
 ## Scope of this document
 

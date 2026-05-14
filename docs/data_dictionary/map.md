@@ -6,7 +6,7 @@ A single unified model for authored maps. Overview, Towns, Buildings, Detail Scr
 
 ## Location
 
-Canonical schema stub: `data_model/map.json`
+Future location: `web/public/modules/<module_id>/maps.json` (per-module). The Map data model has not been formally designed yet — it's intentionally deferred until the editor's spatial-authoring surface is being built. This doc is a placeholder.
 
 ## Scope of this document
 

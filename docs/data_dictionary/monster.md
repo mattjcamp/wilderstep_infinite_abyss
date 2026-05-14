@@ -8,7 +8,7 @@ Ported from v1's `data/monsters.json` (see `_v1_reference/docs/data_dictionary/m
 
 ## Location
 
-`data_model/monsters.json` — real data drives the schema.
+`web/public/modules/default/monsters.json` — real data drives the schema.
 
 ## Scope of this document
 

@@ -8,7 +8,7 @@ Ported from v1's `data/encounters.json` (see `_v1_reference/docs/data_dictionary
 
 ## Location
 
-`data_model/encounters.json` — real data drives the schema.
+`web/public/modules/default/encounters.json` — real data drives the schema.
 
 ## Scope of this document
 

@@ -10,7 +10,7 @@ Ported from v1's `data/spells.json` (see `_v1_reference/docs/data_dictionary/spe
 
 ## Location
 
-`data_model/spells.json` — real data drives the schema.
+`web/public/modules/default/spells.json` — real data drives the schema.
 
 ## Scope of this document
 

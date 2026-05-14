@@ -8,7 +8,7 @@ Ported from v1's `data/classes/*.json` (8 files, one per class). Consolidated in
 
 ## Location
 
-`data_model/character_classes.json` — real data drives the schema.
+`web/public/data/character_classes.json` — real data drives the schema.
 
 ## Scope of this document
 

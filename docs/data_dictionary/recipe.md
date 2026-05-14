@@ -10,7 +10,7 @@ Ported from v1's `data/potions.json` (see `_v1_reference/docs/data_dictionary/po
 
 ## Location
 
-`data_model/recipes.json` — real data drives the schema.
+`web/public/modules/default/recipes.json` — real data drives the schema.
 
 ## Scope of this document
 

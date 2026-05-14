@@ -2,7 +2,7 @@
 
 This folder documents the canonical data models for Wilderstep: Infinite Abyss (v2). Each model gets its own markdown doc describing what the model is for, what its fields mean, how it relates to other models, and an example record.
 
-The data files themselves live in `data_model/` at the repo root. Files there hold real data and the data drives the schema — there is no separate schema spec layer (the dictionary docs in this folder play that role for humans). Per-module instance files are described in `docs/dev_guides/game_architecture_plan.md`; models that have been fully populated may be promoted to per-module files later.
+The data files live under `web/public/` so the running app can fetch them directly. Shared data (used by every module) lives in `web/public/data/` — currently `character_classes.json`, `races.json`, `map_tiles.json`. Per-module data lives in `web/public/modules/<module_id>/` — currently a placeholder `default` module containing everything else. This split mirrors the architecture plan; see `docs/dev_guides/game_architecture_plan.md` for the rationale. The data drives the schema — there is no separate schema spec layer; the dictionary docs in this folder play that role for humans.
 
 ## How to read these docs
 

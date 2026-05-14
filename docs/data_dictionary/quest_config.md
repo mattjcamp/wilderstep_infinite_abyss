@@ -6,7 +6,7 @@ TBD
 
 ## Location
 
-Canonical schema stub: `data_model/quest_config.json`
+Future location: `web/public/modules/<module_id>/quests.json` (per-module). The Quest data models have not been formally designed yet. This doc is a placeholder.
 
 ## Scope of this document
 

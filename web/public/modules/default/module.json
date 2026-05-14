@@ -1,0 +1,9 @@
+{
+  "_comment": "Placeholder module metadata for the first v2 module. This file's shape is provisional — the Module data model has not been formally designed yet (see docs/data_dictionary/module.md, currently a stub). The fields below match the architecture plan's library-module example and are the most likely v1 of the schema. Rename this folder and update id/title when a real module is authored; this default module exists to give the editor and runtime something to load while v2 is being built.",
+  "id": "default",
+  "title": "Default Module (Placeholder)",
+  "description": "A placeholder module that holds the v1-ported content while the editor and module system are being built.",
+  "author": "Matt",
+  "version": "0.1.0",
+  "role": "playable"
+}

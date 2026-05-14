@@ -8,7 +8,7 @@ Ported from v1's `data/spawn_points.json` (see `_v1_reference/docs/data_dictiona
 
 ## Location
 
-`data_model/spawns.json` — real data drives the schema.
+`web/public/modules/default/spawns.json` — real data drives the schema.
 
 ## Scope of this document
 

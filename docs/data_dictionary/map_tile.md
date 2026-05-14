@@ -8,7 +8,7 @@ Ported from v1's `data/tile_defs.json` (see `_v1_reference/docs/data_dictionary/
 
 ## Location
 
-`data_model/map_tiles.json` — real data drives the schema.
+`web/public/data/map_tiles.json` — real data drives the schema.
 
 ## Scope of this document
 

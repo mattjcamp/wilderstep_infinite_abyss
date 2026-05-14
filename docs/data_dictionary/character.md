@@ -10,7 +10,7 @@ Characters are not embedded in [Party](party.md) anymore. Party references Chara
 
 ## Location
 
-`data_model/characters.json` — real data drives the schema.
+`web/public/modules/default/characters.json` — real data drives the schema.
 
 ## Scope of this document
 

@@ -6,7 +6,7 @@ A runtime instance of a Module. Carries the Module's current state as it changes
 
 ## Location
 
-Canonical schema stub: `data_model/game.json`
+No static JSON file. A Game is a runtime save — the serialized form of a Module instance plus all accumulated state (party position, HP/MP, quest progress, generated dungeon maps, etc.). v2 will define the save format in TypeScript and persist via the SaveProvider (likely localStorage to start). This doc is a placeholder.
 
 ## Scope of this document
 

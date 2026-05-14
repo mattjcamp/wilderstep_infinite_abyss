@@ -6,7 +6,7 @@ Playable races. Each race carries stat modifiers applied at character creation, 
 
 ## Location
 
-`data_model/races.json` — real data drives the schema.
+`web/public/data/races.json` — real data drives the schema.
 
 ## Scope of this document
 

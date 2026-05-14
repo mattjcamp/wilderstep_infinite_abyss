@@ -6,7 +6,7 @@ TBD
 
 ## Location
 
-Canonical schema stub: `data_model/npc.json`
+Future location: `web/public/modules/<module_id>/npcs.json` (per-module). The NPC data model has not been formally designed yet — in v1, NPCs were embedded inside town map files. This doc is a placeholder.
 
 ## Scope of this document
 

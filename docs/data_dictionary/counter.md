@@ -10,7 +10,7 @@ Ported from v1's `data/counters.json` (see `_v1_reference/docs/data_dictionary/c
 
 ## Location
 
-`data_model/counters.json` — real data drives the schema.
+`web/public/modules/default/counters.json` — real data drives the schema.
 
 ## Scope of this document
 

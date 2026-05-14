@@ -6,7 +6,7 @@ The canonical definition of an adventure. Contains all the custom schema that de
 
 ## Location
 
-Canonical schema stub: `data_model/module.json`
+Each module ships its own `module.json` at the root of its folder — `web/public/modules/<module_id>/module.json`. A provisional record exists at `web/public/modules/default/module.json` as a placeholder while the Module data model is being designed. This doc is a placeholder.
 
 ## Scope of this document
 

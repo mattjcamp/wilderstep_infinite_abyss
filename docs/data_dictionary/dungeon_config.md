@@ -6,7 +6,7 @@ Distinct from Map because dungeons are not authored — they're procedurally gen
 
 ## Location
 
-Canonical schema stub: `data_model/dungeon_config.json`
+Future location: `web/public/modules/<module_id>/dungeon_configs.json` (per-module). The Dungeon Config data model has not been formally designed yet — this doc is a placeholder.
 
 ## Scope of this document
 

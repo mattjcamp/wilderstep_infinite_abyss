@@ -10,7 +10,7 @@ Ported from v1's `data/items.json` (see `_v1_reference/docs/data_dictionary/item
 
 ## Location
 
-`data_model/items.json` — real data drives the schema.
+`web/public/modules/default/items.json` — real data drives the schema.
 
 ## Scope of this document
 
