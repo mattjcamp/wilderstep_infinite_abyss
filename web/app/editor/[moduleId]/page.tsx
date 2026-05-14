@@ -5,14 +5,15 @@
 
 import Link from "next/link";
 import {
+  ALL_MODEL_KEYS,
   MODELS,
-  MODULE_MODELS,
-  SHARED_MODELS,
   type ModelKey,
 } from "@/data_model/models";
+import { listModuleIds } from "@/data_model/moduleIndex";
 
 export async function generateStaticParams() {
-  return [{ moduleId: "default" }];
+  const ids = await listModuleIds();
+  return ids.map((moduleId) => ({ moduleId }));
 }
 
 export default function ModuleEditorHome({
@@ -33,12 +34,7 @@ export default function ModuleEditorHome({
         </p>
       </header>
 
-      <Section title="Module data" keys={MODULE_MODELS} moduleId={moduleId} />
-      <Section
-        title="Shared / global"
-        keys={SHARED_MODELS}
-        moduleId={moduleId}
-      />
+      <Section title="Module data" keys={ALL_MODEL_KEYS} moduleId={moduleId} />
 
       <section className="mb-8">
         <h2 className="mb-3 text-xs uppercase tracking-wide text-parchment/40">

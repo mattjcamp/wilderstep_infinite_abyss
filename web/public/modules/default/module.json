@@ -1,9 +1,9 @@
 {
-  "_comment": "Placeholder module metadata for the first v2 module. This file's shape is provisional — the Module data model has not been formally designed yet (see docs/data_dictionary/module.md, currently a stub). The fields below match the architecture plan's library-module example and are the most likely v1 of the schema. Rename this folder and update id/title when a real module is authored; this default module exists to give the editor and runtime something to load while v2 is being built.",
+  "_comment": "Base module — every other module inherits from this one unless it declares a different `extends`. Role `core` means it's editable in the editor but hidden from the play picker; the canonical record set lives here and child modules override by record id. See web/src/data_model/StaticModuleSource.ts for the merge semantics.",
   "id": "default",
-  "title": "Default Module (Placeholder)",
-  "description": "A placeholder module that holds the v1-ported content while the editor and module system are being built.",
+  "title": "Default Module",
+  "description": "The base module — canonical effects, classes, races, items, monsters, etc. Other modules extend this one and override records by id.",
   "author": "Matt",
   "version": "0.1.0",
-  "role": "playable"
+  "role": "core"
 }

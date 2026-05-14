@@ -9,7 +9,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MODELS, MODULE_MODELS, SHARED_MODELS } from "@/data_model/models";
+import { ALL_MODEL_KEYS, MODELS } from "@/data_model/models";
 
 export function Sidebar({ moduleId }: { moduleId: string }) {
   const pathname = usePathname();
@@ -46,9 +46,7 @@ export function Sidebar({ moduleId }: { moduleId: string }) {
       <p className="mb-1 mt-2 text-xs uppercase tracking-wide text-parchment/40">
         Module data
       </p>
-      <ul className="mb-4 space-y-0.5">{MODULE_MODELS.map(renderLink)}</ul>
-
-      <ul className="mb-4 space-y-0.5">{SHARED_MODELS.map(renderLink)}</ul>
+      <ul className="mb-4 space-y-0.5">{ALL_MODEL_KEYS.map(renderLink)}</ul>
 
       <p className="mb-1 mt-2 text-xs uppercase tracking-wide text-parchment/40">
         Assets

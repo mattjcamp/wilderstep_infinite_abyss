@@ -1,0 +1,19 @@
+{
+  "_comment": "Demo overrides for the race catalog. `human` matches an id in default/races.json so it overrides the canonical record (note the new description). All other races — including `tiefling` from the tiefling-pack library — are inherited.",
+  "races": [
+    {
+      "id": "human",
+      "name": "Human",
+      "description": "Adaptable and ambitious — the demo module recasts humans as restless wanderers, quick to learn and quicker to leave.",
+      "stat_modifiers": {
+        "strength": 0,
+        "dexterity": 0,
+        "constitution": 0,
+        "intelligence": 0,
+        "wisdom": 0
+      },
+      "exp_per_level": 1125,
+      "effects": []
+    }
+  ]
+}

@@ -2,14 +2,17 @@
  * Model registry — the single source of truth for which data models
  * the editor knows about. Each entry describes:
  *
- *   - where the file lives (shared/global vs. per-module)
- *   - what filename it loads from
+ *   - what filename it loads from (relative to the module folder)
  *   - what top-level key holds the records (or null for singletons)
  *   - which columns the browse table shows
  *   - which dictionary doc it cross-links to
  *
  * Adding a new model is one entry here plus its JSON file. Removing one
  * keeps the docs in place — the editor sidebar just stops showing it.
+ *
+ * Every model lives per-module. There is no separate "shared" scope —
+ * the base `default` module owns the canonical records, and other modules
+ * extend it and override by record id. See StaticModuleSource.load().
  */
 
 export type ModelKey =
@@ -27,8 +30,6 @@ export type ModelKey =
   | "races"
   | "map_tiles";
 
-export type ModelScope = "shared" | "module";
-
 export interface ColumnDef {
   /** Object path on the record. Supports a single key for now; nested
    *  paths would need a getter. */
@@ -43,11 +44,11 @@ export interface ModelDef {
   key: ModelKey;
   /** Sidebar label, e.g. "Effects", "Character Classes". */
   label: string;
-  scope: ModelScope;
-  /** File name relative to the scope folder (e.g. "effects.json"). */
+  /** File name within the module folder (e.g. "effects.json"). */
   fileName: string;
   /** Top-level key under which records live in the JSON file, or null
-   *  for singleton files (Party). */
+   *  for singleton files (Party). Singletons can't be merged by id and
+   *  are replaced wholesale when a child module defines the file. */
   collectionKey: string | null;
   /** Columns shown in the browse table. Ignored when collectionKey is null. */
   columns: ColumnDef[];
@@ -73,7 +74,6 @@ const DEFS: Record<ModelKey, ModelDef> = {
   effects: {
     key: "effects",
     label: "Effects",
-    scope: "module",
     fileName: "effects.json",
     collectionKey: "effects",
     docKey: "effect",
@@ -88,7 +88,6 @@ const DEFS: Record<ModelKey, ModelDef> = {
   spells: {
     key: "spells",
     label: "Spells",
-    scope: "module",
     fileName: "spells.json",
     collectionKey: "spells",
     docKey: "spell",
@@ -105,7 +104,6 @@ const DEFS: Record<ModelKey, ModelDef> = {
   recipes: {
     key: "recipes",
     label: "Recipes",
-    scope: "module",
     fileName: "recipes.json",
     collectionKey: "recipes",
     docKey: "recipe",
@@ -119,7 +117,6 @@ const DEFS: Record<ModelKey, ModelDef> = {
   items: {
     key: "items",
     label: "Items",
-    scope: "module",
     fileName: "items.json",
     collectionKey: "items",
     docKey: "item",
@@ -136,7 +133,6 @@ const DEFS: Record<ModelKey, ModelDef> = {
   counters: {
     key: "counters",
     label: "Counters",
-    scope: "module",
     fileName: "counters.json",
     collectionKey: "counters",
     docKey: "counter",
@@ -151,7 +147,6 @@ const DEFS: Record<ModelKey, ModelDef> = {
   monsters: {
     key: "monsters",
     label: "Monsters",
-    scope: "module",
     fileName: "monsters.json",
     collectionKey: "monsters",
     docKey: "monster",
@@ -167,7 +162,6 @@ const DEFS: Record<ModelKey, ModelDef> = {
   characters: {
     key: "characters",
     label: "Characters",
-    scope: "module",
     fileName: "characters.json",
     collectionKey: "characters",
     docKey: "character",
@@ -183,7 +177,6 @@ const DEFS: Record<ModelKey, ModelDef> = {
   party: {
     key: "party",
     label: "Party",
-    scope: "module",
     fileName: "party.json",
     collectionKey: null,
     docKey: "party",
@@ -193,7 +186,6 @@ const DEFS: Record<ModelKey, ModelDef> = {
   spawns: {
     key: "spawns",
     label: "Spawns",
-    scope: "module",
     fileName: "spawns.json",
     collectionKey: "spawns",
     docKey: "spawn",
@@ -209,7 +201,6 @@ const DEFS: Record<ModelKey, ModelDef> = {
   encounters: {
     key: "encounters",
     label: "Encounters",
-    scope: "module",
     fileName: "encounters.json",
     collectionKey: "encounters",
     docKey: "encounter",
@@ -225,7 +216,6 @@ const DEFS: Record<ModelKey, ModelDef> = {
   character_classes: {
     key: "character_classes",
     label: "Character Classes",
-    scope: "shared",
     fileName: "character_classes.json",
     collectionKey: "character_classes",
     docKey: "character_class",
@@ -241,7 +231,6 @@ const DEFS: Record<ModelKey, ModelDef> = {
   races: {
     key: "races",
     label: "Races",
-    scope: "shared",
     fileName: "races.json",
     collectionKey: "races",
     docKey: "race",
@@ -256,7 +245,6 @@ const DEFS: Record<ModelKey, ModelDef> = {
   map_tiles: {
     key: "map_tiles",
     label: "Maps",
-    scope: "shared",
     fileName: "map_tiles.json",
     collectionKey: "map_tiles",
     docKey: "map_tile",
@@ -274,14 +262,6 @@ const DEFS: Record<ModelKey, ModelDef> = {
 export const MODELS = DEFS;
 
 export const ALL_MODEL_KEYS: ModelKey[] = Object.keys(DEFS) as ModelKey[];
-
-export const MODULE_MODELS: ModelKey[] = ALL_MODEL_KEYS.filter(
-  (k) => DEFS[k].scope === "module",
-);
-
-export const SHARED_MODELS: ModelKey[] = ALL_MODEL_KEYS.filter(
-  (k) => DEFS[k].scope === "shared",
-);
 
 export function getModel(key: string): ModelDef | undefined {
   return key in DEFS ? DEFS[key as ModelKey] : undefined;

@@ -12,10 +12,11 @@ import {
   getModel,
   type ModelKey,
 } from "@/data_model/models";
+import { listModuleIds } from "@/data_model/moduleIndex";
 
 export async function generateStaticParams() {
   // Cartesian: every known module × every known model.
-  const moduleIds = ["default"];
+  const moduleIds = await listModuleIds();
   return moduleIds.flatMap((moduleId) =>
     ALL_MODEL_KEYS.map((modelKey) => ({ moduleId, modelKey })),
   );
@@ -38,8 +39,7 @@ export default function ModelBrowsePage({
         <span className="mx-1">/</span>
         <span className="text-parchment/80">{def.label}</span>
         <span className="ml-3 text-parchment/40">
-          ({def.fileName} ·{" "}
-          {def.scope === "shared" ? "/data/" : `/modules/${params.moduleId}/`})
+          ({def.fileName} · /modules/{params.moduleId}/)
         </span>
       </nav>
       <ModelView
