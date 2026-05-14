@@ -2,9 +2,9 @@
 
 /**
  * Editor sidebar — lists every model the editor knows about, grouped
- * by scope (per-module vs shared). The active route is highlighted via
- * usePathname() so the sidebar can stay a single client component
- * regardless of which model page is rendered.
+ * by scope (per-module vs shared), plus an Assets section. The active
+ * route is highlighted via usePathname() so the sidebar can stay a
+ * single client component regardless of which page renders.
  */
 
 import Link from "next/link";
