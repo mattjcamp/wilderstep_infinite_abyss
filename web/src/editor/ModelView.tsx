@@ -916,7 +916,30 @@ function RowGroup({
           );
         })}
         <td className="px-2 py-1 text-right">
-          {showProvenance ? <ProvenanceBadge kind={provenance} /> : null}
+          <div className="flex items-center justify-end gap-2">
+            {showProvenance ? <ProvenanceBadge kind={provenance} /> : null}
+            {modelKey === "maps" && record.id ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (
+                    typeof window !== "undefined" &&
+                    !window.confirm(
+                      `Delete map "${record.id}"?\n\nThis removes it from this module's maps file. The change saves to the draft until you Publish.`,
+                    )
+                  )
+                    return;
+                  onRevert();
+                }}
+                className="rounded border border-parchment/20 px-2 py-0.5 text-xs text-parchment/60 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
+                title="Delete this map from the module's maps file."
+              >
+                Delete
+              </button>
+            ) : null}
+          </div>
         </td>
       </tr>
       {isOpen && (

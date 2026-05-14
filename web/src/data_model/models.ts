@@ -271,8 +271,6 @@ const DEFS: Record<ModelKey, ModelDef> = {
         label: "Tags",
         format: (v) => (Array.isArray(v) ? v.join(", ") : ""),
       },
-      { field: "width", label: "W", format: asString },
-      { field: "height", label: "H", format: asString },
     ],
   },
 };

@@ -1,27 +1,1193 @@
 {
-  "_comment": "Map catalog. Each map is a 2D `grid` of tile id strings that reference the Tile Palette (map_tiles.json) for visual + behavioral properties (walkable, sprite, link destination). Per-cell behavior follows from the painted tile — to vary behavior across cells that look alike (two doors to different rooms), create distinct tile palette entries and paint with them. `tags` group maps in the editor for organization; the linking system on the tile palette is independent of tags. The grid is row-major: grid[row][col].",
+  "_comment": "Map catalog. Each cell in `grid` is a full Tile Palette instance — id, name, walkable, sprite, and any other tile fields are materialized inline. Painting a cell deep-copies the brush palette entry into that cell; editing a cell in the inspector mutates the cell directly. Palette edits do NOT auto-propagate to painted cells (the cell is its own data after paint) — repaint to refresh. `tags` group maps in the editor for organization; the linking system on tiles is independent of tags. The grid is row-major: grid[row][col].",
   "maps": [
     {
       "id": "town_one_square",
       "name": "Town Square",
       "description": "The cobbled square at the heart of Town One — a stone path crosses east to west, grass on either side. Placeholder map used to seed the editor; replace with real geometry as it gets painted.",
-      "tags": ["town_one"],
+      "tags": [
+        "town_one"
+      ],
       "width": 16,
       "height": 12,
       "default_tile": "grass",
       "grid": [
-        ["grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass"],
-        ["grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass"],
-        ["grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass"],
-        ["grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass"],
-        ["grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass"],
-        ["path",  "path",  "path",  "path",  "path",  "path",  "path",  "path",  "path",  "path",  "path",  "path",  "path",  "path",  "path",  "path" ],
-        ["path",  "path",  "path",  "path",  "path",  "path",  "path",  "path",  "path",  "path",  "path",  "path",  "path",  "path",  "path",  "path" ],
-        ["grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass"],
-        ["grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass"],
-        ["grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass"],
-        ["grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass"],
-        ["grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass"]
+        [
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "sprite": "map/mountains.png"
+          },
+          {
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "sprite": "map/mountains.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          }
+        ],
+        [
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "sprite": "map/mountains.png"
+          },
+          {
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "sprite": "map/mountains.png"
+          },
+          {
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "sprite": "map/mountains.png"
+          },
+          {
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "sprite": "map/mountains.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          }
+        ],
+        [
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "sprite": "map/mountains.png"
+          },
+          {
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "sprite": "map/mountains.png"
+          },
+          {
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "sprite": "map/mountains.png"
+          },
+          {
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "sprite": "map/mountains.png"
+          },
+          {
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "sprite": "map/mountains.png"
+          },
+          {
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "sprite": "map/mountains.png"
+          },
+          {
+            "id": "water",
+            "name": "Water",
+            "walkable": false,
+            "sprite": "map/water.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          }
+        ],
+        [
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "sprite": "map/mountains.png"
+          },
+          {
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "sprite": "map/mountains.png"
+          },
+          {
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "sprite": "map/mountains.png"
+          },
+          {
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "sprite": "map/mountains.png"
+          },
+          {
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "sprite": "map/mountains.png"
+          },
+          {
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "sprite": "map/mountains.png"
+          },
+          {
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "sprite": "map/mountains.png"
+          },
+          {
+            "id": "water",
+            "name": "Water",
+            "walkable": false,
+            "sprite": "map/water.png"
+          },
+          {
+            "id": "water",
+            "name": "Water",
+            "walkable": false,
+            "sprite": "map/water.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          }
+        ],
+        [
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "sprite": "map/path.png"
+          },
+          {
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "sprite": "map/path.png"
+          },
+          {
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "sprite": "map/path.png"
+          },
+          {
+            "id": "floor",
+            "name": "Floor",
+            "walkable": true,
+            "sprite": "map/town_floor.png"
+          },
+          {
+            "id": "floor",
+            "name": "Floor",
+            "walkable": true,
+            "sprite": "map/town_floor.png"
+          },
+          {
+            "id": "water",
+            "name": "Water",
+            "walkable": false,
+            "sprite": "map/water.png"
+          },
+          {
+            "id": "water",
+            "name": "Water",
+            "walkable": false,
+            "sprite": "map/water.png"
+          },
+          {
+            "id": "water",
+            "name": "Water",
+            "walkable": false,
+            "sprite": "map/water.png"
+          },
+          {
+            "id": "water",
+            "name": "Water",
+            "walkable": false,
+            "sprite": "map/water.png"
+          },
+          {
+            "id": "water",
+            "name": "Water",
+            "walkable": false,
+            "sprite": "map/water.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          }
+        ],
+        [
+          {
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "sprite": "map/path.png"
+          },
+          {
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "sprite": "map/path.png"
+          },
+          {
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "sprite": "map/path.png"
+          },
+          {
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "sprite": "map/path.png"
+          },
+          {
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "sprite": "map/path.png"
+          },
+          {
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "sprite": "map/path.png"
+          },
+          {
+            "id": "floor",
+            "name": "Floor",
+            "walkable": true,
+            "sprite": "map/town_floor.png"
+          },
+          {
+            "id": "floor",
+            "name": "Floor",
+            "walkable": true,
+            "sprite": "map/town_floor.png"
+          },
+          {
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "sprite": "map/path.png"
+          },
+          {
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "sprite": "map/path.png"
+          },
+          {
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "sprite": "map/path.png"
+          },
+          {
+            "id": "water",
+            "name": "Water",
+            "walkable": false,
+            "sprite": "map/water.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "sprite": "map/path.png"
+          },
+          {
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "sprite": "map/path.png"
+          },
+          {
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "sprite": "map/path.png"
+          }
+        ],
+        [
+          {
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "sprite": "map/path.png"
+          },
+          {
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "sprite": "map/path.png"
+          },
+          {
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "sprite": "map/path.png"
+          },
+          {
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "sprite": "map/path.png"
+          },
+          {
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "sprite": "map/path.png"
+          },
+          {
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "sprite": "map/path.png"
+          },
+          {
+            "id": "floor",
+            "name": "Floor",
+            "walkable": true,
+            "sprite": "map/town_floor.png"
+          },
+          {
+            "id": "floor",
+            "name": "Floor",
+            "walkable": true,
+            "sprite": "map/town_floor.png"
+          },
+          {
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "sprite": "map/path.png"
+          },
+          {
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "sprite": "map/path.png"
+          },
+          {
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "sprite": "map/path.png"
+          },
+          {
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "sprite": "map/path.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "sprite": "map/path.png"
+          },
+          {
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "sprite": "map/path.png"
+          }
+        ],
+        [
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "wall",
+            "name": "Wall",
+            "walkable": false,
+            "sprite": "map/brick_wall_red.png"
+          },
+          {
+            "id": "wall",
+            "name": "Wall",
+            "walkable": false,
+            "sprite": "map/brick_wall_red.png"
+          },
+          {
+            "id": "wall",
+            "name": "Wall",
+            "walkable": false,
+            "sprite": "map/brick_wall_red.png"
+          },
+          {
+            "id": "wall",
+            "name": "Wall",
+            "walkable": false,
+            "sprite": "map/brick_wall_red.png"
+          },
+          {
+            "id": "wall",
+            "name": "Wall",
+            "walkable": false,
+            "sprite": "map/brick_wall_red.png"
+          },
+          {
+            "id": "wall",
+            "name": "Wall",
+            "walkable": false,
+            "sprite": "map/brick_wall_red.png"
+          },
+          {
+            "id": "wall",
+            "name": "Wall",
+            "walkable": false,
+            "sprite": "map/brick_wall_red.png"
+          },
+          {
+            "id": "wall",
+            "name": "Wall",
+            "walkable": false,
+            "sprite": "map/brick_wall_red.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          }
+        ],
+        [
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "wall",
+            "name": "Wall",
+            "walkable": false,
+            "sprite": "map/brick_wall_red.png"
+          },
+          {
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "sprite": "map/mountains.png"
+          },
+          {
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "sprite": "map/mountains.png"
+          },
+          {
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "sprite": "map/mountains.png"
+          },
+          {
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "sprite": "map/mountains.png"
+          },
+          {
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "sprite": "map/mountains.png"
+          },
+          {
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "sprite": "map/mountains.png"
+          },
+          {
+            "id": "wall",
+            "name": "Wall",
+            "walkable": false,
+            "sprite": "map/brick_wall_red.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          }
+        ],
+        [
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "wall",
+            "name": "Wall",
+            "walkable": false,
+            "sprite": "map/brick_wall_red.png"
+          },
+          {
+            "id": "wall",
+            "name": "Wall",
+            "walkable": false,
+            "sprite": "map/brick_wall_red.png"
+          },
+          {
+            "id": "wall",
+            "name": "Wall",
+            "walkable": false,
+            "sprite": "map/brick_wall_red.png"
+          },
+          {
+            "id": "wall",
+            "name": "Wall",
+            "walkable": false,
+            "sprite": "map/brick_wall_red.png"
+          },
+          {
+            "id": "wall",
+            "name": "Wall",
+            "walkable": false,
+            "sprite": "map/brick_wall_red.png"
+          },
+          {
+            "id": "wall",
+            "name": "Wall",
+            "walkable": false,
+            "sprite": "map/brick_wall_red.png"
+          },
+          {
+            "id": "wall",
+            "name": "Wall",
+            "walkable": false,
+            "sprite": "map/brick_wall_red.png"
+          },
+          {
+            "id": "wall",
+            "name": "Wall",
+            "walkable": false,
+            "sprite": "map/brick_wall_red.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          }
+        ],
+        [
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          }
+        ],
+        [
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          },
+          {
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "sprite": "map/grass1.png"
+          }
+        ]
       ]
     }
   ]

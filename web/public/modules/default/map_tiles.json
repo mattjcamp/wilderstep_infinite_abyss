@@ -1,41 +1,70 @@
 {
-  "_comment": "Tile Palette — reusable tile types used to paint maps. Each tile carries a string `id` (the identity that map.grid cells reference), display `name`, `walkable` flag, and `sprite` reference into the /sprites/map/ library. Optional `flags` carry lighting metadata. Optional `link` is a one-way portal — when the party steps on a cell painted with this tile, they teleport to the destination: `{ \"map_id\": \"<target-map>\", \"x\": <col>, \"y\": <row> }`. Links are one-way, so the return trip needs a complementary tile on the destination map. To have visually-identical tiles with different destinations (e.g., two doors going to different rooms), create separate tile entries — that's the v1 pattern that worked. Trimmed down from the v1 legacy catalog to a basic outdoor + interior starter set; add more via the editor as needed.",
+  "_comment": "Tile Palette — reusable tile types used to paint maps. Each tile carries: `id` (the cell reference), display `name`, `sprite` (path under /sprites/map/), and the behavioral attributes — `walkable` (blocks movement when false), `obstructs` (blocks light + ranged line-of-sight when true), `locked` (gates passage/interaction until unlocked; pair with a key or scripted unlock), `light_source` (the tile emits light), `light_range` (light radius in cells, only meaningful when light_source=true), and `animation` (visual effect played on this tile — one of \"none\", \"torch\", \"fire\", \"fairy\", \"smoke\"). Optional `link` is a one-way portal — when the party steps on a cell painted with this tile, they teleport to `{ \"map_id\": \"<target>\", \"x\": <col>, \"y\": <row> }`. Two visually-identical tiles with different destinations are two separate entries — the v1 pattern that worked. Map cells are full copies of palette entries; palette edits don't auto-propagate to painted cells.",
   "map_tiles": [
     {
       "id": "grass",
       "name": "Grass",
       "walkable": true,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
       "sprite": "map/grass1.png"
     },
     {
       "id": "water",
       "name": "Water",
       "walkable": false,
-      "sprite": "map/water.png",
-      "flags": { "transparent": true }
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "sprite": "map/water.png"
     },
     {
       "id": "mountain",
       "name": "Mountain",
       "walkable": false,
+      "obstructs": true,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
       "sprite": "map/mountains.png"
     },
     {
       "id": "path",
       "name": "Path",
       "walkable": true,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
       "sprite": "map/path.png"
     },
     {
       "id": "floor",
       "name": "Floor",
       "walkable": true,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
       "sprite": "map/town_floor.png"
     },
     {
       "id": "wall",
       "name": "Wall",
       "walkable": false,
+      "obstructs": true,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
       "sprite": "map/brick_wall_red.png"
     }
   ]
