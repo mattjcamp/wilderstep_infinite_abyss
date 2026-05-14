@@ -1,5 +1,5 @@
 {
-  "_comment": "Map catalog. Each map is a 2D grid of tile_id integers that reference the Tile Palette (map_tiles.json) for visual + behavioral properties (walkable, sprite, default interaction type). Per-cell instance data — destination of a portal cell, items placed by the author on a cell — lives in the sparse `links` and `tile_items` arrays so a generic tile type can be reused across maps without conflict. `tags` group maps in the editor for organization; the linking system is independent of tags. The grid is row-major: grid[row][col].",
+  "_comment": "Map catalog. Each map is a 2D `grid` of tile id strings that reference the Tile Palette (map_tiles.json) for visual + behavioral properties (walkable, sprite, link destination). Per-cell behavior follows from the painted tile — to vary behavior across cells that look alike (two doors to different rooms), create distinct tile palette entries and paint with them. `tags` group maps in the editor for organization; the linking system on the tile palette is independent of tags. The grid is row-major: grid[row][col].",
   "maps": [
     {
       "id": "town_one_square",
@@ -8,23 +8,21 @@
       "tags": ["town_one"],
       "width": 16,
       "height": 12,
-      "default_tile": 0,
+      "default_tile": "grass",
       "grid": [
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6],
-        [6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-      ],
-      "links": [],
-      "tile_items": []
+        ["grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass"],
+        ["grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass"],
+        ["grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass"],
+        ["grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass"],
+        ["grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass"],
+        ["path",  "path",  "path",  "path",  "path",  "path",  "path",  "path",  "path",  "path",  "path",  "path",  "path",  "path",  "path",  "path" ],
+        ["path",  "path",  "path",  "path",  "path",  "path",  "path",  "path",  "path",  "path",  "path",  "path",  "path",  "path",  "path",  "path" ],
+        ["grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass"],
+        ["grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass"],
+        ["grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass"],
+        ["grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass"],
+        ["grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass", "grass"]
+      ]
     }
   ]
 }

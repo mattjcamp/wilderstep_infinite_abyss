@@ -1,79 +1,41 @@
 {
-  "_comment": "Tile Palette — reusable tile types used to paint maps. Each tile carries an integer `tile_id` (the identity that map.grid cells reference), display `name`, `walkable` flag, RGB fallback `color`, and `sprite` reference into the /sprites/map/ library. Optional `flags` carry lighting metadata. Optional `interaction_type` + `interaction_data` are catalog-level defaults; per-cell instance data (this specific door leads here) lives on the map record. Trimmed down from the v1 legacy catalog to a basic outdoor + interior starter set; add more via the editor as needed. The integer `tile_id` is what gets stored in map grids, so keeping these ids stable preserves existing maps.",
+  "_comment": "Tile Palette — reusable tile types used to paint maps. Each tile carries a string `id` (the identity that map.grid cells reference), display `name`, `walkable` flag, and `sprite` reference into the /sprites/map/ library. Optional `flags` carry lighting metadata. Optional `link` is a one-way portal — when the party steps on a cell painted with this tile, they teleport to the destination: `{ \"map_id\": \"<target-map>\", \"x\": <col>, \"y\": <row> }`. Links are one-way, so the return trip needs a complementary tile on the destination map. To have visually-identical tiles with different destinations (e.g., two doors going to different rooms), create separate tile entries — that's the v1 pattern that worked. Trimmed down from the v1 legacy catalog to a basic outdoor + interior starter set; add more via the editor as needed.",
   "map_tiles": [
     {
-      "id": "grass_0",
-      "tile_id": 0,
+      "id": "grass",
       "name": "Grass",
       "walkable": true,
-      "color": [
-        34,
-        139,
-        34
-      ],
       "sprite": "map/grass1.png"
     },
     {
-      "id": "water_1",
-      "tile_id": 1,
+      "id": "water",
       "name": "Water",
       "walkable": false,
-      "color": [
-        30,
-        90,
-        180
-      ],
       "sprite": "map/water.png",
-      "flags": {
-        "transparent": true
-      }
+      "flags": { "transparent": true }
     },
     {
-      "id": "mountain_3",
-      "tile_id": 3,
+      "id": "mountain",
       "name": "Mountain",
       "walkable": false,
-      "color": [
-        130,
-        130,
-        130
-      ],
       "sprite": "map/mountains.png"
     },
     {
-      "id": "path_6",
-      "tile_id": 6,
+      "id": "path",
       "name": "Path",
       "walkable": true,
-      "color": [
-        160,
-        140,
-        100
-      ],
       "sprite": "map/path.png"
     },
     {
-      "id": "floor_10",
-      "tile_id": 10,
+      "id": "floor",
       "name": "Floor",
       "walkable": true,
-      "color": [
-        160,
-        130,
-        100
-      ],
       "sprite": "map/town_floor.png"
     },
     {
-      "id": "wall_11",
-      "tile_id": 11,
+      "id": "wall",
       "name": "Wall",
       "walkable": false,
-      "color": [
-        90,
-        70,
-        50
-      ],
       "sprite": "map/brick_wall_red.png"
     }
   ]

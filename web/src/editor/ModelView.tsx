@@ -35,6 +35,8 @@
  * merge layer.
  */
 
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { StaticModuleSource } from "@/data_model/StaticModuleSource";
 import {
@@ -497,6 +499,7 @@ export function ModelView({
                       showProvenance={showProvenance}
                       hasSpriteColumn={hasSpriteColumn}
                       modelKey={modelKey}
+                      moduleId={moduleId}
                       onToggle={() => {
                         if (isEditing) return;
                         setOpenId(isOpen ? null : id);
@@ -849,6 +852,7 @@ function RowGroup({
   showProvenance,
   hasSpriteColumn,
   modelKey,
+  moduleId,
   onToggle,
   onStartEdit,
   onCancelEdit,
@@ -864,6 +868,8 @@ function RowGroup({
   showProvenance: boolean;
   hasSpriteColumn: boolean;
   modelKey?: string;
+  /** Needed so map rows can link into the visual map editor. */
+  moduleId?: string;
   onToggle: () => void;
   onStartEdit: () => void;
   onCancelEdit: () => void;
@@ -872,13 +878,24 @@ function RowGroup({
   def: (typeof MODELS)[ModelKey];
   template: Record_;
 }) {
+  const router = useRouter();
+  // Map rows lead straight into the visual editor — that's the primary
+  // workflow for maps. Other models still click-to-expand into JSON.
+  const isMapRow = modelKey === "maps" && !!moduleId && !!record.id;
+  const onRowClick = () => {
+    if (isMapRow) {
+      router.push(`/editor/${moduleId}/maps/${String(record.id)}`);
+    } else {
+      onToggle();
+    }
+  };
   return (
     <>
       <tr
         className={`cursor-pointer border-t border-parchment/5 ${
           isOpen ? "bg-ember/10" : "hover:bg-ink/30"
         }`}
-        onClick={onToggle}
+        onClick={onRowClick}
       >
         <td className="px-2 py-1 text-parchment/50">{isOpen ? "▾" : "▸"}</td>
         {hasSpriteColumn ? (
@@ -931,6 +948,16 @@ function RowGroup({
                   >
                     Edit
                   </button>
+                  {modelKey === "maps" && record.id && moduleId ? (
+                    <Link
+                      href={`/editor/${moduleId}/maps/${String(record.id)}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="rounded border border-ember/40 bg-ember/15 px-3 py-1 text-sm text-parchment hover:bg-ember/30"
+                      title="Open in the visual map editor (canvas + paint)."
+                    >
+                      Open Map Editor →
+                    </Link>
+                  ) : null}
                   {showProvenance && provenance === "overridden" ? (
                     <button
                       type="button"

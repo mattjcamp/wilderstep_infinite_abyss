@@ -251,7 +251,6 @@ const DEFS: Record<ModelKey, ModelDef> = {
     docKey: "map_tile",
     blurb: "Reusable tile types used to paint maps",
     columns: [
-      { field: "tile_id", label: "Tile ID", format: asString },
       { field: "id", label: "ID" },
       { field: "name", label: "Name" },
       { field: "walkable", label: "Walk", format: asString },
