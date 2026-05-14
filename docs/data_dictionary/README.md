@@ -24,8 +24,8 @@ The v2 codebase is just being built. The **Used?** column is `TBD` everywhere fo
 | Monster | [monster.md](monster.md) | Monster catalog with stats, spells (inline), Effect-id passives + on-hit triggers; ported from v1 |
 | Race | [race.md](race.md) | Playable races — stat modifiers, optional XP override, racial ability Effect ids; ported from v1 |
 | Character Class | [character_class.md](character_class.md) | The eight playable classes — HP/MP growth, allowed races, MP source, non-spell class abilities; ported from v1 |
-| Character | [character.md](character.md) | TBD |
-| Party | [party.md](party.md) | Starting party seed (singleton) — roster, gold, gear, effect slots, inventory; ported from v1 |
+| Character | [character.md](character.md) | Character catalog — class, race, base stats, starting gear; referenced by Party.roster/active_party by id |
+| Party | [party.md](party.md) | Starting party seed (singleton) — references Character ids; party-wide gold, effect slots, shared inventory |
 | NPC | [npc.md](npc.md) | TBD |
 | Encounter | [encounter.md](encounter.md) | Named monster rosters for the random-encounter sampler, with area discriminator; ported from v1 |
 | Spawn | [spawn.md](spawn.md) | Monster-lair behavior bound to a map tile id; ported from v1 |
