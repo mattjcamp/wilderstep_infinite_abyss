@@ -6,49 +6,75 @@
       "tile_id": 0,
       "name": "Grass",
       "walkable": true,
-      "color": [34, 139, 34],
-      "sprite": "overworld/grass"
+      "color": [
+        34,
+        139,
+        34
+      ],
+      "sprite": "map/grass1.png"
     },
     {
       "id": "water_1",
       "tile_id": 1,
       "name": "Water",
       "walkable": false,
-      "color": [30, 90, 180],
-      "sprite": "overworld/water",
-      "flags": { "transparent": true }
+      "color": [
+        30,
+        90,
+        180
+      ],
+      "sprite": "map/water.png",
+      "flags": {
+        "transparent": true
+      }
     },
     {
       "id": "mountain_3",
       "tile_id": 3,
       "name": "Mountain",
       "walkable": false,
-      "color": [130, 130, 130],
-      "sprite": "overworld/mountain"
+      "color": [
+        130,
+        130,
+        130
+      ],
+      "sprite": "map/mountains.png"
     },
     {
       "id": "path_6",
       "tile_id": 6,
       "name": "Path",
       "walkable": true,
-      "color": [160, 140, 100],
-      "sprite": "overworld/path"
+      "color": [
+        160,
+        140,
+        100
+      ],
+      "sprite": "map/path.png"
     },
     {
       "id": "floor_10",
       "tile_id": 10,
       "name": "Floor",
       "walkable": true,
-      "color": [160, 130, 100],
-      "sprite": "town/floor"
+      "color": [
+        160,
+        130,
+        100
+      ],
+      "sprite": "map/town_floor.png"
     },
     {
       "id": "wall_11",
       "tile_id": 11,
       "name": "Wall",
       "walkable": false,
-      "color": [90, 70, 50],
-      "sprite": "town/wall"
+      "color": [
+        90,
+        70,
+        50
+      ],
+      "sprite": "map/brick_wall_red.png"
     }
   ]
 }
