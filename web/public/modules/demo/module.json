@@ -1,5 +1,5 @@
 {
-  "_comment": "Demo module. Extends `default` and pulls in the `tiefling-pack` library to demonstrate the full composition story: inherited base content + library overlay + per-module override. Open in the editor to see: human → overridden (from this module), tiefling → inherited (from the library), dwarves/elves/etc. → inherited (from default).",
+  "_comment": "Demo module. Extends `default` for inherited base content and lists `tiefling-pack` in `uses` so its records appear in the editor's import catalog. Some library content (tiefling) has already been imported into this module and lives in races.json as a native record; the rest (hellfire_aura) remains in the catalog awaiting an Import click. Library updates do NOT flow into this module — once a record is imported, it's yours and decoupled.",
   "id": "demo",
   "title": "Demo Module",
   "description": "A tiny playable module that extends `default`, pulls in the `tiefling-pack` library, and overrides the Human race description to show off the module composition system.",

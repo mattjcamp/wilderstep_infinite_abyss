@@ -7,17 +7,20 @@
  *
  * The list of modules lives in /modules/index.json. Each module
  * declares its own metadata in /modules/<id>/module.json, including
- * optional `extends` (single parent — your base) and `uses` (a list
- * of library modules to compose on top). Resolution layers the data
- * in this order:
+ * optional `extends` (single parent — your base) and `uses` (an
+ * import palette of library modules).
  *
- *   1. extends chain, root-first (e.g. default → ... → parent)
- *   2. `uses` libraries (deduped + collected across the extends chain,
- *      root's uses first; each library contributes only its own file,
- *      not its ancestors)
- *   3. the requested module's own file
+ * Resolution layers the data in this order:
+ *   1. extends chain, root-first (default → ... → parent)
+ *   2. the requested module's own file
  *
- * Each step uses the same merge semantics:
+ * Library content from `uses` is NOT in the resolved view — it's
+ * surfaced separately via listLibraryRecords as a catalog. The
+ * editor renders an Import button per library record; importing
+ * copies the record into the module's own file as a regular new
+ * record, decoupled from the library.
+ *
+ * Merge semantics:
  *   - collections (records under a collectionKey, addressed by id)
  *     are merged by id — later records override earlier records of
  *     the same id; new ids are appended.
@@ -27,9 +30,11 @@
  */
 
 import { withBasePath } from "@/util/basePath";
-import { mergeModel } from "./merge";
+import { loadDraft, loadIndexDraft, MANIFEST_KEY } from "./draft";
+import { extractRecords, mergeModel } from "./merge";
 import { ALL_MODEL_KEYS, MODELS, type ModelKey } from "./models";
 import type {
+  LibraryCatalogEntry,
   LoadedModule,
   ModelLayers,
   ModuleSource,
@@ -60,6 +65,23 @@ async function tryFetchJson(url: string): Promise<unknown | null> {
   } catch {
     return null;
   }
+}
+
+/** Read a module's manifest, preferring a localStorage draft when
+ *  present. Returns null if neither exists (e.g., a brand-new module
+ *  whose draft hasn't been saved yet — caller should treat as
+ *  missing). */
+async function loadModuleManifest(
+  moduleId: string,
+): Promise<(Partial<ModuleSummary> & { id?: string }) | null> {
+  const draft = loadDraft<Partial<ModuleSummary> & { id?: string }>(
+    moduleId,
+    MANIFEST_KEY,
+  );
+  if (draft) return draft;
+  return tryFetchJson(
+    withBasePath(`/modules/${moduleId}/module.json`),
+  ) as Promise<(Partial<ModuleSummary> & { id?: string }) | null>;
 }
 
 function toSummary(
@@ -104,7 +126,9 @@ function collectUsedLibraryIds(chain: ModuleSummary[]): string[] {
 
 /** Walk a module's extends chain from the requested module up to the
  *  root. Returns an array ordered leaf-to-root (so the requested
- *  module is at index 0). */
+ *  module is at index 0). Prefers localStorage manifest drafts over
+ *  on-disk module.json so unexported edits to `extends`/`uses` take
+ *  effect immediately. */
 async function walkExtendsChain(
   moduleId: string,
 ): Promise<ModuleSummary[]> {
@@ -118,9 +142,12 @@ async function walkExtendsChain(
       );
     }
     visited.add(currentId);
-    const meta = (await fetchJson(
-      withBasePath(`/modules/${currentId}/module.json`),
-    )) as Partial<ModuleSummary> & { id?: string };
+    const meta = await loadModuleManifest(currentId);
+    if (!meta) {
+      throw new Error(
+        `Module ${currentId} has no manifest (no draft, no /modules/${currentId}/module.json) while resolving ${moduleId}`,
+      );
+    }
     const summary = toSummary(meta, { id: currentId });
     chain.push(summary);
     currentId = summary.extends;
@@ -130,16 +157,18 @@ async function walkExtendsChain(
 
 export class StaticModuleSource implements ModuleSource {
   async list(): Promise<ModuleSummary[]> {
-    const index = (await fetchJson(
+    // Prefer the localStorage index draft so newly-created modules
+    // show up in the picker before the user exports anything.
+    const draftIndex = loadIndexDraft<IndexFile>();
+    const index = draftIndex ?? ((await fetchJson(
       withBasePath("/modules/index.json"),
-    )) as IndexFile;
+    )) as IndexFile);
     const entries = index.modules ?? [];
     const out: ModuleSummary[] = [];
     for (const entry of entries) {
       try {
-        const meta = (await fetchJson(
-          withBasePath(`/modules/${entry.id}/module.json`),
-        )) as Partial<ModuleSummary> & { id?: string };
+        const meta = await loadModuleManifest(entry.id);
+        if (!meta) throw new Error(`no manifest`);
         out.push(toSummary(meta, entry));
       } catch (e) {
         // Module unreachable — skip with a console warning so the picker
@@ -153,15 +182,13 @@ export class StaticModuleSource implements ModuleSource {
 
   async load(moduleId: string): Promise<LoadedModule> {
     const chain = await walkExtendsChain(moduleId);
-    const usedLibraryIds = collectUsedLibraryIds(chain);
     const summary = chain[0];
 
     const data: Record<string, unknown> = {};
-    // Apply root first, then each ancestor down to and including the
-    // requested module, then layer uses libraries on top, then the
-    // requested module's own file. Note: the requested module is at
-    // chain[0]; it gets applied via its own file pass below, not as
-    // part of the chain walk, so we stop at i=1 here.
+    // Apply ancestors root-first; the requested module's own file is
+    // applied last. Library content (from `uses`) is intentionally
+    // NOT merged here — it's surfaced via listLibraryRecords instead
+    // so authors can opt records in explicitly.
     for (let i = chain.length - 1; i >= 1; i--) {
       const s = chain[i];
       for (const key of ALL_MODEL_KEYS) {
@@ -173,17 +200,6 @@ export class StaticModuleSource implements ModuleSource {
         data[key] = mergeModel(def.collectionKey, data[key], levelData);
       }
     }
-    for (const libId of usedLibraryIds) {
-      for (const key of ALL_MODEL_KEYS) {
-        const def = MODELS[key];
-        const levelData = await tryFetchJson(
-          withBasePath(`/modules/${libId}/${def.fileName}`),
-        );
-        if (levelData === null) continue;
-        data[key] = mergeModel(def.collectionKey, data[key], levelData);
-      }
-    }
-    // Finally, the requesting module's own file.
     for (const key of ALL_MODEL_KEYS) {
       const def = MODELS[key];
       const ownLevel = await tryFetchJson(
@@ -197,20 +213,20 @@ export class StaticModuleSource implements ModuleSource {
   }
 
   /** Convenience: load one model's resolved data without pulling the
-   *  whole module. Walks the extends chain + uses libraries for just
-   *  this model. Used by the per-model browse page to keep network
-   *  traffic minimal. */
+   *  whole module. Walks the extends chain for just this model.
+   *  Used by the per-model browse page to keep network traffic
+   *  minimal. */
   async loadModel(moduleId: string, key: ModelKey): Promise<unknown> {
     const layers = await this.loadModelLayers(moduleId, key);
     return mergeModel(MODELS[key].collectionKey, layers.inherited, layers.ownFile);
   }
 
-  /** Layered loader: returns the inherited data (extends chain + uses
-   *  libraries, all merged) and the current module's own file
-   *  separately. The editor uses this to compute per-row provenance
-   *  (inherited vs overridden vs new), to support copy-on-write
-   *  editing, and to export just the overlay rather than the resolved
-   *  view. */
+  /** Layered loader: returns the inherited data (extends chain only)
+   *  and the current module's own file separately. The editor uses
+   *  this to compute per-row provenance (inherited vs overridden vs
+   *  new), to support copy-on-write editing, and to export just the
+   *  overlay rather than the resolved view. Library content lives
+   *  in the catalog returned by listLibraryRecords, not here. */
   async loadModelLayers(
     moduleId: string,
     key: ModelKey,
@@ -219,9 +235,7 @@ export class StaticModuleSource implements ModuleSource {
     const chain = await walkExtendsChain(moduleId);
     const usedLibraryIds = collectUsedLibraryIds(chain);
 
-    // Inherited = (a) the extends chain above this module, applied
-    // root-first; (b) uses libraries, applied in declared order, each
-    // contributing only its own file.
+    // Inherited = the extends chain above this module, root-first.
     let inherited: unknown = null;
     for (let i = chain.length - 1; i >= 1; i--) {
       const id = chain[i].id;
@@ -230,13 +244,6 @@ export class StaticModuleSource implements ModuleSource {
       );
       if (levelData === null) continue;
       inherited = mergeModel(def.collectionKey, inherited, levelData);
-    }
-    for (const libId of usedLibraryIds) {
-      const libData = await tryFetchJson(
-        withBasePath(`/modules/${libId}/${def.fileName}`),
-      );
-      if (libData === null) continue;
-      inherited = mergeModel(def.collectionKey, inherited, libData);
     }
 
     // ownFile = the requested module's own JSON, or null if absent.
@@ -250,5 +257,46 @@ export class StaticModuleSource implements ModuleSource {
       parentId: chain[1]?.id,
       usedLibraryIds,
     };
+  }
+
+  /** Read a module's raw manifest (the full module.json blob),
+   *  preferring a localStorage draft over the on-disk file. The
+   *  editor uses this when editing the manifest so it can preserve
+   *  fields the typed ModuleSummary view doesn't carry (`_comment`,
+   *  unknown fields a contributor added, etc.). Returns null if the
+   *  module is unknown. */
+  async loadRawManifest(
+    moduleId: string,
+  ): Promise<Record<string, unknown> | null> {
+    const meta = await loadModuleManifest(moduleId);
+    if (!meta) return null;
+    return meta as Record<string, unknown>;
+  }
+
+  /** Catalog of records available for import from the libraries this
+   *  module `uses`. Each entry is one library + the records it
+   *  declares in its own file. Singletons (collectionKey === null)
+   *  return an empty catalog — they can't be opted-in piecewise.
+   *  The editor filters out records whose id already appears in the
+   *  module's resolved view (inherited or own) before rendering. */
+  async listLibraryRecords(
+    moduleId: string,
+    key: ModelKey,
+  ): Promise<LibraryCatalogEntry[]> {
+    const def = MODELS[key];
+    if (def.collectionKey === null) return [];
+    const chain = await walkExtendsChain(moduleId);
+    const usedLibraryIds = collectUsedLibraryIds(chain);
+    const out: LibraryCatalogEntry[] = [];
+    for (const libId of usedLibraryIds) {
+      const libData = await tryFetchJson(
+        withBasePath(`/modules/${libId}/${def.fileName}`),
+      );
+      if (libData === null) continue;
+      const records = extractRecords(def.collectionKey, libData);
+      if (records.length === 0) continue;
+      out.push({ libraryId: libId, records });
+    }
+    return out;
   }
 }

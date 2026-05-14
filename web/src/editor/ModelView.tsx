@@ -46,6 +46,7 @@ import {
 } from "@/data_model/draft";
 import { extractRecords, mergeModel } from "@/data_model/merge";
 import { MODELS, type ModelKey } from "@/data_model/models";
+import type { LibraryCatalogEntry } from "@/data_model/ModuleSource";
 import { RecordForm } from "./RecordForm";
 
 type Record_ = Record<string, unknown>;
@@ -59,7 +60,12 @@ type Layers = {
 
 type LoadState =
   | { kind: "loading" }
-  | { kind: "ok"; layers: Layers; ownDraft: Record_ | null }
+  | {
+      kind: "ok";
+      layers: Layers;
+      ownDraft: Record_ | null;
+      catalog: LibraryCatalogEntry[];
+    }
   | { kind: "error"; message: string };
 
 type RowProvenance = "inherited" | "overridden" | "new";
@@ -77,23 +83,30 @@ export function ModelView({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
 
-  // Load layers once, then derive everything from state.
+  // Load layers + library catalog in parallel.
   useEffect(() => {
     let cancelled = false;
     const src = new StaticModuleSource();
     setState({ kind: "loading" });
-    src
-      .loadModelLayers(moduleId, modelKey)
-      .then((raw) => {
+    Promise.all([
+      src.loadModelLayers(moduleId, modelKey),
+      src.listLibraryRecords(moduleId, modelKey),
+    ])
+      .then(([rawLayers, catalog]) => {
         if (cancelled) return;
         const layers: Layers = {
-          inherited: (raw.inherited as Record_ | null) ?? null,
-          ownFile: (raw.ownFile as Record_ | null) ?? null,
-          parentId: raw.parentId,
-          usedLibraryIds: raw.usedLibraryIds ?? [],
+          inherited: (rawLayers.inherited as Record_ | null) ?? null,
+          ownFile: (rawLayers.ownFile as Record_ | null) ?? null,
+          parentId: rawLayers.parentId,
+          usedLibraryIds: rawLayers.usedLibraryIds ?? [],
         };
         const draft = loadDraft<Record_ | null>(moduleId, modelKey);
-        setState({ kind: "ok", layers, ownDraft: draft ?? null });
+        setState({
+          kind: "ok",
+          layers,
+          ownDraft: draft ?? null,
+          catalog,
+        });
       })
       .catch((e: unknown) => {
         if (cancelled) return;
@@ -232,6 +245,17 @@ export function ModelView({
     saveOwn(next);
   };
 
+  /** Copy a library record into this module's overlay. Deep-cloned so
+   *  later edits don't accidentally mutate the library's in-memory
+   *  data. Once imported, the record is just a regular own record —
+   *  no link back to the library, no future tracking. */
+  const importFromLibrary = (rec: Record_) => {
+    const id = String(rec.id ?? "");
+    if (!id) return;
+    const cloned = JSON.parse(JSON.stringify(rec)) as Record_;
+    upsertRecord(id, cloned);
+  };
+
   const updateSingleton = (updated: Record_ | null) => {
     saveOwn(updated);
   };
@@ -283,12 +307,35 @@ export function ModelView({
   const template =
     derived.records[0] ?? inheritedRecordsForTemplate[0] ?? undefined;
   const canExport = derived.ownEffective !== null;
-  // Suppress per-row provenance when nothing's below this module's
-  // own file (no extends parent, no uses libraries) — every record
-  // would be "new" and the badges would just be noise.
-  const showProvenance =
-    state.layers.parentId !== undefined ||
-    state.layers.usedLibraryIds.length > 0;
+  // Suppress per-row provenance when there's no extends parent —
+  // every record would be "new" and the badges would be noise. Used
+  // libraries don't affect provenance because their records aren't
+  // in the resolved view (they live in the import catalog).
+  const showProvenance = state.layers.parentId !== undefined;
+
+  // Compute the available-from-libraries catalog: each library's
+  // records, filtered to exclude ids already present in the resolved
+  // view (inherited or own). Once a record is imported into own,
+  // it disappears from this list.
+  const presentIds = new Set<string>();
+  if (def.collectionKey !== null) {
+    for (const r of derived.records) {
+      const id = String(r.id ?? "");
+      if (id) presentIds.add(id);
+    }
+  }
+  const availableCatalog =
+    def.collectionKey === null
+      ? []
+      : state.catalog
+          .map((entry) => ({
+            libraryId: entry.libraryId,
+            records: entry.records.filter((r) => {
+              const id = String(r.id ?? "");
+              return id && !presentIds.has(id);
+            }),
+          }))
+          .filter((entry) => entry.records.length > 0);
 
   return (
     <div className="p-4">
@@ -404,6 +451,14 @@ export function ModelView({
               </tbody>
             </table>
           </div>
+
+          {availableCatalog.length > 0 ? (
+            <LibraryCatalog
+              entries={availableCatalog}
+              def={def}
+              onImport={importFromLibrary}
+            />
+          ) : null}
         </>
       )}
     </div>
@@ -514,7 +569,7 @@ function Header({
             <>
               <span className="text-parchment/40">·</span>
               <span>
-                uses{" "}
+                library:{" "}
                 {usedLibraryIds.map((id, i) => (
                   <span key={id}>
                     <span className="text-parchment/85">{id}</span>
@@ -751,5 +806,98 @@ function RowGroup({
         </tr>
       )}
     </>
+  );
+}
+
+/** Catalog of library records the author can import into this module.
+ *  Grouped by library; ids already in the resolved view are filtered
+ *  out by the caller. Click Import → record gets copied into the
+ *  module's own file as a regular new record. From that point on the
+ *  record is "native" to this module — no link back to the library,
+ *  no future tracking. */
+function LibraryCatalog({
+  entries,
+  def,
+  onImport,
+}: {
+  entries: Array<{
+    libraryId: string;
+    records: Record_[];
+  }>;
+  def: (typeof MODELS)[ModelKey];
+  onImport: (record: Record_) => void;
+}) {
+  const total = entries.reduce((sum, e) => sum + e.records.length, 0);
+  return (
+    <section className="mt-6">
+      <h2 className="mb-2 text-xs uppercase tracking-wide text-parchment/45">
+        Available from libraries
+        <span className="ml-2 text-parchment/35 normal-case tracking-normal">
+          ({total} record{total === 1 ? "" : "s"} ready to import)
+        </span>
+      </h2>
+      <div className="space-y-3">
+        {entries.map((entry) => (
+          <div
+            key={entry.libraryId}
+            className="overflow-auto rounded border border-parchment/10 bg-ink/20"
+          >
+            <div className="border-b border-parchment/10 bg-ink/40 px-3 py-1 text-xs text-parchment/70">
+              <span className="text-parchment/85">{entry.libraryId}</span>
+              <span className="ml-2 text-parchment/40">
+                ({entry.records.length} available)
+              </span>
+            </div>
+            <table className="w-full text-left text-sm">
+              <thead className="text-parchment/55">
+                <tr>
+                  {def.columns.map((c) => (
+                    <th key={c.field} className="px-2 py-1 font-normal">
+                      {c.label}
+                    </th>
+                  ))}
+                  <th className="w-20 px-2 py-1"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {entry.records.map((r, i) => {
+                  const id = String(r.id ?? `lib-${entry.libraryId}-${i}`);
+                  return (
+                    <tr key={id} className="border-t border-parchment/5">
+                      {def.columns.map((c) => {
+                        const v = r[c.field];
+                        const display = c.format
+                          ? c.format(v)
+                          : v == null
+                            ? ""
+                            : String(v);
+                        return (
+                          <td
+                            key={c.field}
+                            className="max-w-md truncate px-2 py-1 text-parchment/75"
+                          >
+                            {display}
+                          </td>
+                        );
+                      })}
+                      <td className="px-2 py-1 text-right">
+                        <button
+                          type="button"
+                          onClick={() => onImport(r)}
+                          className="rounded border border-ember/50 bg-ember/20 px-2 py-0.5 text-xs text-parchment hover:bg-ember/40"
+                          title={`Copy this record from ${entry.libraryId} into this module as a new record.`}
+                        >
+                          + Import
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }

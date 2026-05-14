@@ -33,13 +33,14 @@ export interface ModuleSummary {
    *  records in the parent by id; missing files fall through to the
    *  parent. Omit on the root module. */
   extends?: string;
-  /** Library modules whose overlay this module wants to pull in. Each
-   *  listed library contributes its own file (not its ancestors) on
-   *  top of the extends chain, applied in declared order. Used to
-   *  share content (bestiaries, spell packs, tilesets) across many
-   *  playable modules. `uses` declarations are also inherited via the
-   *  extends chain, so a child picks up its parent's libraries.
-   *  Order: parent's uses first, then child's uses, deduplicated. */
+  /** Library modules whose content should be available to this module
+   *  as an import palette. `uses` does NOT compose library records
+   *  into your resolved view — instead, the editor surfaces each
+   *  library's records as a catalog, and the author imports records
+   *  they want into the module's own file (where they become regular
+   *  "new" records, decoupled from the library going forward).
+   *  `uses` declarations are inherited via the extends chain so a
+   *  child picks up its parent's library list automatically. */
   uses?: string[];
 }
 
@@ -55,18 +56,16 @@ export interface LoadedModule {
 }
 
 /** Two-layer view of a single model for one module: what's inherited
- *  (already merged) and what this module's own file declares (or null
- *  if the module doesn't override this model at all). "Inherited" here
- *  is the combined result of (a) the extends chain root-first and
- *  (b) the `uses` libraries applied on top in declared order — i.e.
- *  everything except this module's own file.
+ *  from the extends chain (already merged root-first) and what this
+ *  module's own file declares. Library content from `uses` is NOT
+ *  included here — it's surfaced separately via listLibraryRecords
+ *  so the editor can present it as an import palette.
  *  Returned by ModuleSource.loadModelLayers — the editor uses this
  *  to show per-row provenance and to write copy-on-write overrides
  *  into the module's own file. */
 export interface ModelLayers {
-  /** Merged data from everything below this module: the extends chain
-   *  applied root-first, then `uses` libraries applied in declared
-   *  order. null if nothing below the module defines the model. */
+  /** Merged data from the extends chain, applied root-first. null if
+   *  this module is the root or no ancestor defines the model. */
   inherited: unknown;
   /** This module's own file content (the overlay), or null if the
    *  module doesn't have a file for this model. */
@@ -74,11 +73,20 @@ export interface ModelLayers {
   /** Immediate parent id from `extends`, if any. Convenience for UI
    *  labels like "inherits from <parent>". */
   parentId?: string;
-  /** Library ids pulled in via `uses` (the resolved set, deduped,
-   *  including those inherited from the extends chain), in the order
-   *  they were applied. Convenience for UI labels like
-   *  "uses <lib1>, <lib2>". */
+  /** Library ids declared via `uses` (deduped, also gathered from
+   *  the extends chain). Used by the editor to label the catalog
+   *  source and to know which libraries to query. */
   usedLibraryIds: string[];
+}
+
+/** A library's contribution to the model's catalog: each used library
+ *  is one entry, with the records it declares in its own file.
+ *  Returned by ModuleSource.listLibraryRecords. The editor filters
+ *  out records whose id already appears in the module's inherited
+ *  or own view, then renders the remainder as importable rows. */
+export interface LibraryCatalogEntry {
+  libraryId: string;
+  records: Array<Record<string, unknown>>;
 }
 
 export interface ModuleSource {
@@ -88,6 +96,7 @@ export interface ModuleSource {
   list(): Promise<ModuleSummary[]>;
 
   /** Load a single module's resolved data by id, walking the extends
-   *  chain and merging records. */
+   *  chain and merging records. Library `uses` are NOT auto-merged;
+   *  they're only an import palette. */
   load(moduleId: string): Promise<LoadedModule>;
 }

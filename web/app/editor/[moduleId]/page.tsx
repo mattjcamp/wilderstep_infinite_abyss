@@ -10,6 +10,7 @@ import {
   type ModelKey,
 } from "@/data_model/models";
 import { listModuleIds } from "@/data_model/moduleIndex";
+import { LibrariesPanel } from "@/editor/LibrariesPanel";
 
 export async function generateStaticParams() {
   const ids = await listModuleIds();
@@ -33,6 +34,8 @@ export default function ModuleEditorHome({
           the cards below.
         </p>
       </header>
+
+      <LibrariesPanel moduleId={moduleId} />
 
       <Section title="Module data" keys={ALL_MODEL_KEYS} moduleId={moduleId} />
 
