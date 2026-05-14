@@ -63,9 +63,26 @@ interface TileType {
   /** Visual animation overlay played on cells painted with this tile.
    *  "none" disables. Configs live in ANIMATION_CONFIGS in MapEditor. */
   animation: "none" | "torch" | "fire" | "fairy" | "smoke";
+  /** Counter (shop/service) id from counters.json that this tile
+   *  fronts. Empty string means none. */
+  counter: string;
+  /** Encounter id from encounters.json. Empty string means none.
+   *  The encounter's monster_party_tile renders as an overlay on the cell. */
+  encounter: string;
+  /** Spawn id from spawns.json (monster-lair behavior). Empty for none. */
+  spawn: string;
   sprite: string;
   flags?: Record<string, unknown>;
   link?: { map_id: string; x: number; y: number } | null;
+}
+
+interface RefRecord {
+  id: string;
+  name?: string;
+  [k: string]: unknown;
+}
+interface EncounterRecord extends RefRecord {
+  monster_party_tile?: string;
 }
 
 /** Per-animation Phaser particle-emitter config. Keys are the values
@@ -144,6 +161,9 @@ function cellMatchesPalette(cell: TileType, palette: TileType[]): boolean {
     return false;
   if ((cell.light_range ?? 0) !== (base.light_range ?? 0)) return false;
   if ((cell.animation ?? "none") !== (base.animation ?? "none")) return false;
+  if ((cell.counter ?? "") !== (base.counter ?? "")) return false;
+  if ((cell.encounter ?? "") !== (base.encounter ?? "")) return false;
+  if ((cell.spawn ?? "") !== (base.spawn ?? "")) return false;
   if (cell.sprite !== base.sprite) return false;
   if (JSON.stringify(cell.link ?? null) !== JSON.stringify(base.link ?? null))
     return false;
@@ -171,6 +191,9 @@ type LoadState =
   | {
       kind: "ok";
       palette: TileType[];
+      counters: RefRecord[];
+      encounters: EncounterRecord[];
+      spawns: RefRecord[];
       mapRecord: MapRecord;
       /** The whole maps.json shape for this module's own file (draft-
        *  aware) — needed so we can write back the modified map. */
@@ -236,6 +259,8 @@ export function MapEditor({
     relight: (mode: "day" | "twilight" | "night") => void;
     /** Sync per-cell particle emitters to the current grid's animation values. */
     refreshAnimations: () => void;
+    /** Sync per-cell encounter-sprite overlays from each cell's encounter field. */
+    refreshEncounterOverlays: () => void;
   } | null>(null);
 
   // Selection follows the cursor.
@@ -257,9 +282,18 @@ export function MapEditor({
     (async () => {
       try {
         const src = new StaticModuleSource();
-        const [paletteLayers, mapsLayers] = await Promise.all([
+        const [
+          paletteLayers,
+          mapsLayers,
+          countersLayers,
+          encountersLayers,
+          spawnsLayers,
+        ] = await Promise.all([
           src.loadModelLayers(moduleId, "map_tiles"),
           src.loadModelLayers(moduleId, "maps"),
+          src.loadModelLayers(moduleId, "counters"),
+          src.loadModelLayers(moduleId, "encounters"),
+          src.loadModelLayers(moduleId, "spawns"),
         ]);
         if (cancelled) return;
 
@@ -271,6 +305,27 @@ export function MapEditor({
           paletteLayers.ownFile,
         ) as { map_tiles?: TileType[] } | null;
         const palette = paletteMerged?.map_tiles ?? [];
+
+        const countersMerged = mergeModel(
+          "counters",
+          countersLayers.inherited,
+          countersLayers.ownFile,
+        ) as { counters?: RefRecord[] } | null;
+        const counters = countersMerged?.counters ?? [];
+
+        const encountersMerged = mergeModel(
+          "encounters",
+          encountersLayers.inherited,
+          encountersLayers.ownFile,
+        ) as { encounters?: EncounterRecord[] } | null;
+        const encounters = encountersMerged?.encounters ?? [];
+
+        const spawnsMerged = mergeModel(
+          "spawns",
+          spawnsLayers.inherited,
+          spawnsLayers.ownFile,
+        ) as { spawns?: RefRecord[] } | null;
+        const spawns = spawnsMerged?.spawns ?? [];
 
         // Resolve maps with draft applied so a half-painted map survives reloads.
         const draft = loadDraft<Record<string, unknown>>(moduleId, MODEL_KEY);
@@ -311,6 +366,9 @@ export function MapEditor({
                     light_source: false,
                     light_range: 0,
                     animation: "none",
+                    counter: "",
+                    encounter: "",
+                    spawn: "",
                     sprite: "",
                   } as TileType);
             }
@@ -334,6 +392,9 @@ export function MapEditor({
         setState({
           kind: "ok",
           palette,
+          counters,
+          encounters,
+          spawns,
           mapRecord,
           ownFile: ownEffective ?? null,
           isDraft: hasDraft(moduleId, MODEL_KEY),
@@ -412,17 +473,21 @@ export function MapEditor({
       const Phaser = await import("phaser");
       if (cancelled || !containerRef.current) return;
 
-      const { palette, mapRecord } = state;
+      const { palette, mapRecord, encounters } = state;
       const paletteById = new Map(palette.map((t) => [t.id, t]));
+      const encountersById = new Map(encounters.map((e) => [e.id, e]));
 
       // Gather every unique sprite path used by the palette + the
-      // current grid so each cell can render with its own texture
-      // (cells can carry sprite values independent of the palette
-      // entry they were painted from).
+      // current grid + every encounter's monster_party_tile so we
+      // can render encounter overlays on cells that reference one.
       const spriteKeys = new Set<string>();
       for (const t of palette) if (t.sprite) spriteKeys.add(t.sprite);
       for (const row of gridRef.current) {
         for (const cell of row) if (cell?.sprite) spriteKeys.add(cell.sprite);
+      }
+      for (const e of encounters) {
+        const s = e.monster_party_tile;
+        if (s && s.includes("/")) spriteKeys.add(s);
       }
 
       class MapScene extends Phaser.Scene {
@@ -438,6 +503,10 @@ export function MapEditor({
         > = new Map();
         /** Current animation key per cell so refresh can skip no-ops. */
         emitterKinds: Map<string, AnimationKind> = new Map();
+        /** Encounter overlay sprites keyed by "col,row". */
+        encounterOverlays: Map<string, Phaser.GameObjects.Image> = new Map();
+        /** Current encounter id per cell so refresh can skip no-ops. */
+        encounterOverlayIds: Map<string, string> = new Map();
 
         preload() {
           for (const sprite of spriteKeys) {
@@ -552,6 +621,10 @@ export function MapEditor({
               // Assigned for real below — placeholder so the API object
               // matches the type until create() finishes wiring it.
             },
+            refreshEncounterOverlays: () => {
+              // Assigned for real below — placeholder so the API object
+              // matches the type until create() finishes wiring it.
+            },
             relight: (mode) => {
               // Day = unconditionally full brightness, fast path.
               if (mode === "day") {
@@ -648,6 +721,49 @@ export function MapEditor({
           // and the initial day-mode tint application below.
           const sceneSelf = this;
           if (sceneApiRef.current) {
+            sceneApiRef.current.refreshEncounterOverlays = () => {
+              for (let r = 0; r < mapRecord.height; r++) {
+                for (let c = 0; c < mapRecord.width; c++) {
+                  const cell = gridRef.current[r]?.[c];
+                  const encId = cell?.encounter ?? "";
+                  const key = `${c},${r}`;
+                  const currentId =
+                    sceneSelf.encounterOverlayIds.get(key) ?? "";
+                  if (encId === currentId) continue;
+                  // Remove the existing overlay (if any).
+                  const existing = sceneSelf.encounterOverlays.get(key);
+                  if (existing) {
+                    existing.destroy();
+                    sceneSelf.encounterOverlays.delete(key);
+                    sceneSelf.encounterOverlayIds.delete(key);
+                  }
+                  if (!encId) continue;
+                  const enc = encountersById.get(encId);
+                  const sprite = enc?.monster_party_tile;
+                  if (
+                    !sprite ||
+                    !sprite.includes("/") ||
+                    !sceneSelf.textures.exists(sprite)
+                  ) {
+                    // No sprite or texture wasn't preloaded — track the
+                    // id so we don't repeatedly retry, but don't draw.
+                    sceneSelf.encounterOverlayIds.set(key, encId);
+                    continue;
+                  }
+                  const img = sceneSelf.add
+                    .image(
+                      c * TILE_SIZE + TILE_SIZE / 2,
+                      r * TILE_SIZE + TILE_SIZE / 2,
+                      sprite,
+                    )
+                    .setOrigin(0.5)
+                    .setDisplaySize(TILE_SIZE, TILE_SIZE)
+                    .setDepth(80);
+                  sceneSelf.encounterOverlays.set(key, img);
+                  sceneSelf.encounterOverlayIds.set(key, encId);
+                }
+              }
+            };
             sceneApiRef.current.refreshAnimations = () => {
               for (let r = 0; r < mapRecord.height; r++) {
                 for (let c = 0; c < mapRecord.width; c++) {
@@ -692,6 +808,9 @@ export function MapEditor({
           // Initial animation pass — seeds emitters for any cells
           // whose data carries animation values on load.
           sceneApiRef.current.refreshAnimations();
+          // Initial encounter-overlay pass — seeds sprites for cells
+          // whose encounter is set at load time.
+          sceneApiRef.current.refreshEncounterOverlays();
         }
 
         paintAt(p: Phaser.Input.Pointer) {
@@ -727,6 +846,9 @@ export function MapEditor({
             (existing.light_range ?? 0) === (brushTile.light_range ?? 0) &&
             (existing.animation ?? "none") ===
               (brushTile.animation ?? "none") &&
+            (existing.counter ?? "") === (brushTile.counter ?? "") &&
+            (existing.encounter ?? "") === (brushTile.encounter ?? "") &&
+            (existing.spawn ?? "") === (brushTile.spawn ?? "") &&
             existing.sprite === brushTile.sprite &&
             JSON.stringify(existing.link ?? null) ===
               JSON.stringify(brushTile.link ?? null)
@@ -791,6 +913,12 @@ export function MapEditor({
   // replaces emitters whose `animation` value actually changed.
   useEffect(() => {
     sceneApiRef.current?.refreshAnimations();
+  }, [state]);
+
+  // Sync encounter overlay sprites with the grid. refreshEncounterOverlays
+  // is similarly diff-based — unchanged cells are skipped.
+  useEffect(() => {
+    sceneApiRef.current?.refreshEncounterOverlays();
   }, [state]);
 
   // ── Cell mutators (driven by the Inspector) ─────────────────────
@@ -1143,6 +1271,9 @@ export function MapEditor({
           instance={selectedInstance}
           base={selectedBase}
           palette={state.palette}
+          counters={state.counters}
+          encounters={state.encounters}
+          spawns={state.spawns}
           onUpdate={(patch) => {
             if (!selectedCell) return;
             setCellFields(selectedCell.col, selectedCell.row, patch);
@@ -1164,6 +1295,9 @@ function Inspector({
   instance,
   base,
   palette,
+  counters,
+  encounters,
+  spawns,
   onUpdate,
 }: {
   selectedCell: { col: number; row: number } | null;
@@ -1175,6 +1309,9 @@ function Inspector({
    *  (orphan cell). */
   base: TileType | null;
   palette: TileType[];
+  counters: RefRecord[];
+  encounters: EncounterRecord[];
+  spawns: RefRecord[];
   onUpdate: (patch: Partial<TileType>) => void;
 }) {
   const modified =
@@ -1310,6 +1447,76 @@ function Inspector({
               onUpdate({ animation: v as TileType["animation"] })
             }
             onReset={() => onUpdate({ animation: undefined })}
+          />
+
+          <SelectEditor
+            label="Counter"
+            help="Shop/service counter from counters.json. Empty for none."
+            value={instance.counter ?? ""}
+            paletteValue={base?.counter ?? instance.counter ?? ""}
+            options={[
+              { value: "", label: "(none)" },
+              ...counters.map((c) => ({
+                value: c.id,
+                label: c.name ? `${c.name} — ${c.id}` : c.id,
+              })),
+            ]}
+            isModified={
+              !!base && fieldDiffersFromPalette(instance, palette, "counter")
+            }
+            canReset={!!base}
+            onChange={(v) => onUpdate({ counter: v })}
+            onReset={() => onUpdate({ counter: undefined })}
+          />
+
+          <SelectEditor
+            label="Encounter"
+            help="Random encounter from encounters.json. Empty for none. The encounter's sprite renders on the cell."
+            value={instance.encounter ?? ""}
+            paletteValue={base?.encounter ?? instance.encounter ?? ""}
+            options={[
+              { value: "", label: "(none)" },
+              ...encounters.map((e) => ({
+                value: e.id,
+                label: e.name ? `${e.name} — ${e.id}` : e.id,
+              })),
+            ]}
+            previewSrc={(() => {
+              const id = instance.encounter ?? "";
+              if (!id) return null;
+              const found = encounters.find((e) => e.id === id);
+              const tile = found?.monster_party_tile;
+              if (!tile) return null;
+              return tile.includes("/")
+                ? withBasePath(`/sprites/${tile}`)
+                : null;
+            })()}
+            isModified={
+              !!base && fieldDiffersFromPalette(instance, palette, "encounter")
+            }
+            canReset={!!base}
+            onChange={(v) => onUpdate({ encounter: v })}
+            onReset={() => onUpdate({ encounter: undefined })}
+          />
+
+          <SelectEditor
+            label="Spawn"
+            help="Spawn template from spawns.json (monster-lair behavior). Empty for none."
+            value={instance.spawn ?? ""}
+            paletteValue={base?.spawn ?? instance.spawn ?? ""}
+            options={[
+              { value: "", label: "(none)" },
+              ...spawns.map((s) => ({
+                value: s.id,
+                label: s.name ? `${s.name} — ${s.id}` : s.id,
+              })),
+            ]}
+            isModified={
+              !!base && fieldDiffersFromPalette(instance, palette, "spawn")
+            }
+            canReset={!!base}
+            onChange={(v) => onUpdate({ spawn: v })}
+            onReset={() => onUpdate({ spawn: undefined })}
           />
 
           <LinkEditor
@@ -1520,6 +1727,7 @@ function SelectEditor({
   value,
   paletteValue,
   options,
+  previewSrc,
   isModified,
   canReset,
   onChange,
@@ -1530,6 +1738,9 @@ function SelectEditor({
   value: string;
   paletteValue: string;
   options: Array<{ value: string; label: string }>;
+  /** Optional sprite path to show as a thumbnail next to the select.
+   *  Used by Encounter to surface the encounter's monster_party_tile. */
+  previewSrc?: string | null;
   isModified: boolean;
   canReset: boolean;
   onChange: (v: string) => void;
@@ -1542,17 +1753,33 @@ function SelectEditor({
       canReset={canReset}
       onReset={onReset}
     >
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-sm text-parchment/90 focus:border-parchment/60 focus:outline-none"
-      >
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
+      <div className="flex items-start gap-2">
+        <select
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-sm text-parchment/90 focus:border-parchment/60 focus:outline-none"
+        >
+          {options.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+        {previewSrc ? (
+          <img
+            src={previewSrc}
+            alt=""
+            width={32}
+            height={32}
+            style={{ imageRendering: "pixelated" }}
+            className="h-8 w-8 shrink-0 rounded border border-parchment/20 bg-ink/80 object-contain"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).style.visibility =
+                "hidden";
+            }}
+          />
+        ) : null}
+      </div>
       <p className="mt-0.5 text-[10px] text-parchment/40">
         palette: {options.find((o) => o.value === paletteValue)?.label ?? paletteValue}
       </p>

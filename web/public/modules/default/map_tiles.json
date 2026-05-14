@@ -1,5 +1,5 @@
 {
-  "_comment": "Tile Palette — reusable tile types used to paint maps. Each tile carries: `id` (the cell reference), display `name`, `sprite` (path under /sprites/map/), and the behavioral attributes — `walkable` (blocks movement when false), `obstructs` (blocks light + ranged line-of-sight when true), `locked` (gates passage/interaction until unlocked; pair with a key or scripted unlock), `light_source` (the tile emits light), `light_range` (light radius in cells, only meaningful when light_source=true), and `animation` (visual effect played on this tile — one of \"none\", \"torch\", \"fire\", \"fairy\", \"smoke\"). Optional `link` is a one-way portal — when the party steps on a cell painted with this tile, they teleport to `{ \"map_id\": \"<target>\", \"x\": <col>, \"y\": <row> }`. Two visually-identical tiles with different destinations are two separate entries — the v1 pattern that worked. Map cells are full copies of palette entries; palette edits don't auto-propagate to painted cells.",
+  "_comment": "Tile Palette — reusable tile types used to paint maps. Each tile carries: `id` (the cell reference), display `name`, `sprite` (path under /sprites/map/), and the behavioral attributes — `walkable` (blocks movement when false), `obstructs` (blocks light + ranged line-of-sight when true), `locked` (gates passage/interaction until unlocked), `light_source` (the tile emits light), `light_range` (light radius in cells), `animation` (visual effect — \"none\" | \"torch\" | \"fire\" | \"fairy\" | \"smoke\"), `counter` (id from counters.json — empty for none), `encounter` (id from encounters.json — empty for none; the encounter's monster_party_tile sprite renders as an overlay on the cell), and `spawn` (id from spawns.json — empty for none). Optional `link` is a one-way portal — when the party steps on a cell painted with this tile, they teleport to `{ \"map_id\": \"<target>\", \"x\": <col>, \"y\": <row> }`. Two visually-identical tiles with different destinations are two separate entries. Map cells are full copies of palette entries; palette edits don't auto-propagate to painted cells.",
   "map_tiles": [
     {
       "id": "grass",
@@ -10,6 +10,9 @@
       "light_source": false,
       "light_range": 0,
       "animation": "none",
+      "counter": "",
+      "encounter": "",
+      "spawn": "",
       "sprite": "map/grass1.png"
     },
     {
@@ -21,6 +24,9 @@
       "light_source": false,
       "light_range": 0,
       "animation": "none",
+      "counter": "",
+      "encounter": "",
+      "spawn": "",
       "sprite": "map/water.png"
     },
     {
@@ -32,6 +38,9 @@
       "light_source": false,
       "light_range": 0,
       "animation": "none",
+      "counter": "",
+      "encounter": "",
+      "spawn": "",
       "sprite": "map/mountains.png"
     },
     {
@@ -43,6 +52,9 @@
       "light_source": false,
       "light_range": 0,
       "animation": "none",
+      "counter": "",
+      "encounter": "",
+      "spawn": "",
       "sprite": "map/path.png"
     },
     {
@@ -54,6 +66,9 @@
       "light_source": false,
       "light_range": 0,
       "animation": "none",
+      "counter": "",
+      "encounter": "",
+      "spawn": "",
       "sprite": "map/town_floor.png"
     },
     {
@@ -65,6 +80,9 @@
       "light_source": false,
       "light_range": 0,
       "animation": "none",
+      "counter": "",
+      "encounter": "",
+      "spawn": "",
       "sprite": "map/brick_wall_red.png"
     }
   ]
