@@ -37,11 +37,16 @@ interface FieldSpec {
   kind: FieldKind;
 }
 
-function inferKind(key: string, value: unknown, sample?: unknown): FieldKind {
+function inferKind(
+  key: string,
+  value: unknown,
+  sample?: unknown,
+  modelKey?: string,
+): FieldKind {
   // Known sprite-typed fields are always strings, so the picker can
   // render even when the field is currently null/empty (e.g., a
   // freshly-added `avatar` on Party).
-  if (getSpriteFieldConfig(key) !== null) return "string";
+  if (getSpriteFieldConfig(key, modelKey) !== null) return "string";
   // Prefer the actual record's value; fall back to a sample peer.
   const v = value ?? sample;
   if (Array.isArray(v) || (v !== null && typeof v === "object")) return "json";
@@ -58,6 +63,7 @@ function inferKind(key: string, value: unknown, sample?: unknown): FieldKind {
 function buildFieldList(
   record: Record<string, unknown>,
   template: Record<string, unknown>,
+  modelKey?: string,
 ): FieldSpec[] {
   // Union of keys, in the order they appear in the template first,
   // then any extra keys on the record.
@@ -66,11 +72,11 @@ function buildFieldList(
   for (const k of Object.keys(template)) {
     if (k === "_comment") continue;
     seen.add(k);
-    fields.push({ key: k, kind: inferKind(k, record[k], template[k]) });
+    fields.push({ key: k, kind: inferKind(k, record[k], template[k], modelKey) });
   }
   for (const k of Object.keys(record)) {
     if (seen.has(k) || k === "_comment") continue;
-    fields.push({ key: k, kind: inferKind(k, record[k]) });
+    fields.push({ key: k, kind: inferKind(k, record[k], undefined, modelKey) });
   }
   return fields;
 }
@@ -119,6 +125,7 @@ export function RecordForm({
   onSave,
   onCancel,
   submitLabel = "Save",
+  modelKey,
 }: {
   record: Record<string, unknown>;
   /** A peer record used to fill in field types when `record` has nulls. */
@@ -126,10 +133,14 @@ export function RecordForm({
   onSave: (updated: Record<string, unknown>) => void;
   onCancel: () => void;
   submitLabel?: string;
+  /** The model this record belongs to. Threads through to sprite-field
+   *  config so per-model overrides (e.g., map_tiles.sprite → category
+   *  "map" vs Character.sprite → category "person") apply correctly. */
+  modelKey?: string;
 }) {
   const fields = useMemo(
-    () => buildFieldList(record, template ?? record),
-    [record, template],
+    () => buildFieldList(record, template ?? record, modelKey),
+    [record, template, modelKey],
   );
 
   // String state per field — every input is a string, coerced on submit.
@@ -178,6 +189,7 @@ export function RecordForm({
             spec={f}
             value={drafts[f.key] ?? ""}
             error={errors[f.key]}
+            modelKey={modelKey}
             onChange={(v) => update(f.key, v)}
           />
         ))}
@@ -212,11 +224,13 @@ function FieldRow({
   spec,
   value,
   error,
+  modelKey,
   onChange,
 }: {
   spec: FieldSpec;
   value: string;
   error?: string;
+  modelKey?: string;
   onChange: (v: string) => void;
 }) {
   const labelClasses =
@@ -279,7 +293,7 @@ function FieldRow({
   // a fallback, but offers a thumbnail + browsable grid of sprites
   // from the module's sprite library.
   const spriteConfig =
-    spec.kind === "string" ? getSpriteFieldConfig(spec.key) : null;
+    spec.kind === "string" ? getSpriteFieldConfig(spec.key, modelKey) : null;
   if (spriteConfig) {
     return (
       <div className="flex items-start gap-3">

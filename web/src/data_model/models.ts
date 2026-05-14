@@ -28,7 +28,8 @@ export type ModelKey =
   | "encounters"
   | "character_classes"
   | "races"
-  | "map_tiles";
+  | "map_tiles"
+  | "maps";
 
 export interface ColumnDef {
   /** Object path on the record. Supports a single key for now; nested
@@ -244,17 +245,35 @@ const DEFS: Record<ModelKey, ModelDef> = {
   },
   map_tiles: {
     key: "map_tiles",
-    label: "Maps",
+    label: "Tile Palette",
     fileName: "map_tiles.json",
     collectionKey: "map_tiles",
     docKey: "map_tile",
-    blurb: "Tile catalog",
+    blurb: "Reusable tile types used to paint maps",
     columns: [
       { field: "tile_id", label: "Tile ID", format: asString },
       { field: "id", label: "ID" },
       { field: "name", label: "Name" },
       { field: "walkable", label: "Walk", format: asString },
-      { field: "context", label: "Context" },
+    ],
+  },
+  maps: {
+    key: "maps",
+    label: "Maps",
+    fileName: "maps.json",
+    collectionKey: "maps",
+    docKey: "map",
+    blurb: "Painted world geometry — tile grids with links and items",
+    columns: [
+      { field: "id", label: "ID" },
+      { field: "name", label: "Name" },
+      {
+        field: "tags",
+        label: "Tags",
+        format: (v) => (Array.isArray(v) ? v.join(", ") : ""),
+      },
+      { field: "width", label: "W", format: asString },
+      { field: "height", label: "H", format: asString },
     ],
   },
 };

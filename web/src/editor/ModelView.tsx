@@ -367,8 +367,8 @@ export function ModelView({
   // Whether the table should grow a leading thumbnail column. Yes if
   // any displayed record or the template has a known sprite field.
   const hasSpriteColumn =
-    derived.records.some(recordHasSpriteField) ||
-    (template ? recordHasSpriteField(template) : false);
+    derived.records.some((r) => recordHasSpriteField(r, modelKey)) ||
+    (template ? recordHasSpriteField(template, modelKey) : false);
   // Suppress per-row provenance when there's no extends parent —
   // every record would be "new" and the badges would be noise. Used
   // libraries don't affect provenance because their records aren't
@@ -434,6 +434,7 @@ export function ModelView({
           ownEffective={derived.ownEffective as Record_ | null}
           provenance={showProvenance ? derived.singletonProvenance : null}
           editing={editingId === "__singleton__"}
+          modelKey={modelKey}
           onStartEdit={() => setEditingId("__singleton__")}
           onCancelEdit={() => setEditingId(null)}
           onSave={(updated) => {
@@ -453,6 +454,7 @@ export function ModelView({
                 record={blankFromTemplate(template)}
                 template={template}
                 submitLabel="Add"
+                modelKey={modelKey}
                 onSave={(rec) => {
                   const newId = String(rec.id ?? "");
                   if (newId) upsertRecord(newId, rec);
@@ -494,6 +496,7 @@ export function ModelView({
                       provenance={derived.rowProv.get(id) ?? "inherited"}
                       showProvenance={showProvenance}
                       hasSpriteColumn={hasSpriteColumn}
+                      modelKey={modelKey}
                       onToggle={() => {
                         if (isEditing) return;
                         setOpenId(isOpen ? null : id);
@@ -525,6 +528,7 @@ export function ModelView({
             <LibraryCatalog
               entries={availableCatalog}
               def={def}
+              modelKey={modelKey}
               onImport={importFromLibrary}
             />
           ) : null}
@@ -536,9 +540,9 @@ export function ModelView({
 
 /** Does this record have any known sprite-typed field with a value?
  *  Used to decide whether the browse table grows a thumbnail column. */
-function recordHasSpriteField(record: Record_): boolean {
+function recordHasSpriteField(record: Record_, modelKey?: string): boolean {
   for (const key of Object.keys(record)) {
-    if (getSpriteFieldConfig(key) !== null) return true;
+    if (getSpriteFieldConfig(key, modelKey) !== null) return true;
   }
   return false;
 }
@@ -548,11 +552,17 @@ function recordHasSpriteField(record: Record_): boolean {
  *  record has no sprite field or the value doesn't resolve. Tracks
  *  broken-image state in React (not via direct DOM mutation) so the
  *  hidden flag clears when src changes to a working URL. */
-function RecordSpriteThumb({ record }: { record: Record_ }) {
+function RecordSpriteThumb({
+  record,
+  modelKey,
+}: {
+  record: Record_;
+  modelKey?: string;
+}) {
   let src: string | null = null;
   let alt = "";
   for (const [key, value] of Object.entries(record)) {
-    const config = getSpriteFieldConfig(key);
+    const config = getSpriteFieldConfig(key, modelKey);
     if (!config) continue;
     if (typeof value !== "string" || !value.trim()) continue;
     src = resolveSpritePath(value, config);
@@ -765,6 +775,7 @@ function SingletonView({
   ownEffective,
   provenance,
   editing,
+  modelKey,
   onStartEdit,
   onCancelEdit,
   onSave,
@@ -775,6 +786,7 @@ function SingletonView({
   ownEffective: Record_ | null;
   provenance: RowProvenance | null;
   editing: boolean;
+  modelKey?: string;
   onStartEdit: () => void;
   onCancelEdit: () => void;
   onSave: (updated: Record_) => void;
@@ -795,6 +807,7 @@ function SingletonView({
       {editing ? (
         <RecordForm
           record={displayed ?? inherited ?? {}}
+          modelKey={modelKey}
           onSave={onSave}
           onCancel={onCancelEdit}
         />
@@ -835,6 +848,7 @@ function RowGroup({
   provenance,
   showProvenance,
   hasSpriteColumn,
+  modelKey,
   onToggle,
   onStartEdit,
   onCancelEdit,
@@ -849,6 +863,7 @@ function RowGroup({
   provenance: RowProvenance;
   showProvenance: boolean;
   hasSpriteColumn: boolean;
+  modelKey?: string;
   onToggle: () => void;
   onStartEdit: () => void;
   onCancelEdit: () => void;
@@ -868,7 +883,7 @@ function RowGroup({
         <td className="px-2 py-1 text-parchment/50">{isOpen ? "▾" : "▸"}</td>
         {hasSpriteColumn ? (
           <td className="px-2 py-1">
-            <RecordSpriteThumb record={record} />
+            <RecordSpriteThumb record={record} modelKey={modelKey} />
           </td>
         ) : null}
         {def.columns.map((c) => {
@@ -896,6 +911,7 @@ function RowGroup({
               <RecordForm
                 record={record}
                 template={template}
+                modelKey={modelKey}
                 onSave={onSaveEdit}
                 onCancel={onCancelEdit}
               />
@@ -960,6 +976,7 @@ function RowGroup({
 function LibraryCatalog({
   entries,
   def,
+  modelKey,
   onImport,
 }: {
   entries: Array<{
@@ -967,13 +984,14 @@ function LibraryCatalog({
     records: Record_[];
   }>;
   def: (typeof MODELS)[ModelKey];
+  modelKey?: string;
   onImport: (record: Record_) => void;
 }) {
   const total = entries.reduce((sum, e) => sum + e.records.length, 0);
   // Same column heuristic as the main table: show the thumb column
   // if any library record carries a known sprite field.
   const hasSpriteColumn = entries.some((e) =>
-    e.records.some(recordHasSpriteField),
+    e.records.some((r) => recordHasSpriteField(r, modelKey)),
   );
   return (
     <section className="mt-6">
@@ -1016,7 +1034,7 @@ function LibraryCatalog({
                     <tr key={id} className="border-t border-parchment/5">
                       {hasSpriteColumn ? (
                         <td className="px-2 py-1">
-                          <RecordSpriteThumb record={r} />
+                          <RecordSpriteThumb record={r} modelKey={modelKey} />
                         </td>
                       ) : null}
                       {def.columns.map((c) => {

@@ -30,7 +30,8 @@ export interface SpriteFieldConfig {
   format: "path" | "stem";
 }
 
-/** Keyed by record field name. */
+/** Global field-name → config map. Used when no model-specific
+ *  override applies. */
 const FIELDS: Record<string, SpriteFieldConfig> = {
   tile: { category: "monster", format: "path" },
   sprite: { category: "person", format: "path" },
@@ -42,11 +43,27 @@ const FIELDS: Record<string, SpriteFieldConfig> = {
   avatar: { category: "person", format: "path" },
 };
 
+/** Per-model overrides — when the same field name means different
+ *  things in different models. Currently: `sprite` defaults to the
+ *  person/ folder for characters, but on a Tile Palette record it
+ *  should default to the map/ folder. */
+const PER_MODEL: Record<string, Record<string, SpriteFieldConfig>> = {
+  map_tiles: {
+    sprite: { category: "map", format: "path" },
+  },
+};
+
 /** Returns the picker config for a field, or null if the field isn't
- *  a known sprite field (and should be rendered as a plain input). */
+ *  a known sprite field (and should be rendered as a plain input).
+ *  Pass `modelKey` to pick up any per-model override (so the picker's
+ *  default category matches the record's natural sprite folder). */
 export function getSpriteFieldConfig(
   fieldKey: string,
+  modelKey?: string,
 ): SpriteFieldConfig | null {
+  if (modelKey && PER_MODEL[modelKey]?.[fieldKey]) {
+    return PER_MODEL[modelKey][fieldKey];
+  }
   return FIELDS[fieldKey] ?? null;
 }
 

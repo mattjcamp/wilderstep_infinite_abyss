@@ -1,0 +1,30 @@
+{
+  "_comment": "Map catalog. Each map is a 2D grid of tile_id integers that reference the Tile Palette (map_tiles.json) for visual + behavioral properties (walkable, sprite, default interaction type). Per-cell instance data — destination of a portal cell, items placed by the author on a cell — lives in the sparse `links` and `tile_items` arrays so a generic tile type can be reused across maps without conflict. `tags` group maps in the editor for organization; the linking system is independent of tags. The grid is row-major: grid[row][col].",
+  "maps": [
+    {
+      "id": "town_one_square",
+      "name": "Town Square",
+      "description": "The cobbled square at the heart of Town One — a stone path crosses east to west, grass on either side. Placeholder map used to seed the editor; replace with real geometry as it gets painted.",
+      "tags": ["town_one"],
+      "width": 16,
+      "height": 12,
+      "default_tile": 0,
+      "grid": [
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6],
+        [6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+      ],
+      "links": [],
+      "tile_items": []
+    }
+  ]
+}
