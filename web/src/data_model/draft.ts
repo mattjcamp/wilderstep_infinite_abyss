@@ -123,6 +123,22 @@ export function listDraftKeys(): Array<{
   return out;
 }
 
+/** Remove every draft for a given module — manifest + every per-model
+ *  overlay. Used when deleting a module so its in-browser state is
+ *  cleaned up. Does NOT touch the global modules-index draft.
+ *  Returns the number of entries removed. */
+export function discardAllDraftsFor(moduleId: string): number {
+  if (typeof window === "undefined") return 0;
+  const prefix = `${DRAFT_PREFIX}/${moduleId}/`;
+  const toRemove: string[] = [];
+  for (let i = 0; i < window.localStorage.length; i++) {
+    const k = window.localStorage.key(i);
+    if (k && k.startsWith(prefix)) toRemove.push(k);
+  }
+  for (const k of toRemove) window.localStorage.removeItem(k);
+  return toRemove.length;
+}
+
 /** Trigger a browser download of the given JSON data as `<fileName>`. */
 export function downloadJson(fileName: string, data: unknown): void {
   if (typeof window === "undefined") return;

@@ -1,0 +1,18 @@
+{
+  "_comment": "Soundtrack catalog (hand-maintained for now, mirrors sprites/index.json). Each top-level key is a category folder under web/public/soundtrack/; each value is the list of audio filenames in that folder. Resolve a track path as `/soundtrack/<category>/<filename>` (apply basePath at runtime). When the prebuild pipeline lands, a small node script can regenerate this by walking the folder.",
+  "categories": {
+    "combat": [
+      "winds_of_destiny.mp3"
+    ],
+    "dungeon": [
+      "lost_in_the_labyrinth.mp3"
+    ],
+    "overworld": [
+      "aurelian_overture.mp3",
+      "scepter_of_the_celestial_guardian.mp3"
+    ],
+    "town": [
+      "bards_ballad.mp3"
+    ]
+  }
+}

@@ -1,9 +1,9 @@
 import { Sidebar } from "@/editor/Sidebar";
+import { listModuleIds } from "@/data_model/moduleIndex";
 
 export async function generateStaticParams() {
-  // Hardcoded for now — will read from data/modules/index.json once the
-  // module index generator script lands.
-  return [{ moduleId: "default" }];
+  const ids = await listModuleIds();
+  return ids.map((moduleId) => ({ moduleId }));
 }
 
 export default function ModuleEditorLayout({

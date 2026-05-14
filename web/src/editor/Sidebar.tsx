@@ -37,10 +37,16 @@ export function Sidebar({ moduleId }: { moduleId: string }) {
   return (
     <aside className="w-56 shrink-0 border-r border-parchment/10 bg-ink/30 p-3">
       <Link
-        href={`/editor/${moduleId}`}
-        className="mb-3 block text-xs uppercase tracking-wide text-parchment/50 hover:text-parchment/80"
+        href="/editor"
+        className="mb-1 block text-xs uppercase tracking-wide text-parchment/55 hover:text-parchment/85"
       >
-        ← {moduleId}
+        ← All modules
+      </Link>
+      <Link
+        href={`/editor/${moduleId}`}
+        className="mb-3 block border-b border-parchment/10 pb-2 font-display text-sm text-parchment/85 hover:text-parchment"
+      >
+        {moduleId}
       </Link>
 
       <p className="mb-1 mt-2 text-xs uppercase tracking-wide text-parchment/40">
@@ -64,16 +70,20 @@ export function Sidebar({ moduleId }: { moduleId: string }) {
             Sprites
           </Link>
         </li>
+        <li>
+          <Link
+            href={`/editor/${moduleId}/soundtrack`}
+            className={`block rounded px-2 py-1 text-sm transition ${
+              pathname === `/editor/${moduleId}/soundtrack`
+                ? "bg-ember/30 text-parchment"
+                : "text-parchment/70 hover:bg-ink/40 hover:text-parchment"
+            }`}
+          >
+            Soundtrack
+          </Link>
+        </li>
       </ul>
 
-      <div className="mt-6 border-t border-parchment/10 pt-3">
-        <Link
-          href="/editor"
-          className="block text-xs text-parchment/50 hover:text-parchment/80"
-        >
-          ← All modules
-        </Link>
-      </div>
     </aside>
   );
 }

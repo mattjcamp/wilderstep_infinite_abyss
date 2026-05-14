@@ -15,15 +15,28 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { StaticModuleSource } from "@/data_model/StaticModuleSource";
 import {
+  discardAllDraftsFor,
   discardIndexDraft,
   downloadJson,
   hasDraft,
   hasIndexDraft,
   loadIndexDraft,
   MANIFEST_KEY,
+  saveIndexDraft,
 } from "@/data_model/draft";
 import type { ModuleSummary } from "@/data_model/ModuleSource";
 import { NewModuleForm } from "./NewModuleForm";
+
+interface IndexEntry {
+  id: string;
+  title?: string;
+  role?: string;
+}
+
+interface IndexFile {
+  _comment?: string;
+  modules?: IndexEntry[];
+}
 
 type State =
   | { kind: "loading" }
@@ -78,6 +91,42 @@ export function ModulePicker() {
       return;
     }
     discardIndexDraft();
+    refresh();
+  };
+
+  const onDeleteModule = (m: ModuleSummary) => {
+    if (typeof window === "undefined") return;
+    const ok = window.confirm(
+      `Delete module "${m.id}"?\n\n` +
+        `• Removes it from the modules index in your browser.\n` +
+        `• Discards every in-browser draft for this module (manifest + every model).\n` +
+        `• Does NOT delete the on-disk folder web/public/modules/${m.id}/ — remove that manually if you want the files gone too.\n` +
+        `• Export the updated index.json to commit the removal to disk.`,
+    );
+    if (!ok) return;
+
+    // Build the next index from whatever's current (draft if present,
+    // else the on-disk index reconstructed from the current summary list).
+    const currentIndex =
+      loadIndexDraft<IndexFile>() ?? {
+        modules: state.kind === "ok"
+          ? state.modules.map((s) => ({
+              id: s.id,
+              title: s.title,
+              role: s.role,
+            }))
+          : [],
+      };
+    const nextEntries = (currentIndex.modules ?? []).filter(
+      (e) => e.id !== m.id,
+    );
+    saveIndexDraft({
+      _comment:
+        currentIndex._comment ??
+        "Modules index — managed by the editor in draft form; export and drop into web/public/modules/index.json to commit.",
+      modules: nextEntries,
+    });
+    discardAllDraftsFor(m.id);
     refresh();
   };
 
@@ -155,20 +204,19 @@ export function ModulePicker() {
         <ul className="grid gap-3 sm:grid-cols-2">
           {modules.map((m) => {
             const manifestDraft = hasDraft(m.id, MANIFEST_KEY);
+            // The Default / any core module is protected — never
+            // deletable from the UI. This keeps the inheritance root
+            // intact across modules that extend it.
+            const isProtected = m.id === "default" || m.role === "core";
             return (
-              <li key={m.id}>
+              <li key={m.id} className="relative">
                 <Link
                   href={`/editor/${m.id}`}
-                  className="block rounded-md border border-parchment/20 bg-ink/40 p-4 transition hover:border-parchment/40 hover:bg-ink/60"
+                  className="block rounded-md border border-parchment/20 bg-ink/40 p-4 pr-20 transition hover:border-parchment/40 hover:bg-ink/60"
                 >
-                  <div className="flex items-baseline justify-between gap-3">
-                    <h2 className="font-display text-xl text-parchment">
-                      {m.title}
-                    </h2>
-                    <span className="text-xs uppercase tracking-wide text-parchment/40">
-                      v{m.version}
-                    </span>
-                  </div>
+                  <h2 className="font-display text-xl text-parchment">
+                    {m.title}
+                  </h2>
                   <p className="mt-1 text-sm text-parchment/70">
                     {m.description}
                   </p>
@@ -185,8 +233,25 @@ export function ModulePicker() {
                         manifest draft
                       </span>
                     ) : null}
+                    <span className="ml-auto uppercase tracking-wide text-parchment/40">
+                      v{m.version}
+                    </span>
                   </div>
                 </Link>
+                {!isProtected ? (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onDeleteModule(m);
+                    }}
+                    className="absolute right-2 top-2 rounded border border-parchment/20 bg-ink/60 px-2 py-0.5 text-xs text-parchment/60 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
+                    title="Remove this module from the index and discard its in-browser drafts. The on-disk folder must be deleted manually."
+                  >
+                    Delete
+                  </button>
+                ) : null}
               </li>
             );
           })}

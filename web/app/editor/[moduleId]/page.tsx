@@ -56,6 +56,20 @@ export default function ModuleEditorHome({
               </p>
             </Link>
           </li>
+          <li>
+            <Link
+              href={`/editor/${moduleId}/soundtrack`}
+              className="block rounded-md border border-parchment/15 bg-ink/30 p-3 transition hover:border-parchment/40 hover:bg-ink/50"
+            >
+              <div className="font-display text-lg text-parchment">
+                Soundtrack
+              </div>
+              <p className="mt-0.5 text-sm text-parchment/60">
+                Audio tracks grouped by context (combat, dungeon,
+                overworld, town) — what music is available to reference
+              </p>
+            </Link>
+          </li>
         </ul>
       </section>
     </main>
