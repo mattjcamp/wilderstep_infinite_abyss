@@ -50,7 +50,9 @@
         "mp_cost": 0,
         "range": 99,
         "targeting": "auto_monster",
-        "usable_in": ["battle"],
+        "usable_in": [
+          "battle"
+        ],
         "save_stat": "wisdom",
         "save_dc_base": 10,
         "fail_hp_percent": 50,
@@ -133,6 +135,14 @@
         "extra_range": 3,
         "post_attack_range": 2
       }
+    },
+    {
+      "id": "brew_potion",
+      "name": "Brew Potion",
+      "type": "class",
+      "description": "Combine regents using the guidance of a recipe to create a potion",
+      "duration": null,
+      "params": {}
     }
   ]
 }

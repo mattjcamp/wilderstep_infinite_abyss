@@ -1,0 +1,9 @@
+{
+  "_comment": "Quest Step catalog (real data drives the schema). A Quest Step is one objective inside a Quest. Each step carries an id, display name, and a `kind` discriminator (\"kill\", \"fetch\", \"visit\", \"talk\", …). Kind-specific parameters live in `params`. Steps are referenced in order from a Quest's `steps[]` array. Catalog ships empty. See docs/data_dictionary/quest_step.md.",
+  "quest_steps": [
+    {
+      "id": "test1",
+      "name": "Test 1"
+    }
+  ]
+}

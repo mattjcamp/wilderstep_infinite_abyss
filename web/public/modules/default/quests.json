@@ -1,0 +1,9 @@
+{
+  "_comment": "Quest catalog (real data drives the schema). A Quest is an authored adventure thread: id, display name, optional flavor description, and an ordered list of Quest Step ids. Quest Step records (in quest_steps.json) describe the individual objectives (kill X, fetch Y, visit Z, talk to NPC). Catalog ships empty. See docs/data_dictionary/quest.md.",
+  "quests": [
+    {
+      "id": "test1",
+      "name": "Test 1"
+    }
+  ]
+}

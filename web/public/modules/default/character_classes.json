@@ -1,5 +1,5 @@
 {
-  "_comment": "Character class catalog (real data drives the schema). Each class carries movement range, a casting_type list, a list of ability references (the catalog records live in abilities.json), and an allowable_item_types list gating which weapon and armor item_types the class may equip. `casting_type` ties the class to the spell catalog \u2014 values are `none` (no spells), `sorcerer` (arcane/INT-flavored), or `priest` (divine/WIS-flavored); Druid is the only class with both. Spell eligibility is purely casting_type-based: any class with a matching catalog can cast any spell in that catalog. Per-class level overrides for specific spells live on Spell.class_min_levels. `abilities[]` entries reference Ability records by id with a per-class `min_level` (e.g. Paladin gets Turn Undead at 5 while Cleric gets it at 2). Per-class item gating lives here on `allowable_item_types` (values are Item.item_type) \u2014 Item.party_can_equip / Item.character_can_equip still controls equip *scope* (party vs. character slot) but no longer carries any class info. XP-per-level lives on Race.",
+  "_comment": "Character class catalog (real data drives the schema). Each class carries movement range, a casting_type list, a list of ability references (the catalog records live in abilities.json), and an allowable_item_types list gating which weapon and armor item_types the class may equip. `casting_type` ties the class to the spell catalog — values are `none` (no spells), `sorcerer` (arcane/INT-flavored), or `priest` (divine/WIS-flavored); Druid is the only class with both. Spell eligibility is purely casting_type-based: any class with a matching catalog can cast any spell in that catalog. Per-class level overrides for specific spells live on Spell.class_min_levels. `abilities[]` entries reference Ability records by id with a per-class `min_level` (e.g. Paladin gets Turn Undead at 5 while Cleric gets it at 2). Per-class item gating lives here on `allowable_item_types` (values are Item.item_type) — Item.party_can_equip / Item.character_can_equip still controls equip *scope* (party vs. character slot) but no longer carries any class info. XP-per-level lives on Race.",
   "character_classes": [
     {
       "id": "fighter",
@@ -210,6 +210,10 @@
       "abilities": [
         {
           "ability_id": "herbalism",
+          "min_level": 1
+        },
+        {
+          "ability_id": "brew_potion",
           "min_level": 1
         }
       ]
