@@ -97,9 +97,9 @@ const DEFS: Record<ModelKey, ModelDef> = {
       { field: "id", label: "ID" },
       { field: "name", label: "Name" },
       { field: "action", label: "Action" },
+      { field: "casting_type", label: "Catalog", format: asString },
       { field: "mp_cost", label: "MP", format: asString },
       { field: "min_level", label: "Min Lvl", format: asString },
-      { field: "allowable_classes", label: "Classes", format: (v) => (Array.isArray(v) ? v.join(", ") : asString(v)) },
     ],
   },
   recipes: {
@@ -224,9 +224,13 @@ const DEFS: Record<ModelKey, ModelDef> = {
     columns: [
       { field: "id", label: "ID" },
       { field: "name", label: "Name" },
-      { field: "hp_per_level", label: "HP/Lvl", format: asString },
-      { field: "mp_per_level", label: "MP/Lvl", format: asString },
       { field: "range", label: "Range", format: asString },
+      {
+        field: "casting_type",
+        label: "Casting",
+        format: (v) =>
+          Array.isArray(v) ? v.join(", ") : asString(v ?? "none"),
+      },
     ],
   },
   races: {

@@ -32,7 +32,6 @@ Each record:
   "id": "",
   "name": "",
   "description": "",
-  "allowable_classes": [],
   "casting_type": "",
   "min_level": 1,
   "mp_cost": 0,
@@ -51,12 +50,11 @@ Each record:
 
 | Field | Type | Required | Description | Used? |
 |---|---|---|---|---|
-| `id` | string | yes | Stable identifier; referenced by Character Class (`spells_can_cast`), Item (`activates_spell`), Monster (`spells[]`), and combat logs | TBD |
+| `id` | string | yes | Stable identifier; referenced by Item (`activates_spell`), Monster (`spells[]`), and combat logs | TBD |
 | `name` | string | yes | Display label | TBD |
 | `description` | string | yes | Tooltip / spellbook text | TBD |
-| `allowable_classes` | string[] | yes | Class names that can cast this spell. (See *Notes* — this is granter-side info and may move to Character Class later.) | TBD |
-| `class_min_levels` | object | no | Per-class min level override (e.g. `{ "Paladin": 5 }`) when one of the `allowable_classes` should require a higher level than `min_level`. Currently only used by Turn Undead. | TBD |
-| `casting_type` | string | no | Spellcasting school flavor — `"sorcerer"` (arcane) or `"priest"` (divine) in v1. Drives UI grouping and possibly spell-list partitioning. | TBD |
+| `casting_type` | string | yes | Spellcasting school / catalog — `"sorcerer"` (arcane / INT-flavored) or `"priest"` (divine / WIS-flavored). This is the *only* gating field for class eligibility: a class can cast this spell iff its [Character Class](character_class.md) `casting_type[]` includes this value. There is no per-spell allow-list — every class in the matching catalog can cast every spell in the catalog. | TBD |
+| `class_min_levels` | object | no | Per-class min level override (e.g. `{ "Paladin": 5 }`) when a specific class learns the spell at a different level than the spell's base `min_level`. Currently only used by Turn Undead (base level 2 for Cleric/Druid/Ranger, 5 for Paladin). Keys are class display names (PascalCase). | TBD |
 | `min_level` | int | yes | Minimum character level to learn the spell. Per-class overrides via `class_min_levels`. | TBD |
 | `mp_cost` | int | yes | Mana cost when cast by a character. Items/monsters invoking the same spell may bypass this. | TBD |
 | `range` | int | yes | Maximum cast range in tiles. `0` typically means self-target. | TBD |
@@ -102,8 +100,8 @@ Unknown `action` values should be dropped at load with a warning.
 ## Cross-references to other models
 
 - `action_params.effect_id` → [Effect](effect.md) — the lingering state applied or cured
-- `allowable_classes` → [Character Class](character_class.md) — class names that can learn this spell
-- Referenced *by* [Character Class](character_class.md) `spells_can_cast` (or similar) when classes formalize their spell access
+- `casting_type` ↔ [Character Class](character_class.md) `casting_type[]` — class eligibility gate. Every class with the matching casting_type can cast every spell in the matching catalog.
+- `class_min_levels` keys → [Character Class](character_class.md) `name` (PascalCase) — per-class min level override
 - Referenced *by* [Item](item.md) `activates_spell` — magic items that invoke this spell when used or equipped
 - Referenced *by* [Monster](monster.md) `spells[]` — monster-castable spell ids with per-monster cast_chance and damage overrides
 
@@ -115,7 +113,6 @@ Unknown `action` values should be dropped at load with a warning.
 {
   "id": "magic_dart",
   "name": "Magic Dart",
-  "allowable_classes": ["Wizard", "Alchemist", "Druid"],
   "casting_type": "sorcerer",
   "min_level": 1,
   "mp_cost": 6,
@@ -141,7 +138,6 @@ Unknown `action` values should be dropped at load with a warning.
 {
   "id": "sleep",
   "name": "Sleep",
-  "allowable_classes": ["Wizard", "Druid"],
   "casting_type": "sorcerer",
   "min_level": 1,
   "mp_cost": 5,
@@ -167,7 +163,6 @@ Unknown `action` values should be dropped at load with a warning.
 {
   "id": "push",
   "name": "Push",
-  "allowable_classes": ["Cleric"],
   "casting_type": "priest",
   "min_level": 5,
   "mp_cost": 14,
@@ -192,7 +187,6 @@ Unknown `action` values should be dropped at load with a warning.
 {
   "id": "animate_dead",
   "name": "Animate Dead",
-  "allowable_classes": ["Wizard", "Druid"],
   "casting_type": "sorcerer",
   "min_level": 6,
   "mp_cost": 20,
@@ -219,8 +213,6 @@ Unknown `action` values should be dropped at load with a warning.
 
 ## Notes and open questions
 
-- **`allowable_classes` is granter-side info.** Following the same principle that decoupled the Effect model, "which classes can cast this spell" arguably belongs on Character Class (`spells_can_cast`) rather than on the Spell itself. We kept it on the Spell for now to minimize the porting surface, but flagged: when Character Class is filled in, this might invert. The Item/Monster invocation paths already don't read `allowable_classes` (an item invoking a spell doesn't care which classes "could" cast it), so the field is only meaningful when a Character is the source.
-
 - **`duration` on apply_effect spells is redundant with the Effect's default.** v1 carried `duration` on every spell. For `apply_effect` spells the value matches the referenced Effect's default duration; for damage/heal/etc. it's `"instant"`. We kept it for transparency, but a stricter model would drop it from `apply_effect` records and use the Effect's default unless `action_params.duration` explicitly overrides.
 
 - **Application-time params now live here.** v1's `effect_value` was a polymorphic blob that mixed state-side and application-time data. The port split them: state-side params stay on the Effect record's `params`; application-time params (save DCs, max target HP, per-application magnitudes) live in this Spell record's `action_params`. The Push spell record is the cleanest example of overriding Effect state-side params from the Spell side (`radius: 5, push_distance: 3` overriding `repel_monsters` defaults of `3` and `1`).
@@ -229,7 +221,8 @@ Unknown `action` values should be dropped at load with a warning.
 
 - **Mass Heal and Restore are party-wide via `scope: "all_allies"`** on `action_params`. v1 had distinct `effect_type` values (`mass_heal`, `restore`) that hardcoded the party scope. Folding scope into action_params lets `heal` and `restore` cover their solo and party variants without a separate action discriminator.
 
-- **`casting_type` is informational.** v1's TS port used it for UI grouping (spellbook tabs) but didn't gate behavior. v2 may want to formalize as a class-of-class (arcane / divine) once Character Class is filled in.
+- **`casting_type` is the sole class-eligibility gate.** A class's `casting_type[]` lists the catalogs it can draw from (`["sorcerer"]`, `["priest"]`, `["sorcerer","priest"]`, or `["none"]`), and a spell is castable by a class iff the class's list contains the spell's `casting_type`. There is no per-spell allow-list inside the catalog.
+- **`allowable_classes` was dropped.** v1 (and the early v2 port) carried a per-spell `allowable_classes[]` that narrowed within a catalog — e.g. a sorcerer spell available only to Wizard and Druid but not Alchemist, or a priest spell only to Cleric but not Paladin/Druid/Ranger. Removed in favor of the simpler casting_type-only model: every class in a catalog can cast every spell in the catalog. Consequence: priest spells like Turn Undead, Bless, Major Heal — which v1 restricted to Cleric and/or Paladin — are now also castable by Druid and Ranger. Sorcerer spells like Sleep, Invisibility, Fireball are now castable by Alchemist. If/when per-class narrowing is needed again, a `granted_spells[]` on Character Class is the cleanest place; the spell record stays simple.
 
 - **Composite actions.** `restore` is a multi-effect action (heal + restore MP + cure poison). If composites proliferate, a `sequence` action type that chains sub-actions would be cleaner than ad-hoc named actions. Not needed yet.
 

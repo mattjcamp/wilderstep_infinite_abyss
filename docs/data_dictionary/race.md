@@ -29,13 +29,12 @@ The "Used?" column reflects the v2 TypeScript implementation under `web/`. The c
 | `name` | string | yes | Display label (e.g. `"Human"`) | TBD |
 | `description` | string | no | Flavor text shown in the character creator | TBD |
 | `stat_modifiers` | object | yes | Per-stat deltas applied at creation: `{ strength, dexterity, constitution, intelligence, wisdom }` | TBD |
-| `exp_per_level` | number | no | XP curve override for this race (only Human sets it in v1, with a faster curve) | TBD |
+| `exp_per_level` | number | no | XP required per level for this race. The XP curve is race-determined in our rules — there is no class-side override. Absent values fall back to an engine default (TBD). | TBD |
 | `effects` | string[] | yes | Innate ability Effect ids granted to members of this race | TBD |
 
 ## Cross-references to other models
 
 - `effects[]` → [Effect](effect.md) — Effect ids granted automatically to members. Currently only `"infravision"` resolves to an Effect record in v2's effects.json. The other three ids carried over from v1 (`pickpocket`, `galadriel_light`, `tinker`) point at racial abilities that v1 hardcoded in TS and never added to the Effects catalog — they remain as design-intent here pending a decision to either define them as Effects or move them to another model.
-- Referenced *by* [Character Class](character_class.md) `allowed_races` — which classes a race can take
 - Referenced *by* [Party](party.md) `roster[].race`
 
 ## Example record
@@ -59,6 +58,6 @@ The "Used?" column reflects the v2 TypeScript implementation under `web/`. The c
 ## Notes and open questions
 
 - **Effect refs `pickpocket`, `galadriel_light`, `tinker` are dangling.** v1's TS hardcoded the racial-ability behaviors and didn't put them in `effects.json`. v2 carried the references forward so the design intent is preserved. Either add Effect records for them (matching the v1 hardcoded behavior) or drop the refs.
-- **Human gets `exp_per_level: 1125`**, every other race uses the class default. v1 noted this as the only race-side field its TS actually consumed.
+- **`exp_per_level` is the XP curve, not an override.** In v2 the leveling speed lives entirely on Race — Character Class no longer carries this field. Human sets 1125 (faster); other races in default/ are absent and need either an engine default or an explicit value before the level-up loop is wired up. v1 had it on both Race and Class with the Class value (1500) acting as a fallback, but that arrangement was never honored by the v2 rules.
 - **`stat_modifiers` was duplicated as a TS constant in v1** (`RACE_MODS` in `app/party/new/page.tsx`). v2 should drive from JSON; the constant should disappear once the loader is in.
-- **No `allowed_classes` field.** Race-to-class gating lives on the Class side (`character_class.allowed_races`).
+- **No `allowed_classes` field, and no equivalent on Class either.** The v1 race-class gate table is no longer in the data — v1's TS hardcoded it in `app/party/new/page.tsx` and the JSON copies were never read. If v2 wants to gate class selection by race, this is where that field would live (or it could go back on Class as `allowed_races`); the decision is pending until the character creator is wired up.
