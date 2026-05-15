@@ -32,7 +32,7 @@ The "Used?" column reflects the v2 TypeScript implementation under `web/`. The c
 | `id` | string | yes | Counter identifier (e.g. `"general"`, `"weapon"`, `"healing"`). Referenced by NPC shopType fields and by tile `interaction_data` for `interaction_type: "shop"`. | TBD |
 | `name` | string | yes | Display label shown as the shop UI title | TBD |
 | `description` | string | no | Flavor text shown under the title | TBD |
-| `items` | string[] | yes | Stock list — each entry is an Item `name`. Duplicates control stocking weight. Empty for service-only counters. | TBD |
+| `items` | string[] | yes | Stock list — each entry is an [Item](item.md) `id` (snake_case). Duplicates control stocking weight. Empty for service-only counters. | TBD |
 | `kind` | string | no | `"service"` for temple-style counters; omitted/null for regular shops | TBD |
 | `services` | object[] | no | Service menu entries (present when `kind === "service"`); see *services entry* below | TBD |
 
@@ -51,7 +51,7 @@ The "Used?" column reflects the v2 TypeScript implementation under `web/`. The c
 
 ## Cross-references to other models
 
-- `items[]` strings → [Item](item.md) names — the shop's stock and (in v1) the post-combat loot pool
+- `items[]` strings → [Item](item.md) ids — the shop's stock and (in v1) the post-combat loot pool
 - Counter ids are referenced from [Map Tile](map_tile.md) — tiles with `interaction_type: "shop"` carry the counter id as `interaction_data`
 - Will be referenced by [NPC](npc.md) records once that model is filled in (v1 had a `shopType` field linking NPC dialogs to counters)
 - `services[].id` strings are looked up in code, not data — the runtime branches on the known set (`heal_all_hp`, `restore_all_mp`, `cure_all_poisons`, `raise_dead`)
@@ -76,7 +76,7 @@ The "Used?" column reflects the v2 TypeScript implementation under `web/`. The c
 
 ## Notes and open questions
 
-- **Stock duplicates are the stocking mechanism.** Buying removes one entry from the live stock array, so `["Sword", "Sword", "Mace"]` means two Swords and one Mace in stock.
+- **Stock duplicates are the stocking mechanism.** Buying removes one entry from the live stock array, so `["sword", "sword", "mace"]` means two Swords and one Mace in stock.
 - **Loot pool double-duty.** In v1, the `general`, `weapon`, and `armor` counters' item lists were the source of the post-combat drop pool. The other counters were excluded. If v2 keeps that contract, document it on the Counter model or split out an explicit `Loot` model.
 - **`services[].id` is a string discriminator with hardcoded handlers.** Unknown ids fall through politely in v1. If v2 makes service behavior more declarative, this is the wiring point.
-- **`Item.name` is the cross-reference, not `Item.id`** — same convention as elsewhere in v2 until items move to id-keyed references.
+- **First model on the id-only path.** Counter `items[]` references [Item](item.md) by `id` instead of `name`. The rest of v2 (Recipe `reagents`, Spawn `loot`, Party `inventory[].item`, weapon `ammo`) still uses `name`; those will follow as the ports settle.

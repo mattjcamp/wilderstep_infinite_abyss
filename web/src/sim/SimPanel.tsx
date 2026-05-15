@@ -107,12 +107,12 @@ export function SimPanel({
 
       <section className="rounded border border-parchment/10 bg-ink/40 p-2">
         <h3 className="mb-1 text-xs uppercase tracking-wide text-parchment/55">
-          Active Party ({snap.activeMembers.length}/4)
+          Roster ({snap.activeMembers.length})
         </h3>
         {snap.activeMembers.length === 0 ? (
           <p className="text-xs text-parchment/55">
-            No active members resolved from the module&apos;s
-            characters.json. Check party.json &gt; active_party.
+            No roster members resolved from the module&apos;s
+            characters.json. Check party.json &gt; roster.
           </p>
         ) : (
           <ul className="space-y-1">

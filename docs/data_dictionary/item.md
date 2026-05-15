@@ -42,7 +42,7 @@ Each record minimally has `id`, `name`, `category`. The rest of the fields are p
 | `power` | number | no | Weapon damage (weapons) or consumable potency (general, e.g. heal amount). | TBD |
 | `ranged` | bool | no | Weapon attacks at range. | TBD |
 | `throwable` | bool | no | Eligible for a Throw action. | TBD |
-| `slots` | string[] | no | Equip slots (`"right_hand"`, `"left_hand"`, `"body"`, etc.). | TBD |
+| `slots` | string[] | no | Equip slots. Vocabulary: `"hands"` (weapons — one slot per character regardless of one- or two-handedness), `"body"` (armor). | TBD |
 | `evasion` | number | no | Armor base AC (replaces unarmored AC). | TBD |
 | `ac_bonus` | number | no | Flat AC bonus added on top of any base. | TBD |
 | `bonus_damage` | string \| number | no | Extra dice on hit (e.g. `"1d6"`) — string for dice notation, number for flat bonuses. | TBD |
@@ -118,7 +118,7 @@ Items with `effect` values that have no v1 handler (`Scroll of Fire`, `Smoke Bom
   "power": 5,
   "ranged": false,
   "throwable": false,
-  "slots": ["right_hand", "left_hand"],
+  "slots": ["hands"],
   "durability": 20,
   "party_can_equip": false,
   "character_can_equip": true,
@@ -140,7 +140,7 @@ Items with `effect` values that have no v1 handler (`Scroll of Fire`, `Smoke Bom
   "power": 20,
   "ranged": false,
   "throwable": false,
-  "slots": ["right_hand", "left_hand"],
+  "slots": ["hands"],
   "ac_bonus": 0,
   "bonus_damage": "1d6",
   "damage_type": "fire",

@@ -6,7 +6,8 @@
  *
  *   "path"  → value is a folder-relative path under /sprites/
  *              (e.g., "monster/goblin.png"). The runtime resolves it
- *              as `/sprites/${value}`. Used by `tile` and `sprite`.
+ *              as `/sprites/${value}`. Used by `sprite` (Character,
+ *              Monster, Tile Palette) and `avatar` (Party).
  *   "stem"  → value is just the filename stem with no extension or
  *              folder (e.g., "club"). The runtime resolves it as
  *              `/sprites/<category>/${value}.png`. Used by `icon`.
@@ -33,7 +34,6 @@ export interface SpriteFieldConfig {
 /** Global field-name → config map. Used when no model-specific
  *  override applies. */
 const FIELDS: Record<string, SpriteFieldConfig> = {
-  tile: { category: "monster", format: "path" },
   sprite: { category: "person", format: "path" },
   icon: { category: "item", format: "stem" },
   monster_party_tile: { category: "monster", format: "path" },
@@ -44,12 +44,15 @@ const FIELDS: Record<string, SpriteFieldConfig> = {
 };
 
 /** Per-model overrides — when the same field name means different
- *  things in different models. Currently: `sprite` defaults to the
- *  person/ folder for characters, but on a Tile Palette record it
- *  should default to the map/ folder. */
+ *  things in different models. The shared `sprite` field defaults to
+ *  the person/ folder (Characters); Monsters and Tile Palette
+ *  records redirect it to their own folders. */
 const PER_MODEL: Record<string, Record<string, SpriteFieldConfig>> = {
   map_tiles: {
     sprite: { category: "map", format: "path" },
+  },
+  monsters: {
+    sprite: { category: "monster", format: "path" },
   },
 };
 

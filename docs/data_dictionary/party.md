@@ -2,11 +2,11 @@
 
 ## Purpose
 
-The starting party seed: where the party spawns on the world map, the shared gold pool, which characters are available to the player (the roster), which four are currently in the active adventuring group, the party-wide effect slots, the shared inventory stash, and a few step-counter resources (torch, Galadriel's Light).
+The starting party seed: where the party spawns on the world map, the shared gold pool, the characters currently in the adventuring group (the roster), the party-wide effect slots, the shared inventory stash, and a few step-counter resources (torch, Galadriel's Light).
 
 This is a **singleton** — one Party record per module, not a collection. Characters themselves live in [Character](character.md); Party references them by id. Live game state (where the party currently is, what they've changed since the seed) lives in the runtime [Game](game.md) save.
 
-Ported from v1's `data/party.json`, then refactored: in v1 the `roster[]` was an embedded array of full character objects. In v2 the roster is a list of Character ids, and character data lives in `characters.json`. This lets the roster grow well beyond the active party without bloating the Party record.
+Ported from v1's `data/party.json`, then refactored: in v1 the `roster[]` was an embedded array of full character objects. In v2 the roster is a list of Character ids, and character data lives in `characters.json`. v1 also split the party into a `roster` pool plus an `active_party` subset of four — v2 collapses these into a single `roster` (every character listed is in the active group).
 
 ## Location
 
@@ -26,7 +26,6 @@ A flat singleton object — the whole file is one Party record.
   "start_position": { "col": ..., "row": ... },
   "gold": ...,
   "roster": [ "<character_id>", ... ],
-  "active_party": [ "<character_id>", ... ],
   "party_effects": { "effect_1": ..., ..., "effect_4": ... },
   "inventory": [ <inventory_entry>, ... ],
   "torch_steps": ...,
@@ -40,8 +39,7 @@ A flat singleton object — the whole file is one Party record.
 |---|---|---|---|---|
 | `start_position` | `{ col: int, row: int }` | yes | Initial party position on the world map | TBD |
 | `gold` | int | yes | Shared party gold pool | TBD |
-| `roster` | string[] | yes | [Character](character.md) ids available to the player (the recruit pool). Can grow large. | TBD |
-| `active_party` | string[] | yes | Character ids currently in the active adventuring group (subset of `roster`, typically 4). | TBD |
+| `roster` | string[] | yes | [Character](character.md) ids in the adventuring party. Typically four; the engine treats every roster entry as actively adventuring. | TBD |
 | `party_effects` | object | yes | Up to four named active [Effect](effect.md) slots; each value is an Effect id or null | TBD |
 | `inventory` | object[] | yes | Shared party stash. Each entry is `{ item, charges?, durability? }` where `item` is an [Item](item.md) name. | TBD |
 | `torch_steps` | int | yes | Remaining lit-torch steps | TBD |
@@ -60,7 +58,7 @@ Four named slots; each value is an [Effect](effect.md) id or `null`.
 
 ## Cross-references to other models
 
-- `roster[]` and `active_party[]` → [Character](character.md) ids
+- `roster[]` → [Character](character.md) ids
 - `party_effects.effect_1..4` → [Effect](effect.md) ids
 - `inventory[].item` → [Item](item.md) name
 
@@ -71,7 +69,6 @@ Four named slots; each value is an [Effect](effect.md) id or `null`.
   "start_position": { "col": 14, "row": 16 },
   "gold": 50,
   "roster": ["aldric", "pippin", "selina", "elminster"],
-  "active_party": ["aldric", "pippin", "selina", "elminster"],
   "party_effects": {
     "effect_1": null,
     "effect_2": null,
@@ -90,9 +87,8 @@ Four named slots; each value is an [Effect](effect.md) id or `null`.
 
 ## Notes and open questions
 
-- **Refactor from v1.** v1 embedded the roster as inline character records. v2 splits Character into its own model and references by id. This means a "large roster" (10+ characters the player has rolled or recruited) doesn't bloat the Party record, and the same Character can be referenced across multiple modules if reuse is wanted later.
-- **`active_party` as Character ids, not indices.** v1 used indices into the roster array (`[0, 1, 2, 3]`). v2 uses ids directly so reordering the roster doesn't shift the active set.
-- **`roster` is the available pool; `active_party` is the current group.** The two arrays can diverge (a player may have 10 characters in the roster, 4 actively adventuring). At seed time they typically match.
+- **Refactor from v1.** v1 embedded the roster as inline character records. v2 splits Character into its own model and references by id.
+- **`roster` collapsed `active_party`.** v1 carried a separate `active_party` subset of four ids on top of `roster`. v2 drops that distinction — every entry in `roster` is in the active adventuring group. Recruitable-but-bench-warming characters (the "available pool" the v1 doc described) are not modelled in v2 today; if/when they come back, they're more naturally a separate "recruitable" pool than a parallel array on Party.
 - **Per-character data lives in [Character](character.md).** Equipment, inventory bags, stats, level — none of that is here anymore. Party only carries party-wide concerns.
 - **Singleton vs. per-module seed.** This file is the *default* seed at the data-model layer. Per the architecture plan, each module ships its own starting party at `modules/<id>/party.json`. The v2 module-loading layer will determine precedence; the data shape is the same either way.
 - **`Item.name` cross-reference in the shared `inventory`.** Same convention as elsewhere in v2 until the inventory references switch to id-based.

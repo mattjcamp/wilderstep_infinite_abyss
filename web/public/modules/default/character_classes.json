@@ -5,21 +5,46 @@
       "id": "fighter",
       "name": "Fighter",
       "range": 4,
-      "casting_type": ["none"],
+      "casting_type": [
+        "none"
+      ],
       "allowable_item_types": [
-        "fists", "dagger", "club", "mace", "sword", "axe", "halberd", "spear",
-        "gloves", "sling", "short_bow", "long_bow", "crossbow", "rock",
-        "cloth", "leather", "chain", "plate", "exotic"
+        "fists",
+        "dagger",
+        "club",
+        "mace",
+        "sword",
+        "axe",
+        "halberd",
+        "spear",
+        "gloves",
+        "sling",
+        "short_bow",
+        "long_bow",
+        "crossbow",
+        "rock",
+        "cloth",
+        "leather",
+        "chain",
+        "plate",
+        "exotic"
       ]
     },
     {
       "id": "thief",
       "name": "Thief",
       "range": 6,
-      "casting_type": ["none"],
+      "casting_type": [
+        "none"
+      ],
       "allowable_item_types": [
-        "fists", "dagger", "club", "sling", "short_bow",
-        "cloth", "leather"
+        "fists",
+        "dagger",
+        "club",
+        "sling",
+        "short_bow",
+        "cloth",
+        "leather"
       ],
       "class_abilities": [
         {
@@ -48,10 +73,17 @@
       "id": "cleric",
       "name": "Cleric",
       "range": 2,
-      "casting_type": ["priest"],
+      "casting_type": [
+        "priest"
+      ],
       "allowable_item_types": [
-        "fists", "club", "mace", "sling",
-        "cloth", "leather", "chain"
+        "fists",
+        "club",
+        "mace",
+        "sling",
+        "cloth",
+        "leather",
+        "chain"
       ],
       "class_abilities": [
         {
@@ -65,9 +97,13 @@
       "id": "wizard",
       "name": "Wizard",
       "range": 2,
-      "casting_type": ["sorcerer"],
+      "casting_type": [
+        "sorcerer"
+      ],
       "allowable_item_types": [
-        "fists", "dagger",
+        "fists",
+        "dagger",
+        "club",
         "cloth"
       ]
     },
@@ -75,9 +111,16 @@
       "id": "druid",
       "name": "Druid",
       "range": 2,
-      "casting_type": ["sorcerer", "priest"],
+      "casting_type": [
+        "sorcerer",
+        "priest"
+      ],
       "allowable_item_types": [
-        "fists", "dagger", "club", "mace", "sling",
+        "fists",
+        "dagger",
+        "club",
+        "mace",
+        "sling",
         "cloth"
       ],
       "class_abilities": [
@@ -97,11 +140,28 @@
       "id": "paladin",
       "name": "Paladin",
       "range": 4,
-      "casting_type": ["priest"],
+      "casting_type": [
+        "priest"
+      ],
       "allowable_item_types": [
-        "fists", "dagger", "club", "mace", "sword", "axe", "halberd", "spear",
-        "gloves", "sling", "short_bow", "long_bow", "crossbow", "rock",
-        "cloth", "leather", "chain", "plate"
+        "fists",
+        "dagger",
+        "club",
+        "mace",
+        "sword",
+        "axe",
+        "halberd",
+        "spear",
+        "gloves",
+        "sling",
+        "short_bow",
+        "long_bow",
+        "crossbow",
+        "rock",
+        "cloth",
+        "leather",
+        "chain",
+        "plate"
       ],
       "class_abilities": [
         {
@@ -115,17 +175,23 @@
       "id": "ranger",
       "name": "Ranger",
       "range": 6,
-      "casting_type": ["priest"],
+      "casting_type": [
+        "priest"
+      ],
       "allowable_item_types": [
-        "fists", "dagger", "club", "sword", "sling", "short_bow", "long_bow", "crossbow",
-        "cloth", "leather", "chain"
+        "fists",
+        "dagger",
+        "club",
+        "sword",
+        "sling",
+        "short_bow",
+        "long_bow",
+        "crossbow",
+        "cloth",
+        "leather",
+        "chain"
       ],
       "class_abilities": [
-        {
-          "name": "Herbalism",
-          "min_level": 1,
-          "description": "Keen knowledge of flora lets Rangers spot reagents in the wild. When the party examines a tile, each Ranger rolls an INT save (d20 + INT mod vs DC 13) — success identifies a potion reagent."
-        },
         {
           "name": "Pick Locks",
           "min_level": 3,
@@ -142,9 +208,13 @@
       "id": "alchemist",
       "name": "Alchemist",
       "range": 4,
-      "casting_type": ["sorcerer"],
+      "casting_type": [
+        "sorcerer"
+      ],
       "allowable_item_types": [
-        "fists", "dagger", "sling",
+        "fists",
+        "dagger",
+        "sling",
         "cloth"
       ],
       "class_abilities": [

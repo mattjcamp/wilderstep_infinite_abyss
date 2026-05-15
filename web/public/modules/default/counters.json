@@ -1,15 +1,22 @@
 {
-  "_comment": "Counter catalog (real data drives the schema). Counters are the shops and temples encountered behind town tiles. Each has an id, name, description, and either an `items` stock list (regular shops) or `kind: \"service\"` plus a `services` menu (temples). v1's TS also used the general/weapon/armor counters' `items` arrays as the post-combat loot pool; if v2 keeps that double-duty, document it explicitly when the loot path is wired up. Duplicate entries in `items` are intentional — they control stocking weight (e.g. four Cloths and two Plates means the shop seeds with that mix).",
+  "_comment": "Counter catalog (real data drives the schema). Counters are the shops and temples encountered behind town tiles. Each has an id, name, description, and either an `items` stock list (regular shops) or `kind: \"service\"` plus a `services` menu (temples). Stock entries are Item `id` strings (snake_case) \u2014 same convention Character/Party records are starting to adopt. Duplicates are intentional: they control stocking weight (four `cloth` and two `plate` means the shop seeds with that mix). v1's TS also used the general/weapon/armor counters' `items` arrays as the post-combat loot pool; if v2 keeps that double-duty, document it explicitly when the loot path is wired up.",
   "counters": [
     {
       "id": "armor",
       "name": "Armor Shop",
       "description": "Sells protective armor and shields.",
       "items": [
-        "Cloth",
-        "Leather", "Leather", "Leather", "Leather",
-        "Chain", "Chain", "Chain", "Chain",
-        "Plate", "Plate"
+        "cloth",
+        "leather",
+        "leather",
+        "leather",
+        "leather",
+        "chain",
+        "chain",
+        "chain",
+        "chain",
+        "plate",
+        "plate"
       ]
     },
     {
@@ -17,15 +24,34 @@
       "name": "General Store",
       "description": "Sells supplies, tools, and everyday adventuring gear.",
       "items": [
-        "Torch", "Torch", "Torch", "Torch",
-        "Lockpick", "Lockpick", "Lockpick", "Lockpick",
-        "Camping Supplies", "Camping Supplies", "Camping Supplies", "Camping Supplies",
-        "Healing Herb", "Healing Herb", "Healing Herb",
-        "Antidote", "Antidote", "Antidote",
-        "Arrows", "Arrows", "Arrows",
-        "Bolts", "Bolts", "Bolts",
-        "Stones", "Stones", "Stones",
-        "Dagger"
+        "torch",
+        "torch",
+        "torch",
+        "torch",
+        "lockpick",
+        "lockpick",
+        "lockpick",
+        "lockpick",
+        "camping_supplies",
+        "camping_supplies",
+        "camping_supplies",
+        "camping_supplies",
+        "healing_herb",
+        "healing_herb",
+        "healing_herb",
+        "antidote",
+        "antidote",
+        "antidote",
+        "arrows",
+        "arrows",
+        "arrows",
+        "bolts",
+        "bolts",
+        "bolts",
+        "stones",
+        "stones",
+        "stones",
+        "dagger"
       ]
     },
     {
@@ -33,41 +59,79 @@
       "name": "Guild Hall",
       "description": "Specialised equipment and services for guild members.",
       "items": [
-        "Lockpick", "Lockpick", "Lockpick", "Lockpick",
-        "Smoke Bomb",
-        "Fire Oil", "Fire Oil", "Fire Oil",
-        "Poison Vial"
+        "lockpick",
+        "lockpick",
+        "lockpick",
+        "lockpick",
+        "smoke_bomb",
+        "fire_oil",
+        "fire_oil",
+        "fire_oil",
+        "poison_vial"
       ]
     },
     {
       "id": "healing",
       "name": "Healing Counter",
-      "description": "A temple healer who mends flesh, restores the arcane, purges poison, and — for a price — returns the dead to life.",
+      "description": "A temple healer who mends flesh, restores the arcane, purges poison, and \u2014 for a price \u2014 returns the dead to life.",
       "items": [],
       "kind": "service",
       "services": [
-        { "id": "heal_all_hp",      "name": "Heal All HP",      "description": "Restore every living member to full hit points.",      "cost": 100 },
-        { "id": "restore_all_mp",   "name": "Restore All MP",   "description": "Refill every living member's magic points.",            "cost": 75 },
-        { "id": "cure_all_poisons", "name": "Cure All Poisons", "description": "Cleanse poison from every party member.",               "cost": 50 },
-        { "id": "raise_dead",       "name": "Raise Dead",       "description": "Return a fallen ally to full health. Costly miracle.", "cost": 1000 }
+        {
+          "id": "heal_all_hp",
+          "name": "Heal All HP",
+          "description": "Restore every living member to full hit points.",
+          "cost": 100
+        },
+        {
+          "id": "restore_all_mp",
+          "name": "Restore All MP",
+          "description": "Refill every living member's magic points.",
+          "cost": 75
+        },
+        {
+          "id": "cure_all_poisons",
+          "name": "Cure All Poisons",
+          "description": "Cleanse poison from every party member.",
+          "cost": 50
+        },
+        {
+          "id": "raise_dead",
+          "name": "Raise Dead",
+          "description": "Return a fallen ally to full health. Costly miracle.",
+          "cost": 1000
+        }
       ]
     },
     {
       "id": "inn",
       "name": "Inn",
       "description": "Offers rest and refreshment for weary travelers.",
-      "items": ["Healing Herb", "Camping Supplies"]
+      "items": [
+        "healing_herb",
+        "camping_supplies"
+      ]
     },
     {
       "id": "magic",
       "name": "Magic Shop",
       "description": "Sells scrolls, potions, and enchanted goods.",
       "items": [
-        "Healing Potion", "Healing Potion", "Healing Potion", "Healing Potion",
-        "Mana Potion", "Mana Potion", "Mana Potion", "Mana Potion",
-        "Fire Oil", "Fire Oil", "Fire Oil", "Fire Oil", "Fire Oil",
-        "Elixir of Strength",
-        "Elixir of Warding"
+        "healing_potion",
+        "healing_potion",
+        "healing_potion",
+        "healing_potion",
+        "mana_potion",
+        "mana_potion",
+        "mana_potion",
+        "mana_potion",
+        "fire_oil",
+        "fire_oil",
+        "fire_oil",
+        "fire_oil",
+        "fire_oil",
+        "elixir_of_strength",
+        "elixir_of_warding"
       ]
     },
     {
@@ -75,10 +139,26 @@
       "name": "Reagent Shop",
       "description": "Sells magical reagents and alchemical ingredients.",
       "items": [
-        "Serpent Root", "Glowcap Mushroom", "Moonpetal", "Brimite Ore", "Spring Water",
-        "Serpent Root", "Glowcap Mushroom", "Moonpetal", "Brimite Ore", "Spring Water",
-        "Serpent Root", "Glowcap Mushroom", "Moonpetal", "Brimite Ore", "Spring Water",
-        "Serpent Root", "Glowcap Mushroom", "Moonpetal", "Brimite Ore", "Spring Water"
+        "serpent_root",
+        "glowcap_mushroom",
+        "moonpetal",
+        "brimite_ore",
+        "spring_water",
+        "serpent_root",
+        "glowcap_mushroom",
+        "moonpetal",
+        "brimite_ore",
+        "spring_water",
+        "serpent_root",
+        "glowcap_mushroom",
+        "moonpetal",
+        "brimite_ore",
+        "spring_water",
+        "serpent_root",
+        "glowcap_mushroom",
+        "moonpetal",
+        "brimite_ore",
+        "spring_water"
       ]
     },
     {
@@ -86,18 +166,43 @@
       "name": "Weapons Shop",
       "description": "Sells melee and ranged weapons for all classes.",
       "items": [
-        "Club",
-        "Dagger", "Dagger", "Dagger", "Dagger", "Dagger",
-        "Mace", "Mace", "Mace",
-        "Sword", "Sword", "Sword",
-        "Spear", "Spear", "Spear",
-        "Short Bow", "Short Bow", "Short Bow",
-        "Long Bow", "Long Bow", "Long Bow",
-        "Sling", "Sling", "Sling",
-        "Crossbow", "Crossbow", "Crossbow",
-        "Arrows", "Arrows", "Arrows", "Arrows",
-        "Bolts", "Bolts", "Bolts", "Bolts",
-        "Stones", "Stones"
+        "club",
+        "dagger",
+        "dagger",
+        "dagger",
+        "dagger",
+        "dagger",
+        "mace",
+        "mace",
+        "mace",
+        "sword",
+        "sword",
+        "sword",
+        "spear",
+        "spear",
+        "spear",
+        "short_bow",
+        "short_bow",
+        "short_bow",
+        "long_bow",
+        "long_bow",
+        "long_bow",
+        "sling",
+        "sling",
+        "sling",
+        "crossbow",
+        "crossbow",
+        "crossbow",
+        "arrows",
+        "arrows",
+        "arrows",
+        "arrows",
+        "bolts",
+        "bolts",
+        "bolts",
+        "bolts",
+        "stones",
+        "stones"
       ]
     }
   ]

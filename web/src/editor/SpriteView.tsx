@@ -158,7 +158,7 @@ function SelectedPreview({
           {path}
         </code>
         <div className="mt-3 text-xs text-parchment/50">
-          Use this path in data records (e.g. <code>Monster.tile</code>,{" "}
+          Use this path in data records (e.g. <code>Monster.sprite</code>,{" "}
           <code>Character.sprite</code>). Apply basePath at fetch time.
         </div>
         <button

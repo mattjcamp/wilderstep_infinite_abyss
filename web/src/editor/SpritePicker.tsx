@@ -2,8 +2,8 @@
 
 /**
  * Sprite picker — embedded into RecordForm fields whose key matches
- * a known sprite-field (Monsters.tile, Characters.sprite, Items.icon,
- * Encounters.monster_party_tile).
+ * a known sprite-field (Characters.sprite, Monsters.sprite,
+ * MapTiles.sprite, Items.icon, Encounters.monster_party_tile, Party.avatar).
  *
  * Layout:
  *   [ thumb ] [ text input ] [ Pick… / Done ] [ ✕ clear ]

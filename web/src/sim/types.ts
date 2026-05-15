@@ -68,12 +68,14 @@ export interface SimLightSource {
 }
 
 /** Subset of the party.json record the simulation reads. Everything
- *  else (gold, inventory, roster ordering, …) is ignored by the
- *  kernel; the editor's panel still has the full record on hand. */
+ *  else (gold, inventory, …) is ignored by the kernel; the editor's
+ *  panel still has the full record on hand. */
 export interface SimParty {
   start_position: { col: number; row: number };
   avatar: string;
-  active_party: string[];
+  /** Character ids in the adventuring party. Every entry is in play —
+   *  v2 collapsed v1's roster + active_party into this single list. */
+  roster: string[];
   /** Step countdown for a held torch. >0 = +TORCH_LIGHT_RANGE to the
    *  party's emitted light radius. Decrements one per step. */
   torch_steps: number;

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The monster catalog — every monster the game can spawn. Each record carries combat stats (HP, AC, attack and damage), visual identity (sprite path, fallback color, battle scale), movement rules, and three optional arrays describing what the monster *does* in combat: `spells[]` (castable abilities), `on_hit_effects[]` (effects triggered on a successful melee hit), and `passives[]` (always-on traits).
+The monster catalog — every monster the game can spawn. Each record carries combat stats (HP, AC, attack and damage), visual identity (sprite path, battle scale), movement rules, and three optional arrays describing what the monster *does* in combat: `spells[]` (castable abilities), `on_hit_effects[]` (effects triggered on a successful melee hit), and `passives[]` (always-on traits).
 
 Ported from v1's `data/monsters.json` (see `_v1_reference/docs/data_dictionary/monsters.md`).
 
@@ -40,9 +40,7 @@ The "Used?" column reflects the v2 TypeScript implementation under `web/`. The c
 | `xp_reward` | int | yes | XP granted to the party on kill | TBD |
 | `gold_min` | int | yes | Minimum gold drop on kill (inclusive) | TBD |
 | `gold_max` | int | yes | Maximum gold drop on kill (inclusive) | TBD |
-| `color` | `[int, int, int]` | yes | RGB fallback color when no sprite renders | TBD |
-| `tile` | string | yes | Sprite identifier or relative path (e.g. `"game/monsters/goblin.png"` or `"monsters/lich"`) — **not** a Map Tile id | TBD |
-| `terrain` | string | yes | Spawn terrain: `"land"` or `"sea"` | TBD |
+| `sprite` | string | yes | Sprite identifier or relative path (e.g. `"game/monsters/goblin.png"` or `"monsters/lich"`). Resolved by the asset pipeline the same way Character `sprite` is — there's no relationship to [Map Tile](map_tile.md) ids. | TBD |
 | `move_range` | int | yes | Tiles the monster can move per turn in combat | TBD |
 | `post_attack_move` | int | yes | Extra tiles allowed after a successful melee hit | TBD |
 | `battle_scale` | int (1 or 2) | yes | Sprite size multiplier in combat (1 = standard, 2 = oversized boss) | TBD |
@@ -83,7 +81,7 @@ References an [Effect](effect.md) id with optional overrides. Always-on traits a
 - `on_hit_effects[].effect_id` and `passives[].effect_id` → [Effect](effect.md)
 - `name` referenced *by* [Encounter](encounter.md) `monsters[]` and `monster_party_tile`
 - `name` referenced *by* [Spawn](spawn.md) `spawn_monsters[]` and `boss_monsters[]`
-- `tile` is **not** a Map Tile id — it's a sprite path string; monsters bypass [Map Tile](map_tile.md) entirely for their sprite
+- `sprite` is **not** a Map Tile id — it's a sprite path string; monsters bypass [Map Tile](map_tile.md) entirely for their sprite
 
 ## Example record
 
@@ -102,9 +100,7 @@ References an [Effect](effect.md) id with optional overrides. Always-on traits a
   "xp_reward": 500,
   "gold_min": 50,
   "gold_max": 200,
-  "color": [120, 0, 60],
-  "tile": "game/monsters/vampire_lord.png",
-  "terrain": "land",
+  "sprite": "game/monsters/vampire_lord.png",
   "move_range": 6,
   "post_attack_move": 1,
   "battle_scale": 1,
@@ -124,5 +120,6 @@ References an [Effect](effect.md) id with optional overrides. Always-on traits a
 - **Passives and on_hit_effects now reference Effect ids.** v1 used a `type` string (e.g. `"regen"`, `"fire_resistance"`) that doubled as the runtime handler key and matched no formal Effect record. v2 renames `type` → `effect_id` and resolves against `effects.json`. Per-monster overrides stay as flat keys alongside `effect_id`.
 - **Monster `spells[]` stay inline.** Many monster-only spell types (`breath_fire`, `heal_self`, `heal_ally`, `poison`) don't have player-castable Spell records, so flipping `type` → `spell_id` would require either adding monster-only Spells with a non-player `casting_type` (e.g. `"monster"`) or a separate monster-spell catalog. Decision deferred; the inline duplication is the cost for now.
 - **`difficulty: "boss"` is not in the standard difficulty enum** (`easy`/`normal`/`hard`/`deadly`). v1 used it deliberately so bosses are excluded from rolled encounter pools (placement is intentional, not random). Carried forward; either add `"boss"` to the enum officially or document the convention.
-- **`tile` sprite paths are inconsistent.** Some records use `"game/monsters/<name>.png"` (path + extension), others `"monsters/<name>"` (no prefix, no extension). v1's loader normalized both; v2 carries the v1 strings as-is. Standardizing is a small future cleanup.
+- **`sprite` paths are inconsistent.** Some records use `"game/monsters/<name>.png"` (path + extension), others `"monsters/<name>"` (no prefix, no extension). v1's loader normalized both; v2 carries the v1 strings as-is. Standardizing is a small future cleanup.
+- **Dropped fields (`color`, `terrain`) and rename (`tile` → `sprite`).** v1 carried an RGB `color` fallback used when no sprite was loaded; v2 always renders the sprite (placeholder marker if missing), so the fallback is dead. `terrain` ("land" / "sea") gated where a monster could spawn in v1; v2 surfaces spawn-eligibility through the [Encounter](encounter.md) `area` discriminator and per-cell [Spawn](spawn.md) bindings, so the field is redundant. `tile` was confusingly named (it had no relationship to [Map Tile](map_tile.md) ids); renamed to `sprite` to match the Character convention.
 - **No id-based reference yet.** Encounters and Spawn lists reference monsters by `name`; same convention as elsewhere in v2.

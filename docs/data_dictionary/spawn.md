@@ -2,9 +2,9 @@
 
 ## Purpose
 
-Monster-lair behavior, keyed by the map tile that triggers it. When the party steps on or near a tile with a configured spawn point, this record drives the roamer-roller (`spawn_monsters` + `spawn_chance` + `max_spawned` + `spawn_radius`) and, when the party steps on the tile itself, the boss fight (`boss_monsters`).
+Monster-lair behavior. A Spawn record describes how a lair behaves; the binding to a place on the world happens on the [Map Tile](map_tile.md) — every painted cell carries an optional `spawn` field that names a Spawn id. When the party steps on (or near) such a cell, this record drives the roamer-roller (`spawn_monsters` + `spawn_chance` + `max_spawned` + `spawn_radius`); when they step on the cell itself, the boss fight (`boss_monsters`).
 
-Ported from v1's `data/spawn_points.json` (see `_v1_reference/docs/data_dictionary/spawn_points.json.md`).
+Ported from v1's `data/spawn_points.json` (see `_v1_reference/docs/data_dictionary/spawn_points.json.md`). v1 keyed lairs by integer tile id; v2 inverts that — Spawns are catalog records and *cells* point at them — so the same lair definition can be reused across maps and the binding is an explicit author choice.
 
 ## Location
 
@@ -23,14 +23,13 @@ The "Used?" column reflects the v2 TypeScript implementation under `web/`. The c
 }
 ```
 
-v1 keyed spawn records by stringified tile id; v2 flattens to an array and the integer `tile_id` becomes a regular field (so the catalog is uniform with the other v2 collections).
+v1 keyed spawn records by stringified tile id; v2 flattens to an array (uniform with the other v2 collections) and the cell→spawn link replaces the inline `tile_id` (see Purpose).
 
 ## Fields
 
 | Field | Type | Required | Description | Used? |
 |---|---|---|---|---|
-| `id` | string | yes | Stable identifier in snake_case (e.g. `"monster_spawn"`, `"dragon_lair"`) | TBD |
-| `tile_id` | int | yes | The [Map Tile](map_tile.md) id this lair binds to (66, 67, 68, 69, 71, 75 in current data) | TBD |
+| `id` | string | yes | Stable identifier in snake_case (e.g. `"monster_spawn"`, `"dragon_lair"`). Referenced by [Map Tile](map_tile.md) `spawn`. | TBD |
 | `name` | string | yes | Display name for the "Approach Lair?" prompt | TBD |
 | `description` | string | no | Flavor text shown when approaching | TBD |
 | `spawn_monsters` | string[] | yes | Roster the per-step roller picks from (uniform random) — Monster names | TBD |
@@ -44,7 +43,7 @@ v1 keyed spawn records by stringified tile id; v2 flattens to an array and the i
 
 ## Cross-references to other models
 
-- `tile_id` → [Map Tile](map_tile.md) `tile_id` (the trigger tile)
+- Referenced *by* [Map Tile](map_tile.md) `spawn` — the cell→spawn link is the binding mechanism
 - `spawn_monsters[]` and `boss_monsters[]` → [Monster](monster.md) names
 - `loot[]` → [Item](item.md) names
 
@@ -53,7 +52,6 @@ v1 keyed spawn records by stringified tile id; v2 flattens to an array and the i
 ```json
 {
   "id": "monster_spawn",
-  "tile_id": 66,
   "name": "Monster Spawn",
   "description": "A monster lair.",
   "spawn_monsters": ["Giant Rat", "Wolf", "Goblin", "Orc", "Lich"],
@@ -71,5 +69,5 @@ v1 keyed spawn records by stringified tile id; v2 flattens to an array and the i
 
 - **Dropped from v1 per the not-used rule:** `background_tile` (set on every v1 record but the v1 parser ignored it — cleared lairs in v1 had no explicit reveal tile). If cleared-lair reveal becomes a thing, re-introduce as `cleared_tile_id`.
 - **`boss_monster` (singular) was a legacy fallback for `boss_monsters` in v1.** v2 keeps only the plural form; lairs that v1 had with only the singular set should be updated to populate `boss_monsters`.
-- **Tile ids in v1 spawn data (66–75) overlap with tile ids in `tile_defs.json` that have `context: "spawns"`.** The relationship is implicit (the integers match by hand). v2 makes this explicit by giving Spawn a `tile_id` field that should be validated against [Map Tile](map_tile.md).
+- **v1's tile_id binding was replaced by the cell→spawn link.** v1 carried `tile_id` on each spawn record; v2 drops it. Spawns are now place-agnostic catalog records, and each painted [Map Tile](map_tile.md) cell carries an optional `spawn` field naming the Spawn id. This decouples lair behavior from any single tile and lets one Spawn back many cells across many maps.
 - **No id-based reference to Monster yet.** `spawn_monsters[]` and `boss_monsters[]` are Monster `name` strings — same convention as Item references elsewhere in v2.

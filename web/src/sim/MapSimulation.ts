@@ -144,11 +144,11 @@ export class MapSimulation {
     const raceMap = new Map<string, string>();
     for (const r of opts.catalog.races) raceMap.set(r.id, r.name);
     this.raceNameById = raceMap;
-    // Resolve the active party (4 character ids) to their full records.
+    // Resolve the roster's character ids to their full records.
     // Missing ids drop silently; the panel renders a placeholder row.
     const byId = new Map(opts.catalog.characters.map((c) => [c.id, c]));
     const active: SimCharacter[] = [];
-    for (const id of opts.party.active_party) {
+    for (const id of opts.party.roster) {
       const c = byId.get(id);
       if (c) active.push(c);
     }

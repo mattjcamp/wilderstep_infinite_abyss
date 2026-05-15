@@ -190,10 +190,9 @@ const DEFS: Record<ModelKey, ModelDef> = {
     fileName: "spawns.json",
     collectionKey: "spawns",
     docKey: "spawn",
-    blurb: "Monster lair behavior by tile",
+    blurb: "Monster-lair behavior (triggered by map cells via tile.spawn)",
     columns: [
       { field: "id", label: "ID" },
-      { field: "tile_id", label: "Tile", format: asString },
       { field: "name", label: "Name" },
       { field: "spawn_chance", label: "Chance %", format: asString },
       { field: "max_spawned", label: "Max", format: asString },

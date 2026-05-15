@@ -3,7 +3,7 @@
  *
  * Sprites are *assets*, not a data model, but they're surfaced through
  * the editor here so authors can see what art is available when filling
- * in Monster.tile / Character.sprite fields. The data lives at
+ * in Monster.sprite / Character.sprite fields. The data lives at
  * web/public/sprites/<category>/<filename> with a generated index.json
  * cataloging the set.
  */

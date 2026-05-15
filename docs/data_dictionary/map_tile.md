@@ -60,13 +60,13 @@ Present on tiles that emit light or interact with the lighting system.
 |---|---|---|
 | `"shop"` | Counter id (e.g. `"general"`, `"weapon"`, `"healing"`) | [Counter](counter.md) |
 | `"sign"` | Literal sign message string | none |
-| `"spawn"` | Spawn template id (matches a [Spawn](spawn.md) `id` or the trigger tile binding) | [Spawn](spawn.md) |
+| `"spawn"` | Spawn template id (matches a [Spawn](spawn.md) `id`) | [Spawn](spawn.md) |
 
 ## Cross-references to other models
 
 - `interaction_data` for `interaction_type: "shop"` → [Counter](counter.md) id
-- `tile_id` referenced *by* [Spawn](spawn.md) records (the lair trigger tile)
 - `tile_id` referenced *by* all map data files (overworld, town, dungeon — when those land in v2)
+- A painted cell's `spawn` field references a [Spawn](spawn.md) `id` (the lair binding lives here, not on Spawn)
 - v1 hardcoded specific tile ids as named constants in `Tiles.ts` (`TILE_GRASS = 0`, `TILE_BOAT = 64`, etc.). v2 should keep similar named constants in sync with this data.
 
 ## Example record (light-emitting tile)

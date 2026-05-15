@@ -245,6 +245,12 @@ type LoadState =
        *  aware) — needed so we can write back the modified map. */
       ownFile: Record<string, unknown> | null;
       isDraft: boolean;
+      /** Every map in the module (resolved view, including inherited
+       *  + draft). Used by the cell-inspector's Link picker so authors
+       *  can dropdown to a target map rather than typing the id by
+       *  hand. Just `{id, name}` pairs — the full record isn't
+       *  needed here. */
+      availableMaps: Array<{ id: string; name: string }>;
       /** Simulation-only catalog. Loaded alongside the painting data
        *  so the scene can pre-load party sprites in its single
        *  preload() pass. Null when a load failed; sim mode is still
@@ -628,6 +634,14 @@ export function MapEditor({
             character_classes?: Array<{ id: string; name: string }>;
           } | null);
 
+        // Build the picker list once at load. The full record set is
+        // resolved by mergeModel above (allMaps); we strip to id+name
+        // since the inspector doesn't need anything else and the list
+        // is rendered as a flat <select>.
+        const availableMaps = allMaps
+          .map((m) => ({ id: m.id, name: m.name ?? m.id }))
+          .sort((a, b) => a.name.localeCompare(b.name));
+
         setState({
           kind: "ok",
           palette,
@@ -638,6 +652,7 @@ export function MapEditor({
           mapRecord,
           ownFile: ownEffective ?? null,
           isDraft: hasDraft(moduleId, MODEL_KEY),
+          availableMaps,
           simParty: partyMerged ?? null,
           simCharacters: charactersMerged?.characters ?? [],
           simRaces: racesMerged?.races ?? [],
@@ -1486,7 +1501,7 @@ export function MapEditor({
         row: Math.floor(state.mapRecord.height / 2),
       },
       avatar: "",
-      active_party: [],
+      roster: [],
       torch_steps: 0,
       galadriels_light_steps: 0,
     };
@@ -2102,6 +2117,7 @@ export function MapEditor({
             encounters={state.encounters}
             spawns={state.spawns}
             items={state.items}
+            availableMaps={state.availableMaps}
             onUpdate={(patch) => {
               if (!selectedCell) return;
               setCellFields(selectedCell.col, selectedCell.row, patch);
@@ -2252,6 +2268,7 @@ function Inspector({
   encounters,
   spawns,
   items,
+  availableMaps,
   onUpdate,
 }: {
   selectedCell: { col: number; row: number } | null;
@@ -2267,6 +2284,8 @@ function Inspector({
   encounters: EncounterRecord[];
   spawns: RefRecord[];
   items: ItemRecord[];
+  /** Every map in the module — fed to the Link editor's map_id picker. */
+  availableMaps: Array<{ id: string; name: string }>;
   onUpdate: (patch: Partial<TileType>) => void;
 }) {
   const modified =
@@ -2562,6 +2581,7 @@ function Inspector({
               !!base && fieldDiffersFromPalette(instance, palette, "link")
             }
             canReset={!!base}
+            availableMaps={availableMaps}
             onChange={(v) => onUpdate({ link: v })}
             onReset={() => onUpdate({ link: undefined })}
           />
@@ -2882,6 +2902,7 @@ function LinkEditor({
   paletteValue,
   isModified,
   canReset,
+  availableMaps,
   onChange,
   onReset,
 }: {
@@ -2889,12 +2910,27 @@ function LinkEditor({
   paletteValue: { map_id: string; x: number; y: number } | null;
   isModified: boolean;
   canReset: boolean;
+  /** All maps in the module — feeds the map_id dropdown. */
+  availableMaps: Array<{ id: string; name: string }>;
   onChange: (
     v: { map_id: string; x: number; y: number } | null,
   ) => void;
   onReset: () => void;
 }) {
   const hasLink = value !== null;
+  // True when the current map_id doesn't appear in the picker — either
+  // a forward reference to a map that doesn't exist yet, or the
+  // target has been deleted since this link was authored. Either way
+  // we surface the existing string instead of silently dropping it.
+  const valueIsOrphan =
+    !!value &&
+    !!value.map_id &&
+    !availableMaps.some((m) => m.id === value.map_id);
+  /** When true, the user opted into the text-input fallback so they
+   *  can type a custom / future map id. Engaged automatically when
+   *  the current value is already an orphan. */
+  const [customMode, setCustomMode] = useState<boolean>(false);
+  const useCustom = customMode || valueIsOrphan;
   return (
     <InspectorRow
       label="Link"
@@ -2905,16 +2941,56 @@ function LinkEditor({
       {hasLink ? (
         <div className="space-y-1">
           <label className="block">
-            <span className="text-[10px] text-parchment/45">map_id</span>
-            <input
-              type="text"
-              value={value.map_id}
-              onChange={(e) =>
-                onChange({ ...value, map_id: e.target.value })
-              }
-              placeholder="target-map"
-              className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-xs text-parchment/90 focus:border-parchment/60 focus:outline-none"
-            />
+            <span className="flex items-center justify-between">
+              <span className="text-[10px] text-parchment/45">map_id</span>
+              <button
+                type="button"
+                onClick={() => setCustomMode((c) => !c)}
+                className="text-[10px] uppercase tracking-wide text-parchment/45 hover:text-parchment/80"
+                title={
+                  useCustom
+                    ? "Switch back to picking from the maps list."
+                    : "Switch to a free-form text field to type a custom or future map id."
+                }
+              >
+                {useCustom ? "Pick from list" : "Custom id"}
+              </button>
+            </span>
+            {useCustom ? (
+              <input
+                type="text"
+                value={value.map_id}
+                onChange={(e) =>
+                  onChange({ ...value, map_id: e.target.value })
+                }
+                placeholder="target-map"
+                className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-xs text-parchment/90 focus:border-parchment/60 focus:outline-none"
+              />
+            ) : (
+              <select
+                value={value.map_id}
+                onChange={(e) =>
+                  onChange({ ...value, map_id: e.target.value })
+                }
+                className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-xs text-parchment/90 focus:border-parchment/60 focus:outline-none"
+              >
+                {!value.map_id ? (
+                  <option value="">— choose a map —</option>
+                ) : null}
+                {availableMaps.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.name} ({m.id})
+                  </option>
+                ))}
+              </select>
+            )}
+            {valueIsOrphan ? (
+              <span className="mt-0.5 block text-[10px] text-ember/80">
+                Map id <code>{value.map_id}</code> isn&apos;t in this
+                module yet — value preserved so the link still
+                round-trips.
+              </span>
+            ) : null}
           </label>
           <div className="flex gap-2">
             <label className="flex-1">
