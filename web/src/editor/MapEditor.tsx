@@ -117,12 +117,34 @@ interface RefRecord {
 }
 interface EncounterRecord extends RefRecord {
   monster_party_tile?: string;
+  /** Monster ids in this encounter's roster — read by the quest-glow
+   *  detector so a cell whose encounter contains a quest-relevant
+   *  monster gets the same halo as a directly-referenced encounter. */
+  monsters?: string[];
 }
 /** Item record from items.json — `icon` is a bare sprite name that
  *  resolves to `item/${icon}.png` for overlay rendering. */
 interface ItemRecord extends RefRecord {
   icon?: string;
   category?: string;
+}
+/** Quest record from quests.json — only the bits the cell inspector
+ *  dropdown and the quest-glow / quest-giver renderer actually read.
+ *  Full schema is in docs/data_dictionary/quest.md. */
+interface QuestRecord {
+  id: string;
+  name?: string;
+  quest_giver?: {
+    npc_name?: string;
+    npc_sprite?: string;
+    start_dialog?: string;
+    end_dialog?: string;
+  };
+  steps?: Array<{
+    id?: string;
+    kind?: string;
+    params?: Record<string, unknown> | null;
+  }>;
 }
 
 /** Per-animation Phaser particle-emitter config. Keys are the values
@@ -215,6 +237,82 @@ function cellMatchesPalette(cell: TileType, palette: TileType[]): boolean {
   return true;
 }
 
+/** Compute the set of `"col,row"` keys for cells that should carry the
+ *  quest-related golden glow. A cell glows when any of the following
+ *  is true:
+ *
+ *   - it has a non-empty `quest` field (the quest giver sits here);
+ *   - it has an `encounter` whose id is named by a `kill`-kind step's
+ *     `encounter_id`, OR whose `monsters[]` roster contains a monster
+ *     id named by a `kill` step's `monster_id`;
+ *   - it has an `item` named by a `fetch`-kind step's `item_id`.
+ *
+ *  `visit` and `talk` steps don't drive glow today — those refer to
+ *  coordinates and NPCs that the engine surfaces differently. */
+function computeQuestGlowCells(
+  grid: TileType[][],
+  quests: QuestRecord[],
+  encounters: EncounterRecord[],
+): Set<string> {
+  const questEncounterIds = new Set<string>();
+  const questMonsterIds = new Set<string>();
+  const questItemIds = new Set<string>();
+  for (const q of quests) {
+    for (const s of q.steps ?? []) {
+      const params = (s.params ?? {}) as Record<string, unknown>;
+      if (s.kind === "kill") {
+        const eid = params.encounter_id;
+        const mid = params.monster_id;
+        if (typeof eid === "string" && eid) questEncounterIds.add(eid);
+        if (typeof mid === "string" && mid) questMonsterIds.add(mid);
+      } else if (s.kind === "fetch") {
+        const iid = params.item_id;
+        if (typeof iid === "string" && iid) questItemIds.add(iid);
+      }
+    }
+  }
+
+  const encMonsters = new Map<string, ReadonlySet<string>>();
+  for (const e of encounters) {
+    const mons = Array.isArray(e.monsters) ? new Set(e.monsters) : new Set<string>();
+    encMonsters.set(e.id, mons);
+  }
+
+  const glow = new Set<string>();
+  for (let r = 0; r < grid.length; r++) {
+    const row = grid[r];
+    if (!row) continue;
+    for (let c = 0; c < row.length; c++) {
+      const cell = row[c];
+      if (!cell) continue;
+      if (cell.quest) {
+        glow.add(`${c},${r}`);
+        continue;
+      }
+      if (cell.encounter) {
+        if (questEncounterIds.has(cell.encounter)) {
+          glow.add(`${c},${r}`);
+          continue;
+        }
+        const cellMons = encMonsters.get(cell.encounter);
+        if (cellMons) {
+          for (const m of questMonsterIds) {
+            if (cellMons.has(m)) {
+              glow.add(`${c},${r}`);
+              break;
+            }
+          }
+          if (glow.has(`${c},${r}`)) continue;
+        }
+      }
+      if (cell.item && questItemIds.has(cell.item)) {
+        glow.add(`${c},${r}`);
+      }
+    }
+  }
+  return glow;
+}
+
 function fieldDiffersFromPalette(
   cell: TileType,
   palette: TileType[],
@@ -251,6 +349,14 @@ type LoadState =
        *  hand. Just `{id, name}` pairs — the full record isn't
        *  needed here. */
       availableMaps: Array<{ id: string; name: string }>;
+      /** Every dungeon and quest in the module — feeds the cell
+       *  inspector's Dungeon / Quest dropdowns so authors pick from
+       *  the catalog instead of typing ids by hand. Quests carry the
+       *  full record (not just id+name) because the map editor also
+       *  reads quest_giver + steps for the on-map quest-giver sprite
+       *  + golden-glow rendering. */
+      availableDungeons: Array<{ id: string; name: string }>;
+      availableQuests: QuestRecord[];
       /** Simulation-only catalog. Loaded alongside the painting data
        *  so the scene can pre-load party sprites in its single
        *  preload() pass. Null when a load failed; sim mode is still
@@ -425,6 +531,11 @@ export function MapEditor({
     refreshEncounterOverlays: () => void;
     /** Sync per-cell item-sprite overlays from each cell's item field. */
     refreshItemOverlays: () => void;
+    /** Sync the quest-giver sprite overlay (cells with `quest` set
+     *  render the quest's quest_giver.npc_sprite) AND the soft
+     *  golden glow drawn behind quest-relevant cells (givers,
+     *  encounters tied to kill steps, items tied to fetch steps). */
+    refreshQuestOverlays: () => void;
     /** Show / move the simulation party sprite. Sprite path is the
      *  full key passed to the scene's preload (so the texture is
      *  already cached). Position is in grid coords. */
@@ -471,6 +582,8 @@ export function MapEditor({
           racesLayers,
           effectsLayers,
           classesLayers,
+          dungeonsLayers,
+          questsLayers,
         ] = await Promise.all([
           src.loadModelLayers(moduleId, "map_tiles"),
           src.loadModelLayers(moduleId, "maps"),
@@ -485,6 +598,11 @@ export function MapEditor({
           src.loadModelLayers(moduleId, "races").catch(() => null),
           src.loadModelLayers(moduleId, "effects").catch(() => null),
           src.loadModelLayers(moduleId, "character_classes").catch(() => null),
+          // Cell-inspector pickers for the dungeon/quest fields.
+          // Same non-fatal pattern — empty list if the module hasn't
+          // populated these yet.
+          src.loadModelLayers(moduleId, "dungeons").catch(() => null),
+          src.loadModelLayers(moduleId, "quests").catch(() => null),
         ]);
         if (cancelled) return;
 
@@ -642,6 +760,31 @@ export function MapEditor({
           .map((m) => ({ id: m.id, name: m.name ?? m.id }))
           .sort((a, b) => a.name.localeCompare(b.name));
 
+        // Same shape for the dungeons / quests pickers in the cell
+        // inspector. Failures upstream become empty lists.
+        const dungeonsMerged =
+          dungeonsLayers &&
+          (mergeModel(
+            "dungeons",
+            dungeonsLayers.inherited,
+            dungeonsLayers.ownFile,
+          ) as { dungeons?: Array<{ id: string; name?: string }> } | null);
+        const availableDungeons = (dungeonsMerged?.dungeons ?? [])
+          .map((d) => ({ id: d.id, name: d.name ?? d.id }))
+          .sort((a, b) => a.name.localeCompare(b.name));
+        const questsMerged =
+          questsLayers &&
+          (mergeModel(
+            "quests",
+            questsLayers.inherited,
+            questsLayers.ownFile,
+          ) as { quests?: QuestRecord[] } | null);
+        const availableQuests = (questsMerged?.quests ?? [])
+          .slice()
+          .sort((a, b) =>
+            (a.name ?? a.id).localeCompare(b.name ?? b.id),
+          );
+
         setState({
           kind: "ok",
           palette,
@@ -653,6 +796,8 @@ export function MapEditor({
           ownFile: ownEffective ?? null,
           isDraft: hasDraft(moduleId, MODEL_KEY),
           availableMaps,
+          availableDungeons,
+          availableQuests,
           simParty: partyMerged ?? null,
           simCharacters: charactersMerged?.characters ?? [],
           simRaces: racesMerged?.races ?? [],
@@ -738,12 +883,14 @@ export function MapEditor({
         mapRecord,
         encounters,
         items,
+        availableQuests,
         simParty,
         simCharacters,
       } = state;
       const paletteById = new Map(palette.map((t) => [t.id, t]));
       const encountersById = new Map(encounters.map((e) => [e.id, e]));
       const itemsById = new Map(items.map((i) => [i.id, i]));
+      const questsById = new Map(availableQuests.map((q) => [q.id, q]));
 
       // Gather every unique sprite path used by the palette + the
       // current grid + every encounter's monster_party_tile + every
@@ -760,6 +907,12 @@ export function MapEditor({
       }
       for (const i of items) {
         if (i.icon) spriteKeys.add(`item/${i.icon}.png`);
+      }
+      // Quest-giver NPC sprites — preload so the on-map overlay is
+      // ready as soon as a cell with `tile.quest` becomes visible.
+      for (const q of availableQuests) {
+        const sprite = q.quest_giver?.npc_sprite;
+        if (sprite && sprite.includes("/")) spriteKeys.add(sprite);
       }
       // Sim-mode sprites: party avatar + every active member's
       // portrait. Pre-load defensively so toggling sim on doesn't
@@ -793,6 +946,17 @@ export function MapEditor({
         /** Sim-mode party sprite (single Image, depth-300 above
          *  everything else). Null while sim mode is off. */
         partySprite: Phaser.GameObjects.Image | null = null;
+        /** Quest-giver overlay sprites keyed by "col,row" — the
+         *  NPC sprite from a quest's quest_giver, rendered on cells
+         *  with `tile.quest` set. Diff'd against questGiverIds the
+         *  same way encounter/item overlays are. */
+        questGiverOverlays: Map<string, Phaser.GameObjects.Image> = new Map();
+        questGiverIds: Map<string, string> = new Map();
+        /** Single Graphics layer that draws the soft golden halo
+         *  behind quest-relevant cells. Recomputed wholesale on
+         *  refresh — cheap enough that diffing per cell isn't
+         *  worth the complexity. */
+        questGlowGraphics: Phaser.GameObjects.Graphics | null = null;
 
         preload() {
           for (const sprite of spriteKeys) {
@@ -863,6 +1027,14 @@ export function MapEditor({
           this.overrideGraphics = this.add.graphics();
           this.overrideGraphics.setDepth(150);
 
+          // Quest-relevance halo — a single Graphics layer drawn
+          // BELOW the item/encounter overlays so the halo sits
+          // behind the sprite. Depth 65 places it above the base
+          // cell (no explicit depth) and below items (70) /
+          // encounters (80).
+          this.questGlowGraphics = this.add.graphics();
+          this.questGlowGraphics.setDepth(65);
+
           // Selection highlight — drawn on top of everything.
           this.selectionGraphics = this.add.graphics();
           this.selectionGraphics.setDepth(200);
@@ -914,6 +1086,9 @@ export function MapEditor({
               // Assigned for real below — placeholder so the API object
               // matches the type until create() finishes wiring it.
             },
+            refreshQuestOverlays: () => {
+              // Assigned for real below.
+            },
             setPartyAt: () => {
               // Assigned for real below — placeholder so the API object
               // matches the type until create() finishes wiring it.
@@ -936,6 +1111,9 @@ export function MapEditor({
                   img.clearTint();
                 }
                 for (const img of this.itemOverlays.values()) {
+                  img.clearTint();
+                }
+                for (const img of this.questGiverOverlays.values()) {
                   img.clearTint();
                 }
                 return;
@@ -1033,11 +1211,20 @@ export function MapEditor({
                   if (img) img.setTint(tint);
                   // Placed overlays share the cell's lighting. Any
                   // future placed-sprite layers (counters, etc.) should
-                  // be tinted here as well.
+                  // be tinted here as well. The quest-giver NPC sprite
+                  // is part of the world (it's a character standing
+                  // there), so it dims like everything else. The
+                  // golden quest-relevance halo (questGlowGraphics) is
+                  // a deliberate UI affordance and intentionally
+                  // stays at full brightness — it should "shine
+                  // through" the darkness so quest cells remain
+                  // visible in pitch-black maps.
                   const enc = this.encounterOverlays.get(key);
                   if (enc) enc.setTint(tint);
                   const itm = this.itemOverlays.get(key);
                   if (itm) itm.setTint(tint);
+                  const qg = this.questGiverOverlays.get(key);
+                  if (qg) qg.setTint(tint);
                 }
               }
             },
@@ -1220,6 +1407,102 @@ export function MapEditor({
                 }
               }
             };
+            sceneApiRef.current.refreshQuestOverlays = () => {
+              // ── Quest-giver sprite overlay ────────────────────────
+              // Diff'd against questGiverIds so unchanged cells skip
+              // sprite re-creation. Mirrors the encounter/item layer.
+              for (let r = 0; r < mapRecord.height; r++) {
+                for (let c = 0; c < mapRecord.width; c++) {
+                  const cell = gridRef.current[r]?.[c];
+                  const questId = cell?.quest ?? "";
+                  const key = `${c},${r}`;
+                  const currentId =
+                    sceneSelf.questGiverIds.get(key) ?? "";
+                  if (questId === currentId) continue;
+                  const existing = sceneSelf.questGiverOverlays.get(key);
+                  if (existing) {
+                    existing.destroy();
+                    sceneSelf.questGiverOverlays.delete(key);
+                    sceneSelf.questGiverIds.delete(key);
+                  }
+                  if (!questId) continue;
+                  const quest = questsById.get(questId);
+                  const sprite = quest?.quest_giver?.npc_sprite;
+                  if (
+                    !sprite ||
+                    !sprite.includes("/") ||
+                    !sceneSelf.textures.exists(sprite)
+                  ) {
+                    sceneSelf.questGiverIds.set(key, questId);
+                    continue;
+                  }
+                  const img = sceneSelf.add
+                    .image(
+                      c * TILE_SIZE + TILE_SIZE / 2,
+                      r * TILE_SIZE + TILE_SIZE / 2,
+                      sprite,
+                    )
+                    .setOrigin(0.5)
+                    .setDisplaySize(TILE_SIZE, TILE_SIZE)
+                    // Above items (70) and encounters (80) so the
+                    // quest-giver sits on top of any monster sprite
+                    // sharing the cell.
+                    .setDepth(85);
+                  const baseImg = sceneSelf.cells.get(key);
+                  if (baseImg && baseImg.isTinted) {
+                    img.setTint(baseImg.tintTopLeft);
+                  }
+                  sceneSelf.questGiverOverlays.set(key, img);
+                  sceneSelf.questGiverIds.set(key, questId);
+                }
+              }
+              // ── Golden quest-relevance halo ───────────────────────
+              // Computed wholesale each refresh — cheap, since the
+              // total set is small and Graphics redraw is fast.
+              // Per-cell brightness comes from the base cell's
+              // current tint (relight has already painted it). Untinted
+              // cells (Day mode) get full brightness; tinted cells get
+              // a halo whose RGB is multiplied by the same brightness
+              // applied to the scene, so the halo dims uniformly with
+              // the rest of the world.
+              const g = sceneSelf.questGlowGraphics;
+              if (!g) return;
+              g.clear();
+              const glowCells = computeQuestGlowCells(
+                gridRef.current,
+                availableQuests,
+                encounters,
+              );
+              const BASE_R = 0xff;
+              const BASE_G = 0xd7;
+              const BASE_B = 0x50;
+              const HALO_ALPHA = 0.22;
+              for (const key of glowCells) {
+                const [csStr, rsStr] = key.split(",");
+                const cs = Number(csStr);
+                const rs = Number(rsStr);
+                if (!Number.isFinite(cs) || !Number.isFinite(rs)) continue;
+                // Read brightness from the base sprite's current tint.
+                // relight applies a grayscale tint where all three
+                // channels are equal, so the low byte is the brightness
+                // level 0..255.
+                let brightness = 1;
+                const baseImg = sceneSelf.cells.get(key);
+                if (baseImg && baseImg.isTinted) {
+                  brightness = (baseImg.tintTopLeft & 0xff) / 255;
+                }
+                const r = Math.round(BASE_R * brightness);
+                const gg = Math.round(BASE_G * brightness);
+                const b = Math.round(BASE_B * brightness);
+                const color = (r << 16) | (gg << 8) | b;
+                g.fillStyle(color, HALO_ALPHA);
+                const cx = cs * TILE_SIZE + TILE_SIZE / 2;
+                const cy = rs * TILE_SIZE + TILE_SIZE / 2;
+                // Slightly wider than the cell so the halo bleeds
+                // past the sprite edges.
+                g.fillCircle(cx, cy, TILE_SIZE * 0.72);
+              }
+            };
             sceneApiRef.current.refreshAnimations = () => {
               for (let r = 0; r < mapRecord.height; r++) {
                 for (let c = 0; c < mapRecord.width; c++) {
@@ -1270,6 +1553,11 @@ export function MapEditor({
           // Initial item-overlay pass — seeds sprites for cells whose
           // item is set at load time.
           sceneApiRef.current.refreshItemOverlays();
+          // Initial quest-overlay pass — seeds quest-giver sprites
+          // for any cell with `quest` set, and draws the golden glow
+          // behind quest-relevant cells (givers + matching encounters
+          // + matching items).
+          sceneApiRef.current.refreshQuestOverlays();
         }
 
         paintAt(p: Phaser.Input.Pointer) {
@@ -1587,6 +1875,18 @@ export function MapEditor({
   useEffect(() => {
     sceneApiRef.current?.refreshItemOverlays();
   }, [state]);
+
+  // Sync the quest-giver overlay + golden glow with the grid. Runs
+  // whenever the grid, the quest/encounter catalogs, OR the lighting
+  // mode changes. The dep on lightingMode matters because the halo
+  // dims using each cell's current tint — when the user toggles
+  // Day/Twilight/Night, the halo needs a fresh draw after relight
+  // has finished its tint pass. React fires effects in declaration
+  // order, so this useEffect (declared after the relight effect)
+  // sees the freshly-tinted cells.
+  useEffect(() => {
+    sceneApiRef.current?.refreshQuestOverlays();
+  }, [state, lightingMode]);
 
   // ── Cell mutators (driven by the Inspector) ─────────────────────
   /** Apply a field patch directly to the cell at (col, row). The cell
@@ -2118,6 +2418,8 @@ export function MapEditor({
             spawns={state.spawns}
             items={state.items}
             availableMaps={state.availableMaps}
+            availableDungeons={state.availableDungeons}
+            availableQuests={state.availableQuests}
             onUpdate={(patch) => {
               if (!selectedCell) return;
               setCellFields(selectedCell.col, selectedCell.row, patch);
@@ -2269,6 +2571,8 @@ function Inspector({
   spawns,
   items,
   availableMaps,
+  availableDungeons,
+  availableQuests,
   onUpdate,
 }: {
   selectedCell: { col: number; row: number } | null;
@@ -2286,6 +2590,11 @@ function Inspector({
   items: ItemRecord[];
   /** Every map in the module — fed to the Link editor's map_id picker. */
   availableMaps: Array<{ id: string; name: string }>;
+  /** Every dungeon and quest in the module — fed to the cell-inspector's
+   *  Dungeon and Quest dropdowns. Quests carry the full record (used
+   *  by the on-map quest-giver sprite + glow logic). */
+  availableDungeons: Array<{ id: string; name: string }>;
+  availableQuests: QuestRecord[];
   onUpdate: (patch: Partial<TileType>) => void;
 }) {
   const modified =
@@ -2548,11 +2857,29 @@ function Inspector({
             onReset={() => onUpdate({ item: undefined })}
           />
 
-          <StringEditor
+          <SelectEditor
             label="Quest"
-            help="Quest id reference. The quest model is not yet ported — this field stores the id verbatim so future ports preserve author intent."
+            help="Quest from quests.json. Empty for none. A cell carrying a Quest id is a trigger tile for that quest."
             value={instance.quest ?? ""}
             paletteValue={base?.quest ?? instance.quest ?? ""}
+            options={[
+              { value: "", label: "(none)" },
+              ...availableQuests.map((q) => ({
+                value: q.id,
+                label: q.name ? `${q.name} — ${q.id}` : q.id,
+              })),
+              // Preserve a value pointing at a quest not in the catalog
+              // (forward reference / library record) so it round-trips.
+              ...(instance.quest &&
+              !availableQuests.some((q) => q.id === instance.quest)
+                ? [
+                    {
+                      value: instance.quest,
+                      label: `(missing) ${instance.quest}`,
+                    },
+                  ]
+                : []),
+            ]}
             isModified={
               !!base && fieldDiffersFromPalette(instance, palette, "quest")
             }
@@ -2561,11 +2888,27 @@ function Inspector({
             onReset={() => onUpdate({ quest: undefined })}
           />
 
-          <StringEditor
+          <SelectEditor
             label="Dungeon"
-            help="Dungeon id reference. The dungeon model is not yet ported — this field stores the id verbatim so future ports preserve author intent."
+            help="Dungeon from dungeons.json. Empty for none. A cell carrying a Dungeon id is an entrance trigger — stepping on it generates and enters the dungeon's first level."
             value={instance.dungeon ?? ""}
             paletteValue={base?.dungeon ?? instance.dungeon ?? ""}
+            options={[
+              { value: "", label: "(none)" },
+              ...availableDungeons.map((d) => ({
+                value: d.id,
+                label: d.name ? `${d.name} — ${d.id}` : d.id,
+              })),
+              ...(instance.dungeon &&
+              !availableDungeons.some((d) => d.id === instance.dungeon)
+                ? [
+                    {
+                      value: instance.dungeon,
+                      label: `(missing) ${instance.dungeon}`,
+                    },
+                  ]
+                : []),
+            ]}
             isModified={
               !!base && fieldDiffersFromPalette(instance, palette, "dungeon")
             }

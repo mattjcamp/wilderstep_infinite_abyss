@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The starting party seed: where the party spawns on the world map, the shared gold pool, the characters currently in the adventuring group (the roster), the party-wide effect slots, the shared inventory stash, and a few step-counter resources (torch, Galadriel's Light).
+The starting party seed: which map the party spawns on and at which tile, the shared gold pool, the characters currently in the adventuring group (the roster), the party-wide effect slots, the shared inventory stash, and a few step-counter resources (torch, Galadriel's Light).
 
 This is a **singleton** — one Party record per module, not a collection. Characters themselves live in [Character](character.md); Party references them by id. Live game state (where the party currently is, what they've changed since the seed) lives in the runtime [Game](game.md) save.
 
@@ -23,7 +23,7 @@ A flat singleton object — the whole file is one Party record.
 ```json
 {
   "_comment": "...",
-  "start_position": { "col": ..., "row": ... },
+  "start_position": { "map_id": ..., "col": ..., "row": ... },
   "gold": ...,
   "roster": [ "<character_id>", ... ],
   "party_effects": { "effect_1": ..., ..., "effect_4": ... },
@@ -37,7 +37,7 @@ A flat singleton object — the whole file is one Party record.
 
 | Field | Type | Required | Description | Used? |
 |---|---|---|---|---|
-| `start_position` | `{ col: int, row: int }` | yes | Initial party position on the world map | TBD |
+| `start_position` | `{ map_id: string, col: int, row: int }` | yes | Where the party spawns. `map_id` references a [Map](map.md) id; `col`/`row` are the cell within that map. On a fresh game this is the seed; on a save-game it's overwritten with the party's last position so loading drops them where they were. | TBD |
 | `gold` | int | yes | Shared party gold pool | TBD |
 | `roster` | string[] | yes | [Character](character.md) ids in the adventuring party. Typically four; the engine treats every roster entry as actively adventuring. | TBD |
 | `party_effects` | object | yes | Up to four named active [Effect](effect.md) slots; each value is an Effect id or null | TBD |
@@ -58,6 +58,7 @@ Four named slots; each value is an [Effect](effect.md) id or `null`.
 
 ## Cross-references to other models
 
+- `start_position.map_id` → [Map](map.md) id
 - `roster[]` → [Character](character.md) ids
 - `party_effects.effect_1..4` → [Effect](effect.md) ids
 - `inventory[].item` → [Item](item.md) id
@@ -66,7 +67,7 @@ Four named slots; each value is an [Effect](effect.md) id or `null`.
 
 ```json
 {
-  "start_position": { "col": 14, "row": 16 },
+  "start_position": { "map_id": "test2", "col": 14, "row": 16 },
   "gold": 50,
   "roster": ["aldric", "pippin", "selina", "elminster"],
   "party_effects": {

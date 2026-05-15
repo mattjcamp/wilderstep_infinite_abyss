@@ -21,7 +21,7 @@
       ],
       "quest_giver": {
         "npc_name": "Old Hermit",
-        "npc_sprite": "person/fighter17.png",
+        "npc_sprite": "person/king1.png",
         "start_dialog": "Yo",
         "end_dialog": "Sweet, coode dude"
       },

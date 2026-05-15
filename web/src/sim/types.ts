@@ -71,7 +71,13 @@ export interface SimLightSource {
  *  else (gold, inventory, …) is ignored by the kernel; the editor's
  *  panel still has the full record on hand. */
 export interface SimParty {
-  start_position: { col: number; row: number };
+  /** Where the party spawns. `map_id` names a Map record; `col`/`row`
+   *  are the cell within that map. The sim kernel doesn't load the
+   *  named map itself (the host scene is already showing one and the
+   *  click-to-place flow can override) — it reads `col`/`row` as the
+   *  preferred spawn coordinate. The future /play scene will be the
+   *  consumer that honors `map_id` to pick the right map to mount. */
+  start_position: { map_id?: string; col: number; row: number };
   avatar: string;
   /** Character ids in the adventuring party. Every entry is in play —
    *  v2 collapsed v1's roster + active_party into this single list. */

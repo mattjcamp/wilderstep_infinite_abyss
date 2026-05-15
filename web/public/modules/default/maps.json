@@ -4341,19 +4341,19 @@
             "tag": "floor"
           },
           {
-            "id": "floor",
-            "name": "Floor",
-            "walkable": true,
+            "id": "door_locked",
+            "name": "Locked Door",
+            "walkable": false,
             "obstructs": false,
-            "locked": false,
+            "locked": true,
             "light_source": false,
             "light_range": 0,
-            "animation": "none",
+            "animation": null,
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/town_floor.png",
-            "tag": "floor"
+            "sprite": "map/locked_door.png",
+            "tag": "dungeon"
           },
           {
             "id": "floor",
@@ -6171,7 +6171,8 @@
             "sprite": "map/grass1.png",
             "tag": "outdoor",
             "boat": false,
-            "text": ""
+            "text": "",
+            "quest": "rats"
           },
           {
             "id": "grass",
@@ -7374,21 +7375,20 @@
             "text": ""
           },
           {
-            "id": "grass",
-            "name": "Grass",
+            "id": "dungeon_entrance",
+            "name": "Dungeon Entrane",
             "walkable": true,
-            "obstructs": false,
+            "obstructs": true,
             "locked": false,
             "light_source": false,
             "light_range": 0,
-            "animation": "none",
-            "counter": "",
-            "encounter": "",
-            "spawn": "",
-            "sprite": "map/grass1.png",
+            "animation": null,
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/dungeon_entrance.png",
             "tag": "outdoor",
-            "boat": false,
-            "text": ""
+            "dungeon": "the_hole"
           },
           {
             "id": "grass",
@@ -7473,7 +7473,8 @@
             "sprite": "map/grass1.png",
             "tag": "outdoor",
             "boat": false,
-            "text": ""
+            "text": "",
+            "quest": "rats"
           },
           {
             "id": "grass",
