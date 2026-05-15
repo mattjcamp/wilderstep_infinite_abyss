@@ -32,8 +32,7 @@ The v2 codebase is just being built. The **Used?** column is `TBD` everywhere fo
 | Spawn | [spawn.md](spawn.md) | Monster-lair behavior bound to a map tile id; ported from v1 |
 | Map Tile | [map_tile.md](map_tile.md) | The tile catalog — display, walkability, sprite, lighting flags, interaction metadata; ported from v1 |
 | Map | [map.md](map.md) | Unified model for authored maps (overworld, towns, buildings, detail screens, battle screens) |
-| Dungeon | [dungeon.md](dungeon.md) | Authored multi-level dungeon — id, name, ordered list of inline [Dungeon Level](dungeon_level.md) records |
-| Dungeon Config | [dungeon_config.md](dungeon_config.md) | Procedural dungeon generator inputs (not authored tile data) |
+| Dungeon | [dungeon.md](dungeon.md) | Procedural multi-level dungeon — generator parameters (style, difficulty, size, torch_density, locked_doors) + ordered list of inline [Dungeon Level](dungeon_level.md) records (per-floor overrides) |
 | Quest | [quest.md](quest.md) | Authored adventure thread — id, name, ordered list of inline [Quest Step](quest_step.md) records |
 | Module | [module.md](module.md) | The canonical definition of an adventure — a template a Game is instantiated from |
 | Game | [game.md](game.md) | Runtime instance of a Module; a save file is a serialized Game |

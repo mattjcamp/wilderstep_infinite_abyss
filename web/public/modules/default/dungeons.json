@@ -1,4 +1,31 @@
 {
   "_comment": "Dungeon catalog (real data drives the schema). A Dungeon is an *authored* multi-level dungeon — id, display name, optional flavor description, optional tags (editor-side organizational labels — same convention as Map.tags), and an ordered list of inline Dungeon Level records under `levels[]`. Each level is `{ id, name, tags?, depth, map_id }` — the Map id points at the actual playable tile grid. Dungeon Levels live inline because they have no meaning outside their parent Dungeon (no other model references them). This is distinct from Dungeon Config (in dungeon_configs.json), which describes a *procedural* generator's input parameters — authored dungeons are entirely hand-painted maps, procedural ones are rolled at runtime. The catalog ships empty; populate as adventures are designed. See docs/data_dictionary/dungeon.md.",
-  "dungeons": []
+  "dungeons": [
+    {
+      "id": "the_hole",
+      "name": "The Hole",
+      "description": "An old cave where the town used to throw away it's trash",
+      "tags": [
+        "hole"
+      ],
+      "levels": [
+        {
+          "id": "the_hole_l1",
+          "name": "Level 1",
+          "depth": 1,
+          "map_id": "",
+          "tags": [
+            "hole"
+          ]
+        },
+        {
+          "id": "the_hole_l2",
+          "name": "Level 2",
+          "depth": 2,
+          "map_id": "",
+          "difficulty": "hard"
+        }
+      ]
+    }
+  ]
 }

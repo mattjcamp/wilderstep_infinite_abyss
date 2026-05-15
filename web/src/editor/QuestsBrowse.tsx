@@ -28,8 +28,11 @@ import {
 import { mergeModel } from "@/data_model/merge";
 import { publishItems } from "@/data_model/publishClient";
 import { StaticModuleSource } from "@/data_model/StaticModuleSource";
+import { SpritePicker } from "./SpritePicker";
 import { ID_PATTERN, TagsPicker } from "./TagsPicker";
 import { usePublishServer } from "./usePublishServer";
+
+const NPC_SPRITE_CONFIG = { category: "person", format: "path" } as const;
 
 const MODEL_KEY = "quests";
 const FILE_NAME = "quests.json";
@@ -46,12 +49,49 @@ interface QuestStep {
   params?: Record<string, unknown> | null;
 }
 
+interface QuestGiver {
+  npc_name: string;
+  npc_sprite: string;
+  start_dialog: string;
+  end_dialog: string;
+}
+
+interface TileOp {
+  map: string;
+  col: number;
+  row: number;
+}
+
+interface TileAddOp extends TileOp {
+  tile_id: string;
+}
+
+interface Rewards {
+  xp?: number;
+  gold?: number;
+  items?: string[];
+  tile_remove?: TileOp[];
+  tile_add?: TileAddOp[];
+}
+
 interface QuestRecord {
   id: string;
   name: string;
   description?: string;
   tags?: string[];
+  quest_giver?: QuestGiver;
+  rewards?: Rewards;
   steps: QuestStep[];
+}
+
+interface ItemSummary {
+  id: string;
+  name?: string;
+}
+
+interface MapSummary {
+  id: string;
+  name?: string;
 }
 
 type LoadState =
@@ -59,6 +99,8 @@ type LoadState =
   | {
       kind: "ok";
       quests: QuestRecord[];
+      items: ItemSummary[];
+      maps: MapSummary[];
       ownFile: Record<string, unknown> | null;
       isDraft: boolean;
     }
@@ -74,19 +116,46 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
   const refresh = async () => {
     try {
       const src = new StaticModuleSource();
-      const layers = await src.loadModelLayers(moduleId, "quests");
+      const [questsLayers, itemsLayers, mapsLayers] = await Promise.all([
+        src.loadModelLayers(moduleId, "quests"),
+        src.loadModelLayers(moduleId, "items"),
+        src.loadModelLayers(moduleId, "maps"),
+      ]);
       const draft = loadDraft<Record<string, unknown>>(moduleId, MODEL_KEY);
       const ownEffective =
-        draft ?? (layers.ownFile as Record<string, unknown> | null);
+        draft ?? (questsLayers.ownFile as Record<string, unknown> | null);
       const merged = mergeModel(
         "quests",
-        layers.inherited,
+        questsLayers.inherited,
         ownEffective,
       ) as { quests?: QuestRecord[] } | null;
       const quests = merged?.quests ?? [];
+
+      const itemsMerged = mergeModel(
+        "items",
+        itemsLayers.inherited,
+        itemsLayers.ownFile,
+      ) as { items?: ItemSummary[] } | null;
+      const items = (itemsMerged?.items ?? []).map((i) => ({
+        id: i.id,
+        name: i.name,
+      }));
+
+      const mapsMerged = mergeModel(
+        "maps",
+        mapsLayers.inherited,
+        mapsLayers.ownFile,
+      ) as { maps?: MapSummary[] } | null;
+      const maps = (mapsMerged?.maps ?? []).map((m) => ({
+        id: m.id,
+        name: m.name,
+      }));
+
       setState({
         kind: "ok",
         quests,
+        items,
+        maps,
         ownFile: ownEffective ?? null,
         isDraft: hasDraft(moduleId, MODEL_KEY),
       });
@@ -410,6 +479,8 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
                   {expanded.has(q.id) ? (
                     <QuestEditor
                       quest={q}
+                      items={state.items}
+                      maps={state.maps}
                       existingTags={allTags}
                       onUpdate={(patch) => onUpdateQuest(q.id, patch)}
                       onAddStep={() => onAddStep(q.id)}
@@ -438,6 +509,8 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
 
 function QuestEditor({
   quest,
+  items,
+  maps,
   existingTags,
   onUpdate,
   onAddStep,
@@ -445,6 +518,8 @@ function QuestEditor({
   onDeleteStep,
 }: {
   quest: QuestRecord;
+  items: ItemSummary[];
+  maps: MapSummary[];
   existingTags: string[];
   onUpdate: (patch: Partial<QuestRecord>) => void;
   onAddStep: () => void;
@@ -488,6 +563,18 @@ function QuestEditor({
         />
       </div>
 
+      <QuestGiverEditor
+        giver={quest.quest_giver}
+        onUpdate={(giver) => onUpdate({ quest_giver: giver })}
+      />
+
+      <RewardsEditor
+        rewards={quest.rewards}
+        items={items}
+        maps={maps}
+        onUpdate={(rewards) => onUpdate({ rewards })}
+      />
+
       <h3 className="mt-4 text-xs uppercase tracking-wide text-parchment/55">
         Steps ({quest.steps?.length ?? 0})
       </h3>
@@ -518,6 +605,462 @@ function QuestEditor({
           + Add Step
         </button>
       </div>
+    </div>
+  );
+}
+
+// ── Quest Giver editor ──────────────────────────────────────────────
+
+const EMPTY_GIVER: QuestGiver = {
+  npc_name: "",
+  npc_sprite: "",
+  start_dialog: "",
+  end_dialog: "",
+};
+
+function QuestGiverEditor({
+  giver,
+  onUpdate,
+}: {
+  giver: QuestGiver | undefined;
+  onUpdate: (giver: QuestGiver | undefined) => void;
+}) {
+  const has = giver !== undefined;
+  const g = giver ?? EMPTY_GIVER;
+  return (
+    <section className="mt-4 rounded border border-parchment/10 bg-ink/30 p-2">
+      <div className="flex items-center justify-between">
+        <h3 className="text-xs uppercase tracking-wide text-parchment/55">
+          Quest Giver
+        </h3>
+        {has ? (
+          <button
+            type="button"
+            onClick={() => onUpdate(undefined)}
+            className="rounded border border-parchment/20 px-2 py-0.5 text-[10px] text-parchment/60 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
+            title="Remove the quest_giver block from this quest."
+          >
+            Remove
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => onUpdate({ ...EMPTY_GIVER })}
+            className="rounded border border-ember/50 bg-ember/20 px-2 py-0.5 text-[10px] text-parchment hover:bg-ember/40"
+          >
+            + Add
+          </button>
+        )}
+      </div>
+      {has ? (
+        <div className="mt-2 grid gap-2 sm:grid-cols-2">
+          <label className="block">
+            <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+              NPC name
+            </span>
+            <input
+              type="text"
+              value={g.npc_name}
+              onChange={(e) =>
+                onUpdate({ ...g, npc_name: e.target.value })
+              }
+              placeholder="Old Hermit"
+              className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+            />
+          </label>
+          <div className="block">
+            <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+              NPC sprite
+            </span>
+            <div className="mt-0.5">
+              <SpritePicker
+                value={g.npc_sprite}
+                config={NPC_SPRITE_CONFIG}
+                onChange={(v) => onUpdate({ ...g, npc_sprite: v })}
+              />
+            </div>
+          </div>
+          <label className="block sm:col-span-2">
+            <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+              Start dialog
+            </span>
+            <textarea
+              value={g.start_dialog}
+              onChange={(e) =>
+                onUpdate({ ...g, start_dialog: e.target.value })
+              }
+              rows={2}
+              placeholder="Greetings, traveler…"
+              className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+            />
+          </label>
+          <label className="block sm:col-span-2">
+            <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+              End dialog
+            </span>
+            <textarea
+              value={g.end_dialog}
+              onChange={(e) =>
+                onUpdate({ ...g, end_dialog: e.target.value })
+              }
+              rows={2}
+              placeholder="You did it! Take this for your trouble."
+              className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+            />
+          </label>
+        </div>
+      ) : (
+        <p className="mt-1 text-[11px] text-parchment/45">
+          No quest giver. Click <strong>+ Add</strong> to specify the NPC
+          who offers and accepts this quest.
+        </p>
+      )}
+    </section>
+  );
+}
+
+// ── Rewards editor ──────────────────────────────────────────────────
+
+const EMPTY_REWARDS: Rewards = {};
+
+function RewardsEditor({
+  rewards,
+  items,
+  maps,
+  onUpdate,
+}: {
+  rewards: Rewards | undefined;
+  items: ItemSummary[];
+  maps: MapSummary[];
+  onUpdate: (rewards: Rewards | undefined) => void;
+}) {
+  const has = rewards !== undefined;
+  const r = rewards ?? EMPTY_REWARDS;
+
+  const patch = (p: Partial<Rewards>) => {
+    const next: Rewards = { ...r, ...p };
+    // Drop empty / undefined keys so the persisted JSON stays clean.
+    for (const k of Object.keys(next) as Array<keyof Rewards>) {
+      const v = next[k];
+      if (v === undefined) delete next[k];
+      if (Array.isArray(v) && v.length === 0) delete next[k];
+      if ((k === "xp" || k === "gold") && typeof v === "number" && v === 0) {
+        // Zero is a legit value; leave it alone. (Earlier rule was
+        // too aggressive — keep zeros.)
+      }
+    }
+    onUpdate(next);
+  };
+
+  return (
+    <section className="mt-3 rounded border border-parchment/10 bg-ink/30 p-2">
+      <div className="flex items-center justify-between">
+        <h3 className="text-xs uppercase tracking-wide text-parchment/55">
+          Rewards
+        </h3>
+        {has ? (
+          <button
+            type="button"
+            onClick={() => onUpdate(undefined)}
+            className="rounded border border-parchment/20 px-2 py-0.5 text-[10px] text-parchment/60 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
+            title="Remove the rewards block from this quest."
+          >
+            Remove
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => onUpdate({})}
+            className="rounded border border-ember/50 bg-ember/20 px-2 py-0.5 text-[10px] text-parchment hover:bg-ember/40"
+          >
+            + Add
+          </button>
+        )}
+      </div>
+      {has ? (
+        <div className="mt-2 space-y-3">
+          {/* XP + Gold */}
+          <div className="grid gap-2 sm:grid-cols-2">
+            <label className="block">
+              <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+                XP
+              </span>
+              <input
+                type="number"
+                value={r.xp ?? ""}
+                placeholder="0"
+                onChange={(e) =>
+                  patch({
+                    xp:
+                      e.target.value === ""
+                        ? undefined
+                        : Number(e.target.value) || 0,
+                  })
+                }
+                className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+              />
+            </label>
+            <label className="block">
+              <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+                Gold
+              </span>
+              <input
+                type="number"
+                value={r.gold ?? ""}
+                placeholder="0"
+                onChange={(e) =>
+                  patch({
+                    gold:
+                      e.target.value === ""
+                        ? undefined
+                        : Number(e.target.value) || 0,
+                  })
+                }
+                className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+              />
+            </label>
+          </div>
+
+          {/* Items */}
+          <ItemsList
+            items={r.items ?? []}
+            catalog={items}
+            onChange={(arr) => patch({ items: arr })}
+          />
+
+          {/* tile_remove */}
+          <TileOpsList
+            label="Tile removals"
+            ops={r.tile_remove ?? []}
+            maps={maps}
+            withTileId={false}
+            onChange={(arr) => patch({ tile_remove: arr as TileOp[] })}
+          />
+
+          {/* tile_add */}
+          <TileOpsList
+            label="Tile additions"
+            ops={r.tile_add ?? []}
+            maps={maps}
+            withTileId={true}
+            onChange={(arr) => patch({ tile_add: arr as TileAddOp[] })}
+          />
+        </div>
+      ) : (
+        <p className="mt-1 text-[11px] text-parchment/45">
+          No rewards. Click <strong>+ Add</strong> to specify XP, gold,
+          items, or tile changes applied on completion.
+        </p>
+      )}
+    </section>
+  );
+}
+
+// ── Items reward list ───────────────────────────────────────────────
+
+function ItemsList({
+  items,
+  catalog,
+  onChange,
+}: {
+  items: string[];
+  catalog: ItemSummary[];
+  onChange: (next: string[]) => void;
+}) {
+  const updateAt = (idx: number, id: string) => {
+    const next = items.slice();
+    next[idx] = id;
+    onChange(next);
+  };
+  const removeAt = (idx: number) => {
+    const next = items.slice();
+    next.splice(idx, 1);
+    onChange(next);
+  };
+  const add = () => {
+    onChange([...items, catalog[0]?.id ?? ""]);
+  };
+  return (
+    <div>
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] uppercase tracking-wide text-parchment/55">
+          Items ({items.length})
+        </span>
+        <button
+          type="button"
+          onClick={add}
+          className="rounded border border-ember/50 bg-ember/20 px-2 py-0.5 text-[10px] text-parchment hover:bg-ember/40"
+        >
+          + Add item
+        </button>
+      </div>
+      {items.length === 0 ? (
+        <p className="mt-1 text-[11px] text-parchment/45">
+          (no item rewards)
+        </p>
+      ) : (
+        <ul className="mt-1 space-y-1">
+          {items.map((id, i) => {
+            const known = catalog.some((c) => c.id === id);
+            return (
+              <li key={i} className="flex items-center gap-2">
+                <select
+                  value={id}
+                  onChange={(e) => updateAt(i, e.target.value)}
+                  className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-xs text-parchment/90"
+                >
+                  {!known && id ? (
+                    <option value={id}>(missing) {id}</option>
+                  ) : null}
+                  {!id ? (
+                    <option value="">— choose an item —</option>
+                  ) : null}
+                  {catalog.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name ?? c.id} ({c.id})
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => removeAt(i)}
+                  className="rounded border border-parchment/20 px-2 py-0.5 text-[10px] text-parchment/60 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
+                >
+                  Remove
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+// ── Tile-ops list (used for both tile_remove and tile_add) ──────────
+
+function TileOpsList({
+  label,
+  ops,
+  maps,
+  withTileId,
+  onChange,
+}: {
+  label: string;
+  ops: Array<TileOp | TileAddOp>;
+  maps: MapSummary[];
+  withTileId: boolean;
+  onChange: (next: Array<TileOp | TileAddOp>) => void;
+}) {
+  const updateAt = (
+    idx: number,
+    patch: Partial<TileAddOp>,
+  ) => {
+    const next = ops.slice();
+    next[idx] = { ...next[idx], ...patch };
+    onChange(next);
+  };
+  const removeAt = (idx: number) => {
+    const next = ops.slice();
+    next.splice(idx, 1);
+    onChange(next);
+  };
+  const add = () => {
+    const base: TileOp = { map: maps[0]?.id ?? "", col: 0, row: 0 };
+    if (withTileId) onChange([...ops, { ...base, tile_id: "" }]);
+    else onChange([...ops, base]);
+  };
+  return (
+    <div>
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] uppercase tracking-wide text-parchment/55">
+          {label} ({ops.length})
+        </span>
+        <button
+          type="button"
+          onClick={add}
+          className="rounded border border-ember/50 bg-ember/20 px-2 py-0.5 text-[10px] text-parchment hover:bg-ember/40"
+        >
+          + Add
+        </button>
+      </div>
+      {ops.length === 0 ? (
+        <p className="mt-1 text-[11px] text-parchment/45">(none)</p>
+      ) : (
+        <ul className="mt-1 space-y-1">
+          {ops.map((op, i) => {
+            const mapKnown = maps.some((m) => m.id === op.map);
+            const asAdd = op as TileAddOp;
+            return (
+              <li
+                key={i}
+                className={`grid items-center gap-1 ${
+                  withTileId
+                    ? "sm:grid-cols-[1fr_auto_auto_1fr_auto]"
+                    : "sm:grid-cols-[1fr_auto_auto_auto]"
+                }`}
+              >
+                <select
+                  value={op.map}
+                  onChange={(e) => updateAt(i, { map: e.target.value })}
+                  className="rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-xs text-parchment/90"
+                >
+                  {!mapKnown && op.map ? (
+                    <option value={op.map}>(missing) {op.map}</option>
+                  ) : null}
+                  {!op.map ? (
+                    <option value="">— choose a map —</option>
+                  ) : null}
+                  {maps.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name ?? m.id} ({m.id})
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="number"
+                  value={op.col}
+                  onChange={(e) =>
+                    updateAt(i, { col: Number(e.target.value) || 0 })
+                  }
+                  placeholder="col"
+                  className="w-16 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+                  title="col"
+                />
+                <input
+                  type="number"
+                  value={op.row}
+                  onChange={(e) =>
+                    updateAt(i, { row: Number(e.target.value) || 0 })
+                  }
+                  placeholder="row"
+                  className="w-16 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+                  title="row"
+                />
+                {withTileId ? (
+                  <input
+                    type="text"
+                    value={asAdd.tile_id ?? ""}
+                    onChange={(e) =>
+                      updateAt(i, { tile_id: e.target.value })
+                    }
+                    placeholder="tile_id"
+                    className="min-w-0 rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-xs text-parchment/90"
+                    title="The Map Tile id placed at this cell."
+                  />
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => removeAt(i)}
+                  className="rounded border border-parchment/20 px-2 py-0.5 text-[10px] text-parchment/60 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
+                >
+                  Remove
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </div>
   );
 }

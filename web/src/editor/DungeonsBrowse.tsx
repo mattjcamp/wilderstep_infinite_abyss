@@ -6,16 +6,18 @@
  * the MapsBrowse shape (tag-tree, draft → publish flow) but with
  * inline child-level editing instead of a navigation hop:
  *
- *   - Dungeons grouped by tag, like Maps. A dungeon with no tag falls
- *     into "(untagged)".
+ *   - Dungeons grouped by tag. Untagged dungeons land in "(untagged)".
  *   - Each dungeon row can be expanded to edit its metadata (name,
- *     description, tags) and manage its `levels[]` array.
+ *     description, tags) and the generator's defaults (style,
+ *     difficulty, size, torch_density, locked_doors), plus manage its
+ *     `levels[]` array.
  *   - Dungeon Levels are inline objects under their parent's
  *     `levels[]` — there is no top-level Dungeon Level catalog. Add /
- *     edit / delete a level happens entirely inside the expanded
- *     parent row.
- *   - Per-level fields: id, name, depth, map_id (drop-down of Maps
- *     in the module), tags.
+ *     edit / delete happens inside the expanded parent row.
+ *   - Each Level can override any of the parent's generator
+ *     parameters. The UI surfaces inherited values as placeholders so
+ *     the author can see what they'd get without leaving an override
+ *     set.
  *
  * Same draft / publish / export flow as the rest of the editor.
  */
@@ -38,12 +40,31 @@ const MODEL_KEY = "dungeons";
 const FILE_NAME = "dungeons.json";
 const UNTAGGED = "(untagged)";
 
+/** Closed style enum — the procedural generator's supported themes.
+ *  Add new values here when the generator grows. */
+const STYLES = ["caves", "ruins", "forest"] as const;
+type Style = (typeof STYLES)[number];
+
+/** Same difficulty enum the Monster model uses. */
+const DIFFICULTIES = ["easy", "normal", "hard", "deadly", "boss"] as const;
+type Difficulty = (typeof DIFFICULTIES)[number];
+
+interface DungeonSize {
+  width: number;
+  height: number;
+}
+
 interface DungeonLevel {
   id: string;
   name: string;
   tags?: string[];
   depth: number;
-  map_id: string;
+  // Overrides — undefined means "inherit from parent Dungeon".
+  style?: Style | string;
+  difficulty?: Difficulty | string;
+  size?: DungeonSize;
+  torch_density?: number;
+  locked_doors?: number;
 }
 
 interface DungeonRecord {
@@ -51,12 +72,13 @@ interface DungeonRecord {
   name: string;
   description?: string;
   tags?: string[];
+  // Generator defaults — required on Dungeon.
+  style: Style | string;
+  difficulty: Difficulty | string;
+  size: DungeonSize;
+  torch_density: number;
+  locked_doors: number;
   levels: DungeonLevel[];
-}
-
-interface MapSummary {
-  id: string;
-  name?: string;
 }
 
 type LoadState =
@@ -64,11 +86,20 @@ type LoadState =
   | {
       kind: "ok";
       dungeons: DungeonRecord[];
-      maps: MapSummary[];
       ownFile: Record<string, unknown> | null;
       isDraft: boolean;
     }
   | { kind: "error"; message: string };
+
+/** Default values used for a freshly-created Dungeon. Authors can
+ *  tweak post-create; these are deliberately middle-of-the-road. */
+const DEFAULTS = {
+  style: "caves" as Style,
+  difficulty: "normal" as Difficulty,
+  size: { width: 32, height: 32 },
+  torch_density: 0.15,
+  locked_doors: 0.25,
+} as const;
 
 export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
   const { available: publishAvailable } = usePublishServer();
@@ -77,39 +108,23 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
   const [publishing, setPublishing] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
 
-  // ── Load dungeons (draft-aware) + maps (for the map_id picker) ──
+  // ── Load dungeons (draft-aware) ────────────────────────────────
   const refresh = async () => {
     try {
       const src = new StaticModuleSource();
-      const [dungeonsLayers, mapsLayers] = await Promise.all([
-        src.loadModelLayers(moduleId, "dungeons"),
-        src.loadModelLayers(moduleId, "maps"),
-      ]);
-
+      const layers = await src.loadModelLayers(moduleId, "dungeons");
       const draft = loadDraft<Record<string, unknown>>(moduleId, MODEL_KEY);
       const ownEffective =
-        draft ?? (dungeonsLayers.ownFile as Record<string, unknown> | null);
+        draft ?? (layers.ownFile as Record<string, unknown> | null);
       const merged = mergeModel(
         "dungeons",
-        dungeonsLayers.inherited,
+        layers.inherited,
         ownEffective,
       ) as { dungeons?: DungeonRecord[] } | null;
       const dungeons = merged?.dungeons ?? [];
-
-      const mapsMerged = mergeModel(
-        "maps",
-        mapsLayers.inherited,
-        mapsLayers.ownFile,
-      ) as { maps?: MapSummary[] } | null;
-      const maps = (mapsMerged?.maps ?? []).map((m) => ({
-        id: m.id,
-        name: m.name,
-      }));
-
       setState({
         kind: "ok",
         dungeons,
-        maps,
         ownFile: ownEffective ?? null,
         isDraft: hasDraft(moduleId, MODEL_KEY),
       });
@@ -209,7 +224,6 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
       id: `${dungeonId}_l${nextDepth}`,
       name: `Level ${nextDepth}`,
       depth: nextDepth,
-      map_id: "",
     };
     onUpdateDungeon(dungeonId, {
       levels: [...(parent.levels ?? []), newLevel],
@@ -224,9 +238,19 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
     if (state.kind !== "ok") return;
     const parent = state.dungeons.find((d) => d.id === dungeonId);
     if (!parent) return;
-    const newLevels = (parent.levels ?? []).map((l, i) =>
-      i === levelIdx ? { ...l, ...patch } : l,
-    );
+    const newLevels = (parent.levels ?? []).map((l, i) => {
+      if (i !== levelIdx) return l;
+      // Drop keys whose new value is `undefined` so an "inherit"
+      // toggle clears the override entirely instead of writing
+      // `undefined` into the JSON.
+      const merged = { ...l, ...patch };
+      for (const k of Object.keys(patch) as Array<keyof DungeonLevel>) {
+        if (patch[k] === undefined) {
+          delete (merged as Record<string, unknown>)[k];
+        }
+      }
+      return merged;
+    });
     onUpdateDungeon(dungeonId, { levels: newLevels });
   };
 
@@ -325,7 +349,6 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
 
   return (
     <div className="p-4">
-      {/* Header */}
       <header className="flex flex-wrap items-baseline justify-between gap-3">
         <div>
           <h1 className="font-display text-3xl text-parchment">Dungeons</h1>
@@ -426,6 +449,9 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
                         · {d.levels?.length ?? 0} level
                         {(d.levels?.length ?? 0) === 1 ? "" : "s"}
                       </span>
+                      <span className="text-xs text-parchment/45">
+                        · {d.style} · {d.difficulty}
+                      </span>
                       {Array.isArray(d.tags) && d.tags.length > 1 ? (
                         <span className="text-xs text-parchment/40">
                           · also: {d.tags.filter((t) => t !== tag).join(", ")}
@@ -444,7 +470,6 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
                   {expanded.has(d.id) ? (
                     <DungeonEditor
                       dungeon={d}
-                      maps={state.maps}
                       existingTags={allTags}
                       onUpdate={(patch) => onUpdateDungeon(d.id, patch)}
                       onAddLevel={() => onAddLevel(d.id)}
@@ -469,11 +494,10 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
   );
 }
 
-// ── Inline editor for a single dungeon (metadata + levels list) ─────
+// ── Inline editor for a single dungeon (metadata + generator params + levels) ─
 
 function DungeonEditor({
   dungeon,
-  maps,
   existingTags,
   onUpdate,
   onAddLevel,
@@ -481,7 +505,6 @@ function DungeonEditor({
   onDeleteLevel,
 }: {
   dungeon: DungeonRecord;
-  maps: MapSummary[];
   existingTags: string[];
   onUpdate: (patch: Partial<DungeonRecord>) => void;
   onAddLevel: () => void;
@@ -490,6 +513,7 @@ function DungeonEditor({
 }) {
   return (
     <div className="border-t border-parchment/10 bg-ink/10 px-3 py-3">
+      {/* Identity + tags */}
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="block">
           <span className="text-[10px] uppercase tracking-wide text-parchment/45">
@@ -525,6 +549,31 @@ function DungeonEditor({
         />
       </div>
 
+      {/* Generator defaults — required on Dungeon, inherited by Levels */}
+      <h3 className="mt-4 text-xs uppercase tracking-wide text-parchment/55">
+        Generator defaults
+      </h3>
+      <p className="text-[11px] text-parchment/45">
+        These values drive procedural floor generation. Each Dungeon Level
+        below can override any of them; an empty override on a Level means
+        "inherit from this Dungeon."
+      </p>
+      <GeneratorFields
+        style={dungeon.style}
+        difficulty={dungeon.difficulty}
+        size={dungeon.size}
+        torchDensity={dungeon.torch_density}
+        lockedDoors={dungeon.locked_doors}
+        onStyle={(v) => onUpdate({ style: v })}
+        onDifficulty={(v) => onUpdate({ difficulty: v })}
+        onSize={(v) => onUpdate({ size: v })}
+        onTorchDensity={(v) => onUpdate({ torch_density: v })}
+        onLockedDoors={(v) => onUpdate({ locked_doors: v })}
+        // Dungeon side is required — no clear/inherit affordance.
+        allowInherit={false}
+      />
+
+      {/* Levels list */}
       <h3 className="mt-4 text-xs uppercase tracking-wide text-parchment/55">
         Levels ({dungeon.levels?.length ?? 0})
       </h3>
@@ -535,98 +584,14 @@ function DungeonEditor({
       ) : (
         <ul className="mt-2 space-y-2">
           {(dungeon.levels ?? []).map((lvl, i) => (
-            <li
+            <LevelRow
               key={`${lvl.id}-${i}`}
-              className="rounded border border-parchment/10 bg-ink/30 p-2"
-            >
-              <div className="grid gap-2 sm:grid-cols-4">
-                <label className="block">
-                  <span className="text-[10px] uppercase tracking-wide text-parchment/45">
-                    ID
-                  </span>
-                  <input
-                    type="text"
-                    value={lvl.id}
-                    onChange={(e) =>
-                      onUpdateLevel(i, { id: e.target.value })
-                    }
-                    className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-xs text-parchment/90"
-                  />
-                </label>
-                <label className="block sm:col-span-2">
-                  <span className="text-[10px] uppercase tracking-wide text-parchment/45">
-                    Name
-                  </span>
-                  <input
-                    type="text"
-                    value={lvl.name}
-                    onChange={(e) =>
-                      onUpdateLevel(i, { name: e.target.value })
-                    }
-                    className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
-                  />
-                </label>
-                <label className="block">
-                  <span className="text-[10px] uppercase tracking-wide text-parchment/45">
-                    Depth
-                  </span>
-                  <input
-                    type="number"
-                    value={lvl.depth}
-                    onChange={(e) =>
-                      onUpdateLevel(i, {
-                        depth: Number(e.target.value) || 0,
-                      })
-                    }
-                    className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
-                  />
-                </label>
-                <label className="block sm:col-span-2">
-                  <span className="text-[10px] uppercase tracking-wide text-parchment/45">
-                    Map
-                  </span>
-                  <select
-                    value={lvl.map_id}
-                    onChange={(e) =>
-                      onUpdateLevel(i, { map_id: e.target.value })
-                    }
-                    className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-xs text-parchment/90"
-                  >
-                    <option value="">— choose a map —</option>
-                    {lvl.map_id &&
-                    !maps.some((m) => m.id === lvl.map_id) ? (
-                      <option value={lvl.map_id}>
-                        (missing) {lvl.map_id}
-                      </option>
-                    ) : null}
-                    {maps.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.name ?? m.id} ({m.id})
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <div className="block sm:col-span-2">
-                  <span className="text-[10px] uppercase tracking-wide text-parchment/45">
-                    Tags
-                  </span>
-                  <TagsPicker
-                    tags={lvl.tags ?? []}
-                    existing={existingTags}
-                    onChange={(tags) => onUpdateLevel(i, { tags })}
-                  />
-                </div>
-              </div>
-              <div className="mt-2 flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => onDeleteLevel(i)}
-                  className="rounded border border-parchment/20 px-2 py-0.5 text-xs text-parchment/60 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
-                >
-                  Delete level
-                </button>
-              </div>
-            </li>
+              level={lvl}
+              parent={dungeon}
+              existingTags={existingTags}
+              onUpdate={(patch) => onUpdateLevel(i, patch)}
+              onDelete={() => onDeleteLevel(i)}
+            />
           ))}
         </ul>
       )}
@@ -640,6 +605,344 @@ function DungeonEditor({
         </button>
       </div>
     </div>
+  );
+}
+
+// ── Single level row (identity + overrides) ─────────────────────────
+
+function LevelRow({
+  level,
+  parent,
+  existingTags,
+  onUpdate,
+  onDelete,
+}: {
+  level: DungeonLevel;
+  parent: DungeonRecord;
+  existingTags: string[];
+  onUpdate: (patch: Partial<DungeonLevel>) => void;
+  onDelete: () => void;
+}) {
+  return (
+    <li className="rounded border border-parchment/10 bg-ink/30 p-2">
+      <div className="grid gap-2 sm:grid-cols-4">
+        <label className="block">
+          <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+            ID
+          </span>
+          <input
+            type="text"
+            value={level.id}
+            onChange={(e) => onUpdate({ id: e.target.value })}
+            className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-xs text-parchment/90"
+          />
+        </label>
+        <label className="block sm:col-span-2">
+          <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+            Name
+          </span>
+          <input
+            type="text"
+            value={level.name}
+            onChange={(e) => onUpdate({ name: e.target.value })}
+            className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+          />
+        </label>
+        <label className="block">
+          <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+            Depth
+          </span>
+          <input
+            type="number"
+            value={level.depth}
+            onChange={(e) =>
+              onUpdate({ depth: Number(e.target.value) || 0 })
+            }
+            className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+          />
+        </label>
+      </div>
+
+      <div className="mt-2">
+        <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+          Tags
+        </span>
+        <TagsPicker
+          tags={level.tags ?? []}
+          existing={existingTags}
+          onChange={(tags) => onUpdate({ tags })}
+        />
+      </div>
+
+      <div className="mt-3">
+        <p className="text-[11px] text-parchment/45">
+          Generator overrides — leave any field empty (or click ↩ Inherit)
+          to fall back to the parent Dungeon's value (shown in light text).
+        </p>
+        <GeneratorFields
+          style={level.style}
+          difficulty={level.difficulty}
+          size={level.size}
+          torchDensity={level.torch_density}
+          lockedDoors={level.locked_doors}
+          parentStyle={parent.style}
+          parentDifficulty={parent.difficulty}
+          parentSize={parent.size}
+          parentTorchDensity={parent.torch_density}
+          parentLockedDoors={parent.locked_doors}
+          onStyle={(v) => onUpdate({ style: v })}
+          onDifficulty={(v) => onUpdate({ difficulty: v })}
+          onSize={(v) => onUpdate({ size: v })}
+          onTorchDensity={(v) => onUpdate({ torch_density: v })}
+          onLockedDoors={(v) => onUpdate({ locked_doors: v })}
+          allowInherit={true}
+        />
+      </div>
+
+      <div className="mt-2 flex justify-end">
+        <button
+          type="button"
+          onClick={onDelete}
+          className="rounded border border-parchment/20 px-2 py-0.5 text-xs text-parchment/60 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
+        >
+          Delete level
+        </button>
+      </div>
+    </li>
+  );
+}
+
+// ── Shared generator-parameter editor ───────────────────────────────
+
+function GeneratorFields({
+  style,
+  difficulty,
+  size,
+  torchDensity,
+  lockedDoors,
+  parentStyle,
+  parentDifficulty,
+  parentSize,
+  parentTorchDensity,
+  parentLockedDoors,
+  onStyle,
+  onDifficulty,
+  onSize,
+  onTorchDensity,
+  onLockedDoors,
+  allowInherit,
+}: {
+  // Effective (own) value; may be undefined on Level rows.
+  style: string | undefined;
+  difficulty: string | undefined;
+  size: DungeonSize | undefined;
+  torchDensity: number | undefined;
+  lockedDoors: number | undefined;
+  // Parent values for placeholder fallback (only on Level rows).
+  parentStyle?: string;
+  parentDifficulty?: string;
+  parentSize?: DungeonSize;
+  parentTorchDensity?: number;
+  parentLockedDoors?: number;
+  // Callbacks — receiving `undefined` clears the override (Level only).
+  onStyle: (v: string | undefined) => void;
+  onDifficulty: (v: string | undefined) => void;
+  onSize: (v: DungeonSize | undefined) => void;
+  onTorchDensity: (v: number | undefined) => void;
+  onLockedDoors: (v: number | undefined) => void;
+  /** Whether the editor exposes an "inherit / clear override" affordance
+   *  per field. True on Levels, false on the parent Dungeon. */
+  allowInherit: boolean;
+}) {
+  return (
+    <div className="mt-2 grid gap-2 sm:grid-cols-4">
+      {/* Style */}
+      <label className="block">
+        <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+          Style
+        </span>
+        <div className="mt-0.5 flex items-center gap-1">
+          <select
+            value={style ?? ""}
+            onChange={(e) =>
+              onStyle(e.target.value === "" ? undefined : e.target.value)
+            }
+            className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+          >
+            {allowInherit ? (
+              <option value="">
+                (inherit{parentStyle ? ` — ${parentStyle}` : ""})
+              </option>
+            ) : null}
+            {STYLES.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+            {style && !STYLES.includes(style as Style) ? (
+              <option value={style}>{style} (custom)</option>
+            ) : null}
+          </select>
+        </div>
+      </label>
+
+      {/* Difficulty */}
+      <label className="block">
+        <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+          Difficulty
+        </span>
+        <div className="mt-0.5 flex items-center gap-1">
+          <select
+            value={difficulty ?? ""}
+            onChange={(e) =>
+              onDifficulty(
+                e.target.value === "" ? undefined : e.target.value,
+              )
+            }
+            className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+          >
+            {allowInherit ? (
+              <option value="">
+                (inherit{parentDifficulty ? ` — ${parentDifficulty}` : ""})
+              </option>
+            ) : null}
+            {DIFFICULTIES.map((d) => (
+              <option key={d} value={d}>
+                {d}
+              </option>
+            ))}
+            {difficulty &&
+            !DIFFICULTIES.includes(difficulty as Difficulty) ? (
+              <option value={difficulty}>{difficulty} (custom)</option>
+            ) : null}
+          </select>
+        </div>
+      </label>
+
+      {/* Size — width × height */}
+      <div className="block sm:col-span-2">
+        <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+          Size (w × h)
+        </span>
+        <div className="mt-0.5 flex items-center gap-1">
+          <input
+            type="number"
+            value={size?.width ?? ""}
+            placeholder={parentSize ? String(parentSize.width) : "32"}
+            onChange={(e) => {
+              const w = e.target.value === "" ? NaN : Number(e.target.value);
+              if (Number.isFinite(w)) {
+                onSize({
+                  width: w,
+                  height: size?.height ?? parentSize?.height ?? 0,
+                });
+              } else if (size?.height == null) {
+                onSize(undefined);
+              } else {
+                // Width cleared but height was set; collapse to undefined
+                // to fully inherit, OR keep partial state. Choose the
+                // former for simplicity — partial states confuse the
+                // generator.
+                onSize(undefined);
+              }
+            }}
+            className="w-20 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+          />
+          <span className="text-parchment/40">×</span>
+          <input
+            type="number"
+            value={size?.height ?? ""}
+            placeholder={parentSize ? String(parentSize.height) : "32"}
+            onChange={(e) => {
+              const h = e.target.value === "" ? NaN : Number(e.target.value);
+              if (Number.isFinite(h)) {
+                onSize({
+                  width: size?.width ?? parentSize?.width ?? 0,
+                  height: h,
+                });
+              } else if (size?.width == null) {
+                onSize(undefined);
+              } else {
+                onSize(undefined);
+              }
+            }}
+            className="w-20 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+          />
+          {allowInherit && size !== undefined ? (
+            <InheritButton onClick={() => onSize(undefined)} />
+          ) : null}
+        </div>
+      </div>
+
+      {/* Torch density */}
+      <label className="block">
+        <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+          Torch density (0–1)
+        </span>
+        <div className="mt-0.5 flex items-center gap-1">
+          <input
+            type="number"
+            step={0.05}
+            min={0}
+            max={1}
+            value={torchDensity ?? ""}
+            placeholder={
+              parentTorchDensity != null ? String(parentTorchDensity) : "0.15"
+            }
+            onChange={(e) => {
+              const v =
+                e.target.value === "" ? NaN : Number(e.target.value);
+              onTorchDensity(Number.isFinite(v) ? v : undefined);
+            }}
+            className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+          />
+          {allowInherit && torchDensity !== undefined ? (
+            <InheritButton onClick={() => onTorchDensity(undefined)} />
+          ) : null}
+        </div>
+      </label>
+
+      {/* Locked doors */}
+      <label className="block">
+        <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+          Locked doors (0–1)
+        </span>
+        <div className="mt-0.5 flex items-center gap-1">
+          <input
+            type="number"
+            step={0.05}
+            min={0}
+            max={1}
+            value={lockedDoors ?? ""}
+            placeholder={
+              parentLockedDoors != null ? String(parentLockedDoors) : "0.25"
+            }
+            onChange={(e) => {
+              const v =
+                e.target.value === "" ? NaN : Number(e.target.value);
+              onLockedDoors(Number.isFinite(v) ? v : undefined);
+            }}
+            className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+          />
+          {allowInherit && lockedDoors !== undefined ? (
+            <InheritButton onClick={() => onLockedDoors(undefined)} />
+          ) : null}
+        </div>
+      </label>
+    </div>
+  );
+}
+
+function InheritButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title="Clear this override and inherit the parent Dungeon's value."
+      className="rounded border border-parchment/20 px-1.5 text-xs text-parchment/55 hover:border-parchment/40 hover:text-parchment/90"
+    >
+      ↩
+    </button>
   );
 }
 
@@ -683,6 +986,11 @@ function NewDungeonForm({
       name: name.trim(),
       description: description.trim(),
       tags,
+      style: DEFAULTS.style,
+      difficulty: DEFAULTS.difficulty,
+      size: { ...DEFAULTS.size },
+      torch_density: DEFAULTS.torch_density,
+      locked_doors: DEFAULTS.locked_doors,
       levels: [],
     };
     onCreate(rec);
@@ -695,7 +1003,16 @@ function NewDungeonForm({
     >
       <h2 className="font-display text-lg text-parchment">New Dungeon</h2>
       <p className="mt-1 text-sm text-parchment/55">
-        Create the dungeon record first. Add levels inline after it opens.
+        Procedural dungeon. Style values are <code>caves</code>,{" "}
+        <code>ruins</code>, or <code>forest</code> — the defaults (style:{" "}
+        <code>{DEFAULTS.style}</code>,
+        difficulty: <code>{DEFAULTS.difficulty}</code>, size:{" "}
+        <code>
+          {DEFAULTS.size.width}×{DEFAULTS.size.height}
+        </code>
+        , torch density: <code>{DEFAULTS.torch_density}</code>, locked doors:{" "}
+        <code>{DEFAULTS.locked_doors}</code>) are filled in for you — tweak
+        after creation. Add levels inline once it opens.
       </p>
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <label className="block">

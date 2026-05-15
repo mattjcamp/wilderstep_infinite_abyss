@@ -41,6 +41,9 @@ const FIELDS: Record<string, SpriteFieldConfig> = {
   // (per-character portrait) — the party avatar is what's drawn on
   // the world map for the group as a whole.
   avatar: { category: "person", format: "path" },
+  // Quest.quest_giver.npc_sprite — the NPC the player talks to to
+  // offer/complete a quest. Always a person sprite.
+  npc_sprite: { category: "person", format: "path" },
 };
 
 /** Per-model overrides — when the same field name means different

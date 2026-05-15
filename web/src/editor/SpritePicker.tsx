@@ -3,7 +3,10 @@
 /**
  * Sprite picker — embedded into RecordForm fields whose key matches
  * a known sprite-field (Characters.sprite, Monsters.sprite,
- * MapTiles.sprite, Items.icon, Encounters.monster_party_tile, Party.avatar).
+ * MapTiles.sprite, Items.icon, Encounters.monster_party_tile,
+ * Party.avatar, Quest.quest_giver.npc_sprite). Also usable as a
+ * standalone component by passing `config` explicitly — that's how
+ * QuestsBrowse renders the npc_sprite field outside of RecordForm.
  *
  * Layout:
  *   [ thumb ] [ text input ] [ Pick… / Done ] [ ✕ clear ]

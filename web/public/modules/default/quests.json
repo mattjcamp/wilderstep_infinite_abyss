@@ -1,4 +1,44 @@
 {
   "_comment": "Quest catalog (real data drives the schema). A Quest is an authored adventure thread: id, display name, optional flavor description, optional tags (editor-side organizational labels — group related quests like \"main_story\", \"side\", \"temple_arc\"), and an ordered list of inline Quest Step records under `steps[]`. Each step is `{ id, name, tags?, kind, description?, params? }` — the `kind` discriminator names what the objective is (kill / fetch / visit / talk / …) and `params` carries kind-specific data. Quest Steps live inline because they have no meaning outside their parent Quest. Catalog ships empty. See docs/data_dictionary/quest.md.",
-  "quests": []
+  "quests": [
+    {
+      "id": "rats",
+      "name": "Rats",
+      "description": "Get rid of those dang rats",
+      "tags": [
+        "rats"
+      ],
+      "steps": [
+        {
+          "id": "rats_step_1",
+          "name": "Step 1",
+          "kind": "visit",
+          "params": null,
+          "tags": [
+            "rats"
+          ]
+        }
+      ],
+      "quest_giver": {
+        "npc_name": "Old Hermit",
+        "npc_sprite": "person/fighter17.png",
+        "start_dialog": "Yo",
+        "end_dialog": "Sweet, coode dude"
+      },
+      "rewards": {
+        "xp": 5,
+        "gold": 5,
+        "items": [
+          "halberd"
+        ],
+        "tile_remove": [
+          {
+            "map": "town_one_square",
+            "col": 1,
+            "row": 1
+          }
+        ]
+      }
+    }
+  ]
 }

@@ -2,11 +2,9 @@
 
 ## Purpose
 
-One floor of an **authored** [Dungeon](dungeon.md). A Dungeon Level wraps a [Map](map.md) (the actual playable tile grid) with dungeon-specific metadata: which floor number it is, and the display name shown when the party descends.
+One floor of a procedurally generated [Dungeon](dungeon.md). A Dungeon Level carries its own identity (id, display name, depth) plus *optional overrides* of any of the parent Dungeon's generator parameters. Floors without overrides simply inherit the parent's defaults; floors that vary set only the fields they care about.
 
 Dungeon Levels are **inline objects under their parent Dungeon's `levels[]`**, not a separate top-level catalog. They have no meaning outside the Dungeon that owns them and aren't referenced by any other model.
-
-Procedural dungeon floors are generated at runtime and don't live in this catalog — see [Dungeon Config](dungeon_config.md).
 
 ## Location
 
@@ -14,7 +12,7 @@ Inline under [Dungeon](dungeon.md) records in `web/public/modules/default/dungeo
 
 ## Scope of this document
 
-The "Used?" column reflects the v2 TypeScript implementation under `web/`. The codebase is in its early stages, so every field is currently `TBD` until it is wired up. This model is a **stub** — fields beyond `id`, `name`, `depth`, and `map_id` are open.
+The "Used?" column reflects the v2 TypeScript implementation under `web/`. The codebase is in its early stages, so every field is currently `TBD` until it is wired up. This model is a **stub** — the generator that consumes these parameters hasn't been written yet.
 
 ## Inline shape
 
@@ -24,30 +22,66 @@ Each entry in a parent Dungeon's `levels[]` is an object with the fields below.
 
 | Field | Type | Required | Description | Used? |
 |---|---|---|---|---|
-| `id` | string | yes | Stable identifier in snake_case (e.g. `"crypt_of_dagorn_l1"`). Unique within the parent Dungeon's `levels[]` — there is no global Dungeon Level catalog, so the id only needs to disambiguate among siblings. Convention: `<dungeon_id>_l<depth>`. | TBD |
+| `id` | string | yes | Stable identifier in snake_case (e.g. `"crypt_of_dagorn_l1"`). Unique within the parent Dungeon's `levels[]`. Convention: `<dungeon_id>_l<depth>`. | TBD |
 | `name` | string | yes | Display name shown to the player when entering this floor (e.g. `"Crypt of Dagorn — Tomb Hall"`) | TBD |
-| `tags` | string[] | no | Editor-side organizational labels. Usually carried for tooling convenience; gameplay doesn't read them. | TBD |
+| `tags` | string[] | no | Editor-side organizational labels. Optional; gameplay doesn't read them. | TBD |
 | `depth` | int | yes | 1-indexed floor number; level 1 is the entrance, larger numbers go deeper. | TBD |
-| `map_id` | string | yes | [Map](map.md) `id` — the tile grid actually rendered when the party is on this floor. | TBD |
+| `style` | string | no | Override the parent Dungeon's `style`. Same closed enum: `"caves"`, `"ruins"`, `"forest"`. Omit to inherit. | TBD |
+| `difficulty` | string | no | Override the parent Dungeon's `difficulty`. Same enum as [Monster](monster.md): `"easy"`, `"normal"`, `"hard"`, `"deadly"`, `"boss"`. Omit to inherit. | TBD |
+| `size` | `{ width: int, height: int }` | no | Override the parent Dungeon's `size` for this floor's generated dimensions. Omit to inherit. | TBD |
+| `torch_density` | number (0–1) | no | Override the parent Dungeon's `torch_density`. Useful for going pitch-dark on a climactic floor (`0`) or extra-lit on a temple floor. Omit to inherit. | TBD |
+| `locked_doors` | number (0–1) | no | Override the parent Dungeon's `locked_doors`. Crank toward 1 for a "treasury" floor full of locked doors. Omit to inherit. | TBD |
+
+## Inheritance semantics
+
+An undefined/missing field on a Dungeon Level means "use the parent Dungeon's value." There is no `inherited: true` marker — absence *is* the marker. To force a value, set the field; to fall back to the parent, drop the key.
+
+The editor's level row shows the inherited value in placeholder/grey text when an override is empty so authors can see what they'd get without leaving the level expanded.
 
 ## Cross-references to other models
 
-- `map_id` → [Map](map.md) `id`
-- Owned *by* [Dungeon](dungeon.md) `levels[]` (inline, not by reference)
+- `difficulty` shares the [Monster](monster.md) `difficulty` enum.
+- Owned *by* [Dungeon](dungeon.md) `levels[]` (inline, not by reference).
 
-## Example record (inline under a Dungeon)
+## Example records (inline under a Dungeon)
+
+**A floor that just rides the parent's defaults:**
 
 ```json
 {
   "id": "crypt_of_dagorn_l1",
-  "name": "Crypt of Dagorn — Tomb Hall",
-  "depth": 1,
-  "map_id": "crypt_of_dagorn_l1_map"
+  "name": "Tomb Hall",
+  "depth": 1
+}
+```
+
+**A floor that overrides size and lock density:**
+
+```json
+{
+  "id": "crypt_of_dagorn_l2",
+  "name": "Vault Approach",
+  "depth": 2,
+  "size": { "width": 40, "height": 40 },
+  "locked_doors": 0.5
+}
+```
+
+**A pitch-dark final boss floor:**
+
+```json
+{
+  "id": "crypt_of_dagorn_l3",
+  "name": "The Inner Vault",
+  "depth": 3,
+  "difficulty": "boss",
+  "torch_density": 0.0
 }
 ```
 
 ## Notes and open questions
 
-- **Inline, not a separate catalog.** An earlier pass put Dungeon Levels in their own `dungeon_levels.json` catalog. The model collapsed to inline objects because levels have no meaning outside their owning Dungeon and no other model needs to reference them by global id. The standalone catalog file is deprecated; if you have local copies, drop them.
-- **Schema is a stub.** Likely future additions: per-floor entry/exit coordinates on the Map (so stair tiles know where to land the party on the floor above / below), per-floor ambient lighting override, per-floor encounter pool override, scripted-event hooks.
-- **`depth` vs. `levels[]` index.** Both convey "which floor is this." Carry both for now — the Dungeon's ordering is the truth, but `depth` on the level record makes the floor self-describing for tooling.
+- **Procedural, no `map_id`.** Earlier drafts had each Level point at an authored [Map](map.md); the Dungeon pivot to procedural generation dropped that field — there is no authored grid for the runtime to load.
+- **Inline, not a separate catalog.** Same rationale as before: Levels have no meaning outside their owning Dungeon and aren't referenced by any other model.
+- **Override semantics are absence-based.** No `null` distinction from "unset" today — they're the same thing. If a future case needs "explicit null = take generator default ignoring the parent," that's a separate field convention to introduce then.
+- **Schema is a stub.** Likely future additions: per-floor entry/exit coordinates so stair tiles know where to land the party, scripted-event hooks, encounter / loot table overrides at the per-floor level.

@@ -2,9 +2,9 @@
 
 ## Purpose
 
-An **authored** multi-level dungeon — a hand-painted adventure with named floors the party descends through. Each Dungeon record names the dungeon and embeds its [Dungeon Level](dungeon_level.md) records inline under `levels[]`; each level points at a [Map](map.md) for its tile grid.
+A **procedurally generated** multi-level dungeon. A Dungeon record holds the *defaults* the runtime generator uses (style, difficulty, size, torch density, locked-door probability) plus an ordered list of inline [Dungeon Level](dungeon_level.md) records under `levels[]`. Each Level can override any of the parent's parameters for floor-by-floor variation; an omitted/null field on a Level inherits the parent's value.
 
-This is distinct from [Dungeon Config](dungeon_config.md), which describes a *procedural* generator's input parameters. Authored dungeons are hand-painted maps with deliberate placement; procedural dungeons are rolled at runtime. The two models coexist — a Module can ship both.
+There is no authored tile data on Dungeons — the runtime generator produces each floor at play time from these parameters. This supersedes the older "authored multi-level dungeon" framing and the separate `Dungeon Config` placeholder.
 
 ## Location
 
@@ -12,7 +12,7 @@ This is distinct from [Dungeon Config](dungeon_config.md), which describes a *pr
 
 ## Scope of this document
 
-The "Used?" column reflects the v2 TypeScript implementation under `web/`. The codebase is in its early stages, so every field is currently `TBD` until it is wired up. This model is a **stub** — fields beyond `id`, `name`, `tags`, and `levels[]` are open.
+The "Used?" column reflects the v2 TypeScript implementation under `web/`. The codebase is in its early stages, so every field is currently `TBD` until it is wired up. This model is a **stub** — fields beyond the ones below are open, and the procedural generator that consumes them hasn't been written yet.
 
 ## File shape
 
@@ -30,13 +30,30 @@ The "Used?" column reflects the v2 TypeScript implementation under `web/`. The c
 | `id` | string | yes | Stable identifier in snake_case (e.g. `"crypt_of_dagorn"`) | TBD |
 | `name` | string | yes | Display name shown when the party enters | TBD |
 | `description` | string | no | Flavor text shown on entry or in a quest log | TBD |
-| `tags` | string[] | no | Editor-side organizational labels (e.g. `["main_story", "act_1"]`). Purely for grouping in the browse view — gameplay doesn't read them. Same convention as [Map](map.md) `tags`. | TBD |
-| `levels` | object[] | yes | Ordered list of inline [Dungeon Level](dungeon_level.md) records; index 0 is the entrance floor, deeper floors follow. | TBD |
+| `tags` | string[] | no | Editor-side organizational labels (e.g. `["main_story", "act_1"]`). Same convention as [Map](map.md) `tags`; gameplay doesn't read them. | TBD |
+| `style` | string | yes | Visual / thematic family the generator uses to pick a tile palette and decor. Closed enum: `"caves"`, `"ruins"`, `"forest"`. | TBD |
+| `difficulty` | string | yes | Difficulty tier. Same enum as [Monster](monster.md) `difficulty`: `"easy"`, `"normal"`, `"hard"`, `"deadly"`, `"boss"`. Drives the encounter pool the generator samples from. | TBD |
+| `size` | `{ width: int, height: int }` | yes | Tile dimensions for each generated floor (default; per-level overrides allowed). | TBD |
+| `torch_density` | number (0–1) | yes | Probability that an eligible wall tile carries a torch. `0` = pitch dark, `1` = every wall lit. Drives ambient brightness. | TBD |
+| `locked_doors` | number (0–1) | yes | Probability that an interior door is locked. Pairs with the Thief / Ranger Pick Locks ability and the Knock spell. | TBD |
+| `levels` | object[] | yes | Ordered list of inline [Dungeon Level](dungeon_level.md) records; index 0 is the entrance floor, deeper floors follow. Each Level may override any of the parent's parameters for floor-by-floor variation. | TBD |
+
+## Inheritance into Levels
+
+Every Level inherits its parent Dungeon's parameter values by default. A Level may set any subset of `style`, `difficulty`, `size`, `torch_density`, `locked_doors` to override per floor. Examples of why you'd override:
+
+- The final floor is a `"boss"` difficulty floor inside an otherwise `"hard"` dungeon.
+- A side wing changes `style` from `"caves"` to `"ruins"` for one floor.
+- The bottom floor has `torch_density: 0` for the climactic dark encounter.
+- The treasury floor sets `locked_doors: 1` so every door is locked.
+
+An undefined / missing field on a Level means "use the Dungeon's value" — there's no separate `inherited: true` marker.
 
 ## Cross-references to other models
 
-- `levels[].map_id` → [Map](map.md) `id` (each inline level points at the tile grid it renders)
-- Referenced *by* [Map Tile](map_tile.md) — a cell with `dungeon: "<dungeon_id>"` is a dungeon-entrance trigger on a normal Map (entering steps the party onto `levels[0]`'s Map)
+- `difficulty` shares the [Monster](monster.md) `difficulty` enum.
+- Referenced *by* [Map Tile](map_tile.md) — a cell with `dungeon: "<dungeon_id>"` is a dungeon-entrance trigger on a normal Map (entering kicks off generation of `levels[0]`).
+- The generator will sample from [Encounter](encounter.md), [Spawn](spawn.md), and [Item](item.md) pools at runtime, gated by `difficulty` and (eventually) `style`.
 
 ## Example record
 
@@ -46,26 +63,42 @@ The "Used?" column reflects the v2 TypeScript implementation under `web/`. The c
   "name": "Crypt of Dagorn",
   "description": "An ancient burial vault sealed against the rising tide of undeath.",
   "tags": ["main_story", "act_1"],
+  "style": "caves",
+  "difficulty": "hard",
+  "size": { "width": 32, "height": 32 },
+  "torch_density": 0.15,
+  "locked_doors": 0.3,
   "levels": [
     {
       "id": "crypt_of_dagorn_l1",
       "name": "Tomb Hall",
-      "depth": 1,
-      "map_id": "crypt_of_dagorn_l1_map"
+      "depth": 1
     },
     {
       "id": "crypt_of_dagorn_l2",
       "name": "Vault Approach",
       "depth": 2,
-      "map_id": "crypt_of_dagorn_l2_map"
+      "size": { "width": 40, "height": 40 },
+      "locked_doors": 0.5
+    },
+    {
+      "id": "crypt_of_dagorn_l3",
+      "name": "The Inner Vault",
+      "depth": 3,
+      "difficulty": "deadly",
+      "torch_density": 0.0
     }
   ]
 }
 ```
 
+In this example, L1 inherits everything from the parent; L2 overrides size + locked_doors; L3 overrides difficulty + torch_density (and is pitch-dark).
+
 ## Notes and open questions
 
-- **Levels are inline, not a separate catalog.** Earlier drafts stored Dungeon Levels in their own `dungeon_levels.json`; the model collapsed back to inline objects because no other record references levels by id — they exist only as children of their parent Dungeon. The dictionary entry for [Dungeon Level](dungeon_level.md) still documents the inline shape.
-- **Schema is a stub.** Likely future additions: party-entry coordinates per level (so descending stairs land somewhere specific), per-dungeon ambient lighting, per-dungeon encounter/spawn overrides, completion flags.
-- **Authored vs. procedural.** Use Dungeon when every floor should be deliberately laid out (puzzles, set-piece encounters). Use [Dungeon Config](dungeon_config.md) when the rogue-like dimension is the point.
-- **Level ids are scope-local.** A level id like `crypt_of_dagorn_l1` only needs to be unique within its parent Dungeon's `levels[]` — there's no global level catalog to collide with. Save-game state can address a level as `(dungeon_id, level_id)` or by the level's position in `levels[]`.
+- **Procedural, not authored.** Earlier drafts framed Dungeons as hand-painted multi-floor maps. The model pivoted to procedural generation; the previous [Dungeon Config](dungeon_config.md) model is now superseded by this one.
+- **Levels are inline, not a separate catalog.** No other record references a Dungeon Level by global id, so the children live as inline objects under their parent.
+- **`style` is a closed enum today.** Values are `"caves"`, `"ruins"`, `"forest"`. Add new values here (and in `DungeonsBrowse`'s dropdown) when the generator gains support for additional themes.
+- **`size` is fixed per generation.** No min/max range yet — every level either uses the inherited size or sets its own. Adding `{ min_width, max_width, ... }` for "random within a range" is a natural future extension.
+- **`difficulty: "boss"` is the boss-floor convention.** Matches Monster's note that `"boss"` is intentionally outside the random-encounter pool. A Level overriding to `"boss"` flags it as the final floor for generator/UI purposes.
+- **Schema is a stub.** Likely future additions: per-dungeon encounter table overrides, loot multiplier, scripted-event hooks for specific levels, seed/RNG knob.
