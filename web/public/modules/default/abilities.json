@@ -1,5 +1,5 @@
 {
-  "_comment": "Ability catalog (real data drives the schema). An Ability is a named capability that lives on a Character — granted by a race, by a class, or by some other source (item, quest, scripted). Descriptions here are granter-agnostic; per-granter level gates (and any future per-granter param overrides) live on the granting record (Character Class.abilities, Race.abilities). See docs/data_dictionary/ability.md.",
+  "_comment": "Ability catalog (real data drives the schema). An Ability is a named capability that lives on a Character — granted by a race, by a class, or by some other source (item, quest, scripted). Descriptions here are granter-agnostic; per-granter level gates (and any future per-granter param overrides) live on the granting record (Character Class.abilities, Race.abilities). Setting `party_effect: true` marks the Ability as a togglable party-wide effect — its id may appear in the Party.party_effects[] list and the in-game Party screen renders it as a toggle; without that flag the Ability is character/combat-only and renders on the character sheet instead. See docs/data_dictionary/ability.md.",
   "abilities": [
     {
       "id": "pick_locks",
@@ -18,6 +18,7 @@
       "type": "class",
       "description": "Hidden traps are revealed before the party steps on them.",
       "duration": "permanent",
+      "party_effect": true,
       "params": null
     },
     {
@@ -45,14 +46,12 @@
       "type": "class",
       "description": "Channel holy energy at every undead on the battlefield. Each one must make a Wisdom save (d20 + WIS mod vs DC 10 + caster's WIS mod) or be destroyed outright; those that succeed are still seared for 50% of their HP in radiant damage.",
       "duration": "instant",
+      "usable_in": ["battle"],
       "params": {
         "action": "turn_undead",
         "mp_cost": 0,
         "range": 99,
         "targeting": "auto_monster",
-        "usable_in": [
-          "battle"
-        ],
         "save_stat": "wisdom",
         "save_dc_base": 10,
         "fail_hp_percent": 50,
@@ -84,6 +83,7 @@
       "type": "race",
       "description": "Pierces darkness, revealing the world in shades of red. The bearer can see in absolute darkness without needing a torch.",
       "duration": "permanent",
+      "party_effect": true,
       "params": null
     },
     {
@@ -92,6 +92,7 @@
       "type": "race",
       "description": "Attempt to steal items from town NPCs. Once per NPC, with a chance of failure.",
       "duration": "permanent",
+      "usable_in": ["party"],
       "params": null
     },
     {
@@ -100,6 +101,7 @@
       "type": "race",
       "description": "Conjure a soft magical illumination, lighting dark areas without consuming a torch. Persists for 200 overworld steps after invocation.",
       "duration": "permanent",
+      "party_effect": true,
       "params": {
         "applied_effect": "magic_light",
         "applied_duration_steps": 200
@@ -111,6 +113,7 @@
       "type": "race",
       "description": "Once per in-game day, fashion any single item normally found in a general store.",
       "duration": "permanent",
+      "usable_in": ["party"],
       "params": {
         "uses_per_day": 1
       }
@@ -142,6 +145,7 @@
       "type": "class",
       "description": "Combine regents using the guidance of a recipe to create a potion",
       "duration": null,
+      "usable_in": ["party"],
       "params": {}
     }
   ]

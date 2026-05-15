@@ -1,6 +1,6 @@
 npm run dev:all
 
-- Add Game editor screens for Characters and Party (sims)
+- in combat screen, add a dice roll area
 
 ## Wishlist (long-term, not currently scoped)
 

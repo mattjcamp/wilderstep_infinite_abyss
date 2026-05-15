@@ -37,11 +37,14 @@
  *     the Characters editor (sim preview next to the editable sheet).
  */
 
+import { useState } from "react";
 import type {
+  PartyAbilityRef,
   PartyCharacterRef,
   PartyClassRef,
   PartyItemRef,
   PartyRaceRef,
+  PartySpellRef,
 } from "./PartyScreen";
 import { resolveSpritePath } from "./spriteFields";
 
@@ -162,12 +165,24 @@ export function CharacterSheetSim({
   classes,
   races,
   items,
+  abilities = [],
+  spells = [],
   onBack,
 }: {
   character: PartyCharacterRef;
   classes: ReadonlyArray<PartyClassRef>;
   races: ReadonlyArray<PartyRaceRef>;
   items: ReadonlyArray<SheetItemRef>;
+  /** Full Ability catalog. The sheet filters to the ids granted by
+   *  the character's race + class (with min_level satisfied). Pass an
+   *  empty array — or omit entirely — and the Abilities sections
+   *  render empty. */
+  abilities?: ReadonlyArray<PartyAbilityRef>;
+  /** Full Spell catalog. The sheet filters to spells whose
+   *  `casting_type` matches one of the character's class casting
+   *  types and whose `min_level` is satisfied (`class_min_levels`
+   *  override honoured if present). */
+  spells?: ReadonlyArray<PartySpellRef>;
   /** Optional Back button — shown when present. Lets the Party screen
    *  drill-in / drill-out, while standalone hosts can omit it. */
   onBack?: () => void;
@@ -177,7 +192,41 @@ export function CharacterSheetSim({
   const raceName =
     races.find((r) => r.id === character.race)?.name ?? character.race;
   const race = races.find((r) => r.id === character.race);
+  const klass = classes.find((c) => c.id === character.class);
   const itemById = new Map(items.map((it) => [it.id, it]));
+  const abilityById = new Map(abilities.map((a) => [a.id, a]));
+
+  // ── Resolve granted abilities ────────────────────────────────────
+  // Race abilities are unconditional; class abilities gate on
+  // min_level. Each entry pairs the catalog record with whatever
+  // metadata the granter supplied (today: min_level from class).
+  const raceAbilities: PartyAbilityRef[] = (race?.abilities ?? [])
+    .map((id) => abilityById.get(id))
+    .filter((a): a is PartyAbilityRef => Boolean(a));
+  const classAbilities: PartyAbilityRef[] = (klass?.abilities ?? [])
+    .filter((link) => (link.min_level ?? 1) <= (character.level ?? 1))
+    .map((link) => abilityById.get(link.ability_id ?? link.id ?? ""))
+    .filter((a): a is PartyAbilityRef => Boolean(a));
+
+  // ── Resolve known spells ─────────────────────────────────────────
+  // Spell is castable when:
+  //   - the class's casting_type[] includes the spell's casting_type
+  //   - character.level >= per-class override OR global min_level
+  const knownSpells: PartySpellRef[] = (klass?.casting_type
+    ? spells.filter((s) => {
+        if (!s.casting_type) return false;
+        if (!klass.casting_type!.includes(s.casting_type)) return false;
+        const gate =
+          s.class_min_levels?.[klass.id] ?? s.min_level ?? 1;
+        return (character.level ?? 1) >= gate;
+      })
+    : []) as PartySpellRef[];
+
+  // ── Last-used feedback line (preview-only) ───────────────────────
+  // Click an ability/spell button → flash a confirmation here. No
+  // state mutation, no targeting picker; real mechanics land when
+  // the runtime is ready.
+  const [lastAction, setLastAction] = useState<string | null>(null);
 
   const equipped = (character.equipped ?? {}) as Record<string, string>;
   const handsId = equipped.hands;
@@ -400,6 +449,67 @@ export function CharacterSheetSim({
         </div>
       </div>
 
+      {/* Abilities + Spells — full-width below the two-pane block.
+          Each section lists everything granted to / known by the
+          character; rows whose `usable_in` includes "party" get a
+          Use / Cast button that flashes a preview-only confirmation
+          (no state mutation in this pass). */}
+      <div className="grid gap-3 md:grid-cols-2">
+        <AbilitySection
+          title="Race Abilities"
+          rows={raceAbilities}
+          emptyHint={`${raceName} grants no listed abilities.`}
+          onUse={(a) =>
+            setLastAction(`Used ${a.name ?? a.id} — preview only.`)
+          }
+        />
+        <AbilitySection
+          title="Class Abilities"
+          rows={classAbilities}
+          emptyHint={`${className} grants no abilities at level ${level}.`}
+          onUse={(a) =>
+            setLastAction(`Used ${a.name ?? a.id} — preview only.`)
+          }
+        />
+      </div>
+
+      <section>
+        <h3 className="text-xs uppercase tracking-wide text-amber-300">
+          Spells
+        </h3>
+        {knownSpells.length === 0 ? (
+          <p className="mt-1 text-sm text-parchment/45">
+            {klass?.casting_type && klass.casting_type.includes("none")
+              ? "Not a spellcaster."
+              : `No spells known at level ${level}.`}
+          </p>
+        ) : (
+          <ul className="mt-1 space-y-1">
+            {knownSpells.map((s) => (
+              <SpellRow
+                key={s.id}
+                spell={s}
+                onCast={() =>
+                  setLastAction(
+                    `Cast ${s.name ?? s.id} — preview only (MP ${
+                      s.mp_cost ?? 0
+                    }).`,
+                  )
+                }
+              />
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {/* Transient action feedback line. Empty by default; populates
+          on Use / Cast clicks. */}
+      {lastAction ? (
+        <p className="rounded border border-amber-300/30 bg-amber-300/5 px-2 py-1 text-xs text-amber-200/90">
+          {lastAction}
+        </p>
+      ) : null}
+
       {/* Bottom hint bar (cosmetic — keys aren't bound in this pass) */}
       <div className="border-t border-parchment/15 pt-1 text-center font-mono text-[10px] uppercase tracking-wider text-parchment/45">
         [↑↓] select · [Enter] equip / unequip · [R] return to stash · [1-4]
@@ -479,5 +589,112 @@ function StatBar({
         {value} / {max <= 1 && value === 0 ? 0 : max}
       </span>
     </div>
+  );
+}
+
+// ── Abilities & spells ─────────────────────────────────────────────
+
+function AbilitySection({
+  title,
+  rows,
+  emptyHint,
+  onUse,
+}: {
+  title: string;
+  rows: ReadonlyArray<PartyAbilityRef>;
+  emptyHint: string;
+  onUse: (a: PartyAbilityRef) => void;
+}) {
+  return (
+    <section>
+      <h3 className="text-xs uppercase tracking-wide text-amber-300">
+        {title}
+      </h3>
+      {rows.length === 0 ? (
+        <p className="mt-1 text-sm text-parchment/45">{emptyHint}</p>
+      ) : (
+        <ul className="mt-1 space-y-1">
+          {rows.map((a) => {
+            const usable = (a.usable_in ?? []).includes("party");
+            return (
+              <li
+                key={a.id}
+                className="rounded border border-parchment/10 bg-ink/30 px-2 py-1"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm text-parchment/95">
+                    {a.name ?? a.id}
+                  </span>
+                  {usable ? (
+                    <button
+                      type="button"
+                      onClick={() => onUse(a)}
+                      className="rounded border border-ember/60 bg-ember/30 px-2 py-0.5 text-[11px] text-parchment hover:bg-ember/50"
+                    >
+                      Use
+                    </button>
+                  ) : (
+                    <span className="text-[10px] uppercase tracking-wider text-parchment/35">
+                      {(a.usable_in ?? []).includes("battle")
+                        ? "Combat"
+                        : "Passive"}
+                    </span>
+                  )}
+                </div>
+                {a.description ? (
+                  <p className="mt-0.5 text-[11px] text-parchment/65">
+                    {a.description}
+                  </p>
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function SpellRow({
+  spell,
+  onCast,
+}: {
+  spell: PartySpellRef;
+  onCast: () => void;
+}) {
+  const usable = (spell.usable_in ?? []).includes("party");
+  return (
+    <li className="rounded border border-parchment/10 bg-ink/30 px-2 py-1">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-sm text-parchment/95">
+          {spell.name ?? spell.id}
+          <span className="ml-2 font-mono text-[10px] text-parchment/45">
+            MP {spell.mp_cost ?? 0}
+            {spell.casting_type ? ` · ${spell.casting_type}` : ""}
+            {spell.min_level ? ` · L${spell.min_level}+` : ""}
+          </span>
+        </span>
+        {usable ? (
+          <button
+            type="button"
+            onClick={onCast}
+            className="rounded border border-ember/60 bg-ember/30 px-2 py-0.5 text-[11px] text-parchment hover:bg-ember/50"
+          >
+            Cast
+          </button>
+        ) : (
+          <span className="text-[10px] uppercase tracking-wider text-parchment/35">
+            {(spell.usable_in ?? []).includes("battle")
+              ? "Combat"
+              : "—"}
+          </span>
+        )}
+      </div>
+      {spell.description ? (
+        <p className="mt-0.5 text-[11px] text-parchment/65">
+          {spell.description}
+        </p>
+      ) : null}
+    </li>
   );
 }

@@ -10,14 +10,9 @@
     "aldric",
     "pippin",
     "selina",
-    "elminster"
+    "alchey"
   ],
-  "party_effects": {
-    "effect_1": null,
-    "effect_2": null,
-    "effect_3": null,
-    "effect_4": null
-  },
+  "party_effects": [],
   "inventory": [
     {
       "item": "torch",

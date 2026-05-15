@@ -38,6 +38,7 @@ import {
   CharacterSheetSim,
   type SheetItemRef,
 } from "./CharacterSheetSim";
+import type { PartySpellRef } from "./PartyScreen";
 import { resolveSpritePath } from "./spriteFields";
 import { usePublishServer } from "./usePublishServer";
 
@@ -62,6 +63,10 @@ type LoadState =
       /** Item catalog — read by the CharacterSheetSim preview to
        *  resolve equipped item names and derive AC + damage. */
       items: SheetItemRef[];
+      /** Spell catalog — read by the CharacterSheetSim preview to
+       *  list the spells this character knows (filtered by class
+       *  casting_type + min_level). */
+      spells: PartySpellRef[];
       ownFile: Record<string, unknown> | null;
       isDraft: boolean;
     }
@@ -84,12 +89,14 @@ export function CharactersBrowse({ moduleId }: { moduleId: string }) {
         classesLayers,
         abilitiesLayers,
         itemsLayers,
+        spellsLayers,
       ] = await Promise.all([
         src.loadModelLayers(moduleId, "characters"),
         src.loadModelLayers(moduleId, "races"),
         src.loadModelLayers(moduleId, "character_classes"),
         src.loadModelLayers(moduleId, "abilities"),
         src.loadModelLayers(moduleId, "items"),
+        src.loadModelLayers(moduleId, "spells"),
       ]);
       const draft = loadDraft<Record<string, unknown>>(moduleId, MODEL_KEY);
       const ownEffective =
@@ -130,6 +137,13 @@ export function CharactersBrowse({ moduleId }: { moduleId: string }) {
       ) as { items?: SheetItemRef[] } | null;
       const items = itemsMerged?.items ?? [];
 
+      const spellsMerged = mergeModel(
+        "spells",
+        spellsLayers.inherited,
+        spellsLayers.ownFile,
+      ) as { spells?: PartySpellRef[] } | null;
+      const spells = spellsMerged?.spells ?? [];
+
       setState({
         kind: "ok",
         characters,
@@ -137,6 +151,7 @@ export function CharactersBrowse({ moduleId }: { moduleId: string }) {
         classes,
         abilities,
         items,
+        spells,
         ownFile: ownEffective ?? null,
         isDraft: hasDraft(moduleId, MODEL_KEY),
       });
@@ -438,6 +453,8 @@ export function CharactersBrowse({ moduleId }: { moduleId: string }) {
                       classes={state.classes}
                       races={state.races}
                       items={state.items}
+                      abilities={state.abilities}
+                      spells={state.spells}
                     />
                   </div>
                 </div>

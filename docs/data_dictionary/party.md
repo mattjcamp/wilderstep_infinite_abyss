@@ -26,7 +26,7 @@ A flat singleton object — the whole file is one Party record.
   "start_position": { "map_id": ..., "col": ..., "row": ... },
   "gold": ...,
   "roster": [ "<character_id>", ... ],
-  "party_effects": { "effect_1": ..., ..., "effect_4": ... },
+  "party_effects": [ "<ability_id>", ... ],
   "inventory": [ <inventory_entry>, ... ],
   "torch_steps": ...,
   "galadriels_light_steps": ...
@@ -40,27 +40,16 @@ A flat singleton object — the whole file is one Party record.
 | `start_position` | `{ map_id: string, col: int, row: int }` | yes | Where the party spawns. `map_id` references a [Map](map.md) id; `col`/`row` are the cell within that map. On a fresh game this is the seed; on a save-game it's overwritten with the party's last position so loading drops them where they were. | TBD |
 | `gold` | int | yes | Shared party gold pool | TBD |
 | `roster` | string[] | yes | [Character](character.md) ids in the adventuring party. Typically four; the engine treats every roster entry as actively adventuring. | TBD |
-| `party_effects` | object | yes | Up to four named active [Effect](effect.md) slots; each value is an Effect id or null | TBD |
+| `party_effects` | string[] | yes | Currently-active party-wide [Ability](ability.md) ids — abilities flagged with `party_effect: true`. Dynamic list (no fixed slot count); the in-game Party screen renders one row per available ability and lets the player toggle them on or off. Default `[]`. | TBD |
 | `inventory` | object[] | yes | Shared party stash. Each entry is `{ item, charges?, durability? }` where `item` is an [Item](item.md) `id` (snake_case). | TBD |
 | `torch_steps` | int | yes | Remaining lit-torch steps | TBD |
 | `galadriels_light_steps` | int | yes | Elven Light remaining steps | TBD |
-
-## `party_effects` sub-object
-
-Four named slots; each value is an [Effect](effect.md) id or `null`.
-
-| Field | Type | Description |
-|---|---|---|
-| `effect_1` | string \| null | First active effect id |
-| `effect_2` | string \| null | Second active effect id |
-| `effect_3` | string \| null | Third active effect id |
-| `effect_4` | string \| null | Fourth active effect id |
 
 ## Cross-references to other models
 
 - `start_position.map_id` → [Map](map.md) id
 - `roster[]` → [Character](character.md) ids
-- `party_effects.effect_1..4` → [Effect](effect.md) ids
+- `party_effects[]` → [Ability](ability.md) ids (only ids of abilities with `party_effect: true` should appear here)
 - `inventory[].item` → [Item](item.md) id
 
 ## Example record
@@ -70,12 +59,7 @@ Four named slots; each value is an [Effect](effect.md) id or `null`.
   "start_position": { "map_id": "test2", "col": 14, "row": 16 },
   "gold": 50,
   "roster": ["aldric", "pippin", "selina", "elminster"],
-  "party_effects": {
-    "effect_1": null,
-    "effect_2": null,
-    "effect_3": null,
-    "effect_4": null
-  },
+  "party_effects": [],
   "inventory": [
     { "item": "torch", "charges": 1 },
     { "item": "rock", "charges": 20 },
@@ -93,3 +77,4 @@ Four named slots; each value is an [Effect](effect.md) id or `null`.
 - **Per-character data lives in [Character](character.md).** Equipment, inventory bags, stats, level — none of that is here anymore. Party only carries party-wide concerns.
 - **Singleton vs. per-module seed.** This file is the *default* seed at the data-model layer. Per the architecture plan, each module ships its own starting party at `modules/<id>/party.json`. The v2 module-loading layer will determine precedence; the data shape is the same either way.
 - **Inventory items reference by id.** Migrated from `Item.name` (`"Torch"`, `"Rock"`, `"Lockpick"`) once the rest of v2 standardized on Item ids.
+- **No fixed slot count on `party_effects`.** v1 modeled the in-game effect list as four named slots (`effect_1..4`) to match the original Ultima 3 HUD constraint. v2 drops the cap — the in-game Party screen lists every available party-wide Ability the roster unlocks and lets the player toggle them on or off; `party_effects` is just the array of currently-on ability ids. Source-of-truth for which abilities qualify is the `party_effect` flag on [Ability](ability.md) records.

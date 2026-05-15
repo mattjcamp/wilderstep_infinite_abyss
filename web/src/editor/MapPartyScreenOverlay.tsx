@@ -5,13 +5,14 @@
  * during simulation mode. Bound to the `P` key by MapEditor.
  *
  * Self-contained: loads the module's party, characters, races,
- * classes, abilities, items, and spells once on mount; renders the
+ * classes, abilities, and items once on mount; renders the
  * preview component inside a centered card with a dim backdrop.
  * Pressing the same key again — or ESC, or clicking the backdrop —
  * dismisses it.
  */
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { loadDraft, saveDraft } from "@/data_model/draft";
 import { mergeModel } from "@/data_model/merge";
 import { StaticModuleSource } from "@/data_model/StaticModuleSource";
 import {
@@ -51,6 +52,26 @@ export function MapPartyScreenOverlay({
     ReadonlyArray<string>
   >([]);
 
+  /** Reorder handler — drag-and-drop on the roster writes the new
+   *  order into the party draft (localStorage) so the Party editor +
+   *  any later sim session see the change. Local state updates in
+   *  place to keep the overlay responsive. */
+  const onReorderRoster = useCallback(
+    (newOrder: string[]) => {
+      setState((prev) => {
+        if (prev.kind !== "ok") return prev;
+        const nextParty: PartyRecord = { ...prev.party, roster: newOrder };
+        saveDraft(
+          moduleId,
+          "party",
+          nextParty as unknown as Record<string, unknown>,
+        );
+        return { ...prev, party: nextParty };
+      });
+    },
+    [moduleId],
+  );
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -75,8 +96,15 @@ export function MapPartyScreenOverlay({
         ]);
         if (cancelled) return;
 
+        // Honor any pending party draft so reorders done in the Party
+        // editor (or earlier in this sim session) are reflected here.
+        const partyDraft = loadDraft<Record<string, unknown>>(
+          moduleId,
+          "party",
+        );
+        const partyOwn = partyDraft ?? partyLayers.ownFile;
         const party =
-          (mergeModel("party", partyLayers.inherited, partyLayers.ownFile) as
+          (mergeModel("party", partyLayers.inherited, partyOwn) as
             | PartyRecord
             | null) ?? {};
         const characters =
@@ -214,6 +242,7 @@ export function MapPartyScreenOverlay({
               spells={state.spells}
               activeEffectIds={activeEffectIds}
               onActiveEffectsChange={setActiveEffectIds}
+              onReorderRoster={onReorderRoster}
             />
           )}
         </div>

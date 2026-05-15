@@ -58,7 +58,10 @@ export interface PartyInventoryEntry {
 export interface PartyRecord {
   gold?: number;
   roster?: string[];
-  party_effects?: Record<string, string | null>;
+  /** Currently-active party-wide Ability ids — the dynamic
+   *  replacement for v1's fixed `{effect_1..4}` slot object. Each
+   *  entry is the id of an Ability with `party_effect: true`. */
+  party_effects?: string[];
   inventory?: PartyInventoryEntry[];
   torch_steps?: number;
   galadriels_light_steps?: number;
@@ -114,6 +117,11 @@ export interface PartyClassRef {
   id: string;
   name?: string;
   abilities?: PartyClassAbilityRef[];
+  /** Spell catalogs this class can draw from — values are
+   *  `"sorcerer"`, `"priest"`, or `"none"`. Used by the character
+   *  sheet to filter the Spells list by which catalog the class
+   *  reads. */
+  casting_type?: string[];
 }
 
 export interface PartyAbilityRef {
@@ -122,6 +130,16 @@ export interface PartyAbilityRef {
   type?: "race" | "class" | "other" | string;
   description?: string;
   duration?: number | string | null;
+  /** When true, this Ability is a togglable party-wide effect — its
+   *  id can appear in `Party.party_effects[]` and the in-game Effects
+   *  list renders it as a toggle. Combat-only actions and
+   *  character-only passives leave this absent/false. */
+  party_effect?: boolean;
+  /** Where the player can actively trigger this Ability. Mirrors
+   *  `Spell.usable_in` — `"battle"` for combat actions, `"party"` for
+   *  out-of-combat actions surfaced as a Use button on the character
+   *  sheet. Absent / empty = passive. */
+  usable_in?: string[];
 }
 
 export interface PartyItemRef {
@@ -132,6 +150,19 @@ export interface PartyItemRef {
 export interface PartySpellRef {
   id: string;
   name?: string;
+  description?: string;
+  casting_type?: string;
+  min_level?: number;
+  mp_cost?: number;
+  range?: number;
+  targeting?: string;
+  usable_in?: string[];
+  duration?: number | string | null;
+  action?: string;
+  /** Per-class min_level overrides — keyed by class id. When the
+   *  character's class id appears here, that level gates eligibility
+   *  instead of the global `min_level`. */
+  class_min_levels?: Record<string, number>;
 }
 
 const SPRITE_CONFIG = { category: "person", format: "path" } as const;
@@ -217,12 +248,6 @@ type EffectRow = {
   active: boolean;
 };
 
-type ActionRow =
-  | { kind: "cast"; label: "CAST SPELL"; hint: string; enabled: boolean }
-  | { kind: "pickpocket"; label: "PICKPOCKET"; hint: string; enabled: boolean }
-  | { kind: "tinker"; label: "TINKER"; hint: string; enabled: boolean }
-  | { kind: "brew"; label: "BREW POTION"; hint: string; enabled: boolean };
-
 // ── Component ───────────────────────────────────────────────────────
 
 export function PartyScreen({
@@ -235,6 +260,7 @@ export function PartyScreen({
   spells = [],
   activeEffectIds,
   onActiveEffectsChange,
+  onReorderRoster,
 }: {
   party: PartyRecord;
   /** Full character records for the party's roster ids. Missing ids
@@ -244,9 +270,9 @@ export function PartyScreen({
   classes: ReadonlyArray<PartyClassRef>;
   abilities: ReadonlyArray<PartyAbilityRef>;
   items: ReadonlyArray<PartyItemRef>;
-  /** Optional spell catalog — only used to enable/disable the CAST
-   *  SPELL row's hint. The screen doesn't render the spell list yet
-   *  (a future pass when targeting is wired up). */
+  /** Full Spell catalog — forwarded to CharacterSheetSim on drill-in
+   *  so the per-character "Spells" section can filter by class. The
+   *  Party screen itself doesn't render the spell list. */
   spells?: ReadonlyArray<PartySpellRef>;
   /** Which optional abilities are currently flagged as "active" for
    *  preview. The host owns this; the screen toggles via the
@@ -254,6 +280,13 @@ export function PartyScreen({
    *  nothing selected. */
   activeEffectIds: ReadonlyArray<string>;
   onActiveEffectsChange: (ids: ReadonlyArray<string>) => void;
+  /** When provided, roster cards become draggable: the callback fires
+   *  with the reordered character-id list whenever the user drops a
+   *  card on a new position. Omit to keep the roster read-only (the
+   *  default for hosts that don't persist edits). Click-to-drill-in
+   *  still works — mouse-down without a drag is a click, mouse-down +
+   *  movement is a drag start. */
+  onReorderRoster?: (newOrder: string[]) => void;
 }) {
   // ── Resolve roster ──────────────────────────────────────────────
   const members = useMemo(() => {
@@ -282,59 +315,21 @@ export function PartyScreen({
     [members, races, classes],
   );
 
-  // ── Build the EFFECTS list (race + class abilities only) ─────────
+  // ── Build the EFFECTS list ──────────────────────────────────────
+  // Only abilities flagged `party_effect: true` AND unlocked by some
+  // current roster member belong here. Unavailable effects are
+  // omitted entirely — the player shouldn't see options they can't
+  // use. The list is dynamic; there's no fixed slot count.
   const effectRows: EffectRow[] = useMemo(() => {
-    const togglable = abilities.filter(
-      (a) => a.type === "race" || a.type === "class",
-    );
-    return togglable.map((a) => ({
-      kind: "effect" as const,
-      ability: a,
-      available: unlocked.has(a.id),
-      active: activeEffectIds.includes(a.id),
-    }));
+    return abilities
+      .filter((a) => a.party_effect === true && unlocked.has(a.id))
+      .map((a) => ({
+        kind: "effect" as const,
+        ability: a,
+        available: true,
+        active: activeEffectIds.includes(a.id),
+      }));
   }, [abilities, unlocked, activeEffectIds]);
-
-  // ── Build the conditional ACTION rows below the effects ──────────
-  const hasRace = (raceId: string) => members.some((m) => m.race === raceId);
-  const hasClass = (classId: string) =>
-    members.some((m) => m.class === classId);
-  const actionRows: ActionRow[] = useMemo(() => {
-    const rows: ActionRow[] = [
-      {
-        kind: "cast",
-        label: "CAST SPELL",
-        hint: spells.length > 0 ? `${spells.length} known` : "no spells",
-        enabled: spells.length > 0,
-      },
-    ];
-    if (hasClass("alchemist")) {
-      rows.push({
-        kind: "brew",
-        label: "BREW POTION",
-        hint: "Alchemist",
-        enabled: true,
-      });
-    }
-    if (hasRace("halfling")) {
-      rows.push({
-        kind: "pickpocket",
-        label: "PICKPOCKET",
-        hint: "Halfling",
-        enabled: true,
-      });
-    }
-    if (hasRace("gnome")) {
-      rows.push({
-        kind: "tinker",
-        label: "TINKER",
-        hint: "Gnome",
-        enabled: true,
-      });
-    }
-    return rows;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [members, spells.length]);
 
   // ── Selection state — which left-list row is highlighted ─────────
   // Default to the first available effect so the right pane shows
@@ -352,6 +347,36 @@ export function PartyScreen({
   const focusedMember = focusedMemberId
     ? members.find((m) => m.id === focusedMemberId) ?? null
     : null;
+
+  // ── Drag-and-drop roster reorder ────────────────────────────────
+  // `dragFromId` = the card the user is currently dragging.
+  // `dropTargetId` = the card the cursor is hovering over (drives the
+  // visual insertion indicator). Both clear on drop or drag-end.
+  // Reordering is OFF entirely unless the host wired onReorderRoster.
+  const [dragFromId, setDragFromId] = useState<string | null>(null);
+  const [dropTargetId, setDropTargetId] = useState<string | null>(null);
+  const reorderEnabled = Boolean(onReorderRoster);
+  const handleDrop = (toId: string) => {
+    if (!onReorderRoster || !dragFromId || dragFromId === toId) {
+      setDragFromId(null);
+      setDropTargetId(null);
+      return;
+    }
+    const ids = members.map((m) => m.id);
+    const fromIdx = ids.indexOf(dragFromId);
+    const toIdx = ids.indexOf(toId);
+    if (fromIdx === -1 || toIdx === -1) {
+      setDragFromId(null);
+      setDropTargetId(null);
+      return;
+    }
+    const reordered = [...ids];
+    const [moved] = reordered.splice(fromIdx, 1);
+    reordered.splice(toIdx, 0, moved);
+    onReorderRoster(reordered);
+    setDragFromId(null);
+    setDropTargetId(null);
+  };
 
   // Resync selection when the underlying list changes (e.g., roster
   // edit added a Halfling and unlocked Pickpocket).
@@ -385,6 +410,8 @@ export function PartyScreen({
         // carry power/evasion/etc. Cast through to surface those fields
         // to the sheet without forcing every host to import SheetItemRef.
         items={items as ReadonlyArray<SheetItemRef>}
+        abilities={abilities}
+        spells={spells}
         onBack={() => setFocusedMemberId(null)}
       />
     );
@@ -408,7 +435,10 @@ export function PartyScreen({
             </h3>
             <ul className="mt-1 space-y-0.5">
               {effectRows.length === 0 ? (
-                <li className="text-xs text-parchment/50">(no abilities)</li>
+                <li className="text-xs text-parchment/50">
+                  (no party effects available — roster doesn&apos;t
+                  unlock any)
+                </li>
               ) : null}
               {effectRows.map((row) => {
                 const isSel = row.ability.id === selectedId;
@@ -418,62 +448,25 @@ export function PartyScreen({
                       type="button"
                       onClick={() => setSelectedId(row.ability.id)}
                       onDoubleClick={() =>
-                        toggleActive(row.ability.id, row.available)
+                        toggleActive(row.ability.id, true)
                       }
                       className={[
-                        "flex w-full items-center justify-between gap-2 rounded border px-2 py-0.5 text-left text-sm",
+                        "flex w-full items-center gap-2 rounded border px-2 py-0.5 text-left text-sm text-parchment/90",
                         isSel
                           ? "border-ember/60 bg-ember/15"
                           : "border-transparent hover:bg-ink/50",
-                        row.available
-                          ? "text-parchment/90"
-                          : "text-parchment/40",
                       ].join(" ")}
                     >
-                      <span className="flex items-center gap-2">
-                        {row.active ? (
-                          <span className="text-amber-300">●</span>
-                        ) : row.available ? (
-                          <span className="text-parchment/40">○</span>
-                        ) : (
-                          <span className="text-parchment/30">×</span>
-                        )}
-                        <span>{row.ability.name ?? row.ability.id}</span>
-                      </span>
-                      {!row.available ? (
-                        <span className="text-[10px] uppercase tracking-wider text-parchment/40">
-                          REQ NOT MET
-                        </span>
-                      ) : null}
+                      {row.active ? (
+                        <span className="text-amber-300">●</span>
+                      ) : (
+                        <span className="text-parchment/40">○</span>
+                      )}
+                      <span>{row.ability.name ?? row.ability.id}</span>
                     </button>
                   </li>
                 );
               })}
-            </ul>
-          </section>
-
-          {/* Actions — CAST SPELL + conditional rows */}
-          <section>
-            <h3 className="text-xs uppercase tracking-wide text-amber-300">
-              Actions
-            </h3>
-            <ul className="mt-1 space-y-0.5">
-              {actionRows.map((row) => (
-                <li
-                  key={row.kind}
-                  className={[
-                    "flex items-center justify-between gap-2 rounded px-2 py-0.5 text-sm",
-                    row.enabled
-                      ? "text-parchment/85"
-                      : "text-parchment/40",
-                  ].join(" ")}
-                >
-                  <span>{row.label}</span>
-                  <span className="text-[11px] text-parchment/55">
-                    {row.hint}
-                  </span>
-                </li>
-              ))}
             </ul>
           </section>
 
@@ -530,6 +523,18 @@ export function PartyScreen({
                   raceName={raceById.get(m.race)?.name ?? m.race}
                   xpNext={xpForNextLevel(m, raceById.get(m.race))}
                   onOpen={() => setFocusedMemberId(m.id)}
+                  draggable={reorderEnabled}
+                  isDragging={dragFromId === m.id}
+                  isDropTarget={
+                    dropTargetId === m.id && dragFromId !== m.id
+                  }
+                  onDragStart={() => setDragFromId(m.id)}
+                  onDragEnterCard={() => setDropTargetId(m.id)}
+                  onDropOnCard={() => handleDrop(m.id)}
+                  onDragEnd={() => {
+                    setDragFromId(null);
+                    setDropTargetId(null);
+                  }}
                 />
               ))}
             </ul>
@@ -559,23 +564,15 @@ export function PartyScreen({
                     classes,
                   )}
                 </div>
-                {selectedRow.available ? (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      toggleActive(selectedRow.ability.id, true)
-                    }
-                    className="mt-1 rounded border border-ember/60 bg-ember/30 px-2 py-0.5 text-xs text-parchment hover:bg-ember/50"
-                  >
-                    {selectedRow.active
-                      ? "Remove from active"
-                      : "Add to active"}
-                  </button>
-                ) : (
-                  <p className="mt-1 text-[11px] text-ember/70">
-                    No qualifying party member.
-                  </p>
-                )}
+                <button
+                  type="button"
+                  onClick={() => toggleActive(selectedRow.ability.id, true)}
+                  className="mt-1 rounded border border-ember/60 bg-ember/30 px-2 py-0.5 text-xs text-parchment hover:bg-ember/50"
+                >
+                  {selectedRow.active
+                    ? "Remove from active"
+                    : "Add to active"}
+                </button>
               </div>
             ) : (
               <p className="mt-1 text-xs text-parchment/45">
@@ -597,7 +594,9 @@ export function PartyScreen({
       {/* Bottom hint bar (purely cosmetic — keys aren't wired in this
           preview pass; click to select, double-click to toggle). */}
       <div className="border-t border-parchment/15 pt-1 text-center font-mono text-[10px] uppercase tracking-wider text-parchment/45">
-        Click to select · Double-click to toggle active · ESC to close
+        Click to select · Double-click to toggle active
+        {reorderEnabled ? " · Drag a character to reorder" : ""} · ESC to
+        close
       </div>
     </div>
   );
@@ -612,6 +611,13 @@ function RosterCard({
   raceName,
   xpNext,
   onOpen,
+  draggable = false,
+  isDragging = false,
+  isDropTarget = false,
+  onDragStart,
+  onDragEnterCard,
+  onDropOnCard,
+  onDragEnd,
 }: {
   member: PartyCharacterRef;
   slotNumber: number;
@@ -622,6 +628,16 @@ function RosterCard({
    *  the CharacterSheetSim for this member. The Party screen passes
    *  this; standalone uses can omit it. */
   onOpen?: () => void;
+  /** When true the card is HTML5-draggable (the host owns the reorder
+   *  flow). Clicks still drill in — the browser only fires drag
+   *  events on actual movement. */
+  draggable?: boolean;
+  isDragging?: boolean;
+  isDropTarget?: boolean;
+  onDragStart?: () => void;
+  onDragEnterCard?: () => void;
+  onDropOnCard?: () => void;
+  onDragEnd?: () => void;
 }) {
   const thumb = member.sprite
     ? resolveSpritePath(member.sprite, SPRITE_CONFIG)
@@ -634,13 +650,51 @@ function RosterCard({
   return (
     <li
       className={[
-        "flex items-start gap-2 rounded border border-parchment/10 bg-ink/30 p-2",
+        "flex items-start gap-2 rounded border border-parchment/10 bg-ink/30 p-2 transition-colors",
         onOpen
           ? "cursor-pointer hover:border-amber-300/40 hover:bg-ink/50"
           : "",
+        isDragging ? "opacity-40" : "",
+        isDropTarget
+          ? "border-amber-300/70 ring-1 ring-amber-300/50"
+          : "",
       ].join(" ")}
+      draggable={draggable}
+      onDragStart={(e) => {
+        if (!draggable) return;
+        // dataTransfer needs *something* on Firefox; we don't actually
+        // read from it — the parent tracks the drag-from id in state.
+        e.dataTransfer.setData("text/plain", member.id);
+        e.dataTransfer.effectAllowed = "move";
+        onDragStart?.();
+      }}
+      onDragOver={(e) => {
+        if (!draggable) return;
+        // Without preventDefault the drop event never fires.
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+      }}
+      onDragEnter={() => {
+        if (!draggable) return;
+        onDragEnterCard?.();
+      }}
+      onDrop={(e) => {
+        if (!draggable) return;
+        e.preventDefault();
+        onDropOnCard?.();
+      }}
+      onDragEnd={() => {
+        if (!draggable) return;
+        onDragEnd?.();
+      }}
       onClick={onOpen}
-      title={onOpen ? `Open ${member.name}'s sheet` : undefined}
+      title={
+        draggable
+          ? `Drag to reorder · click to open ${member.name}'s sheet`
+          : onOpen
+            ? `Open ${member.name}'s sheet`
+            : undefined
+      }
     >
       {thumb ? (
         // eslint-disable-next-line @next/next/no-img-element

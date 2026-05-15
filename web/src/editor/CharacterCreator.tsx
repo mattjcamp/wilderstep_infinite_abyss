@@ -138,6 +138,10 @@ export interface ClassRecord {
   name?: string;
   description?: string;
   abilities?: Array<{ ability_id: string; min_level?: number }>;
+  /** Spell catalogs this class can draw from — `"sorcerer"`,
+   *  `"priest"`, or `"none"`. Used by the character sheet's Spells
+   *  section to filter castable spells. */
+  casting_type?: string[];
 }
 
 export interface AbilityRecord {

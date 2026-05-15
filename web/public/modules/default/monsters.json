@@ -1,5 +1,5 @@
 {
-  "_comment": "Monster catalog (real data drives the schema). Each monster carries combat stats, visual identity (tile, color), movement rules, and arrays for `spells` (castable abilities), `on_hit_effects` (effects applied on a successful hit), and `passives` (always-on traits). v2 transforms: monster `passives[].type` and `on_hit_effects[].type` are renamed to `effect_id`, referencing entries in effects.json (drain, poisoned, slowed, consumed, regen, fire_resistance, poison_immunity). Per-monster overrides (chance, amount, duration, etc.) stay as flat keys alongside `effect_id`. Monster `spells[]` remain inline for now \u2014 many monster spell types don't have player-castable Spell records, so unifying with spells.json is deferred. Dropped per the not-used rule: monster `description` (parsed but never read), `spawn_weight` (TS uses encounters.json weights), the `ranged` sub-object (entire object parsed but unread), and the top-level `spawn_tables` (TS uses encounters.json).",
+  "_comment": "Monster catalog (real data drives the schema). Each monster carries combat stats, visual identity (tile, color), movement rules, and arrays for `spells` (castable abilities), `on_hit_effects` (effects applied on a successful hit), and `passives` (always-on traits). v2 transforms: monster `passives[].type` and `on_hit_effects[].type` are renamed to `effect_id`, referencing entries in effects.json (drain, poisoned, slowed, consumed, regen, fire_resistance, poison_immunity). Per-monster overrides (chance, amount, duration, etc.) stay as flat keys alongside `effect_id`. Monster `spells[]` remain inline for now — many monster spell types don't have player-castable Spell records, so unifying with spells.json is deferred. Dropped per the not-used rule: monster `description` (parsed but never read), `spawn_weight` (TS uses encounters.json weights), the `ranged` sub-object (entire object parsed but unread), and the top-level `spawn_tables` (TS uses encounters.json).",
   "monsters": [
     {
       "id": "giant_rat",
@@ -701,7 +701,7 @@
       "xp_reward": 205,
       "gold_min": 30,
       "gold_max": 80,
-      "sprite": "monster/lark_f1.png",
+      "sprite": "person/townsperson21.png",
       "move_range": 1,
       "post_attack_move": 0,
       "battle_scale": 1,

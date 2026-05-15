@@ -16,7 +16,8 @@
  * (no persistence target yet).
  */
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { loadDraft, saveDraft } from "@/data_model/draft";
 import { mergeModel } from "@/data_model/merge";
 import { StaticModuleSource } from "@/data_model/StaticModuleSource";
 import { ModelView } from "./ModelView";
@@ -56,6 +57,26 @@ export function PartyBrowse({ moduleId }: { moduleId: string }) {
    *  away. */
   const [editing, setEditing] = useState(false);
 
+  /** Reorder handler — the PartyScreen drag-and-drop fires this with
+   *  the new id order. We write the updated party object into the
+   *  party draft (localStorage) so the change survives navigation,
+   *  then update local state in place to avoid a network re-fetch. */
+  const onReorderRoster = useCallback(
+    (newOrder: string[]) => {
+      setState((prev) => {
+        if (prev.kind !== "ok") return prev;
+        const nextParty: PartyRecord = { ...prev.party, roster: newOrder };
+        saveDraft(
+          moduleId,
+          "party",
+          nextParty as unknown as Record<string, unknown>,
+        );
+        return { ...prev, party: nextParty };
+      });
+    },
+    [moduleId],
+  );
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -80,8 +101,16 @@ export function PartyBrowse({ moduleId }: { moduleId: string }) {
         ]);
         if (cancelled) return;
 
+        // Draft overrides the on-disk own file. This lets in-screen
+        // edits (reordering the roster, future toggles) survive page
+        // navigation until the user publishes.
+        const partyDraft = loadDraft<Record<string, unknown>>(
+          moduleId,
+          "party",
+        );
+        const partyOwn = partyDraft ?? partyLayers.ownFile;
         const party =
-          (mergeModel("party", partyLayers.inherited, partyLayers.ownFile) as
+          (mergeModel("party", partyLayers.inherited, partyOwn) as
             | PartyRecord
             | null) ?? {};
         const characters =
@@ -192,6 +221,7 @@ export function PartyBrowse({ moduleId }: { moduleId: string }) {
             spells={state.spells}
             activeEffectIds={activeEffectIds}
             onActiveEffectsChange={setActiveEffectIds}
+            onReorderRoster={onReorderRoster}
           />
         )}
       </section>

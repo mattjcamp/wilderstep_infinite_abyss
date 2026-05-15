@@ -5,7 +5,7 @@
       "id": "aldric",
       "name": "Aldric",
       "class": "fighter",
-      "race": "human",
+      "race": "dwarf",
       "gender": "Male",
       "level": 1,
       "exp": 0,
@@ -29,7 +29,7 @@
       "class": "thief",
       "race": "halfling",
       "gender": "Male",
-      "level": 1,
+      "level": 2,
       "exp": 0,
       "hp": 9,
       "mp": 0,
@@ -51,7 +51,7 @@
       "class": "cleric",
       "race": "human",
       "gender": "Female",
-      "level": 1,
+      "level": 3,
       "exp": 0,
       "hp": 9,
       "mp": 13,
@@ -88,6 +88,25 @@
       },
       "inventory": [],
       "sprite": "person/wizard4.png"
+    },
+    {
+      "id": "alchey",
+      "name": "Alchey",
+      "class": "alchemist",
+      "race": "gnome",
+      "gender": "Male",
+      "level": 1,
+      "exp": 0,
+      "hp": 17,
+      "mp": 0,
+      "strength": 7,
+      "dexterity": 13,
+      "constitution": 15,
+      "intelligence": 13,
+      "wisdom": 9,
+      "sprite": "person/townsperson8.png",
+      "equipped": {},
+      "inventory": []
     }
   ]
 }

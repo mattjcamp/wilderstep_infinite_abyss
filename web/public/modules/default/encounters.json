@@ -1,5 +1,5 @@
 {
-  "_comment": "Encounter catalog (real data drives the schema). Each encounter is a named monster roster used by the random-encounter sampler. `area` is the discriminator: \"dungeon\", \"house_basement\", or \"overworld\". `level` is the difficulty band (1\u20138); the sampler filters by min/max level. `weight` controls the relative pick probability inside an eligible band. `monsters[]` entries are Monster `id` strings (snake_case); duplicates are intentional \u2014 they spawn multiple instances of the same monster. `monster_party_tile` is the sprite shown for the lead monster on the overworld map (empty falls back to monsters[0]). v1 nested encounters under area-bucket keys; v2 flattens them into one array. Some v1 encounters share names across areas \u2014 those get area-suffixed ids here. Dropped: `terrain` (parsed but no v1 consumer).",
+  "_comment": "Encounter catalog (real data drives the schema). Each encounter is a named monster roster used by the random-encounter sampler. `area` is the discriminator: \"dungeon\", \"house_basement\", or \"overworld\". `level` is the difficulty band (1–8); the sampler filters by min/max level. `weight` controls the relative pick probability inside an eligible band. `monsters[]` entries are Monster `id` strings (snake_case); duplicates are intentional — they spawn multiple instances of the same monster. `monster_party_tile` is the sprite shown for the lead monster on the overworld map (empty falls back to monsters[0]). v1 nested encounters under area-bucket keys; v2 flattens them into one array. Some v1 encounters share names across areas — those get area-suffixed ids here. Dropped: `terrain` (parsed but no v1 consumer).",
   "encounters": [
     {
       "id": "cellar_rats",
@@ -581,7 +581,7 @@
       "name": "Lone Ogre",
       "level": 5,
       "weight": 18,
-      "monster_party_tile": "person/fighter14.png",
+      "monster_party_tile": "person/townsperson21.png",
       "monsters": [
         "ogre"
       ]
@@ -592,7 +592,7 @@
       "name": "Ogre and Drake",
       "level": 6,
       "weight": 12,
-      "monster_party_tile": "person/fighter14.png",
+      "monster_party_tile": "person/townsperson21.png",
       "monsters": [
         "ogre",
         "wyvern"
@@ -604,7 +604,7 @@
       "name": "Ogre Brutes",
       "level": 7,
       "weight": 12,
-      "monster_party_tile": "person/fighter14.png",
+      "monster_party_tile": "person/townsperson21.png",
       "monsters": [
         "ogre",
         "ogre"
@@ -616,7 +616,7 @@
       "name": "Ogre Warband",
       "level": 8,
       "weight": 10,
-      "monster_party_tile": "person/fighter14.png",
+      "monster_party_tile": "person/townsperson21.png",
       "monsters": [
         "ogre",
         "ogre",
