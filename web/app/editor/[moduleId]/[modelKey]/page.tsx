@@ -6,9 +6,11 @@
 
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { CharactersBrowse } from "@/editor/CharactersBrowse";
 import { DungeonsBrowse } from "@/editor/DungeonsBrowse";
 import { MapsBrowse } from "@/editor/MapsBrowse";
 import { ModelView } from "@/editor/ModelView";
+import { PartyBrowse } from "@/editor/PartyBrowse";
 import { QuestsBrowse } from "@/editor/QuestsBrowse";
 import {
   ALL_MODEL_KEYS,
@@ -51,6 +53,10 @@ export default function ModelBrowsePage({
         <DungeonsBrowse moduleId={params.moduleId} />
       ) : params.modelKey === "quests" ? (
         <QuestsBrowse moduleId={params.moduleId} />
+      ) : params.modelKey === "characters" ? (
+        <CharactersBrowse moduleId={params.moduleId} />
+      ) : params.modelKey === "party" ? (
+        <PartyBrowse moduleId={params.moduleId} />
       ) : (
         <ModelView
           moduleId={params.moduleId}

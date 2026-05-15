@@ -69,7 +69,11 @@ export function SimPanel({
       </header>
       <p className="text-xs text-parchment/55">
         WASD or arrow keys to move. Cells must be walkable. Stepping
-        on a tile with a link traverses to the target map.
+        on a tile with a link traverses to the target map. Press{" "}
+        <kbd className="rounded border border-parchment/30 px-1 font-mono">
+          P
+        </kbd>{" "}
+        to open the Party screen.
       </p>
 
       <section className="rounded border border-parchment/10 bg-ink/40 p-2">

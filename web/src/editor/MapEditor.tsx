@@ -42,6 +42,7 @@ import { withBasePath } from "@/util/basePath";
 import { publishItems } from "@/data_model/publishClient";
 import { MapSimulation, type SceneBridge } from "@/sim/MapSimulation";
 import { SimPanel } from "@/sim/SimPanel";
+import { MapPartyScreenOverlay } from "./MapPartyScreenOverlay";
 import type {
   SimCharacter,
   SimEffect,
@@ -408,6 +409,11 @@ export function MapEditor({
    *  into state purely for the SimPanel prop. Updated when sim mounts
    *  or unmounts. */
   const [simInstance, setSimInstance] = useState<MapSimulation | null>(null);
+  /** True while the P-key party screen overlay is open. Bound only
+   *  during simMode === "active" so editing the map normally doesn't
+   *  trip the modal. The overlay self-owns its own ESC handling and
+   *  closes via this setter. */
+  const [partyScreenOpen, setPartyScreenOpen] = useState(false);
   /** Callback the Phaser scene invokes when the user clicks a tile
    *  during "placing" — held in a ref so the scene closure stays
    *  stable while React re-renders. */
@@ -468,6 +474,42 @@ export function MapEditor({
       window.removeEventListener("keyup", onUp, { capture: true });
     };
   }, []);
+
+  // P toggles the in-game Party screen — but ONLY while the simulation
+  // is active. Outside sim, pressing P shouldn't pop the modal (and
+  // shouldn't fight cell-text inputs). When the overlay is open, the
+  // overlay itself owns the P / ESC handling for dismissal so we
+  // intentionally bail out here.
+  useEffect(() => {
+    const isTyping = (t: EventTarget | null) => {
+      if (!(t instanceof HTMLElement)) return false;
+      const tag = t.tagName;
+      return (
+        tag === "INPUT" ||
+        tag === "TEXTAREA" ||
+        tag === "SELECT" ||
+        t.isContentEditable
+      );
+    };
+    const onPartyKey = (e: KeyboardEvent) => {
+      if (simModeRef.current !== "active") return;
+      if (partyScreenOpen) return;
+      if (e.key !== "p" && e.key !== "P") return;
+      if (isTyping(e.target)) return;
+      e.preventDefault();
+      setPartyScreenOpen(true);
+    };
+    window.addEventListener("keydown", onPartyKey);
+    return () => window.removeEventListener("keydown", onPartyKey);
+  }, [partyScreenOpen]);
+
+  // If the user leaves simulation while the overlay is still open,
+  // dismiss it so it doesn't linger over the inspector pane.
+  useEffect(() => {
+    if (simMode !== "active" && partyScreenOpen) {
+      setPartyScreenOpen(false);
+    }
+  }, [simMode, partyScreenOpen]);
   const [publishing, setPublishing] = useState(false);
 
   const [selectedCell, setSelectedCell] = useState<
@@ -2427,6 +2469,15 @@ export function MapEditor({
           />
         )}
       </div>
+      {/* In-game party screen (P during sim). Mounted at the editor
+          root so the fixed-positioned overlay sits above the canvas
+          AND the side panels. */}
+      {partyScreenOpen ? (
+        <MapPartyScreenOverlay
+          moduleId={moduleId}
+          onClose={() => setPartyScreenOpen(false)}
+        />
+      ) : null}
     </div>
   );
 }
