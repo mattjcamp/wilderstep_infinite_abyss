@@ -7,9 +7,9 @@
   "avatar": "person/fighter18.png",
   "gold": 50,
   "roster": [
+    "selina",
     "aldric",
     "pippin",
-    "selina",
     "alchey"
   ],
   "party_effects": [],
@@ -31,5 +31,6 @@
     }
   ],
   "torch_steps": 0,
-  "galadriels_light_steps": 0
+  "galadriels_light_steps": 0,
+  "party": []
 }

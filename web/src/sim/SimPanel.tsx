@@ -89,7 +89,7 @@ export function SimPanel({
         <p className="font-mono text-xs text-parchment/80">
           torch: {snap.party.torch_steps} · galadriel: {snap.party.galadriels_light_steps}
         </p>
-        <div className="mt-2 flex gap-2">
+        <div className="mt-2 flex flex-wrap gap-2">
           <button
             type="button"
             onClick={() => sim.lightTorch()}
