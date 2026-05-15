@@ -6,8 +6,10 @@
 
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { DungeonsBrowse } from "@/editor/DungeonsBrowse";
 import { MapsBrowse } from "@/editor/MapsBrowse";
 import { ModelView } from "@/editor/ModelView";
+import { QuestsBrowse } from "@/editor/QuestsBrowse";
 import {
   ALL_MODEL_KEYS,
   getModel,
@@ -45,6 +47,10 @@ export default function ModelBrowsePage({
       </nav>
       {params.modelKey === "maps" ? (
         <MapsBrowse moduleId={params.moduleId} />
+      ) : params.modelKey === "dungeons" ? (
+        <DungeonsBrowse moduleId={params.moduleId} />
+      ) : params.modelKey === "quests" ? (
+        <QuestsBrowse moduleId={params.moduleId} />
       ) : (
         <ModelView
           moduleId={params.moduleId}

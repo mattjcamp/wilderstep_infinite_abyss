@@ -1,9 +1,4 @@
 {
-  "_comment": "Dungeon Level catalog (real data drives the schema). A Dungeon Level is one floor of an authored Dungeon: id, display name, depth (1-indexed; level 1 is the entrance floor), and the Map id whose grid is rendered when the party is on this level. Levels are referenced in order from a Dungeon's `levels[]` array. Catalog ships empty. See docs/data_dictionary/dungeon_level.md.",
-  "dungeon_levels": [
-    {
-      "id": "test1",
-      "name": "Test 1"
-    }
-  ]
+  "_comment": "DEPRECATED — Dungeon Levels are now inline objects under Dungeon.levels[] in dungeons.json. This file is retained empty so old code paths that fetch it don't 404; safe to delete when convenient. See docs/data_dictionary/dungeon_level.md for the inline shape.",
+  "dungeon_levels": []
 }

@@ -31,6 +31,7 @@ Each record:
 {
   "id": "",
   "name": "",
+  "result_item": "",
   "reagents": {}
 }
 ```
@@ -41,12 +42,13 @@ Each record:
 |---|---|---|---|---|
 | `id` | string | yes | Stable identifier; snake_case (e.g. `"healing_potion"`). Used by the crafting UI to identify the picked option and by save-game state if recipe knowledge is persisted later. | TBD |
 | `name` | string | yes | Display label shown in the brew picker. | TBD |
+| `result_item` | string | yes | [Item](item.md) `id` produced on a successful brew. In current data this happens to equal the recipe's own `id` (convenient when the recipe and its output share a name), but the contract is that they're independent: future recipes can produce an item whose id differs from the recipe's. | TBD |
 | `reagents` | object<string, int> | yes | Required materials: `{ "<item_id>": <quantity>, ... }`. Keys are [Item](item.md) ids (snake_case). Quantities are positive integers. | TBD |
 
 ## Cross-references to other models
 
-- `reagents` keys → [Item](item.md) ids — the ingredient items (entries with `item_type: "reagent"` in `items.json`: `moonpetal`, `spring_water`, `glowcap_mushroom`, `serpent_root`, `brimite_ore`).
-- Future: a Recipe's *result* (what item it produces on a successful brew) will reference [Item](item.md) once that side of the model lands.
+- `result_item` → [Item](item.md) `id` — the item produced on a successful brew
+- `reagents` keys → [Item](item.md) ids — the ingredient items (entries with `item_type: "reagent"` in `items.json`: `moonpetal`, `spring_water`, `glowcap_mushroom`, `serpent_root`, `brimite_ore`)
 
 ## Example record
 
@@ -54,13 +56,14 @@ Each record:
 {
   "id": "healing_potion",
   "name": "Healing Potion",
+  "result_item": "healing_potion",
   "reagents": { "moonpetal": 1, "spring_water": 1 }
 }
 ```
 
 ## Notes and open questions
 
-- **Intentional v2 simplification.** v1's recipe records also carried `description`, `dc` (alchemy skill check DC), `result_item`, `result_count`, and `category`. v2 dropped these for the first pass — the Recipe right now exists only to populate the brew-option picker and check ingredient counts; nothing produces an item yet, so DC and result fields would be data without a consumer. They'll come back when crafting execution lands.
+- **Intentional v2 simplification.** v1's recipe records also carried `description`, `dc` (alchemy skill check DC), `result_count`, and `category`. v2 dropped these for the first pass — the Recipe right now exists only to populate the brew-option picker, check ingredient counts, and name the resulting item. They'll come back when crafting execution lands.
 
 - **Reagent keys are Item ids.** Migrated from the original `Item.name` keys (`"Moonpetal"`, `"Spring Water"`, …) once the rest of v2 standardized on id references.
 
@@ -68,6 +71,6 @@ Each record:
 
 - **No DC, no skill-check semantics yet.** v1 ran `d20 + INT mod ≥ dc` to determine brew success, consuming reagents on both success and failure. v2 has no equivalent system. When the brew action is implemented, decide whether DC lives on the Recipe (where it does the work) or is computed from Recipe + class/level/items at apply time.
 
-- **No result_item yet either.** Currently a recipe with id `"healing_potion"` is just a labeled bundle of reagents. There's no formal claim that picking it produces a Healing Potion item. v1's convention was that `result_item` defaulted to the recipe key, which kept the data DRY but coupled the recipe's identity to its output. v2 will need to decide whether the recipe's id is the result-item id by convention, or whether `result_item` should be an explicit field added later.
+- **`result_item` made explicit.** v1 used the recipe's id as the produced item's id by convention, which kept the data DRY but coupled the recipe's identity to its output. v2 makes the link explicit so the two ids can drift apart — useful when a recipe is renamed without renaming the item, or when two recipes produce the same Item (e.g. a fast/expensive variant) and they need distinct recipe ids.
 
 - **Recipe knowledge is not modeled.** v1 made every recipe available to any Alchemist who opened the brew menu. v2 hasn't decided whether recipes are learned, discovered, gated by class, or universal. The Recipe record carries no `allowable_classes` or `min_level` field today; if recipe discovery becomes a thing, it'll live somewhere — possibly here, possibly on Character Class.

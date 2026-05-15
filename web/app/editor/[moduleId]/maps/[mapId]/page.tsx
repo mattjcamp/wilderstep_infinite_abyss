@@ -12,6 +12,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { MapEditor } from "@/editor/MapEditor";
@@ -68,7 +69,16 @@ export default function MapEditorPage({
         <span className="mx-1">/</span>
         <span className="text-parchment/80">{params.mapId}</span>
       </nav>
-      <MapEditor moduleId={params.moduleId} mapId={params.mapId} />
+      {/* MapEditor calls useSearchParams() for sim-mode auto-entry,
+          which bails out of static prerendering unless it's wrapped
+          in a Suspense boundary. The fallback below is what the
+          static export ships in the prerendered HTML; the real
+          component hydrates on the client immediately. */}
+      <Suspense
+        fallback={<p className="p-4 text-parchment/60">Loading map…</p>}
+      >
+        <MapEditor moduleId={params.moduleId} mapId={params.mapId} />
+      </Suspense>
     </div>
   );
 }

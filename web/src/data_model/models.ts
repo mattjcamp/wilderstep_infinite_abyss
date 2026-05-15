@@ -32,9 +32,7 @@ export type ModelKey =
   | "map_tiles"
   | "maps"
   | "dungeons"
-  | "dungeon_levels"
-  | "quests"
-  | "quest_steps";
+  | "quests";
 
 export interface ColumnDef {
   /** Object path on the record. Supports a single key for now; nested
@@ -132,6 +130,7 @@ const DEFS: Record<ModelKey, ModelDef> = {
     columns: [
       { field: "id", label: "ID" },
       { field: "name", label: "Name" },
+      { field: "result_item", label: "Produces" },
       { field: "reagents", label: "Reagents", format: (v) => (v && typeof v === "object" ? Object.entries(v).map(([k, n]) => `${k}×${n}`).join(", ") : "") },
     ],
   },
@@ -318,25 +317,6 @@ const DEFS: Record<ModelKey, ModelDef> = {
       },
     ],
   },
-  dungeon_levels: {
-    key: "dungeon_levels",
-    label: "Dungeon Levels",
-    fileName: "dungeon_levels.json",
-    collectionKey: "dungeon_levels",
-    docKey: "dungeon_level",
-    blurb: "One floor of an authored Dungeon — wraps a Map with depth + naming",
-    columns: [
-      { field: "id", label: "ID" },
-      { field: "name", label: "Name" },
-      {
-        field: "tags",
-        label: "Tags",
-        format: (v) => (Array.isArray(v) ? v.join(", ") : ""),
-      },
-      { field: "depth", label: "Depth", format: asString },
-      { field: "map_id", label: "Map" },
-    ],
-  },
   quests: {
     key: "quests",
     label: "Quests",
@@ -357,24 +337,6 @@ const DEFS: Record<ModelKey, ModelDef> = {
         label: "Steps",
         format: (v) => (Array.isArray(v) ? `${v.length}` : ""),
       },
-    ],
-  },
-  quest_steps: {
-    key: "quest_steps",
-    label: "Quest Steps",
-    fileName: "quest_steps.json",
-    collectionKey: "quest_steps",
-    docKey: "quest_step",
-    blurb: "Individual objectives that make up a Quest — kill / fetch / visit / talk",
-    columns: [
-      { field: "id", label: "ID" },
-      { field: "name", label: "Name" },
-      {
-        field: "tags",
-        label: "Tags",
-        format: (v) => (Array.isArray(v) ? v.join(", ") : ""),
-      },
-      { field: "kind", label: "Kind" },
     ],
   },
 };
