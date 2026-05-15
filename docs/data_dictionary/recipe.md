@@ -41,11 +41,11 @@ Each record:
 |---|---|---|---|---|
 | `id` | string | yes | Stable identifier; snake_case (e.g. `"healing_potion"`). Used by the crafting UI to identify the picked option and by save-game state if recipe knowledge is persisted later. | TBD |
 | `name` | string | yes | Display label shown in the brew picker. | TBD |
-| `reagents` | object<string, int> | yes | Required materials: `{ "<item_name>": <quantity>, ... }`. Keys are Item names (display-string form, matching `Item.name`). Quantities are positive integers. | TBD |
+| `reagents` | object<string, int> | yes | Required materials: `{ "<item_id>": <quantity>, ... }`. Keys are [Item](item.md) ids (snake_case). Quantities are positive integers. | TBD |
 
 ## Cross-references to other models
 
-- `reagents` keys → [Item](item.md) — the ingredient items. v1's reagents were `Item.item_type: "reagent"` entries in `items.json` (`Moonpetal`, `Spring Water`, `Glowcap Mushroom`, `Serpent Root`, `Brimite Ore`). Until Item is ported, reagent names are just strings; once Item lands they should resolve to real Item ids/names.
+- `reagents` keys → [Item](item.md) ids — the ingredient items (entries with `item_type: "reagent"` in `items.json`: `moonpetal`, `spring_water`, `glowcap_mushroom`, `serpent_root`, `brimite_ore`).
 - Future: a Recipe's *result* (what item it produces on a successful brew) will reference [Item](item.md) once that side of the model lands.
 
 ## Example record
@@ -54,7 +54,7 @@ Each record:
 {
   "id": "healing_potion",
   "name": "Healing Potion",
-  "reagents": { "Moonpetal": 1, "Spring Water": 1 }
+  "reagents": { "moonpetal": 1, "spring_water": 1 }
 }
 ```
 
@@ -62,7 +62,7 @@ Each record:
 
 - **Intentional v2 simplification.** v1's recipe records also carried `description`, `dc` (alchemy skill check DC), `result_item`, `result_count`, and `category`. v2 dropped these for the first pass — the Recipe right now exists only to populate the brew-option picker and check ingredient counts; nothing produces an item yet, so DC and result fields would be data without a consumer. They'll come back when crafting execution lands.
 
-- **Reagent keys are strings, not ids, today.** v1 keyed reagents by `Item.name` (e.g. `"Moonpetal"`) because v1 items were keyed by display name. When Item is ported and gains real ids, the convention here may shift to `Item.id` (e.g. `"moonpetal"`). Either way the contract is "keys are Item references"; the exact form is open until Item lands.
+- **Reagent keys are Item ids.** Migrated from the original `Item.name` keys (`"Moonpetal"`, `"Spring Water"`, …) once the rest of v2 standardized on id references.
 
 - **Dropped because not used in v1.** v1's `potions.json` had a top-level `reagents` array (master list of valid reagent names) that the TS port did not consume — dropped per the "don't bring over not-used fields" rule. v1 also had `category` (preserved on the runtime model but no UI consumed it — same treatment) and `_comment` (no TS reader).
 

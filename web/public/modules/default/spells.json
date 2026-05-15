@@ -1,5 +1,5 @@
 {
-  "_comment": "Spell catalog (real data drives the schema). A Spell describes a castable action — what it does, what catalog it belongs to, what it costs. Casting eligibility is purely by catalog: a class can cast a spell iff its CharacterClass.casting_type[] contains this spell's casting_type. Per-spell narrowing inside a catalog is not supported (e.g. there is no longer a way to make a sorcerer spell Wizard-only). Spells that produce a lingering status reference an Effect by id under action_params.effect_id and supply application-time params (save DCs, magnitudes that override the Effect's defaults) in action_params. Spells that produce one-shot results (damage, heal, teleport, summon) carry their action-specific data in action_params directly. The `action` field is the discriminator: damage, heal, apply_effect, cure_effect, teleport, summon, aoe_damage, turn_undead, knock, restore. class_min_levels supplies per-class level overrides where one class earns the spell at a different level than the spell's base min_level. See docs/data_dictionary/spell.md.",
+  "_comment": "Spell catalog (real data drives the schema). Each spell is a castable action \u2014 damage, heal, apply/cure an effect, summon, teleport, or a composite. `casting_type` (\"sorcerer\" / \"priest\") is the only class-eligibility gate; per-class min-level overrides live on `class_min_levels`. `usable_in` is a two-value enum: \"battle\" (in-combat) or \"party\" (out-of-combat \u2014 the party-management UI on any map). v1 split the out-of-combat case into overworld/town/dungeon, but no caller distinguished between them \u2014 collapsed to a single \"party\" value. Action-specific params (damage dice, effect ids, save DCs) live on `action_params`; the discriminator is `action`. See docs/data_dictionary/spell.md.",
   "spells": [
     {
       "id": "magic_dart",
@@ -77,7 +77,7 @@
       "range": 1,
       "targeting": "self",
       "usable_in": [
-        "dungeon"
+        "party"
       ],
       "duration": "instant",
       "action": "knock",
@@ -246,7 +246,7 @@
     {
       "id": "fireball",
       "name": "Fireball",
-      "description": "Hurls a massive ball of flame that detonates in a 3-tile radius, scorching everything — friend or foe — caught in the blast.",
+      "description": "Hurls a massive ball of flame that detonates in a 3-tile radius, scorching everything \u2014 friend or foe \u2014 caught in the blast.",
       "casting_type": "sorcerer",
       "min_level": 7,
       "mp_cost": 30,
@@ -278,7 +278,7 @@
       "range": 0,
       "targeting": "self",
       "usable_in": [
-        "dungeon"
+        "party"
       ],
       "duration": 100,
       "action": "apply_effect",
@@ -299,9 +299,7 @@
       "targeting": "select_ally_or_self",
       "usable_in": [
         "battle",
-        "overworld",
-        "town",
-        "dungeon"
+        "party"
       ],
       "duration": "instant",
       "action": "heal",
@@ -332,31 +330,6 @@
         "effect_id": "poisoned"
       },
       "sfx": "heal",
-      "hit_sfx": null
-    },
-    {
-      "id": "turn_undead",
-      "name": "Turn Undead",
-      "description": "Channels holy energy at every undead on the battlefield. Each one must make a Wisdom save or be destroyed outright; those that succeed are still seared for 50% of their HP.",
-      "class_min_levels": {
-        "Paladin": 5
-      },
-      "casting_type": "priest",
-      "min_level": 2,
-      "mp_cost": 0,
-      "range": 99,
-      "targeting": "auto_monster",
-      "usable_in": [
-        "battle"
-      ],
-      "duration": "instant",
-      "action": "turn_undead",
-      "action_params": {
-        "hp_percent": 0.5,
-        "save_dc_base": 10,
-        "save_dc_stat": "wisdom"
-      },
-      "sfx": "turn_undead",
       "hit_sfx": null
     },
     {
@@ -433,9 +406,7 @@
       "range": 0,
       "targeting": "self",
       "usable_in": [
-        "overworld",
-        "dungeon",
-        "town"
+        "party"
       ],
       "duration": 10,
       "action": "apply_effect",

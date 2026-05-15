@@ -47,7 +47,7 @@ Each record minimally has `id`, `name`, `category`. The rest of the fields are p
 | `ac_bonus` | number | no | Flat AC bonus added on top of any base. | TBD |
 | `bonus_damage` | string \| number | no | Extra dice on hit (e.g. `"1d6"`) — string for dice notation, number for flat bonuses. | TBD |
 | `damage_type` | string | no | Damage school (e.g. `"fire"`). Used for resistance interactions. | TBD |
-| `ammo` | string | no | Name of the ammo item this weapon consumes (e.g. `"Arrows"`). Cross-references another Item by `name`. | TBD |
+| `ammo` | string | no | Id of the ammo item this weapon consumes (e.g. `"arrows"`, `"bolts"`, `"stones"`). Cross-references another Item by `id`. | TBD |
 | `durability` | number | no | Max uses; `0` means indestructible. | TBD |
 | `usable` | bool | no | Marks the item as a consumable. | TBD |
 | `combat_usable` | bool | no | Usable mid-combat (defaults to true for consumables). | TBD |
@@ -96,10 +96,12 @@ Items with `effect` values that have no v1 handler (`Scroll of Fire`, `Smoke Bom
 ## Cross-references to other models
 
 - `grants_effect` → [Effect](effect.md) — Effect id conferred while the item is equipped
-- `ammo` → another **Item** in this same file (matches another item's `name`; e.g. Long Bow's `ammo: "Arrows"`)
-- Referenced *by* [Recipe](recipe.md) `reagents` keys — recipe ingredients are item names (current convention is to match `Item.name`, not `Item.id`)
-- Referenced *by* [Party](party.md) `equipped.*` and `inventory[]` slots — items the party carries (by name)
-- Referenced *by* [Counter](counter.md) shop stock + loot tables (by name) — once Counter is ported
+- `ammo` → another **Item** in this same file (matches another item's `id`; e.g. Long Bow's `ammo: "arrows"`)
+- Referenced *by* [Recipe](recipe.md) `reagents` keys — recipe ingredients (by id)
+- Referenced *by* [Party](party.md) `inventory[].item` slots — items the party carries (by id)
+- Referenced *by* [Counter](counter.md) shop stock + loot tables (by id)
+- Referenced *by* [Spawn](spawn.md) `loot[]` — clear-the-lair drops (by id)
+- Referenced *by* [Character](character.md) `equipped.*` values + `inventory[].item` — equipped weapon/armor and personal bag (by id)
 - Forward-declared: an `activates_spell` field referencing [Spell](spell.md) would let magic items invoke a Spell (e.g. a Wand of Lightning). No items currently use this; the design was discussed alongside the spells port.
 - The `effect` action-verb on consumables is **not** an [Effect](effect.md) id — see Notes for the naming overlap and the future-bridge to Spell.
 
@@ -243,7 +245,7 @@ Items with `effect` values that have no v1 handler (`Scroll of Fire`, `Smoke Bom
 
 - **Sun Sword's `grants_effect` was dropped.** v1 had `grants_effect: "sun_sword_aura"`, but the `sun_sword_aura` Effect record was removed from `effects.json` earlier. To avoid a dangling reference, the field was dropped from Sun Sword in the port; the weapon is still a `power: 20` fire weapon with `bonus_damage: 1d6`. If the aura comes back as an Effect, re-add `grants_effect: "sun_sword_aura"` here.
 
-- **Cross-references use `Item.name`, not `Item.id`.** v1 keyed inventory entries and recipe reagents by display name (the v1 file was keyed by name to begin with). The port kept that convention so Recipe records and the `ammo` field don't break. If v2 standardizes on id-based references later, all of those references need to switch in lockstep.
+- **All cross-references use `Item.id`.** v1 keyed inventory entries, recipe reagents, counter stock, spawn loot, weapon ammo, and equipped slots by display name. v2 standardized every Item reference on `Item.id` (snake_case) — no name-based holdouts remain.
 
 - **`item_type` is an open string.** No enum validation today. Typo risk; the observed values are listed under *Polymorphic discriminators* above, but adding a new value silently is too easy.
 

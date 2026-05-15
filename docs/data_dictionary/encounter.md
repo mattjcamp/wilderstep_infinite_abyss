@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Named monster rosters used by the random-encounter sampler and by quest kill-steps. Each encounter ties a difficulty `level`, a sampling `weight`, and an `area` discriminator to a list of monster names. The combat scene loads the full roster from this record on a hit.
+Named monster rosters used by the random-encounter sampler and by quest kill-steps. Each encounter ties a difficulty `level`, a sampling `weight`, and an `area` discriminator to a list of [Monster](monster.md) ids. The combat scene loads the full roster from this record on a hit.
 
 Ported from v1's `data/encounters.json` (see `_v1_reference/docs/data_dictionary/encounters.json.md`).
 
@@ -34,8 +34,8 @@ v1 nested encounters under three top-level area keys (`dungeon`, `house_basement
 | `name` | string | yes | Display / lookup name; referenced by quest kill-step rows | TBD |
 | `level` | int (1–8) | yes | Difficulty band; the sampler filters by `[minLevel..maxLevel]` | TBD |
 | `weight` | int (> 0) | yes | Weighted-sample probability inside an eligible band | TBD |
-| `monster_party_tile` | string | yes | Lead monster shown on the overworld map sprite (empty string falls back to `monsters[0]`) | TBD |
-| `monsters` | string[] | yes | Roster handed to the combat scene; cross-refs Monster `name` | TBD |
+| `monster_party_tile` | string | yes | Sprite path shown for the lead monster on the overworld (e.g. `"monster/goblin.png"`). Empty string falls back to `monsters[0]`'s default sprite. | TBD |
+| `monsters` | string[] | yes | Roster handed to the combat scene. Each entry is a [Monster](monster.md) `id` (snake_case). Duplicates spawn multiple instances. | TBD |
 
 ## Polymorphic discriminator
 
@@ -43,7 +43,8 @@ v1 nested encounters under three top-level area keys (`dungeon`, `house_basement
 
 ## Cross-references to other models
 
-- `monsters[]` and `monster_party_tile` → [Monster](monster.md) names
+- `monsters[]` → [Monster](monster.md) ids
+- `monster_party_tile` is a sprite path, not a [Monster](monster.md) reference — it points at a file under `web/public/sprites/`
 - Referenced *by* future [NPC](npc.md) records (v1's town NPCs could trigger named encounters) and [Quest Step](quest_step.md) kill-step rows
 
 ## Example record
@@ -55,8 +56,8 @@ v1 nested encounters under three top-level area keys (`dungeon`, `house_basement
   "name": "Cellar Rats",
   "level": 1,
   "weight": 30,
-  "monster_party_tile": "Giant Rat",
-  "monsters": ["Giant Rat"]
+  "monster_party_tile": "monster/giant_rat.png",
+  "monsters": ["giant_rat"]
 }
 ```
 
@@ -66,4 +67,4 @@ v1 nested encounters under three top-level area keys (`dungeon`, `house_basement
 - **House_basement is capped at levels 1–2.** Intentional per v1's narrative scope (only one tier of basements).
 - **Two v1 overworld records had empty `monster_party_tile`** (Lich with Minions, Mind Flayer). v2 carries them forward as-is; the runtime falls back to `monsters[0]` for display.
 - **Same-name encounters across areas** were silently disambiguated by v2's id assignment — the area is appended (`cellar_rats` → `cellar_rats_dungeon`, `cellar_rats_house_basement`). 11 such collisions in the v1 data.
-- **No id-based reference to Monster yet.** `monsters[]` carries Monster `name` strings — same convention as elsewhere in v2.
+- **Migrated to id references.** v1 (and the first v2 pass) carried Monster `name` strings in `monsters[]`. v2 switched to `Monster.id` (snake_case) so display-name refactors don't silently break encounter rosters. `monster_party_tile` is unchanged — it's always been a sprite path, not a Monster reference.

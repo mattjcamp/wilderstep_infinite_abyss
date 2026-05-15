@@ -16,6 +16,7 @@
  */
 
 export type ModelKey =
+  | "abilities"
   | "effects"
   | "spells"
   | "recipes"
@@ -72,6 +73,21 @@ function countItems(v: unknown): string {
 }
 
 const DEFS: Record<ModelKey, ModelDef> = {
+  abilities: {
+    key: "abilities",
+    label: "Abilities",
+    fileName: "abilities.json",
+    collectionKey: "abilities",
+    docKey: "ability",
+    blurb: "Named character capabilities — race / class / other (the catalog half of v1's effects)",
+    columns: [
+      { field: "id", label: "ID" },
+      { field: "name", label: "Name" },
+      { field: "type", label: "Type" },
+      { field: "duration", label: "Duration", format: asString },
+      { field: "description", label: "Description" },
+    ],
+  },
   effects: {
     key: "effects",
     label: "Effects",

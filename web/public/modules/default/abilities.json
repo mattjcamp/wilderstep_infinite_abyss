@@ -1,0 +1,138 @@
+{
+  "_comment": "Ability catalog (real data drives the schema). An Ability is a named capability that lives on a Character — granted by a race, by a class, or by some other source (item, quest, scripted). Descriptions here are granter-agnostic; per-granter level gates (and any future per-granter param overrides) live on the granting record (Character Class.abilities, Race.abilities). See docs/data_dictionary/ability.md.",
+  "abilities": [
+    {
+      "id": "pick_locks",
+      "name": "Pick Locks",
+      "type": "class",
+      "description": "Pick locked doors and chests — d20 + DEX mod vs DC 12, one lockpick consumed per attempt.",
+      "duration": "permanent",
+      "params": {
+        "dc": 12,
+        "save_stat": "dexterity"
+      }
+    },
+    {
+      "id": "detect_traps",
+      "name": "Detect Traps",
+      "type": "class",
+      "description": "Hidden traps are revealed before the party steps on them.",
+      "duration": "permanent",
+      "params": null
+    },
+    {
+      "id": "backstab",
+      "name": "Backstab",
+      "type": "class",
+      "description": "Critical hits with daggers on a successful DEX save — the humble dagger becomes a devastating weapon.",
+      "duration": "permanent",
+      "params": {
+        "save_stat": "dexterity",
+        "weapon_type": "dagger"
+      }
+    },
+    {
+      "id": "shadow_step",
+      "name": "Shadow Step",
+      "type": "class",
+      "description": "Move after attacking — true hit-and-run play.",
+      "duration": "permanent",
+      "params": null
+    },
+    {
+      "id": "turn_undead",
+      "name": "Turn Undead",
+      "type": "class",
+      "description": "Channel holy energy at every undead on the battlefield. Each one must make a Wisdom save (d20 + WIS mod vs DC 10 + caster's WIS mod) or be destroyed outright; those that succeed are still seared for 50% of their HP in radiant damage.",
+      "duration": "instant",
+      "params": {
+        "action": "turn_undead",
+        "mp_cost": 0,
+        "range": 99,
+        "targeting": "auto_monster",
+        "usable_in": ["battle"],
+        "save_stat": "wisdom",
+        "save_dc_base": 10,
+        "fail_hp_percent": 50,
+        "sfx": "turn_undead"
+      }
+    },
+    {
+      "id": "dual_casting",
+      "name": "Dual Casting",
+      "type": "class",
+      "description": "Access to both the priest and sorcerer spell catalogs — the only class with both.",
+      "duration": "permanent",
+      "params": null
+    },
+    {
+      "id": "herbalism",
+      "name": "Herbalism",
+      "type": "class",
+      "description": "Nature lore spots reagents in the wild. When the party examines a tile, the holder rolls an INT save (d20 + INT mod vs DC 13) — success identifies a potion reagent. Alchemists in particular benefit from a doubled find rate.",
+      "duration": "permanent",
+      "params": {
+        "dc": 13,
+        "save_stat": "intelligence"
+      }
+    },
+    {
+      "id": "infravision",
+      "name": "Infravision",
+      "type": "race",
+      "description": "Pierces darkness, revealing the world in shades of red. The bearer can see in absolute darkness without needing a torch.",
+      "duration": "permanent",
+      "params": null
+    },
+    {
+      "id": "pickpocket",
+      "name": "Pickpocket",
+      "type": "race",
+      "description": "Attempt to steal items from town NPCs. Once per NPC, with a chance of failure.",
+      "duration": "permanent",
+      "params": null
+    },
+    {
+      "id": "galadriels_light",
+      "name": "Galadriel's Light",
+      "type": "race",
+      "description": "Conjure a soft magical illumination, lighting dark areas without consuming a torch. Persists for 200 overworld steps after invocation.",
+      "duration": "permanent",
+      "params": {
+        "applied_effect": "magic_light",
+        "applied_duration_steps": 200
+      }
+    },
+    {
+      "id": "tinker",
+      "name": "Tinker",
+      "type": "race",
+      "description": "Once per in-game day, fashion any single item normally found in a general store.",
+      "duration": "permanent",
+      "params": {
+        "uses_per_day": 1
+      }
+    },
+    {
+      "id": "fast_learner",
+      "name": "Fast Learner",
+      "type": "race",
+      "description": "Requires only 1125 XP per level instead of the standard 1500, leveling up roughly 25% faster than other races.",
+      "duration": "permanent",
+      "params": {
+        "note": "The mechanic lives on Race.exp_per_level; this record is the character-sheet entry."
+      }
+    },
+    {
+      "id": "nimble",
+      "name": "Nimble",
+      "type": "race",
+      "description": "Allows extra movement, and the ability to move after an attack",
+      "duration": "permanent",
+      "params": {
+        "extra_range": 3,
+        "post_attack_range": 2
+      }
+    }
+  ]
+}

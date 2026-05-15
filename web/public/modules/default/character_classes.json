@@ -1,5 +1,5 @@
 {
-  "_comment": "Character class catalog (real data drives the schema). Each class carries movement range, a casting_type list, a list of non-spell class_abilities, and an allowable_item_types list gating which weapon and armor item_types the class may equip. `casting_type` ties the class to the spell catalog — values are `none` (no spells), `sorcerer` (arcane/INT-flavored), or `priest` (divine/WIS-flavored); Druid is the only class with both. Spell eligibility is purely casting_type-based: any class with a matching catalog can cast any spell in that catalog. Per-class level overrides for specific spells live on Spell.class_min_levels. Per-class item gating lives here on `allowable_item_types` (values are Item.item_type) — Item.party_can_equip / Item.character_can_equip still controls equip *scope* (party vs. character slot) but no longer carries any class info. XP-per-level lives on Race. Pruned v1 relics that the v2 engine no longer reads: hp_per_level, mp_per_level, allowed_races, mp_source, exp_per_level, and (most recently) Spell.allowable_classes.",
+  "_comment": "Character class catalog (real data drives the schema). Each class carries movement range, a casting_type list, a list of ability references (the catalog records live in abilities.json), and an allowable_item_types list gating which weapon and armor item_types the class may equip. `casting_type` ties the class to the spell catalog \u2014 values are `none` (no spells), `sorcerer` (arcane/INT-flavored), or `priest` (divine/WIS-flavored); Druid is the only class with both. Spell eligibility is purely casting_type-based: any class with a matching catalog can cast any spell in that catalog. Per-class level overrides for specific spells live on Spell.class_min_levels. `abilities[]` entries reference Ability records by id with a per-class `min_level` (e.g. Paladin gets Turn Undead at 5 while Cleric gets it at 2). Per-class item gating lives here on `allowable_item_types` (values are Item.item_type) \u2014 Item.party_can_equip / Item.character_can_equip still controls equip *scope* (party vs. character slot) but no longer carries any class info. XP-per-level lives on Race.",
   "character_classes": [
     {
       "id": "fighter",
@@ -46,26 +46,22 @@
         "cloth",
         "leather"
       ],
-      "class_abilities": [
+      "abilities": [
         {
-          "name": "Pick Locks",
-          "min_level": 1,
-          "description": "A Thief can pick locked doors and chests (d20 + DEX mod vs DC 12), consuming one lockpick per attempt."
+          "ability_id": "pick_locks",
+          "min_level": 1
         },
         {
-          "name": "Detect Traps",
-          "min_level": 1,
-          "description": "A Thief's keen eye reveals hidden traps before the party steps on them."
+          "ability_id": "detect_traps",
+          "min_level": 1
         },
         {
-          "name": "Backstab",
-          "min_level": 3,
-          "description": "From level 3, a Thief lands critical hits with daggers on a successful DEX save, turning the humble dagger into a devastating weapon."
+          "ability_id": "backstab",
+          "min_level": 3
         },
         {
-          "name": "Shadow Step",
-          "min_level": 7,
-          "description": "From level 7, a Thief can move after attacking — true hit-and-run play."
+          "ability_id": "shadow_step",
+          "min_level": 7
         }
       ]
     },
@@ -85,11 +81,10 @@
         "leather",
         "chain"
       ],
-      "class_abilities": [
+      "abilities": [
         {
-          "name": "Turn Undead",
-          "min_level": 2,
-          "description": "From level 2, a Cleric can channel holy energy to Turn Undead: every undead on the battlefield must make a Wisdom save or be destroyed; those that succeed still take 50% of their HP in radiant damage."
+          "ability_id": "turn_undead",
+          "min_level": 2
         }
       ]
     },
@@ -123,16 +118,14 @@
         "sling",
         "cloth"
       ],
-      "class_abilities": [
+      "abilities": [
         {
-          "name": "Dual Casting",
-          "min_level": 1,
-          "description": "Druids draw from both the priest and sorcerer spell catalogs — the only class with access to both."
+          "ability_id": "dual_casting",
+          "min_level": 1
         },
         {
-          "name": "Herbalism",
-          "min_level": 1,
-          "description": "Druidic nature lore spots reagents in the wild. When the party examines a tile, each Druid rolls an INT save (d20 + INT mod vs DC 13) — success identifies a potion reagent."
+          "ability_id": "herbalism",
+          "min_level": 1
         }
       ]
     },
@@ -163,11 +156,10 @@
         "chain",
         "plate"
       ],
-      "class_abilities": [
+      "abilities": [
         {
-          "name": "Turn Undead",
-          "min_level": 5,
-          "description": "From level 5, a Paladin can channel holy energy to Turn Undead: every undead on the battlefield must make a Wisdom save or be destroyed; those that succeed still take 50% of their HP in radiant damage."
+          "ability_id": "turn_undead",
+          "min_level": 5
         }
       ]
     },
@@ -191,16 +183,14 @@
         "leather",
         "chain"
       ],
-      "class_abilities": [
+      "abilities": [
         {
-          "name": "Pick Locks",
-          "min_level": 3,
-          "description": "From level 3, a Ranger can pick locked doors and chests (d20 + DEX mod vs DC 12), consuming one lockpick per attempt — same mechanic as a Thief."
+          "ability_id": "pick_locks",
+          "min_level": 3
         },
         {
-          "name": "Detect Traps",
-          "min_level": 3,
-          "description": "From level 3, a Ranger's woodcraft reveals hidden traps before the party steps on them."
+          "ability_id": "detect_traps",
+          "min_level": 3
         }
       ]
     },
@@ -217,11 +207,10 @@
         "sling",
         "cloth"
       ],
-      "class_abilities": [
+      "abilities": [
         {
-          "name": "Herbalism",
-          "min_level": 1,
-          "description": "Expert knowledge of ingredients doubles the chance of finding reagents when examining the wilderness."
+          "ability_id": "herbalism",
+          "min_level": 1
         }
       ]
     }

@@ -43,16 +43,16 @@ The "Used?" column reflects the v2 TypeScript implementation under `web/`. The c
 | `constitution` | int | yes | Post-race CON | TBD |
 | `intelligence` | int | yes | Post-race INT | TBD |
 | `wisdom` | int | yes | Post-race WIS | TBD |
-| `equipped` | object | no | Equipment slot map. Slots: `hands` (weapon — one slot per character; two-handed weapons still occupy just `hands`), `body` (armor). Values are [Item](item.md) names. | TBD |
-| `inventory` | object[] | no | Personal bag (separate from the party's shared stash). Each entry is `{ item, charges?, durability? }` where `item` is an Item name. | TBD |
+| `equipped` | object | no | Equipment slot map. Slots: `hands` (weapon — one slot per character; two-handed weapons still occupy just `hands`), `body` (armor). Values are [Item](item.md) ids (snake_case). | TBD |
+| `inventory` | object[] | no | Personal bag (separate from the party's shared stash). Each entry is `{ item, charges?, durability? }` where `item` is an [Item](item.md) id. | TBD |
 | `sprite` | string | no | Asset path relative to the assets directory (e.g. `"characters/fighter.png"`) | TBD |
 
 ## Cross-references to other models
 
 - `class` → [Character Class](character_class.md) id
 - `race` → [Race](race.md) id
-- `equipped.*` values → [Item](item.md) name
-- `inventory[].item` → [Item](item.md) name
+- `equipped.*` values → [Item](item.md) id
+- `inventory[].item` → [Item](item.md) id
 - Referenced *by* [Party](party.md) `roster[]` (array of Character ids)
 
 ## Example record
@@ -73,7 +73,7 @@ The "Used?" column reflects the v2 TypeScript implementation under `web/`. The c
   "constitution": 12,
   "intelligence": 8,
   "wisdom": 8,
-  "equipped": { "hands": "Club", "body": "Cloth" },
+  "equipped": { "hands": "club", "body": "cloth" },
   "inventory": [],
   "sprite": "characters/fighter.png"
 }

@@ -1,28 +1,28 @@
 {
-  "_comment": "Spawn-point catalog (real data drives the schema). Each spawn is monster-lair behavior the engine triggers when the party steps on (or near) a map cell whose tile carries this spawn's id in its `spawn` field. The binding lives on the map cell, not here \u2014 multiple cells (and multiple maps) can reuse the same Spawn. `background_tile` and the v1 `tile_id` are dropped: the cell\u2192spawn link replaces tile_id (it's the explicit author choice now), and v1 never read background_tile.",
+  "_comment": "Spawn-point catalog (real data drives the schema). Each spawn is monster-lair behavior the engine triggers when the party steps on (or near) a map cell whose tile carries this spawn's id in its `spawn` field. The binding lives on the map cell, not here \u2014 multiple cells (and multiple maps) can reuse the same Spawn. `spawn_monsters` and `boss_monsters` are Monster `id` strings (snake_case); `loot` is Item `id` strings. Duplicate entries in any of these are intentional \u2014 they control sampling weight (one Goblin five times = five times more likely).",
   "spawns": [
     {
       "id": "monster_spawn",
       "name": "Monster Spawn",
       "description": "A monster lair.",
       "spawn_monsters": [
-        "Giant Rat",
-        "Wolf",
-        "Goblin",
-        "Orc",
-        "Lich"
+        "giant_rat",
+        "wolf",
+        "goblin",
+        "orc",
+        "lich"
       ],
       "spawn_chance": 5,
       "spawn_radius": 5,
       "max_spawned": 2,
       "boss_monsters": [
-        "Goblin"
+        "goblin"
       ],
       "xp_reward": 50,
       "gold_reward": 25,
       "loot": [
-        "+2 Chain",
-        "Arrows"
+        "chain_plus_2",
+        "arrows"
       ]
     },
     {
@@ -30,29 +30,29 @@
       "name": "Campfire Spawn",
       "description": "A smoldering campfire attracts wandering creatures.",
       "spawn_monsters": [
-        "Orc",
-        "Orc Shaman",
-        "Orc",
-        "Goblin",
-        "Goblin"
+        "orc",
+        "orc_shaman",
+        "orc",
+        "goblin",
+        "goblin"
       ],
       "spawn_chance": 5,
       "spawn_radius": 4,
       "max_spawned": 3,
       "boss_monsters": [
-        "Goblin",
-        "Goblin",
-        "Goblin",
-        "Goblin",
-        "Dark Mage",
-        "Orc Shaman",
-        "Orc"
+        "goblin",
+        "goblin",
+        "goblin",
+        "goblin",
+        "dark_mage",
+        "orc_shaman",
+        "orc"
       ],
       "xp_reward": 60,
       "gold_reward": 30,
       "loot": [
-        "Torch",
-        "Arrows"
+        "torch",
+        "arrows"
       ]
     },
     {
@@ -60,27 +60,27 @@
       "name": "Graveyard Spawn",
       "description": "Restless spirits rise from ancient graves.",
       "spawn_monsters": [
-        "Skeleton",
-        "Zombie"
+        "skeleton",
+        "zombie"
       ],
       "spawn_chance": 5,
       "spawn_radius": 3,
       "max_spawned": 4,
       "boss_monsters": [
-        "Skeleton",
-        "Skeleton",
-        "Zombie",
-        "Zombie",
-        "Zombie",
-        "Zombie",
-        "Skeleton Archer",
-        "Super Zombie"
+        "skeleton",
+        "skeleton",
+        "zombie",
+        "zombie",
+        "zombie",
+        "zombie",
+        "skeleton_archer",
+        "super_zombie"
       ],
       "xp_reward": 70,
       "gold_reward": 20,
       "loot": [
-        "Bones",
-        "Ancient Shield"
+        "bones",
+        "ancient_shield"
       ]
     },
     {
@@ -88,14 +88,14 @@
       "name": "Dragon",
       "description": "A monster lair.",
       "spawn_monsters": [
-        "Dragon"
+        "dragon"
       ],
       "spawn_chance": 2,
       "spawn_radius": 3,
       "max_spawned": 2,
       "boss_monsters": [
-        "Dragon",
-        "Dark Mage"
+        "dragon",
+        "dark_mage"
       ],
       "xp_reward": 50,
       "gold_reward": 25,
@@ -106,15 +106,15 @@
       "name": "Wyvern",
       "description": "A monster lair.",
       "spawn_monsters": [
-        "Wyvern"
+        "wyvern"
       ],
       "spawn_chance": 20,
       "spawn_radius": 3,
       "max_spawned": 2,
       "boss_monsters": [
-        "Wyvern",
-        "Wyvern",
-        "Dark Mage"
+        "wyvern",
+        "wyvern",
+        "dark_mage"
       ],
       "xp_reward": 50,
       "gold_reward": 25,
@@ -125,16 +125,16 @@
       "name": "Man Eater Spawn",
       "description": "An unsettling rustling sound comes from a thick bed of plants",
       "spawn_monsters": [
-        "Man Eater",
-        "Man Eater"
+        "man_eater",
+        "man_eater"
       ],
       "spawn_chance": 20,
       "spawn_radius": 3,
       "max_spawned": 2,
       "boss_monsters": [
-        "Man Eater",
-        "Man Eater",
-        "Man Eater"
+        "man_eater",
+        "man_eater",
+        "man_eater"
       ],
       "xp_reward": 50,
       "gold_reward": 25,

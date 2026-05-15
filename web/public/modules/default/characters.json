@@ -17,8 +17,8 @@
       "intelligence": 8,
       "wisdom": 8,
       "equipped": {
-        "hands": "Club",
-        "body": "Cloth"
+        "hands": "club",
+        "body": "cloth"
       },
       "inventory": [],
       "sprite": "person/fighter6.png"
@@ -39,8 +39,8 @@
       "intelligence": 8,
       "wisdom": 9,
       "equipped": {
-        "hands": "Club",
-        "body": "Cloth"
+        "hands": "club",
+        "body": "cloth"
       },
       "inventory": [],
       "sprite": "person/hobbit1.png"
@@ -61,8 +61,8 @@
       "intelligence": 8,
       "wisdom": 16,
       "equipped": {
-        "hands": "Club",
-        "body": "Cloth"
+        "hands": "club",
+        "body": "cloth"
       },
       "inventory": [],
       "sprite": "person/cleric1.png"
@@ -83,8 +83,8 @@
       "intelligence": 17,
       "wisdom": 8,
       "equipped": {
-        "hands": "Club",
-        "body": "Cloth"
+        "hands": "club",
+        "body": "cloth"
       },
       "inventory": [],
       "sprite": "person/wizard4.png"

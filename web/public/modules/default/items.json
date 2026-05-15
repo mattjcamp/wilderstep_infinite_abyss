@@ -1,5 +1,5 @@
 {
-  "_comment": "Item catalog (real data drives the schema). Items live in three categories — weapons, armors, general — distinguished by the `category` field. Weapons carry combat fields (power, slots, ranged/throwable, bonus_damage, damage_type, ammo). Armors carry evasion. General items are everything else: consumables, ammo, reagents, scrolls, keys, quest items, tools. Consumables use `usable` + `effect` (verb) + `power`. Items that confer an Effect while equipped use `grants_effect` to reference an Effect id. See docs/data_dictionary/item.md.",
+  "_comment": "Item catalog (real data drives the schema). Items live in three categories \u2014 weapons, armors, general \u2014 distinguished by the `category` field. Weapons carry combat fields (power, slots, ranged/throwable, bonus_damage, damage_type, ammo). Armors carry evasion. General items are everything else: consumables, ammo, reagents, scrolls, keys, quest items, tools. Consumables use `usable` + `effect` (verb) + `power`. Items that confer an Effect while equipped use `grants_effect` to reference an Effect id. See docs/data_dictionary/item.md.",
   "items": [
     {
       "id": "broad_axe",
@@ -52,7 +52,7 @@
       "slots": [
         "hands"
       ],
-      "ammo": "Bolts",
+      "ammo": "bolts",
       "durability": 20,
       "party_can_equip": false,
       "character_can_equip": true,
@@ -164,7 +164,7 @@
       "slots": [
         "hands"
       ],
-      "ammo": "Arrows",
+      "ammo": "arrows",
       "durability": 20,
       "party_can_equip": false,
       "character_can_equip": true,
@@ -238,7 +238,7 @@
       "slots": [
         "hands"
       ],
-      "ammo": "Arrows",
+      "ammo": "arrows",
       "durability": 30,
       "party_can_equip": false,
       "character_can_equip": true,
@@ -257,7 +257,7 @@
       "slots": [
         "hands"
       ],
-      "ammo": "Arrows",
+      "ammo": "arrows",
       "durability": 0,
       "party_can_equip": false,
       "character_can_equip": true
@@ -275,7 +275,7 @@
       "slots": [
         "hands"
       ],
-      "ammo": "Stones",
+      "ammo": "stones",
       "durability": 20,
       "party_can_equip": false,
       "character_can_equip": true,

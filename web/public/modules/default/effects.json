@@ -1,20 +1,6 @@
 {
-  "_comment": "Effect catalog (real data; the schema is whatever this file says it is). Effects are pure capability records describing what an effect *is* as state on its bearer: identity (id/name/description), default duration, and state-side params (the ongoing magnitude or rules — e.g. ac_bonus, damage_per_turn, regen amount). WHO can have an effect and HOW it gets applied live on the granter (Character Class.abilities, Race.traits, Item.grants_effect, Spell.action_params for spell-applied statuses, Monster.passives/on_hit_effects). Application-time params (save_dc, max_target_hp, etc.) live on those applier records. See docs/data_dictionary/effect.md.",
+  "_comment": "Effect catalog (real data; the schema is whatever this file says it is). Effects are runtime gameplay conditions — statuses applied by spells (sleep, charm, bless, magic_light), monster passives (regen, fire_resistance), and on-hit triggers (drain, poisoned). Character-sheet capabilities (race perks, class abilities) moved out to Ability — see abilities.json — so this file no longer carries id-as-capability records like detect_traps or infravision. WHO applies an effect and HOW lives on the applier (Item.grants_effect, Spell.action_params, Monster.passives/on_hit_effects). Application-time params (save_dc, max_target_hp, etc.) live on those applier records. See docs/data_dictionary/effect.md.",
   "effects": [
-    {
-      "id": "detect_traps",
-      "name": "Detect Traps",
-      "description": "Traps are revealed before the party steps on them.",
-      "duration": "permanent",
-      "params": null
-    },
-    {
-      "id": "infravision",
-      "name": "Infravision",
-      "description": "Pierces darkness, revealing the world in shades of red.",
-      "duration": "permanent",
-      "params": null
-    },
     {
       "id": "ac_buff",
       "name": "Shielded",

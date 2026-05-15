@@ -32,20 +32,20 @@ v1 keyed spawn records by stringified tile id; v2 flattens to an array (uniform 
 | `id` | string | yes | Stable identifier in snake_case (e.g. `"monster_spawn"`, `"dragon_lair"`). Referenced by [Map Tile](map_tile.md) `spawn`. | TBD |
 | `name` | string | yes | Display name for the "Approach Lair?" prompt | TBD |
 | `description` | string | no | Flavor text shown when approaching | TBD |
-| `spawn_monsters` | string[] | yes | Roster the per-step roller picks from (uniform random) — Monster names | TBD |
+| `spawn_monsters` | string[] | yes | Roster the per-step roller picks from (uniform random). Each entry is a [Monster](monster.md) `id`. Duplicates control sampling weight (`["goblin","goblin","orc"]` ≈ 2:1 goblin-to-orc). | TBD |
 | `spawn_chance` | int (1–100) | yes | Per-step percent chance to spawn a roamer | TBD |
 | `spawn_radius` | int | yes | Chebyshev tile radius for the saturation check | TBD |
 | `max_spawned` | int | yes | Cap on simultaneous roamers around the tile | TBD |
-| `boss_monsters` | string[] | yes | Monsters composing the boss fight triggered when stepping on the tile itself | TBD |
+| `boss_monsters` | string[] | yes | Monsters composing the boss fight triggered when stepping on the tile itself. Each entry is a [Monster](monster.md) `id`. Duplicates spawn multiple instances. | TBD |
 | `xp_reward` | int | yes | XP awarded for clearing the lair | TBD |
 | `gold_reward` | int | yes | Gold awarded for clearing the lair | TBD |
-| `loot` | string[] | yes | Item names dropped on clear | TBD |
+| `loot` | string[] | yes | [Item](item.md) `id` strings dropped on clear. Duplicates drop multiple copies. | TBD |
 
 ## Cross-references to other models
 
 - Referenced *by* [Map Tile](map_tile.md) `spawn` — the cell→spawn link is the binding mechanism
-- `spawn_monsters[]` and `boss_monsters[]` → [Monster](monster.md) names
-- `loot[]` → [Item](item.md) names
+- `spawn_monsters[]` and `boss_monsters[]` → [Monster](monster.md) ids
+- `loot[]` → [Item](item.md) ids
 
 ## Example record
 
@@ -54,14 +54,14 @@ v1 keyed spawn records by stringified tile id; v2 flattens to an array (uniform 
   "id": "monster_spawn",
   "name": "Monster Spawn",
   "description": "A monster lair.",
-  "spawn_monsters": ["Giant Rat", "Wolf", "Goblin", "Orc", "Lich"],
+  "spawn_monsters": ["giant_rat", "wolf", "goblin", "orc", "lich"],
   "spawn_chance": 5,
   "spawn_radius": 5,
   "max_spawned": 2,
-  "boss_monsters": ["Goblin"],
+  "boss_monsters": ["goblin"],
   "xp_reward": 50,
   "gold_reward": 25,
-  "loot": ["+2 Chain", "Arrows"]
+  "loot": ["chain_plus_2", "arrows"]
 }
 ```
 
@@ -70,4 +70,5 @@ v1 keyed spawn records by stringified tile id; v2 flattens to an array (uniform 
 - **Dropped from v1 per the not-used rule:** `background_tile` (set on every v1 record but the v1 parser ignored it — cleared lairs in v1 had no explicit reveal tile). If cleared-lair reveal becomes a thing, re-introduce as `cleared_tile_id`.
 - **`boss_monster` (singular) was a legacy fallback for `boss_monsters` in v1.** v2 keeps only the plural form; lairs that v1 had with only the singular set should be updated to populate `boss_monsters`.
 - **v1's tile_id binding was replaced by the cell→spawn link.** v1 carried `tile_id` on each spawn record; v2 drops it. Spawns are now place-agnostic catalog records, and each painted [Map Tile](map_tile.md) cell carries an optional `spawn` field naming the Spawn id. This decouples lair behavior from any single tile and lets one Spawn back many cells across many maps.
-- **No id-based reference to Monster yet.** `spawn_monsters[]` and `boss_monsters[]` are Monster `name` strings — same convention as Item references elsewhere in v2.
+- **Migrated to id references.** v1 (and the first v2 pass) carried Monster *names* in `spawn_monsters[]`/`boss_monsters[]` and Item *names* in `loot[]`. v2 switched all three to id strings (snake_case) so refactors of display names don't silently break spawn rosters.
+- **Two dangling loot ids.** The `graveyard_spawn` record references `bones` and `ancient_shield` — neither has a matching record in `items.json` (carried over from v1 where they were never ported as proper Items). The ids are preserved here so author intent isn't lost; resolving them means either adding the missing Item records or pruning the refs.

@@ -19,15 +19,15 @@
   },
   "inventory": [
     {
-      "item": "Torch",
+      "item": "torch",
       "charges": 1
     },
     {
-      "item": "Rock",
+      "item": "rock",
       "charges": 20
     },
     {
-      "item": "Lockpick",
+      "item": "lockpick",
       "charges": 10
     }
   ],

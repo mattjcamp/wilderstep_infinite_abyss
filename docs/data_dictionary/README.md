@@ -17,6 +17,7 @@ The v2 codebase is just being built. The **Used?** column is `TBD` everywhere fo
 | Model | Doc | Purpose |
 |---|---|---|
 | Effect | [effect.md](effect.md) | Unified model for abilities, statuses, passives, and on-hit triggers; ported from v1 and decoupled from its granters |
+| Ability | [ability.md](ability.md) | Catalog of named character capabilities (race / class / other) — referenced by Race.abilities and Character Class.abilities |
 | Spell | [spell.md](spell.md) | Castable spell-actions (damage, heal, apply_effect, summon, etc.); ported from v1 |
 | Recipe | [recipe.md](recipe.md) | Brew options as id + name + reagents-map; ported from v1 (DC/result deferred) |
 | Item | [item.md](item.md) | Weapons, armor, consumables, reagents, scrolls, keys, quest items; ported from v1 |

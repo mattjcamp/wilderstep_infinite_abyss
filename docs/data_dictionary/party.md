@@ -41,7 +41,7 @@ A flat singleton object — the whole file is one Party record.
 | `gold` | int | yes | Shared party gold pool | TBD |
 | `roster` | string[] | yes | [Character](character.md) ids in the adventuring party. Typically four; the engine treats every roster entry as actively adventuring. | TBD |
 | `party_effects` | object | yes | Up to four named active [Effect](effect.md) slots; each value is an Effect id or null | TBD |
-| `inventory` | object[] | yes | Shared party stash. Each entry is `{ item, charges?, durability? }` where `item` is an [Item](item.md) name. | TBD |
+| `inventory` | object[] | yes | Shared party stash. Each entry is `{ item, charges?, durability? }` where `item` is an [Item](item.md) `id` (snake_case). | TBD |
 | `torch_steps` | int | yes | Remaining lit-torch steps | TBD |
 | `galadriels_light_steps` | int | yes | Elven Light remaining steps | TBD |
 
@@ -60,7 +60,7 @@ Four named slots; each value is an [Effect](effect.md) id or `null`.
 
 - `roster[]` → [Character](character.md) ids
 - `party_effects.effect_1..4` → [Effect](effect.md) ids
-- `inventory[].item` → [Item](item.md) name
+- `inventory[].item` → [Item](item.md) id
 
 ## Example record
 
@@ -76,9 +76,9 @@ Four named slots; each value is an [Effect](effect.md) id or `null`.
     "effect_4": null
   },
   "inventory": [
-    { "item": "Torch", "charges": 1 },
-    { "item": "Rock", "charges": 20 },
-    { "item": "Lockpick", "charges": 10 }
+    { "item": "torch", "charges": 1 },
+    { "item": "rock", "charges": 20 },
+    { "item": "lockpick", "charges": 10 }
   ],
   "torch_steps": 0,
   "galadriels_light_steps": 0
@@ -91,4 +91,4 @@ Four named slots; each value is an [Effect](effect.md) id or `null`.
 - **`roster` collapsed `active_party`.** v1 carried a separate `active_party` subset of four ids on top of `roster`. v2 drops that distinction — every entry in `roster` is in the active adventuring group. Recruitable-but-bench-warming characters (the "available pool" the v1 doc described) are not modelled in v2 today; if/when they come back, they're more naturally a separate "recruitable" pool than a parallel array on Party.
 - **Per-character data lives in [Character](character.md).** Equipment, inventory bags, stats, level — none of that is here anymore. Party only carries party-wide concerns.
 - **Singleton vs. per-module seed.** This file is the *default* seed at the data-model layer. Per the architecture plan, each module ships its own starting party at `modules/<id>/party.json`. The v2 module-loading layer will determine precedence; the data shape is the same either way.
-- **`Item.name` cross-reference in the shared `inventory`.** Same convention as elsewhere in v2 until the inventory references switch to id-based.
+- **Inventory items reference by id.** Migrated from `Item.name` (`"Torch"`, `"Rock"`, `"Lockpick"`) once the rest of v2 standardized on Item ids.

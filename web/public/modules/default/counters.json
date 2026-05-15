@@ -1,5 +1,5 @@
 {
-  "_comment": "Counter catalog (real data drives the schema). Counters are the shops and temples encountered behind town tiles. Each has an id, name, description, and either an `items` stock list (regular shops) or `kind: \"service\"` plus a `services` menu (temples). Stock entries are Item `id` strings (snake_case) \u2014 same convention Character/Party records are starting to adopt. Duplicates are intentional: they control stocking weight (four `cloth` and two `plate` means the shop seeds with that mix). v1's TS also used the general/weapon/armor counters' `items` arrays as the post-combat loot pool; if v2 keeps that double-duty, document it explicitly when the loot path is wired up.",
+  "_comment": "Counter catalog (real data drives the schema). Counters are the shops and temples encountered behind town tiles. Each has an id, name, description, and either an `items` stock list (regular shops) or `kind: \"service\"` plus a `services` menu (temples). Stock entries are Item `id` strings (snake_case) — same convention Character/Party records are starting to adopt. Duplicates are intentional: they control stocking weight (four `cloth` and two `plate` means the shop seeds with that mix). v1's TS also used the general/weapon/armor counters' `items` arrays as the post-combat loot pool; if v2 keeps that double-duty, document it explicitly when the loot path is wired up.",
   "counters": [
     {
       "id": "armor",
@@ -55,25 +55,9 @@
       ]
     },
     {
-      "id": "guild",
-      "name": "Guild Hall",
-      "description": "Specialised equipment and services for guild members.",
-      "items": [
-        "lockpick",
-        "lockpick",
-        "lockpick",
-        "lockpick",
-        "smoke_bomb",
-        "fire_oil",
-        "fire_oil",
-        "fire_oil",
-        "poison_vial"
-      ]
-    },
-    {
       "id": "healing",
       "name": "Healing Counter",
-      "description": "A temple healer who mends flesh, restores the arcane, purges poison, and \u2014 for a price \u2014 returns the dead to life.",
+      "description": "A temple healer who mends flesh, restores the arcane, purges poison, and — for a price — returns the dead to life.",
       "items": [],
       "kind": "service",
       "services": [
@@ -104,18 +88,9 @@
       ]
     },
     {
-      "id": "inn",
-      "name": "Inn",
-      "description": "Offers rest and refreshment for weary travelers.",
-      "items": [
-        "healing_herb",
-        "camping_supplies"
-      ]
-    },
-    {
-      "id": "magic",
-      "name": "Magic Shop",
-      "description": "Sells scrolls, potions, and enchanted goods.",
+      "id": "potion_shop",
+      "name": "Potion Shop",
+      "description": "Sells potions",
       "items": [
         "healing_potion",
         "healing_potion",
@@ -174,31 +149,22 @@
         "dagger",
         "mace",
         "mace",
-        "mace",
-        "sword",
         "sword",
         "sword",
         "spear",
         "spear",
-        "spear",
-        "short_bow",
         "short_bow",
         "short_bow",
         "long_bow",
         "long_bow",
-        "long_bow",
         "sling",
         "sling",
-        "sling",
-        "crossbow",
         "crossbow",
         "crossbow",
         "arrows",
         "arrows",
         "arrows",
         "arrows",
-        "bolts",
-        "bolts",
         "bolts",
         "bolts",
         "stones",

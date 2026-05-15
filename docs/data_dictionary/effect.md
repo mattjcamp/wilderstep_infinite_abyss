@@ -2,22 +2,20 @@
 
 ## Purpose
 
-A named, persistent or transient gameplay condition. **Effect is the unified, decoupled model** for everything that lives on a character, monster, or party as a discrete piece of state. Four conceptual kinds fit under one schema:
+A named runtime gameplay condition. **Effect is the unified model for things that sit on a character, monster, or party as a discrete piece of mutable state.** Three conceptual kinds fit under one schema:
 
-1. **Ability** — a passive capability granted to its bearer. Examples: Detect Traps, Infravision.
-2. **Applied status** — a transient condition imposed by a spell or other trigger. Examples: Asleep, Cursed, Blessed.
-3. **Passive trait** — an always-on capability on a character or monster. Examples: Regenerating, Fire Resistance, Poison Immunity.
-4. **Trigger** — an effect that fires on an event (a successful hit, a step taken) rather than ticking over time. Examples: Drain (HP transferred on hit), Consumed (engulf on hit).
+1. **Applied status** — a transient condition imposed by a spell or other trigger. Examples: Asleep, Cursed, Blessed, Light.
+2. **Passive trait** — an always-on capability on a character or monster. Examples: Regenerating, Fire Resistance, Poison Immunity.
+3. **Trigger** — an effect that fires on an event (a successful hit, a step taken) rather than ticking over time. Examples: Drain (HP transferred on hit), Consumed (engulf on hit).
 
-**Effects are pure capability records.** They describe *what* an effect does and its default parameters. They do not describe *who* can have it or *how it was applied*. That mapping lives on the granter:
+Character-sheet capabilities (racial perks like Infravision, class features like Pick Locks and Turn Undead) used to be modelled as Effects too. They moved to the dedicated [Ability](ability.md) catalog in the relationship refactor so the character-sheet surface is independent of the runtime-state surface. Some Abilities still *produce* an Effect when invoked (Galadriel's Light → `magic_light`); the Effect record in this file is the runtime status, the Ability record is the character-sheet entry.
 
-- [Character Class](character_class.md) records list abilities that members of the class get (e.g., Thieves get `detect_traps`).
-- [Race](race.md) records list racial abilities (e.g., Dwarves get `infravision`).
+**Effects are pure state records.** They describe *what* the condition does and its default parameters. They do not describe *who* can have it or *how it was applied*. That mapping lives on the applier:
+
 - [Item](item.md) records use `grants_effect` to apply an effect while equipped (e.g., Sun Sword grants `sun_sword_aura`).
 - [Spell](spell.md) records use `effect_type` (or equivalent) to specify the status they apply on cast.
 - [Monster](monster.md) records list `passives[]` and `on_hit_effects[]` referencing effects by id, with per-monster parameter overrides.
-
-This decoupling means a single `detect_traps` Effect can be granted by a class ability, an item, a spell, or any future mechanism without the Effect record itself needing to know which.
+- [Ability](ability.md) records that produce a transient status reference its Effect id in `params` (e.g. Galadriel's Light → `params.applied_effect: "magic_light"`).
 
 ## Location
 
@@ -82,28 +80,13 @@ This is a snapshot, not a closed list. New effects can define new param keys; ru
 
 ## Cross-references to other models
 
-- [Character Class](character_class.md) — class abilities reference Effect `id`s
-- [Race](race.md) — racial abilities reference Effect `id`s
 - [Spell](spell.md) — `effect_type` (or equivalent) reference Effect `id`s for spell-applied statuses
 - [Item](item.md) — `grants_effect` references Effect `id`s for effects conferred by equipping the item
 - [Monster](monster.md) — `passives[]` and `on_hit_effects[]` reference Effect `id`s with per-monster parameter overrides (e.g. per-monster `chance`, scaled `amount`)
+- [Ability](ability.md) — Ability records whose invocation produces a transient status reference its Effect id in `params.applied_effect` (e.g. Galadriel's Light → `magic_light`)
 - [Party](party.md) — `party_effects.effect_1..4` save-game slots reference Effect `id`s
 
 ## Example records
-
-**Ability (class- or race-granted, but the Effect doesn't say which):**
-
-```json
-{
-  "id": "detect_traps",
-  "name": "Detect Traps",
-  "description": "Traps are revealed before the party steps on them.",
-  "duration": "permanent",
-  "params": null
-}
-```
-
-The Thief class (and the Ranger class at level 3) will list `detect_traps` as a granted ability in their own records — see [Character Class](character_class.md).
 
 **Status applied by a spell** (state-only — the application-time params live on the Sleep spell):
 
@@ -145,7 +128,7 @@ The Sleep spell carries the application params (`max_target_hp`, `save_dc_stat`,
 
 ## Notes and open questions
 
-- **Decoupling decision.** The schema deliberately dropped v1's `requirements` (class/race eligibility predicate) and `item_granted` (party-slot-bypass flag). Both belonged to the *applier*, not the effect. The mapping from "who has access to this effect" now lives on Character Class / Race / Item / Spell records.
+- **Decoupling decision.** The schema deliberately dropped v1's `requirements` (class/race eligibility predicate) and `item_granted` (party-slot-bypass flag). Both belonged to the *applier*, not the effect. The mapping from "who has access to this effect" now lives on Item / Spell records (for effects applied at runtime) or on [Ability](ability.md) records (for character-sheet capabilities). The Ability/Effect split was the second pass of this decoupling: it pulled the character-sheet half of "abilities" out of this catalog entirely.
 
 - **State-side vs. application-time split.** Effect `params` hold *state-side* values — what does being in this state mean. Examples: `regen.amount` (HP per round), `bless.attack_bonus`, `poisoned.damage_per_turn`, `repel_monsters.radius`. Application-time params — what governs whether the effect gets applied at all — live on the applier (Spell, Item, Monster). Examples: a Sleep spell's `save_dc_base` and `max_target_hp` live on the Sleep spell, not on the Sleep effect; a monster's per-hit `chance` to apply Poison lives on the monster's `on_hit_effects[]` entry, not on the Poisoned effect. This split was applied during the spells port; effect records now reflect it.
 

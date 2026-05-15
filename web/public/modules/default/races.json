@@ -1,5 +1,5 @@
 {
-  "_comment": "Race catalog (real data drives the schema). Each race has stat modifiers applied at character creation, an optional XP curve override, and an optional list of innate Effect ids granted to members. Effect references map to ids in effects.json; refs that don't resolve there (pickpocket, galadriel_light, tinker) are kept from v1 as a record of design intent — those Effects don't exist yet in v2.",
+  "_comment": "Race catalog (real data drives the schema). Each race has stat modifiers applied at character creation, an optional XP curve override (Humans level faster), and an `abilities` list of innate Ability ids granted to members of this race. Ability records (name, description, default params) live in abilities.json — this file only carries the reference. v1 called this field `effects` and pointed at Effect ids; v2 renamed it to `abilities` and migrated the records into the dedicated Ability catalog.",
   "races": [
     {
       "id": "human",
@@ -13,7 +13,9 @@
         "wisdom": 0
       },
       "exp_per_level": 1125,
-      "effects": []
+      "abilities": [
+        "fast_learner"
+      ]
     },
     {
       "id": "dwarf",
@@ -26,7 +28,7 @@
         "intelligence": 0,
         "wisdom": 1
       },
-      "effects": [
+      "abilities": [
         "infravision"
       ]
     },
@@ -41,7 +43,7 @@
         "intelligence": 0,
         "wisdom": 1
       },
-      "effects": [
+      "abilities": [
         "pickpocket"
       ]
     },
@@ -56,8 +58,9 @@
         "intelligence": 2,
         "wisdom": 0
       },
-      "effects": [
-        "galadriel_light"
+      "exp_per_level": null,
+      "abilities": [
+        "nimble"
       ]
     },
     {
@@ -71,7 +74,7 @@
         "intelligence": 2,
         "wisdom": 1
       },
-      "effects": [
+      "abilities": [
         "tinker"
       ]
     }

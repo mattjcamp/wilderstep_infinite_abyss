@@ -108,10 +108,10 @@ export interface SimCharacterClass {
 export interface SimRace {
   id: string;
   name: string;
-  /** Permanent effect ids this race grants. Used to detect e.g.
+  /** Innate Ability ids this race grants. Used to detect e.g.
    *  Infravision so the lighting kernel can extend the party's
    *  effective light radius in dark maps. */
-  effects?: string[];
+  abilities?: string[];
 }
 
 /** Subset of an effect record the sim reads. */

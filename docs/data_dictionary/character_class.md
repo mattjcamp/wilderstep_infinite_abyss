@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Playable character classes — Fighter, Thief, Cleric, Wizard, Druid, Paladin, Ranger, Alchemist. Each class carries movement range, a casting_type list, and a list of non-spell class abilities.
+Playable character classes — Fighter, Thief, Cleric, Wizard, Druid, Paladin, Ranger, Alchemist. Each class carries movement range, a casting_type list, and a list of [Ability](ability.md) references (granted to members of the class at a per-class level threshold).
 
 Ported from v1's `data/classes/*.json` (8 files, one per class). Consolidated into a single collection here.
 
@@ -33,7 +33,8 @@ The "Used?" column reflects the v2 TypeScript implementation under `web/`. The c
 | `name` | string | yes | Display label (PascalCase: `"Fighter"`, `"Wizard"`) | TBD |
 | `range` | number | yes | Tiles of movement per combat turn | TBD |
 | `casting_type` | string[] | yes | Which spell catalog(s) this class can cast from. Values: `"none"`, `"sorcerer"`, `"priest"`. `["none"]` for non-casters; one entry for single-catalog casters; both `"sorcerer"` and `"priest"` for hybrid casters like Druid. | TBD |
-| `class_abilities` | object[] | no | Non-spell class features (e.g. Herbalism, Pick Locks, Detect Traps). See *class_abilities* below. | TBD |
+| `abilities` | object[] | no | Non-spell class features (e.g. Herbalism, Pick Locks, Detect Traps). Each entry references an [Ability](ability.md) by id with a per-class level gate. See *abilities entry* below. | TBD |
+| `allowable_item_types` | string[] | no | Item.item_type values this class is allowed to equip (weapon + armor). `["fists", "dagger", "cloth"]` etc. | TBD |
 
 ### `casting_type` values
 
@@ -45,23 +46,22 @@ The "Used?" column reflects the v2 TypeScript implementation under `web/`. The c
 
 A class with `["sorcerer", "priest"]` (currently just Druid) can cast from both catalogs. The list is the set of catalogs the class participates in — it is not ordered, and `"none"` should never appear alongside another value.
 
-## `class_abilities[]` entry
+## `abilities[]` entry
 
-Non-spell class features. Spells are handled separately — see [Spell](spell.md)'s `casting_type` (the catalog) and `class_min_levels` (per-class level overrides).
+Non-spell class features. Spells are handled separately — see [Spell](spell.md)'s `casting_type` (the catalog) and `class_min_levels` (per-class level overrides). The entry is a thin reference into the [Ability](ability.md) catalog (where the name, description, and default params live); only the per-class level gate is duplicated here.
 
 | Field | Type | Description |
 |---|---|---|
-| `name` | string | Ability label (e.g. `"Detect Traps"`, `"Pick Locks"`, `"Herbalism"`) |
-| `min_level` | int | Level at which the ability unlocks (defaults to 1 when omitted) |
-| `description` | string | UI / tooltip text |
+| `ability_id` | string | Id of an [Ability](ability.md) record (e.g. `"pick_locks"`, `"detect_traps"`, `"herbalism"`) |
+| `min_level` | int | Level at which a member of this class unlocks the ability (defaults to 1 when omitted) |
 
 ## Cross-references to other models
 
 - `casting_type[]` ↔ [Spell](spell.md) `casting_type` — class eligibility gate. Every class with a matching catalog can cast every spell in that catalog.
-- Referenced *by* [Spell](spell.md) `class_min_levels` keys — per-class level overrides for specific spells (e.g. Paladin gets Turn Undead at 5 instead of 2)
-- Referenced *by* [Item](item.md) `party_can_equip` / `character_can_equip` — which classes can use a given item
+- `abilities[].ability_id` → [Ability](ability.md) `id` — the catalog records (name, description, default params) live in `abilities.json`; this record only adds the per-class `min_level` gate.
+- `allowable_item_types[]` → [Item](item.md) `item_type` — gates which weapons/armor a class may equip.
+- Referenced *by* [Spell](spell.md) `class_min_levels` keys — per-class level overrides for specific spells (currently unused; reserved for cases where a class learns a spell at a different level than the spell's base `min_level`)
 - Referenced *by* [Party](party.md) `roster[].class` (matched case-insensitively against `name`)
-- `class_abilities[].name` values that match an [Effect](effect.md) id (e.g. Ranger's `"Detect Traps"` maps to effect `detect_traps`) are how class abilities bridge to the unified Effect model — though the link is by-convention, not enforced by the data shape
 
 ## Example record
 
@@ -71,10 +71,10 @@ Non-spell class features. Spells are handled separately — see [Spell](spell.md
   "name": "Ranger",
   "range": 6,
   "casting_type": ["priest"],
-  "class_abilities": [
-    { "name": "Herbalism", "min_level": 1, "description": "..." },
-    { "name": "Pick Locks", "min_level": 3, "description": "..." },
-    { "name": "Detect Traps", "min_level": 3, "description": "..." }
+  "allowable_item_types": ["fists", "dagger", "club", "sword", "sling", "short_bow", "long_bow", "crossbow", "cloth", "leather", "chain"],
+  "abilities": [
+    { "ability_id": "pick_locks",   "min_level": 3 },
+    { "ability_id": "detect_traps", "min_level": 3 }
   ]
 }
 ```
@@ -87,6 +87,6 @@ Non-spell class features. Spells are handled separately — see [Spell](spell.md
   - `mp_source` — MP scaling source (single-stat ability or dual-stat average). Unused by v2; if/when MP scaling is wired up it should live on the casting mechanic, not the class.
   - `exp_per_level` — XP curve. In v2 the leveling speed is determined by race, not class, so this field moved entirely to [Race](race.md). v1 set 1500 on every class and only Human overrode it on the race side.
   - **Also dropped earlier:** `_comment`, `allowed_weapons`, `allowed_armor`, `spell_type`, `mp_source.percentage`, `mp_regen_multiplier`.
-- **`class_abilities` is currently sparse.** v1 enumerated abilities only for Paladin, Ranger, Alchemist. Thief should plausibly gain Pick Locks and Detect Traps here at level 1 (v1 surfaced these via the now-removed `requirements` predicate on the Effect model). Add when the gating semantics are settled.
-- **Paladin's `Turn Undead` is both a class ability and a spell.** v1 carried it in both `class_abilities` (for char-sheet display) and `spells.json` (with `class_min_levels: { Paladin: 5 }`). The Spell is the mechanic; the class_ability entry is descriptive. Either dedupe (derive char-sheet info from Spell) or accept the duplication for now.
-- **`class_abilities[].name` → Effect id is a soft convention.** Some abilities match Effect ids (Detect Traps → `detect_traps`); others don't have Effect representations (Pick Locks, Herbalism). A future refactor could split into `granted_effects` / `granted_spells` / `class_skills` for cleaner cross-references.
+- **`abilities[]` are id references, not inline records.** Migrated from the original `class_abilities[]` shape (which carried `{ name, min_level, description }` inline). The catalog records now live in `abilities.json` so the same Ability can be granted from multiple sources (Cleric + Paladin both get `turn_undead`; Thief + Ranger both get `pick_locks` and `detect_traps`) without duplicating the description.
+- **Turn Undead is an Ability, not a Spell.** v1 carried it in both `class_abilities` (for char-sheet display) and `spells.json` (with `class_min_levels: { Paladin: 5 }`). v2 collapsed those into a single [Ability](ability.md) record (`turn_undead`) that carries both the character-sheet description and the cast mechanic (mp_cost, range, targeting, save_dc_base, sfx, etc.) in its `params`. Cleric @ 2 and Paladin @ 5 are encoded as the per-class `min_level` on each class's `abilities[]` entry.
+- **Per-class param overrides are not modelled yet.** Alchemist's Herbalism doubles the find rate compared to Druid's, but the class record only carries `{ ability_id, min_level }`. If/when the Ability model gains per-granter overrides (parallel to Spell `class_min_levels`), Alchemist's link would carry e.g. `params: { chance_multiplier: 2 }`.

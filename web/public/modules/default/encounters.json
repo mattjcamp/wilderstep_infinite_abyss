@@ -1,5 +1,5 @@
 {
-  "_comment": "Encounter catalog (real data drives the schema). Each encounter is a named monster roster used by the random-encounter sampler. `area` is the discriminator: \"dungeon\", \"house_basement\", or \"overworld\". `level` is the difficulty band (1–8); the sampler filters by min/max level. `weight` controls the relative pick probability inside an eligible band. `monster_party_tile` is the lead monster shown on the overworld sprite (empty falls back to monsters[0]). v1 nested encounters under area-bucket keys; v2 flattens them into one array. Some v1 encounters share names across areas — those get area-suffixed ids here. Dropped: `terrain` (parsed but no v1 consumer).",
+  "_comment": "Encounter catalog (real data drives the schema). Each encounter is a named monster roster used by the random-encounter sampler. `area` is the discriminator: \"dungeon\", \"house_basement\", or \"overworld\". `level` is the difficulty band (1\u20138); the sampler filters by min/max level. `weight` controls the relative pick probability inside an eligible band. `monsters[]` entries are Monster `id` strings (snake_case); duplicates are intentional \u2014 they spawn multiple instances of the same monster. `monster_party_tile` is the sprite shown for the lead monster on the overworld map (empty falls back to monsters[0]). v1 nested encounters under area-bucket keys; v2 flattens them into one array. Some v1 encounters share names across areas \u2014 those get area-suffixed ids here. Dropped: `terrain` (parsed but no v1 consumer).",
   "encounters": [
     {
       "id": "cellar_rats",
@@ -9,7 +9,7 @@
       "weight": 30,
       "monster_party_tile": "monster/giant_rat.png",
       "monsters": [
-        "Giant Rat"
+        "giant_rat"
       ]
     },
     {
@@ -20,8 +20,8 @@
       "weight": 30,
       "monster_party_tile": "monster/giant_rat.png",
       "monsters": [
-        "Giant Rat",
-        "Giant Rat"
+        "giant_rat",
+        "giant_rat"
       ]
     },
     {
@@ -32,7 +32,7 @@
       "weight": 25,
       "monster_party_tile": "monster/goblin.png",
       "monsters": [
-        "Goblin"
+        "goblin"
       ]
     },
     {
@@ -43,8 +43,8 @@
       "weight": 15,
       "monster_party_tile": "monster/goblin.png",
       "monsters": [
-        "Goblin",
-        "Giant Rat"
+        "goblin",
+        "giant_rat"
       ]
     },
     {
@@ -55,9 +55,9 @@
       "weight": 30,
       "monster_party_tile": "monster/goblin.png",
       "monsters": [
-        "Goblin",
-        "Goblin",
-        "Goblin"
+        "goblin",
+        "goblin",
+        "goblin"
       ]
     },
     {
@@ -68,8 +68,8 @@
       "weight": 25,
       "monster_party_tile": "monster/wolf.png",
       "monsters": [
-        "Wolf",
-        "Wolf"
+        "wolf",
+        "wolf"
       ]
     },
     {
@@ -80,9 +80,9 @@
       "weight": 25,
       "monster_party_tile": "monster/goblin.png",
       "monsters": [
-        "Goblin",
-        "Goblin",
-        "Wolf"
+        "goblin",
+        "goblin",
+        "wolf"
       ]
     },
     {
@@ -93,10 +93,10 @@
       "weight": 20,
       "monster_party_tile": "monster/giant_rat.png",
       "monsters": [
-        "Giant Rat",
-        "Giant Rat",
-        "Giant Rat",
-        "Giant Rat"
+        "giant_rat",
+        "giant_rat",
+        "giant_rat",
+        "giant_rat"
       ]
     },
     {
@@ -107,8 +107,8 @@
       "weight": 30,
       "monster_party_tile": "monster/skeleton2.png",
       "monsters": [
-        "Skeleton",
-        "Skeleton"
+        "skeleton",
+        "skeleton"
       ]
     },
     {
@@ -119,8 +119,8 @@
       "weight": 25,
       "monster_party_tile": "monster/zombie.png",
       "monsters": [
-        "Zombie",
-        "Zombie"
+        "zombie",
+        "zombie"
       ]
     },
     {
@@ -131,8 +131,8 @@
       "weight": 20,
       "monster_party_tile": "monster/skeleton2.png",
       "monsters": [
-        "Skeleton Archer",
-        "Skeleton Archer"
+        "skeleton_archer",
+        "skeleton_archer"
       ]
     },
     {
@@ -143,10 +143,10 @@
       "weight": 20,
       "monster_party_tile": "monster/wolf.png",
       "monsters": [
-        "Wolf",
-        "Wolf",
-        "Goblin",
-        "Goblin"
+        "wolf",
+        "wolf",
+        "goblin",
+        "goblin"
       ]
     },
     {
@@ -157,9 +157,9 @@
       "weight": 15,
       "monster_party_tile": "monster/orc2.png",
       "monsters": [
-        "Orc Shaman",
-        "Goblin",
-        "Goblin"
+        "orc_shaman",
+        "goblin",
+        "goblin"
       ]
     },
     {
@@ -170,9 +170,9 @@
       "weight": 25,
       "monster_party_tile": "monster/skeleton2.png",
       "monsters": [
-        "Skeleton",
-        "Skeleton",
-        "Zombie"
+        "skeleton",
+        "skeleton",
+        "zombie"
       ]
     },
     {
@@ -183,9 +183,9 @@
       "weight": 20,
       "monster_party_tile": "monster/skeleton2.png",
       "monsters": [
-        "Skeleton",
-        "Skeleton Archer",
-        "Zombie"
+        "skeleton",
+        "skeleton_archer",
+        "zombie"
       ]
     },
     {
@@ -196,8 +196,8 @@
       "weight": 25,
       "monster_party_tile": "monster/orc1.png",
       "monsters": [
-        "Orc",
-        "Orc"
+        "orc",
+        "orc"
       ]
     },
     {
@@ -208,9 +208,9 @@
       "weight": 20,
       "monster_party_tile": "monster/orc1.png",
       "monsters": [
-        "Orc",
-        "Skeleton",
-        "Wolf"
+        "orc",
+        "skeleton",
+        "wolf"
       ]
     },
     {
@@ -221,9 +221,9 @@
       "weight": 15,
       "monster_party_tile": "monster/wolf.png",
       "monsters": [
-        "Wolf",
-        "Wolf",
-        "Wolf"
+        "wolf",
+        "wolf",
+        "wolf"
       ]
     },
     {
@@ -234,9 +234,9 @@
       "weight": 25,
       "monster_party_tile": "monster/orc1.png",
       "monsters": [
-        "Orc",
-        "Orc",
-        "Orc"
+        "orc",
+        "orc",
+        "orc"
       ]
     },
     {
@@ -247,9 +247,9 @@
       "weight": 20,
       "monster_party_tile": "monster/orc1.png",
       "monsters": [
-        "Orc",
-        "Orc",
-        "Orc Shaman"
+        "orc",
+        "orc",
+        "orc_shaman"
       ]
     },
     {
@@ -260,9 +260,9 @@
       "weight": 15,
       "monster_party_tile": "monster/dark_mage.png",
       "monsters": [
-        "Dark Mage",
-        "Skeleton Archer",
-        "Skeleton"
+        "dark_mage",
+        "skeleton_archer",
+        "skeleton"
       ]
     },
     {
@@ -273,9 +273,9 @@
       "weight": 15,
       "monster_party_tile": "monster/skeleton2.png",
       "monsters": [
-        "Skeleton Archer",
-        "Skeleton Archer",
-        "Skeleton Archer"
+        "skeleton_archer",
+        "skeleton_archer",
+        "skeleton_archer"
       ]
     },
     {
@@ -286,7 +286,7 @@
       "weight": 10,
       "monster_party_tile": "monster/troll.png",
       "monsters": [
-        "Troll"
+        "troll"
       ]
     },
     {
@@ -297,10 +297,10 @@
       "weight": 20,
       "monster_party_tile": "monster/orc1.png",
       "monsters": [
-        "Orc",
-        "Orc",
-        "Wolf",
-        "Wolf"
+        "orc",
+        "orc",
+        "wolf",
+        "wolf"
       ]
     },
     {
@@ -311,9 +311,9 @@
       "weight": 20,
       "monster_party_tile": "monster/troll.png",
       "monsters": [
-        "Troll",
-        "Goblin",
-        "Goblin"
+        "troll",
+        "goblin",
+        "goblin"
       ]
     },
     {
@@ -324,9 +324,9 @@
       "weight": 20,
       "monster_party_tile": "monster/dark_mage.png",
       "monsters": [
-        "Dark Mage",
-        "Orc",
-        "Skeleton Archer"
+        "dark_mage",
+        "orc",
+        "skeleton_archer"
       ]
     },
     {
@@ -337,11 +337,11 @@
       "weight": 15,
       "monster_party_tile": "monster/skeleton2.png",
       "monsters": [
-        "Skeleton",
-        "Skeleton",
-        "Skeleton Archer",
-        "Zombie",
-        "Zombie"
+        "skeleton",
+        "skeleton",
+        "skeleton_archer",
+        "zombie",
+        "zombie"
       ]
     },
     {
@@ -352,10 +352,10 @@
       "weight": 15,
       "monster_party_tile": "monster/orc1.png",
       "monsters": [
-        "Orc",
-        "Orc",
-        "Orc",
-        "Orc Shaman"
+        "orc",
+        "orc",
+        "orc",
+        "orc_shaman"
       ]
     },
     {
@@ -366,8 +366,8 @@
       "weight": 20,
       "monster_party_tile": "monster/troll.png",
       "monsters": [
-        "Troll",
-        "Troll"
+        "troll",
+        "troll"
       ]
     },
     {
@@ -378,9 +378,9 @@
       "weight": 20,
       "monster_party_tile": "monster/dark_mage.png",
       "monsters": [
-        "Dark Mage",
-        "Dark Mage",
-        "Orc Shaman"
+        "dark_mage",
+        "dark_mage",
+        "orc_shaman"
       ]
     },
     {
@@ -391,11 +391,11 @@
       "weight": 20,
       "monster_party_tile": "monster/orc1.png",
       "monsters": [
-        "Orc",
-        "Orc",
-        "Orc",
-        "Orc",
-        "Orc Shaman"
+        "orc",
+        "orc",
+        "orc",
+        "orc",
+        "orc_shaman"
       ]
     },
     {
@@ -406,11 +406,11 @@
       "weight": 15,
       "monster_party_tile": "monster/dark_mage.png",
       "monsters": [
-        "Dark Mage",
-        "Skeleton",
-        "Skeleton",
-        "Skeleton Archer",
-        "Skeleton Archer"
+        "dark_mage",
+        "skeleton",
+        "skeleton",
+        "skeleton_archer",
+        "skeleton_archer"
       ]
     },
     {
@@ -421,9 +421,9 @@
       "weight": 15,
       "monster_party_tile": "monster/troll.png",
       "monsters": [
-        "Troll",
-        "Orc",
-        "Orc"
+        "troll",
+        "orc",
+        "orc"
       ]
     },
     {
@@ -434,9 +434,9 @@
       "weight": 20,
       "monster_party_tile": "monster/troll.png",
       "monsters": [
-        "Troll",
-        "Troll",
-        "Troll"
+        "troll",
+        "troll",
+        "troll"
       ]
     },
     {
@@ -447,10 +447,10 @@
       "weight": 20,
       "monster_party_tile": "monster/dark_mage.png",
       "monsters": [
-        "Dark Mage",
-        "Dark Mage",
-        "Troll",
-        "Orc Shaman"
+        "dark_mage",
+        "dark_mage",
+        "troll",
+        "orc_shaman"
       ]
     },
     {
@@ -461,12 +461,12 @@
       "weight": 15,
       "monster_party_tile": "monster/skeleton2.png",
       "monsters": [
-        "Skeleton",
-        "Skeleton",
-        "Skeleton Archer",
-        "Skeleton Archer",
-        "Zombie",
-        "Zombie"
+        "skeleton",
+        "skeleton",
+        "skeleton_archer",
+        "skeleton_archer",
+        "zombie",
+        "zombie"
       ]
     },
     {
@@ -477,12 +477,12 @@
       "weight": 15,
       "monster_party_tile": "monster/orc1.png",
       "monsters": [
-        "Orc",
-        "Orc",
-        "Orc",
-        "Orc",
-        "Orc Shaman",
-        "Orc Shaman"
+        "orc",
+        "orc",
+        "orc",
+        "orc",
+        "orc_shaman",
+        "orc_shaman"
       ]
     },
     {
@@ -493,10 +493,10 @@
       "weight": 10,
       "monster_party_tile": "monster/troll.png",
       "monsters": [
-        "Troll",
-        "Troll",
-        "Orc Shaman",
-        "Dark Mage"
+        "troll",
+        "troll",
+        "orc_shaman",
+        "dark_mage"
       ]
     },
     {
@@ -507,7 +507,7 @@
       "weight": 10,
       "monster_party_tile": "monster/dragon2.png",
       "monsters": [
-        "Dragon"
+        "dragon"
       ]
     },
     {
@@ -518,9 +518,9 @@
       "weight": 10,
       "monster_party_tile": "monster/dark_mage.png",
       "monsters": [
-        "Dark Mage",
-        "Dark Mage",
-        "Skeleton Archer"
+        "dark_mage",
+        "dark_mage",
+        "skeleton_archer"
       ]
     },
     {
@@ -531,8 +531,8 @@
       "weight": 10,
       "monster_party_tile": "monster/dragon1.png",
       "monsters": [
-        "Wyvern",
-        "Wyvern"
+        "wyvern",
+        "wyvern"
       ]
     },
     {
@@ -543,8 +543,8 @@
       "weight": 10,
       "monster_party_tile": "monster/dragon1.png",
       "monsters": [
-        "Wyvern",
-        "Orc Shaman"
+        "wyvern",
+        "orc_shaman"
       ]
     },
     {
@@ -555,9 +555,9 @@
       "weight": 10,
       "monster_party_tile": "monster/dark_mage.png",
       "monsters": [
-        "Dark Mage",
-        "Dark Mage",
-        "Troll"
+        "dark_mage",
+        "dark_mage",
+        "troll"
       ]
     },
     {
@@ -568,11 +568,11 @@
       "weight": 10,
       "monster_party_tile": "monster/skeleton2.png",
       "monsters": [
-        "Skeleton",
-        "Skeleton",
-        "Skeleton Archer",
-        "Zombie",
-        "Zombie"
+        "skeleton",
+        "skeleton",
+        "skeleton_archer",
+        "zombie",
+        "zombie"
       ]
     },
     {
@@ -583,7 +583,7 @@
       "weight": 18,
       "monster_party_tile": "person/fighter14.png",
       "monsters": [
-        "Ogre"
+        "ogre"
       ]
     },
     {
@@ -594,8 +594,8 @@
       "weight": 12,
       "monster_party_tile": "person/fighter14.png",
       "monsters": [
-        "Ogre",
-        "Wyvern"
+        "ogre",
+        "wyvern"
       ]
     },
     {
@@ -606,8 +606,8 @@
       "weight": 12,
       "monster_party_tile": "person/fighter14.png",
       "monsters": [
-        "Ogre",
-        "Ogre"
+        "ogre",
+        "ogre"
       ]
     },
     {
@@ -618,9 +618,9 @@
       "weight": 10,
       "monster_party_tile": "person/fighter14.png",
       "monsters": [
-        "Ogre",
-        "Ogre",
-        "Ogre"
+        "ogre",
+        "ogre",
+        "ogre"
       ]
     },
     {
@@ -631,7 +631,7 @@
       "weight": 15,
       "monster_party_tile": "monster/lark_f2.png",
       "monsters": [
-        "Banshee"
+        "banshee"
       ]
     },
     {
@@ -642,8 +642,8 @@
       "weight": 12,
       "monster_party_tile": "monster/lark_f2.png",
       "monsters": [
-        "Banshee",
-        "Banshee"
+        "banshee",
+        "banshee"
       ]
     },
     {
@@ -654,8 +654,8 @@
       "weight": 10,
       "monster_party_tile": "monster/lich.png",
       "monsters": [
-        "Lich",
-        "Banshee"
+        "lich",
+        "banshee"
       ]
     },
     {
@@ -666,9 +666,9 @@
       "weight": 10,
       "monster_party_tile": "monster/lark_f2.png",
       "monsters": [
-        "Banshee",
-        "Banshee",
-        "Banshee"
+        "banshee",
+        "banshee",
+        "banshee"
       ]
     },
     {
@@ -679,9 +679,9 @@
       "weight": 8,
       "monster_party_tile": "monster/lark_f2.png",
       "monsters": [
-        "Banshee",
-        "Banshee",
-        "Lich"
+        "banshee",
+        "banshee",
+        "lich"
       ]
     },
     {
@@ -692,8 +692,8 @@
       "weight": 10,
       "monster_party_tile": "monster/lark_f2.png",
       "monsters": [
-        "Banshee",
-        "Man Eater"
+        "banshee",
+        "man_eater"
       ]
     },
     {
@@ -704,9 +704,9 @@
       "weight": 8,
       "monster_party_tile": "monster/man_thing1.png",
       "monsters": [
-        "Man Eater",
-        "Man Eater",
-        "Wyvern"
+        "man_eater",
+        "man_eater",
+        "wyvern"
       ]
     },
     {
@@ -717,7 +717,7 @@
       "weight": 12,
       "monster_party_tile": "monster/daemon1.png",
       "monsters": [
-        "Mind Flayer"
+        "mind_flayer"
       ]
     },
     {
@@ -728,8 +728,8 @@
       "weight": 8,
       "monster_party_tile": "monster/daemon1.png",
       "monsters": [
-        "Mind Flayer",
-        "Mind Flayer"
+        "mind_flayer",
+        "mind_flayer"
       ]
     },
     {
@@ -740,7 +740,7 @@
       "weight": 10,
       "monster_party_tile": "person/wizard5.png",
       "monsters": [
-        "Vampire Lord"
+        "vampire_lord"
       ]
     },
     {
@@ -751,8 +751,8 @@
       "weight": 6,
       "monster_party_tile": "person/wizard5.png",
       "monsters": [
-        "Vampire Lord",
-        "Vampire Lord"
+        "vampire_lord",
+        "vampire_lord"
       ]
     },
     {
@@ -763,7 +763,7 @@
       "weight": 12,
       "monster_party_tile": "monster/lark_f1.png",
       "monsters": [
-        "Stone Golem"
+        "stone_golem"
       ]
     },
     {
@@ -774,8 +774,8 @@
       "weight": 8,
       "monster_party_tile": "monster/lark_f1.png",
       "monsters": [
-        "Stone Golem",
-        "Stone Golem"
+        "stone_golem",
+        "stone_golem"
       ]
     },
     {
@@ -786,7 +786,7 @@
       "weight": 10,
       "monster_party_tile": "monster/giant_octopus.png",
       "monsters": [
-        "Hydra"
+        "hydra"
       ]
     },
     {
@@ -797,8 +797,8 @@
       "weight": 6,
       "monster_party_tile": "monster/giant_octopus.png",
       "monsters": [
-        "Hydra",
-        "Stone Golem"
+        "hydra",
+        "stone_golem"
       ]
     },
     {
@@ -809,8 +809,8 @@
       "weight": 6,
       "monster_party_tile": "person/wizard5.png",
       "monsters": [
-        "Vampire Lord",
-        "Mind Flayer"
+        "vampire_lord",
+        "mind_flayer"
       ]
     },
     {
@@ -821,9 +821,9 @@
       "weight": 3,
       "monster_party_tile": "monster/giant_octopus.png",
       "monsters": [
-        "Hydra",
-        "Vampire Lord",
-        "Mind Flayer"
+        "hydra",
+        "vampire_lord",
+        "mind_flayer"
       ]
     },
     {
@@ -834,7 +834,7 @@
       "weight": 40,
       "monster_party_tile": "monster/giant_rat.png",
       "monsters": [
-        "Giant Rat"
+        "giant_rat"
       ]
     },
     {
@@ -845,8 +845,8 @@
       "weight": 30,
       "monster_party_tile": "monster/giant_rat.png",
       "monsters": [
-        "Giant Rat",
-        "Giant Rat"
+        "giant_rat",
+        "giant_rat"
       ]
     },
     {
@@ -857,7 +857,7 @@
       "weight": 20,
       "monster_party_tile": "monster/goblin.png",
       "monsters": [
-        "Goblin"
+        "goblin"
       ]
     },
     {
@@ -868,8 +868,8 @@
       "weight": 10,
       "monster_party_tile": "monster/goblin.png",
       "monsters": [
-        "Goblin",
-        "Giant Rat"
+        "goblin",
+        "giant_rat"
       ]
     },
     {
@@ -880,7 +880,7 @@
       "weight": 30,
       "monster_party_tile": "monster/wolf.png",
       "monsters": [
-        "Wolf"
+        "wolf"
       ]
     },
     {
@@ -891,8 +891,8 @@
       "weight": 30,
       "monster_party_tile": "monster/goblin.png",
       "monsters": [
-        "Goblin",
-        "Goblin"
+        "goblin",
+        "goblin"
       ]
     },
     {
@@ -903,8 +903,8 @@
       "weight": 25,
       "monster_party_tile": "monster/giant_rat.png",
       "monsters": [
-        "Giant Rat",
-        "Giant Rat"
+        "giant_rat",
+        "giant_rat"
       ]
     },
     {
@@ -915,8 +915,8 @@
       "weight": 30,
       "monster_party_tile": "monster/wolf.png",
       "monsters": [
-        "Wolf",
-        "Wolf"
+        "wolf",
+        "wolf"
       ]
     },
     {
@@ -927,9 +927,9 @@
       "weight": 30,
       "monster_party_tile": "monster/goblin.png",
       "monsters": [
-        "Goblin",
-        "Goblin",
-        "Goblin"
+        "goblin",
+        "goblin",
+        "goblin"
       ]
     },
     {
@@ -940,8 +940,8 @@
       "weight": 30,
       "monster_party_tile": "monster/orc1.png",
       "monsters": [
-        "Orc",
-        "Orc"
+        "orc",
+        "orc"
       ]
     },
     {
@@ -952,9 +952,9 @@
       "weight": 25,
       "monster_party_tile": "monster/wolf.png",
       "monsters": [
-        "Wolf",
-        "Wolf",
-        "Goblin"
+        "wolf",
+        "wolf",
+        "goblin"
       ]
     },
     {
@@ -965,9 +965,9 @@
       "weight": 30,
       "monster_party_tile": "monster/orc1.png",
       "monsters": [
-        "Orc",
-        "Orc",
-        "Orc"
+        "orc",
+        "orc",
+        "orc"
       ]
     },
     {
@@ -978,9 +978,9 @@
       "weight": 25,
       "monster_party_tile": "monster/orc1.png",
       "monsters": [
-        "Orc",
-        "Wolf",
-        "Wolf"
+        "orc",
+        "wolf",
+        "wolf"
       ]
     },
     {
@@ -991,9 +991,9 @@
       "weight": 25,
       "monster_party_tile": "monster/orc1.png",
       "monsters": [
-        "Orc",
-        "Orc",
-        "Orc Shaman"
+        "orc",
+        "orc",
+        "orc_shaman"
       ]
     },
     {
@@ -1004,7 +1004,7 @@
       "weight": 15,
       "monster_party_tile": "monster/troll.png",
       "monsters": [
-        "Troll"
+        "troll"
       ]
     },
     {
@@ -1015,9 +1015,9 @@
       "weight": 20,
       "monster_party_tile": "monster/troll.png",
       "monsters": [
-        "Troll",
-        "Wolf",
-        "Wolf"
+        "troll",
+        "wolf",
+        "wolf"
       ]
     },
     {
@@ -1028,9 +1028,9 @@
       "weight": 20,
       "monster_party_tile": "monster/dark_mage.png",
       "monsters": [
-        "Dark Mage",
-        "Orc",
-        "Orc"
+        "dark_mage",
+        "orc",
+        "orc"
       ]
     },
     {
@@ -1041,8 +1041,8 @@
       "weight": 20,
       "monster_party_tile": "monster/troll.png",
       "monsters": [
-        "Troll",
-        "Troll"
+        "troll",
+        "troll"
       ]
     },
     {
@@ -1053,10 +1053,10 @@
       "weight": 20,
       "monster_party_tile": "monster/orc1.png",
       "monsters": [
-        "Orc",
-        "Orc",
-        "Orc",
-        "Orc Shaman"
+        "orc",
+        "orc",
+        "orc",
+        "orc_shaman"
       ]
     },
     {
@@ -1067,10 +1067,10 @@
       "weight": 15,
       "monster_party_tile": "monster/dark_mage.png",
       "monsters": [
-        "Dark Mage",
-        "Troll",
-        "Orc",
-        "Orc"
+        "dark_mage",
+        "troll",
+        "orc",
+        "orc"
       ]
     },
     {
@@ -1081,9 +1081,9 @@
       "weight": 15,
       "monster_party_tile": "monster/troll.png",
       "monsters": [
-        "Troll",
-        "Troll",
-        "Troll"
+        "troll",
+        "troll",
+        "troll"
       ]
     },
     {
@@ -1094,9 +1094,9 @@
       "weight": 10,
       "monster_party_tile": "monster/lich.png",
       "monsters": [
-        "Lich",
-        "Skeleton",
-        "Skeleton"
+        "lich",
+        "skeleton",
+        "skeleton"
       ]
     },
     {
@@ -1107,7 +1107,7 @@
       "weight": 10,
       "monster_party_tile": "monster/daemon1.png",
       "monsters": [
-        "Mind Flayer"
+        "mind_flayer"
       ]
     }
   ]

@@ -54,12 +54,12 @@ Each record:
 | `name` | string | yes | Display label | TBD |
 | `description` | string | yes | Tooltip / spellbook text | TBD |
 | `casting_type` | string | yes | Spellcasting school / catalog — `"sorcerer"` (arcane / INT-flavored) or `"priest"` (divine / WIS-flavored). This is the *only* gating field for class eligibility: a class can cast this spell iff its [Character Class](character_class.md) `casting_type[]` includes this value. There is no per-spell allow-list — every class in the matching catalog can cast every spell in the catalog. | TBD |
-| `class_min_levels` | object | no | Per-class min level override (e.g. `{ "Paladin": 5 }`) when a specific class learns the spell at a different level than the spell's base `min_level`. Currently only used by Turn Undead (base level 2 for Cleric/Druid/Ranger, 5 for Paladin). Keys are class display names (PascalCase). | TBD |
+| `class_min_levels` | object | no | Per-class min level override (e.g. `{ "Paladin": 5 }`) when a specific class learns the spell at a different level than the spell's base `min_level`. Keys are class display names (PascalCase). No spell uses this in current data — it's preserved against the case where a future spell needs class-specific gating. | TBD |
 | `min_level` | int | yes | Minimum character level to learn the spell. Per-class overrides via `class_min_levels`. | TBD |
 | `mp_cost` | int | yes | Mana cost when cast by a character. Items/monsters invoking the same spell may bypass this. | TBD |
 | `range` | int | yes | Maximum cast range in tiles. `0` typically means self-target. | TBD |
 | `targeting` | string | yes | Target selection mode (see *Targeting modes* below) | TBD |
-| `usable_in` | string[] | yes | Which game contexts the spell can be cast in: `"battle"`, `"overworld"`, `"town"`, `"dungeon"` | TBD |
+| `usable_in` | string[] | yes | Which game contexts the spell can be cast in. Two values: `"battle"` (in-combat) or `"party"` (out-of-combat — the party-management UI on any map). Most spells are battle-only; utility spells like Knock and Light are party-only; Heal is both. | TBD |
 | `duration` | string \| number | yes | `"instant"` for one-shot spells, or a turn/step count for effect-applying spells. For `apply_effect` spells this matches the applied Effect's default duration; explicit `duration` here would override the Effect. | TBD |
 | `action` | string | yes | Action discriminator. See *Action discriminators* below for the full list. | TBD |
 | `action_params` | object \| null | yes | Action-specific parameters. Shape depends on `action`. For `apply_effect` / `cure_effect`, includes `effect_id` plus any application-time overrides for the Effect's params. | TBD |
@@ -79,7 +79,6 @@ The `action` field is a discriminated union. Each value names a runtime handler;
 | `cure_effect` | `{ effect_id }` | Removes the named Effect from the target |
 | `teleport` | `null` | Teleports caster to selected tile (no params) |
 | `summon` | `{ creature: { name, hp, ac, attack_bonus, damage_dice, damage_sides, damage_bonus } }` | Summons a temporary creature; `duration` on the Spell record governs how long it lasts |
-| `turn_undead` | `{ hp_percent, save_dc_base, save_dc_stat }` | Damages all undead on the field; failed save destroys them outright |
 | `knock` | `{ save_dc_base, save_stat }` | Utility — attempts to unlock a target |
 | `restore` | `{ heal_percent, mp_percent, cure_effects, scope? }` | Composite — full or partial HP/MP restore plus list of effects to cure |
 
@@ -95,7 +94,7 @@ Unknown `action` values should be dropped at load with a warning.
 | `select_enemy` | Pick a hostile target within range |
 | `select_tile` | Pick a tile (for AOE, teleport, summon) |
 | `directional_projectile` | Aim a line; everything in the path may be hit |
-| `auto_monster` | Auto-targets all monsters (e.g. Turn Undead) |
+| `auto_monster` | Auto-targets all monsters on the field (no manual pick) |
 
 ## Cross-references to other models
 
@@ -168,7 +167,7 @@ Unknown `action` values should be dropped at load with a warning.
   "mp_cost": 14,
   "range": 0,
   "targeting": "self",
-  "usable_in": ["overworld", "dungeon", "town"],
+  "usable_in": ["party"],
   "duration": 10,
   "action": "apply_effect",
   "action_params": {
@@ -222,10 +221,12 @@ Unknown `action` values should be dropped at load with a warning.
 - **Mass Heal and Restore are party-wide via `scope: "all_allies"`** on `action_params`. v1 had distinct `effect_type` values (`mass_heal`, `restore`) that hardcoded the party scope. Folding scope into action_params lets `heal` and `restore` cover their solo and party variants without a separate action discriminator.
 
 - **`casting_type` is the sole class-eligibility gate.** A class's `casting_type[]` lists the catalogs it can draw from (`["sorcerer"]`, `["priest"]`, `["sorcerer","priest"]`, or `["none"]`), and a spell is castable by a class iff the class's list contains the spell's `casting_type`. There is no per-spell allow-list inside the catalog.
-- **`allowable_classes` was dropped.** v1 (and the early v2 port) carried a per-spell `allowable_classes[]` that narrowed within a catalog — e.g. a sorcerer spell available only to Wizard and Druid but not Alchemist, or a priest spell only to Cleric but not Paladin/Druid/Ranger. Removed in favor of the simpler casting_type-only model: every class in a catalog can cast every spell in the catalog. Consequence: priest spells like Turn Undead, Bless, Major Heal — which v1 restricted to Cleric and/or Paladin — are now also castable by Druid and Ranger. Sorcerer spells like Sleep, Invisibility, Fireball are now castable by Alchemist. If/when per-class narrowing is needed again, a `granted_spells[]` on Character Class is the cleanest place; the spell record stays simple.
+- **`allowable_classes` was dropped.** v1 (and the early v2 port) carried a per-spell `allowable_classes[]` that narrowed within a catalog — e.g. a sorcerer spell available only to Wizard and Druid but not Alchemist, or a priest spell only to Cleric but not Paladin/Druid/Ranger. Removed in favor of the simpler casting_type-only model: every class in a catalog can cast every spell in the catalog. Consequence: priest spells like Bless and Major Heal — which v1 restricted to Cleric and/or Paladin — are now also castable by Druid and Ranger. Sorcerer spells like Sleep, Invisibility, Fireball are now castable by Alchemist. If/when per-class narrowing is needed again, a `granted_spells[]` on Character Class is the cleanest place; the spell record stays simple.
 
 - **Composite actions.** `restore` is a multi-effect action (heal + restore MP + cure poison). If composites proliferate, a `sequence` action type that chains sub-actions would be cleaner than ad-hoc named actions. Not needed yet.
 
 - **`item_type` interactions are TBD.** v1's Wand-of-Lightning style items would have referenced a Spell id via something like `item.activates_spell`. The Item model has not been ported yet; the cross-reference here is forward-declared.
 
 - **Several v1 SFX values are placeholder.** Many spells reused `sfx: "shield"` regardless of their actual nature (Sleep, Long Shanks, Invisibility, etc.). Carried over as-is; expect a content pass to normalize.
+
+- **`usable_in` collapsed from four values to two.** v1 split the out-of-combat case into `overworld` / `town` / `dungeon`, but no runtime caller actually distinguished between them — all three just meant "not in a fight." v2 collapsed those into a single `party` value, leaving `battle` vs. `party` as the only distinction. The four-value enum lives in the v1 reference if it's ever needed back.

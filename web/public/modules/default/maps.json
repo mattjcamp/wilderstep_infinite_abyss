@@ -3780,10 +3780,10 @@
             "tag": "floor"
           },
           {
-            "id": "floor_brown",
-            "name": "Brown Floor",
-            "walkable": true,
-            "obstructs": false,
+            "id": "machine",
+            "name": "Machine",
+            "walkable": false,
+            "obstructs": true,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -3791,8 +3791,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/floor_brown.png",
-            "tag": "floor"
+            "sprite": "map/machine.png",
+            "tag": "dungeon"
           },
           {
             "id": "lava1",
@@ -5022,18 +5022,33 @@
             "tag": "water"
           },
           {
-            "id": "water_shallow",
-            "name": "Shallow Water",
+            "id": "water",
+            "name": "Water",
             "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
-            "animation": null,
+            "animation": "none",
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/water_shallow.png",
+            "sprite": "map/water.png",
+            "tag": "water"
+          },
+          {
+            "id": "water",
+            "name": "Water",
+            "walkable": false,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/water.png",
             "tag": "water"
           },
           {
@@ -5050,21 +5065,6 @@
             "spawn": null,
             "sprite": "map/water_shallow.png",
             "tag": "water"
-          },
-          {
-            "id": "swamp",
-            "name": "Swamp",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": null,
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/swamp.png",
-            "tag": "terrain"
           },
           {
             "id": "swamp",

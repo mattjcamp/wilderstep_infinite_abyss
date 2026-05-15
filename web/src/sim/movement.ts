@@ -98,7 +98,7 @@ export function step(
 }
 
 /** Compute the party's emitted light radius from its current torch /
- *  effect state plus any permanent race effects on the active members.
+ *  effect state plus any race abilities that bear on lighting.
  *  Zero means "the party emits no light"; the renderer then relies on
  *  the map's own light sources + ambient. v1 took the max across
  *  modifiers rather than stacking — we match that. */
@@ -106,31 +106,27 @@ export function partyLightRange(
   party: Pick<SimParty, "torch_steps" | "galadriels_light_steps">,
   activeMembers: ReadonlyArray<SimCharacter>,
   races: ReadonlyArray<SimRace>,
-  effects: ReadonlyArray<SimEffect>,
+  // Reserved for future light-relevant transient effects; unused
+  // since Infravision moved from Effect → Ability.
+  _effects: ReadonlyArray<SimEffect>,
 ): number {
   let best = 0;
   if (party.torch_steps > 0) best = Math.max(best, TORCH_LIGHT_RANGE);
   if (party.galadriels_light_steps > 0) {
     best = Math.max(best, GALADRIELS_LIGHT_RANGE);
   }
-  // Permanent race effects — e.g. Dwarf Infravision lets the party
-  // see the whole map in absolute darkness.
-  const effectsById = new Map(effects.map((e) => [e.id, e]));
+  // Race abilities — e.g. Dwarf Infravision lets the party see the
+  // whole map in absolute darkness. Ability ids are always passive
+  // when granted by a Race, so we don't need the catalog record here;
+  // the id alone is enough to gate the light bonus.
   const racesById = new Map(races.map((r) => [r.id, r]));
   for (const m of activeMembers) {
     const race = racesById.get(m.race);
     if (!race) continue;
-    for (const effId of race.effects ?? []) {
-      const eff = effectsById.get(effId);
-      if (!eff) continue;
-      if (eff.duration !== "permanent") continue;
-      // We only recognize light-related effects here; everything else
-      // is gameplay flavor the sim doesn't need to model yet.
-      if (effId === "infravision") best = Math.max(best, INFRAVISION_RANGE);
-      // Other permanent effects (detect_traps, regen, …) don't affect
-      // light radius. Add cases here as new lighting-relevant effects
-      // are introduced.
+    if ((race.abilities ?? []).includes("infravision")) {
+      best = Math.max(best, INFRAVISION_RANGE);
     }
+    // Add other lighting-relevant abilities here as they appear.
   }
   return best;
 }
