@@ -28,8 +28,8 @@
  * rectangle), zoom/pan, walkable overlay, undo/redo.
  */
 
-import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { StaticModuleSource } from "@/data_model/StaticModuleSource";
 import {
   discardDraft,
@@ -40,6 +40,16 @@ import {
 import { mergeModel } from "@/data_model/merge";
 import { withBasePath } from "@/util/basePath";
 import { publishItems } from "@/data_model/publishClient";
+import { MapSimulation, type SceneBridge } from "@/sim/MapSimulation";
+import { SimPanel } from "@/sim/SimPanel";
+import type {
+  SimCharacter,
+  SimEffect,
+  SimGrid,
+  SimLightSource,
+  SimParty,
+  SimRace,
+} from "@/sim/types";
 import { usePublishServer } from "./usePublishServer";
 
 const TILE_SIZE = 32;
@@ -235,6 +245,15 @@ type LoadState =
        *  aware) — needed so we can write back the modified map. */
       ownFile: Record<string, unknown> | null;
       isDraft: boolean;
+      /** Simulation-only catalog. Loaded alongside the painting data
+       *  so the scene can pre-load party sprites in its single
+       *  preload() pass. Null when a load failed; sim mode is still
+       *  reachable but the panel falls back to placeholders. */
+      simParty: SimParty | null;
+      simCharacters: SimCharacter[];
+      simRaces: SimRace[];
+      simEffects: SimEffect[];
+      simClasses: Array<{ id: string; name: string }>;
     }
   | { kind: "error"; message: string };
 
@@ -246,10 +265,43 @@ export function MapEditor({
   mapId: string;
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { available: publishAvailable } = usePublishServer();
   const [state, setState] = useState<LoadState>({ kind: "loading" });
   const [activeBrush, setActiveBrush] = useState<string | null>(null);
   const [gridLinesOn, setGridLinesOn] = useState(true);
+  /** Simulation mode state machine.
+   *   - "off"     → Inspector visible, paint/inspect/pan tools work.
+   *   - "placing" → user clicked Simulate; the next walkable click on
+   *                 the canvas drops the party there and transitions
+   *                 to "active". Painting is suppressed while placing.
+   *   - "active"  → SimPanel visible, party sprite on the map, WASD /
+   *                 arrows drive movement, paint is suppressed.
+   *  Link traversal (URL `?sim=1&entryCol=X&entryRow=Y`) skips
+   *  "placing" and lands directly in "active" at the destination cell. */
+  const [simMode, setSimMode] = useState<"off" | "placing" | "active">(
+    "off",
+  );
+  /** Mirror in a ref so the Phaser scene's pointer handler — which
+   *  reads from refs only — can branch on the current sim state. */
+  const simModeRef = useRef<"off" | "placing" | "active">("off");
+  useEffect(() => {
+    simModeRef.current = simMode;
+  }, [simMode]);
+  /** Live MapSimulation instance while simMode === "active". Held as
+   *  a ref because we never want it to drive React renders — it
+   *  pushes updates through events. */
+  const simRef = useRef<MapSimulation | null>(null);
+  /** The Sim panel needs the instance to subscribe; we mirror simRef
+   *  into state purely for the SimPanel prop. Updated when sim mounts
+   *  or unmounts. */
+  const [simInstance, setSimInstance] = useState<MapSimulation | null>(null);
+  /** Callback the Phaser scene invokes when the user clicks a tile
+   *  during "placing" — held in a ref so the scene closure stays
+   *  stable while React re-renders. */
+  const onSimPlaceRef = useRef<(col: number, row: number) => void>(
+    () => {},
+  );
   /** Discrete zoom presets. Index into ZOOM_STEPS; the canvas is
    *  CSS-scaled by this factor so the outer overflow-auto container
    *  produces matching scrollbars for pan. Phaser pointer events still
@@ -326,6 +378,12 @@ export function MapEditor({
   const [lightingMode, setLightingMode] = useState<
     "day" | "twilight" | "night"
   >("day");
+  /** Mirror of lightingMode in a ref so the sim's relight callback
+   *  can trigger a pass without re-binding the closure each render. */
+  const lightingModeRef = useRef<"day" | "twilight" | "night">("day");
+  useEffect(() => {
+    lightingModeRef.current = lightingMode;
+  }, [lightingMode]);
   /** Which palette-tag sections are currently collapsed in the side
    *  panel. Tags are expanded by default; entries here are the
    *  exceptions. */
@@ -361,7 +419,20 @@ export function MapEditor({
     refreshEncounterOverlays: () => void;
     /** Sync per-cell item-sprite overlays from each cell's item field. */
     refreshItemOverlays: () => void;
+    /** Show / move the simulation party sprite. Sprite path is the
+     *  full key passed to the scene's preload (so the texture is
+     *  already cached). Position is in grid coords. */
+    setPartyAt: (col: number, row: number, sprite: string) => void;
+    /** Hide the party sprite entirely. Called on sim teardown. */
+    clearParty: () => void;
+    /** Override the party-light source the relight pass folds in.
+     *  Null disables the extra source. */
+    setPartyLight: (source: SimLightSource | null) => void;
   } | null>(null);
+  /** The party-light source the simulation contributes. Read by the
+   *  scene's relight on every pass — when sim mode is off this stays
+   *  null and behavior is identical to the painting view. */
+  const partyLightRef = useRef<SimLightSource | null>(null);
 
   // Selection follows the cursor.
   useEffect(() => {
@@ -389,6 +460,11 @@ export function MapEditor({
           encountersLayers,
           spawnsLayers,
           itemsLayers,
+          partyLayers,
+          charactersLayers,
+          racesLayers,
+          effectsLayers,
+          classesLayers,
         ] = await Promise.all([
           src.loadModelLayers(moduleId, "map_tiles"),
           src.loadModelLayers(moduleId, "maps"),
@@ -396,6 +472,13 @@ export function MapEditor({
           src.loadModelLayers(moduleId, "encounters"),
           src.loadModelLayers(moduleId, "spawns"),
           src.loadModelLayers(moduleId, "items"),
+          // Sim-only catalog. Failures here are non-fatal — the editor
+          // still functions for painting; sim mode just degrades.
+          src.loadModelLayers(moduleId, "party").catch(() => null),
+          src.loadModelLayers(moduleId, "characters").catch(() => null),
+          src.loadModelLayers(moduleId, "races").catch(() => null),
+          src.loadModelLayers(moduleId, "effects").catch(() => null),
+          src.loadModelLayers(moduleId, "character_classes").catch(() => null),
         ]);
         if (cancelled) return;
 
@@ -504,6 +587,47 @@ export function MapEditor({
         const firstBrush =
           palette.find((t) => t.walkable)?.id ?? palette[0]?.id ?? null;
         setActiveBrush(firstBrush);
+        // Sim-catalog merges. The sim only reads a small subset of
+        // each record; we resolve them through the same mergeModel
+        // pipeline so module extends/uses chains work identically.
+        const partyMerged =
+          partyLayers &&
+          (mergeModel(
+            "party",
+            partyLayers.inherited,
+            partyLayers.ownFile,
+          ) as SimParty | null);
+        const charactersMerged =
+          charactersLayers &&
+          (mergeModel(
+            "characters",
+            charactersLayers.inherited,
+            charactersLayers.ownFile,
+          ) as { characters?: SimCharacter[] } | null);
+        const racesMerged =
+          racesLayers &&
+          (mergeModel(
+            "races",
+            racesLayers.inherited,
+            racesLayers.ownFile,
+          ) as { races?: SimRace[] } | null);
+        const effectsMerged =
+          effectsLayers &&
+          (mergeModel(
+            "effects",
+            effectsLayers.inherited,
+            effectsLayers.ownFile,
+          ) as { effects?: SimEffect[] } | null);
+        const classesMerged =
+          classesLayers &&
+          (mergeModel(
+            "character_classes",
+            classesLayers.inherited,
+            classesLayers.ownFile,
+          ) as {
+            character_classes?: Array<{ id: string; name: string }>;
+          } | null);
+
         setState({
           kind: "ok",
           palette,
@@ -514,6 +638,11 @@ export function MapEditor({
           mapRecord,
           ownFile: ownEffective ?? null,
           isDraft: hasDraft(moduleId, MODEL_KEY),
+          simParty: partyMerged ?? null,
+          simCharacters: charactersMerged?.characters ?? [],
+          simRaces: racesMerged?.races ?? [],
+          simEffects: effectsMerged?.effects ?? [],
+          simClasses: classesMerged?.character_classes ?? [],
         });
       } catch (e) {
         if (cancelled) return;
@@ -589,7 +718,14 @@ export function MapEditor({
       const Phaser = await import("phaser");
       if (cancelled || !containerRef.current) return;
 
-      const { palette, mapRecord, encounters, items } = state;
+      const {
+        palette,
+        mapRecord,
+        encounters,
+        items,
+        simParty,
+        simCharacters,
+      } = state;
       const paletteById = new Map(palette.map((t) => [t.id, t]));
       const encountersById = new Map(encounters.map((e) => [e.id, e]));
       const itemsById = new Map(items.map((i) => [i.id, i]));
@@ -609,6 +745,13 @@ export function MapEditor({
       }
       for (const i of items) {
         if (i.icon) spriteKeys.add(`item/${i.icon}.png`);
+      }
+      // Sim-mode sprites: party avatar + every active member's
+      // portrait. Pre-load defensively so toggling sim on doesn't
+      // need a second loader pass.
+      if (simParty?.avatar) spriteKeys.add(simParty.avatar);
+      for (const ch of simCharacters) {
+        if (ch.sprite) spriteKeys.add(ch.sprite);
       }
 
       class MapScene extends Phaser.Scene {
@@ -632,6 +775,9 @@ export function MapEditor({
         itemOverlays: Map<string, Phaser.GameObjects.Image> = new Map();
         /** Current item id per cell so refresh can skip no-ops. */
         itemOverlayIds: Map<string, string> = new Map();
+        /** Sim-mode party sprite (single Image, depth-300 above
+         *  everything else). Null while sim mode is off. */
+        partySprite: Phaser.GameObjects.Image | null = null;
 
         preload() {
           for (const sprite of spriteKeys) {
@@ -753,6 +899,16 @@ export function MapEditor({
               // Assigned for real below — placeholder so the API object
               // matches the type until create() finishes wiring it.
             },
+            setPartyAt: () => {
+              // Assigned for real below — placeholder so the API object
+              // matches the type until create() finishes wiring it.
+            },
+            clearParty: () => {
+              // Assigned for real below.
+            },
+            setPartyLight: () => {
+              // Assigned for real below.
+            },
             relight: (mode) => {
               // Day = unconditionally full brightness, fast path. Also
               // clear tints on placed overlays so they don't keep the
@@ -785,6 +941,17 @@ export function MapEditor({
                   if (range <= 0) continue;
                   sources.push({ col: c, row: r, range });
                 }
+              }
+              // Add the simulation party's own light source on top —
+              // when sim mode is off this ref stays null so the
+              // painting view's lighting is unchanged.
+              const partyLight = partyLightRef.current;
+              if (partyLight && partyLight.range > 0) {
+                sources.push({
+                  col: partyLight.col,
+                  row: partyLight.row,
+                  range: partyLight.range,
+                });
               }
               /** Bresenham line-of-sight: returns true if no obstructs=true
                *  cell lies strictly between (srcCol,srcRow) and
@@ -864,6 +1031,76 @@ export function MapEditor({
           // whenever cells change. Keep the existing relight API call
           // and the initial day-mode tint application below.
           const sceneSelf = this;
+          if (sceneApiRef.current) {
+            sceneApiRef.current.setPartyAt = (col, row, spritePath) => {
+              // Lazy-create the sprite the first time the sim shows.
+              // Anchored center for natural alignment with the cell.
+              const px = col * TILE_SIZE + TILE_SIZE / 2;
+              const py = row * TILE_SIZE + TILE_SIZE / 2;
+              if (!sceneSelf.partySprite) {
+                if (!spritePath || !sceneSelf.textures.exists(spritePath)) {
+                  // Texture wasn't preloaded (empty path, mismatched
+                  // file name, or party.json without a usable avatar).
+                  // Warn so the user can fix the module's avatar
+                  // value, then render a fallback marker so the user
+                  // can still see where the party is on the map.
+                  // eslint-disable-next-line no-console
+                  console.warn(
+                    `[sim] missing party sprite "${spritePath}" — ` +
+                      `falling back to a marker. Check party.avatar ` +
+                      `in this module's party.json.`,
+                  );
+                  // Generate a one-off ember circle the first time
+                  // we need a fallback, then reuse it.
+                  const MARKER_KEY = "__party_marker";
+                  if (!sceneSelf.textures.exists(MARKER_KEY)) {
+                    const g = sceneSelf.add.graphics();
+                    g.fillStyle(0xffb84d, 1);
+                    g.fillCircle(16, 16, 13);
+                    g.lineStyle(2, 0x4a1c00, 1);
+                    g.strokeCircle(16, 16, 13);
+                    g.generateTexture(MARKER_KEY, 32, 32);
+                    g.destroy();
+                  }
+                  sceneSelf.partySprite = sceneSelf.add
+                    .image(px, py, MARKER_KEY)
+                    .setOrigin(0.5)
+                    .setDisplaySize(TILE_SIZE, TILE_SIZE)
+                    .setDepth(300);
+                  return;
+                }
+                sceneSelf.partySprite = sceneSelf.add
+                  .image(px, py, spritePath)
+                  .setOrigin(0.5)
+                  .setDisplaySize(TILE_SIZE, TILE_SIZE)
+                  // Above grid lines (100), override markers (150),
+                  // emitters (160), selection (200), and the encounter/
+                  // item overlays (70-80).
+                  .setDepth(300);
+              } else {
+                sceneSelf.partySprite.setPosition(px, py);
+                if (
+                  spritePath &&
+                  sceneSelf.textures.exists(spritePath) &&
+                  sceneSelf.partySprite.texture.key !== spritePath
+                ) {
+                  sceneSelf.partySprite.setTexture(spritePath);
+                }
+              }
+            };
+            sceneApiRef.current.clearParty = () => {
+              if (sceneSelf.partySprite) {
+                sceneSelf.partySprite.destroy();
+                sceneSelf.partySprite = null;
+              }
+            };
+            sceneApiRef.current.setPartyLight = (source) => {
+              partyLightRef.current = source;
+              // Caller is expected to call relight() right after for
+              // an instant visual update, but we set the ref here so
+              // even a stale relight picks up the new source.
+            };
+          }
           if (sceneApiRef.current) {
             sceneApiRef.current.refreshEncounterOverlays = () => {
               for (let r = 0; r < mapRecord.height; r++) {
@@ -1030,6 +1267,15 @@ export function MapEditor({
             r >= mapRecord.height
           )
             return;
+          // Simulation modes intercept the canvas click. "placing"
+          // routes the click into the spawn picker; "active" swallows
+          // the click entirely (movement is keyboard-driven, mouse
+          // clicks shouldn't repaint cells underneath the party).
+          if (simModeRef.current === "placing") {
+            onSimPlaceRef.current(c, r);
+            return;
+          }
+          if (simModeRef.current === "active") return;
           // Selection always follows the cursor — both tools update it.
           onCellTouchedRef.current(c, r);
           // Inspect + Pan never paint; just selecting is the whole job.
@@ -1108,6 +1354,188 @@ export function MapEditor({
     // updates patch the existing scene in-place.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.kind === "ok" ? state.mapRecord.id : null]);
+
+  // ── Simulation mode lifecycle ───────────────────────────────────
+  /** Pending spawn position for the next sim mount. Set by either:
+   *   - the URL-query auto-entry (link traversal landed us here), or
+   *   - the click-to-place handler (user picked a tile on this map).
+   *  Consumed by the lifecycle effect on sim mount, then cleared so
+   *  a subsequent exit-then-restart doesn't reuse a stale coord. */
+  const spawnAtRef = useRef<{ col: number; row: number } | null>(null);
+  // Honor `?sim=1` on initial render — drop straight into "active"
+  // sim mode at the entry coord. This is how link traversal lands:
+  // we push to the new map URL with these params, and the new
+  // MapEditor picks them up here. We router.replace() the params
+  // away on read so a browser refresh doesn't re-trigger the
+  // auto-entry.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const sim = searchParams?.get("sim");
+    if (sim !== "1") return;
+    const colStr = searchParams.get("entryCol");
+    const rowStr = searchParams.get("entryRow");
+    const col = colStr != null ? Number(colStr) : NaN;
+    const row = rowStr != null ? Number(rowStr) : NaN;
+    if (Number.isFinite(col) && Number.isFinite(row)) {
+      spawnAtRef.current = { col, row };
+    }
+    // Link arrivals skip "placing" — we already know the entry cell.
+    setSimMode("active");
+    // Strip the query so this only fires once per navigation.
+    router.replace(`/editor/${moduleId}/maps/${mapId}`, { scroll: false });
+    // Run-once on mount: searchParams is stable enough here that
+    // re-triggering on its identity change would be a bug.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Keep onSimPlaceRef pointed at a fresh closure with the latest
+  // grid — when the user clicks a tile while "placing", we validate
+  // walkability and transition to "active" with the chosen spawn.
+  useEffect(() => {
+    onSimPlaceRef.current = (col, row) => {
+      if (state.kind !== "ok") return;
+      const cell = state.mapRecord.grid[row]?.[col];
+      if (!cell) return;
+      if (!cell.walkable) {
+        // Click landed on a wall / water / impassable tile. We just
+        // ignore it — the user can click somewhere else. The cursor
+        // stays in "placing" so the gesture is repeatable without
+        // re-clicking the toolbar button.
+        return;
+      }
+      spawnAtRef.current = { col, row };
+      setSimMode("active");
+    };
+  }, [state]);
+
+  const onLinkTraversed = useCallback(
+    (link: { map_id: string; x: number; y: number }) => {
+      // Navigate to the linked map with sim still active and the
+      // party landing at the destination coord. The new MapEditor
+      // instance reads these params on mount.
+      const url =
+        `/editor/${moduleId}/maps/${link.map_id}` +
+        `?sim=1&entryCol=${link.x}&entryRow=${link.y}`;
+      router.push(url);
+    },
+    [moduleId, router],
+  );
+
+  useEffect(() => {
+    if (simMode !== "active" || state.kind !== "ok") {
+      // Tear down any existing sim when leaving "active" (toggling
+      // off, or transitioning back to "placing" — though placing only
+      // appears on the way IN, we still defensively dispose).
+      if (simRef.current) {
+        simRef.current.dispose();
+        simRef.current = null;
+        setSimInstance(null);
+      }
+      return;
+    }
+    // Build a SimGrid view of the painted grid. Each TileType
+    // already carries the SimCell shape, so a shallow cast is safe.
+    const grid = state.mapRecord.grid as unknown as SimGrid;
+
+    const bridge: SceneBridge = {
+      setPartyAt: (col, row) => {
+        const sprite = state.simParty?.avatar ?? "";
+        sceneApiRef.current?.setPartyAt(col, row, sprite);
+      },
+      clearParty: () => {
+        sceneApiRef.current?.clearParty();
+      },
+      setPartyLight: (source) => {
+        sceneApiRef.current?.setPartyLight(source);
+      },
+      relight: () => {
+        sceneApiRef.current?.relight(lightingModeRef.current);
+      },
+      onKey: (handler) => {
+        // Window-scoped listener. Ignore the keystroke if the user is
+        // typing in an input/textarea so cell-text editing isn't
+        // blocked when sim mode is on for a quick test.
+        const isTyping = (t: EventTarget | null) => {
+          if (!(t instanceof HTMLElement)) return false;
+          const tag = t.tagName;
+          return (
+            tag === "INPUT" ||
+            tag === "TEXTAREA" ||
+            tag === "SELECT" ||
+            t.isContentEditable
+          );
+        };
+        const listener = (e: KeyboardEvent) => {
+          if (isTyping(e.target)) return;
+          handler(e.key);
+        };
+        window.addEventListener("keydown", listener);
+        return () => window.removeEventListener("keydown", listener);
+      },
+    };
+
+    const classNameById = new Map<string, string>(
+      state.simClasses.map((c) => [c.id, c.name]),
+    );
+    // Synthesize a minimal Party if the module had none — sim still
+    // runs (so the user can walk an empty placeholder around) but
+    // with no light/effect data and a hardcoded center spawn.
+    const party: SimParty = state.simParty ?? {
+      start_position: {
+        col: Math.floor(state.mapRecord.width / 2),
+        row: Math.floor(state.mapRecord.height / 2),
+      },
+      avatar: "",
+      active_party: [],
+      torch_steps: 0,
+      galadriels_light_steps: 0,
+    };
+
+    const sim = new MapSimulation({
+      grid,
+      party,
+      catalog: {
+        characters: state.simCharacters,
+        races: state.simRaces,
+        effects: state.simEffects,
+      },
+      classNameById,
+      bridge,
+      startAt: spawnAtRef.current ?? undefined,
+    });
+    // Consume the one-shot spawn coord so a subsequent exit + Simulate
+    // returns the user to the "placing" picker rather than reusing
+    // the previous spot.
+    spawnAtRef.current = null;
+
+    const unsubscribe = sim.subscribe((ev) => {
+      if (ev.kind === "linked") onLinkTraversed(ev.link);
+    });
+
+    simRef.current = sim;
+    setSimInstance(sim);
+
+    return () => {
+      unsubscribe();
+      sim.dispose();
+      if (simRef.current === sim) {
+        simRef.current = null;
+        setSimInstance(null);
+      }
+    };
+    // Map identity is the primary lifetime key — when the user
+    // traverses a link the route remounts MapEditor entirely, so this
+    // effect re-runs cleanly. simMode is the user toggle. State is
+    // intentionally omitted: we don't want to rebuild the sim on
+    // every paint while sim is active.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    // Re-run when sim transitions in/out of "active" (the only state
+    // that mounts a sim) and when the user navigates to a new map.
+    simMode === "active",
+    state.kind === "ok" ? state.mapRecord.id : null,
+    onLinkTraversed,
+  ]);
 
   // Propagate grid-lines toggle to the running scene.
   useEffect(() => {
@@ -1405,6 +1833,32 @@ export function MapEditor({
           />
           Grid lines
         </label>
+        <button
+          type="button"
+          onClick={() =>
+            setSimMode((v) => (v === "off" ? "placing" : "off"))
+          }
+          className={`rounded border px-2 py-0.5 text-xs transition ${
+            simMode === "active"
+              ? "border-ember/60 bg-ember/30 text-parchment"
+              : simMode === "placing"
+                ? "border-ember/60 bg-ember/15 text-parchment animate-pulse"
+                : "border-parchment/20 bg-ink/40 text-parchment/70 hover:bg-ink/60"
+          }`}
+          title={
+            simMode === "off"
+              ? "Drop the Party onto this map and walk it around. Tests movement, lighting, party effects, and tile links."
+              : simMode === "placing"
+                ? "Click a walkable tile to place the party. Click Simulate again to cancel."
+                : "Exit simulation."
+          }
+        >
+          {simMode === "active"
+            ? "▣ Simulating"
+            : simMode === "placing"
+              ? "○ Click a tile…"
+              : "▶ Simulate"}
+        </button>
         <div
           className="flex items-center gap-1"
           title="Zoom — also pinch on trackpad or Ctrl/⌘ + wheel. Pan: two-finger scroll, Space + drag, or middle-mouse drag."
@@ -1553,7 +2007,11 @@ export function MapEditor({
             // navigation gesture.
             overscrollBehavior: "contain",
             cursor:
-              tool === "pan" || spaceHeld ? "grab" : undefined,
+              simMode === "placing"
+                ? "crosshair"
+                : tool === "pan" || spaceHeld
+                  ? "grab"
+                  : undefined,
           }}
           onWheel={(e) => {
             // Ctrl/⌘ + wheel = zoom. Bare wheel keeps native scroll.
@@ -1627,22 +2085,62 @@ export function MapEditor({
           </div>
         </div>
 
-        <Inspector
-          selectedCell={selectedCell}
-          instance={selectedInstance}
-          base={selectedBase}
-          palette={state.palette}
-          counters={state.counters}
-          encounters={state.encounters}
-          spawns={state.spawns}
-          items={state.items}
-          onUpdate={(patch) => {
-            if (!selectedCell) return;
-            setCellFields(selectedCell.col, selectedCell.row, patch);
-          }}
-        />
+        {simMode === "active" && simInstance ? (
+          <SimPanel
+            sim={simInstance}
+            onExitSim={() => setSimMode("off")}
+          />
+        ) : simMode === "placing" ? (
+          <SimPlacingPanel onCancel={() => setSimMode("off")} />
+        ) : (
+          <Inspector
+            selectedCell={selectedCell}
+            instance={selectedInstance}
+            base={selectedBase}
+            palette={state.palette}
+            counters={state.counters}
+            encounters={state.encounters}
+            spawns={state.spawns}
+            items={state.items}
+            onUpdate={(patch) => {
+              if (!selectedCell) return;
+              setCellFields(selectedCell.col, selectedCell.row, patch);
+            }}
+          />
+        )}
       </div>
     </div>
+  );
+}
+
+/** Stand-in panel rendered while sim mode is in its "placing" step.
+ *  Replaces the Inspector during the gesture so the right rail still
+ *  has useful content (and a Cancel button) instead of going blank. */
+function SimPlacingPanel({ onCancel }: { onCancel: () => void }) {
+  return (
+    <aside className="flex w-72 shrink-0 flex-col gap-3 overflow-auto border-l border-parchment/10 bg-ink/30 p-3 text-sm text-parchment/85">
+      <header className="flex items-center justify-between gap-2">
+        <h2 className="font-display text-base text-parchment">Place Party</h2>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="rounded border border-parchment/20 px-2 py-0.5 text-xs text-parchment/70 hover:bg-ink/40"
+          title="Cancel and return to the Inspector."
+        >
+          Cancel
+        </button>
+      </header>
+      <p className="text-xs text-parchment/70">
+        Click a <span className="text-parchment">walkable</span> tile on
+        the map to drop the party there. Clicks on walls, water, or
+        other impassable tiles are ignored.
+      </p>
+      <p className="text-xs text-parchment/55">
+        Once placed, use <span className="font-mono">WASD</span> or the
+        arrow keys to move. Stepping on a tile with a link traverses to
+        the target map.
+      </p>
+    </aside>
   );
 }
 
