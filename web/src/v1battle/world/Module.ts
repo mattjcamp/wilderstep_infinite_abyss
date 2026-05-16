@@ -16,7 +16,16 @@
  * a New-Game form, or a save file.)
  */
 
-export const ACTIVE_MODULE = "the_dragon_of_dagorn";
+// Active module is settable at runtime so the launcher can point v1's
+// loaders at whichever v2 module the user picked before booting the
+// CombatScene. Defaults to "default" (v2's seed module).
+let _activeModule = "default";
+export function setActiveModule(id: string): void {
+  _activeModule = id;
+}
+export function getActiveModule(): string {
+  return _activeModule;
+}
 
 /**
  * Path prefix for static assets and data when the app is hosted under
@@ -65,7 +74,7 @@ export function withBase(path: string): string {
 
 /** Build a /-prefixed URL into the active module's data folder. */
 export function modulePath(file: string): string {
-  return appendCacheBust(withBase(`/modules/${ACTIVE_MODULE}/${file}`));
+  return appendCacheBust(withBase(`/modules/${_activeModule}/${file}`));
 }
 
 /** Build a /-prefixed URL into the shared `data/` folder (system data

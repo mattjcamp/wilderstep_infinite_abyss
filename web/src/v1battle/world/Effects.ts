@@ -1,51 +1,71 @@
 /**
- * Party-wide effects (Detect Traps, Infravision, Galadriel's Light…).
+ * Runtime status effects — reads v2's module-scoped effects.json
+ * natively.
  *
- * Effects come from `data/effects.json` and have requirements that
- * gate which effects the current party can equip. The Python game
- * supports three requirement forms:
+ * v2 differences (canonical model):
+ *   - Catalog is a flat array under `effects`, keyed by `id`
+ *     (snake_case). Same shape as items/spells/monsters.
+ *   - Per-effect parameters carried on `params` (was scattered
+ *     across separate fields in v1).
+ *   - No `requirements` clause: v2 split the "who can use this"
+ *     question off entirely. Party-effect togglability now lives
+ *     on `Ability.party_effect: true` (abilities.json). Combat's
+ *     runtime statuses (bless, curse, sleep, magic_light, ac_buff,
+ *     poisoned, …) all stay on effects.json.
+ *   - No `item_granted` flag: item-conferred effects come through
+ *     `Item.grants_effect` referencing an effect id; the gating
+ *     ("only if the item is equipped") is checked at the equipment
+ *     layer rather than baked into the effect record.
  *
- *   - `{ class: "Thief", min_level: 1 }`    — a member of that class
- *     at or above the level
- *   - `{ race:  "Dwarf" }`                  — any member of the race
- *   - `{ any_of: [<req>, <req>, …] }`       — at least one match
- *
- * Plus an `item_granted: true` flag for effects that only become
- * available once the party owns a specific item (we treat these as
- * unavailable for now — item-granted activation comes later).
+ * `canEquip` therefore degrades to a trivial "always true" — v1 had
+ * Detect Traps / Infravision sitting in this catalog with class /
+ * race requirements; in v2 those are abilities, surfaced by a
+ * different code path. Until that path gets ported, the helper just
+ * lets callers proceed.
  */
 
-import { dataPath } from "./Module";
-import type { PartyMember } from "./Party";
+import { modulePath } from "./Module";
 
-export interface Requirement {
-  class?: string;
-  min_level?: number;
-  race?: string;
-  any_of?: Requirement[];
+export interface EffectParams {
+  /** Generic buff/debuff knobs. */
+  ac_bonus?: number;
+  ac_penalty?: number;
+  attack_bonus?: number;
+  attack_penalty?: number;
+  range_bonus?: number;
+  /** Per-turn damage tick (poisoned, consumed). */
+  damage_per_turn?: number;
+  /** Per-turn HP restore (regen). */
+  amount?: number;
+  /** Repel-monsters knobs. */
+  radius?: number;
+  push_distance?: number;
+  [key: string]: unknown;
 }
 
 export interface Effect {
   id: string;
   name: string;
   description: string;
-  duration: "permanent" | number;
-  requirements?: Requirement;
-  item_granted?: boolean;
+  /** Duration is "permanent" / "instant" / "until_save" / number
+   *  (turns or steps depending on context). */
+  duration: "permanent" | "instant" | "until_save" | number | string;
+  params?: EffectParams | null;
 }
 
 interface RawEffect {
   id?: string;
   name?: string;
   description?: string;
-  duration?: "permanent" | number;
-  requirements?: Requirement;
-  item_granted?: boolean;
+  duration?: "permanent" | "instant" | "until_save" | number | string;
+  params?: EffectParams | null;
 }
 
 let _cache: Effect[] | null = null;
 
-export async function loadEffects(url = dataPath("effects.json")): Promise<Effect[]> {
+export async function loadEffects(
+  url = modulePath("effects.json"),
+): Promise<Effect[]> {
   if (_cache) return _cache;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed to load ${url}: ${res.status}`);
@@ -55,41 +75,21 @@ export async function loadEffects(url = dataPath("effects.json")): Promise<Effec
     name: e.name ?? "?",
     description: e.description ?? "",
     duration: e.duration ?? "permanent",
-    requirements: e.requirements,
-    item_granted: e.item_granted,
+    params: e.params,
   }));
   return _cache;
 }
 
 /**
- * Does the active party (or any single member) meet a single
- * requirement clause? Recurses into `any_of`.
+ * Whether the party can pick this effect. v2 doesn't carry per-effect
+ * eligibility clauses anymore — party-effect togglability moved to
+ * Ability records (abilities.json with `party_effect: true`). Callers
+ * that still go through this helper get a blanket `true`; the
+ * eligibility checks should run against the ability catalog when the
+ * Party migration lands.
  */
-function meetsClause(req: Requirement, members: PartyMember[]): boolean {
-  if (req.any_of && req.any_of.length > 0) {
-    return req.any_of.some((sub) => meetsClause(sub, members));
-  }
-  if (req.class) {
-    const min = req.min_level ?? 1;
-    return members.some(
-      (m) => m.class.toLowerCase() === req.class!.toLowerCase() && m.level >= min
-    );
-  }
-  if (req.race) {
-    return members.some((m) => m.race.toLowerCase() === req.race!.toLowerCase());
-  }
-  return false;
-}
-
-/**
- * Whether the party can equip this effect. Item-granted effects are
- * gated by item ownership, which we don't model yet — return false
- * so the UI can render them dim with an explanatory hint.
- */
-export function canEquip(effect: Effect, members: PartyMember[]): boolean {
-  if (effect.item_granted) return false;
-  if (!effect.requirements) return true;
-  return meetsClause(effect.requirements, members);
+export function canEquip(_effect: Effect): boolean {
+  return true;
 }
 
 /** Test-only cache reset. */

@@ -229,7 +229,7 @@ export function performTempleService(
   const members = activeMembers(party);
   switch (svc.id) {
     case "heal_all_hp": {
-      const wounded = members.filter((m) => m.hp > 0 && m.hp < m.maxHp);
+      const wounded = members.filter((m) => m.hp > 0 && m.hp < m.max_hp);
       if (wounded.length === 0) {
         return { ok: false, message: "No one needs healing." };
       }
@@ -237,12 +237,12 @@ export function performTempleService(
         return { ok: false, message: "Not enough gold." };
       }
       party.gold -= svc.cost;
-      for (const m of wounded) m.hp = m.maxHp;
+      for (const m of wounded) m.hp = m.max_hp;
       return { ok: true, message: "Wounds close — party fully healed." };
     }
     case "restore_all_mp": {
       const drained = members.filter(
-        (m) => m.hp > 0 && m.maxMp != null && (m.mp ?? 0) < m.maxMp,
+        (m) => m.hp > 0 && m.max_mp != null && (m.mp ?? 0) < m.max_mp,
       );
       if (drained.length === 0) {
         return { ok: false, message: "Magic reserves are already full." };
@@ -251,7 +251,7 @@ export function performTempleService(
         return { ok: false, message: "Not enough gold." };
       }
       party.gold -= svc.cost;
-      for (const m of drained) m.mp = m.maxMp;
+      for (const m of drained) m.mp = m.max_mp;
       return { ok: true, message: "Arcane power flows back to the party." };
     }
     case "cure_all_poisons": {
@@ -269,8 +269,8 @@ export function performTempleService(
         return { ok: false, message: "Not enough gold." };
       }
       party.gold -= svc.cost;
-      target.hp = target.maxHp;
-      if (target.maxMp != null) target.mp = target.maxMp;
+      target.hp = target.max_hp;
+      if (target.max_mp != null) target.mp = target.max_mp;
       return { ok: true, message: `${target.name} is returned to life!` };
     }
     default:

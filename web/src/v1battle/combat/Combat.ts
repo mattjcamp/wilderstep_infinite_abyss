@@ -56,8 +56,13 @@ import type { MonsterSpell, MonsterPassive } from "../data/monsters";
  *  narrow lets the helpers stay easy to test in isolation. */
 type MonsterSpellLike = Pick<
   MonsterSpell,
-  "type" | "damageDice" | "damageSides" | "damageBonus"
-       | "healDice"   | "healSides"   | "healBonus"
+  | "type"
+  | "damage_dice"
+  | "damage_sides"
+  | "damage_bonus"
+  | "heal_dice"
+  | "heal_sides"
+  | "heal_bonus"
 >;
 
 /** Pick the nearest enemy within `range` tiles (Chebyshev). Returns
@@ -828,7 +833,7 @@ export class Combat {
     if (!actor.monsterSpells || actor.monsterSpells.length === 0) return null;
     for (let i = 0; i < actor.monsterSpells.length; i++) {
       const spell = actor.monsterSpells[i];
-      const chance = spell.castChance | 0;
+      const chance = spell.cast_chance | 0;
       if (chance <= 0) continue;
       const roll = Math.floor(this.rng() * 100) + 1;
       if (roll > chance) continue;
@@ -849,7 +854,7 @@ export class Combat {
       }
       // sleep — refuses targets above max_target_hp; closest enemy in range.
       if (spell.type === "sleep") {
-        const max = spell.maxTargetHp ?? Infinity;
+        const max = spell.max_target_hp ?? Infinity;
         const candidates = enemies.filter((e) => e.maxHp <= max);
         const target = nearestInRange(actor, candidates, spell.range);
         if (!target) continue;
@@ -938,9 +943,9 @@ export class Combat {
   /** Sum dice + bonus for a damage spell, halving fire-typed damage
    *  when the target has a `fire_resistance` passive. */
   private rollMonsterSpellDamage(spell: MonsterSpellLike, target: Combatant): number {
-    const dice = spell.damageDice ?? 0;
-    const sides = spell.damageSides ?? 0;
-    const bonus = spell.damageBonus ?? 0;
+    const dice = spell.damage_dice ?? 0;
+    const sides = spell.damage_sides ?? 0;
+    const bonus = spell.damage_bonus ?? 0;
     if (dice <= 0 || sides <= 0) {
       // Pure-status spell (sleep / curse) with no damage payload.
       return 0;
@@ -960,9 +965,9 @@ export class Combat {
   }
 
   private rollHealAmount(spell: MonsterSpellLike, _target: Combatant): number {
-    const dice = spell.healDice ?? 1;
-    const sides = spell.healSides ?? 6;
-    const bonus = spell.healBonus ?? 0;
+    const dice = spell.heal_dice ?? 1;
+    const sides = spell.heal_sides ?? 6;
+    const bonus = spell.heal_bonus ?? 0;
     let total = bonus;
     for (let i = 0; i < dice; i++) {
       total += Math.floor(this.rng() * sides) + 1;
@@ -1004,10 +1009,10 @@ export class Combat {
         const strMod = Math.floor(((target.strength ?? 10) - 10) / 2);
         const roll = 1 + Math.floor(this.rng() * 20);
         const total = roll + strMod;
-        if (total >= eff.saveDc) {
+        if (total >= eff.save_dc) {
           this.log.push(
             `${target.name} twists free of ${attacker.name}'s jaws! ` +
-            `(STR ${roll}+${strMod}=${total} vs DC ${eff.saveDc})`
+            `(STR ${roll}+${strMod}=${total} vs DC ${eff.save_dc})`
           );
           continue;
         }
@@ -1015,15 +1020,15 @@ export class Combat {
         // we can release them near it later, then move off-board so
         // collision / targeting helpers don't see them.
         target.consumed = {
-          damagePerTurn: eff.damagePerTurn,
-          saveDc: eff.saveDc,
+          damagePerTurn: eff.damage_per_turn,
+          saveDc: eff.save_dc,
           consumerId: attacker.id,
           originalPosition: { ...target.position },
         };
         target.position = { col: -1, row: -1 };
         this.log.push(
           `${attacker.name} swallows ${target.name} whole! ` +
-          `(STR ${roll}+${strMod}=${total} vs DC ${eff.saveDc} — Failed!)`
+          `(STR ${roll}+${strMod}=${total} vs DC ${eff.save_dc} — Failed!)`
         );
         this.pendingConsumeEvents.push({
           targetId: target.id, kind: "applied", consumerId: attacker.id,

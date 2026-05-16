@@ -1,152 +1,213 @@
 /**
- * Class & race templates — port of the small slice of `data/classes/*.json`
- * and `data/races.json` the leveling system needs (HP/MP/XP per level
- * and the casting-stat source for MP gains).
+ * Class & race templates — reads v2's module-scoped catalogs natively.
  *
- * The Python game loads these lazily per-character; here we cache by
- * lowercase name on first fetch and reuse forever. Failing fetches
- * throw — leveling falls back to sane defaults via the helpers in
- * Leveling.ts so combat doesn't soft-lock if a class file is missing.
+ * v2 differences (canonical model):
+ *   - Classes live in a single `character_classes.json` (flat array
+ *     under the top-level `character_classes` key) keyed by `id`
+ *     (snake_case). v1 had one JSON per class under `data/classes/`.
+ *   - `casting_type` is an array of catalog ids (`["sorcerer"]`,
+ *     `["sorcerer","priest"]` for Druid). v1 didn't carry this on
+ *     the class — spell eligibility was per-spell `allowable_classes`.
+ *   - Abilities reference the central `abilities.json` catalog via
+ *     `{ability_id, min_level}` pairs; the name + description live
+ *     on the ability record now, not inline.
+ *   - Races live in a single `races.json` (flat array) keyed by id.
+ *
+ * v1-only fields kept here (with sane defaults) until v2 adopts them:
+ *   - `hp_per_level` / `mp_per_level` / `exp_per_level` — v2's class
+ *     records don't carry these yet. Defaults below mirror v1's
+ *     per-class JSON so the level-up math has something to read.
+ *   - `mp_source` (ability or dual-stat config) — v2 hasn't modelled
+ *     casting-stat selection yet; defaults pick from class id.
  */
 
-import { dataPath } from "./Module";
+import { modulePath } from "./Module";
 
 export interface MpSource {
-  /** Single-stat caster: which ability feeds the per-level MP gain. */
   ability?: "strength" | "dexterity" | "intelligence" | "wisdom";
-  /** Dual-stat caster (Druid). One of "higher" / "average"; absent
-   *  falls back to the lower value (Python's default). */
   abilities?: Array<"strength" | "dexterity" | "intelligence" | "wisdom">;
   mode?: "higher" | "average";
 }
 
-/**
- * Non-spell class ability — Pick Locks, Detect Traps, Turn Undead
- * (when wired as a class ability rather than a spell), Herbalism, etc.
- *
- * Mirrors the per-class JSON's `class_abilities` array. `minLevel`
- * is the level the ability becomes available; absent or `1` means
- * "available from character creation". Level-up dialogs diff this
- * against the member's old/new level to surface fresh unlocks.
- */
-export interface ClassAbility {
-  name: string;
-  description: string;
-  minLevel: number;
+/** Reference to an ability from `abilities.json`, with the level
+ *  the class earns access. Mirrors v2's character_classes.json
+ *  `abilities[]` entries. */
+export interface ClassAbilityRef {
+  ability_id: string;
+  min_level: number;
 }
 
 export interface ClassTemplate {
+  /** Snake_case identifier (Map key + canonical id). */
+  id: string;
+  /** Display label ("Fighter", "Wizard", …). */
   name: string;
-  hpPerLevel: number;
-  mpPerLevel: number;
-  expPerLevel: number;
-  /** Tile movement budget per combat turn — Wizards/Clerics 2,
-   *  Fighters 4, Thieves/Rangers 6 in the shipped data. */
+  description?: string;
+  /** Tile movement budget per combat turn. */
   range: number;
-  mpSource?: MpSource;
-  /** Non-spell abilities the class learns, with their level gates.
-   *  Empty for plain classes (Fighter, Thief, Wizard, Cleric); the
-   *  hybrid classes (Ranger, Paladin, Alchemist) carry one or more.
-   *  Optional so test fixtures and old loaders that don't set it
-   *  don't have to thread `[]` through every literal — consumers
-   *  treat undefined as the empty list. */
-  classAbilities?: ClassAbility[];
+  /** Spell catalogs this class can draw from. */
+  casting_type: string[];
+  /** References to abilities.json entries, with per-class level gates. */
+  abilities: ClassAbilityRef[];
+  /** Item-type allowlist used by equip-time gating. */
+  allowable_item_types?: string[];
+  // ── v1-only fields (defaults until v2 adopts them) ───────────────
+  /** HP gained per level above 1. */
+  hp_per_level: number;
+  /** MP gained per level above 1. */
+  mp_per_level: number;
+  /** XP curve when the race doesn't override it. */
+  exp_per_level: number;
+  /** Casting-stat selector — drives mp_gain on level-up. */
+  mp_source?: MpSource;
 }
 
 export interface RaceInfo {
+  id: string;
   name: string;
-  /** Optional XP override — Humans use 750 instead of the class default. */
-  expPerLevel?: number;
+  description?: string;
+  /** Optional XP curve override — Humans level faster. */
+  exp_per_level?: number;
+  /** Per-stat creation modifiers. */
+  stat_modifiers?: Record<string, number>;
+  /** Innate ability ids granted to every member of this race. */
+  abilities?: string[];
 }
 
+// ── Defaults v2's character_classes.json doesn't carry yet ───────
+//
+// These mirror v1's per-class JSON (data/classes/<name>.json) and
+// keep the leveling math working until v2 layers the same fields
+// onto its catalog. When that happens, drop these and read straight
+// off the v2 record.
+
+const HP_PER_LEVEL_DEFAULTS: Record<string, number> = {
+  fighter: 8,
+  paladin: 8,
+  ranger: 6,
+  alchemist: 4,
+  thief: 6,
+  druid: 6,
+  cleric: 6,
+  wizard: 4,
+};
+const MP_PER_LEVEL_DEFAULTS: Record<string, number> = {
+  fighter: 0,
+  paladin: 4,
+  ranger: 0,
+  alchemist: 4,
+  thief: 0,
+  druid: 6,
+  cleric: 6,
+  wizard: 8,
+};
+const EXP_PER_LEVEL_DEFAULT = 1500;
+const MP_SOURCE_DEFAULTS: Record<string, MpSource> = {
+  cleric: { ability: "wisdom" },
+  paladin: { ability: "wisdom" },
+  ranger: { ability: "wisdom" },
+  wizard: { ability: "intelligence" },
+  alchemist: { ability: "intelligence" },
+  druid: { abilities: ["intelligence", "wisdom"], mode: "average" },
+};
+
 interface RawClassAbility {
-  name?: string;
-  description?: string;
+  ability_id?: string;
   min_level?: number;
 }
 
 interface RawClass {
+  id?: string;
   name?: string;
-  hp_per_level?: number;
-  mp_per_level?: number;
-  exp_per_level?: number;
+  description?: string;
   range?: number;
-  mp_source?: {
-    ability?: string;
-    abilities?: string[];
-    mode?: string;
-  } | null;
-  class_abilities?: RawClassAbility[];
+  casting_type?: string[];
+  abilities?: RawClassAbility[];
+  allowable_item_types?: string[];
 }
 
-interface RawRaces {
-  [key: string]: { exp_per_level?: number } | string;
+interface RawRace {
+  id?: string;
+  name?: string;
+  description?: string;
+  exp_per_level?: number | null;
+  stat_modifiers?: Record<string, number>;
+  abilities?: string[];
 }
 
-const _classCache = new Map<string, ClassTemplate>();
+let _classCatalog: Map<string, ClassTemplate> | null = null;
 let _racesCache: Map<string, RaceInfo> | null = null;
 
-function classFromRaw(name: string, raw: RawClass): ClassTemplate {
-  const src = raw.mp_source;
-  let mpSource: MpSource | undefined;
-  if (src) {
-    if (src.ability) {
-      mpSource = { ability: src.ability as MpSource["ability"] };
-    } else if (Array.isArray(src.abilities)) {
-      mpSource = {
-        abilities: src.abilities as MpSource["abilities"],
-        mode: src.mode as MpSource["mode"],
-      };
-    }
-  }
-  // Per-ability default min_level is 1 ("known from character creation"),
-  // matching the Python game's behaviour where an `abilities` entry
-  // without `min_level` is always available. Level-up unlocks key off
-  // an explicit min_level above 1.
-  const classAbilities: ClassAbility[] = (raw.class_abilities ?? [])
-    .map((a) => ({
-      name: a.name ?? "",
-      description: a.description ?? "",
-      minLevel: typeof a.min_level === "number" ? a.min_level : 1,
-    }))
-    .filter((a) => a.name.length > 0);
+function classFromRaw(raw: RawClass): ClassTemplate | null {
+  if (!raw.id || !raw.name) return null;
+  const idLower = raw.id.toLowerCase();
   return {
-    name: raw.name ?? name,
-    hpPerLevel:  raw.hp_per_level  ?? 6,
-    mpPerLevel:  raw.mp_per_level  ?? 0,
-    expPerLevel: raw.exp_per_level ?? 1000,
-    range:       raw.range         ?? 4,
-    mpSource,
-    classAbilities,
+    id: raw.id,
+    name: raw.name,
+    description: raw.description,
+    range: typeof raw.range === "number" ? raw.range : 4,
+    casting_type: Array.isArray(raw.casting_type) ? raw.casting_type : [],
+    abilities: Array.isArray(raw.abilities)
+      ? raw.abilities
+          .filter(
+            (a): a is RawClassAbility => !!a && typeof a.ability_id === "string",
+          )
+          .map((a) => ({
+            ability_id: a.ability_id as string,
+            min_level: typeof a.min_level === "number" ? a.min_level : 1,
+          }))
+      : [],
+    allowable_item_types: raw.allowable_item_types,
+    hp_per_level: HP_PER_LEVEL_DEFAULTS[idLower] ?? 6,
+    mp_per_level: MP_PER_LEVEL_DEFAULTS[idLower] ?? 0,
+    exp_per_level: EXP_PER_LEVEL_DEFAULT,
+    mp_source: MP_SOURCE_DEFAULTS[idLower],
   };
 }
 
-/** Fetch one class template (e.g. "Cleric"). Cached after the first call. */
-export async function loadClass(name: string): Promise<ClassTemplate> {
-  const key = name.toLowerCase();
-  const cached = _classCache.get(key);
-  if (cached) return cached;
-  const url = dataPath(`classes/${key}.json`);
+/** Fetch the whole class catalog once; cached for the page session. */
+async function loadClassCatalog(): Promise<Map<string, ClassTemplate>> {
+  if (_classCatalog) return _classCatalog;
+  const url = modulePath("character_classes.json");
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed to load ${url}: ${res.status}`);
-  const raw = (await res.json()) as RawClass;
-  const tpl = classFromRaw(name, raw);
-  _classCache.set(key, tpl);
+  const raw = (await res.json()) as { character_classes?: RawClass[] };
+  const out = new Map<string, ClassTemplate>();
+  for (const r of raw.character_classes ?? []) {
+    const tpl = classFromRaw(r);
+    if (tpl) out.set(tpl.id.toLowerCase(), tpl);
+  }
+  _classCatalog = out;
+  return out;
+}
+
+/** Fetch one class template by id ("fighter", "wizard"). */
+export async function loadClass(id: string): Promise<ClassTemplate> {
+  const cat = await loadClassCatalog();
+  const tpl = cat.get(id.toLowerCase());
+  if (!tpl) throw new Error(`Unknown class id: ${id}`);
   return tpl;
 }
 
-/** Fetch the races map. Cached after the first call. */
-export async function loadRaces(url = dataPath("races.json")): Promise<Map<string, RaceInfo>> {
+/** Fetch the races map. Cached after the first call. Keyed by id. */
+export async function loadRaces(
+  url = modulePath("races.json"),
+): Promise<Map<string, RaceInfo>> {
   if (_racesCache) return _racesCache;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed to load ${url}: ${res.status}`);
-  const raw = (await res.json()) as RawRaces;
+  const raw = (await res.json()) as { races?: RawRace[] };
   const out = new Map<string, RaceInfo>();
-  for (const [name, body] of Object.entries(raw)) {
-    if (name.startsWith("_") || typeof body !== "object" || body === null) continue;
-    out.set(name, {
-      name,
-      expPerLevel: typeof body.exp_per_level === "number" ? body.exp_per_level : undefined,
+  for (const r of raw.races ?? []) {
+    if (!r.id || !r.name) continue;
+    out.set(r.id, {
+      id: r.id,
+      name: r.name,
+      description: r.description,
+      exp_per_level:
+        typeof r.exp_per_level === "number" ? r.exp_per_level : undefined,
+      stat_modifiers: r.stat_modifiers,
+      abilities: r.abilities,
     });
   }
   _racesCache = out;
@@ -155,48 +216,35 @@ export async function loadRaces(url = dataPath("races.json")): Promise<Map<strin
 
 /** Test-only cache reset. */
 export function _clearClassCaches(): void {
-  _classCache.clear();
+  _classCatalog = null;
   _racesCache = null;
 }
 
 /**
- * Race-level innate abilities the character sheet surfaces under
- * "Race Abilities". Hardcoded display data rather than derived from
- * effects.json because some race traits (Pickpocket, Tinker) live as
- * action helpers in PartyActions.ts rather than slottable effects —
- * the table here gives the UI a single place to look.
+ * Race-level innate abilities for character-sheet display. Returns a
+ * minimal {name, description} list for the given race id, sourced
+ * from `races.json` + `abilities.json`. v2 references abilities by
+ * id; callers pass the resolved Map for the lookup.
  *
- * Humans intentionally return [] — their "edge" is faster XP gain
- * (1125 vs 1500), which the level-up math already surfaces.
- */
-const RACE_ABILITIES: Record<string, Array<{ name: string; description: string }>> = {
-  Human:    [],
-  Dwarf:    [{
-    name: "Infravision",
-    description: "Dwarven eyes pierce darkness — the party sees a wider radius in unlit areas.",
-  }],
-  Halfling: [{
-    name: "Pickpocket",
-    description: "From the inventory screen, lift coins or a small item from any nearby NPC. Once per NPC per game.",
-  }],
-  Elf:      [{
-    name: "Galadriel's Light",
-    description: "Channel a soft elven starlight that lights the party's path for ~200 steps.",
-  }],
-  Gnome:    [{
-    name: "Tinker",
-    description: "Once per in-game day, fashion any single item normally found in a general store.",
-  }],
-};
-
-/**
- * Lookup the innate abilities for a given race. Case-insensitive on
- * the race name. Unknown races return an empty list rather than
- * throw — the character sheet just shows nothing under Race Abilities.
+ * Helper exists for backwards compatibility with PartyScene-style
+ * UI code that hardcoded a per-race ability list in v1; new code
+ * should read from races.json + abilities.json directly.
  */
 export function raceAbilities(
-  race: string,
+  raceId: string,
+  races: Map<string, RaceInfo>,
+  abilities: Map<string, { name?: string; description?: string }>,
 ): Array<{ name: string; description: string }> {
-  const key = race.charAt(0).toUpperCase() + race.slice(1).toLowerCase();
-  return RACE_ABILITIES[key] ?? [];
+  const race = races.get(raceId.toLowerCase());
+  if (!race?.abilities) return [];
+  const out: Array<{ name: string; description: string }> = [];
+  for (const id of race.abilities) {
+    const ab = abilities.get(id);
+    if (!ab) continue;
+    out.push({
+      name: ab.name ?? id,
+      description: ab.description ?? "",
+    });
+  }
+  return out;
 }

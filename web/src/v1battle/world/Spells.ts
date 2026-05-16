@@ -1,13 +1,33 @@
 /**
- * Spells loader.
+ * Spells loader — reads v2's module-scoped spells.json natively.
  *
- * Mirrors `data/spells.json` from the Python project. The full schema
- * carries combat-only fields (targeting, sfx, hit_sfx, etc.) — we
- * keep them around as opaque so the data round-trips cleanly, but
- * the menu-cast flow only reads a small subset.
+ * v2 differences (these are the canonical model now):
+ *   - `casting_type` is a single string (`"sorcerer"` / `"priest"`),
+ *     not an array. Class eligibility comes from matching this against
+ *     the class's `casting_type[]` list (Druid: ["sorcerer","priest"]).
+ *   - `allowable_classes` is GONE — derived from casting_type + classes.
+ *     Helpers that need class eligibility now take a ClassTemplate ref
+ *     instead of a class-name string.
+ *   - The effect descriptor split: v1 stored `effect_type` (e.g. "heal",
+ *     "bless") + `effect_value` flat on the spell. v2 uses `action`
+ *     (the discriminator) + `action_params` (the bag). The mapping is:
+ *
+ *       v1 effect_type === "heal"             ↔  v2 action === "heal"
+ *       v1 effect_type === "bless"            ↔  v2 action === "apply_effect", params.effect_id === "bless"
+ *       v1 effect_type === "fireball"         ↔  v2 action === "aoe_damage"
+ *       etc.
+ *
+ *     The Spell type below carries BOTH v2's `action`/`action_params`
+ *     and legacy/computed `effect_type`/`effect_value` fields. v2's
+ *     fields are populated from JSON directly. The legacy fields are
+ *     computed at load time so the 20+ CombatScene branches that read
+ *     them keep working without rewrites. As consumers migrate to read
+ *     `action`/`action_params` directly, the legacy fields can come
+ *     off the type.
  */
 
-import { dataPath } from "./Module";
+import { modulePath } from "./Module";
+import type { ClassTemplate } from "./Classes";
 import type { PartyMember } from "./Party";
 
 export interface SpellEffectValue {
@@ -16,59 +36,77 @@ export interface SpellEffectValue {
   dice_sides?: number;
   stat_bonus?: string;
   min_damage?: number;
+  min_heal?: number;
   ac_bonus?: number;
   range_bonus?: number;
-  /** Bless bumps every ally's d20 hit roll by this amount. */
   attack_bonus?: number;
-  /** Curse subtracts this from the target's AC. */
   ac_penalty?: number;
-  /** Curse subtracts this from the target's d20 hit roll. */
   attack_penalty?: number;
   max_target_hp?: number;
   save_dc_stat?: string;
   save_dc_base?: number;
   save_stat?: string;
   hp_amount?: number;
+  /** v2's apply_effect / cure_effect spells carry the target effect id here. */
+  effect_id?: string;
+  radius?: number;
+  damage_type?: string;
+  scope?: string;
+  heal_percent?: number;
+  mp_percent?: number;
+  cure_effects?: string[];
   [key: string]: unknown;
 }
 
 export interface Spell {
+  // ── v2 canonical fields ──────────────────────────────────────
   id: string;
   name: string;
   description: string;
-  allowable_classes: string[];
+  /** Single casting catalog: `"sorcerer"` or `"priest"`. */
   casting_type: string;
-  /** Minimum caster level when no per-class table is given. */
   min_level: number;
-  /** Per-class minimum levels — overrides `min_level` when present. */
   class_min_levels?: Record<string, number>;
   mp_cost: number;
-  duration: "instant" | number;
-  effect_type: string;
-  effect_value?: SpellEffectValue;
+  duration: "instant" | number | string;
+  /** Discriminator for the resolver — `"damage"`, `"heal"`,
+   *  `"apply_effect"`, `"cure_effect"`, `"teleport"`, `"summon"`,
+   *  `"aoe_damage"`, `"restore"`, `"knock"`, etc. */
+  action: string;
+  /** Action-specific parameters. Shape depends on `action`. */
+  action_params?: SpellEffectValue | null;
   range?: number;
   targeting?: string;
-  /** Where the spell may be cast: any of "battle"/"overworld"/"town"/"dungeon". */
+  /** Where the spell can be cast: `"battle"` (in combat) or
+   *  `"party"` (out of combat). */
   usable_in: string[];
   icon?: string;
-  /** SFX name played when the spell is cast (matches Sfx catalog). */
   sfx?: string;
-  /** SFX name played when the spell hits/lands (matches Sfx catalog). */
   hit_sfx?: string | null;
+
+  // ── Legacy / derived fields (computed at load) ───────────────
+  // These mirror v1's spell shape so CombatScene's effect_type-based
+  // branches keep working during the migration. Compute once at
+  // load; do not write to these elsewhere.
+  /** Same content as `action`, except apply_effect / cure_effect
+   *  spells return the underlying effect id ("bless", "curse", etc.)
+   *  matching v1's `effect_type` strings. */
+  effect_type: string;
+  /** Same object as `action_params`. */
+  effect_value?: SpellEffectValue;
 }
 
 interface RawSpell {
   id?: string;
   name?: string;
   description?: string;
-  allowable_classes?: string[];
   casting_type?: string;
   min_level?: number;
   class_min_levels?: Record<string, number>;
   mp_cost?: number;
-  duration?: "instant" | number;
-  effect_type?: string;
-  effect_value?: SpellEffectValue;
+  duration?: "instant" | number | string;
+  action?: string;
+  action_params?: SpellEffectValue | null;
   range?: number;
   targeting?: string;
   usable_in?: string[] | string;
@@ -79,7 +117,9 @@ interface RawSpell {
 
 let _cache: Spell[] | null = null;
 
-export async function loadSpells(url = dataPath("spells.json")): Promise<Spell[]> {
+export async function loadSpells(
+  url = modulePath("spells.json"),
+): Promise<Spell[]> {
   if (_cache) return _cache;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed to load ${url}: ${res.status}`);
@@ -94,62 +134,90 @@ export function spellFromRaw(s: RawSpell): Spell {
     : typeof s.usable_in === "string"
       ? [s.usable_in]
       : [];
+  const action = s.action ?? "";
+  const params = s.action_params ?? {};
+  // Compute the legacy effect_type:
+  //   - apply_effect / cure_effect → params.effect_id (e.g. "bless")
+  //   - everything else            → the action string itself
+  const effectType =
+    (action === "apply_effect" || action === "cure_effect") &&
+    typeof params.effect_id === "string"
+      ? params.effect_id
+      : action;
   return {
     id: s.id ?? "",
     name: s.name ?? "?",
     description: s.description ?? "",
-    allowable_classes: s.allowable_classes ?? [],
     casting_type: s.casting_type ?? "",
     min_level: s.min_level ?? 1,
     class_min_levels: s.class_min_levels,
     mp_cost: s.mp_cost ?? 0,
     duration: s.duration ?? "instant",
-    effect_type: s.effect_type ?? "",
-    effect_value: s.effect_value,
+    action,
+    action_params: s.action_params,
     range: s.range,
     targeting: s.targeting,
     usable_in: usable,
     icon: s.icon,
     sfx: s.sfx,
     hit_sfx: s.hit_sfx,
+    // Legacy/derived
+    effect_type: effectType,
+    effect_value: params as SpellEffectValue,
   };
 }
 
-/** Per-class minimum level required to cast — `class_min_levels` wins over `min_level`. */
+/** Per-class minimum level required to cast — `class_min_levels` wins
+ *  over `min_level`. Class identifier is the lowercase class id. */
 export function minLevelFor(spell: Spell, klass: string): number {
-  const ck = spell.class_min_levels?.[klass];
+  const ck = spell.class_min_levels?.[klass.toLowerCase()];
   if (typeof ck === "number" && Number.isFinite(ck)) return ck;
   return spell.min_level;
 }
 
+/** True when a class with `template` as its template can cast spells
+ *  of `spell.casting_type`. v2 derives eligibility from the class's
+ *  casting_type[] list rather than a per-spell allowlist. */
+export function classCanCast(spell: Spell, template: ClassTemplate | null): boolean {
+  if (!template) return false;
+  return template.casting_type.includes(spell.casting_type);
+}
+
 /**
- * Active members who can cast this spell — must have the class, meet
- * the level threshold, be alive, and have at least `mp_cost` MP.
+ * Active members who can cast this spell. Caller passes the class-
+ * template map so we can check casting_type eligibility (v2's gate)
+ * + the level threshold + MP cost.
  */
-export function castersFor(spell: Spell, members: PartyMember[]): PartyMember[] {
+export function castersFor(
+  spell: Spell,
+  members: PartyMember[],
+  classTemplates: Map<string, ClassTemplate>,
+): PartyMember[] {
   return members.filter((m) => {
     if (m.hp <= 0) return false;
-    if (!spell.allowable_classes.includes(m.class)) return false;
+    const tpl = classTemplates.get(m.class.toLowerCase()) ?? null;
+    if (!classCanCast(spell, tpl)) return false;
     if (m.level < minLevelFor(spell, m.class)) return false;
-    if (m.maxMp == null || (m.mp ?? 0) < spell.mp_cost) return false;
+    if (m.max_mp == null || (m.mp ?? 0) < spell.mp_cost) return false;
     return true;
   });
 }
 
 /**
  * Spells the player can pick from the Party Inventory's CAST menu —
- * usable outside of combat (the spell has at least one non-"battle"
- * context) and at least one party member can cast it right now.
+ * usable outside of combat AND at least one party member can cast
+ * it right now.
  */
 export function spellsCastableFromMenu(
   spells: Spell[],
   members: PartyMember[],
+  classTemplates: Map<string, ClassTemplate>,
 ): Spell[] {
   return spells.filter((s) => {
     if (s.usable_in.length === 0) return false;
     const outsideCombat = s.usable_in.some((c) => c !== "battle");
     if (!outsideCombat) return false;
-    return castersFor(s, members).length > 0;
+    return castersFor(s, members, classTemplates).length > 0;
   });
 }
 

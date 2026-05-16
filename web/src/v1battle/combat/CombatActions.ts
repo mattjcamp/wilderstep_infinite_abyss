@@ -15,7 +15,8 @@
 import type { Combatant, AttackResult } from "../types";
 import type { Item } from "../world/Items";
 import { isCombatUsable } from "../world/Items";
-import type { Spell } from "../world/Spells";
+import { classCanCast, type Spell } from "../world/Spells";
+import type { ClassTemplate } from "../world/Classes";
 import type { PartyMember } from "../world/Party";
 import { rollAttack, rollDamage } from "./engine";
 import type { RNG } from "../rng";
@@ -203,16 +204,16 @@ export function rollSpellHeal(spell: Spell, caster: Combatant, rng: RNG): number
 }
 
 /**
- * Whether a spell is castable in combat by this combatant's class
- * (we look up class via the bridge in the scene). Convenience
- * filter over spell.usable_in + spell.allowable_classes.
+ * Whether a spell is castable in combat by a class with `template`
+ * as its class template. v2 derives eligibility from
+ * `class.casting_type[]` matching `spell.casting_type`.
  */
 export function spellIsCombatCastable(
-  spell: Spell, callerClass: string,
+  spell: Spell,
+  template: ClassTemplate | null,
 ): boolean {
   if (!spell.usable_in.includes("battle")) return false;
-  return spell.allowable_classes
-    .some((c) => c.toLowerCase() === callerClass.toLowerCase());
+  return classCanCast(spell, template);
 }
 
 /**
@@ -335,7 +336,7 @@ export function isRanged(item: Item): boolean {
  * the action stays usable when new weapon types are added.
  */
 export function maxRangeFor(item: Item): number {
-  switch (item.itemType) {
+  switch (item.item_type) {
     case "long_bow":  return 10;
     case "crossbow":  return 8;
     case "short_bow": return 6;
@@ -648,7 +649,7 @@ export function useCombatItem(
       };
     }
     case "heal_mp": {
-      if (!member || member.maxMp == null) {
+      if (!member || member.max_mp <= 0) {
         return {
           ok: false,
           effect,
@@ -656,8 +657,8 @@ export function useCombatItem(
           endsTurn: false,
         };
       }
-      const cur = member.mp ?? 0;
-      if (cur >= member.maxMp) {
+      const cur = member.mp;
+      if (cur >= member.max_mp) {
         return {
           ok: false,
           effect,
@@ -668,7 +669,7 @@ export function useCombatItem(
       // Python: restore = power + 1d4.
       const dice = rollDamage(1, 4, 0, false, rng);
       const restore = Math.max(1, power + dice);
-      const next = Math.min(member.maxMp, cur + restore);
+      const next = Math.min(member.max_mp, cur + restore);
       const actual = next - cur;
       member.mp = next;
       return {

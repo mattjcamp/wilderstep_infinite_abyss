@@ -20,7 +20,7 @@
 import type { PartyMember } from "./Party";
 import type { ClassTemplate, RaceInfo } from "./Classes";
 import type { Spell } from "./Spells";
-import { minLevelFor } from "./Spells";
+import { classCanCast, minLevelFor } from "./Spells";
 
 /** A class ability or spell that becomes available at this level-up. */
 export interface UnlockedSpell {
@@ -56,7 +56,7 @@ function abilityMod(stat: number): number {
 }
 
 function castingMod(member: PartyMember, tpl: ClassTemplate): number {
-  const src = tpl.mpSource;
+  const src = tpl.mp_source;
   if (!src) return 0;
   if (src.ability) {
     return abilityMod(member[src.ability]);
@@ -79,14 +79,15 @@ export function xpForNextLevel(
   tpl: ClassTemplate,
   race: RaceInfo | null,
 ): number {
-  const xpPer = race?.expPerLevel ?? tpl.expPerLevel;
+  const xpPer = race?.exp_per_level ?? tpl.exp_per_level;
   return member.level * xpPer;
 }
 
 /**
  * Spells the member's class learns at exactly `level`. Filters the
- * full catalog against the class's allowable list and per-class
- * level overrides. Used at level-up to surface "you can now cast X".
+ * full catalog against the class's casting catalogs + per-class
+ * level overrides. v2 derives eligibility from
+ * `class.casting_type[]` matching `spell.casting_type`.
  *
  * Pure helper — exported so the same predicate can drive a "What's
  * next?" preview elsewhere in the UI.
@@ -95,11 +96,11 @@ export function spellsUnlockedAt(
   klass: string,
   level: number,
   spells: ReadonlyArray<Spell>,
+  classTemplate: ClassTemplate | null,
 ): UnlockedSpell[] {
-  const klassLower = klass.toLowerCase();
   const out: UnlockedSpell[] = [];
   for (const s of spells) {
-    if (!s.allowable_classes.some((c) => c.toLowerCase() === klassLower)) continue;
+    if (!classCanCast(s, classTemplate)) continue;
     if (minLevelFor(s, klass) !== level) continue;
     out.push({
       name: s.name,
@@ -115,17 +116,22 @@ export function abilitiesUnlockedAt(
   tpl: ClassTemplate,
   level: number,
 ): UnlockedAbility[] {
-  return (tpl.classAbilities ?? [])
-    .filter((a) => a.minLevel === level)
-    .map((a) => ({ name: a.name, description: a.description }));
+  // v2 stores class abilities as {ability_id, min_level} pairs;
+  // name + description live on abilities.json. The level-up UI is
+  // off the visual-test path right now, so this returns the
+  // ability id as a placeholder name until the consumer threads
+  // the abilities catalog through.
+  return (tpl.abilities ?? [])
+    .filter((a) => a.min_level === level)
+    .map((a) => ({ name: a.ability_id, description: "" }));
 }
 
 /**
  * Add XP and apply any level-ups in place. Returns one event per
  * level gained so the caller can show messages / play sfx / animate.
  *
- * Mutates `member.exp`, `member.level`, `member.maxHp`, `member.hp`,
- * and (for casters) `member.maxMp`, `member.mp`. HP / MP are bumped
+ * Mutates `member.exp`, `member.level`, `member.max_hp`, `member.hp`,
+ * and (for casters) `member.max_mp`, `member.mp`. HP / MP are bumped
  * by the gain on each level so a wounded member partially heals on
  * level-up — same behaviour as the Python game.
  *
@@ -143,28 +149,28 @@ export function awardXp(
   if (xp <= 0) return [];
   member.exp += xp;
   const events: LevelUpEvent[] = [];
-  const xpPer = race?.expPerLevel ?? tpl.expPerLevel;
+  const xpPer = race?.exp_per_level ?? tpl.exp_per_level;
   while (member.exp >= member.level * xpPer) {
     member.level += 1;
 
-    const hpGain = Math.max(1, tpl.hpPerLevel + abilityMod(member.constitution));
-    member.maxHp += hpGain;
-    member.hp = Math.min(member.hp + hpGain, member.maxHp);
+    const hpGain = Math.max(1, tpl.hp_per_level + abilityMod(member.constitution));
+    member.max_hp += hpGain;
+    member.hp = Math.min(member.hp + hpGain, member.max_hp);
 
     let mpGain = 0;
-    if (tpl.mpPerLevel > 0) {
-      mpGain = Math.max(0, tpl.mpPerLevel + castingMod(member, tpl));
+    if (tpl.mp_per_level > 0) {
+      mpGain = Math.max(0, tpl.mp_per_level + castingMod(member, tpl));
       if (mpGain > 0) {
-        if (member.maxMp == null) member.maxMp = 0;
+        if (member.max_mp == null) member.max_mp = 0;
         if (member.mp == null) member.mp = 0;
-        member.maxMp += mpGain;
-        member.mp = Math.min(member.mp + mpGain, member.maxMp);
+        member.max_mp += mpGain;
+        member.mp = Math.min(member.mp + mpGain, member.max_mp);
       }
     }
 
     // Diff against the *new* level — these are unlocks the player
     // didn't have a moment ago.
-    const newSpells = spellsUnlockedAt(member.class, member.level, spells);
+    const newSpells = spellsUnlockedAt(member.class, member.level, spells, tpl);
     const newAbilities = abilitiesUnlockedAt(tpl, member.level);
 
     let msg = `${member.name} reached Level ${member.level}! HP+${hpGain}`;

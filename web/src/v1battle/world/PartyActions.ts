@@ -10,77 +10,65 @@
  * caller wants the same effect (e.g., a future save/load layer).
  */
 
-import type { Party, PartyMember, EquipmentSlots, InventoryItem } from "./Party";
+import type { Party, PartyMember, EquippedSlot, InventoryItem } from "./Party";
 import type { Effect } from "./Effects";
 import { canEquip } from "./Effects";
 import type { Spell } from "./Spells";
 import { castersFor } from "./Spells";
-import type { Item, EquipSlot } from "./Items";
+import type { Item } from "./Items";
 import { addToStash } from "./TownActions";
 
-// ── Slot name bridge ───────────────────────────────────────────────
-// items.json uses snake_case ("right_hand"); EquipmentSlots uses
-// camelCase ("rightHand"). Centralise the mapping here so callers
-// don't have to think about it.
-
-const SLOT_TO_FIELD: Record<EquipSlot, keyof EquipmentSlots> = {
-  right_hand: "rightHand",
-  left_hand:  "leftHand",
-  body:       "body",
-  head:       "head",
-};
+// ── Slot handling ──────────────────────────────────────────────────
+// v2 collapsed equipment slots to {hands, body}. Item.slots may still
+// include "head" for forward-compat (helmets), but PartyMember.equipped
+// only carries hands+body, so we filter at the seam.
 
 /**
- * Equip slots the player UI currently surfaces. Two rows ship today:
- *
- *   - `right_hand` — drives the "Hands" row (the player's weapon).
- *     The combat math reads attack/damage off this slot; offhand
- *     content didn't actually move the dice, so we don't surface a
- *     second hand row that promised a buff it couldn't deliver.
- *   - `body`       — body armor, drives the "Body" row.
- *
- * `left_hand` and `head` stay in the EquipSlot type for forward
- * compat (offhand weapons and helmets will return when the matching
- * gameplay + UI lands), but every player-facing path filters through
- * this list so empty rows the player can't fill don't show up as
- * "broken".
+ * Equip slots the PartyMember model carries today. Ships as `hands`
+ * and `body`; helmet support will land alongside a Head slot when the
+ * matching gameplay returns.
  */
-export const SUPPORTED_EQUIP_SLOTS: readonly EquipSlot[] = [
-  "right_hand", "body",
+export const SUPPORTED_EQUIP_SLOTS: readonly EquippedSlot[] = [
+  "hands", "body",
 ];
 
 /**
  * The slots an item can land in given the currently-supported set.
  * Filters the catalog's `slots` list to entries the player can
  * actually target. Returns `[]` for items whose only slots are
- * unsupported — equip helpers treat that as "not equippable".
+ * unsupported (head-only items, etc.) — equip helpers treat that as
+ * "not equippable".
  */
 export function equippableSlots(
   item: Item,
-  supported: readonly EquipSlot[] = SUPPORTED_EQUIP_SLOTS,
-): EquipSlot[] {
-  if (!item.characterCanEquip) return [];
-  return item.slots.filter((s) => supported.includes(s));
+  supported: readonly EquippedSlot[] = SUPPORTED_EQUIP_SLOTS,
+): EquippedSlot[] {
+  if (!item.character_can_equip) return [];
+  const out: EquippedSlot[] = [];
+  for (const s of item.slots ?? []) {
+    // `ItemSlot` is a superset of `EquippedSlot` ("head" only lives
+    // on items today). Narrow by membership in the supported list.
+    if (s === "hands" || s === "body") {
+      if (supported.includes(s)) out.push(s);
+    }
+  }
+  return out;
 }
 
-// Slot labels used in feedback/log lines (e.g. "Gimli equips Sword as
-// hands."). The collapsed-UI model uses "hands" for the right-hand
-// slot since the player no longer thinks of it as primary-vs-offhand.
-const SLOT_LABEL: Record<EquipSlot, string> = {
-  right_hand: "hands",
-  left_hand:  "offhand",
-  body:       "body armor",
-  head:       "helmet",
+// Slot labels used in feedback/log lines.
+const SLOT_LABEL: Record<EquippedSlot, string> = {
+  hands: "hands",
+  body:  "body armor",
 };
 
-/** Read the item name in a slot (camelCase field). */
-function readSlot(member: PartyMember, slot: EquipSlot): string | null {
-  return member.equipped[SLOT_TO_FIELD[slot]];
+/** Read the item id in a slot. */
+function readSlot(member: PartyMember, slot: EquippedSlot): string | null {
+  return member.equipped[slot];
 }
 
-/** Write the slot in a way the EquipmentSlots type accepts. */
-function writeSlot(member: PartyMember, slot: EquipSlot, value: string | null): void {
-  member.equipped[SLOT_TO_FIELD[slot]] = value;
+/** Write the slot. */
+function writeSlot(member: PartyMember, slot: EquippedSlot, value: string | null): void {
+  member.equipped[slot] = value;
 }
 
 export interface ActionResult {
@@ -124,10 +112,7 @@ export function findRace(
 
 /** True when the party currently has the named effect equipped. */
 export function partyHasEffect(party: Party, effectId: string): boolean {
-  for (const v of Object.values(party.partyEffects)) {
-    if (v === effectId) return true;
-  }
-  return false;
+  return party.party_effects.includes(effectId);
 }
 
 // ── Active-effects readout (HUD strip) ────────────────────────────
@@ -182,7 +167,7 @@ const LIGHT_EFFECT_IDS: ReadonlySet<string> = new Set([
 ]);
 
 /**
- * Recompute `party.itemGrantedEffectIds` from the currently-equipped
+ * Recompute `party.item_granted_effect_ids` from the currently-equipped
  * gear of every alive active member. Mirrors the Python game's
  * `Party.get_item_granted_effects`:
  *
@@ -201,20 +186,20 @@ export function refreshItemGrantedEffects(
 ): void {
   const seen = new Set<string>();
   const ids: string[] = [];
-  for (const idx of party.activeParty) {
-    const m = party.roster[idx];
-    if (!m || m.hp <= 0) continue;
-    for (const slot of ["rightHand", "leftHand", "body", "head"] as const) {
-      const itemName = m.equipped[slot];
-      if (!itemName) continue;
-      const def = items.get(itemName);
-      const eid = def?.grantsEffect;
+  // v2: every roster member is active.
+  for (const m of party.roster) {
+    if (m.hp <= 0) continue;
+    for (const slot of ["hands", "body"] as const) {
+      const itemId = m.equipped[slot];
+      if (!itemId) continue;
+      const def = items.get(itemId);
+      const eid = def?.grants_effect;
       if (!eid || seen.has(eid)) continue;
       seen.add(eid);
       ids.push(eid);
     }
   }
-  party.itemGrantedEffectIds = ids;
+  party.item_granted_effect_ids = ids;
 }
 
 /** Display-name fallback for the handful of partyEffects ids the
@@ -254,48 +239,48 @@ export function summariseActiveEffects(
   // Torch counter — synthetic entry. Show whenever there are steps
   // remaining, even in lit scenes (the player wants to know their
   // light inventory before stepping into a dark area).
-  if (party.torchSteps > 0) {
+  if (party.torch_steps > 0) {
     out.push({
       id: "",
       name: "Torch",
       isLight: true,
-      charges: party.torchSteps,
+      charges: party.torch_steps,
     });
   }
   // Light spell counter — separate from Torch so the player can see
   // a magical light source and a physical one running in parallel.
-  if (party.magicLightSteps > 0) {
+  if (party.magic_light_steps > 0) {
     out.push({
       id: "",
       name: "Magic Light",
       isLight: true,
-      charges: party.magicLightSteps,
+      charges: party.magic_light_steps,
     });
   }
 
-  // Slotted partyEffects. Walk `effect_1`..`effect_N` in id order so
-  // the readout is stable across saves.
-  for (const slot of Object.keys(party.partyEffects).sort()) {
-    const id = party.partyEffects[slot];
+  // party_effects is a flat list in v2 — walk it in order. The
+  // ordering is stable across saves because the player's toggle
+  // order is preserved.
+  for (const id of party.party_effects) {
     if (!id) continue;
     const isLight = LIGHT_EFFECT_IDS.has(id);
     let charges: number | undefined;
     // Only Galadriel's Light burns down today. Other effects either
     // tick on their own clock (Detect Traps is permanent) or aren't
     // wired into the HUD yet.
-    if (id === "galadriels_light" && party.galadrielsLightSteps > 0) {
-      charges = party.galadrielsLightSteps;
+    if (id === "galadriels_light" && party.galadriels_light_steps > 0) {
+      charges = party.galadriels_light_steps;
     }
     out.push({ id, name: nameFor(id), isLight, charges });
   }
 
   // Item-granted effects — Sun Sword Aura while the Sun Sword is
-  // equipped, etc. Walked separately from `partyEffects` so they
-  // don't consume one of the four manual slots; deduped against
-  // anything already in the readout (so toggling a slotted effect
-  // ON while the same id is also item-granted doesn't double-render).
+  // equipped, etc. Walked separately from `party_effects` so they
+  // don't compete with manually-toggled effects; deduped against
+  // anything already in the readout (so toggling an effect ON while
+  // the same id is also item-granted doesn't double-render).
   const seenIds = new Set(out.map((o) => o.id).filter((id) => id !== ""));
-  for (const id of party.itemGrantedEffectIds ?? []) {
+  for (const id of party.item_granted_effect_ids ?? []) {
     if (seenIds.has(id)) continue;
     seenIds.add(id);
     out.push({
@@ -339,7 +324,7 @@ export function partyLightRadius(party: Party, defaultRadius: number): number {
   // Light spell and physical torch share the boost — both are
   // illumination orbs. Either being active is enough; their counters
   // tick independently in the dark-scene move handlers.
-  if (party.magicLightSteps > 0 || party.torchSteps > 0) {
+  if (party.magic_light_steps > 0 || party.torch_steps > 0) {
     return Math.max(defaultRadius, PARTY_LIGHT_BOOST);
   }
   return defaultRadius;
@@ -368,7 +353,7 @@ export function partyLightTint(party: Party): PartyTint | null {
   if (partyHasEffect(party, "galadriels_light")) {
     return { color: 0x9bb6e0, alphaScale: 0.45 };
   }
-  if (party.magicLightSteps > 0 || party.torchSteps > 0) {
+  if (party.magic_light_steps > 0 || party.torch_steps > 0) {
     // Warm orange flicker — much smaller alpha than Galadriel's so it
     // reads as a candle pool, not a magical glow. Light spell and
     // torch share the tint since both are "an illumination orb";
@@ -382,82 +367,69 @@ export function partyLightTint(party: Party): PartyTint | null {
 // ── Effects ────────────────────────────────────────────────────────
 
 /**
- * Assign an effect into the first empty `effect_N` slot of the party.
+ * Toggle an effect on for the party. v2 has no slot cap — the effect
+ * is appended to `party.party_effects` and stays until removed.
  *
- * Fails if the party can't equip it (requirements unmet) or if every
- * slot is already filled.
+ * Fails if the party can't equip it (in v2, `canEquip` always
+ * returns true — eligibility now lives on Ability records).
  */
 export function assignEffectToParty(
   party: Party,
   effect: Effect,
   members: PartyMember[],
 ): ActionResult {
-  if (!canEquip(effect, members)) {
-    return { ok: false, message: `Cannot assign ${effect.name} — requirements not met.` };
+  if (!canEquip(effect)) {
+    return {
+      ok: false,
+      message: `Cannot assign ${effect.name} — requirements not met.`,
+    };
   }
-  // Already equipped? Treat as success no-op.
-  for (const v of Object.values(party.partyEffects)) {
-    if (v === effect.id) {
-      return { ok: true, message: `${effect.name} is already active.` };
-    }
+  void members;
+  // Already active? Treat as success no-op.
+  if (party.party_effects.includes(effect.id)) {
+    return { ok: true, message: `${effect.name} is already active.` };
   }
-  // First null slot wins.
-  const slots = Object.keys(party.partyEffects).sort();
-  for (const slot of slots) {
-    if (party.partyEffects[slot] == null) {
-      party.partyEffects[slot] = effect.id;
-      // Galadriel's Light burns out after `duration` steps — seed the
-      // counter from effects.json so the web version matches the
-      // Python game's 500-step limit.
-      if (effect.id === "galadriels_light" && typeof effect.duration === "number") {
-        party.galadrielsLightSteps = effect.duration;
-      }
-      return { ok: true, message: `${effect.name} active.` };
-    }
+  party.party_effects.push(effect.id);
+  // Galadriel's Light burns out after `duration` steps — seed the
+  // counter from effects.json so the web version matches the
+  // Python game's 500-step limit.
+  if (effect.id === "galadriels_light" && typeof effect.duration === "number") {
+    party.galadriels_light_steps = effect.duration;
   }
-  return { ok: false, message: "All four effect slots are full." };
+  return { ok: true, message: `${effect.name} active.` };
 }
 
 /**
- * Remove an effect from whatever slot holds it. No-op success when
- * the effect isn't currently equipped.
+ * Remove an effect from the party. No-op success when the effect
+ * isn't currently active.
  */
 export function removeEffectFromParty(
   party: Party,
   effect: Effect,
 ): ActionResult {
-  for (const slot of Object.keys(party.partyEffects)) {
-    if (party.partyEffects[slot] === effect.id) {
-      party.partyEffects[slot] = null;
-      if (effect.id === "galadriels_light") {
-        party.galadrielsLightSteps = 0;
-      }
-      return { ok: true, message: `${effect.name} dispelled.` };
-    }
+  const idx = party.party_effects.indexOf(effect.id);
+  if (idx < 0) {
+    return { ok: true, message: `${effect.name} was not active.` };
   }
-  return { ok: true, message: `${effect.name} was not active.` };
+  party.party_effects.splice(idx, 1);
+  if (effect.id === "galadriels_light") {
+    party.galadriels_light_steps = 0;
+  }
+  return { ok: true, message: `${effect.name} dispelled.` };
 }
 
 /**
  * Decrement Galadriel's Light by one step. When the counter hits zero
- * the effect is cleared from whichever slot holds it. Returns true on
- * the step that the light fades, so callers can show a message.
- *
- * Mirrors the Python game's `_tick_galadriels_light` (called in
- * overworld, town, and dungeon move handlers — every move ticks,
- * regardless of whether the scene is dark).
+ * the effect is removed from `party_effects`. Returns true on the
+ * step that the light fades, so callers can show a message.
  */
 export function tickGaladrielsLight(party: Party): boolean {
   if (!partyHasEffect(party, "galadriels_light")) return false;
-  if (party.galadrielsLightSteps <= 0) return false;
-  party.galadrielsLightSteps -= 1;
-  if (party.galadrielsLightSteps > 0) return false;
-  for (const slot of Object.keys(party.partyEffects)) {
-    if (party.partyEffects[slot] === "galadriels_light") {
-      party.partyEffects[slot] = null;
-      break;
-    }
-  }
+  if (party.galadriels_light_steps <= 0) return false;
+  party.galadriels_light_steps -= 1;
+  if (party.galadriels_light_steps > 0) return false;
+  const idx = party.party_effects.indexOf("galadriels_light");
+  if (idx >= 0) party.party_effects.splice(idx, 1);
   return true;
 }
 
@@ -476,8 +448,9 @@ export function giveStashItemTo(
   if (stashIndex < 0 || stashIndex >= party.inventory.length) {
     return { ok: false, message: "Item not found in stash." };
   }
-  const member = party.roster[party.activeParty[memberIndex] ?? -1];
-  if (!member) return { ok: false, message: "No active member in that slot." };
+  // v2: roster IS the active list. Index straight in.
+  const member = party.roster[memberIndex];
+  if (!member) return { ok: false, message: "No party member in that slot." };
   const item = party.inventory[stashIndex];
   party.inventory.splice(stashIndex, 1);
   member.inventory.push(item);
@@ -494,8 +467,8 @@ export function returnItemToStash(
   memberIndex: number,
   itemIndex: number,
 ): ActionResult {
-  const member = party.roster[party.activeParty[memberIndex] ?? -1];
-  if (!member) return { ok: false, message: "No active member in that slot." };
+  const member = party.roster[memberIndex];
+  if (!member) return { ok: false, message: "No party member in that slot." };
   if (itemIndex < 0 || itemIndex >= member.inventory.length) {
     return { ok: false, message: "Item not found." };
   }
@@ -560,24 +533,24 @@ export type DurabilityResult =
  */
 export function useEquippedDurability(
   member: PartyMember,
-  slot: EquipSlot,
+  slot: EquippedSlot,
   items: Map<string, Item>,
 ): DurabilityResult {
   const itemName = readSlot(member, slot);
   if (!itemName) return { kind: "empty" };
   const max = getItemMaxDurability(itemName, items);
   if (max == null) return { kind: "indestructible" };
-  let current = member.equippedDurability[slot];
+  let current = member.equipped_durability[slot];
   if (current == null) current = max;
   if (current > max) current = max;     // editor-changed-max guard
   current -= 1;
   if (current <= 0) {
     // Snap the slot — the item shatters out of existence.
     writeSlot(member, slot, null);
-    member.equippedDurability[slot] = null;
+    member.equipped_durability[slot] = null;
     return { kind: "broke", itemName };
   }
-  member.equippedDurability[slot] = current;
+  member.equipped_durability[slot] = current;
   return { kind: "ok", current, max };
 }
 
@@ -588,14 +561,14 @@ export function useEquippedDurability(
  */
 export function getSlotDurability(
   member: PartyMember,
-  slot: EquipSlot,
+  slot: EquippedSlot,
   items: Map<string, Item>,
 ): { current: number; max: number } | null {
   const itemName = readSlot(member, slot);
   if (!itemName) return null;
   const max = getItemMaxDurability(itemName, items);
   if (max == null) return null;
-  let current = member.equippedDurability[slot];
+  let current = member.equipped_durability[slot];
   if (current == null) current = max;
   if (current > max) current = max;
   return { current, max };
@@ -608,20 +581,20 @@ export function getSlotDurability(
  */
 function seedSlotFromEntry(
   member: PartyMember,
-  slot: EquipSlot,
+  slot: EquippedSlot,
   itemName: string,
   itemDur: number | undefined,
   items: Map<string, Item>,
 ): void {
   const max = getItemMaxDurability(itemName, items);
   if (max == null) {
-    member.equippedDurability[slot] = null;
+    member.equipped_durability[slot] = null;
     return;
   }
   if (typeof itemDur === "number") {
-    member.equippedDurability[slot] = Math.max(0, Math.min(max, itemDur));
+    member.equipped_durability[slot] = Math.max(0, Math.min(max, itemDur));
   } else {
-    member.equippedDurability[slot] = max;
+    member.equipped_durability[slot] = max;
   }
 }
 
@@ -632,13 +605,13 @@ function seedSlotFromEntry(
  */
 function entryForSlot(
   member: PartyMember,
-  slot: EquipSlot,
+  slot: EquippedSlot,
   itemName: string,
   items: Map<string, Item>,
 ): InventoryItem {
   const max = getItemMaxDurability(itemName, items);
   if (max == null) return { item: itemName };
-  const cur = member.equippedDurability[slot];
+  const cur = member.equipped_durability[slot];
   if (cur == null) return { item: itemName };
   return { item: itemName, durability: cur };
 }
@@ -677,12 +650,12 @@ export function equipItemFromInventory(
   // are filtered out so a head-only item refuses cleanly until the
   // matching UI lands.
   const usable = equippableSlots(def);
-  if (!def.characterCanEquip || usable.length === 0) {
+  if (!def.character_can_equip || usable.length === 0) {
     return { ok: false, message: `${inv.item} cannot be equipped.` };
   }
 
   // First empty matching slot wins.
-  let chosen: EquipSlot | null = null;
+  let chosen: EquippedSlot | null = null;
   for (const s of usable) {
     if (readSlot(member, s) == null) { chosen = s; break; }
   }
@@ -734,7 +707,7 @@ export function equipItemFromInventory(
 export function equipItemIntoSlot(
   member: PartyMember,
   itemIndex: number,
-  slot: EquipSlot,
+  slot: EquippedSlot,
   items: Map<string, Item>,
 ): ActionResult {
   if (itemIndex < 0 || itemIndex >= member.inventory.length) {
@@ -746,7 +719,7 @@ export function equipItemIntoSlot(
     return { ok: false, message: `Don't know how to equip ${inv.item}.` };
   }
   const usable = equippableSlots(def);
-  if (!def.characterCanEquip || usable.length === 0) {
+  if (!def.character_can_equip || usable.length === 0) {
     return { ok: false, message: `${inv.item} cannot be equipped.` };
   }
   // Reject explicit picks for slots the UI doesn't surface yet
@@ -792,7 +765,7 @@ export function equipItemIntoSlot(
  */
 export function unequipSlot(
   member: PartyMember,
-  slot: EquipSlot,
+  slot: EquippedSlot,
   items?: Map<string, Item>,
 ): ActionResult {
   const current = readSlot(member, slot);
@@ -803,7 +776,7 @@ export function unequipSlot(
     ? entryForSlot(member, slot, current, items)
     : { item: current };
   writeSlot(member, slot, null);
-  member.equippedDurability[slot] = null;
+  member.equipped_durability[slot] = null;
   member.inventory.push(entry);
   return {
     ok: true,
@@ -945,7 +918,7 @@ export function pickpocket(
  * A Gnome tinkers up an item the player picked from the general
  * store stock. Gated to once per in-game day: the caller passes the
  * current `dayIndex` from GameTime, and we refuse when it matches
- * `party.lastTinkerDay`. Mirrors the old random-pick version's
+ * `party.last_tinker_day`. Mirrors the old random-pick version's
  * spirit ("a Gnome reaches into a cluttered pouch and pulls out
  * something useful") but lets the player choose what they need
  * — a torch in a dark dungeon, arrows for a ranger, an antidote
@@ -962,7 +935,7 @@ export function pickpocket(
  *
  * On success, adds the item to the shared stash via `addToStash`
  * (so stackables like Arrows merge cleanly with existing rows) and
- * stamps `party.lastTinkerDay = currentDay` so the gate engages
+ * stamps `party.last_tinker_day = currentDay` so the gate engages
  * until the clock rolls into tomorrow.
  *
  * `items` is the live items catalog (loaded from items.json) — used
@@ -981,7 +954,7 @@ export function tinker(
   if (!gnome) {
     return { ok: false, message: "No Gnome in the party." };
   }
-  if (typeof party.lastTinkerDay === "number" && party.lastTinkerDay === currentDay) {
+  if (typeof party.last_tinker_day === "number" && party.last_tinker_day === currentDay) {
     return {
       ok: false,
       message: `${gnome.name} has already tinkered today — try again tomorrow.`,
@@ -997,7 +970,7 @@ export function tinker(
   // Arrows / Lockpicks / Torches merge with existing stacks rather
   // than spawning a second row.
   addToStash(party, itemName, items);
-  party.lastTinkerDay = currentDay;
+  party.last_tinker_day = currentDay;
   return { ok: true, message: `${gnome.name} tinkers up a ${itemName}.` };
 }
 
@@ -1014,7 +987,7 @@ export function canTinker(
   currentDay: number,
 ): boolean {
   if (!findRace(members, "Gnome")) return false;
-  if (typeof party.lastTinkerDay === "number" && party.lastTinkerDay === currentDay) {
+  if (typeof party.last_tinker_day === "number" && party.last_tinker_day === currentDay) {
     return false;
   }
   return true;
@@ -1090,7 +1063,7 @@ export function castHealOnTarget(
   if (target.hp <= 0) {
     return { ok: false, message: `${target.name} is dead and cannot be healed.` };
   }
-  const possible = castersFor(spell, members);
+  const possible = castersFor(spell, members, new Map());
   if (possible.length === 0) {
     return { ok: false, message: "No one in the party can cast that spell." };
   }
@@ -1102,7 +1075,7 @@ export function castHealOnTarget(
   caster.mp = (caster.mp ?? 0) - spell.mp_cost;
   const before = target.hp;
   const amount = rollHeal(spell, caster, rng);
-  target.hp = Math.min(target.maxHp, target.hp + amount);
+  target.hp = Math.min(target.max_hp, target.hp + amount);
   const healed = target.hp - before;
   void party;
   return {
@@ -1121,7 +1094,7 @@ export function castMassHeal(
   spell: Spell,
   rng: () => number = Math.random,
 ): ActionResult {
-  const possible = castersFor(spell, members);
+  const possible = castersFor(spell, members, new Map());
   if (possible.length === 0) {
     return { ok: false, message: "No one in the party can cast that spell." };
   }
@@ -1135,7 +1108,7 @@ export function castMassHeal(
     if (m.hp <= 0) continue;
     const before = m.hp;
     const amount = rollHeal(spell, caster, rng);
-    m.hp = Math.min(m.maxHp, m.hp + amount);
+    m.hp = Math.min(m.max_hp, m.hp + amount);
     total += m.hp - before;
   }
   void party;
@@ -1182,7 +1155,7 @@ export function castMagicLight(
   rng: () => number = Math.random,
 ): ActionResult {
   void rng;  // reserved for future variability — Python version is deterministic too.
-  const possible = castersFor(spell, members);
+  const possible = castersFor(spell, members, new Map());
   if (possible.length === 0) {
     return { ok: false, message: "No one in the party can cast that spell." };
   }
@@ -1204,7 +1177,7 @@ export function castMagicLight(
   // Top up the magic-light counter only — torches keep their own
   // count. Math.max guards against a corrupt save with a negative
   // value.
-  party.magicLightSteps = Math.max(party.magicLightSteps, 0) + steps;
+  party.magic_light_steps = Math.max(party.magic_light_steps, 0) + steps;
   return {
     ok: true,
     message: `${caster.name} casts ${spell.name}! A radiant orb illuminates the way.`,
@@ -1230,7 +1203,7 @@ export function classifyMenuCast(spell: Spell): MenuCastKind {
   // Light is a self-cast utility spell — adds torch-step lighting to
   // the party without prompting for a target. Mirrors the Python
   // game's `_on_spell_magic_light` (a hook that toggles the dungeon's
-  // torch state), but routed through the same `party.torchSteps`
+  // torch state), but routed through the same `party.torch_steps`
   // counter the web port uses for physical torches and Galadriel's
   // Light, so the lighting renderer doesn't need a separate path.
   if (spell.effect_type === "magic_light") return "self";
@@ -1244,7 +1217,7 @@ export function classifyMenuCast(spell: Spell): MenuCastKind {
 /** Number of light-steps a single torch provides when lit. Each
  *  Torch stash entry's `charges` field is the *stack count* (how many
  *  torches the party is carrying) — not the duration. Lighting one
- *  consumes one charge and adds this many steps to `party.torchSteps`. */
+ *  consumes one charge and adds this many steps to `party.torch_steps`. */
 const TORCH_DEFAULT_STEPS = 150;
 
 export interface UseItemResult {
@@ -1282,15 +1255,15 @@ export function consumeCampingSupplies(party: Party): UseItemResult {
   let totalMp = 0;
   for (const m of party.roster) {
     if (m.hp <= 0) continue;
-    const hpHeal = m.maxHp - m.hp;
+    const hpHeal = m.max_hp - m.hp;
     if (hpHeal > 0) {
-      m.hp = m.maxHp;
+      m.hp = m.max_hp;
       totalHp += hpHeal;
     }
-    if (m.maxMp != null) {
-      const mpHeal = m.maxMp - (m.mp ?? 0);
+    if (m.max_mp > 0) {
+      const mpHeal = m.max_mp - m.mp;
       if (mpHeal > 0) {
-        m.mp = m.maxMp;
+        m.mp = m.max_mp;
         totalMp += mpHeal;
       }
     }
@@ -1311,7 +1284,7 @@ export function consumeCampingSupplies(party: Party): UseItemResult {
 
 /**
  * Light a torch — pull one charge off the Torch stack in the stash
- * and add `TORCH_DEFAULT_STEPS` light-steps to `party.torchSteps`.
+ * and add `TORCH_DEFAULT_STEPS` light-steps to `party.torch_steps`.
  * Steps tick down inside dark scenes (town interiors / dungeons);
  * while they're > 0 the party emits an 8-tile light pool via
  * `partyLightRadius`. (No tint — see `refreshDarkness` in TownScene
@@ -1345,7 +1318,7 @@ export function consumeTorch(party: Party): UseItemResult {
   } else {
     entry.charges = remaining;
   }
-  party.torchSteps = Math.max(party.torchSteps, 0) + TORCH_DEFAULT_STEPS;
+  party.torch_steps = Math.max(party.torch_steps, 0) + TORCH_DEFAULT_STEPS;
   return {
     ok: true,
     message: `Torch lit. ${TORCH_DEFAULT_STEPS} steps of light.`,

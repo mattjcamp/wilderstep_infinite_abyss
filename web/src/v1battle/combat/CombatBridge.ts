@@ -33,20 +33,19 @@ export function abilityMod(stat: number): number {
 function mod(stat: number): number { return abilityMod(stat); }
 
 /**
- * Sum the `acBonus` field across every equipped item the member is
- * currently wearing. Mundane gear has no `acBonus`, so this is a
+ * Sum the `ac_bonus` field across every equipped item the member is
+ * currently wearing. Mundane gear has no `ac_bonus`, so this is a
  * no-op for the starter party — the field is honoured for magic
- * gear (Mystic Sword, Sun Sword, Bracers of Defence, etc.) the way
- * the Python game's `Member.get_total_ac_bonus()` does.
+ * gear (Mystic Sword, Sun Sword, Bracers of Defence, etc.).
  */
 function totalAcBonus(equipped: EquipmentSlots, items: Map<string, Item>): number {
   let total = 0;
-  const slots: Array<keyof EquipmentSlots> = ["rightHand", "leftHand", "body", "head"];
+  const slots: Array<keyof EquipmentSlots> = ["hands", "body"];
   for (const slot of slots) {
     const name = equipped[slot];
     if (!name) continue;
     const it = items.get(name);
-    if (it?.acBonus) total += it.acBonus;
+    if (it?.ac_bonus) total += it.ac_bonus;
   }
   return total;
 }
@@ -109,8 +108,8 @@ export function combatStatsFor(
   member: PartyMember,
   items: Map<string, Item>,
 ): CombatStats {
-  const weapon = member.equipped.rightHand
-    ? items.get(member.equipped.rightHand) ?? null
+  const weapon = member.equipped.hands
+    ? items.get(member.equipped.hands) ?? null
     : null;
   const armor = member.equipped.body
     ? items.get(member.equipped.body) ?? null
@@ -160,14 +159,14 @@ export function combatantFromMember(
   // equipped weapon. Mirrors the Python game's `bonus_damage` +
   // `damage_type` read inside `_apply_weapon_damage`. Sun Sword shows
   // up here as `{ weaponBonusDamage: "1d6", weaponDamageType: "fire" }`.
-  const equippedWeapon = member.equipped.rightHand
-    ? items.get(member.equipped.rightHand) ?? null
+  const equippedWeapon = member.equipped.hands
+    ? items.get(member.equipped.hands) ?? null
     : null;
   return {
-    id: `pm:${member.name}`,
+    id: `pm:${member.id}`,
     name: member.name,
     side: "party",
-    maxHp: member.maxHp,
+    maxHp: member.max_hp,
     hp: member.hp,
     ac: stats.ac,
     attackBonus: stats.attackBonus,
@@ -188,8 +187,8 @@ export function combatantFromMember(
     charClass: member.class,
     level: member.level,
     weaponName: stats.weaponName,
-    weaponBonusDamage: equippedWeapon?.bonusDamage,
-    weaponDamageType: equippedWeapon?.damageType,
+    weaponBonusDamage: equippedWeapon?.bonus_damage,
+    weaponDamageType: equippedWeapon?.damage_type,
   };
 }
 
@@ -221,8 +220,8 @@ export function refreshCombatantGear(
   member: PartyMember,
   items: Map<string, Item>,
 ): void {
-  const weapon = member.equipped.rightHand
-    ? items.get(member.equipped.rightHand) ?? null
+  const weapon = member.equipped.hands
+    ? items.get(member.equipped.hands) ?? null
     : null;
   const armor = member.equipped.body
     ? items.get(member.equipped.body) ?? null
@@ -242,8 +241,8 @@ export function refreshCombatantGear(
   // Refresh magic-item bonus damage + type — equipping Sun Sword
   // mid-fight should immediately add its 1d6 fire to subsequent
   // swings (and dropping back to a Sword should stop it).
-  c.weaponBonusDamage = weapon?.bonusDamage;
-  c.weaponDamageType = weapon?.damageType;
+  c.weaponBonusDamage = weapon?.bonus_damage;
+  c.weaponDamageType = weapon?.damage_type;
 }
 
 /**

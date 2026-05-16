@@ -700,8 +700,8 @@ export class CombatScene extends Phaser.Scene {
       (x) => x.side === "party" && x.name === member.name,
     );
     if (!c) return;
-    const weapon = member.equipped.rightHand
-      ? this.items.get(member.equipped.rightHand) ?? null
+    const weapon = member.equipped.hands
+      ? this.items.get(member.equipped.hands) ?? null
       : null;
     const isRangedWeapon = !!(weapon && weapon.ranged);
     const dexMod = abilityMod(member.dexterity);
@@ -894,7 +894,18 @@ export class CombatScene extends Phaser.Scene {
         // it by setting cursor + activating; activate() bails if the
         // row is disabled at that moment.
         this.actionCursor = i;
-        this.activateAction();
+        try {
+          this.activateAction();
+        } catch (err) {
+          // Don't let a thrown exception in the per-action handler
+          // tear down the scene loop. Log + surface in the combat log
+          // so the player sees something happened, and the developer
+          // can grab the stack from the console.
+          // eslint-disable-next-line no-console
+          console.error("[CombatScene] action dispatch failed:", err);
+          this.combat.log.push(`(internal) action failed — see console.`);
+          this.refreshLog();
+        }
       });
       const t = this.add.text(HUD_X + 24, ry + 2, "", FONT_BODY());
       this.actionRowHandles.push(handle);
@@ -950,7 +961,7 @@ export class CombatScene extends Phaser.Scene {
     let mpBar: Phaser.GameObjects.Rectangle | undefined;
     let mpText: Phaser.GameObjects.Text | undefined;
     const member = this.memberByCombatantId(c.id);
-    if (member && member.maxMp != null) {
+    if (member && member.max_mp > 0) {
       const mpBarY = y + 44;
       this.track(
         this.add.rectangle(tx, mpBarY, barW, 8, 0x1c1c2a, 1).setOrigin(0)
@@ -960,7 +971,7 @@ export class CombatScene extends Phaser.Scene {
         .rectangle(tx + 1, mpBarY + 1, fullBarW, 6, C.mp, 1)
         .setOrigin(0);
       mpText = this.add
-        .text(tx + barW - 2, mpBarY - 14, `${member.mp ?? 0}/${member.maxMp}`,
+        .text(tx + barW - 2, mpBarY - 14, `${member.mp}/${member.max_mp}`,
               FONT_MONO(C.dim))
         .setOrigin(1, 0);
     }
@@ -1258,16 +1269,16 @@ export class CombatScene extends Phaser.Scene {
     const member = this.memberForCurrent();
     const canThrow = !!member && this.partyHasThrowable();
     const canCast =
-      !!member && member.maxMp != null &&
+      !!member && member.max_mp > 0 &&
       this.spells.some(
         (s) =>
-          spellIsCombatCastable(s, member.class) &&
+          spellIsCombatCastable(s, this.classTemplates.get(member.class.toLowerCase()) ?? null) &&
           member.level >= minLevelFor(s, member.class) &&
-          (member.mp ?? 0) >= s.mp_cost
+          (member.mp) >= s.mp_cost
       );
     const equippedWeapon =
-      member && member.equipped.rightHand
-        ? this.items.get(member.equipped.rightHand) ?? null
+      member && member.equipped.hands
+        ? this.items.get(member.equipped.hands) ?? null
         : null;
     const canRange = !!equippedWeapon && isRanged(equippedWeapon);
     const canUse = !!member && this.partyHasCombatUsable();
@@ -1376,7 +1387,7 @@ export class CombatScene extends Phaser.Scene {
   private startRangeAttack(): void {
     const member = this.memberForCurrent();
     if (!member) return;
-    const weaponName = member.equipped.rightHand;
+    const weaponName = member.equipped.hands;
     if (!weaponName) {
       this.combat.log.push(`${this.combat.current.name} has no weapon equipped.`);
       this.refreshLog();
@@ -1425,22 +1436,13 @@ export class CombatScene extends Phaser.Scene {
   private applyWeaponDurability(attackerId: string): void {
     const member = this.memberByCombatantId(attackerId);
     if (!member) return;
-    // Try right hand first (the common case); only the slot whose
-    // item actually exists gets decremented. Both slots have to be
-    // tried because a thief's off-hand dagger lives in left_hand.
-    const slotsToTry: Array<["right_hand" | "left_hand", "rightHand" | "leftHand"]> = [
-      ["right_hand", "rightHand"],
-      ["left_hand",  "leftHand"],
-    ];
-    for (const [slot, field] of slotsToTry) {
-      if (!member.equipped[field]) continue;
-      // eslint-disable-next-line react-hooks/rules-of-hooks -- `useEquippedDurability` is a plain helper, not a React hook
-      const r = useEquippedDurability(member, slot, this.items);
-      if (r.kind === "broke") {
-        this.combat.log.push(`*** ${member.name}'s ${r.itemName} shatters! ***`);
-        this.spawnShatterVfx(attackerId, r.itemName, "weapon");
-      }
-      return; // only the first hand the attack came from
+    // v2 collapsed offhand into the single `hands` slot.
+    if (!member.equipped.hands) return;
+    // eslint-disable-next-line react-hooks/rules-of-hooks -- `useEquippedDurability` is a plain helper, not a React hook
+    const r = useEquippedDurability(member, "hands", this.items);
+    if (r.kind === "broke") {
+      this.combat.log.push(`*** ${member.name}'s ${r.itemName} shatters! ***`);
+      this.spawnShatterVfx(attackerId, r.itemName, "weapon");
     }
   }
 
@@ -1704,8 +1706,8 @@ export class CombatScene extends Phaser.Scene {
       const fits = equippableSlots(o.item);
       const slot = fits[0];
       const tag =
-        slot === "right_hand" ? "hands" :
-        slot === "body"       ? "body" :
+        slot === "hands" ? "hands" :
+        slot === "body"  ? "body"  :
         "—";
       return `${o.item.name.padEnd(18, " ")} ${tag}`;
     });
@@ -1808,8 +1810,8 @@ export class CombatScene extends Phaser.Scene {
     }
     // The remaining kinds resolve immediately. Spend MP, log, and
     // end the turn — same as a finished single-target cast would.
-    if (member.maxMp != null) {
-      member.mp = Math.max(0, (member.mp ?? 0) - spell.mp_cost);
+    if (member.max_mp > 0) {
+      member.mp = Math.max(0, (member.mp) - spell.mp_cost);
     }
     this.clearPicker();
     this.mode = "default";
@@ -1955,10 +1957,10 @@ export class CombatScene extends Phaser.Scene {
     if (!member) return;
     const opts = this.spells.filter(
       (s) =>
-        spellIsCombatCastable(s, member.class) &&
+        spellIsCombatCastable(s, this.classTemplates.get(member.class.toLowerCase()) ?? null) &&
         member.level >= minLevelFor(s, member.class) &&
-        member.maxMp != null &&
-        (member.mp ?? 0) >= s.mp_cost
+        member.max_mp > 0 &&
+        (member.mp) >= s.mp_cost
     );
     if (opts.length === 0) {
       this.combat.log.push(`${this.combat.current.name} has no spell to cast.`);
@@ -2140,8 +2142,8 @@ export class CombatScene extends Phaser.Scene {
       } else if (action.kind === "cast") {
         const spell = action.spell;
         const member = this.memberForCurrent();
-        if (member && member.maxMp != null) {
-          member.mp = Math.max(0, (member.mp ?? 0) - spell.mp_cost);
+        if (member && member.max_mp > 0) {
+          member.mp = Math.max(0, (member.mp) - spell.mp_cost);
         }
         // Cast SFX + caster glow up-front; the per-effect branch below
         // adds the spell-specific VFX and (where present) the impact SFX.
@@ -2529,8 +2531,8 @@ export class CombatScene extends Phaser.Scene {
     const me = this.combat.current;
     const spell = action.spell;
     const member = this.memberForCurrent();
-    if (member && member.maxMp != null) {
-      member.mp = Math.max(0, (member.mp ?? 0) - spell.mp_cost);
+    if (member && member.max_mp > 0) {
+      member.mp = Math.max(0, (member.mp) - spell.mp_cost);
     }
     this.busy = true;
     this.mode = "default";
@@ -2635,8 +2637,8 @@ export class CombatScene extends Phaser.Scene {
     const me = this.combat.current;
     const spell = action.spell;
     const member = this.memberForCurrent();
-    if (member && member.maxMp != null) {
-      member.mp = Math.max(0, (member.mp ?? 0) - spell.mp_cost);
+    if (member && member.max_mp > 0) {
+      member.mp = Math.max(0, (member.mp) - spell.mp_cost);
     }
     this.busy = true;
     this.mode = "default";
@@ -3319,12 +3321,12 @@ export class CombatScene extends Phaser.Scene {
     const canThrow = !!member && this.partyHasThrowable();
     const canCast =
       !!member &&
-      member.maxMp != null &&
+      member.max_mp > 0 &&
       this.spells.some(
         (s) =>
-          spellIsCombatCastable(s, member.class) &&
+          spellIsCombatCastable(s, this.classTemplates.get(member.class.toLowerCase()) ?? null) &&
           member.level >= minLevelFor(s, member.class) &&
-          (member.mp ?? 0) >= s.mp_cost
+          (member.mp) >= s.mp_cost
       );
     // Range is enabled when the equipped weapon has ranged: true AND
     // the party still has matching ammo to fire. A bow with no
@@ -3333,8 +3335,8 @@ export class CombatScene extends Phaser.Scene {
     // — they fall back to melee with the offhand weapon, which the
     // turn-start hook auto-swapped into the right hand.
     const equippedWeapon =
-      member && member.equipped.rightHand
-        ? this.items.get(member.equipped.rightHand) ?? null
+      member && member.equipped.hands
+        ? this.items.get(member.equipped.hands) ?? null
         : null;
     const ammoOk = (() => {
       if (!equippedWeapon || !isRanged(equippedWeapon)) return false;
@@ -3438,10 +3440,10 @@ export class CombatScene extends Phaser.Scene {
         // Casters: re-read MP from the live PartyMember and resize bar.
         if (card.mpBar && card.mpText) {
           const member = this.memberByCombatantId(c.id);
-          if (member && member.maxMp != null) {
-            const mpPct = Math.max(0, (member.mp ?? 0) / Math.max(1, member.maxMp));
+          if (member && member.max_mp > 0) {
+            const mpPct = Math.max(0, (member.mp) / Math.max(1, member.max_mp));
             card.mpBar.width = Math.max(0, card.fullBarW * mpPct);
-            card.mpText.setText(`${member.mp ?? 0}/${member.maxMp}`);
+            card.mpText.setText(`${member.mp}/${member.max_mp}`);
           }
         }
       }

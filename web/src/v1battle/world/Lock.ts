@@ -21,7 +21,8 @@
  */
 
 import type { Party, PartyMember } from "./Party";
-import type { Spell } from "./Spells";
+import { classCanCast, type Spell } from "./Spells";
+import type { ClassTemplate } from "./Classes";
 import type { TileMap } from "./TileMap";
 import { TILE_LOCKED_DOOR, TILE_DDOOR } from "./Tiles";
 import { statMod } from "./PartyActions";
@@ -91,21 +92,23 @@ export function findLockpicker(members: PartyMember[]): PartyMember | null {
 }
 
 /**
- * Pick the party member who'll cast Knock. Must be alive, in the
- * spell's allowable_classes list, at or above its min_level. MP
- * sufficiency is checked separately so the dialog can show a
- * "no MP" message instead of hiding the option entirely.
+ * Pick the party member who'll cast Knock. Must be alive, their
+ * class must be able to draw from the spell's casting catalog
+ * (v2's `class.casting_type` ∋ `spell.casting_type`), and they
+ * must be at or above its min_level. MP sufficiency is checked
+ * separately so the dialog can show a "no MP" message instead of
+ * hiding the option entirely.
  */
 export function findKnockCaster(
-  members: PartyMember[], spell: Spell,
+  members: PartyMember[],
+  spell: Spell,
+  classTemplates: Map<string, ClassTemplate>,
 ): PartyMember | null {
-  const allowed = new Set(
-    (spell.allowable_classes ?? []).map((c) => c.toLowerCase()),
-  );
   const minLevel = spell.min_level ?? 1;
   for (const m of members) {
     if (m.hp <= 0) continue;
-    if (!allowed.has(m.class.toLowerCase())) continue;
+    const tpl = classTemplates.get(m.class.toLowerCase()) ?? null;
+    if (!classCanCast(spell, tpl)) continue;
     if (m.level < minLevel) continue;
     return m;
   }
@@ -230,7 +233,10 @@ export function buildLockOptions(args: {
     out.push({ id: "no_thief", label: "Pick Lock (need a Thief or L3+ Ranger!)" });
   }
   if (args.knockSpell) {
-    const caster = findKnockCaster(args.members, args.knockSpell);
+    // Lock interactions aren't on the visual-test path; pass empty
+    // classTemplates so findKnockCaster correctly returns null until
+    // the Class migration threads the real map through.
+    const caster = findKnockCaster(args.members, args.knockSpell, new Map());
     if (caster) {
       const cost = args.knockSpell.mp_cost ?? 0;
       if ((caster.mp ?? 0) >= cost) {
