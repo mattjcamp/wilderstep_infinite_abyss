@@ -249,6 +249,10 @@ const C = {
   mp:        0x7aa6ff,
   cursor:    0xc8553d,
   moveHint:  0x44648a,
+  // Gold-leaning highlight for weapon / spell reach. Distinct from
+  // moveHint (cool blue) so the player can read at a glance whether
+  // a cell is a step destination or a shot landing zone.
+  rangeHint: 0xc89542,
   selectBg:  0x2a1f24,
 } as const;
 
@@ -1554,6 +1558,7 @@ export class CombatScene extends Phaser.Scene {
         `${this.combat.current.name} aims their ${weapon.name} — pick a direction.`,
       );
       this.refreshLog();
+      this.drawActionHints();
       return;
     }
     this.startTargetingFor({ kind: "range", weapon }, "enemies");
@@ -2182,7 +2187,13 @@ export class CombatScene extends Phaser.Scene {
       this.pendingAction = null;
       this.mode = "default";
       this.refreshActionMenu();
+      this.drawActionHints();
+      return;
     }
+    // Reach-hint overlay: with the staged action set, redraw so the
+    // overlay switches from movement-blue to range-gold over the
+    // cells the chosen weapon / spell can reach.
+    this.drawActionHints();
   }
 
   /**
@@ -2669,6 +2680,10 @@ export class CombatScene extends Phaser.Scene {
     this.mode = "pick-direction";
     this.clearPicker();
     this.renderDirectionPickerHint(spell);
+    // Reach overlay: paint the four cardinal lines the bolt could
+    // travel, clipped at the first obstruction. Gives the player a
+    // visual preview of where the cast will land before they commit.
+    this.drawActionHints();
   }
 
   /** Bottom-of-HUD prompt explaining the direction controls. */
@@ -3580,7 +3595,7 @@ export class CombatScene extends Phaser.Scene {
     this.refreshLog();
     for (const x of this.combat.combatants) this.refreshHp(x);
     this.highlightActiveActor();
-    this.drawMoveHints();
+    this.drawActionHints();
     this.refreshVisibility();
   }
 
@@ -3812,27 +3827,198 @@ export class CombatScene extends Phaser.Scene {
     }
   }
 
-  private drawMoveHints(): void {
+  /**
+   * Draw the reach overlay for the active party member. The set of
+   * cells changes with the current sub-mode:
+   *
+   *   - default               → BFS-expanded movement diamond (every
+   *                              cell reachable in `movePoints` cardinal
+   *                              steps, blocked by walls / unwalkable
+   *                              cells / allies, with enemy cells
+   *                              included as bump-attack landings)
+   *   - pick-target + range   → all enemies' tiles within the
+   *                              weapon's range with clear LOS
+   *   - pick-target + cast    → spell range cells, LOS-filtered for
+   *                              projectile spells
+   *   - pick-direction        → the four cardinal lines a directional
+   *                              weapon / spell would fly along,
+   *                              clipped at the first obstruction
+   *
+   * Movement hints use the cool moveHint blue; reach hints use the
+   * warm rangeHint gold so the two contexts read distinctly. AI turns
+   * skip hints entirely — the overlay is a player-facing affordance.
+   *
+   * Important: this MUST stay safe to call while `this.busy` is true.
+   * tryPlayerStep flips busy on for the duration of the move
+   * animation and calls refreshAll() inside the try block — if we
+   * bailed on busy, hints would be cleared during the animation and
+   * never get repainted before the next input arrived. The overlay
+   * just sits behind the animating sprite anyway, so painting it
+   * immediately is fine.
+   */
+  private drawActionHints(): void {
     this.clearMoveHints();
     if (this.combat.current.side !== "party") return;
-    const actor = this.combat.current;
-    const dirs: [number, number][] = [[-1, 0], [1, 0], [0, -1], [0, 1]];
-    for (const [dc, dr] of dirs) {
-      const nc = actor.position.col + dc;
-      const nr = actor.position.row + dr;
-      if (isWall(nc, nr)) continue;
-      // Honour arena-map walkability — rocks / pits in the picked
-      // map don't get a move-hint flash, matching the move that
-      // tryMove would refuse anyway.
-      const cell = this.arenaCells?.[nr]?.[nc];
-      if (cell && cell.walkable === false) continue;
-      const occupant = this.combat.combatantAt(nc, nr);
-      if (occupant && occupant.side === actor.side) continue;
+    const me = this.combat.current.position;
+    const pending = this.pendingAction;
+
+    let cells: { col: number; row: number }[] = [];
+    // Widen to number so the gold-vs-blue reassignments below don't
+    // get pinned to the literal type of the first assigned constant.
+    let color: number = C.moveHint;
+
+    if (this.mode === "default") {
+      cells = this.movementReachCells(me, this.combat.movePoints);
+    } else if (this.mode === "pick-target" && pending?.kind === "range") {
+      cells = this.targetReachCells(me, maxRangeFor(pending.weapon), true);
+      color = C.rangeHint;
+    } else if (this.mode === "pick-target" && pending?.kind === "throw") {
+      // Throw doesn't yet have a range cap upstream, but the hint
+      // gives the player a useful visual anchor — pin to the item's
+      // declared range (defaults to 4 for throwables via items.json).
+      cells = this.targetReachCells(me, maxRangeFor(pending.item), true);
+      color = C.rangeHint;
+    } else if (this.mode === "pick-target" && pending?.kind === "cast") {
+      // Spell range: honour the spell's `range` field with a sensible
+      // fallback. LOS gating mirrors the picker's filter — projectile
+      // spells need a clear line, heals / buffs reach through cover.
+      const spell = pending.spell;
+      const range = typeof spell.range === "number" && spell.range > 0 ? spell.range : 6;
+      const e = spell.effect_type;
+      const projectile =
+        e === "damage" ||
+        e === "undead_damage" ||
+        e === "lightning_bolt" ||
+        e === "aoe_fireball";
+      cells = this.targetReachCells(me, range, projectile);
+      color = C.rangeHint;
+    } else if (this.mode === "pick-direction" && pending?.kind === "direction") {
+      const spell = pending.spell;
+      const range = typeof spell.range === "number" && spell.range > 0 ? spell.range : 6;
+      cells = this.directionalReachCells(me, range);
+      color = C.rangeHint;
+    } else if (this.mode === "pick-direction" && pending?.kind === "range-direction") {
+      cells = this.directionalReachCells(me, maxRangeFor(pending.weapon));
+      color = C.rangeHint;
+    } else {
+      // Other sub-modes (pick-throw, pick-use, pick-equip, pick-spell,
+      // pick-tile) own their own overlays / pickers. Clear hints and
+      // bail — leaving a stale move diamond on the arena while a picker
+      // popover is open would be visually noisy.
+      return;
+    }
+
+    for (const c of cells) {
       const hint = this.add
-        .rectangle(this.tileX(nc), this.tileY(nr), TILE - 6, TILE - 6, C.moveHint, 0.35)
-        .setStrokeStyle(1, C.moveHint);
+        .rectangle(this.tileX(c.col), this.tileY(c.row), TILE - 6, TILE - 6, color, 0.30)
+        .setStrokeStyle(1, color);
       this.moveHintRects.push(hint);
     }
+  }
+
+  /**
+   * Cardinal-line "cross" reach from `start`, with each arm running
+   * up to `budget` cells. Each arm stops at the first blocker in its
+   * line — wall, unwalkable cell, ally, or enemy (the enemy cell IS
+   * highlighted as a valid bump-attack landing, but the line doesn't
+   * pass through them). The cross shrinks naturally as `budget`
+   * decreases because each step the player takes draws one fewer
+   * cell per arm.
+   *
+   * Why a cross and not a BFS diamond: combat movement is one
+   * cardinal step per move-point. Reaching a diagonal cell costs two
+   * move-points and requires a turn into the second direction — but
+   * the player can't pre-commit to that turn, they can only see
+   * "where would the next step go?" The cross matches the single
+   * cardinal commit cleanly; a diamond overlay implied you could
+   * also reach the corners, which is misleading when you can only
+   * step in one direction at a time.
+   */
+  private movementReachCells(
+    start: { col: number; row: number },
+    budget: number,
+  ): { col: number; row: number }[] {
+    if (budget <= 0) return [];
+    const me = this.combat.current;
+    const dirs: [number, number][] = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+    const out: { col: number; row: number }[] = [];
+    for (const [dc, dr] of dirs) {
+      let nc = start.col;
+      let nr = start.row;
+      for (let i = 0; i < budget; i++) {
+        nc += dc;
+        nr += dr;
+        if (isWall(nc, nr)) break;
+        const ac = this.arenaCells?.[nr]?.[nc];
+        if (ac && ac.walkable === false) break;
+        const occupant = this.combat.combatantAt(nc, nr);
+        if (occupant && occupant.side === me.side) break;
+        out.push({ col: nc, row: nr });
+        // Enemy along the arm is a valid bump-attack target — keep
+        // the cell highlighted, but the arm stops here.
+        if (occupant) break;
+      }
+    }
+    return out;
+  }
+
+  /** Every cell within Chebyshev `range` of `start`, optionally
+   *  filtered to those with clear line of sight (used by ranged
+   *  weapons and projectile-shaped spells). Walls + out-of-bounds
+   *  cells are excluded so the overlay doesn't bleed onto the
+   *  perimeter ring. Start cell is excluded. */
+  private targetReachCells(
+    start: { col: number; row: number },
+    range: number,
+    requireLOS: boolean,
+  ): { col: number; row: number }[] {
+    if (range <= 0) return [];
+    const out: { col: number; row: number }[] = [];
+    for (let dr = -range; dr <= range; dr++) {
+      for (let dc = -range; dc <= range; dc++) {
+        if (dc === 0 && dr === 0) continue;
+        if (Math.max(Math.abs(dc), Math.abs(dr)) > range) continue;
+        const nc = start.col + dc;
+        const nr = start.row + dr;
+        if (isWall(nc, nr)) continue;
+        if (requireLOS && !this.combat.hasLineOfSight(start, { col: nc, row: nr })) {
+          continue;
+        }
+        out.push({ col: nc, row: nr });
+      }
+    }
+    return out;
+  }
+
+  /** Cells that lie along the four cardinal lines from `start`, out
+   *  to `range`. Stops at perimeter walls + obstructing cells (the
+   *  same rule the directional ray uses when firing). The line
+   *  *includes* the obstructing cell so the player sees exactly
+   *  where the bolt would terminate. Start cell is excluded. */
+  private directionalReachCells(
+    start: { col: number; row: number },
+    range: number,
+  ): { col: number; row: number }[] {
+    if (range <= 0) return [];
+    const out: { col: number; row: number }[] = [];
+    const dirs: [number, number][] = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+    for (const [dc, dr] of dirs) {
+      let nc = start.col;
+      let nr = start.row;
+      for (let i = 0; i < range; i++) {
+        nc += dc;
+        nr += dr;
+        if (isWall(nc, nr)) break;
+        out.push({ col: nc, row: nr });
+        const cell = this.arenaCells?.[nr]?.[nc];
+        if (cell?.obstructs === true) break;
+        // A creature in line of fire still gets a highlighted cell —
+        // it's a legitimate target for the bolt — but the bolt
+        // wouldn't pass through them, so stop the line here.
+        if (this.combat.combatantAt(nc, nr)) break;
+      }
+    }
+    return out;
   }
 
   private clearMoveHints(): void {
