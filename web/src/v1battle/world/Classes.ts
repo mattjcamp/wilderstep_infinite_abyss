@@ -138,14 +138,26 @@ interface RawRace {
 let _classCatalog: Map<string, ClassTemplate> | null = null;
 let _racesCache: Map<string, RaceInfo> | null = null;
 
+/**
+ * Hydrate one character_classes.json entry. Defaults seed required
+ * scalars + the per-class HP/MP/EXP table v2 doesn't carry yet;
+ * spread carries every other RawClass field through (project
+ * principle — adding a field shouldn't need a loader edit).
+ * Overrides re-stamp `casting_type` and `abilities` for the shape +
+ * filtering they require, and validated identity fields.
+ */
 function classFromRaw(raw: RawClass): ClassTemplate | null {
   if (!raw.id || !raw.name) return null;
   const idLower = raw.id.toLowerCase();
   return {
+    range: 4,
+    hp_per_level: HP_PER_LEVEL_DEFAULTS[idLower] ?? 6,
+    mp_per_level: MP_PER_LEVEL_DEFAULTS[idLower] ?? 0,
+    exp_per_level: EXP_PER_LEVEL_DEFAULT,
+    mp_source: MP_SOURCE_DEFAULTS[idLower],
+    ...raw,
     id: raw.id,
     name: raw.name,
-    description: raw.description,
-    range: typeof raw.range === "number" ? raw.range : 4,
     casting_type: Array.isArray(raw.casting_type) ? raw.casting_type : [],
     abilities: Array.isArray(raw.abilities)
       ? raw.abilities
@@ -157,11 +169,6 @@ function classFromRaw(raw: RawClass): ClassTemplate | null {
             min_level: typeof a.min_level === "number" ? a.min_level : 1,
           }))
       : [],
-    allowable_item_types: raw.allowable_item_types,
-    hp_per_level: HP_PER_LEVEL_DEFAULTS[idLower] ?? 6,
-    mp_per_level: MP_PER_LEVEL_DEFAULTS[idLower] ?? 0,
-    exp_per_level: EXP_PER_LEVEL_DEFAULT,
-    mp_source: MP_SOURCE_DEFAULTS[idLower],
   };
 }
 
@@ -200,14 +207,18 @@ export async function loadRaces(
   const out = new Map<string, RaceInfo>();
   for (const r of raw.races ?? []) {
     if (!r.id || !r.name) continue;
+    // Spread carries every RawRace field through; the override
+    // block only revalidates required identity fields. Project
+    // principle: adding a field to RaceInfo + races.json shouldn't
+    // need a copy point edit here.
     out.set(r.id, {
+      ...r,
       id: r.id,
       name: r.name,
-      description: r.description,
+      // races.json may carry null for "no override" — coerce to
+      // undefined so the optional field reads cleanly downstream.
       exp_per_level:
         typeof r.exp_per_level === "number" ? r.exp_per_level : undefined,
-      stat_modifiers: r.stat_modifiers,
-      abilities: r.abilities,
     });
   }
   _racesCache = out;

@@ -60,23 +60,32 @@ interface RawEncountersFile {
 let _flatCache: EncounterTemplate[] | null = null;
 let _byAreaCache: Record<string, EncounterTemplate[]> | null = null;
 
+/**
+ * Hydrate a raw v2 encounters.json entry. Defaults seed required
+ * scalars; spread carries every other field through (project
+ * principle — adding a new field to the interface + the JSON
+ * shouldn't need a copy point here). The lone explicit override is
+ * `monsterPartyTile`, which we *derive* from `monster_party_tile`
+ * for a runtime camelCase alias the rest of the engine consumes.
+ */
 function fromRaw(raw: RawEncounter): EncounterTemplate | null {
   const monsters = Array.isArray(raw.monsters)
     ? raw.monsters.filter((m): m is string => typeof m === "string" && m.length > 0)
     : [];
   if (monsters.length === 0) return null;
-  const id = typeof raw.id === "string" && raw.id.length > 0 ? raw.id : "";
-  const lead = typeof raw.monster_party_tile === "string" && raw.monster_party_tile.length > 0
-    ? raw.monster_party_tile
-    : monsters[0];
+  const lead =
+    typeof raw.monster_party_tile === "string" && raw.monster_party_tile.length > 0
+      ? raw.monster_party_tile
+      : monsters[0];
   return {
-    id,
-    area: typeof raw.area === "string" && raw.area.length > 0 ? raw.area : "overworld",
-    name: raw.name ?? "Encounter",
-    level: typeof raw.level === "number" && Number.isFinite(raw.level) ? raw.level : 1,
-    weight: typeof raw.weight === "number" && raw.weight > 0 ? raw.weight : 1,
-    monsterPartyTile: lead,
+    id: "",
+    area: "overworld",
+    name: "Encounter",
+    level: 1,
+    weight: 1,
+    ...raw,
     monsters,
+    monsterPartyTile: lead,
   };
 }
 

@@ -356,6 +356,112 @@ export function maxRangeFor(item: Item): number {
   }
 }
 
+// ── Spell saving throws ─────────────────────────────────────────────
+//
+// Centralised "did the target resist the spell?" roll. Pulls the
+// caster's spell-casting stat (INT for sorcerer-line, WIS for priest-
+// line) and the defender's save stat (named on the spell's
+// `save_dc_stat` action_param). When the defender carries real
+// attribute scores — Combatants stamped from a PartyMember OR from a
+// MonsterSpec with the new attribute fields — the save bonus reflects
+// the actual ability modifier. When attributes are missing (legacy
+// monsters without the v2 stat block), the save bonus falls back to a
+// conservative heuristic so the call still resolves.
+
+/** D&D-style modifier: 10 = +0, 18 = +4, 8 = -1. Exposed because
+ *  multiple resolvers consume it. */
+export function abilityMod(score: number): number {
+  return Math.floor((score - 10) / 2);
+}
+
+/** Which Combatant stat field the spell's casting type taps for the
+ *  DC bonus. Sorcerer-line spells (Sleep, Magic Dart, Fireball) use
+ *  INT; priest-line spells (Curse, Turn Undead) use WIS. Falls back
+ *  to WIS for unknown casting types since most save-bearing legacy
+ *  spells were priest-flavoured. */
+function castingStatField(spell: Spell): "intelligence" | "wisdom" {
+  return spell.casting_type === "sorcerer" ? "intelligence" : "wisdom";
+}
+
+/** Save-stat field on the defender. Reads `save_dc_stat` from the
+ *  spell's action_params; defaults to wisdom so callers don't have
+ *  to set the field explicitly for the legacy will-save case. */
+function saveStatField(
+  spell: Spell,
+): "strength" | "dexterity" | "constitution" | "intelligence" | "wisdom" {
+  const ev = (spell.effect_value ?? {}) as Record<string, unknown>;
+  const s = typeof ev.save_dc_stat === "string" ? ev.save_dc_stat : "wisdom";
+  if (s === "strength" || s === "dexterity" || s === "constitution" ||
+      s === "intelligence" || s === "wisdom") {
+    return s;
+  }
+  return "wisdom";
+}
+
+export interface SpellSaveResult {
+  /** True when the defender resisted (d20 + bonus ≥ DC). */
+  saved: boolean;
+  /** Raw d20 roll. */
+  roll: number;
+  /** d20 + defender save bonus. */
+  total: number;
+  /** Difficulty class — `save_dc_base + caster casting-mod`. */
+  dc: number;
+  /** Defender's save-stat modifier. */
+  bonus: number;
+  /** Field name on the defender that was consulted, e.g. "intelligence". */
+  saveStat: string;
+}
+
+/**
+ * Roll a saving throw for `target` against `spell` cast by `caster`.
+ *
+ * Formula (matches the D&D-ish pattern the v1 game leaned on):
+ *
+ *   DC    = spell.action_params.save_dc_base + caster's casting-mod
+ *   bonus = mod(target[save_dc_stat])
+ *   total = d20 + bonus
+ *   saved = total >= DC
+ *
+ * When `target` lacks the relevant ability score (legacy monsters
+ * without v2 attributes), the bonus falls back to
+ * `max(0, target.attackBonus - 2)` — the same heuristic
+ * resolveTurnUndead used to compute saves with. Same for the
+ * caster: missing attribute → +0 to the DC, no bonus from a
+ * dimwit-cast spell.
+ */
+export function rollSpellSave(
+  caster: Combatant,
+  target: Combatant,
+  spell: Spell,
+  rng: RNG,
+): SpellSaveResult {
+  const ev = (spell.effect_value ?? {}) as Record<string, unknown>;
+  const dcBase = typeof ev.save_dc_base === "number" ? (ev.save_dc_base as number) : 10;
+  const casterStat = castingStatField(spell);
+  const casterScore = caster[casterStat];
+  const casterMod = typeof casterScore === "number" ? abilityMod(casterScore) : 0;
+  const dc = dcBase + casterMod;
+
+  const saveStat = saveStatField(spell);
+  const targetScore = target[saveStat];
+  const bonus =
+    typeof targetScore === "number"
+      ? abilityMod(targetScore)
+      : Math.max(0, target.attackBonus - 2);
+
+  const roll = 1 + Math.floor(rng() * 20);
+  const total = roll + bonus;
+  return {
+    saved: total >= dc,
+    roll,
+    total,
+    dc,
+    bonus,
+    saveStat,
+  };
+}
+
 /**
  * Per-target outcome for Turn Undead — the scene needs both the dice
  * detail (for the log) and the resulting damage so it can flash/animate
@@ -519,7 +625,15 @@ export function resolveTurnUndead(
   const outcomes: TurnUndeadOutcome[] = [];
   for (const t of undeadTargets) {
     const saveRoll = Math.floor(rng() * 20) + 1;
-    const saveBonus = Math.max(0, t.attackBonus - 2);
+    // Real WIS-mod when the monster has the new attribute block;
+    // legacy "max(0, attackBonus - 2)" heuristic when it doesn't,
+    // so v1-data monsters still resolve cleanly.
+    const wisScore =
+      dcStat === "intelligence" ? t.intelligence : t.wisdom;
+    const saveBonus =
+      typeof wisScore === "number"
+        ? abilityMod(wisScore)
+        : Math.max(0, t.attackBonus - 2);
     const saveTotal = saveRoll + saveBonus;
     if (saveTotal < saveDc) {
       const damage = t.hp;

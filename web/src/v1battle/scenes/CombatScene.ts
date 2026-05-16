@@ -75,6 +75,7 @@ import {
   spellIsCombatCastable,
   classifyCombatCast,
   describeStatusCast,
+  rollSpellSave,
   resolveDamageSpell,
   resolveHealSpell,
   resolveTurnUndead,
@@ -2174,21 +2175,18 @@ export class CombatScene extends Phaser.Scene {
     this.mode = "pick-target";
     this.clearPicker();
     this.drawTargetBadges(side);
-    // If no valid targets were drawn (e.g. ranged weapon with all
-    // enemies out of range, throw with no live foes, cast on
-    // allies that are all already at full HP), the picker would be
-    // silently empty — pressing 1..9 / clicking does nothing and the
-    // player can't tell why. Bail out with an explanation in the
-    // combat log so the move stays usable on a future turn.
+    // Empty target list (e.g. all enemies out of range or behind
+    // cover) used to auto-revert to default mode, which also cleared
+    // the range overlay before the player could read it. Now we
+    // STAY in pick-target so the reach hints stick on screen — the
+    // player sees the squares the weapon / spell could reach and
+    // understands exactly why no target lit up. A log line spells
+    // out the specific gate (out of range, no allies hurt, etc.),
+    // and ESC cancels back to the action menu the usual way.
     if (this.targetBadges.length === 0) {
       const reason = this.noTargetReason(action, side);
       this.combat.log.push(reason);
       this.refreshLog();
-      this.pendingAction = null;
-      this.mode = "default";
-      this.refreshActionMenu();
-      this.drawActionHints();
-      return;
     }
     // Reach-hint overlay: with the staged action set, redraw so the
     // overlay switches from movement-blue to range-gold over the
@@ -2432,12 +2430,51 @@ export class CombatScene extends Phaser.Scene {
         } else {
           // Status / debuff effects we don't have full mechanics for
           // yet (sleep / charm / cure_poison / restore — these need
-          // status models the buff engine doesn't cover). Spell still
-          // resolves visibly so the player gets feedback.
+          // status models the buff engine doesn't cover). Even
+          // without status persistence, the SAVE is now real: a
+          // monster with high INT/WIS resists Sleep/Charm/Curse,
+          // a low-INT zombie folds. The visible feedback (aura +
+          // log line) reflects whether the spell stuck or not.
           const isAlly = target.side === me.side;
-          await this.auraOn(target, isAlly ? VFX_COLOURS.buff : VFX_COLOURS.curse);
-          this.combat.log.push(
-            `${me.name} casts ${spell.name} on ${target.name} — ${describeStatusCast(me, target, spell)}`
+          const ev = spell.effect_value ?? {};
+          const hasSave =
+            typeof ev.save_dc_stat === "string" || typeof ev.save_dc_base === "number";
+          let resisted = false;
+          if (hasSave && !isAlly) {
+            const save = rollSpellSave(me, target, spell, defaultRng);
+            // Format the save dice as `STAT save: d20(N) + M = T vs DC D`
+            // so the d20 roll is unmistakable. Earlier format
+            // `INT 2+5=7` read like "INT score 2, plus 5" instead of
+            // "d20 came up 2, plus +5 from INT".
+            const stat = save.saveStat.toUpperCase().slice(0, 3);
+            const sign = save.bonus >= 0 ? "+" : "";
+            const verdict = save.saved ? "saved" : "failed";
+            const dice =
+              `${stat} save: d20(${save.roll}) ${sign}${save.bonus} = ${save.total} ` +
+              `vs DC ${save.dc} — ${verdict}`;
+            if (save.saved) {
+              resisted = true;
+              this.combat.log.push(
+                `${me.name} casts ${spell.name} on ${target.name} — resisted! (${dice})`,
+              );
+            } else {
+              this.combat.log.push(
+                `${me.name} casts ${spell.name} on ${target.name} — ` +
+                `${describeStatusCast(me, target, spell)} (${dice})`,
+              );
+            }
+          } else {
+            this.combat.log.push(
+              `${me.name} casts ${spell.name} on ${target.name} — ${describeStatusCast(me, target, spell)}`,
+            );
+          }
+          // Aura still plays — the cleric / wizard threw something,
+          // visible feedback either way. Color cue distinguishes
+          // "landed" vs "deflected" so the player reads the outcome
+          // before the dice line.
+          await this.auraOn(
+            target,
+            resisted ? VFX_COLOURS.shield : (isAlly ? VFX_COLOURS.buff : VFX_COLOURS.curse),
           );
         }
       }

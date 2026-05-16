@@ -128,40 +128,45 @@ export async function loadSpells(
   return _cache;
 }
 
+/**
+ * Hydrate a v2 spell record.
+ *
+ * Defaults seed required fields when the JSON omits them; spread
+ * carries every other field through unconditionally (project
+ * principle — catalog data lives in the model + spells.json, not in
+ * loader copy points). Overrides re-stamp the fields that need
+ * shaping: `usable_in` accepts a singleton string for convenience
+ * and gets normalised to an array, and the computed `effect_type` /
+ * `effect_value` legacy fields are derived from `action` +
+ * `action_params`.
+ */
 export function spellFromRaw(s: RawSpell): Spell {
-  const usable = Array.isArray(s.usable_in)
-    ? s.usable_in
-    : typeof s.usable_in === "string"
-      ? [s.usable_in]
-      : [];
   const action = s.action ?? "";
   const params = s.action_params ?? {};
-  // Compute the legacy effect_type:
-  //   - apply_effect / cure_effect → params.effect_id (e.g. "bless")
-  //   - everything else            → the action string itself
   const effectType =
     (action === "apply_effect" || action === "cure_effect") &&
     typeof params.effect_id === "string"
       ? params.effect_id
       : action;
   return {
-    id: s.id ?? "",
-    name: s.name ?? "?",
-    description: s.description ?? "",
-    casting_type: s.casting_type ?? "",
-    min_level: s.min_level ?? 1,
-    class_min_levels: s.class_min_levels,
-    mp_cost: s.mp_cost ?? 0,
-    duration: s.duration ?? "instant",
+    id: "",
+    name: "?",
+    description: "",
+    casting_type: "",
+    min_level: 1,
+    mp_cost: 0,
+    duration: "instant",
+    ...s,
     action,
     action_params: s.action_params,
-    range: s.range,
-    targeting: s.targeting,
-    usable_in: usable,
-    icon: s.icon,
-    sfx: s.sfx,
-    hit_sfx: s.hit_sfx,
-    // Legacy/derived
+    usable_in: Array.isArray(s.usable_in)
+      ? s.usable_in
+      : typeof s.usable_in === "string"
+        ? [s.usable_in]
+        : [],
+    // Legacy / derived — kept out of the raw shape so they always
+    // reflect the action+params pair, not whatever the JSON happened
+    // to carry.
     effect_type: effectType,
     effect_value: params as SpellEffectValue,
   };

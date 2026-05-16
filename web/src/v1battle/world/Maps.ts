@@ -89,14 +89,21 @@ export interface ArenaCellInfo {
 
 let _flatCache: ArenaMap[] | null = null;
 
+/**
+ * Hydrate one v2 maps.json entry. Spread carries every RawMap field
+ * through (project principle — adding a field to ArenaMap + maps.json
+ * shouldn't need a copy point edit). Overrides re-stamp validated
+ * identity fields, narrow `tags` to strings, and derive `width` /
+ * `height` from the grid when the JSON omits them.
+ */
 function fromRaw(raw: RawMap): ArenaMap | null {
   if (!raw.id || !raw.name) return null;
   const grid = Array.isArray(raw.grid) ? raw.grid : [];
   const tags = Array.isArray(raw.tags) ? raw.tags.filter((t) => typeof t === "string") : [];
   return {
+    ...raw,
     id: raw.id,
     name: raw.name,
-    description: raw.description,
     tags,
     width: typeof raw.width === "number" ? raw.width : grid[0]?.length ?? 0,
     height: typeof raw.height === "number" ? raw.height : grid.length,

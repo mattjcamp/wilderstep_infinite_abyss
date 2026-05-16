@@ -7,7 +7,7 @@
       "class": "fighter",
       "race": "dwarf",
       "gender": "Male",
-      "level": 5,
+      "level": 10,
       "exp": 2,
       "hp": 50,
       "mp": 0,
@@ -29,7 +29,7 @@
       "class": "thief",
       "race": "halfling",
       "gender": "Male",
-      "level": 5,
+      "level": 10,
       "exp": 0,
       "hp": 23,
       "mp": 0,
@@ -51,7 +51,7 @@
       "class": "cleric",
       "race": "human",
       "gender": "Female",
-      "level": 5,
+      "level": 10,
       "exp": 0,
       "hp": 9,
       "mp": 130,
@@ -61,8 +61,8 @@
       "intelligence": 8,
       "wisdom": 16,
       "equipped": {
-        "hands": "club",
-        "body": "cloth"
+        "hands": "sling",
+        "body": "leather"
       },
       "inventory": [],
       "sprite": "person/cleric1.png"
@@ -73,7 +73,7 @@
       "class": "wizard",
       "race": "human",
       "gender": "Male",
-      "level": 5,
+      "level": 10,
       "exp": 0,
       "hp": 6,
       "mp": 180,

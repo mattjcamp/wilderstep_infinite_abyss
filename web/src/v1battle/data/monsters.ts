@@ -46,6 +46,27 @@ export interface MonsterSpec {
   battle_scale?: number;
   post_attack_move?: number;
   difficulty?: string;
+  /**
+   * D&D-style ability scores. Optional so the legacy "direct stats
+   * only" monsters keep working — when present, combat uses them
+   * for save resolution (DC + defender bonus), spell casting bonus,
+   * and the STR-save Man Eater escape roll. When absent, defenders
+   * fall back to the legacy `max(0, attackBonus - 2)` heuristic and
+   * the save uses the spell's flat `save_dc_base`. Convention
+   * matches PartyMember: 10 = +0 modifier, 18 = +4, 8 = -1.
+   *
+   * Authoring guidance:
+   *   - High INT (16+) → resists sleep / charm / magic dart
+   *   - High WIS (16+) → resists curse, harder to Turn Undead
+   *   - High STR (16+) → escapes Man Eater consumes easily
+   *   - Low (6–8) of either makes the monster a soft target for that
+   *     vector — design lever, not a flaw.
+   */
+  strength?: number;
+  dexterity?: number;
+  constitution?: number;
+  intelligence?: number;
+  wisdom?: number;
   /** Spell-casting AI table. Each entry has a `cast_chance` (0-100)
    *  the engine rolls against on the monster's turn. Reserved for v2
    *  to layer back in; absent today. */
@@ -153,6 +174,12 @@ interface RawMonster {
   battle_scale?: number;
   post_attack_move?: number;
   difficulty?: string;
+  /** Character-like attribute scores. See MonsterSpec for the convention. */
+  strength?: number;
+  dexterity?: number;
+  constitution?: number;
+  intelligence?: number;
+  wisdom?: number;
   spells?: RawMonsterSpell[] | null;
   passives?: RawMonsterPassive[] | null;
   on_hit_effects?: RawMonsterOnHit[] | null;
@@ -171,25 +198,20 @@ const KNOWN_SPELL_TYPES: ReadonlySet<string> = new Set([
   "heal_ally",
 ]);
 
+/**
+ * Validate the discriminator + carry every other RawMonsterSpell
+ * field through. Project principle: catalog fields are configured
+ * in the data model — adding a new optional numeric to MonsterSpell
+ * should just need an entry on the interface and in monsters.json,
+ * with no separate copy point here to remember.
+ */
 function spellFromRaw(s: RawMonsterSpell): MonsterSpell | null {
   if (!s.type || !KNOWN_SPELL_TYPES.has(s.type)) return null;
   return {
+    cast_chance: 0,
+    ...s,
     type: s.type as MonsterSpellType,
     name: s.name ?? s.type,
-    cast_chance: typeof s.cast_chance === "number" ? s.cast_chance : 0,
-    range: s.range,
-    damage_dice: s.damage_dice,
-    damage_sides: s.damage_sides,
-    damage_bonus: s.damage_bonus,
-    heal_dice: s.heal_dice,
-    heal_sides: s.heal_sides,
-    heal_bonus: s.heal_bonus,
-    save_dc: s.save_dc,
-    duration: s.duration,
-    max_target_hp: s.max_target_hp,
-    ac_penalty: s.ac_penalty,
-    attack_penalty: s.attack_penalty,
-    damage_per_turn: s.damage_per_turn,
   };
 }
 
@@ -238,43 +260,44 @@ function resolveSpriteUrl(sprite: string | undefined): string {
 
 let _catalog: Map<string, MonsterSpec> | null = null;
 
-/** Build a typed spec from a raw v2 monsters.json entry. */
+/**
+ * Build a typed spec from a raw v2 monsters.json entry.
+ *
+ * Defaults come first so spread + JSON values override them; then a
+ * second override block re-stamps validated identity, the resolved
+ * sprite URL, and the discriminated-union sub-arrays whose runtime
+ * shapes differ from the raw JSON. New plain-data fields can be
+ * added to `MonsterSpec` + `RawMonster` + monsters.json with no
+ * change to this hydrator — the spread carries them through.
+ */
 export function specFromRaw(raw: RawMonster): MonsterSpec | null {
   if (!raw.id || !raw.name) return null;
   return {
+    // Defaults for required numeric fields when JSON omits them.
+    hp: 10,
+    ac: 11,
+    attack_bonus: 2,
+    damage_dice: 1,
+    damage_sides: 6,
+    damage_bonus: 0,
+    move_range: 3,
+    battle_scale: 1,
+    post_attack_move: 0,
+    ...raw,
+    // Validated / computed / coerced fields re-stamped after spread.
     id: raw.id,
     name: raw.name,
-    hp: raw.hp ?? 10,
-    ac: raw.ac ?? 11,
-    attack_bonus: raw.attack_bonus ?? 2,
-    damage_dice: raw.damage_dice ?? 1,
-    damage_sides: raw.damage_sides ?? 6,
-    damage_bonus: raw.damage_bonus ?? 0,
     sprite: resolveSpriteUrl(raw.sprite),
-    move_range: raw.move_range ?? 3,
     undead: !!raw.undead,
     humanoid: !!raw.humanoid,
-    xp_reward: raw.xp_reward,
-    gold_min: raw.gold_min,
-    gold_max: raw.gold_max,
-    battle_scale: typeof raw.battle_scale === "number" ? raw.battle_scale : 1,
-    post_attack_move:
-      typeof raw.post_attack_move === "number" ? raw.post_attack_move : 0,
-    difficulty: raw.difficulty,
     spells: Array.isArray(raw.spells)
-      ? raw.spells
-          .map(spellFromRaw)
-          .filter((x): x is MonsterSpell => x !== null)
+      ? raw.spells.map(spellFromRaw).filter((x): x is MonsterSpell => x !== null)
       : undefined,
     passives: Array.isArray(raw.passives)
-      ? raw.passives
-          .map(passiveFromRaw)
-          .filter((x): x is MonsterPassive => x !== null)
+      ? raw.passives.map(passiveFromRaw).filter((x): x is MonsterPassive => x !== null)
       : undefined,
     on_hit_effects: Array.isArray(raw.on_hit_effects)
-      ? raw.on_hit_effects
-          .map(onHitFromRaw)
-          .filter((x): x is MonsterOnHit => x !== null)
+      ? raw.on_hit_effects.map(onHitFromRaw).filter((x): x is MonsterOnHit => x !== null)
       : undefined,
   };
 }
@@ -328,6 +351,15 @@ export function makeMonsterByName(id: string, idSuffix = ""): Combatant {
     goldMax > goldMin
       ? goldMin + Math.floor(Math.random() * (goldMax - goldMin + 1))
       : goldMin;
+  // When the spec carries attributes, derive the runtime dexMod from
+  // them so AC + initiative read the same way they do for party
+  // members. Combatant already accepts the full 5-stat block as
+  // optional fields; threading them through here is what makes
+  // `rollSpellSave` find a real modifier on the monster side.
+  const dexMod =
+    typeof spec.dexterity === "number"
+      ? Math.floor((spec.dexterity - 10) / 2)
+      : 0;
   return {
     id: `${spec.id}${idSuffix}`,
     name: spec.name,
@@ -341,7 +373,12 @@ export function makeMonsterByName(id: string, idSuffix = ""): Combatant {
       sides: spec.damage_sides,
       bonus: spec.damage_bonus,
     },
-    dexMod: 0,
+    dexMod,
+    strength: spec.strength,
+    dexterity: spec.dexterity,
+    constitution: spec.constitution,
+    intelligence: spec.intelligence,
+    wisdom: spec.wisdom,
     // v2 doesn't model an RGB fallback; pick a neutral that reads as
     // "missing sprite" without screaming any specific creature type.
     color: [140, 140, 140],

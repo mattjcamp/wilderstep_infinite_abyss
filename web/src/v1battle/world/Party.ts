@@ -251,9 +251,18 @@ function normalizeInventory(raw: unknown): InventoryItem[] {
 // ── Character → PartyMember ────────────────────────────────────────
 
 /**
- * Hydrate a raw character record (from characters.json) into a runtime
- * PartyMember. `id` is required for the join with `Party.roster_ids`;
- * raw records missing one are best-effort defaulted to a slugged name.
+ * Hydrate a raw character record (from characters.json) into a
+ * runtime PartyMember.
+ *
+ * Defaults seed required scalars (every D&D-ish stat, level, hp/mp);
+ * spread carries every other RawCharacter field through (project
+ * principle — adding a field to PartyMember + characters.json
+ * shouldn't need a copy point edit). Overrides handle the things
+ * that can't be a pass-through: id slug fallback, lowercase class /
+ * race ids, computed `max_hp` / `max_mp` (v2 carries only current
+ * values), normalised `equipped` + `equipped_durability` (always a
+ * fixed-shape pair), resolved sprite URL, and inventory shape
+ * coercion.
  */
 export function memberFromRaw(raw: RawCharacter): PartyMember {
   const klass = (raw.class ?? "fighter").toLowerCase();
@@ -261,33 +270,31 @@ export function memberFromRaw(raw: RawCharacter): PartyMember {
   const mp = raw.mp ?? 0;
   const id = raw.id ?? (raw.name ?? "unknown").toLowerCase().replace(/\s+/g, "_");
   return {
+    name: "?",
+    gender: "?",
+    level: 1,
+    exp: 0,
+    strength: 10,
+    dexterity: 10,
+    constitution: 10,
+    intelligence: 10,
+    wisdom: 10,
+    ...raw,
     id,
-    name: raw.name ?? "?",
     class: klass,
     race: (raw.race ?? "human").toLowerCase(),
-    gender: raw.gender ?? "?",
-    level: raw.level ?? 1,
-    exp: raw.exp ?? 0,
     hp,
     max_hp: hp,
     mp,
     max_mp: mp,
-    strength: raw.strength ?? 10,
-    dexterity: raw.dexterity ?? 10,
-    constitution: raw.constitution ?? 10,
-    intelligence: raw.intelligence ?? 10,
-    wisdom: raw.wisdom ?? 10,
     equipped: {
       hands: raw.equipped?.hands ?? null,
       body: raw.equipped?.body ?? null,
     },
-    // Durability trackers default to "uninitialised" — the first time
-    // an item is equipped (or use_durability runs against it) the
-    // helper seeds it from the catalog max.
-    equipped_durability: {
-      hands: null,
-      body: null,
-    },
+    // Durability trackers default to "uninitialised" — the first
+    // time an item is equipped (or use_durability runs against it)
+    // the helper seeds it from the catalog max.
+    equipped_durability: { hands: null, body: null },
     inventory: normalizeInventory(raw.inventory),
     sprite: spriteForMember(raw.sprite, klass),
   };
@@ -298,6 +305,17 @@ export function memberFromRaw(raw: RawCharacter): PartyMember {
  * characters catalog. `roster` is filled by looking up each id in
  * `characters`; ids that don't resolve are dropped (with a console
  * warning) so a stale save doesn't crash the boot.
+ */
+/**
+ * Build a runtime `Party` from a raw party.json plus a resolved
+ * characters catalog.
+ *
+ * Spread carries every plain-data RawParty field through (project
+ * principle — adding a field to Party + party.json shouldn't need a
+ * copy point edit). Overrides handle the fields that require
+ * shaping: `start_position` normalises to definite col/row,
+ * `roster` is resolved from ids against the characters catalog, and
+ * inventory + party_effects get defensive defaults.
  */
 export function partyFromRaw(
   raw: RawParty,
@@ -314,21 +332,20 @@ export function partyFromRaw(
     }
   }
   return {
+    gold: 0,
+    torch_steps: 0,
+    magic_light_steps: 0,
+    galadriels_light_steps: 0,
+    ...raw,
     start_position: {
       map_id: raw.start_position?.map_id,
       col: raw.start_position?.col ?? 0,
       row: raw.start_position?.row ?? 0,
     },
-    avatar: raw.avatar,
-    gold: raw.gold ?? 0,
     roster_ids,
     roster,
     party_effects: Array.isArray(raw.party_effects) ? [...raw.party_effects] : [],
     inventory: normalizeInventory(raw.inventory),
-    torch_steps: raw.torch_steps ?? 0,
-    magic_light_steps: raw.magic_light_steps ?? 0,
-    galadriels_light_steps: raw.galadriels_light_steps ?? 0,
-    last_tinker_day: raw.last_tinker_day,
   };
 }
 

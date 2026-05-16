@@ -70,12 +70,16 @@ export async function loadEffects(
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed to load ${url}: ${res.status}`);
   const raw = (await res.json()) as { effects?: RawEffect[] };
+  // Spread + defaults — see itemFromRaw for the rationale; adding a
+  // new field to Effect + effects.json shouldn't need a copy point
+  // change here. Defaults seed the required scalars when JSON omits
+  // them; spread carries every other field through.
   _cache = (raw.effects ?? []).map((e) => ({
-    id: e.id ?? "",
-    name: e.name ?? "?",
-    description: e.description ?? "",
-    duration: e.duration ?? "permanent",
-    params: e.params,
+    id: "",
+    name: "?",
+    description: "",
+    duration: "permanent" as Effect["duration"],
+    ...e,
   }));
   return _cache;
 }

@@ -1,5 +1,5 @@
 {
-  "_comment": "Monster catalog (real data drives the schema). Each monster carries combat stats, visual identity (tile, color), movement rules, and arrays for `spells` (castable abilities), `on_hit_effects` (effects applied on a successful hit), and `passives` (always-on traits). v2 transforms: monster `passives[].type` and `on_hit_effects[].type` are renamed to `effect_id`, referencing entries in effects.json (drain, poisoned, slowed, consumed, regen, fire_resistance, poison_immunity). Per-monster overrides (chance, amount, duration, etc.) stay as flat keys alongside `effect_id`. Monster `spells[]` remain inline for now — many monster spell types don't have player-castable Spell records, so unifying with spells.json is deferred. Dropped per the not-used rule: monster `description` (parsed but never read), `spawn_weight` (TS uses encounters.json weights), the `ranged` sub-object (entire object parsed but unread), and the top-level `spawn_tables` (TS uses encounters.json).",
+  "_comment": "Monster catalog (real data drives the schema). Each monster carries combat stats, visual identity (tile, color), movement rules, and arrays for `spells` (castable abilities), `on_hit_effects` (effects applied on a successful hit), and `passives` (always-on traits). v2 transforms: monster `passives[].type` and `on_hit_effects[].type` are renamed to `effect_id`, referencing entries in effects.json (drain, poisoned, slowed, consumed, regen, fire_resistance, poison_immunity). Per-monster overrides (chance, amount, duration, etc.) stay as flat keys alongside `effect_id`. Monster `spells[]` remain inline for now \u2014 many monster spell types don't have player-castable Spell records, so unifying with spells.json is deferred. Dropped per the not-used rule: monster `description` (parsed but never read), `spawn_weight` (TS uses encounters.json weights), the `ranged` sub-object (entire object parsed but unread), and the top-level `spawn_tables` (TS uses encounters.json).",
   "monsters": [
     {
       "id": "giant_rat",
@@ -19,7 +19,12 @@
       "move_range": 10,
       "post_attack_move": 0,
       "battle_scale": 1,
-      "difficulty": "easy"
+      "difficulty": "easy",
+      "strength": 6,
+      "dexterity": 14,
+      "constitution": 10,
+      "intelligence": 2,
+      "wisdom": 10
     },
     {
       "id": "goblin",
@@ -39,7 +44,12 @@
       "move_range": 6,
       "post_attack_move": 0,
       "battle_scale": 1,
-      "difficulty": "easy"
+      "difficulty": "easy",
+      "strength": 8,
+      "dexterity": 14,
+      "constitution": 10,
+      "intelligence": 10,
+      "wisdom": 8
     },
     {
       "id": "wild_boar",
@@ -59,7 +69,12 @@
       "move_range": 4,
       "post_attack_move": 0,
       "battle_scale": 1,
-      "difficulty": "easy"
+      "difficulty": "easy",
+      "strength": 16,
+      "dexterity": 11,
+      "constitution": 14,
+      "intelligence": 2,
+      "wisdom": 10
     },
     {
       "id": "wolf",
@@ -79,7 +94,12 @@
       "move_range": 4,
       "post_attack_move": 0,
       "battle_scale": 1,
-      "difficulty": "easy"
+      "difficulty": "easy",
+      "strength": 12,
+      "dexterity": 14,
+      "constitution": 12,
+      "intelligence": 3,
+      "wisdom": 12
     },
     {
       "id": "dark_mage",
@@ -137,7 +157,12 @@
           "damage_sides": 4,
           "damage_bonus": 1
         }
-      ]
+      ],
+      "strength": 8,
+      "dexterity": 12,
+      "constitution": 11,
+      "intelligence": 17,
+      "wisdom": 11
     },
     {
       "id": "orc",
@@ -157,7 +182,12 @@
       "move_range": 4,
       "post_attack_move": 0,
       "battle_scale": 1,
-      "difficulty": "normal"
+      "difficulty": "normal",
+      "strength": 16,
+      "dexterity": 12,
+      "constitution": 14,
+      "intelligence": 7,
+      "wisdom": 9
     },
     {
       "id": "orc_shaman",
@@ -205,7 +235,12 @@
           "damage_per_turn": 2,
           "duration": 4
         }
-      ]
+      ],
+      "strength": 10,
+      "dexterity": 11,
+      "constitution": 12,
+      "intelligence": 12,
+      "wisdom": 16
     },
     {
       "id": "skeleton",
@@ -225,7 +260,12 @@
       "move_range": 3,
       "post_attack_move": 0,
       "battle_scale": 1,
-      "difficulty": "normal"
+      "difficulty": "normal",
+      "strength": 10,
+      "dexterity": 14,
+      "constitution": 10,
+      "intelligence": 6,
+      "wisdom": 8
     },
     {
       "id": "skeleton_archer",
@@ -245,7 +285,12 @@
       "move_range": 2,
       "post_attack_move": 0,
       "battle_scale": 1,
-      "difficulty": "normal"
+      "difficulty": "normal",
+      "strength": 10,
+      "dexterity": 16,
+      "constitution": 10,
+      "intelligence": 6,
+      "wisdom": 8
     },
     {
       "id": "troll",
@@ -284,7 +329,12 @@
           "heal_sides": 6,
           "heal_bonus": 1
         }
-      ]
+      ],
+      "strength": 18,
+      "dexterity": 13,
+      "constitution": 16,
+      "intelligence": 5,
+      "wisdom": 7
     },
     {
       "id": "zombie",
@@ -304,7 +354,12 @@
       "move_range": 3,
       "post_attack_move": 0,
       "battle_scale": 1,
-      "difficulty": "normal"
+      "difficulty": "normal",
+      "strength": 13,
+      "dexterity": 6,
+      "constitution": 10,
+      "intelligence": 3,
+      "wisdom": 5
     },
     {
       "id": "super_zombie",
@@ -324,7 +379,12 @@
       "move_range": 2,
       "post_attack_move": 0,
       "battle_scale": 1,
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "strength": 16,
+      "dexterity": 6,
+      "constitution": 14,
+      "intelligence": 3,
+      "wisdom": 5
     },
     {
       "id": "banshee",
@@ -371,7 +431,12 @@
           "chance": 40,
           "amount": 8
         }
-      ]
+      ],
+      "strength": 10,
+      "dexterity": 14,
+      "constitution": 10,
+      "intelligence": 14,
+      "wisdom": 16
     },
     {
       "id": "lich",
@@ -471,7 +536,12 @@
         {
           "effect_id": "poison_immunity"
         }
-      ]
+      ],
+      "strength": 11,
+      "dexterity": 14,
+      "constitution": 18,
+      "intelligence": 20,
+      "wisdom": 16
     },
     {
       "id": "man_eater",
@@ -509,7 +579,12 @@
         {
           "effect_id": "poison_immunity"
         }
-      ]
+      ],
+      "strength": 18,
+      "dexterity": 8,
+      "constitution": 20,
+      "intelligence": 1,
+      "wisdom": 8
     },
     {
       "id": "ogre",
@@ -529,7 +604,12 @@
       "move_range": 2,
       "post_attack_move": 0,
       "battle_scale": 1,
-      "difficulty": "hard"
+      "difficulty": "hard",
+      "strength": 19,
+      "dexterity": 8,
+      "constitution": 16,
+      "intelligence": 5,
+      "wisdom": 7
     },
     {
       "id": "wyvern",
@@ -561,7 +641,12 @@
           "damage_bonus": 0,
           "save_dc": 13
         }
-      ]
+      ],
+      "strength": 19,
+      "dexterity": 16,
+      "constitution": 17,
+      "intelligence": 5,
+      "wisdom": 12
     },
     {
       "id": "dragon",
@@ -602,7 +687,12 @@
         {
           "effect_id": "fire_resistance"
         }
-      ]
+      ],
+      "strength": 23,
+      "dexterity": 14,
+      "constitution": 21,
+      "intelligence": 18,
+      "wisdom": 15
     },
     {
       "id": "hydra",
@@ -627,7 +717,12 @@
         {
           "effect_id": "fire_resistance"
         }
-      ]
+      ],
+      "strength": 20,
+      "dexterity": 12,
+      "constitution": 20,
+      "intelligence": 2,
+      "wisdom": 10
     },
     {
       "id": "mind_flayer",
@@ -685,7 +780,12 @@
           "damage_per_turn": 3,
           "duration": 4
         }
-      ]
+      ],
+      "strength": 11,
+      "dexterity": 12,
+      "constitution": 12,
+      "intelligence": 19,
+      "wisdom": 17
     },
     {
       "id": "stone_golem",
@@ -713,7 +813,12 @@
         {
           "effect_id": "poison_immunity"
         }
-      ]
+      ],
+      "strength": 22,
+      "dexterity": 9,
+      "constitution": 20,
+      "intelligence": 1,
+      "wisdom": 1
     },
     {
       "id": "vampire_lord",
@@ -766,7 +871,12 @@
           "effect_id": "regen",
           "amount": 4
         }
-      ]
+      ],
+      "strength": 18,
+      "dexterity": 18,
+      "constitution": 18,
+      "intelligence": 17,
+      "wisdom": 15
     }
   ]
 }

@@ -1,5 +1,5 @@
 {
-  "_comment": "Spawn-point catalog (real data drives the schema). Each spawn is monster-lair behavior the engine triggers when the party steps on (or near) a map cell whose tile carries this spawn's id in its `spawn` field. The binding lives on the map cell, not here \u2014 multiple cells (and multiple maps) can reuse the same Spawn. `spawn_monsters` and `boss_monsters` are Monster `id` strings (snake_case); `loot` is Item `id` strings. Duplicate entries in any of these are intentional \u2014 they control sampling weight (one Goblin five times = five times more likely).",
+  "_comment": "Spawn-point catalog (real data drives the schema). Each spawn is monster-lair behavior the engine triggers when the party steps on (or near) a map cell whose tile carries this spawn's id in its `spawn` field. The binding lives on the map cell, not here — multiple cells (and multiple maps) can reuse the same Spawn. `spawn_monsters` and `boss_monsters` are Monster `id` strings (snake_case); `loot` is Item `id` strings. Duplicate entries in any of these are intentional — they control sampling weight (one Goblin five times = five times more likely).",
   "spawns": [
     {
       "id": "monster_spawn",
@@ -136,8 +136,8 @@
         "man_eater",
         "man_eater"
       ],
-      "xp_reward": 50,
-      "gold_reward": 25,
+      "xp_reward": 200,
+      "gold_reward": 200,
       "loot": []
     }
   ]
