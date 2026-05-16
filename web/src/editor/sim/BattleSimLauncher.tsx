@@ -12,7 +12,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { BattleSimV1Mount } from "./BattleSimV1Mount";
 import { loadAllEncounters, _clearEncountersCache, type EncounterTemplate } from "@/v1battle/world/Encounters";
 import { loadMonsters, _clearMonstersCache, type MonsterSpec } from "@/v1battle/data/monsters";
-import { loadArenaMaps, _clearMapsCache, type ArenaMap } from "@/v1battle/world/Maps";
+import { loadArenaMaps, _clearMapsCache, type ArenaCellInfo, type ArenaMap } from "@/v1battle/world/Maps";
 import { setActiveModule, withBase } from "@/v1battle/world/Module";
 import { ARENA_COLS, ARENA_ROWS } from "@/v1battle/combat/Arena";
 
@@ -103,26 +103,34 @@ export function BattleSimLauncher({ moduleId }: { moduleId: string }) {
     [arenaMaps, selectedMapId],
   );
 
-  // Resolve the picked map's grid into a sprite-URL matrix the
-  // CombatScene can preload + render. Each cell's `sprite` is a
-  // folder-relative path like "map/grass1.png"; we prepend `/sprites/`
-  // (and the deploy base, if any) here so the scene sees a ready-to-
-  // fetch URL. Cells outside the arena bounds are clipped; cells with
-  // no sprite become `null` (scene falls back to default fill).
-  const arenaTileSprites = useMemo(() => {
+  // Resolve the picked map's grid into a per-cell info matrix the
+  // CombatScene can preload, render, and consult for walkability /
+  // line-of-sight. `sprite` is normalised to a base-prefixed
+  // `/sprites/...` URL (or null for the default fill); `walkable`
+  // and `obstructs` default to "open ground" when the cell is
+  // missing or malformed, so a partial map degrades gracefully.
+  const arenaCells = useMemo(() => {
     if (!selectedMap) return undefined;
-    const matrix: (string | null)[][] = [];
+    const matrix: (ArenaCellInfo | null)[][] = [];
     for (let r = 0; r < ARENA_ROWS; r++) {
-      const row: (string | null)[] = [];
+      const row: (ArenaCellInfo | null)[] = [];
       const sourceRow = selectedMap.grid[r];
       for (let c = 0; c < ARENA_COLS; c++) {
         const cell = sourceRow?.[c];
-        const sprite = cell?.sprite;
-        row.push(
-          typeof sprite === "string" && sprite.length > 0
-            ? withBase(`/sprites/${sprite}`)
-            : null,
-        );
+        if (!cell) {
+          row.push(null);
+          continue;
+        }
+        const spritePath = cell.sprite;
+        const sprite =
+          typeof spritePath === "string" && spritePath.length > 0
+            ? withBase(`/sprites/${spritePath}`)
+            : null;
+        row.push({
+          sprite,
+          walkable: cell.walkable !== false,
+          obstructs: cell.obstructs === true,
+        });
       }
       matrix.push(row);
     }
@@ -253,7 +261,7 @@ export function BattleSimLauncher({ moduleId }: { moduleId: string }) {
           key={`${started}:${selected.id}:${selectedMap?.id ?? ""}`}
           moduleId={moduleId}
           monsterIds={selected.monsters}
-          arenaTileSprites={arenaTileSprites}
+          arenaCells={arenaCells}
         />
       ) : (
         <p className="text-sm text-parchment/45">

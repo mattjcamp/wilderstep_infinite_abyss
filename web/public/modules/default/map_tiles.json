@@ -290,7 +290,7 @@
       "id": "wall_stone",
       "name": "Stone Wall",
       "walkable": false,
-      "obstructs": false,
+      "obstructs": true,
       "locked": false,
       "light_source": false,
       "light_range": 0,

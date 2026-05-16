@@ -16,24 +16,27 @@
  *     Forwarded to CombatScene as `monsterNames` (the scene's existing
  *     init-data field). When omitted the scene falls back to v1's
  *     hand-built sample encounter.
- *   - `arenaTileSprites` — optional per-cell sprite-URL matrix the
- *     picked arena map resolves to. CombatScene preloads + renders it
- *     as the floor; omitted means the legacy dark-green fill.
+ *   - `arenaCells` — optional per-cell sprite + walkable + obstructs
+ *     matrix the picked arena map resolves to. CombatScene preloads
+ *     the sprites, bakes them into the arena RT, and installs
+ *     walkability + line-of-sight predicates into Combat so rocks /
+ *     pits / tall grass actually affect the fight.
  *
  * The party comes from `modules/<id>/party.json` joined against
  * `characters.json` (see `loadParty`).
  */
 
 import { useEffect, useRef } from "react";
+import type { ArenaCellInfo } from "@/v1battle/world/Maps";
 
 export function BattleSimV1Mount({
   moduleId,
   monsterIds,
-  arenaTileSprites,
+  arenaCells,
 }: {
   moduleId: string;
   monsterIds?: readonly string[];
-  arenaTileSprites?: ReadonlyArray<ReadonlyArray<string | null>>;
+  arenaCells?: ReadonlyArray<ReadonlyArray<ArenaCellInfo | null>>;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -104,8 +107,8 @@ export function BattleSimV1Mount({
                     : undefined,
                 // Snapshot the matrix so a later mutation to the
                 // launcher's React state can't desync mid-render.
-                arenaTileSprites: arenaTileSprites
-                  ? arenaTileSprites.map((row) => [...row])
+                arenaCells: arenaCells
+                  ? arenaCells.map((row) => [...row])
                   : undefined,
               },
             );

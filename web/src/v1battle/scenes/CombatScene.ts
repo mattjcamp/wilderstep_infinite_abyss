@@ -64,6 +64,7 @@ import {
   swapToMeleeIfOutOfAmmo,
 } from "../world/Party";
 import { loadClass, loadRaces, type ClassTemplate } from "../world/Classes";
+import type { ArenaCellInfo } from "../world/Maps";
 import { awardXp, type LevelUpEvent } from "../world/Leveling";
 import { defaultRng } from "../rng";
 import {
@@ -177,16 +178,20 @@ interface CombatSceneData {
    */
   silent?: boolean;
   /**
-   * Per-tile floor sprite URLs for the arena, in `[row][col]` order.
-   * Cells set to `null` (or rows shorter than ARENA_COLS, etc.) fall
-   * back to the legacy dark-fill / `terrainTileId` path so the rest of
-   * the arena keeps working even when the supplied map is smaller than
-   * the arena grid. Sprite URLs are expected pre-resolved — the scene
-   * preloads anything that isn't already in `this.textures` before
-   * `drawArena` paints. Walls remain perimeter-hardcoded; this only
-   * controls the floor.
+   * Per-cell arena data when launched against a custom arena map.
+   *
+   * Carries the resolved floor sprite URL plus the two gameplay
+   * flags combat consults: `walkable` (movement) and `obstructs`
+   * (projectile / spell line-of-sight). Index order is `[row][col]`,
+   * sized to fit the arena grid. Cells set to `null` (or rows
+   * shorter than ARENA_COLS, etc.) fall back to walkable open
+   * ground with the scene's default fill — so a smaller map still
+   * boots; the corners just look bare.
+   *
+   * The perimeter wall ring (`isWall` from Arena.ts) still applies
+   * unconditionally — `arenaCells` augments the interior only.
    */
-  arenaTileSprites?: ReadonlyArray<ReadonlyArray<string | null>>;
+  arenaCells?: ReadonlyArray<ReadonlyArray<ArenaCellInfo | null>>;
 }
 
 // ── Debug cheats ──────────────────────────────────────────────────
@@ -305,7 +310,14 @@ type PendingAction =
   /** Tile-targeted spell — resolution branches by effect_type. */
   | { kind: "tile"; spell: Spell }
   /** Directional spell — resolution waits on an arrow-key press. */
-  | { kind: "direction"; spell: Spell };
+  | { kind: "direction"; spell: Spell }
+  /** Volley-style ranged weapon — caster picks a cardinal direction,
+   *  the projectile flies in a line and hits the first creature in
+   *  its path (friendly fire risk, just like directional spells).
+   *  Used when Item.targeting === "directional" (short bow, long
+   *  bow, sling). Crossbow / silver bow remain `range` with a
+   *  target picker. */
+  | { kind: "range-direction"; weapon: Item };
 
 export class CombatScene extends Phaser.Scene {
   private combat!: Combat;
@@ -314,9 +326,9 @@ export class CombatScene extends Phaser.Scene {
    *  the combat soundtrack. Set from init-data; see `silent` on
    *  CombatSceneData. */
   private silent = false;
-  /** Optional per-cell floor sprite matrix. See `arenaTileSprites`
-   *  on CombatSceneData for the contract. */
-  private arenaTileSprites: ReadonlyArray<ReadonlyArray<string | null>> | null = null;
+  /** Optional per-cell arena data — sprite + walkable + obstructs.
+   *  See `arenaCells` on CombatSceneData for the contract. */
+  private arenaCells: ReadonlyArray<ReadonlyArray<ArenaCellInfo | null>> | null = null;
   private triggerKey: string | null = null;
   private terrainTileId: number | null = null;
   /** Catalog names for this fight; null falls back to makeSampleEncounter. */
@@ -434,7 +446,7 @@ export class CombatScene extends Phaser.Scene {
   init(data?: CombatSceneData): void {
     this.fromWorld = !!data?.fromWorld;
     this.silent = !!data?.silent;
-    this.arenaTileSprites = data?.arenaTileSprites ?? null;
+    this.arenaCells = data?.arenaCells ?? null;
     this.triggerKey = data?.triggerKey ?? null;
     this.terrainTileId = data?.terrainTileId ?? null;
     this.monsterNames = data?.monsterNames && data.monsterNames.length > 0
@@ -610,13 +622,14 @@ export class CombatScene extends Phaser.Scene {
       }
       // Arena floor sprites — when the launcher supplied a map, every
       // unique URL in the matrix needs to live in the texture cache
-      // before drawArena() runs, otherwise the per-cell `add.image`
-      // call below would silently no-op. Dedupe so the same grass /
-      // stone / etc. tile isn't queued 200×.
-      if (this.arenaTileSprites) {
+      // before drawArena() runs, otherwise the per-cell stamp would
+      // silently no-op. Dedupe so the same grass / stone / etc. tile
+      // isn't queued 200×.
+      if (this.arenaCells) {
         const seen = new Set<string>();
-        for (const row of this.arenaTileSprites) {
-          for (const url of row) {
+        for (const row of this.arenaCells) {
+          for (const cell of row) {
+            const url = cell?.sprite ?? null;
             if (!url || seen.has(url)) continue;
             seen.add(url);
             if (!this.textures.exists(url)) {
@@ -663,6 +676,24 @@ export class CombatScene extends Phaser.Scene {
       ? this.monsterNames.map((n, i) => makeMonsterByName(n, `-${i}`))
       : makeSampleEncounter();
     this.combat = new Combat(party, enemies);
+
+    // Plumb arena-map flags into combat so tryMove + AI step refuse
+    // unwalkable cells and Range / damage-spell targeting filters
+    // through line-of-sight. Snap to local refs so the predicates
+    // close over the matrix that was current when combat was built;
+    // a later remount installs fresh ones.
+    const cellsForPredicates = this.arenaCells;
+    if (cellsForPredicates) {
+      this.combat.setBlockedPredicate((col, row) => {
+        const cell = cellsForPredicates[row]?.[col];
+        return cell?.walkable === false;
+      });
+      this.combat.setObstructsPredicate((col, row) => {
+        const cell = cellsForPredicates[row]?.[col];
+        return cell?.obstructs === true;
+      });
+    }
+
     this.cameras.main.setBackgroundColor("#0c0c14");
     this.cameras.main.fadeIn(220, 0, 0, 0);
 
@@ -842,7 +873,30 @@ export class CombatScene extends Phaser.Scene {
     const terrainKey = this.terrainTileId != null
       ? tileSpriteKey(this.terrainTileId)
       : null;
-    const mapTiles = this.arenaTileSprites;
+    const mapCells = this.arenaCells;
+
+    // Bake the per-cell floor sprites into one RenderTexture. Without
+    // this, each non-wall interior cell adds its own Image GameObject —
+    // 224 of them on an 18×16 grid. The display-list walk + extra
+    // WebGL state cost pushed each frame over budget, which made the
+    // 110ms move tweens feel ~1s in wall-clock time on the playtest
+    // module. One RT is one display-list entry; the cells become
+    // baked pixels, not live GameObjects.
+    //
+    // Phaser 4 RT API specifics this code depends on (different from
+    // v3, fwiw):
+    //   - `.stamp(key, frame, x, y, { originX, originY })` is the
+    //     "draw a texture at top-left (x,y)" entrypoint. Plain
+    //     `.draw(key, x, y)` treats x/y as the texture's CENTER and
+    //     would offset every tile by 16 px.
+    //   - The command buffer is flushed only when `.render()` runs.
+    //     Stamps queued before `render()` are otherwise invisible.
+    let floorRT: Phaser.GameObjects.RenderTexture | null = null;
+    if (mapCells) {
+      floorRT = this.add
+        .renderTexture(ARENA_X, ARENA_Y, ARENA_W, ARENA_H)
+        .setOrigin(0);
+    }
 
     for (let row = 0; row < ARENA_ROWS; row++) {
       for (let col = 0; col < ARENA_COLS; col++) {
@@ -859,22 +913,36 @@ export class CombatScene extends Phaser.Scene {
             .setStrokeStyle(1, 0x1a1a2a);
           continue;
         }
-        // Open floor — priority is map-supplied per-cell sprite,
-        // then the legacy terrain sprite, then the moody dark-green
-        // fallback. Tile sprites are native 32×32 so we don't
-        // force-resize.
-        const cellUrl = mapTiles?.[row]?.[col] ?? null;
-        if (cellUrl && this.textures.exists(cellUrl)) {
-          this.add.image(x, y, cellUrl).setOrigin(0);
+        // Open floor — priority is map-supplied per-cell sprite (baked
+        // into the RT), then the legacy terrain sprite, then the moody
+        // dark-green fallback. Map sprites are stamped once, not added
+        // as live GameObjects, so the per-frame cost stays flat.
+        const cell = mapCells?.[row]?.[col] ?? null;
+        const cellUrl = cell?.sprite ?? null;
+        if (floorRT && cellUrl && this.textures.exists(cellUrl)) {
+          // Coordinates are RT-local (origin at ARENA_X/Y), so no
+          // arena offset here. `originX/Y: 0` stamps from the
+          // texture's top-left rather than its center.
+          floorRT.stamp(cellUrl, undefined, col * TILE, row * TILE, {
+            originX: 0,
+            originY: 0,
+          });
         } else if (terrainKey && this.textures.exists(terrainKey)) {
           this.add.image(x, y, terrainKey).setOrigin(0);
-        } else {
+        } else if (!floorRT) {
+          // Default arena (no map picked) keeps the legacy
+          // rectangle fill. With a map picked, missing cells fall
+          // through silently — the RT's dark background shows through.
           this.add
             .rectangle(x, y, TILE, TILE, 0x14241a, 1)
             .setOrigin(0)
             .setStrokeStyle(1, 0x1a2a20);
         }
         // Per-tile click target for cardinal-step movement / attack.
+        // Skip on unwalkable interior cells so the player can't click
+        // into a rock or pit — combat would refuse the move anyway,
+        // but suppressing the hit zone keeps the cursor honest.
+        if (cell && cell.walkable === false) continue;
         const hit = this.add
           .rectangle(x, y, TILE, TILE, 0xffffff, 0)
           .setOrigin(0)
@@ -882,6 +950,11 @@ export class CombatScene extends Phaser.Scene {
         hit.on("pointerdown", () => this.onTileClicked(col, row));
       }
     }
+
+    // Flush the stamp command buffer to the RT's internal texture.
+    // Without this, all stamps queued above are buffered but never
+    // painted, leaving the arena black.
+    if (floorRT) floorRT.render();
   }
 
   private drawHud(): void {
@@ -1298,9 +1371,17 @@ export class CombatScene extends Phaser.Scene {
       if (dir === "e") return this.moveTileCursor(1, 0);
       return;
     }
-    // Direction-pick mode: ANY of the four arrows fires the spell.
+    // Direction-pick mode: ANY of the four arrows fires the staged
+    // action. Both directional spells (magic_dart, lightning_bolt)
+    // and directional weapons (short bow / long bow / sling) share
+    // the same pick-direction mode; the pending action's kind tells
+    // us which fire path to take.
     if (this.mode === "pick-direction") {
-      void this.fireDirectionalSpell(dir);
+      if (this.pendingAction?.kind === "range-direction") {
+        void this.fireDirectionalRange(dir);
+      } else {
+        void this.fireDirectionalSpell(dir);
+      }
       return;
     }
     if (key === "UP")    return this.moveActionCursor(-1);
@@ -1457,6 +1538,21 @@ export class CombatScene extends Phaser.Scene {
     const weapon = this.items.get(weaponName);
     if (!weapon || !isRanged(weapon)) {
       this.combat.log.push(`${this.combat.current.name}'s ${weaponName} is not a ranged weapon.`);
+      this.refreshLog();
+      return;
+    }
+    // Branch on the weapon's targeting mode. Volley-style weapons
+    // (short bow, long bow, sling) ask for a cardinal direction —
+    // the bolt flies in a line and hits the first creature it sees.
+    // Precision weapons (crossbow, silver bow, default) open the
+    // numbered target picker the way they always have.
+    if (weapon.targeting === "directional") {
+      this.pendingAction = { kind: "range-direction", weapon };
+      this.mode = "pick-direction";
+      this.clearPicker();
+      this.combat.log.push(
+        `${this.combat.current.name} aims their ${weapon.name} — pick a direction.`,
+      );
       this.refreshLog();
       return;
     }
@@ -2130,16 +2226,37 @@ export class CombatScene extends Phaser.Scene {
     }
     let list = this.combat.combatants
       .filter((c) => c.side === side && c.hp > 0);
+    const me = this.combat.current;
     // Range action: only show targets within the weapon's max range
-    // (Chebyshev distance from the active member).
+    // (Chebyshev distance from the active member) AND with a clear
+    // line of sight. Arena cells flagged `obstructs: true` block the
+    // shot — a tree / boulder in the middle of the path drops the
+    // target from the picker.
     if (this.pendingAction.kind === "range") {
-      const me = this.combat.current;
       const max = maxRangeFor(this.pendingAction.weapon);
       list = list.filter((t) => {
         const dc = Math.abs(t.position.col - me.position.col);
         const dr = Math.abs(t.position.row - me.position.row);
-        return Math.max(dc, dr) <= max;
+        if (Math.max(dc, dr) > max) return false;
+        return this.combat.hasLineOfSight(me.position, t.position);
       });
+    } else if (this.pendingAction.kind === "cast") {
+      // Damaging spells (projectile-shaped — magic_arrow, fireball,
+      // lightning_bolt, magic_dart, fire_bolt, undead_damage, …)
+      // honour cover. Heals + buffs are willed-into-place: caster's
+      // intent reaches the ally regardless of intervening cells.
+      const spell = this.pendingAction.spell;
+      const e = spell.effect_type;
+      const projectileSpell =
+        e === "damage" ||
+        e === "undead_damage" ||
+        e === "lightning_bolt" ||
+        e === "aoe_fireball";
+      if (projectileSpell) {
+        list = list.filter((t) =>
+          this.combat.hasLineOfSight(me.position, t.position),
+        );
+      }
     }
     return list.slice(0, 9);
   }
@@ -2602,11 +2719,24 @@ export class CombatScene extends Phaser.Scene {
 
     const [dCol, dRow] = DIR_DELTAS[dir];
     const range = typeof spell.range === "number" ? spell.range : 99;
+    // Directional bolts honour BOTH the perimeter wall AND arena-map
+    // obstructs. magic_dart / lightning_bolt aren't routed through
+    // `currentTargetList` (they pick a direction, not a target from a
+    // list), so the LOS filter that gates Range + select-enemy spells
+    // doesn't apply here — we have to feed the obstructions into the
+    // ray's stop predicate directly. Walkability is intentionally NOT
+    // checked: a pit you can't stand in shouldn't stop an arrow flying
+    // overhead.
+    const obstructsRay = (c: number, r: number): boolean => {
+      if (isWall(c, r)) return true;
+      const cell = this.arenaCells?.[r]?.[c];
+      return cell?.obstructs === true;
+    };
     const trace = traceDirectionalRay(
       me.position,
       { dCol, dRow },
       range,
-      (c, r) => isWall(c, r),
+      obstructsRay,
       (c, r) => this.combat.combatantAt(c, r),
     );
 
@@ -2653,6 +2783,110 @@ export class CombatScene extends Phaser.Scene {
       }
       // Cast consumes the rest of the turn whether or not the dart
       // connected, mirroring how throw / cast already behave.
+      this.combat.movePoints = 0;
+      this.refreshAll();
+      if (this.combat.isOver) return this.endEncounter();
+      this.endActorTurn();
+    } finally {
+      this.busy = false;
+    }
+  }
+
+  /**
+   * Directional-projectile counterpart for ranged WEAPONS — short
+   * bows, long bows, slings. Mirrors `fireDirectionalSpell`'s
+   * structure (trace ray, fly projectile, resolve first creature
+   * hit, FF risk on allies) but uses weapon resolution instead of
+   * spell math: consume one ammo from the stash, run `resolveThrow`
+   * (the same dice helper Range/Throw already use), and wear the
+   * weapon's durability one tick on a successful hit.
+   *
+   * Obstructions stop the bolt the same way they stop directional
+   * spells; the `obstructsRay` predicate is built locally so this
+   * method's behaviour stays self-contained.
+   */
+  private async fireDirectionalRange(dir: Direction): Promise<void> {
+    const action = this.pendingAction;
+    if (!action || action.kind !== "range-direction") return;
+    const me = this.combat.current;
+    const weapon = action.weapon;
+
+    // Ammo gate — abort cleanly if the stash is empty. The Range
+    // row's enable check upstream catches the typical case, but a
+    // bow with built-in ammo (Rock — both throwable AND ranged)
+    // has no `ammo` string and shouldn't try to consume from the
+    // stash, mirroring the existing target-range branch.
+    const ammoName = weapon.ammo;
+    const partyData = gameState.partyData;
+    if (ammoName && partyData && !consumeAmmoFromStash(partyData, ammoName)) {
+      this.combat.log.push(`${me.name} is out of ${ammoName}!`);
+      this.refreshLog();
+      this.pendingAction = null;
+      this.mode = "default";
+      this.refreshActionMenu();
+      return;
+    }
+
+    this.busy = true;
+    this.mode = "default";
+    this.pendingAction = null;
+    this.clearPicker();
+
+    const [dCol, dRow] = DIR_DELTAS[dir];
+    // Bows don't carry an explicit range value yet — use maxRangeFor
+    // so each weapon type still has its tactical reach (long bow >
+    // short bow > sling). Same predicate as the directional spell
+    // path: perimeter walls + obstructing cells stop the bolt;
+    // walkability doesn't matter for an arrow in flight.
+    const range = maxRangeFor(weapon);
+    const obstructsRay = (c: number, r: number): boolean => {
+      if (isWall(c, r)) return true;
+      const cell = this.arenaCells?.[r]?.[c];
+      return cell?.obstructs === true;
+    };
+    const trace = traceDirectionalRay(
+      me.position,
+      { dCol, dRow },
+      range,
+      obstructsRay,
+      (c, r) => this.combat.combatantAt(c, r),
+    );
+
+    Sfx.play("arrow");
+    try {
+      const start = this.bodyXY(me);
+      const endPx = {
+        x: this.tileX(trace.endCol),
+        y: this.tileY(trace.endRow),
+      };
+      // Bow / crossbow / sling whistle and projectile streak — same
+      // VFX as the target-range path so the two firing modes feel
+      // like cousins, not strangers.
+      await projectileLine(this, start, endPx, VFX_COLOURS.white, 220);
+
+      if (trace.hitId) {
+        const target = this.combat.byId(trace.hitId);
+        const result = resolveThrow(me, target, weapon, defaultRng);
+        const friendly = target.side === me.side;
+        const tag = friendly ? " — FRIENDLY FIRE!" : "";
+        this.combat.log.push(
+          result.hit
+            ? `${me.name} looses ${weapon.name} → ${target.name} (${dir.toUpperCase()})${tag} — ${result.damage} dmg${result.killed ? ", defeated!" : "."}`
+            : `${me.name} looses ${weapon.name} → ${target.name} (${dir.toUpperCase()}) — miss.`,
+        );
+        await this.animateHit(target, result);
+        this.refreshHp(target);
+        if (result.hit) {
+          this.applyWeaponDurability(me.id);
+          this.applyArmorDurability(target.id);
+        }
+      } else {
+        this.combat.log.push(
+          `${me.name}'s ${weapon.name} flies ${dir.toUpperCase()} — nothing in line.`,
+        );
+      }
+      // Same end-of-turn behaviour as throw/cast/target-range: the
+      // shot consumes the rest of the turn.
       this.combat.movePoints = 0;
       this.refreshAll();
       if (this.combat.isOver) return this.endEncounter();
@@ -3587,6 +3821,11 @@ export class CombatScene extends Phaser.Scene {
       const nc = actor.position.col + dc;
       const nr = actor.position.row + dr;
       if (isWall(nc, nr)) continue;
+      // Honour arena-map walkability — rocks / pits in the picked
+      // map don't get a move-hint flash, matching the move that
+      // tryMove would refuse anyway.
+      const cell = this.arenaCells?.[nr]?.[nc];
+      if (cell && cell.walkable === false) continue;
       const occupant = this.combat.combatantAt(nc, nr);
       if (occupant && occupant.side === actor.side) continue;
       const hint = this.add

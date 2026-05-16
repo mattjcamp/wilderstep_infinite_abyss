@@ -57,7 +57,9 @@
       "party_can_equip": false,
       "character_can_equip": true,
       "buy": 250,
-      "sell": 125
+      "sell": 125,
+      "targeting": "target",
+      "range": 8
     },
     {
       "id": "dagger",
@@ -76,7 +78,8 @@
       "party_can_equip": false,
       "character_can_equip": true,
       "buy": 20,
-      "sell": 10
+      "sell": 10,
+      "range": 4
     },
     {
       "id": "fists",
@@ -169,7 +172,9 @@
       "party_can_equip": false,
       "character_can_equip": true,
       "buy": 150,
-      "sell": 75
+      "sell": 75,
+      "targeting": "directional",
+      "range": 10
     },
     {
       "id": "mace",
@@ -223,7 +228,8 @@
       "party_can_equip": false,
       "character_can_equip": true,
       "buy": 0,
-      "sell": 0
+      "sell": 0,
+      "range": 4
     },
     {
       "id": "short_bow",
@@ -243,7 +249,9 @@
       "party_can_equip": false,
       "character_can_equip": true,
       "buy": 60,
-      "sell": 30
+      "sell": 30,
+      "targeting": "directional",
+      "range": 6
     },
     {
       "id": "silver_bow",
@@ -260,7 +268,9 @@
       "ammo": "arrows",
       "durability": 0,
       "party_can_equip": false,
-      "character_can_equip": true
+      "character_can_equip": true,
+      "targeting": "target",
+      "range": 10
     },
     {
       "id": "sling",
@@ -280,7 +290,9 @@
       "party_can_equip": false,
       "character_can_equip": true,
       "buy": 60,
-      "sell": 30
+      "sell": 30,
+      "targeting": "directional",
+      "range": 6
     },
     {
       "id": "spear",
@@ -636,7 +648,8 @@
       "party_can_equip": false,
       "character_can_equip": false,
       "buy": 35,
-      "sell": 15
+      "sell": 15,
+      "range": 4
     },
     {
       "id": "glowcap_mushroom",
@@ -734,7 +747,8 @@
       "party_can_equip": false,
       "character_can_equip": false,
       "buy": 70,
-      "sell": 35
+      "sell": 35,
+      "range": 4
     },
     {
       "id": "lockpick",
@@ -804,7 +818,8 @@
       "party_can_equip": false,
       "character_can_equip": false,
       "buy": 75,
-      "sell": 35
+      "sell": 35,
+      "range": 4
     },
     {
       "id": "poison_vial",
@@ -820,7 +835,8 @@
       "party_can_equip": false,
       "character_can_equip": false,
       "buy": 50,
-      "sell": 25
+      "sell": 25,
+      "range": 4
     },
     {
       "id": "rope",
@@ -955,7 +971,8 @@
       "party_can_equip": false,
       "character_can_equip": false,
       "buy": 60,
-      "sell": 30
+      "sell": 30,
+      "range": 4
     }
   ]
 }

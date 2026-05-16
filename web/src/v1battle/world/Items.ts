@@ -80,6 +80,32 @@ export interface Item {
   damage_type?: string;
   /** Effect id this item confers on the party while equipped. */
   grants_effect?: string;
+  /**
+   * Firing mode for ranged weapons (`ranged: true`). `"target"` is
+   * the familiar pick-an-enemy-from-the-list flow with LOS gating —
+   * suits precision instruments (crossbow, silver bow). `"directional"`
+   * is a Magic-Dart-style cardinal-line shot — caster picks an
+   * arrow key, the projectile flies in that line and hits the first
+   * creature, with friendly-fire risk. Suits volley-style weapons
+   * (short bow, long bow, sling).
+   *
+   * Default when omitted is `"target"`. Field is ignored for non-
+   * ranged items.
+   */
+  targeting?: "target" | "directional";
+  /**
+   * Maximum tile distance the weapon can reach. Used by both Range
+   * (target-pick LOS filter) and the directional-fire ray trace.
+   * Authoritative when set; `maxRangeFor` falls back to the legacy
+   * item_type switch when omitted so older items.json data keeps
+   * working without an immediate edit.
+   *
+   * Convention: 1 means melee-only (the default for non-ranged
+   * items). Longer values give bow types tactical depth — Long Bow
+   * 10 reaches across the arena, Sling 6 wants to close before
+   * firing.
+   */
+  range?: number;
 }
 
 interface RawItem extends Partial<Item> {
@@ -99,37 +125,35 @@ function isItemSlot(s: string): s is ItemSlot {
   return s === "hands" || s === "body" || s === "head";
 }
 
+/**
+ * Hydrate a raw items.json entry into a typed `Item`.
+ *
+ * Project principle: catalog fields are configured in the data model
+ * (the `Item` interface + items.json). The loader carries every
+ * known field through unconditionally, so adding a new attribute to
+ * `Item` + items.json is sufficient — no separate copy point here to
+ * remember. An earlier per-field enumeration silently dropped the
+ * `targeting` and `range` fields when they were added, which is the
+ * class of regression this spread avoids.
+ *
+ * The spread is followed by a handful of overrides for fields whose
+ * runtime shape differs from the raw JSON: `slots` is narrowed to
+ * the v2 `ItemSlot` union so unknown strings can't leak in, and
+ * `effect` is normalised from `undefined` to `null` so downstream
+ * consumers can switch on a single absent value. Required identity
+ * fields (`id`, `category`, `name`) are validated upfront and then
+ * re-stamped so TypeScript sees them as definitely-present on the
+ * returned object.
+ */
 function itemFromRaw(r: RawItem): Item | null {
   if (!r.id || !r.category || !r.name) return null;
-  const slots = (r.slots ?? []).filter(isItemSlot);
   return {
+    ...r,
     id: r.id,
     category: r.category,
     name: r.name,
-    description: r.description,
-    slots,
-    character_can_equip: r.character_can_equip,
-    party_can_equip: r.party_can_equip,
-    usable: r.usable,
-    combat_usable: r.combat_usable,
+    slots: (r.slots ?? []).filter(isItemSlot),
     effect: r.effect ?? null,
-    power: r.power,
-    ranged: r.ranged,
-    melee: r.melee,
-    throwable: r.throwable,
-    evasion: r.evasion,
-    ac_bonus: r.ac_bonus,
-    durability: r.durability,
-    item_type: r.item_type,
-    icon: r.icon,
-    buy: r.buy,
-    sell: r.sell,
-    stackable: r.stackable,
-    charges: r.charges,
-    ammo: r.ammo,
-    bonus_damage: r.bonus_damage,
-    damage_type: r.damage_type,
-    grants_effect: r.grants_effect,
   };
 }
 

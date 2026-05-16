@@ -62,6 +62,31 @@ interface RawMapsFile {
  *  arena. The simulator's picker filters on this. */
 export const ARENA_TAG = "battle_screen_arena";
 
+/**
+ * Compact arena cell the simulator + CombatScene consume. Carries
+ * just the three fields combat cares about right now:
+ *
+ *   - `sprite`     — already-resolved /sprites/… URL for the floor.
+ *                    `null` falls back to the scene's default fill.
+ *   - `walkable`   — true if a combatant can stand on the cell.
+ *                    Movement (tryMove, monster AI step) refuses
+ *                    `walkable === false` cells.
+ *   - `obstructs`  — true if the cell blocks a straight line for
+ *                    projectiles / spells. Range + damage-cast
+ *                    targeting walks Bresenham and rejects targets
+ *                    whose intermediate cells obstruct.
+ *
+ * Defaults when a cell is missing or malformed: walkable=true,
+ * obstructs=false, sprite=null — i.e. "open ground with default
+ * appearance" — so a partial map degrades gracefully into the
+ * legacy arena.
+ */
+export interface ArenaCellInfo {
+  sprite: string | null;
+  walkable: boolean;
+  obstructs: boolean;
+}
+
 let _flatCache: ArenaMap[] | null = null;
 
 function fromRaw(raw: RawMap): ArenaMap | null {

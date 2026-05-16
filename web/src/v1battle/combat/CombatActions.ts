@@ -336,6 +336,15 @@ export function isRanged(item: Item): boolean {
  * the action stays usable when new weapon types are added.
  */
 export function maxRangeFor(item: Item): number {
+  // Authoritative source: the item's own `range`. Authors edit
+  // ranges per-weapon in items.json without touching code.
+  if (typeof item.range === "number" && Number.isFinite(item.range) && item.range > 0) {
+    return item.range;
+  }
+  // Legacy fallback: derive from item_type for older catalogs that
+  // haven't been updated with explicit ranges yet. New v2 data
+  // should set `range` directly; this branch keeps existing tests
+  // and pre-v2 saves from regressing.
   switch (item.item_type) {
     case "long_bow":  return 10;
     case "crossbow":  return 8;

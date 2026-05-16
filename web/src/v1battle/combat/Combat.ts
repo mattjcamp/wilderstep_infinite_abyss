@@ -175,6 +175,23 @@ export class Combat {
    *  / escape labels animate in sync with HP changes. */
   private pendingConsumeEvents: ConsumeEvent[] = [];
 
+  /**
+   * Optional per-cell walkability predicate, supplied by the arena
+   * map. Default = no extra blocking — only the hardcoded perimeter
+   * wall stops movement. `isBlocked` ORs this with `isWall` so
+   * `tryMove`, the AI step, and `findFreeTileNear` all honour
+   * authored obstacles like rocks / pits.
+   */
+  private blockedPredicate: (col: number, row: number) => boolean = () => false;
+  /**
+   * Optional per-cell line-of-sight predicate. Cells where this
+   * returns true stop projectiles + ranged spells. Default = nothing
+   * obstructs (open arena). `hasLineOfSight` walks Bresenham between
+   * attacker and target and rejects the line on the first
+   * intermediate obstruction.
+   */
+  private obstructsPredicate: (col: number, row: number) => boolean = () => false;
+
   private rng: RNG;
 
   constructor(party: Combatant[], enemies: Combatant[], rng: RNG = defaultRng) {
@@ -268,6 +285,69 @@ export class Combat {
 
   alive(side: Side): Combatant[] {
     return this.combatants.filter((c) => c.side === side && c.hp > 0);
+  }
+
+  /**
+   * Install (or clear) the per-cell movement-block predicate. Pass
+   * `null` to reset to "no extra blocking". CombatScene installs the
+   * predicate after the scene wires the arena map's `walkable` flags.
+   */
+  setBlockedPredicate(fn: ((col: number, row: number) => boolean) | null): void {
+    this.blockedPredicate = fn ?? (() => false);
+  }
+
+  /**
+   * Install (or clear) the line-of-sight predicate. Pass `null` to
+   * reset. Cells where the predicate returns true block ranged
+   * attacks and damage spells that go through `hasLineOfSight`.
+   */
+  setObstructsPredicate(fn: ((col: number, row: number) => boolean) | null): void {
+    this.obstructsPredicate = fn ?? (() => false);
+  }
+
+  /** True when `(col, row)` is a wall or has been flagged unwalkable
+   *  by the arena map. Used in place of bare `isWall` calls. */
+  private isBlocked(col: number, row: number): boolean {
+    return isWall(col, row) || this.blockedPredicate(col, row);
+  }
+
+  /**
+   * True iff a straight line from `from` → `to` doesn't pass through
+   * any cell flagged as obstructing. Uses an integer Bresenham walk;
+   * the endpoints themselves are NOT tested (you don't shoot through
+   * yourself, and the target tile is your aim point, not cover).
+   *
+   * No predicate installed → always true; v1 callers that don't care
+   * about cover get the original line-free behaviour. The blocking
+   * cell itself acts as cover even when its `walkable` is true (tall
+   * grass) — the two flags are independent.
+   */
+  hasLineOfSight(from: GridPos, to: GridPos): boolean {
+    let x0 = from.col;
+    let y0 = from.row;
+    const x1 = to.col;
+    const y1 = to.row;
+    const dx = Math.abs(x1 - x0);
+    const dy = Math.abs(y1 - y0);
+    const sx = x0 < x1 ? 1 : -1;
+    const sy = y0 < y1 ? 1 : -1;
+    let err = dx - dy;
+    while (x0 !== x1 || y0 !== y1) {
+      const e2 = 2 * err;
+      if (e2 > -dy) {
+        err -= dy;
+        x0 += sx;
+      }
+      if (e2 < dx) {
+        err += dx;
+        y0 += sy;
+      }
+      // Reached the target — endpoint itself never obstructs the
+      // shot at that target.
+      if (x0 === x1 && y0 === y1) break;
+      if (this.obstructsPredicate(x0, y0)) return false;
+    }
+    return true;
   }
 
   combatantAt(col: number, row: number): Combatant | null {
@@ -396,7 +476,7 @@ export class Combat {
     const nc = actor.position.col + dc;
     const nr = actor.position.row + dr;
 
-    if (!inBounds(nc, nr) || isWall(nc, nr)) {
+    if (!inBounds(nc, nr) || this.isBlocked(nc, nr)) {
       return { kind: "blocked", reason: "wall" };
     }
 
@@ -587,7 +667,7 @@ export class Combat {
       const [dc, dr] = DIR_DELTAS[dir];
       const nc = actor.position.col + dc;
       const nr = actor.position.row + dr;
-      if (!inBounds(nc, nr) || isWall(nc, nr)) continue;
+      if (!inBounds(nc, nr) || this.isBlocked(nc, nr)) continue;
       const occupant = this.combatantAt(nc, nr);
       // Allow stepping into a tile occupied by the target's party so
       // the bump-attack path can resolve — but only if it's an enemy
@@ -805,7 +885,7 @@ export class Combat {
           if (Math.max(Math.abs(dc), Math.abs(dr)) !== r) continue;
           const c = origin.col + dc;
           const ro = origin.row + dr;
-          if (!inBounds(c, ro) || isWall(c, ro)) continue;
+          if (!inBounds(c, ro) || this.isBlocked(c, ro)) continue;
           if (this.combatantAt(c, ro)) continue;
           return { col: c, row: ro };
         }
