@@ -3,40 +3,34 @@
   "quests": [
     {
       "id": "rats",
-      "name": "Rats",
-      "description": "Get rid of those dang rats",
+      "name": "The Giant Rats",
+      "description": "Get rid of those giant rats in their giant rat hiole",
       "tags": [
         "rats"
       ],
       "steps": [
         {
           "id": "rats_step_1",
-          "name": "Step 1",
-          "kind": "visit",
+          "name": "Step 1 Kill the Giant Rats",
+          "kind": "kill",
           "params": null,
+          "description": "Kill the Giant Rats in the cave under the shop",
           "tags": [
             "rats"
           ]
         }
       ],
       "quest_giver": {
-        "npc_name": "Old Hermit",
-        "npc_sprite": "person/king1.png",
-        "start_dialog": "Yo",
-        "end_dialog": "Sweet, coode dude"
+        "npc_name": "Jerald",
+        "npc_sprite": "person/hobbit2.png",
+        "start_dialog": "I'm the owner of the General Shop and my basement is infested with Giant Rats. Can you take care of this problem for me?",
+        "end_dialog": "Thank you so much for getting rid of those rats and dealing with that cave system... Who knew?"
       },
       "rewards": {
-        "xp": 5,
-        "gold": 5,
+        "xp": 100,
+        "gold": 100,
         "items": [
-          "halberd"
-        ],
-        "tile_remove": [
-          {
-            "map": "town_one_square",
-            "col": 1,
-            "row": 1
-          }
+          "camping_supplies"
         ]
       }
     }

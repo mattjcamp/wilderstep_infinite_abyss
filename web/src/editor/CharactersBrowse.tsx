@@ -439,6 +439,7 @@ export function CharactersBrowse({ moduleId }: { moduleId: string }) {
                     character={c}
                     races={state.races}
                     classes={state.classes}
+                    items={state.items}
                     onChange={(next) => onUpdate(c.id, next)}
                   />
                   <div>

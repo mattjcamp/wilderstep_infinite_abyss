@@ -2,18 +2,155 @@
 
 /**
  * BattleSimLauncher — visual-test launcher for the ported v1
- * CombatScene. For this phase the simulator uses v1's bundled sample
- * party + sample encounter (no v2 data adapter yet). Once the v1
- * visuals are confirmed working, the next pass adds the v2→v1 data
- * adapter so battles fight the player's real party against authored
- * encounters from v2's catalogs.
+ * CombatScene. Loads the module's encounter + monster catalogs so the
+ * picker can render each encounter's lead-monster sprite alongside
+ * the name. Party comes from `modules/<id>/party.json` (see
+ * BattleSimV1Mount + the live loadParty path in CombatScene).
  */
 
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { BattleSimV1Mount } from "./BattleSimV1Mount";
+import { loadAllEncounters, _clearEncountersCache, type EncounterTemplate } from "@/v1battle/world/Encounters";
+import { loadMonsters, _clearMonstersCache, type MonsterSpec } from "@/v1battle/data/monsters";
+import { loadArenaMaps, _clearMapsCache, type ArenaMap } from "@/v1battle/world/Maps";
+import { setActiveModule, withBase } from "@/v1battle/world/Module";
+import { ARENA_COLS, ARENA_ROWS } from "@/v1battle/combat/Arena";
 
 export function BattleSimLauncher({ moduleId }: { moduleId: string }) {
   const [started, setStarted] = useState(false);
+  const [encounters, setEncounters] = useState<EncounterTemplate[]>([]);
+  const [monsters, setMonsters] = useState<Map<string, MonsterSpec>>(
+    () => new Map(),
+  );
+  const [arenaMaps, setArenaMaps] = useState<ArenaMap[]>([]);
+  const [selectedId, setSelectedId] = useState<string>("");
+  /** Empty string = "no map, use the default dark-fill arena". Any
+   *  non-empty value is an `ArenaMap.id`. */
+  const [selectedMapId, setSelectedMapId] = useState<string>("");
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  // Pin loaders to the picked module + reset all three caches when
+  // switching modules so the pickers show the right catalog. The
+  // caches are also reset in case the user navigates between modules
+  // without a full page reload.
+  useEffect(() => {
+    setActiveModule(moduleId);
+    _clearEncountersCache();
+    _clearMonstersCache();
+    _clearMapsCache();
+    let cancelled = false;
+    (async () => {
+      try {
+        // Three catalogs in parallel — encounters, monsters (so the
+        // picker rows can render lead-monster sprites), and arena
+        // maps (so the Map picker has options the moment it renders).
+        const [list, mons, maps] = await Promise.all([
+          loadAllEncounters(),
+          loadMonsters(),
+          loadArenaMaps(),
+        ]);
+        if (cancelled) return;
+        setEncounters(list);
+        setMonsters(mons);
+        setArenaMaps(maps);
+        // Default to the first eligible entry so Start Battle works
+        // without an extra click. Empty catalog → keep selectedId empty
+        // and the Start button disables itself below.
+        setSelectedId((prev) => prev || list[0]?.id || "");
+      } catch (err) {
+        if (cancelled) return;
+        setLoadError(err instanceof Error ? err.message : String(err));
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [moduleId]);
+
+  // Group encounters by area for the popover sections. Memoised so
+  // the picker doesn't rebuild on every selection change.
+  const grouped = useMemo(() => {
+    const byArea = new Map<string, EncounterTemplate[]>();
+    for (const e of encounters) {
+      const arr = byArea.get(e.area) ?? [];
+      arr.push(e);
+      byArea.set(e.area, arr);
+    }
+    // Stable area order: dungeon first (most encounters), then
+    // overworld, then anything else in alpha order.
+    const sortAreas = (a: string, b: string): number => {
+      const order = (s: string): number =>
+        s === "dungeon" ? 0 : s === "overworld" ? 1 : 2;
+      const oa = order(a);
+      const ob = order(b);
+      return oa !== ob ? oa - ob : a.localeCompare(b);
+    };
+    return [...byArea.entries()]
+      .sort(([a], [b]) => sortAreas(a, b))
+      .map(([area, list]) => ({
+        area,
+        encounters: list.slice().sort(
+          (x, y) => x.level - y.level || x.name.localeCompare(y.name),
+        ),
+      }));
+  }, [encounters]);
+
+  const selected = useMemo(
+    () => encounters.find((e) => e.id === selectedId) ?? null,
+    [encounters, selectedId],
+  );
+
+  const selectedMap = useMemo(
+    () => arenaMaps.find((m) => m.id === selectedMapId) ?? null,
+    [arenaMaps, selectedMapId],
+  );
+
+  // Resolve the picked map's grid into a sprite-URL matrix the
+  // CombatScene can preload + render. Each cell's `sprite` is a
+  // folder-relative path like "map/grass1.png"; we prepend `/sprites/`
+  // (and the deploy base, if any) here so the scene sees a ready-to-
+  // fetch URL. Cells outside the arena bounds are clipped; cells with
+  // no sprite become `null` (scene falls back to default fill).
+  const arenaTileSprites = useMemo(() => {
+    if (!selectedMap) return undefined;
+    const matrix: (string | null)[][] = [];
+    for (let r = 0; r < ARENA_ROWS; r++) {
+      const row: (string | null)[] = [];
+      const sourceRow = selectedMap.grid[r];
+      for (let c = 0; c < ARENA_COLS; c++) {
+        const cell = sourceRow?.[c];
+        const sprite = cell?.sprite;
+        row.push(
+          typeof sprite === "string" && sprite.length > 0
+            ? withBase(`/sprites/${sprite}`)
+            : null,
+        );
+      }
+      matrix.push(row);
+    }
+    return matrix;
+  }, [selectedMap]);
+
+  // Hot-swap the in-flight battle on encounter OR map change so the
+  // user doesn't have to remember to press Restart Battle.
+  const restartIfRunning = () => {
+    if (!started) return;
+    setStarted(false);
+    setTimeout(() => setStarted(true), 0);
+  };
+  const pickEncounter = (id: string) => {
+    setSelectedId(id);
+    restartIfRunning();
+  };
+  const pickMap = (id: string) => {
+    setSelectedMapId(id);
+    restartIfRunning();
+  };
+
+  // The Start button has caused at least one "battle just disappears"
+  // bug in the past — when it kept focus, an Enter/Space pressed
+  // inside the canvas bubbled back to it and re-toggled `started`,
+  // unmounting the scene. Capture the ref so we can blur() after
+  // every click.
+  const startBtnRef = useRef<HTMLButtonElement>(null);
 
   return (
     <div className="p-4">
@@ -22,46 +159,320 @@ export function BattleSimLauncher({ moduleId }: { moduleId: string }) {
           Battle Simulator
         </h1>
         <p className="mt-1 text-sm text-parchment/55">
-          Visual test of v1&apos;s ported CombatScene. Uses v1&apos;s
-          sample party + sample encounter so we can verify the original
-          look, feel, and animations render correctly before wiring v2
-          data. Module: <span className="font-mono">{moduleId}</span>
+          Visual test of v1&apos;s ported CombatScene driving the v2
+          data model end-to-end. Party comes from{" "}
+          <span className="font-mono">modules/{moduleId}/party.json</span>;
+          pick an encounter below to choose the fight.
         </p>
       </header>
 
-      <section className="mb-4 flex items-center gap-3">
+      <section className="mb-4 flex flex-wrap items-start gap-3">
+        <div className="flex flex-col gap-1">
+          <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+            Encounter
+          </span>
+          <EncounterPicker
+            selected={selected}
+            grouped={grouped}
+            monsters={monsters}
+            onPick={pickEncounter}
+            disabled={encounters.length === 0}
+            placeholder={
+              encounters.length === 0
+                ? loadError
+                  ? "(failed to load)"
+                  : "(loading…)"
+                : "Pick an encounter…"
+            }
+          />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+            Arena Map
+          </span>
+          <select
+            value={selectedMapId}
+            onChange={(e) => pickMap(e.target.value)}
+            className="min-w-[200px] rounded border border-parchment/30 bg-ink/60 px-2 py-1 text-sm text-parchment focus:border-parchment/60 focus:outline-none"
+            title={
+              arenaMaps.length === 0
+                ? `No maps tagged "battle_screen_arena" in this module.`
+                : undefined
+            }
+          >
+            <option value="">(default arena)</option>
+            {arenaMaps.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
         <button
+          ref={startBtnRef}
           type="button"
-          // `blur()` after the toggle is load-bearing: without it the
-          // button keeps keyboard focus, and any Enter/Space the user
-          // presses INSIDE the Phaser canvas (e.g. to confirm an
-          // action picker) bubbles back to this button and re-fires
-          // its onClick — silently flipping `started` back to false
-          // and unmounting the canvas. The unmount produces no
-          // exception, which makes it look like the battle "just
-          // disappears" when the player tries to use the keyboard.
-          onClick={(e) => {
+          onClick={() => {
             setStarted((v) => !v);
-            e.currentTarget.blur();
+            startBtnRef.current?.blur();
           }}
-          className="rounded border border-ember/60 bg-ember/30 px-4 py-1 text-sm text-parchment hover:bg-ember/50"
+          disabled={!selected}
+          className="mt-[18px] rounded border border-ember/60 bg-ember/30 px-4 py-1 text-sm text-parchment hover:bg-ember/50 disabled:opacity-50"
         >
           {started ? "Restart Battle" : "Start Battle"}
         </button>
-        <p className="text-xs text-parchment/50">
-          Sample data: 4-member party vs a random sample encounter.
-        </p>
+
+        {selected && (
+          <div className="mt-[18px] flex items-center gap-3">
+            <p className="text-xs text-parchment/55">
+              {selected.area} · lvl {selected.level} ·{" "}
+              {selected.monsters.length} monster
+              {selected.monsters.length === 1 ? "" : "s"}
+            </p>
+            <MonsterRoster
+              monsterIds={selected.monsters}
+              monsters={monsters}
+            />
+          </div>
+        )}
       </section>
 
-      {started ? (
-        // Remounted on every Start press via key, so a "Restart" gives
-        // a fresh scene with fresh dice rolls + a fresh sample encounter.
-        <BattleSimV1Mount key={String(started)} moduleId={moduleId} />
+      {loadError && (
+        <p className="mb-3 text-xs text-rust">
+          Couldn&apos;t load encounters.json: {loadError}
+        </p>
+      )}
+
+      {started && selected ? (
+        // Remount on every Start press, encounter swap, OR map swap
+        // so each run starts from a fresh scene with the right
+        // arena. `selectedMap?.id ?? ""` keeps the key stable when no
+        // map is picked.
+        <BattleSimV1Mount
+          key={`${started}:${selected.id}:${selectedMap?.id ?? ""}`}
+          moduleId={moduleId}
+          monsterIds={selected.monsters}
+          arenaTileSprites={arenaTileSprites}
+        />
       ) : (
         <p className="text-sm text-parchment/45">
-          Press <em>Start Battle</em> to mount the v1 combat scene.
+          Press <em>Start Battle</em> to mount the v1 combat scene with
+          the picked encounter.
         </p>
       )}
     </div>
+  );
+}
+
+/**
+ * Resolve the sprite the picker should show for a given encounter.
+ * Prefers the looked-up monster's `sprite` (a pre-resolved
+ * `/sprites/...` URL) when the catalog has it; falls back to the raw
+ * `monster_party_tile` path so the row still renders something useful
+ * before monsters.json finishes loading.
+ */
+function leadSpriteFor(
+  encounter: EncounterTemplate,
+  monsters: ReadonlyMap<string, MonsterSpec>,
+): string | null {
+  const leadId = encounter.monsters[0] ?? encounter.monsterPartyTile;
+  const spec = leadId ? monsters.get(leadId) : null;
+  return spec?.sprite ?? null;
+}
+
+/**
+ * Button + popover encounter picker. Native <select>/<option>
+ * elements can't render images, so we replace the dropdown with a
+ * custom listbox that has the lead-monster sprite at the front of
+ * every row, grouped by area. Click outside or press ESC to close.
+ */
+function EncounterPicker({
+  selected,
+  grouped,
+  monsters,
+  onPick,
+  disabled,
+  placeholder,
+}: {
+  selected: EncounterTemplate | null;
+  grouped: Array<{ area: string; encounters: EncounterTemplate[] }>;
+  monsters: ReadonlyMap<string, MonsterSpec>;
+  onPick: (id: string) => void;
+  disabled: boolean;
+  placeholder: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  // Close on outside-click + ESC. Mirrors the SpritePicker pattern so
+  // the two pickers feel consistent.
+  useEffect(() => {
+    if (!open) return;
+    const onDocDown = (e: MouseEvent) => {
+      if (!rootRef.current) return;
+      if (!rootRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onDocDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDocDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  const selectedSprite = selected ? leadSpriteFor(selected, monsters) : null;
+  const selectedLabel = selected
+    ? `${selected.name} (lvl ${selected.level})`
+    : placeholder;
+
+  return (
+    <div ref={rootRef} className="relative inline-block">
+      <button
+        type="button"
+        onClick={() => !disabled && setOpen((v) => !v)}
+        disabled={disabled}
+        className="flex min-w-[280px] items-center gap-2 rounded border border-parchment/30 bg-ink/60 px-2 py-1 text-left text-sm text-parchment hover:border-parchment/60 disabled:opacity-50"
+      >
+        <div className="h-8 w-8 shrink-0 rounded border border-parchment/15 bg-ink/80">
+          {selectedSprite ? (
+            <img
+              src={selectedSprite}
+              alt=""
+              width={32}
+              height={32}
+              style={{ imageRendering: "pixelated" }}
+              className="h-full w-full object-contain"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).style.visibility =
+                  "hidden";
+              }}
+            />
+          ) : null}
+        </div>
+        <span className="flex-1 truncate">{selectedLabel}</span>
+        <span className="text-xs text-parchment/45" aria-hidden>
+          ▾
+        </span>
+      </button>
+
+      {open ? (
+        <div
+          role="listbox"
+          className="absolute left-0 top-full z-20 mt-1 max-h-[420px] w-[420px] overflow-auto rounded border border-parchment/25 bg-ink/95 p-2 shadow-xl"
+        >
+          {grouped.map((g) => (
+            <section key={g.area} className="mb-2 last:mb-0">
+              <h3 className="mb-1 px-1 text-[10px] uppercase tracking-wide text-parchment/45">
+                {g.area} · {g.encounters.length}
+              </h3>
+              <ul className="space-y-0.5">
+                {g.encounters.map((e) => {
+                  const isCurrent = selected?.id === e.id;
+                  const sprite = leadSpriteFor(e, monsters);
+                  return (
+                    <li key={e.id}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onPick(e.id);
+                          setOpen(false);
+                        }}
+                        className={`flex w-full items-center gap-2 rounded border px-2 py-1 text-left text-xs transition ${
+                          isCurrent
+                            ? "border-ember/60 bg-ember/20 text-parchment"
+                            : "border-transparent text-parchment/85 hover:border-parchment/30 hover:bg-ink/60"
+                        }`}
+                      >
+                        <div className="h-7 w-7 shrink-0 rounded border border-parchment/15 bg-ink/80">
+                          {sprite ? (
+                            <img
+                              src={sprite}
+                              alt=""
+                              width={28}
+                              height={28}
+                              style={{ imageRendering: "pixelated" }}
+                              className="h-full w-full object-contain"
+                              onError={(ev) => {
+                                (ev.currentTarget as HTMLImageElement).style.visibility =
+                                  "hidden";
+                              }}
+                            />
+                          ) : null}
+                        </div>
+                        <span className="min-w-0 flex-1 truncate">
+                          {e.name}
+                        </span>
+                        <span className="shrink-0 text-[10px] text-parchment/55">
+                          lvl {e.level} · {e.monsters.length}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * Render one 32×32 sprite per monster in the encounter, in roster
+ * order. Duplicates stay (an encounter with two goblins shows two
+ * goblin sprites) so the player gets a visual sense of how many
+ * enemies are coming. Each thumbnail's title is the monster id +
+ * display name, which doubles as a fallback when the sprite 404s.
+ */
+function MonsterRoster({
+  monsterIds,
+  monsters,
+}: {
+  monsterIds: ReadonlyArray<string>;
+  monsters: ReadonlyMap<string, MonsterSpec>;
+}) {
+  if (monsterIds.length === 0) return null;
+  return (
+    <ul className="flex items-center gap-1">
+      {monsterIds.map((id, i) => {
+        const spec = monsters.get(id) ?? null;
+        const src = spec?.sprite ?? null;
+        const title = spec?.name ? `${spec.name} (${id})` : id;
+        return (
+          <li
+            key={`${id}-${i}`}
+            className="h-8 w-8 shrink-0 rounded border border-parchment/20 bg-ink/80"
+            title={title}
+          >
+            {src ? (
+              <img
+                src={src}
+                alt={title}
+                width={32}
+                height={32}
+                style={{ imageRendering: "pixelated" }}
+                className="h-full w-full object-contain"
+                onError={(e) => {
+                  // Sprite missing on disk — hide the broken-image
+                  // glyph but keep the slot itself so the count of
+                  // monsters in the encounter stays accurate.
+                  (e.currentTarget as HTMLImageElement).style.visibility =
+                    "hidden";
+                }}
+              />
+            ) : (
+              <span className="block truncate px-1 text-[9px] text-parchment/55">
+                {id}
+              </span>
+            )}
+          </li>
+        );
+      })}
+    </ul>
   );
 }

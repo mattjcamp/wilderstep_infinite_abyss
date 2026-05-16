@@ -167,6 +167,26 @@ interface CombatSceneData {
    * remove.
    */
   interiorPath?: string;
+  /**
+   * When true, skip the combat-track playback that would otherwise
+   * fire from `create()`. The simulator opts in via this flag so the
+   * visual-test pane doesn't blare music every time it mounts; the
+   * user's global mute preference (Music.setMuted) stays untouched
+   * either way. The real combat path (from world / dungeon) leaves
+   * this false so the soundtrack rolls in as usual.
+   */
+  silent?: boolean;
+  /**
+   * Per-tile floor sprite URLs for the arena, in `[row][col]` order.
+   * Cells set to `null` (or rows shorter than ARENA_COLS, etc.) fall
+   * back to the legacy dark-fill / `terrainTileId` path so the rest of
+   * the arena keeps working even when the supplied map is smaller than
+   * the arena grid. Sprite URLs are expected pre-resolved — the scene
+   * preloads anything that isn't already in `this.textures` before
+   * `drawArena` paints. Walls remain perimeter-hardcoded; this only
+   * controls the floor.
+   */
+  arenaTileSprites?: ReadonlyArray<ReadonlyArray<string | null>>;
 }
 
 // ── Debug cheats ──────────────────────────────────────────────────
@@ -290,6 +310,13 @@ type PendingAction =
 export class CombatScene extends Phaser.Scene {
   private combat!: Combat;
   private fromWorld = false;
+  /** True when the launcher wants the scene to run without firing
+   *  the combat soundtrack. Set from init-data; see `silent` on
+   *  CombatSceneData. */
+  private silent = false;
+  /** Optional per-cell floor sprite matrix. See `arenaTileSprites`
+   *  on CombatSceneData for the contract. */
+  private arenaTileSprites: ReadonlyArray<ReadonlyArray<string | null>> | null = null;
   private triggerKey: string | null = null;
   private terrainTileId: number | null = null;
   /** Catalog names for this fight; null falls back to makeSampleEncounter. */
@@ -406,6 +433,8 @@ export class CombatScene extends Phaser.Scene {
 
   init(data?: CombatSceneData): void {
     this.fromWorld = !!data?.fromWorld;
+    this.silent = !!data?.silent;
+    this.arenaTileSprites = data?.arenaTileSprites ?? null;
     this.triggerKey = data?.triggerKey ?? null;
     this.terrainTileId = data?.terrainTileId ?? null;
     this.monsterNames = data?.monsterNames && data.monsterNames.length > 0
@@ -528,7 +557,17 @@ export class CombatScene extends Phaser.Scene {
     // (overworld / town / dungeon), and that scene's `create()`
     // calls Music.playArea(...) to swap back — so combat's track
     // bookends the encounter automatically.
-    Music.playArea("combat");
+    //
+    // The simulator opts out via `silent` so the visual-test pane
+    // doesn't blare music every time it mounts. We also stop any
+    // currently-playing track on entry (e.g. if the previous launch
+    // started one before `silent` was added) so the sim stays quiet
+    // end-to-end.
+    if (this.silent) {
+      Music.stop(0);
+    } else {
+      Music.playArea("combat");
+    }
     // Items + spells back the action sub-menus and the
     // party-bridge's stat derivation, so load them up-front before
     // we build Combat.
@@ -567,6 +606,24 @@ export class CombatScene extends Phaser.Scene {
         if (!this.textures.exists(path)) {
           this.load.image(path, path);
           queued += 1;
+        }
+      }
+      // Arena floor sprites — when the launcher supplied a map, every
+      // unique URL in the matrix needs to live in the texture cache
+      // before drawArena() runs, otherwise the per-cell `add.image`
+      // call below would silently no-op. Dedupe so the same grass /
+      // stone / etc. tile isn't queued 200×.
+      if (this.arenaTileSprites) {
+        const seen = new Set<string>();
+        for (const row of this.arenaTileSprites) {
+          for (const url of row) {
+            if (!url || seen.has(url)) continue;
+            seen.add(url);
+            if (!this.textures.exists(url)) {
+              this.load.image(url, url);
+              queued += 1;
+            }
+          }
         }
       }
       if (queued > 0) {
@@ -785,6 +842,7 @@ export class CombatScene extends Phaser.Scene {
     const terrainKey = this.terrainTileId != null
       ? tileSpriteKey(this.terrainTileId)
       : null;
+    const mapTiles = this.arenaTileSprites;
 
     for (let row = 0; row < ARENA_ROWS; row++) {
       for (let col = 0; col < ARENA_COLS; col++) {
@@ -801,11 +859,14 @@ export class CombatScene extends Phaser.Scene {
             .setStrokeStyle(1, 0x1a1a2a);
           continue;
         }
-        // Open floor — terrain sprite if available, otherwise a
-        // moody dark green that reads as "field" without leaning on
-        // U3 styling. Tile sprites are native 32×32 so we don't
+        // Open floor — priority is map-supplied per-cell sprite,
+        // then the legacy terrain sprite, then the moody dark-green
+        // fallback. Tile sprites are native 32×32 so we don't
         // force-resize.
-        if (terrainKey && this.textures.exists(terrainKey)) {
+        const cellUrl = mapTiles?.[row]?.[col] ?? null;
+        if (cellUrl && this.textures.exists(cellUrl)) {
+          this.add.image(x, y, cellUrl).setOrigin(0);
+        } else if (terrainKey && this.textures.exists(terrainKey)) {
           this.add.image(x, y, terrainKey).setOrigin(0);
         } else {
           this.add

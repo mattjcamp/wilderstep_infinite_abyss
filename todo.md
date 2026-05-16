@@ -1,6 +1,8 @@
 npm run dev:all
 
 - in combat screen, add a dice roll area
+- in combat screen, allow custom maps (perhaps constrained to set rows and cols)
+- add combat screen polish (lighting bolt, fireball, other magical effects)
 
 ## Wishlist (long-term, not currently scoped)
 

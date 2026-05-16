@@ -1,88 +1,129 @@
 /**
- * Encounter table loader.
+ * Encounter table loader — reads v2's module-scoped encounters.json
+ * natively.
  *
- * Reads `data/encounters.json` (the same file the Python game uses)
- * and exposes a weighted-sampler keyed by area + level band. The
- * dungeon generator places one encounter per non-entrance room by
- * calling `sampleEncounter("dungeon", ...)`.
+ * v2 differences from v1:
+ *   - Encounters live in a single flat `encounters[]` keyed by `id`.
+ *     `area` is now a field on each entry instead of an outer dict
+ *     bucket. (v1 grouped them under `encounters.dungeon`,
+ *     `encounters.overworld`, etc.)
+ *   - JSON field names are snake_case (`monster_party_tile`,
+ *     `monsters[]`). Monster references are catalog ids
+ *     (`"giant_rat"`), not display names.
+ *   - `terrain` is gone — v1 used it for sea / land encounter
+ *     splitting but no live consumer reads it any more.
  *
- * The JSON format groups encounters by area (`"dungeon"`,
- * `"overworld"`, `"house_basement"`); each entry has:
+ * Runtime model: every entry is hydrated into an `EncounterTemplate`
+ * with the same camelCase fields v1 consumers expect (Dungeon,
+ * InteriorSpawn, Quests, sampleEncounter). `loadEncounters()` returns
+ * the legacy `Record<area, EncounterTemplate[]>` shape so callers
+ * don't have to change — internally we just group the flat array on
+ * the way out.
  *
- *   { name, level (1-8), weight, terrain, monster_party_tile, monsters[] }
- *
- * `monster_party_tile` is the catalog name shown on the map (the lead
- * monster). `monsters` is the full encounter roster handed to combat.
+ * `loadAllEncounters()` is the new flat-list variant the simulator
+ * picker uses — id + area carried along so the UI can render
+ * "[dungeon] Cellar Rats (lvl 1)" entries without a re-pivot.
  */
-import { dataPath } from "./Module";
+import { modulePath } from "./Module";
 import { defaultRng, type RNG } from "../rng";
 
 export interface EncounterTemplate {
+  /** Snake_case id from encounters.json. */
+  id: string;
+  /** Area bucket — "dungeon" / "overworld" / "house_basement". */
+  area: string;
   name: string;
   /** 1..8, used by area / difficulty filters. */
   level: number;
   weight: number;
-  terrain: "land" | "sea";
-  /** Catalog name of the monster shown on the map (the lead). */
+  /** Monster id of the lead (shown on the map). */
   monsterPartyTile: string;
   /** Full roster handed to CombatScene. First entry should match the lead. */
   monsters: string[];
 }
 
 interface RawEncounter {
+  id?: string;
+  area?: string;
   name?: string;
   level?: number;
   weight?: number;
-  terrain?: string;
   monster_party_tile?: string;
   monsters?: string[];
 }
 
-interface RawEncounters {
-  encounters?: Record<string, RawEncounter[]>;
+interface RawEncountersFile {
+  _comment?: string;
+  encounters?: RawEncounter[];
 }
 
-let _cache: Record<string, EncounterTemplate[]> | null = null;
+let _flatCache: EncounterTemplate[] | null = null;
+let _byAreaCache: Record<string, EncounterTemplate[]> | null = null;
 
 function fromRaw(raw: RawEncounter): EncounterTemplate | null {
   const monsters = Array.isArray(raw.monsters)
     ? raw.monsters.filter((m): m is string => typeof m === "string" && m.length > 0)
     : [];
   if (monsters.length === 0) return null;
+  const id = typeof raw.id === "string" && raw.id.length > 0 ? raw.id : "";
   const lead = typeof raw.monster_party_tile === "string" && raw.monster_party_tile.length > 0
     ? raw.monster_party_tile
     : monsters[0];
   return {
+    id,
+    area: typeof raw.area === "string" && raw.area.length > 0 ? raw.area : "overworld",
     name: raw.name ?? "Encounter",
     level: typeof raw.level === "number" && Number.isFinite(raw.level) ? raw.level : 1,
     weight: typeof raw.weight === "number" && raw.weight > 0 ? raw.weight : 1,
-    terrain: raw.terrain === "sea" ? "sea" : "land",
     monsterPartyTile: lead,
     monsters,
   };
 }
 
-export async function loadEncounters(
-  url = dataPath("encounters.json"),
-): Promise<Record<string, EncounterTemplate[]>> {
-  if (_cache) return _cache;
+/** Fetch + hydrate every encounter once. Cached per session. */
+async function fetchEncounters(): Promise<EncounterTemplate[]> {
+  if (_flatCache) return _flatCache;
+  const url = modulePath("encounters.json");
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed to load ${url}: ${res.status}`);
-  const raw = (await res.json()) as RawEncounters;
-  const out: Record<string, EncounterTemplate[]> = {};
-  for (const [area, list] of Object.entries(raw.encounters ?? {})) {
-    if (!Array.isArray(list)) continue;
-    out[area] = list
-      .map(fromRaw)
-      .filter((e): e is EncounterTemplate => e !== null);
+  const raw = (await res.json()) as RawEncountersFile;
+  const out: EncounterTemplate[] = [];
+  for (const r of raw.encounters ?? []) {
+    const e = fromRaw(r);
+    if (e) out.push(e);
   }
-  _cache = out;
+  _flatCache = out;
+  return out;
+}
+
+/**
+ * Flat list of every encounter in load order — the picker / sampler
+ * UI uses this so it can render id + area + level alongside the name.
+ */
+export async function loadAllEncounters(): Promise<EncounterTemplate[]> {
+  return fetchEncounters();
+}
+
+/**
+ * Legacy area-bucket shape kept for back-compat with the Dungeon /
+ * Interior / Quest spawners that consume `Record<area, EncounterTemplate[]>`.
+ * Internally just groups the flat list by `area`.
+ */
+export async function loadEncounters(): Promise<Record<string, EncounterTemplate[]>> {
+  if (_byAreaCache) return _byAreaCache;
+  const flat = await fetchEncounters();
+  const out: Record<string, EncounterTemplate[]> = {};
+  for (const e of flat) {
+    (out[e.area] ??= []).push(e);
+  }
+  _byAreaCache = out;
   return out;
 }
 
 /** Test-only: clear the encounter cache. */
 export function _clearEncountersCache(): void {
-  _cache = null;
+  _flatCache = null;
+  _byAreaCache = null;
 }
 
 export interface SampleOptions {
@@ -99,33 +140,20 @@ export interface SampleOptions {
    * roster empties out after pruning are excluded entirely; encounters
    * whose lead got pruned have it swapped to the first surviving
    * monster.
-   *
-   * When undefined the filter is a no-op — callers that don't care
-   * about per-monster tiering keep the prior behaviour.
    */
   allowedDifficulties?: ReadonlySet<string>;
   /**
-   * Lookup: monster catalog name → difficulty tag (from monsters.json).
+   * Lookup: monster catalog id → difficulty tag (from monsters.json).
    * Required when `allowedDifficulties` is set; without it the prune
    * step can't tell which monsters belong to which tier and the
    * filter no-ops to avoid silently dropping every encounter.
    */
-  monsterDifficulty?: (name: string) => string | undefined;
+  monsterDifficulty?: (id: string) => string | undefined;
 }
 
 /**
  * Roll one encounter from the named area, restricted to the given
- * level band. Returns null when nothing matches (caller decides
- * whether to leave the room empty or fall back to a hardcoded fight).
- *
- * When `allowedDifficulties` + `monsterDifficulty` are supplied, the
- * sampler additionally enforces per-monster tier matching: each
- * candidate encounter's roster is pruned to monsters whose individual
- * `difficulty` is in the allowed set, and encounters that lose their
- * full roster are removed from the pool. Used by dungeon generation
- * to honour per-dungeon difficulty without leaning on the encounter
- * `level` field alone (a level-6 encounter can mix hard + normal
- * monsters; we only want the matching ones).
+ * level band. Returns null when nothing matches.
  */
 export function sampleEncounter(
   table: Record<string, EncounterTemplate[]>,
@@ -139,22 +167,16 @@ export function sampleEncounter(
   const rng = opts.rng ?? defaultRng;
   let eligible = list.filter((e) => e.level >= minLv && e.level <= maxLv);
 
-  // Optional per-monster difficulty pruning. Both the allow-list and
-  // the lookup must be present for the filter to engage — see the
-  // option doc for the rationale.
   const allow = opts.allowedDifficulties;
   const lookup = opts.monsterDifficulty;
   if (allow && lookup) {
     const pruned: EncounterTemplate[] = [];
     for (const e of eligible) {
-      const survivors = e.monsters.filter((name) => {
-        const d = lookup(name);
+      const survivors = e.monsters.filter((id) => {
+        const d = lookup(id);
         return d != null && allow.has(d);
       });
-      if (survivors.length === 0) continue; // entire roster filtered out
-      // Keep the original lead when it survived; otherwise promote the
-      // first survivor so `monsterPartyTile` always names a monster
-      // that's actually in the fight.
+      if (survivors.length === 0) continue;
       const lead = survivors.includes(e.monsterPartyTile)
         ? e.monsterPartyTile
         : survivors[0];

@@ -3,10 +3,10 @@
   "dungeons": [
     {
       "id": "the_hole",
-      "name": "The Hole",
-      "description": "An old cave where the town used to throw away it's trash",
+      "name": "The Giant Rat Hole",
+      "description": "A hole in the ground teaming with giant rats",
       "tags": [
-        "hole"
+        "giant_rat_hole"
       ],
       "levels": [
         {
@@ -15,17 +15,17 @@
           "depth": 1,
           "map_id": "",
           "tags": [
-            "hole"
+            "giant_rat_hole"
           ]
         },
         {
           "id": "the_hole_l2",
           "name": "Level 2",
-          "depth": 2,
-          "map_id": "",
-          "difficulty": "hard"
+          "depth": 2
         }
-      ]
+      ],
+      "torch_density": 0.05,
+      "locked_doors": 0
     }
   ]
 }

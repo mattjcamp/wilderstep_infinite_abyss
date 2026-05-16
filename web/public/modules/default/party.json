@@ -10,13 +10,23 @@
     "selina",
     "aldric",
     "pippin",
-    "alchey"
+    "elminster"
   ],
   "party_effects": [],
   "inventory": [
     {
       "item": "torch",
       "charges": 1
+    },
+    {
+      "item": "arrows",
+      "charges": 100
+    },
+    {
+      "item": "short_bow"
+    },
+    {
+      "item": "sword"
     },
     {
       "item": "dagger"

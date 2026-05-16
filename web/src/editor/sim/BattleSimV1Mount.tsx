@@ -8,18 +8,32 @@
  * shapes natively (no translation adapter — v2 IS the data model).
  * The CombatScene + the combat logic above the loaders stays v1.
  *
+ * Inputs:
+ *   - `moduleId` — which module's catalogs to read. `setActiveModule`
+ *     is pinned BEFORE the scene mounts so its preload fetches the
+ *     right module's items/spells/monsters/party data.
+ *   - `monsterIds` — the picked encounter's roster (catalog ids).
+ *     Forwarded to CombatScene as `monsterNames` (the scene's existing
+ *     init-data field). When omitted the scene falls back to v1's
+ *     hand-built sample encounter.
+ *   - `arenaTileSprites` — optional per-cell sprite-URL matrix the
+ *     picked arena map resolves to. CombatScene preloads + renders it
+ *     as the floor; omitted means the legacy dark-green fill.
+ *
  * The party comes from `modules/<id>/party.json` joined against
- * `characters.json` (see `loadParty`). The encounter is still v1's
- * bundled sample for this phase — encounter pickers are a separate
- * pass.
+ * `characters.json` (see `loadParty`).
  */
 
 import { useEffect, useRef } from "react";
 
 export function BattleSimV1Mount({
   moduleId,
+  monsterIds,
+  arenaTileSprites,
 }: {
   moduleId: string;
+  monsterIds?: readonly string[];
+  arenaTileSprites?: ReadonlyArray<ReadonlyArray<string | null>>;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -69,11 +83,31 @@ export function BattleSimV1Mount({
             // party (modules/<id>/party.json + characters.json) via
             // loadParty(); without it, the scene falls back to v1's
             // hand-built demo party (Kael/Thora/Syl/Miren).
+            //
+            // `monsterNames` is the CombatScene init-data field for
+            // a custom enemy roster. Omitting it (or passing an empty
+            // array) keeps the v1 sample-encounter fallback.
             g.scene.add(
               "CombatScene",
               CombatScene as unknown as typeof Phaser.Scene,
               true,
-              { fromWorld: true },
+              {
+                fromWorld: true,
+                // The simulator is a visual-test pane; running it
+                // shouldn't blast the combat soundtrack at the user.
+                // The scene's `silent` flag suppresses the per-area
+                // music kick + stops any leftover track on entry.
+                silent: true,
+                monsterNames:
+                  monsterIds && monsterIds.length > 0
+                    ? [...monsterIds]
+                    : undefined,
+                // Snapshot the matrix so a later mutation to the
+                // launcher's React state can't desync mid-render.
+                arenaTileSprites: arenaTileSprites
+                  ? arenaTileSprites.map((row) => [...row])
+                  : undefined,
+              },
             );
           },
         },

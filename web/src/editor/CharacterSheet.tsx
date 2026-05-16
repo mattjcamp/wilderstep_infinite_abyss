@@ -25,6 +25,30 @@
  */
 
 import { SpritePicker } from "./SpritePicker";
+import { withBasePath } from "@/util/basePath";
+
+/** Slim Item view the sheet needs — id, display name, icon
+ *  (resolved against /sprites/item/<icon>.png), and the slots the
+ *  item can equip into. Hosts can pass any item shape that satisfies
+ *  this; CharactersBrowse forwards its full SheetItemRef[]. */
+export interface SheetItemOption {
+  id: string;
+  name?: string;
+  icon?: string;
+  slots?: string[];
+}
+
+/** The two equip slots the v2 character schema models. `head` is
+ *  reserved on items.json for forward-compat helmets, but PartyMember
+ *  doesn't carry a head slot today. */
+type EquipSlot = "hands" | "body";
+
+const EQUIP_SLOT_ORDER: readonly EquipSlot[] = ["hands", "body"];
+
+const SLOT_LABELS: Record<EquipSlot, string> = {
+  hands: "Hands",
+  body:  "Body",
+};
 
 /** A reasonably-complete Character record. Optional fields default
  *  sensibly; unknown fields round-trip through `extra`. */
@@ -70,12 +94,17 @@ export function CharacterSheet({
   character,
   races,
   classes,
+  items = [],
   onChange,
   lockId = false,
 }: {
   character: CharacterRecord;
   races: Array<{ id: string; name?: string }>;
   classes: Array<{ id: string; name?: string }>;
+  /** Item catalog for the equipped-slot pickers. When omitted the
+   *  equipped section degrades to read-only text — the host hasn't
+   *  loaded items.json yet, but the rest of the sheet still works. */
+  items?: ReadonlyArray<SheetItemOption>;
   onChange: (next: CharacterRecord) => void;
   /** When true, the id field is read-only. Useful in the game-side
    *  flow where ids are auto-generated and shouldn't be editable. */
@@ -83,6 +112,15 @@ export function CharacterSheet({
 }) {
   const patch = (p: Partial<CharacterRecord>) =>
     onChange({ ...character, ...p });
+
+  // Mutate a single key on `character.equipped` without dropping
+  // unknown keys (forward-compat with future slots like head).
+  const patchEquipped = (slot: EquipSlot, itemId: string) => {
+    const next = { ...(character.equipped ?? {}) };
+    if (itemId) next[slot] = itemId;
+    else delete next[slot];
+    patch({ equipped: next });
+  };
 
   return (
     <div className="space-y-4">
@@ -290,14 +328,110 @@ export function CharacterSheet({
         </div>
       </section>
 
-      {/* Equipped + inventory note ───────────────────────────── */}
+      {/* Equipped ───────────────────────────────────────────── */}
+      <section className="rounded border border-parchment/15 bg-ink/40 p-3">
+        <h3 className="mb-2 text-xs uppercase tracking-wide text-parchment/55">
+          Equipped
+        </h3>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {EQUIP_SLOT_ORDER.map((slot) => (
+            <EquipSlotPicker
+              key={slot}
+              slot={slot}
+              value={character.equipped?.[slot] ?? ""}
+              items={items}
+              onChange={(itemId) => patchEquipped(slot, itemId)}
+            />
+          ))}
+        </div>
+        {items.length === 0 ? (
+          <p className="mt-2 text-[10px] text-parchment/40">
+            (Item catalog unavailable — pickers fall back to the raw id.)
+          </p>
+        ) : null}
+      </section>
+
+      {/* Personal inventory note ──────────────────────────────── */}
       <p className="text-[11px] text-parchment/45">
-        Equipped gear and personal inventory are not editable in this sheet
-        yet — they round-trip through unchanged. Use the Items model to
-        manage available item ids in the meantime; per-character equip
-        slots and inventory lists will join this sheet in a later pass.
+        Personal inventory rounds through unchanged for now. The Hands +
+        Body slots above edit <span className="font-mono">equipped</span>;
+        the rest of the equipment ribbon (helmets, etc.) joins this sheet
+        when the matching gameplay returns.
       </p>
     </div>
+  );
+}
+
+/**
+ * Dropdown + thumbnail picker for one equip slot. Filters the items
+ * catalog to entries whose `slots` include this slot. Mirrors the
+ * map editor's item field (dropdown + 32×32 sprite preview from
+ * `item.icon`) so the editor's two "pick an item" surfaces look the
+ * same.
+ */
+function EquipSlotPicker({
+  slot,
+  value,
+  items,
+  onChange,
+}: {
+  slot: EquipSlot;
+  value: string;
+  items: ReadonlyArray<SheetItemOption>;
+  onChange: (itemId: string) => void;
+}) {
+  // Slot-matched options. Items missing a `slots` array don't qualify
+  // even for hands — the catalog flags equippable gear explicitly.
+  const candidates = items.filter((i) => (i.slots ?? []).includes(slot));
+  const current = items.find((i) => i.id === value) ?? null;
+  // If the saved value points at an item the catalog doesn't recognise
+  // (renamed / library reference / stale draft), keep it round-tripping
+  // via a synthetic "(missing)" option so we don't silently drop it.
+  const missing = value && !current ? value : "";
+
+  const previewSrc = current?.icon
+    ? withBasePath(`/sprites/item/${current.icon}.png`)
+    : null;
+
+  return (
+    <label className="block">
+      <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+        {SLOT_LABELS[slot]}
+      </span>
+      <div className="mt-0.5 flex items-start gap-2">
+        <select
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90 focus:border-parchment/60 focus:outline-none"
+        >
+          <option value="">(none)</option>
+          {missing ? (
+            <option value={missing}>(missing) {missing}</option>
+          ) : null}
+          {candidates.map((i) => (
+            <option key={i.id} value={i.id}>
+              {i.name ? `${i.name} — ${i.id}` : i.id}
+            </option>
+          ))}
+        </select>
+        {previewSrc ? (
+          <img
+            src={previewSrc}
+            alt=""
+            width={32}
+            height={32}
+            style={{ imageRendering: "pixelated" }}
+            className="h-8 w-8 shrink-0 rounded border border-parchment/20 bg-ink/80 object-contain"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).style.visibility =
+                "hidden";
+            }}
+          />
+        ) : (
+          <div className="h-8 w-8 shrink-0 rounded border border-parchment/15 bg-ink/40" />
+        )}
+      </div>
+    </label>
   );
 }
 
