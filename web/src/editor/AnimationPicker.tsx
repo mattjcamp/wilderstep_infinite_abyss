@@ -33,8 +33,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { withBasePath } from "@/util/basePath";
-import { resolveProjectileEffect } from "@/vfx/effectRegistry";
-import { Sfx } from "@/v1battle/audio/Sfx";
+// NOTE: `@/vfx/effectRegistry` transitively pulls in `phaser`, which
+// touches `navigator` at module load and crashes Next.js static
+// prerendering of any page that imports this picker. `@/v1battle/audio/Sfx`
+// is similarly browser-only (Web Audio + localStorage). Both are
+// lazy-`import()`-ed inside the preview effect below, which only ever
+// runs in the browser.
 
 interface AnimationRecord {
   id: string;
@@ -158,7 +162,17 @@ export function AnimationPicker({
     setPreviewState("loading");
     (async () => {
       try {
-        const Phaser = await import("phaser");
+        // All three modules are browser-only (phaser touches `navigator`,
+        // Sfx touches Web Audio, effectRegistry pulls phaser via Vfx),
+        // so they're imported here rather than at module top level —
+        // otherwise Next.js's static prerender crashes with
+        // `ReferenceError: navigator is not defined`.
+        const [Phaser, { resolveProjectileEffect }, { Sfx }] =
+          await Promise.all([
+            import("phaser"),
+            import("@/vfx/effectRegistry"),
+            import("@/v1battle/audio/Sfx"),
+          ]);
         if (cancelled) return;
         class PreviewScene extends Phaser.Scene {
           constructor() {

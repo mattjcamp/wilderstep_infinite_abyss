@@ -6005,7 +6005,8 @@
             "encounter": "",
             "spawn": "",
             "sprite": "map/grass1.png",
-            "tag": "outdoor"
+            "tag": "outdoor",
+            "text": "Grass grows, in an unusual place..."
           },
           {
             "id": "mountain",
@@ -6290,7 +6291,7 @@
             "animation": null,
             "counter": null,
             "encounter": null,
-            "spawn": null,
+            "spawn": "graveyard_spawn",
             "sprite": "map/graveyard.png",
             "tag": "outdoor"
           },
