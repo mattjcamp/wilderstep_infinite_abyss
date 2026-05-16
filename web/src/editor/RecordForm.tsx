@@ -25,6 +25,8 @@ import { SpritePicker } from "./SpritePicker";
 import { getSpriteFieldConfig } from "./spriteFields";
 import { AnimationPicker } from "./AnimationPicker";
 import { getAnimationFieldConfig } from "./animationFields";
+import { CounterPicker } from "./CounterPicker";
+import { getCounterFieldConfig } from "./counterFields";
 
 type FieldKind =
   | "string"
@@ -52,11 +54,24 @@ function inferKind(
   // Animation-typed fields are likewise always strings (Animation id).
   // The picker renders an empty-state when the value is null/"".
   if (getAnimationFieldConfig(key, modelKey) !== null) return "string";
+  // Counter-typed fields are strings too (Counter id). The CounterPicker
+  // handles a null/"" value as "(none)".
+  if (getCounterFieldConfig(key, modelKey) !== null) return "string";
   // Prefer the actual record's value; fall back to a sample peer.
   const v = value ?? sample;
   if (Array.isArray(v) || (v !== null && typeof v === "object")) return "json";
   if (typeof v === "string") {
-    if (key === "description" || key === "_comment") return "string-long";
+    // Prose-shaped fields render as a multi-line textarea instead of
+    // a single-line input. `description` and `_comment` are universal;
+    // `personal_history` is the NPC backstory field. Add new prose
+    // keys here as new models introduce them.
+    if (
+      key === "description" ||
+      key === "_comment" ||
+      key === "personal_history"
+    ) {
+      return "string-long";
+    }
     return "string";
   }
   if (typeof v === "number") return "number";
@@ -336,6 +351,27 @@ function FieldRow({
         </label>
         <div className="flex-1">
           <AnimationPicker value={value} onChange={onChange} />
+          {error ? <p className="mt-1 text-xs text-ember">{error}</p> : null}
+        </div>
+      </div>
+    );
+  }
+
+  // Counter-typed string fields get the CounterPicker. Same pattern,
+  // reading counters.json instead.
+  const counterConfig =
+    spec.kind === "string"
+      ? getCounterFieldConfig(spec.key, modelKey)
+      : null;
+  if (counterConfig) {
+    return (
+      <div className="flex items-start gap-3">
+        <label htmlFor={spec.key} className={labelClasses}>
+          {spec.key}
+          <span className="block text-[10px] text-parchment/40">counter</span>
+        </label>
+        <div className="flex-1">
+          <CounterPicker value={value} onChange={onChange} />
           {error ? <p className="mt-1 text-xs text-ember">{error}</p> : null}
         </div>
       </div>

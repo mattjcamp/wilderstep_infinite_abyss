@@ -33,7 +33,8 @@ export type ModelKey =
   | "maps"
   | "dungeons"
   | "quests"
-  | "animations";
+  | "animations"
+  | "npcs";
 
 export interface ColumnDef {
   /** Object path on the record. Supports a single key for now; nested
@@ -353,6 +354,20 @@ const DEFS: Record<ModelKey, ModelDef> = {
       { field: "visual", label: "Visual" },
       { field: "cast_sfx", label: "Cast SFX" },
       { field: "hit_sfx", label: "Hit SFX" },
+    ],
+  },
+  npcs: {
+    key: "npcs",
+    label: "NPCs",
+    fileName: "npcs.json",
+    collectionKey: "npcs",
+    docKey: "npc",
+    blurb: "Non-player characters — name, sprite, backstory, and a list of dialogs",
+    columns: [
+      { field: "id", label: "ID" },
+      { field: "name", label: "Name" },
+      { field: "sprite", label: "Sprite" },
+      { field: "dialogs", label: "Dialogs", format: countItems },
     ],
   },
 };

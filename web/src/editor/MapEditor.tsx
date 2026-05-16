@@ -43,6 +43,8 @@ import { publishItems } from "@/data_model/publishClient";
 import { MapSimulation, type SceneBridge } from "@/sim/MapSimulation";
 import { SimPanel } from "@/sim/SimPanel";
 import { MapPartyScreenOverlay } from "./MapPartyScreenOverlay";
+import { NpcDialogOverlay } from "./NpcDialogOverlay";
+import { CounterShopOverlay } from "./CounterShopOverlay";
 import type {
   SimCharacter,
   SimEffect,
@@ -106,6 +108,10 @@ interface TileType {
   /** Dungeon id reference — placeholder; the dungeon model is not yet
    *  ported. Stored verbatim so future ports preserve author intent. */
   dungeon: string;
+  /** NPC id from npcs.json. Empty string means none. When set, the
+   *  NPC's sprite renders as an overlay on the cell so designers can
+   *  see at a glance where each villager / quest-giver stands. */
+  npc: string;
   sprite: string;
   flags?: Record<string, unknown>;
   link?: { map_id: string; x: number; y: number } | null;
@@ -128,6 +134,12 @@ interface EncounterRecord extends RefRecord {
 interface ItemRecord extends RefRecord {
   icon?: string;
   category?: string;
+}
+/** NPC record from npcs.json — only the fields the map editor needs.
+ *  `sprite` follows the standard person/<file>.png path so we can
+ *  resolve a preview thumbnail and render the on-map overlay. */
+interface NpcRecord extends RefRecord {
+  sprite?: string;
 }
 /** Quest record from quests.json — only the bits the cell inspector
  *  dropdown and the quest-glow / quest-giver renderer actually read.
@@ -232,6 +244,7 @@ function cellMatchesPalette(cell: TileType, palette: TileType[]): boolean {
   if ((cell.item ?? "") !== (base.item ?? "")) return false;
   if ((cell.quest ?? "") !== (base.quest ?? "")) return false;
   if ((cell.dungeon ?? "") !== (base.dungeon ?? "")) return false;
+  if ((cell.npc ?? "") !== (base.npc ?? "")) return false;
   if (cell.sprite !== base.sprite) return false;
   if (JSON.stringify(cell.link ?? null) !== JSON.stringify(base.link ?? null))
     return false;
@@ -339,6 +352,7 @@ type LoadState =
       encounters: EncounterRecord[];
       spawns: RefRecord[];
       items: ItemRecord[];
+      npcs: NpcRecord[];
       mapRecord: MapRecord;
       /** The whole maps.json shape for this module's own file (draft-
        *  aware) — needed so we can write back the modified map. */
@@ -414,6 +428,23 @@ export function MapEditor({
    *  trip the modal. The overlay self-owns its own ESC handling and
    *  closes via this setter. */
   const [partyScreenOpen, setPartyScreenOpen] = useState(false);
+  /** NPC currently being interacted with (id from npcs.json). Null when
+   *  no dialog overlay is open. Set by the sim's npc_encountered
+   *  event; cleared when the player closes the dialog. */
+  const [npcEncounterId, setNpcEncounterId] = useState<string | null>(null);
+  /** Counter currently being shopped (id from counters.json). Null when
+   *  the shop overlay is closed. The shop overlay is launched from
+   *  inside the NPC dialog; closing it returns the player to the
+   *  dialog. */
+  const [shopCounterId, setShopCounterId] = useState<string | null>(null);
+  /** Mirrors npcEncounterId/shopCounterId in a ref so the sim's
+   *  keyboard listener can gate movement without re-binding on every
+   *  state change. */
+  const overlaysOpenRef = useRef(false);
+  useEffect(() => {
+    overlaysOpenRef.current =
+      !!npcEncounterId || !!shopCounterId || partyScreenOpen;
+  }, [npcEncounterId, shopCounterId, partyScreenOpen]);
   /** Callback the Phaser scene invokes when the user clicks a tile
    *  during "placing" — held in a ref so the scene closure stays
    *  stable while React re-renders. */
@@ -503,8 +534,14 @@ export function MapEditor({
     return () => window.removeEventListener("keydown", onPartyKey);
   }, [partyScreenOpen]);
 
-  // If the user leaves simulation while the overlay is still open,
-  // dismiss it so it doesn't linger over the inspector pane.
+  // If the user leaves simulation while any overlay is still open,
+  // dismiss them so they don't linger over the inspector pane.
+  useEffect(() => {
+    if (simMode !== "active") {
+      if (npcEncounterId) setNpcEncounterId(null);
+      if (shopCounterId) setShopCounterId(null);
+    }
+  }, [simMode, npcEncounterId, shopCounterId]);
   useEffect(() => {
     if (simMode !== "active" && partyScreenOpen) {
       setPartyScreenOpen(false);
@@ -582,6 +619,8 @@ export function MapEditor({
     refreshEncounterOverlays: () => void;
     /** Sync per-cell item-sprite overlays from each cell's item field. */
     refreshItemOverlays: () => void;
+    /** Sync per-cell NPC-sprite overlays from each cell's npc field. */
+    refreshNpcOverlays: () => void;
     /** Sync the quest-giver sprite overlay (cells with `quest` set
      *  render the quest's quest_giver.npc_sprite) AND the soft
      *  golden glow drawn behind quest-relevant cells (givers,
@@ -596,6 +635,26 @@ export function MapEditor({
     /** Override the party-light source the relight pass folds in.
      *  Null disables the extra source. */
     setPartyLight: (source: SimLightSource | null) => void;
+    /** Sync the "loose" boats sitting on the world map. Each entry
+     *  carries the boat's sprite so cells can swap their render
+     *  texture between boat and water as boats move around. */
+    setBoatPositions: (
+      positions: ReadonlyArray<{
+        col: number;
+        row: number;
+        sprite: string;
+      }>,
+    ) => void;
+    /** Show / move the boat sprite that follows the party while
+     *  they're aboard. The scene also hides partySprite while the
+     *  boat is showing (the party is "inside" the boat). `sprite`
+     *  is the boat's render key — passed on board, omitted on sail. */
+    setPartyBoatAt: (
+      col: number,
+      row: number,
+      visible: boolean,
+      sprite?: string,
+    ) => void;
   } | null>(null);
   /** The party-light source the simulation contributes. Read by the
    *  scene's relight on every pass — when sim mode is off this stays
@@ -635,6 +694,7 @@ export function MapEditor({
           classesLayers,
           dungeonsLayers,
           questsLayers,
+          npcsLayers,
         ] = await Promise.all([
           src.loadModelLayers(moduleId, "map_tiles"),
           src.loadModelLayers(moduleId, "maps"),
@@ -654,6 +714,9 @@ export function MapEditor({
           // populated these yet.
           src.loadModelLayers(moduleId, "dungeons").catch(() => null),
           src.loadModelLayers(moduleId, "quests").catch(() => null),
+          // NPC catalog for the cell inspector's NPC picker + the
+          // on-map NPC-sprite overlay. Non-fatal too.
+          src.loadModelLayers(moduleId, "npcs").catch(() => null),
         ]);
         if (cancelled) return;
 
@@ -693,6 +756,15 @@ export function MapEditor({
           itemsLayers.ownFile,
         ) as { items?: ItemRecord[] } | null;
         const items = itemsMerged?.items ?? [];
+
+        const npcsMerged =
+          npcsLayers &&
+          (mergeModel(
+            "npcs",
+            npcsLayers.inherited,
+            npcsLayers.ownFile,
+          ) as { npcs?: NpcRecord[] } | null);
+        const npcs = npcsMerged?.npcs ?? [];
 
         // Resolve maps with draft applied so a half-painted map survives reloads.
         const draft = loadDraft<Record<string, unknown>>(moduleId, MODEL_KEY);
@@ -742,6 +814,7 @@ export function MapEditor({
                     item: "",
                     quest: "",
                     dungeon: "",
+                    npc: "",
                     sprite: "",
                   } as TileType);
             }
@@ -843,6 +916,7 @@ export function MapEditor({
           encounters,
           spawns,
           items,
+          npcs,
           mapRecord,
           ownFile: ownEffective ?? null,
           isDraft: hasDraft(moduleId, MODEL_KEY),
@@ -934,6 +1008,7 @@ export function MapEditor({
         mapRecord,
         encounters,
         items,
+        npcs,
         availableQuests,
         simParty,
         simCharacters,
@@ -941,6 +1016,7 @@ export function MapEditor({
       const paletteById = new Map(palette.map((t) => [t.id, t]));
       const encountersById = new Map(encounters.map((e) => [e.id, e]));
       const itemsById = new Map(items.map((i) => [i.id, i]));
+      const npcsById = new Map(npcs.map((n) => [n.id, n]));
       const questsById = new Map(availableQuests.map((q) => [q.id, q]));
 
       // Gather every unique sprite path used by the palette + the
@@ -965,6 +1041,26 @@ export function MapEditor({
         const sprite = q.quest_giver?.npc_sprite;
         if (sprite && sprite.includes("/")) spriteKeys.add(sprite);
       }
+      // NPC sprites from the npcs catalog — same rationale as
+      // quest-giver sprites. Tolerate bare-stem sprite paths
+      // (e.g. "cleric1") by defaulting to the person/ folder.
+      const resolveNpcSpriteKey = (raw: string | undefined): string => {
+        if (!raw) return "";
+        if (raw.includes("/")) return raw;
+        return `person/${/\.[a-z]+$/i.test(raw) ? raw : `${raw}.png`}`;
+      };
+      for (const n of npcs) {
+        const key = resolveNpcSpriteKey(n.sprite);
+        if (key) spriteKeys.add(key);
+      }
+      // Resolve a "swap to water" sprite for cells that lose their
+      // boat. Pick the first water-tagged tile in the palette (the
+      // designer's chosen canonical water) and fall back to a known
+      // path if the palette doesn't have one. Pre-add it to the
+      // sprite keys so boards never miss the texture.
+      const WATER_SPRITE_KEY =
+        palette.find((t) => t.tag === "water")?.sprite ?? "map/water.png";
+      if (WATER_SPRITE_KEY) spriteKeys.add(WATER_SPRITE_KEY);
       // Sim-mode sprites: party avatar + every active member's
       // portrait. Pre-load defensively so toggling sim on doesn't
       // need a second loader pass.
@@ -994,9 +1090,27 @@ export function MapEditor({
         itemOverlays: Map<string, Phaser.GameObjects.Image> = new Map();
         /** Current item id per cell so refresh can skip no-ops. */
         itemOverlayIds: Map<string, string> = new Map();
+        /** NPC overlay sprites keyed by "col,row" — the NPC's portrait
+         *  rendered on cells with `tile.npc` set. */
+        npcOverlays: Map<string, Phaser.GameObjects.Image> = new Map();
+        /** Current NPC id per cell so refresh can skip no-ops. */
+        npcOverlayIds: Map<string, string> = new Map();
         /** Sim-mode party sprite (single Image, depth-300 above
          *  everything else). Null while sim mode is off. */
         partySprite: Phaser.GameObjects.Image | null = null;
+        /** Sprite key for each cell that currently holds a loose boat.
+         *  Boats render via the cell's own image (swapped between
+         *  boat and water textures) rather than a separate overlay —
+         *  so when the party boards, the same cell smoothly becomes
+         *  water. The Map gives the scene memory of which cells need
+         *  to be reverted back to water when the boat is picked up. */
+        boatTextures: Map<string, string> = new Map();
+        /** Boat sprite that follows the party while they're aboard.
+         *  Single Image, depth just below the party sprite so the
+         *  party rides the boat — except partySprite is hidden while
+         *  this is visible, so visually the boat IS the party. Null
+         *  when the party is on land. */
+        partyBoatSprite: Phaser.GameObjects.Image | null = null;
         /** Quest-giver overlay sprites keyed by "col,row" — the
          *  NPC sprite from a quest's quest_giver, rendered on cells
          *  with `tile.quest` set. Diff'd against questGiverIds the
@@ -1167,12 +1281,22 @@ export function MapEditor({
               // Assigned for real below — placeholder so the API object
               // matches the type until create() finishes wiring it.
             },
+            refreshNpcOverlays: () => {
+              // Assigned for real below — placeholder so the API object
+              // matches the type until create() finishes wiring it.
+            },
             refreshQuestOverlays: () => {
               // Assigned for real below.
             },
             setPartyAt: () => {
               // Assigned for real below — placeholder so the API object
               // matches the type until create() finishes wiring it.
+            },
+            setBoatPositions: () => {
+              // Assigned for real below.
+            },
+            setPartyBoatAt: () => {
+              // Assigned for real below.
             },
             clearParty: () => {
               // Assigned for real below.
@@ -1194,9 +1318,16 @@ export function MapEditor({
                 for (const img of this.itemOverlays.values()) {
                   img.clearTint();
                 }
+                for (const img of this.npcOverlays.values()) {
+                  img.clearTint();
+                }
                 for (const img of this.questGiverOverlays.values()) {
                   img.clearTint();
                 }
+                // Loose boats render via the cell image itself
+                // (texture-swapped between boat and water) so the
+                // per-cell clearTint loop already handles them.
+                if (this.partyBoatSprite) this.partyBoatSprite.clearTint();
                 return;
               }
               const ambient = mode === "twilight" ? 0.4 : 0.1;
@@ -1304,8 +1435,12 @@ export function MapEditor({
                   if (enc) enc.setTint(tint);
                   const itm = this.itemOverlays.get(key);
                   if (itm) itm.setTint(tint);
+                  const npcImg = this.npcOverlays.get(key);
+                  if (npcImg) npcImg.setTint(tint);
                   const qg = this.questGiverOverlays.get(key);
                   if (qg) qg.setTint(tint);
+                  // No boat-overlay tint here — boats render via the
+                  // cell's own image, which is tinted right above.
                 }
               }
             },
@@ -1375,6 +1510,141 @@ export function MapEditor({
               if (sceneSelf.partySprite) {
                 sceneSelf.partySprite.destroy();
                 sceneSelf.partySprite = null;
+              }
+              // Also drop the party-boat sprite if the sim shut down
+              // while the party was aboard.
+              if (sceneSelf.partyBoatSprite) {
+                sceneSelf.tweens.killTweensOf(sceneSelf.partyBoatSprite);
+                sceneSelf.partyBoatSprite.destroy();
+                sceneSelf.partyBoatSprite = null;
+              }
+            };
+            // ── Boat helpers ───────────────────────────────────────────
+            // Boats render via cell-texture swaps, not extra overlay
+            // sprites. The cell image at a boat's position carries the
+            // boat texture; when the party boards we swap that cell to
+            // a water texture and show the partyBoatSprite instead.
+            //
+            //   1. applyBoatBob — perpetual sin-wave y tween so the
+            //      partyBoatSprite rocks gently on the water.
+            //   2. setBoatPositions — diffs the host-supplied set of
+            //      loose boats; cells that lost their boat get the
+            //      water sprite, cells that gained one get the boat's
+            //      sprite. The map cell IS the boat.
+            //   3. setPartyBoatAt — lazily creates the partyBoatSprite
+            //      while aboard; hides the partySprite at the same
+            //      time so the party visually IS the boat.
+            const WATER_SPRITE = WATER_SPRITE_KEY;
+            const applyBoatBob = (img: Phaser.GameObjects.Image) => {
+              img.setData("baseY", img.y);
+              sceneSelf.tweens.add({
+                targets: img,
+                y: img.y - 2,
+                duration: 900,
+                yoyo: true,
+                repeat: -1,
+                ease: "Sine.easeInOut",
+              });
+            };
+            const repositionWithBob = (
+              img: Phaser.GameObjects.Image,
+              col: number,
+              row: number,
+            ) => {
+              sceneSelf.tweens.killTweensOf(img);
+              img.setPosition(
+                col * TILE_SIZE + TILE_SIZE / 2,
+                row * TILE_SIZE + TILE_SIZE / 2,
+              );
+              applyBoatBob(img);
+            };
+            sceneApiRef.current.setBoatPositions = (positions) => {
+              const wanted = new Map(
+                positions.map((p) => [`${p.col},${p.row}`, p.sprite]),
+              );
+              // Cells that lost their boat (party just boarded here)
+              // get swapped back to the water sprite.
+              for (const [key, _sprite] of sceneSelf.boatTextures) {
+                if (wanted.has(key)) continue;
+                const baseImg = sceneSelf.cells.get(key);
+                if (
+                  baseImg &&
+                  WATER_SPRITE &&
+                  sceneSelf.textures.exists(WATER_SPRITE)
+                ) {
+                  baseImg.setTexture(WATER_SPRITE);
+                }
+                sceneSelf.boatTextures.delete(key);
+                // Silence unused-binding warnings without using `_`
+                // in a way that complicates the destructure.
+                void _sprite;
+              }
+              // Cells that gained a boat (disembarked here, or sim
+              // start-up) get the boat sprite painted in.
+              for (const [key, sprite] of wanted) {
+                if (sceneSelf.boatTextures.get(key) === sprite) continue;
+                const baseImg = sceneSelf.cells.get(key);
+                if (
+                  baseImg &&
+                  sprite &&
+                  sceneSelf.textures.exists(sprite)
+                ) {
+                  baseImg.setTexture(sprite);
+                }
+                sceneSelf.boatTextures.set(key, sprite);
+              }
+            };
+            sceneApiRef.current.setPartyBoatAt = (
+              col,
+              row,
+              visible,
+              sprite,
+            ) => {
+              if (!visible) {
+                if (sceneSelf.partyBoatSprite) {
+                  sceneSelf.tweens.killTweensOf(sceneSelf.partyBoatSprite);
+                  sceneSelf.partyBoatSprite.destroy();
+                  sceneSelf.partyBoatSprite = null;
+                }
+                // Party is on land again — restore its sprite.
+                if (sceneSelf.partySprite) {
+                  sceneSelf.partySprite.setVisible(true);
+                }
+                return;
+              }
+              // Resolve the sprite to render. Prefer the caller's
+              // explicit arg (board); fall back to the live texture
+              // (sail) since the boat already has one.
+              const resolved =
+                sprite ?? sceneSelf.partyBoatSprite?.texture.key ?? "";
+              if (!resolved || !sceneSelf.textures.exists(resolved)) return;
+              if (!sceneSelf.partyBoatSprite) {
+                sceneSelf.partyBoatSprite = sceneSelf.add
+                  .image(
+                    col * TILE_SIZE + TILE_SIZE / 2,
+                    row * TILE_SIZE + TILE_SIZE / 2,
+                    resolved,
+                  )
+                  .setOrigin(0.5)
+                  .setDisplaySize(TILE_SIZE, TILE_SIZE)
+                  // Above floors / items / encounters / NPCs (≤ 80),
+                  // at the same depth band the party uses so the boat
+                  // visually "is" the party while the partySprite is
+                  // hidden.
+                  .setDepth(300);
+                applyBoatBob(sceneSelf.partyBoatSprite);
+              } else {
+                if (
+                  sprite &&
+                  sceneSelf.partyBoatSprite.texture.key !== sprite
+                ) {
+                  sceneSelf.partyBoatSprite.setTexture(sprite);
+                }
+                repositionWithBob(sceneSelf.partyBoatSprite, col, row);
+              }
+              // Hide the party sprite — the boat IS the party.
+              if (sceneSelf.partySprite) {
+                sceneSelf.partySprite.setVisible(false);
               }
             };
             sceneApiRef.current.setPartyLight = (source) => {
@@ -1485,6 +1755,62 @@ export function MapEditor({
                   }
                   sceneSelf.itemOverlays.set(key, img);
                   sceneSelf.itemOverlayIds.set(key, itemId);
+                }
+              }
+            };
+            sceneApiRef.current.refreshNpcOverlays = () => {
+              // Same diff'd-overlay pattern as items/encounters: walk
+              // every cell, compare its current npc id to the one we
+              // last rendered, and only mutate the scene where it
+              // changed. NPC sprites render slightly above items but
+              // below encounters so a tile carrying both a dropped
+              // item and a stationed NPC reads "person standing on
+              // the dropped thing."
+              for (let r = 0; r < mapRecord.height; r++) {
+                for (let c = 0; c < mapRecord.width; c++) {
+                  const cell = gridRef.current[r]?.[c];
+                  const npcId = cell?.npc ?? "";
+                  const key = `${c},${r}`;
+                  const currentId =
+                    sceneSelf.npcOverlayIds.get(key) ?? "";
+                  if (npcId === currentId) continue;
+                  // Remove any existing overlay first.
+                  const existing = sceneSelf.npcOverlays.get(key);
+                  if (existing) {
+                    existing.destroy();
+                    sceneSelf.npcOverlays.delete(key);
+                    sceneSelf.npcOverlayIds.delete(key);
+                  }
+                  if (!npcId) continue;
+                  const npc = npcsById.get(npcId);
+                  const spriteKey = resolveNpcSpriteKey(npc?.sprite);
+                  if (!spriteKey || !sceneSelf.textures.exists(spriteKey)) {
+                    // No sprite (or texture didn't preload) — record
+                    // the id so we don't retry every refresh.
+                    sceneSelf.npcOverlayIds.set(key, npcId);
+                    continue;
+                  }
+                  const img = sceneSelf.add
+                    .image(
+                      c * TILE_SIZE + TILE_SIZE / 2,
+                      r * TILE_SIZE + TILE_SIZE / 2,
+                      spriteKey,
+                    )
+                    .setOrigin(0.5)
+                    // Cover most of the cell — NPCs are people, not
+                    // dropped objects; they should read at roughly
+                    // the same scale as a party member would.
+                    .setDisplaySize(TILE_SIZE * 0.95, TILE_SIZE * 0.95)
+                    // Above items (70) and below encounter monsters
+                    // (80) so a wandering monster overrides a
+                    // stationary NPC if they happen to share a tile.
+                    .setDepth(75);
+                  const baseImg = sceneSelf.cells.get(key);
+                  if (baseImg && baseImg.isTinted) {
+                    img.setTint(baseImg.tintTopLeft);
+                  }
+                  sceneSelf.npcOverlays.set(key, img);
+                  sceneSelf.npcOverlayIds.set(key, npcId);
                 }
               }
             };
@@ -1634,6 +1960,9 @@ export function MapEditor({
           // Initial item-overlay pass — seeds sprites for cells whose
           // item is set at load time.
           sceneApiRef.current.refreshItemOverlays();
+          // Initial NPC-overlay pass — seeds sprites for cells whose
+          // npc is set at load time.
+          sceneApiRef.current.refreshNpcOverlays();
           // Initial quest-overlay pass — seeds quest-giver sprites
           // for any cell with `quest` set, and draws the golden glow
           // behind quest-relevant cells (givers + matching encounters
@@ -1702,6 +2031,7 @@ export function MapEditor({
             (existing.item ?? "") === (brushTile.item ?? "") &&
             (existing.quest ?? "") === (brushTile.quest ?? "") &&
             (existing.dungeon ?? "") === (brushTile.dungeon ?? "") &&
+            (existing.npc ?? "") === (brushTile.npc ?? "") &&
             existing.sprite === brushTile.sprite &&
             JSON.stringify(existing.link ?? null) ===
               JSON.stringify(brushTile.link ?? null)
@@ -1987,6 +2317,12 @@ export function MapEditor({
       relight: () => {
         sceneApiRef.current?.relight(lightingModeRef.current);
       },
+      setBoatPositions: (positions) => {
+        sceneApiRef.current?.setBoatPositions(positions);
+      },
+      setPartyBoatAt: (col, row, visible, sprite) => {
+        sceneApiRef.current?.setPartyBoatAt(col, row, visible, sprite);
+      },
       onKey: (handler) => {
         // Window-scoped listener. Ignore the keystroke if the user is
         // typing in an input/textarea so cell-text editing isn't
@@ -2003,6 +2339,10 @@ export function MapEditor({
         };
         const listener = (e: KeyboardEvent) => {
           if (isTyping(e.target)) return;
+          // Pause sim movement while a modal overlay (NPC dialog,
+          // shop, party screen) is open — otherwise the party would
+          // keep stepping in the background while the player reads.
+          if (overlaysOpenRef.current) return;
           handler(e.key);
         };
         window.addEventListener("keydown", listener);
@@ -2046,6 +2386,12 @@ export function MapEditor({
 
     const unsubscribe = sim.subscribe((ev) => {
       if (ev.kind === "linked") onLinkTraversed(ev.link);
+      if (ev.kind === "npc_encountered") {
+        // Open the NPC dialog overlay. Movement is gated via
+        // overlaysOpenRef so the party doesn't keep stepping while
+        // the player reads.
+        setNpcEncounterId(ev.npcId);
+      }
     });
 
     simRef.current = sim;
@@ -2107,6 +2453,13 @@ export function MapEditor({
   // above the base tile but below encounter overlays.
   useEffect(() => {
     sceneApiRef.current?.refreshItemOverlays();
+  }, [state]);
+
+  // Sync NPC overlay sprites with the grid. NPCs render at near-full
+  // tile size and sit between items (70) and encounters (80) on the
+  // depth stack.
+  useEffect(() => {
+    sceneApiRef.current?.refreshNpcOverlays();
   }, [state]);
 
   // Sync the quest-giver overlay + golden glow with the grid. Runs
@@ -2664,6 +3017,7 @@ export function MapEditor({
             encounters={state.encounters}
             spawns={state.spawns}
             items={state.items}
+            npcs={state.npcs}
             availableMaps={state.availableMaps}
             availableDungeons={state.availableDungeons}
             availableQuests={state.availableQuests}
@@ -2683,6 +3037,44 @@ export function MapEditor({
           onClose={() => setPartyScreenOpen(false)}
         />
       ) : null}
+      {/* NPC dialog overlay — opens when the party steps onto a cell
+          whose `npc` is set. Hidden behind the shop overlay if the
+          player taps Shop. */}
+      {npcEncounterId && !shopCounterId
+        ? (() => {
+            const npc = state.npcs.find((n) => n.id === npcEncounterId);
+            if (!npc) return null;
+            return (
+              <NpcDialogOverlay
+                npc={npc as Parameters<typeof NpcDialogOverlay>[0]["npc"]}
+                onOpenShop={(counterId) => setShopCounterId(counterId)}
+                onClose={() => setNpcEncounterId(null)}
+              />
+            );
+          })()
+        : null}
+      {/* Counter shop overlay — opens from inside the NPC dialog. */}
+      {shopCounterId
+        ? (() => {
+            const counter = state.counters.find(
+              (c) => c.id === shopCounterId,
+            );
+            if (!counter || !state.simParty) {
+              // Counter missing OR no party loaded — bounce back to
+              // the NPC dialog rather than rendering a broken shop.
+              setShopCounterId(null);
+              return null;
+            }
+            return (
+              <CounterShopOverlay
+                counter={counter as Parameters<typeof CounterShopOverlay>[0]["counter"]}
+                party={state.simParty}
+                items={state.items as Parameters<typeof CounterShopOverlay>[0]["items"]}
+                onClose={() => setShopCounterId(null)}
+              />
+            );
+          })()
+        : null}
     </div>
   );
 }
@@ -2826,6 +3218,7 @@ function Inspector({
   encounters,
   spawns,
   items,
+  npcs,
   availableMaps,
   availableDungeons,
   availableQuests,
@@ -2844,6 +3237,7 @@ function Inspector({
   encounters: EncounterRecord[];
   spawns: RefRecord[];
   items: ItemRecord[];
+  npcs: NpcRecord[];
   /** Every map in the module — fed to the Link editor's map_id picker. */
   availableMaps: Array<{ id: string; name: string }>;
   /** Every dungeon and quest in the module — fed to the cell-inspector's
@@ -3111,6 +3505,53 @@ function Inspector({
             canReset={!!base}
             onChange={(v) => onUpdate({ item: v })}
             onReset={() => onUpdate({ item: undefined })}
+          />
+
+          <SelectEditor
+            label="NPC"
+            help="NPC from npcs.json. Empty for none. The NPC's sprite renders as an overlay on the cell so you can place villagers / shopkeepers / quest-givers visually."
+            value={instance.npc ?? ""}
+            paletteValue={base?.npc ?? instance.npc ?? ""}
+            options={[
+              { value: "", label: "(none)" },
+              ...npcs.map((n) => ({
+                value: n.id,
+                label: n.name ? `${n.name} — ${n.id}` : n.id,
+              })),
+              // Preserve a value pointing at an NPC not in the catalog
+              // (forward reference / library record) so it round-trips
+              // through save / load.
+              ...(instance.npc &&
+              !npcs.some((n) => n.id === instance.npc)
+                ? [
+                    {
+                      value: instance.npc,
+                      label: `(missing) ${instance.npc}`,
+                    },
+                  ]
+                : []),
+            ]}
+            previewSrc={(() => {
+              const id = instance.npc ?? "";
+              if (!id) return null;
+              const found = npcs.find((n) => n.id === id);
+              const sprite = found?.sprite;
+              if (!sprite) return null;
+              // NPC sprites are stored as folder-relative paths
+              // (e.g. "person/cleric1.png"). Match the resolver the
+              // SpritePicker uses elsewhere — slash-bearing paths go
+              // under /sprites/, bare stems fall back to the default
+              // person folder.
+              return sprite.includes("/")
+                ? withBasePath(`/sprites/${sprite}`)
+                : withBasePath(`/sprites/person/${sprite}`);
+            })()}
+            isModified={
+              !!base && fieldDiffersFromPalette(instance, palette, "npc")
+            }
+            canReset={!!base}
+            onChange={(v) => onUpdate({ npc: v })}
+            onReset={() => onUpdate({ npc: undefined })}
           />
 
           <SelectEditor

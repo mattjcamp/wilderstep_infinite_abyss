@@ -31,6 +31,23 @@ export interface SimCell {
   light_range: number;
   /** Inter-map portal — null/undefined when this cell does not link. */
   link?: { map_id: string; x: number; y: number } | null;
+  /** NPC id from npcs.json — when the party steps onto this cell, the
+   *  sim emits an npc_encountered event so the host can open a dialog
+   *  overlay. Empty / undefined when no NPC stands here. */
+  npc?: string;
+  /** True = this cell is a boat the party can board. Stepping onto it
+   *  from land mounts the party; the sim then lets them sail across
+   *  tiles tagged "water" until they step onto walkable land again,
+   *  at which point the boat stays behind on the last water cell. */
+  boat?: boolean;
+  /** Free-form designer tag. The sim only reads "water" — boats can
+   *  sail across cells whose `tag === "water"`. Other tag values are
+   *  ignored by the kernel. */
+  tag?: string;
+  /** Render texture for the cell. The sim kernel doesn't paint, but
+   *  it passes this through to the host on boat boarding so the
+   *  scene knows which sprite to use for the boat-under-the-party. */
+  sprite?: string;
 }
 
 /** Row-major grid: grid[row][col]. */
@@ -88,6 +105,21 @@ export interface SimParty {
   /** Step countdown for the Galadriel's Light effect (Elf race).
    *  >0 = +GALADRIELS_LIGHT_RANGE. Decrements one per step. */
   galadriels_light_steps: number;
+  /** Gold on hand. Optional in the type because the sim kernel itself
+   *  never touches it; the editor's shop overlay reads + mutates it
+   *  when the player buys / sells at a counter. */
+  gold?: number;
+  /** Item stash carried by the party as a whole. Same caveat as gold —
+   *  the kernel ignores this, but the shop overlay mutates it during a
+   *  sim session. Each entry is { item: string; charges?: number }. */
+  inventory?: PartyInventoryEntry[];
+}
+
+/** One row in the party's stash. The editor's shop overlay and any
+ *  future inventory UI write to this shape. */
+export interface PartyInventoryEntry {
+  item: string;
+  charges?: number;
 }
 
 /** Subset of a character record the sim reads. */

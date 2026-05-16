@@ -21,11 +21,11 @@
 
 import {
   cellAt,
+  deltaFor,
   directionForKey,
   findSpawn,
   partyLightRange,
   partyLightSource,
-  step,
   tickPartyTimers,
 } from "./movement";
 import type {
@@ -62,6 +62,28 @@ export interface SceneBridge {
    *  pipe the keys through Phaser's keyboard manager or attach a
    *  raw window listener — the kernel doesn't care. */
   onKey(handler: (key: string) => void): () => void;
+  /** Show / move / hide the boat sprite that follows the party while
+   *  they're aboard. `visible=false` hides it (party is on land). The
+   *  host also hides the party sprite while the boat is showing — the
+   *  party is "inside" the boat, not a sprite next to it. `sprite` is
+   *  passed on board (the boat's identity) and omitted on sail. */
+  setPartyBoatAt(
+    col: number,
+    row: number,
+    visible: boolean,
+    sprite?: string,
+  ): void;
+  /** Sync the "loose" boats sitting on the world map (cells the party
+   *  isn't aboard right now). Each entry carries the boat's sprite so
+   *  cells can swap their render texture between boat and water as
+   *  boats move around. */
+  setBoatPositions(
+    positions: ReadonlyArray<{
+      col: number;
+      row: number;
+      sprite: string;
+    }>,
+  ): void;
 }
 
 /** Catalog data the sim needs to resolve character → race → effects.
@@ -86,6 +108,20 @@ export type SimEvent =
       link: { map_id: string; x: number; y: number };
     }
   | { kind: "log"; message: string }
+  /** Fired after a successful step onto a cell whose `npc` field is
+   *  set. The host opens a dialog overlay; the kernel doesn't render
+   *  anything itself. The party stays on the cell — leaving the dialog
+   *  is a separate user action. */
+  | { kind: "npc_encountered"; npcId: string; pos: Position }
+  /** Fired when the party steps onto a boat tile from land. The
+   *  party-boat sprite shown by the host follows the party from this
+   *  point on; the boat cell itself no longer renders a "loose" boat
+   *  because the boat is under the party. */
+  | { kind: "boarded"; pos: Position }
+  /** Fired when the party steps off the boat onto walkable land. The
+   *  boat stays behind on the last water cell (`boatAt`) — the host
+   *  re-renders a loose boat there. */
+  | { kind: "disembarked"; pos: Position; boatAt: Position }
   /** Emitted whenever the *visible* simulation state changes — host
    *  uses this to re-render its panel (HP bars, torch countdown, …). */
   | { kind: "state" };
@@ -132,6 +168,19 @@ export class MapSimulation {
   private readonly disposeKeyListener: () => void;
   private party: SimParty;
   private pos: Position;
+  /** True iff the party is currently aboard a boat. Maintained by
+   *  stepInDirection — see board / sail / disembark branches. */
+  private onBoat = false;
+  /** Sprite key of the boat the party is currently riding. Captured
+   *  on board (from the cell's sprite) and used on disembark so the
+   *  boat dropped back onto the map keeps its identity — e.g. a
+   *  pirate ship doesn't become a frigate after a single round-trip. */
+  private currentBoatSprite: string | null = null;
+  /** Cells that currently hold a "loose" boat the party isn't aboard.
+   *  Seeded at construction from cells flagged `boat: true`. Maps
+   *  "col,row" → sprite so each boat carries its own visual when it's
+   *  picked up + put down again. */
+  private readonly boatPositions = new Map<string, string>();
   private disposed = false;
 
   constructor(opts: MapSimulationOptions) {
@@ -169,9 +218,41 @@ export class MapSimulation {
         };
     this.pos = findSpawn(opts.grid, preferred);
 
+    // Seed boat positions from any cell currently flagged boat:true.
+    // Each entry remembers the cell's sprite so the boat keeps its
+    // identity across pick-up / put-down. If the spawn cell itself is
+    // a boat (designer placed the party in mid-river), treat the
+    // party as already aboard so the boat sprite renders under them
+    // from frame one.
+    for (let r = 0; r < opts.grid.length; r++) {
+      const row = opts.grid[r];
+      if (!row) continue;
+      for (let c = 0; c < row.length; c++) {
+        const cell = row[c];
+        if (cell?.boat) {
+          this.boatPositions.set(`${c},${r}`, cell.sprite ?? "");
+        }
+      }
+    }
+    const spawnKey = `${this.pos.col},${this.pos.row}`;
+    if (this.boatPositions.has(spawnKey)) {
+      this.currentBoatSprite =
+        this.boatPositions.get(spawnKey) ?? null;
+      this.boatPositions.delete(spawnKey);
+      this.onBoat = true;
+    }
+
     // Initial scene push — the sprite + light source land in place
-    // before the first keypress.
+    // before the first keypress. Boat overlays land at the same time
+    // so the static "moored" boats on the map render from frame one.
     this.bridge.setPartyAt(this.pos.col, this.pos.row);
+    this.bridge.setBoatPositions(this.snapshotBoats());
+    this.bridge.setPartyBoatAt(
+      this.pos.col,
+      this.pos.row,
+      this.onBoat,
+      this.currentBoatSprite ?? undefined,
+    );
     this.bridge.setPartyLight(this.computeLightSource());
     this.bridge.relight();
 
@@ -182,58 +263,195 @@ export class MapSimulation {
   }
 
   /** Manually drive a step. Useful for buttons (e.g., a tap-up control
-   *  in a mobile build) and for tests. */
+   *  in a mobile build) and for tests.
+   *
+   *  Classification order (top wins):
+   *    1. NPC bump — never lets the party walk through the cell
+   *    2. Off-grid — always blocked
+   *    3. Boat boarding — on land stepping onto a loose boat
+   *    4. Boat sailing — already aboard, stepping onto a water-tagged cell
+   *    5. Boat disembark — already aboard, stepping onto walkable land
+   *    6. Boat blocked — aboard but target is non-water non-walkable
+   *       (mountain in the sea, second boat in the way, …)
+   *    7. Normal walking — falls through to step()
+   */
   stepInDirection(direction: Direction): void {
     if (this.disposed) return;
-    const result = step(this.grid, this.pos, direction);
-    if (result.kind === "stayed") {
+    const { dc, dr } = deltaFor(direction);
+    const targetCol = this.pos.col + dc;
+    const targetRow = this.pos.row + dr;
+    const target = cellAt(this.grid, targetCol, targetRow);
+
+    // 1. NPC bump — takes priority over everything else. The party
+    //    stays put; the host opens a dialog overlay.
+    if (target?.npc) {
+      this.emit({
+        kind: "npc_encountered",
+        npcId: target.npc,
+        pos: { col: targetCol, row: targetRow },
+      });
+      return;
+    }
+
+    // 2. Off-grid.
+    if (!target) {
       this.emit({
         kind: "blocked",
         pos: { ...this.pos },
         direction,
-        reason: result.reason,
+        reason: "off_grid",
       });
-      this.emit({
-        kind: "log",
-        message:
-          result.reason === "off_grid"
-            ? "Edge of the map."
-            : "Something blocks the way.",
-      });
+      this.emit({ kind: "log", message: "Edge of the map." });
       return;
     }
+
+    const targetKey = `${targetCol},${targetRow}`;
+    const targetHasBoat =
+      this.boatPositions.has(targetKey) || target.boat === true;
+    /** Sprite of the boat at the target cell — first the live boat-
+     *  positions map (a boat disembarked here recently), then the
+     *  cell's own sprite (untouched boat tile from the palette). */
+    const targetBoatSprite =
+      this.boatPositions.get(targetKey) ?? target.sprite ?? "";
+    const targetIsWater = (target.tag ?? "") === "water";
+
+    // Decide the kind. Boat-aware classification first, then fall
+    // through to the normal walking path for the on-land non-boat case.
+    type MoveKind =
+      | "walk"
+      | "board"
+      | "sail"
+      | "disembark"
+      | "blocked-boat"
+      | "linked"
+      | "blocked";
+    let kind: MoveKind;
+    if (this.onBoat) {
+      if (targetHasBoat) kind = "blocked-boat";
+      else if (targetIsWater) kind = "sail";
+      else if (target.walkable) kind = "disembark";
+      else kind = "blocked";
+    } else {
+      if (targetHasBoat) kind = "board";
+      else if (!target.walkable) kind = "blocked";
+      else if (target.link && target.link.map_id) kind = "linked";
+      else kind = "walk";
+    }
+
+    // 6 / blocked branches first — these don't move the party.
+    if (kind === "blocked" || kind === "blocked-boat") {
+      const message =
+        kind === "blocked-boat"
+          ? "Another boat is in the way."
+          : this.onBoat
+            ? "The boat can't go there."
+            : "Something blocks the way.";
+      this.emit({
+        kind: "blocked",
+        pos: { ...this.pos },
+        direction,
+        reason: "blocked",
+      });
+      this.emit({ kind: "log", message });
+      return;
+    }
+
+    // Movement commits — same side-effects regardless of move kind.
     const from = { ...this.pos };
-    const to: Position = { col: result.col, row: result.row };
+    const to: Position = { col: targetCol, row: targetRow };
+    // Capture the cell the party is leaving BEFORE updating pos —
+    // disembark drops the boat here.
+    const leftFrom = { ...this.pos };
     this.pos = to;
     // Step counters tick AFTER movement: a torch with 1 step left
     // lights the tile you step onto, then burns out. Matches v1.
     this.party = { ...this.party, ...tickPartyTimers(this.party) };
-    // Push side-effects through the bridge.
     this.bridge.setPartyAt(to.col, to.row);
+
+    // Boat state side-effects.
+    if (kind === "board") {
+      // Lift the boat off the world map (it's under the party now).
+      // The cell's render texture swaps to water on the scene side;
+      // we remember the boat's sprite so disembark can put it back.
+      this.currentBoatSprite = targetBoatSprite;
+      this.boatPositions.delete(targetKey);
+      this.onBoat = true;
+      this.bridge.setBoatPositions(this.snapshotBoats());
+      this.bridge.setPartyBoatAt(to.col, to.row, true, targetBoatSprite);
+      this.emit({ kind: "boarded", pos: { ...to } });
+      this.emit({ kind: "log", message: "You board the boat." });
+    } else if (kind === "sail") {
+      // Boat moves with the party — no change to boatPositions or
+      // the scene's tracked sprite, just a position update.
+      this.bridge.setPartyBoatAt(to.col, to.row, true);
+    } else if (kind === "disembark") {
+      // Boat stays behind on the cell the party just left. The
+      // scene swaps that cell's texture back to the boat sprite.
+      const droppedSprite = this.currentBoatSprite ?? "";
+      this.boatPositions.set(
+        `${leftFrom.col},${leftFrom.row}`,
+        droppedSprite,
+      );
+      this.onBoat = false;
+      this.currentBoatSprite = null;
+      this.bridge.setBoatPositions(this.snapshotBoats());
+      this.bridge.setPartyBoatAt(to.col, to.row, false);
+      this.emit({
+        kind: "disembarked",
+        pos: { ...to },
+        boatAt: leftFrom,
+      });
+      this.emit({
+        kind: "log",
+        message: "You step ashore. The boat waits behind you.",
+      });
+    }
+
+    // Lighting re-pass after the party (and any boat) has moved.
     this.bridge.setPartyLight(this.computeLightSource());
     this.bridge.relight();
-    if (result.kind === "linked") {
+
+    // Linked traversal — same emit ordering as the pre-boat version.
+    if (kind === "linked" && target.link) {
       this.emit({ kind: "moved", from, to });
       this.emit({
         kind: "linked",
         from,
         to,
-        link: result.link,
+        link: target.link,
       });
       this.emit({
         kind: "log",
-        message: `Link → ${result.link.map_id}@${result.link.x},${result.link.y}`,
+        message: `Link → ${target.link.map_id}@${target.link.x},${target.link.y}`,
       });
       this.emit({ kind: "state" });
       return;
     }
+
     this.emit({ kind: "moved", from, to });
-    // Surface on-step tile text if the cell carries any. Useful for
-    // testing scripted callouts when authoring a map.
-    const cell = cellAt(this.grid, to.col, to.row);
-    const text = (cell as unknown as { text?: string } | null)?.text;
+    // Surface on-step tile text if the cell carries any.
+    const text = (target as unknown as { text?: string }).text;
     if (text) this.emit({ kind: "log", message: text });
     this.emit({ kind: "state" });
+  }
+
+  /** Snapshot the loose-boat set as an array the bridge can hand to
+   *  the scene. Each entry carries the boat's sprite so the scene
+   *  can decide what texture to render. Copied per call so a later
+   *  mutation here never bleeds into the host. */
+  private snapshotBoats(): Array<{
+    col: number;
+    row: number;
+    sprite: string;
+  }> {
+    const out: Array<{ col: number; row: number; sprite: string }> = [];
+    for (const [key, sprite] of this.boatPositions) {
+      const [c, r] = key.split(",").map((v) => Number.parseInt(v, 10));
+      if (Number.isFinite(c) && Number.isFinite(r)) {
+        out.push({ col: c, row: r, sprite });
+      }
+    }
+    return out;
   }
 
   /** Light a torch — sets a step countdown that bumps the party's
