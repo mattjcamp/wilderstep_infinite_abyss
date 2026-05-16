@@ -95,19 +95,21 @@ import {
   flashTarget,
   castGlow,
   projectileLine,
-  lightningZigzag,
   radialBurst,
   healingSparkles,
   glowAura,
   screenShake,
   floatingX,
   shatterEffect,
-  magicDart,
-  magicArrow,
   partyDeathSlump,
   partyDeathBanner,
   VFX_COLOURS,
-} from "../combat/Vfx";
+} from "@/vfx/Vfx";
+import { resolveProjectileEffect } from "@/vfx/effectRegistry";
+import {
+  loadAnimations,
+  getAnimationById,
+} from "@/vfx/animationsCatalog";
 import { Sfx } from "../audio/Sfx";
 import { Music } from "../audio/Music";
 import type { Combatant, AttackResult } from "../types";
@@ -1477,7 +1479,7 @@ export class CombatScene extends Phaser.Scene {
     if (this.mode === "pick-spell") {
       const spell = this.spellOptions[this.pickerCursor];
       if (!spell) return;
-      this.dispatchSpell(spell);
+      void this.dispatchSpell(spell);
       return;
     }
     if (this.mode === "pick-use") {
@@ -1920,9 +1922,12 @@ export class CombatScene extends Phaser.Scene {
   /**
    * Spell-pick → action dispatch. Classifies the spell, and either
    * stages a target prompt (single-target) or casts immediately
-   * (self / mass / unsupported).
+   * (self / mass / unsupported). The async signature lets the
+   * resolve-now branches await the animation catalog before
+   * playing cast SFX / visuals; target-stage branches return
+   * before any await runs and the function resolves synchronously.
    */
-  private dispatchSpell(spell: Spell): void {
+  private async dispatchSpell(spell: Spell): Promise<void> {
     const member = this.memberForCurrent();
     if (!member) return;
     const kind = classifyCombatCast(spell);
@@ -1980,13 +1985,31 @@ export class CombatScene extends Phaser.Scene {
     this.mode = "default";
 
     const me = this.combat.current;
-    Sfx.play(spell.sfx);
+
+    // Animation-driven dispatch. Catalog is preloaded eagerly at the
+    // top of any cast path so getAnimationById resolves synchronously.
+    await loadAnimations();
+    const animation = getAnimationById(spell.animation_id);
+    const castSfx = animation?.cast_sfx ?? "";
+    const hitSfx = animation?.hit_sfx ?? "";
+    const animVisual = (animation?.visual ?? "").trim();
+    const hasVisual = animVisual !== "" && animVisual !== "none";
+    /** Play the animation's visual at a target's body position. Each
+     *  branch below calls this with the appropriate target instead of
+     *  hand-coding the visual helper. */
+    const playVisualAt = async (point: { x: number; y: number }) => {
+      if (!hasVisual) return;
+      const fn = resolveProjectileEffect({ effect_type: animVisual });
+      await fn(this, point, point);
+    };
+
+    if (castSfx) Sfx.play(castSfx);
     this.castGlowFor(me, this.colorForSpell(spell.effect_type));
     if (kind === "self") {
       if (spell.effect_type === "heal" || spell.effect_type === "major_heal") {
         const r = resolveHealSpell(me, me, spell, defaultRng);
         this.combat.log.push(`${me.name} casts ${spell.name} on self — heals ${r.heal} HP.`);
-        void this.healTargetVfx(me);
+        void playVisualAt(this.bodyXY(me));
         this.refreshHp(me);
       } else if (spell.effect_type === "invisibility") {
         // Caster fades from view: an "Invisibility"-tagged AC buff
@@ -2005,7 +2028,7 @@ export class CombatScene extends Phaser.Scene {
           `${me.name} casts ${spell.name} — fades from view (+6 AC for ${turns} turns).`
         );
       } else {
-        void this.auraOn(me, VFX_COLOURS.buff);
+        void playVisualAt(this.bodyXY(me));
         this.combat.log.push(
           `${me.name} casts ${spell.name} — ${describeStatusCast(me, me, spell)}`
         );
@@ -2030,27 +2053,87 @@ export class CombatScene extends Phaser.Scene {
           // Stagger the per-ally aura so they sparkle in sequence
           // rather than all flashing at once — feels more "blessing
           // sweeping over the party".
-          this.time.delayedCall(count * 60, () => void this.auraOn(ally, VFX_COLOURS.buff));
+          const allyPos = this.bodyXY(ally);
+          this.time.delayedCall(count * 60, () => void playVisualAt(allyPos));
           count += 1;
         }
         this.combat.log.push(
           `${me.name} casts ${spell.name} — ${count} ${count === 1 ? "ally" : "allies"} gain +${value} to hit for ${turns} turns.`
         );
-      } else {
+      } else if (spell.action === "restore") {
+        // Restore: percentage HP + percentage MP top-up for every
+        // alive ally, plus optionally cure listed status effects.
+        // params: heal_percent (0..1), mp_percent (0..1), cure_effects
+        // (array of effect ids), scope=all_allies. The status-effect
+        // engine isn't built yet, so cure_effects is a noop — the
+        // call shape is here so the field becomes live as soon as the
+        // engine arrives.
+        const ev = spell.effect_value ?? {};
+        const healPct = typeof ev.heal_percent === "number" ? ev.heal_percent : 0;
+        const mpPct = typeof ev.mp_percent === "number" ? ev.mp_percent : 0;
+        let totalHp = 0;
+        let totalMp = 0;
+        let i = 0;
+        for (const ally of this.combat.combatants) {
+          if (ally.side !== "party" || ally.hp <= 0) continue;
+          // HP top-up — clamp to maxHp.
+          const hpGain = Math.min(
+            ally.maxHp - ally.hp,
+            Math.max(0, Math.floor(ally.maxHp * healPct)),
+          );
+          if (hpGain > 0) {
+            ally.hp += hpGain;
+            totalHp += hpGain;
+          }
+          // MP top-up — has to go through the PartyMember row since
+          // MP lives there (combatants don't carry mp themselves).
+          const allyMember = this.memberByCombatantId(ally.id);
+          if (allyMember && allyMember.max_mp > 0) {
+            const mpGain = Math.min(
+              allyMember.max_mp - allyMember.mp,
+              Math.max(0, Math.floor(allyMember.max_mp * mpPct)),
+            );
+            if (mpGain > 0) {
+              allyMember.mp += mpGain;
+              totalMp += mpGain;
+            }
+            // Keep PartyMember.hp in sync with the combatant so the
+            // post-battle roster reflects the heal.
+            allyMember.hp = ally.hp;
+          }
+          const allyPos = this.bodyXY(ally);
+          this.time.delayedCall(i * 70, () => void playVisualAt(allyPos));
+          i += 1;
+          this.refreshHp(ally);
+        }
+        const parts: string[] = [];
+        if (totalHp > 0) parts.push(`${totalHp} HP`);
+        if (totalMp > 0) parts.push(`${totalMp} MP`);
+        this.combat.log.push(
+          `${me.name} casts ${spell.name} — party restored ` +
+            `${parts.length > 0 ? parts.join(" / ") : "nothing"}.`,
+        );
+      } else if (spell.action === "heal") {
+        // Mass heal — every alive ally takes the spell's dice and
+        // adds the rolled amount. Stagger the visuals so the bar
+        // sweeps across the party instead of strobing simultaneously.
         let total = 0;
         let i = 0;
         for (const ally of this.combat.combatants) {
           if (ally.side !== "party" || ally.hp <= 0) continue;
-          if (spell.effect_type === "mass_heal" || spell.effect_type === "heal" || spell.effect_type === "major_heal") {
-            const r = resolveHealSpell(me, ally, spell, defaultRng);
-            total += r.heal;
-            this.time.delayedCall(i * 70, () => void this.healTargetVfx(ally));
-            i += 1;
-            this.refreshHp(ally);
-          }
+          const r = resolveHealSpell(me, ally, spell, defaultRng);
+          total += r.heal;
+          const allyPos = this.bodyXY(ally);
+          this.time.delayedCall(i * 70, () => void playVisualAt(allyPos));
+          i += 1;
+          this.refreshHp(ally);
         }
         this.combat.log.push(
-          `${me.name} casts ${spell.name} — party heals ${total} HP total.`
+          `${me.name} casts ${spell.name} — party heals ${total} HP total.`,
+        );
+      } else {
+        this.combat.log.push(
+          `${me.name} casts ${spell.name} — no mass-ally effect implemented.`,
         );
       }
     } else if (kind === "mass-enemy") {
@@ -2076,17 +2159,16 @@ export class CombatScene extends Phaser.Scene {
           );
           const body = this.bodies.get(target.id);
           if (body) {
-            const radius = o.saved ? 38 : 56;
+            const at = { x: body.x, y: body.y };
             this.time.delayedCall(i * 80, () => {
               flashTarget(this, body, VFX_COLOURS.buff);
-              void radialBurst(this, { x: body.x, y: body.y },
-                                VFX_COLOURS.buff, VFX_COLOURS.white, radius);
+              void playVisualAt(at);
             });
           }
           i += 1;
           this.refreshHp(target);
         }
-        if (spell.hit_sfx) Sfx.play(spell.hit_sfx);
+        if (hitSfx) Sfx.play(hitSfx);
       } else {
         // Generic mass-enemy fallback (no other spells use this
         // classifier today, but the branch keeps options open for
@@ -2332,9 +2414,29 @@ export class CombatScene extends Phaser.Scene {
         if (member && member.max_mp > 0) {
           member.mp = Math.max(0, (member.mp) - spell.mp_cost);
         }
-        // Cast SFX + caster glow up-front; the per-effect branch below
-        // adds the spell-specific VFX and (where present) the impact SFX.
-        Sfx.play(spell.sfx);
+        // Animation-driven dispatch. spell.animation_id picks the
+        // cast SFX, the visual key, and the impact SFX as a bundle;
+        // every per-effect branch below just runs the visual for
+        // that spell, no hand-coded helpers.
+        await loadAnimations();
+        const animation = getAnimationById(spell.animation_id);
+        const castSfx = animation?.cast_sfx ?? "";
+        const hitSfx = animation?.hit_sfx ?? "";
+        const animVisual = (animation?.visual ?? "").trim();
+        const hasVisual = animVisual !== "" && animVisual !== "none";
+        /** Resolve and run the animation's visual. For projectile
+         *  visuals the (from, to) line is meaningful; for point-only
+         *  visuals (heal_sparkles, buff_aura, …) the `from` arg is
+         *  ignored. Caller passes target body as `to`. */
+        const runVisual = async (
+          from: { x: number; y: number },
+          to: { x: number; y: number },
+        ): Promise<void> => {
+          if (!hasVisual) return;
+          const fn = resolveProjectileEffect({ effect_type: animVisual });
+          await fn(this, from, to);
+        };
+        if (castSfx) Sfx.play(castSfx);
         this.castGlowFor(me, this.colorForSpell(spell.effect_type));
         const e = spell.effect_type;
         if (e === "heal" || e === "major_heal") {
@@ -2342,35 +2444,22 @@ export class CombatScene extends Phaser.Scene {
           this.combat.log.push(
             `${me.name} casts ${spell.name} on ${target.name} — heals ${r.heal} HP.`
           );
-          await this.healTargetVfx(target);
+          await runVisual(this.bodyXY(target), this.bodyXY(target));
           this.refreshHp(target);
         } else if (
-          e === "damage" || e === "undead_damage"
+          e === "damage" || e === "undead_damage" || e === "lightning_bolt"
         ) {
-          // Damage spell: projectile from caster → target, then hit.
-          // Magic Arrow gets its own glowing-shaft VFX so it reads
-          // distinct from a mundane bow shot; other damage spells
-          // keep the generic bowed projectile.
-          if (spell.id === "magic_arrow") {
-            await magicArrow(this, this.bodyXY(me), this.bodyXY(target));
-          } else {
-            await this.flyProjectile(me, target, VFX_COLOURS.arcane);
-          }
+          // Damage spells: the animation's visual is a caster→target
+          // projectile (lightning_strike, magic_dart, magic_arrow,
+          // generic_projectile). lightning_bolt no longer needs its
+          // own branch — its visual is just whatever the animation
+          // says it is.
+          await runVisual(this.bodyXY(me), this.bodyXY(target));
           const r = resolveDamageSpell(me, target, spell, defaultRng);
           this.combat.log.push(
             `${me.name} casts ${spell.name} on ${target.name} — ${r.damage} dmg${r.killed ? ", defeated!" : "."}`
           );
-          if (spell.hit_sfx) Sfx.play(spell.hit_sfx);
-          await this.animateHit(target, r);
-          this.refreshHp(target);
-        } else if (e === "lightning_bolt") {
-          // Branch out a zigzag bolt from caster to target.
-          await this.lightningTo(me, target);
-          const r = resolveDamageSpell(me, target, spell, defaultRng);
-          this.combat.log.push(
-            `${me.name} casts ${spell.name} on ${target.name} — ${r.damage} dmg${r.killed ? ", defeated!" : "."}`
-          );
-          if (spell.hit_sfx) Sfx.play(spell.hit_sfx);
+          if (hitSfx) Sfx.play(hitSfx);
           await this.animateHit(target, r);
           this.refreshHp(target);
         } else if (e === "ac_buff") {
@@ -2384,7 +2473,7 @@ export class CombatScene extends Phaser.Scene {
             turnsLeft: turns,
             source: "Shield",
           });
-          await this.auraOn(target, VFX_COLOURS.shield);
+          await runVisual(this.bodyXY(target), this.bodyXY(target));
           this.combat.log.push(
             `${me.name} casts ${spell.name} on ${target.name} — +${value} AC for ${turns} turns.`
           );
@@ -2408,7 +2497,7 @@ export class CombatScene extends Phaser.Scene {
             turnsLeft: turns,
             source: "Curse",
           });
-          await this.auraOn(target, VFX_COLOURS.curse);
+          await runVisual(this.bodyXY(target), this.bodyXY(target));
           this.combat.log.push(
             `${me.name} casts ${spell.name} on ${target.name} — -${atk} ATK / -${acP} AC for ${turns} turns.`
           );
@@ -2423,7 +2512,7 @@ export class CombatScene extends Phaser.Scene {
             turnsLeft: turns,
             source: "Long Shanks",
           });
-          await this.auraOn(target, VFX_COLOURS.heal);
+          await runVisual(this.bodyXY(target), this.bodyXY(target));
           this.combat.log.push(
             `${me.name} casts ${spell.name} on ${target.name} — +${value} move for ${turns} turns.`
           );
@@ -2433,19 +2522,14 @@ export class CombatScene extends Phaser.Scene {
           // status models the buff engine doesn't cover). Even
           // without status persistence, the SAVE is now real: a
           // monster with high INT/WIS resists Sleep/Charm/Curse,
-          // a low-INT zombie folds. The visible feedback (aura +
-          // log line) reflects whether the spell stuck or not.
+          // a low-INT zombie folds. The visible feedback (animation
+          // + log line) reflects what happened.
           const isAlly = target.side === me.side;
           const ev = spell.effect_value ?? {};
           const hasSave =
             typeof ev.save_dc_stat === "string" || typeof ev.save_dc_base === "number";
-          let resisted = false;
           if (hasSave && !isAlly) {
             const save = rollSpellSave(me, target, spell, defaultRng);
-            // Format the save dice as `STAT save: d20(N) + M = T vs DC D`
-            // so the d20 roll is unmistakable. Earlier format
-            // `INT 2+5=7` read like "INT score 2, plus 5" instead of
-            // "d20 came up 2, plus +5 from INT".
             const stat = save.saveStat.toUpperCase().slice(0, 3);
             const sign = save.bonus >= 0 ? "+" : "";
             const verdict = save.saved ? "saved" : "failed";
@@ -2453,7 +2537,6 @@ export class CombatScene extends Phaser.Scene {
               `${stat} save: d20(${save.roll}) ${sign}${save.bonus} = ${save.total} ` +
               `vs DC ${save.dc} — ${verdict}`;
             if (save.saved) {
-              resisted = true;
               this.combat.log.push(
                 `${me.name} casts ${spell.name} on ${target.name} — resisted! (${dice})`,
               );
@@ -2468,14 +2551,9 @@ export class CombatScene extends Phaser.Scene {
               `${me.name} casts ${spell.name} on ${target.name} — ${describeStatusCast(me, target, spell)}`,
             );
           }
-          // Aura still plays — the cleric / wizard threw something,
-          // visible feedback either way. Color cue distinguishes
-          // "landed" vs "deflected" so the player reads the outcome
-          // before the dice line.
-          await this.auraOn(
-            target,
-            resisted ? VFX_COLOURS.shield : (isAlly ? VFX_COLOURS.buff : VFX_COLOURS.curse),
-          );
+          // Animation plays regardless of save outcome — the log
+          // line carries the result.
+          await runVisual(this.bodyXY(target), this.bodyXY(target));
         }
       }
       // Throw / cast each consume the rest of the turn.
@@ -2792,27 +2870,37 @@ export class CombatScene extends Phaser.Scene {
       (c, r) => this.combat.combatantAt(c, r),
     );
 
-    Sfx.play(spell.sfx);
+    // Ensure the animation catalog is loaded before we resolve the
+    // dispatch. Cached after first call so this is a no-op on every
+    // subsequent cast. Wrapped in await so the first cast doesn't
+    // race the fetch and silently fall back to the legacy visual.
+    await loadAnimations();
+
+    // Resolve the animation. Every spell carries an animation_id
+    // post-migration; the catalog has the cast SFX, the visual key,
+    // and the impact SFX bundled together.
+    const animation = getAnimationById(spell.animation_id);
+    const castSfx = animation?.cast_sfx ?? "";
+    const hitSfx = animation?.hit_sfx ?? "";
+
+    if (castSfx) Sfx.play(castSfx);
     this.castGlowFor(me, this.colorForSpell(spell.effect_type));
     try {
       // Animate the projectile from caster → endpoint regardless of
       // whether anything was hit, so the player sees the cast resolve.
-      // Per-spell VFX:
-      //   - lightning_bolt → jagged zigzag
-      //   - Magic Dart (id "fireball" in the data — it isn't, just a
-      //     legacy id) → arcane orb with sparkle trail
-      //   - everything else → the generic bowed projectile
+      // The animation's `visual` is a key into the effectRegistry —
+      // "none" or unset means skip the projectile draw (audio-only).
       const start = this.bodyXY(me);
       const endPx = {
         x: this.tileX(trace.endCol),
         y: this.tileY(trace.endRow),
       };
-      if (spell.effect_type === "lightning_bolt") {
-        await lightningZigzag(this, start, endPx);
-      } else if (spell.id === "fireball" /* Magic Dart */) {
-        await magicDart(this, start, endPx, VFX_COLOURS.arcane);
-      } else {
-        await projectileLine(this, start, endPx, VFX_COLOURS.arcane, 220);
+      const animVisual = (animation?.visual ?? "").trim();
+      if (animVisual && animVisual !== "none") {
+        const projectile = resolveProjectileEffect({
+          effect_type: animVisual,
+        });
+        await projectile(this, start, endPx);
       }
 
       if (trace.hitId) {
@@ -2825,7 +2913,7 @@ export class CombatScene extends Phaser.Scene {
         this.combat.log.push(
           `${me.name} casts ${spell.name} → ${target.name} (${dir.toUpperCase()})${tag} — ${r.damage} dmg${r.killed ? ", defeated!" : "."}`
         );
-        if (spell.hit_sfx) Sfx.play(spell.hit_sfx);
+        if (hitSfx) Sfx.play(hitSfx);
         await this.animateHit(target, r);
         this.refreshHp(target);
       } else {
@@ -2992,16 +3080,21 @@ export class CombatScene extends Phaser.Scene {
     this.pendingAction = null;
     this.clearTileCursor();
     this.clearPicker();
-    // Cast SFX + caster glow before the per-effect VFX kicks in.
-    Sfx.play(spell.sfx);
+    // Animation-driven cast SFX. The per-effect handlers below
+    // resolve their own visuals through the animation (since each
+    // has different from/to semantics — AOE projectile, teleport
+    // arrival burst, summon spawn burst).
+    await loadAnimations();
+    const animation = getAnimationById(spell.animation_id);
+    if (animation?.cast_sfx) Sfx.play(animation.cast_sfx);
     this.castGlowFor(me, this.colorForSpell(spell.effect_type));
     try {
       const e = spell.effect_type;
-      if (e === "aoe_fireball") {
+      if (e === "aoe_damage") {
         await this.resolveAoeFireball(me, spell, this.tileCursorPos);
       } else if (e === "teleport") {
         await this.resolveTeleport(me, spell, this.tileCursorPos);
-      } else if (e === "summon_skeleton") {
+      } else if (e === "summon") {
         await this.resolveSummonSkeleton(me, spell, this.tileCursorPos);
       } else {
         this.combat.log.push(
@@ -3037,15 +3130,26 @@ export class CombatScene extends Phaser.Scene {
                Math.abs(c.position.row - centre.row),
              ) <= radius
     );
-    // Aim a fireball orb at the centre tile, then explode there.
+    // Aim the animation's projectile at the centre tile (visual key
+    // is fire_projectile for fireball_burst). When the spell carries
+    // a non-projectile or "none" animation the flight is skipped —
+    // the AOE detonation below still plays as it's the mechanic's
+    // intrinsic feedback, not the spell's "look".
     const burstAt = { x: this.tileX(centre.col), y: this.tileY(centre.row) };
-    await projectileLine(
-      this,
-      { x: this.tileX(caster.position.col), y: this.tileY(caster.position.row) },
-      burstAt,
-      VFX_COLOURS.fire, 280,
-    );
-    if (spell.hit_sfx) Sfx.play(spell.hit_sfx);
+    const casterAt = {
+      x: this.tileX(caster.position.col),
+      y: this.tileY(caster.position.row),
+    };
+    const animation = getAnimationById(spell.animation_id);
+    const animVisual = (animation?.visual ?? "").trim();
+    if (animVisual && animVisual !== "none") {
+      const fn = resolveProjectileEffect({ effect_type: animVisual });
+      await fn(this, casterAt, burstAt);
+    }
+    if (animation?.hit_sfx) Sfx.play(animation.hit_sfx);
+    // AOE detonation — fixed feedback for any tile-target damage
+    // spell. Not animation-driven because it's tied to the AOE
+    // mechanic, not the spell's chosen visual.
     screenShake(this, 0.008, 240);
     void radialBurst(this, burstAt, VFX_COLOURS.fire, VFX_COLOURS.ember, 64);
     if (victims.length === 0) {
@@ -3088,13 +3192,22 @@ export class CombatScene extends Phaser.Scene {
     }
     caster.position = { ...dest };
     // Snap the sprite + selection ring to the new tile, with a fade
-    // out / fade in pair so the relocation reads visually.
+    // out / fade in pair so the relocation reads visually. The
+    // depart and arrive visuals are both pulled from the spell's
+    // animation — same visual fired twice at different points.
     const body = this.bodies.get(caster.id);
     const ring = this.selRings.get(caster.id);
     const x = this.tileX(dest.col);
     const y = this.tileY(dest.row);
+    const animation = getAnimationById(spell.animation_id);
+    const animVisual = (animation?.visual ?? "").trim();
+    const playBurstAt = (point: { x: number; y: number }) => {
+      if (!animVisual || animVisual === "none") return;
+      const fn = resolveProjectileEffect({ effect_type: animVisual });
+      void fn(this, point, point);
+    };
     if (body) {
-      void radialBurst(this, { x: body.x, y: body.y }, VFX_COLOURS.arcane, VFX_COLOURS.white, 30);
+      playBurstAt({ x: body.x, y: body.y });
       await new Promise<void>((res) => {
         this.tweens.add({
           targets: body, alpha: 0,
@@ -3104,7 +3217,7 @@ export class CombatScene extends Phaser.Scene {
       });
       body.x = x; body.y = y;
       if (ring) { ring.x = x; ring.y = y; }
-      void radialBurst(this, { x, y }, VFX_COLOURS.arcane, VFX_COLOURS.white, 30);
+      playBurstAt({ x, y });
       await new Promise<void>((res) => {
         this.tweens.add({
           targets: body, alpha: 1,
@@ -3169,10 +3282,15 @@ export class CombatScene extends Phaser.Scene {
     }
     this.bodies.set(id, body);
 
-    // "Claws its way out of the ground" VFX — purple/bone burst at
-    // the spawn tile, then a quick scale-up on the body so the entry
-    // reads as a summoning rather than a warp-in.
-    void radialBurst(this, { x, y }, VFX_COLOURS.curse, VFX_COLOURS.white, 42);
+    // "Claws its way out of the ground" VFX — runs the spell's
+    // animation visual at the spawn tile, then scales the body up so
+    // the entry reads as a summoning rather than a warp-in.
+    const animation = getAnimationById(spell.animation_id);
+    const animVisual = (animation?.visual ?? "").trim();
+    if (animVisual && animVisual !== "none") {
+      const fn = resolveProjectileEffect({ effect_type: animVisual });
+      void fn(this, { x, y }, { x, y });
+    }
     body.setScale(0.2);
     this.tweens.add({
       targets: body, scale: 1,
@@ -3470,11 +3588,6 @@ export class CombatScene extends Phaser.Scene {
   /** Fly a projectile arc from `from` → `to` in screen coords. */
   private flyProjectile(from: Combatant, to: Combatant, color: number): Promise<void> {
     return projectileLine(this, this.bodyXY(from), this.bodyXY(to), color, 240);
-  }
-
-  /** Lightning zigzag from caster to target. */
-  private lightningTo(from: Combatant, to: Combatant): Promise<void> {
-    return lightningZigzag(this, this.bodyXY(from), this.bodyXY(to));
   }
 
   /** Coloured aura ring around a target — buff/debuff status visual. */

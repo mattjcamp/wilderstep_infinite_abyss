@@ -239,18 +239,27 @@ export type CombatCastKind =
 export function classifyCombatCast(spell: Spell): CombatCastKind {
   const t = (spell.targeting ?? "").toLowerCase();
   const e = spell.effect_type;
+  const scope = (() => {
+    const ev = spell.effect_value;
+    if (ev && typeof ev === "object" && typeof ev.scope === "string") {
+      return ev.scope;
+    }
+    return "";
+  })();
 
   // Tile-targeted spells get a dedicated arena picker.
   if (t === "select_tile") return "pick-tile";
-  if (e === "aoe_fireball" || e === "teleport" || e === "summon_skeleton") {
+  if (e === "aoe_damage" || e === "teleport" || e === "summon") {
     return "pick-tile";
   }
 
-  // Mass-effect spells with self targeting: Mass Heal, Restore.
-  if (e === "mass_heal") return "mass-ally";
-  // Bless is "self" in the data but the Python game applies it
-  // party-wide — treat it as mass-ally so every alive ally gets the
-  // attack-bonus buff.
+  // Mass-effect spells. Two ways a spell can be mass-ally:
+  //   1. action_params.scope === "all_allies" — the canonical
+  //      v2 signal. Mass Heal and Restore both use this with
+  //      targeting=self.
+  //   2. Bless — declared self-targeted in the data but the
+  //      Python game has always applied it party-wide.
+  if (scope === "all_allies") return "mass-ally";
   if (e === "bless") return "mass-ally";
 
   // Auto-against-all-enemies: Turn Undead's auto_monster targeting.
@@ -563,21 +572,35 @@ export function makeSummonedSkeleton(
   id: string,
   casterName: string,
 ): Combatant {
+  // The summon spell now ships its creature stats under a nested
+  // `creature` block (v2 schema) — { hp, ac, attack_bonus,
+  // damage_dice, damage_sides, damage_bonus }. We also accept the
+  // legacy flat `skeleton_*` shape so older saved data and tests
+  // keep working until they're rewritten.
   const ev = (spell.effect_value ?? {}) as Record<string, unknown>;
-  const num = (k: string, dflt: number): number =>
-    typeof ev[k] === "number" ? (ev[k] as number) : dflt;
+  const creature =
+    ev.creature && typeof ev.creature === "object"
+      ? (ev.creature as Record<string, unknown>)
+      : null;
+  const pickNum = (newKey: string, legacyKey: string, dflt: number): number => {
+    if (creature && typeof creature[newKey] === "number") {
+      return creature[newKey] as number;
+    }
+    if (typeof ev[legacyKey] === "number") return ev[legacyKey] as number;
+    return dflt;
+  };
   return {
     id,
     name: `${casterName}'s Skeleton`,
     side: "party",
-    maxHp:        num("skeleton_hp", 30),
-    hp:           num("skeleton_hp", 30),
-    ac:           num("skeleton_ac", 14),
-    attackBonus:  num("skeleton_attack", 6),
+    maxHp:        pickNum("hp",            "skeleton_hp",       30),
+    hp:           pickNum("hp",            "skeleton_hp",       30),
+    ac:           pickNum("ac",            "skeleton_ac",       14),
+    attackBonus:  pickNum("attack_bonus",  "skeleton_attack",    6),
     damage: {
-      dice:  num("skeleton_dmg_dice", 2),
-      sides: num("skeleton_dmg_sides", 6),
-      bonus: num("skeleton_dmg_bonus", 3),
+      dice:  pickNum("damage_dice",  "skeleton_dmg_dice",  2),
+      sides: pickNum("damage_sides", "skeleton_dmg_sides", 6),
+      bonus: pickNum("damage_bonus", "skeleton_dmg_bonus", 3),
     },
     dexMod: 1,
     color: [200, 200, 180],

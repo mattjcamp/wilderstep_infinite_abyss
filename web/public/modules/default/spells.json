@@ -4,6 +4,7 @@
     {
       "id": "magic_dart",
       "name": "Magic Dart",
+      "animation_id": "magic_dart",
       "description": "Hurls an energy-charged dart in a straight line, stinging on impact.",
       "casting_type": "sorcerer",
       "min_level": 1,
@@ -20,13 +21,12 @@
         "dice_sides": 6,
         "stat_bonus": "intelligence",
         "min_damage": 1
-      },
-      "sfx": "fireball",
-      "hit_sfx": "explosion"
+      }
     },
     {
       "id": "shield",
       "name": "Shield",
+      "animation_id": "shield_aura",
       "description": "Conjures a faint magical barrier around an ally, slightly boosting their armor.",
       "casting_type": "sorcerer",
       "min_level": 1,
@@ -40,13 +40,12 @@
       "action": "apply_effect",
       "action_params": {
         "effect_id": "ac_buff"
-      },
-      "sfx": "shield",
-      "hit_sfx": null
+      }
     },
     {
       "id": "sleep",
       "name": "Sleep",
+      "animation_id": "status_aura",
       "description": "Lulls a weak-minded creature into a light magical slumber.",
       "casting_type": "sorcerer",
       "min_level": 1,
@@ -63,13 +62,12 @@
         "max_target_hp": 15,
         "save_dc_stat": "intelligence",
         "save_dc_base": 8
-      },
-      "sfx": "shield",
-      "hit_sfx": null
+      }
     },
     {
       "id": "knock",
       "name": "Knock",
+      "animation_id": "utility_clack",
       "description": "Sends a pulse of arcane force into a lock's mechanism, rattling tumblers and wards alike.",
       "casting_type": "sorcerer",
       "min_level": 2,
@@ -84,13 +82,12 @@
       "action_params": {
         "save_dc_base": 12,
         "save_stat": "intelligence"
-      },
-      "sfx": "lock_pick_success",
-      "hit_sfx": null
+      }
     },
     {
       "id": "long_shanks",
       "name": "Long Shanks",
+      "animation_id": "shield_aura",
       "description": "Enchants an ally's legs with unnatural speed, extending their movement range for 3 turns. May also be cast on yourself.",
       "casting_type": "sorcerer",
       "min_level": 2,
@@ -104,13 +101,12 @@
       "action": "apply_effect",
       "action_params": {
         "effect_id": "range_buff"
-      },
-      "sfx": "shield",
-      "hit_sfx": null
+      }
     },
     {
       "id": "magic_arrow",
       "name": "Magic Arrow",
+      "animation_id": "magic_arrow",
       "description": "Conjures a piercing bolt of arcane energy that streaks toward a chosen foe.",
       "casting_type": "sorcerer",
       "min_level": 3,
@@ -127,13 +123,12 @@
         "dice_sides": 8,
         "stat_bonus": "intelligence",
         "min_damage": 1
-      },
-      "sfx": "fireball",
-      "hit_sfx": "explosion"
+      }
     },
     {
       "id": "invisibility",
       "name": "Invisibility",
+      "animation_id": "shield_aura",
       "description": "The caster bends light around themselves, becoming invisible to enemies for 3 turns.",
       "casting_type": "sorcerer",
       "min_level": 4,
@@ -147,13 +142,12 @@
       "action": "apply_effect",
       "action_params": {
         "effect_id": "invisibility"
-      },
-      "sfx": "shield",
-      "hit_sfx": null
+      }
     },
     {
       "id": "misty_step",
       "name": "Misty Step",
+      "animation_id": "teleport_blink",
       "description": "The caster vanishes in a swirl of silvery mist and reappears at a chosen location on the battlefield.",
       "casting_type": "sorcerer",
       "min_level": 4,
@@ -165,13 +159,12 @@
       ],
       "duration": "instant",
       "action": "teleport",
-      "action_params": null,
-      "sfx": "shield",
-      "hit_sfx": null
+      "action_params": null
     },
     {
       "id": "charm_person",
       "name": "Charm Person",
+      "animation_id": "status_aura",
       "description": "Weaves an enchantment that bends the will of a humanoid creature, turning it against its allies for 3 turns.",
       "casting_type": "sorcerer",
       "min_level": 5,
@@ -187,13 +180,12 @@
         "effect_id": "charm",
         "save_dc_stat": "intelligence",
         "save_dc_base": 12
-      },
-      "sfx": "shield",
-      "hit_sfx": null
+      }
     },
     {
       "id": "lightning_bolt",
       "name": "Lightning Bolt",
+      "animation_id": "lightning_strike",
       "description": "Unleashes a searing bolt of lightning that streaks in a straight line, electrocuting everything in its path.",
       "casting_type": "sorcerer",
       "min_level": 5,
@@ -211,13 +203,12 @@
         "stat_bonus": "intelligence",
         "min_damage": 1,
         "damage_type": "lightning"
-      },
-      "sfx": "fireball",
-      "hit_sfx": "explosion"
+      }
     },
     {
       "id": "animate_dead",
       "name": "Animate Dead",
+      "animation_id": "summon_burst",
       "description": "Raises a powerful skeleton warrior from the earth to fight for the caster.",
       "casting_type": "sorcerer",
       "min_level": 6,
@@ -239,13 +230,12 @@
           "damage_sides": 6,
           "damage_bonus": 3
         }
-      },
-      "sfx": "shield",
-      "hit_sfx": null
+      }
     },
     {
       "id": "fireball",
       "name": "Fireball",
+      "animation_id": "fireball_burst",
       "description": "Hurls a massive ball of flame that detonates in a 3-tile radius, scorching everything \u2014 friend or foe \u2014 caught in the blast.",
       "casting_type": "sorcerer",
       "min_level": 7,
@@ -264,13 +254,12 @@
         "min_damage": 1,
         "radius": 3,
         "damage_type": "fire"
-      },
-      "sfx": "fireball",
-      "hit_sfx": "explosion"
+      }
     },
     {
       "id": "light",
       "name": "Light",
+      "animation_id": "status_aura",
       "description": "Conjures a radiant orb of divine light that illuminates the darkest passages for the party.",
       "casting_type": "priest",
       "min_level": 1,
@@ -284,13 +273,12 @@
       "action": "apply_effect",
       "action_params": {
         "effect_id": "magic_light"
-      },
-      "sfx": "heal",
-      "hit_sfx": null
+      }
     },
     {
       "id": "heal",
       "name": "Minor Heal",
+      "animation_id": "heal_sparkles",
       "description": "Sends a gentle wave of healing energy toward an ally or the caster.",
       "casting_type": "priest",
       "min_level": 1,
@@ -308,13 +296,12 @@
         "dice_sides": 6,
         "stat_bonus": "wisdom",
         "min_heal": 1
-      },
-      "sfx": "heal",
-      "hit_sfx": null
+      }
     },
     {
       "id": "cure_poison",
       "name": "Cure Poison",
+      "animation_id": "heal_sparkles",
       "description": "Draws the venom from an ally's body with a cleansing prayer, removing the poisoned condition.",
       "casting_type": "priest",
       "min_level": 2,
@@ -328,13 +315,12 @@
       "action": "cure_effect",
       "action_params": {
         "effect_id": "poisoned"
-      },
-      "sfx": "heal",
-      "hit_sfx": null
+      }
     },
     {
       "id": "bless",
       "name": "Bless",
+      "animation_id": "shield_aura",
       "description": "Invokes a divine blessing that empowers all allies, granting them greater accuracy in battle.",
       "casting_type": "priest",
       "min_level": 3,
@@ -349,13 +335,12 @@
       "action_params": {
         "effect_id": "bless",
         "attack_bonus": 2
-      },
-      "sfx": "shield",
-      "hit_sfx": null
+      }
     },
     {
       "id": "curse",
       "name": "Curse",
+      "animation_id": "curse_aura",
       "description": "Calls down a dark malediction on an enemy, weakening its defenses and dulling its attacks.",
       "casting_type": "priest",
       "min_level": 3,
@@ -369,13 +354,12 @@
       "action": "apply_effect",
       "action_params": {
         "effect_id": "curse"
-      },
-      "sfx": "shield",
-      "hit_sfx": null
+      }
     },
     {
       "id": "major_heal",
       "name": "Major Heal",
+      "animation_id": "heal_sparkles",
       "description": "Channels a powerful wave of restorative energy toward an ally, mending grievous wounds.",
       "casting_type": "priest",
       "min_level": 4,
@@ -392,13 +376,12 @@
         "dice_sides": 8,
         "stat_bonus": "wisdom",
         "min_heal": 1
-      },
-      "sfx": "heal",
-      "hit_sfx": null
+      }
     },
     {
       "id": "push",
       "name": "Push",
+      "animation_id": "status_aura",
       "description": "Emits a powerful wave of divine force that drives nearby monsters away from the party.",
       "casting_type": "priest",
       "min_level": 5,
@@ -414,13 +397,12 @@
         "effect_id": "repel_monsters",
         "radius": 5,
         "push_distance": 3
-      },
-      "sfx": "magic_burst",
-      "hit_sfx": null
+      }
     },
     {
       "id": "mass_heal",
       "name": "Mass Heal",
+      "animation_id": "heal_sparkles",
       "description": "A burst of divine light radiates from the caster, restoring health to all nearby allies.",
       "casting_type": "priest",
       "min_level": 6,
@@ -438,13 +420,12 @@
         "stat_bonus": "wisdom",
         "min_heal": 1,
         "scope": "all_allies"
-      },
-      "sfx": "heal",
-      "hit_sfx": null
+      }
     },
     {
       "id": "restore",
       "name": "Restore",
+      "animation_id": "heal_sparkles",
       "description": "A radiant pillar of divine power engulfs the party, fully restoring health and mana to all allies and purging all poisons from their bodies.",
       "casting_type": "priest",
       "min_level": 7,
@@ -463,9 +444,7 @@
           "poisoned"
         ],
         "scope": "all_allies"
-      },
-      "sfx": "heal",
-      "hit_sfx": null
+      }
     }
   ]
 }

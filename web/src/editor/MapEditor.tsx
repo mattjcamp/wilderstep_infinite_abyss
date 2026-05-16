@@ -516,12 +516,17 @@ export function MapEditor({
     { col: number; row: number } | null
   >(null);
   /** "paint" → click/drag paints the active brush and selects the cell.
+   *  "fill"  → click/drag draws a rectangle preview; on release every
+   *            cell inside the rect is painted with the active brush
+   *            in a single batched persist.
    *  "pan"  → click/drag scrolls the canvas viewport. Useful on
    *           laptops with no middle mouse button.
    *  "inspect" → click/drag only selects (so you can read attributes
    *  without modifying the map). */
-  const [tool, setTool] = useState<"paint" | "inspect" | "pan">("paint");
-  const toolRef = useRef<"paint" | "inspect" | "pan">("paint");
+  const [tool, setTool] = useState<"paint" | "inspect" | "pan" | "fill">(
+    "paint",
+  );
+  const toolRef = useRef<"paint" | "inspect" | "pan" | "fill">("paint");
   useEffect(() => {
     toolRef.current = tool;
   }, [tool]);
@@ -548,6 +553,10 @@ export function MapEditor({
   const containerRef = useRef<HTMLDivElement | null>(null);
   // Refs that bridge React state into the Phaser scene's closure.
   const brushRef = useRef<string | null>(null);
+  /** Start cell of an in-progress Fill rectangle drag. Set on pointer-
+   *  down while the Fill tool is active, cleared on pointer-up after
+   *  the rectangle commits. Null at all other times. */
+  const fillStartRef = useRef<{ col: number; row: number } | null>(null);
   /** The live grid the scene mutates on paint. Each cell is a full
    *  TileType instance — paint replaces it with a deep-copy of the
    *  brush palette entry. */
@@ -999,6 +1008,11 @@ export function MapEditor({
          *  refresh — cheap enough that diffing per cell isn't
          *  worth the complexity. */
         questGlowGraphics: Phaser.GameObjects.Graphics | null = null;
+        /** Preview rectangle drawn while the user drags with the Fill
+         *  tool. Cleared on pointer up when the rectangle commits.
+         *  Depth 199 — above cells/overrides/grid/halo but below the
+         *  selection highlight (200). */
+        fillPreviewGraphics: Phaser.GameObjects.Graphics | null = null;
 
         preload() {
           for (const sprite of spriteKeys) {
@@ -1048,11 +1062,31 @@ export function MapEditor({
 
           this.input.on(
             "pointerdown",
-            (p: Phaser.Input.Pointer) => this.paintAt(p),
+            (p: Phaser.Input.Pointer) => {
+              if (toolRef.current === "fill") {
+                this.fillStart(p);
+              } else {
+                this.paintAt(p);
+              }
+            },
           );
           this.input.on("pointermove", (p: Phaser.Input.Pointer) => {
-            if (p.isDown) this.paintAt(p);
+            if (!p.isDown) return;
+            if (toolRef.current === "fill") {
+              this.fillDrag(p);
+            } else {
+              this.paintAt(p);
+            }
           });
+          // Pointer-up commits a Fill drag. Use both pointerup (release
+          // over the canvas) and pointerupoutside (release after the
+          // pointer left the canvas mid-drag) so a swift drag off the
+          // edge still finalizes the rect.
+          const onPointerUp = (p: Phaser.Input.Pointer) => {
+            if (toolRef.current === "fill") this.fillCommit(p);
+          };
+          this.input.on("pointerup", onPointerUp);
+          this.input.on("pointerupoutside", onPointerUp);
 
           // Generate the white particle source texture used for all
           // animations (tinted per-emitter for color variation).
@@ -1080,6 +1114,11 @@ export function MapEditor({
           // Selection highlight — drawn on top of everything.
           this.selectionGraphics = this.add.graphics();
           this.selectionGraphics.setDepth(200);
+
+          // Fill-tool preview rectangle — sits just below the
+          // selection so the active cell's highlight still reads.
+          this.fillPreviewGraphics = this.add.graphics();
+          this.fillPreviewGraphics.setDepth(199);
 
           // Expose a small API the React side can call.
           sceneApiRef.current = {
@@ -1623,11 +1662,17 @@ export function MapEditor({
           if (simModeRef.current === "active") return;
           // Selection always follows the cursor — both tools update it.
           onCellTouchedRef.current(c, r);
-          // Inspect + Pan never paint; just selecting is the whole job.
-          // Pan-mode drags are normally swallowed by the React-layer
-          // capture handler before Phaser sees them, but guard anyway
-          // so a stray click can't repaint a cell unexpectedly.
-          if (toolRef.current === "inspect" || toolRef.current === "pan")
+          // Inspect + Pan + Fill never paint via this path; just
+          // selecting is the whole job here. Pan-mode drags are
+          // normally swallowed by the React-layer capture handler
+          // before Phaser sees them, but guard anyway so a stray
+          // click can't repaint a cell unexpectedly. Fill uses its
+          // own pointerdown/move/up handlers below.
+          if (
+            toolRef.current === "inspect" ||
+            toolRef.current === "pan" ||
+            toolRef.current === "fill"
+          )
             return;
           const brush = brushRef.current;
           if (!brush) return;
@@ -1672,6 +1717,152 @@ export function MapEditor({
             img.setTexture(fresh.sprite);
           }
           persistRef.current();
+        }
+
+        /** Fill tool — pointerdown. Remember the starting cell and
+         *  draw a single-cell preview rect. Simulation-mode hooks
+         *  match paintAt so the fill tool can't accidentally hijack
+         *  a sim placement or click. */
+        fillStart(p: Phaser.Input.Pointer) {
+          const c = Math.floor(p.x / TILE_SIZE);
+          const r = Math.floor(p.y / TILE_SIZE);
+          if (
+            c < 0 ||
+            r < 0 ||
+            c >= mapRecord.width ||
+            r >= mapRecord.height
+          )
+            return;
+          if (simModeRef.current === "placing") {
+            onSimPlaceRef.current(c, r);
+            return;
+          }
+          if (simModeRef.current === "active") return;
+          onCellTouchedRef.current(c, r);
+          fillStartRef.current = { col: c, row: r };
+          this.drawFillPreview(c, r, c, r);
+        }
+
+        /** Fill tool — pointermove while the button is held. Updates
+         *  the preview rectangle's far corner to the cursor cell
+         *  (clamped to the map). */
+        fillDrag(p: Phaser.Input.Pointer) {
+          const start = fillStartRef.current;
+          if (!start) return;
+          const c = Math.floor(p.x / TILE_SIZE);
+          const r = Math.floor(p.y / TILE_SIZE);
+          const cc = Math.max(0, Math.min(mapRecord.width - 1, c));
+          const rr = Math.max(0, Math.min(mapRecord.height - 1, r));
+          onCellTouchedRef.current(cc, rr);
+          this.drawFillPreview(start.col, start.row, cc, rr);
+        }
+
+        /** Fill tool — pointerup. Commits every cell inside the
+         *  rectangle defined by the press point and the release
+         *  point. Identical cells short-circuit so only changed
+         *  cells get reassigned + their texture refreshed, then
+         *  persistRef fires once for the whole batch. */
+        fillCommit(p: Phaser.Input.Pointer) {
+          const start = fillStartRef.current;
+          fillStartRef.current = null;
+          if (this.fillPreviewGraphics) this.fillPreviewGraphics.clear();
+          if (!start) return;
+          if (
+            simModeRef.current === "placing" ||
+            simModeRef.current === "active"
+          )
+            return;
+          const c = Math.floor(p.x / TILE_SIZE);
+          const r = Math.floor(p.y / TILE_SIZE);
+          const cc = Math.max(0, Math.min(mapRecord.width - 1, c));
+          const rr = Math.max(0, Math.min(mapRecord.height - 1, r));
+          const brush = brushRef.current;
+          if (!brush) return;
+          const brushTile = paletteById.get(brush);
+          if (!brushTile) return;
+          const c0 = Math.min(start.col, cc);
+          const c1 = Math.max(start.col, cc);
+          const r0 = Math.min(start.row, rr);
+          const r1 = Math.max(start.row, rr);
+          let changed = false;
+          for (let row = r0; row <= r1; row++) {
+            for (let col = c0; col <= c1; col++) {
+              const existing = gridRef.current[row][col];
+              if (
+                existing &&
+                existing.id === brushTile.id &&
+                existing.name === brushTile.name &&
+                (existing.tag ?? "") === (brushTile.tag ?? "") &&
+                existing.walkable === brushTile.walkable &&
+                existing.obstructs === brushTile.obstructs &&
+                (existing.boat ?? false) === (brushTile.boat ?? false) &&
+                (existing.text ?? "") === (brushTile.text ?? "") &&
+                (existing.locked ?? false) === (brushTile.locked ?? false) &&
+                (existing.light_source ?? false) ===
+                  (brushTile.light_source ?? false) &&
+                (existing.light_range ?? 0) ===
+                  (brushTile.light_range ?? 0) &&
+                (existing.animation ?? "none") ===
+                  (brushTile.animation ?? "none") &&
+                (existing.counter ?? "") === (brushTile.counter ?? "") &&
+                (existing.encounter ?? "") ===
+                  (brushTile.encounter ?? "") &&
+                (existing.spawn ?? "") === (brushTile.spawn ?? "") &&
+                (existing.item ?? "") === (brushTile.item ?? "") &&
+                (existing.quest ?? "") === (brushTile.quest ?? "") &&
+                (existing.dungeon ?? "") === (brushTile.dungeon ?? "") &&
+                existing.sprite === brushTile.sprite &&
+                JSON.stringify(existing.link ?? null) ===
+                  JSON.stringify(brushTile.link ?? null)
+              ) {
+                continue;
+              }
+              const fresh: TileType = { ...brushTile };
+              gridRef.current[row][col] = fresh;
+              const img = this.cells.get(`${col},${row}`);
+              if (
+                img &&
+                fresh.sprite &&
+                this.textures.exists(fresh.sprite)
+              ) {
+                img.setTexture(fresh.sprite);
+              }
+              changed = true;
+            }
+          }
+          onCellTouchedRef.current(cc, rr);
+          if (changed) persistRef.current();
+        }
+
+        /** Render the Fill-tool's preview rectangle between two cell
+         *  coords. The rect is normalized — caller can pass corners
+         *  in any order. */
+        drawFillPreview(
+          c0In: number,
+          r0In: number,
+          c1In: number,
+          r1In: number,
+        ) {
+          if (!this.fillPreviewGraphics) return;
+          const c0 = Math.min(c0In, c1In);
+          const c1 = Math.max(c0In, c1In);
+          const r0 = Math.min(r0In, r1In);
+          const r1 = Math.max(r0In, r1In);
+          this.fillPreviewGraphics.clear();
+          this.fillPreviewGraphics.fillStyle(0xffb84d, 0.18);
+          this.fillPreviewGraphics.fillRect(
+            c0 * TILE_SIZE,
+            r0 * TILE_SIZE,
+            (c1 - c0 + 1) * TILE_SIZE,
+            (r1 - r0 + 1) * TILE_SIZE,
+          );
+          this.fillPreviewGraphics.lineStyle(2, 0xffb84d, 0.9);
+          this.fillPreviewGraphics.strokeRect(
+            c0 * TILE_SIZE,
+            r0 * TILE_SIZE,
+            (c1 - c0 + 1) * TILE_SIZE,
+            (r1 - r0 + 1) * TILE_SIZE,
+          );
         }
       }
 
@@ -2128,6 +2319,18 @@ export function MapEditor({
           </button>
           <button
             type="button"
+            onClick={() => setTool("fill")}
+            className={`border-l border-parchment/15 px-2 py-0.5 text-xs transition ${
+              tool === "fill"
+                ? "bg-ember/30 text-parchment"
+                : "bg-ink/40 text-parchment/65 hover:bg-ink/60"
+            }`}
+            title="Click and drag to fill a rectangle with the active brush."
+          >
+            🪣 Fill
+          </button>
+          <button
+            type="button"
             onClick={() => setTool("pan")}
             className={`border-l border-parchment/15 px-2 py-0.5 text-xs transition ${
               tool === "pan"
@@ -2368,7 +2571,9 @@ export function MapEditor({
                 ? "crosshair"
                 : tool === "pan" || spaceHeld
                   ? "grab"
-                  : undefined,
+                  : tool === "fill"
+                    ? "crosshair"
+                    : undefined,
           }}
           onWheel={(e) => {
             // Ctrl/⌘ + wheel = zoom. Bare wheel keeps native scroll.

@@ -23,6 +23,8 @@
 import { useMemo, useState } from "react";
 import { SpritePicker } from "./SpritePicker";
 import { getSpriteFieldConfig } from "./spriteFields";
+import { AnimationPicker } from "./AnimationPicker";
+import { getAnimationFieldConfig } from "./animationFields";
 
 type FieldKind =
   | "string"
@@ -47,6 +49,9 @@ function inferKind(
   // render even when the field is currently null/empty (e.g., a
   // freshly-added `avatar` on Party).
   if (getSpriteFieldConfig(key, modelKey) !== null) return "string";
+  // Animation-typed fields are likewise always strings (Animation id).
+  // The picker renders an empty-state when the value is null/"".
+  if (getAnimationFieldConfig(key, modelKey) !== null) return "string";
   // Prefer the actual record's value; fall back to a sample peer.
   const v = value ?? sample;
   if (Array.isArray(v) || (v !== null && typeof v === "object")) return "json";
@@ -307,6 +312,30 @@ function FieldRow({
             config={spriteConfig}
             onChange={onChange}
           />
+          {error ? <p className="mt-1 text-xs text-ember">{error}</p> : null}
+        </div>
+      </div>
+    );
+  }
+
+  // Animation-typed string fields get the AnimationPicker. Same shape
+  // as sprite fields, but it reads from the module's animations.json
+  // catalog instead of the sprite index.
+  const animationConfig =
+    spec.kind === "string"
+      ? getAnimationFieldConfig(spec.key, modelKey)
+      : null;
+  if (animationConfig) {
+    return (
+      <div className="flex items-start gap-3">
+        <label htmlFor={spec.key} className={labelClasses}>
+          {spec.key}
+          <span className="block text-[10px] text-parchment/40">
+            animation
+          </span>
+        </label>
+        <div className="flex-1">
+          <AnimationPicker value={value} onChange={onChange} />
           {error ? <p className="mt-1 text-xs text-ember">{error}</p> : null}
         </div>
       </div>

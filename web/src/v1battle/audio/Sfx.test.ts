@@ -4,8 +4,8 @@
  * vitest runs in jsdom, which doesn't ship a working AudioContext, so
  * actual playback is impossible. The contract these tests guard is:
  *
- *   - The catalog covers every name spells.json references via `sfx`
- *     and `hit_sfx`, plus the names CombatScene plays directly.
+ *   - The catalog covers every name that animations.json references
+ *     (cast_sfx + hit_sfx), plus the names CombatScene plays directly.
  *   - `Sfx.play` is a no-op (and never throws) when there's no audio,
  *     so headless test runs are safe.
  *   - The mute toggle persists through localStorage.
@@ -28,10 +28,12 @@ describe("Sfx — catalog completeness", () => {
     "encounter", "victory", "defeat", "chirp", "arrow",
   ];
 
-  // Names referenced in data/spells.json (sfx + hit_sfx fields).
-  const SPELL_NAMES = [
+  // Names referenced via animations.json's cast_sfx + hit_sfx
+  // fields (the new authoritative path now that spells.json no
+  // longer carries SFX names directly).
+  const ANIMATION_NAMES = [
     "fireball", "explosion", "heal", "shield",
-    "turn_undead", "magic_burst", "lock_pick_success",
+    "turn_undead", "magic_burst", "lock_pick_success", "level_up",
   ];
 
   it("knows every combat-trigger name", () => {
@@ -40,30 +42,33 @@ describe("Sfx — catalog completeness", () => {
     }
   });
 
-  it("knows every spell sfx/hit_sfx name", () => {
-    for (const n of SPELL_NAMES) {
-      expect(Sfx.has(n), `missing spell SFX: ${n}`).toBe(true);
+  it("knows every animation cast_sfx / hit_sfx name", () => {
+    for (const n of ANIMATION_NAMES) {
+      expect(Sfx.has(n), `missing animation SFX: ${n}`).toBe(true);
     }
   });
 
-  it("covers every non-empty sfx/hit_sfx in the live spells.json", async () => {
-    // Cross-check: nothing in the data should fall through to a
-    // missing generator. If a designer adds a new spell with a new
-    // SFX name in spells.json, this guard fails until the catalog
-    // gains a matching entry.
+  it("covers every cast_sfx / hit_sfx referenced by animations.json", async () => {
+    // Cross-check: nothing in the catalog should fall through to a
+    // missing generator. If a designer adds a new animation with a
+    // new SFX name, this guard fails until the catalog gains a
+    // matching entry.
     const fs = await import("node:fs");
     const path = await import("node:path");
-    const repoRoot = path.resolve(__dirname, "..", "..", "..", "..");
-    const file = path.join(repoRoot, "data", "spells.json");
+    const here = path.dirname(new URL(import.meta.url).pathname);
+    // web/src/v1battle/audio → web/public/modules/default/animations.json
+    const file = path.resolve(
+      here, "..", "..", "..", "public", "modules", "default", "animations.json",
+    );
     const raw = JSON.parse(fs.readFileSync(file, "utf-8")) as
-      { spells?: Array<{ sfx?: string; hit_sfx?: string | null }> };
+      { animations?: Array<{ cast_sfx?: string; hit_sfx?: string }> };
     const referenced = new Set<string>();
-    for (const s of raw.spells ?? []) {
-      if (s.sfx) referenced.add(s.sfx);
-      if (s.hit_sfx) referenced.add(s.hit_sfx);
+    for (const a of raw.animations ?? []) {
+      if (a.cast_sfx) referenced.add(a.cast_sfx);
+      if (a.hit_sfx) referenced.add(a.hit_sfx);
     }
     for (const name of referenced) {
-      expect(Sfx.has(name), `spells.json references missing SFX "${name}"`)
+      expect(Sfx.has(name), `animations.json references missing SFX "${name}"`)
         .toBe(true);
     }
   });

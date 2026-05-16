@@ -32,7 +32,8 @@ export type ModelKey =
   | "map_tiles"
   | "maps"
   | "dungeons"
-  | "quests";
+  | "quests"
+  | "animations";
 
 export interface ColumnDef {
   /** Object path on the record. Supports a single key for now; nested
@@ -337,6 +338,21 @@ const DEFS: Record<ModelKey, ModelDef> = {
         label: "Steps",
         format: (v) => (Array.isArray(v) ? `${v.length}` : ""),
       },
+    ],
+  },
+  animations: {
+    key: "animations",
+    label: "Animations",
+    fileName: "animations.json",
+    collectionKey: "animations",
+    docKey: "animation",
+    blurb: "Visual + audio bundles that spells / abilities / items / effects reference by id",
+    columns: [
+      { field: "id", label: "ID" },
+      { field: "name", label: "Name" },
+      { field: "visual", label: "Visual" },
+      { field: "cast_sfx", label: "Cast SFX" },
+      { field: "hit_sfx", label: "Hit SFX" },
     ],
   },
 };

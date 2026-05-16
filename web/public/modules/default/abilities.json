@@ -1,11 +1,12 @@
 {
-  "_comment": "Ability catalog (real data drives the schema). An Ability is a named capability that lives on a Character — granted by a race, by a class, or by some other source (item, quest, scripted). Descriptions here are granter-agnostic; per-granter level gates (and any future per-granter param overrides) live on the granting record (Character Class.abilities, Race.abilities). Setting `party_effect: true` marks the Ability as a togglable party-wide effect — its id may appear in the Party.party_effects[] list and the in-game Party screen renders it as a toggle; without that flag the Ability is character/combat-only and renders on the character sheet instead. See docs/data_dictionary/ability.md.",
+  "_comment": "Ability catalog (real data drives the schema). An Ability is a named capability that lives on a Character \u2014 granted by a race, by a class, or by some other source (item, quest, scripted). Descriptions here are granter-agnostic; per-granter level gates (and any future per-granter param overrides) live on the granting record (Character Class.abilities, Race.abilities). Setting `party_effect: true` marks the Ability as a togglable party-wide effect \u2014 its id may appear in the Party.party_effects[] list and the in-game Party screen renders it as a toggle; without that flag the Ability is character/combat-only and renders on the character sheet instead. See docs/data_dictionary/ability.md.",
   "abilities": [
     {
       "id": "pick_locks",
       "name": "Pick Locks",
+      "animation_id": null,
       "type": "class",
-      "description": "Pick locked doors and chests — d20 + DEX mod vs DC 12, one lockpick consumed per attempt.",
+      "description": "Pick locked doors and chests \u2014 d20 + DEX mod vs DC 12, one lockpick consumed per attempt.",
       "duration": "permanent",
       "params": {
         "dc": 12,
@@ -15,6 +16,7 @@
     {
       "id": "detect_traps",
       "name": "Detect Traps",
+      "animation_id": null,
       "type": "class",
       "description": "Hidden traps are revealed before the party steps on them.",
       "duration": "permanent",
@@ -24,8 +26,9 @@
     {
       "id": "backstab",
       "name": "Backstab",
+      "animation_id": null,
       "type": "class",
-      "description": "Critical hits with daggers on a successful DEX save — the humble dagger becomes a devastating weapon.",
+      "description": "Critical hits with daggers on a successful DEX save \u2014 the humble dagger becomes a devastating weapon.",
       "duration": "permanent",
       "params": {
         "save_stat": "dexterity",
@@ -35,18 +38,22 @@
     {
       "id": "shadow_step",
       "name": "Shadow Step",
+      "animation_id": null,
       "type": "class",
-      "description": "Move after attacking — true hit-and-run play.",
+      "description": "Move after attacking \u2014 true hit-and-run play.",
       "duration": "permanent",
       "params": null
     },
     {
       "id": "turn_undead",
       "name": "Turn Undead",
+      "animation_id": "turn_undead",
       "type": "class",
       "description": "Channel holy energy at every undead on the battlefield. Each one must make a Wisdom save (d20 + WIS mod vs DC 10 + caster's WIS mod) or be destroyed outright; those that succeed are still seared for 50% of their HP in radiant damage.",
       "duration": "instant",
-      "usable_in": ["battle"],
+      "usable_in": [
+        "battle"
+      ],
       "params": {
         "action": "turn_undead",
         "mp_cost": 0,
@@ -61,16 +68,18 @@
     {
       "id": "dual_casting",
       "name": "Dual Casting",
+      "animation_id": null,
       "type": "class",
-      "description": "Access to both the priest and sorcerer spell catalogs — the only class with both.",
+      "description": "Access to both the priest and sorcerer spell catalogs \u2014 the only class with both.",
       "duration": "permanent",
       "params": null
     },
     {
       "id": "herbalism",
       "name": "Herbalism",
+      "animation_id": null,
       "type": "class",
-      "description": "Nature lore spots reagents in the wild. When the party examines a tile, the holder rolls an INT save (d20 + INT mod vs DC 13) — success identifies a potion reagent. Alchemists in particular benefit from a doubled find rate.",
+      "description": "Nature lore spots reagents in the wild. When the party examines a tile, the holder rolls an INT save (d20 + INT mod vs DC 13) \u2014 success identifies a potion reagent. Alchemists in particular benefit from a doubled find rate.",
       "duration": "permanent",
       "params": {
         "dc": 13,
@@ -80,6 +89,7 @@
     {
       "id": "infravision",
       "name": "Infravision",
+      "animation_id": null,
       "type": "race",
       "description": "Pierces darkness, revealing the world in shades of red. The bearer can see in absolute darkness without needing a torch.",
       "duration": "permanent",
@@ -89,15 +99,19 @@
     {
       "id": "pickpocket",
       "name": "Pickpocket",
+      "animation_id": null,
       "type": "race",
       "description": "Attempt to steal items from town NPCs. Once per NPC, with a chance of failure.",
       "duration": "permanent",
-      "usable_in": ["party"],
+      "usable_in": [
+        "party"
+      ],
       "params": null
     },
     {
       "id": "galadriels_light",
       "name": "Galadriel's Light",
+      "animation_id": null,
       "type": "race",
       "description": "Conjure a soft magical illumination, lighting dark areas without consuming a torch. Persists for 200 overworld steps after invocation.",
       "duration": "permanent",
@@ -110,10 +124,13 @@
     {
       "id": "tinker",
       "name": "Tinker",
+      "animation_id": null,
       "type": "race",
       "description": "Once per in-game day, fashion any single item normally found in a general store.",
       "duration": "permanent",
-      "usable_in": ["party"],
+      "usable_in": [
+        "party"
+      ],
       "params": {
         "uses_per_day": 1
       }
@@ -121,6 +138,7 @@
     {
       "id": "fast_learner",
       "name": "Fast Learner",
+      "animation_id": null,
       "type": "race",
       "description": "Requires only 1125 XP per level instead of the standard 1500, leveling up roughly 25% faster than other races.",
       "duration": "permanent",
@@ -131,6 +149,7 @@
     {
       "id": "nimble",
       "name": "Nimble",
+      "animation_id": null,
       "type": "race",
       "description": "Allows extra movement, and the ability to move after an attack",
       "duration": "permanent",
@@ -142,10 +161,13 @@
     {
       "id": "brew_potion",
       "name": "Brew Potion",
+      "animation_id": null,
       "type": "class",
       "description": "Combine regents using the guidance of a recipe to create a potion",
       "duration": null,
-      "usable_in": ["party"],
+      "usable_in": [
+        "party"
+      ],
       "params": {}
     }
   ]

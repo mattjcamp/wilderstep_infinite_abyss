@@ -1,16 +1,20 @@
 {
-  "_comment": "Effect catalog (real data; the schema is whatever this file says it is). Effects are runtime gameplay conditions — statuses applied by spells (sleep, charm, bless, magic_light), monster passives (regen, fire_resistance), and on-hit triggers (drain, poisoned). Character-sheet capabilities (race perks, class abilities) moved out to Ability — see abilities.json — so this file no longer carries id-as-capability records like detect_traps or infravision. WHO applies an effect and HOW lives on the applier (Item.grants_effect, Spell.action_params, Monster.passives/on_hit_effects). Application-time params (save_dc, max_target_hp, etc.) live on those applier records. See docs/data_dictionary/effect.md.",
+  "_comment": "Effect catalog (real data; the schema is whatever this file says it is). Effects are runtime gameplay conditions \u2014 statuses applied by spells (sleep, charm, bless, magic_light), monster passives (regen, fire_resistance), and on-hit triggers (drain, poisoned). Character-sheet capabilities (race perks, class abilities) moved out to Ability \u2014 see abilities.json \u2014 so this file no longer carries id-as-capability records like detect_traps or infravision. WHO applies an effect and HOW lives on the applier (Item.grants_effect, Spell.action_params, Monster.passives/on_hit_effects). Application-time params (save_dc, max_target_hp, etc.) live on those applier records. See docs/data_dictionary/effect.md.",
   "effects": [
     {
       "id": "ac_buff",
       "name": "Shielded",
+      "animation_id": null,
       "description": "A faint magical barrier improves the recipient's armor.",
       "duration": 3,
-      "params": { "ac_bonus": 1 }
+      "params": {
+        "ac_bonus": 1
+      }
     },
     {
       "id": "sleep",
       "name": "Asleep",
+      "animation_id": null,
       "description": "Lulled into a magical slumber; cannot act until shaken loose or the spell fades.",
       "duration": 2,
       "params": null
@@ -18,13 +22,17 @@
     {
       "id": "range_buff",
       "name": "Long Shanks",
+      "animation_id": null,
       "description": "The recipient's stride is magically lengthened, extending movement range.",
       "duration": 3,
-      "params": { "range_bonus": 4 }
+      "params": {
+        "range_bonus": 4
+      }
     },
     {
       "id": "invisibility",
       "name": "Invisible",
+      "animation_id": null,
       "description": "Cannot be seen or targeted directly until the magic fades or the bearer attacks.",
       "duration": 3,
       "params": null
@@ -32,6 +40,7 @@
     {
       "id": "charm",
       "name": "Charmed",
+      "animation_id": null,
       "description": "Loyalty is magically redirected toward the source for the duration.",
       "duration": 3,
       "params": null
@@ -39,6 +48,7 @@
     {
       "id": "magic_light",
       "name": "Light",
+      "animation_id": null,
       "description": "A soft magical glow illuminates the area around the bearer.",
       "duration": 100,
       "params": null
@@ -46,42 +56,59 @@
     {
       "id": "bless",
       "name": "Blessed",
+      "animation_id": null,
       "description": "Divine favor grants a bonus to attack rolls.",
       "duration": 4,
-      "params": { "attack_bonus": 1 }
+      "params": {
+        "attack_bonus": 1
+      }
     },
     {
       "id": "curse",
       "name": "Cursed",
+      "animation_id": null,
       "description": "A magical curse weakens the target's defense and accuracy.",
       "duration": 4,
-      "params": { "ac_penalty": 2, "attack_penalty": 2 }
+      "params": {
+        "ac_penalty": 2,
+        "attack_penalty": 2
+      }
     },
     {
       "id": "repel_monsters",
       "name": "Repelled",
+      "animation_id": null,
       "description": "Nearby monsters are pushed back from the bearer each turn.",
       "duration": 10,
-      "params": { "radius": 3, "push_distance": 1 }
+      "params": {
+        "radius": 3,
+        "push_distance": 1
+      }
     },
-
     {
       "id": "drain",
       "name": "Drained",
+      "animation_id": null,
       "description": "Life force is transferred from the target to the attacker on a successful hit.",
       "duration": "instant",
-      "params": { "amount": 2 }
+      "params": {
+        "amount": 2
+      }
     },
     {
       "id": "poisoned",
       "name": "Poisoned",
+      "animation_id": null,
       "description": "A toxin courses through the target, dealing damage each turn until it wears off.",
       "duration": 5,
-      "params": { "damage_per_turn": 2 }
+      "params": {
+        "damage_per_turn": 2
+      }
     },
     {
       "id": "slowed",
       "name": "Slowed",
+      "animation_id": null,
       "description": "Reactions are sluggish; effective movement is reduced.",
       "duration": 2,
       "params": null
@@ -89,21 +116,27 @@
     {
       "id": "consumed",
       "name": "Consumed",
+      "animation_id": null,
       "description": "Swallowed whole; the target takes damage each turn until they break free.",
       "duration": "until_save",
-      "params": { "damage_per_turn": 1 }
+      "params": {
+        "damage_per_turn": 1
+      }
     },
-
     {
       "id": "regen",
       "name": "Regenerating",
+      "animation_id": null,
       "description": "Restores hit points each round.",
       "duration": "permanent",
-      "params": { "amount": 2 }
+      "params": {
+        "amount": 2
+      }
     },
     {
       "id": "fire_resistance",
       "name": "Fire Resistance",
+      "animation_id": null,
       "description": "Halves damage from fire-based spells and attacks.",
       "duration": "permanent",
       "params": null
@@ -111,6 +144,7 @@
     {
       "id": "poison_immunity",
       "name": "Poison Immunity",
+      "animation_id": null,
       "description": "Immune to poison damage and the Poisoned status.",
       "duration": "permanent",
       "params": null

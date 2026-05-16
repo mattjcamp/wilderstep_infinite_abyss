@@ -284,6 +284,11 @@ describe("resolveHealSpell", () => {
 });
 
 function spell(over: Partial<Spell>): Spell {
+  // The helper passes both legacy `effect_type` (some older tests
+  // still set it directly) and v2's `action` + `action_params` so a
+  // test can express a spell in either shape. spellFromRaw recomputes
+  // effect_type from action when one is supplied, so action wins
+  // when both are present.
   return spellFromRaw({
     id: over.id ?? "x",
     name: over.name ?? "X",
@@ -293,6 +298,8 @@ function spell(over: Partial<Spell>): Spell {
     min_level: 1,
     mp_cost: over.mp_cost ?? 4,
     duration: "instant",
+    action: over.action ?? over.effect_type ?? "damage",
+    action_params: over.action_params ?? over.effect_value,
     effect_type: over.effect_type ?? "damage",
     effect_value: over.effect_value,
     targeting: over.targeting,
@@ -310,8 +317,16 @@ describe("classifyCombatCast", () => {
     expect(classifyCombatCast(spell({ effect_type: "bless", targeting: "self" }))).toBe("mass-ally");
   });
 
-  it("mass-ally for mass_heal", () => {
-    expect(classifyCombatCast(spell({ effect_type: "mass_heal", targeting: "self" }))).toBe("mass-ally");
+  it("mass-ally for a self-targeted heal with scope=all_allies (Mass Heal)", () => {
+    expect(
+      classifyCombatCast(
+        spell({
+          action: "heal",
+          targeting: "self",
+          effect_value: { scope: "all_allies" },
+        }),
+      ),
+    ).toBe("mass-ally");
   });
 
   it("mass-enemy for undead_damage / auto_monster", () => {
@@ -341,15 +356,38 @@ describe("classifyCombatCast", () => {
   });
 
   it("tile-targeted spells classify as pick-tile", () => {
-    expect(classifyCombatCast(spell({ effect_type: "aoe_fireball",   targeting: "select_tile" }))).toBe("pick-tile");
-    expect(classifyCombatCast(spell({ effect_type: "teleport",       targeting: "select_tile" }))).toBe("pick-tile");
-    expect(classifyCombatCast(spell({ effect_type: "summon_skeleton",targeting: "select_tile" }))).toBe("pick-tile");
+    expect(classifyCombatCast(spell({ action: "aoe_damage", targeting: "select_tile" }))).toBe("pick-tile");
+    expect(classifyCombatCast(spell({ action: "teleport",   targeting: "select_tile" }))).toBe("pick-tile");
+    expect(classifyCombatCast(spell({ action: "summon",     targeting: "select_tile" }))).toBe("pick-tile");
   });
 
   it("aoe / teleport / summon classify as pick-tile even when targeting is missing", () => {
-    expect(classifyCombatCast(spell({ effect_type: "aoe_fireball" }))).toBe("pick-tile");
-    expect(classifyCombatCast(spell({ effect_type: "teleport" }))).toBe("pick-tile");
-    expect(classifyCombatCast(spell({ effect_type: "summon_skeleton" }))).toBe("pick-tile");
+    expect(classifyCombatCast(spell({ action: "aoe_damage" }))).toBe("pick-tile");
+    expect(classifyCombatCast(spell({ action: "teleport" }))).toBe("pick-tile");
+    expect(classifyCombatCast(spell({ action: "summon" }))).toBe("pick-tile");
+  });
+
+  it("scope=all_allies promotes a self-targeted spell to mass-ally", () => {
+    // Mass Heal: action=heal + targeting=self + scope=all_allies.
+    expect(
+      classifyCombatCast(
+        spell({
+          action: "heal",
+          targeting: "self",
+          effect_value: { scope: "all_allies" },
+        }),
+      ),
+    ).toBe("mass-ally");
+    // Restore: action=restore + targeting=self + scope=all_allies.
+    expect(
+      classifyCombatCast(
+        spell({
+          action: "restore",
+          targeting: "self",
+          effect_value: { scope: "all_allies" },
+        }),
+      ),
+    ).toBe("mass-ally");
   });
 });
 
