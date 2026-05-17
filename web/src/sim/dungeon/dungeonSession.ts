@@ -16,7 +16,7 @@
  * this with a session-level prefix.
  */
 
-import type { DungeonLevel } from "@/v1battle/world/Dungeon";
+import type { DungeonLevel } from "@/battle/world/Dungeon";
 
 /** Mutation state for a single floor — the bits a re-mount of the
  *  same grid needs in order to resume. Cell-coordinate keys

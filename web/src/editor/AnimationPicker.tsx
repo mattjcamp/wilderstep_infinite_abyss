@@ -35,7 +35,7 @@ import { useEffect, useRef, useState } from "react";
 import { withBasePath } from "@/util/basePath";
 // NOTE: `@/vfx/effectRegistry` transitively pulls in `phaser`, which
 // touches `navigator` at module load and crashes Next.js static
-// prerendering of any page that imports this picker. `@/v1battle/audio/Sfx`
+// prerendering of any page that imports this picker. `@/battle/audio/Sfx`
 // is similarly browser-only (Web Audio + localStorage). Both are
 // lazy-`import()`-ed inside the preview effect below, which only ever
 // runs in the browser.
@@ -171,7 +171,7 @@ export function AnimationPicker({
           await Promise.all([
             import("phaser"),
             import("@/vfx/effectRegistry"),
-            import("@/v1battle/audio/Sfx"),
+            import("@/battle/audio/Sfx"),
           ]);
         if (cancelled) return;
         class PreviewScene extends Phaser.Scene {

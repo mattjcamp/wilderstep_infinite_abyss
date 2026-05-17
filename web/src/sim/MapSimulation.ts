@@ -163,7 +163,7 @@ export interface SceneBridge {
 
 /** DC the Pick Lock attempt rolls against. Matches `Lock.ts`
  *  (`PICK_LOCK_DC = 12`); duplicated here so the sim doesn't pull
- *  the v1battle world layer into its dependency graph. */
+ *  the battle world layer into its dependency graph. */
 const PICK_LOCK_DC = 12;
 /** Default DC when the Knock spell record's `action_params.save_dc_base`
  *  is missing. Matches `Lock.ts.KNOCK_DEFAULT_DC`. */

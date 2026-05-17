@@ -38,7 +38,7 @@ export interface AnimationRecord {
    *  of a visual entirely. */
   visual?: string;
   /** SFX name played at cast time. Matches a generator in
-   *  v1battle/audio/Sfx.ts. Empty string = silent. */
+   *  battle/audio/Sfx.ts. Empty string = silent. */
   cast_sfx?: string;
   /** SFX name played on impact. Same catalog rules as cast_sfx. */
   hit_sfx?: string;

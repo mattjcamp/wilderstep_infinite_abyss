@@ -22,18 +22,18 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { mergeModel } from "@/data_model/merge";
 import { StaticModuleSource } from "@/data_model/StaticModuleSource";
-import { dungeonSeed } from "@/v1battle/world/Dungeon";
+import { dungeonSeed } from "@/battle/world/Dungeon";
 import {
   _clearEncountersCache,
   loadEncounters,
   type EncounterTemplate,
-} from "@/v1battle/world/Encounters";
+} from "@/battle/world/Encounters";
 import {
   _clearMonstersCache,
   loadMonsters,
   type MonsterSpec,
-} from "@/v1battle/data/monsters";
-import { setActiveModule } from "@/v1battle/world/Module";
+} from "@/battle/data/monsters";
+import { setActiveModule } from "@/battle/world/Module";
 import {
   generateDungeonFromRecord,
   resolveLevelOptions,
@@ -104,7 +104,7 @@ export function DungeonSimLauncher({ moduleId }: { moduleId: string }) {
     (async () => {
       try {
         const src = new StaticModuleSource();
-        // Pin the v1battle loaders at this module + flush their
+        // Pin the battle loaders at this module + flush their
         // module-scoped caches so a swap to a different module
         // doesn't see stale encounters / monsters.
         setActiveModule(moduleId);
@@ -112,9 +112,9 @@ export function DungeonSimLauncher({ moduleId }: { moduleId: string }) {
         _clearMonstersCache();
         // Three catalogs in parallel:
         //   - dungeons.json (v2 records) — the picker reads these
-        //   - encounters.json (v1battle loader, area-bucketed) —
+        //   - encounters.json (battle loader, area-bucketed) —
         //     the generator samples from `encounters.dungeon`
-        //   - monsters.json (v1battle loader) — supplies
+        //   - monsters.json (battle loader) — supplies
         //     per-monster difficulty tier + sprite paths
         const [layers, encs, mons] = await Promise.all([
           src.loadModelLayers(moduleId, "dungeons"),

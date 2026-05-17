@@ -23,14 +23,14 @@ import {
   TILE_FOREST_ARCHWAY_DOWN,
   TILE_FOREST_ARCHWAY_UP,
   TILE_WALL_TORCH,
-} from "@/v1battle/world/Tiles";
+} from "@/battle/world/Tiles";
 import {
   TILE_CHEST,
   TILE_STAIRS,
   TILE_STAIRS_DOWN,
-} from "@/v1battle/world/Dungeon";
-import { TILE_DFLOOR } from "@/v1battle/world/Tiles";
-import type { DungeonLevel, DungeonStyle } from "@/v1battle/world/Dungeon";
+} from "@/battle/world/Dungeon";
+import { TILE_DFLOOR } from "@/battle/world/Tiles";
+import type { DungeonLevel, DungeonStyle } from "@/battle/world/Dungeon";
 import { prototypeForTileId, type DungeonTilePrototype } from "./tileMapping";
 
 /** A dungeon-level cell. Compatible with the editor's `TileType` and

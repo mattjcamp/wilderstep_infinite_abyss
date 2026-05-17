@@ -10,11 +10,11 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { BattleSimV1Mount } from "./BattleSimV1Mount";
-import { loadAllEncounters, _clearEncountersCache, type EncounterTemplate } from "@/v1battle/world/Encounters";
-import { loadMonsters, _clearMonstersCache, type MonsterSpec } from "@/v1battle/data/monsters";
-import { loadArenaMaps, _clearMapsCache, type ArenaCellInfo, type ArenaMap } from "@/v1battle/world/Maps";
-import { setActiveModule, withBase } from "@/v1battle/world/Module";
-import { ARENA_COLS, ARENA_ROWS } from "@/v1battle/combat/Arena";
+import { loadAllEncounters, _clearEncountersCache, type EncounterTemplate } from "@/battle/world/Encounters";
+import { loadMonsters, _clearMonstersCache, type MonsterSpec } from "@/battle/data/monsters";
+import { loadArenaMaps, _clearMapsCache, type ArenaCellInfo, type ArenaMap } from "@/battle/world/Maps";
+import { setActiveModule, withBase } from "@/battle/world/Module";
+import { ARENA_COLS, ARENA_ROWS } from "@/battle/combat/Arena";
 
 export function BattleSimLauncher({ moduleId }: { moduleId: string }) {
   const [started, setStarted] = useState(false);

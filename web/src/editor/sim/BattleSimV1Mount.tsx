@@ -4,7 +4,7 @@
  * BattleSimV1Mount — boots v1's CombatScene against v2 data.
  *
  * Migration model: the v1 game directory was copied verbatim under
- * `src/v1battle/`. Loaders inside that directory now read v2 JSON
+ * `src/battle/`. Loaders inside that directory now read v2 JSON
  * shapes natively (no translation adapter — v2 IS the data model).
  * The CombatScene + the combat logic above the loaders stays v1.
  *
@@ -27,7 +27,7 @@
  */
 
 import { useEffect, useRef } from "react";
-import type { ArenaCellInfo } from "@/v1battle/world/Maps";
+import type { ArenaCellInfo } from "@/battle/world/Maps";
 
 export function BattleSimV1Mount({
   moduleId,
@@ -74,12 +74,12 @@ export function BattleSimV1Mount({
       const Phaser = await import("phaser");
       if (cancelled || !containerRef.current) return;
       const { CombatScene } = await import(
-        "@/v1battle/scenes/CombatScene"
+        "@/battle/scenes/CombatScene"
       );
       // Point v1's loaders at the v2 module the user picked. Must
       // happen BEFORE the scene mounts since preload kicks off
       // module-scoped fetches.
-      const { setActiveModule } = await import("@/v1battle/world/Module");
+      const { setActiveModule } = await import("@/battle/world/Module");
       setActiveModule(moduleId);
 
       // v1 canvas is 960×720 by spec.

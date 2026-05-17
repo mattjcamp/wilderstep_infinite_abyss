@@ -3,16 +3,16 @@
  *
  * These mirror the data dictionary entries (`docs/data_dictionary/
  * dungeon.md` and `dungeon_level.md`) field-for-field. The
- * underlying enums live in `v1battle/world/Dungeon.ts` (single
+ * underlying enums live in `battle/world/Dungeon.ts` (single
  * source of truth — the generator and the schema agree by
  * construction). We re-export them here so callers only need to
- * touch `@/sim/dungeon/types` rather than reaching into v1battle.
+ * touch `@/sim/dungeon/types` rather than reaching into battle.
  */
 
 import type {
   DungeonStyle as V1DungeonStyle,
   Difficulty as V1Difficulty,
-} from "@/v1battle/world/Dungeon";
+} from "@/battle/world/Dungeon";
 
 /** Visual / thematic family the generator uses to pick a tile
  *  palette and decor. Closed enum per docs/data_dictionary/dungeon.md. */

@@ -7,7 +7,7 @@ npm run dev:all
 
 10. MapEditor and DungeonSimMount have duplicated Phaser scaffolding. Lighting + animation configs are shared now, but each has its own ~600-line scene class. If you keep adding game systems (combat overlays, dialog, party UI), they'll drift again. Worth a refactor at some point to a shared "world scene" that the editor wraps and the play page mounts directly. Not urgent.
 
-11. CombatScene is still in v1battle/ and reads v2 data natively — that's working but the file's heritage is the Python port. Tests under that path have ~282 pre-existing failures (CombatBridge dice math, vfx animationsCatalog, Combat passives) that you'll want to clean up before adding more combat features so regressions are visible. If you want, I can take a pass at those before the gameplay wiring.
+
 
 12. No CI test step. We're at 87 sim/lighting/dungeon tests, all passing, plus a working next build gate. CI only runs the build, not the tests. Wiring vitest run into the deploy workflow + adding vitest as a devDep would let regressions show up before they hit you in the simulator.
 
@@ -22,7 +22,9 @@ Play Workflow:
         - Choose Module
         - Form Tye Party (create characters and form the party)
         - View Beginning screen based on the description of the module (takes up whole screen, players can "press any key" to start playing after a few seconds)
-        - 
+        - The map appears with the party located in the starting position stored in the party's data model
+        - When the party moves through links, the game state is saved. This save file is essentially a copy of the module but with the current state of the party and the world
+        - If all characters die then the game goes to a grim looking end screen that gives the party a chance to start over from their last saved game
 
 1. Real combat trigger from the spawn/encounter flow. Right now the simulator shows a Win/Flee dialog when the party bumps into a spawn or placed-encounter monster. That dialog is a stand-in. The actual combat scene lives at /editor/[moduleId]/sim/battle and isn't reachable from the overworld sim. Gameplay needs:
 

@@ -35,8 +35,8 @@
 import {
   generateDungeonLevel,
   type DungeonLevel,
-} from "@/v1battle/world/Dungeon";
-import type { EncounterTemplate } from "@/v1battle/world/Encounters";
+} from "@/battle/world/Dungeon";
+import type { EncounterTemplate } from "@/battle/world/Encounters";
 import {
   DUNGEON_DEFAULTS,
   type DungeonLevelRecord,
@@ -49,7 +49,7 @@ export interface GenerateFromRecordOptions {
    *  matching v1's `generateDungeon` so re-rolls are predictable. */
   seed: number;
   /** Encounters table, grouped by area (as returned by
-   *  `loadEncounters` in `v1battle/world/Encounters`). The generator
+   *  `loadEncounters` in `battle/world/Encounters`). The generator
    *  samples from `encounters.dungeon` to populate rooms with
    *  monsters; without this every floor is empty of combat.
    *

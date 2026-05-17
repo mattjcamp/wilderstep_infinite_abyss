@@ -1001,7 +1001,7 @@ export function MapEditor({
         // sprite paths. We only pluck those three fields out of the
         // (much larger) monsters.json record so the sim type stays
         // narrow. monsters.json paths are already in the "monster/foo.png"
-        // shape v1battle's loader resolves.
+        // shape battle's loader resolves.
         const monstersMerged =
           monstersLayers &&
           (mergeModel(

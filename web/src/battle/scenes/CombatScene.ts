@@ -116,7 +116,6 @@ import {
   getAnimationById,
 } from "@/vfx/animationsCatalog";
 import { Sfx } from "../audio/Sfx";
-import { Music } from "../audio/Music";
 import type { Combatant, AttackResult } from "../types";
 import type { PartyMember } from "../world/Party";
 import { consumeOneFromStackAt } from "../world/Party";
@@ -171,12 +170,10 @@ interface CombatSceneData {
    */
   interiorPath?: string;
   /**
-   * When true, skip the combat-track playback that would otherwise
-   * fire from `create()`. The simulator opts in via this flag so the
-   * visual-test pane doesn't blare music every time it mounts; the
-   * user's global mute preference (Music.setMuted) stays untouched
-   * either way. The real combat path (from world / dungeon) leaves
-   * this false so the soundtrack rolls in as usual.
+   * Carried over from the v1 audio era — when true, the scene skips
+   * any soundtrack work. The v2 audio system isn't wired up yet, so
+   * this currently affects nothing, but the simulator still sets it
+   * so the flag is preserved for the future music layer.
    */
   silent?: boolean;
   /**
@@ -631,22 +628,11 @@ export class CombatScene extends Phaser.Scene {
     if (typeof window !== "undefined") {
       (window as unknown as { __combat?: CombatScene }).__combat = this;
     }
-    // Slam-cut into the combat playlist. The post-fight transition
-    // hands control back to whichever scene we came from
-    // (overworld / town / dungeon), and that scene's `create()`
-    // calls Music.playArea(...) to swap back — so combat's track
-    // bookends the encounter automatically.
+    // Music: the v1 file-based manager is gone — the v2 audio system
+    // isn't wired up yet. When that lands, hook the combat track here,
+    // gated by `this.silent` (the simulator sets it so the visual-test
+    // pane stays quiet).
     //
-    // The simulator opts out via `silent` so the visual-test pane
-    // doesn't blare music every time it mounts. We also stop any
-    // currently-playing track on entry (e.g. if the previous launch
-    // started one before `silent` was added) so the sim stays quiet
-    // end-to-end.
-    if (this.silent) {
-      Music.stop(0);
-    } else {
-      Music.playArea("combat");
-    }
     // Items + spells back the action sub-menus and the
     // party-bridge's stat derivation, so load them up-front before
     // we build Combat.

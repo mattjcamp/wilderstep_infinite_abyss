@@ -28,9 +28,9 @@ import { withBasePath } from "@/util/basePath";
 import {
   TILE_STAIRS,
   type DungeonLevel,
-} from "@/v1battle/world/Dungeon";
-import { TILE_STAIRS_DOWN } from "@/v1battle/world/Dungeon";
-import { TILE_FOREST_ARCHWAY_UP, TILE_FOREST_ARCHWAY_DOWN } from "@/v1battle/world/Tiles";
+} from "@/battle/world/Dungeon";
+import { TILE_STAIRS_DOWN } from "@/battle/world/Dungeon";
+import { TILE_FOREST_ARCHWAY_UP, TILE_FOREST_ARCHWAY_DOWN } from "@/battle/world/Tiles";
 import { mergeModel } from "@/data_model/merge";
 import { StaticModuleSource } from "@/data_model/StaticModuleSource";
 import {

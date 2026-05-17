@@ -167,55 +167,30 @@ export class TileMap {
    * can still see `link.kind === "overworld"`.
    */
   /**
-   * Resolve the counter key (from `data/counters.json`) attached to a
-   * cell, or null. Two paths are checked, in order:
-   *
-   *   1. Per-cell override: `tile_properties["col,row"].shop_type`.
-   *      Authors set this to point any tile at any counter without
-   *      needing a dedicated counter-tile id.
-   *   2. Tile-id default: `tile_defs.json` carries
-   *      `interaction_type === "shop"` plus `interaction_data` on the
-   *      Counter / Weapon Counter / Armor Counter / Magic Shop /
-   *      Healing Counter tile ids. Stepping into one of those tiles
-   *      uses its declared counter key.
-   *
-   * The override beats the default — a Magic Shop tile re-purposed
-   * with `shop_type: "weapon"` becomes a weapon counter without losing
-   * its sprite.
+   * Resolve the counter key (from the active module's counters.json)
+   * attached to a cell, or null. Reads the per-cell override from
+   * `tile_properties["col,row"].shop_type` — v2 maps no longer rely
+   * on tile-id defaults, so an empty/missing override means "not a
+   * counter".
    */
   getCounterKey(col: number, row: number): string | null {
     const props = this.tileProperties[`${col},${row}`];
     const override = props?.shop_type;
     if (typeof override === "string" && override.length > 0) return override;
-    const id = this.getTile(col, row);
-    const def = tileDef(id);
-    if (def.interactionType !== "shop") return null;
-    return def.interactionData && def.interactionData.length > 0
-      ? def.interactionData
-      : null;
+    return null;
   }
 
   /**
-   * Sign text for a tile, or null when it isn't a sign. Reads
-   * `tile_defs.json::interaction_type: "sign"` (per the data — town
-   * "General Store Sign" tiles, "Armor & Weapons", etc.) and
-   * returns the companion `interaction_data` string verbatim.
-   *
-   * Per-tile `tile_properties.sign` overrides the catalog default —
-   * authors can re-purpose a generic sign sprite with a custom
-   * message for one-off cases (a posted notice, a memorial plaque,
-   * etc.) without shipping a new tile id.
+   * Sign text for a tile, or null when it isn't a sign. Reads the
+   * per-cell `tile_properties.sign` override; v2 maps no longer rely
+   * on tile-id defaults, so an empty/missing override means "not a
+   * sign".
    */
   getSignText(col: number, row: number): string | null {
     const props = this.tileProperties[`${col},${row}`];
     const override = props?.sign;
     if (typeof override === "string" && override.length > 0) return override;
-    const id = this.getTile(col, row);
-    const def = tileDef(id);
-    if (def.interactionType !== "sign") return null;
-    return def.interactionData && def.interactionData.length > 0
-      ? def.interactionData
-      : null;
+    return null;
   }
 
   getTileLink(col: number, row: number): TileLink | null {

@@ -10,7 +10,7 @@ import {
   type SpawnCellInfo,
 } from "./spawn";
 import type { SimEncounterRef } from "./types";
-import { mulberry32 } from "../v1battle/rng";
+import { mulberry32 } from "../battle/rng";
 
 function makeSpawn(over: Partial<SimSpawn> = {}): SimSpawn {
   return {

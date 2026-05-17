@@ -3,7 +3,7 @@ import {
   generateDungeonFromRecord,
   resolveLevelOptions,
 } from "./generateFromRecord";
-import { torchProfileFromProbability } from "@/v1battle/world/Dungeon";
+import { torchProfileFromProbability } from "@/battle/world/Dungeon";
 import { DUNGEON_DEFAULTS, type DungeonRecord } from "./types";
 
 /** Build a record with sensible defaults so each test can override

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { DungeonLevel } from "@/v1battle/world/Dungeon";
+import type { DungeonLevel } from "@/battle/world/Dungeon";
 import {
   clearAllDungeonSessions,
   clearDungeonSession,

@@ -1,7 +1,7 @@
 /**
  * v1-numeric-tile-id → v2-cell mapping table.
  *
- * The v1 procedural generator (`v1battle/world/Dungeon.ts`) emits
+ * The v1 procedural generator (`battle/world/Dungeon.ts`) emits
  * numeric tile ids (TILE_DFLOOR = 20, TILE_DWALL = 21, …). v2 paints
  * with string-keyed cells that carry their own sprite + walkability.
  * This module is the bridge: it returns a v2-shaped cell prototype
@@ -33,15 +33,15 @@ import {
   TILE_STAIRS_DOWN,
   TILE_WALL_TORCH,
   TILE_WATER,
-} from "@/v1battle/world/Tiles";
+} from "@/battle/world/Tiles";
 import {
   TILE_ARTIFACT,
   TILE_CHEST,
   TILE_DWALL,
   TILE_STAIRS,
   TILE_TRAP,
-} from "@/v1battle/world/Dungeon";
-import type { DungeonStyle } from "@/v1battle/world/Dungeon";
+} from "@/battle/world/Dungeon";
+import type { DungeonStyle } from "@/battle/world/Dungeon";
 
 /** Prototype shape — the union of fields TileType (editor) and
  *  SimCell (simulator) read. Deep-copied per cell; per-cell extras

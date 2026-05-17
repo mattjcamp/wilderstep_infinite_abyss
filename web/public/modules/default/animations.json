@@ -1,5 +1,5 @@
 {
-  "_comment": "Animation catalog — the curated list of visual + audio bundles that designers can attach to spells, abilities, items, and effects. Each record indexes one visual (matching a key in the VFX projectile registry at web/src/vfx/effectRegistry.ts) and zero-to-two SFX names (matching generators in web/src/v1battle/audio/Sfx.ts). Adding new visuals or sounds requires a code change; this file just lets designers pick from what's available. The 'none' record is a sentinel meaning 'no visual, no sound' — use it explicitly to suppress fallback behavior. See docs/data_dictionary/animation.md.",
+  "_comment": "Animation catalog — the curated list of visual + audio bundles that designers can attach to spells, abilities, items, and effects. Each record indexes one visual (matching a key in the VFX projectile registry at web/src/vfx/effectRegistry.ts) and zero-to-two SFX names (matching generators in web/src/battle/audio/Sfx.ts). Adding new visuals or sounds requires a code change; this file just lets designers pick from what's available. The 'none' record is a sentinel meaning 'no visual, no sound' — use it explicitly to suppress fallback behavior. See docs/data_dictionary/animation.md.",
   "animations": [
     {
       "id": "none",
