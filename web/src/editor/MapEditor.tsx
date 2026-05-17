@@ -41,7 +41,14 @@ import { mergeModel } from "@/data_model/merge";
 import { withBasePath } from "@/util/basePath";
 import { publishItems } from "@/data_model/publishClient";
 import { MapSimulation, type SceneBridge } from "@/sim/MapSimulation";
+import {
+  computeLighting,
+  emitterVisibleAt,
+  tintForCell,
+} from "@/sim/lighting";
 import { SimPanel } from "@/sim/SimPanel";
+import { ANIMATION_CONFIGS } from "@/sim/tileAnimations";
+import type { AnimationKind } from "@/sim/tileAnimations";
 import { MapPartyScreenOverlay } from "./MapPartyScreenOverlay";
 import { NpcDialogOverlay } from "./NpcDialogOverlay";
 import { CounterShopOverlay } from "./CounterShopOverlay";
@@ -170,51 +177,10 @@ interface QuestRecord {
   }>;
 }
 
-/** Per-animation Phaser particle-emitter config. Keys are the values
- *  TileType.animation can take ("none" excluded — no emitter at all). */
-const ANIMATION_CONFIGS = {
-  torch: {
-    speedX: { min: -10, max: 10 },
-    speedY: { min: -40, max: -20 },
-    lifespan: { min: 400, max: 700 },
-    scale: { start: 0.35, end: 0 },
-    alpha: { start: 1, end: 0 },
-    frequency: 80,
-    tint: [0xffaa44, 0xff6622, 0xffdd66],
-    blendMode: "ADD" as const,
-  },
-  fire: {
-    speedX: { min: -20, max: 20 },
-    speedY: { min: -60, max: -30 },
-    lifespan: { min: 500, max: 900 },
-    scale: { start: 0.55, end: 0 },
-    alpha: { start: 1, end: 0 },
-    frequency: 40,
-    tint: [0xff3322, 0xff8844, 0xffdd66],
-    blendMode: "ADD" as const,
-  },
-  fairy: {
-    speedX: { min: -25, max: 25 },
-    speedY: { min: -25, max: 5 },
-    lifespan: { min: 1500, max: 2500 },
-    scale: { start: 0.25, end: 0 },
-    alpha: { start: 1, end: 0 },
-    frequency: 220,
-    tint: [0xaaeeff, 0xeeaaff, 0xffffff, 0x88ffcc],
-    blendMode: "ADD" as const,
-  },
-  smoke: {
-    speedX: { min: -10, max: 10 },
-    speedY: { min: -25, max: -12 },
-    lifespan: { min: 1000, max: 1800 },
-    scale: { start: 0.4, end: 0.9 },
-    alpha: { start: 0.55, end: 0 },
-    frequency: 130,
-    tint: [0x555555, 0x777777, 0x444444],
-  },
-} as const;
-
-type AnimationKind = keyof typeof ANIMATION_CONFIGS;
+// Per-tile animation configs + AnimationKind live in
+// `sim/tileAnimations.ts` (imported above). Keeping a local
+// note so the next person searching for "ANIMATION_CONFIGS"
+// here finds the new location.
 
 interface MapRecord {
   id: string;
@@ -743,6 +709,18 @@ export function MapEditor({
    *  scene's relight on every pass — when sim mode is off this stays
    *  null and behavior is identical to the painting view. */
   const partyLightRef = useRef<SimLightSource | null>(null);
+  /** True when at least one active party member's race carries the
+   *  `infravision` ability AND the player has currently engaged
+   *  it. The ability part is computed once on catalog load; the
+   *  activation half is pushed in through the
+   *  `setPartyInfravisionActive` bridge callback every time the
+   *  user toggles it via the SimPanel button. The relight pass
+   *  reads the combined value through the closure. */
+  const partyInfravisionActiveRef = useRef<boolean>(false);
+  /** Separately tracked: does the party even have the ability? UI
+   *  controls (the SimPanel toggle) gate on this so a non-Dwarf
+   *  party doesn't show an Activate Infravision button at all. */
+  const partyHasInfravisionRef = useRef<boolean>(false);
 
   // Selection follows the cursor.
   useEffect(() => {
@@ -1179,6 +1157,7 @@ export function MapEditor({
         availableQuests,
         simParty,
         simCharacters,
+        simRaces,
         simMonsters,
       } = state;
       const paletteById = new Map(palette.map((t) => [t.id, t]));
@@ -1190,6 +1169,25 @@ export function MapEditor({
       // already in the "monster/foo.png" shape the preload pipeline
       // consumes, so they slot straight into spriteKeys below.
       const monstersById = new Map(simMonsters.map((m) => [m.id, m]));
+      // Compute partyHasInfravision once now that the catalog is
+      // in hand. Walks roster → character.race → race.abilities.
+      // The flag is read by relight via the ref so subsequent
+      // re-renders pick up changes after a fresh module load.
+      {
+        const racesById = new Map(simRaces.map((r) => [r.id, r]));
+        const charactersById = new Map(
+          simCharacters.map((c) => [c.id, c]),
+        );
+        partyHasInfravisionRef.current = (simParty?.roster ?? []).some(
+          (id) => {
+            const c = charactersById.get(id);
+            if (!c) return false;
+            const r = racesById.get(c.race);
+            if (!r) return false;
+            return (r.abilities ?? []).includes("infravision");
+          },
+        );
+      }
 
       // Gather every unique sprite path used by the palette + the
       // current grid + every encounter's monster_party_tile + every
@@ -1277,6 +1275,13 @@ export function MapEditor({
         /** Sim-mode party sprite (single Image, depth-300 above
          *  everything else). Null while sim mode is off. */
         partySprite: Phaser.GameObjects.Image | null = null;
+        /** Last known party cell — captured every `setPartyAt` so
+         *  the relight pass (shared with the dungeon scene) can
+         *  root the party-vision pool and gate torch LOS. Null when
+         *  sim mode is off; the shared helper interprets `null` as
+         *  "painting view, no LOS gating". */
+        partyCol: number | null = null;
+        partyRow: number | null = null;
         /** Live roamer sprites keyed by SimRoamer.id. Mutated by
          *  setRoamerPositions — entries that disappear from the
          *  incoming list are destroyed, new ids spawn a fresh Image,
@@ -1517,143 +1522,105 @@ export function MapEditor({
               // Assigned for real below.
             },
             relight: (mode) => {
-              // Day = unconditionally full brightness, fast path. Also
-              // clear tints on placed overlays so they don't keep the
-              // dim look from a prior twilight/night pass.
-              if (mode === "day") {
-                for (const img of this.cells.values()) {
-                  img.clearTint();
-                }
-                for (const img of this.encounterOverlays.values()) {
-                  img.clearTint();
-                }
-                for (const img of this.itemOverlays.values()) {
-                  img.clearTint();
-                }
-                for (const img of this.npcOverlays.values()) {
-                  img.clearTint();
-                }
-                for (const img of this.questGiverOverlays.values()) {
-                  img.clearTint();
-                }
-                // Loose boats render via the cell image itself
-                // (texture-swapped between boat and water) so the
-                // per-cell clearTint loop already handles them.
-                if (this.partyBoatSprite) this.partyBoatSprite.clearTint();
-                return;
-              }
-              const ambient = mode === "twilight" ? 0.4 : 0.1;
-              // Pre-collect light sources so the inner loop only walks
-              // a small list per cell.
-              const sources: Array<{
-                col: number;
-                row: number;
-                range: number;
-              }> = [];
-              for (let r = 0; r < mapRecord.height; r++) {
-                for (let c = 0; c < mapRecord.width; c++) {
-                  const cell = gridRef.current[r]?.[c];
-                  if (!cell?.light_source) continue;
-                  const range = cell.light_range ?? 0;
-                  if (range <= 0) continue;
-                  sources.push({ col: c, row: r, range });
-                }
-              }
-              // Add the simulation party's own light source on top —
-              // when sim mode is off this ref stays null so the
-              // painting view's lighting is unchanged.
-              const partyLight = partyLightRef.current;
-              if (partyLight && partyLight.range > 0) {
-                sources.push({
-                  col: partyLight.col,
-                  row: partyLight.row,
-                  range: partyLight.range,
-                });
-              }
-              /** Bresenham line-of-sight: returns true if no obstructs=true
-               *  cell lies strictly between (srcCol,srcRow) and
-               *  (dstCol,dstRow). The source and destination cells
-               *  themselves are NOT checked — a wall can be lit on its
-               *  visible face even though it blocks light beyond it. */
-              const hasLOS = (
-                srcCol: number,
-                srcRow: number,
-                dstCol: number,
-                dstRow: number,
-              ): boolean => {
-                if (srcCol === dstCol && srcRow === dstRow) return true;
-                const dx = Math.abs(dstCol - srcCol);
-                const dy = Math.abs(dstRow - srcRow);
-                const sx = srcCol < dstCol ? 1 : -1;
-                const sy = srcRow < dstRow ? 1 : -1;
-                let err = dx - dy;
-                let c = srcCol;
-                let r = srcRow;
-                // Defensive iteration cap — Bresenham always terminates
-                // within dx+dy steps, but guard against bad input.
-                const maxSteps = dx + dy + 2;
-                for (let i = 0; i < maxSteps; i++) {
-                  const e2 = err * 2;
-                  if (e2 > -dy) {
-                    err -= dy;
-                    c += sx;
-                  }
-                  if (e2 < dx) {
-                    err += dx;
-                    r += sy;
-                  }
-                  if (c === dstCol && r === dstRow) return true;
-                  const cell = gridRef.current[r]?.[c];
-                  if (cell?.obstructs) return false;
-                }
-                return false;
+              // All lighting math lives in `sim/lighting.ts` and is
+              // shared with the dungeon scene. We just consume the
+              // result and apply tints to cells + overlays.
+              // Painting view (sim off) → partyCol/Row are null →
+              // helper falls back to "no party, no LOS gate" so
+              // overworld twilight/night still reads sensibly even
+              // before the user enters sim mode.
+              const party =
+                this.partyCol !== null && this.partyRow !== null
+                  ? { col: this.partyCol, row: this.partyRow }
+                  : null;
+              const result = computeLighting({
+                grid: gridRef.current as unknown as SimGrid,
+                party,
+                partyLight: partyLightRef.current,
+                // Combined check — the ability has to be present
+                // AND the player has to have engaged it. Either
+                // alone disables the red band.
+                partyInfravisionActive:
+                  partyHasInfravisionRef.current &&
+                  partyInfravisionActiveRef.current,
+                mode,
+              });
+              // Phaser dispatch — `tintForCell` returns the tint
+              // value; we always use multiply mode. v2 tile sprites
+              // lean heavily on "mostly black with coloured detail
+              // pixels" (grass = green specks on near-black bg).
+              // Multiply preserves that look — the black stays
+              // black and only the detail pixels read as red under
+              // infravision, which lands closer to heat vision
+              // than a uniform red fill that loses every detail.
+              const applyTint = (
+                img: Phaser.GameObjects.Image,
+                col: number,
+                row: number,
+              ) => {
+                const t = tintForCell(result, col, row);
+                if (t.mode === "clear") img.clearTint();
+                else img.setTint(t.value);
               };
-              for (let r = 0; r < mapRecord.height; r++) {
-                for (let c = 0; c < mapRecord.width; c++) {
-                  let brightness = ambient;
-                  for (const s of sources) {
-                    const dist = Math.max(
-                      Math.abs(c - s.col),
-                      Math.abs(r - s.row),
-                    );
-                    if (dist > s.range) continue;
-                    // LOS check — walls between source and target
-                    // cast a shadow on cells beyond.
-                    if (!hasLOS(s.col, s.row, c, r)) continue;
-                    // Falloff: 1.0 at source, ~0 at edge of range.
-                    const falloff = 1 - dist / (s.range + 1);
-                    const lit = ambient + (1 - ambient) * falloff;
-                    if (lit > brightness) brightness = lit;
-                  }
-                  const level = Math.max(
-                    0,
-                    Math.min(255, Math.floor(brightness * 255)),
+              // Cells.
+              for (const [key] of result.cells) {
+                const img = this.cells.get(key);
+                if (!img) continue;
+                const [cs, rs] = key.split(",");
+                applyTint(img, Number(cs), Number(rs));
+              }
+              // Placed overlays share their cell's render band so
+              // a goblin in red infravision territory reads as red,
+              // an item on a torchlit tile reads in grayscale.
+              // Quest-glow / boat sprite / fill-preview stay
+              // un-tinted — they're UI affordances, not part of the
+              // diegetic world.
+              for (const [key, img] of this.encounterOverlays) {
+                const [cs, rs] = key.split(",");
+                applyTint(img, Number(cs), Number(rs));
+              }
+              for (const [key, img] of this.itemOverlays) {
+                const [cs, rs] = key.split(",");
+                applyTint(img, Number(cs), Number(rs));
+              }
+              for (const [key, img] of this.npcOverlays) {
+                const [cs, rs] = key.split(",");
+                applyTint(img, Number(cs), Number(rs));
+              }
+              for (const [key, img] of this.questGiverOverlays) {
+                const [cs, rs] = key.split(",");
+                applyTint(img, Number(cs), Number(rs));
+              }
+              // Emitter visibility — particle animations (fairy
+              // lights, smoke, fire on non-light-source cells)
+              // render independent of the cell tint, so without
+              // gating they'd float bright through dark areas the
+              // party can't see. The shared rule hides emitters on
+              // cells at ambient brightness OR infravision-red.
+              //
+              // Painting view (no party on the map) keeps every
+              // emitter visible — authors need to see what they
+              // painted while iterating, even in night mode.
+              if (party !== null) {
+                for (const [key, emitter] of this.emitters) {
+                  const [cs, rs] = key.split(",");
+                  emitter.setVisible(
+                    emitterVisibleAt(result, Number(cs), Number(rs)),
                   );
-                  const tint = (level << 16) | (level << 8) | level;
-                  const key = `${c},${r}`;
-                  const img = this.cells.get(key);
-                  if (img) img.setTint(tint);
-                  // Placed overlays share the cell's lighting. Any
-                  // future placed-sprite layers (counters, etc.) should
-                  // be tinted here as well. The quest-giver NPC sprite
-                  // is part of the world (it's a character standing
-                  // there), so it dims like everything else. The
-                  // golden quest-relevance halo (questGlowGraphics) is
-                  // a deliberate UI affordance and intentionally
-                  // stays at full brightness — it should "shine
-                  // through" the darkness so quest cells remain
-                  // visible in pitch-black maps.
-                  const enc = this.encounterOverlays.get(key);
-                  if (enc) enc.setTint(tint);
-                  const itm = this.itemOverlays.get(key);
-                  if (itm) itm.setTint(tint);
-                  const npcImg = this.npcOverlays.get(key);
-                  if (npcImg) npcImg.setTint(tint);
-                  const qg = this.questGiverOverlays.get(key);
-                  if (qg) qg.setTint(tint);
-                  // No boat-overlay tint here — boats render via the
-                  // cell's own image, which is tinted right above.
                 }
+              } else {
+                for (const emitter of this.emitters.values()) {
+                  emitter.setVisible(true);
+                }
+              }
+              // Loose boats render via the cell image itself
+              // (texture-swapped between boat and water) so the
+              // per-cell tint loop above already handles them.
+              // The partyBoatSprite is a separate Image; clear its
+              // tint in Day, leave alone otherwise (it follows the
+              // party and the party owns the light pool around it).
+              if (mode === "day" && this.partyBoatSprite) {
+                this.partyBoatSprite.clearTint();
               }
             },
           };
@@ -1663,6 +1630,13 @@ export function MapEditor({
           const sceneSelf = this;
           if (sceneApiRef.current) {
             sceneApiRef.current.setPartyAt = (col, row, spritePath) => {
+              // Capture the party's cell BEFORE drawing the sprite —
+              // the shared lighting helper reads partyCol/Row to
+              // root the 1-tile vision pool and gate torch LOS.
+              // The bridge wires a relight call after every step,
+              // so this stays current.
+              sceneSelf.partyCol = col;
+              sceneSelf.partyRow = row;
               // Lazy-create the sprite the first time the sim shows.
               // Anchored center for natural alignment with the cell.
               const px = col * TILE_SIZE + TILE_SIZE / 2;
@@ -1730,6 +1704,12 @@ export function MapEditor({
                 sceneSelf.partyBoatSprite.destroy();
                 sceneSelf.partyBoatSprite = null;
               }
+              // Sim is leaving — the painting view's relight pass
+              // should run without a party (no LOS gating). Null
+              // out the tracked position so the shared lighting
+              // helper picks up the right branch.
+              sceneSelf.partyCol = null;
+              sceneSelf.partyRow = null;
             };
             // Floater for tile.text. Spawned about two tiles above
             // the cell so the party sprite doesn't sit on top of the
@@ -2795,6 +2775,15 @@ export function MapEditor({
       },
       setSuppressedEncounterCells: (cells) => {
         sceneApiRef.current?.setSuppressedEncounterCells(cells);
+      },
+      setPartyInfravisionActive: (active) => {
+        // Sim is the source of truth — when it tells us the
+        // activation flag flipped, store it in the ref the
+        // relight pass reads and trigger a relight so the next
+        // frame reflects the change. The SimPanel button calls
+        // `sim.setInfravisionActive` which routes through here.
+        partyInfravisionActiveRef.current = active;
+        sceneApiRef.current?.relight(lightingModeRef.current);
       },
       onKey: (handler) => {
         // Window-scoped listener. Ignore the keystroke if the user is

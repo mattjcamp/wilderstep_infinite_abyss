@@ -62,6 +62,11 @@ export function DungeonSimLauncher({ moduleId }: { moduleId: string }) {
   // on because dungeons are meant to be played dark; this lets you
   // confirm torch placement looks right.
   const [darkness, setDarkness] = useState<boolean>(true);
+  // Infravision toggle — opt-in player switch that activates the
+  // infravision render mode (red shades for in-LOS cells not lit
+  // by another source). Off by default; engaging it without an
+  // eligible roster member is a no-op on the sim side.
+  const [infravisionActive, setInfravisionActive] = useState<boolean>(false);
 
   // Load the dungeons catalog (no draft awareness — we read the
   // published file). Authors who want to iterate on a draft hit
@@ -215,6 +220,19 @@ export function DungeonSimLauncher({ moduleId }: { moduleId: string }) {
           Darkness
         </label>
 
+        <label
+          className="flex cursor-pointer items-center gap-2 rounded border border-parchment/20 bg-ink/40 px-2 py-1 text-sm text-parchment/80 hover:bg-ink/60"
+          title="Engage the party's infravision ability (e.g. Dwarf). Every cell in LOS becomes visible — torchlit cells render normally, otherwise-dark cells render in shades of red. Has no effect when no roster member has the ability."
+        >
+          <input
+            type="checkbox"
+            checked={infravisionActive}
+            onChange={(e) => setInfravisionActive(e.target.checked)}
+            className="accent-ember"
+          />
+          Infravision
+        </label>
+
         <button
           type="button"
           onClick={() => {
@@ -250,6 +268,7 @@ export function DungeonSimLauncher({ moduleId }: { moduleId: string }) {
           floorIdx={clampedFloor}
           returnTo={returnTo}
           darkness={darkness}
+          infravisionActive={infravisionActive}
         />
       ) : (
         <p className="text-sm text-parchment/45">

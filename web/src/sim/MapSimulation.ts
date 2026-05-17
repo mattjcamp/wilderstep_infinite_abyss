@@ -151,6 +151,14 @@ export interface SceneBridge {
    *  roaming one (and stays hidden after the encounter is
    *  defeated). Cell keys are `"col,row"`. Optional. */
   setSuppressedEncounterCells?(cells: ReadonlySet<string>): void;
+  /** Push the party's current infravision activation flag. The host
+   *  scene stores it on the side (typically a per-scene boolean)
+   *  and reads it during the next relight to decide whether to
+   *  render in-LOS cells as infravision red. Called once at sim
+   *  construction (initial state) and again on every
+   *  `setInfravisionActive` toggle. Optional — hosts that don't
+   *  support infravision rendering just ignore it. */
+  setPartyInfravisionActive?(active: boolean): void;
 }
 
 /** DC the Pick Lock attempt rolls against. Matches `Lock.ts`
@@ -395,6 +403,11 @@ export interface SimSnapshot {
    *  ids without re-fetching the catalog. */
   classNameById: ReadonlyMap<string, string>;
   raceNameById: ReadonlyMap<string, string>;
+  /** True iff at least one currently-active roster member's race
+   *  grants the `infravision` ability. UI controls gate on this:
+   *  no ability holders → the activation button is hidden, since
+   *  there's no one in the party who could engage it. */
+  partyHasInfravision: boolean;
 }
 
 export interface MapSimulationOptions {
@@ -580,6 +593,13 @@ export class MapSimulation {
     // doesn't double up with the live one.
     this.bridge.setPlacedEncounterPositions?.(this.snapshotPlacedEncounters());
     this.bridge.setSuppressedEncounterCells?.(this.suppressedEncounterCells());
+    // Initial infravision push — reflects the party.json field (or
+    // the default of `false`). The host stores this and consults
+    // it on every relight; subsequent toggles come through
+    // `setInfravisionActive` below.
+    this.bridge.setPartyInfravisionActive?.(
+      this.party.infravision_active === true,
+    );
 
     // Keyboard input. The bridge owns the actual listener registration
     // so the host can scope it however it likes (window vs. canvas vs.
@@ -1192,6 +1212,49 @@ export class MapSimulation {
     this.emit({ kind: "state" });
   }
 
+  /** Activate or deactivate the party's infravision ability. The
+   *  ability itself is a passive race trait (Dwarf in the default
+   *  module); this method is the player-controlled switch that
+   *  decides whether the lighting renderer applies the
+   *  infravision band.
+   *
+   *  Silently no-ops if no roster member has the ability — that
+   *  way callers (button handlers, prop syncs) don't have to gate
+   *  themselves; only the UI needs to know whether to *expose*
+   *  the toggle. */
+  setInfravisionActive(active: boolean): void {
+    if (this.disposed) return;
+    if (!this.partyHasInfravision()) return;
+    const next = !!active;
+    if ((this.party.infravision_active ?? false) === next) return;
+    this.party = { ...this.party, infravision_active: next };
+    this.bridge.setPartyInfravisionActive?.(next);
+    this.bridge.relight();
+    this.emit({
+      kind: "log",
+      message: next
+        ? "Infravision engaged."
+        : "Infravision disengaged.",
+    });
+    this.emit({ kind: "state" });
+  }
+
+  /** True iff at least one currently-active roster member has a
+   *  race carrying the `infravision` ability. Computed on demand —
+   *  the active-member list is fixed at construction so this is
+   *  effectively a constant. */
+  private partyHasInfravision(): boolean {
+    const racesById = new Map(
+      this.catalog.races.map((r) => [r.id, r]),
+    );
+    for (const m of this.activeMembers) {
+      const race = racesById.get(m.race);
+      if (!race) continue;
+      if ((race.abilities ?? []).includes("infravision")) return true;
+    }
+    return false;
+  }
+
   /** Snapshot of state the panel UI renders. Always fresh — no
    *  caching, the underlying data is tiny. */
   snapshot(): SimSnapshot {
@@ -1202,6 +1265,7 @@ export class MapSimulation {
       lightRange: this.currentLightRange(),
       classNameById: this.classNameById,
       raceNameById: this.raceNameById,
+      partyHasInfravision: this.partyHasInfravision(),
     };
   }
 

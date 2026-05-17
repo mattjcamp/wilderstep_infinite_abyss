@@ -162,6 +162,16 @@ export interface SimParty {
   /** Step countdown for the Galadriel's Light effect (Elf race).
    *  >0 = +GALADRIELS_LIGHT_RANGE. Decrements one per step. */
   galadriels_light_steps: number;
+  /** Whether the party has currently *engaged* their infravision
+   *  ability. The ability itself is a passive race trait (Dwarf in
+   *  the default module); this flag is the player-controlled
+   *  on/off switch. True means the lighting renderer should show
+   *  every in-LOS cell — cells lit by another source render
+   *  normally, cells lit only by infravision render in red.
+   *
+   *  Defaults to false: infravision is opt-in. Toggle via
+   *  `MapSimulation.setInfravisionActive(active)`. */
+  infravision_active?: boolean;
   /** Gold on hand. Optional in the type because the sim kernel itself
    *  never touches it; the editor's shop overlay reads + mutates it
    *  when the player buys / sells at a counter. */

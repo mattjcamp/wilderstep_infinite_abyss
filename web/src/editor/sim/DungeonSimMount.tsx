@@ -41,6 +41,12 @@ import {
   type DungeonMapRecord,
 } from "@/sim/dungeon/dungeonLevelToMap";
 import { DUNGEON_SPRITE_KEYS } from "@/sim/dungeon/tileMapping";
+import {
+  computeLighting,
+  emitterVisibleAt,
+  tintForCell,
+} from "@/sim/lighting";
+import { ANIMATION_CONFIGS } from "@/sim/tileAnimations";
 import type {
   SimCharacter,
   SimEncounterRef,
@@ -72,22 +78,12 @@ interface Props {
    *  "Day" mode). Used by the launcher's Darkness toggle so
    *  authors can compare lit / unlit layouts at a glance. */
   darkness?: boolean;
+  /** When true, the party engages its infravision ability (if any
+   *  active member has it). Drives the lighting model's
+   *  `partyInfravisionActive` flag. Defaults to false — infravision
+   *  is opt-in, matching torches and other party-light effects. */
+  infravisionActive?: boolean;
 }
-
-/** Particle-emitter config for a torch. Mirrors MapEditor's torch
- *  ANIMATION_CONFIGS entry — duplicated here so the dungeon mount
- *  stays self-contained. If a third caller needs it, hoist into a
- *  shared `sim/tileAnimations.ts`. */
-const TORCH_EMITTER_CONFIG = {
-  speedX: { min: -10, max: 10 },
-  speedY: { min: -40, max: -20 },
-  lifespan: { min: 400, max: 700 },
-  scale: { start: 0.35, end: 0 },
-  alpha: { start: 1, end: 0 },
-  frequency: 80,
-  tint: [0xffaa44, 0xff6622, 0xffdd66],
-  blendMode: "ADD" as const,
-};
 
 export function DungeonSimMount({
   moduleId,
@@ -96,17 +92,26 @@ export function DungeonSimMount({
   floorIdx: initialFloorIdx,
   returnTo,
   darkness = true,
+  infravisionActive = false,
 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
   const [floorIdx, setFloorIdx] = useState(initialFloorIdx);
   const [exited, setExited] = useState(false);
   /** Active Phaser scene — captured on create() so the React side
-   *  can push prop updates (lighting mode toggles) without rebuilding
-   *  the whole game. Cleared in the mount effect's teardown. */
+   *  can push prop updates (lighting mode toggles, infravision
+   *  activation) without rebuilding the whole game. Cleared in
+   *  the mount effect's teardown. */
   const sceneRef = useRef<{
     setLightingMode: (m: "day" | "night") => void;
+    setPartyInfravisionActive: (active: boolean) => void;
   } | null>(null);
+  /** Active MapSimulation. Exposed so the launcher's Infravision
+   *  checkbox (or any future prop sync) can call
+   *  `sim.setInfravisionActive` — which updates the canonical
+   *  `party.infravision_active` field and signals the bridge.
+   *  Cleared on teardown alongside `sceneRef`. */
+  const simRef = useRef<MapSimulation | null>(null);
 
   // When `exited` flips and we have a returnTo target, navigate back
   // to the overworld map with sim mode re-engaged at the entrance
@@ -271,6 +276,18 @@ export function DungeonSimMount({
          *  simulator tick. */
         partyCol = 0;
         partyRow = 0;
+        /** True when at least one active party member's race grants
+         *  the `infravision` ability. Set once at scene boot from
+         *  the catalog. The ability being present isn't enough on
+         *  its own — see `partyInfravisionActive` below. */
+        partyHasInfravision = false;
+        /** Whether the player has currently *engaged* infravision.
+         *  Pushed via `setPartyInfravisionActive` on the bridge —
+         *  the React mount drives this from the launcher's
+         *  Infravision checkbox + the sim's `setInfravisionActive`
+         *  method. Combined with `partyHasInfravision` at relight
+         *  time: red rendering only happens when both are true. */
+        partyInfravisionActive = false;
         /** Lighting mode: "day" = full bright, no tinting;
          *  "night" = dark ambient with Bresenham-LOS falloff from
          *  light sources. Toggled by the launcher's Darkness
@@ -292,9 +309,38 @@ export function DungeonSimMount({
           // mount time. The React-side effect below pushes
           // subsequent toggles through `setLightingMode`.
           this.lightingMode = darkness ? "night" : "day";
+          // Seed infravision activation from the React prop. The
+          // launcher's checkbox + the parent useEffect below keep
+          // this in sync.
+          this.partyInfravisionActive = infravisionActive;
           sceneRef.current = {
             setLightingMode: (m) => this.setLightingMode(m),
+            setPartyInfravisionActive: (active) => {
+              if (this.partyInfravisionActive === active) return;
+              this.partyInfravisionActive = active;
+              this.relight();
+            },
           };
+          // Detect infravision once at scene boot. Walks the
+          // party's roster → character.race → race.abilities,
+          // returns true when ANY active member's race carries the
+          // "infravision" id. The flag stays static for the
+          // dungeon's lifetime (re-mounting picks up a fresh value).
+          const racesById = new Map(
+            (catalog?.races ?? []).map((r) => [r.id, r]),
+          );
+          const charactersById = new Map(
+            (catalog?.characters ?? []).map((c) => [c.id, c]),
+          );
+          this.partyHasInfravision = (catalog?.party?.roster ?? []).some(
+            (id) => {
+              const c = charactersById.get(id);
+              if (!c) return false;
+              const r = racesById.get(c.race);
+              if (!r) return false;
+              return (r.abilities ?? []).includes("infravision");
+            },
+          );
           // Render every cell as an Image keyed by "col,row".
           for (let r = 0; r < floorRecord!.height; r++) {
             for (let c = 0; c < floorRecord!.width; c++) {
@@ -318,21 +364,28 @@ export function DungeonSimMount({
             g.generateTexture("__particle", 16, 16);
             g.destroy();
           }
-          // One particle emitter per torch cell. The ember-tinted
-          // flame matches the editor's torch animation; depth 160
-          // puts it above the cell tint (which is just a setTint on
-          // the cell image) but below the party / roamer sprites.
+          // One particle emitter per cell whose `animation` value
+          // names a known config. Shared with the overworld map
+          // scene via `sim/tileAnimations.ts` so a torch reads the
+          // same in both. Depth 160 sits above the cell tint
+          // (a `setTint` on the cell image) but below party /
+          // roamer sprites.
           for (let r = 0; r < floorRecord!.height; r++) {
             for (let c = 0; c < floorRecord!.width; c++) {
               const cell = floorRecord!.grid[r][c];
-              if ((cell.animation ?? "none") !== "torch") continue;
+              const animation = (cell.animation ?? "none") as
+                | keyof typeof ANIMATION_CONFIGS
+                | "none";
+              if (animation === "none") continue;
+              const cfg = ANIMATION_CONFIGS[animation];
+              if (!cfg) continue;
               const x = c * TILE_SIZE + TILE_SIZE / 2;
               const y = r * TILE_SIZE + TILE_SIZE / 2;
               const emitter = this.add.particles(
                 x,
                 y,
                 "__particle",
-                TORCH_EMITTER_CONFIG as unknown as Phaser.Types.GameObjects.Particles.ParticleEmitterConfig,
+                cfg as unknown as Phaser.Types.GameObjects.Particles.ParticleEmitterConfig,
               );
               emitter.setDepth(160);
               this.emitters.set(`${c},${r}`, emitter);
@@ -367,161 +420,68 @@ export function DungeonSimMount({
         }
 
         relight() {
-          // Day fast-path — full bright, drop any tints from a prior
-          // night pass. All torch emitters show because the whole
-          // map is visible. Mirrors MapEditor's `relight("day")`.
-          if (this.lightingMode === "day") {
-            for (const img of this.cells.values()) img.clearTint();
-            for (const img of this.placedSprites.values()) img.clearTint();
-            for (const img of this.roamerSprites.values()) img.clearTint();
-            for (const e of this.emitters.values()) e.setVisible(true);
-            return;
-          }
-          // Night: low ambient + Bresenham-LOS falloff from a
-          // curated set of light sources.
-          //
-          // Two rules drive what's lit:
-          //   1. The party always emits a tiny light pool (range 1
-          //      by default — they can see the cell they're in
-          //      plus the four cardinal + four diagonal neighbours
-          //      they could step onto). A larger source (active
-          //      torch, Galadriel's Light) overrides the baseline
-          //      when set via the sim's `setPartyLight` bridge.
-          //   2. Wall-torches only contribute light when the party
-          //      has LOS to the torch itself. A torch behind a
-          //      wall is unknown to the player — its flame is
-          //      hidden (emitter invisible) AND its light pool is
-          //      not cast. Walk around the corner and the torch
-          //      pops in: emitter visible, pool revealed.
-          const ambient = 0.1;
-          const sources: Array<{
-            col: number;
-            row: number;
-            range: number;
-          }> = [];
-          /** Bresenham LOS — true when no obstructs=true cell lies
-           *  strictly between source and destination. Source +
-           *  destination cells themselves aren't checked (a wall's
-           *  visible face still reads lit). Matches MapEditor's
-           *  implementation byte-for-byte. */
-          const hasLOS = (
-            srcCol: number,
-            srcRow: number,
-            dstCol: number,
-            dstRow: number,
-          ): boolean => {
-            if (srcCol === dstCol && srcRow === dstRow) return true;
-            const dx = Math.abs(dstCol - srcCol);
-            const dy = Math.abs(dstRow - srcRow);
-            const sx = srcCol < dstCol ? 1 : -1;
-            const sy = srcRow < dstRow ? 1 : -1;
-            let err = dx - dy;
-            let c = srcCol;
-            let r = srcRow;
-            const maxSteps = dx + dy + 2;
-            for (let i = 0; i < maxSteps; i++) {
-              const e2 = err * 2;
-              if (e2 > -dy) {
-                err -= dy;
-                c += sx;
-              }
-              if (e2 < dx) {
-                err += dx;
-                r += sy;
-              }
-              if (c === dstCol && r === dstRow) return true;
-              const cell = floorRecord!.grid[r]?.[c];
-              if (cell?.obstructs) return false;
-            }
-            return false;
-          };
-          // Rule 1 — always-on party vision.
-          const partyRange =
-            this.partyLight && this.partyLight.range > 0
-              ? this.partyLight.range
-              : 1;
-          sources.push({
-            col: this.partyCol,
-            row: this.partyRow,
-            range: partyRange,
+          // All the math lives in `sim/lighting.ts` (shared with
+          // the overworld scene). We just consume the result and
+          // apply tints to cell images, source emitters, and any
+          // overlay sprites we track. Same input shape both scenes
+          // use, so the dungeon torch + overworld torch render
+          // identically.
+          const result = computeLighting({
+            grid: floorRecord!.grid as unknown as SimGrid,
+            party: { col: this.partyCol, row: this.partyRow },
+            partyLight: this.partyLight,
+            // Infravision renders red only when the party both
+            // *has* the ability AND has activated it. Either alone
+            // does nothing.
+            partyInfravisionActive:
+              this.partyHasInfravision && this.partyInfravisionActive,
+            mode: this.lightingMode,
           });
-          // Rule 2 — torches visible from the party. Iterate each
-          // cell once: a light-source cell with LOS to the party
-          // becomes a source AND keeps its emitter visible; a
-          // light-source cell without LOS gets its emitter hidden
-          // and doesn't contribute light.
-          for (let r = 0; r < floorRecord!.height; r++) {
-            for (let c = 0; c < floorRecord!.width; c++) {
-              const cell = floorRecord!.grid[r][c];
-              if (!cell.light_source || cell.light_range <= 0) continue;
-              const key = `${c},${r}`;
-              const visible = hasLOS(this.partyCol, this.partyRow, c, r);
-              const emitter = this.emitters.get(key);
-              if (emitter) emitter.setVisible(visible);
-              if (visible) {
-                sources.push({ col: c, row: r, range: cell.light_range });
-              }
-            }
-          }
-          // Per-cell tint pass. brightnessByKey captures the
-          // result so overlay sprites (roamers, placed encounters)
-          // can tint to match their underlying floor instead of
-          // popping bright.
-          const brightnessByKey = new Map<string, number>();
-          for (let r = 0; r < floorRecord!.height; r++) {
-            for (let c = 0; c < floorRecord!.width; c++) {
-              let brightness = ambient;
-              for (const s of sources) {
-                const dist = Math.max(
-                  Math.abs(c - s.col),
-                  Math.abs(r - s.row),
-                );
-                if (dist > s.range) continue;
-                if (!hasLOS(s.col, s.row, c, r)) continue;
-                const falloff = 1 - dist / (s.range + 1);
-                const lit = ambient + (1 - ambient) * falloff;
-                if (lit > brightness) brightness = lit;
-              }
-              const level = Math.max(
-                0,
-                Math.min(255, Math.floor(brightness * 255)),
-              );
-              const tint = (level << 16) | (level << 8) | level;
-              const key = `${c},${r}`;
-              brightnessByKey.set(key, level);
-              const img = this.cells.get(key);
-              if (img) {
-                if (level >= 255) img.clearTint();
-                else img.setTint(tint);
-              }
-            }
-          }
-          // Overlay sprites inherit their cell's brightness so a
-          // roamer in a dim corridor doesn't read like a spotlight.
-          const tintOverlay = (
+          // Per-sprite Phaser dispatch. `tintForCell` returns the
+          // tint value to apply; we always use multiply mode so
+          // mostly-black sprites (grass, water, etc.) stay mostly
+          // black and only their coloured detail pixels read as
+          // red in infravision — that lands closer to "heat
+          // vision" than a uniform red fill that hides every
+          // detail.
+          const applyTint = (
             img: Phaser.GameObjects.Image,
             col: number,
             row: number,
           ) => {
-            const level = brightnessByKey.get(`${col},${row}`);
-            if (level === undefined || level >= 255) {
-              img.clearTint();
-            } else {
-              img.setTint((level << 16) | (level << 8) | level);
-            }
+            const t = tintForCell(result, col, row);
+            if (t.mode === "clear") img.clearTint();
+            else img.setTint(t.value);
           };
-          for (const [id, img] of this.roamerSprites) {
-            void id;
+          // Cells.
+          for (const [key] of result.cells) {
+            const img = this.cells.get(key);
+            if (!img) continue;
+            const [cs, rs] = key.split(",");
+            applyTint(img, Number(cs), Number(rs));
+          }
+          // Emitter visibility — covers torch flames AND any
+          // decorative animation (fairy / smoke / fire) on cells
+          // the party can't actually see. Without this, particle
+          // emitters poke through the darkness because they
+          // render independent of the cell tint. The shared rule
+          // hides emitters on cells at ambient brightness OR
+          // infravision-red.
+          for (const [key, emitter] of this.emitters) {
+            const [cs, rs] = key.split(",");
+            emitter.setVisible(
+              emitterVisibleAt(result, Number(cs), Number(rs)),
+            );
+          }
+          // Roamer + placed-encounter overlays inherit their cell's
+          // render band so a monster in red territory reads as red.
+          const tintOverlay = (img: Phaser.GameObjects.Image) => {
             const col = Math.round((img.x - TILE_SIZE / 2) / TILE_SIZE);
             const row = Math.round((img.y - TILE_SIZE / 2) / TILE_SIZE);
-            tintOverlay(img, col, row);
-          }
-          for (const [id, img] of this.placedSprites) {
-            void id;
-            const col = Math.round((img.x - TILE_SIZE / 2) / TILE_SIZE);
-            const row = Math.round((img.y - TILE_SIZE / 2) / TILE_SIZE);
-            tintOverlay(img, col, row);
-          }
+            applyTint(img, col, row);
+          };
+          for (const img of this.roamerSprites.values()) tintOverlay(img);
+          for (const img of this.placedSprites.values()) tintOverlay(img);
         }
 
         setPartyAt(col: number, row: number) {
@@ -683,11 +643,17 @@ export function DungeonSimMount({
                 img.setTexture(sprite);
               }
             },
+            setPartyInfravisionActive: (active) => {
+              // The sim is the source of truth — push the flag
+              // into the scene's stored field via sceneRef so the
+              // next relight picks it up.
+              sceneRef.current?.setPartyInfravisionActive(active);
+            },
           };
 
           sim = new MapSimulation({
             grid,
-            party: partyForSim,
+            party: { ...partyForSim, infravision_active: infravisionActive },
             catalog: {
               characters: catalog.characters,
               races: catalog.races,
@@ -701,6 +667,7 @@ export function DungeonSimMount({
             bridge,
             startAt,
           });
+          simRef.current = sim;
           sim.subscribe((ev) => {
             if (ev.kind === "linked") {
               const target = ev.link.map_id;
@@ -736,6 +703,7 @@ export function DungeonSimMount({
       sim?.dispose();
       sim = null;
       sceneRef.current = null;
+      simRef.current = null;
       if (game) {
         game.destroy(true);
         game = null;
@@ -751,6 +719,23 @@ export function DungeonSimMount({
   useEffect(() => {
     sceneRef.current?.setLightingMode(darkness ? "night" : "day");
   }, [darkness]);
+
+  // Mirror the launcher's Infravision checkbox into the sim by
+  // way of `sim.setInfravisionActive` — which updates the
+  // canonical `party.infravision_active` field, signals the
+  // bridge, and re-runs the relight. We fall back to pushing
+  // directly to the scene ref when the sim isn't mounted yet
+  // (the bridge's initial-state push will still happen on
+  // construction, this is just for prop changes that arrive
+  // between renders).
+  useEffect(() => {
+    const sim = simRef.current;
+    if (sim) {
+      sim.setInfravisionActive(infravisionActive);
+    } else {
+      sceneRef.current?.setPartyInfravisionActive(infravisionActive);
+    }
+  }, [infravisionActive]);
 
   if (exited) {
     return (

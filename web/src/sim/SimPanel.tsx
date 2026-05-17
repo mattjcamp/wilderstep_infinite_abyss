@@ -89,6 +89,12 @@ export function SimPanel({
         <p className="font-mono text-xs text-parchment/80">
           torch: {snap.party.torch_steps} · galadriel: {snap.party.galadriels_light_steps}
         </p>
+        {snap.partyHasInfravision ? (
+          <p className="font-mono text-xs text-parchment/80">
+            infravision:{" "}
+            {snap.party.infravision_active ? "active" : "off"}
+          </p>
+        ) : null}
         <div className="mt-2 flex flex-wrap gap-2">
           <button
             type="button"
@@ -106,6 +112,23 @@ export function SimPanel({
           >
             Magic Light
           </button>
+          {/* Infravision is a passive race ability (Dwarf in the
+              default module). The button only appears when a roster
+              member has it; otherwise activation would do nothing. */}
+          {snap.partyHasInfravision ? (
+            <button
+              type="button"
+              onClick={() =>
+                sim.setInfravisionActive(!snap.party.infravision_active)
+              }
+              className="rounded border border-parchment/20 px-2 py-0.5 text-xs hover:bg-ink/50"
+              title="Engage / disengage the party's infravision. In-LOS cells beyond a real light source render in shades of red while active."
+            >
+              {snap.party.infravision_active
+                ? "Disengage Infravision"
+                : "Activate Infravision"}
+            </button>
+          ) : null}
         </div>
       </section>
 

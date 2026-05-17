@@ -1,7 +1,7 @@
 npm run dev:all
 
-- add to dungeon data model: list of treasures that can be placed for the dungeon/levels
-- implement infravision: tiles in darkness that are in LOL appear as shades of red 
+- make sure the dungeon chests are transparent and use the tile we have in the library
+- in a dark battle arena, infravision characters can see the unlit areas of the arena highlighted in red and they can target enemies.
 
 # V3 Ideas
 
