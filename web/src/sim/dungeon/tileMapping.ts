@@ -79,6 +79,13 @@ export interface DungeonTilePrototype {
   npc: string;
   flags?: Record<string, unknown>;
   link?: { map_id: string; x: number; y: number } | null;
+  /** Optional overlay sprite drawn ON TOP of the cell's base
+   *  sprite — used by "placed item" tiles (chests, etc.) so the
+   *  floor underneath shows through the sprite's transparent
+   *  pixels. The base sprite is the style's floor; this is the
+   *  thing sitting on it. When undefined / empty, the cell
+   *  renders as just its base. */
+  placedItemSprite?: string;
 }
 
 /** Build a fully-defaulted prototype with the supplied fields. Spread

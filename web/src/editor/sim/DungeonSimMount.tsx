@@ -256,6 +256,15 @@ export function DungeonSimMount({
 
       class DungeonScene extends Phaser.Scene {
         cells: Map<string, Phaser.GameObjects.Image> = new Map();
+        /** Placed-item overlay sprites keyed by "col,row". One per
+         *  cell whose tile carried `placedItemSprite` (chests
+         *  today; stairs/artifacts later if we extend the pattern).
+         *  Rendered at depth 70 — above the floor cell image,
+         *  below particle emitters (160) and roamers (250). */
+        placedItemSprites: Map<
+          string,
+          Phaser.GameObjects.Image
+        > = new Map();
         partySprite: Phaser.GameObjects.Image | null = null;
         roamerSprites: Map<string, Phaser.GameObjects.Image> = new Map();
         placedSprites: Map<string, Phaser.GameObjects.Image> = new Map();
@@ -352,6 +361,29 @@ export function DungeonSimMount({
                 .setOrigin(0)
                 .setDisplaySize(TILE_SIZE, TILE_SIZE);
               this.cells.set(`${c},${r}`, img);
+            }
+          }
+          // Placed-item overlays — one per cell whose `placedItemSprite`
+          // is set (chests, etc.). Anchored center, depth 70 so they
+          // sit above the floor cell image but below particles + the
+          // party/roamer/encounter sprites. The relight pass tints
+          // them through `placedItemSprites` so they inherit their
+          // cell's render band.
+          for (let r = 0; r < floorRecord!.height; r++) {
+            for (let c = 0; c < floorRecord!.width; c++) {
+              const cell = floorRecord!.grid[r][c];
+              const tex = cell.placedItemSprite;
+              if (!tex || !this.textures.exists(tex)) continue;
+              const img = this.add
+                .image(
+                  c * TILE_SIZE + TILE_SIZE / 2,
+                  r * TILE_SIZE + TILE_SIZE / 2,
+                  tex,
+                )
+                .setOrigin(0.5)
+                .setDisplaySize(TILE_SIZE, TILE_SIZE)
+                .setDepth(70);
+              this.placedItemSprites.set(`${c},${r}`, img);
             }
           }
           // Particle source texture — a 16×16 white circle that
@@ -482,6 +514,14 @@ export function DungeonSimMount({
           };
           for (const img of this.roamerSprites.values()) tintOverlay(img);
           for (const img of this.placedSprites.values()) tintOverlay(img);
+          // Chest / placed-item overlays — same rule. Tinted by
+          // the cell they sit on so a chest in a red corridor
+          // reads red, in a torchlit room reads grayscale, in
+          // darkness fades to near-invisible alongside the floor.
+          for (const [key, img] of this.placedItemSprites) {
+            const [cs, rs] = key.split(",");
+            applyTint(img, Number(cs), Number(rs));
+          }
         }
 
         setPartyAt(col: number, row: number) {

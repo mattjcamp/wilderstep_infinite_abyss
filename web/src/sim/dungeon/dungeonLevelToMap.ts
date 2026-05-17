@@ -24,7 +24,12 @@ import {
   TILE_FOREST_ARCHWAY_UP,
   TILE_WALL_TORCH,
 } from "@/v1battle/world/Tiles";
-import { TILE_STAIRS, TILE_STAIRS_DOWN } from "@/v1battle/world/Dungeon";
+import {
+  TILE_CHEST,
+  TILE_STAIRS,
+  TILE_STAIRS_DOWN,
+} from "@/v1battle/world/Dungeon";
+import { TILE_DFLOOR } from "@/v1battle/world/Tiles";
 import type { DungeonLevel, DungeonStyle } from "@/v1battle/world/Dungeon";
 import { prototypeForTileId, type DungeonTilePrototype } from "./tileMapping";
 
@@ -91,13 +96,31 @@ export function dungeonLevelToMap(
     const row: DungeonMapCell[] = [];
     for (let c = 0; c < renderWidth; c++) {
       const tileId = level.tiles[r]?.[c] ?? -1;
-      const proto = prototypeForTileId(tileId, style);
+      // Chests render as a "placed item" overlay on top of the
+      // style's floor, not as a cell whose own sprite is the chest
+      // art. With the chest sprite's background pixels alpha-zero,
+      // the floor shows through naturally — the chest reads as
+      // sitting on the floor, not floating in a void. Stairs and
+      // other "placed" things could follow this same pattern
+      // later; today only chests get it.
+      const isChest = tileId === TILE_CHEST;
+      const lookupId = isChest ? TILE_DFLOOR : tileId;
+      const proto = prototypeForTileId(lookupId, style);
       // Fallback to a wall when the generator emitted an unmapped
       // tile id — safer than a walkable floor since we don't know
       // what the cell was supposed to be.
       const base: DungeonMapCell = proto
         ? cloneProto(proto)
         : cloneProto(prototypeForTileId(0, style) ?? FALLBACK_WALL);
+      if (isChest) {
+        // Identity bits carry over so the rest of the system can
+        // tell "this is a chest cell" — walkability stays true (the
+        // party can step onto a chest to interact), the sprite
+        // stays the floor's, and an overlay carries the chest art.
+        base.id = "chest";
+        base.name = "Chest";
+        base.placedItemSprite = "map/chest_tile.png";
+      }
       patchStairsLink(base, tileId, dungeonId, floorIdx, totalFloors);
       patchTileProperties(base, level, c, r);
       patchDecoration(base, level, c, r, style);
