@@ -163,21 +163,41 @@ export function dungeonLevelToMap(
 /** Roll-up summary of every placed encounter on a floor. Hosts pass
  *  this into the simulator's encounter catalog so each
  *  `__dungeon_enc_*__` id the cells reference resolves to a real
- *  roster. The host owns the encounter monster names; this helper
- *  just hands back the (id, name, monsters[]) tuples in one pass.
+ *  roster.
+ *
+ *  When `monsterSpriteById` is supplied, the helper resolves each
+ *  lead monster's id (the generator stores it as `DungeonMonster.name`
+ *  — really a monster_party_tile id, not a display name) to its
+ *  sprite path. That populates `monster_party_tile` on the result
+ *  so the placed-encounter renderer in DungeonSimMount draws the
+ *  real monster sprite instead of falling back to the red marker.
+ *
  *  Pure — no dependency on the simulator types. */
-export function dungeonEncounterRefs(level: DungeonLevel): Array<{
+export function dungeonEncounterRefs(
+  level: DungeonLevel,
+  monsterSpriteById?: ReadonlyMap<string, string | undefined>,
+): Array<{
   id: string;
   name: string;
+  monster_party_tile?: string;
   monsters: string[];
 }> {
-  return level.monsters.map((m) => ({
-    id: `__dungeon_enc_${m.id}__`,
-    name: m.encounterName,
-    monsters: m.encounterNames.length > 0
-      ? [...m.encounterNames]
-      : [m.name],
-  }));
+  return level.monsters.map((m) => {
+    const leadId = m.name;
+    const spritePath = monsterSpriteById?.get(leadId);
+    return {
+      id: `__dungeon_enc_${m.id}__`,
+      name: m.encounterName,
+      // `monster_party_tile` carries the SPRITE PATH (e.g.
+      // "monster/giant_rat.png") that the renderer uses as a
+      // Phaser texture key. The v2 encounter record's same-named
+      // field stores a monster id; we resolve it here.
+      monster_party_tile: spritePath,
+      monsters: m.encounterNames.length > 0
+        ? [...m.encounterNames]
+        : [m.name],
+    };
+  });
 }
 
 // ── internals ──────────────────────────────────────────────────────

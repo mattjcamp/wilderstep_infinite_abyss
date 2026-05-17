@@ -185,6 +185,7 @@ export function combatantFromMember(
     // Shadow Step reads class + level. Stamped here so the Combat
     // engine doesn't have to reach back into the PartyMember.
     charClass: member.class,
+    race: member.race,
     level: member.level,
     weaponName: stats.weaponName,
     weaponBonusDamage: equippedWeapon?.bonus_damage,

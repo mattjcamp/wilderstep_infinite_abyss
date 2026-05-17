@@ -25,11 +25,16 @@
         {
           "id": "the_hole_l2",
           "name": "Level 2",
-          "depth": 2
+          "depth": 2,
+          "size": {
+            "width": 64,
+            "height": 64
+          },
+          "difficulty": "deadly"
         }
       ],
-      "torch_density": 0.05,
-      "locked_doors": 0.1,
+      "torch_density": 0.75,
+      "locked_doors": 1,
       "style": "ruins"
     }
   ]

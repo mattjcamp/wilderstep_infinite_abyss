@@ -34,6 +34,7 @@ export function BattleSimV1Mount({
   monsterIds,
   arenaCells,
   darkness,
+  partyInfravisionActive,
 }: {
   moduleId: string;
   monsterIds?: readonly string[];
@@ -43,6 +44,10 @@ export function BattleSimV1Mount({
    *  the active party member) to "punch" pools of light. Off keeps the
    *  legacy fully-bright look. */
   darkness?: boolean;
+  /** When true (and darkness is on), the active party's infravision
+   *  ability paints in-LOS dark cells red and makes them targetable.
+   *  Inert when `darkness` is false. */
+  partyInfravisionActive?: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -117,6 +122,7 @@ export function BattleSimV1Mount({
                   ? arenaCells.map((row) => [...row])
                   : undefined,
                 darkness: !!darkness,
+                partyInfravisionActive: !!partyInfravisionActive,
               },
             );
           },

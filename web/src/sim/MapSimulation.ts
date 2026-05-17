@@ -408,6 +408,13 @@ export interface SimSnapshot {
    *  no ability holders → the activation button is hidden, since
    *  there's no one in the party who could engage it. */
   partyHasInfravision: boolean;
+  /** Live mutation state, exposed so long-lived hosts (dungeon
+   *  sessions) can snapshot and write back to their store on each
+   *  state event. Sets are exposed as ReadonlySet — the host
+   *  should clone before storing if it intends to mutate. */
+  unlockedCells: ReadonlySet<string>;
+  defeatedEncounters: ReadonlySet<string>;
+  destroyedLairs: ReadonlySet<string>;
 }
 
 export interface MapSimulationOptions {
@@ -422,6 +429,23 @@ export interface MapSimulationOptions {
    *  party.start_position. The editor passes this when entering a
    *  map via a link (entryCol/entryRow from the previous map). */
   startAt?: Position;
+  /** Pre-populated unlocked-cell set — `"col,row"` keys from a
+   *  prior session on this same grid. Used by long-lived hosts
+   *  (dungeon sessions) so a door the party picked stays open
+   *  after leaving + returning to the floor. Optional; default
+   *  empty. */
+  initialUnlockedCells?: ReadonlySet<string>;
+  /** Pre-populated defeated-encounter set — `"col,row"` source
+   *  cells whose placed encounter has already been resolved.
+   *  Filters the placed-encounter seed pass so a re-mount of the
+   *  same floor doesn't respawn already-killed enemies. Optional;
+   *  default empty. */
+  initialDefeatedEncounters?: ReadonlySet<string>;
+  /** Pre-populated destroyed-lair set — `"col,row"` keys of
+   *  Monster Spawn cells that have been cleared in a previous
+   *  session. Used by overworld re-mounts so a destroyed lair
+   *  stays quiet. Default empty. */
+  initialDestroyedLairs?: ReadonlySet<string>;
 }
 
 /** The simulation controller. One per active sim session; mounted by
@@ -454,8 +478,13 @@ export class MapSimulation {
    *  inside `isCellLocked` so the lock encounter doesn't re-fire
    *  every time the party steps near the same door. We keep the
    *  original grid untouched — exiting the simulator returns the
-   *  map to its authored state. */
-  private readonly unlockedCells = new Set<string>();
+   *  map to its authored state.
+   *
+   *  Seeded from `MapSimulationOptions.initialUnlockedCells` so a
+   *  host (like a long-lived dungeon session) can re-mount the
+   *  same floor without forgetting which doors were already
+   *  picked. */
+  private readonly unlockedCells: Set<string>;
   /** Live lock encounter while the dialog is up. Cleared by
    *  `attemptPickLock` (on success or failure-with-charge-consumed),
    *  `attemptKnock`, or `dismissLock`. */
@@ -477,13 +506,17 @@ export class MapSimulation {
   private placedEncounters: SimPlacedEncounter[] = [];
   /** Cells where the party has defeated the boss and destroyed the
    *  lair. Looked up in the spawn pass + boss-trigger path so a
-   *  destroyed cell never fires again. Persisted across the session
-   *  only — leaving the simulator restores the original grid. */
-  private readonly destroyedLairs = new Set<string>();
+   *  destroyed cell never fires again. Seeded from
+   *  `MapSimulationOptions.initialDestroyedLairs` so a long-lived
+   *  host can re-mount the map without re-spawning a cleared lair. */
+  private readonly destroyedLairs: Set<string>;
   /** "col,row" keys of placed-encounter cells whose entity has been
    *  defeated. The cell overlay suppression set folds these in so
-   *  the static encounter sprite stays hidden after victory. */
-  private readonly defeatedEncounters = new Set<string>();
+   *  the static encounter sprite stays hidden after victory.
+   *  Seeded from `MapSimulationOptions.initialDefeatedEncounters`
+   *  so the placed-encounter pass at construction skips already-
+   *  killed entities. */
+  private readonly defeatedEncounters: Set<string>;
   /** In-flight spawn encounter while the overlay is up. Cleared by
    *  `resolveSpawnEncounter`. */
   private pendingSpawn: SpawnEncounterOptions | null = null;
@@ -509,14 +542,24 @@ export class MapSimulation {
       (opts.catalog.encounters ?? []).map((e) => [e.id, e]),
     );
     this.groundTile = opts.catalog.groundTile;
+    // Mutation state — seeded from per-session options so a host
+    // remounting the same grid (e.g. dungeon floor revisits)
+    // resumes where it left off. Cloned into new Sets so the
+    // caller's references stay theirs to mutate.
+    this.unlockedCells = new Set(opts.initialUnlockedCells ?? []);
+    this.destroyedLairs = new Set(opts.initialDestroyedLairs ?? []);
+    this.defeatedEncounters = new Set(opts.initialDefeatedEncounters ?? []);
     // Seed placed-encounter entities. Each painted encounter cell
     // spawns one roaming entity at the cell's coords. They start
-    // there and march toward the party every step.
+    // there and march toward the party every step. Defeated cells
+    // (from a prior session) are excluded so the entity doesn't
+    // re-spawn after a re-mount.
     this.placedEncounters = findPlacedEncounters(
       opts.grid as unknown as ReadonlyArray<
         ReadonlyArray<SpawnCellInfo | null | undefined>
       >,
       this.encounterCatalog,
+      this.defeatedEncounters,
     );
     // Cache race id → name so SimPanel can display "Human" rather than
     // "human" without a lookup helper.
@@ -1256,7 +1299,9 @@ export class MapSimulation {
   }
 
   /** Snapshot of state the panel UI renders. Always fresh — no
-   *  caching, the underlying data is tiny. */
+   *  caching, the underlying data is tiny. The mutation sets
+   *  alias the kernel's internal Sets (cheap) — hosts persisting
+   *  them across mounts should clone first. */
   snapshot(): SimSnapshot {
     return {
       pos: { ...this.pos },
@@ -1266,6 +1311,9 @@ export class MapSimulation {
       classNameById: this.classNameById,
       raceNameById: this.raceNameById,
       partyHasInfravision: this.partyHasInfravision(),
+      unlockedCells: this.unlockedCells,
+      defeatedEncounters: this.defeatedEncounters,
+      destroyedLairs: this.destroyedLairs,
     };
   }
 

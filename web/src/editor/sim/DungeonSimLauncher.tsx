@@ -24,9 +24,24 @@ import { mergeModel } from "@/data_model/merge";
 import { StaticModuleSource } from "@/data_model/StaticModuleSource";
 import { dungeonSeed } from "@/v1battle/world/Dungeon";
 import {
+  _clearEncountersCache,
+  loadEncounters,
+  type EncounterTemplate,
+} from "@/v1battle/world/Encounters";
+import {
+  _clearMonstersCache,
+  loadMonsters,
+  type MonsterSpec,
+} from "@/v1battle/data/monsters";
+import { setActiveModule } from "@/v1battle/world/Module";
+import {
   generateDungeonFromRecord,
   resolveLevelOptions,
 } from "@/sim/dungeon/generateFromRecord";
+import {
+  clearDungeonSession,
+  getOrCreateDungeonSession,
+} from "@/sim/dungeon/dungeonSession";
 import type { DungeonRecord } from "@/sim/dungeon/types";
 import { DungeonSimMount } from "./DungeonSimMount";
 
@@ -67,6 +82,19 @@ export function DungeonSimLauncher({ moduleId }: { moduleId: string }) {
   // by another source). Off by default; engaging it without an
   // eligible roster member is a no-op on the sim side.
   const [infravisionActive, setInfravisionActive] = useState<boolean>(false);
+  // Encounters table + monsters catalog — loaded once per module
+  // mount. The generator samples encounters per non-entrance room
+  // (`sampleEncounter` inside v1's `placeRandomEncounters`), and
+  // the monsters catalog provides both the per-monster difficulty
+  // tier (so a "normal" dungeon doesn't pull in "hard" monsters
+  // through a mixed roster) and the sprite paths the placed-
+  // encounter renderer hands to Phaser.
+  const [encountersTable, setEncountersTable] = useState<
+    Record<string, EncounterTemplate[]>
+  >({});
+  const [monstersCatalog, setMonstersCatalog] = useState<
+    Map<string, MonsterSpec>
+  >(() => new Map());
 
   // Load the dungeons catalog (no draft awareness — we read the
   // published file). Authors who want to iterate on a draft hit
@@ -76,7 +104,23 @@ export function DungeonSimLauncher({ moduleId }: { moduleId: string }) {
     (async () => {
       try {
         const src = new StaticModuleSource();
-        const layers = await src.loadModelLayers(moduleId, "dungeons");
+        // Pin the v1battle loaders at this module + flush their
+        // module-scoped caches so a swap to a different module
+        // doesn't see stale encounters / monsters.
+        setActiveModule(moduleId);
+        _clearEncountersCache();
+        _clearMonstersCache();
+        // Three catalogs in parallel:
+        //   - dungeons.json (v2 records) — the picker reads these
+        //   - encounters.json (v1battle loader, area-bucketed) —
+        //     the generator samples from `encounters.dungeon`
+        //   - monsters.json (v1battle loader) — supplies
+        //     per-monster difficulty tier + sprite paths
+        const [layers, encs, mons] = await Promise.all([
+          src.loadModelLayers(moduleId, "dungeons"),
+          loadEncounters().catch(() => ({}) as Record<string, EncounterTemplate[]>),
+          loadMonsters().catch(() => new Map<string, MonsterSpec>()),
+        ]);
         const merged = mergeModel(
           "dungeons",
           layers.inherited,
@@ -85,6 +129,8 @@ export function DungeonSimLauncher({ moduleId }: { moduleId: string }) {
         if (cancelled) return;
         const list = merged?.dungeons ?? [];
         setDungeons(list);
+        setEncountersTable(encs);
+        setMonstersCatalog(mons);
         if (list.length > 0) {
           setSelectedId((prev) => prev || list[0].id);
         }
@@ -103,13 +149,13 @@ export function DungeonSimLauncher({ moduleId }: { moduleId: string }) {
     [dungeons, selectedId],
   );
 
-  // Generate every floor of the selected dungeon by reading the v2
-  // record directly. The wrapper passes raw `size.width` /
-  // `size.height` through to the generator and merges per-Level
-  // overrides on top of the parent's defaults — see
-  // `generateDungeonFromRecord`. The seed prefers the user's
-  // override; otherwise we derive a stable one from the dungeon id
-  // so re-mounts reproduce the layout.
+  // Pull levels out of the dungeon-session store. The session is
+  // created on first entry and reused for every subsequent mount
+  // — re-entering the same dungeon (overworld → entrance → back
+  // → entrance) shows the SAME generated layout with whatever
+  // mutations (defeated encounters, picked locks, etc.) the party
+  // accumulated. The session is keyed by dungeon id; a new seed
+  // (manual override) is treated as a fresh roll.
   const generated = useMemo(() => {
     if (!selected || !started) return null;
     const seed =
@@ -117,9 +163,21 @@ export function DungeonSimLauncher({ moduleId }: { moduleId: string }) {
         ? Number.parseInt(seedOverride, 10) >>> 0
         : dungeonSeed(selected.id, 0, 0);
     if (!Number.isFinite(seed)) return null;
-    const levels = generateDungeonFromRecord(selected, { seed });
-    return { dungeon: selected, levels };
-  }, [selected, started, seedOverride]);
+    const session = getOrCreateDungeonSession(selected.id, seed, () => {
+      // monsterDifficulty closure — looks up the per-monster
+      // difficulty tag so `sampleEncounter` can prune rosters
+      // that mix tiers. Captured into the closure to avoid
+      // passing the catalog through the API surface.
+      const monsterDifficulty = (id: string): string | undefined =>
+        monstersCatalog.get(id)?.difficulty;
+      return generateDungeonFromRecord(selected, {
+        seed,
+        encounters: encountersTable,
+        monsterDifficulty,
+      });
+    });
+    return { dungeon: selected, levels: session.levels };
+  }, [selected, started, seedOverride, encountersTable, monstersCatalog]);
 
   const totalFloors = generated?.levels.length ?? 0;
   const clampedFloor = totalFloors > 0
@@ -236,6 +294,15 @@ export function DungeonSimLauncher({ moduleId }: { moduleId: string }) {
         <button
           type="button"
           onClick={() => {
+            // "Regenerate" explicitly clears the session for the
+            // picked dungeon so the next mount rolls a fresh
+            // layout. Without this the store would keep handing
+            // back the same generated levels (the design goal —
+            // dungeons are rolled once per game) and the button
+            // would be a no-op past the first click.
+            if (started && selected) {
+              clearDungeonSession(selected.id);
+            }
             setStarted((v) => !v);
           }}
           disabled={!selected}

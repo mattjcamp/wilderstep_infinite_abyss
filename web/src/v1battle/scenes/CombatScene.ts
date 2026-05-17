@@ -67,6 +67,7 @@ import { loadClass, loadRaces, type ClassTemplate } from "../world/Classes";
 import type { ArenaCellInfo } from "../world/Maps";
 import {
   brightnessAt,
+  hasLineOfSight,
   type LightSource,
   PARTY_LIGHT_RADIUS,
 } from "../world/Lighting";
@@ -210,6 +211,16 @@ interface CombatSceneData {
    * pass this flag.
    */
   darkness?: boolean;
+  /**
+   * When true the party is treated as if their infravision ability
+   * is currently engaged. Only matters in darkness mode: cells the
+   * party has Bresenham LOS to but no light source reaches are
+   * highlighted in red (infravision "sees" the heat) AND become
+   * targetable by the action picker. Outside darkness mode the
+   * flag is inert. Defaults to false — infravision is opt-in even
+   * for parties whose members have the race trait.
+   */
+  partyInfravisionActive?: boolean;
 }
 
 // ── Debug cheats ──────────────────────────────────────────────────
@@ -355,6 +366,29 @@ export class CombatScene extends Phaser.Scene {
    *  light_source cells (plus a party self-light) to "punch" pools of
    *  light. Comes from CombatSceneData.darkness. */
   private darkness = false;
+  /** When true AND in darkness mode, infravision-augmented vision
+   *  applies — but only on turns where the active actor's race
+   *  grants the ability. The flag is the player-controlled global
+   *  switch (matches the overworld / dungeon activation); the
+   *  per-turn gate is `infravisionRaces` below.
+   *
+   *  Comes from CombatSceneData.partyInfravisionActive. Has no
+   *  effect when `darkness` is false; bright fights ignore it. */
+  private partyInfravisionActive = false;
+  /** Set of race ids that grant the `infravision` ability — read
+   *  from races.json once at scene boot. The render path consults
+   *  this against the *active actor's* race so the effect only
+   *  applies on the Dwarf's turn (or whichever races authoring
+   *  flags). Empty set means no race grants the ability for this
+   *  fight, which silently disables the infravision pass. */
+  private infravisionRaces: Set<string> = new Set();
+  /** Separate Graphics layer that paints the infravision red
+   *  rectangles in MULTIPLY blend mode — so the underlying floor
+   *  texture's coloured detail pixels show through as red (the
+   *  same look the dungeon / overworld get from `setTint`). Kept
+   *  apart from `darknessGfx` because the black darkness overlay
+   *  uses normal alpha blending. */
+  private infravisionGfx: Phaser.GameObjects.Graphics | null = null;
   /** Static light sources collected from `arenaCells` at create time.
    *  Empty while `darkness` is off. Per-source the radius comes from
    *  the cell's `lightRange`, falling back to Lighting.ts's default. */
@@ -482,6 +516,7 @@ export class CombatScene extends Phaser.Scene {
     this.silent = !!data?.silent;
     this.arenaCells = data?.arenaCells ?? null;
     this.darkness = !!data?.darkness;
+    this.partyInfravisionActive = !!data?.partyInfravisionActive;
     this.staticLights = [];
     this.triggerKey = data?.triggerKey ?? null;
     this.terrainTileId = data?.terrainTileId ?? null;
@@ -518,6 +553,10 @@ export class CombatScene extends Phaser.Scene {
     if (this.darknessGfx) {
       this.darknessGfx.destroy();
       this.darknessGfx = null;
+    }
+    if (this.infravisionGfx) {
+      this.infravisionGfx.destroy();
+      this.infravisionGfx = null;
     }
     // Party cards previously got `.clear()`'d but their child
     // GameObjects (hp bar, hp text, mp bar, mp text) were left to
@@ -648,6 +687,24 @@ export class CombatScene extends Phaser.Scene {
           try { this.classTemplates.set(k.toLowerCase(), await loadClass(k)); }
           catch { /* keep going — DEFAULT_MOVE_RANGE applies */ }
         }));
+      }
+      // Races map — used by the infravision render to decide
+      // whether the current active actor's race grants the
+      // ability. Loaded once at scene boot; falls back to an
+      // empty map so a missing races.json silently disables the
+      // ability check rather than crashing the fight.
+      try {
+        const races = await loadRaces();
+        const infraIds = new Set<string>();
+        for (const [id, race] of races) {
+          if ((race.abilities ?? []).includes("infravision")) {
+            infraIds.add(id);
+          }
+        }
+        this.infravisionRaces = infraIds;
+      } catch {
+        // Leave the default empty set — no race grants
+        // infravision in the active fight.
       }
       // Spawn-tile fights use catalog names; warm the loader so
       // makeMonsterByName resolves stats / sprites correctly.
@@ -1024,6 +1081,17 @@ export class CombatScene extends Phaser.Scene {
       }
       this.staticLights = lights;
       this.darknessGfx = this.add.graphics().setDepth(20);
+      // Sibling Graphics for the infravision red. MULTIPLY blend
+      // means a red rectangle drawn here multiplies the underlying
+      // floor pixel by red — black stays black, coloured floor
+      // detail pixels surface as red specks. Same visual model as
+      // the dungeon scene's `setTint` on per-cell Images, applied
+      // here on a single Graphics rather than per-Image (the
+      // arena bakes the floor into a RenderTexture). Depth 21
+      // sits just above the black darkness fill so red rectangles
+      // composite over any partial darkness at the same cell.
+      this.infravisionGfx = this.add.graphics().setDepth(21);
+      this.infravisionGfx.setBlendMode(Phaser.BlendModes.MULTIPLY);
       this.refreshDarkness();
     }
   }
@@ -1056,9 +1124,41 @@ export class CombatScene extends Phaser.Scene {
         ? cur.position
         : this.combat?.combatants.find((c) => c.side === "party" && c.hp > 0)
             ?.position ?? { col: 1, row: 1 };
-    return brightnessAt(
+    const lit = brightnessAt(
       col, row, this.staticLights, partyAnchor, PARTY_LIGHT_RADIUS,
     ) > 0;
+    if (lit) return true;
+    // Infravision band — a cell in the active actor's LOS is
+    // targetable when (a) the activation toggle is on AND (b) the
+    // active actor's race grants the ability. Other actors don't
+    // share the dwarf's heat vision; their turns see only the
+    // standard lit cells.
+    const infravisionOn =
+      this.partyInfravisionActive &&
+      !!cur &&
+      cur.side === "party" &&
+      cur.hp > 0 &&
+      !!cur.race &&
+      this.infravisionRaces.has(cur.race);
+    if (infravisionOn) {
+      const isBlocking = (c: number, r: number): boolean => {
+        if (isWall(c, r)) return true;
+        const cell = this.arenaCells?.[r]?.[c];
+        return cell?.obstructs === true;
+      };
+      if (
+        hasLineOfSight(
+          partyAnchor.col,
+          partyAnchor.row,
+          col,
+          row,
+          isBlocking,
+        )
+      ) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**
@@ -1077,18 +1177,41 @@ export class CombatScene extends Phaser.Scene {
   private refreshDarkness(): void {
     if (!this.darkness || !this.darknessGfx) return;
     const g = this.darknessGfx;
+    const ig = this.infravisionGfx;
     g.clear();
+    ig?.clear();
     // Anchor the party self-light on the active actor when they're on
     // the party side; otherwise centre it on whichever party member is
     // alive so monsters' turns don't strand the player in the dark.
+    const cur = this.combat?.current;
     const partyAnchor = (() => {
-      const cur = this.combat?.current;
       if (cur && cur.side === "party" && cur.hp > 0) return cur.position;
       const fallback = this.combat?.combatants.find(
         (c) => c.side === "party" && c.hp > 0,
       );
       return fallback ? fallback.position : { col: 1, row: 1 };
     })();
+    // Infravision applies ONLY when the active actor is a party
+    // member whose race grants the ability AND the player has
+    // engaged it via the launcher's Infravision toggle. Other
+    // characters' turns (Selina, Pippin, Elminster) and monster
+    // turns get pure darkness — they don't see in the dark.
+    const infravisionOn =
+      this.partyInfravisionActive &&
+      !!cur &&
+      cur.side === "party" &&
+      cur.hp > 0 &&
+      !!cur.race &&
+      this.infravisionRaces.has(cur.race);
+    // Predicate for `hasLineOfSight` — walls and `arenaCells`
+    // obstructs entries block the Bresenham walk. Used by the
+    // infravision pass to decide which dark cells the active
+    // actor can actually "feel" the heat through.
+    const isBlocking = (col: number, row: number): boolean => {
+      if (isWall(col, row)) return true;
+      const cell = this.arenaCells?.[row]?.[col];
+      return cell?.obstructs === true;
+    };
     const MAX_DARKNESS = 0.92;
     for (let r = 0; r < ARENA_ROWS; r++) {
       for (let c = 0; c < ARENA_COLS; c++) {
@@ -1098,6 +1221,30 @@ export class CombatScene extends Phaser.Scene {
         const b = brightnessAt(
           c, r, this.staticLights, partyAnchor, PARTY_LIGHT_RADIUS,
         );
+        // Infravision band — cell is dark (no light source reached
+        // it) but the active actor has LOS to it. Painted on the
+        // sibling `infravisionGfx` which uses MULTIPLY blend, so
+        // the underlying floor's coloured detail pixels surface as
+        // red (matches the dungeon's `setTint(0xff0000)` look —
+        // black sprite pixels stay black, green specks become red
+        // specks). The black-darkness pass is skipped for these
+        // cells; the multiply red effectively replaces it.
+        if (
+          infravisionOn &&
+          b <= 0.001 &&
+          ig &&
+          hasLineOfSight(
+            partyAnchor.col,
+            partyAnchor.row,
+            c,
+            r,
+            isBlocking,
+          )
+        ) {
+          ig.fillStyle(0xff0000, 1);
+          ig.fillRect(ARENA_X + c * TILE, ARENA_Y + r * TILE, TILE, TILE);
+          continue;
+        }
         const alpha = (1 - b) * MAX_DARKNESS;
         if (alpha <= 0.001) continue;
         g.fillStyle(0x000000, alpha);

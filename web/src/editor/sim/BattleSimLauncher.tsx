@@ -32,6 +32,13 @@ export function BattleSimLauncher({ moduleId }: { moduleId: string }) {
    *  around the active party member) read as lit. Off by default so
    *  existing arenas keep their fully-bright look. */
   const [darkness, setDarkness] = useState<boolean>(false);
+  /** Infravision toggle — opt-in switch matching the dungeon
+   *  simulator. When on (and `darkness` is on), in-LOS dark cells
+   *  in the arena render as red overlays and become targetable.
+   *  Off keeps the legacy combat behaviour. Restarts the in-flight
+   *  fight on change, same as `darkness`. */
+  const [partyInfravisionActive, setPartyInfravisionActive] =
+    useState<boolean>(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   // Pin loaders to the picked module + reset all three caches when
@@ -293,6 +300,22 @@ export function BattleSimLauncher({ moduleId }: { moduleId: string }) {
           Darkness
         </label>
 
+        <label
+          className="mt-[18px] flex cursor-pointer items-center gap-2 rounded border border-parchment/20 bg-ink/40 px-2 py-1 text-sm text-parchment/80 hover:bg-ink/60"
+          title="Engage the party's infravision ability in the arena. Only matters when Darkness is on: dark cells the party has line-of-sight to are highlighted in red and become targetable. Has no effect when no party member has the ability."
+        >
+          <input
+            type="checkbox"
+            checked={partyInfravisionActive}
+            onChange={(e) => {
+              setPartyInfravisionActive(e.target.checked);
+              restartIfRunning();
+            }}
+            className="accent-ember"
+          />
+          Infravision
+        </label>
+
         <button
           ref={startBtnRef}
           type="button"
@@ -333,11 +356,12 @@ export function BattleSimLauncher({ moduleId }: { moduleId: string }) {
         // arena. `selectedMap?.id ?? ""` keeps the key stable when no
         // map is picked.
         <BattleSimV1Mount
-          key={`${started}:${selected.id}:${selectedMap?.id ?? ""}:${darkness ? "dark" : "light"}`}
+          key={`${started}:${selected.id}:${selectedMap?.id ?? ""}:${darkness ? "dark" : "light"}:${partyInfravisionActive ? "ir" : "noir"}`}
           moduleId={moduleId}
           monsterIds={selected.monsters}
           arenaCells={arenaCells}
           darkness={darkness}
+          partyInfravisionActive={partyInfravisionActive}
         />
       ) : (
         <p className="text-sm text-parchment/45">

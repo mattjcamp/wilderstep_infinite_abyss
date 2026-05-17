@@ -30,6 +30,11 @@ export interface Combatant {
    *  combatants and legacy test fixtures omit it. Read by class-
    *  gated mechanics like Thief Backstab + Shadow Step. */
   charClass?: string;
+  /** Race id (snake_case) — references races.json. Stamped from
+   *  the PartyMember for party-side combatants. Optional for
+   *  monsters and legacy fixtures. Read by race-gated rendering
+   *  like the infravision overlay (Dwarf only). */
+  race?: string;
   /** Character level, used by class-gated ability cutoffs
    *  (Backstab @ 3+, Shadow Step @ 7+, Ranger Pick Locks @ 3+).
    *  Optional for the same reason as `charClass`. */

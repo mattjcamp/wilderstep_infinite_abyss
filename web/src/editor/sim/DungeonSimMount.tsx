@@ -33,7 +33,12 @@ import { TILE_STAIRS_DOWN } from "@/v1battle/world/Dungeon";
 import { TILE_FOREST_ARCHWAY_UP, TILE_FOREST_ARCHWAY_DOWN } from "@/v1battle/world/Tiles";
 import { mergeModel } from "@/data_model/merge";
 import { StaticModuleSource } from "@/data_model/StaticModuleSource";
-import { MapSimulation, type SceneBridge } from "@/sim/MapSimulation";
+import {
+  MapSimulation,
+  type LockEncounterOptions,
+  type SceneBridge,
+} from "@/sim/MapSimulation";
+import { LockDialogOverlay } from "@/editor/LockDialogOverlay";
 import {
   dungeonEncounterRefs,
   dungeonLevelToMap,
@@ -42,6 +47,11 @@ import {
 } from "@/sim/dungeon/dungeonLevelToMap";
 import { DUNGEON_SPRITE_KEYS } from "@/sim/dungeon/tileMapping";
 import {
+  getFloorMutations,
+  peekDungeonSession,
+  writeFloorMutations,
+} from "@/sim/dungeon/dungeonSession";
+import {
   computeLighting,
   emitterVisibleAt,
   tintForCell,
@@ -49,12 +59,14 @@ import {
 import { ANIMATION_CONFIGS } from "@/sim/tileAnimations";
 import type {
   SimCharacter,
+  SimCharacterClass,
   SimEncounterRef,
   SimGrid,
   SimLightSource,
   SimMonsterRef,
   SimParty,
   SimRace,
+  SimSpell,
 } from "@/sim/types";
 
 const TILE_SIZE = 32;
@@ -98,6 +110,19 @@ export function DungeonSimMount({
   const router = useRouter();
   const [floorIdx, setFloorIdx] = useState(initialFloorIdx);
   const [exited, setExited] = useState(false);
+  /** Lock-dialog state — populated by the sim's `lock_encountered`
+   *  event when the party bumps a locked cell (interior doors the
+   *  generator placed via `placeLockedDoors`). Cleared when the
+   *  user picks/knocks the lock or dismisses the dialog. */
+  const [lockEncounter, setLockEncounter] =
+    useState<LockEncounterOptions | null>(null);
+  /** Mirrors any open dialog into a ref so the keyboard bridge can
+   *  gate movement without re-binding the listener on every state
+   *  change. Same pattern MapEditor uses. */
+  const overlaysOpenRef = useRef(false);
+  useEffect(() => {
+    overlaysOpenRef.current = !!lockEncounter;
+  }, [lockEncounter]);
   /** Active Phaser scene — captured on create() so the React side
    *  can push prop updates (lighting mode toggles, infravision
    *  activation) without rebuilding the whole game. Cleared in
@@ -123,12 +148,16 @@ export function DungeonSimMount({
     router.push(url);
   }, [exited, returnTo, moduleId, router]);
   // Catalogs loaded once at mount — needed for the sim's roamer
-  // sprite resolution and encounter rosters.
+  // sprite resolution, encounter rosters, AND the locked-door
+  // dialog (character_classes for Knock-spell caster eligibility,
+  // the Knock spell record itself for cost / DC).
   const [catalog, setCatalog] = useState<{
     party: SimParty | null;
     characters: SimCharacter[];
     races: SimRace[];
     monsters: SimMonsterRef[];
+    classes: SimCharacterClass[];
+    knockSpell: SimSpell | null;
   } | null>(null);
 
   // Load the sim catalogs once. The dungeon tester doesn't need
@@ -139,13 +168,23 @@ export function DungeonSimMount({
     let cancelled = false;
     (async () => {
       const src = new StaticModuleSource();
-      const [partyLayers, charLayers, raceLayers, monsterLayers] =
-        await Promise.all([
-          src.loadModelLayers(moduleId, "party").catch(() => null),
-          src.loadModelLayers(moduleId, "characters").catch(() => null),
-          src.loadModelLayers(moduleId, "races").catch(() => null),
-          src.loadModelLayers(moduleId, "monsters").catch(() => null),
-        ]);
+      const [
+        partyLayers,
+        charLayers,
+        raceLayers,
+        monsterLayers,
+        classLayers,
+        spellLayers,
+      ] = await Promise.all([
+        src.loadModelLayers(moduleId, "party").catch(() => null),
+        src.loadModelLayers(moduleId, "characters").catch(() => null),
+        src.loadModelLayers(moduleId, "races").catch(() => null),
+        src.loadModelLayers(moduleId, "monsters").catch(() => null),
+        // Classes + spells back the locked-door Knock dialog.
+        // Non-fatal — without them only the Pick Lock row appears.
+        src.loadModelLayers(moduleId, "character_classes").catch(() => null),
+        src.loadModelLayers(moduleId, "spells").catch(() => null),
+      ]);
       if (cancelled) return;
       const party =
         partyLayers
@@ -178,6 +217,25 @@ export function DungeonSimMount({
             monsters?: Array<{ id: string; name?: string; sprite?: string }>;
           } | null)
         : null;
+      const classesMerged = classLayers
+        ? (mergeModel(
+            "character_classes",
+            classLayers.inherited,
+            classLayers.ownFile,
+          ) as { character_classes?: SimCharacterClass[] } | null)
+        : null;
+      const spellsMerged = spellLayers
+        ? (mergeModel(
+            "spells",
+            spellLayers.inherited,
+            spellLayers.ownFile,
+          ) as { spells?: SimSpell[] } | null)
+        : null;
+      // Pluck the Knock spell record out of the merged spells
+      // list — the lock dialog only needs that one entry; the rest
+      // of the spells catalog isn't consulted here.
+      const knockSpell =
+        spellsMerged?.spells?.find((s) => s.id === "knock") ?? null;
       setCatalog({
         party,
         characters: charactersMerged?.characters ?? [],
@@ -187,6 +245,8 @@ export function DungeonSimMount({
           name: m.name ?? m.id,
           sprite: m.sprite ?? "",
         })),
+        classes: classesMerged?.character_classes ?? [],
+        knockSpell,
       });
     })();
     return () => {
@@ -209,16 +269,23 @@ export function DungeonSimMount({
 
   // Encounter catalog for the active floor — each cell's `encounter`
   // id resolves to a synthetic SimEncounterRef built from the
-  // generator's DungeonMonster entries.
+  // generator's DungeonMonster entries. The monsters catalog feeds
+  // sprite resolution so `monster_party_tile` ends up as the
+  // actual Phaser texture key (e.g. "monster/giant_rat.png")
+  // instead of the lead monster's bare id.
   const dungeonEncounters = useMemo<SimEncounterRef[]>(() => {
     const lvl = levels[floorIdx];
-    if (!lvl) return [];
-    return dungeonEncounterRefs(lvl).map((e) => ({
+    if (!lvl || !catalog) return [];
+    const monsterSpriteById = new Map<string, string | undefined>(
+      catalog.monsters.map((m) => [m.id, m.sprite]),
+    );
+    return dungeonEncounterRefs(lvl, monsterSpriteById).map((e) => ({
       id: e.id,
       name: e.name,
+      monster_party_tile: e.monster_party_tile,
       monsters: e.monsters,
     }));
-  }, [levels, floorIdx]);
+  }, [levels, floorIdx, catalog]);
 
   // Mount Phaser when (a) the catalog finished loading and (b) we
   // have a floor record to render. Tear down the entire game on
@@ -665,6 +732,12 @@ export function DungeonSimMount({
                 ) {
                   return;
                 }
+                // Pause movement while a modal dialog (locked door,
+                // etc.) is up. The dialog drives the next step via
+                // its own button handlers; letting the party keep
+                // moving in the background would route around the
+                // lock check.
+                if (overlaysOpenRef.current) return;
                 handler(e.key);
               };
               window.addEventListener("keydown", listener);
@@ -691,6 +764,18 @@ export function DungeonSimMount({
             },
           };
 
+          // Pull this floor's mutations from the dungeon session
+          // (created on first entry by the launcher). The Sets
+          // are LIVE references — passing them as `initial*`
+          // copies them into the sim's own state, and we re-snapshot
+          // after each `state` event below so the session always
+          // reflects the latest. `peekDungeonSession` returns
+          // undefined when there's no active session (e.g. tests);
+          // in that case the floor starts fresh.
+          const session = peekDungeonSession(dungeonId);
+          const initialMutations = session
+            ? getFloorMutations(session, floorIdx)
+            : null;
           sim = new MapSimulation({
             grid,
             party: { ...partyForSim, infravision_active: infravisionActive },
@@ -702,10 +787,20 @@ export function DungeonSimMount({
               encounters: dungeonEncounters,
               // No spawns inside a procedurally generated dungeon —
               // the monsters are placed inline as encounters.
+              // characterClasses + knockSpell wire the locked-door
+              // dialog's Knock row. Without them the simulator
+              // still emits lock_encountered events and the Pick
+              // Lock row works; the Knock row is just suppressed.
+              characterClasses: catalog.classes,
+              knockSpell: catalog.knockSpell,
             },
             classNameById,
             bridge,
             startAt,
+            initialUnlockedCells: initialMutations?.unlockedCells,
+            initialDefeatedEncounters:
+              initialMutations?.defeatedEncounters,
+            initialDestroyedLairs: initialMutations?.destroyedLairs,
           });
           simRef.current = sim;
           sim.subscribe((ev) => {
@@ -722,6 +817,31 @@ export function DungeonSimMount({
                 const next = Number.parseInt(match[1], 10);
                 if (Number.isFinite(next)) setFloorIdx(next);
               }
+            }
+            if (ev.kind === "lock_encountered") {
+              // Party bumped a locked door — pop the Pick Lock /
+              // Cast Knock dialog. The simulator stores the
+              // pending lock; the dialog drives the next step via
+              // sim.attemptPickLock / attemptKnock / dismissLock.
+              // Movement is gated by overlaysOpenRef while the
+              // modal is up.
+              setLockEncounter(ev.options);
+            }
+            // Mirror the sim's mutation state back into the
+            // dungeon session on every state tick. Cheap: the
+            // Sets are tiny, and the snapshot aliases the kernel's
+            // internal Sets — we clone here so a later in-sim
+            // mutation can't bleed back through stored references.
+            // Catches every meaningful state change: defeated
+            // encounters, picked locks, destroyed lairs (the
+            // sim emits `state` after each).
+            if (ev.kind === "state" && session) {
+              const snap = sim!.snapshot();
+              writeFloorMutations(session, floorIdx, {
+                unlockedCells: new Set(snap.unlockedCells),
+                defeatedEncounters: new Set(snap.defeatedEncounters),
+                destroyedLairs: new Set(snap.destroyedLairs),
+              });
             }
           });
         }
@@ -815,6 +935,22 @@ export function DungeonSimMount({
         className="rounded border border-parchment/20 bg-ink/80 shadow-xl"
         style={{ display: "inline-block" }}
       />
+      {/* Locked-door dialog — opens when the party bumps a cell
+          flagged `locked: true` (interior doors the dungeon
+          generator placed). Same overlay component the map
+          editor uses; the sim drives the dice rolls + cell
+          unlock through the simRef callbacks. */}
+      {lockEncounter ? (
+        <LockDialogOverlay
+          options={lockEncounter}
+          onPickLock={() => simRef.current?.attemptPickLock() ?? null}
+          onCastKnock={() => simRef.current?.attemptKnock() ?? null}
+          onClose={() => {
+            simRef.current?.dismissLock();
+            setLockEncounter(null);
+          }}
+        />
+      ) : null}
       <UnusedTilesNote
         unused={[TILE_STAIRS, TILE_STAIRS_DOWN, TILE_FOREST_ARCHWAY_UP, TILE_FOREST_ARCHWAY_DOWN]}
       />

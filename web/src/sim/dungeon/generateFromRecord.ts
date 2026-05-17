@@ -36,6 +36,7 @@ import {
   generateDungeonLevel,
   type DungeonLevel,
 } from "@/v1battle/world/Dungeon";
+import type { EncounterTemplate } from "@/v1battle/world/Encounters";
 import {
   DUNGEON_DEFAULTS,
   type DungeonLevelRecord,
@@ -47,6 +48,23 @@ export interface GenerateFromRecordOptions {
   /** RNG seed for floor 0. Floor N is seeded as `(seed + N) >>> 0`,
    *  matching v1's `generateDungeon` so re-rolls are predictable. */
   seed: number;
+  /** Encounters table, grouped by area (as returned by
+   *  `loadEncounters` in `v1battle/world/Encounters`). The generator
+   *  samples from `encounters.dungeon` to populate rooms with
+   *  monsters; without this every floor is empty of combat.
+   *
+   *  Per-Level overrides aren't supported yet — every floor draws
+   *  from the same area bucket. Per-level encounter pools are a
+   *  future schema addition. */
+  encounters?: Record<string, EncounterTemplate[]>;
+  /** Monster difficulty lookup — `(monsterId) => "easy" | "normal"
+   *  | …`. Used by `sampleEncounter` to prune candidate rosters so
+   *  a "normal" dungeon doesn't slip a "hard" monster into a
+   *  mixed-tier encounter. Built by the caller from
+   *  `loadMonsters()`. Optional but recommended; without it the
+   *  level-band filter still narrows the pool but per-monster tier
+   *  isn't enforced. */
+  monsterDifficulty?: (monsterId: string) => string | undefined;
 }
 
 /**
@@ -88,6 +106,14 @@ export function generateDungeonFromRecord(
         floorIdx === totalFloors - 1 && totalFloors > 1,
       lockProbability: resolved.locked_doors,
       torchProbability: resolved.torch_density,
+      // Encounters table + monster-difficulty lookup — when both
+      // are present, the generator samples encounter rosters per
+      // non-entrance room (the `encChance` roll inside
+      // `placeRandomEncounters`). When `encounters` is undefined,
+      // the room loop is skipped and the floor has no monsters.
+      encounters: opts.encounters,
+      encounterArea: "dungeon",
+      monsterDifficulty: opts.monsterDifficulty,
       seed,
     });
     out.push(normaliseAuthoredHeight(raw, resolved.size.height));
