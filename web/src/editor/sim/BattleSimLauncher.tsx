@@ -27,6 +27,11 @@ export function BattleSimLauncher({ moduleId }: { moduleId: string }) {
   /** Empty string = "no map, use the default dark-fill arena". Any
    *  non-empty value is an `ArenaMap.id`. */
   const [selectedMapId, setSelectedMapId] = useState<string>("");
+  /** Darkness toggle — when on, CombatScene paints a dark overlay over
+   *  the arena and only cells with a `light_source` (plus a small pool
+   *  around the active party member) read as lit. Off by default so
+   *  existing arenas keep their fully-bright look. */
+  const [darkness, setDarkness] = useState<boolean>(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   // Pin loaders to the picked module + reset all three caches when
@@ -56,7 +61,19 @@ export function BattleSimLauncher({ moduleId }: { moduleId: string }) {
         // Default to the first eligible entry so Start Battle works
         // without an extra click. Empty catalog → keep selectedId empty
         // and the Start button disables itself below.
-        setSelectedId((prev) => prev || list[0]?.id || "");
+        setSelectedId((prev) => {
+          const next = prev || list[0]?.id || "";
+          // Apply encounter-declared defaults (arena_id, darkness)
+          // exactly once per module load — only when there was no
+          // prior selection to preserve, so re-mounting doesn't
+          // clobber a manual map / darkness override the user made
+          // before navigating away and back.
+          if (!prev && next) {
+            const first = list.find((e) => e.id === next);
+            if (first) applyEncounterDefaults(first, maps);
+          }
+          return next;
+        });
       } catch (err) {
         if (cancelled) return;
         setLoadError(err instanceof Error ? err.message : String(err));
@@ -126,10 +143,26 @@ export function BattleSimLauncher({ moduleId }: { moduleId: string }) {
           typeof spritePath === "string" && spritePath.length > 0
             ? withBase(`/sprites/${spritePath}`)
             : null;
+        // Lighting fields ride through the ArenaMapCell index
+        // signature — the map editor saves them as `light_source` /
+        // `light_range`. Normalise to the typed ArenaCellInfo shape
+        // (camelCase, numeric range). The CombatScene only consults
+        // these when the launcher's Darkness toggle is on.
+        const rawLight = cell.light_source;
+        const lightSource = rawLight === true
+          || (typeof rawLight === "string" && rawLight.toLowerCase() === "true");
+        const rawRange = cell.light_range;
+        const lightRange = typeof rawRange === "number"
+          ? rawRange
+          : typeof rawRange === "string" && rawRange.trim() !== ""
+            ? Number(rawRange)
+            : undefined;
         row.push({
           sprite,
           walkable: cell.walkable !== false,
           obstructs: cell.obstructs === true,
+          lightSource: lightSource || undefined,
+          lightRange: Number.isFinite(lightRange) ? lightRange : undefined,
         });
       }
       matrix.push(row);
@@ -144,12 +177,41 @@ export function BattleSimLauncher({ moduleId }: { moduleId: string }) {
     setStarted(false);
     setTimeout(() => setStarted(true), 0);
   };
+  /**
+   * Apply an encounter's authored defaults (`arena_id`, `darkness`) to
+   * the launcher's map / darkness state. Idempotent — if the encounter
+   * doesn't declare a field, the existing value stays. Unknown arena
+   * ids fall back to the default arena (empty string) so a typo
+   * doesn't strand the user on a broken map. Called from
+   * `pickEncounter` and from the initial-load seed above.
+   */
+  const applyEncounterDefaults = (
+    enc: EncounterTemplate,
+    mapList: ArenaMap[],
+  ) => {
+    if (typeof enc.arenaId === "string") {
+      const known = mapList.some((m) => m.id === enc.arenaId);
+      setSelectedMapId(known ? enc.arenaId : "");
+    }
+    if (typeof enc.darkness === "boolean") {
+      setDarkness(enc.darkness);
+    }
+  };
   const pickEncounter = (id: string) => {
     setSelectedId(id);
+    const enc = encounters.find((e) => e.id === id) ?? null;
+    if (enc) applyEncounterDefaults(enc, arenaMaps);
     restartIfRunning();
   };
   const pickMap = (id: string) => {
     setSelectedMapId(id);
+    restartIfRunning();
+  };
+  const toggleDarkness = (next: boolean) => {
+    setDarkness(next);
+    // Darkness is a scene-level switch — the overlay is built in
+    // create(), not driven by a per-frame prop. Restart so the change
+    // takes effect immediately instead of "next battle".
     restartIfRunning();
   };
 
@@ -218,6 +280,19 @@ export function BattleSimLauncher({ moduleId }: { moduleId: string }) {
           </select>
         </div>
 
+        <label
+          className="mt-[18px] flex cursor-pointer items-center gap-2 rounded border border-parchment/20 bg-ink/40 px-2 py-1 text-sm text-parchment/80 hover:bg-ink/60"
+          title="Paint a darkness overlay over the arena. Cells flagged light_source in the map editor (plus a small pool around the active party member) read as lit."
+        >
+          <input
+            type="checkbox"
+            checked={darkness}
+            onChange={(e) => toggleDarkness(e.target.checked)}
+            className="accent-ember"
+          />
+          Darkness
+        </label>
+
         <button
           ref={startBtnRef}
           type="button"
@@ -258,10 +333,11 @@ export function BattleSimLauncher({ moduleId }: { moduleId: string }) {
         // arena. `selectedMap?.id ?? ""` keeps the key stable when no
         // map is picked.
         <BattleSimV1Mount
-          key={`${started}:${selected.id}:${selectedMap?.id ?? ""}`}
+          key={`${started}:${selected.id}:${selectedMap?.id ?? ""}:${darkness ? "dark" : "light"}`}
           moduleId={moduleId}
           monsterIds={selected.monsters}
           arenaCells={arenaCells}
+          darkness={darkness}
         />
       ) : (
         <p className="text-sm text-parchment/45">

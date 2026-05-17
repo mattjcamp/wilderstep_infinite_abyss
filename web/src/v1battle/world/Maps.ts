@@ -85,6 +85,12 @@ export interface ArenaCellInfo {
   sprite: string | null;
   walkable: boolean;
   obstructs: boolean;
+  /** When true (and combat is run in darkness mode), this cell emits a
+   *  pool of light with Chebyshev radius `lightRange` (defaults to 3
+   *  if unset). Authored in the map editor via the `light_source` /
+   *  `light_range` per-cell fields. */
+  lightSource?: boolean;
+  lightRange?: number;
 }
 
 let _flatCache: ArenaMap[] | null = null;

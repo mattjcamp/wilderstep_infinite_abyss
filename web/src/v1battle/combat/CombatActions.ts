@@ -20,8 +20,28 @@ import type { ClassTemplate } from "../world/Classes";
 import type { PartyMember } from "../world/Party";
 import { rollAttack, rollDamage } from "./engine";
 import type { RNG } from "../rng";
-import { assetUrl } from "../world/Module";
+import { assetUrl, withBase } from "../world/Module";
 import type { Buff } from "./Buffs";
+
+/**
+ * Resolve a creature-sprite reference from a summon spell into a URL
+ * Phaser can load. Mirrors the v2 monster catalog's `resolveSpriteUrl`
+ * — bare keys like `"monster/skeleton2.png"` land under `/sprites/`,
+ * already-rooted paths (`"/assets/..."` or full URLs) pass through.
+ * Falls back to the legacy `/assets/monsters/skeleton.png` so older
+ * spell data without a `sprite` field still renders a graphic instead
+ * of the no-texture rectangle.
+ */
+function resolveSummonSpriteUrl(sprite: unknown): string {
+  if (typeof sprite !== "string" || sprite.length === 0) {
+    return assetUrl("/assets/monsters/skeleton.png");
+  }
+  if (sprite.startsWith("http://") || sprite.startsWith("https://")) {
+    return sprite;
+  }
+  if (sprite.startsWith("/")) return withBase(sprite);
+  return withBase(`/sprites/${sprite}`);
+}
 
 /**
  * Throwable / ranged attack — used by the Throw action and by ranged
@@ -589,6 +609,14 @@ export function makeSummonedSkeleton(
     if (typeof ev[legacyKey] === "number") return ev[legacyKey] as number;
     return dflt;
   };
+  // `creature.sprite` is the v2 hook so individual summon spells can
+  // point at any monster art (skeleton, zombie, wolf, …) without
+  // hard-coding the path in scene code. Falls back to the legacy
+  // hand-drawn skeleton when omitted so older spell data still
+  // renders.
+  const spriteRef = creature && typeof creature.sprite === "string"
+    ? creature.sprite
+    : (typeof ev.sprite === "string" ? ev.sprite : undefined);
   return {
     id,
     name: `${casterName}'s Skeleton`,
@@ -604,7 +632,7 @@ export function makeSummonedSkeleton(
     },
     dexMod: 1,
     color: [200, 200, 180],
-    sprite: assetUrl("/assets/monsters/skeleton.png"),
+    sprite: resolveSummonSpriteUrl(spriteRef),
     baseMoveRange: 3,
     position: { col: 0, row: 0 }, // overwritten by Combat.addCombatant
     undead: true,

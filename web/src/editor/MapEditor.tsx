@@ -45,13 +45,17 @@ import { SimPanel } from "@/sim/SimPanel";
 import { MapPartyScreenOverlay } from "./MapPartyScreenOverlay";
 import { NpcDialogOverlay } from "./NpcDialogOverlay";
 import { CounterShopOverlay } from "./CounterShopOverlay";
+import { LockDialogOverlay } from "./LockDialogOverlay";
+import type { LockEncounterOptions } from "@/sim/MapSimulation";
 import type {
   SimCharacter,
+  SimCharacterClass,
   SimEffect,
   SimGrid,
   SimLightSource,
   SimParty,
   SimRace,
+  SimSpell,
 } from "@/sim/types";
 import { usePublishServer } from "./usePublishServer";
 
@@ -380,7 +384,12 @@ type LoadState =
       simCharacters: SimCharacter[];
       simRaces: SimRace[];
       simEffects: SimEffect[];
-      simClasses: Array<{ id: string; name: string }>;
+      simClasses: SimCharacterClass[];
+      /** Knock-spell record (or null when the module hasn't defined
+       *  one). Threaded into the MapSimulation catalog so the Pick
+       *  Lock / Cast Knock dialog can offer the Knock row when the
+       *  party has an eligible caster. */
+      simKnockSpell: SimSpell | null;
     }
   | { kind: "error"; message: string };
 
@@ -432,6 +441,10 @@ export function MapEditor({
    *  no dialog overlay is open. Set by the sim's npc_encountered
    *  event; cleared when the player closes the dialog. */
   const [npcEncounterId, setNpcEncounterId] = useState<string | null>(null);
+  /** Lock-dialog state — set when the sim emits `lock_encountered`,
+   *  cleared on dismiss / successful unlock. Keeps the option snapshot
+   *  so the overlay renders without re-querying the sim. */
+  const [lockEncounter, setLockEncounter] = useState<LockEncounterOptions | null>(null);
   /** Counter currently being shopped (id from counters.json). Null when
    *  the shop overlay is closed. The shop overlay is launched from
    *  inside the NPC dialog; closing it returns the player to the
@@ -443,8 +456,11 @@ export function MapEditor({
   const overlaysOpenRef = useRef(false);
   useEffect(() => {
     overlaysOpenRef.current =
-      !!npcEncounterId || !!shopCounterId || partyScreenOpen;
-  }, [npcEncounterId, shopCounterId, partyScreenOpen]);
+      !!npcEncounterId ||
+      !!shopCounterId ||
+      partyScreenOpen ||
+      !!lockEncounter;
+  }, [npcEncounterId, shopCounterId, partyScreenOpen, lockEncounter]);
   /** Callback the Phaser scene invokes when the user clicks a tile
    *  during "placing" — held in a ref so the scene closure stays
    *  stable while React re-renders. */
@@ -540,8 +556,9 @@ export function MapEditor({
     if (simMode !== "active") {
       if (npcEncounterId) setNpcEncounterId(null);
       if (shopCounterId) setShopCounterId(null);
+      if (lockEncounter) setLockEncounter(null);
     }
-  }, [simMode, npcEncounterId, shopCounterId]);
+  }, [simMode, npcEncounterId, shopCounterId, lockEncounter]);
   useEffect(() => {
     if (simMode !== "active" && partyScreenOpen) {
       setPartyScreenOpen(false);
@@ -655,6 +672,10 @@ export function MapEditor({
       visible: boolean,
       sprite?: string,
     ) => void;
+    /** Briefly show `text` floating up over the cell at (col, row).
+     *  Used when the party steps onto a tile whose `text` field is
+     *  set. Rises and fades over ~1.4s. Self-cleaning. */
+    floatText: (col: number, row: number, text: string) => void;
   } | null>(null);
   /** The party-light source the simulation contributes. Read by the
    *  scene's relight on every pass — when sim mode is off this stays
@@ -695,6 +716,7 @@ export function MapEditor({
           dungeonsLayers,
           questsLayers,
           npcsLayers,
+          spellsLayers,
         ] = await Promise.all([
           src.loadModelLayers(moduleId, "map_tiles"),
           src.loadModelLayers(moduleId, "maps"),
@@ -717,6 +739,10 @@ export function MapEditor({
           // NPC catalog for the cell inspector's NPC picker + the
           // on-map NPC-sprite overlay. Non-fatal too.
           src.loadModelLayers(moduleId, "npcs").catch(() => null),
+          // Spells catalog — only the Knock spell is consumed by the
+          // simulator today (Pick Lock / Cast Knock dialog). Non-fatal
+          // so a module without spells still boots into sim mode.
+          src.loadModelLayers(moduleId, "spells").catch(() => null),
         ]);
         if (cancelled) return;
 
@@ -873,8 +899,21 @@ export function MapEditor({
             classesLayers.inherited,
             classesLayers.ownFile,
           ) as {
-            character_classes?: Array<{ id: string; name: string }>;
+            character_classes?: SimCharacterClass[];
           } | null);
+        // Spells catalog — the sim only needs the Knock spell today
+        // (lock-unlock dialog). We pull the full list through mergeModel
+        // and then pluck the entry whose id matches; missing → null,
+        // which suppresses the Cast Knock row in the dialog.
+        const spellsMerged =
+          spellsLayers &&
+          (mergeModel(
+            "spells",
+            spellsLayers.inherited,
+            spellsLayers.ownFile,
+          ) as { spells?: SimSpell[] } | null);
+        const knockSpell: SimSpell | null =
+          spellsMerged?.spells?.find((s) => s.id === "knock") ?? null;
 
         // Build the picker list once at load. The full record set is
         // resolved by mergeModel above (allMaps); we strip to id+name
@@ -928,6 +967,7 @@ export function MapEditor({
           simRaces: racesMerged?.races ?? [],
           simEffects: effectsMerged?.effects ?? [],
           simClasses: classesMerged?.character_classes ?? [],
+          simKnockSpell: knockSpell,
         });
       } catch (e) {
         if (cancelled) return;
@@ -1304,6 +1344,9 @@ export function MapEditor({
             setPartyLight: () => {
               // Assigned for real below.
             },
+            floatText: () => {
+              // Assigned for real below.
+            },
             relight: (mode) => {
               // Day = unconditionally full brightness, fast path. Also
               // clear tints on placed overlays so they don't keep the
@@ -1518,6 +1561,80 @@ export function MapEditor({
                 sceneSelf.partyBoatSprite.destroy();
                 sceneSelf.partyBoatSprite = null;
               }
+            };
+            // Floater for tile.text. Spawned about two tiles above
+            // the cell so the party sprite doesn't sit on top of the
+            // text — without that offset the label kept getting eaten
+            // by the avatar in the first half-second when the player
+            // most wants to read it. Depth 320 sits above the party
+            // sprite (300) and any grid / encounter overlays.
+            //
+            // Lifecycle: hold for a moment at full opacity so the
+            // player has a chance to start reading, THEN rise + fade.
+            // Total visible time is ~3.4s (700ms hold + 2700ms drift),
+            // and the wordWrap is generous so multi-sentence text
+            // entries don't shoot off the canvas edge.
+            sceneApiRef.current.floatText = (col, row, text) => {
+              const trimmed = (text ?? "").trim();
+              if (!trimmed) return;
+              const px = col * TILE_SIZE + TILE_SIZE / 2;
+              // Lift the label ~2 tiles above the cell centre so the
+              // party sprite (centred on the cell) doesn't overlap
+              // it. The origin is bottom-centred (0.5, 1) so the
+              // anchor sits at the top of the gap.
+              const py = row * TILE_SIZE + TILE_SIZE / 2 - TILE_SIZE * 2;
+              const FONT = {
+                fontFamily: '"Press Start 2P", monospace',
+                fontSize: "10px",
+                color: "#fff2c8",
+                stroke: "#1a0e00",
+                strokeThickness: 3,
+                align: "center" as const,
+                wordWrap: { width: TILE_SIZE * 8, useAdvancedWrap: true },
+              };
+              const label = sceneSelf.add
+                .text(px, py, trimmed, FONT)
+                .setOrigin(0.5, 1)
+                .setDepth(320);
+              // Drop shadow for legibility over light tiles — second
+              // text under the main one, slightly offset and dim.
+              const shadow = sceneSelf.add
+                .text(px + 1, py + 2, trimmed, {
+                  ...FONT,
+                  color: "#000000",
+                  stroke: "#000000",
+                  strokeThickness: 0,
+                })
+                .setOrigin(0.5, 1)
+                .setAlpha(0.35)
+                .setDepth(319);
+              const rise = 32;
+              const holdMs = 700;
+              const driftMs = 2700;
+              // First tween: hold in place at full opacity so the
+              // player can start reading before motion kicks in.
+              sceneSelf.tweens.add({
+                targets: [label, shadow],
+                alpha: { from: 1, to: 1 },
+                duration: holdMs,
+                onComplete: () => {
+                  // Second tween: rise + fade. We destroy both pieces
+                  // when the drift finishes so the scene stays clean
+                  // even if the party walks across a string of
+                  // text-bearing cells.
+                  sceneSelf.tweens.add({
+                    targets: [label, shadow],
+                    y: `-=${rise}`,
+                    alpha: 0,
+                    duration: driftMs,
+                    ease: "Sine.easeOut",
+                    onComplete: () => {
+                      label.destroy();
+                      shadow.destroy();
+                    },
+                  });
+                },
+              });
             };
             // ── Boat helpers ───────────────────────────────────────────
             // Boats render via cell-texture swaps, not extra overlay
@@ -2323,6 +2440,9 @@ export function MapEditor({
       setPartyBoatAt: (col, row, visible, sprite) => {
         sceneApiRef.current?.setPartyBoatAt(col, row, visible, sprite);
       },
+      floatText: (col, row, text) => {
+        sceneApiRef.current?.floatText(col, row, text);
+      },
       onKey: (handler) => {
         // Window-scoped listener. Ignore the keystroke if the user is
         // typing in an input/textarea so cell-text editing isn't
@@ -2374,6 +2494,11 @@ export function MapEditor({
         characters: state.simCharacters,
         races: state.simRaces,
         effects: state.simEffects,
+        // Threaded through for the Pick Lock / Cast Knock dialog —
+        // findKnockCaster reads classes' `casting_type[]` to match
+        // members against the spell's catalog.
+        characterClasses: state.simClasses,
+        knockSpell: state.simKnockSpell,
       },
       classNameById,
       bridge,
@@ -2391,6 +2516,12 @@ export function MapEditor({
         // overlaysOpenRef so the party doesn't keep stepping while
         // the player reads.
         setNpcEncounterId(ev.npcId);
+      }
+      if (ev.kind === "lock_encountered") {
+        // Pop the Pick Lock / Cast Knock / Leave dialog. The same
+        // overlaysOpenRef gate freezes keyboard movement under the
+        // modal.
+        setLockEncounter(ev.options);
       }
     });
 
@@ -3052,6 +3183,23 @@ export function MapEditor({
               />
             );
           })()
+        : null}
+      {/* Lock dialog overlay — opens when the party bumps a locked
+          cell during simulation. Three actions: Pick Lock, Cast Knock,
+          Leave. Rolls + grid mutation happen in the sim; we just close
+          the overlay when the user dismisses or succeeds. */}
+      {lockEncounter
+        ? (
+            <LockDialogOverlay
+              options={lockEncounter}
+              onPickLock={() => simRef.current?.attemptPickLock() ?? null}
+              onCastKnock={() => simRef.current?.attemptKnock() ?? null}
+              onClose={() => {
+                simRef.current?.dismissLock();
+                setLockEncounter(null);
+              }}
+            />
+          )
         : null}
       {/* Counter shop overlay — opens from inside the NPC dialog. */}
       {shopCounterId

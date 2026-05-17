@@ -48,6 +48,12 @@ export interface SimCell {
    *  it passes this through to the host on boat boarding so the
    *  scene knows which sprite to use for the boat-under-the-party. */
   sprite?: string;
+  /** True when the cell is "locked" — the editor exposes this as a
+   *  per-cell BoolEditor. Walking onto a locked cell opens the
+   *  Pick Lock / Cast Knock / Leave dialog instead of moving; once
+   *  unlocked (success or designer override) the gate lifts and the
+   *  normal `walkable` check decides movement. */
+  locked?: boolean;
 }
 
 /** Row-major grid: grid[row][col]. */
@@ -134,12 +140,44 @@ export interface SimCharacter {
   hp: number;
   mp: number;
   sprite: string;
+  // Ability scores — optional because the sim itself doesn't need
+  // them for movement / lighting, but the lock-pick + Knock-spell
+  // rolls do. Loader casts characters.json straight to SimCharacter,
+  // so these come through automatically when the JSON declares them.
+  strength?: number;
+  dexterity?: number;
+  intelligence?: number;
+  wisdom?: number;
+  constitution?: number;
 }
 
 /** Subset of the character_classes record the sim reads. */
 export interface SimCharacterClass {
   id: string;
   name: string;
+  /** Catalogs this class can draw from — e.g. `["sorcerer"]` for
+   *  Wizard. Used by the Knock-spell finder to pick an eligible
+   *  caster from the party. Optional so non-caster classes (Fighter,
+   *  Thief) can omit it. */
+  casting_type?: string[];
+}
+
+/** Just enough of a Spell record for the simulator's lock-unlock
+ *  dialog to roll the Knock spell. Loader pulls this out of
+ *  spells.json by id. */
+export interface SimSpell {
+  id: string;
+  name: string;
+  /** Catalog the spell belongs to (matches `SimCharacterClass.casting_type`). */
+  casting_type: string;
+  min_level: number;
+  mp_cost: number;
+  /** Action discriminator — `"knock"` for the Knock spell. */
+  action?: string;
+  /** Free-form action params; the lock-unlock path reads
+   *  `save_dc_base` (default 12) and `save_stat` (default
+   *  "intelligence") out of this bag. */
+  action_params?: Record<string, unknown>;
 }
 
 /** Subset of the race record the sim reads. */

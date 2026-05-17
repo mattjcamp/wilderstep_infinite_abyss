@@ -65,6 +65,11 @@ import {
 } from "../world/Party";
 import { loadClass, loadRaces, type ClassTemplate } from "../world/Classes";
 import type { ArenaCellInfo } from "../world/Maps";
+import {
+  brightnessAt,
+  type LightSource,
+  PARTY_LIGHT_RADIUS,
+} from "../world/Lighting";
 import { awardXp, type LevelUpEvent } from "../world/Leveling";
 import { defaultRng } from "../rng";
 import {
@@ -195,6 +200,16 @@ interface CombatSceneData {
    * unconditionally — `arenaCells` augments the interior only.
    */
   arenaCells?: ReadonlyArray<ReadonlyArray<ArenaCellInfo | null>>;
+  /**
+   * When true the scene paints a darkness overlay over the arena.
+   * Cells flagged `lightSource` in the arena matrix emit pools of
+   * light (radius from `lightRange`, default 3 tiles, Chebyshev),
+   * and the active party member emits a small self-light so the
+   * player can always see what they're doing. Off (default) keeps
+   * the legacy fully-bright look — overworld/dungeon callers don't
+   * pass this flag.
+   */
+  darkness?: boolean;
 }
 
 // ── Debug cheats ──────────────────────────────────────────────────
@@ -336,6 +351,18 @@ export class CombatScene extends Phaser.Scene {
   /** Optional per-cell arena data — sprite + walkable + obstructs.
    *  See `arenaCells` on CombatSceneData for the contract. */
   private arenaCells: ReadonlyArray<ReadonlyArray<ArenaCellInfo | null>> | null = null;
+  /** When true, paint a darkness overlay and use `arenaCells`-flagged
+   *  light_source cells (plus a party self-light) to "punch" pools of
+   *  light. Comes from CombatSceneData.darkness. */
+  private darkness = false;
+  /** Static light sources collected from `arenaCells` at create time.
+   *  Empty while `darkness` is off. Per-source the radius comes from
+   *  the cell's `lightRange`, falling back to Lighting.ts's default. */
+  private staticLights: LightSource[] = [];
+  /** Graphics object that paints the darkness overlay. Rebuilt on every
+   *  party move / turn change so the party's own light pool follows the
+   *  active actor. Lives at depth 20 (above bodies/HP, below floaters). */
+  private darknessGfx: Phaser.GameObjects.Graphics | null = null;
   private triggerKey: string | null = null;
   private terrainTileId: number | null = null;
   /** Catalog names for this fight; null falls back to makeSampleEncounter. */
@@ -454,6 +481,8 @@ export class CombatScene extends Phaser.Scene {
     this.fromWorld = !!data?.fromWorld;
     this.silent = !!data?.silent;
     this.arenaCells = data?.arenaCells ?? null;
+    this.darkness = !!data?.darkness;
+    this.staticLights = [];
     this.triggerKey = data?.triggerKey ?? null;
     this.terrainTileId = data?.terrainTileId ?? null;
     this.monsterNames = data?.monsterNames && data.monsterNames.length > 0
@@ -484,6 +513,12 @@ export class CombatScene extends Phaser.Scene {
     this.selRings.clear();
     for (const r of this.moveHintRects) r?.destroy();
     this.moveHintRects.length = 0;
+    // Tear down the previous run's darkness overlay so a re-entry
+    // doesn't stack a new Graphics on top of the old one.
+    if (this.darknessGfx) {
+      this.darknessGfx.destroy();
+      this.darknessGfx = null;
+    }
     // Party cards previously got `.clear()`'d but their child
     // GameObjects (hp bar, hp text, mp bar, mp text) were left to
     // Phaser's shutdown — same race the monster bars hit. Walk and
@@ -962,6 +997,113 @@ export class CombatScene extends Phaser.Scene {
     // Without this, all stamps queued above are buffered but never
     // painted, leaving the arena black.
     if (floorRT) floorRT.render();
+
+    // Darkness overlay — only when the launcher's Darkness toggle is
+    // on. Collect every cell flagged `lightSource` into a static
+    // LightSource list (party self-light is added per-redraw in
+    // refreshDarkness) and create the Graphics that paints the
+    // overlay. Slotted at depth 20 so it covers floor + bodies + HP
+    // bars (a creature hiding in pitch black should genuinely
+    // disappear) but stays under floating damage text (depth 50) and
+    // the HUD pickers.
+    if (this.darkness) {
+      const lights: LightSource[] = [];
+      if (this.arenaCells) {
+        for (let r = 0; r < ARENA_ROWS; r++) {
+          const sourceRow = this.arenaCells[r];
+          if (!sourceRow) continue;
+          for (let c = 0; c < ARENA_COLS; c++) {
+            const cell = sourceRow[c];
+            if (!cell?.lightSource) continue;
+            const radius = typeof cell.lightRange === "number" && cell.lightRange > 0
+              ? cell.lightRange
+              : 3;
+            lights.push({ col: c, row: r, radius });
+          }
+        }
+      }
+      this.staticLights = lights;
+      this.darknessGfx = this.add.graphics().setDepth(20);
+      this.refreshDarkness();
+    }
+  }
+
+  /**
+   * "Can the party see this cell?" — the player-facing visibility gate
+   * used by the target picker and the gold reach-hint overlay.
+   *
+   *   - Off when `darkness` is disabled (returns true unconditionally
+   *     so legacy bright-fight behaviour is untouched).
+   *   - On in darkness mode: a cell is visible iff `brightnessAt` says
+   *     so — i.e. any static light source reaches it, or it falls
+   *     inside the party's self-light pool around the active actor.
+   *
+   * Deliberately NOT consulted by directional attacks (magic_dart,
+   * lightning_bolt, bows / crossbows / slings fired in a cardinal
+   * direction) — those route through `traceDirectionalRay` and "fire
+   * blind into the dark" is the whole point. AOE tile picks
+   * (fireball) also skip this gate because the target is a coordinate
+   * the player aims at, not a creature they're spotting.
+   *
+   * Uses the same `partyAnchor` rule as `refreshDarkness` so what the
+   * player SEES is exactly what they can TARGET.
+   */
+  private isCellVisibleToParty(col: number, row: number): boolean {
+    if (!this.darkness) return true;
+    const cur = this.combat?.current;
+    const partyAnchor =
+      cur && cur.side === "party" && cur.hp > 0
+        ? cur.position
+        : this.combat?.combatants.find((c) => c.side === "party" && c.hp > 0)
+            ?.position ?? { col: 1, row: 1 };
+    return brightnessAt(
+      col, row, this.staticLights, partyAnchor, PARTY_LIGHT_RADIUS,
+    ) > 0;
+  }
+
+  /**
+   * Re-paint the arena darkness overlay using the static light sources
+   * from `arenaCells` plus a party self-light centred on the active
+   * party member. Called whenever the active actor changes or moves so
+   * the party's pool follows them around the map.
+   *
+   * Brightness per cell comes from Lighting.ts `brightnessAt`. The
+   * cell's opacity is `(1 - brightness) * MAX_DARKNESS` so fully-lit
+   * cells (right under a torch) read clear and cells outside every
+   * pool sit at full darkness. Tile-quantised — there's no per-pixel
+   * gradient, but that matches the engine's Chebyshev-distance light
+   * model and the tactical grid the player is already reading.
+   */
+  private refreshDarkness(): void {
+    if (!this.darkness || !this.darknessGfx) return;
+    const g = this.darknessGfx;
+    g.clear();
+    // Anchor the party self-light on the active actor when they're on
+    // the party side; otherwise centre it on whichever party member is
+    // alive so monsters' turns don't strand the player in the dark.
+    const partyAnchor = (() => {
+      const cur = this.combat?.current;
+      if (cur && cur.side === "party" && cur.hp > 0) return cur.position;
+      const fallback = this.combat?.combatants.find(
+        (c) => c.side === "party" && c.hp > 0,
+      );
+      return fallback ? fallback.position : { col: 1, row: 1 };
+    })();
+    const MAX_DARKNESS = 0.92;
+    for (let r = 0; r < ARENA_ROWS; r++) {
+      for (let c = 0; c < ARENA_COLS; c++) {
+        // Wall ring already paints itself as solid dark fill, no point
+        // double-darkening it.
+        if (isWall(c, r)) continue;
+        const b = brightnessAt(
+          c, r, this.staticLights, partyAnchor, PARTY_LIGHT_RADIUS,
+        );
+        const alpha = (1 - b) * MAX_DARKNESS;
+        if (alpha <= 0.001) continue;
+        g.fillStyle(0x000000, alpha);
+        g.fillRect(ARENA_X + c * TILE, ARENA_Y + r * TILE, TILE, TILE);
+      }
+    }
   }
 
   private drawHud(): void {
@@ -2286,6 +2428,34 @@ export class CombatScene extends Phaser.Scene {
     const sideHasAnyone = this.combat.combatants.some(
       (c) => c.side === side && c.hp > 0,
     );
+    // Darkness gate — when the picker emptied out specifically because
+    // every otherwise-valid target sits in shadow, say so. Range / LOS
+    // failures still produce their own messages below; this only
+    // fires when the visibility filter was THE gate.
+    if (this.darkness) {
+      const me = this.combat.current;
+      const aliveOnSide = this.combat.combatants.filter(
+        (c) => c.side === side && c.hp > 0,
+      );
+      const anyHidden = aliveOnSide.some(
+        (c) => !this.isCellVisibleToParty(c.position.col, c.position.row),
+      );
+      const anyVisible = aliveOnSide.some(
+        (c) => this.isCellVisibleToParty(c.position.col, c.position.row),
+      );
+      // Only call out darkness when there ARE hidden combatants and
+      // NO visible ones — otherwise the visible-but-out-of-range case
+      // would get a misleading "shadows hide them" message when
+      // really the player just needs to walk closer.
+      if (anyHidden && !anyVisible) {
+        // Suppress unused-var warning for `me` — keeping the binding
+        // for the parallel reason strings below.
+        void me;
+        return side === "party"
+          ? `${this.combat.current.name}: can't see any allies — they're lost in shadow.`
+          : `${this.combat.current.name}: can't see any enemies — they're hidden in shadow. Bring a light, or fire a directional shot blind.`;
+      }
+    }
     if (action.kind === "range") {
       const max = maxRangeFor(action.weapon);
       if (!sideHasAnyone) {
@@ -2349,6 +2519,15 @@ export class CombatScene extends Phaser.Scene {
         );
       }
     }
+    // Final visibility gate — only fires in darkness mode (the helper
+    // is a no-op otherwise). Drops any target whose cell sits in
+    // shadow from the party's POV so the player can't pick a creature
+    // they shouldn't be able to see. Directional / tile attacks never
+    // route through here, so firing a bow blind down a corridor still
+    // works.
+    list = list.filter((t) =>
+      this.isCellVisibleToParty(t.position.col, t.position.row),
+    );
     return list.slice(0, 9);
   }
 
@@ -2358,6 +2537,10 @@ export class CombatScene extends Phaser.Scene {
     const me = this.combat.current;
     this.busy = true;
     this.clearTargetBadges();
+    // Drop the range/move hint grid BEFORE the projectile or spell
+    // visual plays — the translucent reach overlay otherwise sits on
+    // top of arrows, magic darts, and AOE bursts and washes them out.
+    this.clearMoveHints();
     this.mode = "default";
     try {
       if (action.kind === "throw") {
@@ -2846,6 +3029,9 @@ export class CombatScene extends Phaser.Scene {
     this.mode = "default";
     this.pendingAction = null;
     this.clearPicker();
+    // Drop the reach overlay before the bolt flies — see resolveTarget
+    // for the rationale (hint grid washes out the projectile VFX).
+    this.clearMoveHints();
 
     const [dCol, dRow] = DIR_DELTAS[dir];
     const range = typeof spell.range === "number" ? spell.range : 99;
@@ -2971,6 +3157,9 @@ export class CombatScene extends Phaser.Scene {
     this.mode = "default";
     this.pendingAction = null;
     this.clearPicker();
+    // Drop the reach overlay before the arrow flies — see resolveTarget
+    // for the rationale (hint grid washes out the projectile VFX).
+    this.clearMoveHints();
 
     const [dCol, dRow] = DIR_DELTAS[dir];
     // Bows don't carry an explicit range value yet — use maxRangeFor
@@ -3080,6 +3269,10 @@ export class CombatScene extends Phaser.Scene {
     this.pendingAction = null;
     this.clearTileCursor();
     this.clearPicker();
+    // Drop the reach overlay before the AOE / teleport / summon burst
+    // plays — see resolveTarget for the rationale (hint grid washes
+    // out the spell VFX).
+    this.clearMoveHints();
     // Animation-driven cast SFX. The per-effect handlers below
     // resolve their own visuals through the animation (since each
     // has different from/to semantics — AOE projectile, teleport
@@ -3274,6 +3467,32 @@ export class CombatScene extends Phaser.Scene {
     let body: Phaser.GameObjects.Image | Phaser.GameObjects.Rectangle;
     if (skeleton.sprite && this.textures.exists(skeleton.sprite)) {
       body = this.add.image(x, y, skeleton.sprite);
+    } else if (skeleton.sprite) {
+      // Sprite is declared (via the spell's `creature.sprite`) but
+      // wasn't part of the preload pass — summon-spell creature art
+      // doesn't live in the monster catalog, so the texture cache
+      // doesn't have it yet. Mount a placeholder rectangle, kick off
+      // a lazy load, and swap it for the real image once Phaser
+      // finishes fetching. Without this, the body stays as a tan
+      // square because the original render only checked `exists()`
+      // and silently fell back.
+      const colorHex = Phaser.Display.Color.GetColor(...skeleton.color);
+      body = this.add
+        .rectangle(x, y, TILE - 4, TILE - 4, colorHex)
+        .setStrokeStyle(2, 0x0a0a14);
+      const url = skeleton.sprite;
+      this.load.image(url, url);
+      this.load.once(`filecomplete-image-${url}`, () => {
+        // Combat may have ended (or this summon may have been
+        // destroyed) by the time the image lands. Bail if the body's
+        // gone or the destroyed Phaser objects would throw.
+        const current = this.bodies.get(id);
+        if (!current || current !== body) return;
+        const sprite = this.add.image(x, y, url).setDepth(body.depth);
+        body.destroy();
+        this.bodies.set(id, sprite);
+      });
+      this.load.start();
     } else {
       const colorHex = Phaser.Display.Color.GetColor(...skeleton.color);
       body = this.add
@@ -3747,6 +3966,12 @@ export class CombatScene extends Phaser.Scene {
     this.highlightActiveActor();
     this.drawActionHints();
     this.refreshVisibility();
+    // The party self-light pool follows the active party member, so
+    // every full refresh (turn change, move, summon, refresh after
+    // damage) re-bakes the darkness overlay. Cheap — Graphics.clear
+    // + ~280 fillRect calls per repaint, batched into one display
+    // list entry.
+    this.refreshDarkness();
   }
 
   private refreshTurnHeader(): void {
@@ -4134,6 +4359,12 @@ export class CombatScene extends Phaser.Scene {
         if (requireLOS && !this.combat.hasLineOfSight(start, { col: nc, row: nr })) {
           continue;
         }
+        // Visibility gate — keeps the gold reach overlay in sync with
+        // the actual target list under darkness. Off in bright fights
+        // (helper short-circuits to true). Only applies to the
+        // pick-target callers; directional and tile hints route
+        // through `directionalReachCells` which doesn't consult this.
+        if (!this.isCellVisibleToParty(nc, nr)) continue;
         out.push({ col: nc, row: nr });
       }
     }

@@ -1,4 +1,3 @@
 npm run dev:all
 
-- make battle arena support lighting effects
-- Animate Dead does not show a sprite graphic (do we need to define one in the data model?)
+- In quest steps with kill objects, we need to be able to specify the map or the dungeon and level the monsters are in (actually same with retrieval quests in dungeons)

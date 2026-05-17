@@ -1,12 +1,12 @@
 {
-  "_comment": "Ability catalog (real data drives the schema). An Ability is a named capability that lives on a Character \u2014 granted by a race, by a class, or by some other source (item, quest, scripted). Descriptions here are granter-agnostic; per-granter level gates (and any future per-granter param overrides) live on the granting record (Character Class.abilities, Race.abilities). Setting `party_effect: true` marks the Ability as a togglable party-wide effect \u2014 its id may appear in the Party.party_effects[] list and the in-game Party screen renders it as a toggle; without that flag the Ability is character/combat-only and renders on the character sheet instead. See docs/data_dictionary/ability.md.",
+  "_comment": "Ability catalog (real data drives the schema). An Ability is a named capability that lives on a Character — granted by a race, by a class, or by some other source (item, quest, scripted). Descriptions here are granter-agnostic; per-granter level gates (and any future per-granter param overrides) live on the granting record (Character Class.abilities, Race.abilities). Setting `party_effect: true` marks the Ability as a togglable party-wide effect — its id may appear in the Party.party_effects[] list and the in-game Party screen renders it as a toggle; without that flag the Ability is character/combat-only and renders on the character sheet instead. See docs/data_dictionary/ability.md.",
   "abilities": [
     {
       "id": "pick_locks",
       "name": "Pick Locks",
       "animation_id": null,
       "type": "class",
-      "description": "Pick locked doors and chests \u2014 d20 + DEX mod vs DC 12, one lockpick consumed per attempt.",
+      "description": "Pick locked doors and chests — d20 + DEX mod vs DC 12, one lockpick consumed per attempt.",
       "duration": "permanent",
       "params": {
         "dc": 12,
@@ -28,7 +28,7 @@
       "name": "Backstab",
       "animation_id": null,
       "type": "class",
-      "description": "Critical hits with daggers on a successful DEX save \u2014 the humble dagger becomes a devastating weapon.",
+      "description": "Critical hits with daggers on a successful DEX save — the humble dagger becomes a devastating weapon.",
       "duration": "permanent",
       "params": {
         "save_stat": "dexterity",
@@ -40,7 +40,7 @@
       "name": "Shadow Step",
       "animation_id": null,
       "type": "class",
-      "description": "Move after attacking \u2014 true hit-and-run play.",
+      "description": "Move after attacking — true hit-and-run play.",
       "duration": "permanent",
       "params": null
     },
@@ -70,7 +70,7 @@
       "name": "Dual Casting",
       "animation_id": null,
       "type": "class",
-      "description": "Access to both the priest and sorcerer spell catalogs \u2014 the only class with both.",
+      "description": "Access to both the priest and sorcerer spell catalogs — the only class with both.",
       "duration": "permanent",
       "params": null
     },
@@ -79,7 +79,7 @@
       "name": "Herbalism",
       "animation_id": null,
       "type": "class",
-      "description": "Nature lore spots reagents in the wild. When the party examines a tile, the holder rolls an INT save (d20 + INT mod vs DC 13) \u2014 success identifies a potion reagent. Alchemists in particular benefit from a doubled find rate.",
+      "description": "Nature lore spots reagents in the wild. When the party examines a tile, the holder rolls an INT save (d20 + INT mod vs DC 13) — success identifies a potion reagent. Alchemists in particular benefit from a doubled find rate.",
       "duration": "permanent",
       "params": {
         "dc": 13,
@@ -107,19 +107,6 @@
         "party"
       ],
       "params": null
-    },
-    {
-      "id": "galadriels_light",
-      "name": "Galadriel's Light",
-      "animation_id": null,
-      "type": "race",
-      "description": "Conjure a soft magical illumination, lighting dark areas without consuming a torch. Persists for 200 overworld steps after invocation.",
-      "duration": "permanent",
-      "party_effect": true,
-      "params": {
-        "applied_effect": "magic_light",
-        "applied_duration_steps": 200
-      }
     },
     {
       "id": "tinker",

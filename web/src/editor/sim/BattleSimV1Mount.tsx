@@ -33,10 +33,16 @@ export function BattleSimV1Mount({
   moduleId,
   monsterIds,
   arenaCells,
+  darkness,
 }: {
   moduleId: string;
   monsterIds?: readonly string[];
   arenaCells?: ReadonlyArray<ReadonlyArray<ArenaCellInfo | null>>;
+  /** When true the CombatScene paints a darkness overlay over the arena
+   *  and uses the map's `light_source` cells (plus a small pool around
+   *  the active party member) to "punch" pools of light. Off keeps the
+   *  legacy fully-bright look. */
+  darkness?: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -110,6 +116,7 @@ export function BattleSimV1Mount({
                 arenaCells: arenaCells
                   ? arenaCells.map((row) => [...row])
                   : undefined,
+                darkness: !!darkness,
               },
             );
           },

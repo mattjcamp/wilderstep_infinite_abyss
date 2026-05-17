@@ -40,6 +40,18 @@ export interface EncounterTemplate {
   monsterPartyTile: string;
   /** Full roster handed to CombatScene. First entry should match the lead. */
   monsters: string[];
+  /** Optional id of an `ArenaMap` (from `maps.json`, tagged
+   *  `battle_screen_arena`) the fight should run on. The launcher
+   *  pre-selects this map when the encounter is picked; the user can
+   *  still override via the Arena Map dropdown. Unknown ids are
+   *  ignored — picker reverts to the default arena. JSON key:
+   *  `arena_id`. */
+  arenaId?: string;
+  /** When true, the launcher's Darkness toggle is pre-checked for
+   *  this encounter so the fight starts in low-light by default. The
+   *  user can still flip it off. Pairs naturally with an `arenaId`
+   *  that has authored `light_source` cells. JSON key: `darkness`. */
+  darkness?: boolean;
 }
 
 interface RawEncounter {
@@ -50,6 +62,11 @@ interface RawEncounter {
   weight?: number;
   monster_party_tile?: string;
   monsters?: string[];
+  /** Optional id of an arena map (see EncounterTemplate.arenaId). */
+  arena_id?: string;
+  /** Encounter pre-flags itself as a darkness fight (see
+   *  EncounterTemplate.darkness). */
+  darkness?: boolean;
 }
 
 interface RawEncountersFile {
@@ -86,6 +103,14 @@ function fromRaw(raw: RawEncounter): EncounterTemplate | null {
     ...raw,
     monsters,
     monsterPartyTile: lead,
+    // Snake_case → camelCase aliases. Omitted when the JSON didn't
+    // declare them so consumers can distinguish "no preference" from
+    // "explicitly off / empty".
+    arenaId:
+      typeof raw.arena_id === "string" && raw.arena_id.length > 0
+        ? raw.arena_id
+        : undefined,
+    darkness: typeof raw.darkness === "boolean" ? raw.darkness : undefined,
   };
 }
 
