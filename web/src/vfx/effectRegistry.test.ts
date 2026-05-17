@@ -1,4 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
+
+// The registry imports the real Vfx module, which in turn imports
+// Phaser. Phaser's ESM bundle runs initialization at module load
+// that crashes under vitest's jsdom env (no real WebGL). We never
+// *call* the rendered effects here — only resolve them — so stub
+// phaser to an empty module before the registry imports it.
+vi.mock("phaser", () => ({ default: {}, BlendModes: {}, Geom: {} }));
+
 import {
   resolveProjectileEffect,
   registerProjectileEffect,
@@ -6,10 +14,6 @@ import {
   __resetProjectileRegistryForTests,
   type ProjectileEffectFn,
 } from "./effectRegistry";
-
-// The registry imports the real Vfx module, which in turn imports
-// Phaser. We never *call* the rendered effects here — only resolve
-// them — so the Phaser import is harmless.
 
 describe("effectRegistry", () => {
   beforeEach(() => {

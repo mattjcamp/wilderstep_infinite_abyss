@@ -190,10 +190,10 @@ function readStat(member: SimCharacter, name: string): number {
 
 /** True when an inventory entry's item field names a lockpick under
  *  either the v2 id (`"lockpick"` — from items.json) or the legacy
- *  display name (`"Lockpick"` — still used by `public/data/party.json`
- *  before the sync script flattens it). Matching both keeps the
- *  simulator working against either data shape without the user
- *  having to clean up their module first. */
+ *  display name (`"Lockpick"` — still emitted by legacy authored
+ *  party JSON before the sync script flattens it). Matching both
+ *  keeps the simulator working against either data shape without
+ *  the user having to clean up their module first. */
 function isLockpickEntry(item: string): boolean {
   return item === "lockpick" || item === "Lockpick";
 }

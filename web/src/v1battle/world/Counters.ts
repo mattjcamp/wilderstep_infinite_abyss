@@ -1,5 +1,5 @@
 /**
- * Counters loader — port of `data/counters.json`.
+ * Counters loader — reads the active module's `counters.json`.
  *
  * Counters are the catalog of "things you can do at a service NPC":
  * shopkeeps' wares (general / weapon / armor / magic / reagent / inn /
@@ -17,7 +17,7 @@
  *     temple services. Each entry has id/name/description/cost.
  */
 
-import { dataPath } from "./Module";
+import { modulePath } from "./Module";
 
 export interface CounterService {
   id: string;
@@ -52,7 +52,7 @@ interface RawCounter {
 let _cache: Map<string, Counter> | null = null;
 
 export async function loadCounters(
-  url = dataPath("counters.json"),
+  url = modulePath("counters.json"),
 ): Promise<Map<string, Counter>> {
   if (_cache) return _cache;
   const res = await fetch(url);

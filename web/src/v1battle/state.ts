@@ -30,7 +30,7 @@ export interface GameState {
    *  runs against this narrower shape. */
   party: Combatant[];
   /**
-   * Full Party payload from `/data/party.json` — roster, active
+   * Full Party payload from the active module's `party.json` — roster, active
    * indices, gold, shared inventory, party effects. Loaded lazily by
    * the first scene that needs it (PartyScene) and held here so
    * subsequent opens are instant and edits survive transitions.

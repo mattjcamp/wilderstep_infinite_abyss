@@ -50,8 +50,7 @@ import {
   isAuthoredEncounterId,
   authoredDefeatKey,
 } from "../world/InteriorSpawn";
-import { tileSpriteKey, populateRuntimeDefs, spriteManifest } from "../world/Tiles";
-import { assetUrl, dataPath } from "../world/Module";
+import { assetUrl } from "../world/Module";
 import { loadItems, type Item } from "../world/Items";
 import { loadCounters } from "../world/Counters";
 import { rollLootDrop } from "../world/Loot";
@@ -127,12 +126,6 @@ interface CombatSceneData {
   fromWorld?: boolean;
   /** The "col,row" key of the trigger tile that started this fight. */
   triggerKey?: string;
-  /**
-   * Terrain tile id whose sprite should fill the arena floor. When
-   * present, every non-wall tile renders that sprite; falls back to
-   * a coloured rectangle otherwise.
-   */
-  terrainTileId?: number;
   /**
    * When set, build the encounter from these catalog names instead
    * of the random sample. Used by Monster Spawn boss fights and
@@ -398,7 +391,6 @@ export class CombatScene extends Phaser.Scene {
    *  active actor. Lives at depth 20 (above bodies/HP, below floaters). */
   private darknessGfx: Phaser.GameObjects.Graphics | null = null;
   private triggerKey: string | null = null;
-  private terrainTileId: number | null = null;
   /** Catalog names for this fight; null falls back to makeSampleEncounter. */
   private monsterNames: string[] | null = null;
   /** Scene to launch on exit. Defaults to OverworldScene. */
@@ -519,7 +511,6 @@ export class CombatScene extends Phaser.Scene {
     this.partyInfravisionActive = !!data?.partyInfravisionActive;
     this.staticLights = [];
     this.triggerKey = data?.triggerKey ?? null;
-    this.terrainTileId = data?.terrainTileId ?? null;
     this.monsterNames = data?.monsterNames && data.monsterNames.length > 0
       ? [...data.monsterNames] : null;
     this.destroySpawnKey = data?.destroySpawnKey ?? null;
@@ -622,19 +613,14 @@ export class CombatScene extends Phaser.Scene {
       const path = assetUrl(`/assets/characters/${f}.png`);
       this.load.image(path, path);
     }
-    // Tile sprites for the arena floor — load the full tile manifest
-    // so we can render whatever terrain the encounter sat on.
+    // Arena floor sprites come from arenaCells (a v2 map matrix) and
+    // are queued in create() once the per-cell URLs are known; nothing
+    // to preload here statically. The NEAREST filter applied at texture
+    // add time below keeps pixel art crisp regardless of who loads the
+    // sprite.
     this.textures.on("addtexture", (key: string) => {
       const tex = this.textures.get(key);
       if (tex) tex.setFilter(Phaser.Textures.FilterMode.NEAREST);
-    });
-    this.load.json("tile_defs_combat", dataPath("tile_defs.json"));
-    this.load.once("filecomplete-json-tile_defs_combat", () => {
-      const raw = this.cache.json.get("tile_defs_combat");
-      if (raw) populateRuntimeDefs(raw);
-      for (const { key, path } of spriteManifest()) {
-        this.load.image(key, path);
-      }
     });
   }
 
@@ -969,9 +955,6 @@ export class CombatScene extends Phaser.Scene {
 
   private drawArena(): void {
     this.panel(ARENA_X - 4, ARENA_Y - 4, ARENA_W + 8, ARENA_H + 8);
-    const terrainKey = this.terrainTileId != null
-      ? tileSpriteKey(this.terrainTileId)
-      : null;
     const mapCells = this.arenaCells;
 
     // Bake the per-cell floor sprites into one RenderTexture. Without
@@ -1013,8 +996,8 @@ export class CombatScene extends Phaser.Scene {
           continue;
         }
         // Open floor — priority is map-supplied per-cell sprite (baked
-        // into the RT), then the legacy terrain sprite, then the moody
-        // dark-green fallback. Map sprites are stamped once, not added
+        // into the RT), else the moody dark-green fallback for the
+        // no-map default arena. Map sprites are stamped once, not added
         // as live GameObjects, so the per-frame cost stays flat.
         const cell = mapCells?.[row]?.[col] ?? null;
         const cellUrl = cell?.sprite ?? null;
@@ -1026,8 +1009,6 @@ export class CombatScene extends Phaser.Scene {
             originX: 0,
             originY: 0,
           });
-        } else if (terrainKey && this.textures.exists(terrainKey)) {
-          this.add.image(x, y, terrainKey).setOrigin(0);
         } else if (!floorRT) {
           // Default arena (no map picked) keeps the legacy
           // rectangle fill. With a map picked, missing cells fall
