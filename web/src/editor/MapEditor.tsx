@@ -46,13 +46,19 @@ import { MapPartyScreenOverlay } from "./MapPartyScreenOverlay";
 import { NpcDialogOverlay } from "./NpcDialogOverlay";
 import { CounterShopOverlay } from "./CounterShopOverlay";
 import { LockDialogOverlay } from "./LockDialogOverlay";
-import type { LockEncounterOptions } from "@/sim/MapSimulation";
+import { SpawnEncounterOverlay } from "./SpawnEncounterOverlay";
+import type {
+  LockEncounterOptions,
+  SpawnEncounterOptions,
+} from "@/sim/MapSimulation";
+import type { SimSpawn } from "@/sim/spawn";
 import type {
   SimCharacter,
   SimCharacterClass,
   SimEffect,
   SimGrid,
   SimLightSource,
+  SimMonsterRef,
   SimParty,
   SimRace,
   SimSpell,
@@ -390,6 +396,13 @@ type LoadState =
        *  Lock / Cast Knock dialog can offer the Knock row when the
        *  party has an eligible caster. */
       simKnockSpell: SimSpell | null;
+      /** Resolved spawns.json catalog — passed straight to the sim
+       *  so the per-step spawn loop can find lairs by cell.spawn id. */
+      simSpawns: SimSpawn[];
+      /** Resolved monsters.json catalog — gives the spawn loop sprite
+       *  paths for roamers and lets the encounter overlay show
+       *  roster thumbnails. */
+      simMonsters: SimMonsterRef[];
     }
   | { kind: "error"; message: string };
 
@@ -445,6 +458,12 @@ export function MapEditor({
    *  cleared on dismiss / successful unlock. Keeps the option snapshot
    *  so the overlay renders without re-querying the sim. */
   const [lockEncounter, setLockEncounter] = useState<LockEncounterOptions | null>(null);
+  /** Spawn-encounter dialog state — set when the sim emits
+   *  `spawn_encountered` (party stepped on a lair, or a roamer
+   *  caught up). Cleared once the player resolves it via the
+   *  overlay's Win/Flee buttons. */
+  const [spawnEncounter, setSpawnEncounter] =
+    useState<SpawnEncounterOptions | null>(null);
   /** Counter currently being shopped (id from counters.json). Null when
    *  the shop overlay is closed. The shop overlay is launched from
    *  inside the NPC dialog; closing it returns the player to the
@@ -459,8 +478,15 @@ export function MapEditor({
       !!npcEncounterId ||
       !!shopCounterId ||
       partyScreenOpen ||
-      !!lockEncounter;
-  }, [npcEncounterId, shopCounterId, partyScreenOpen, lockEncounter]);
+      !!lockEncounter ||
+      !!spawnEncounter;
+  }, [
+    npcEncounterId,
+    shopCounterId,
+    partyScreenOpen,
+    lockEncounter,
+    spawnEncounter,
+  ]);
   /** Callback the Phaser scene invokes when the user clicks a tile
    *  during "placing" — held in a ref so the scene closure stays
    *  stable while React re-renders. */
@@ -676,6 +702,42 @@ export function MapEditor({
      *  Used when the party steps onto a tile whose `text` field is
      *  set. Rises and fades over ~1.4s. Self-cleaning. */
     floatText: (col: number, row: number, text: string) => void;
+    /** Sync per-roamer sprites with the live set from the simulator.
+     *  Roamers render at near-full cell size with a depth just below
+     *  the party (so the party sprite reads on top when they collide). */
+    setRoamerPositions: (
+      positions: ReadonlyArray<{
+        id: string;
+        col: number;
+        row: number;
+        sprite: string;
+      }>,
+    ) => void;
+    /** Swap the cell at (col, row) to a different sprite/walkable.
+     *  Used by the destroy-lair path so a defeated Monster Spawn
+     *  reverts to plain ground visually in-session. */
+    setCellSprite: (
+      col: number,
+      row: number,
+      sprite: string,
+      walkable: boolean,
+    ) => void;
+    /** Sync sprites for the live placed-encounter entities. Same
+     *  shape and depth as roamers — they're just sourced from
+     *  encounter cells instead of spawns. */
+    setPlacedEncounterPositions: (
+      positions: ReadonlyArray<{
+        id: string;
+        col: number;
+        row: number;
+        sprite: string;
+      }>,
+    ) => void;
+    /** Tell the scene to suppress the static cell-encounter overlay
+     *  for these "col,row" keys. Pairs with the placed-encounter
+     *  renderer so a roaming entity doesn't double up with the
+     *  painted sprite. Cleared (empty set) when sim mode ends. */
+    setSuppressedEncounterCells: (cells: ReadonlySet<string>) => void;
   } | null>(null);
   /** The party-light source the simulation contributes. Read by the
    *  scene's relight on every pass — when sim mode is off this stays
@@ -717,6 +779,7 @@ export function MapEditor({
           questsLayers,
           npcsLayers,
           spellsLayers,
+          monstersLayers,
         ] = await Promise.all([
           src.loadModelLayers(moduleId, "map_tiles"),
           src.loadModelLayers(moduleId, "maps"),
@@ -743,6 +806,11 @@ export function MapEditor({
           // simulator today (Pick Lock / Cast Knock dialog). Non-fatal
           // so a module without spells still boots into sim mode.
           src.loadModelLayers(moduleId, "spells").catch(() => null),
+          // Monsters catalog — read by the spawn subsystem so the
+          // roamer renderer + encounter overlay can resolve a
+          // monster id to a sprite + display name. Non-fatal so
+          // modules without monsters.json still mount.
+          src.loadModelLayers(moduleId, "monsters").catch(() => null),
         ]);
         if (cancelled) return;
 
@@ -775,6 +843,42 @@ export function MapEditor({
           spawnsLayers.ownFile,
         ) as { spawns?: RefRecord[] } | null;
         const spawns = spawnsMerged?.spawns ?? [];
+        // Build the typed SimSpawn list the simulator consumes. We
+        // backfill the few fields v1 docs allow to be optional with
+        // the same defaults the v1 reference loader applied — so a
+        // partially-authored Spawn record still drives a sensible
+        // loop instead of throwing.
+        const simSpawns: SimSpawn[] = spawns.map((s) => {
+          const rec = s as RefRecord & {
+            description?: string;
+            spawn_monsters?: string[];
+            spawn_chance?: number;
+            spawn_radius?: number;
+            max_spawned?: number;
+            boss_monsters?: string[];
+            xp_reward?: number;
+            gold_reward?: number;
+            loot?: string[];
+          };
+          return {
+            id: rec.id,
+            name: (rec.name as string) ?? "Monster Spawn",
+            description: rec.description ?? "",
+            spawn_monsters: rec.spawn_monsters ?? [],
+            spawn_chance:
+              typeof rec.spawn_chance === "number" ? rec.spawn_chance : 20,
+            spawn_radius:
+              typeof rec.spawn_radius === "number" ? rec.spawn_radius : 3,
+            max_spawned:
+              typeof rec.max_spawned === "number" ? rec.max_spawned : 2,
+            boss_monsters: rec.boss_monsters ?? [],
+            xp_reward:
+              typeof rec.xp_reward === "number" ? rec.xp_reward : 50,
+            gold_reward:
+              typeof rec.gold_reward === "number" ? rec.gold_reward : 25,
+            loot: rec.loot ?? [],
+          };
+        });
 
         const itemsMerged = mergeModel(
           "items",
@@ -915,6 +1019,27 @@ export function MapEditor({
         const knockSpell: SimSpell | null =
           spellsMerged?.spells?.find((s) => s.id === "knock") ?? null;
 
+        // Monsters catalog — the spawn subsystem needs ids + names +
+        // sprite paths. We only pluck those three fields out of the
+        // (much larger) monsters.json record so the sim type stays
+        // narrow. monsters.json paths are already in the "monster/foo.png"
+        // shape v1battle's loader resolves.
+        const monstersMerged =
+          monstersLayers &&
+          (mergeModel(
+            "monsters",
+            monstersLayers.inherited,
+            monstersLayers.ownFile,
+          ) as {
+            monsters?: Array<{ id: string; name?: string; sprite?: string }>;
+          } | null);
+        const simMonsters: SimMonsterRef[] =
+          (monstersMerged?.monsters ?? []).map((m) => ({
+            id: m.id,
+            name: m.name ?? m.id,
+            sprite: m.sprite ?? "",
+          }));
+
         // Build the picker list once at load. The full record set is
         // resolved by mergeModel above (allMaps); we strip to id+name
         // since the inspector doesn't need anything else and the list
@@ -968,6 +1093,8 @@ export function MapEditor({
           simEffects: effectsMerged?.effects ?? [],
           simClasses: classesMerged?.character_classes ?? [],
           simKnockSpell: knockSpell,
+          simSpawns,
+          simMonsters,
         });
       } catch (e) {
         if (cancelled) return;
@@ -1052,12 +1179,17 @@ export function MapEditor({
         availableQuests,
         simParty,
         simCharacters,
+        simMonsters,
       } = state;
       const paletteById = new Map(palette.map((t) => [t.id, t]));
       const encountersById = new Map(encounters.map((e) => [e.id, e]));
       const itemsById = new Map(items.map((i) => [i.id, i]));
       const npcsById = new Map(npcs.map((n) => [n.id, n]));
       const questsById = new Map(availableQuests.map((q) => [q.id, q]));
+      // Map id → sprite for the roamer renderer. Sprites are
+      // already in the "monster/foo.png" shape the preload pipeline
+      // consumes, so they slot straight into spriteKeys below.
+      const monstersById = new Map(simMonsters.map((m) => [m.id, m]));
 
       // Gather every unique sprite path used by the palette + the
       // current grid + every encounter's monster_party_tile + every
@@ -1108,6 +1240,13 @@ export function MapEditor({
       for (const ch of simCharacters) {
         if (ch.sprite) spriteKeys.add(ch.sprite);
       }
+      // Monster sprites — the spawn loop renders one Phaser Image per
+      // roamer using these textures. Preloading them up front means
+      // a freshly-spawned monster appears immediately without the
+      // mid-step loader hop.
+      for (const m of simMonsters) {
+        if (m.sprite) spriteKeys.add(m.sprite);
+      }
 
       class MapScene extends Phaser.Scene {
         cells: Map<string, Phaser.GameObjects.Image> = new Map();
@@ -1138,6 +1277,24 @@ export function MapEditor({
         /** Sim-mode party sprite (single Image, depth-300 above
          *  everything else). Null while sim mode is off. */
         partySprite: Phaser.GameObjects.Image | null = null;
+        /** Live roamer sprites keyed by SimRoamer.id. Mutated by
+         *  setRoamerPositions — entries that disappear from the
+         *  incoming list are destroyed, new ids spawn a fresh Image,
+         *  surviving ids tween/snap to their new position. */
+        roamerSprites: Map<string, Phaser.GameObjects.Image> = new Map();
+        /** Live placed-encounter sprites keyed by SimPlacedEncounter.id.
+         *  Same diff'd-update pattern as roamers; they share the same
+         *  depth band (250) so they layer naturally with each other. */
+        placedEncounterSprites: Map<
+          string,
+          Phaser.GameObjects.Image
+        > = new Map();
+        /** Cell keys whose static encounter overlay should currently
+         *  stay hidden. Driven by the sim subsystem — every cell
+         *  with a live placed-encounter entity (plus every cell whose
+         *  entity has been defeated) lands here while sim mode is
+         *  on. Cleared back to an empty Set on sim teardown. */
+        suppressedEncounterCells: Set<string> = new Set();
         /** Sprite key for each cell that currently holds a loose boat.
          *  Boats render via the cell's own image (swapped between
          *  boat and water textures) rather than a separate overlay —
@@ -1345,6 +1502,18 @@ export function MapEditor({
               // Assigned for real below.
             },
             floatText: () => {
+              // Assigned for real below.
+            },
+            setRoamerPositions: () => {
+              // Assigned for real below.
+            },
+            setCellSprite: () => {
+              // Assigned for real below.
+            },
+            setPlacedEncounterPositions: () => {
+              // Assigned for real below.
+            },
+            setSuppressedEncounterCells: () => {
               // Assigned for real below.
             },
             relight: (mode) => {
@@ -1770,6 +1939,170 @@ export function MapEditor({
               // an instant visual update, but we set the ref here so
               // even a stale relight picks up the new source.
             };
+            // Roamer rendering — one Image per live SimRoamer. Diffs
+            // against the previously-drawn set: drop sprites for ids
+            // that vanished, snap surviving ids to their new cell,
+            // create fresh ones for new entries.
+            sceneApiRef.current.setRoamerPositions = (positions) => {
+              const wanted = new Map(positions.map((p) => [p.id, p]));
+              // Drop sprites for ids that left the list.
+              for (const [id, img] of sceneSelf.roamerSprites) {
+                if (wanted.has(id)) continue;
+                img.destroy();
+                sceneSelf.roamerSprites.delete(id);
+              }
+              // Update / create the wanted entries.
+              for (const [id, p] of wanted) {
+                const px = p.col * TILE_SIZE + TILE_SIZE / 2;
+                const py = p.row * TILE_SIZE + TILE_SIZE / 2;
+                let img = sceneSelf.roamerSprites.get(id);
+                if (!img) {
+                  // Fall back to a roamer-marker dot when the
+                  // monster's sprite didn't preload (missing
+                  // sprite path, typo). The roamer still moves;
+                  // the user sees "something" is chasing them.
+                  const ROAMER_MARKER_KEY = "__roamer_marker";
+                  const texKey =
+                    p.sprite && sceneSelf.textures.exists(p.sprite)
+                      ? p.sprite
+                      : ROAMER_MARKER_KEY;
+                  if (
+                    texKey === ROAMER_MARKER_KEY &&
+                    !sceneSelf.textures.exists(texKey)
+                  ) {
+                    const g = sceneSelf.add.graphics();
+                    g.fillStyle(0xb84d4d, 1);
+                    g.fillCircle(16, 16, 12);
+                    g.lineStyle(2, 0x4a1c00, 1);
+                    g.strokeCircle(16, 16, 12);
+                    g.generateTexture(texKey, 32, 32);
+                    g.destroy();
+                  }
+                  img = sceneSelf.add
+                    .image(px, py, texKey)
+                    .setOrigin(0.5)
+                    .setDisplaySize(TILE_SIZE * 0.95, TILE_SIZE * 0.95)
+                    // Below the party sprite (300) so a collision
+                    // visually reads "party on top of monster," but
+                    // above encounter overlays (80) and NPCs (75).
+                    .setDepth(250);
+                  sceneSelf.roamerSprites.set(id, img);
+                } else {
+                  img.setPosition(px, py);
+                  if (
+                    p.sprite &&
+                    sceneSelf.textures.exists(p.sprite) &&
+                    img.texture.key !== p.sprite
+                  ) {
+                    img.setTexture(p.sprite);
+                  }
+                }
+              }
+            };
+            // Destroy-lair texture swap. Replaces the base cell
+            // image's texture with the supplied sprite and clears
+            // its tint so the freshly-revealed grass doesn't keep
+            // the spawn-tile lighting. Also re-runs the encounter /
+            // animation passes — destroying a spawn cell may have
+            // cleared overlay state the diffs need to see.
+            sceneApiRef.current.setCellSprite = (col, row, sprite) => {
+              const key = `${col},${row}`;
+              const img = sceneSelf.cells.get(key);
+              if (!img) return;
+              if (sprite && sceneSelf.textures.exists(sprite)) {
+                img.setTexture(sprite);
+              }
+              // The animation/encounter/etc. overlays on this cell
+              // (if any) are tied to the cell's other fields; the
+              // destroy path also cleared the spawn id off the cell,
+              // so the next refresh pass will pick that up. No
+              // explicit refresh here — callers run them on a state
+              // tick anyway.
+            };
+            // Placed-encounter rendering — same diff'd-update pattern
+            // as roamers. Distinct map so suppression bookkeeping
+            // doesn't have to differentiate; both render at depth 250.
+            sceneApiRef.current.setPlacedEncounterPositions = (positions) => {
+              const wanted = new Map(positions.map((p) => [p.id, p]));
+              for (const [id, img] of sceneSelf.placedEncounterSprites) {
+                if (wanted.has(id)) continue;
+                img.destroy();
+                sceneSelf.placedEncounterSprites.delete(id);
+              }
+              for (const [id, p] of wanted) {
+                const px = p.col * TILE_SIZE + TILE_SIZE / 2;
+                const py = p.row * TILE_SIZE + TILE_SIZE / 2;
+                let img = sceneSelf.placedEncounterSprites.get(id);
+                if (!img) {
+                  // Encounter sprites come from monster_party_tile —
+                  // already a "monster/foo.png" path. Fall back to a
+                  // marker dot when the texture didn't preload.
+                  const ENC_MARKER_KEY = "__placed_encounter_marker";
+                  const texKey =
+                    p.sprite && sceneSelf.textures.exists(p.sprite)
+                      ? p.sprite
+                      : ENC_MARKER_KEY;
+                  if (
+                    texKey === ENC_MARKER_KEY &&
+                    !sceneSelf.textures.exists(texKey)
+                  ) {
+                    const g = sceneSelf.add.graphics();
+                    g.fillStyle(0xc66666, 1);
+                    g.fillCircle(16, 16, 12);
+                    g.lineStyle(2, 0x4a1c00, 1);
+                    g.strokeCircle(16, 16, 12);
+                    g.generateTexture(texKey, 32, 32);
+                    g.destroy();
+                  }
+                  img = sceneSelf.add
+                    .image(px, py, texKey)
+                    .setOrigin(0.5)
+                    .setDisplaySize(TILE_SIZE * 0.95, TILE_SIZE * 0.95)
+                    // Same depth band as roamers — both are "monsters
+                    // pursuing the party."
+                    .setDepth(250);
+                  sceneSelf.placedEncounterSprites.set(id, img);
+                } else {
+                  img.setPosition(px, py);
+                  if (
+                    p.sprite &&
+                    sceneSelf.textures.exists(p.sprite) &&
+                    img.texture.key !== p.sprite
+                  ) {
+                    img.setTexture(p.sprite);
+                  }
+                }
+              }
+            };
+            // Suppression set for the static cell-encounter overlay.
+            // Updating the set destroys any existing overlay for the
+            // newly-suppressed cells; calling refreshEncounterOverlays
+            // afterwards is a no-op for those (the diff sees no change).
+            // Cells that LEAVE the suppression set get re-rendered
+            // through a fresh refresh pass, which we also trigger so
+            // sim teardown restores the painted overlays without the
+            // caller doing it explicitly.
+            sceneApiRef.current.setSuppressedEncounterCells = (cells) => {
+              const next = new Set(cells);
+              const prev = sceneSelf.suppressedEncounterCells;
+              // Drop overlays for cells that just got suppressed.
+              for (const key of next) {
+                if (prev.has(key)) continue;
+                const existing = sceneSelf.encounterOverlays.get(key);
+                if (existing) {
+                  existing.destroy();
+                  sceneSelf.encounterOverlays.delete(key);
+                  sceneSelf.encounterOverlayIds.delete(key);
+                }
+              }
+              sceneSelf.suppressedEncounterCells = next;
+              // Cells that just LEFT the suppression set need their
+              // overlays brought back — refreshEncounterOverlays
+              // sees a missing overlay for a still-set encounter id
+              // and recreates it. Safe to call on every change since
+              // it's diff'd internally.
+              sceneApiRef.current?.refreshEncounterOverlays();
+            };
           }
           if (sceneApiRef.current) {
             sceneApiRef.current.refreshEncounterOverlays = () => {
@@ -1778,9 +2111,17 @@ export function MapEditor({
                   const cell = gridRef.current[r]?.[c];
                   const encId = cell?.encounter ?? "";
                   const key = `${c},${r}`;
+                  // Sim-mode override: cells whose static overlay is
+                  // suppressed (because a live placed encounter is
+                  // standing in for it) don't get painted here. Treat
+                  // them as "no encounter" from this pass's POV — any
+                  // existing overlay is torn down, no new one created.
+                  const suppressed =
+                    sceneSelf.suppressedEncounterCells.has(key);
+                  const effectiveId = suppressed ? "" : encId;
                   const currentId =
                     sceneSelf.encounterOverlayIds.get(key) ?? "";
-                  if (encId === currentId) continue;
+                  if (effectiveId === currentId) continue;
                   // Remove the existing overlay (if any).
                   const existing = sceneSelf.encounterOverlays.get(key);
                   if (existing) {
@@ -1788,8 +2129,8 @@ export function MapEditor({
                     sceneSelf.encounterOverlays.delete(key);
                     sceneSelf.encounterOverlayIds.delete(key);
                   }
-                  if (!encId) continue;
-                  const enc = encountersById.get(encId);
+                  if (!effectiveId) continue;
+                  const enc = encountersById.get(effectiveId);
                   const sprite = enc?.monster_party_tile;
                   if (
                     !sprite ||
@@ -1798,7 +2139,7 @@ export function MapEditor({
                   ) {
                     // No sprite or texture wasn't preloaded — track the
                     // id so we don't repeatedly retry, but don't draw.
-                    sceneSelf.encounterOverlayIds.set(key, encId);
+                    sceneSelf.encounterOverlayIds.set(key, effectiveId);
                     continue;
                   }
                   const img = sceneSelf.add
@@ -1818,7 +2159,7 @@ export function MapEditor({
                     img.setTint(baseImg.tintTopLeft);
                   }
                   sceneSelf.encounterOverlays.set(key, img);
-                  sceneSelf.encounterOverlayIds.set(key, encId);
+                  sceneSelf.encounterOverlayIds.set(key, effectiveId);
                 }
               }
             };
@@ -2443,6 +2784,18 @@ export function MapEditor({
       floatText: (col, row, text) => {
         sceneApiRef.current?.floatText(col, row, text);
       },
+      setRoamerPositions: (positions) => {
+        sceneApiRef.current?.setRoamerPositions(positions);
+      },
+      setCellSprite: (col, row, sprite, walkable) => {
+        sceneApiRef.current?.setCellSprite(col, row, sprite, walkable);
+      },
+      setPlacedEncounterPositions: (positions) => {
+        sceneApiRef.current?.setPlacedEncounterPositions(positions);
+      },
+      setSuppressedEncounterCells: (cells) => {
+        sceneApiRef.current?.setSuppressedEncounterCells(cells);
+      },
       onKey: (handler) => {
         // Window-scoped listener. Ignore the keystroke if the user is
         // typing in an input/textarea so cell-text editing isn't
@@ -2487,6 +2840,25 @@ export function MapEditor({
       galadriels_light_steps: 0,
     };
 
+    // Pick a ground tile the destroy-lair path can revert a defeated
+    // spawn cell to. Prefer a tile tagged "grass"; fall back to the
+    // first walkable, non-special palette entry. Failure to find one
+    // is non-fatal — the destroy path still clears the cell's spawn
+    // id, the visual just won't change.
+    const groundPaletteEntry =
+      state.palette.find((t) => t.tag === "grass") ??
+      state.palette.find(
+        (t) => t.walkable && !t.boat && !t.locked && !t.light_source,
+      ) ??
+      null;
+    const groundTile = groundPaletteEntry
+      ? {
+          id: groundPaletteEntry.id,
+          sprite: groundPaletteEntry.sprite,
+          walkable: groundPaletteEntry.walkable,
+        }
+      : undefined;
+
     const sim = new MapSimulation({
       grid,
       party,
@@ -2499,6 +2871,21 @@ export function MapEditor({
         // members against the spell's catalog.
         characterClasses: state.simClasses,
         knockSpell: state.simKnockSpell,
+        // Monster-lair subsystem catalogs. Both can be empty for
+        // modules that haven't authored either — the spawn loop
+        // just stays dormant in that case.
+        spawns: state.simSpawns,
+        monsters: state.simMonsters,
+        // Encounter catalog feeds the placed-encounter pursuit loop.
+        // Each cell with `tile.encounter` set spawns one roaming
+        // entity whose collision opens this encounter's roster.
+        encounters: state.encounters.map((e) => ({
+          id: e.id,
+          name: (e.name as string) ?? e.id,
+          monster_party_tile: e.monster_party_tile,
+          monsters: e.monsters ?? [],
+        })),
+        groundTile,
       },
       classNameById,
       bridge,
@@ -2529,6 +2916,33 @@ export function MapEditor({
         // the NPC-broker route) is reused, so closing the overlay
         // cleanly returns the player to keyboard movement.
         setShopCounterId(ev.counterId);
+      }
+      if (ev.kind === "spawn_encountered") {
+        // Monster Spawn fight — boss or roamer. The overlay pops with
+        // Win/Flee buttons; movement is gated through overlaysOpenRef
+        // until resolveSpawnEncounter lands the outcome.
+        setSpawnEncounter(ev.options);
+      }
+      if (ev.kind === "spawn_destroyed") {
+        // No special UI today — the cell visual is already swapped by
+        // setCellSprite and the inspector picks up the change on its
+        // next render. Just log the event for the user.
+      }
+      if (ev.kind === "dungeon_entered") {
+        // Dungeon entrance — route to the dedicated dungeon sim
+        // page with the dungeon id + the return cell, so exiting
+        // drops the party back here at the entrance. The dungeon
+        // sim handles the procedural generation + the simulation
+        // for the entire underground run.
+        const params = new URLSearchParams({
+          id: ev.dungeonId,
+          return: state.kind === "ok" ? state.mapRecord.id : mapId,
+          col: String(ev.returnPos.col),
+          row: String(ev.returnPos.row),
+        });
+        router.push(
+          `/editor/${moduleId}/sim/dungeon?${params.toString()}`,
+        );
       }
     });
 
@@ -3204,6 +3618,23 @@ export function MapEditor({
               onClose={() => {
                 simRef.current?.dismissLock();
                 setLockEncounter(null);
+              }}
+            />
+          )
+        : null}
+      {/* Spawn-encounter overlay — opens when the party steps onto a
+          Monster Spawn lair OR is caught by a roamer. The overlay's
+          Win button resolves the encounter through the sim, which
+          either destroys the lair (boss fights) or removes the
+          roamer (roamer fights). */}
+      {spawnEncounter
+        ? (
+            <SpawnEncounterOverlay
+              options={spawnEncounter}
+              monsters={state.simMonsters}
+              onResolve={(outcome) => {
+                simRef.current?.resolveSpawnEncounter(outcome);
+                setSpawnEncounter(null);
               }}
             />
           )

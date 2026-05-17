@@ -15,7 +15,13 @@ import {
   type DungeonLevel,
   type QuestKillSpawnRow,
 } from "./Dungeon";
-import { TILE_DFLOOR, TILE_PATH, TILE_GRASS, TILE_FOREST_ARCHWAY_UP } from "./Tiles";
+import {
+  TILE_DFLOOR,
+  TILE_PATH,
+  TILE_GRASS,
+  TILE_FOREST_ARCHWAY_UP,
+  TILE_LOCKED_DOOR,
+} from "./Tiles";
 import {
   ensureQuestStates,
   acceptQuest,
@@ -71,13 +77,13 @@ describe("Dungeon — single level shape", () => {
     name: "Test",
     width: 40,
     height: 30,
-    style: "default",
+    style: "ruins",
     difficulty: "normal",
     floorIdx: 0,
     placeStairsDown: false,
     placeOverworldExit: false,
-    placeDoors: false,
-    torchDensity: "moderate",
+    lockProbability: 0,
+    torchProbability: 0.15,
     seed: 42,
   });
 
@@ -116,12 +122,12 @@ describe("Dungeon — single level shape", () => {
 describe("Dungeon — determinism", () => {
   const opts = {
     name: "Stable",
-    style: "default" as const,
+    style: "ruins" as const,
     numLevels: 2,
     difficulty: "normal" as const,
     levelSize: "medium" as const,
-    torchDensity: "moderate" as const,
-    lockedDoors: false,
+    torchProbability: 0.15 as const,
+    lockProbability: 0,
     seedBase: 12345,
   };
 
@@ -146,9 +152,9 @@ describe("Dungeon — determinism", () => {
 describe("Dungeon — multi-level", () => {
   it("each non-final level has a stairs-down tile", () => {
     const levels = generateDungeon({
-      name: "Multi", style: "default", numLevels: 3,
-      difficulty: "normal", levelSize: "medium", torchDensity: "none",
-      lockedDoors: false, seedBase: 7,
+      name: "Multi", style: "ruins", numLevels: 3,
+      difficulty: "normal", levelSize: "medium", torchProbability: 0,
+      lockProbability: 0, seedBase: 7,
     });
     expect(levels.length).toBe(3);
     expect(countMatching(levels[0], (id) => id === TILE_STAIRS_DOWN)).toBeGreaterThan(0);
@@ -158,9 +164,9 @@ describe("Dungeon — multi-level", () => {
 
   it("the bottom non-forest floor of a multi-level dungeon registers an overworld exit", () => {
     const levels = generateDungeon({
-      name: "Exit", style: "default", numLevels: 2,
-      difficulty: "normal", levelSize: "medium", torchDensity: "none",
-      lockedDoors: false, seedBase: 99,
+      name: "Exit", style: "ruins", numLevels: 2,
+      difficulty: "normal", levelSize: "medium", torchProbability: 0,
+      lockProbability: 0, seedBase: 99,
     });
     expect(levels[0].overworldExits.size).toBe(0);
     expect(levels[1].overworldExits.size).toBeGreaterThanOrEqual(1);
@@ -168,9 +174,9 @@ describe("Dungeon — multi-level", () => {
 
   it("a single-level dungeon does NOT register an overworld exit (just leave through the entry)", () => {
     const levels = generateDungeon({
-      name: "Solo", style: "default", numLevels: 1,
-      difficulty: "easy", levelSize: "small", torchDensity: "none",
-      lockedDoors: false, seedBase: 4,
+      name: "Solo", style: "ruins", numLevels: 1,
+      difficulty: "easy", levelSize: "small", torchProbability: 0,
+      lockProbability: 0, seedBase: 4,
     });
     expect(levels[0].overworldExits.size).toBe(0);
   });
@@ -179,13 +185,13 @@ describe("Dungeon — multi-level", () => {
 describe("Dungeon — styles", () => {
   it("cave style uses path floors", () => {
     const lvl = generateDungeonLevel({
-      name: "Cave", width: 30, height: 20, style: "cave",
+      name: "Cave", width: 30, height: 20, style: "caves",
       difficulty: "easy", floorIdx: 0, placeStairsDown: false,
-      placeOverworldExit: false, placeDoors: false,
-      torchDensity: "none", seed: 1,
+      placeOverworldExit: false, lockProbability: 0,
+      torchProbability: 0, seed: 1,
     });
     expect(countMatching(lvl, (id) => id === TILE_PATH)).toBeGreaterThan(0);
-    expect(styleFloorTile("cave")).toBe(TILE_PATH);
+    expect(styleFloorTile("caves")).toBe(TILE_PATH);
   });
 
   it("forest style spawns archway entrance tiles and grass-floored rooms", () => {
@@ -196,8 +202,8 @@ describe("Dungeon — styles", () => {
     const lvl = generateDungeonLevel({
       name: "Wood", width: 30, height: 20, style: "forest",
       difficulty: "easy", floorIdx: 0, placeStairsDown: false,
-      placeOverworldExit: false, placeDoors: false,
-      torchDensity: "none", seed: 17,
+      placeOverworldExit: false, lockProbability: 0,
+      torchProbability: 0, seed: 17,
     });
     // Either the entry is an archway (edge placement succeeded) or
     // a regular stairs-up (room-center fallback). Both are acceptable
@@ -248,10 +254,10 @@ describe("Dungeon — random encounter difficulty filter", () => {
     const seen = new Set<string>();
     for (const seed of [1, 7, 19, 99, 314, 2718]) {
       const lvl = generateDungeonLevel({
-        name: "F", width: 40, height: 30, style: "default",
+        name: "F", width: 40, height: 30, style: "ruins",
         difficulty: "normal", floorIdx: 0, placeStairsDown: false,
-        placeOverworldExit: false, placeDoors: false,
-        torchDensity: "none", seed,
+        placeOverworldExit: false, lockProbability: 0,
+        torchProbability: 0, seed,
         encounters, monsterDifficulty: difficulty,
       });
       for (const m of lvl.monsters) {
@@ -270,10 +276,10 @@ describe("Dungeon — random encounter difficulty filter", () => {
     // Force the seed picks so the mixed encounter is selected, then
     // assert its roster is pruned.
     const lvl = generateDungeonLevel({
-      name: "F", width: 40, height: 30, style: "default",
+      name: "F", width: 40, height: 30, style: "ruins",
       difficulty: "normal", floorIdx: 0, placeStairsDown: false,
-      placeOverworldExit: false, placeDoors: false,
-      torchDensity: "none", seed: 42,
+      placeOverworldExit: false, lockProbability: 0,
+      torchProbability: 0, seed: 42,
       encounters, monsterDifficulty: difficulty,
     });
     for (const m of lvl.monsters) {
@@ -288,10 +294,10 @@ describe("Dungeon — random encounter difficulty filter", () => {
 
   it("a hard dungeon still spawns hard monsters via the same machinery", () => {
     const lvl = generateDungeonLevel({
-      name: "F", width: 40, height: 30, style: "default",
+      name: "F", width: 40, height: 30, style: "ruins",
       difficulty: "hard", floorIdx: 0, placeStairsDown: false,
-      placeOverworldExit: false, placeDoors: false,
-      torchDensity: "none", seed: 7,
+      placeOverworldExit: false, lockProbability: 0,
+      torchProbability: 0, seed: 7,
       encounters, monsterDifficulty: difficulty,
     });
     // The hard tier accepts Banshee + Man Eater; some rooms will
@@ -312,10 +318,10 @@ describe("Dungeon — random encounter difficulty filter", () => {
     const seen = new Set<string>();
     for (const seed of [1, 7, 19, 99, 314, 2718]) {
       const lvl = generateDungeonLevel({
-        name: "F", width: 40, height: 30, style: "default",
+        name: "F", width: 40, height: 30, style: "ruins",
         difficulty: "normal", floorIdx: 0, placeStairsDown: false,
-        placeOverworldExit: false, placeDoors: false,
-        torchDensity: "none", seed, encounters,
+        placeOverworldExit: false, lockProbability: 0,
+        torchProbability: 0, seed, encounters,
         // monsterDifficulty intentionally omitted
       });
       for (const m of lvl.monsters) {
@@ -329,30 +335,30 @@ describe("Dungeon — random encounter difficulty filter", () => {
   });
 });
 
-describe("Dungeon — torch density", () => {
-  it("'none' produces zero wall-torch decorations", () => {
+describe("Dungeon — torch probability", () => {
+  it("p = 0 produces zero wall-torch decorations", () => {
     const lvl = generateDungeonLevel({
-      name: "Dark", width: 40, height: 30, style: "default",
+      name: "Dark", width: 40, height: 30, style: "ruins",
       difficulty: "normal", floorIdx: 0, placeStairsDown: false,
-      placeOverworldExit: false, placeDoors: false,
-      torchDensity: "none", seed: 8,
+      placeOverworldExit: false, lockProbability: 0,
+      torchProbability: 0, seed: 8,
     });
     const torchCount = Object.values(lvl.decorations).filter((id) => id === 34).length;
     expect(torchCount).toBe(0);
   });
 
-  it("'abundant' produces strictly more torches than 'sparse'", () => {
+  it("higher probabilities yield strictly more torches", () => {
     const sparse = generateDungeonLevel({
-      name: "S", width: 40, height: 30, style: "default",
+      name: "S", width: 40, height: 30, style: "ruins",
       difficulty: "normal", floorIdx: 0, placeStairsDown: false,
-      placeOverworldExit: false, placeDoors: false,
-      torchDensity: "sparse", seed: 1234,
+      placeOverworldExit: false, lockProbability: 0,
+      torchProbability: 0.05, seed: 1234,
     });
     const abundant = generateDungeonLevel({
-      name: "A", width: 40, height: 30, style: "default",
+      name: "A", width: 40, height: 30, style: "ruins",
       difficulty: "normal", floorIdx: 0, placeStairsDown: false,
-      placeOverworldExit: false, placeDoors: false,
-      torchDensity: "abundant", seed: 1234,
+      placeOverworldExit: false, lockProbability: 0,
+      torchProbability: 0.5, seed: 1234,
     });
     const sparseCount = Object.values(sparse.decorations).filter((id) => id === 34).length;
     const abundantCount = Object.values(abundant.decorations).filter((id) => id === 34).length;
@@ -361,15 +367,50 @@ describe("Dungeon — torch density", () => {
 });
 
 describe("Dungeon — locked doors", () => {
-  it("placing doors yields some door tiles", () => {
+  it("places at least one door (locked or unlocked) on every dungeon", () => {
+    // Doors are architectural in v2 — they always get placed where
+    // a corridor meets a room. The lockProbability only decides
+    // whether a single-entrance room's lone door gets upgraded to
+    // a locked door, so counting both kinds covers the
+    // "this dungeon has doors" assertion regardless of seed.
     const lvl = generateDungeonLevel({
-      name: "Doors", width: 40, height: 30, style: "default",
+      name: "Doors", width: 40, height: 30, style: "ruins",
       difficulty: "hard", floorIdx: 0, placeStairsDown: false,
-      placeOverworldExit: false, placeDoors: true,
-      torchDensity: "none", seed: 50,
+      placeOverworldExit: false, lockProbability: 0,
+      torchProbability: 0, seed: 50,
     });
-    const doorCount = countMatching(lvl, (id) => id === TILE_DDOOR);
-    expect(doorCount).toBeGreaterThan(0);
+    const doors = countMatching(
+      lvl,
+      (id) => id === TILE_DDOOR || id === TILE_LOCKED_DOOR,
+    );
+    expect(doors).toBeGreaterThan(0);
+  });
+
+  it("p = 0 places no locked doors", () => {
+    const lvl = generateDungeonLevel({
+      name: "Unlocked", width: 40, height: 30, style: "ruins",
+      difficulty: "normal", floorIdx: 0, placeStairsDown: false,
+      placeOverworldExit: false, lockProbability: 0,
+      torchProbability: 0, seed: 50,
+    });
+    expect(countMatching(lvl, (id) => id === TILE_LOCKED_DOOR)).toBe(0);
+  });
+
+  it("p = 1 places at least one locked door", () => {
+    // The fixDisconnectedLockedDoors pass can demote locks that
+    // would strand a region — so even at p=1 we can't assert that
+    // *every* candidate locked, only that *some* did. Seed picked
+    // so the level generates with at least one single-entrance
+    // room that doesn't strand anything.
+    const lvl = generateDungeonLevel({
+      name: "Locked", width: 40, height: 30, style: "ruins",
+      difficulty: "normal", floorIdx: 0, placeStairsDown: false,
+      placeOverworldExit: false, lockProbability: 1,
+      torchProbability: 0, seed: 50,
+    });
+    expect(
+      countMatching(lvl, (id) => id === TILE_LOCKED_DOOR),
+    ).toBeGreaterThan(0);
   });
 });
 
@@ -382,10 +423,10 @@ describe("Dungeon — chest + trap placement", () => {
     let totalTraps = 0;
     for (let seed = 0; seed < 8; seed++) {
       const lvl = generateDungeonLevel({
-        name: "F", width: 40, height: 30, style: "default",
+        name: "F", width: 40, height: 30, style: "ruins",
         difficulty: "normal", floorIdx: 0, placeStairsDown: false,
-        placeOverworldExit: false, placeDoors: false,
-        torchDensity: "none", seed,
+        placeOverworldExit: false, lockProbability: 0,
+        torchProbability: 0, seed,
       });
       totalChests += countMatching(lvl, (id) => id === TILE_CHEST);
       totalTraps += countMatching(lvl, (id) => id === TILE_TRAP);
@@ -420,10 +461,10 @@ describe("Dungeon — connectivity (entry must reach the descent stairs)", () =>
     let triedAtLeastOne = false;
     for (let seed = 0; seed < 6; seed++) {
       const lvl = generateDungeonLevel({
-        name: "C", width: 40, height: 30, style: "default",
+        name: "C", width: 40, height: 30, style: "ruins",
         difficulty: "normal", floorIdx: 0,
         placeStairsDown: true, placeOverworldExit: false,
-        placeDoors: true, torchDensity: "none", seed,
+        lockProbability: 1, torchProbability: 0, seed,
       });
       // Find descent stair (might not exist on a degenerate seed).
       let stair: [number, number] | null = null;
@@ -461,7 +502,7 @@ describe("placeQuestKillMonsters", () => {
         tileProperties: {},
         entryCol: 0,
         entryRow: 0,
-        style: "default",
+        style: "ruins",
         monsters: [],
         openedChests: new Set(),
         triggeredTraps: new Set(),
@@ -698,7 +739,7 @@ describe("cleanupCompletedQuestMonsters", () => {
       decorations: {},
       tileProperties: {},
       entryCol: 0, entryRow: 0,
-      style: "default",
+      style: "ruins",
       monsters: monsters.map((m, i) => ({
         col: i, row: 0,
         name: "Goblin",

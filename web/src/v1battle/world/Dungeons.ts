@@ -44,13 +44,26 @@ interface RawDungeon {
 function fromRaw(raw: RawDungeon): DungeonDef | null {
   if (!raw || typeof raw !== "object" || typeof raw.name !== "string") return null;
   const style: DungeonStyle = (() => {
-    const s = raw.dungeon_style ?? "default";
-    if (s === "cave" || s === "forest" || s === "ruins") return s;
-    return "default";
+    // v1 records used `dungeon_style: "cave" | "forest" | "ruins"`;
+    // v2's enum is `caves | ruins | forest`. Map the legacy singular
+    // `cave` to the new plural; everything else either matches v2
+    // already or falls back to the stone "ruins" rendering.
+    const s = raw.dungeon_style;
+    if (s === "caves" || s === "cave") return "caves";
+    if (s === "forest") return "forest";
+    return "ruins";
   })();
   const difficulty: Difficulty = (() => {
     const d = raw.difficulty;
-    if (d === "easy" || d === "normal" || d === "hard" || d === "deadly") return d;
+    if (
+      d === "easy" ||
+      d === "normal" ||
+      d === "hard" ||
+      d === "deadly" ||
+      d === "boss"
+    ) {
+      return d;
+    }
     return "normal";
   })();
   const levelSize: LevelSize = (() => {

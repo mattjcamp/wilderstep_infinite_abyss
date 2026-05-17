@@ -72,6 +72,38 @@ export default function ModuleEditorHome({
           </li>
         </ul>
       </section>
+
+      <section className="mb-8">
+        <h2 className="mb-3 text-xs uppercase tracking-wide text-parchment/40">
+          Simulators
+        </h2>
+        <ul className="grid gap-2 sm:grid-cols-2">
+          <li>
+            <Link
+              href={`/editor/${moduleId}/sim/battle`}
+              className="block rounded-md border border-parchment/15 bg-ink/30 p-3 transition hover:border-parchment/40 hover:bg-ink/50"
+            >
+              <div className="font-display text-lg text-parchment">Battle</div>
+              <p className="mt-0.5 text-sm text-parchment/60">
+                Pick an encounter + arena and run the ported combat
+                scene end-to-end against the module&apos;s party.
+              </p>
+            </Link>
+          </li>
+          <li>
+            <Link
+              href={`/editor/${moduleId}/sim/dungeon`}
+              className="block rounded-md border border-parchment/15 bg-ink/30 p-3 transition hover:border-parchment/40 hover:bg-ink/50"
+            >
+              <div className="font-display text-lg text-parchment">Dungeon</div>
+              <p className="mt-0.5 text-sm text-parchment/60">
+                Procedurally generate a floor from a Dungeon record
+                and walk the party through it.
+              </p>
+            </Link>
+          </li>
+        </ul>
+      </section>
     </main>
   );
 }

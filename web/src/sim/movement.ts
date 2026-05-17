@@ -20,7 +20,6 @@ import type {
 } from "./types";
 import {
   GALADRIELS_LIGHT_RANGE,
-  INFRAVISION_RANGE,
   TORCH_LIGHT_RANGE,
 } from "./types";
 
@@ -98,35 +97,34 @@ export function step(
 }
 
 /** Compute the party's emitted light radius from its current torch /
- *  effect state plus any race abilities that bear on lighting.
- *  Zero means "the party emits no light"; the renderer then relies on
- *  the map's own light sources + ambient. v1 took the max across
- *  modifiers rather than stacking — we match that. */
+ *  spell state.
+ *
+ *  Zero means "the party emits no light" — the renderer then relies
+ *  on the map's own light sources + ambient (plus, in dungeons, a
+ *  small built-in vision baseline rooted at the party).
+ *
+ *  v1 took the max across modifiers rather than stacking — we
+ *  match that.
+ *
+ *  Note on race abilities: a previous iteration treated `infravision`
+ *  (Dwarf) as a light source granting effectively-infinite party
+ *  light. That was a placeholder, not the proper model — infravision
+ *  is a vision ability (the character sees in low light) not a
+ *  literal lantern the party carries. Until we model vision
+ *  abilities separately from light sources, the infravision branch
+ *  stays out of this function. `activeMembers` / `races` /
+ *  `_effects` are kept on the signature for future hooks (e.g. a
+ *  proper "Light" spell effect) without churning the callers. */
 export function partyLightRange(
   party: Pick<SimParty, "torch_steps" | "galadriels_light_steps">,
-  activeMembers: ReadonlyArray<SimCharacter>,
-  races: ReadonlyArray<SimRace>,
-  // Reserved for future light-relevant transient effects; unused
-  // since Infravision moved from Effect → Ability.
+  _activeMembers: ReadonlyArray<SimCharacter>,
+  _races: ReadonlyArray<SimRace>,
   _effects: ReadonlyArray<SimEffect>,
 ): number {
   let best = 0;
   if (party.torch_steps > 0) best = Math.max(best, TORCH_LIGHT_RANGE);
   if (party.galadriels_light_steps > 0) {
     best = Math.max(best, GALADRIELS_LIGHT_RANGE);
-  }
-  // Race abilities — e.g. Dwarf Infravision lets the party see the
-  // whole map in absolute darkness. Ability ids are always passive
-  // when granted by a Race, so we don't need the catalog record here;
-  // the id alone is enough to gate the light bonus.
-  const racesById = new Map(races.map((r) => [r.id, r]));
-  for (const m of activeMembers) {
-    const race = racesById.get(m.race);
-    if (!race) continue;
-    if ((race.abilities ?? []).includes("infravision")) {
-      best = Math.max(best, INFRAVISION_RANGE);
-    }
-    // Add other lighting-relevant abilities here as they appear.
   }
   return best;
 }

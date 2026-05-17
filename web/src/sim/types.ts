@@ -60,6 +60,51 @@ export interface SimCell {
    *  unlocked (success or designer override) the gate lifts and the
    *  normal `walkable` check decides movement. */
   locked?: boolean;
+  /** Catalog id from spawns.json — when set, this cell is a monster
+   *  lair. The sim's spawn loop drops roamers from `spawn_monsters`
+   *  around it each step; stepping onto the cell starts a boss
+   *  fight against `boss_monsters`. Winning the boss fight destroys
+   *  the lair (cell reverts to plain ground). Empty / undefined =
+   *  not a lair. */
+  spawn?: string;
+  /** Catalog id from encounters.json — when set, this cell is the
+   *  starting position of a placed encounter. The sim seeds one
+   *  roaming entity per encounter cell at construction; from there
+   *  it pursues the party like a spawn roamer. Stepping into / onto
+   *  the entity opens combat against the encounter's full roster;
+   *  victory removes the entity permanently for the session. Empty
+   *  / undefined = no encounter on this cell. */
+  encounter?: string;
+  /** Catalog id from dungeons.json — when set, this cell is a
+   *  dungeon entrance. Stepping onto it emits `dungeon_entered`
+   *  and the host transitions the simulator into the procedurally
+   *  generated dungeon. Empty / undefined = not an entrance. */
+  dungeon?: string;
+}
+
+/** Minimal monsters.json record the sim reads — just the fields the
+ *  roamer renderer and the encounter banner need. Loader casts the
+ *  merged monsters list to this shape. */
+export interface SimMonsterRef {
+  id: string;
+  name: string;
+  /** Sprite path like "monster/goblin.png" — the host renders this
+   *  on every roamer tile and inside the encounter dialog. */
+  sprite?: string;
+}
+
+/** Minimal encounters.json record the sim reads. Loader pulls these
+ *  three fields per entry — the rest of the encounter record (area,
+ *  level, weight, …) is irrelevant to the spawn / pursuit loop. */
+export interface SimEncounterRef {
+  id: string;
+  name: string;
+  /** Lead monster's sprite path the placed-encounter renderer draws
+   *  as the entity icon. Already in "monster/foo.png" form. */
+  monster_party_tile?: string;
+  /** Full combat roster. Fed to the encounter banner + handed to
+   *  combat on victory resolution. */
+  monsters: string[];
 }
 
 /** Row-major grid: grid[row][col]. */
@@ -208,6 +253,12 @@ export interface SimEffect {
  *  the panel UI and the kernel agree on what "lighting a torch" means. */
 export const TORCH_LIGHT_RANGE = 3;
 export const GALADRIELS_LIGHT_RANGE = 5;
-/** Range used for permanent-light effects like Infravision. Practical
- *  infinity at our grid scale — bigger than any reasonable map. */
-export const INFRAVISION_RANGE = 999;
+// INFRAVISION_RANGE used to live here as a stand-in for the
+// Dwarf infravision ability. It was implemented as a 999-cell
+// party light, which lit the entire map and meant a dwarf in
+// the roster trivialised dungeon darkness. Infravision is a
+// vision ability (the character sees in low light), not a
+// physical light source the party emits. It'll come back as a
+// separate "render mode" for the party when vision abilities
+// land; for now the constant is intentionally absent so a
+// stray reference fails the type-check.

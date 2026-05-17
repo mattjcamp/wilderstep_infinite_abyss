@@ -28,14 +28,28 @@ import {
   partyLightSource,
   tickPartyTimers,
 } from "./movement";
+import {
+  findLairs,
+  findPlacedEncounters,
+  roamStep,
+  roamerCollidesWithParty,
+  trySpawnRoamer,
+  type SimPlacedEncounter,
+  type SimRoamer,
+  type SimSpawn,
+  type SpawnCellInfo,
+} from "./spawn";
 import type {
   Direction,
   Position,
+  SimCell,
   SimCharacter,
   SimCharacterClass,
   SimEffect,
+  SimEncounterRef,
   SimGrid,
   SimLightSource,
+  SimMonsterRef,
   SimParty,
   SimRace,
   SimSpell,
@@ -94,6 +108,49 @@ export interface SceneBridge {
    *  rise + fade over ~1.4s. Optional so the kernel works against a
    *  bridge that hasn't implemented it yet (older /play harness, tests). */
   floatText?(col: number, row: number, text: string): void;
+  /** Sync the set of live monster-spawn roamers to the scene. Hosts
+   *  render one sprite per entry (size ~ cell, depth above floor
+   *  but below the party). Each entry carries the sprite path from
+   *  the monsters catalog so the scene knows what to draw. Optional
+   *  so a host without a monsters catalog plumbed in still mounts
+   *  the sim (the spawn loop just won't be visible). */
+  setRoamerPositions?(
+    positions: ReadonlyArray<{
+      id: string;
+      col: number;
+      row: number;
+      sprite: string;
+    }>,
+  ): void;
+  /** Replace the cell at (col, row) with a different sprite + walkable
+   *  flag — used by the destroy-lair path so a defeated Monster Spawn
+   *  reverts to plain ground in-session. The sim never persists the
+   *  change; the underlying map file is untouched. Optional so hosts
+   *  that haven't wired the texture-swap yet still drive the sim. */
+  setCellSprite?(
+    col: number,
+    row: number,
+    sprite: string,
+    walkable: boolean,
+  ): void;
+  /** Sync the set of live placed-encounter entities to the scene.
+   *  Same shape as `setRoamerPositions` — host renders one sprite
+   *  per entry. Drawn at the same depth band as roamers so they
+   *  both layer correctly against the party. Optional. */
+  setPlacedEncounterPositions?(
+    positions: ReadonlyArray<{
+      id: string;
+      col: number;
+      row: number;
+      sprite: string;
+    }>,
+  ): void;
+  /** Tell the host which encounter cells should suppress their
+   *  static cell overlay this frame. Used by the placed-encounter
+   *  subsystem so the painted sprite doesn't double up with the
+   *  roaming one (and stays hidden after the encounter is
+   *  defeated). Cell keys are `"col,row"`. Optional. */
+  setSuppressedEncounterCells?(cells: ReadonlySet<string>): void;
 }
 
 /** DC the Pick Lock attempt rolls against. Matches `Lock.ts`
@@ -154,6 +211,26 @@ export interface SimCatalog {
   effects: ReadonlyArray<SimEffect>;
   characterClasses?: ReadonlyArray<SimCharacterClass>;
   knockSpell?: SimSpell | null;
+  /** Spawn catalog (spawns.json). Cells carrying a `spawn` id matched
+   *  against this map drive the per-step spawn loop + boss-fight
+   *  trigger. Empty / omitted = the spawn subsystem stays dormant. */
+  spawns?: ReadonlyArray<SimSpawn>;
+  /** Monsters catalog. The spawn loop reads names + sprites from
+   *  here when resolving a `spawn_monsters` / `boss_monsters` id to
+   *  something the host can render. Empty / omitted = roamers spawn
+   *  but the host gets blank sprites. */
+  monsters?: ReadonlyArray<SimMonsterRef>;
+  /** Encounter catalog (encounters.json). Painted encounter cells
+   *  match their id against this list to drive the placed-encounter
+   *  pursuit loop. Empty / omitted = placed encounters stay static
+   *  (no roaming behaviour). */
+  encounters?: ReadonlyArray<SimEncounterRef>;
+  /** Fallback sprite + tile id the destroy-lair path uses when a
+   *  Monster Spawn is defeated. Captured from the module's tile
+   *  palette (typically grass). Optional — when missing, the destroy
+   *  path still removes the spawn id from the cell but leaves the
+   *  original sprite in place. */
+  groundTile?: { id: string; sprite: string; walkable: boolean };
 }
 
 /** Snapshot of "who can do what" at the moment the party bumps a
@@ -174,6 +251,51 @@ export interface LockEncounterOptions {
   /** MP cost — `null` when no knock spell is loaded. The row says
    *  "insufficient MP" when the caster exists but is too poor. */
   knockMpCost: number | null;
+}
+
+/** Snapshot of the encounter the party just triggered. Three flavours:
+ *
+ *   - "boss":   party stepped onto a Monster Spawn lair tile. The
+ *               fight uses the lair's `boss_monsters`; winning
+ *               destroys the lair.
+ *   - "roamer": a roamer the lair previously coughed up caught up
+ *               with the party. The fight uses just that roamer's
+ *               monster id; winning removes the roamer but leaves
+ *               the lair alone.
+ *   - "placed": a painted encounter cell's roaming entity caught
+ *               the party. The fight uses the encounter's full
+ *               roster; winning removes the entity for the rest of
+ *               the session (no respawn).
+ *
+ * The overlay reads this and calls `resolveSpawnEncounter` once
+ * the player picks an outcome. */
+export interface SpawnEncounterOptions {
+  kind: "boss" | "roamer" | "placed";
+  /** Display name shown in the overlay banner. For boss / roamer
+   *  this is the lair name; for placed encounters it's the
+   *  encounter name. */
+  name: string;
+  /** Free-form flavour text below the banner. */
+  description?: string;
+  /** Cell the encounter sources from. Boss → the lair the party
+   *  stepped onto; roamer → the originating lair; placed → the
+   *  cell the encounter was painted on. */
+  sourcePos: Position;
+  /** Roster the fight uses. Boss → `spawn.boss_monsters`; roamer →
+   *  `[roamer.monsterId]`; placed → `encounter.monsters`. */
+  monsters: ReadonlyArray<string>;
+  /** The lair record. Populated for boss / roamer kinds; null for
+   *  placed encounters. */
+  spawn: SimSpawn | null;
+  /** The encounter record. Populated for placed kind; null for
+   *  boss / roamer. */
+  encounter: SimEncounterRef | null;
+  /** Id of the roamer that triggered a "roamer" fight (so resolve
+   *  removes the right entry). Null for boss / placed kinds. */
+  roamerId: string | null;
+  /** Id of the placed encounter entity that triggered a "placed"
+   *  fight. Null for boss / roamer kinds. */
+  placedEncounterId: string | null;
 }
 
 /** Result returned by `attemptPickLock` / `attemptKnock` so the
@@ -231,6 +353,31 @@ export type SimEvent =
    *  (sprite swap if the door art changes) and re-runs the lighting
    *  pass since `obstructs` may have flipped. */
   | { kind: "lock_resolved"; pos: Position; outcome: "picked" | "knocked" | "left" }
+  /** Fired when the party stumbles into a spawn-driven fight — either
+   *  by stepping onto a Monster Spawn lair (boss fight) or by being
+   *  caught by a wandering roamer. Host opens the encounter overlay
+   *  and calls `resolveSpawnEncounter` once the player picks an
+   *  outcome. Movement is gated through `overlaysOpenRef` until the
+   *  resolution lands. */
+  | { kind: "spawn_encountered"; options: SpawnEncounterOptions }
+  /** Fired after a successful boss fight — the lair has been
+   *  destroyed and the cell reverted to plain ground. Host listens
+   *  to update the inspector + log, but the cell visual is already
+   *  swapped by the kernel via `setCellSprite`. */
+  | { kind: "spawn_destroyed"; pos: Position; spawnId: string }
+  /** Fired when the party steps onto a cell whose `dungeon` field is
+   *  set. The host transitions the simulator into the procedurally-
+   *  generated dungeon (Phase B). Movement is paused on the kernel
+   *  side until the host either swaps the underlying grid (via a
+   *  new `MapSimulation` mount) or dismisses the event. The
+   *  `returnPos` carries the cell the party stepped *from* so the
+   *  host can drop them back there when they exit the dungeon. */
+  | {
+      kind: "dungeon_entered";
+      dungeonId: string;
+      pos: Position;
+      returnPos: Position;
+    }
   /** Emitted whenever the *visible* simulation state changes — host
    *  uses this to re-render its panel (HP bars, torch countdown, …). */
   | { kind: "state" };
@@ -300,6 +447,35 @@ export class MapSimulation {
    *  `attemptPickLock` (on success or failure-with-charge-consumed),
    *  `attemptKnock`, or `dismissLock`. */
   private pendingLock: LockEncounterOptions | null = null;
+  /** Spawns catalog, keyed by `SimSpawn.id` for fast cell→lair lookup. */
+  private readonly spawnCatalog: ReadonlyMap<string, SimSpawn>;
+  /** Monsters catalog, keyed by `SimMonsterRef.id` for sprite resolution. */
+  private readonly monsterCatalog: ReadonlyMap<string, SimMonsterRef>;
+  /** Encounters catalog, keyed by `SimEncounterRef.id` for placed-
+   *  encounter resolution. */
+  private readonly encounterCatalog: ReadonlyMap<string, SimEncounterRef>;
+  /** Live roamers — monsters the spawn loop has dropped onto the map.
+   *  Mutated each step. Snapshot to the bridge via setRoamerPositions. */
+  private roamers: SimRoamer[] = [];
+  /** Live placed-encounter entities — one per painted encounter cell,
+   *  seeded at construction. Each entity pursues the party every
+   *  step until defeated; victory removes the entity for the
+   *  session (the source cell stays empty until the sim ends). */
+  private placedEncounters: SimPlacedEncounter[] = [];
+  /** Cells where the party has defeated the boss and destroyed the
+   *  lair. Looked up in the spawn pass + boss-trigger path so a
+   *  destroyed cell never fires again. Persisted across the session
+   *  only — leaving the simulator restores the original grid. */
+  private readonly destroyedLairs = new Set<string>();
+  /** "col,row" keys of placed-encounter cells whose entity has been
+   *  defeated. The cell overlay suppression set folds these in so
+   *  the static encounter sprite stays hidden after victory. */
+  private readonly defeatedEncounters = new Set<string>();
+  /** In-flight spawn encounter while the overlay is up. Cleared by
+   *  `resolveSpawnEncounter`. */
+  private pendingSpawn: SpawnEncounterOptions | null = null;
+  /** Ground-tile fallback used by the destroy-lair path. */
+  private readonly groundTile: SimCatalog["groundTile"];
   private disposed = false;
 
   constructor(opts: MapSimulationOptions) {
@@ -307,6 +483,28 @@ export class MapSimulation {
     this.grid = opts.grid;
     this.catalog = opts.catalog;
     this.classNameById = opts.classNameById;
+    // Spawn + monster catalogs — indexed by id for the spawn pass.
+    // Both default to empty so a module without spawns.json still
+    // mounts the sim cleanly (the loop just finds nothing to do).
+    this.spawnCatalog = new Map(
+      (opts.catalog.spawns ?? []).map((s) => [s.id, s]),
+    );
+    this.monsterCatalog = new Map(
+      (opts.catalog.monsters ?? []).map((m) => [m.id, m]),
+    );
+    this.encounterCatalog = new Map(
+      (opts.catalog.encounters ?? []).map((e) => [e.id, e]),
+    );
+    this.groundTile = opts.catalog.groundTile;
+    // Seed placed-encounter entities. Each painted encounter cell
+    // spawns one roaming entity at the cell's coords. They start
+    // there and march toward the party every step.
+    this.placedEncounters = findPlacedEncounters(
+      opts.grid as unknown as ReadonlyArray<
+        ReadonlyArray<SpawnCellInfo | null | undefined>
+      >,
+      this.encounterCatalog,
+    );
     // Cache race id → name so SimPanel can display "Human" rather than
     // "human" without a lookup helper.
     const raceMap = new Map<string, string>();
@@ -374,6 +572,14 @@ export class MapSimulation {
     );
     this.bridge.setPartyLight(this.computeLightSource());
     this.bridge.relight();
+    // Initial roamer push so the host clears any stale sprites from
+    // a prior session and the texture cache is primed.
+    this.bridge.setRoamerPositions?.([]);
+    // Initial placed-encounter push — render entities at their source
+    // cells. Suppress the static cell overlays so the painted sprite
+    // doesn't double up with the live one.
+    this.bridge.setPlacedEncounterPositions?.(this.snapshotPlacedEncounters());
+    this.bridge.setSuppressedEncounterCells?.(this.suppressedEncounterCells());
 
     // Keyboard input. The bridge owns the actual listener registration
     // so the host can scope it however it likes (window vs. canvas vs.
@@ -593,7 +799,351 @@ export class MapSimulation {
       this.emit({ kind: "log", message: text });
       this.bridge.floatText?.(to.col, to.row, text);
     }
+
+    // ── Dungeon entrance ────────────────────────────────────────────
+    // If the cell the party just stepped onto carries a `dungeon`
+    // id, fire `dungeon_entered` and short-circuit the rest of the
+    // step pipeline (spawns / roamers / placed encounters all
+    // pause until the host transitions us). The host swaps in a
+    // new MapSimulation for the dungeon's first floor; this
+    // instance keeps the overworld grid alive in memory so the
+    // host can dispose+remount cleanly when the party exits.
+    const dungeonId = this.dungeonIdAt(to);
+    if (dungeonId) {
+      this.emit({
+        kind: "dungeon_entered",
+        dungeonId,
+        pos: { col: to.col, row: to.row },
+        returnPos: { col: from.col, row: from.row },
+      });
+      this.emit({
+        kind: "log",
+        message: `You descend into the dungeon.`,
+      });
+      this.emit({ kind: "state" });
+      return;
+    }
+
+    // ── Spawn subsystem ─────────────────────────────────────────────
+    // Order matters here:
+    //   1. Boss trigger — if the cell the party just stepped onto is
+    //      a live lair, fire the boss encounter NOW. The spawn loop
+    //      and roamer pursuit don't run on a step that opens combat
+    //      (matches v1 — the player isn't around to be roamed at).
+    //   2. Spawn pass — each lair within the scan window rolls its
+    //      own spawn_chance.
+    //   3. Roamer pursuit — every roamer steps one cell toward the
+    //      party. Roamers that land on the party's cell (or
+    //      adjacent) trigger a roamer encounter and the pursuit
+    //      stops short for the rest of the step.
+    const bossOptions = this.spawnOptionsForLair(to);
+    if (bossOptions) {
+      this.pendingSpawn = bossOptions;
+      this.emit({ kind: "spawn_encountered", options: bossOptions });
+      this.emit({
+        kind: "log",
+        message: `Approach Lair: ${bossOptions.name}`,
+      });
+      this.emit({ kind: "state" });
+      return;
+    }
+
+    this.runSpawnPass();
+    const roamerOptions = this.advanceRoamersAndCheckCollision();
+    if (roamerOptions) {
+      this.pendingSpawn = roamerOptions;
+      this.emit({ kind: "spawn_encountered", options: roamerOptions });
+      this.emit({
+        kind: "log",
+        message: `A roaming ${this.monsterDisplayName(roamerOptions.monsters[0])} catches up!`,
+      });
+    }
+
+    // Placed encounters pursue too. Run after roamers so a spawn
+    // roamer that's been around longer wins the collision tie-break,
+    // but the placed-encounter sprites still update each step. The
+    // first one that collides triggers the encounter overlay; if a
+    // roamer already triggered this step we still advance the
+    // placed entities (so they don't appear frozen behind a paused
+    // dialog) but don't open a second overlay.
+    const placedOptions = this.advancePlacedEncountersAndCheckCollision();
+    if (placedOptions && !this.pendingSpawn) {
+      this.pendingSpawn = placedOptions;
+      this.emit({ kind: "spawn_encountered", options: placedOptions });
+      this.emit({
+        kind: "log",
+        message: `${placedOptions.name} ambushes the party!`,
+      });
+    }
+
+    this.bridge.setRoamerPositions?.(this.snapshotRoamers());
+    this.bridge.setPlacedEncounterPositions?.(this.snapshotPlacedEncounters());
+
     this.emit({ kind: "state" });
+  }
+
+  /** Move every placed encounter one cardinal step toward the party.
+   *  Returns the encounter options for the first entity that lands
+   *  Chebyshev-adjacent to the party, or null when nothing collides.
+   *  Mirrors `advanceRoamersAndCheckCollision` but reads from
+   *  `placedEncounters` and builds the "placed" kind. */
+  private advancePlacedEncountersAndCheckCollision():
+    | SpawnEncounterOptions
+    | null {
+    if (this.placedEncounters.length === 0) return null;
+    let trigger: SpawnEncounterOptions | null = null;
+    const occupied = new Set<string>(
+      this.placedEncounters.map((p) => `${p.col},${p.row}`),
+    );
+    // Roamers already occupy cells; treat them as blocked too so
+    // two monster types don't stack on the same tile.
+    for (const r of this.roamers) occupied.add(`${r.col},${r.row}`);
+    for (const placed of this.placedEncounters) {
+      const fromKey = `${placed.col},${placed.row}`;
+      occupied.delete(fromKey);
+      const next = roamStep(
+        { col: placed.col, row: placed.row },
+        this.pos,
+        (c, r) => {
+          const cell = cellAt(this.grid, c, r);
+          return cell !== null && cell.walkable;
+        },
+        (c, r) => occupied.has(`${c},${r}`),
+      );
+      placed.col = next.col;
+      placed.row = next.row;
+      occupied.add(`${next.col},${next.row}`);
+      if (!trigger && roamerCollidesWithParty(placed, this.pos)) {
+        const enc = this.encounterCatalog.get(placed.encounterId);
+        if (enc) {
+          trigger = {
+            kind: "placed",
+            name: enc.name,
+            description: undefined,
+            sourcePos: this.parseKey(placed.sourceKey) ?? {
+              col: placed.col,
+              row: placed.row,
+            },
+            monsters: enc.monsters,
+            spawn: null,
+            encounter: enc,
+            roamerId: null,
+            placedEncounterId: placed.id,
+          };
+        }
+      }
+    }
+    return trigger;
+  }
+
+  /** Parse a "col,row" key back into a Position. Returns null when
+   *  either coord doesn't fit. Used by placed-encounter resolution
+   *  to recover the source cell. */
+  private parseKey(key: string): Position | null {
+    const [csStr, rsStr] = key.split(",");
+    const c = Number(csStr);
+    const r = Number(rsStr);
+    if (!Number.isFinite(c) || !Number.isFinite(r)) return null;
+    return { col: c, row: r };
+  }
+
+  /** Snapshot of every live placed encounter for the bridge. */
+  private snapshotPlacedEncounters(): Array<{
+    id: string;
+    col: number;
+    row: number;
+    sprite: string;
+  }> {
+    return this.placedEncounters.map((p) => ({
+      id: p.id,
+      col: p.col,
+      row: p.row,
+      sprite: p.sprite ?? "",
+    }));
+  }
+
+  /** Set of source cells that should suppress their static encounter
+   *  overlay during the sim — every cell with a still-active placed
+   *  encounter, plus every defeated cell (the encounter is gone but
+   *  the static sprite shouldn't reappear mid-session). */
+  private suppressedEncounterCells(): Set<string> {
+    const out = new Set<string>(this.defeatedEncounters);
+    for (const p of this.placedEncounters) out.add(p.sourceKey);
+    return out;
+  }
+
+  /** Returns the dungeon id painted on the cell at `at`, or null
+   *  when the cell doesn't carry one. Used by the step pipeline to
+   *  fire `dungeon_entered`. */
+  private dungeonIdAt(at: Position): string | null {
+    const cell = cellAt(this.grid, at.col, at.row) as
+      | (SimCell & { dungeon?: string })
+      | null;
+    const id = cell?.dungeon;
+    return id && id.length > 0 ? id : null;
+  }
+
+  /** Build the SpawnEncounterOptions snapshot for a lair the party
+   *  just stepped onto. Returns null when the destination cell isn't
+   *  a live lair (no spawn id, unknown id, destroyed, or empty
+   *  boss_monsters). */
+  private spawnOptionsForLair(at: Position): SpawnEncounterOptions | null {
+    const cell = cellAt(this.grid, at.col, at.row) as
+      | (SimCell & { spawn?: string })
+      | null;
+    const spawnId = cell?.spawn;
+    if (!spawnId) return null;
+    const key = `${at.col},${at.row}`;
+    if (this.destroyedLairs.has(key)) return null;
+    const spawn = this.spawnCatalog.get(spawnId);
+    if (!spawn) return null;
+    const roster = spawn.boss_monsters.length > 0
+      ? [...spawn.boss_monsters]
+      : [...spawn.spawn_monsters];
+    if (roster.length === 0) return null;
+    return {
+      kind: "boss",
+      name: spawn.name,
+      description: spawn.description,
+      sourcePos: { col: at.col, row: at.row },
+      monsters: roster,
+      spawn,
+      encounter: null,
+      roamerId: null,
+      placedEncounterId: null,
+    };
+  }
+
+  /** Iterate every live lair on the map and roll its spawn_chance.
+   *  Successful rolls append a roamer to `this.roamers`. Pure-ish —
+   *  doesn't emit events; the caller refreshes the bridge after
+   *  the pursuit phase. */
+  private runSpawnPass(): void {
+    if (this.spawnCatalog.size === 0) return;
+    const lairs = findLairs(
+      this.grid as unknown as ReadonlyArray<
+        ReadonlyArray<SpawnCellInfo | null | undefined>
+      >,
+      this.spawnCatalog,
+    );
+    for (const { col, row, spawn } of lairs) {
+      if (this.destroyedLairs.has(`${col},${row}`)) continue;
+      const roamer = trySpawnRoamer({
+        lair: { col, row },
+        spawn,
+        party: this.pos,
+        existing: this.roamers,
+        isWalkable: (c, r) => {
+          const cell = cellAt(this.grid, c, r);
+          return cell !== null && cell.walkable;
+        },
+        rng: Math.random,
+        spriteFor: (id) => this.monsterCatalog.get(id)?.sprite,
+      });
+      if (roamer) {
+        this.roamers.push(roamer);
+        this.emit({
+          kind: "log",
+          message: `A ${this.monsterDisplayName(roamer.monsterId)} prowls out of ${spawn.name}.`,
+        });
+      }
+    }
+  }
+
+  /** Move every roamer one cardinal step toward the party. The first
+   *  roamer that lands adjacent / on top of the party returns the
+   *  encounter snapshot; remaining roamers still finish their step
+   *  (so the map looks alive) but the encounter is what the caller
+   *  reacts to. Returns null when no roamer collides. */
+  private advanceRoamersAndCheckCollision(): SpawnEncounterOptions | null {
+    if (this.roamers.length === 0) return null;
+    let trigger: SpawnEncounterOptions | null = null;
+    // Occupancy set is rebuilt each step from the moved positions so
+    // two roamers don't end up sharing a cell.
+    const occupied = new Set<string>(
+      this.roamers.map((r) => `${r.col},${r.row}`),
+    );
+    for (const roamer of this.roamers) {
+      const fromKey = `${roamer.col},${roamer.row}`;
+      occupied.delete(fromKey);
+      const next = roamStep(
+        { col: roamer.col, row: roamer.row },
+        this.pos,
+        (c, r) => {
+          const cell = cellAt(this.grid, c, r);
+          return cell !== null && cell.walkable;
+        },
+        (c, r) => occupied.has(`${c},${r}`),
+      );
+      roamer.col = next.col;
+      roamer.row = next.row;
+      occupied.add(`${next.col},${next.row}`);
+      if (!trigger && roamerCollidesWithParty(roamer, this.pos)) {
+        // First collision wins — locate the lair the roamer came
+        // from so the destroy-lair option survives even when the
+        // player kills the roamer on its own tile. sourcePos falls
+        // back to the roamer cell if the source coords are gone.
+        const [scStr, srStr] = roamer.sourceKey.split(",");
+        const sc = Number(scStr);
+        const sr = Number(srStr);
+        const spawnId = this.spawnIdAtSourceKey(roamer.sourceKey);
+        const spawn = spawnId ? this.spawnCatalog.get(spawnId) : undefined;
+        if (spawn) {
+          trigger = {
+            kind: "roamer",
+            name: spawn.name,
+            description: spawn.description,
+            sourcePos: Number.isFinite(sc) && Number.isFinite(sr)
+              ? { col: sc, row: sr }
+              : { col: roamer.col, row: roamer.row },
+            monsters: [roamer.monsterId],
+            spawn,
+            encounter: null,
+            roamerId: roamer.id,
+            placedEncounterId: null,
+          };
+        }
+      }
+    }
+    return trigger;
+  }
+
+  /** Look up the spawn id painted on the cell at `sourceKey`. Used
+   *  by the roamer-collision branch to recover the lair record after
+   *  the roamer has moved away. Returns undefined when the cell has
+   *  no spawn (e.g. the lair was destroyed mid-session). */
+  private spawnIdAtSourceKey(sourceKey: string): string | undefined {
+    const [csStr, rsStr] = sourceKey.split(",");
+    const cs = Number(csStr);
+    const rs = Number(rsStr);
+    if (!Number.isFinite(cs) || !Number.isFinite(rs)) return undefined;
+    const cell = cellAt(this.grid, cs, rs) as
+      | (SimCell & { spawn?: string })
+      | null;
+    return cell?.spawn;
+  }
+
+  /** Display name for a monster id. Falls back to the id itself when
+   *  the catalog doesn't define one (so log lines aren't empty). */
+  private monsterDisplayName(id: string): string {
+    return this.monsterCatalog.get(id)?.name ?? id;
+  }
+
+  /** Snapshot of every live roamer with the sprite the bridge needs
+   *  to draw. Copied per call so later mutations don't bleed into
+   *  the host. */
+  private snapshotRoamers(): Array<{
+    id: string;
+    col: number;
+    row: number;
+    sprite: string;
+  }> {
+    return this.roamers.map((r) => ({
+      id: r.id,
+      col: r.col,
+      row: r.row,
+      sprite: r.sprite ?? this.monsterCatalog.get(r.monsterId)?.sprite ?? "",
+    }));
   }
 
   /** Snapshot the loose-boat set as an array the bridge can hand to
@@ -756,6 +1306,127 @@ export class MapSimulation {
     return { kind: "knock", success, roll, mod, total, dc, message };
   }
 
+  // ── Spawn-encounter dialog ─────────────────────────────────────
+  // The host opens the SpawnEncounterOverlay on `spawn_encountered`
+  // and feeds the outcome back through `resolveSpawnEncounter`. The
+  // outcome is the only signal the kernel needs — the actual fight
+  // is rendered (or stubbed) in the host. This contract lets us
+  // ship the spawn loop now and slot real combat in later without
+  // changing the kernel.
+
+  /** Snapshot of the currently-pending spawn encounter, or null
+   *  when none is queued. Host uses this on mount to refill its
+   *  overlay state without remembering the event payload. */
+  getPendingSpawn(): SpawnEncounterOptions | null {
+    return this.pendingSpawn;
+  }
+
+  /**
+   * Resolve the pending spawn encounter. Outcomes:
+   *
+   *   - "won":  The party defeated the roster.
+   *     • Boss encounter → destroy the lair (cell reverts to ground,
+   *       every roamer tied to that lair is removed). Emits
+   *       `spawn_destroyed` and `setCellSprite` if a ground tile is
+   *       available.
+   *     • Roamer encounter → remove that one roamer; lair survives.
+   *   - "fled": Party retreats. No roamer or lair is removed; the
+   *     overlay closes and movement resumes. (Retreat doesn't
+   *     teleport the party — host can wire in a step-back if it
+   *     wants something fancier later.)
+   *
+   * Returns true when the resolution applied (i.e. an encounter was
+   * pending). Returns false if there was nothing to resolve.
+   */
+  resolveSpawnEncounter(outcome: "won" | "fled"): boolean {
+    if (this.disposed || !this.pendingSpawn) return false;
+    const enc = this.pendingSpawn;
+    this.pendingSpawn = null;
+    if (outcome === "fled") {
+      this.emit({ kind: "log", message: "The party retreats." });
+      this.emit({ kind: "state" });
+      return true;
+    }
+    if (enc.kind === "boss" && enc.spawn) {
+      this.destroyLair(enc.sourcePos, enc.spawn);
+    } else if (enc.kind === "roamer") {
+      // Roamer fight — remove just the offending roamer.
+      const before = this.roamers.length;
+      if (enc.roamerId) {
+        this.roamers = this.roamers.filter((r) => r.id !== enc.roamerId);
+      }
+      if (this.roamers.length !== before) {
+        this.emit({
+          kind: "log",
+          message: `Defeated a ${this.monsterDisplayName(enc.monsters[0])}.`,
+        });
+      }
+      this.bridge.setRoamerPositions?.(this.snapshotRoamers());
+    } else if (enc.kind === "placed") {
+      // Placed encounter fight — remove the entity permanently and
+      // mark its source cell defeated so the suppression set keeps
+      // the static overlay hidden after victory.
+      const before = this.placedEncounters.length;
+      if (enc.placedEncounterId) {
+        const target = this.placedEncounters.find(
+          (p) => p.id === enc.placedEncounterId,
+        );
+        if (target) this.defeatedEncounters.add(target.sourceKey);
+        this.placedEncounters = this.placedEncounters.filter(
+          (p) => p.id !== enc.placedEncounterId,
+        );
+      }
+      if (this.placedEncounters.length !== before) {
+        this.emit({
+          kind: "log",
+          message: `${enc.name} defeated.`,
+        });
+      }
+      this.bridge.setPlacedEncounterPositions?.(
+        this.snapshotPlacedEncounters(),
+      );
+      this.bridge.setSuppressedEncounterCells?.(
+        this.suppressedEncounterCells(),
+      );
+    }
+    this.emit({ kind: "state" });
+    return true;
+  }
+
+  /** Mark a lair cell as destroyed: track it in `destroyedLairs` so
+   *  the spawn pass + boss trigger ignore it, visually swap the cell
+   *  to the configured ground tile, and clear every roamer that
+   *  traces back to it. The painted grid is NOT mutated — the
+   *  destruction is per-session only (matches the unlocked-cells
+   *  convention). */
+  private destroyLair(pos: Position, spawn: SimSpawn): void {
+    const key = `${pos.col},${pos.row}`;
+    this.destroyedLairs.add(key);
+    if (this.groundTile) {
+      this.bridge.setCellSprite?.(
+        pos.col,
+        pos.row,
+        this.groundTile.sprite,
+        this.groundTile.walkable,
+      );
+    }
+    // Drop every roamer that was tied to this lair.
+    const before = this.roamers.length;
+    this.roamers = this.roamers.filter((r) => r.sourceKey !== key);
+    if (this.roamers.length !== before) {
+      this.bridge.setRoamerPositions?.(this.snapshotRoamers());
+    }
+    this.emit({
+      kind: "spawn_destroyed",
+      pos,
+      spawnId: spawn.id,
+    });
+    this.emit({
+      kind: "log",
+      message: `${spawn.name} destroyed — the lair falls silent.`,
+    });
+  }
+
   /** Close the lock dialog without trying anything. The cell stays
    *  locked; the party stays put. */
   dismissLock(): void {
@@ -849,6 +1520,12 @@ export class MapSimulation {
     this.disposeKeyListener();
     this.bridge.setPartyLight(null);
     this.bridge.clearParty();
+    // Clear any drawn roamers / placed encounters so a re-entry to
+    // sim mode starts blank. Also restore the static cell overlays
+    // by emptying the suppression set.
+    this.bridge.setRoamerPositions?.([]);
+    this.bridge.setPlacedEncounterPositions?.([]);
+    this.bridge.setSuppressedEncounterCells?.(new Set());
     this.bridge.relight();
     this.listeners.clear();
   }

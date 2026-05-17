@@ -63,9 +63,20 @@ const WALL_TILES: ReadonlySet<number> = new Set([
 ]);
 
 // ── Tunable types exposed via dungeons.json ──────────────────────
+//
+// These match the v2 data dictionary entries
+// (docs/data_dictionary/dungeon.md, dungeon_level.md, monster.md)
+// so the on-disk records flow into the generator with no adapter
+// layer. Two renames vs the legacy v1 port: `"cave"` → `"caves"`
+// (v2's plural-form convention) and `"default"` → `"ruins"` (the
+// stone-block dungeon that used to be implicit behind the
+// "anything else" branch is now explicit). `"boss"` joins the
+// difficulty tiers as the per-floor boss band — meant for a
+// climactic floor inside an otherwise-deadly dungeon, set via a
+// Dungeon Level override.
 
-export type DungeonStyle = "cave" | "forest" | "ruins" | "default";
-export type Difficulty = "easy" | "normal" | "hard" | "deadly";
+export type DungeonStyle = "caves" | "ruins" | "forest";
+export type Difficulty = "easy" | "normal" | "hard" | "deadly" | "boss";
 export type LevelSize = "small" | "medium" | "large";
 export type TorchDensity = "none" | "sparse" | "moderate" | "abundant";
 
@@ -84,6 +95,13 @@ const DIFFICULTY_PROFILES: Record<Difficulty, DifficultyProfile> = {
   normal: { minRooms: 6,  maxRooms: 10, encMin: 2, encMax: 4, encChance: 0.50 },
   hard:   { minRooms: 8,  maxRooms: 14, encMin: 3, encMax: 6, encChance: 0.65 },
   deadly: { minRooms: 10, maxRooms: 18, encMin: 5, encMax: 8, encChance: 0.80 },
+  // Boss tier is tuned for a single climactic floor: a tighter
+  // room count keeps the layout focused (the room-tested encounter
+  // density translates into one or two big set-pieces), the
+  // encounter band is pinned at the top of the cap, and the chance
+  // is high enough that nearly every non-entrance room delivers a
+  // fight. Use via a per-Level override, not as a parent default.
+  boss:   { minRooms: 5,  maxRooms: 8,  encMin: 7, encMax: 8, encChance: 0.90 },
 };
 
 const ENCOUNTER_LEVEL_MAX = 8;
@@ -122,14 +140,11 @@ export const LEVEL_SIZES: Record<LevelSize, { width: number; height: number }> =
   large:  { width: 60, height: 40 },
 };
 
-// dungeons.json torch_density values map onto the generator's
-// internal { "none" | "low" | "medium" | "high" } torch dial.
-const TORCH_MAP: Record<TorchDensity, "none" | "low" | "medium" | "high"> = {
-  none:     "none",
-  sparse:   "low",
-  moderate: "medium",
-  abundant: "high",
-};
+// v2 records carry `torch_density` as a 0..1 probability. The
+// generator now consumes that probability directly via
+// `torchProfileFromProbability` below — no banded enum lookup. The
+// TorchDensity type stays exported for legacy callers (currently
+// just the orphaned v1 dungeons-loader).
 
 // ── Output shape ─────────────────────────────────────────────────
 
@@ -214,8 +229,9 @@ export interface DungeonLevel {
  * back into the surrounding floor regardless of style.
  */
 export function styleFloorTile(style: DungeonStyle | undefined): number {
-  if (style === "cave") return TILE_PATH;
+  if (style === "caves") return TILE_PATH;
   if (style === "forest") return TILE_GRASS;
+  // "ruins" + any unknown style → stone-block dungeon floor.
   return TILE_DFLOOR;
 }
 
@@ -401,10 +417,24 @@ function placeDoors(g: Grid, rooms: Room[]): void {
 }
 
 /**
- * Replace the lone door of a single-entrance room (any room except the
- * entrance room) with a locked door. Run after `placeDoors`.
+ * Replace the lone door of a single-entrance room with a locked door
+ * — rolled per room against `lockProbability`. Single-entrance rooms
+ * are the candidates because locking a multi-entrance room strands
+ * nothing (the party just walks the other way). The entrance room
+ * (index 0) is skipped so the dungeon entry is never gated.
+ *
+ * `p === 0` skips every room; `p >= 1` locks every candidate. Run
+ * after `placeDoors`. The fixDisconnectedLockedDoors pass that
+ * follows will demote any lock that turns out to strand a region
+ * away from the entrance stairs.
  */
-function placeLockedDoors(g: Grid, rooms: Room[]): void {
+function placeLockedDoors(
+  g: Grid,
+  rooms: Room[],
+  lockProbability: number,
+  rng: RNG,
+): void {
+  if (!Number.isFinite(lockProbability) || lockProbability <= 0) return;
   for (let i = 0; i < rooms.length; i++) {
     if (i === 0) continue;
     const room = rooms[i];
@@ -418,10 +448,10 @@ function placeLockedDoors(g: Grid, rooms: Room[]): void {
       ring.push([room.x2, r]);
     }
     const doors = ring.filter(([c, r]) => getTile(g, c, r) === TILE_DDOOR);
-    if (doors.length === 1) {
-      const [dc, dr] = doors[0];
-      setTile(g, dc, dr, TILE_LOCKED_DOOR);
-    }
+    if (doors.length !== 1) continue;
+    if (rng() >= lockProbability) continue;
+    const [dc, dr] = doors[0];
+    setTile(g, dc, dr, TILE_LOCKED_DOOR);
   }
 }
 
@@ -479,15 +509,42 @@ interface TorchDensityProfile {
   minSpacing: number;
   /** Cap on torch count, expressed as a multiplier of room count. */
   maxMultiplier: number;
-  /** When true, also consider corridor-wall candidates (high density). */
+  /** When true, also consider corridor-wall candidates. Kicks in at
+   *  higher probabilities so dense dungeons get torches in the
+   *  hallways too, not just inside rooms. */
   includeCorridors: boolean;
 }
 
-function torchProfile(d: "none" | "low" | "medium" | "high"): TorchDensityProfile {
-  if (d === "none")  return { minSpacing: 999, maxMultiplier: 0,   includeCorridors: false };
-  if (d === "high")  return { minSpacing: 2,   maxMultiplier: 5,   includeCorridors: true  };
-  if (d === "low")   return { minSpacing: 8,   maxMultiplier: 0.5, includeCorridors: false };
-  return                  { minSpacing: 4,   maxMultiplier: 2,   includeCorridors: false };
+/**
+ * Map a 0–1 torch probability into the three knobs the placement
+ * loop reads. Linear in spirit; the constants are tuned so the v2
+ * authored `torch_density` value reads as "fraction of eligible
+ * walls that hold a torch" in practice — i.e. `0.05` is a sparse
+ * scattering, `0.25` is a moderate dungeon, `1.0` is "every
+ * eligible wall lit, corridors included."
+ *
+ * `p ≤ 0` produces a profile that places zero torches (the
+ * `multiplier × roomCount` cap rounds to zero AND `minSpacing` is
+ * effectively infinite so the placement loop never accepts a
+ * candidate).
+ */
+export function torchProfileFromProbability(p: number): TorchDensityProfile {
+  if (!Number.isFinite(p) || p <= 0) {
+    return { minSpacing: 999, maxMultiplier: 0, includeCorridors: false };
+  }
+  const clamped = Math.min(1, Math.max(0, p));
+  // `8 * p` caps at ~8 torches per room at p=1 — generous, since
+  // the minSpacing rule still keeps them from clumping.
+  const maxMultiplier = 8 * clamped;
+  // Spacing tightens as density rises: p=0.05 → ~8 tiles apart,
+  // p=0.5 → ~4 tiles apart, p=1 → 0 → clamped to 2 (the absolute
+  // floor so adjacent torches don't share a light pool).
+  const minSpacing = Math.max(2, Math.round(8 - 8 * clamped));
+  // Beyond 0.4, the per-room candidate pool isn't dense enough to
+  // hit the multiplier — fold corridor walls in so the dungeon
+  // actually feels lit at higher settings.
+  const includeCorridors = clamped >= 0.4;
+  return { minSpacing, maxMultiplier, includeCorridors };
 }
 
 /**
@@ -499,11 +556,11 @@ function torchProfile(d: "none" | "low" | "medium" | "high"): TorchDensityProfil
 function placeDecorations(
   g: Grid,
   rooms: Room[],
-  torchDensity: "none" | "low" | "medium" | "high",
+  torchProbability: number,
   floorTile: number,
   rng: RNG,
 ): void {
-  const prof = torchProfile(torchDensity);
+  const prof = torchProfileFromProbability(torchProbability);
   const maxTorches = Math.floor(rooms.length * prof.maxMultiplier);
 
   // ── Torch candidates: wall tiles bordering a floor tile ──
@@ -783,11 +840,20 @@ export interface GenerateLevelOptions {
   /** When true, the bottom floor of a multi-level dungeon also gets
    *  a stairs-up that exits straight to the overworld. */
   placeOverworldExit: boolean;
-  /** When true, place doors at corridor entries, with single-entrance
-   *  rooms upgraded to locked doors (then re-checked for connectivity). */
-  placeDoors: boolean;
-  /** dungeons.json torch_density value. */
-  torchDensity: TorchDensity;
+  /** Probability (0..1) that a single-entrance room's lone door is
+   *  locked. Doors themselves are always placed where corridors
+   *  meet rooms — they're an architectural feature of the dungeon.
+   *  At `0` no doors are locked; at `1` every eligible door is
+   *  locked; in between the lock state is rolled per room. The
+   *  connectivity-fix pass still runs to make sure a critical
+   *  locked door never strands a region. Matches v2's
+   *  `dungeons.json` `locked_doors` field. */
+  lockProbability: number;
+  /** Probability (0..1) per eligible wall that a torch is placed.
+   *  Drives the three internal knobs (spacing, count multiplier,
+   *  whether to consider corridor walls). Matches v2's
+   *  `dungeons.json` `torch_density` field. */
+  torchProbability: number;
   /** Encounter table (loaded from encounters.json). When omitted no
    *  monsters are placed. */
   encounters?: Record<string, EncounterTemplate[]>;
@@ -822,13 +888,15 @@ export function generateDungeonLevel(opts: GenerateLevelOptions): DungeonLevel {
 
   let wallTile: number;
   let floorTile: number;
-  if (style === "cave") {
+  if (style === "caves") {
     wallTile = TILE_MOUNTAIN;
     floorTile = TILE_PATH;
   } else if (style === "forest") {
     wallTile = TILE_FOREST;
     floorTile = TILE_GRASS;
   } else {
+    // "ruins" — stone-block dungeon. Also the fallback for any
+    // future style we haven't taught the generator to render yet.
     wallTile = TILE_DWALL;
     floorTile = TILE_DFLOOR;
   }
@@ -970,14 +1038,19 @@ export function generateDungeonLevel(opts: GenerateLevelOptions): DungeonLevel {
   }
 
   // ── Doors + locked doors + connectivity check ──
-  if (opts.placeDoors) {
-    placeDoors(grid, rooms);
-    placeLockedDoors(grid, rooms);
-  }
+  // Doors are architectural — every dungeon places them at room
+  // entries. `lockProbability` decides what fraction of single-
+  // entrance rooms get their door upgraded to locked. p=0 → no
+  // locks (matching the v2 `locked_doors: 0` author intent: "doors
+  // exist, none locked"); p=1 → every eligible door locks (the
+  // connectivity pass below still demotes locks that would strand
+  // a region).
+  placeDoors(grid, rooms);
+  placeLockedDoors(grid, rooms, opts.lockProbability, rng);
   fixDisconnectedLockedDoors(grid, rooms, stairsCol, stairsRow);
 
   // ── Decorations (overlay layer) ──
-  placeDecorations(grid, rooms, TORCH_MAP[opts.torchDensity], floorTile, rng);
+  placeDecorations(grid, rooms, opts.torchProbability, floorTile, rng);
 
   // ── Optional overworld-exit stair for non-forest multi-level dungeons ──
   const overworldExits = new Set<string>();
@@ -1015,8 +1088,12 @@ export interface GenerateDungeonOptions {
   numLevels: number;
   difficulty: Difficulty;
   levelSize: LevelSize;
-  torchDensity: TorchDensity;
-  lockedDoors: boolean;
+  /** v2-unit 0..1 torch probability — see
+   *  `GenerateLevelOptions.torchProbability`. */
+  torchProbability: number;
+  /** v2-unit 0..1 lock probability — see
+   *  `GenerateLevelOptions.lockProbability`. */
+  lockProbability: number;
   /** Seeds level N as `seedBase + N` for reproducibility. */
   seedBase: number;
   /** Encounter table (loaded from encounters.json). Optional. */
@@ -1032,6 +1109,12 @@ export interface GenerateDungeonOptions {
  * level; the bottom floor (N-1) of a non-forest multi-level dungeon
  * also gets an overworld-exit stair so the party can leave without
  * climbing all the way back up.
+ *
+ * NB: the v2-native `generateDungeonFromRecord` wrapper in
+ * `sim/dungeon/` is the preferred entry point — it reads the
+ * Dungeon record directly and honours per-Level overrides. This
+ * function is kept for tests and legacy callers that already
+ * supply a flat options bundle.
  */
 export function generateDungeon(opts: GenerateDungeonOptions): DungeonLevel[] {
   const size = LEVEL_SIZES[opts.levelSize] ?? LEVEL_SIZES.medium;
@@ -1048,8 +1131,8 @@ export function generateDungeon(opts: GenerateDungeonOptions): DungeonLevel[] {
       floorIdx: li,
       placeStairsDown: li < numLevels - 1,
       placeOverworldExit: li === numLevels - 1 && numLevels > 1,
-      placeDoors: opts.lockedDoors,
-      torchDensity: opts.torchDensity,
+      lockProbability: opts.lockProbability,
+      torchProbability: opts.torchProbability,
       encounters: opts.encounters,
       encounterArea: "dungeon",
       monsterDifficulty: opts.monsterDifficulty,
