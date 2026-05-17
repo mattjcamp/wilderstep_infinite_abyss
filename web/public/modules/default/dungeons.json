@@ -16,11 +16,7 @@
           "map_id": "",
           "tags": [
             "giant_rat_hole"
-          ],
-          "size": {
-            "width": 22,
-            "height": 16
-          }
+          ]
         },
         {
           "id": "the_hole_l2",
@@ -29,13 +25,12 @@
           "size": {
             "width": 64,
             "height": 64
-          },
-          "difficulty": "deadly"
+          }
         }
       ],
       "torch_density": 0.75,
       "locked_doors": 1,
-      "style": "ruins"
+      "style": "caves"
     }
   ]
 }
