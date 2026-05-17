@@ -1,15 +1,15 @@
 "use client";
 
 /**
- * BattleSimLauncher — visual-test launcher for the ported v1
- * CombatScene. Loads the module's encounter + monster catalogs so the
- * picker can render each encounter's lead-monster sprite alongside
- * the name. Party comes from `modules/<id>/party.json` (see
- * BattleSimV1Mount + the live loadParty path in CombatScene).
+ * BattleSimLauncher — visual-test launcher for CombatScene. Loads the
+ * module's encounter + monster catalogs so the picker can render each
+ * encounter's lead-monster sprite alongside the name. Party comes from
+ * `modules/<id>/party.json` (see BattleSimMount + the live loadParty
+ * path in CombatScene).
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { BattleSimV1Mount } from "./BattleSimV1Mount";
+import { BattleSimMount } from "./BattleSimMount";
 import { loadAllEncounters, _clearEncountersCache, type EncounterTemplate } from "@/battle/world/Encounters";
 import { loadMonsters, _clearMonstersCache, type MonsterSpec } from "@/battle/data/monsters";
 import { loadArenaMaps, _clearMapsCache, type ArenaCellInfo, type ArenaMap } from "@/battle/world/Maps";
@@ -355,7 +355,7 @@ export function BattleSimLauncher({ moduleId }: { moduleId: string }) {
         // so each run starts from a fresh scene with the right
         // arena. `selectedMap?.id ?? ""` keeps the key stable when no
         // map is picked.
-        <BattleSimV1Mount
+        <BattleSimMount
           key={`${started}:${selected.id}:${selectedMap?.id ?? ""}:${darkness ? "dark" : "light"}:${partyInfravisionActive ? "ir" : "noir"}`}
           moduleId={moduleId}
           monsterIds={selected.monsters}

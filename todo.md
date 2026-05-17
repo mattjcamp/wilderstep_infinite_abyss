@@ -5,10 +5,6 @@ npm run dev:all
 
 ## Technical Debt
 
-10. MapEditor and DungeonSimMount have duplicated Phaser scaffolding. Lighting + animation configs are shared now, but each has its own ~600-line scene class. If you keep adding game systems (combat overlays, dialog, party UI), they'll drift again. Worth a refactor at some point to a shared "world scene" that the editor wraps and the play page mounts directly. Not urgent.
-
-
-
 12. No CI test step. We're at 87 sim/lighting/dungeon tests, all passing, plus a working next build gate. CI only runs the build, not the tests. Wiring vitest run into the deploy workflow + adding vitest as a devDep would let regressions show up before they hit you in the simulator.
 
 ## Preliminary
