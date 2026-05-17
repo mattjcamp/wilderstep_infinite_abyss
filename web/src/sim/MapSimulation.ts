@@ -208,6 +208,11 @@ export type SimEvent =
    *  anything itself. The party stays on the cell — leaving the dialog
    *  is a separate user action. */
   | { kind: "npc_encountered"; npcId: string; pos: Position }
+  /** Fired when the party bumps a cell whose `counter` field is set —
+   *  an unattended shop / service counter planted on the tile. The
+   *  host opens the CounterShopOverlay directly (no NPC dialog in
+   *  between). Party stays put, same as the NPC bump model. */
+  | { kind: "counter_encountered"; counterId: string; pos: Position }
   /** Fired when the party steps onto a boat tile from land. The
    *  party-boat sprite shown by the host follows the party from this
    *  point on; the boat cell itself no longer renders a "loose" boat
@@ -402,6 +407,18 @@ export class MapSimulation {
       this.emit({
         kind: "npc_encountered",
         npcId: target.npc,
+        pos: { col: targetCol, row: targetRow },
+      });
+      return;
+    }
+
+    // 1.5. Counter bump — unattended shop tile. Same "party stops on
+    // bump, host opens overlay" pattern as NPC; the shop modal stacks
+    // straight away with no NPC dialog in between.
+    if (target?.counter) {
+      this.emit({
+        kind: "counter_encountered",
+        counterId: target.counter,
         pos: { col: targetCol, row: targetRow },
       });
       return;

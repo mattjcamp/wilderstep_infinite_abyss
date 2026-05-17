@@ -35,6 +35,12 @@ export interface SimCell {
    *  sim emits an npc_encountered event so the host can open a dialog
    *  overlay. Empty / undefined when no NPC stands here. */
   npc?: string;
+  /** Counter id from counters.json — an unattended shop / fountain
+   *  / service desk planted directly on a tile. Bumping the cell
+   *  emits a counter_encountered event so the host opens the
+   *  CounterShopOverlay without needing an NPC to broker the
+   *  conversation. Empty / undefined = no counter on this cell. */
+  counter?: string;
   /** True = this cell is a boat the party can board. Stepping onto it
    *  from land mounts the party; the sim then lets them sail across
    *  tiles tagged "water" until they step onto walkable land again,

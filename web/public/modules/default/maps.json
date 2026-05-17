@@ -2053,19 +2053,19 @@
             "tag": "outdoor"
           },
           {
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
+            "id": "counter",
+            "name": "Counter",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
-            "animation": "none",
-            "counter": "",
-            "encounter": "",
-            "spawn": "",
-            "sprite": "map/grass1.png",
-            "tag": "outdoor"
+            "animation": null,
+            "counter": "general",
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/counter.png",
+            "tag": "indoor"
           },
           {
             "id": "grass",
@@ -2080,7 +2080,8 @@
             "encounter": "",
             "spawn": "",
             "sprite": "map/grass1.png",
-            "tag": "outdoor"
+            "tag": "outdoor",
+            "npc": "stranger_in_grey"
           },
           {
             "id": "grass",

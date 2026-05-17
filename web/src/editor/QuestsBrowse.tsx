@@ -47,6 +47,27 @@ interface QuestStep {
   kind: StepKind;
   description?: string;
   params?: Record<string, unknown> | null;
+  /** Where this step physically takes place. The runtime uses this to
+   *  decide where to spawn monsters, place fetch items, or anchor a
+   *  talk encounter; the editor uses it to surface a dungeon/level
+   *  pair or a map id picker so authors don't hand-type ids.
+   *
+   *  - "dungeon" pairs with `dungeon_id` + `dungeon_level` (the
+   *    dungeon's procedural floor index, 1-based; a hand-authored
+   *    dungeon's `levels[]` array uses the same `depth` integer).
+   *  - "map" pairs with `map_id` (a static, hand-painted map).
+   *  - Unset (or omitted) means the step has no fixed location —
+   *    talk steps with the quest giver, abstract objectives, etc.
+   *  JSON key: `location_kind`. */
+  location_kind?: "dungeon" | "map";
+  /** Dungeon catalog id. Only consulted when `location_kind === "dungeon"`. */
+  dungeon_id?: string;
+  /** 1-based floor depth into the named dungeon. Procedural dungeons
+   *  have no fixed level count — this is the floor we want the step
+   *  to fire on. */
+  dungeon_level?: number;
+  /** Map catalog id. Only consulted when `location_kind === "map"`. */
+  map_id?: string;
 }
 
 interface QuestGiver {
@@ -94,6 +115,15 @@ interface MapSummary {
   name?: string;
 }
 
+interface DungeonSummary {
+  id: string;
+  name?: string;
+  /** Number of authored levels — empty / missing for procedurally
+   *  generated dungeons; we still allow any positive integer in the
+   *  step editor so authors can target a procedural floor by number. */
+  levelCount?: number;
+}
+
 type LoadState =
   | { kind: "loading" }
   | {
@@ -101,6 +131,7 @@ type LoadState =
       quests: QuestRecord[];
       items: ItemSummary[];
       maps: MapSummary[];
+      dungeons: DungeonSummary[];
       ownFile: Record<string, unknown> | null;
       isDraft: boolean;
     }
@@ -116,11 +147,16 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
   const refresh = async () => {
     try {
       const src = new StaticModuleSource();
-      const [questsLayers, itemsLayers, mapsLayers] = await Promise.all([
-        src.loadModelLayers(moduleId, "quests"),
-        src.loadModelLayers(moduleId, "items"),
-        src.loadModelLayers(moduleId, "maps"),
-      ]);
+      const [questsLayers, itemsLayers, mapsLayers, dungeonsLayers] =
+        await Promise.all([
+          src.loadModelLayers(moduleId, "quests"),
+          src.loadModelLayers(moduleId, "items"),
+          src.loadModelLayers(moduleId, "maps"),
+          // Dungeons feed the per-step "Location: Dungeon" picker.
+          // Non-fatal so the editor still boots in modules without
+          // dungeons authored yet.
+          src.loadModelLayers(moduleId, "dungeons").catch(() => null),
+        ]);
       const draft = loadDraft<Record<string, unknown>>(moduleId, MODEL_KEY);
       const ownEffective =
         draft ?? (questsLayers.ownFile as Record<string, unknown> | null);
@@ -151,11 +187,34 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
         name: m.name,
       }));
 
+      // Dungeon catalog → summary list for the step location picker.
+      // `levelCount` comes from each dungeon's authored `levels[]`
+      // length when present, otherwise undefined (procedural).
+      const dungeonsMerged =
+        dungeonsLayers &&
+        (mergeModel(
+          "dungeons",
+          dungeonsLayers.inherited,
+          dungeonsLayers.ownFile,
+        ) as {
+          dungeons?: Array<{
+            id: string;
+            name?: string;
+            levels?: unknown[];
+          }>;
+        } | null);
+      const dungeons = (dungeonsMerged?.dungeons ?? []).map((d) => ({
+        id: d.id,
+        name: d.name,
+        levelCount: Array.isArray(d.levels) ? d.levels.length : undefined,
+      }));
+
       setState({
         kind: "ok",
         quests,
         items,
         maps,
+        dungeons,
         ownFile: ownEffective ?? null,
         isDraft: hasDraft(moduleId, MODEL_KEY),
       });
@@ -481,6 +540,7 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
                       quest={q}
                       items={state.items}
                       maps={state.maps}
+                      dungeons={state.dungeons}
                       existingTags={allTags}
                       onUpdate={(patch) => onUpdateQuest(q.id, patch)}
                       onAddStep={() => onAddStep(q.id)}
@@ -516,10 +576,12 @@ function QuestEditor({
   onAddStep,
   onUpdateStep,
   onDeleteStep,
+  dungeons,
 }: {
   quest: QuestRecord;
   items: ItemSummary[];
   maps: MapSummary[];
+  dungeons: DungeonSummary[];
   existingTags: string[];
   onUpdate: (patch: Partial<QuestRecord>) => void;
   onAddStep: () => void;
@@ -590,6 +652,8 @@ function QuestEditor({
               step={s}
               existingTags={existingTags}
               indexLabel={i + 1}
+              maps={maps}
+              dungeons={dungeons}
               onUpdate={(patch) => onUpdateStep(i, patch)}
               onDelete={() => onDeleteStep(i)}
             />
@@ -1071,12 +1135,16 @@ function StepRow({
   step,
   existingTags,
   indexLabel,
+  maps,
+  dungeons,
   onUpdate,
   onDelete,
 }: {
   step: QuestStep;
   existingTags: string[];
   indexLabel: number;
+  maps: MapSummary[];
+  dungeons: DungeonSummary[];
   onUpdate: (patch: Partial<QuestStep>) => void;
   onDelete: () => void;
 }) {
@@ -1194,6 +1262,143 @@ function StepRow({
             </p>
           )}
         </label>
+
+        {/* Location picker — three sub-rows, conditional on
+            `location_kind`. The kind dropdown sits on its own; the
+            dungeon picker + level (or the map picker) only render
+            when the kind matches, so authors never see a stale
+            field staring back at them. Setting kind back to "none"
+            clears the related ids so the JSON doesn't carry dead
+            references the runtime would have to ignore. */}
+        <fieldset className="sm:col-span-4 rounded border border-parchment/15 bg-ink/20 p-2">
+          <legend className="px-1 text-[10px] uppercase tracking-wide text-parchment/55">
+            Location
+          </legend>
+          <div className="grid gap-2 sm:grid-cols-4">
+            <label className="block">
+              <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+                Kind
+              </span>
+              <select
+                value={step.location_kind ?? ""}
+                onChange={(e) => {
+                  const next = e.target.value as "" | "dungeon" | "map";
+                  if (next === "") {
+                    onUpdate({
+                      location_kind: undefined,
+                      dungeon_id: undefined,
+                      dungeon_level: undefined,
+                      map_id: undefined,
+                    });
+                  } else if (next === "dungeon") {
+                    onUpdate({
+                      location_kind: "dungeon",
+                      map_id: undefined,
+                    });
+                  } else {
+                    onUpdate({
+                      location_kind: "map",
+                      dungeon_id: undefined,
+                      dungeon_level: undefined,
+                    });
+                  }
+                }}
+                className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+              >
+                <option value="">(none)</option>
+                <option value="dungeon">Dungeon</option>
+                <option value="map">Map</option>
+              </select>
+            </label>
+
+            {step.location_kind === "dungeon" ? (
+              <>
+                <label className="block sm:col-span-2">
+                  <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+                    Dungeon
+                  </span>
+                  <select
+                    value={step.dungeon_id ?? ""}
+                    onChange={(e) =>
+                      onUpdate({ dungeon_id: e.target.value || undefined })
+                    }
+                    className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-xs text-parchment/90"
+                  >
+                    <option value="">(pick one…)</option>
+                    {dungeons.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.name ?? d.id}
+                        {typeof d.levelCount === "number"
+                          ? ` (${d.levelCount} authored)`
+                          : ""}
+                      </option>
+                    ))}
+                  </select>
+                  {step.dungeon_id &&
+                  !dungeons.some((d) => d.id === step.dungeon_id) ? (
+                    <p className="mt-1 text-xs text-ember/80">
+                      Unknown dungeon id — not present in dungeons.json.
+                    </p>
+                  ) : null}
+                </label>
+                <label className="block">
+                  <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+                    Level (1-based)
+                  </span>
+                  <input
+                    type="number"
+                    min={1}
+                    value={
+                      typeof step.dungeon_level === "number"
+                        ? step.dungeon_level
+                        : ""
+                    }
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      if (raw === "") {
+                        onUpdate({ dungeon_level: undefined });
+                        return;
+                      }
+                      const n = parseInt(raw, 10);
+                      if (Number.isFinite(n) && n >= 1) {
+                        onUpdate({ dungeon_level: n });
+                      }
+                    }}
+                    className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+                  />
+                </label>
+              </>
+            ) : null}
+
+            {step.location_kind === "map" ? (
+              <label className="block sm:col-span-3">
+                <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+                  Map
+                </span>
+                <select
+                  value={step.map_id ?? ""}
+                  onChange={(e) =>
+                    onUpdate({ map_id: e.target.value || undefined })
+                  }
+                  className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-xs text-parchment/90"
+                >
+                  <option value="">(pick one…)</option>
+                  {maps.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name ?? m.id}
+                    </option>
+                  ))}
+                </select>
+                {step.map_id &&
+                !maps.some((m) => m.id === step.map_id) ? (
+                  <p className="mt-1 text-xs text-ember/80">
+                    Unknown map id — not present in maps.json.
+                  </p>
+                ) : null}
+              </label>
+            ) : null}
+          </div>
+        </fieldset>
       </div>
       <div className="mt-2 flex justify-end">
         <button

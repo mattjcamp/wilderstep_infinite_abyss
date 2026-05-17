@@ -2523,6 +2523,13 @@ export function MapEditor({
         // modal.
         setLockEncounter(ev.options);
       }
+      if (ev.kind === "counter_encountered") {
+        // Tile-planted shop counter — open the CounterShopOverlay
+        // directly. The existing shopCounterId state path (used by
+        // the NPC-broker route) is reused, so closing the overlay
+        // cleanly returns the player to keyboard movement.
+        setShopCounterId(ev.counterId);
+      }
     });
 
     simRef.current = sim;
