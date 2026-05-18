@@ -38,3 +38,50 @@ export function readModuleIndex(): ModuleIndexEntry[] {
 export async function listModuleIds(): Promise<string[]> {
   return readModuleIndex().map((m) => m.id);
 }
+
+/** Full metadata read off each module's module.json. Used by the
+ *  /play module picker which needs title/description/author/version
+ *  + role to filter to "playable" modules. Reads the filesystem
+ *  rather than the index so a draft module (one in
+ *  `public/modules/<id>/` but not yet listed in index.json) still
+ *  shows up in the picker. */
+export interface ModuleMetadata {
+  id: string;
+  title?: string;
+  description?: string;
+  author?: string;
+  version?: string;
+  role?: string;
+}
+
+/** Synchronously read every module.json under `public/modules/`.
+ *  Skips files / hidden dirs. Returns an empty list if the folder
+ *  doesn't exist (clean checkout, broken deploy). Build-time only. */
+export function readAllModules(): ModuleMetadata[] {
+  const modulesDir = path.join(process.cwd(), "public", "modules");
+  let entries: string[];
+  try {
+    entries = fs.readdirSync(modulesDir);
+  } catch {
+    return [];
+  }
+  const out: ModuleMetadata[] = [];
+  for (const name of entries) {
+    if (name.startsWith(".")) continue;
+    const moduleJson = path.join(modulesDir, name, "module.json");
+    if (!fs.existsSync(moduleJson)) continue;
+    try {
+      const raw = fs.readFileSync(moduleJson, "utf8");
+      const parsed = JSON.parse(raw) as ModuleMetadata;
+      // The id in the JSON should match the folder name; defer to
+      // the folder for the canonical id so a typo in module.json
+      // doesn't break routing.
+      out.push({ ...parsed, id: name });
+    } catch {
+      // Malformed module.json — skip it. The editor would catch this
+      // in a separate pass; the play picker just ignores broken
+      // modules so one bad draft doesn't take down the whole list.
+    }
+  }
+  return out;
+}

@@ -120,6 +120,24 @@ import type { Combatant, AttackResult } from "../types";
 import type { PartyMember } from "../world/Party";
 import { consumeOneFromStackAt } from "../world/Party";
 
+/** Outcome the React-mounted host receives when the combat scene
+ *  resolves. The v1 scene-switching path mutates `gameState.partyData`
+ *  in place during the fight; the host can read post-fight HP/MP from
+ *  there before unmounting. This payload focuses on the parts the
+ *  host can't easily infer otherwise. */
+export interface CombatResolved {
+  /** Who lived through the encounter. `enemies` means a party wipe —
+   *  the host routes to the end screen. `party` means the host marks
+   *  the trigger encounter defeated and resumes the world. */
+  winner: "party" | "enemies";
+  /** XP awarded to the alive party members (already added to
+   *  `gameState.partyData` by the time the host reads this). */
+  xp: number;
+  /** Gold added to the party. Same caveat — mutated in place; this
+   *  is the delta for surfacing in a "you found X gold" toast. */
+  gold: number;
+}
+
 interface CombatSceneData {
   /** True when launched from the overworld; false for the /combat demo. */
   fromWorld?: boolean;
@@ -176,6 +194,17 @@ interface CombatSceneData {
    * so the flag is preserved for the future music layer.
    */
   silent?: boolean;
+  /**
+   * v2 hook for the React-mounted play flow. When set, the scene
+   * calls `onResolved` with the fight outcome INSTEAD of bouncing
+   * to `returnSceneKey` via `scene.start`. The host then unmounts
+   * the Phaser game on its own schedule and routes the player back
+   * to the world / end screen.
+   *
+   * Passing this also disables the camera fade-out before exit so
+   * the host can run its own transition.
+   */
+  onResolved?: (result: CombatResolved) => void;
   /**
    * Per-cell arena data when launched against a custom arena map.
    *
@@ -349,6 +378,8 @@ export class CombatScene extends Phaser.Scene {
    *  the combat soundtrack. Set from init-data; see `silent` on
    *  CombatSceneData. */
   private silent = false;
+  /** Optional v2 host callback — see CombatSceneData.onResolved. */
+  private onResolved: ((result: CombatResolved) => void) | null = null;
   /** Optional per-cell arena data — sprite + walkable + obstructs.
    *  See `arenaCells` on CombatSceneData for the contract. */
   private arenaCells: ReadonlyArray<ReadonlyArray<ArenaCellInfo | null>> | null = null;
@@ -503,6 +534,7 @@ export class CombatScene extends Phaser.Scene {
   init(data?: CombatSceneData): void {
     this.fromWorld = !!data?.fromWorld;
     this.silent = !!data?.silent;
+    this.onResolved = data?.onResolved ?? null;
     this.arenaCells = data?.arenaCells ?? null;
     this.darkness = !!data?.darkness;
     this.partyInfravisionActive = !!data?.partyInfravisionActive;
@@ -4632,14 +4664,29 @@ export class CombatScene extends Phaser.Scene {
 
   private scheduleExit(delayMs: number): void {
     this.time.delayedCall(delayMs, () => {
+      // v2 host path — when `onResolved` was supplied, the React side
+      // owns the post-fight transition (unmount Phaser, route to the
+      // end screen or back to the world). The scene reports the
+      // outcome and steps aside; no fade-out, no scene.start.
+      if (this.onResolved) {
+        const winner: "party" | "enemies" =
+          this.combat.winner === "enemies" ? "enemies" : "party";
+        const enemies = this.combat.combatants.filter(
+          (c) => c.side === "enemies",
+        );
+        const xp = enemies.reduce((s, m) => s + (m.xpReward ?? 0), 0);
+        const gold = enemies.reduce((s, m) => s + (m.goldReward ?? 0), 0);
+        this.onResolved({ winner, xp, gold });
+        return;
+      }
       this.cameras.main.fadeOut(220, 0, 0, 0);
       this.cameras.main.once("camerafadeoutcomplete", () => {
-        // Defeat is a special case: the dungeon flow needs to drop the
-        // party back on the overworld with `defeated=true` so the
-        // overworld's standard "you are wiped" handling runs. Returning
-        // into a dungeon scene with a dead party would re-render the
-        // dungeon under the defeat overlay, which is not the cue the
-        // player expects.
+        // v1 scene-switching path. Defeat is a special case: the
+        // dungeon flow needs to drop the party back on the overworld
+        // with `defeated=true` so the overworld's standard "you are
+        // wiped" handling runs. Returning into a dungeon scene with
+        // a dead party would re-render the dungeon under the defeat
+        // overlay, which is not the cue the player expects.
         if (this.combat.winner === "enemies") {
           this.scene.start("OverworldScene");
           return;

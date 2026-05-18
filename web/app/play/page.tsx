@@ -1,19 +1,18 @@
 /**
- * /play — the game route.
+ * /play — the game's title-screen route.
  *
- * Stub. Eventually this is where the title screen / module picker /
- * Phaser-or-equivalent game canvas mounts.
+ * Two affordances:
+ *   • Return to Game — loads the localStorage save and resumes. Hidden
+ *     (or disabled — see PlayLanding) when no save exists.
+ *   • New Game       — sends the player to the module picker.
+ *
+ * The save check has to run in the browser (localStorage isn't
+ * available during SSR), so the page is a thin server wrapper around
+ * a client component.
  */
-import Link from "next/link";
+
+import { PlayLanding } from "./PlayLanding";
 
 export default function PlayPage() {
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-6 p-8">
-      <h1 className="font-display text-4xl text-parchment">Play</h1>
-      <p className="text-parchment/70">Game stub — no content yet.</p>
-      <Link href="/" className="text-ember underline">
-        Back to landing
-      </Link>
-    </main>
-  );
+  return <PlayLanding />;
 }
