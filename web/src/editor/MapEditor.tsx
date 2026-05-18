@@ -2714,15 +2714,28 @@ export function MapEditor({
 
   const onLinkTraversed = useCallback(
     (link: { map_id: string; x: number; y: number }) => {
-      // Navigate to the linked map with sim still active and the
-      // party landing at the destination coord. The new MapEditor
-      // instance reads these params on mount.
+      // Same-map portals (e.g. a teleporter pair on one map) can't
+      // route through the URL: Next's App Router treats a push to the
+      // current pathname with new query params as same-route, so
+      // MapEditor doesn't remount and the lifecycle effect that
+      // consumes the entry-coord query never re-fires. The party
+      // would visually stay on the source cell while the address bar
+      // updated. Instead, teleport the party in the running sim — the
+      // sim is already correctly wired to this map, so there's
+      // nothing to rebuild.
+      const currentMapId = state.kind === "ok" ? state.mapRecord.id : mapId;
+      if (link.map_id === currentMapId) {
+        simRef.current?.teleport(link.x, link.y);
+        return;
+      }
+      // Cross-map: route through the URL so the new MapEditor mount
+      // picks the entry coord up via searchParams and seeds spawnAt.
       const url =
         `/editor/${moduleId}/maps/${link.map_id}` +
         `?sim=1&entryCol=${link.x}&entryRow=${link.y}`;
       router.push(url);
     },
-    [moduleId, router],
+    [moduleId, router, state, mapId],
   );
 
   useEffect(() => {

@@ -1282,6 +1282,43 @@ export class MapSimulation {
     this.emit({ kind: "state" });
   }
 
+  /** Teleport the party to (col, row) without going through normal
+   *  step-classification.
+   *
+   *  Used for same-map link traversal. A regular `move()` only steps
+   *  one cell in a cardinal direction; portals can connect arbitrary
+   *  cells, and the URL-navigation path used for cross-map links
+   *  doesn't fire when the link target is the current map (the route
+   *  doesn't remount), so the sim has to land the party itself.
+   *
+   *  Out-of-bounds is rejected — destinations off the grid are
+   *  treated as a no-op. Walkability is NOT checked: link targets are
+   *  authored and may legitimately point at a cell whose walkable
+   *  flag is false (e.g. landing on a small platform). The author
+   *  controls the destination; the sim trusts it.
+   *
+   *  Side effects mirror `move()`'s "walk" branch:
+   *    - bridge.setPartyAt
+   *    - party timer tick
+   *    - lighting re-pass
+   *    - emits `moved` + `state`. */
+  teleport(col: number, row: number): void {
+    if (this.disposed) return;
+    if (col < 0 || row < 0) return;
+    if (row >= this.grid.length) return;
+    const rowArr = this.grid[row];
+    if (!rowArr || col >= rowArr.length) return;
+    const from = { ...this.pos };
+    const to: Position = { col, row };
+    this.pos = to;
+    this.party = { ...this.party, ...tickPartyTimers(this.party) };
+    this.bridge.setPartyAt(to.col, to.row);
+    this.bridge.setPartyLight(this.computeLightSource());
+    this.bridge.relight();
+    this.emit({ kind: "moved", from, to });
+    this.emit({ kind: "state" });
+  }
+
   /** True iff at least one currently-active roster member has a
    *  race carrying the `infravision` ability. Computed on demand —
    *  the active-member list is fixed at construction so this is

@@ -1,8 +1,4 @@
-npm run dev:all
-
-## Remaining Features
-
-## Preliminary
+## Preliminary for Game Implementation
 
 2. A real /play route. Today everything testable lives under /editor/.... The /play page is a stub. Whatever your intended entry point is — a New Game / Continue chooser, picking a module, dropping the party on the configured start_position — needs to exist. The MapEditor's sim mode does basically the right movement work, but it's bundled with the painting UI; you'll want a slimmed-down host that's just the scene + party panel + simulator kernel.
 

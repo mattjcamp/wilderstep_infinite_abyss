@@ -1,5 +1,5 @@
 {
-  "_comment": "Tile Palette \u2014 reusable tile types used to paint maps. Each tile carries: `id` (the cell reference), display `name`, `tag` (string used to group tiles in the editor palette panel \u2014 empty for untagged), `sprite` (path under /sprites/map/), and the behavioral attributes \u2014 `walkable` (blocks movement when false), `obstructs` (blocks light + ranged line-of-sight when true), `locked` (gates passage/interaction until unlocked), `light_source` (the tile emits light), `light_range` (light radius in cells), `animation` (visual effect \u2014 \"none\" | \"torch\" | \"fire\" | \"fairy\" | \"smoke\"), `counter` (id from counters.json \u2014 empty for none), `encounter` (id from encounters.json \u2014 empty for none; the encounter sprite renders as an overlay), and `spawn` (id from spawns.json \u2014 empty for none). Optional `link` is a one-way portal: `{ \"map_id\": \"<target>\", \"x\": <col>, \"y\": <row> }`. Map cells are full copies of palette entries; palette edits don't auto-propagate to painted cells.",
+  "_comment": "Tile Palette — reusable tile types used to paint maps. Each tile carries: `id` (the cell reference), display `name`, `tag` (string used to group tiles in the editor palette panel — empty for untagged), `sprite` (path under /sprites/map/), and the behavioral attributes — `walkable` (blocks movement when false), `obstructs` (blocks light + ranged line-of-sight when true), `locked` (gates passage/interaction until unlocked), `light_source` (the tile emits light), `light_range` (light radius in cells), `animation` (visual effect — \"none\" | \"torch\" | \"fire\" | \"fairy\" | \"smoke\"), `counter` (id from counters.json — empty for none), `encounter` (id from encounters.json — empty for none; the encounter sprite renders as an overlay), and `spawn` (id from spawns.json — empty for none). Optional `link` is a one-way portal: `{ \"map_id\": \"<target>\", \"x\": <col>, \"y\": <row> }`. Map cells are full copies of palette entries; palette edits don't auto-propagate to painted cells.",
   "map_tiles": [
     {
       "id": "grass",
@@ -10,11 +10,11 @@
       "light_source": false,
       "light_range": 0,
       "animation": "none",
-      "counter": "",
-      "encounter": "",
-      "spawn": "",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
       "sprite": "map/grass1.png",
-      "tag": "outdoor"
+      "tag": "terrain"
     },
     {
       "id": "water",
