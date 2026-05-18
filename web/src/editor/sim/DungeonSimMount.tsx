@@ -51,25 +51,19 @@ import {
   peekDungeonSession,
   writeFloorMutations,
 } from "@/sim/dungeon/dungeonSession";
-import {
-  computeLighting,
-  emitterVisibleAt,
-  tintForCell,
-} from "@/sim/lighting";
-import { ANIMATION_CONFIGS } from "@/sim/tileAnimations";
+import { tintForCell } from "@/sim/lighting";
+import { TILE_SIZE, WorldRenderer } from "@/sim/scene/WorldRenderer";
 import type {
   SimCharacter,
   SimCharacterClass,
   SimEncounterRef,
   SimGrid,
-  SimLightSource,
   SimMonsterRef,
   SimParty,
   SimRace,
   SimSpell,
 } from "@/sim/types";
 
-const TILE_SIZE = 32;
 
 interface Props {
   moduleId: string;
@@ -322,53 +316,21 @@ export function DungeonSimMount({
       const height = floorRecord.height * TILE_SIZE;
 
       class DungeonScene extends Phaser.Scene {
-        cells: Map<string, Phaser.GameObjects.Image> = new Map();
+        /** Shared world renderer — owns cells, party sprite, roamers,
+         *  placed encounters, particle emitters, and the relight
+         *  pass. Created in `create()` once textures are loaded. */
+        world: WorldRenderer | null = null;
         /** Placed-item overlay sprites keyed by "col,row". One per
-         *  cell whose tile carried `placedItemSprite` (chests
-         *  today; stairs/artifacts later if we extend the pattern).
-         *  Rendered at depth 70 — above the floor cell image,
-         *  below particle emitters (160) and roamers (250). */
+         *  cell whose tile carried `placedItemSprite` (chests today;
+         *  stairs/artifacts later if we extend the pattern).
+         *  Rendered at depth 70 — above the floor cell image, below
+         *  particle emitters (160) and roamers (250). Tinted by the
+         *  WorldRenderer's `onRelight` hook so they share the same
+         *  render band as the cell they sit on. */
         placedItemSprites: Map<
           string,
           Phaser.GameObjects.Image
         > = new Map();
-        partySprite: Phaser.GameObjects.Image | null = null;
-        roamerSprites: Map<string, Phaser.GameObjects.Image> = new Map();
-        placedSprites: Map<string, Phaser.GameObjects.Image> = new Map();
-        encounterOverlays: Map<string, Phaser.GameObjects.Image> = new Map();
-        /** Phaser particle emitters keyed by "col,row" — torch
-         *  flames, one per `animation: "torch"` cell. Lazy-created
-         *  in `create()` after the cell textures land. */
-        emitters: Map<
-          string,
-          Phaser.GameObjects.Particles.ParticleEmitter
-        > = new Map();
-        partyLight: SimLightSource | null = null;
-        /** Last known party cell. Captured every `setPartyAt` so
-         *  the relight pass knows where to root the party-vision
-         *  light pool and which torches the party currently has
-         *  LOS to. Defaults to (0, 0) before the sim mounts;
-         *  immediately overwritten by `setPartyAt` on the first
-         *  simulator tick. */
-        partyCol = 0;
-        partyRow = 0;
-        /** True when at least one active party member's race grants
-         *  the `infravision` ability. Set once at scene boot from
-         *  the catalog. The ability being present isn't enough on
-         *  its own — see `partyInfravisionActive` below. */
-        partyHasInfravision = false;
-        /** Whether the player has currently *engaged* infravision.
-         *  Pushed via `setPartyInfravisionActive` on the bridge —
-         *  the React mount drives this from the launcher's
-         *  Infravision checkbox + the sim's `setInfravisionActive`
-         *  method. Combined with `partyHasInfravision` at relight
-         *  time: red rendering only happens when both are true. */
-        partyInfravisionActive = false;
-        /** Lighting mode: "day" = full bright, no tinting;
-         *  "night" = dark ambient with Bresenham-LOS falloff from
-         *  light sources. Toggled by the launcher's Darkness
-         *  checkbox via the React `darkness` prop. */
-        lightingMode: "day" | "night" = "night";
 
         constructor() {
           super("DungeonScene");
@@ -381,34 +343,18 @@ export function DungeonSimMount({
         }
 
         create() {
-          // Seed the lighting mode from the React prop captured at
-          // mount time. The React-side effect below pushes
-          // subsequent toggles through `setLightingMode`.
-          this.lightingMode = darkness ? "night" : "day";
-          // Seed infravision activation from the React prop. The
-          // launcher's checkbox + the parent useEffect below keep
-          // this in sync.
-          this.partyInfravisionActive = infravisionActive;
-          sceneRef.current = {
-            setLightingMode: (m) => this.setLightingMode(m),
-            setPartyInfravisionActive: (active) => {
-              if (this.partyInfravisionActive === active) return;
-              this.partyInfravisionActive = active;
-              this.relight();
-            },
-          };
-          // Detect infravision once at scene boot. Walks the
-          // party's roster → character.race → race.abilities,
-          // returns true when ANY active member's race carries the
-          // "infravision" id. The flag stays static for the
-          // dungeon's lifetime (re-mounting picks up a fresh value).
+          // Detect infravision once at scene boot. Walks the party's
+          // roster → character.race → race.abilities, returns true
+          // when ANY active member's race carries the "infravision"
+          // id. The flag stays static for the dungeon's lifetime
+          // (re-mounting picks up a fresh value).
           const racesById = new Map(
             (catalog?.races ?? []).map((r) => [r.id, r]),
           );
           const charactersById = new Map(
             (catalog?.characters ?? []).map((c) => [c.id, c]),
           );
-          this.partyHasInfravision = (catalog?.party?.roster ?? []).some(
+          const partyHasInfravision = (catalog?.party?.roster ?? []).some(
             (id) => {
               const c = charactersById.get(id);
               if (!c) return false;
@@ -417,25 +363,45 @@ export function DungeonSimMount({
               return (r.abilities ?? []).includes("infravision");
             },
           );
-          // Render every cell as an Image keyed by "col,row".
-          for (let r = 0; r < floorRecord!.height; r++) {
-            for (let c = 0; c < floorRecord!.width; c++) {
-              const cell = floorRecord!.grid[r][c];
-              const tex = cell.sprite;
-              if (!tex || !this.textures.exists(tex)) continue;
-              const img = this.add
-                .image(c * TILE_SIZE, r * TILE_SIZE, tex)
-                .setOrigin(0)
-                .setDisplaySize(TILE_SIZE, TILE_SIZE);
-              this.cells.set(`${c},${r}`, img);
-            }
-          }
-          // Placed-item overlays — one per cell whose `placedItemSprite`
-          // is set (chests, etc.). Anchored center, depth 70 so they
-          // sit above the floor cell image but below particles + the
-          // party/roamer/encounter sprites. The relight pass tints
-          // them through `placedItemSprites` so they inherit their
-          // cell's render band.
+
+          // Build the shared renderer. `onRelight` tints the dungeon-
+          // specific chest overlays so they inherit the per-cell
+          // render band (chest in red corridor reads red, in torchlit
+          // room reads grayscale).
+          this.world = new WorldRenderer({
+            scene: this,
+            grid: floorRecord!.grid,
+            partyAvatar: catalog?.party?.avatar ?? "",
+            partyHasInfravision,
+            initialLightingMode: darkness ? "night" : "day",
+            initialInfravisionActive: infravisionActive,
+            onRelight: (result) => {
+              for (const [key, img] of this.placedItemSprites) {
+                const [cs, rs] = key.split(",");
+                const t = tintForCell(result, Number(cs), Number(rs));
+                if (t.mode === "clear") img.clearTint();
+                else img.setTint(t.value);
+              }
+            },
+          });
+
+          // Expose scene controls back to React. The renderer owns
+          // both setters; this just bridges them through the ref the
+          // parent useEffects read.
+          sceneRef.current = {
+            setLightingMode: (m) => this.world?.setLightingMode(m),
+            setPartyInfravisionActive: (active) => {
+              this.world?.setPartyInfravisionActive(active);
+            },
+          };
+
+          // Shared init: particle texture, cells, emitters.
+          this.world.ensureParticleTexture();
+          this.world.createCells();
+          this.world.createEmitters();
+
+          // Dungeon-only: chest / placed-item overlays. Anchored
+          // center, depth 70 — above floor, below particles + party.
           for (let r = 0; r < floorRecord!.height; r++) {
             for (let c = 0; c < floorRecord!.width; c++) {
               const cell = floorRecord!.grid[r][c];
@@ -453,241 +419,10 @@ export function DungeonSimMount({
               this.placedItemSprites.set(`${c},${r}`, img);
             }
           }
-          // Particle source texture — a 16×16 white circle that
-          // each emitter tints + scales. Same one-shot init pattern
-          // MapEditor's scene uses so the visual stays consistent.
-          if (!this.textures.exists("__particle")) {
-            const g = this.add.graphics();
-            g.fillStyle(0xffffff, 1);
-            g.fillCircle(8, 8, 8);
-            g.generateTexture("__particle", 16, 16);
-            g.destroy();
-          }
-          // One particle emitter per cell whose `animation` value
-          // names a known config. Shared with the overworld map
-          // scene via `sim/tileAnimations.ts` so a torch reads the
-          // same in both. Depth 160 sits above the cell tint
-          // (a `setTint` on the cell image) but below party /
-          // roamer sprites.
-          for (let r = 0; r < floorRecord!.height; r++) {
-            for (let c = 0; c < floorRecord!.width; c++) {
-              const cell = floorRecord!.grid[r][c];
-              const animation = (cell.animation ?? "none") as
-                | keyof typeof ANIMATION_CONFIGS
-                | "none";
-              if (animation === "none") continue;
-              const cfg = ANIMATION_CONFIGS[animation];
-              if (!cfg) continue;
-              const x = c * TILE_SIZE + TILE_SIZE / 2;
-              const y = r * TILE_SIZE + TILE_SIZE / 2;
-              const emitter = this.add.particles(
-                x,
-                y,
-                "__particle",
-                cfg as unknown as Phaser.Types.GameObjects.Particles.ParticleEmitterConfig,
-              );
-              emitter.setDepth(160);
-              this.emitters.set(`${c},${r}`, emitter);
-            }
-          }
-          // Initial encounter-sprite pass — render the dungeon
-          // monster lead-sprite on every cell that carries one. The
-          // simulator's placed-encounter subsystem will animate them
-          // once the sim mounts; this just makes the starting state
-          // visible.
-          this.refreshEncounterOverlays();
-          this.relight();
-          // Start the simulation once the textures are ready.
+
+          // First relight + start the sim.
+          this.world.relight();
           this.mountSim();
-        }
-
-        /** Mode setter — re-runs the lighting pass with the new
-         *  ambient. Called from the React effect that watches the
-         *  `darkness` prop. */
-        setLightingMode(mode: "day" | "night") {
-          if (this.lightingMode === mode) return;
-          this.lightingMode = mode;
-          this.relight();
-        }
-
-        refreshEncounterOverlays() {
-          // Drop existing.
-          for (const img of this.encounterOverlays.values()) img.destroy();
-          this.encounterOverlays.clear();
-          // No static overlays for dungeons — every encounter is a
-          // moving entity rendered via setPlacedEncounterPositions.
-        }
-
-        relight() {
-          // All the math lives in `sim/lighting.ts` (shared with
-          // the overworld scene). We just consume the result and
-          // apply tints to cell images, source emitters, and any
-          // overlay sprites we track. Same input shape both scenes
-          // use, so the dungeon torch + overworld torch render
-          // identically.
-          const result = computeLighting({
-            grid: floorRecord!.grid as unknown as SimGrid,
-            party: { col: this.partyCol, row: this.partyRow },
-            partyLight: this.partyLight,
-            // Infravision renders red only when the party both
-            // *has* the ability AND has activated it. Either alone
-            // does nothing.
-            partyInfravisionActive:
-              this.partyHasInfravision && this.partyInfravisionActive,
-            mode: this.lightingMode,
-          });
-          // Per-sprite Phaser dispatch. `tintForCell` returns the
-          // tint value to apply; we always use multiply mode so
-          // mostly-black sprites (grass, water, etc.) stay mostly
-          // black and only their coloured detail pixels read as
-          // red in infravision — that lands closer to "heat
-          // vision" than a uniform red fill that hides every
-          // detail.
-          const applyTint = (
-            img: Phaser.GameObjects.Image,
-            col: number,
-            row: number,
-          ) => {
-            const t = tintForCell(result, col, row);
-            if (t.mode === "clear") img.clearTint();
-            else img.setTint(t.value);
-          };
-          // Cells.
-          for (const [key] of result.cells) {
-            const img = this.cells.get(key);
-            if (!img) continue;
-            const [cs, rs] = key.split(",");
-            applyTint(img, Number(cs), Number(rs));
-          }
-          // Emitter visibility — covers torch flames AND any
-          // decorative animation (fairy / smoke / fire) on cells
-          // the party can't actually see. Without this, particle
-          // emitters poke through the darkness because they
-          // render independent of the cell tint. The shared rule
-          // hides emitters on cells at ambient brightness OR
-          // infravision-red.
-          for (const [key, emitter] of this.emitters) {
-            const [cs, rs] = key.split(",");
-            emitter.setVisible(
-              emitterVisibleAt(result, Number(cs), Number(rs)),
-            );
-          }
-          // Roamer + placed-encounter overlays inherit their cell's
-          // render band so a monster in red territory reads as red.
-          const tintOverlay = (img: Phaser.GameObjects.Image) => {
-            const col = Math.round((img.x - TILE_SIZE / 2) / TILE_SIZE);
-            const row = Math.round((img.y - TILE_SIZE / 2) / TILE_SIZE);
-            applyTint(img, col, row);
-          };
-          for (const img of this.roamerSprites.values()) tintOverlay(img);
-          for (const img of this.placedSprites.values()) tintOverlay(img);
-          // Chest / placed-item overlays — same rule. Tinted by
-          // the cell they sit on so a chest in a red corridor
-          // reads red, in a torchlit room reads grayscale, in
-          // darkness fades to near-invisible alongside the floor.
-          for (const [key, img] of this.placedItemSprites) {
-            const [cs, rs] = key.split(",");
-            applyTint(img, Number(cs), Number(rs));
-          }
-        }
-
-        setPartyAt(col: number, row: number) {
-          // Capture the cell BEFORE we draw the sprite — relight()
-          // reads partyCol/Row to root the party-vision pool and
-          // gate torch LOS. The bridge wires this so every sim
-          // step re-runs relight after the position update.
-          this.partyCol = col;
-          this.partyRow = row;
-          const sprite = catalog!.party?.avatar ?? "";
-          const px = col * TILE_SIZE + TILE_SIZE / 2;
-          const py = row * TILE_SIZE + TILE_SIZE / 2;
-          if (!this.partySprite) {
-            const tex =
-              sprite && this.textures.exists(sprite) ? sprite : "__party_marker";
-            if (
-              tex === "__party_marker" &&
-              !this.textures.exists("__party_marker")
-            ) {
-              const g = this.add.graphics();
-              g.fillStyle(0xffb84d, 1);
-              g.fillCircle(16, 16, 13);
-              g.lineStyle(2, 0x4a1c00, 1);
-              g.strokeCircle(16, 16, 13);
-              g.generateTexture("__party_marker", 32, 32);
-              g.destroy();
-            }
-            this.partySprite = this.add
-              .image(px, py, tex)
-              .setOrigin(0.5)
-              .setDisplaySize(TILE_SIZE, TILE_SIZE)
-              .setDepth(300);
-          } else {
-            this.partySprite.setPosition(px, py);
-          }
-        }
-
-        setRoamerPositions(
-          positions: ReadonlyArray<{
-            id: string;
-            col: number;
-            row: number;
-            sprite: string;
-          }>,
-        ) {
-          this.diffMonsterSprites(this.roamerSprites, positions);
-        }
-        setPlacedEncounterPositions(
-          positions: ReadonlyArray<{
-            id: string;
-            col: number;
-            row: number;
-            sprite: string;
-          }>,
-        ) {
-          this.diffMonsterSprites(this.placedSprites, positions);
-        }
-
-        diffMonsterSprites(
-          map: Map<string, Phaser.GameObjects.Image>,
-          positions: ReadonlyArray<{
-            id: string;
-            col: number;
-            row: number;
-            sprite: string;
-          }>,
-        ) {
-          const wanted = new Map(positions.map((p) => [p.id, p]));
-          for (const [id, img] of map) {
-            if (wanted.has(id)) continue;
-            img.destroy();
-            map.delete(id);
-          }
-          for (const [id, p] of wanted) {
-            const px = p.col * TILE_SIZE + TILE_SIZE / 2;
-            const py = p.row * TILE_SIZE + TILE_SIZE / 2;
-            let img = map.get(id);
-            if (!img) {
-              const tex =
-                p.sprite && this.textures.exists(p.sprite)
-                  ? p.sprite
-                  : "__party_marker";
-              img = this.add
-                .image(px, py, tex)
-                .setOrigin(0.5)
-                .setDisplaySize(TILE_SIZE * 0.95, TILE_SIZE * 0.95)
-                .setDepth(250);
-              map.set(id, img);
-            } else {
-              img.setPosition(px, py);
-              if (
-                p.sprite &&
-                this.textures.exists(p.sprite) &&
-                img.texture.key !== p.sprite
-              ) {
-                img.setTexture(p.sprite);
-              }
-            }
-          }
         }
 
         mountSim() {
@@ -707,18 +442,15 @@ export function DungeonSimMount({
             galadriels_light_steps: 0,
           };
           const classNameById = new Map<string, string>();
+          // Capture renderer in a local for the bridge closures —
+          // `this.world` is a Phaser scene field; the bridge
+          // outlives the scene tear-down so it needs a stable ref.
+          const renderer = this.world!;
           const bridge: SceneBridge = {
-            setPartyAt: (c, r) => this.setPartyAt(c, r),
-            clearParty: () => {
-              if (this.partySprite) {
-                this.partySprite.destroy();
-                this.partySprite = null;
-              }
-            },
-            setPartyLight: (source) => {
-              this.partyLight = source;
-            },
-            relight: () => this.relight(),
+            setPartyAt: (c, r) => renderer.setPartyAt(c, r),
+            clearParty: () => renderer.clearParty(),
+            setPartyLight: (source) => renderer.setPartyLight(source),
+            relight: () => renderer.relight(),
             setBoatPositions: () => {},
             setPartyBoatAt: () => {},
             onKey: (handler) => {
@@ -744,23 +476,17 @@ export function DungeonSimMount({
               return () => window.removeEventListener("keydown", listener);
             },
             setRoamerPositions: (positions) => {
-              this.setRoamerPositions(positions);
+              renderer.setRoamerPositions(positions);
             },
             setPlacedEncounterPositions: (positions) => {
-              this.setPlacedEncounterPositions(positions);
+              renderer.setPlacedEncounterPositions(positions);
             },
             setSuppressedEncounterCells: () => {},
             setCellSprite: (col, row, sprite) => {
-              const img = this.cells.get(`${col},${row}`);
-              if (img && this.textures.exists(sprite)) {
-                img.setTexture(sprite);
-              }
+              renderer.setCellSprite(col, row, sprite);
             },
             setPartyInfravisionActive: (active) => {
-              // The sim is the source of truth — push the flag
-              // into the scene's stored field via sceneRef so the
-              // next relight picks it up.
-              sceneRef.current?.setPartyInfravisionActive(active);
+              renderer.setPartyInfravisionActive(active);
             },
           };
 
