@@ -1,3 +1,4 @@
+- spawns still cannot be attacked
 - port over time keeping feature
 - port over logging system
 - battle arena should be light based on time of day (or overriden)

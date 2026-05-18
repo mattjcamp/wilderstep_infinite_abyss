@@ -1,18 +1,23 @@
 /**
- * buildArenaCells — snapshot a window of the world map into the
+ * buildArenaCells — snapshot a window of a source grid into the
  * 18×16 arena matrix CombatScene consumes.
  *
- * Why this exists. The combat scene renders a 18×16 grid (ARENA_COLS
- * × ARENA_ROWS) and, when given an `arenaCells` matrix, paints those
- * cells with their actual map sprites + honours per-cell `walkable`
- * and `obstructs` flags during movement and line-of-sight. Without
- * the matrix the scene falls back to a generic green field.
+ * Status: NOT WIRED into the play flow today. The play side
+ * intentionally omits `arenaCells` from PlayCombatHost, which lets
+ * the combat scene fall back to its generic green-field arena. This
+ * helper is held in reserve for when the encounter record gains an
+ * `arenaId` field (or similar) and the host can pick a dedicated
+ * authored arena map per encounter.
  *
- * Until modules can author per-encounter arena maps (a future field
- * on the encounter record), the play side approximates by cropping a
- * window of the world map centered on the encounter cell. This keeps
- * the visual continuity: a fight in a forest reads as forest, a
- * fight on a road reads as road, etc.
+ * Why the cropping logic exists. The combat scene renders a 18×16
+ * grid (ARENA_COLS × ARENA_ROWS) and, when given an `arenaCells`
+ * matrix, paints those cells with their actual map sprites + honours
+ * per-cell `walkable` and `obstructs` flags during movement and
+ * line-of-sight. Without the matrix the scene falls back to a
+ * generic green field. When an authored arena map lands, the host
+ * will pass that map's full grid here and crop a window around the
+ * trigger cell so the fight reads as taking place in the right
+ * environment.
  *
  * Cropping rules:
  *

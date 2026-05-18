@@ -718,6 +718,27 @@ export class MapSimulation {
       return;
     }
 
+    // 2.6. Monster Spawn lair bump — same "encounter overrides
+    // walkable" pattern as locks. A lair is a thing the party
+    // *attacks*, not stands on; designers commonly author them as
+    // unwalkable so the cell reads as a structure. Without this
+    // pre-walkable check the party would bounce off "Something
+    // blocks the way" without ever engaging the boss. The post-move
+    // boss check below handles the (rare) case where the lair tile
+    // is authored as walkable; this one handles the (common) case
+    // where it isn't.
+    const bumpBoss = this.spawnOptionsForLair({ col: targetCol, row: targetRow });
+    if (bumpBoss) {
+      this.pendingSpawn = bumpBoss;
+      this.emit({ kind: "spawn_encountered", options: bumpBoss });
+      this.emit({
+        kind: "log",
+        message: `Approach Lair: ${bumpBoss.name}`,
+      });
+      this.emit({ kind: "state" });
+      return;
+    }
+
     const targetKey = `${targetCol},${targetRow}`;
     const targetHasBoat =
       this.boatPositions.has(targetKey) || target.boat === true;

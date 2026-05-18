@@ -47,8 +47,13 @@ import {
   type SceneBridge,
   type SpawnEncounterOptions,
 } from "@/sim/MapSimulation";
+import { tintForCell } from "@/sim/lighting";
 import { TILE_SIZE, WorldRenderer } from "@/sim/scene/WorldRenderer";
-import { buildArenaCells } from "@/play/buildArenaCells";
+
+/** How many log lines the in-world message strip retains. Larger
+ *  values cost rendering for marginal value — players read the bottom
+ *  3-4 lines, not the back-buffer. */
+const MAX_LOG = 6;
 import { loadWorld, saveWorld } from "@/play/save";
 import { applyCombatResultToSave } from "@/play/syncFromBattle";
 import type { WorldSave } from "@/play/saveTypes";
@@ -99,6 +104,14 @@ interface PlayMapRecord {
   grid: PlayCell[][];
 }
 
+/** Minimal item shape PlayHost uses to render overlays. The full
+ *  v2 item record carries more (slots, durability, buy/sell, etc.);
+ *  only the icon is read here. */
+interface PlayItem {
+  id: string;
+  icon?: string;
+}
+
 interface LoadedCatalog {
   map: PlayMapRecord;
   /** Palette (map_tiles) — used for the destroy-lair fallback and
@@ -112,6 +125,10 @@ interface LoadedCatalog {
   encounters: SimEncounterRef[];
   spawns: SimSpawn[];
   knockSpell: SimSpell | null;
+  /** Items catalog — used to resolve `cell.item` overlays to their
+   *  icon sprite (`item/<icon>.png`). Kernel doesn't read this
+   *  directly; it's a scene-render concern. */
+  items: PlayItem[];
 }
 
 interface State {
@@ -139,6 +156,11 @@ export function PlayHost() {
    *  combat scene reports back via `onResolved`. While set the world
    *  Phaser game is unmounted and PlayCombatHost takes its place. */
   const [combat, setCombat] = useState<SpawnEncounterOptions | null>(null);
+  /** Scrolling log of in-world messages — text-on-step from cells
+   *  with the `text` field, plus the kernel's narrated events (Edge
+   *  of the map, You descend into the dungeon, Approach Lair: …).
+   *  Capped at MAX_LOG to keep render cheap. */
+  const [logMessages, setLogMessages] = useState<string[]>([]);
   const overlaysOpenRef = useRef(false);
   useEffect(() => {
     // Both modal lock-dialog AND active combat gate keyboard movement
@@ -217,7 +239,11 @@ export function PlayHost() {
       const Phaser = await import("phaser");
       if (cancelled || !containerRef.current) return;
 
-      // Collect every sprite key the cells, party, and monsters need.
+      // Collect every sprite key the cells, party, monsters, and
+      // dropped items need. Item icons resolve to `item/<icon>.png`
+      // and are queued separately so cells with the `item` field
+      // can paint their overlay sprite (sword, potion, scroll, etc.)
+      // on top of the floor tile.
       const spriteKeys = new Set<string>();
       for (const row of catalog.map.grid) {
         for (const cell of row) {
@@ -228,12 +254,35 @@ export function PlayHost() {
       for (const m of catalog.monsters) {
         if (m.sprite) spriteKeys.add(m.sprite);
       }
+      // Item-icon resolution: id → icon. Authors set `cell.item`
+      // to an item id; the catalog says which icon sprite to draw.
+      const itemsById = new Map<string, PlayItem>();
+      for (const it of catalog.items) itemsById.set(it.id, it);
+      const itemIconKeys = new Set<string>();
+      for (const row of catalog.map.grid) {
+        for (const cell of row) {
+          const itemId = cell.item;
+          if (typeof itemId !== "string" || !itemId) continue;
+          const item = itemsById.get(itemId);
+          const icon = item?.icon;
+          if (!icon) continue;
+          itemIconKeys.add(`item/${icon}.png`);
+        }
+      }
+      for (const key of itemIconKeys) spriteKeys.add(key);
 
       const width = catalog.map.width * TILE_SIZE;
       const height = catalog.map.height * TILE_SIZE;
 
       class PlayScene extends Phaser.Scene {
         world: WorldRenderer | null = null;
+        /** Cell-bound item overlays keyed "col,row". One per cell
+         *  whose `item` field resolves to a known item with an icon.
+         *  Rendered at depth 70 — above the floor, below particles
+         *  (160) and the party / roamers (250+). Tinted in the
+         *  WorldRenderer onRelight hook so a dropped item picks up
+         *  the same shade as the floor beneath it. */
+        itemOverlays: Map<string, Phaser.GameObjects.Image> = new Map();
         constructor() {
           super("PlayScene");
         }
@@ -268,10 +317,50 @@ export function PlayHost() {
             // overworld, etc.); for now everywhere reads as daylit.
             initialLightingMode: "day",
             initialInfravisionActive: !!save.party.infravision_active,
+            // Tint item overlays in sync with the floor cell they
+            // sit on so a sword on a dim corridor reads dim too,
+            // and so they pick up infravision red when relevant.
+            onRelight: (result) => {
+              for (const [key, img] of this.itemOverlays) {
+                const [cs, rs] = key.split(",");
+                const t = tintForCell(result, Number(cs), Number(rs));
+                if (t.mode === "clear") img.clearTint();
+                else img.setTint(t.value);
+              }
+            },
           });
           this.world.ensureParticleTexture();
           this.world.createCells();
           this.world.createEmitters();
+
+          // Item overlays — one Image per cell whose `item` resolves
+          // to a known icon. Authored via the editor's per-cell
+          // `item` field; the icon comes from items.json. Sized at
+          // 70% of the tile so the floor underneath is still visible
+          // (matches the "dropped on the floor" look from v1).
+          for (let r = 0; r < catalog.map.height; r++) {
+            for (let c = 0; c < catalog.map.width; c++) {
+              const cell = catalog.map.grid[r][c];
+              const itemId = cell.item;
+              if (typeof itemId !== "string" || !itemId) continue;
+              const item = itemsById.get(itemId);
+              const icon = item?.icon;
+              if (!icon) continue;
+              const tex = `item/${icon}.png`;
+              if (!this.textures.exists(tex)) continue;
+              const img = this.add
+                .image(
+                  c * TILE_SIZE + TILE_SIZE / 2,
+                  r * TILE_SIZE + TILE_SIZE / 2,
+                  tex,
+                )
+                .setOrigin(0.5)
+                .setDisplaySize(TILE_SIZE * 0.7, TILE_SIZE * 0.7)
+                .setDepth(70);
+              this.itemOverlays.set(`${c},${r}`, img);
+            }
+          }
+
           this.world.relight();
           this.mountSim();
         }
@@ -333,6 +422,32 @@ export function PlayHost() {
             clearParty: () => renderer.clearParty(),
             setPartyLight: (source) => renderer.setPartyLight(source),
             relight: () => renderer.relight(),
+            // Float tile text over the destination cell briefly so
+            // the player sees it without looking away. Implemented
+            // as a transient label on the Phaser scene — fades out
+            // after a beat. The scrolling log strip below captures
+            // the same text durably via the `log` event.
+            floatText: (col, row, text) => {
+              const x = col * TILE_SIZE + TILE_SIZE / 2;
+              const y = row * TILE_SIZE - 4;
+              const label = this.add
+                .text(x, y, text, {
+                  fontFamily: "monospace",
+                  fontSize: "12px",
+                  color: "#f6efd6",
+                  backgroundColor: "#0c0c14",
+                  padding: { x: 4, y: 2 },
+                })
+                .setOrigin(0.5, 1)
+                .setDepth(500);
+              this.tweens.add({
+                targets: label,
+                alpha: { from: 1, to: 0 },
+                y: { from: y, to: y - 12 },
+                duration: 1800,
+                onComplete: () => label.destroy(),
+              });
+            },
             setBoatPositions: () => {
               // Boat-as-cell-texture is editor-side bookkeeping today;
               // the play scene relies on the sim's own cell sprite
@@ -401,6 +516,18 @@ export function PlayHost() {
           simRef.current = sim;
 
           sim.subscribe((ev) => {
+            if (ev.kind === "log") {
+              // Append to the scrolling message log. Capped to the
+              // last MAX_LOG lines so the list stays cheap to
+              // re-render. Same shape MapEditor's SimPanel uses.
+              setLogMessages((prev) => {
+                const next = [...prev, ev.message];
+                return next.length > MAX_LOG
+                  ? next.slice(next.length - MAX_LOG)
+                  : next;
+              });
+              return;
+            }
             if (ev.kind === "linked") {
               handleLinked(ev.link);
               return;
@@ -653,7 +780,7 @@ export function PlayHost() {
         }}
       />
 
-      {combat && state.save && state.catalog ? (
+      {combat && state.save ? (
         <PlayCombatHost
           // Reseat the Phaser game per fight via React's key — every
           // new encounter gets a fresh CombatScene instance with the
@@ -662,15 +789,27 @@ export function PlayHost() {
           moduleId={state.save.moduleId}
           monsterIds={combat.monsters}
           save={state.save}
-          arenaCells={buildArenaCells(
-            state.catalog.map.grid,
-            combat.sourcePos.col,
-            combat.sourcePos.row,
-          )}
+          // `arenaCells` intentionally omitted — combat falls back to
+          // the generic green-field arena until per-encounter arena
+          // maps are authored (encounter.arenaId, future). The
+          // `buildArenaCells` helper is ready in src/play/ for that
+          // wiring; cropping the world map here surfaced the wrong
+          // pattern (a fight on the world's terrain mid-step) before
+          // arena-map authoring landed.
           onResolved={onCombatResolved}
         />
       ) : null}
 
+      {/* In-world message log. Surfaces text-on-step + the kernel's
+       *  narrated events (locks, links, edge of map, boss approach).
+       *  Hidden during combat — the combat scene has its own log. */}
+      {!combat && logMessages.length > 0 ? (
+        <div className="w-full max-w-5xl rounded border border-parchment/15 bg-ink/60 p-2 font-mono text-xs leading-snug text-parchment/70">
+          {logMessages.map((msg, i) => (
+            <div key={`${i}-${msg}`}>{msg}</div>
+          ))}
+        </div>
+      ) : null}
       <footer className="text-xs text-parchment/45">
         {combat
           ? "Combat resolves when one side falls."
@@ -708,6 +847,7 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
     encountersLayers,
     spawnsLayers,
     spellsLayers,
+    itemsLayers,
   ] = await Promise.all([
     src.loadModelLayers(moduleId, "map_tiles"),
     src.loadModelLayers(moduleId, "maps"),
@@ -719,6 +859,7 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
     src.loadModelLayers(moduleId, "encounters").catch(() => null),
     src.loadModelLayers(moduleId, "spawns").catch(() => null),
     src.loadModelLayers(moduleId, "spells").catch(() => null),
+    src.loadModelLayers(moduleId, "items").catch(() => null),
   ]);
 
   const paletteDoc = (mergeModel(
@@ -829,6 +970,14 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
     (spellsDoc.spells ?? []).find(
       (s) => s.id === "knock" || s.action === "knock",
     ) ?? null;
+  // Items — only the id + icon are needed for cell.item overlay
+  // resolution. The full item record (slots, durability, etc.) is
+  // a v1battle concern handled by the combat seeder.
+  const itemsDoc = (mergeModel(
+    "items",
+    itemsLayers?.inherited ?? [],
+    itemsLayers?.ownFile ?? null,
+  ) ?? {}) as { items?: PlayItem[] };
 
   return {
     map,
@@ -841,6 +990,7 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
     encounters: encountersDoc.encounters ?? [],
     spawns: spawnsDoc.spawns ?? [],
     knockSpell,
+    items: itemsDoc.items ?? [],
   };
 }
 
