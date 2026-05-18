@@ -12,8 +12,8 @@
       "role": "library"
     },
     {
-      "id": "demo",
-      "title": "Demo Module",
+      "id": "test",
+      "title": "Test",
       "role": "playable"
     }
   ]
