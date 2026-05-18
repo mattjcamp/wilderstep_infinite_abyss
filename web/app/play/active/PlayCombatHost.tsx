@@ -21,16 +21,36 @@
 
 import { useEffect, useRef } from "react";
 import type { CombatResolved } from "@/battle/scenes/CombatScene";
+import type { ArenaCellInfo } from "@/battle/world/Maps";
+import { seedBattleCaches } from "@/play/seedBattleCaches";
+import type { WorldSave } from "@/play/saveTypes";
 
 interface Props {
   moduleId: string;
   monsterIds: ReadonlyArray<string>;
+  /** The active save. Seeds v1battle's caches with the saved party
+   *  (HP/MP, custom characters, inventory) so CombatScene loads the
+   *  *real* roster instead of falling back to the demo party. */
+  save: WorldSave;
+  /** 18×16 arena cell matrix — cropped from the world map around the
+   *  encounter location. Paints the fight on the actual terrain
+   *  (grass / road / forest), and the per-cell walkable + obstructs
+   *  flags feed the scene's movement + line-of-sight predicates.
+   *  Pass `undefined` to let the scene fall back to its generic
+   *  green-field arena. */
+  arenaCells?: ReadonlyArray<ReadonlyArray<ArenaCellInfo | null>>;
   /** Called once when the fight resolves — winner side + XP/gold the
    *  scene awarded to the party. PlayHost applies the consequences. */
   onResolved: (result: CombatResolved) => void;
 }
 
-export function PlayCombatHost({ moduleId, monsterIds, onResolved }: Props) {
+export function PlayCombatHost({
+  moduleId,
+  monsterIds,
+  save,
+  arenaCells,
+  onResolved,
+}: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   // Latest onResolved — the Phaser scene captures the callback once at
   // boot; if React rerenders us with a new closure, the ref keeps the
@@ -50,6 +70,17 @@ export function PlayCombatHost({ moduleId, monsterIds, onResolved }: Props) {
       const { CombatScene } = await import("@/battle/scenes/CombatScene");
       const { setActiveModule } = await import("@/battle/world/Module");
       setActiveModule(moduleId);
+      // Inheritance-aware cache seed. Without this, CombatScene's
+      // loaders hit /modules/<id>/X.json — flat lookups that don't
+      // walk the v2 `extends` chain — and a module like `test` that
+      // ships only module.json + maps.json sees 404s on every catalog
+      // (party, items, spells, monsters, races, effects). The result
+      // is a fall-through to v1's hand-built demo party and empty
+      // catalogs that grey out Cast / Throw / Use Item. Seeding the
+      // caches up-front with merged data makes CombatScene's loaders
+      // cache-hits and they never touch /modules/.
+      await seedBattleCaches(moduleId, save);
+      if (cancelled || !containerRef.current) return;
 
       // The v1 canvas is 960×720 by spec — CombatScene depends on
       // that geometry for its hand-laid HUD layout.
@@ -76,6 +107,12 @@ export function PlayCombatHost({ moduleId, monsterIds, onResolved }: Props) {
                 silent: true,
                 monsterNames:
                   monsterIds.length > 0 ? [...monsterIds] : undefined,
+                // Snapshot the matrix so a later mutation to the
+                // host's React state can't desync mid-render — same
+                // pattern the editor's BattleSim uses.
+                arenaCells: arenaCells
+                  ? arenaCells.map((row) => [...row])
+                  : undefined,
                 // Routes the scene's exit through React instead of
                 // letting it scene.start a v1 world scene that
                 // doesn't exist anymore.

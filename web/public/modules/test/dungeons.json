@@ -1,0 +1,35 @@
+{
+  "dungeons": [
+    {
+      "id": "the_hole",
+      "name": "The Giant Rat Hole",
+      "description": "A hole in the ground teaming with giant rats",
+      "tags": [
+        "giant_rat_hole"
+      ],
+      "levels": [
+        {
+          "id": "the_hole_l1",
+          "name": "Level 1",
+          "depth": 1,
+          "map_id": "",
+          "tags": [
+            "giant_rat_hole"
+          ]
+        },
+        {
+          "id": "the_hole_l2",
+          "name": "Level 2",
+          "depth": 2,
+          "size": {
+            "width": 64,
+            "height": 64
+          }
+        }
+      ],
+      "torch_density": 0.05,
+      "locked_doors": 0,
+      "style": "caves"
+    }
+  ]
+}

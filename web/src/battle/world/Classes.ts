@@ -232,6 +232,31 @@ export function _clearClassCaches(): void {
 }
 
 /**
+ * Seed `_classCatalog` from a pre-parsed character_classes.json blob
+ * (the same `{ character_classes: RawClass[] }` shape the loader
+ * expects). Used by the play side's `seedBattleCaches` to inject
+ * inheritance-aware data — `loadClass()` then hits the seeded cache
+ * and never fetches /modules/<id>/character_classes.json.
+ *
+ * Pass `null` to clear (same effect as `_clearClassCaches` for the
+ * class slot only; races stay).
+ */
+export function _setClassCatalog(
+  raw: { character_classes?: RawClass[] } | null,
+): void {
+  if (!raw) {
+    _classCatalog = null;
+    return;
+  }
+  const out = new Map<string, ClassTemplate>();
+  for (const r of raw.character_classes ?? []) {
+    const tpl = classFromRaw(r);
+    if (tpl) out.set(tpl.id.toLowerCase(), tpl);
+  }
+  _classCatalog = out;
+}
+
+/**
  * Race-level innate abilities for character-sheet display. Returns a
  * minimal {name, description} list for the given race id, sourced
  * from `races.json` + `abilities.json`. v2 references abilities by

@@ -48,7 +48,9 @@ import {
   type SpawnEncounterOptions,
 } from "@/sim/MapSimulation";
 import { TILE_SIZE, WorldRenderer } from "@/sim/scene/WorldRenderer";
+import { buildArenaCells } from "@/play/buildArenaCells";
 import { loadWorld, saveWorld } from "@/play/save";
+import { applyCombatResultToSave } from "@/play/syncFromBattle";
 import type { WorldSave } from "@/play/saveTypes";
 import type {
   SimCharacter,
@@ -259,10 +261,12 @@ export function PlayHost() {
             grid: catalog.map.grid,
             partyAvatar: save.party.avatar,
             partyHasInfravision,
-            // Night for the live game — the editor uses Day toggles
-            // during authoring, but in-play we want torches to mean
-            // something. Future setting: per-map ambient.
-            initialLightingMode: "night",
+            // Day for testing — full-brightness rendering so authors
+            // can walk the world without torch-LOS gating getting in
+            // the way. The future game clock + per-map ambient flag
+            // will pick "night" automatically (dungeons, after-dusk
+            // overworld, etc.); for now everywhere reads as daylit.
+            initialLightingMode: "day",
             initialInfravisionActive: !!save.party.infravision_active,
           });
           this.world.ensureParticleTexture();
@@ -537,9 +541,22 @@ export function PlayHost() {
     }
     if (result.winner === "party") {
       sim.resolveSpawnEncounter("won");
-      // Persist the new defeated/destroyed state so re-entering the
-      // map remembers the kill. saveCurrent reads the kernel's
-      // snapshot which already reflects the resolution.
+      // Two reconciliations need to land before the save write:
+      //   1. World-side mutations from the kernel (unlocked cells,
+      //      defeated encounters, destroyed lairs, party position) —
+      //      `saveCurrent` snapshots those off the sim.
+      //   2. Combat-side mutations to the party (HP/MP/inventory
+      //      changes per character, shared stash items consumed, gold
+      //      from kills) — `applyCombatResultToSave` reads
+      //      `gameState.partyData` which CombatScene mutated in place
+      //      during the fight, and folds those deltas into the save's
+      //      `members[]` + `party.gold` + `party.inventory`.
+      //
+      // Do (2) FIRST so saveRef.current carries the post-fight party
+      // before saveCurrent reads it.
+      if (saveRef.current) {
+        saveRef.current = applyCombatResultToSave(saveRef.current);
+      }
       saveCurrent();
       setCombat(null);
       return;
@@ -636,14 +653,20 @@ export function PlayHost() {
         }}
       />
 
-      {combat ? (
+      {combat && state.save && state.catalog ? (
         <PlayCombatHost
           // Reseat the Phaser game per fight via React's key — every
           // new encounter gets a fresh CombatScene instance with the
           // right monster roster.
           key={`${combat.sourcePos.col},${combat.sourcePos.row}`}
-          moduleId={state.save?.moduleId ?? ""}
+          moduleId={state.save.moduleId}
           monsterIds={combat.monsters}
+          save={state.save}
+          arenaCells={buildArenaCells(
+            state.catalog.map.grid,
+            combat.sourcePos.col,
+            combat.sourcePos.row,
+          )}
           onResolved={onCombatResolved}
         />
       ) : null}

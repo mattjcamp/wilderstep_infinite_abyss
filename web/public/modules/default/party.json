@@ -7,9 +7,9 @@
   "avatar": "person/fighter18.png",
   "gold": 50,
   "roster": [
-    "selina",
     "aldric",
     "pippin",
+    "selina",
     "elminster"
   ],
   "party_effects": [],
