@@ -73,6 +73,13 @@ import {
   type SceneBridge,
   type SpawnEncounterOptions,
 } from "@/sim/MapSimulation";
+import {
+  ensureQuestStates,
+  parseQuestsFile,
+  type CombatLocation,
+  type QuestDef,
+  type QuestState,
+} from "@/battle/world/Quests";
 import { tintForCell } from "@/sim/lighting";
 import { TILE_SIZE, WorldRenderer } from "@/sim/scene/WorldRenderer";
 import {
@@ -241,11 +248,30 @@ export function PlayHost() {
    *  success. Movement is gated on this via `overlaysOpenRef`. */
   const [lockEncounter, setLockEncounter] =
     useState<LockEncounterOptions | null>(null);
-  /** Quest-offer state — set on `quest_encountered`, cleared when the
-   *  player Accepts or Declines via the overlay. Movement gates on
-   *  this through overlaysOpenRef so a chained step doesn't slip past
-   *  the dialog. */
-  const [questOffer, setQuestOffer] = useState<SimQuestRef | null>(null);
+  /** Quest dialog state — set on `quest_encountered`, cleared on
+   *  Accept / Decline / Close. The kernel re-fires this event every
+   *  time the party bumps the quest-giver tile (no status-based
+   *  filtering), so the host computes the dialog mode here based on
+   *  the current QuestState:
+   *
+   *   - `status: "available"` → offer (Accept / Decline)
+   *   - `status: "active"`    → in-progress (Close)
+   *   - `status: "completed"` → handoff (Close flips to "turned_in")
+   *   - `status: "turned_in"` → suppressed entirely (handler bails)
+   *
+   *  All view inputs are computed at event time so the render block
+   *  stays a pure function of state. Movement gates on this through
+   *  overlaysOpenRef so a chained step doesn't slip past the dialog. */
+  const [questOffer, setQuestOffer] = useState<{
+    questId: string;
+    quest: SimQuestRef;
+    alreadyAccepted: boolean;
+    complete: boolean;
+    stepIdx: number;
+    stepCount: number;
+    activeStepName?: string;
+    activeStepDescription?: string;
+  } | null>(null);
   /** Active combat — set on `spawn_encountered`, cleared when the
    *  combat scene reports back via `onResolved`. While set the world
    *  Phaser game is unmounted and PlayCombatHost takes its place. */
@@ -283,6 +309,18 @@ export function PlayHost() {
    *  catalog finished loading) need a live read at call time, not
    *  the empty initial snapshot. */
   const catalogRef = useRef<LoadedCatalog | null>(null);
+  /** Parsed v2 QuestDef[] — populated when the sim mounts. Used by
+   *  the quest_encountered handler to compute the dialog mode and by
+   *  the kill-credit listener to update save.questStepProgress. */
+  const questDefsRef = useRef<QuestDef[]>([]);
+  /** Sandbox-scoped quest state. Status / step kills / step progress
+   *  per quest id. Bootstrapped from `save.acceptedQuests` +
+   *  `save.questStepProgress` at sim-mount time so existing saves
+   *  resume their progress; mutated as the player accepts quests
+   *  and kills quest targets. (Saving the full QuestState into the
+   *  save shape is a follow-up — for now, on reload, status is
+   *  re-inferred from acceptedQuests + questStepProgress.) */
+  const questStatesRef = useRef<Map<string, QuestState>>(new Map());
   useEffect(() => {
     // Lock dialog, quest offer, AND active combat each gate keyboard
     // movement through the same ref so the world sim freezes under
@@ -1061,6 +1099,53 @@ export function PlayHost() {
           const startAt = dungeonNow
             ? dungeonNow.startAt
             : { col: save.party.col, row: save.party.row };
+
+          // Quest setup — parse the catalog's quest records through
+          // the v2 loader so the sim receives structured QuestDef[]s
+          // (kind, encounterId, count, locationKind, mapId, dungeonId,
+          // dungeonLevel). Bootstrap each quest's state from the save
+          // so progress survives a reload: accepted quests promote to
+          // "active", questStepProgress[id] = N flips the first N
+          // stepProgress[] entries to true, and a quest whose every
+          // step is done lands on "completed". (Persisting the full
+          // QuestState shape into the save is a follow-up — for now
+          // the legacy acceptedQuests + questStepProgress fields are
+          // enough to round-trip the playable state.)
+          const questDefs = parseQuestsFile({ quests: catalog.quests });
+          ensureQuestStates(questDefs, questStatesRef.current);
+          const accepted = new Set(save.acceptedQuests ?? []);
+          for (const def of questDefs) {
+            const qs = questStatesRef.current.get(def.id);
+            if (!qs) continue;
+            if (accepted.has(def.id) && qs.status === "available") {
+              qs.status = "active";
+            }
+            const nextStep = save.questStepProgress?.[def.id] ?? 0;
+            for (let i = 0; i < Math.min(nextStep, qs.stepProgress.length); i++) {
+              qs.stepProgress[i] = true;
+            }
+            if (
+              qs.stepProgress.length > 0 &&
+              qs.stepProgress.every((p) => p) &&
+              qs.status === "active"
+            ) {
+              qs.status = "completed";
+            }
+          }
+          questDefsRef.current = questDefs;
+          // Tell the sim where the party currently is so kill-step
+          // matching knows which authored encounters belong on this
+          // map/floor. Dungeon floors take precedence — when the
+          // party is inside a dungeon, we ignore the overworld
+          // mapId entirely.
+          const currentLocation: CombatLocation = dungeonNow
+            ? {
+                kind: "dungeon",
+                dungeonId: dungeonNow.dungeonId,
+                dungeonLevel: dungeonNow.floorIdx,
+              }
+            : { kind: "map", mapId: save.party.currentMapId };
+
           sim = new MapSimulation({
             grid: catalog.map.grid as unknown as SimGrid,
             party: partyForSim,
@@ -1090,6 +1175,9 @@ export function PlayHost() {
             initialBoatPositions,
             initialOnBoat: save.party.onBoat,
             initialCurrentBoatSprite: save.party.currentBoatSprite,
+            questDefs,
+            questStates: questStatesRef.current,
+            currentLocation,
           });
           simRef.current = sim;
 
@@ -1148,7 +1236,63 @@ export function PlayHost() {
               return;
             }
             if (ev.kind === "quest_encountered") {
-              setQuestOffer(ev.quest);
+              // The kernel re-fires every time the party bumps the
+              // giver tile, so the dialog mode is computed here from
+              // the current QuestState.
+              const qstate = questStatesRef.current.get(ev.questId);
+              // "turned_in" → quest is done and rewards have been
+              // handed off. Subsequent bumps stay silent.
+              if (qstate?.status === "turned_in") return;
+              const def = questDefsRef.current.find((d) => d.id === ev.questId);
+              const stepCount = def?.steps.length ?? 0;
+              const progress = qstate?.stepProgress ?? [];
+              let pendingIdx = progress.findIndex((p) => !p);
+              if (pendingIdx === -1) pendingIdx = stepCount;
+              const activeStep =
+                pendingIdx < stepCount ? def?.steps[pendingIdx] : null;
+              setQuestOffer({
+                questId: ev.questId,
+                quest: ev.quest,
+                alreadyAccepted:
+                  qstate?.status === "active" ||
+                  qstate?.status === "completed",
+                complete: qstate?.status === "completed",
+                stepIdx: pendingIdx,
+                stepCount,
+                activeStepName:
+                  activeStep?.name || activeStep?.description || undefined,
+                activeStepDescription:
+                  activeStep && activeStep.name
+                    ? activeStep.description
+                    : undefined,
+              });
+              return;
+            }
+            if (ev.kind === "quest_kill_credited") {
+              // Mirror the kernel's state mutation back into the save
+              // so a reload preserves progress. We translate the v2
+              // structured state (stepKills + stepProgress) into the
+              // legacy save shape (questStepProgress[id] = first
+              // incomplete step index) the rest of the save format
+              // already understands.
+              const qs = questStatesRef.current.get(ev.questId);
+              const save = saveRef.current;
+              if (qs && save) {
+                let nextIdx = qs.stepProgress.findIndex((p) => !p);
+                if (nextIdx === -1) nextIdx = qs.stepProgress.length;
+                const prevProgress = save.questStepProgress ?? {};
+                if (prevProgress[ev.questId] !== nextIdx) {
+                  const nextSave: WorldSave = {
+                    ...save,
+                    questStepProgress: {
+                      ...prevProgress,
+                      [ev.questId]: nextIdx,
+                    },
+                  };
+                  saveWorld(nextSave);
+                  saveRef.current = nextSave;
+                }
+              }
               return;
             }
             if (ev.kind === "dungeon_entered") {
@@ -1630,20 +1774,27 @@ export function PlayHost() {
   }, []);
 
   /** Quest accept — mark the quest accepted on the kernel (so the
-   *  trigger tile stops re-offering) and persist into the save. */
+   *  trigger tile stops re-offering), flip the QuestState's status
+   *  to "active", ask the sim to drop any newly-eligible kill-step
+   *  encounters onto the live map, and persist the accepted-set
+   *  into the save. */
   const onQuestAccept = useCallback(() => {
     setQuestOffer((current) => {
       if (!current) return null;
       const sim = simRef.current;
-      const newlyAccepted = sim?.markQuestAccepted(current.id) ?? false;
+      const id = current.questId;
+      const newlyAccepted = sim?.markQuestAccepted(id) ?? false;
+      const qs = questStatesRef.current.get(id);
+      if (qs && qs.status === "available") qs.status = "active";
+      sim?.refreshQuestPlacements();
       if (newlyAccepted) {
         const save = saveRef.current;
         if (save) {
           const prev = save.acceptedQuests ?? [];
-          if (!prev.includes(current.id)) {
+          if (!prev.includes(id)) {
             const nextSave: WorldSave = {
               ...save,
-              acceptedQuests: [...prev, current.id],
+              acceptedQuests: [...prev, id],
             };
             saveWorld(nextSave);
             saveRef.current = nextSave;
@@ -1654,12 +1805,22 @@ export function PlayHost() {
     });
   }, []);
 
-  /** Quest decline — close the overlay without flipping the
-   *  accepted-quest set. Re-stepping the trigger cell will re-offer.
-   *  We intentionally don't write to the save here; declining is a
-   *  transient choice. */
+  /** Quest decline / close — routes both "Decline" (offer view) and
+   *  "Close" (in-progress / complete view) through the same handler.
+   *  In the complete view we additionally flip status to "turned_in"
+   *  so the dialog stops re-opening on subsequent bumps. (We don't
+   *  persist that flip into the save shape yet — `turned_in` becomes
+   *  effectively "completed" on reload, which is harmless for now
+   *  since the dialog gracefully renders the same end-dialog copy
+   *  for both.) */
   const onQuestDecline = useCallback(() => {
-    setQuestOffer(null);
+    setQuestOffer((current) => {
+      if (current?.complete) {
+        const qs = questStatesRef.current.get(current.questId);
+        if (qs) qs.status = "turned_in";
+      }
+      return null;
+    });
   }, []);
 
   // Render shells.
@@ -1827,12 +1988,18 @@ export function PlayHost() {
       ) : null}
 
       {questOffer
-        ? renderQuestOffer({
-            quest: questOffer,
-            save: state.save ?? null,
-            onAccept: onQuestAccept,
-            onDecline: onQuestDecline,
-          })
+        ? (
+            <QuestDialogOverlay
+              quest={questOffer.quest}
+              alreadyAccepted={questOffer.alreadyAccepted}
+              stepIdx={questOffer.stepIdx}
+              stepCount={questOffer.stepCount}
+              activeStepName={questOffer.activeStepName}
+              activeStepDescription={questOffer.activeStepDescription}
+              onAccept={onQuestAccept}
+              onDecline={onQuestDecline}
+            />
+          )
         : null}
     </main>
   );
@@ -2159,46 +2326,6 @@ function buildDungeonCatalog(
     spawns: [],
     encounters: [...baseCatalog.encounters, ...dungeonEncs],
   };
-}
-
-/**
- * Render the QuestDialogOverlay with the right step props pulled
- * off the save. The accept / progress / complete states drive
- * different copy in the overlay; this helper centralises the
- * "compute step idx + active step name/description from raw
- * quest record" plumbing so the JSX site stays compact.
- */
-function renderQuestOffer({
-  quest,
-  save,
-  onAccept,
-  onDecline,
-}: {
-  quest: SimQuestRef;
-  save: WorldSave | null;
-  onAccept: () => void;
-  onDecline: () => void;
-}) {
-  const accepted = save?.acceptedQuests?.includes(quest.id) ?? false;
-  const steps =
-    (quest as unknown as {
-      steps?: ReadonlyArray<{ name?: string; description?: string }>;
-    }).steps ?? [];
-  const stepIdx = save?.questStepProgress?.[quest.id] ?? 0;
-  const stepCount = steps.length;
-  const active = stepIdx < stepCount ? steps[stepIdx] : undefined;
-  return (
-    <QuestDialogOverlay
-      quest={quest}
-      alreadyAccepted={accepted}
-      stepIdx={stepIdx}
-      stepCount={stepCount}
-      activeStepName={active?.name}
-      activeStepDescription={active?.description}
-      onAccept={onAccept}
-      onDecline={onDecline}
-    />
-  );
 }
 
 /**

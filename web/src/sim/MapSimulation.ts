@@ -31,14 +31,23 @@ import {
 import {
   findLairs,
   findPlacedEncounters,
+  findQuestPlacedEncounters,
   roamStep,
   roamerCollidesWithParty,
   trySpawnRoamer,
+  type QuestPlacementRequest,
   type SimPlacedEncounter,
   type SimRoamer,
   type SimSpawn,
   type SpawnCellInfo,
 } from "./spawn";
+import {
+  activeKillStepsAt,
+  creditQuestKill,
+  type CombatLocation,
+  type QuestDef,
+  type QuestState,
+} from "@/battle/world/Quests";
 import type {
   Direction,
   Position,
@@ -407,6 +416,27 @@ export type SimEvent =
    *  to update the inspector + log, but the cell visual is already
    *  swapped by the kernel via `setCellSprite`. */
   | { kind: "spawn_destroyed"; pos: Position; spawnId: string }
+  /** Fired after a placed encounter that was a quest-driven spawn
+   *  (id prefix `q-<questId>-<stepIdx>-`) was resolved with "won".
+   *  Carries the credit result so the host can render a banner
+   *  ("Step complete!", "Quest complete!") and decide whether to
+   *  re-open the quest dialog for the end-of-quest handoff. The
+   *  underlying `QuestState` is already mutated by the time this
+   *  event fires. */
+  | {
+      kind: "quest_kill_credited";
+      questId: string;
+      stepIdx: number;
+      /** `state.stepKills[stepIdx]` after the increment. */
+      killsSoFar: number;
+      /** The step's authored `count`. Equal to `killsSoFar` when
+       *  `stepCompleted` is true. */
+      countTarget: number;
+      /** True when this credit flipped the step to complete. */
+      stepCompleted: boolean;
+      /** True when this credit flipped the QUEST to complete. */
+      questCompleted: boolean;
+    }
   /** Fired when the party steps onto a cell whose `dungeon` field is
    *  set. The host transitions the simulator into the procedurally-
    *  generated dungeon (Phase B). Movement is paused on the kernel
@@ -518,6 +548,24 @@ export interface MapSimulationOptions {
   /** Boat sprite the party is currently riding. Paired with
    *  `initialOnBoat`; ignored when that's false. */
   initialCurrentBoatSprite?: string | null;
+  /** Quest definitions parsed from quests.json. The sim runs the
+   *  v2-structured kill-step pass at construction so any active step
+   *  targeting `currentLocation` drops its encounter onto the map
+   *  alongside the painted ones. Empty / omitted = no quest-driven
+   *  placements (the painted-cell pipeline still runs unchanged). */
+  questDefs?: ReadonlyArray<QuestDef>;
+  /** Per-quest state map. Source of truth for "is this quest active?"
+   *  and "how many kills credit so far?". Typically
+   *  `gameState.moduleQuestStates`. Required when `questDefs` is
+   *  non-empty; otherwise no quest is `active` and the kill-step
+   *  pass no-ops. */
+  questStates?: ReadonlyMap<string, QuestState>;
+  /** What location this sim represents — `{ kind: "map", mapId }`
+   *  for an overworld / town / building map; `{ kind: "dungeon",
+   *  dungeonId, dungeonLevel }` for a dungeon floor. Fed to
+   *  {@link activeKillStepsAt} so only steps that match drop their
+   *  encounters here. Omitted = no quest-driven placements. */
+  currentLocation?: CombatLocation;
 }
 
 /** The simulation controller. One per active sim session; mounted by
@@ -576,6 +624,19 @@ export class MapSimulation {
    *  set. Seeded from `MapSimulationOptions.initialAcceptedQuests`;
    *  mutated by `markQuestAccepted` on the host's Accept path. */
   private readonly acceptedQuests: Set<string>;
+  /** Quest definitions, stashed at construction so
+   *  {@link refreshQuestPlacements} can re-evaluate active kill steps
+   *  mid-session without the host re-passing them. Empty when no
+   *  quests were supplied — the refresh path then no-ops. */
+  private readonly questDefs: ReadonlyArray<QuestDef>;
+  /** Per-quest state. Same lifetime caveat as {@link questDefs}; the
+   *  host mutates this (flipping `status` to "active" on Accept) and
+   *  calls {@link refreshQuestPlacements} so the sim re-reads it. */
+  private readonly questStates: ReadonlyMap<string, QuestState>;
+  /** Current combat location — used by the kill-step matcher.
+   *  Undefined when the host didn't supply one; the refresh path
+   *  then no-ops. */
+  private readonly currentLocation: CombatLocation | undefined;
   /** Live roamers — monsters the spawn loop has dropped onto the map.
    *  Mutated each step. Snapshot to the bridge via setRoamerPositions. */
   private roamers: SimRoamer[] = [];
@@ -645,6 +706,51 @@ export class MapSimulation {
       this.encounterCatalog,
       this.defeatedEncounters,
     );
+    // Quest-driven placements. Every active kill step whose v2
+    // `location_kind` / `map_id` / `dungeon_id` / `dungeon_level`
+    // matches `currentLocation` gets `step.count` copies of its
+    // encounter dropped onto random walkable cells (minus cells
+    // already used by painted encounters, the party spawn, NPC
+    // homes, and any tile that's not walkable). The resulting
+    // entities ride the same `placedEncounters` pipeline as the
+    // painted ones, so movement, sprite rendering, and combat
+    // resolution all work with no further wiring.
+    //
+    // The options are also stashed on the sim so the host can call
+    // `refreshQuestPlacements()` after flipping a quest's status to
+    // "active" mid-session — the freshly active step's encounters
+    // appear without a sim teardown / re-mount.
+    this.questDefs = opts.questDefs ?? [];
+    this.questStates = opts.questStates ?? new Map();
+    this.currentLocation = opts.currentLocation;
+    if (
+      this.currentLocation &&
+      this.questDefs.length > 0 &&
+      opts.questStates
+    ) {
+      const rows = activeKillStepsAt(
+        this.questDefs,
+        this.questStates,
+        this.currentLocation,
+      );
+      if (rows.length > 0) {
+        const requests: QuestPlacementRequest[] = rows.map((r) => ({
+          questId: r.questId,
+          stepIdx: r.stepIdx,
+          encounterId: r.encounterId,
+          count: r.remaining,
+        }));
+        const walkable = this.collectQuestPlacementCells(opts);
+        const placedQuest = findQuestPlacedEncounters(
+          requests,
+          this.encounterCatalog,
+          walkable,
+        );
+        if (placedQuest.length > 0) {
+          this.placedEncounters = [...this.placedEncounters, ...placedQuest];
+        }
+      }
+    }
     // Cache race id → name so SimPanel can display "Human" rather than
     // "human" without a lookup helper.
     const raceMap = new Map<string, string>();
@@ -1716,13 +1822,14 @@ export class MapSimulation {
       // mark its source cell defeated so the suppression set keeps
       // the static overlay hidden after victory.
       const before = this.placedEncounters.length;
-      if (enc.placedEncounterId) {
-        const target = this.placedEncounters.find(
-          (p) => p.id === enc.placedEncounterId,
-        );
+      // Capture the resolved entity's id BEFORE we filter it out so
+      // the quest-credit branch below can parse it.
+      const resolvedId = enc.placedEncounterId;
+      if (resolvedId) {
+        const target = this.placedEncounters.find((p) => p.id === resolvedId);
         if (target) this.defeatedEncounters.add(target.sourceKey);
         this.placedEncounters = this.placedEncounters.filter(
-          (p) => p.id !== enc.placedEncounterId,
+          (p) => p.id !== resolvedId,
         );
       }
       if (this.placedEncounters.length !== before) {
@@ -1737,6 +1844,42 @@ export class MapSimulation {
       this.bridge.setSuppressedEncounterCells?.(
         this.suppressedEncounterCells(),
       );
+      // Quest credit pass. Quest-driven spawns mint ids of the form
+      // `q-<questId>-<stepIdx>-<n>`. When one of those resolves,
+      // increment the matching step's kill counter; if the new total
+      // hits `count`, the step (and possibly the quest) flips
+      // complete. Non-quest placed encounters (`placed-c-r`) skip
+      // this branch entirely.
+      if (resolvedId) {
+        const m = /^q-(.+)-(\d+)-\d+$/.exec(resolvedId);
+        if (m) {
+          const credit = creditQuestKill(
+            this.questDefs,
+            this.questStates,
+            m[1],
+            Number(m[2]),
+          );
+          if (credit) {
+            this.emit({
+              kind: "log",
+              message: credit.stepCompleted
+                ? credit.questCompleted
+                  ? `Quest complete: ${credit.step.name || credit.step.description || "the deed is done"}.`
+                  : `Step complete: ${credit.step.name || credit.step.description || "(unnamed step)"}.`
+                : `${credit.step.name || "Quest target"} defeated (${credit.killsSoFar}/${credit.step.count}).`,
+            });
+            this.emit({
+              kind: "quest_kill_credited",
+              questId: credit.questId,
+              stepIdx: credit.stepIdx,
+              killsSoFar: credit.killsSoFar,
+              countTarget: credit.step.count,
+              stepCompleted: credit.stepCompleted,
+              questCompleted: credit.questCompleted,
+            });
+          }
+        }
+      }
     }
     this.emit({ kind: "state" });
     return true;
@@ -1762,6 +1905,92 @@ export class MapSimulation {
     if (this.acceptedQuests.has(questId)) return false;
     this.acceptedQuests.add(questId);
     return true;
+  }
+
+  /** Re-evaluate the quest-driven placement pass against the current
+   *  `questStates` and drop any newly-active kill step's encounter
+   *  onto the map. Idempotent: rows whose `(questId, stepIdx)` is
+   *  already present in `placedEncounters` (by stable id prefix) are
+   *  skipped so re-running this after a single quest accept doesn't
+   *  duplicate existing placements.
+   *
+   *  Hosts call this from the Accept handler of the quest offer
+   *  dialog AFTER flipping the relevant `QuestState.status` to
+   *  `"active"`. The `setPlacedEncounterPositions` bridge call fires
+   *  inside so the scene renderer picks up the new entities on the
+   *  next frame.
+   *
+   *  No-op when `currentLocation` / `questDefs` weren't supplied at
+   *  construction. */
+  refreshQuestPlacements(): void {
+    if (!this.currentLocation || this.questDefs.length === 0) return;
+    const rows = activeKillStepsAt(
+      this.questDefs,
+      this.questStates,
+      this.currentLocation,
+    );
+    if (rows.length === 0) return;
+    // Stable-id prefix gate. `findQuestPlacedEncounters` mints ids of
+    // the form `q-<questId>-<stepIdx>-<n>`; we strip the trailing
+    // `-n` so we can ask "is ANY copy of this step already placed?".
+    const placedKeys = new Set<string>();
+    for (const p of this.placedEncounters) {
+      const m = /^q-(.+)-(\d+)-\d+$/.exec(p.id);
+      if (m) placedKeys.add(`${m[1]}|${m[2]}`);
+    }
+    const fresh = rows.filter(
+      (r) => !placedKeys.has(`${r.questId}|${r.stepIdx}`),
+    );
+    if (fresh.length === 0) return;
+    const requests: QuestPlacementRequest[] = fresh.map((r) => ({
+      questId: r.questId,
+      stepIdx: r.stepIdx,
+      encounterId: r.encounterId,
+      count: r.remaining,
+    }));
+    const walkable = this.liveWalkableCellsForQuestPlacement();
+    const fresher = findQuestPlacedEncounters(
+      requests,
+      this.encounterCatalog,
+      walkable,
+    );
+    if (fresher.length === 0) return;
+    this.placedEncounters = [...this.placedEncounters, ...fresher];
+    this.bridge.setPlacedEncounterPositions?.(
+      this.snapshotPlacedEncounters(),
+    );
+    this.bridge.setSuppressedEncounterCells?.(this.suppressedEncounterCells());
+  }
+
+  /** Walkable-cell list for the refresh path. Same exclusion rules
+   *  as the construction-time helper but reads live state — current
+   *  party position, current `placedEncounters` — so newly added
+   *  quest spawns don't land on a tile already occupied by a roamer
+   *  the player has been chasing. */
+  private liveWalkableCellsForQuestPlacement(): Array<[number, number]> {
+    const occupied = new Set<string>();
+    for (const p of this.placedEncounters) occupied.add(`${p.col},${p.row}`);
+    for (const r of this.roamers) occupied.add(`${r.col},${r.row}`);
+    occupied.add(`${this.pos.col},${this.pos.row}`);
+    const out: Array<[number, number]> = [];
+    for (let r = 0; r < this.grid.length; r++) {
+      const row = this.grid[r];
+      if (!row) continue;
+      for (let c = 0; c < row.length; c++) {
+        const cell = row[c];
+        if (!cell || !cell.walkable) continue;
+        if (cell.encounter) continue;
+        if (cell.npc) continue;
+        if (cell.counter) continue;
+        if (cell.spawn) continue;
+        if (cell.quest) continue;
+        if (cell.dungeon) continue;
+        if (cell.link) continue;
+        if (occupied.has(`${c},${r}`)) continue;
+        out.push([c, r]);
+      }
+    }
+    return out;
   }
 
   private destroyLair(pos: Position, spawn: SimSpawn): void {
@@ -1926,5 +2155,49 @@ export class MapSimulation {
         /* swallow */
       }
     }
+  }
+
+  /** Build the walkable-cell list quest-driven placement consumes.
+   *  Excludes any cell that:
+   *
+   *   - isn't walkable;
+   *   - already carries a painted encounter (those have their own
+   *     entity from {@link findPlacedEncounters} — a duplicate at the
+   *     same coord would render two roamers on the same tile);
+   *   - carries an `npc`, `counter`, `spawn`, `quest`, `item`, or
+   *     `link` (these are reserved interaction tiles — dropping a
+   *     monster here would silently swallow the player's bump into
+   *     the NPC, shop, etc.);
+   *   - is the party's spawn cell (otherwise the encounter would
+   *     fire on the very first frame).
+   *
+   *  Returns a fresh array — `findQuestPlacedEncounters` consumes it
+   *  with `splice` so callers must not share. */
+  private collectQuestPlacementCells(
+    opts: MapSimulationOptions,
+  ): Array<[number, number]> {
+    const partyCol = opts.startAt?.col ?? opts.party.start_position.col;
+    const partyRow = opts.startAt?.row ?? opts.party.start_position.row;
+    const out: Array<[number, number]> = [];
+    for (let r = 0; r < opts.grid.length; r++) {
+      const row = opts.grid[r];
+      if (!row) continue;
+      for (let c = 0; c < row.length; c++) {
+        const cell = row[c];
+        if (!cell || !cell.walkable) continue;
+        // Reserved interaction tiles.
+        if (cell.encounter) continue;
+        if (cell.npc) continue;
+        if (cell.counter) continue;
+        if (cell.spawn) continue;
+        if (cell.quest) continue;
+        if (cell.dungeon) continue;
+        if (cell.link) continue;
+        // Party spawn.
+        if (c === partyCol && r === partyRow) continue;
+        out.push([c, r]);
+      }
+    }
+    return out;
   }
 }

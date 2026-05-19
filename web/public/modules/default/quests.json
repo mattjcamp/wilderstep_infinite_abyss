@@ -14,16 +14,15 @@
           "name": "Step 1 Kill the Giant Rats",
           "kind": "kill",
           "params": {
-            "monster_id": "giant_rat",
+            "encounter_id": "rat_swarm",
             "count": 1
           },
           "description": "Kill the Giant Rats in the cave under the shop",
           "tags": [
             "rats"
           ],
-          "location_kind": "dungeon",
-          "dungeon_id": "the_hole",
-          "dungeon_level": 2
+          "location_kind": "map",
+          "map_id": "demo_map"
         }
       ],
       "quest_giver": {

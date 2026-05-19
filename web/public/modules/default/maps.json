@@ -6893,19 +6893,19 @@
             "tag": "terrain"
           },
           {
-            "id": "grass",
-            "name": "Grass",
+            "id": "stone_circle",
+            "name": "Stone Circle",
             "walkable": true,
             "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
-            "animation": "fire",
+            "animation": null,
             "counter": null,
             "encounter": null,
-            "spawn": "campfire_spawn",
-            "sprite": "map/grass1.png",
-            "tag": "terrain"
+            "spawn": null,
+            "sprite": "map/stone_circle.png",
+            "tag": "outdoor"
           },
           {
             "id": "grass",
@@ -9577,19 +9577,19 @@
             "tag": "terrain"
           },
           {
-            "id": "grass",
-            "name": "Grass",
+            "id": "stone_circle",
+            "name": "Stone Circle",
             "walkable": true,
             "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
-            "animation": "none",
+            "animation": null,
             "counter": null,
-            "encounter": "shambling_dead",
+            "encounter": null,
             "spawn": null,
-            "sprite": "map/grass1.png",
-            "tag": "terrain"
+            "sprite": "map/stone_circle.png",
+            "tag": "outdoor"
           },
           {
             "id": "grass",

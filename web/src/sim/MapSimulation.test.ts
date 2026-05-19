@@ -1,6 +1,11 @@
 import { describe, it, expect, vi } from "vitest";
 import { MapSimulation, type SceneBridge } from "./MapSimulation";
 import type { SimGrid, SimCell, SimParty, SimEvent } from "./types";
+import {
+  ensureQuestStates,
+  parseQuestsFile,
+  type QuestState,
+} from "@/battle/world/Quests";
 
 /** Build a SceneBridge whose methods are all spies — tests assert
  *  what the sim asked the host to draw without standing up Phaser. */
@@ -419,5 +424,397 @@ describe("MapSimulation.teleport", () => {
     // doesn't throw and doesn't emit. Post-dispose snapshot calls are
     // not part of the supported surface so we don't assert on it.
     expect(true).toBe(true);
+  });
+});
+
+describe("MapSimulation — quest-driven placed encounters", () => {
+  /** Build a sim seeded with a single active map-kill quest targeting
+   *  `mapId`. Returns the sim + a spy on the bridge's
+   *  setPlacedEncounterPositions so tests can assert what landed. */
+  function makeQuestSim(opts: {
+    mapId: string;
+    questMapId: string;
+    count?: number;
+    accepted?: boolean;
+  }) {
+    const defs = parseQuestsFile({
+      quests: [
+        {
+          id: "rats",
+          name: "The Giant Rats",
+          steps: [
+            {
+              id: "rats_step_1",
+              name: "Kill the rats",
+              kind: "kill",
+              params: {
+                encounter_id: "cellar_rats",
+                count: opts.count ?? 1,
+              },
+              location_kind: "map",
+              map_id: opts.questMapId,
+            },
+          ],
+        },
+      ],
+    });
+    const states = new Map<string, QuestState>();
+    ensureQuestStates(defs, states);
+    if (opts.accepted) {
+      states.get("rats")!.status = "active";
+    }
+
+    const bridge = fakeBridge();
+    const grid = makeGrid();
+    const sim = new MapSimulation({
+      grid,
+      party: makeParty({ start_position: { col: 0, row: 0 } }),
+      catalog: {
+        characters: [],
+        races: [],
+        effects: [],
+        encounters: [
+          {
+            id: "cellar_rats",
+            name: "Cellar Rats",
+            monsters: ["giant_rat"],
+            monster_party_tile: "monster/giant_rat.png",
+          },
+        ],
+      },
+      classNameById: new Map(),
+      bridge,
+      questDefs: defs,
+      questStates: states,
+      currentLocation: { kind: "map", mapId: opts.mapId },
+    });
+    return { sim, bridge };
+  }
+
+  it("drops the quest encounter onto a walkable cell when the step matches", () => {
+    const { bridge } = makeQuestSim({
+      mapId: "demo_map",
+      questMapId: "demo_map",
+      accepted: true,
+    });
+    // sim mounts → bridge.setPlacedEncounterPositions called with the
+    // initial placed encounters list (post-quest-merge).
+    const calls = (bridge.setPlacedEncounterPositions as ReturnType<typeof vi.fn>).mock.calls;
+    expect(calls.length).toBeGreaterThan(0);
+    const placed = calls[0][0] as Array<{ id: string; sprite?: string }>;
+    expect(placed.length).toBe(1);
+    expect(placed[0].id).toMatch(/^q-rats-0-/);
+    expect(placed[0].sprite).toBe("monster/giant_rat.png");
+  });
+
+  it("spawns `count` copies for a multi-target step", () => {
+    const { bridge } = makeQuestSim({
+      mapId: "demo_map",
+      questMapId: "demo_map",
+      count: 3,
+      accepted: true,
+    });
+    const placed = (bridge.setPlacedEncounterPositions as ReturnType<typeof vi.fn>)
+      .mock.calls[0][0] as Array<{ id: string }>;
+    expect(placed).toHaveLength(3);
+  });
+
+  it("places nothing when the quest is only available (not accepted)", () => {
+    const { bridge } = makeQuestSim({
+      mapId: "demo_map",
+      questMapId: "demo_map",
+      accepted: false,
+    });
+    const placed = (bridge.setPlacedEncounterPositions as ReturnType<typeof vi.fn>)
+      .mock.calls[0][0] as Array<unknown>;
+    expect(placed).toHaveLength(0);
+  });
+
+  it("places nothing when the step's map_id doesn't match the current location", () => {
+    const { bridge } = makeQuestSim({
+      mapId: "other_map",
+      questMapId: "demo_map",
+      accepted: true,
+    });
+    const placed = (bridge.setPlacedEncounterPositions as ReturnType<typeof vi.fn>)
+      .mock.calls[0][0] as Array<unknown>;
+    expect(placed).toHaveLength(0);
+  });
+
+  it("refreshQuestPlacements drops encounters when a quest goes active mid-session", () => {
+    // Quest starts as "available" — initial mount places nothing.
+    const defs = parseQuestsFile({
+      quests: [
+        {
+          id: "rats",
+          name: "The Giant Rats",
+          steps: [
+            {
+              id: "rats_step_1",
+              name: "Kill the rats",
+              kind: "kill",
+              params: { encounter_id: "cellar_rats", count: 1 },
+              location_kind: "map",
+              map_id: "demo_map",
+            },
+          ],
+        },
+      ],
+    });
+    const states = new Map<string, QuestState>();
+    ensureQuestStates(defs, states);
+    // status stays "available" at first.
+    const bridge = fakeBridge();
+    const sim = new MapSimulation({
+      grid: makeGrid(),
+      party: makeParty({ start_position: { col: 0, row: 0 } }),
+      catalog: {
+        characters: [],
+        races: [],
+        effects: [],
+        encounters: [
+          {
+            id: "cellar_rats",
+            name: "Cellar Rats",
+            monsters: ["giant_rat"],
+            monster_party_tile: "monster/giant_rat.png",
+          },
+        ],
+      },
+      classNameById: new Map(),
+      bridge,
+      questDefs: defs,
+      questStates: states,
+      currentLocation: { kind: "map", mapId: "demo_map" },
+    });
+    const initialCalls = (
+      bridge.setPlacedEncounterPositions as ReturnType<typeof vi.fn>
+    ).mock.calls;
+    expect(initialCalls[0][0]).toHaveLength(0);
+
+    // Now the player accepts the quest — host flips status and asks
+    // for a refresh.
+    states.get("rats")!.status = "active";
+    sim.refreshQuestPlacements();
+
+    // The bridge sees a fresh placement-positions call with the rat.
+    const allCalls = (
+      bridge.setPlacedEncounterPositions as ReturnType<typeof vi.fn>
+    ).mock.calls;
+    const last = allCalls[allCalls.length - 1][0] as Array<{ id: string }>;
+    expect(last).toHaveLength(1);
+    expect(last[0].id).toMatch(/^q-rats-0-/);
+  });
+
+  it("refreshQuestPlacements is idempotent — repeat calls don't duplicate placements", () => {
+    const defs = parseQuestsFile({
+      quests: [
+        {
+          id: "rats",
+          name: "The Giant Rats",
+          steps: [
+            {
+              id: "rats_step_1",
+              name: "Kill the rats",
+              kind: "kill",
+              params: { encounter_id: "cellar_rats", count: 1 },
+              location_kind: "map",
+              map_id: "demo_map",
+            },
+          ],
+        },
+      ],
+    });
+    const states = new Map<string, QuestState>();
+    ensureQuestStates(defs, states);
+    states.get("rats")!.status = "active";
+    const bridge = fakeBridge();
+    const sim = new MapSimulation({
+      grid: makeGrid(),
+      party: makeParty({ start_position: { col: 0, row: 0 } }),
+      catalog: {
+        characters: [],
+        races: [],
+        effects: [],
+        encounters: [
+          {
+            id: "cellar_rats",
+            name: "Cellar Rats",
+            monsters: ["giant_rat"],
+          },
+        ],
+      },
+      classNameById: new Map(),
+      bridge,
+      questDefs: defs,
+      questStates: states,
+      currentLocation: { kind: "map", mapId: "demo_map" },
+    });
+    // Construction already placed the rat.
+    const callsBefore = (bridge.setPlacedEncounterPositions as ReturnType<typeof vi.fn>)
+      .mock.calls.length;
+    // Refresh shouldn't duplicate it.
+    sim.refreshQuestPlacements();
+    sim.refreshQuestPlacements();
+    const allCalls = (
+      bridge.setPlacedEncounterPositions as ReturnType<typeof vi.fn>
+    ).mock.calls;
+    // setPlacedEncounterPositions wasn't re-called (no new placements
+    // → no bridge ping).
+    expect(allCalls.length).toBe(callsBefore);
+  });
+
+  it("resolveSpawnEncounter('won') on a quest spawn credits the step and emits quest_kill_credited", () => {
+    // Tighten the grid so the rat MUST land at (1,0) — that's the
+    // only walkable, non-party-spawn cell. Lets us drive a
+    // deterministic collision without random retries.
+    const grid = makeGrid();
+    for (let r = 0; r < 5; r++) {
+      for (let c = 0; c < 5; c++) {
+        if ((c === 0 && r === 0) || (c === 1 && r === 0)) continue;
+        grid[r][c] = cell({ walkable: false });
+      }
+    }
+    const defs = parseQuestsFile({
+      quests: [
+        {
+          id: "rats",
+          name: "The Giant Rats",
+          steps: [
+            {
+              id: "s1",
+              name: "Kill the rats",
+              kind: "kill",
+              params: { encounter_id: "cellar_rats", count: 1 },
+              location_kind: "map",
+              map_id: "demo_map",
+            },
+          ],
+        },
+      ],
+    });
+    const states = new Map<string, QuestState>();
+    ensureQuestStates(defs, states);
+    states.get("rats")!.status = "active";
+    const bridge = fakeBridge();
+    const sim = new MapSimulation({
+      grid,
+      party: makeParty({ start_position: { col: 0, row: 0 } }),
+      catalog: {
+        characters: [],
+        races: [],
+        effects: [],
+        encounters: [
+          {
+            id: "cellar_rats",
+            name: "Cellar Rats",
+            monsters: ["giant_rat"],
+            monster_party_tile: "monster/giant_rat.png",
+          },
+        ],
+      },
+      classNameById: new Map(),
+      bridge,
+      questDefs: defs,
+      questStates: states,
+      currentLocation: { kind: "map", mapId: "demo_map" },
+    });
+    // Verify the placement landed at (1,0) — the only candidate cell.
+    const placed = (
+      bridge.setPlacedEncounterPositions as ReturnType<typeof vi.fn>
+    ).mock.calls[0][0] as Array<{ id: string; col: number; row: number }>;
+    expect(placed).toHaveLength(1);
+    expect(placed[0]).toMatchObject({ col: 1, row: 0 });
+    const ratId = placed[0].id;
+
+    // Capture events that fire from here on out.
+    const events = captureEvents(sim);
+    // Party at (0,0), rat at (1,0). Step right → party walks into
+    // the rat's cell, placed-encounter pursuit pass detects the
+    // Chebyshev-0 collision and fires spawn_encountered.
+    sim.stepInDirection("right");
+    const ev = events.find((e) => e.kind === "spawn_encountered");
+    expect(ev).toBeDefined();
+    if (ev?.kind !== "spawn_encountered") throw new Error("narrow");
+    expect(ev.options.placedEncounterId).toBe(ratId);
+
+    // Win the fight. The kernel removes the placed entity, calls
+    // creditQuestKill, and emits quest_kill_credited.
+    sim.resolveSpawnEncounter("won");
+
+    const credit = events.find((e) => e.kind === "quest_kill_credited");
+    expect(credit).toBeDefined();
+    if (credit?.kind !== "quest_kill_credited") throw new Error("narrow");
+    expect(credit.questId).toBe("rats");
+    expect(credit.stepIdx).toBe(0);
+    expect(credit.killsSoFar).toBe(1);
+    expect(credit.stepCompleted).toBe(true);
+    expect(credit.questCompleted).toBe(true);
+    // The underlying state was mutated.
+    expect(states.get("rats")!.stepProgress[0]).toBe(true);
+    expect(states.get("rats")!.status).toBe("completed");
+  });
+
+  it("does not drop on the party's spawn cell", () => {
+    // Tighten the walkable pool so the only available cell is the
+    // party spawn — the helper should bail rather than drop on top
+    // of the party. We do this by walling off every cell except
+    // (0,0) (the party spawn) and (1,0).
+    const grid = makeGrid();
+    for (let r = 0; r < 5; r++) {
+      for (let c = 0; c < 5; c++) {
+        if ((c === 0 && r === 0) || (c === 1 && r === 0)) continue;
+        grid[r][c] = cell({ walkable: false });
+      }
+    }
+    const defs = parseQuestsFile({
+      quests: [
+        {
+          id: "rats",
+          name: "Rats",
+          steps: [
+            {
+              id: "s1",
+              name: "Kill",
+              kind: "kill",
+              params: { encounter_id: "cellar_rats", count: 1 },
+              location_kind: "map",
+              map_id: "demo_map",
+            },
+          ],
+        },
+      ],
+    });
+    const states = new Map<string, QuestState>();
+    ensureQuestStates(defs, states);
+    states.get("rats")!.status = "active";
+
+    const bridge = fakeBridge();
+    new MapSimulation({
+      grid,
+      party: makeParty({ start_position: { col: 0, row: 0 } }),
+      catalog: {
+        characters: [],
+        races: [],
+        effects: [],
+        encounters: [
+          {
+            id: "cellar_rats",
+            name: "Cellar Rats",
+            monsters: ["giant_rat"],
+          },
+        ],
+      },
+      classNameById: new Map(),
+      bridge,
+      questDefs: defs,
+      questStates: states,
+      currentLocation: { kind: "map", mapId: "demo_map" },
+    });
+    const placed = (bridge.setPlacedEncounterPositions as ReturnType<typeof vi.fn>)
+      .mock.calls[0][0] as Array<{ col: number; row: number }>;
+    // One cell is available for placement: (1,0). Party is on (0,0).
+    expect(placed).toHaveLength(1);
+    expect(placed[0]).toMatchObject({ col: 1, row: 0 });
   });
 });

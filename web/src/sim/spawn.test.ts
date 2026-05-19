@@ -4,6 +4,8 @@ import {
   roamStep,
   findLairs,
   findPlacedEncounters,
+  findQuestPlacedEncounters,
+  QUEST_TARGET_TINT,
   roamerCollidesWithParty,
   type SimSpawn,
   type SimRoamer,
@@ -234,5 +236,97 @@ describe("roamerCollidesWithParty", () => {
     expect(
       roamerCollidesWithParty({ col: 3, row: 5 }, { col: 5, row: 5 }),
     ).toBe(false);
+  });
+});
+
+describe("findQuestPlacedEncounters", () => {
+  const catalog: ReadonlyMap<string, SimEncounterRef> = new Map([
+    ["cellar_rats", {
+      id: "cellar_rats",
+      name: "Cellar Rats",
+      monsters: ["giant_rat"],
+      monster_party_tile: "monster/giant_rat.png",
+    }],
+  ]);
+
+  it("places `count` encounters onto distinct walkable cells", () => {
+    const walkable: Array<[number, number]> = [
+      [0, 0], [1, 0], [2, 0], [3, 0],
+    ];
+    const rng = mulberry32(42);
+    const out = findQuestPlacedEncounters(
+      [{ questId: "rats", stepIdx: 0, encounterId: "cellar_rats", count: 3 }],
+      catalog,
+      walkable,
+      { rng },
+    );
+    expect(out).toHaveLength(3);
+    // Three distinct cells consumed from the pool.
+    const cells = new Set(out.map((p) => `${p.col},${p.row}`));
+    expect(cells.size).toBe(3);
+    // Walkable pool shrank.
+    expect(walkable).toHaveLength(1);
+  });
+
+  it("populates the placed-encounter shape MapSimulation expects", () => {
+    const walkable: Array<[number, number]> = [[5, 7]];
+    const out = findQuestPlacedEncounters(
+      [{ questId: "rats", stepIdx: 0, encounterId: "cellar_rats", count: 1 }],
+      catalog,
+      walkable,
+      { rng: () => 0 },
+    );
+    expect(out).toEqual([
+      {
+        id: "q-rats-0-0",
+        encounterId: "cellar_rats",
+        col: 5,
+        row: 7,
+        sourceKey: "5,7",
+        sprite: "monster/giant_rat.png",
+        tint: QUEST_TARGET_TINT,
+      },
+    ]);
+  });
+
+  it("drops requests whose encounter id is unknown to the catalog", () => {
+    const out = findQuestPlacedEncounters(
+      [
+        { questId: "missing", stepIdx: 0, encounterId: "no_such", count: 1 },
+        { questId: "rats", stepIdx: 0, encounterId: "cellar_rats", count: 1 },
+      ],
+      catalog,
+      [[0, 0]],
+      { rng: () => 0 },
+    );
+    expect(out.map((p) => p.questId ?? p.id)).toEqual(["q-rats-0-0"]);
+  });
+
+  it("stops early when the walkable pool runs out", () => {
+    const out = findQuestPlacedEncounters(
+      [{ questId: "rats", stepIdx: 0, encounterId: "cellar_rats", count: 5 }],
+      catalog,
+      [[0, 0], [1, 0]],
+      { rng: () => 0 },
+    );
+    expect(out).toHaveLength(2);
+  });
+
+  it("honours an encounter's own `tint` over the default quest-target tint", () => {
+    const catalogWithTint: ReadonlyMap<string, SimEncounterRef> = new Map([
+      ["red_rats", {
+        id: "red_rats",
+        name: "Red Rats",
+        monsters: ["giant_rat"],
+        tint: 0xff0000,
+      }],
+    ]);
+    const out = findQuestPlacedEncounters(
+      [{ questId: "rats", stepIdx: 0, encounterId: "red_rats", count: 1 }],
+      catalogWithTint,
+      [[0, 0]],
+      { rng: () => 0 },
+    );
+    expect(out[0].tint).toBe(0xff0000);
   });
 });

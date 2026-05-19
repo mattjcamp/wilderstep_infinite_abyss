@@ -342,3 +342,75 @@ export function findPlacedEncounters(
   }
   return out;
 }
+
+/** One request fed to {@link findQuestPlacedEncounters}: a kill step
+ *  wants `count` copies of `encounterId` placed on the current map.
+ *  Mirrors the shape returned by `Quests.activeKillStepsAt`. */
+export interface QuestPlacementRequest {
+  /** Stable quest id (used to compose the placed-encounter id). */
+  questId: string;
+  /** Step index inside the quest. */
+  stepIdx: number;
+  /** Encounter catalog id the step wants cleared. */
+  encounterId: string;
+  /** How many copies of `encounterId` still need to be on the map.
+   *  Typically `step.count - already_killed`. */
+  count: number;
+}
+
+/** Default tint applied to quest-driven placed encounters — a soft
+ *  gold halo, multiplied with the cell's lighting tint at draw time.
+ *  Matches the value the dungeon generator uses for quest-target
+ *  monsters so all quest-related spawns read the same colour. */
+export const QUEST_TARGET_TINT = 0xffe580;
+
+/**
+ * Place `request.count` copies of each request's encounter on random
+ * walkable cells, returning the resulting {@link SimPlacedEncounter}
+ * rows. The caller is responsible for assembling `walkable` from its
+ * grid (minus the party spawn, NPC homes, painted encounter cells,
+ * any other reservations).
+ *
+ * Cells are consumed from `walkable` as they're picked, so the same
+ * cell never receives two quest spawns and the same list can be
+ * passed alongside a static `findPlacedEncounters` pass without
+ * collisions (caller filters its own static-encounter cells out
+ * first).
+ *
+ * Requests whose encounter id is unknown to the catalog drop
+ * silently — the helper logs nothing, since validation belongs at
+ * the catalog-load boundary, not in the placement pass.
+ *
+ * Pure — no grid mutation, no global RNG. `rng` defaults to
+ * `Math.random`; tests pass a deterministic generator so a placement
+ * assertion can pin a known cell.
+ */
+export function findQuestPlacedEncounters(
+  requests: ReadonlyArray<QuestPlacementRequest>,
+  catalog: ReadonlyMap<string, SimEncounterRef>,
+  walkable: Array<[number, number]>,
+  options?: { rng?: () => number; tint?: number },
+): SimPlacedEncounter[] {
+  const rng = options?.rng ?? Math.random;
+  const tint = options?.tint ?? QUEST_TARGET_TINT;
+  const out: SimPlacedEncounter[] = [];
+  for (const req of requests) {
+    const enc = catalog.get(req.encounterId);
+    if (!enc) continue;
+    for (let n = 0; n < req.count; n++) {
+      if (walkable.length === 0) return out;
+      const idx = Math.floor(rng() * walkable.length);
+      const [c, r] = walkable.splice(idx, 1)[0];
+      out.push({
+        id: `q-${req.questId}-${req.stepIdx}-${n}`,
+        encounterId: req.encounterId,
+        col: c,
+        row: r,
+        sourceKey: `${c},${r}`,
+        sprite: enc.monster_party_tile,
+        tint: enc.tint ?? tint,
+      });
+    }
+  }
+  return out;
+}

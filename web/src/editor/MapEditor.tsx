@@ -42,6 +42,11 @@ import { withBasePath } from "@/util/basePath";
 import { publishItems } from "@/data_model/publishClient";
 import { MapSimulation, type SceneBridge } from "@/sim/MapSimulation";
 import {
+  ensureQuestStates,
+  parseQuestsFile,
+  type QuestState,
+} from "@/battle/world/Quests";
+import {
   computeLighting,
   emitterVisibleAt,
   tintForCell,
@@ -51,6 +56,8 @@ import { ANIMATION_CONFIGS } from "@/sim/tileAnimations";
 import type { AnimationKind } from "@/sim/tileAnimations";
 import { MapPartyScreenOverlay } from "./MapPartyScreenOverlay";
 import { NpcDialogOverlay } from "./NpcDialogOverlay";
+import { QuestDialogOverlay } from "./QuestDialogOverlay";
+import type { SimQuestRef } from "@/sim/types";
 import { CounterShopOverlay } from "./CounterShopOverlay";
 import { LockDialogOverlay } from "./LockDialogOverlay";
 import { SpawnEncounterOverlay } from "./SpawnEncounterOverlay";
@@ -233,8 +240,7 @@ function cellMatchesPalette(cell: TileType, palette: TileType[]): boolean {
  *
  *   - it has a non-empty `quest` field (the quest giver sits here);
  *   - it has an `encounter` whose id is named by a `kill`-kind step's
- *     `encounter_id`, OR whose `monsters[]` roster contains a monster
- *     id named by a `kill` step's `monster_id`;
+ *     `encounter_id`;
  *   - it has an `item` named by a `fetch`-kind step's `item_id`.
  *
  *  `visit` and `talk` steps don't drive glow today — those refer to
@@ -242,30 +248,20 @@ function cellMatchesPalette(cell: TileType, palette: TileType[]): boolean {
 function computeQuestGlowCells(
   grid: TileType[][],
   quests: QuestRecord[],
-  encounters: EncounterRecord[],
 ): Set<string> {
   const questEncounterIds = new Set<string>();
-  const questMonsterIds = new Set<string>();
   const questItemIds = new Set<string>();
   for (const q of quests) {
     for (const s of q.steps ?? []) {
       const params = (s.params ?? {}) as Record<string, unknown>;
       if (s.kind === "kill") {
         const eid = params.encounter_id;
-        const mid = params.monster_id;
         if (typeof eid === "string" && eid) questEncounterIds.add(eid);
-        if (typeof mid === "string" && mid) questMonsterIds.add(mid);
       } else if (s.kind === "fetch") {
         const iid = params.item_id;
         if (typeof iid === "string" && iid) questItemIds.add(iid);
       }
     }
-  }
-
-  const encMonsters = new Map<string, ReadonlySet<string>>();
-  for (const e of encounters) {
-    const mons = Array.isArray(e.monsters) ? new Set(e.monsters) : new Set<string>();
-    encMonsters.set(e.id, mons);
   }
 
   const glow = new Set<string>();
@@ -279,21 +275,9 @@ function computeQuestGlowCells(
         glow.add(`${c},${r}`);
         continue;
       }
-      if (cell.encounter) {
-        if (questEncounterIds.has(cell.encounter)) {
-          glow.add(`${c},${r}`);
-          continue;
-        }
-        const cellMons = encMonsters.get(cell.encounter);
-        if (cellMons) {
-          for (const m of questMonsterIds) {
-            if (cellMons.has(m)) {
-              glow.add(`${c},${r}`);
-              break;
-            }
-          }
-          if (glow.has(`${c},${r}`)) continue;
-        }
+      if (cell.encounter && questEncounterIds.has(cell.encounter)) {
+        glow.add(`${c},${r}`);
+        continue;
       }
       if (cell.item && questItemIds.has(cell.item)) {
         glow.add(`${c},${r}`);
@@ -435,23 +419,64 @@ export function MapEditor({
    *  inside the NPC dialog; closing it returns the player to the
    *  dialog. */
   const [shopCounterId, setShopCounterId] = useState<string | null>(null);
+  /** Quest dialog state — set when the sim emits `quest_encountered`,
+   *  cleared on Accept / Decline / Close. The kernel re-fires this
+   *  event every time the party bumps the quest-giver tile (no
+   *  status-based filtering), so the host computes the dialog mode
+   *  here:
+   *
+   *   - `status: "available"` → offer (Accept / Decline)
+   *   - `status: "active"`    → in-progress (Close — shows the active step)
+   *   - `status: "completed"` → handoff (Close — flips to "turned_in")
+   *   - `status: "turned_in"` → suppressed entirely (handler bails)
+   *
+   *  All view inputs are computed at event time so the render block
+   *  stays a pure function of state. */
+  const [questEncounter, setQuestEncounter] = useState<{
+    questId: string;
+    quest: SimQuestRef;
+    /** True when status has moved past "available". */
+    alreadyAccepted: boolean;
+    /** True when status === "completed" — the giver hands off rewards. */
+    complete: boolean;
+    /** Index of the next pending step, or `stepCount` when every step
+     *  has flipped to true. Matches the overlay's `stepIdx` semantic. */
+    stepIdx: number;
+    stepCount: number;
+    activeStepName?: string;
+    activeStepDescription?: string;
+  } | null>(null);
   /** Mirrors npcEncounterId/shopCounterId in a ref so the sim's
    *  keyboard listener can gate movement without re-binding on every
    *  state change. */
   const overlaysOpenRef = useRef(false);
+  /** Sandbox quest-state map. Holds `{status, stepProgress, stepKills,
+   *  guardianDefeated}` per quest id for the duration of the editor
+   *  session. The sim reads this on construction (so active kill
+   *  steps targeting the current map drop their encounters); the
+   *  QuestDialogOverlay's Accept handler flips `status` to "active"
+   *  and calls `sim.refreshQuestPlacements()` so newly-active steps
+   *  drop their encounters mid-session.
+   *
+   *  Persists across sim toggles within the same MapEditor mount so
+   *  acceptance survives a Simulate → off → Simulate cycle. Reset on
+   *  map change because the editor remounts entirely there. */
+  const questStatesRef = useRef<Map<string, QuestState>>(new Map());
   useEffect(() => {
     overlaysOpenRef.current =
       !!npcEncounterId ||
       !!shopCounterId ||
       partyScreenOpen ||
       !!lockEncounter ||
-      !!spawnEncounter;
+      !!spawnEncounter ||
+      !!questEncounter;
   }, [
     npcEncounterId,
     shopCounterId,
     partyScreenOpen,
     lockEncounter,
     spawnEncounter,
+    questEncounter,
   ]);
   /** Callback the Phaser scene invokes when the user clicks a tile
    *  during "placing" — held in a ref so the scene closure stays
@@ -549,8 +574,9 @@ export function MapEditor({
       if (npcEncounterId) setNpcEncounterId(null);
       if (shopCounterId) setShopCounterId(null);
       if (lockEncounter) setLockEncounter(null);
+      if (questEncounter) setQuestEncounter(null);
     }
-  }, [simMode, npcEncounterId, shopCounterId, lockEncounter]);
+  }, [simMode, npcEncounterId, shopCounterId, lockEncounter, questEncounter]);
   useEffect(() => {
     if (simMode !== "active" && partyScreenOpen) {
       setPartyScreenOpen(false);
@@ -2316,7 +2342,6 @@ export function MapEditor({
               const glowCells = computeQuestGlowCells(
                 gridRef.current,
                 availableQuests,
-                encounters,
               );
               const BASE_R = 0xff;
               const BASE_G = 0xd7;
@@ -2861,6 +2886,17 @@ export function MapEditor({
         }
       : undefined;
 
+    // Parse the editor's QuestRecord[] through the v2 loader so the
+    // sim receives runtime QuestDef[]s (kind, encounterId, count,
+    // locationKind, etc.). parseQuestsFile is tolerant — empty list
+    // → empty result, the sim's quest-placement pass no-ops.
+    const questDefsForSim = parseQuestsFile({ quests: state.availableQuests });
+    // Top up the sandbox state map so every loaded quest has a state
+    // entry ("available" by default). Idempotent — re-running this
+    // on a sim re-mount preserves any state mutations
+    // (markQuestAccepted, etc.) from the previous session.
+    ensureQuestStates(questDefsForSim, questStatesRef.current);
+
     const sim = new MapSimulation({
       grid,
       party,
@@ -2892,6 +2928,15 @@ export function MapEditor({
       classNameById,
       bridge,
       startAt: spawnAtRef.current ?? undefined,
+      // Quest-driven encounter placement. Hand the sim the parsed
+      // quest defs + the sandbox state map; on construction it runs
+      // `activeKillStepsAt({ kind: "map", mapId })` and drops each
+      // active step's encounter onto a random walkable cell. See the
+      // questStatesRef declaration above for the "available vs
+      // active" caveat.
+      questDefs: questDefsForSim,
+      questStates: questStatesRef.current,
+      currentLocation: { kind: "map", mapId: state.mapRecord.id },
     });
     // Consume the one-shot spawn coord so a subsequent exit + Simulate
     // returns the user to the "placing" picker rather than reusing
@@ -2930,6 +2975,43 @@ export function MapEditor({
         // setCellSprite and the inspector picks up the change on its
         // next render. Just log the event for the user.
       }
+      if (ev.kind === "quest_encountered") {
+        // Quest tile bumped — the kernel re-fires every time, so we
+        // pick the dialog mode here based on current state.
+        const qstate = questStatesRef.current.get(ev.questId);
+        // "turned_in" → quest is done and rewards have been handed
+        // off. Suppress entirely (re-bumping the giver shouldn't
+        // re-open anything until a future "talk again" feature
+        // lands).
+        if (qstate?.status === "turned_in") return;
+        const def = questDefsForSim.find((d) => d.id === ev.questId);
+        const stepCount = def?.steps.length ?? 0;
+        const progress = qstate?.stepProgress ?? [];
+        // First incomplete step, or stepCount when every step is
+        // done (matches QuestDialogOverlay's `stepIdx` semantic).
+        let pendingIdx = progress.findIndex((p) => !p);
+        if (pendingIdx === -1) pendingIdx = stepCount;
+        const activeStep = pendingIdx < stepCount ? def?.steps[pendingIdx] : null;
+        setQuestEncounter({
+          questId: ev.questId,
+          quest: ev.quest,
+          alreadyAccepted:
+            qstate?.status === "active" ||
+            qstate?.status === "completed",
+          complete: qstate?.status === "completed",
+          stepIdx: pendingIdx,
+          stepCount,
+          activeStepName: activeStep?.name || activeStep?.description || undefined,
+          activeStepDescription:
+            activeStep && activeStep.name ? activeStep.description : undefined,
+        });
+      }
+      // Note: quest_kill_credited is emitted by the sim but the host
+      // doesn't act on it directly — the structured info is reserved
+      // for a future banner / quest-log subsystem. For now the
+      // accompanying `log` event carries the player-facing message
+      // and the next quest-giver bump rebuilds the dialog with
+      // fresh state.
       if (ev.kind === "dungeon_entered") {
         // Dungeon entrance — route to the dedicated dungeon sim
         // page with the dungeon id + the return cell, so exiting
@@ -3620,6 +3702,45 @@ export function MapEditor({
               onClose={() => {
                 simRef.current?.dismissLock();
                 setLockEncounter(null);
+              }}
+            />
+          )
+        : null}
+      {/* Quest dialog — three views driven by the QuestState status:
+          - "available"  → offer (Accept flips to active, refreshes
+                           placements so kill-step encounters appear)
+          - "active"     → in-progress reminder (Close)
+          - "completed"  → handoff (Close flips status to turned_in)
+          The "turned_in" case is filtered upstream in the
+          quest_encountered handler. */}
+      {questEncounter
+        ? (
+            <QuestDialogOverlay
+              quest={questEncounter.quest}
+              alreadyAccepted={questEncounter.alreadyAccepted}
+              stepIdx={questEncounter.stepIdx}
+              stepCount={questEncounter.stepCount}
+              activeStepName={questEncounter.activeStepName}
+              activeStepDescription={questEncounter.activeStepDescription}
+              onAccept={() => {
+                const id = questEncounter.questId;
+                simRef.current?.markQuestAccepted(id);
+                const qs = questStatesRef.current.get(id);
+                if (qs) qs.status = "active";
+                simRef.current?.refreshQuestPlacements();
+                setQuestEncounter(null);
+              }}
+              onDecline={() => {
+                // The overlay routes both "Decline" (offer view) and
+                // "Close" (in-progress / complete view) through
+                // onDecline. We only need to do extra work in the
+                // complete view — flip to "turned_in" so the dialog
+                // stops re-opening.
+                if (questEncounter.complete) {
+                  const qs = questStatesRef.current.get(questEncounter.questId);
+                  if (qs) qs.status = "turned_in";
+                }
+                setQuestEncounter(null);
               }}
             />
           )

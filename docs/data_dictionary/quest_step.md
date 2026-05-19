@@ -27,7 +27,7 @@ Each entry in a parent Quest's `steps[]` is an object with the fields below.
 | `tags` | string[] | no | Editor-side organizational labels. Optional; gameplay doesn't read them. | TBD |
 | `kind` | string | yes | Discriminator for what the step is. See *kind values* below. | TBD |
 | `description` | string | no | Player-facing detail / tooltip text | TBD |
-| `params` | object | no | Kind-specific parameters (monster id to kill, item id to fetch, map cell to visit, …). Shape depends on `kind`. | TBD |
+| `params` | object | no | Kind-specific parameters (encounter id to clear, item id to fetch, map cell to visit, …). Shape depends on `kind`. | TBD |
 
 ## `kind` values
 
@@ -35,7 +35,7 @@ Open-ended enum. Anticipated values:
 
 | Value | Meaning | Likely `params` |
 |---|---|---|
-| `"kill"` | Kill a specific monster or members of an encounter | `{ "monster_id": "...", "count": 1 }` or `{ "encounter_id": "..." }` |
+| `"kill"` | Clear a specific encounter the listed number of times | `{ "encounter_id": "...", "count": 1 }` |
 | `"fetch"` | Obtain an item and bring it back | `{ "item_id": "...", "count": 1 }` |
 | `"visit"` | Step on a specific map cell | `{ "map_id": "...", "col": 0, "row": 0 }` |
 | `"talk"` | Talk to a specific NPC | `{ "npc_id": "..." }` |

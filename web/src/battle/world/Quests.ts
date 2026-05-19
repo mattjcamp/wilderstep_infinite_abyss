@@ -71,55 +71,133 @@ export interface WorldUnlock {
  *  quest's world-unlock op completes. */
 export type AppliedUnlock = readonly [col: number, row: number, tile: number];
 
+/** Where a step plays out in the v2 structured form. Empty means
+ *  "any location credits the step." */
+export type QuestLocationKind = "dungeon" | "map" | "";
+
 export interface QuestStep {
+  // ── v2-native fields ───────────────────────────────────────────
+  /** Stable per-step id, unique within the parent Quest's `steps[]`.
+   *  In v2 JSON this is `step.id`. */
+  id: string;
+  /** Display name shown in the quest log for this step. */
+  name: string;
   description: string;
+  /** Editor-side organizational labels. Gameplay doesn't read them. */
+  tags: string[];
+  /** Discriminator for what the step is — `"kill"`, `"fetch"`, `"visit"`,
+   *  `"talk"`, or any future kind. Open enum; the runtime branches on
+   *  known values and skips unknown ones. */
+  kind: QuestStepKind;
+  /** Free-form params blob the v2 JSON carries. The fields below are
+   *  typed projections of the common shapes (kill: encounter_id+count;
+   *  fetch: item_id+count; visit: map_id+col+row; talk: npc_id). */
+  params: Record<string, unknown>;
+  /** v2 structured location. Use {@link matchesLocation} to check
+   *  whether a current combat location satisfies the step. */
+  locationKind: QuestLocationKind;
+  mapId: string;
+  dungeonId: string;
+  /** 1-based per the editor's "Level (1-based)" input. Undefined =
+   *  any floor of the dungeon counts. */
+  dungeonLevel?: number;
+
+  // ── Convenience projections of `params` for the common kinds ───
+  /** For `kind === "kill"` — the encounter id (encounters.json `id`)
+   *  the step wants cleared. Pulled from `params.encounter_id`. */
+  encounterId: string;
+  /** For `kind === "kill"` (or any countable step) — how many
+   *  encounter clearings to credit. Pulled from `params.count`; defaults
+   *  to 1 when absent. */
+  count: number;
+  /** For `kind === "fetch"` — item id from `params.item_id`. */
+  itemId: string;
+
+  // ── v1-shape compat fields ─────────────────────────────────────
+  // Populated for backwards-compat with helpers ported from v1 (the
+  // orphan `placeQuestInteriorMonsters` / `placeQuestInteriorItems`
+  // path, the string-based `locationMatches`, the kill-credit
+  // helpers). v2 quests don't carry data for these so they're
+  // derived/empty; once the v1 helpers are deleted, these go too.
+  /** @deprecated Use {@link kind} (alias for back-compat). */
   stepType: QuestStepKind;
-  /** For kill steps — encounter name (encounters.json key). */
+  /** @deprecated Use {@link encounterId}. */
   encounter: string;
-  /** For collect steps — display name of the artifact item. */
+  /** @deprecated Use {@link itemId}. v2 quests don't author this. */
   collectItem: string;
-  /** "yes" / "no" — when "yes", a guardian roster entry joins the
-   *  artifact's encounter (v1 simplification: not a separate fight). */
+  /** @deprecated v2 quests don't author this. */
   hasGuardian: boolean;
-  /** Encounter name for the guardian (when hasGuardian). */
+  /** @deprecated v2 quests don't author this. */
   guardianEncounter: string;
-  /** Where this step plays out — `"dungeon:X"`, `"town:X"`,
-   *  `"interior:X/Y"`, `"building:X"`, `"space:X/Y"`, `"overview"`,
-   *  or empty (any location credits). */
+  /** @deprecated Use {@link locationKind} + {@link mapId} / {@link dungeonId}. */
   spawnLocation: string;
-  /** How many encounter clearings (kill) or items (collect) to credit
-   *  the step. Most steps are 1; some kill steps are 3. */
+  /** @deprecated Use {@link count}. */
   targetCount: number;
-  /** Optional pinned spawn coords for the artifact (collect steps). */
+  /** @deprecated v2 quests don't author this. */
   spawnCol?: number;
+  /** @deprecated v2 quests don't author this. */
   spawnRow?: number;
 }
 
+/** The v2 `quest_giver` envelope. The giver's *placement* lives on a
+ *  map cell (via `cell.quest`) — not in the quest record. */
+export interface QuestGiver {
+  npcName: string;
+  npcSprite: string;
+  startDialog: string;
+  endDialog: string;
+}
+
+/** The v2 `rewards` envelope. */
+export interface QuestRewards {
+  xp: number;
+  gold: number;
+  items: string[];
+}
+
 export interface QuestDef {
+  // ── v2-native fields ───────────────────────────────────────────
+  /** Stable Quest id from quests.json (e.g. `"rats"`). v2's primary
+   *  key for runtime state lookup. */
+  id: string;
   name: string;
   description: string;
-  giverNpc: string;
-  /** Path under /assets/ (or a Python-style absolute path that the
-   *  asset resolver will translate). Empty falls back to the role
-   *  default in `resolveNpcSprite`. */
-  giverSprite: string;
-  giverLocation: string;
-  giverDialogue: string;
-  giverCol: number;
-  giverRow: number;
-  rewardXp: number;
-  rewardGold: number;
-  rewardItems: string[];
-  /**
-   * Overworld tile mutations applied on turn-in. Most quests carry an
-   * empty list. Mirrors the Python `reward_world_unlocks` field —
-   * the data is a list (not a singleton) so authors can hand-edit a
-   * multi-tile unlock (e.g. a 2-wide bridge) by adding entries.
-   */
-  rewardWorldUnlocks: WorldUnlock[];
-  isFinalQuest: boolean;
-  victoryText: string;
+  /** Editor-side organizational labels. */
+  tags: string[];
   steps: QuestStep[];
+  questGiver: QuestGiver;
+  rewards: QuestRewards;
+
+  // ── v1-shape compat fields ─────────────────────────────────────
+  // Populated from the v2 envelope so helpers ported from v1
+  // (Towns.ts giver placement, applyTurnedInWorldUnlocks, etc.)
+  // still compile. v2 doesn't author location/coords on the quest
+  // record so those are empty/zero; v2 doesn't author world unlocks
+  // or a final-quest flag yet so those are empty/false.
+  /** @deprecated Use {@link questGiver}.npcName. */
+  giverNpc: string;
+  /** @deprecated Use {@link questGiver}.npcSprite. */
+  giverSprite: string;
+  /** @deprecated v2 doesn't author this. */
+  giverLocation: string;
+  /** @deprecated Use {@link questGiver}.startDialog. */
+  giverDialogue: string;
+  /** @deprecated v2 doesn't author this — giver position lives on a map cell. */
+  giverCol: number;
+  /** @deprecated v2 doesn't author this. */
+  giverRow: number;
+  /** @deprecated Use {@link rewards}.xp. */
+  rewardXp: number;
+  /** @deprecated Use {@link rewards}.gold. */
+  rewardGold: number;
+  /** @deprecated Use {@link rewards}.items. */
+  rewardItems: string[];
+  /** @deprecated v2 doesn't author this yet. */
+  rewardWorldUnlocks: WorldUnlock[];
+  /** @deprecated v2 doesn't author this yet. */
+  isFinalQuest: boolean;
+  /** @deprecated v2 doesn't author this yet. */
+  victoryText: string;
 }
 
 export interface QuestState {
@@ -142,7 +220,20 @@ export interface QuestState {
 }
 
 interface RawQuestStep {
+  // v2 fields
+  id?: string;
+  name?: string;
   description?: string;
+  tags?: unknown;
+  kind?: string;
+  params?: Record<string, unknown> | null;
+  location_kind?: string;
+  map_id?: string;
+  dungeon_id?: string;
+  dungeon_level?: number | string;
+  // v1 legacy fields (kept so the loader can fall back to v1-shape
+  // quests.json files during migration — strip once nothing in the
+  // module catalog uses them)
   step_type?: string;
   encounter?: string;
   collect_item?: string;
@@ -163,9 +254,29 @@ interface RawWorldUnlock {
   tile?: number | string;
 }
 
+interface RawQuestGiver {
+  npc_name?: string;
+  npc_sprite?: string;
+  start_dialog?: string;
+  end_dialog?: string;
+}
+
+interface RawRewards {
+  xp?: number | string;
+  gold?: number | string;
+  items?: unknown;
+}
+
 interface RawQuest {
+  // v2 fields
+  id?: string;
   name?: string;
   description?: string;
+  tags?: unknown;
+  steps?: RawQuestStep[];
+  quest_giver?: RawQuestGiver | null;
+  rewards?: RawRewards | null;
+  // v1 legacy fields (fallback during migration)
   giver_npc?: string;
   giver_sprite?: string;
   giver_location?: string;
@@ -178,7 +289,13 @@ interface RawQuest {
   reward_world_unlocks?: RawWorldUnlock[];
   is_final_quest?: boolean;
   victory_text?: string;
-  steps?: RawQuestStep[];
+}
+
+/** Top-level envelope. v2 quests.json wraps the list as
+ *  `{ quests: [...] }`. Older fixtures may still be a bare array;
+ *  the loader handles both. */
+interface RawQuestsFile {
+  quests?: RawQuest[];
 }
 
 function coerceInt(v: unknown): number | undefined {
@@ -190,20 +307,118 @@ function coerceInt(v: unknown): number | undefined {
   return undefined;
 }
 
+/** Coerce arbitrary `tags` JSON to a clean string[]. */
+function coerceStringArray(v: unknown): string[] {
+  if (!Array.isArray(v)) return [];
+  return v.filter((s): s is string => typeof s === "string" && s.length > 0);
+}
+
+/** Coerce v2's `location_kind` to the typed union. Anything other than
+ *  the known values collapses to empty (= "any location credits"). */
+function coerceLocationKind(v: unknown): QuestLocationKind {
+  if (v === "dungeon" || v === "map") return v;
+  return "";
+}
+
 function stepFromRaw(raw: RawQuestStep): QuestStep | null {
-  const stepType = raw.step_type === "collect" ? "collect" : "kill";
+  // v2 `kind` is the discriminator; fall back to v1 `step_type` so a
+  // module that still has v1-shape quests.json can hydrate without the
+  // step collapsing to defaults. "kill" / "collect" stay as legacy
+  // values; anything else passes through as the open enum.
+  const kindRaw = raw.kind ?? raw.step_type ?? "kill";
+  const kind = kindRaw as QuestStepKind;
+
+  const params = (raw.params && typeof raw.params === "object")
+    ? raw.params as Record<string, unknown>
+    : {};
+
+  // ── Convenience projections of params ─────────────────────────
+  // Pull the common kill / fetch fields out of params, falling back
+  // to v1 flat fields (raw.encounter / raw.target_count / raw.collect_item)
+  // so legacy authoring keeps working.
+  const encounterIdParam = typeof params.encounter_id === "string"
+    ? params.encounter_id
+    : "";
+  const encounterId = encounterIdParam || (raw.encounter ?? "");
+
+  const countParam = coerceInt(params.count);
+  const count = Math.max(
+    1,
+    countParam ?? raw.target_count ?? 1,
+  );
+
+  const itemIdParam = typeof params.item_id === "string"
+    ? params.item_id
+    : "";
+  const itemId = itemIdParam || (raw.collect_item ?? "");
+
+  // ── Location (v2 structured) ──────────────────────────────────
+  const locationKind = coerceLocationKind(raw.location_kind);
+  const mapId = typeof raw.map_id === "string" ? raw.map_id : "";
+  const dungeonId = typeof raw.dungeon_id === "string" ? raw.dungeon_id : "";
+  const dungeonLevel = coerceInt(raw.dungeon_level);
+
+  // ── v1-shape compat (derived) ─────────────────────────────────
+  // `stepType` mirrors v1 with the union narrowed to "kill" | "collect";
+  // anything else (visit/talk/...) maps to "kill" so the few v1 helpers
+  // that branch on stepType don't crash. Once those helpers are
+  // deleted this whole block goes too.
+  const stepType: QuestStepKind = (kind === "collect" ? "collect" : "kill");
+  // Synthesize a v1-style spawn_location string from the structured v2
+  // form so the string-based `locationMatches` keeps returning sensible
+  // results for legacy callers. Empty when no location_kind is set.
+  const spawnLocation = synthesizeSpawnLocation(locationKind, mapId, dungeonId, dungeonLevel)
+    || (raw.spawn_location ?? "");
+
   return {
+    // v2-native
+    id: raw.id ?? "",
+    name: raw.name ?? "",
     description: raw.description ?? "",
+    tags: coerceStringArray(raw.tags),
+    kind,
+    params,
+    locationKind,
+    mapId,
+    dungeonId,
+    dungeonLevel,
+    encounterId,
+    count,
+    itemId,
+    // v1-shape compat
     stepType,
-    encounter: raw.encounter ?? "",
-    collectItem: raw.collect_item ?? "",
+    encounter: encounterId,
+    collectItem: itemId,
     hasGuardian: raw.has_guardian === "yes" || raw.has_guardian === true,
     guardianEncounter: raw.guardian_encounter ?? "",
-    spawnLocation: raw.spawn_location ?? "",
-    targetCount: Math.max(1, raw.target_count ?? 1),
+    spawnLocation,
+    targetCount: count,
     spawnCol: coerceInt(raw.spawn_col),
     spawnRow: coerceInt(raw.spawn_row),
   };
+}
+
+/** Build a v1-style location string from v2's structured fields so the
+ *  legacy string-based `locationMatches` and any orphan helpers that
+ *  read `step.spawnLocation` keep agreeing with the structured matcher.
+ *  Empty `locationKind` → empty string (= "any location credits"). */
+function synthesizeSpawnLocation(
+  kind: QuestLocationKind,
+  mapId: string,
+  dungeonId: string,
+  dungeonLevel?: number,
+): string {
+  if (kind === "map") {
+    return mapId ? `map:${mapId}` : "";
+  }
+  if (kind === "dungeon") {
+    if (!dungeonId) return "";
+    if (typeof dungeonLevel === "number") {
+      return `dungeon:${dungeonId} - Floor ${dungeonLevel}`;
+    }
+    return `dungeon:${dungeonId}`;
+  }
+  return "";
 }
 
 function unlockFromRaw(raw: RawWorldUnlock): WorldUnlock | null {
@@ -230,33 +445,69 @@ function unlockFromRaw(raw: RawWorldUnlock): WorldUnlock | null {
 }
 
 function fromRaw(raw: RawQuest): QuestDef | null {
-  if (!raw || typeof raw !== "object" || typeof raw.name !== "string") return null;
+  if (!raw || typeof raw !== "object") return null;
+  // v2 keys quests by `id`. v1 keyed them by `name`. Accept either —
+  // a quest must have at least one of the two to be addressable.
+  const id = typeof raw.id === "string" && raw.id.length > 0
+    ? raw.id
+    : (typeof raw.name === "string" ? raw.name : "");
+  if (!id) return null;
+  const name = typeof raw.name === "string" && raw.name.length > 0 ? raw.name : id;
+
   const steps = (raw.steps ?? [])
     .map(stepFromRaw)
     .filter((s): s is QuestStep => s !== null);
+
+  // ── Quest giver (v2 nested envelope, v1 flat fallback) ────────
+  const giverRaw = raw.quest_giver ?? null;
+  const questGiver: QuestGiver = {
+    npcName: giverRaw?.npc_name ?? raw.giver_npc ?? "",
+    npcSprite: giverRaw?.npc_sprite ?? raw.giver_sprite ?? "",
+    startDialog: giverRaw?.start_dialog ?? raw.giver_dialogue ?? "",
+    endDialog: giverRaw?.end_dialog ?? "",
+  };
+
+  // ── Rewards (v2 nested envelope, v1 flat fallback) ────────────
+  const rewardsRaw = raw.rewards ?? null;
+  const rewards: QuestRewards = {
+    xp: coerceInt(rewardsRaw?.xp) ?? raw.reward_xp ?? 0,
+    gold: coerceInt(rewardsRaw?.gold) ?? raw.reward_gold ?? 0,
+    items: rewardsRaw && Array.isArray(rewardsRaw.items)
+      ? rewardsRaw.items.filter((s): s is string => typeof s === "string")
+      : (Array.isArray(raw.reward_items)
+          ? raw.reward_items.filter((s): s is string => typeof s === "string")
+          : []),
+  };
+
+  // v2 doesn't carry world unlocks yet; v1 fixtures might.
   const rewardWorldUnlocks = Array.isArray(raw.reward_world_unlocks)
     ? raw.reward_world_unlocks
         .map(unlockFromRaw)
         .filter((u): u is WorldUnlock => u !== null)
     : [];
+
   return {
-    name: raw.name,
+    // v2-native
+    id,
+    name,
     description: raw.description ?? "",
-    giverNpc: raw.giver_npc ?? raw.name,
-    giverSprite: raw.giver_sprite ?? "",
+    tags: coerceStringArray(raw.tags),
+    steps,
+    questGiver,
+    rewards,
+    // v1-shape compat (derived)
+    giverNpc: questGiver.npcName || name,
+    giverSprite: questGiver.npcSprite,
     giverLocation: raw.giver_location ?? "",
-    giverDialogue: raw.giver_dialogue ?? "",
+    giverDialogue: questGiver.startDialog,
     giverCol: raw.giver_col ?? 0,
     giverRow: raw.giver_row ?? 0,
-    rewardXp: raw.reward_xp ?? 0,
-    rewardGold: raw.reward_gold ?? 0,
-    rewardItems: Array.isArray(raw.reward_items)
-      ? raw.reward_items.filter((s): s is string => typeof s === "string")
-      : [],
+    rewardXp: rewards.xp,
+    rewardGold: rewards.gold,
+    rewardItems: rewards.items,
     rewardWorldUnlocks,
     isFinalQuest: raw.is_final_quest === true,
     victoryText: raw.victory_text ?? "",
-    steps,
   };
 }
 
@@ -266,12 +517,23 @@ export async function loadQuests(url = modulePath("quests.json")): Promise<Quest
   if (_cache) return _cache;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed to load ${url}: ${res.status}`);
-  const raw = (await res.json()) as RawQuest[];
-  if (!Array.isArray(raw)) throw new Error("quests.json is not an array");
-  _cache = raw
+  const raw = await res.json();
+  _cache = parseQuestsFile(raw);
+  return _cache;
+}
+
+/** Parse a `quests.json` payload (either v2's `{ quests: [...] }`
+ *  envelope or a bare v1 array) into the runtime QuestDef[]. Exposed
+ *  for tests so the loader can be exercised without a fetch. */
+export function parseQuestsFile(raw: unknown): QuestDef[] {
+  const list: RawQuest[] = Array.isArray(raw)
+    ? (raw as RawQuest[])
+    : Array.isArray((raw as RawQuestsFile | null)?.quests)
+      ? ((raw as RawQuestsFile).quests as RawQuest[])
+      : [];
+  return list
     .map(fromRaw)
     .filter((q): q is QuestDef => q !== null);
-  return _cache;
 }
 
 /** Test-only: clear the cache. */
@@ -293,7 +555,10 @@ export function ensureQuestStates(
   states: Map<string, QuestState>,
 ): void {
   for (const def of defs) {
-    let state = states.get(def.name);
+    // v2 keys state by `def.id` (the quests.json stable id). v1
+    // fixtures whose `id` falls back to `name` still hit the same
+    // bucket, so this isn't a breaking change for old data.
+    let state = states.get(def.id);
     if (!state) {
       state = {
         status: "available",
@@ -301,7 +566,7 @@ export function ensureQuestStates(
         stepKills: {},
         guardianDefeated: {},
       };
-      states.set(def.name, state);
+      states.set(def.id, state);
       continue;
     }
     while (state.stepProgress.length < def.steps.length) {
@@ -322,9 +587,62 @@ export function ensureQuestStates(
  */
 const FLOOR_SUFFIX = /\s*-\s*floor\s+\d+$/i;
 
+/** Where the party currently is when combat resolves — the input to
+ *  the structured location matcher. Mirrors v2's `location_kind` +
+ *  the relevant ids (`map_id` for "map" locations; `dungeon_id` plus
+ *  optional `dungeonLevel` for "dungeon" locations).
+ *
+ *  Use {@link matchesLocation} to check whether a step is satisfied
+ *  by a given location. */
+export interface CombatLocation {
+  kind: "map" | "dungeon";
+  /** Required when `kind === "map"`. */
+  mapId?: string;
+  /** Required when `kind === "dungeon"`. */
+  dungeonId?: string;
+  /** 1-based floor index. Optional — when absent the matcher treats
+   *  the step as "any floor of the dungeon credits." */
+  dungeonLevel?: number;
+}
+
 /**
+ * Returns true when a v2 step's structured `locationKind` / `mapId`
+ * / `dungeonId` / `dungeonLevel` is satisfied by the current
+ * {@link CombatLocation}. Replaces the legacy string-based
+ * {@link locationMatches}.
+ *
+ * Rules:
+ *   - Empty `step.locationKind` → matches any location (the v1
+ *     "no location requirement" semantic).
+ *   - `step.locationKind === "map"` → satisfied when `loc.kind ===
+ *     "map"` AND (step.mapId is empty OR matches loc.mapId).
+ *   - `step.locationKind === "dungeon"` → satisfied when `loc.kind
+ *     === "dungeon"` AND (step.dungeonId empty OR matches), AND
+ *     (step.dungeonLevel undefined OR matches loc.dungeonLevel).
+ */
+export function matchesLocation(step: QuestStep, loc: CombatLocation): boolean {
+  if (!step.locationKind) return true;
+  if (step.locationKind !== loc.kind) return false;
+  if (loc.kind === "map") {
+    return !step.mapId || step.mapId === loc.mapId;
+  }
+  // dungeon
+  if (step.dungeonId && step.dungeonId !== loc.dungeonId) return false;
+  if (typeof step.dungeonLevel === "number") {
+    return step.dungeonLevel === loc.dungeonLevel;
+  }
+  return true;
+}
+
+/**
+ * Legacy v1 string-based matcher. Kept so the orphan v1 helpers in
+ * this file (and the InteriorSpawn / Dungeon quest-placement code
+ * that hasn't been re-wired yet) keep working.
+ *
  * Returns true when a combat-location string satisfies a step's
  * spawn_location. Mirrors `_location_matches` in quest_manager.py.
+ *
+ * @deprecated Use {@link matchesLocation} for v2-structured matching.
  */
 export function locationMatches(stepLocation: string, combatLocation: string): boolean {
   if (!stepLocation) return true;
@@ -606,6 +924,137 @@ export function activeKillStepsForLocation(
     }
   }
   return out;
+}
+
+/** One row per active kill step that wants encounters spawned at
+ *  `loc`. Returned by {@link activeKillStepsAt} — the v2-structured
+ *  successor to {@link activeKillStepsForLocation}. */
+export interface ActiveKillStepRow {
+  /** Stable quest id (matches the key in `moduleQuestStates`). */
+  questId: string;
+  /** Step index inside the quest's `steps[]`. */
+  stepIdx: number;
+  /** Encounter id (encounters.json) the step wants cleared. */
+  encounterId: string;
+  /** How many more clearings still need to credit this step
+   *  (`step.count - already-killed`). Always ≥ 1 in returned rows;
+   *  zero-remaining steps are dropped. */
+  remaining: number;
+  /** Back-reference to the step itself, for callers that need
+   *  additional fields (description, tags, etc.). */
+  step: QuestStep;
+}
+
+/**
+ * Every active kill step whose v2-structured `locationKind` /
+ * `mapId` / `dungeonId` / `dungeonLevel` matches the current
+ * {@link CombatLocation}. The caller (MapSimulation, the dungeon
+ * scene, etc.) uses the returned rows to drive placement.
+ *
+ * Rules:
+ *   - The quest's state must be `active`.
+ *   - The step must be `kind: "kill"` and not already marked
+ *     complete in `stepProgress`.
+ *   - The step must declare an `encounterId` (empty = "not
+ *     authored yet", skipped).
+ *   - The step's location must satisfy {@link matchesLocation}.
+ *   - At least one clearing must still be needed
+ *     (`step.count - kills_so_far > 0`).
+ */
+export function activeKillStepsAt(
+  defs: ReadonlyArray<QuestDef>,
+  states: ReadonlyMap<string, QuestState>,
+  loc: CombatLocation,
+): ActiveKillStepRow[] {
+  const out: ActiveKillStepRow[] = [];
+  for (const def of defs) {
+    const state = states.get(def.id);
+    if (!state || state.status !== "active") continue;
+    for (let i = 0; i < def.steps.length; i++) {
+      const step = def.steps[i];
+      if (step.kind !== "kill") continue;
+      if (state.stepProgress[i]) continue;
+      if (!step.encounterId) continue;
+      if (!matchesLocation(step, loc)) continue;
+      const done = state.stepKills[i] ?? 0;
+      const remaining = Math.max(0, step.count - done);
+      if (remaining <= 0) continue;
+      out.push({
+        questId: def.id,
+        stepIdx: i,
+        encounterId: step.encounterId,
+        remaining,
+        step,
+      });
+    }
+  }
+  return out;
+}
+
+// ── Kill credit ────────────────────────────────────────────────
+
+/** Result of {@link creditQuestKill} — describes what changed so the
+ *  host can render banners ("Step complete!", "Quest complete!") and
+ *  decide whether to re-fetch dialog text. */
+export interface QuestKillCredit {
+  /** Quest the credit was applied to. */
+  questId: string;
+  /** Step index inside the quest. */
+  stepIdx: number;
+  /** Reference to the step record (`description`, `name`, `count`). */
+  step: QuestStep;
+  /** `state.stepKills[i]` after the increment. */
+  killsSoFar: number;
+  /** True when this credit flipped `stepProgress[i]` from false to
+   *  true (i.e. `killsSoFar >= step.count`). */
+  stepCompleted: boolean;
+  /** True when this credit was the LAST step's completion → the
+   *  quest's status flipped from "active" to "completed" and the
+   *  player can now return to the giver for the end-dialog. */
+  questCompleted: boolean;
+}
+
+/**
+ * Credit one clearing of a quest's kill step. Idempotent in the
+ * "already-complete" sense — calling this for a step whose
+ * `stepProgress` is already true returns null without mutating.
+ *
+ * Mutates `state.stepKills[stepIdx]` (incrementing it), then —
+ * if the new total reaches the step's `count` — sets
+ * `state.stepProgress[stepIdx] = true`. If that completion makes
+ * `stepProgress` all true, the status flips to "completed".
+ *
+ * Returns null when the quest doesn't exist, the step doesn't exist,
+ * the step isn't a `kill` kind, or the step is already complete.
+ */
+export function creditQuestKill(
+  defs: ReadonlyArray<QuestDef>,
+  states: ReadonlyMap<string, QuestState>,
+  questId: string,
+  stepIdx: number,
+): QuestKillCredit | null {
+  const def = defs.find((d) => d.id === questId);
+  if (!def) return null;
+  const state = states.get(questId);
+  if (!state) return null;
+  if (state.status !== "active") return null;
+  const step = def.steps[stepIdx];
+  if (!step) return null;
+  if (step.kind !== "kill") return null;
+  if (state.stepProgress[stepIdx]) return null;
+  const killsSoFar = (state.stepKills[stepIdx] ?? 0) + 1;
+  state.stepKills[stepIdx] = killsSoFar;
+  let stepCompleted = false;
+  let questCompleted = false;
+  if (killsSoFar >= step.count) {
+    state.stepProgress[stepIdx] = true;
+    stepCompleted = true;
+    if (state.stepProgress.length > 0 && state.stepProgress.every((p) => p)) {
+      state.status = "completed";
+      questCompleted = true;
+    }
+  }
+  return { questId, stepIdx, step, killsSoFar, stepCompleted, questCompleted };
 }
 
 // ── Acceptance / turn-in ───────────────────────────────────────
