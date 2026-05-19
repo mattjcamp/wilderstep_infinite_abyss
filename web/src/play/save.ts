@@ -24,6 +24,7 @@ import {
   SAVE_STORAGE_KEY,
   type WorldSave,
 } from "./saveTypes";
+import { clearAllDungeonSessions } from "@/sim/dungeon/dungeonSession";
 
 /** True iff a save blob exists in localStorage. Safe to call during
  *  SSR — returns false when window is undefined. */
@@ -122,7 +123,12 @@ export function restorePrevSave(): boolean {
 
 /** Remove the current save. Used by "Start over" flows after the
  *  player accepts a death screen prompt. Safe to call when no save
- *  exists. */
+ *  exists.
+ *
+ *  Also flushes the module-scoped in-memory dungeon session store
+ *  so a brand-new game re-rolls every dungeon from scratch — without
+ *  this, the prior game's rolled layouts could leak through into
+ *  the next run (same tab) until the player walks back into one. */
 export function clearSave(): void {
   if (typeof window === "undefined") return;
   try {
@@ -131,6 +137,7 @@ export function clearSave(): void {
   } catch {
     // Best-effort: if storage is unwritable, leave the blob alone.
   }
+  clearAllDungeonSessions();
 }
 
 /** Dispatch on schemaVersion to migrate a raw blob to the current

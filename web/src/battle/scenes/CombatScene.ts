@@ -825,14 +825,28 @@ export class CombatScene extends Phaser.Scene {
     const enemies = this.monsterNames
       ? this.monsterNames.map((n, i) => makeMonsterByName(n, `-${i}`))
       : makeSampleEncounter();
-    this.combat = new Combat(party, enemies);
+    // Snap to local refs so the predicates close over the matrix
+    // that was current when combat was built; a later remount
+    // installs fresh ones.
+    const cellsForPredicates = this.arenaCells;
+    const blockedPredicate = cellsForPredicates
+      ? (col: number, row: number) => {
+          const cell = cellsForPredicates[row]?.[col];
+          return cell?.walkable === false;
+        }
+      : undefined;
+    // Hand the blocked predicate to Combat up front so initial
+    // formation placement skips authored unwalkable cells (rocks,
+    // trees, hedges, etc.) — without this, monsters can spawn on top
+    // of impassable terrain that they then can't step off of.
+    this.combat = new Combat(party, enemies, undefined, blockedPredicate);
 
     // Plumb arena-map flags into combat so tryMove + AI step refuse
     // unwalkable cells and Range / damage-spell targeting filters
-    // through line-of-sight. Snap to local refs so the predicates
-    // close over the matrix that was current when combat was built;
-    // a later remount installs fresh ones.
-    const cellsForPredicates = this.arenaCells;
+    // through line-of-sight. (Combat's constructor already installed
+    // `blockedPredicate` for placement; this re-affirms it for the
+    // movement / AI phase and adds the obstruct predicate which
+    // placement doesn't need.)
     if (cellsForPredicates) {
       this.combat.setBlockedPredicate((col, row) => {
         const cell = cellsForPredicates[row]?.[col];
@@ -1473,25 +1487,20 @@ export class CombatScene extends Phaser.Scene {
         this.isCellVisibleToParty(Number(cs), Number(rs)),
       );
     }
-    // Party sprite gate in darkness — hide non-anchor party members
-    // when the scene is dark. The "anchor" is whichever party member
-    // is carrying the light: the active actor when it's their turn,
-    // or the first alive party member when an enemy is acting (same
-    // fallback the darkness pass uses to anchor the self-light pool).
-    // Idle teammates fade into shadow like everyone else off-anchor,
-    // even if they happen to be inside the active actor's small
-    // light bubble — without this a teammate standing next to the
-    // caster pokes through the darkness while teammates further
-    // away get correctly hidden, which is what the user noticed
-    // with Aldric.
+    // Party sprite gate in darkness — same predicate the monster
+    // bodies / HP bars / emitters use: a body is drawn iff its cell
+    // is currently visible to the party (lit by a torch pool, by the
+    // active actor's self-light, or seen through infravision LOS).
+    //
+    // Earlier this hid every non-anchor party member outright, which
+    // gave a tell that was bad enough to file a bug against: a
+    // teammate sitting in a cell the active actor's light bubble
+    // clearly covered would still be invisible, so the actor could
+    // bump into them ("blocked") without seeing what they'd bumped.
+    // Gating on isCellVisibleToParty lines the party up with the
+    // rest of the darkness-aware draws — what the player sees lit on
+    // the floor is what they see standing on it.
     if (this.combat) {
-      const cur2 = this.combat.current;
-      const anchorId =
-        cur2 && cur2.side === "party" && cur2.hp > 0
-          ? cur2.id
-          : this.combat.combatants.find(
-              (c) => c.side === "party" && c.hp > 0,
-            )?.id ?? null;
       for (const c of this.combat.combatants) {
         if (c.side !== "party") continue;
         const body = this.bodies.get(c.id);
@@ -1502,7 +1511,14 @@ export class CombatScene extends Phaser.Scene {
           body.setVisible(true);
           continue;
         }
-        body.setVisible(c.id === anchorId && c.hp > 0);
+        if (c.hp <= 0) {
+          // Dead party member — refreshHp owns the corpse rendering;
+          // don't fight it here.
+          continue;
+        }
+        body.setVisible(
+          this.isCellVisibleToParty(c.position.col, c.position.row),
+        );
       }
     }
   }

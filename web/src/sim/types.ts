@@ -105,6 +105,11 @@ export interface SimEncounterRef {
   /** Full combat roster. Fed to the encounter banner + handed to
    *  combat on victory resolution. */
   monsters: string[];
+  /** Optional id of a Map (from maps.json) that should back this
+   *  encounter's battle as the arena. Null / undefined falls back to
+   *  the generic green-field arena. Authored via the editor's
+   *  MapPicker on the `custom_map` field. */
+  custom_map?: string | null;
 }
 
 /** Row-major grid: grid[row][col]. */

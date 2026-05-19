@@ -40,12 +40,14 @@ v1 keyed spawn records by stringified tile id; v2 flattens to an array (uniform 
 | `xp_reward` | int | yes | XP awarded for clearing the lair | TBD |
 | `gold_reward` | int | yes | Gold awarded for clearing the lair | TBD |
 | `loot` | string[] | yes | [Item](item.md) `id` strings dropped on clear. Duplicates drop multiple copies. | TBD |
+| `custom_map` | string \| null | no | Optional [Map](map.md) `id`. When set, the lair's boss fight loads this authored map as the battle arena; `null` falls back to the default arena. The editor renders a Map picker for this field. | TBD |
 
 ## Cross-references to other models
 
 - Referenced *by* [Map Tile](map_tile.md) `spawn` — the cell→spawn link is the binding mechanism
 - `spawn_monsters[]` and `boss_monsters[]` → [Monster](monster.md) ids
 - `loot[]` → [Item](item.md) ids
+- `custom_map` → [Map](map.md) id (optional battle arena for the lair's boss fight)
 
 ## Example record
 
@@ -61,7 +63,8 @@ v1 keyed spawn records by stringified tile id; v2 flattens to an array (uniform 
   "boss_monsters": ["goblin"],
   "xp_reward": 50,
   "gold_reward": 25,
-  "loot": ["chain_plus_2", "arrows"]
+  "loot": ["chain_plus_2", "arrows"],
+  "custom_map": null
 }
 ```
 

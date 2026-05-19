@@ -91,6 +91,20 @@ export interface SavedPartyState {
   /** Per-character state, keyed by character id. Tuple form keeps the
    *  serialised JSON readable and avoids any-as-object problems. */
   members: ReadonlyArray<SavedCharacterState>;
+  /** Where the party is inside a dungeon, when applicable. Absent
+   *  on the overworld. When set, the play loader re-mounts the
+   *  matching dungeon floor (regenerated deterministically from the
+   *  saved seed in `save.dungeons[dungeonId]`) at `(col, row)`
+   *  instead of the overworld map referenced by `currentMapId`.
+   *  `returnTo` records where on the overworld to drop the party
+   *  when they leave the dungeon. */
+  currentDungeon?: {
+    dungeonId: string;
+    floorIdx: number;
+    col: number;
+    row: number;
+    returnTo: { mapId: string; col: number; row: number };
+  };
 }
 
 /** Mutation deltas for one visited map. Sets are serialised as

@@ -36,6 +36,7 @@ v1 nested encounters under three top-level area keys (`dungeon`, `house_basement
 | `weight` | int (> 0) | yes | Weighted-sample probability inside an eligible band | TBD |
 | `monster_party_tile` | string | yes | Sprite path shown for the lead monster on the overworld (e.g. `"monster/goblin.png"`). Empty string falls back to `monsters[0]`'s default sprite. | TBD |
 | `monsters` | string[] | yes | Roster handed to the combat scene. Each entry is a [Monster](monster.md) `id` (snake_case). Duplicates spawn multiple instances. | TBD |
+| `custom_map` | string \| null | no | Optional [Map](map.md) `id`. When set, the encounter's battle loads this authored map as the arena; `null` falls back to the default arena. The editor renders a Map picker for this field. | TBD |
 
 ## Polymorphic discriminator
 
@@ -45,6 +46,7 @@ v1 nested encounters under three top-level area keys (`dungeon`, `house_basement
 
 - `monsters[]` → [Monster](monster.md) ids
 - `monster_party_tile` is a sprite path, not a [Monster](monster.md) reference — it points at a file under `web/public/sprites/`
+- `custom_map` → [Map](map.md) id (optional battle arena for the encounter's fight)
 - Referenced *by* future [NPC](npc.md) records (v1's town NPCs could trigger named encounters) and [Quest Step](quest_step.md) kill-step rows
 
 ## Example record
@@ -57,7 +59,8 @@ v1 nested encounters under three top-level area keys (`dungeon`, `house_basement
   "level": 1,
   "weight": 30,
   "monster_party_tile": "monster/giant_rat.png",
-  "monsters": ["giant_rat"]
+  "monsters": ["giant_rat"],
+  "custom_map": null
 }
 ```
 

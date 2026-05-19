@@ -1,5 +1,5 @@
 {
-  "_comment": "Spawn-point catalog (real data drives the schema). Each spawn is monster-lair behavior the engine triggers when the party steps on (or near) a map cell whose tile carries this spawn's id in its `spawn` field. The binding lives on the map cell, not here — multiple cells (and multiple maps) can reuse the same Spawn. `spawn_monsters` and `boss_monsters` are Monster `id` strings (snake_case); `loot` is Item `id` strings. Duplicate entries in any of these are intentional — they control sampling weight (one Goblin five times = five times more likely).",
+  "_comment": "Spawn-point catalog (real data drives the schema). Each spawn is monster-lair behavior the engine triggers when the party steps on (or near) a map cell whose tile carries this spawn's id in its `spawn` field. The binding lives on the map cell, not here — multiple cells (and multiple maps) can reuse the same Spawn. `spawn_monsters` and `boss_monsters` are Monster `id` strings (snake_case); `loot` is Item `id` strings. Duplicate entries in any of these are intentional — they control sampling weight (one Goblin five times = five times more likely). Optional `custom_map` is a Map `id` — when set, stepping into this lair's boss fight uses that authored battle map instead of the default arena.",
   "spawns": [
     {
       "id": "monster_spawn",
@@ -23,7 +23,8 @@
       "loot": [
         "chain_plus_2",
         "arrows"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "campfire_spawn",
@@ -53,7 +54,8 @@
       "loot": [
         "torch",
         "arrows"
-      ]
+      ],
+      "custom_map": "battle_arena_1"
     },
     {
       "id": "graveyard_spawn",
@@ -81,7 +83,8 @@
       "loot": [
         "bones",
         "ancient_shield"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "dragon_lair",
@@ -99,7 +102,8 @@
       ],
       "xp_reward": 50,
       "gold_reward": 25,
-      "loot": []
+      "loot": [],
+      "custom_map": null
     },
     {
       "id": "wyvern_lair",
@@ -118,7 +122,8 @@
       ],
       "xp_reward": 50,
       "gold_reward": 25,
-      "loot": []
+      "loot": [],
+      "custom_map": null
     },
     {
       "id": "man_eater_spawn",
@@ -138,7 +143,8 @@
       ],
       "xp_reward": 200,
       "gold_reward": 200,
-      "loot": []
+      "loot": [],
+      "custom_map": null
     }
   ]
 }

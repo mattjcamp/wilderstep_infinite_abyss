@@ -124,3 +124,73 @@ export function writeFloorMutations(
 ): void {
   session.floors.set(floorIdx, next);
 }
+
+// ── JSON serialisation (for WorldSave persistence) ────────────────
+//
+// DungeonLevel carries five Set<string> fields (openedChests,
+// triggeredTraps, detectedTraps, exploredTiles, overworldExits).
+// These don't survive a JSON.stringify round-trip — they'd land as
+// "{}" without a custom replacer. The two helpers here flatten the
+// Sets to arrays on write and rebuild them on read, leaving every
+// other field untouched.
+//
+// The save schema declares `SavedDungeonSession.levels: unknown[]`
+// for exactly this reason — the play side picks the precise shape;
+// the save layer stays JSON-only.
+
+interface SerialisedDungeonLevel {
+  // Everything that's not a Set survives the round-trip as-is, so
+  // the type opens with an index signature.
+  [k: string]: unknown;
+  openedChests: string[];
+  triggeredTraps: string[];
+  detectedTraps: string[];
+  exploredTiles: string[];
+  overworldExits: string[];
+}
+
+/** Flatten a DungeonLevel's Sets to plain string arrays so the
+ *  whole structure JSON-stringifies. The `unknown` cast lets the
+ *  helper stay decoupled from the v1 Dungeon type; callers cast
+ *  the result back to DungeonLevel-shape at the boundary. */
+export function serialiseDungeonLevels(levels: unknown[]): unknown[] {
+  return levels.map((raw) => {
+    const lvl = raw as Record<string, unknown>;
+    const out: SerialisedDungeonLevel = {
+      ...lvl,
+      openedChests: Array.from((lvl.openedChests as Set<string>) ?? []),
+      triggeredTraps: Array.from((lvl.triggeredTraps as Set<string>) ?? []),
+      detectedTraps: Array.from((lvl.detectedTraps as Set<string>) ?? []),
+      exploredTiles: Array.from((lvl.exploredTiles as Set<string>) ?? []),
+      overworldExits: Array.from((lvl.overworldExits as Set<string>) ?? []),
+    };
+    return out;
+  });
+}
+
+/** Reverse of `serialiseDungeonLevels` — rebuild the Sets so the
+ *  in-memory DungeonLevel shape is fully restored. Tolerates
+ *  legacy/partial payloads (missing fields land as empty Sets). */
+export function hydrateDungeonLevels(serialised: unknown[]): unknown[] {
+  return serialised.map((raw) => {
+    const lvl = raw as Record<string, unknown>;
+    return {
+      ...lvl,
+      openedChests: new Set<string>(
+        (lvl.openedChests as ReadonlyArray<string>) ?? [],
+      ),
+      triggeredTraps: new Set<string>(
+        (lvl.triggeredTraps as ReadonlyArray<string>) ?? [],
+      ),
+      detectedTraps: new Set<string>(
+        (lvl.detectedTraps as ReadonlyArray<string>) ?? [],
+      ),
+      exploredTiles: new Set<string>(
+        (lvl.exploredTiles as ReadonlyArray<string>) ?? [],
+      ),
+      overworldExits: new Set<string>(
+        (lvl.overworldExits as ReadonlyArray<string>) ?? [],
+      ),
+    };
+  });
+}

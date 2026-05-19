@@ -27,6 +27,8 @@ import { AnimationPicker } from "./AnimationPicker";
 import { getAnimationFieldConfig } from "./animationFields";
 import { CounterPicker } from "./CounterPicker";
 import { getCounterFieldConfig } from "./counterFields";
+import { MapPicker } from "./MapPicker";
+import { getMapFieldConfig } from "./mapFields";
 
 type FieldKind =
   | "string"
@@ -57,6 +59,9 @@ function inferKind(
   // Counter-typed fields are strings too (Counter id). The CounterPicker
   // handles a null/"" value as "(none)".
   if (getCounterFieldConfig(key, modelKey) !== null) return "string";
+  // Map-typed fields (e.g., spawn.custom_map, encounter.custom_map)
+  // are Map id strings. The MapPicker handles null/"" as "(none)".
+  if (getMapFieldConfig(key, modelKey) !== null) return "string";
   // Prefer the actual record's value; fall back to a sample peer.
   const v = value ?? sample;
   if (Array.isArray(v) || (v !== null && typeof v === "object")) return "json";
@@ -372,6 +377,25 @@ function FieldRow({
         </label>
         <div className="flex-1">
           <CounterPicker value={value} onChange={onChange} />
+          {error ? <p className="mt-1 text-xs text-ember">{error}</p> : null}
+        </div>
+      </div>
+    );
+  }
+
+  // Map-typed string fields (spawn.custom_map, encounter.custom_map)
+  // get the MapPicker — reads maps.json and writes the picked Map id.
+  const mapConfig =
+    spec.kind === "string" ? getMapFieldConfig(spec.key, modelKey) : null;
+  if (mapConfig) {
+    return (
+      <div className="flex items-start gap-3">
+        <label htmlFor={spec.key} className={labelClasses}>
+          {spec.key}
+          <span className="block text-[10px] text-parchment/40">map</span>
+        </label>
+        <div className="flex-1">
+          <MapPicker value={value} onChange={onChange} />
           {error ? <p className="mt-1 text-xs text-ember">{error}</p> : null}
         </div>
       </div>

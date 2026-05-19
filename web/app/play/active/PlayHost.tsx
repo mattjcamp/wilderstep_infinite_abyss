@@ -41,6 +41,27 @@ import { StaticModuleSource } from "@/data_model/StaticModuleSource";
 import { LockDialogOverlay } from "@/editor/LockDialogOverlay";
 import type { CombatResolved } from "@/battle/scenes/CombatScene";
 import { PlayCombatHost } from "./PlayCombatHost";
+import { buildArenaCells } from "@/play/buildArenaCells";
+import { generateDungeonFromRecord } from "@/sim/dungeon/generateFromRecord";
+import {
+  dungeonEncounterRefs,
+  dungeonLevelToMap,
+  floorMapId,
+  EXIT_TO_OVERWORLD_MAP_ID,
+} from "@/sim/dungeon/dungeonLevelToMap";
+import {
+  clearAllDungeonSessions,
+  getOrCreateDungeonSession,
+  getFloorMutations,
+  hydrateDungeonLevels,
+  peekDungeonSession,
+  serialiseDungeonLevels,
+  writeFloorMutations,
+} from "@/sim/dungeon/dungeonSession";
+import type { DungeonRecord } from "@/sim/dungeon/types";
+import type { DungeonLevel } from "@/battle/world/Dungeon";
+import { DUNGEON_SPRITE_KEYS } from "@/sim/dungeon/tileMapping";
+import type { EncounterTemplate } from "@/battle/world/Encounters";
 import {
   MapSimulation,
   type LockEncounterOptions,
@@ -136,8 +157,38 @@ interface PlayItem {
   icon?: string;
 }
 
+/** Session-only state set when the party is exploring a dungeon.
+ *  Lives in a ref on PlayHost — not persisted to the save (a tab
+ *  close inside a dungeon drops the party back at the overworld
+ *  entrance on next load). Tracks which dungeon record we generated
+ *  from, the per-floor levels (regenerated once, cached for the
+ *  session via dungeonSession), the current floor index, the
+ *  overworld return cell, and the cell to mount the party on this
+ *  floor. */
+interface DungeonState {
+  dungeonId: string;
+  seed: number;
+  levels: DungeonLevel[];
+  floorIdx: number;
+  /** Where on the overworld to drop the party when they exit. */
+  returnTo: { mapId: string; col: number; row: number };
+  /** Cell to land on when the floor mounts. Set by dungeon_entered
+   *  (entrance of F0) and floor transitions (entry of the new floor).
+   *  Consumed during the Phaser mount; survives across reloads of
+   *  the *same* floor because the load effect re-reads it. */
+  startAt: { col: number; row: number };
+}
+
 interface LoadedCatalog {
   map: PlayMapRecord;
+  /** Every map in the module's maps catalog — used to resolve a
+   *  spawn / encounter's `custom_map` field to an arena grid at
+   *  combat-open time. Grids are NOT hydrated against the palette
+   *  here (the world map is the only one that needs that for
+   *  WorldRenderer); buildArenaCells reads `sprite` / `walkable` /
+   *  `obstructs` / `light_*` directly off the cells, all of which
+   *  v2 already materializes inline on every painted cell. */
+  allMaps: PlayMapRecord[];
   /** Palette (map_tiles) — used for the destroy-lair fallback and
    *  cell-prototype hydration. */
   palette: PlayCell[];
@@ -148,6 +199,10 @@ interface LoadedCatalog {
   monsters: SimMonsterRef[];
   encounters: SimEncounterRef[];
   spawns: SimSpawn[];
+  /** Authored dungeons catalog. Resolved at dungeon_entered time —
+   *  the host looks up the matching record, generates its levels,
+   *  and swaps the world map for the dungeon's first floor. */
+  dungeons: DungeonRecord[];
   knockSpell: SimSpell | null;
   /** Items catalog — used to resolve `cell.item` overlays to their
    *  icon sprite (`item/<icon>.png`). Kernel doesn't read this
@@ -197,6 +252,12 @@ export function PlayHost() {
   const clockRef = useRef(0);
   const rendererRef = useRef<WorldRenderer | null>(null);
   const overlaysOpenRef = useRef(false);
+  /** Session-only dungeon state. Null on the overworld. Populated
+   *  when a `dungeon_entered` event lands; cleared when the party
+   *  exits through stairs at F0 or stairs-down on the bottom floor.
+   *  Read by the load effect (to overlay the catalog with the
+   *  dungeon's floor) and by `saveCurrent` / `handleLinked`. */
+  const dungeonStateRef = useRef<DungeonState | null>(null);
   useEffect(() => {
     // Both modal lock-dialog AND active combat gate keyboard movement
     // through the same ref so the world sim freezes under either.
@@ -213,9 +274,60 @@ export function PlayHost() {
         return;
       }
       saveRef.current = save;
+      // Rehydrate dungeon state from the save before catalog
+      // assembly — `currentDungeon` on the party means the player
+      // saved (or last left) inside a dungeon, and the floor
+      // catalog needs to be in place before Phaser mounts. The
+      // in-memory dungeonSession store is also primed here so the
+      // same rolled layout the save captured comes back; no fresh
+      // generation runs on reload.
+      const cdRaw = save.party.currentDungeon;
+      const persistedRaw = cdRaw ? save.dungeons?.[cdRaw.dungeonId] : null;
+      if (cdRaw && persistedRaw && !dungeonStateRef.current) {
+        const hydratedLevels = hydrateDungeonLevels(
+          persistedRaw.levels,
+        ) as DungeonLevel[];
+        const session = getOrCreateDungeonSession(
+          cdRaw.dungeonId,
+          persistedRaw.seed,
+          () => hydratedLevels,
+        );
+        // Replay per-floor mutations into the in-memory session
+        // store so the kernel mount picks them up via
+        // `getFloorMutations`.
+        for (const f of persistedRaw.floors) {
+          writeFloorMutations(session, f.floorIdx, {
+            unlockedCells: new Set(f.state.unlockedCells),
+            defeatedEncounters: new Set(f.state.defeatedEncounters),
+            destroyedLairs: new Set(f.state.destroyedLairs),
+          });
+        }
+        dungeonStateRef.current = {
+          dungeonId: cdRaw.dungeonId,
+          seed: persistedRaw.seed,
+          levels: hydratedLevels,
+          floorIdx: cdRaw.floorIdx,
+          returnTo: cdRaw.returnTo,
+          startAt: { col: cdRaw.col, row: cdRaw.row },
+        };
+      } else if (!cdRaw && dungeonStateRef.current) {
+        // Defensive: a save that explicitly cleared currentDungeon
+        // (e.g. EndScreen → new game) should also drop the live
+        // ref so the next mount starts clean on the overworld.
+        dungeonStateRef.current = null;
+      }
+
       try {
-        const catalog = await loadCatalog(save);
+        const baseCatalog = await loadCatalog(save);
         if (cancelled) return;
+        // Overlay the dungeon's current floor when the party is
+        // inside a dungeon. Both the dungeon mount and the
+        // overworld mount run through the same Phaser scene below
+        // — the overlay just swaps the grid + encounters the
+        // kernel sees.
+        const catalog = dungeonStateRef.current
+          ? buildDungeonCatalog(baseCatalog, dungeonStateRef.current)
+          : baseCatalog;
         setState({ kind: "ok", catalog, save });
       } catch (e) {
         if (cancelled) return;
@@ -237,6 +349,40 @@ export function PlayHost() {
     const save = saveRef.current;
     const sim = simRef.current;
     if (!save || !sim) return;
+    // While inside a dungeon, persist the dungeon's state instead
+    // of the overworld map's. The overworld save's `currentMapId`
+    // still points at the entrance map (where the party will
+    // re-emerge); writing the kernel's snapshot under that key
+    // would corrupt the saved overworld state. Instead we update
+    // `save.party.currentDungeon` (live floor + cell) and mirror
+    // the in-memory session into `save.dungeons[id]` so a reload
+    // mid-floor lands the party right back where they were with
+    // the rolled layout intact.
+    const dungeonNow = dungeonStateRef.current;
+    if (dungeonNow) {
+      const session = peekDungeonSession(dungeonNow.dungeonId);
+      const snapshot = session ? snapshotDungeonForSave(session) : null;
+      const next: WorldSave = {
+        ...save,
+        clockMinutes: clockRef.current,
+        party: {
+          ...save.party,
+          currentDungeon: {
+            dungeonId: dungeonNow.dungeonId,
+            floorIdx: dungeonNow.floorIdx,
+            col: sim.snapshot().pos.col,
+            row: sim.snapshot().pos.row,
+            returnTo: dungeonNow.returnTo,
+          },
+        },
+        dungeons: snapshot
+          ? { ...save.dungeons, [dungeonNow.dungeonId]: snapshot }
+          : save.dungeons,
+      };
+      saveWorld(next);
+      saveRef.current = next;
+      return;
+    }
     const snap = sim.snapshot();
     // Per-map mutations for the current map.
     // Boat positions serialise to a plain Record for JSON-safety.
@@ -302,6 +448,13 @@ export function PlayHost() {
       // can paint their overlay sprite (sword, potion, scroll, etc.)
       // on top of the floor tile.
       const spriteKeys = new Set<string>();
+      // Dungeon floors share a baseline set of sprites the prototype
+      // table touches even when a given cell didn't get them assigned
+      // (chests, locked doors, torches). Preload them up front so a
+      // mid-game floor transition doesn't blink missing tiles.
+      if (dungeonStateRef.current) {
+        for (const key of DUNGEON_SPRITE_KEYS) spriteKeys.add(key);
+      }
       for (const row of catalog.map.grid) {
         for (const cell of row) {
           if (cell.sprite) spriteKeys.add(cell.sprite);
@@ -404,7 +557,13 @@ export function PlayHost() {
             // day at noon, night past dusk, twilight in the
             // transition windows. Subsequent ticks update via
             // renderer.setLightingMode after each move.
-            initialLightingMode: lightingModeFromClock(save.clockMinutes),
+            // Dungeons are dim by definition — every floor renders
+            // in night mode so torches throw real light pools and
+            // the rest stays in shadow. The overworld inherits the
+            // saved clock as before.
+            initialLightingMode: dungeonStateRef.current
+              ? "night"
+              : lightingModeFromClock(save.clockMinutes),
             initialInfravisionActive: !!save.party.infravision_active,
             // Tint item overlays in sync with the floor cell they
             // sit on so a sword on a dim corridor reads dim too,
@@ -712,6 +871,28 @@ export function PlayHost() {
               renderer.setPartyInfravisionActive(active),
           };
 
+          // While the party is inside a dungeon the per-floor
+          // entry cell wins over the save's overworld coords —
+          // those still point at the dungeon-entrance cell on the
+          // overworld (where the party will return on exit) and
+          // would land them off-grid otherwise. Floor mutations
+          // come from the in-memory dungeon session so destroyed
+          // lairs / picked locks / defeated encounters survive
+          // floor transitions in both directions.
+          const dungeonNow = dungeonStateRef.current;
+          const dungeonMutations = dungeonNow
+            ? getFloorMutations(
+                getOrCreateDungeonSession(
+                  dungeonNow.dungeonId,
+                  dungeonNow.seed,
+                  () => dungeonNow.levels,
+                ),
+                dungeonNow.floorIdx,
+              )
+            : null;
+          const startAt = dungeonNow
+            ? dungeonNow.startAt
+            : { col: save.party.col, row: save.party.row };
           sim = new MapSimulation({
             grid: catalog.map.grid as unknown as SimGrid,
             party: partyForSim,
@@ -728,10 +909,14 @@ export function PlayHost() {
             },
             classNameById,
             bridge,
-            startAt: { col: save.party.col, row: save.party.row },
-            initialUnlockedCells,
-            initialDefeatedEncounters,
-            initialDestroyedLairs,
+            startAt,
+            initialUnlockedCells:
+              dungeonMutations?.unlockedCells ?? initialUnlockedCells,
+            initialDefeatedEncounters:
+              dungeonMutations?.defeatedEncounters ??
+              initialDefeatedEncounters,
+            initialDestroyedLairs:
+              dungeonMutations?.destroyedLairs ?? initialDestroyedLairs,
             initialBoatPositions,
             initialOnBoat: save.party.onBoat,
             initialCurrentBoatSprite: save.party.currentBoatSprite,
@@ -751,7 +936,13 @@ export function PlayHost() {
               clockRef.current = advanced.totalMinutes;
               setClockMinutes(advanced.totalMinutes);
               const afterMode = lightingModeFromClock(advanced.totalMinutes);
-              if (afterMode !== beforeMode) {
+              if (
+                afterMode !== beforeMode &&
+                !dungeonStateRef.current
+              ) {
+                // Suspended in dungeons — every dungeon floor stays
+                // in "night" mode regardless of the world clock so
+                // torch pools paint correctly.
                 rendererRef.current?.setLightingMode(afterMode);
               }
               // Persist every step. Without this the save only
@@ -787,13 +978,7 @@ export function PlayHost() {
               return;
             }
             if (ev.kind === "dungeon_entered") {
-              // Phase 4 territory — surface a stub log so the
-              // designer knows the trigger fired without crashing
-              // through into a half-built dungeon path.
-              // eslint-disable-next-line no-console
-              console.info(
-                `[play] dungeon_entered "${ev.dungeonId}" (Phase 4b)`,
-              );
+              handleDungeonEntered(ev.dungeonId, ev.returnPos);
               return;
             }
             if (ev.kind === "spawn_encountered") {
@@ -802,6 +987,27 @@ export function PlayHost() {
               // listener is gated by overlaysOpenRef), but the canvas
               // is hidden while PlayCombatHost takes the screen.
               setCombat(ev.options);
+              return;
+            }
+            if (ev.kind === "state") {
+              // Mirror the kernel's mutation state into the dungeon
+              // session every tick when the party is in a dungeon.
+              // Floor mutations (destroyed lairs are a no-op here,
+              // but picked locks and defeated encounters matter)
+              // need to survive floor transitions in both
+              // directions.
+              const dungeonNow = dungeonStateRef.current;
+              if (dungeonNow && sim) {
+                const session = peekDungeonSession(dungeonNow.dungeonId);
+                if (session) {
+                  const snap = sim.snapshot();
+                  writeFloorMutations(session, dungeonNow.floorIdx, {
+                    unlockedCells: new Set(snap.unlockedCells),
+                    defeatedEncounters: new Set(snap.defeatedEncounters),
+                    destroyedLairs: new Set(snap.destroyedLairs),
+                  });
+                }
+              }
               return;
             }
             if (
@@ -828,12 +1034,217 @@ export function PlayHost() {
       });
     })();
 
+    /** Resolve a dungeon record's catalog id, generate its levels
+     *  (or fetch the cached session), and remount the world against
+     *  the entrance floor. The overworld save's currentMapId stays
+     *  put — we use the in-memory `dungeonStateRef` to drive the
+     *  swap so closing the tab mid-dungeon doesn't strand the
+     *  player on a synthetic floor id with no session backing it. */
+    function handleDungeonEntered(
+      dungeonId: string,
+      returnPos: { col: number; row: number },
+    ) {
+      const save = saveRef.current;
+      const cat = state.kind === "ok" ? state.catalog : null;
+      if (!save || !cat) return;
+      const record = cat.dungeons.find((d) => d.id === dungeonId);
+      if (!record) {
+        // eslint-disable-next-line no-console
+        console.warn(
+          `[play] dungeon_entered: no dungeon record for id "${dungeonId}"`,
+        );
+        return;
+      }
+      // Persistent per-game seed: if the dungeon already has a
+      // SavedDungeonSession on the save, reuse its seed (and its
+      // already-generated levels via the in-memory store
+      // pre-population that runs in the load effect). Otherwise
+      // roll a fresh seed and bind it to the save below — that's
+      // what makes this dungeon "fixed for the rest of the game".
+      const persisted = save.dungeons?.[dungeonId];
+      const seed = persisted
+        ? persisted.seed
+        : Math.floor(Math.random() * 0x7fffffff);
+      // Encounter table + monster-difficulty lookup let the
+      // generator populate rooms with combat. Without them the
+      // floor is empty and every dungeon feels the same.
+      // SimEncounterRef carries only the sim-facing fields, but
+      // the raw JSON records (which the loader cast through to
+      // SimEncounterRef) do carry `area` — read it back off the
+      // unknown shape so the generator's area filter still works.
+      const encountersByArea: Record<string, EncounterTemplate[]> = {};
+      for (const e of cat.encounters) {
+        const area =
+          (e as unknown as { area?: string }).area ?? "dungeon";
+        (encountersByArea[area] ??= []).push(
+          e as unknown as EncounterTemplate,
+        );
+      }
+      const monsterDifficulty = (id: string): string | undefined =>
+        (cat.monsters.find((m) => m.id === id) as
+          | (SimMonsterRef & { difficulty?: string })
+          | undefined)?.difficulty;
+      const session = getOrCreateDungeonSession(dungeonId, seed, () =>
+        generateDungeonFromRecord(record, {
+          seed,
+          encounters: encountersByArea,
+          monsterDifficulty,
+        }),
+      );
+      const lvl0 = session.levels[0];
+      if (!lvl0) {
+        // eslint-disable-next-line no-console
+        console.warn(
+          `[play] dungeon_entered: "${dungeonId}" has no floors`,
+        );
+        return;
+      }
+      // Save the overworld's mutations BEFORE the swap so re-emerging
+      // from the dungeon resumes the right cleared / unlocked state.
+      saveCurrent();
+      const returnTo = {
+        mapId: save.party.currentMapId,
+        col: returnPos.col,
+        row: returnPos.row,
+      };
+      dungeonStateRef.current = {
+        dungeonId,
+        seed: session.seed,
+        levels: session.levels,
+        floorIdx: 0,
+        returnTo,
+        startAt: { col: lvl0.entryCol, row: lvl0.entryRow },
+      };
+      // Persist the dungeon to the save so a reload mid-dungeon
+      // (or a tab close + return) lands the party back in the
+      // *same* dungeon with the *same* rolled layout — the seed
+      // bound here is what the rest of the game session will see.
+      const dungeonSnapshot = snapshotDungeonForSave(session);
+      const nextSave: WorldSave = {
+        ...save,
+        clockMinutes: clockRef.current,
+        party: {
+          ...save.party,
+          currentDungeon: {
+            dungeonId,
+            floorIdx: 0,
+            col: lvl0.entryCol,
+            row: lvl0.entryRow,
+            returnTo,
+          },
+        },
+        dungeons: dungeonSnapshot
+          ? { ...save.dungeons, [dungeonId]: dungeonSnapshot }
+          : save.dungeons,
+      };
+      saveWorld(nextSave);
+      saveRef.current = nextSave;
+      // Bump the reload key so the load effect re-runs, the dungeon
+      // overlay kicks in via buildDungeonCatalog, and the Phaser
+      // game remounts against the synthetic floor.
+      setReloadKey((k) => k + 1);
+    }
+
     /** Handle a link event from the kernel. Saves the current map's
      *  mutations + party position FIRST, then either teleports (same
      *  map) or bumps the reload key (cross-map). */
     function handleLinked(link: { map_id: string; x: number; y: number }) {
       const save = saveRef.current;
       if (!save) return;
+      // ── Dungeon link handling ──────────────────────────────────────
+      // Stairs cells in a generated dungeon link to synthetic map
+      // ids (see `dungeonLevelToMap`). Recognise those before the
+      // overworld branches so they don't try to fetch the link from
+      // maps.json.
+      const dungeonNow = dungeonStateRef.current;
+      if (dungeonNow && link.map_id === EXIT_TO_OVERWORLD_MAP_ID) {
+        // Drop the dungeon overlay and restore the overworld at the
+        // saved return cell. Mirror the dungeon's latest state into
+        // save.dungeons[id] BEFORE exiting so a re-entry next
+        // session resumes with the right cleared rooms / unlocked
+        // doors. We keep save.dungeons[id] populated even after
+        // exit — that's how the seed stays bound for the rest of
+        // the game.
+        const session = peekDungeonSession(dungeonNow.dungeonId);
+        const snapshot = session ? snapshotDungeonForSave(session) : null;
+        const next: WorldSave = {
+          ...save,
+          clockMinutes: clockRef.current,
+          party: {
+            ...save.party,
+            currentMapId: dungeonNow.returnTo.mapId,
+            col: dungeonNow.returnTo.col,
+            row: dungeonNow.returnTo.row,
+            currentDungeon: undefined,
+          },
+          dungeons: snapshot
+            ? { ...save.dungeons, [dungeonNow.dungeonId]: snapshot }
+            : save.dungeons,
+        };
+        saveWorld(next);
+        saveRef.current = next;
+        dungeonStateRef.current = null;
+        setReloadKey((k) => k + 1);
+        return;
+      }
+      if (dungeonNow) {
+        // Floor transition — `floorMapId(d, n)` shape. Pull n out
+        // and remount on that floor's entrance cell. Floor mutations
+        // for both directions live in the session store so the
+        // descend / ascend round-trip preserves state on each floor.
+        const match = link.map_id.match(/_f(\d+)__$/);
+        const targetFloor = match
+          ? Number.parseInt(match[1], 10)
+          : Number.NaN;
+        if (
+          Number.isFinite(targetFloor) &&
+          link.map_id === floorMapId(dungeonNow.dungeonId, targetFloor)
+        ) {
+          const lvl = dungeonNow.levels[targetFloor];
+          if (lvl) {
+            dungeonStateRef.current = {
+              ...dungeonNow,
+              floorIdx: targetFloor,
+              // entryCol/entryRow is the floor's stairs-up cell —
+              // works for both descending (player lands on the
+              // stairs-up of the new floor) and ascending (same,
+              // a slight content nit but matches DungeonSimMount).
+              startAt: { col: lvl.entryCol, row: lvl.entryRow },
+            };
+            // Mirror the latest in-memory session into the save so
+            // a reload mid-transition (or right after) resumes on
+            // the new floor with the prior floor's mutations
+            // preserved.
+            const session = peekDungeonSession(dungeonNow.dungeonId);
+            const snapshot = session
+              ? snapshotDungeonForSave(session)
+              : null;
+            const next: WorldSave = {
+              ...save,
+              clockMinutes: clockRef.current,
+              party: {
+                ...save.party,
+                currentDungeon: {
+                  dungeonId: dungeonNow.dungeonId,
+                  floorIdx: targetFloor,
+                  col: lvl.entryCol,
+                  row: lvl.entryRow,
+                  returnTo: dungeonNow.returnTo,
+                },
+              },
+              dungeons: snapshot
+                ? { ...save.dungeons, [dungeonNow.dungeonId]: snapshot }
+                : save.dungeons,
+            };
+            saveWorld(next);
+            saveRef.current = next;
+            setReloadKey((k) => k + 1);
+            return;
+          }
+        }
+        // Unknown synthetic id while in a dungeon — fall through to
+        // the normal handler, which will log a missing-map error.
+      }
       if (link.map_id === save.party.currentMapId) {
         // Same-map portal — teleport in place. We still save the
         // post-teleport position so a reload puts the party on the
@@ -1063,21 +1474,34 @@ export function PlayHost() {
           moduleId={state.save.moduleId}
           monsterIds={combat.monsters}
           save={state.save}
-          // `arenaCells` intentionally omitted — combat falls back to
-          // the generic green-field arena until per-encounter arena
-          // maps are authored (encounter.arenaId, future). The
-          // `buildArenaCells` helper is ready in src/play/ for that
-          // wiring; cropping the world map here surfaced the wrong
-          // pattern (a fight on the world's terrain mid-step) before
-          // arena-map authoring landed.
+          // If the spawn / encounter authored a `custom_map`, resolve
+          // it against the module's maps catalog and feed the
+          // CombatScene a cropped 18×16 window of that authored grid.
+          // Centering on the map's midpoint biases the action toward
+          // the cosmetic centre of the authored arena (the source
+          // cell coords are world coords — irrelevant once we've
+          // swapped grids). Unknown ids and null fall through to the
+          // default generic green-field arena.
+          arenaCells={resolveCustomArenaCells(
+            combat.customMapId,
+            state.catalog?.allMaps ?? [],
+          )}
           //
-          // Time-of-day → darkness: when the world is in twilight or
-          // night, the fight inherits the dim/dark ambient. Day
-          // fights stay bright. Read off the live clock so an
-          // encounter triggered just after dusk reads as a dusk
-          // fight, not whatever the lighting was a beat ago.
+          // Darkness inherits from the *world renderer's current
+          // lighting mode* at encounter time — the battle should
+          // feel like a continuation of the map the party was on:
+          //   - day  → bright battle
+          //   - twilight / night → dark battle
+          // Reading off the live renderer (rather than recomputing
+          // from the clock here) means any future signal that
+          // overrides the mode — e.g., interior maps authored as
+          // always-dark — will propagate to combat automatically:
+          // whatever the world view is showing is what the fight
+          // shows. The arena map's own torches are decor only; they
+          // never force darkness on.
           darkness={
-            lightingModeFromClock(clockMinutes) !== "day"
+            (rendererRef.current?.lightingMode ??
+              lightingModeFromClock(clockMinutes)) !== "day"
           }
           // Race-derived infravision in combat. Always "armed" — the
           // combat scene's per-actor race check (e.g. dwarves) +
@@ -1139,6 +1563,7 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
     spawnsLayers,
     spellsLayers,
     itemsLayers,
+    dungeonsLayers,
   ] = await Promise.all([
     src.loadModelLayers(moduleId, "map_tiles"),
     src.loadModelLayers(moduleId, "maps"),
@@ -1151,6 +1576,7 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
     src.loadModelLayers(moduleId, "spawns").catch(() => null),
     src.loadModelLayers(moduleId, "spells").catch(() => null),
     src.loadModelLayers(moduleId, "items").catch(() => null),
+    src.loadModelLayers(moduleId, "dungeons").catch(() => null),
   ]);
 
   const paletteDoc = (mergeModel(
@@ -1269,9 +1695,15 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
     itemsLayers?.inherited ?? [],
     itemsLayers?.ownFile ?? null,
   ) ?? {}) as { items?: PlayItem[] };
+  const dungeonsDoc = (mergeModel(
+    "dungeons",
+    dungeonsLayers?.inherited ?? [],
+    dungeonsLayers?.ownFile ?? null,
+  ) ?? {}) as { dungeons?: DungeonRecord[] };
 
   return {
     map,
+    allMaps,
     palette,
     characters,
     races: racesDoc.races ?? [],
@@ -1280,8 +1712,118 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
     monsters: monstersDoc.monsters ?? [],
     encounters: encountersDoc.encounters ?? [],
     spawns: spawnsDoc.spawns ?? [],
+    dungeons: dungeonsDoc.dungeons ?? [],
     knockSpell,
     items: itemsDoc.items ?? [],
+  };
+}
+
+/**
+ * Resolve a spawn / encounter's `custom_map` Map id to the
+ * `arenaCells` matrix CombatScene consumes, or `undefined` when the
+ * id is null / unknown (so the scene falls back to the generic
+ * green-field arena).
+ *
+ * The custom map IS the arena, so we crop its grid centered on its
+ * own midpoint rather than around any world coord. Smaller-than-18×16
+ * maps null-pad at the edges via buildArenaCells's normal behavior.
+ */
+function resolveCustomArenaCells(
+  customMapId: string | null,
+  maps: ReadonlyArray<PlayMapRecord>,
+):
+  | ReadonlyArray<ReadonlyArray<ReturnType<typeof buildArenaCells>[number][number]>>
+  | undefined {
+  if (!customMapId) return undefined;
+  const map = maps.find((m) => m.id === customMapId);
+  if (!map) return undefined;
+  const centerCol = Math.floor((map.width || map.grid[0]?.length || 0) / 2);
+  const centerRow = Math.floor((map.height || map.grid.length) / 2);
+  return buildArenaCells(map.grid, centerCol, centerRow);
+}
+
+
+/**
+ * Mirror an in-memory DungeonSession into the JSON-safe
+ * SavedDungeonSession shape WorldSave expects. Flattens the levels'
+ * internal Sets (openedChests, triggeredTraps, etc.) and every
+ * floor's mutation Sets so the result round-trips through
+ * localStorage cleanly. Pure — produces a fresh object.
+ */
+function snapshotDungeonForSave(
+  session: ReturnType<typeof peekDungeonSession>,
+) {
+  if (!session) return null;
+  const floors = Array.from(session.floors.entries()).map(
+    ([floorIdx, state]) => ({
+      floorIdx,
+      state: {
+        unlockedCells: Array.from(state.unlockedCells),
+        defeatedEncounters: Array.from(state.defeatedEncounters),
+        destroyedLairs: Array.from(state.destroyedLairs),
+      },
+    }),
+  );
+  return {
+    dungeonId: session.dungeonId,
+    seed: session.seed,
+    levels: serialiseDungeonLevels(session.levels as unknown[]),
+    floors,
+  };
+}
+
+/**
+ * Build the catalog the kernel should mount when the party is
+ * inside a dungeon. Overlays the base (overworld) catalog with:
+ *
+ *   - `map` swapped for the current dungeon floor's synthetic map
+ *     (built via `dungeonLevelToMap` from the generated DungeonLevel)
+ *   - `allMaps` extended with that floor record so any inner lookup
+ *     can find it by id
+ *   - `spawns` zeroed — procedurally generated dungeons place their
+ *     monsters as inline encounters, not as lairs
+ *   - `encounters` extended with one synthetic SimEncounterRef per
+ *     placed dungeon monster, sprite-resolved from the monsters
+ *     catalog so the placed-encounter renderer draws the real
+ *     creature instead of a red marker
+ *
+ * Pure — the dungeonStateRef is the caller's concern. The result is
+ * a fresh LoadedCatalog object; the base is not mutated.
+ */
+function buildDungeonCatalog(
+  baseCatalog: LoadedCatalog,
+  dungeon: DungeonState,
+): LoadedCatalog {
+  const lvl = dungeon.levels[dungeon.floorIdx];
+  const dungeonMap = dungeonLevelToMap(lvl, {
+    dungeonId: dungeon.dungeonId,
+    floorIdx: dungeon.floorIdx,
+    totalFloors: dungeon.levels.length,
+  });
+  const spriteByMonsterId = new Map(
+    baseCatalog.monsters.map((m) => [m.id, m.sprite]),
+  );
+  const dungeonEncs: SimEncounterRef[] = dungeonEncounterRefs(
+    lvl,
+    spriteByMonsterId,
+  ).map((e) => ({
+    id: e.id,
+    name: e.name,
+    monster_party_tile: e.monster_party_tile,
+    monsters: e.monsters,
+  }));
+  // The synthetic dungeon map record is structurally compatible with
+  // PlayMapRecord — id / name / width / height / grid — and the cells
+  // already carry the same shape PlayCell expects. Cast through to
+  // satisfy the typed shell without dragging the DungeonMapCell type
+  // into the overworld surface.
+  const asPlayMap = dungeonMap as unknown as PlayMapRecord;
+  return {
+    ...baseCatalog,
+    map: asPlayMap,
+    allMaps: [...baseCatalog.allMaps, asPlayMap],
+    spawns: [],
+    encounters: [...baseCatalog.encounters, ...dungeonEncs],
   };
 }
 

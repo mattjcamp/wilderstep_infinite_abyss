@@ -51,6 +51,11 @@ export interface SimSpawn {
   xp_reward: number;
   gold_reward: number;
   loot: string[];
+  /** Optional id of a Map (from maps.json) that should back this
+   *  lair's boss fight as the battle arena. Null / undefined falls
+   *  back to the generic green-field arena. Authored via the editor's
+   *  MapPicker on the `custom_map` field. */
+  custom_map?: string | null;
 }
 
 /** A live roamer on the map — a monster that one of the lairs spat

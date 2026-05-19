@@ -29,6 +29,7 @@ import type { CharacterRecord } from "@/editor/CharacterSheet";
 import { clockFromDate } from "@/battle/world/GameTime";
 import { setActiveModule, loadModuleConfig } from "@/battle/world/Module";
 import { saveWorld } from "@/play/save";
+import { clearAllDungeonSessions } from "@/sim/dungeon/dungeonSession";
 import type {
   SavedCharacterState,
   SavedPartyState,
@@ -115,6 +116,12 @@ export function BeginningScreen({
       setCommitting(true);
       try {
         const save = await assembleInitialSave(moduleId, draft);
+        // Flush the in-memory dungeon session store before
+        // committing the new save — a previous run in the same
+        // tab could otherwise re-use its rolled dungeon layouts
+        // here even though the new save's `dungeons: {}` map is
+        // empty.
+        clearAllDungeonSessions();
         saveWorld(save);
         // Clear the draft so a back-button trip doesn't replay.
         try {

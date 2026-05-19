@@ -194,9 +194,32 @@ export class Combat {
 
   private rng: RNG;
 
-  constructor(party: Combatant[], enemies: Combatant[], rng: RNG = defaultRng) {
+  constructor(
+    party: Combatant[],
+    enemies: Combatant[],
+    rng: RNG = defaultRng,
+    /**
+     * Optional per-cell blocked predicate used during initial
+     * formation placement. When provided, `layoutFormations` filters
+     * the candidate cells in each side's band by it so combatants
+     * don't spawn on top of unwalkable terrain (rocks, trees, hedges,
+     * etc.) carried in the arena map. The same predicate gets
+     * installed permanently after construction via
+     * `setBlockedPredicate` for movement / AI; passing it here just
+     * makes initial placement honor the same rules. When omitted, the
+     * placer falls back to the original full-band scatter.
+     */
+    placementBlocked?: (col: number, row: number) => boolean,
+  ) {
     this.rng = rng;
     this.combatants = [...party, ...enemies];
+    if (placementBlocked) {
+      // Install up front so layoutFormations can read it via
+      // `this.blockedPredicate`. CombatScene's later call replaces it
+      // (with an identical body, in practice) but doing it here keeps
+      // tryMove / AI honest if the caller forgets the second hookup.
+      this.blockedPredicate = placementBlocked;
+    }
     this.layoutFormations(party, enemies);
 
     const rolls: InitiativeRoll[] = this.combatants.map((c) => {
@@ -253,19 +276,37 @@ export class Combat {
     colMax: number,
     rows: number[],
   ): void {
-    const cells: GridPos[] = [];
+    // Two pools: walkable cells go first; the rest are kept as a
+    // fallback for the edge case where an arena map authored heavy
+    // obstruction in a side band would otherwise leave combatants
+    // unplaced. Filtering uses `isBlocked` so the perimeter wall +
+    // any arena-map `walkable: false` cells are skipped together.
+    const walkable: GridPos[] = [];
+    const blocked: GridPos[] = [];
     for (const r of rows) {
-      for (let c = colMin; c <= colMax; c++) cells.push({ col: c, row: r });
+      for (let c = colMin; c <= colMax; c++) {
+        if (this.isBlocked(c, r)) blocked.push({ col: c, row: r });
+        else walkable.push({ col: c, row: r });
+      }
     }
     // Fisher-Yates with Math.random — deliberately NOT this.rng so
     // the seeded combat RNG sequence (d20s, damage rolls, init) stays
     // independent of formation shuffling. Tests pin combat RNG with
     // mulberry32 and check positions only as bands, not exact cells,
     // so non-deterministic placement is fine.
-    for (let i = cells.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [cells[i], cells[j]] = [cells[j], cells[i]];
-    }
+    const shuffle = (arr: GridPos[]): void => {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+    };
+    shuffle(walkable);
+    shuffle(blocked);
+    // Concatenate so walkable cells are consumed first; blocked cells
+    // only come into play when the band is too crowded — which on the
+    // ARENA_COLS-2 wide × 4 row default bands shouldn't happen unless
+    // an author intentionally packed obstacles wall-to-wall.
+    const cells = walkable.concat(blocked);
     combatants.forEach((c, i) => {
       c.position = cells[i] ?? { col: colMin, row: rows[0] };
     });

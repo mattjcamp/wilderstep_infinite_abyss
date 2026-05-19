@@ -1,5 +1,5 @@
 {
-  "_comment": "Encounter catalog (real data drives the schema). Each encounter is a named monster roster used by the random-encounter sampler. `area` is the discriminator: \"dungeon\", \"house_basement\", or \"overworld\". `level` is the difficulty band (1–8); the sampler filters by min/max level. `weight` controls the relative pick probability inside an eligible band. `monsters[]` entries are Monster `id` strings (snake_case); duplicates are intentional — they spawn multiple instances of the same monster. `monster_party_tile` is the sprite shown for the lead monster on the overworld map (empty falls back to monsters[0]). v1 nested encounters under area-bucket keys; v2 flattens them into one array. Some v1 encounters share names across areas — those get area-suffixed ids here. Dropped: `terrain` (parsed but no v1 consumer).",
+  "_comment": "Encounter catalog (real data drives the schema). Each encounter is a named monster roster used by the random-encounter sampler. `area` is the discriminator: \"dungeon\", \"house_basement\", or \"overworld\". `level` is the difficulty band (1–8); the sampler filters by min/max level. `weight` controls the relative pick probability inside an eligible band. `monsters[]` entries are Monster `id` strings (snake_case); duplicates are intentional — they spawn multiple instances of the same monster. `monster_party_tile` is the sprite shown for the lead monster on the overworld map (empty falls back to monsters[0]). v1 nested encounters under area-bucket keys; v2 flattens them into one array. Some v1 encounters share names across areas — those get area-suffixed ids here. Dropped: `terrain` (parsed but no v1 consumer). Optional `custom_map` is a Map `id` — when set, this encounter's battle uses that authored map instead of the default arena.",
   "encounters": [
     {
       "id": "cellar_rats",
@@ -10,7 +10,8 @@
       "monster_party_tile": "monster/giant_rat.png",
       "monsters": [
         "giant_rat"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "rat_nest",
@@ -22,7 +23,8 @@
       "monsters": [
         "giant_rat",
         "giant_rat"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "stray_goblin",
@@ -33,7 +35,8 @@
       "monster_party_tile": "monster/goblin.png",
       "monsters": [
         "goblin"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "goblin_squatters",
@@ -45,7 +48,8 @@
       "monsters": [
         "goblin",
         "giant_rat"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "goblin_ambush",
@@ -58,7 +62,8 @@
         "goblin",
         "goblin",
         "goblin"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "wolf_pack",
@@ -70,7 +75,8 @@
       "monsters": [
         "wolf",
         "wolf"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "goblin_raiders",
@@ -83,7 +89,8 @@
         "goblin",
         "goblin",
         "wolf"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "rat_swarm",
@@ -97,7 +104,8 @@
         "giant_rat",
         "giant_rat",
         "giant_rat"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "skeleton_patrol",
@@ -109,7 +117,8 @@
       "monsters": [
         "skeleton",
         "skeleton"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "shambling_dead",
@@ -121,7 +130,8 @@
       "monsters": [
         "zombie",
         "zombie"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "skeleton_archers",
@@ -133,7 +143,8 @@
       "monsters": [
         "skeleton_archer",
         "skeleton_archer"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "wolves_and_goblins",
@@ -147,7 +158,8 @@
         "wolf",
         "goblin",
         "goblin"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "shaman_s_guard",
@@ -160,7 +172,8 @@
         "orc_shaman",
         "goblin",
         "goblin"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "undead_horde",
@@ -173,7 +186,8 @@
         "skeleton",
         "skeleton",
         "zombie"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "undead_warband",
@@ -186,7 +200,8 @@
         "skeleton",
         "skeleton_archer",
         "zombie"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "orc_scouts",
@@ -198,7 +213,8 @@
       "monsters": [
         "orc",
         "orc"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "mixed_patrol",
@@ -211,7 +227,8 @@
         "orc",
         "skeleton",
         "wolf"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "wild_pack",
@@ -224,7 +241,8 @@
         "wolf",
         "wolf",
         "wolf"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "orc_warband",
@@ -237,7 +255,8 @@
         "orc",
         "orc",
         "orc"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "orc_raiding_party",
@@ -250,7 +269,8 @@
         "orc",
         "orc",
         "orc_shaman"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "dark_coven",
@@ -263,7 +283,8 @@
         "dark_mage",
         "skeleton_archer",
         "skeleton"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "archer_s_nest",
@@ -276,7 +297,8 @@
         "skeleton_archer",
         "skeleton_archer",
         "skeleton_archer"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "troll_den",
@@ -287,7 +309,8 @@
       "monster_party_tile": "monster/troll.png",
       "monsters": [
         "troll"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "orc_with_wolves",
@@ -301,7 +324,8 @@
         "orc",
         "wolf",
         "wolf"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "troll_and_minions",
@@ -314,7 +338,8 @@
         "troll",
         "goblin",
         "goblin"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "dark_patrol",
@@ -327,7 +352,8 @@
         "dark_mage",
         "orc",
         "skeleton_archer"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "cursed_battalion",
@@ -342,7 +368,8 @@
         "skeleton_archer",
         "zombie",
         "zombie"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "orc_siege",
@@ -356,7 +383,8 @@
         "orc",
         "orc",
         "orc_shaman"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "troll_warband",
@@ -368,7 +396,8 @@
       "monsters": [
         "troll",
         "troll"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "dark_conclave",
@@ -381,7 +410,8 @@
         "dark_mage",
         "dark_mage",
         "orc_shaman"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "orc_legion",
@@ -396,7 +426,8 @@
         "orc",
         "orc",
         "orc_shaman"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "necromancer_s_guard",
@@ -411,7 +442,8 @@
         "skeleton",
         "skeleton_archer",
         "skeleton_archer"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "troll_ambush",
@@ -424,7 +456,8 @@
         "troll",
         "orc",
         "orc"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "troll_horde",
@@ -437,7 +470,8 @@
         "troll",
         "troll",
         "troll"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "shadow_army",
@@ -451,7 +485,8 @@
         "dark_mage",
         "troll",
         "orc_shaman"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "undead_apocalypse",
@@ -467,7 +502,8 @@
         "skeleton_archer",
         "zombie",
         "zombie"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "orc_warchief_s_guard",
@@ -483,7 +519,8 @@
         "orc",
         "orc_shaman",
         "orc_shaman"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "troll_kings",
@@ -497,7 +534,8 @@
         "troll",
         "orc_shaman",
         "dark_mage"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "ancient_dragon",
@@ -508,7 +546,8 @@
       "monster_party_tile": "monster/dragon2.png",
       "monsters": [
         "dragon"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "dragon_cultists",
@@ -521,7 +560,8 @@
         "dark_mage",
         "dark_mage",
         "skeleton_archer"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "drake_pack",
@@ -533,7 +573,8 @@
       "monsters": [
         "wyvern",
         "wyvern"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "drake_and_keeper",
@@ -545,7 +586,8 @@
       "monsters": [
         "wyvern",
         "orc_shaman"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "wyrm_blooded_cultists",
@@ -558,7 +600,8 @@
         "dark_mage",
         "dark_mage",
         "troll"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "bone_pit_horde",
@@ -573,7 +616,8 @@
         "skeleton_archer",
         "zombie",
         "zombie"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "lone_ogre",
@@ -584,7 +628,8 @@
       "monster_party_tile": "person/townsperson21.png",
       "monsters": [
         "ogre"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "ogre_and_drake",
@@ -596,7 +641,8 @@
       "monsters": [
         "ogre",
         "wyvern"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "ogre_brutes",
@@ -608,7 +654,8 @@
       "monsters": [
         "ogre",
         "ogre"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "ogre_warband",
@@ -621,7 +668,8 @@
         "ogre",
         "ogre",
         "ogre"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "wailing_spirit",
@@ -632,7 +680,8 @@
       "monster_party_tile": "monster/lark_f2.png",
       "monsters": [
         "banshee"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "banshee_pair",
@@ -644,7 +693,8 @@
       "monsters": [
         "banshee",
         "banshee"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "lich_and_banshee",
@@ -656,7 +706,8 @@
       "monsters": [
         "lich",
         "banshee"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "banshee_choir",
@@ -669,7 +720,8 @@
         "banshee",
         "banshee",
         "banshee"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "cursed_manor",
@@ -682,7 +734,8 @@
         "banshee",
         "banshee",
         "lich"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "haunted_trail",
@@ -694,7 +747,8 @@
       "monsters": [
         "banshee",
         "man_eater"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "predator_s_den",
@@ -707,7 +761,8 @@
         "man_eater",
         "man_eater",
         "wyvern"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "mind_flayer",
@@ -718,7 +773,8 @@
       "monster_party_tile": "monster/daemon1.png",
       "monsters": [
         "mind_flayer"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "mind_flayer_conclave",
@@ -730,7 +786,8 @@
       "monsters": [
         "mind_flayer",
         "mind_flayer"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "vampire_lord",
@@ -741,7 +798,8 @@
       "monster_party_tile": "person/wizard5.png",
       "monsters": [
         "vampire_lord"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "vampire_s_court",
@@ -753,7 +811,8 @@
       "monsters": [
         "vampire_lord",
         "vampire_lord"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "stone_sentinel",
@@ -764,7 +823,8 @@
       "monster_party_tile": "monster/lark_f1.png",
       "monsters": [
         "stone_golem"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "twin_sentinels",
@@ -776,7 +836,8 @@
       "monsters": [
         "stone_golem",
         "stone_golem"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "lurking_hydra",
@@ -787,7 +848,8 @@
       "monster_party_tile": "monster/giant_octopus.png",
       "monsters": [
         "hydra"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "ancient_hydra",
@@ -799,7 +861,8 @@
       "monsters": [
         "hydra",
         "stone_golem"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "death_s_heralds",
@@ -811,7 +874,8 @@
       "monsters": [
         "vampire_lord",
         "mind_flayer"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "the_apocalypse",
@@ -824,7 +888,8 @@
         "hydra",
         "vampire_lord",
         "mind_flayer"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "cellar_rats_house_basement",
@@ -835,7 +900,8 @@
       "monster_party_tile": "monster/giant_rat.png",
       "monsters": [
         "giant_rat"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "rat_infestation",
@@ -847,7 +913,8 @@
       "monsters": [
         "giant_rat",
         "giant_rat"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "stray_goblin_house_basement",
@@ -858,7 +925,8 @@
       "monster_party_tile": "monster/goblin.png",
       "monsters": [
         "goblin"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "goblin_squatters_house_basement",
@@ -870,7 +938,8 @@
       "monsters": [
         "goblin",
         "giant_rat"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "stray_wolves",
@@ -881,7 +950,8 @@
       "monster_party_tile": "monster/wolf.png",
       "monsters": [
         "wolf"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "goblin_scouts",
@@ -893,7 +963,8 @@
       "monsters": [
         "goblin",
         "goblin"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "field_rats",
@@ -905,7 +976,8 @@
       "monsters": [
         "giant_rat",
         "giant_rat"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "wolf_pack_overworld",
@@ -917,7 +989,8 @@
       "monsters": [
         "wolf",
         "wolf"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "goblin_raiding_party",
@@ -930,7 +1003,8 @@
         "goblin",
         "goblin",
         "goblin"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "orc_scouts_overworld",
@@ -942,7 +1016,8 @@
       "monsters": [
         "orc",
         "orc"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "wolves_and_goblins_overworld",
@@ -955,7 +1030,8 @@
         "wolf",
         "wolf",
         "goblin"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "orc_warband_overworld",
@@ -968,7 +1044,8 @@
         "orc",
         "orc",
         "orc"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "orc_with_wolves_overworld",
@@ -981,7 +1058,8 @@
         "orc",
         "wolf",
         "wolf"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "orc_raiders",
@@ -994,7 +1072,8 @@
         "orc",
         "orc",
         "orc_shaman"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "lone_troll",
@@ -1005,7 +1084,8 @@
       "monster_party_tile": "monster/troll.png",
       "monsters": [
         "troll"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "troll_and_wolves",
@@ -1018,7 +1098,8 @@
         "troll",
         "wolf",
         "wolf"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "dark_riders",
@@ -1031,7 +1112,8 @@
         "dark_mage",
         "orc",
         "orc"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "troll_warband_overworld",
@@ -1043,7 +1125,8 @@
       "monsters": [
         "troll",
         "troll"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "orc_war_host",
@@ -1057,7 +1140,8 @@
         "orc",
         "orc",
         "orc_shaman"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "shadow_vanguard",
@@ -1071,7 +1155,8 @@
         "troll",
         "orc",
         "orc"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "troll_horde_overworld",
@@ -1084,7 +1169,8 @@
         "troll",
         "troll",
         "troll"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "lich_with_minions",
@@ -1097,7 +1183,8 @@
         "lich",
         "skeleton",
         "skeleton"
-      ]
+      ],
+      "custom_map": null
     },
     {
       "id": "mind_flayer_overworld",
@@ -1108,7 +1195,8 @@
       "monster_party_tile": "monster/daemon1.png",
       "monsters": [
         "mind_flayer"
-      ]
+      ],
+      "custom_map": null
     }
   ]
 }

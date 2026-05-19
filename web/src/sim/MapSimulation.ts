@@ -304,6 +304,14 @@ export interface SpawnEncounterOptions {
   /** Id of the placed encounter entity that triggered a "placed"
    *  fight. Null for boss / roamer kinds. */
   placedEncounterId: string | null;
+  /** Optional Map id (from maps.json) the host should use as the
+   *  battle arena. Sourced from the matching catalog record's
+   *  `custom_map` field — `spawn.custom_map` for boss / roamer kinds,
+   *  `encounter.custom_map` for placed kinds. Null falls back to the
+   *  generic green-field arena. The kernel doesn't load maps itself;
+   *  it just carries the id so the host can resolve it against its
+   *  already-loaded maps catalog. */
+  customMapId: string | null;
 }
 
 /** Result returned by `attemptPickLock` / `attemptKnock` so the
@@ -694,6 +702,14 @@ export class MapSimulation {
     this.bridge.setPartyInfravisionActive?.(
       this.party.infravision_active === true,
     );
+    // Final relight AFTER roamer + placed-encounter sprites land
+    // in the scene. The earlier `relight()` call ran against the
+    // empty sprite lists, so any monsters seeded on construction
+    // (a dungeon floor's placed encounters, a save with live
+    // roamers) miss the first tint pass and paint at full
+    // brightness for one frame. Re-running here pins them to the
+    // correct ambient before the first keypress.
+    this.bridge.relight();
 
     // Keyboard input. The bridge owns the actual listener registration
     // so the host can scope it however it likes (window vs. canvas vs.
@@ -1084,6 +1100,10 @@ export class MapSimulation {
             encounter: enc,
             roamerId: null,
             placedEncounterId: placed.id,
+            customMapId:
+              typeof enc.custom_map === "string" && enc.custom_map.length > 0
+                ? enc.custom_map
+                : null,
           };
         }
       }
@@ -1166,6 +1186,10 @@ export class MapSimulation {
       encounter: null,
       roamerId: null,
       placedEncounterId: null,
+      customMapId:
+        typeof spawn.custom_map === "string" && spawn.custom_map.length > 0
+          ? spawn.custom_map
+          : null,
     };
   }
 
@@ -1256,6 +1280,14 @@ export class MapSimulation {
             encounter: null,
             roamerId: roamer.id,
             placedEncounterId: null,
+            // The lair's `custom_map` is reserved for the BOSS fight
+            // — it represents the unique arena you reach by entering
+            // the lair itself. Roamers shed by the lair fight in the
+            // open world, not in the boss arena, so they always use
+            // the default arena regardless of the spawn record.
+            // Authored per-encounter arenas live on Encounter
+            // records (encounter.custom_map), not on Spawn.
+            customMapId: null,
           };
         }
       }

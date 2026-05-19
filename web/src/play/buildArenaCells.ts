@@ -53,6 +53,12 @@ interface WorldCell {
   obstructs?: boolean;
   light_source?: boolean;
   light_range?: number;
+  /** Per-cell particle animation key — "torch", "fire", "fairy",
+   *  "smoke", or "none". CombatScene renders the matching
+   *  ANIMATION_CONFIGS emitter centred on the cell. Carried through
+   *  verbatim so the same `light_source` torch tiles authored on the
+   *  map keep their flame animation when the arena uses that map. */
+  animation?: string | null;
 }
 
 type WorldGrid = ReadonlyArray<ReadonlyArray<WorldCell | null | undefined>>;
@@ -74,6 +80,10 @@ function toArenaCell(cell: WorldCell): ArenaCellInfo {
     lightSource: cell.light_source ? true : undefined,
     lightRange:
       typeof cell.light_range === "number" ? cell.light_range : undefined,
+    animation:
+      typeof cell.animation === "string" && cell.animation.length > 0
+        ? cell.animation
+        : undefined,
   };
 }
 
