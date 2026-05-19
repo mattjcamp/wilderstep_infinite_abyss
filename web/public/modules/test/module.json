@@ -1,0 +1,11 @@
+{
+  "_comment": "Test playground module. Inherits everything from `default` and overrides record-by-record as authored content lands. role=playable so it appears in the /play/new picker; extends=default so party.json, characters, races, classes, items, spells, monsters, encounters etc. all resolve through the merge chain without needing to be re-authored here. Add module-specific maps in maps.json, an overriding party.json with a custom start_position, etc.",
+  "id": "test",
+  "title": "Test",
+  "description": "Sandbox module — extends default. Use this to author + playtest world content without modifying the canonical default module.",
+  "author": "test",
+  "version": "0.1.0",
+  "role": "playable",
+  "extends": "default"
+}
+</content>
