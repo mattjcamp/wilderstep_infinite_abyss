@@ -164,12 +164,22 @@ export function BattleSimLauncher({ moduleId }: { moduleId: string }) {
           : typeof rawRange === "string" && rawRange.trim() !== ""
             ? Number(rawRange)
             : undefined;
+        // Per-cell animation key — torch/fire/fairy/smoke. Passed
+        // through so CombatScene can mount the matching particle
+        // emitter on top of the cell sprite. "none" or absent →
+        // skipped (the scene treats undefined as "no emitter").
+        const rawAnim = cell.animation;
+        const animation =
+          typeof rawAnim === "string" && rawAnim !== "none" && rawAnim !== ""
+            ? rawAnim
+            : undefined;
         row.push({
           sprite,
           walkable: cell.walkable !== false,
           obstructs: cell.obstructs === true,
           lightSource: lightSource || undefined,
           lightRange: Number.isFinite(lightRange) ? lightRange : undefined,
+          animation,
         });
       }
       matrix.push(row);

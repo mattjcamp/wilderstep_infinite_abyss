@@ -10,11 +10,6 @@
       "id": "tiefling-pack",
       "title": "Tiefling Pack",
       "role": "library"
-    },
-    {
-      "id": "test",
-      "title": "Test",
-      "role": "playable"
     }
   ]
 }

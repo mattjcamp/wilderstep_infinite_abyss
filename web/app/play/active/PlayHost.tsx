@@ -49,11 +49,35 @@ import {
 } from "@/sim/MapSimulation";
 import { tintForCell } from "@/sim/lighting";
 import { TILE_SIZE, WorldRenderer } from "@/sim/scene/WorldRenderer";
+import {
+  MINUTES_PER_STEP,
+  advanceClock,
+  fullStr,
+  isDawn,
+  isDay,
+  isDusk,
+  lunarPhaseName,
+  makeClock,
+} from "@/battle/world/GameTime";
 
 /** How many log lines the in-world message strip retains. Larger
  *  values cost rendering for marginal value — players read the bottom
  *  3-4 lines, not the back-buffer. */
 const MAX_LOG = 6;
+
+/** Map the game clock's time-of-day classification onto the
+ *  WorldRenderer's lighting mode. Dawn + dusk both render as
+ *  "twilight" (the lighting helper uses softer falloff than full
+ *  night). Outside the day/twilight windows, the world is at full
+ *  night ambient — full darkness with torch pools punching through. */
+function lightingModeFromClock(
+  clockMinutes: number,
+): "day" | "twilight" | "night" {
+  const clock = { totalMinutes: clockMinutes };
+  if (isDay(clock)) return "day";
+  if (isDawn(clock) || isDusk(clock)) return "twilight";
+  return "night";
+}
 import { loadWorld, saveWorld } from "@/play/save";
 import { applyCombatResultToSave } from "@/play/syncFromBattle";
 import type { WorldSave } from "@/play/saveTypes";
@@ -161,6 +185,17 @@ export function PlayHost() {
    *  of the map, You descend into the dungeon, Approach Lair: …).
    *  Capped at MAX_LOG to keep render cheap. */
   const [logMessages, setLogMessages] = useState<string[]>([]);
+  /** Live game clock — total minutes since the module's epoch.
+   *  Initialised from the save on load, advanced MINUTES_PER_STEP per
+   *  successful party move, and persisted by saveCurrent. Re-renders
+   *  the HUD date/time/moon readout each tick. */
+  const [clockMinutes, setClockMinutes] = useState(0);
+  /** Mirror clock + renderer in refs so the per-step closure inside
+   *  the bridge's `moved` listener reads the latest values without
+   *  refreshing on every minute change. The renderer ref also
+   *  shortcuts setLightingMode without a React render hop. */
+  const clockRef = useRef(0);
+  const rendererRef = useRef<WorldRenderer | null>(null);
   const overlaysOpenRef = useRef(false);
   useEffect(() => {
     // Both modal lock-dialog AND active combat gate keyboard movement
@@ -211,6 +246,12 @@ export function PlayHost() {
     };
     const next: WorldSave = {
       ...save,
+      // Clock advances on every step via the sim event handler and
+      // lives in the ref to avoid one React render per minute. The
+      // save just reads the latest from the ref at write time so
+      // the timestamp survives reload + carries through link
+      // traversal across maps.
+      clockMinutes: clockRef.current,
       party: {
         ...save.party,
         col: snap.pos.col,
@@ -305,17 +346,24 @@ export function PlayHost() {
             return (r.abilities ?? []).includes("infravision");
           });
 
+          // Seed the clock + lighting mode from the save BEFORE the
+          // renderer mounts. Subsequent advances flow through the
+          // bridge's `moved` listener (advance) and the renderer ref
+          // (setLightingMode). Reading directly here avoids waiting
+          // for React state to settle through to the scene closure.
+          clockRef.current = save.clockMinutes;
+          setClockMinutes(save.clockMinutes);
+
           this.world = new WorldRenderer({
             scene: this,
             grid: catalog.map.grid,
             partyAvatar: save.party.avatar,
             partyHasInfravision,
-            // Day for testing — full-brightness rendering so authors
-            // can walk the world without torch-LOS gating getting in
-            // the way. The future game clock + per-map ambient flag
-            // will pick "night" automatically (dungeons, after-dusk
-            // overworld, etc.); for now everywhere reads as daylit.
-            initialLightingMode: "day",
+            // Drive the initial lighting from the saved clock —
+            // day at noon, night past dusk, twilight in the
+            // transition windows. Subsequent ticks update via
+            // renderer.setLightingMode after each move.
+            initialLightingMode: lightingModeFromClock(save.clockMinutes),
             initialInfravisionActive: !!save.party.infravision_active,
             // Tint item overlays in sync with the floor cell they
             // sit on so a sword on a dim corridor reads dim too,
@@ -329,6 +377,7 @@ export function PlayHost() {
               }
             },
           });
+          rendererRef.current = this.world;
           this.world.ensureParticleTexture();
           this.world.createCells();
           this.world.createEmitters();
@@ -516,6 +565,33 @@ export function PlayHost() {
           simRef.current = sim;
 
           sim.subscribe((ev) => {
+            if (ev.kind === "moved") {
+              // Time of day advances per step. Recompute the
+              // lighting mode whenever the clock crosses a band
+              // boundary (day → twilight → night → twilight → day);
+              // identity-stable mode strings mean setLightingMode
+              // is a no-op when nothing changed.
+              const beforeMode = lightingModeFromClock(clockRef.current);
+              const advanced = makeClock(clockRef.current);
+              advanceClock(advanced, MINUTES_PER_STEP);
+              clockRef.current = advanced.totalMinutes;
+              setClockMinutes(advanced.totalMinutes);
+              const afterMode = lightingModeFromClock(advanced.totalMinutes);
+              if (afterMode !== beforeMode) {
+                rendererRef.current?.setLightingMode(afterMode);
+              }
+              // Persist every step. Without this the save only
+              // committed on link crossings + combat resolution +
+              // Save & Quit — so closing the tab mid-walk reverted
+              // the party to the last checkpoint on reload. Now
+              // every step writes col/row/clock + the map's
+              // mutation state to localStorage, and Return to Game
+              // resumes at the cell the player was actually on.
+              // localStorage writes are sync but the save blob is
+              // a few KB; the cost is invisible at this scale.
+              saveCurrent();
+              return;
+            }
             if (ev.kind === "log") {
               // Append to the scrolling message log. Capped to the
               // last MAX_LOG lines so the list stays cheap to
@@ -594,6 +670,11 @@ export function PlayHost() {
         if (snap) {
           const next: WorldSave = {
             ...save,
+            // Pull the live clock from the ref — it advances per
+            // step into the ref, not into the save. Without this
+            // every link write would commit the stale clock from
+            // the last explicit saveCurrent call.
+            clockMinutes: clockRef.current,
             party: {
               ...save.party,
               col: snap.pos.col,
@@ -617,6 +698,14 @@ export function PlayHost() {
         : { unlockedCells: [], defeatedEncounters: [], destroyedLairs: [] };
       const next: WorldSave = {
         ...save,
+        // Live clock from the ref — same reason as the same-map
+        // teleport branch above. Without this, the new map mount
+        // calls `lightingModeFromClock(save.clockMinutes)` with the
+        // *original* save value (or the most-recent saveCurrent
+        // checkpoint) and snaps the world back to day even though
+        // the player walked through hours of in-world time before
+        // hitting the link.
+        clockMinutes: clockRef.current,
         party: {
           ...save.party,
           currentMapId: link.map_id,
@@ -755,6 +844,17 @@ export function PlayHost() {
             on {state.save?.party.currentMapId}
           </span>
         </div>
+        {/* Date / time / moon phase. Advances per step via the
+         *  `moved` event handler. Hidden during combat — the combat
+         *  scene runs on its own time. */}
+        {!combat ? (
+          <div className="text-xs text-parchment/75">
+            <span className="font-mono">{fullStr({ totalMinutes: clockMinutes })}</span>
+            <span className="ml-3 text-parchment/55">
+              · {lunarPhaseName({ totalMinutes: clockMinutes })}
+            </span>
+          </div>
+        ) : null}
         <div className="flex gap-3 text-sm">
           <button
             type="button"
@@ -796,6 +896,23 @@ export function PlayHost() {
           // wiring; cropping the world map here surfaced the wrong
           // pattern (a fight on the world's terrain mid-step) before
           // arena-map authoring landed.
+          //
+          // Time-of-day → darkness: when the world is in twilight or
+          // night, the fight inherits the dim/dark ambient. Day
+          // fights stay bright. Read off the live clock so an
+          // encounter triggered just after dusk reads as a dusk
+          // fight, not whatever the lighting was a beat ago.
+          darkness={
+            lightingModeFromClock(clockMinutes) !== "day"
+          }
+          // Race-derived infravision in combat. Always "armed" — the
+          // combat scene's per-actor race check (e.g. dwarves) +
+          // darkness gate produce the actual rendering: a dwarf's
+          // turn during a night fight tints LOS cells red and lets
+          // him target enemies on otherwise-invisible cells; humans
+          // on the same turn-order see nothing extra. No effect in
+          // daylight fights (darkness gate is false).
+          partyInfravisionActive
           onResolved={onCombatResolved}
         />
       ) : null}

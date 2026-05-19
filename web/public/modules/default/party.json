@@ -1,8 +1,8 @@
 {
   "start_position": {
-    "map_id": "test2",
-    "col": 14,
-    "row": 16
+    "map_id": "demo_map",
+    "col": 17,
+    "row": 4
   },
   "avatar": "person/fighter18.png",
   "gold": 50,

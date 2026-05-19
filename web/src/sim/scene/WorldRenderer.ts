@@ -121,7 +121,7 @@ export interface WorldRendererConfig {
   partyHasInfravision?: boolean;
   /** Initial lighting mode. The host's React effect can call
    *  `setLightingMode` later to track its `darkness` prop. */
-  initialLightingMode?: "day" | "night";
+  initialLightingMode?: "day" | "twilight" | "night";
   /** Initial value of the player-controlled "is infravision engaged"
    *  flag. Combined with `partyHasInfravision` at relight time. */
   initialInfravisionActive?: boolean;
@@ -188,7 +188,7 @@ export class WorldRenderer {
   partyInfravisionActive = false;
   /** `"day"` paints everything at full brightness; `"night"` runs the
    *  full Bresenham-LOS lighting model. */
-  lightingMode: "day" | "night" = "night";
+  lightingMode: "day" | "twilight" | "night" = "night";
 
   private readonly onRelightHook?: (result: LightingResult) => void;
 
@@ -347,7 +347,7 @@ export class WorldRenderer {
     this.relight();
   }
 
-  setLightingMode(mode: "day" | "night"): void {
+  setLightingMode(mode: "day" | "twilight" | "night"): void {
     if (this.lightingMode === mode) return;
     this.lightingMode = mode;
     this.relight();

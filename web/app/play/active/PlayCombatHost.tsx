@@ -39,6 +39,20 @@ interface Props {
    *  Pass `undefined` to let the scene fall back to its generic
    *  green-field arena. */
   arenaCells?: ReadonlyArray<ReadonlyArray<ArenaCellInfo | null>>;
+  /** When true, the combat scene paints a darkness overlay and uses
+   *  the arena matrix's `light_source` cells (plus a small pool
+   *  around the active member) to "punch" holes of light. Driven by
+   *  the world's time-of-day at encounter time so a fight that
+   *  triggers at night reads as a night fight, not a sunlit one. */
+  darkness?: boolean;
+  /** When true, the combat scene's infravision pass is "armed" —
+   *  during a turn the scene will tint LOS cells red for the active
+   *  actor IF that actor's race carries the infravision ability.
+   *  Only meaningful while `darkness` is on; daylight fights ignore
+   *  this. Routing the flag here means an active dwarf in a night
+   *  fight automatically sees the dark cells he could otherwise not
+   *  target — without a separate toggle UI on the play side. */
+  partyInfravisionActive?: boolean;
   /** Called once when the fight resolves — winner side + XP/gold the
    *  scene awarded to the party. PlayHost applies the consequences. */
   onResolved: (result: CombatResolved) => void;
@@ -49,6 +63,8 @@ export function PlayCombatHost({
   monsterIds,
   save,
   arenaCells,
+  darkness,
+  partyInfravisionActive,
   onResolved,
 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -113,6 +129,19 @@ export function PlayCombatHost({
                 arenaCells: arenaCells
                   ? arenaCells.map((row) => [...row])
                   : undefined,
+                // Inherits the world's time-of-day at the moment the
+                // encounter fired. A fight that triggers at dusk /
+                // night reads as a dim / dark fight (the combat
+                // scene paints its darkness overlay + uses any
+                // light_source cells in the arena matrix); a fight
+                // mid-day stays bright.
+                darkness: !!darkness,
+                // Race-based infravision passes through. The scene
+                // checks `partyInfravisionActive && darkness &&
+                // current.race ∈ infravisionRaces` per actor — so
+                // setting this true is benign for the non-dwarf
+                // party members; only the dwarf's turn paints red.
+                partyInfravisionActive: !!partyInfravisionActive,
                 // Routes the scene's exit through React instead of
                 // letting it scene.start a v1 world scene that
                 // doesn't exist anymore.

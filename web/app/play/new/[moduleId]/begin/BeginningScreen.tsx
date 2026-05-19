@@ -26,6 +26,8 @@ import Link from "next/link";
 import { mergeModel } from "@/data_model/merge";
 import { StaticModuleSource } from "@/data_model/StaticModuleSource";
 import type { CharacterRecord } from "@/editor/CharacterSheet";
+import { clockFromDate } from "@/battle/world/GameTime";
+import { setActiveModule, loadModuleConfig } from "@/battle/world/Module";
 import { saveWorld } from "@/play/save";
 import type {
   SavedCharacterState,
@@ -251,6 +253,25 @@ async function assembleInitialSave(
     }
   }
 
+  // Seed the in-world clock from module.json's `settings.start_time`
+  // (loaded via the v1battle ModuleConfig helper, which already knows
+  // about `extends` chains through the `setActiveModule` switch). When
+  // a module doesn't declare a start time, fall back to year 1 / Jan 1
+  // / 12:00 PM — that's the epoch and lands the world at midday on
+  // the first day. The clock advances per step from there.
+  setActiveModule(moduleId);
+  const moduleConfig = await loadModuleConfig().catch(() => null);
+  const startTime = moduleConfig?.settings.startTime;
+  const initialClock = startTime
+    ? clockFromDate({
+        year: startTime.year,
+        month: startTime.month,
+        day: startTime.day,
+        hour: startTime.hour,
+        minute: startTime.minute,
+      })
+    : { totalMinutes: 0 };
+
   const startPos = party.start_position ?? { col: 0, row: 0 };
   const savedParty: SavedPartyState = {
     currentMapId: startPos.map_id ?? "",
@@ -270,6 +291,7 @@ async function assembleInitialSave(
     schemaVersion: 1,
     savedAt: new Date().toISOString(),
     moduleId,
+    clockMinutes: initialClock.totalMinutes,
     party: savedParty,
     maps: {},
     dungeons: {},

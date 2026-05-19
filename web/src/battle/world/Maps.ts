@@ -91,6 +91,14 @@ export interface ArenaCellInfo {
    *  `light_range` per-cell fields. */
   lightSource?: boolean;
   lightRange?: number;
+  /** Per-cell particle animation key — one of the entries in
+   *  `@/sim/tileAnimations`'s ANIMATION_CONFIGS (`"torch"`,
+   *  `"fire"`, `"fairy"`, `"smoke"`). Renders as an ADD-blended
+   *  particle emitter on top of the cell sprite. Independent of
+   *  `lightSource` — a torch can be lit (light_source: true) AND
+   *  animated (animation: "torch"), or only one of the two.
+   *  Absent / `"none"` → no emitter. */
+  animation?: string;
 }
 
 let _flatCache: ArenaMap[] | null = null;

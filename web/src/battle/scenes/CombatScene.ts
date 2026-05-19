@@ -51,6 +51,7 @@ import {
   authoredDefeatKey,
 } from "../world/InteriorSpawn";
 import { assetUrl } from "../world/Module";
+import { ANIMATION_CONFIGS } from "@/sim/tileAnimations";
 import { loadItems, type Item } from "../world/Items";
 import { loadCounters } from "../world/Counters";
 import { rollLootDrop } from "../world/Loot";
@@ -458,6 +459,15 @@ export class CombatScene extends Phaser.Scene {
     /** Pixels above the body sprite centre to anchor the bar. */
     offsetY: number;
   }>();
+  /** Particle emitters keyed by `"col,row"` — one per arena cell
+   *  whose `animation` field declared a torch / fire / fairy / smoke
+   *  effect. Created once in the arena draw pass; visibility is
+   *  re-gated in `refreshDarkness` so an emitter on a cell beyond
+   *  the party's LOS doesn't poke a flame through the darkness. */
+  private arenaEmitters = new Map<
+    string,
+    Phaser.GameObjects.Particles.ParticleEmitter
+  >();
 
   private logText!: Phaser.GameObjects.Text;
   private turnText!: Phaser.GameObjects.Text;
@@ -595,6 +605,8 @@ export class CombatScene extends Phaser.Scene {
       b.bar?.destroy();
     }
     this.monsterHpBars.clear();
+    for (const e of this.arenaEmitters.values()) e?.destroy();
+    this.arenaEmitters.clear();
     for (const t of this.actionTexts) t?.destroy();
     this.actionTexts.length = 0;
     for (const h of this.actionRowHandles) h?.destroy();
@@ -1054,6 +1066,49 @@ export class CombatScene extends Phaser.Scene {
     // painted, leaving the arena black.
     if (floorRT) floorRT.render();
 
+    // Per-cell particle emitters — torches, fire, fairy, smoke.
+    // Same `ANIMATION_CONFIGS` table the overworld + dungeon scenes
+    // consume so a torch on the arena reads exactly like a torch on
+    // the world map. Anchored at the cell's centre, depth 160 sits
+    // above the floor RT but below party / monster bodies (250)
+    // and the darkness overlay (20) — wait, below darkness, so
+    // `refreshDarkness` re-gates each emitter's visibility against
+    // `isCellVisibleToParty` to make sure an emitter on an unseen
+    // cell doesn't pokes a flame through the darkness anyway.
+    if (mapCells) {
+      // Lazy white-circle source texture for the emitters. One-shot
+      // init; idempotent on re-mount.
+      if (!this.textures.exists("__particle")) {
+        const g = this.add.graphics();
+        g.fillStyle(0xffffff, 1);
+        g.fillCircle(8, 8, 8);
+        g.generateTexture("__particle", 16, 16);
+        g.destroy();
+      }
+      for (let r = 0; r < ARENA_ROWS; r++) {
+        for (let c = 0; c < ARENA_COLS; c++) {
+          if (isWall(c, r)) continue;
+          const cell = mapCells[r]?.[c];
+          const animation = cell?.animation;
+          if (!animation || animation === "none") continue;
+          const cfg = (
+            ANIMATION_CONFIGS as Record<string, unknown>
+          )[animation];
+          if (!cfg) continue;
+          const ex = ARENA_X + c * TILE + TILE / 2;
+          const ey = ARENA_Y + r * TILE + TILE / 2;
+          const emitter = this.add.particles(
+            ex,
+            ey,
+            "__particle",
+            cfg as Phaser.Types.GameObjects.Particles.ParticleEmitterConfig,
+          );
+          emitter.setDepth(160);
+          this.arenaEmitters.set(`${c},${r}`, emitter);
+        }
+      }
+    }
+
     // Darkness overlay — only when the launcher's Darkness toggle is
     // on. Collect every cell flagged `lightSource` into a static
     // LightSource list (party self-light is added per-redraw in
@@ -1249,6 +1304,40 @@ export class CombatScene extends Phaser.Scene {
         g.fillStyle(0x000000, alpha);
         g.fillRect(ARENA_X + c * TILE, ARENA_Y + r * TILE, TILE, TILE);
       }
+    }
+    // Monster HP bars float 20 px above their body's cell — which
+    // can lift them *outside* the arena's row-bound darkness paint
+    // when the monster is near the top edge. Per-cell fillRect
+    // doesn't cover that gap, so an unseen creature gives itself
+    // away with a bright green bar. Gate visibility directly on
+    // the bar pair using the same predicate the target picker
+    // already uses (lit by torch / party self-light, or visible
+    // through the active actor's infravision LOS).
+    if (this.combat) {
+      for (const c of this.combat.combatants) {
+        if (c.side !== "enemies") continue;
+        const bars = this.monsterHpBars.get(c.id);
+        if (!bars) continue;
+        // Dead monsters stay hidden regardless of visibility —
+        // refreshHp already turns the bars off on HP <= 0; the
+        // visibility flag here would otherwise turn the corpse's
+        // empty bar back on if the party walked into LOS.
+        if (c.hp <= 0) continue;
+        const visible = this.isCellVisibleToParty(c.position.col, c.position.row);
+        bars.bg.setVisible(visible);
+        bars.bar.setVisible(visible);
+      }
+    }
+    // Cell particle emitters render at depth 160 — above the
+    // darkness graphics (20) — so a torch on an unseen cell would
+    // poke its flame straight through the dark. Hide each emitter
+    // whose cell isn't currently visible to the party. Same
+    // predicate as the HP bars + the target picker.
+    for (const [key, emitter] of this.arenaEmitters) {
+      const [cs, rs] = key.split(",");
+      emitter.setVisible(
+        this.isCellVisibleToParty(Number(cs), Number(rs)),
+      );
     }
   }
 
@@ -1446,6 +1535,10 @@ export class CombatScene extends Phaser.Scene {
       b.bar?.destroy();
     }
     this.monsterHpBars.clear();
+    // Note: arenaEmitters live for the lifetime of the arena draw
+    // (they're cell-bound, not actor-bound), so this combatant-
+    // refresh path doesn't touch them. The wholesale teardown in
+    // `clearStaleDraws` handles their disposal on scene exit.
 
     for (const c of this.combat.combatants) {
       const x = this.tileX(c.position.col);

@@ -130,6 +130,12 @@ export interface WorldSave {
   /** Module id this save belongs to. Save is locked to one module —
    *  starting a new game in a different module overwrites. */
   moduleId: string;
+  /** Game clock — total elapsed in-world minutes since the module's
+   *  epoch (year 1, Jan 1 SUN 12:00 AM). Advanced MINUTES_PER_STEP
+   *  per successful party step. Seeded from the module's
+   *  `settings.start_time` on New Game; defaults to 0 when absent.
+   *  Drives time-of-day lighting + moon phase + the HUD readout. */
+  clockMinutes: number;
   party: SavedPartyState;
   /** Per-map mutation deltas keyed by map id. Maps the party has
    *  never visited are absent — `loadMapState` treats absence as
