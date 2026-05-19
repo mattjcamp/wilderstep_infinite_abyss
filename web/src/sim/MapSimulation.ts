@@ -51,6 +51,7 @@ import type {
   SimLightSource,
   SimMonsterRef,
   SimParty,
+  SimQuestRef,
   SimRace,
   SimSpell,
 } from "./types";
@@ -120,6 +121,12 @@ export interface SceneBridge {
       col: number;
       row: number;
       sprite: string;
+      /** Optional sprite tint (packed RGB). When set the renderer
+       *  multiplies this with the per-cell lighting tint, so a
+       *  flagged roamer / placed entity carries its own colour wash
+       *  on top of the ambient. Used today by quest-target dungeon
+       *  placements (faint gold halo). */
+      tint?: number;
     }>,
   ): void;
   /** Replace the cell at (col, row) with a different sprite + walkable
@@ -143,6 +150,8 @@ export interface SceneBridge {
       col: number;
       row: number;
       sprite: string;
+      /** Optional sprite tint — see `setRoamerPositions`. */
+      tint?: number;
     }>,
   ): void;
   /** Tell the host which encounter cells should suppress their
@@ -233,6 +242,11 @@ export interface SimCatalog {
    *  pursuit loop. Empty / omitted = placed encounters stay static
    *  (no roaming behaviour). */
   encounters?: ReadonlyArray<SimEncounterRef>;
+  /** Quest catalog (quests.json). Cells carrying a `quest` id match
+   *  here; on step the sim emits `quest_encountered` so the host
+   *  opens the offer dialog. Empty / omitted = quest tiles silently
+   *  no-op. */
+  quests?: ReadonlyArray<SimQuestRef>;
   /** Fallback sprite + tile id the destroy-lair path uses when a
    *  Monster Spawn is defeated. Captured from the module's tile
    *  palette (typically grass). Optional — when missing, the destroy
@@ -376,6 +390,18 @@ export type SimEvent =
    *  outcome. Movement is gated through `overlaysOpenRef` until the
    *  resolution lands. */
   | { kind: "spawn_encountered"; options: SpawnEncounterOptions }
+  /** Fired when the party steps onto a cell carrying a `quest` id
+   *  the quest catalog recognises AND the quest hasn't been
+   *  accepted yet. The host opens an offer dialog (name +
+   *  description + quest_giver's sprite/name + start_dialog) with
+   *  Accept / Decline buttons. Accept calls `markQuestAccepted` so
+   *  the trigger stops re-firing. */
+  | {
+      kind: "quest_encountered";
+      questId: string;
+      quest: SimQuestRef;
+      pos: Position;
+    }
   /** Fired after a successful boss fight — the lair has been
    *  destroyed and the cell reverted to plain ground. Host listens
    *  to update the inspector + log, but the cell visual is already
@@ -423,6 +449,10 @@ export interface SimSnapshot {
   unlockedCells: ReadonlySet<string>;
   defeatedEncounters: ReadonlySet<string>;
   destroyedLairs: ReadonlySet<string>;
+  /** Quest ids the party has accepted. Persisted on the save so a
+   *  reload doesn't re-offer them and the quest log knows what's
+   *  active. */
+  acceptedQuests: ReadonlySet<string>;
   /** Loose boats currently parked on the map — `"col,row"` →
    *  sprite key. Hosts that persist across sessions snapshot this
    *  so a boat the party left at a dock is still parked there on
@@ -468,6 +498,12 @@ export interface MapSimulationOptions {
    *  session. Used by overworld re-mounts so a destroyed lair
    *  stays quiet. Default empty. */
   initialDestroyedLairs?: ReadonlySet<string>;
+  /** Pre-populated accepted-quest set — quest ids the party has
+   *  already accepted in a prior session. Filters the
+   *  `quest_encountered` emit so a quest tile doesn't re-offer
+   *  the same dialog every time the party walks past. Default
+   *  empty. */
+  initialAcceptedQuests?: ReadonlySet<string>;
   /** Pre-populated loose-boat positions — `"col,row"` → sprite
    *  key. Overrides the per-cell `boat: true` scan so a save can
    *  restore the WORLD's boat layout (boats the party moved + left
@@ -532,6 +568,14 @@ export class MapSimulation {
   /** Encounters catalog, keyed by `SimEncounterRef.id` for placed-
    *  encounter resolution. */
   private readonly encounterCatalog: ReadonlyMap<string, SimEncounterRef>;
+  /** Quests catalog, keyed by `SimQuestRef.id` for cell→quest lookup
+   *  when emitting `quest_encountered`. */
+  private readonly questCatalog: ReadonlyMap<string, SimQuestRef>;
+  /** Quest ids the party has accepted. Suppresses the
+   *  `quest_encountered` emit on cells whose `quest` id is in this
+   *  set. Seeded from `MapSimulationOptions.initialAcceptedQuests`;
+   *  mutated by `markQuestAccepted` on the host's Accept path. */
+  private readonly acceptedQuests: Set<string>;
   /** Live roamers — monsters the spawn loop has dropped onto the map.
    *  Mutated each step. Snapshot to the bridge via setRoamerPositions. */
   private roamers: SimRoamer[] = [];
@@ -577,6 +621,10 @@ export class MapSimulation {
     this.encounterCatalog = new Map(
       (opts.catalog.encounters ?? []).map((e) => [e.id, e]),
     );
+    this.questCatalog = new Map(
+      (opts.catalog.quests ?? []).map((q) => [q.id, q]),
+    );
+    this.acceptedQuests = new Set(opts.initialAcceptedQuests ?? []);
     this.groundTile = opts.catalog.groundTile;
     // Mutation state — seeded from per-session options so a host
     // remounting the same grid (e.g. dungeon floor revisits)
@@ -746,6 +794,28 @@ export class MapSimulation {
         pos: { col: targetCol, row: targetRow },
       });
       return;
+    }
+
+    // 1.1. Quest-tile bump — the quest_giver acts like a static NPC
+    //    standing on the tile: the party can't walk through them,
+    //    bumping always opens the dialog. The kernel doesn't filter
+    //    on acceptedQuests here; the host decides whether to show
+    //    the offer (Accept / Decline) or an in-progress reminder.
+    //    Cells where the quest id doesn't resolve in the catalog
+    //    fall through silently — broken authoring shouldn't trap
+    //    the party.
+    const targetQuestId = (target as { quest?: string } | null)?.quest;
+    if (targetQuestId) {
+      const quest = this.questCatalog.get(targetQuestId);
+      if (quest) {
+        this.emit({
+          kind: "quest_encountered",
+          questId: targetQuestId,
+          quest,
+          pos: { col: targetCol, row: targetRow },
+        });
+        return;
+      }
     }
 
     // 1.5. Counter bump — unattended shop tile. Same "party stops on
@@ -1128,12 +1198,14 @@ export class MapSimulation {
     col: number;
     row: number;
     sprite: string;
+    tint?: number;
   }> {
     return this.placedEncounters.map((p) => ({
       id: p.id,
       col: p.col,
       row: p.row,
       sprite: p.sprite ?? "",
+      tint: p.tint,
     }));
   }
 
@@ -1475,6 +1547,7 @@ export class MapSimulation {
       unlockedCells: this.unlockedCells,
       defeatedEncounters: this.defeatedEncounters,
       destroyedLairs: this.destroyedLairs,
+      acceptedQuests: this.acceptedQuests,
       boatPositions: this.boatPositions,
       onBoat: this.onBoat,
       currentBoatSprite: this.currentBoatSprite,
@@ -1675,6 +1748,22 @@ export class MapSimulation {
    *  traces back to it. The painted grid is NOT mutated — the
    *  destruction is per-session only (matches the unlocked-cells
    *  convention). */
+  /** Record that the party accepted a quest. Subsequent steps onto
+   *  the same `quest` cell stop firing `quest_encountered`. The host
+   *  calls this from the Accept handler of the offer dialog;
+   *  declining the quest leaves the set untouched so re-stepping the
+   *  cell will re-offer. Persistence (writing the set into the save)
+   *  is the host's concern.
+   *
+   *  Returns true when the id was actually added (false when the set
+   *  already contained it — the host can treat a duplicate accept as
+   *  a no-op without emitting a `state` event). */
+  markQuestAccepted(questId: string): boolean {
+    if (this.acceptedQuests.has(questId)) return false;
+    this.acceptedQuests.add(questId);
+    return true;
+  }
+
   private destroyLair(pos: Position, spawn: SimSpawn): void {
     const key = `${pos.col},${pos.row}`;
     this.destroyedLairs.add(key);

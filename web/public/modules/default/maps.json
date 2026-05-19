@@ -7117,7 +7117,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/grass1.png",
-            "tag": "terrain"
+            "tag": "terrain",
+            "quest": "rats"
           },
           {
             "id": "grass",

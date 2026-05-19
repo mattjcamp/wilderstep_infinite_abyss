@@ -80,6 +80,14 @@ export interface SimCell {
    *  and the host transitions the simulator into the procedurally
    *  generated dungeon. Empty / undefined = not an entrance. */
   dungeon?: string;
+  /** Catalog id from quests.json — when set, stepping onto this
+   *  cell offers the quest. The sim emits `quest_encountered`
+   *  with the quest's id / name / description / quest_giver
+   *  block; the host opens a dialog where the player can Accept
+   *  or Decline. Empty / undefined = no quest offer here. Once
+   *  the quest is accepted (the host calls `markQuestAccepted`),
+   *  subsequent steps onto the cell don't re-fire. */
+  quest?: string;
 }
 
 /** Minimal monsters.json record the sim reads — just the fields the
@@ -91,6 +99,25 @@ export interface SimMonsterRef {
   /** Sprite path like "monster/goblin.png" — the host renders this
    *  on every roamer tile and inside the encounter dialog. */
   sprite?: string;
+}
+
+/** Minimal quests.json record the sim reads — just enough to drive
+ *  the quest-offer dialog when the party steps onto a `quest`-tagged
+ *  cell. The full Quest record carries steps / rewards / completion
+ *  dialog too; those are not consumed by the kernel today (the v1
+ *  quest log + step tracking is a follow-up). */
+export interface SimQuestRef {
+  id: string;
+  name: string;
+  description?: string;
+  /** NPC that offers (and later accepts) the quest. The overlay
+   *  renders the sprite + name + start_dialog. */
+  quest_giver?: {
+    npc_name?: string;
+    npc_sprite?: string;
+    start_dialog?: string;
+    end_dialog?: string;
+  };
 }
 
 /** Minimal encounters.json record the sim reads. Loader pulls these
@@ -110,6 +137,12 @@ export interface SimEncounterRef {
    *  the generic green-field arena. Authored via the editor's
    *  MapPicker on the `custom_map` field. */
   custom_map?: string | null;
+  /** Optional tint (packed RGB, e.g. 0xffe580) the placed-encounter
+   *  renderer should overlay on the sprite — used today by dungeon
+   *  quest-target placements to render a faint gold halo. Multiplied
+   *  with the per-cell lighting tint at draw time so the colour
+   *  reads natural at any ambient. */
+  tint?: number;
 }
 
 /** Row-major grid: grid[row][col]. */

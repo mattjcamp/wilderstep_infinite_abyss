@@ -308,5 +308,6 @@ async function assembleInitialSave(
     party: savedParty,
     maps: {},
     dungeons: {},
+    acceptedQuests: [],
   };
 }

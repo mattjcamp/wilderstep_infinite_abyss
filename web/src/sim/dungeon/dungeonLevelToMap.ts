@@ -181,21 +181,45 @@ export function dungeonEncounterRefs(
   name: string;
   monster_party_tile?: string;
   monsters: string[];
+  /** Optional tint (RGB, e.g. 0xffe580) applied on top of the
+   *  cell's lighting tint at render time. Used to flag quest-target
+   *  placements with a soft gold halo — the renderer multiplies
+   *  this with the per-cell lighting so the tint reads naturally at
+   *  any ambient. */
+  tint?: number;
 }> {
   return level.monsters.map((m) => {
-    const leadId = m.name;
-    const spritePath = monsterSpriteById?.get(leadId);
+    // `m.name` is what the v1 generator stored as
+    // `enc.monsterPartyTile`. Despite the EncounterTemplate doc
+    // comment calling that "monster id of the lead", the actual
+    // encounters.json values (and what the generator copies
+    // through here) are SPRITE PATHS in the form
+    // "monster/giant_rat.png" — directly usable as Phaser texture
+    // keys without going through the id-keyed monsterSpriteById
+    // lookup. (A prior version of this helper tried to resolve
+    // `m.name` as an id, always missed, and the placed-encounter
+    // renderer fell back to the green party-marker placeholder —
+    // the missing-sprite bug the user reported on quest monsters.)
+    //
+    // We still accept `monsterSpriteById` as a parameter for
+    // forward compat: if a future generator path ever stores a
+    // real monster id in `m.name`, the lookup picks up its sprite
+    // first; otherwise we keep `m.name` as the resolved key.
+    const looked = monsterSpriteById?.get(m.name);
+    const spritePath = looked ?? m.name;
     return {
       id: `__dungeon_enc_${m.id}__`,
       name: m.encounterName,
-      // `monster_party_tile` carries the SPRITE PATH (e.g.
-      // "monster/giant_rat.png") that the renderer uses as a
-      // Phaser texture key. The v2 encounter record's same-named
-      // field stores a monster id; we resolve it here.
       monster_party_tile: spritePath,
       monsters: m.encounterNames.length > 0
         ? [...m.encounterNames]
         : [m.name],
+      // Quest-target placements get the gold halo. The exact hue
+      // is `0xffe580` — bright enough to stand out at full
+      // lighting, soft enough that the multiply blend with a dim
+      // ambient still reads as "tinted yellow" rather than
+      // washing out the underlying sprite.
+      tint: m.questName ? 0xffe580 : undefined,
     };
   });
 }

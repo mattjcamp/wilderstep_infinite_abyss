@@ -175,4 +175,8 @@ export interface WorldSave {
   /** Per-dungeon session keyed by dungeon id. Same absence-=-empty
    *  semantics: a dungeon the party hasn't entered isn't in the map. */
   dungeons: Record<string, SavedDungeonSession>;
+  /** Quest ids the party has accepted. Stops the quest-tile trigger
+   *  from re-offering an already-accepted quest. Absent on legacy
+   *  saves; the loader treats absence as an empty list. */
+  acceptedQuests?: ReadonlyArray<string>;
 }

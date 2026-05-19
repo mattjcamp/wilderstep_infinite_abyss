@@ -13,7 +13,10 @@
           "id": "rats_step_1",
           "name": "Step 1 Kill the Giant Rats",
           "kind": "kill",
-          "params": null,
+          "params": {
+            "monster_id": "giant_rat",
+            "count": 1
+          },
           "description": "Kill the Giant Rats in the cave under the shop",
           "tags": [
             "rats"

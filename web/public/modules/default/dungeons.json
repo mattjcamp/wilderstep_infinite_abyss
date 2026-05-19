@@ -21,16 +21,16 @@
         {
           "id": "the_hole_l2",
           "name": "Level 2",
-          "depth": 2,
-          "size": {
-            "width": 64,
-            "height": 64
-          }
+          "depth": 2
         }
       ],
       "torch_density": 0.75,
       "locked_doors": 1,
-      "style": "caves"
+      "style": "caves",
+      "size": {
+        "width": 16,
+        "height": 16
+      }
     }
   ]
 }

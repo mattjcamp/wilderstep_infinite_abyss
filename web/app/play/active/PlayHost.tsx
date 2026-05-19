@@ -39,6 +39,7 @@ import { withBasePath } from "@/util/basePath";
 import { mergeModel } from "@/data_model/merge";
 import { StaticModuleSource } from "@/data_model/StaticModuleSource";
 import { LockDialogOverlay } from "@/editor/LockDialogOverlay";
+import { QuestDialogOverlay } from "@/editor/QuestDialogOverlay";
 import type { CombatResolved } from "@/battle/scenes/CombatScene";
 import { PlayCombatHost } from "./PlayCombatHost";
 import { buildArenaCells } from "@/play/buildArenaCells";
@@ -60,6 +61,10 @@ import {
 } from "@/sim/dungeon/dungeonSession";
 import type { DungeonRecord } from "@/sim/dungeon/types";
 import type { DungeonLevel } from "@/battle/world/Dungeon";
+import {
+  TILE_STAIRS_DOWN,
+} from "@/battle/world/Dungeon";
+import { TILE_FOREST_ARCHWAY_DOWN } from "@/battle/world/Tiles";
 import { DUNGEON_SPRITE_KEYS } from "@/sim/dungeon/tileMapping";
 import type { EncounterTemplate } from "@/battle/world/Encounters";
 import {
@@ -110,6 +115,7 @@ import type {
   SimGrid,
   SimMonsterRef,
   SimParty,
+  SimQuestRef,
   SimRace,
   SimSpell,
 } from "@/sim/types";
@@ -203,6 +209,10 @@ interface LoadedCatalog {
    *  the host looks up the matching record, generates its levels,
    *  and swaps the world map for the dungeon's first floor. */
   dungeons: DungeonRecord[];
+  /** Authored quests catalog. Cells carrying a `quest` id match
+   *  against this; on step the sim emits `quest_encountered` and
+   *  the host opens the offer dialog. */
+  quests: SimQuestRef[];
   knockSpell: SimSpell | null;
   /** Items catalog — used to resolve `cell.item` overlays to their
    *  icon sprite (`item/<icon>.png`). Kernel doesn't read this
@@ -231,6 +241,11 @@ export function PlayHost() {
    *  success. Movement is gated on this via `overlaysOpenRef`. */
   const [lockEncounter, setLockEncounter] =
     useState<LockEncounterOptions | null>(null);
+  /** Quest-offer state — set on `quest_encountered`, cleared when the
+   *  player Accepts or Declines via the overlay. Movement gates on
+   *  this through overlaysOpenRef so a chained step doesn't slip past
+   *  the dialog. */
+  const [questOffer, setQuestOffer] = useState<SimQuestRef | null>(null);
   /** Active combat — set on `spawn_encountered`, cleared when the
    *  combat scene reports back via `onResolved`. While set the world
    *  Phaser game is unmounted and PlayCombatHost takes its place. */
@@ -259,10 +274,12 @@ export function PlayHost() {
    *  dungeon's floor) and by `saveCurrent` / `handleLinked`. */
   const dungeonStateRef = useRef<DungeonState | null>(null);
   useEffect(() => {
-    // Both modal lock-dialog AND active combat gate keyboard movement
-    // through the same ref so the world sim freezes under either.
-    overlaysOpenRef.current = !!lockEncounter || !!combat;
-  }, [lockEncounter, combat]);
+    // Lock dialog, quest offer, AND active combat each gate keyboard
+    // movement through the same ref so the world sim freezes under
+    // any of them.
+    overlaysOpenRef.current =
+      !!lockEncounter || !!combat || !!questOffer;
+  }, [lockEncounter, combat, questOffer]);
 
   // Load save + catalogs + map. Re-runs when `reloadKey` bumps.
   useEffect(() => {
@@ -480,6 +497,23 @@ export function PlayHost() {
         }
       }
       for (const key of itemIconKeys) spriteKeys.add(key);
+      // Quest-giver overlay sprites. Cells tagged with a `quest` id
+      // draw the quest_giver's npc_sprite on top of the floor so the
+      // player can see *who* is offering the quest before stepping
+      // on the cell. We resolve the quest catalog now + queue the
+      // sprite key for preload; create() walks the grid + spawns
+      // one Image per quest cell.
+      const questsById = new Map<string, SimQuestRef>();
+      for (const q of catalog.quests) questsById.set(q.id, q);
+      for (const row of catalog.map.grid) {
+        for (const cell of row) {
+          const questId = cell.quest;
+          if (typeof questId !== "string" || !questId) continue;
+          const quest = questsById.get(questId);
+          const giverSprite = quest?.quest_giver?.npc_sprite;
+          if (giverSprite) spriteKeys.add(giverSprite);
+        }
+      }
       // Boat sprite + water sprite for the board / disembark
       // texture swaps. The kernel tracks which cells have loose
       // boats; the scene flips between the boat texture and the
@@ -492,8 +526,22 @@ export function PlayHost() {
           ?.sprite ?? "map/water.png";
       if (waterSprite) spriteKeys.add(waterSprite);
 
-      const width = catalog.map.width * TILE_SIZE;
-      const height = catalog.map.height * TILE_SIZE;
+      // Viewport: a fixed window centered on the party rather than
+      // the full map blown out to the page. The Phaser canvas stays
+      // at this size; the camera scrolls within the map's bounds as
+      // the party walks. Capped to the map's actual dimensions so a
+      // 16×16 building doesn't render black bars to the right /
+      // bottom.
+      //
+      // 19×15 is a reasonable "around the party" frame — wide enough
+      // to read context (a few tiles in every direction), tight
+      // enough that the party doesn't get lost in a vast canvas.
+      const VIEWPORT_COLS = 19;
+      const VIEWPORT_ROWS = 15;
+      const mapPixelWidth = catalog.map.width * TILE_SIZE;
+      const mapPixelHeight = catalog.map.height * TILE_SIZE;
+      const width = Math.min(VIEWPORT_COLS * TILE_SIZE, mapPixelWidth);
+      const height = Math.min(VIEWPORT_ROWS * TILE_SIZE, mapPixelHeight);
 
       class PlayScene extends Phaser.Scene {
         world: WorldRenderer | null = null;
@@ -504,6 +552,14 @@ export function PlayHost() {
          *  WorldRenderer onRelight hook so a dropped item picks up
          *  the same shade as the floor beneath it. */
         itemOverlays: Map<string, Phaser.GameObjects.Image> = new Map();
+        /** Cell-bound quest-giver overlays keyed "col,row". One per
+         *  cell whose `quest` field resolves in the quest catalog to
+         *  a record with a `quest_giver.npc_sprite`. Rendered at
+         *  depth 80 — above item overlays (70), below particles
+         *  (160) and party / roamers (250+). Tinted via the
+         *  WorldRenderer onRelight hook so the giver dims into
+         *  shadow on unlit cells just like other map sprites. */
+        questOverlays: Map<string, Phaser.GameObjects.Image> = new Map();
         /** Cells currently rendering a boat texture — keyed "col,row",
          *  value is the boat's sprite key. The map cell IS the boat:
          *  setBoatPositions diffs this against the kernel's live boat
@@ -575,6 +631,12 @@ export function PlayHost() {
                 if (t.mode === "clear") img.clearTint();
                 else img.setTint(t.value);
               }
+              for (const [key, img] of this.questOverlays) {
+                const [cs, rs] = key.split(",");
+                const t = tintForCell(result, Number(cs), Number(rs));
+                if (t.mode === "clear") img.clearTint();
+                else img.setTint(t.value);
+              }
             },
           });
           rendererRef.current = this.world;
@@ -630,8 +692,56 @@ export function PlayHost() {
             }
           }
 
+          // Quest-giver overlays — one Image per cell whose `quest`
+          // field resolves in the quest catalog and whose quest_giver
+          // declares an `npc_sprite`. Drawn at depth 80, full tile
+          // size (the giver IS the figure on the cell, not a small
+          // dropped overlay). Accepted quests still render the
+          // overlay so the player can find the quest giver again for
+          // a future end-dialog handoff.
+          for (let r = 0; r < catalog.map.height; r++) {
+            for (let c = 0; c < catalog.map.width; c++) {
+              const cell = catalog.map.grid[r][c];
+              const questId = cell.quest;
+              if (typeof questId !== "string" || !questId) continue;
+              const quest = questsById.get(questId);
+              const giverSprite = quest?.quest_giver?.npc_sprite;
+              if (!giverSprite || !this.textures.exists(giverSprite)) {
+                continue;
+              }
+              const img = this.add
+                .image(
+                  c * TILE_SIZE + TILE_SIZE / 2,
+                  r * TILE_SIZE + TILE_SIZE / 2,
+                  giverSprite,
+                )
+                .setOrigin(0.5)
+                .setDisplaySize(TILE_SIZE, TILE_SIZE)
+                .setDepth(80);
+              this.questOverlays.set(`${c},${r}`, img);
+            }
+          }
+
           this.world.relight();
           this.mountSim();
+
+          // Lock the camera into a fixed viewport that follows the
+          // party. Bounds clamp scrolling to the map's pixel extent
+          // so we don't pan past the edge into the background. Lerp
+          // = 1 means the camera snaps; a smaller value would ease
+          // into position over a few frames, but combat / overworld
+          // movement reads cleaner without the lag. roundPixels
+          // keeps the pixel-art alignment sharp.
+          if (this.world.partySprite) {
+            this.cameras.main.setBounds(
+              0,
+              0,
+              mapPixelWidth,
+              mapPixelHeight,
+            );
+            this.cameras.main.setRoundPixels(true);
+            this.cameras.main.startFollow(this.world.partySprite, true);
+          }
         }
 
         mountSim() {
@@ -905,6 +1015,7 @@ export function PlayHost() {
               spawns: catalog.spawns,
               monsters: catalog.monsters,
               encounters: catalog.encounters,
+              quests: catalog.quests,
               groundTile,
             },
             classNameById,
@@ -917,6 +1028,7 @@ export function PlayHost() {
               initialDefeatedEncounters,
             initialDestroyedLairs:
               dungeonMutations?.destroyedLairs ?? initialDestroyedLairs,
+            initialAcceptedQuests: new Set(save.acceptedQuests ?? []),
             initialBoatPositions,
             initialOnBoat: save.party.onBoat,
             initialCurrentBoatSprite: save.party.currentBoatSprite,
@@ -975,6 +1087,10 @@ export function PlayHost() {
             }
             if (ev.kind === "lock_encountered") {
               setLockEncounter(ev.options);
+              return;
+            }
+            if (ev.kind === "quest_encountered") {
+              setQuestOffer(ev.quest);
               return;
             }
             if (ev.kind === "dungeon_entered") {
@@ -1084,11 +1200,46 @@ export function PlayHost() {
         (cat.monsters.find((m) => m.id === id) as
           | (SimMonsterRef & { difficulty?: string })
           | undefined)?.difficulty;
+      // Walk the accepted quests' kill-steps and group their target
+      // monsters by destination floor. Step records carry
+      // `dungeon_id` + `dungeon_level` (1-based "depth" per the
+      // schema) + `params.monster_id`; we convert level→floorIdx by
+      // subtracting 1 so the generator's 0-based index lines up.
+      // Quests without a monster_id or without a matching dungeon
+      // id contribute nothing — they don't break anything, they
+      // just don't get the guarantee.
+      const accepted = new Set<string>(save.acceptedQuests ?? []);
+      const requiredByFloor = new Map<number, string[]>();
+      for (const q of cat.quests) {
+        if (!accepted.has(q.id)) continue;
+        const steps =
+          (q as unknown as {
+            steps?: ReadonlyArray<{
+              kind?: string;
+              dungeon_id?: string;
+              dungeon_level?: number;
+              params?: { monster_id?: string } | null;
+            }>;
+          }).steps ?? [];
+        for (const s of steps) {
+          if (s.kind !== "kill") continue;
+          if (s.dungeon_id !== dungeonId) continue;
+          const monsterId = s.params?.monster_id;
+          if (!monsterId) continue;
+          const lvl = s.dungeon_level;
+          if (typeof lvl !== "number" || !Number.isFinite(lvl)) continue;
+          const floorIdx = Math.max(0, lvl - 1);
+          const bucket = requiredByFloor.get(floorIdx) ?? [];
+          if (!bucket.includes(monsterId)) bucket.push(monsterId);
+          requiredByFloor.set(floorIdx, bucket);
+        }
+      }
       const session = getOrCreateDungeonSession(dungeonId, seed, () =>
         generateDungeonFromRecord(record, {
           seed,
           encounters: encountersByArea,
           monsterDifficulty,
+          requiredMonstersByFloor: requiredByFloor,
         }),
       );
       const lvl0 = session.levels[0];
@@ -1202,14 +1353,27 @@ export function PlayHost() {
         ) {
           const lvl = dungeonNow.levels[targetFloor];
           if (lvl) {
+            // Landing cell depends on direction:
+            //   - descending (target floor is below the current
+            //     one): land on the new floor's stairs-UP, which
+            //     the generator records as entryCol/entryRow.
+            //   - ascending (target floor is above): land on the
+            //     new floor's stairs-DOWN — the spot the party
+            //     would have descended from. Without this the
+            //     ascent always dumps the party back on the
+            //     entrance stairs even when they came up from a
+            //     different shaft, which reads as teleportation.
+            // Falls back to entryCol/entryRow when stairs-down
+            // isn't on the destination floor (e.g. a single-floor
+            // dungeon, or an authored map that pre-dates this).
+            const ascending = targetFloor < dungeonNow.floorIdx;
+            const stairsDown = ascending ? findStairsDownCell(lvl) : null;
+            const landing =
+              stairsDown ?? { col: lvl.entryCol, row: lvl.entryRow };
             dungeonStateRef.current = {
               ...dungeonNow,
               floorIdx: targetFloor,
-              // entryCol/entryRow is the floor's stairs-up cell —
-              // works for both descending (player lands on the
-              // stairs-up of the new floor) and ascending (same,
-              // a slight content nit but matches DungeonSimMount).
-              startAt: { col: lvl.entryCol, row: lvl.entryRow },
+              startAt: landing,
             };
             // Mirror the latest in-memory session into the save so
             // a reload mid-transition (or right after) resumes on
@@ -1227,8 +1391,8 @@ export function PlayHost() {
                 currentDungeon: {
                   dungeonId: dungeonNow.dungeonId,
                   floorIdx: targetFloor,
-                  col: lvl.entryCol,
-                  row: lvl.entryRow,
+                  col: landing.col,
+                  row: landing.row,
                   returnTo: dungeonNow.returnTo,
                 },
               },
@@ -1389,6 +1553,39 @@ export function PlayHost() {
     setLockEncounter(null);
   }, []);
 
+  /** Quest accept — mark the quest accepted on the kernel (so the
+   *  trigger tile stops re-offering) and persist into the save. */
+  const onQuestAccept = useCallback(() => {
+    setQuestOffer((current) => {
+      if (!current) return null;
+      const sim = simRef.current;
+      const newlyAccepted = sim?.markQuestAccepted(current.id) ?? false;
+      if (newlyAccepted) {
+        const save = saveRef.current;
+        if (save) {
+          const prev = save.acceptedQuests ?? [];
+          if (!prev.includes(current.id)) {
+            const nextSave: WorldSave = {
+              ...save,
+              acceptedQuests: [...prev, current.id],
+            };
+            saveWorld(nextSave);
+            saveRef.current = nextSave;
+          }
+        }
+      }
+      return null;
+    });
+  }, []);
+
+  /** Quest decline — close the overlay without flipping the
+   *  accepted-quest set. Re-stepping the trigger cell will re-offer.
+   *  We intentionally don't write to the save here; declining is a
+   *  transient choice. */
+  const onQuestDecline = useCallback(() => {
+    setQuestOffer(null);
+  }, []);
+
   // Render shells.
   if (state.kind === "loading") {
     return (
@@ -1525,6 +1722,16 @@ export function PlayHost() {
           ))}
         </div>
       ) : null}
+
+      {/* Quest log — every accepted quest's name + first
+       *  uncompleted step's name + description. Hidden during combat.
+       *  Step completion isn't tracked yet, so we show step 0 as the
+       *  active objective for now; once the kernel grows step
+       *  tracking the index will read off the save's per-quest
+       *  progress. */}
+      {!combat && state.catalog && state.save?.acceptedQuests
+        ? renderQuestLog(state.catalog.quests, state.save.acceptedQuests)
+        : null}
       <footer className="text-xs text-parchment/45">
         {combat
           ? "Combat resolves when one side falls."
@@ -1537,6 +1744,17 @@ export function PlayHost() {
           onPickLock={onPickLock}
           onCastKnock={onCastKnock}
           onClose={onLockClose}
+        />
+      ) : null}
+
+      {questOffer ? (
+        <QuestDialogOverlay
+          quest={questOffer}
+          alreadyAccepted={
+            state.save?.acceptedQuests?.includes(questOffer.id) ?? false
+          }
+          onAccept={onQuestAccept}
+          onDecline={onQuestDecline}
         />
       ) : null}
     </main>
@@ -1564,6 +1782,7 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
     spellsLayers,
     itemsLayers,
     dungeonsLayers,
+    questsLayers,
   ] = await Promise.all([
     src.loadModelLayers(moduleId, "map_tiles"),
     src.loadModelLayers(moduleId, "maps"),
@@ -1577,6 +1796,7 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
     src.loadModelLayers(moduleId, "spells").catch(() => null),
     src.loadModelLayers(moduleId, "items").catch(() => null),
     src.loadModelLayers(moduleId, "dungeons").catch(() => null),
+    src.loadModelLayers(moduleId, "quests").catch(() => null),
   ]);
 
   const paletteDoc = (mergeModel(
@@ -1700,6 +1920,11 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
     dungeonsLayers?.inherited ?? [],
     dungeonsLayers?.ownFile ?? null,
   ) ?? {}) as { dungeons?: DungeonRecord[] };
+  const questsDoc = (mergeModel(
+    "quests",
+    questsLayers?.inherited ?? [],
+    questsLayers?.ownFile ?? null,
+  ) ?? {}) as { quests?: SimQuestRef[] };
 
   return {
     map,
@@ -1713,6 +1938,7 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
     encounters: encountersDoc.encounters ?? [],
     spawns: spawnsDoc.spawns ?? [],
     dungeons: dungeonsDoc.dungeons ?? [],
+    quests: questsDoc.quests ?? [],
     knockSpell,
     items: itemsDoc.items ?? [],
   };
@@ -1742,6 +1968,32 @@ function resolveCustomArenaCells(
   return buildArenaCells(map.grid, centerCol, centerRow);
 }
 
+
+/**
+ * Locate the (col, row) of a level's "stairs-down" cell — either
+ * the standard stone stairs or the forest archway equivalent.
+ * Returns null when the level doesn't carry one (e.g. the bottom
+ * floor of a single-level dungeon, or one where the generator
+ * placed the exit as an overworld archway). Used by the ascent
+ * branch in `handleLinked` so going up from floor N lands the
+ * party on floor N-1's stairs-down — i.e. the spot they descended
+ * from — rather than the floor's entrance.
+ */
+function findStairsDownCell(
+  level: DungeonLevel,
+): { col: number; row: number } | null {
+  for (let r = 0; r < level.tiles.length; r++) {
+    const row = level.tiles[r];
+    if (!row) continue;
+    for (let c = 0; c < row.length; c++) {
+      const tid = row[c];
+      if (tid === TILE_STAIRS_DOWN || tid === TILE_FOREST_ARCHWAY_DOWN) {
+        return { col: c, row: r };
+      }
+    }
+  }
+  return null;
+}
 
 /**
  * Mirror an in-memory DungeonSession into the JSON-safe
@@ -1825,6 +2077,63 @@ function buildDungeonCatalog(
     spawns: [],
     encounters: [...baseCatalog.encounters, ...dungeonEncs],
   };
+}
+
+/**
+ * Render the quest-log strip — one row per accepted quest with the
+ * quest name and the active step's name + description. Currently
+ * "active step" is always step 0; once step completion lands the
+ * per-quest progress lookup will drive the index.
+ *
+ * Returns null when the player has no accepted quests so the panel
+ * doesn't render an empty box.
+ */
+function renderQuestLog(
+  catalogQuests: ReadonlyArray<SimQuestRef>,
+  accepted: ReadonlyArray<string>,
+) {
+  if (accepted.length === 0) return null;
+  const byId = new Map(catalogQuests.map((q) => [q.id, q]));
+  const rows = accepted
+    .map((id) => byId.get(id))
+    .filter((q): q is SimQuestRef => !!q);
+  if (rows.length === 0) return null;
+  return (
+    <aside className="w-full max-w-5xl rounded border border-parchment/15 bg-ink/60 p-3 text-xs text-parchment/80">
+      <header className="mb-2 text-[10px] uppercase tracking-wide text-parchment/45">
+        Quest Log
+      </header>
+      <ul className="space-y-2">
+        {rows.map((q) => {
+          // SimQuestRef doesn't carry steps today; the raw record
+          // loaded through `loadCatalog` does. We cast through to
+          // read the first step's name + description as the active
+          // objective. Future per-quest step state will pick the
+          // right one off the save.
+          const steps = (q as unknown as { steps?: ReadonlyArray<{
+            name?: string;
+            description?: string;
+          }> }).steps;
+          const step0 = steps?.[0];
+          return (
+            <li key={q.id}>
+              <div className="font-medium text-parchment">{q.name}</div>
+              {step0?.name ? (
+                <div className="text-[11px] text-parchment/70">
+                  → {step0.name}
+                </div>
+              ) : null}
+              {step0?.description ? (
+                <div className="text-[11px] italic text-parchment/55">
+                  {step0.description}
+                </div>
+              ) : null}
+            </li>
+          );
+        })}
+      </ul>
+    </aside>
+  );
 }
 
 // Reference to silence "unused" lints — keeps the SavedCharacterState

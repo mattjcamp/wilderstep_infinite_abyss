@@ -871,6 +871,14 @@ export interface GenerateLevelOptions {
    * against).
    */
   monsterDifficulty?: (name: string) => string | undefined;
+  /** Monsters the caller wants guaranteed to appear on this floor —
+   *  typically driven by active quest kill-steps targeting the
+   *  matching `(dungeon, level)`. After the normal encounter
+   *  placement loop runs, the generator checks the placed roster
+   *  for each id here; any that didn't naturally land get a
+   *  force-placed encounter chosen from the pool. Empty / omitted =
+   *  no guarantees beyond what the encounter sampler produces. */
+  requiredMonsterIds?: ReadonlyArray<string>;
   /** Deterministic seed. Required so dungeons regenerate identically
    *  across sessions. */
   seed: number;
@@ -1016,6 +1024,93 @@ export function generateDungeonLevel(opts: GenerateLevelOptions): DungeonLevel {
         encounterNames: enc.monsters,
         encounterName: enc.name,
       });
+    }
+  }
+
+  // ── Required-monster guarantee ──
+  // After the random pass runs, any monster id the caller flagged
+  // as required (typically the target of an active quest kill-step
+  // for this dungeon + floor) must show up at least once. We scan
+  // the already-placed roster, then for each missing id pick an
+  // encounter from the area pool that contains it and force-place
+  // it in an unused room (not the entrance). Without this a player
+  // who accepts "Kill the Giant Rats" can roll a floor that has
+  // zero rats, with no way to make progress.
+  if (
+    opts.requiredMonsterIds &&
+    opts.requiredMonsterIds.length > 0 &&
+    opts.encounters
+  ) {
+    const areaPool = opts.encounters[opts.encounterArea ?? "dungeon"] ?? [];
+    const placedMonsterIds = new Set<string>();
+    for (const m of monsters) {
+      for (const id of m.encounterNames) placedMonsterIds.add(id);
+    }
+    // Track which rooms we've already dropped a monster in so the
+    // forced encounters don't pile on the same cell.
+    const usedRooms = new Set<number>();
+    for (let i = 1; i < rooms.length; i++) {
+      const r = rooms[i];
+      const [rcx, rcy] = r.center;
+      if (monsters.some((m) => m.col === rcx && m.row === rcy)) {
+        usedRooms.add(i);
+      }
+    }
+    for (const requiredId of opts.requiredMonsterIds) {
+      if (placedMonsterIds.has(requiredId)) continue;
+      // Find an encounter in the area pool whose roster contains
+      // the required id. Prefer encounters in the floor's level
+      // band, but fall back to anything that includes the monster
+      // if no band match exists (better to force a slightly off-
+      // band fight than to fail the quest objective entirely).
+      const containing = areaPool.filter((e) =>
+        e.monsters.includes(requiredId),
+      );
+      if (containing.length === 0) continue;
+      const inBand = containing.filter(
+        (e) => e.level >= profile.encMin && e.level <= profile.encMax,
+      );
+      const pool = inBand.length > 0 ? inBand : containing;
+      const enc = pool[Math.floor(rng() * pool.length)];
+      // Pick the first un-used non-entrance room.
+      let placedAt: { col: number; row: number } | null = null;
+      for (let i = 1; i < rooms.length; i++) {
+        if (usedRooms.has(i)) continue;
+        const r = rooms[i];
+        let [mx, my] = r.center;
+        mx += randInt(rng, -1, 1);
+        my += randInt(rng, -1, 1);
+        if (getTile(grid, mx, my) !== floorTile) {
+          // Fall back to room center if the jittered cell isn't floor.
+          mx = r.center[0];
+          my = r.center[1];
+          if (getTile(grid, mx, my) !== floorTile) continue;
+        }
+        placedAt = { col: mx, row: my };
+        usedRooms.add(i);
+        break;
+      }
+      if (!placedAt) continue;
+      monsters.push({
+        id: `m-${opts.seed}-q-${requiredId}`,
+        col: placedAt.col,
+        row: placedAt.row,
+        name: enc.monsterPartyTile,
+        encounterNames: enc.monsters,
+        encounterName: enc.name,
+        // Mark this as a quest-required placement so the renderer
+        // can paint the soft gold halo the DungeonMonster doc
+        // comment describes — the player sees which sprites are
+        // "credit toward an active quest". Stored as a generic
+        // "quest-target" marker (we don't have a specific quest
+        // name from the caller — the kill-step is identified by
+        // the monster id, not the quest's display name). The
+        // renderer only checks truthiness today, so any non-empty
+        // string suffices; downstream features can re-key off the
+        // monster id encoded here.
+        questName: `__quest_target_${requiredId}`,
+      });
+      placedMonsterIds.add(requiredId);
     }
   }
 

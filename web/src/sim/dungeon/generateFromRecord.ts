@@ -65,6 +65,12 @@ export interface GenerateFromRecordOptions {
    *  level-band filter still narrows the pool but per-monster tier
    *  isn't enforced. */
   monsterDifficulty?: (monsterId: string) => string | undefined;
+  /** Required-monster ids keyed by 0-based floor index. Driven by
+   *  accepted quests' kill-steps targeting `(dungeon, level)`. The
+   *  generator passes the matching list down so each required id is
+   *  guaranteed at least one placement on that floor. Floors absent
+   *  from this map (or quests without monster ids) generate normally. */
+  requiredMonstersByFloor?: ReadonlyMap<number, ReadonlyArray<string>>;
 }
 
 /**
@@ -114,6 +120,7 @@ export function generateDungeonFromRecord(
       encounters: opts.encounters,
       encounterArea: "dungeon",
       monsterDifficulty: opts.monsterDifficulty,
+      requiredMonsterIds: opts.requiredMonstersByFloor?.get(floorIdx),
       seed,
     });
     out.push(normaliseAuthoredHeight(raw, resolved.size.height));

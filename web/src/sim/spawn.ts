@@ -113,6 +113,12 @@ export interface SimPlacedEncounter {
   /** Lead-sprite path (matches v2's `encounter.monster_party_tile`).
    *  Optional so a missing sprite degrades to the host's placeholder. */
   sprite?: string;
+  /** Optional sprite tint (packed RGB, e.g. 0xffe580) — propagated
+   *  from the encounter record's `tint` field. Used today by
+   *  quest-target dungeon placements to render a soft gold halo.
+   *  Falsy = no tint override, sprite renders with the cell's
+   *  lighting tint only. */
+  tint?: number;
 }
 
 /**
@@ -330,6 +336,7 @@ export function findPlacedEncounters(
         row: r,
         sourceKey,
         sprite: enc.monster_party_tile,
+        tint: enc.tint,
       });
     }
   }

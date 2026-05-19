@@ -98,6 +98,13 @@ export interface RoamerSpriteEntry {
   col: number;
   row: number;
   sprite: string;
+  /** Optional sprite tint (packed RGB). When present, the relight
+   *  pass multiplies the per-cell lighting tint by this value so the
+   *  sprite carries its own colour wash on top of the ambient — used
+   *  today by quest-target dungeon placements (faint gold halo).
+   *  Stored on the Image via `setData("tint", value)` so re-tints
+   *  during relight don't need the entry list re-passed. */
+  tint?: number;
 }
 
 /** Construction options. Everything except `scene` and `grid` is
@@ -404,12 +411,43 @@ export class WorldRenderer {
       }
     }
     // Roamer + placed-encounter overlays inherit their cell's tint.
+    // When the sprite carries its own `tint` (stashed via setData
+    // when the entry arrived), we multiply it with the lighting
+    // tint channel-by-channel — matches how Phaser's MULTIPLY blend
+    // would combine them visually, but composed explicitly so a
+    // fully-lit cell ("clear" mode) still applies the per-sprite
+    // tint instead of clearing it.
+    const multiplyTint = (a: number, b: number): number => {
+      const ar = (a >> 16) & 0xff;
+      const ag = (a >> 8) & 0xff;
+      const ab = a & 0xff;
+      const br = (b >> 16) & 0xff;
+      const bg = (b >> 8) & 0xff;
+      const bb = b & 0xff;
+      const r = Math.round((ar * br) / 255) & 0xff;
+      const g = Math.round((ag * bg) / 255) & 0xff;
+      const bl = Math.round((ab * bb) / 255) & 0xff;
+      return (r << 16) | (g << 8) | bl;
+    };
     const tintOverlay = (img: Phaser.GameObjects.Image) => {
       const col = Math.round((img.x - TILE_SIZE / 2) / TILE_SIZE);
       const row = Math.round((img.y - TILE_SIZE / 2) / TILE_SIZE);
       const t = tintForCell(result, col, row);
-      if (t.mode === "clear") img.clearTint();
-      else img.setTint(t.value);
+      const spriteTint = img.getData("tint");
+      const hasSpriteTint = typeof spriteTint === "number";
+      if (t.mode === "clear" && !hasSpriteTint) {
+        img.clearTint();
+        return;
+      }
+      if (t.mode === "clear" && hasSpriteTint) {
+        img.setTint(spriteTint as number);
+        return;
+      }
+      if (!hasSpriteTint) {
+        img.setTint(t.value);
+        return;
+      }
+      img.setTint(multiplyTint(t.value, spriteTint as number));
     };
     for (const img of this.roamerSprites.values()) tintOverlay(img);
     for (const img of this.placedEncounterSprites.values()) tintOverlay(img);
@@ -457,6 +495,11 @@ export class WorldRenderer {
           img.setTexture(p.sprite);
         }
       }
+      // Stash the per-entry tint on the Image so the next relight
+      // can read it back without the caller having to re-pass the
+      // whole positions list. Setting to null when absent clears any
+      // leftover tint from a prior placement.
+      img.setData("tint", typeof p.tint === "number" ? p.tint : null);
     }
   }
 }
