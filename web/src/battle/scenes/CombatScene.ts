@@ -362,6 +362,13 @@ type PendingAction =
   | { kind: "cast"; spell: Spell }
   /** Tile-targeted spell — resolution branches by effect_type. */
   | { kind: "tile"; spell: Spell }
+  /** Tile-targeted throw — used for thrown items whose effect lands
+   *  on the cell itself rather than on a creature. The canonical
+   *  case is a lit torch with `ignite: true`: the player needs to
+   *  be able to chuck it at any open cell in range — including dark
+   *  and empty ones — so they can light up the arena. Resolution
+   *  is in `resolveThrowTile`. */
+  | { kind: "throw-tile"; item: Item }
   /** Directional spell — resolution waits on an arrow-key press. */
   | { kind: "direction"; spell: Spell }
   /** Volley-style ranged weapon — caster picks a cardinal direction,
@@ -413,8 +420,31 @@ export class CombatScene extends Phaser.Scene {
   private infravisionGfx: Phaser.GameObjects.Graphics | null = null;
   /** Static light sources collected from `arenaCells` at create time.
    *  Empty while `darkness` is off. Per-source the radius comes from
-   *  the cell's `lightRange`, falling back to Lighting.ts's default. */
+   *  the cell's `lightRange`, falling back to Lighting.ts's default.
+   *  Dynamic sources (thrown-torch fires) get appended at runtime —
+   *  the per-cell brightness pass treats authored + dynamic the same. */
   private staticLights: LightSource[] = [];
+  /** Fire cells ignited mid-fight by thrown items (`ignite: true`).
+   *  Keyed `"col,row"`. Each entry tracks:
+   *    - lightRange: tiles the fire illuminates (Chebyshev radius)
+   *    - damage: HP loss for combatants standing on / entering
+   *    - emitter: the fire particle effect rendered on the cell
+   *  The cell's contribution to `staticLights` lives in the array
+   *  above; this map is the bookkeeping side for the damage pass +
+   *  the emitter so we can clean both up if a fire ever burns out. */
+  private fireCells = new Map<
+    string,
+    {
+      lightRange: number;
+      damage: number;
+      emitter: Phaser.GameObjects.Particles.ParticleEmitter;
+    }
+  >();
+  /** Combatant ids that have already taken fire damage this turn,
+   *  keyed off the turn id so a single combatant can't get stung
+   *  twice if they step on multiple fire cells in the same activation.
+   *  Cleared on each new turn. Kept lazy — populated on first sting. */
+  private fireDamagedThisTurn = new Set<string>();
   /** Graphics object that paints the darkness overlay. Rebuilt on every
    *  party move / turn change so the party's own light pool follows the
    *  active actor. Lives at depth 20 (above bodies/HP, below floaters). */
@@ -607,6 +637,11 @@ export class CombatScene extends Phaser.Scene {
     this.monsterHpBars.clear();
     for (const e of this.arenaEmitters.values()) e?.destroy();
     this.arenaEmitters.clear();
+    // Fire emitters spawned mid-fight by thrown torches — same
+    // teardown rule as authored cell emitters.
+    for (const f of this.fireCells.values()) f.emitter?.destroy();
+    this.fireCells.clear();
+    this.fireDamagedThisTurn.clear();
     for (const t of this.actionTexts) t?.destroy();
     this.actionTexts.length = 0;
     for (const h of this.actionRowHandles) h?.destroy();
@@ -1228,6 +1263,105 @@ export class CombatScene extends Phaser.Scene {
    * gradient, but that matches the engine's Chebyshev-distance light
    * model and the tactical grid the player is already reading.
    */
+  /**
+   * Turn the cell at (col, row) into a fire tile. Three pieces:
+   *
+   *   1. A new LightSource appended to `staticLights` so the
+   *      darkness pass reads it like any authored torch.
+   *   2. A fire particle emitter at the cell, depth 160 (same band
+   *      as cell animations elsewhere — above the floor tint,
+   *      below party / monsters / darkness).
+   *   3. A `fireCells` entry tracking lightRange + damage + the
+   *      emitter handle so a future burnout pass can clear the
+   *      light source + destroy the emitter together.
+   *
+   * Re-igniting an already-fire cell just bumps the damage/range
+   * if the new throw is hotter — keeps the fire from compounding
+   * into multiple emitters on the same tile.
+   *
+   * Calls `refreshDarkness` so the new pool of light lands the
+   * frame the torch hits. Lighting outside the darkness mode is
+   * a no-op (the helper bails early when `!this.darkness`).
+   */
+  private igniteCell(
+    col: number,
+    row: number,
+    lightRange: number,
+    damage: number,
+  ): void {
+    const key = `${col},${row}`;
+    const existing = this.fireCells.get(key);
+    if (existing) {
+      existing.lightRange = Math.max(existing.lightRange, lightRange);
+      existing.damage = Math.max(existing.damage, damage);
+      // Update the matching staticLight entry's radius.
+      for (const light of this.staticLights) {
+        if (light.col === col && light.row === row) {
+          light.radius = existing.lightRange;
+          break;
+        }
+      }
+      this.refreshDarkness();
+      return;
+    }
+    this.staticLights.push({ col, row, radius: lightRange });
+    // Lazy white-circle particle source — shared with the cell-
+    // emitter pass that runs in drawArena. Idempotent on existing
+    // texture so a fire ignited late doesn't re-generate it.
+    if (!this.textures.exists("__particle")) {
+      const g = this.add.graphics();
+      g.fillStyle(0xffffff, 1);
+      g.fillCircle(8, 8, 8);
+      g.generateTexture("__particle", 16, 16);
+      g.destroy();
+    }
+    const ex = ARENA_X + col * TILE + TILE / 2;
+    const ey = ARENA_Y + row * TILE + TILE / 2;
+    const cfg = ANIMATION_CONFIGS.fire;
+    const emitter = this.add.particles(
+      ex,
+      ey,
+      "__particle",
+      cfg as unknown as Phaser.Types.GameObjects.Particles.ParticleEmitterConfig,
+    );
+    emitter.setDepth(160);
+    this.fireCells.set(key, { lightRange, damage, emitter });
+    // Anyone already standing on the cell (the target of the throw,
+    // most commonly) gets the first damage tick immediately rather
+    // than waiting until their next move into the cell.
+    this.applyFireDamageOnEntry(col, row);
+    // Light pool needs to re-pool now that this source exists.
+    this.refreshDarkness();
+  }
+
+  /**
+   * Apply fire damage to every combatant currently standing on the
+   * given cell. Called once when the cell ignites (catches anyone
+   * the projectile landed on) and once per move when a combatant
+   * enters a fire cell. Each combatant takes at most one fire hit
+   * per turn — the `fireDamagedThisTurn` Set is the gate, cleared
+   * each turn transition. No-op if `combat` hasn't been built yet.
+   */
+  private applyFireDamageOnEntry(col: number, row: number): void {
+    if (!this.combat) return;
+    const fire = this.fireCells.get(`${col},${row}`);
+    if (!fire) return;
+    for (const c of this.combat.combatants) {
+      if (c.hp <= 0) continue;
+      if (c.position.col !== col || c.position.row !== row) continue;
+      if (this.fireDamagedThisTurn.has(c.id)) continue;
+      this.fireDamagedThisTurn.add(c.id);
+      const before = c.hp;
+      c.hp = Math.max(0, c.hp - fire.damage);
+      this.combat.log.push(
+        c.hp <= 0
+          ? `${c.name} burns to death in the fire (${before} → 0).`
+          : `${c.name} burns in the fire (${before} → ${c.hp}).`,
+      );
+      this.refreshHp(c);
+    }
+  }
+
   private refreshDarkness(): void {
     if (!this.darkness || !this.darknessGfx) return;
     const g = this.darknessGfx;
@@ -1338,6 +1472,38 @@ export class CombatScene extends Phaser.Scene {
       emitter.setVisible(
         this.isCellVisibleToParty(Number(cs), Number(rs)),
       );
+    }
+    // Party sprite gate in darkness — hide non-anchor party members
+    // when the scene is dark. The "anchor" is whichever party member
+    // is carrying the light: the active actor when it's their turn,
+    // or the first alive party member when an enemy is acting (same
+    // fallback the darkness pass uses to anchor the self-light pool).
+    // Idle teammates fade into shadow like everyone else off-anchor,
+    // even if they happen to be inside the active actor's small
+    // light bubble — without this a teammate standing next to the
+    // caster pokes through the darkness while teammates further
+    // away get correctly hidden, which is what the user noticed
+    // with Aldric.
+    if (this.combat) {
+      const cur2 = this.combat.current;
+      const anchorId =
+        cur2 && cur2.side === "party" && cur2.hp > 0
+          ? cur2.id
+          : this.combat.combatants.find(
+              (c) => c.side === "party" && c.hp > 0,
+            )?.id ?? null;
+      for (const c of this.combat.combatants) {
+        if (c.side !== "party") continue;
+        const body = this.bodies.get(c.id);
+        if (!body) continue;
+        if (!this.darkness) {
+          // Daylight / lit scene — restore normal visibility (alive
+          // sprites shown, dead bodies handled by refreshHp's tint).
+          body.setVisible(true);
+          continue;
+        }
+        body.setVisible(c.id === anchorId && c.hp > 0);
+      }
     }
   }
 
@@ -1853,6 +2019,17 @@ export class CombatScene extends Phaser.Scene {
     if (this.mode === "pick-throw") {
       const opt = this.throwOptions[this.pickerCursor];
       if (!opt) return;
+      // Items whose effect lands on the cell (a lit torch that
+      // ignites the ground) need pick-tile mode — the player has to
+      // be able to aim at any open square in range, dark or empty,
+      // not just a visible enemy. Drains the item the same way the
+      // creature-target path does (`consumeThrowItem` is the rule
+      // we don't refund mis-thrown items).
+      if (opt.item.ignite) {
+        this.startThrowTilePicking(opt.item);
+        this.consumeThrowItem(opt);
+        return;
+      }
       this.startTargetingFor({ kind: "throw", item: opt.item }, "enemies");
       this.consumeThrowItem(opt);
       return;
@@ -1876,7 +2053,15 @@ export class CombatScene extends Phaser.Scene {
       return;
     }
     if (this.mode === "pick-tile") {
-      void this.resolveTileSpell();
+      // pick-tile is shared between AOE / teleport / summon spells
+      // (kind: "tile") and ignitable thrown items (kind: "throw-tile").
+      // Branch on the pending action kind so the resolver picks the
+      // correct fire/spell handler.
+      if (this.pendingAction?.kind === "throw-tile") {
+        void this.resolveThrowTile();
+      } else {
+        void this.resolveTileSpell();
+      }
       return;
     }
     if (this.mode !== "default") return; // other sub-modes use number keys
@@ -2795,6 +2980,22 @@ export class CombatScene extends Phaser.Scene {
         await this.flyProjectile(me, target, VFX_COLOURS.ember);
         await this.animateHit(target, result);
         this.refreshHp(target);
+        // Ignite the landing cell when the thrown item declares
+        // `ignite: true` — e.g. a lit torch. Drops a fire light
+        // source there + a fire particle emitter + adds the cell
+        // to fireCells for damage-on-entry. Future-proofed by
+        // light_range coming from the item data; defaults to 3.
+        if (action.item.ignite) {
+          this.igniteCell(
+            target.position.col,
+            target.position.row,
+            action.item.light_range ?? 3,
+            action.item.power ?? 3,
+          );
+          this.combat.log.push(
+            `The ${action.item.name} catches the ground at (${target.position.col}, ${target.position.row}) on fire.`,
+          );
+        }
       } else if (action.kind === "range") {
         // Same dice resolution as Throw — fire-and-forget projectile.
         // The weapon stays equipped (no consume) since it's reusable.
@@ -3146,7 +3347,10 @@ export class CombatScene extends Phaser.Scene {
     this.renderTilePickerHint(spell);
   }
 
-  /** Move the tile cursor by (dc, dr), clamped to the open arena. */
+  /** Move the tile cursor by (dc, dr), clamped to the open arena and
+   *  — for throw-tile mode — to within the item's throw range from
+   *  the caster. The range cap is silent: pressing a direction that
+   *  would push past the cap leaves the cursor where it is. */
   private moveTileCursor(dc: number, dr: number): void {
     const next = {
       col: this.tileCursorPos.col + dc,
@@ -3155,22 +3359,57 @@ export class CombatScene extends Phaser.Scene {
     // Clamp to inside the wall ring (1..N-2).
     next.col = Math.max(1, Math.min(ARENA_COLS - 2, next.col));
     next.row = Math.max(1, Math.min(ARENA_ROWS - 2, next.row));
+    // For throw-tile, enforce the item's max range as a Chebyshev
+    // distance from the caster. Refuse moves that would step the
+    // reticle past the cap.
+    const pending = this.pendingAction;
+    if (this.mode === "pick-tile" && pending?.kind === "throw-tile") {
+      const caster = this.combat.current.position;
+      const range = maxRangeFor(pending.item);
+      const cheb = Math.max(
+        Math.abs(next.col - caster.col),
+        Math.abs(next.row - caster.row),
+      );
+      if (cheb > range) {
+        // Out of range — keep the cursor where it was.
+        return;
+      }
+    }
     this.tileCursorPos = next;
     this.refreshTileCursor();
   }
 
-  /** Re-render the tile cursor reticle + AOE preview if applicable. */
+  /** Re-render the tile cursor reticle + AOE / light preview if
+   *  applicable. Shared between tile-spells and throw-tile.  */
   private refreshTileCursor(): void {
     this.clearTileCursor();
     if (this.mode !== "pick-tile") return;
     const action = this.pendingAction;
-    if (!action || action.kind !== "tile") return;
+    if (!action) return;
+    if (action.kind !== "tile" && action.kind !== "throw-tile") return;
     const { col, row } = this.tileCursorPos;
-    // Optional radius preview for aoe_fireball-style spells.
-    const ev = action.spell.effect_value ?? {};
-    const radius = typeof (ev as Record<string, unknown>).radius === "number"
-      ? (ev as { radius: number }).radius
-      : 0;
+    // Per-action preview radius: spells use `effect_value.radius`,
+    // ignitable throws use the item's `light_range` (default 3).
+    let radius = 0;
+    let previewColor = 0xff8e3c;
+    if (action.kind === "tile") {
+      const ev = action.spell.effect_value ?? {};
+      radius = typeof (ev as Record<string, unknown>).radius === "number"
+        ? (ev as { radius: number }).radius
+        : 0;
+    } else {
+      // throw-tile: preview the area the fire would light up.
+      radius = action.item.light_range ?? 3;
+      previewColor = 0xffb84d;
+    }
+    // Lift the reticle + radius preview above the darkness overlay
+    // (depth 20) in throw-tile mode. The whole point of throwing a
+    // torch is to aim into darkness, so the cursor MUST be visible
+    // through the shadow. Spell tile-picks land in lit conditions
+    // most of the time, so they stay at the legacy depths.
+    const isThrowTile = action.kind === "throw-tile";
+    const previewDepth = isThrowTile ? 21 : 15;
+    const cursorDepth = isThrowTile ? 22 : 16;
     if (radius > 0) {
       for (let dr = -radius; dr <= radius; dr++) {
         for (let dc = -radius; dc <= radius; dc++) {
@@ -3181,10 +3420,10 @@ export class CombatScene extends Phaser.Scene {
           if (dc === 0 && dr === 0) continue; // centre handled below
           const aoe = this.add
             .rectangle(ARENA_X + c * TILE, ARENA_Y + r * TILE, TILE, TILE,
-                       0xff8e3c, 0.18)
+                       previewColor, 0.18)
             .setOrigin(0)
-            .setStrokeStyle(1, 0xff8e3c, 0.35)
-            .setDepth(15);
+            .setStrokeStyle(1, previewColor, 0.35)
+            .setDepth(previewDepth);
           this.tileCursorObjects.push(aoe);
         }
       }
@@ -3195,7 +3434,7 @@ export class CombatScene extends Phaser.Scene {
                  C.cursor, 0)
       .setOrigin(0)
       .setStrokeStyle(2, C.cursor)
-      .setDepth(16);
+      .setDepth(cursorDepth);
     this.tileCursorObjects.push(cursor);
   }
 
@@ -3542,6 +3781,130 @@ export class CombatScene extends Phaser.Scene {
     }
   }
 
+  // ── Throw-tile picker (ignitable items) ─────────────────────────
+  //
+  // Routes "Throw" of an ignitable item (e.g. a lit torch) into the
+  // tile picker so the player can target ANY open cell in range,
+  // dark or empty — the whole point of throwing a torch is to light
+  // up an area, which means the target cell is by definition the
+  // one the party cannot see. Reuses the pick-tile mode (cursor,
+  // arrow-key nudging, ESC cancel) so we don't duplicate input
+  // plumbing; the only divergence is the pending-action variant +
+  // the resolver below.
+
+  /**
+   * Begin tile selection for an ignitable thrown item. Cursor starts
+   * one tile north of the caster — close enough that a quick Enter
+   * lights the ground in front of them, far enough that the caster
+   * sprite isn't underneath the reticle.
+   */
+  private startThrowTilePicking(item: Item): void {
+    const me = this.combat.current;
+    const start = {
+      col: Math.max(1, Math.min(ARENA_COLS - 2, me.position.col)),
+      row: Math.max(1, Math.min(ARENA_ROWS - 2, me.position.row - 1)),
+    };
+    this.tileCursorPos = start;
+    this.pendingAction = { kind: "throw-tile", item };
+    this.mode = "pick-tile";
+    this.clearPicker();
+    this.refreshTileCursor();
+    this.renderThrowTilePickerHint(item);
+    // Range overlay: paint the cells the player can reach. drawActionHints
+    // grew a throw-tile branch — gives the player a visual cap so they
+    // know exactly which squares the cursor can travel to.
+    this.drawActionHints();
+  }
+
+  /** Bottom-of-HUD prompt for the throw-tile picker — describes the
+   *  item, the throw range, and the keyboard controls. */
+  private renderThrowTilePickerHint(item: Item): void {
+    this.clearPicker();
+    const range = maxRangeFor(item);
+    const lines = [
+      `Throwing: ${item.name}`,
+      `Range: ${range} tiles`,
+      "[↑↓←→] move reticle",
+      "[Enter] confirm",
+      "[ESC]   cancel",
+    ];
+    const w = HUD_W - 12, h = lines.length * 18 + 28;
+    const x = HUD_X + 6, y = HUD_Y + HUD_H - 6 - h;
+    this.pickerObjects.push(
+      this.add.rectangle(x, y, w, h, 0x10101a, 0.98)
+        .setOrigin(0)
+        .setStrokeStyle(2, C.accent)
+    );
+    this.pickerObjects.push(
+      this.add.text(x + 10, y + 8, "PICK A TILE", FONT_HEAD(C.accent))
+    );
+    lines.forEach((line, i) => {
+      this.pickerObjects.push(
+        this.add.text(x + 10, y + 30 + i * 18, line, FONT_BODY())
+      );
+    });
+  }
+
+  /**
+   * Resolve a confirmed throw-tile. Mirrors the throw-at-creature
+   * branch of `resolveTarget` (whoosh SFX, bump animation, projectile
+   * arc) but the destination is a cell, not a Combatant — so the
+   * projectile lands at the cursor and the cell is ignited. Any
+   * combatant currently standing on the cell takes the first damage
+   * tick via `igniteCell → applyFireDamageOnEntry`.
+   *
+   * One-pass with the spell-tile path on `consumeThrowItem` — the
+   * item was already drained on entry to the picker (matching the
+   * legacy throw behavior; the player can't escape-cancel to get
+   * their torch back).
+   */
+  private async resolveThrowTile(): Promise<void> {
+    const action = this.pendingAction;
+    if (!action || action.kind !== "throw-tile") return;
+    const me = this.combat.current;
+    const item = action.item;
+    const target = { ...this.tileCursorPos };
+    this.busy = true;
+    this.mode = "default";
+    this.pendingAction = null;
+    this.clearTileCursor();
+    this.clearPicker();
+    this.clearMoveHints();
+    try {
+      // Throw whoosh + visible projectile arc from caster → target cell.
+      Sfx.play("chirp");
+      await this.animateBump(me, me.position, target);
+      const start = this.bodyXY(me);
+      const endPx = {
+        x: this.tileX(target.col),
+        y: this.tileY(target.row),
+      };
+      await projectileLine(this, start, endPx, VFX_COLOURS.ember, 240);
+      this.combat.log.push(
+        `${me.name} hurls ${item.name} at (${target.col}, ${target.row}).`,
+      );
+      // Ignite the landing cell. Drops a fire light source, a fire
+      // particle emitter, and stamps the cell into fireCells so any
+      // combatant who steps onto it takes fire damage. Anyone already
+      // standing there gets the first tick immediately.
+      this.igniteCell(
+        target.col,
+        target.row,
+        item.light_range ?? 3,
+        item.power ?? 3,
+      );
+      this.combat.log.push(
+        `The ${item.name} catches the ground at (${target.col}, ${target.row}) on fire.`,
+      );
+      this.combat.movePoints = 0;
+      this.refreshAll();
+      if (this.combat.isOver) return this.endEncounter();
+      this.endActorTurn();
+    } finally {
+      this.busy = false;
+    }
+  }
+
   /**
    * Fireball-style AOE: every alive creature within `radius` Chebyshev
    * tiles of the chosen cell takes the spell's dice damage. Includes
@@ -3805,6 +4168,11 @@ export class CombatScene extends Phaser.Scene {
       const result = this.combat.tryMove(dir);
       if (result.kind === "moved") {
         await this.animateMove(actor, before, result.to);
+        // Step-onto-fire damage. `applyFireDamageOnEntry` no-ops on
+        // non-fire cells and self-gates repeat damage per turn via
+        // `fireDamagedThisTurn`, so calling it after every move is
+        // safe and cheap.
+        this.applyFireDamageOnEntry(result.to.col, result.to.row);
       } else if (result.kind === "attacked") {
         const target = this.combat.byId(result.result.targetId);
         await this.animateBump(actor, before, target.position);
@@ -3828,6 +4196,18 @@ export class CombatScene extends Phaser.Scene {
   private endActorTurn(): void {
     this.clearMoveHints();
     this.combat.endTurn();
+    // Reset the per-turn fire-damage gate so the next combatant can
+    // be stung once if they happen to start or end their turn on
+    // a fire cell. Cleared here rather than at the start of the next
+    // turn so the kickoff path (which calls `applyFireDamageOnEntry`
+    // on the new actor's standing cell) sees an empty set.
+    this.fireDamagedThisTurn.clear();
+    // Anyone who STARTS the turn on a fire cell takes a hit before
+    // they can move. Mirrors the "stepped onto" case.
+    const cur = this.combat?.current;
+    if (cur && cur.hp > 0) {
+      this.applyFireDamageOnEntry(cur.position.col, cur.position.row);
+    }
     this.refreshAll();
     this.flashConsumeEvents();
     if (this.combat.isOver) return this.endEncounter();
@@ -3963,6 +4343,9 @@ export class CombatScene extends Phaser.Scene {
         const moveResult = this.combat.tryMove(intent.dir);
         if (moveResult.kind === "moved") {
           await this.animateMove(actor, before, moveResult.to);
+          // AI takes fire damage on entry too — same predicate the
+          // player path uses, same per-turn gate.
+          this.applyFireDamageOnEntry(moveResult.to.col, moveResult.to.row);
         } else if (moveResult.kind === "attacked") {
           const target = this.combat.byId(moveResult.result.targetId);
           await this.animateBump(actor, before, target.position);
@@ -4514,18 +4897,33 @@ export class CombatScene extends Phaser.Scene {
     } else if (this.mode === "pick-direction" && pending?.kind === "range-direction") {
       cells = this.directionalReachCells(me, maxRangeFor(pending.weapon));
       color = C.rangeHint;
+    } else if (this.mode === "pick-tile" && pending?.kind === "throw-tile") {
+      // Throw-tile: the legal landing zone is every open arena cell
+      // within Chebyshev `range` of the caster. Unlike target-pick
+      // mode this DOESN'T require LOS and DOESN'T require visibility —
+      // the player throws a torch into shadow exactly so the shadow
+      // lifts.
+      cells = this.throwTileReachCells(me, maxRangeFor(pending.item));
+      color = C.rangeHint;
     } else {
       // Other sub-modes (pick-throw, pick-use, pick-equip, pick-spell,
-      // pick-tile) own their own overlays / pickers. Clear hints and
-      // bail — leaving a stale move diamond on the arena while a picker
-      // popover is open would be visually noisy.
+      // pick-tile for spells) own their own overlays / pickers. Clear
+      // hints and bail — leaving a stale move diamond on the arena
+      // while a picker popover is open would be visually noisy.
       return;
     }
 
+    // Lift pick-tile hints above the darkness overlay (depth 20).
+    // Without this the gold reach grid gets swallowed by the shadow
+    // layer in night fights — exactly the situation a throw-torch
+    // reach overlay needs to be visible in.
+    const hintDepth =
+      this.mode === "pick-tile" && pending?.kind === "throw-tile" ? 22 : 0;
     for (const c of cells) {
       const hint = this.add
         .rectangle(this.tileX(c.col), this.tileY(c.row), TILE - 6, TILE - 6, color, 0.30)
-        .setStrokeStyle(1, color);
+        .setStrokeStyle(1, color)
+        .setDepth(hintDepth);
       this.moveHintRects.push(hint);
     }
   }
@@ -4604,6 +5002,32 @@ export class CombatScene extends Phaser.Scene {
         // pick-target callers; directional and tile hints route
         // through `directionalReachCells` which doesn't consult this.
         if (!this.isCellVisibleToParty(nc, nr)) continue;
+        out.push({ col: nc, row: nr });
+      }
+    }
+    return out;
+  }
+
+  /**
+   * Cells the player can throw a tile-targeted item onto from `start`.
+   * Used by the throw-tile reach overlay: every non-wall cell within
+   * Chebyshev `range`, regardless of LOS or current party visibility.
+   * The whole point of throwing a torch is to light up shadow, so
+   * filtering against visibility here would defeat the feature.
+   */
+  private throwTileReachCells(
+    start: { col: number; row: number },
+    range: number,
+  ): { col: number; row: number }[] {
+    if (range <= 0) return [];
+    const out: { col: number; row: number }[] = [];
+    for (let dr = -range; dr <= range; dr++) {
+      for (let dc = -range; dc <= range; dc++) {
+        if (dc === 0 && dr === 0) continue;
+        if (Math.max(Math.abs(dc), Math.abs(dr)) > range) continue;
+        const nc = start.col + dc;
+        const nr = start.row + dr;
+        if (isWall(nc, nr)) continue;
         out.push({ col: nc, row: nr });
       }
     }

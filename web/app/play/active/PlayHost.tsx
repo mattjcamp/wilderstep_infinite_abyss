@@ -239,10 +239,19 @@ export function PlayHost() {
     if (!save || !sim) return;
     const snap = sim.snapshot();
     // Per-map mutations for the current map.
+    // Boat positions serialise to a plain Record for JSON-safety.
+    // The kernel's snapshot exposes them as a ReadonlyMap; we
+    // flatten to { "col,row": sprite } so the save can round-trip
+    // through JSON.parse/stringify without any custom revivers.
+    const boatPositionsObj: Record<string, string> = {};
+    for (const [key, sprite] of snap.boatPositions) {
+      boatPositionsObj[key] = sprite;
+    }
     const mapState = {
       unlockedCells: Array.from(snap.unlockedCells),
       defeatedEncounters: Array.from(snap.defeatedEncounters),
       destroyedLairs: Array.from(snap.destroyedLairs),
+      boatPositions: boatPositionsObj,
     };
     const next: WorldSave = {
       ...save,
@@ -259,6 +268,13 @@ export function PlayHost() {
         infravision_active: !!snap.party.infravision_active,
         torch_steps: snap.party.torch_steps,
         galadriels_light_steps: snap.party.galadriels_light_steps,
+        // Mid-voyage state — onBoat flips during boarding /
+        // disembarking; currentBoatSprite carries the sprite of the
+        // boat the party is riding. Persisting both lets a reload
+        // drop the player straight back into the boat at the saved
+        // cell instead of forcing them ashore.
+        onBoat: snap.onBoat,
+        currentBoatSprite: snap.currentBoatSprite,
       },
       maps: { ...save.maps, [save.party.currentMapId]: mapState },
     };
@@ -311,6 +327,17 @@ export function PlayHost() {
         }
       }
       for (const key of itemIconKeys) spriteKeys.add(key);
+      // Boat sprite + water sprite for the board / disembark
+      // texture swaps. The kernel tracks which cells have loose
+      // boats; the scene flips between the boat texture and the
+      // module's water texture as boats are boarded + dropped.
+      // Picking the first water-tagged palette tile mirrors the
+      // editor sim's heuristic so a custom-art module's water
+      // sprite gets used instead of the hardcoded fallback.
+      const waterSprite =
+        catalog.palette.find((t) => (t as { tag?: string }).tag === "water")
+          ?.sprite ?? "map/water.png";
+      if (waterSprite) spriteKeys.add(waterSprite);
 
       const width = catalog.map.width * TILE_SIZE;
       const height = catalog.map.height * TILE_SIZE;
@@ -324,6 +351,20 @@ export function PlayHost() {
          *  WorldRenderer onRelight hook so a dropped item picks up
          *  the same shade as the floor beneath it. */
         itemOverlays: Map<string, Phaser.GameObjects.Image> = new Map();
+        /** Cells currently rendering a boat texture — keyed "col,row",
+         *  value is the boat's sprite key. The map cell IS the boat:
+         *  setBoatPositions diffs this against the kernel's live boat
+         *  list and swaps each cell's texture between water (the
+         *  party just boarded it) and the boat sprite (a boat is
+         *  parked there). Initial state captured during the scene's
+         *  create() pass from cells whose `boat` field is true. */
+        boatTextures: Map<string, string> = new Map();
+        /** Single Image that follows the party while they're aboard.
+         *  Depth 300 matches the party sprite — when this is visible
+         *  the partySprite is hidden, so the boat visually IS the
+         *  party. Bobs gently via a perpetual sin-wave tween. Null
+         *  while the party is on land. */
+        partyBoatSprite: Phaser.GameObjects.Image | null = null;
         constructor() {
           super("PlayScene");
         }
@@ -381,6 +422,26 @@ export function PlayHost() {
           this.world.ensureParticleTexture();
           this.world.createCells();
           this.world.createEmitters();
+
+          // Seed `boatTextures` from the authored grid BEFORE the
+          // kernel's first `setBoatPositions` call lands. The grid's
+          // `boat: true` cells render with their boat sprite via
+          // createCells; the bridge's diff handler needs to know that
+          // baseline so it can correctly swap cells back to water on
+          // first init. Without this seed, a save where the party
+          // moved a boat from A to B would: render cell A with the
+          // boat sprite (from authored data), receive a setBoatPositions
+          // call listing only B as wanted, find scene.boatTextures
+          // empty, and never swap A to water — leaving a ghost boat
+          // at the original cell.
+          for (let r = 0; r < catalog.map.height; r++) {
+            for (let c = 0; c < catalog.map.width; c++) {
+              const cell = catalog.map.grid[r][c];
+              if (cell.boat && cell.sprite) {
+                this.boatTextures.set(`${c},${r}`, cell.sprite);
+              }
+            }
+          }
 
           // Item overlays — one Image per cell whose `item` resolves
           // to a known icon. Authored via the editor's per-cell
@@ -446,6 +507,13 @@ export function PlayHost() {
           const initialDestroyedLairs = mutations
             ? new Set(mutations.destroyedLairs)
             : undefined;
+          // Boat positions for this map — rehydrate the serialised
+          // Record into a Map. When absent (legacy save or never-
+          // visited map), the kernel falls back to scanning the
+          // grid's `boat: true` cells, which matches a fresh boot.
+          const initialBoatPositions = mutations?.boatPositions
+            ? new Map(Object.entries(mutations.boatPositions))
+            : undefined;
 
           // Ground tile for destroy-lair revert: grab the first
           // grass-tagged or first walkable palette entry.
@@ -497,17 +565,120 @@ export function PlayHost() {
                 onComplete: () => label.destroy(),
               });
             },
-            setBoatPositions: () => {
-              // Boat-as-cell-texture is editor-side bookkeeping today;
-              // the play scene relies on the sim's own cell sprite
-              // swap path through setCellSprite, which the kernel
-              // routes correctly for board / disembark.
+            // Boats render via cell-texture swaps + a party-bound
+            // overlay sprite, mirroring the editor sim's pattern:
+            //
+            //   1. setBoatPositions — the kernel hands us the list of
+            //      loose boats (cell + sprite). Cells that lost their
+            //      boat (party just boarded) swap back to the water
+            //      sprite; cells that gained one swap to the boat
+            //      sprite. The map cell IS the boat.
+            //   2. setPartyBoatAt — creates/destroys the
+            //      `partyBoatSprite` overlay at the party's cell
+            //      while aboard. Hides the partySprite so the boat
+            //      visually IS the party. Idle bob via a perpetual
+            //      sin-wave tween.
+            setBoatPositions: (positions) => {
+              const scene = this;
+              const wanted = new Map(
+                positions.map((p) => [`${p.col},${p.row}`, p.sprite]),
+              );
+              // Cells that lost their boat (party boarded here) →
+              // back to the water sprite.
+              for (const [key] of scene.boatTextures) {
+                if (wanted.has(key)) continue;
+                const baseImg = renderer.cells.get(key);
+                if (
+                  baseImg &&
+                  waterSprite &&
+                  scene.textures.exists(waterSprite)
+                ) {
+                  baseImg.setTexture(waterSprite);
+                }
+                scene.boatTextures.delete(key);
+              }
+              // Cells that gained a boat (disembarked here, or first
+              // boot from a save where the party left a boat behind).
+              for (const [key, sprite] of wanted) {
+                if (scene.boatTextures.get(key) === sprite) continue;
+                const baseImg = renderer.cells.get(key);
+                if (
+                  baseImg &&
+                  sprite &&
+                  scene.textures.exists(sprite)
+                ) {
+                  baseImg.setTexture(sprite);
+                }
+                scene.boatTextures.set(key, sprite);
+              }
             },
-            setPartyBoatAt: () => {
-              // Same caveat — the party-on-boat sprite (a separate
-              // image overlay) is editor-only. The kernel still
-              // tracks boat state for movement; the visual just
-              // doesn't change here yet.
+            setPartyBoatAt: (col, row, visible, sprite) => {
+              const scene = this;
+              if (!visible) {
+                if (scene.partyBoatSprite) {
+                  scene.tweens.killTweensOf(scene.partyBoatSprite);
+                  scene.partyBoatSprite.destroy();
+                  scene.partyBoatSprite = null;
+                }
+                // Back on land — restore the party sprite.
+                if (renderer.partySprite) {
+                  renderer.partySprite.setVisible(true);
+                }
+                return;
+              }
+              // Pick a sprite: explicit arg (board) wins, then the
+              // live boat sprite (sail), then bail.
+              const resolved =
+                sprite ?? scene.partyBoatSprite?.texture.key ?? "";
+              if (!resolved || !scene.textures.exists(resolved)) return;
+              if (!scene.partyBoatSprite) {
+                scene.partyBoatSprite = scene.add
+                  .image(
+                    col * TILE_SIZE + TILE_SIZE / 2,
+                    row * TILE_SIZE + TILE_SIZE / 2,
+                    resolved,
+                  )
+                  .setOrigin(0.5)
+                  .setDisplaySize(TILE_SIZE, TILE_SIZE)
+                  // Same depth band as the party so the boat sits at
+                  // the party's z when the party sprite is hidden.
+                  .setDepth(300);
+                // Idle bob — perpetual yoyo so the boat reads as
+                // afloat even when the party is stationary.
+                scene.tweens.add({
+                  targets: scene.partyBoatSprite,
+                  y: scene.partyBoatSprite.y - 2,
+                  duration: 900,
+                  yoyo: true,
+                  repeat: -1,
+                  ease: "Sine.easeInOut",
+                });
+              } else {
+                scene.tweens.killTweensOf(scene.partyBoatSprite);
+                scene.partyBoatSprite.setPosition(
+                  col * TILE_SIZE + TILE_SIZE / 2,
+                  row * TILE_SIZE + TILE_SIZE / 2,
+                );
+                if (
+                  resolved &&
+                  scene.partyBoatSprite.texture.key !== resolved
+                ) {
+                  scene.partyBoatSprite.setTexture(resolved);
+                }
+                scene.tweens.add({
+                  targets: scene.partyBoatSprite,
+                  y: scene.partyBoatSprite.y - 2,
+                  duration: 900,
+                  yoyo: true,
+                  repeat: -1,
+                  ease: "Sine.easeInOut",
+                });
+              }
+              // Hide the on-foot party sprite while the boat is
+              // visible — they're one entity from the player's POV.
+              if (renderer.partySprite) {
+                renderer.partySprite.setVisible(false);
+              }
             },
             onKey: (handler) => {
               const listener = (e: KeyboardEvent) => {
@@ -561,6 +732,9 @@ export function PlayHost() {
             initialUnlockedCells,
             initialDefeatedEncounters,
             initialDestroyedLairs,
+            initialBoatPositions,
+            initialOnBoat: save.party.onBoat,
+            initialCurrentBoatSprite: save.party.currentBoatSprite,
           });
           simRef.current = sim;
 

@@ -415,6 +415,20 @@ export interface SimSnapshot {
   unlockedCells: ReadonlySet<string>;
   defeatedEncounters: ReadonlySet<string>;
   destroyedLairs: ReadonlySet<string>;
+  /** Loose boats currently parked on the map — `"col,row"` →
+   *  sprite key. Hosts that persist across sessions snapshot this
+   *  so a boat the party left at a dock is still parked there on
+   *  reload. Excludes the boat the party is currently riding (if
+   *  any) — that one is tracked via `currentBoatSprite`. */
+  boatPositions: ReadonlyMap<string, string>;
+  /** True iff the party is currently riding a boat. Persisted across
+   *  link / quit boundaries so a reload mid-voyage drops the player
+   *  back into the boat at their saved cell. */
+  onBoat: boolean;
+  /** Sprite key of the boat the party is currently riding, or null
+   *  when on foot. Paired with `onBoat`; restored on construction
+   *  via `initialCurrentBoatSprite`. */
+  currentBoatSprite: string | null;
 }
 
 export interface MapSimulationOptions {
@@ -446,6 +460,20 @@ export interface MapSimulationOptions {
    *  session. Used by overworld re-mounts so a destroyed lair
    *  stays quiet. Default empty. */
   initialDestroyedLairs?: ReadonlySet<string>;
+  /** Pre-populated loose-boat positions — `"col,row"` → sprite
+   *  key. Overrides the per-cell `boat: true` scan so a save can
+   *  restore the WORLD's boat layout (boats the party moved + left
+   *  elsewhere). When omitted, the kernel falls back to scanning
+   *  the grid for cells with `boat: true`. */
+  initialBoatPositions?: ReadonlyMap<string, string>;
+  /** Whether the party starts mounted on a boat. When true,
+   *  `initialCurrentBoatSprite` should also be supplied so the host
+   *  can render the right sprite under the party. Defaults to false
+   *  (party starts on foot). */
+  initialOnBoat?: boolean;
+  /** Boat sprite the party is currently riding. Paired with
+   *  `initialOnBoat`; ignored when that's false. */
+  initialCurrentBoatSprite?: string | null;
 }
 
 /** The simulation controller. One per active sim session; mounted by
@@ -591,28 +619,51 @@ export class MapSimulation {
         };
     this.pos = findSpawn(opts.grid, preferred);
 
-    // Seed boat positions from any cell currently flagged boat:true.
-    // Each entry remembers the cell's sprite so the boat keeps its
-    // identity across pick-up / put-down. If the spawn cell itself is
-    // a boat (designer placed the party in mid-river), treat the
-    // party as already aboard so the boat sprite renders under them
-    // from frame one.
-    for (let r = 0; r < opts.grid.length; r++) {
-      const row = opts.grid[r];
-      if (!row) continue;
-      for (let c = 0; c < row.length; c++) {
-        const cell = row[c];
-        if (cell?.boat) {
-          this.boatPositions.set(`${c},${r}`, cell.sprite ?? "");
+    // Seed boat positions. Two paths:
+    //   1. A saved game restoring this map — `initialBoatPositions`
+    //      carries the boats' last-known cells (party may have moved
+    //      them around between sessions). Use that verbatim and skip
+    //      the grid scan; the authored `boat: true` cells already
+    //      contributed to the saved set when that session ran.
+    //   2. Fresh boot (no prior session) — scan the grid for cells
+    //      with `boat: true` and snapshot their sprites. Each entry
+    //      remembers the cell's sprite so the boat keeps its identity
+    //      across pick-up / put-down.
+    //
+    // Same for `onBoat` + `currentBoatSprite` — saved state wins;
+    // otherwise the kernel infers "party started mid-river" by
+    // checking whether the spawn cell itself is a boat.
+    if (opts.initialBoatPositions) {
+      for (const [key, sprite] of opts.initialBoatPositions) {
+        this.boatPositions.set(key, sprite);
+      }
+    } else {
+      for (let r = 0; r < opts.grid.length; r++) {
+        const row = opts.grid[r];
+        if (!row) continue;
+        for (let c = 0; c < row.length; c++) {
+          const cell = row[c];
+          if (cell?.boat) {
+            this.boatPositions.set(`${c},${r}`, cell.sprite ?? "");
+          }
         }
       }
     }
-    const spawnKey = `${this.pos.col},${this.pos.row}`;
-    if (this.boatPositions.has(spawnKey)) {
-      this.currentBoatSprite =
-        this.boatPositions.get(spawnKey) ?? null;
-      this.boatPositions.delete(spawnKey);
+    if (opts.initialOnBoat) {
+      // Restoring mid-voyage. The boat the party is riding shouldn't
+      // appear in the loose-boats Map (it's "with the party"); the
+      // save side is expected to have excluded the party's boat
+      // already, so we don't pop here.
       this.onBoat = true;
+      this.currentBoatSprite = opts.initialCurrentBoatSprite ?? null;
+    } else {
+      const spawnKey = `${this.pos.col},${this.pos.row}`;
+      if (this.boatPositions.has(spawnKey)) {
+        this.currentBoatSprite =
+          this.boatPositions.get(spawnKey) ?? null;
+        this.boatPositions.delete(spawnKey);
+        this.onBoat = true;
+      }
     }
 
     // Initial scene push — the sprite + light source land in place
@@ -727,16 +778,23 @@ export class MapSimulation {
     // boss check below handles the (rare) case where the lair tile
     // is authored as walkable; this one handles the (common) case
     // where it isn't.
-    const bumpBoss = this.spawnOptionsForLair({ col: targetCol, row: targetRow });
-    if (bumpBoss) {
-      this.pendingSpawn = bumpBoss;
-      this.emit({ kind: "spawn_encountered", options: bumpBoss });
-      this.emit({
-        kind: "log",
-        message: `Approach Lair: ${bumpBoss.name}`,
-      });
-      this.emit({ kind: "state" });
-      return;
+    //
+    // Gated on `!this.onBoat` — a boat-borne party brushing past a
+    // lair on the shore doesn't engage. A land creature can't fight
+    // a thing sitting on the water; the encounter only opens when
+    // the party returns to land + walks onto the lair on foot.
+    if (!this.onBoat) {
+      const bumpBoss = this.spawnOptionsForLair({ col: targetCol, row: targetRow });
+      if (bumpBoss) {
+        this.pendingSpawn = bumpBoss;
+        this.emit({ kind: "spawn_encountered", options: bumpBoss });
+        this.emit({
+          kind: "log",
+          message: `Approach Lair: ${bumpBoss.name}`,
+        });
+        this.emit({ kind: "state" });
+        return;
+      }
     }
 
     const targetKey = `${targetCol},${targetRow}`;
@@ -920,21 +978,34 @@ export class MapSimulation {
     //      party. Roamers that land on the party's cell (or
     //      adjacent) trigger a roamer encounter and the pursuit
     //      stops short for the rest of the step.
-    const bossOptions = this.spawnOptionsForLair(to);
-    if (bossOptions) {
-      this.pendingSpawn = bossOptions;
-      this.emit({ kind: "spawn_encountered", options: bossOptions });
-      this.emit({
-        kind: "log",
-        message: `Approach Lair: ${bossOptions.name}`,
-      });
-      this.emit({ kind: "state" });
-      return;
+    // Post-move boss check — handles the rare walkable-lair case
+    // where the party physically stands on the lair tile. Gated
+    // alongside the pre-walkable bump check above so a boat-borne
+    // party doesn't engage land-bound lairs.
+    if (!this.onBoat) {
+      const bossOptions = this.spawnOptionsForLair(to);
+      if (bossOptions) {
+        this.pendingSpawn = bossOptions;
+        this.emit({ kind: "spawn_encountered", options: bossOptions });
+        this.emit({
+          kind: "log",
+          message: `Approach Lair: ${bossOptions.name}`,
+        });
+        this.emit({ kind: "state" });
+        return;
+      }
     }
 
+    // The spawn pass + roamer pursuit + placed-encounter pursuit all
+    // ADVANCE regardless of whether the party is in a boat — roaming
+    // monsters keep moving around on shore even when their target
+    // sails past. What we gate is the COLLISION emit: a land creature
+    // can't engage a boat-borne party, so the spawn_encountered fires
+    // only when the party is on foot. Visually the roamer still
+    // sprites onto its new cell each step; it just can't catch you.
     this.runSpawnPass();
     const roamerOptions = this.advanceRoamersAndCheckCollision();
-    if (roamerOptions) {
+    if (roamerOptions && !this.onBoat) {
       this.pendingSpawn = roamerOptions;
       this.emit({ kind: "spawn_encountered", options: roamerOptions });
       this.emit({
@@ -951,7 +1022,7 @@ export class MapSimulation {
     // placed entities (so they don't appear frozen behind a paused
     // dialog) but don't open a second overlay.
     const placedOptions = this.advancePlacedEncountersAndCheckCollision();
-    if (placedOptions && !this.pendingSpawn) {
+    if (placedOptions && !this.pendingSpawn && !this.onBoat) {
       this.pendingSpawn = placedOptions;
       this.emit({ kind: "spawn_encountered", options: placedOptions });
       this.emit({
@@ -1372,6 +1443,9 @@ export class MapSimulation {
       unlockedCells: this.unlockedCells,
       defeatedEncounters: this.defeatedEncounters,
       destroyedLairs: this.destroyedLairs,
+      boatPositions: this.boatPositions,
+      onBoat: this.onBoat,
+      currentBoatSprite: this.currentBoatSprite,
     };
   }
 

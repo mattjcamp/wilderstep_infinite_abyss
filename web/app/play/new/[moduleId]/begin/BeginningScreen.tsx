@@ -283,6 +283,12 @@ async function assembleInitialSave(
     torch_steps: 0,
     galadriels_light_steps: 0,
     infravision_active: false,
+    // Fresh game — party starts on foot. The kernel's grid-scan
+    // boat-spawn-cell heuristic still handles the "party started
+    // on a boat tile" case; this just leaves the saved flags at
+    // their defaults so the absence-of-value behavior triggers.
+    onBoat: false,
+    currentBoatSprite: null,
     roster,
     members,
   };

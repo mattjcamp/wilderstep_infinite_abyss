@@ -106,6 +106,22 @@ export interface Item {
    * firing.
    */
   range?: number;
+  /**
+   * When true, throwing the item in combat ignites the landing cell:
+   * the cell becomes a fire tile that emits light at `light_range`
+   * tiles (Chebyshev), renders a fire animation, and damages
+   * combatants who stand on it. Independent from `throwable` —
+   * setting `ignite: true` without `throwable: true` is meaningless
+   * (the throw flow gates on `throwable` first). Typical use: a
+   * lit torch.
+   */
+  ignite?: boolean;
+  /**
+   * Light radius (tiles, Chebyshev) the ignited cell emits while
+   * burning. Only consulted when `ignite: true`. Defaults to 3 when
+   * omitted, matching the v1 torch radius.
+   */
+  light_range?: number;
 }
 
 interface RawItem extends Partial<Item> {

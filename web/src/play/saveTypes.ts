@@ -76,6 +76,15 @@ export interface SavedPartyState {
   torch_steps: number;
   galadriels_light_steps: number;
   infravision_active: boolean;
+  /** True when the party is currently riding a boat. Pairs with
+   *  `currentBoatSprite`. Persisted so a reload mid-voyage drops
+   *  the player back into the boat at the saved cell rather than
+   *  on foot. Absent in legacy saves; treated as false. */
+  onBoat?: boolean;
+  /** Sprite key of the boat the party is riding. Null / absent when
+   *  on foot. Restored to the kernel via `initialCurrentBoatSprite`
+   *  so the boat overlay re-renders with the right art. */
+  currentBoatSprite?: string | null;
   /** Roster — ordered list of character ids. Identity stays in
    *  `members` keyed by id; this is just the turn order. */
   roster: ReadonlyArray<string>;
@@ -97,6 +106,14 @@ export interface SavedMapState {
   /** Monster Spawn cells whose boss has been killed. Same filtering
    *  semantics as defeatedEncounters. */
   destroyedLairs: ReadonlyArray<string>;
+  /** Loose boats parked on this map — `"col,row"` → sprite key.
+   *  Object form (not array) so JSON round-trip preserves the
+   *  key/value pairing without an array of tuples. Excludes the
+   *  boat the party is currently riding (tracked on party state).
+   *  Absent for legacy saves; the loader treats absence as
+   *  "scan the grid for boat:true cells", matching the kernel's
+   *  default boot path. */
+  boatPositions?: Record<string, string>;
 }
 
 /** One floor inside a saved dungeon — same fields as

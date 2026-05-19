@@ -1,5 +1,5 @@
 {
-  "_comment": "Item catalog (real data drives the schema). Items live in three categories \u2014 weapons, armors, general \u2014 distinguished by the `category` field. Weapons carry combat fields (power, slots, ranged/throwable, bonus_damage, damage_type, ammo). Armors carry evasion. General items are everything else: consumables, ammo, reagents, scrolls, keys, quest items, tools. Consumables use `usable` + `effect` (verb) + `power`. Items that confer an Effect while equipped use `grants_effect` to reference an Effect id. See docs/data_dictionary/item.md.",
+  "_comment": "Item catalog (real data drives the schema). Items live in three categories — weapons, armors, general — distinguished by the `category` field. Weapons carry combat fields (power, slots, ranged/throwable, bonus_damage, damage_type, ammo). Armors carry evasion. General items are everything else: consumables, ammo, reagents, scrolls, keys, quest items, tools. Consumables use `usable` + `effect` (verb) + `power`. Items that confer an Effect while equipped use `grants_effect` to reference an Effect id. See docs/data_dictionary/item.md.",
   "items": [
     {
       "id": "broad_axe",
@@ -1016,7 +1016,12 @@
       "party_can_equip": true,
       "character_can_equip": false,
       "buy": 5,
-      "sell": 2
+      "sell": 2,
+      "throwable": true,
+      "ignite": true,
+      "light_range": 3,
+      "power": 3,
+      "range": 4
     },
     {
       "id": "weakening_poison",
