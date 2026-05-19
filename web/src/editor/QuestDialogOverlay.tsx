@@ -24,11 +24,23 @@ import type { SimQuestRef } from "@/sim/types";
 interface Props {
   quest: SimQuestRef;
   /** True when the quest has already been accepted. The overlay
-   *  switches to an in-progress view: same banner + description, but
-   *  the Accept / Decline rows are replaced with a single Close
-   *  button so the player can confirm the active objective and
-   *  return to the world. */
+   *  switches to an in-progress / complete view: the Accept /
+   *  Decline rows collapse to a single Close button. The exact copy
+   *  depends on whether `stepIdx` has caught up to `stepCount`. */
   alreadyAccepted?: boolean;
+  /** Index of the NEXT pending step (matches WorldSave.questStepProgress
+   *  semantics). 0 = first step still pending, stepCount = all done.
+   *  Only consulted when `alreadyAccepted` is true. */
+  stepIdx?: number;
+  /** Total number of steps in the quest. Only consulted when
+   *  `alreadyAccepted` is true. */
+  stepCount?: number;
+  /** Display name of the active step. Surfaced as the headline
+   *  objective in the in-progress view. */
+  activeStepName?: string;
+  /** Description of the active step. Surfaced as italic detail in
+   *  the in-progress view. */
+  activeStepDescription?: string;
   onAccept: () => void;
   onDecline: () => void;
 }
@@ -36,20 +48,29 @@ interface Props {
 export function QuestDialogOverlay({
   quest,
   alreadyAccepted = false,
+  stepIdx = 0,
+  stepCount = 0,
+  activeStepName,
+  activeStepDescription,
   onAccept,
   onDecline,
 }: Props) {
+  const complete =
+    alreadyAccepted && stepCount > 0 && stepIdx >= stepCount;
   const giver = quest.quest_giver;
   const giverSprite = giver?.npc_sprite
     ? withBasePath(`/sprites/${giver.npc_sprite}`)
     : null;
   const giverName = giver?.npc_name ?? "Quest Giver";
-  // Dialog falls back to the description when the quest record
-  // doesn't author a start_dialog (legacy quests + stub records).
-  const dialog =
-    giver?.start_dialog ??
-    quest.description ??
-    "They have a task for you.";
+  // Dialog text varies by state:
+  //   - complete  → giver's end_dialog (the handoff after success)
+  //   - accepted  → giver's start_dialog (reminder of the ask)
+  //   - offered   → giver's start_dialog (the offer itself)
+  // Each falls back to the quest description / a generic line if
+  // the record doesn't carry the targeted dialog string.
+  const dialog = complete
+    ? giver?.end_dialog ?? "Thank you. The deed is done."
+    : giver?.start_dialog ?? quest.description ?? "They have a task for you.";
 
   return (
     <div
@@ -62,7 +83,11 @@ export function QuestDialogOverlay({
         <header className="mb-3 flex items-baseline justify-between">
           <h2 className="font-display text-xl">{quest.name}</h2>
           <span className="font-mono text-[11px] text-parchment/45">
-            {alreadyAccepted ? "Quest in progress" : "Quest offered"}
+            {complete
+              ? "Quest complete"
+              : alreadyAccepted
+                ? `Quest in progress (${stepIdx}/${stepCount})`
+                : "Quest offered"}
           </span>
         </header>
 
@@ -103,8 +128,34 @@ export function QuestDialogOverlay({
           </p>
         ) : null}
 
+        {alreadyAccepted && !complete && activeStepName ? (
+          <div className="mb-3 rounded border border-parchment/15 bg-ink/60 p-2">
+            <p className="text-[10px] uppercase tracking-wide text-parchment/45">
+              Active objective ({stepIdx + 1}/{stepCount})
+            </p>
+            <p className="text-sm text-parchment/85">→ {activeStepName}</p>
+            {activeStepDescription ? (
+              <p className="mt-1 text-[11px] italic text-parchment/55">
+                {activeStepDescription}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+
         <div className="flex flex-col gap-2">
-          {alreadyAccepted ? (
+          {complete ? (
+            <button
+              type="button"
+              onClick={onDecline}
+              className="rounded border border-emerald-500/50 bg-emerald-700/25 px-3 py-2 text-left text-sm text-emerald-50 hover:bg-emerald-700/45"
+            >
+              <div className="font-medium">Close</div>
+              <div className="text-[11px] text-emerald-100/75">
+                Every objective is finished. Rewards arrive when the
+                completion flow lands; for now, well done.
+              </div>
+            </button>
+          ) : alreadyAccepted ? (
             <button
               type="button"
               onClick={onDecline}

@@ -309,5 +309,6 @@ async function assembleInitialSave(
     maps: {},
     dungeons: {},
     acceptedQuests: [],
+    questStepProgress: {},
   };
 }

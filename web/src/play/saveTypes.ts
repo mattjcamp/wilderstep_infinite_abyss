@@ -179,4 +179,12 @@ export interface WorldSave {
    *  from re-offering an already-accepted quest. Absent on legacy
    *  saves; the loader treats absence as an empty list. */
   acceptedQuests?: ReadonlyArray<string>;
+  /** Per-quest step progress. Value is the index of the next
+   *  incomplete step (0 = first step pending, N = all N steps done).
+   *  Each combat win against a kill-step's target monster on the
+   *  matching dungeon + level bumps the entry by 1. Absent quests
+   *  are treated as 0 (first step pending). Used by the quest
+   *  dialog and quest log to switch between offer / in-progress /
+   *  complete states. */
+  questStepProgress?: Record<string, number>;
 }

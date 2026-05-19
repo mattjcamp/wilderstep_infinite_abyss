@@ -57,6 +57,7 @@ import {
 } from "@/sim/lighting";
 import { ANIMATION_CONFIGS } from "@/sim/tileAnimations";
 import type { SimLightSource } from "@/sim/types";
+import { withBasePath } from "@/util/basePath";
 
 /** Structural shape of a cell the renderer reads. Both v2 map cells
  *  (`MapRecord.grid[r][c]` from the editor) and dungeon cells
@@ -214,12 +215,32 @@ export class WorldRenderer {
    *  scene is a no-op. Call once at the start of `create()` before
    *  `createEmitters`. */
   ensureParticleTexture(): void {
-    if (this.scene.textures.exists(PARTICLE_TEX)) return;
-    const g = this.scene.add.graphics();
-    g.fillStyle(0xffffff, 1);
-    g.fillCircle(8, 8, 8);
-    g.generateTexture(PARTICLE_TEX, 16, 16);
-    g.destroy();
+    if (!this.scene.textures.exists(PARTICLE_TEX)) {
+      const g = this.scene.add.graphics();
+      g.fillStyle(0xffffff, 1);
+      g.fillCircle(8, 8, 8);
+      g.generateTexture(PARTICLE_TEX, 16, 16);
+      g.destroy();
+    }
+    // Same idempotent guard for the party-marker placeholder. We
+    // generate this here (rather than only lazily inside setPartyAt
+    // when the avatar sprite is missing) because diffSprites uses
+    // the same key as the fallback for roamer / placed-encounter
+    // sprites whose texture wasn't preloaded. If the texture was
+    // never generated, Phaser substitutes its built-in __MISSING
+    // pattern — a green-and-magenta checker — which the user
+    // (correctly) describes as a "green hollow box." Generating it
+    // up front makes the fallback render the intended orange
+    // marker dot in every code path.
+    if (!this.scene.textures.exists(PARTY_MARKER_TEX)) {
+      const g = this.scene.add.graphics();
+      g.fillStyle(0xffb84d, 1);
+      g.fillCircle(16, 16, 13);
+      g.lineStyle(2, 0x4a1c00, 1);
+      g.strokeCircle(16, 16, 13);
+      g.generateTexture(PARTY_MARKER_TEX, 32, 32);
+      g.destroy();
+    }
   }
 
   /** First-time render of every cell. Skips cells whose `sprite` is
@@ -475,16 +496,27 @@ export class WorldRenderer {
       const py = p.row * TILE_SIZE + TILE_SIZE / 2;
       let img = map.get(id);
       if (!img) {
-        const tex =
-          p.sprite && this.scene.textures.exists(p.sprite)
-            ? p.sprite
-            : PARTY_MARKER_TEX;
+        const hasTexture =
+          !!p.sprite && this.scene.textures.exists(p.sprite);
+        const tex = hasTexture ? (p.sprite as string) : PARTY_MARKER_TEX;
         img = this.scene.add
           .image(px, py, tex)
           .setOrigin(0.5)
           .setDisplaySize(TILE_SIZE * 0.95, TILE_SIZE * 0.95)
           .setDepth(250);
         map.set(id, img);
+        // Lazy-load the texture if the sprite key wasn't in the
+        // preload pass. Without this defense, any sprite path the
+        // preload missed lands as the green PARTY_MARKER_TEX
+        // placeholder for the lifetime of the scene. The lazy load
+        // fires once per missing key, swaps the texture on the
+        // already-placed Image when complete, and is a no-op on
+        // subsequent diffSprites passes (the second call sees
+        // hasTexture === true). A console warning surfaces the
+        // missing key so authoring data can be fixed too.
+        if (!hasTexture && p.sprite) {
+          this.queueLazySpriteLoad(id, p.sprite, map);
+        }
       } else {
         img.setPosition(px, py);
         if (
@@ -493,6 +525,9 @@ export class WorldRenderer {
           img.texture.key !== p.sprite
         ) {
           img.setTexture(p.sprite);
+        } else if (p.sprite && !this.scene.textures.exists(p.sprite)) {
+          // Same self-healing as the create branch.
+          this.queueLazySpriteLoad(id, p.sprite, map);
         }
       }
       // Stash the per-entry tint on the Image so the next relight
@@ -502,6 +537,71 @@ export class WorldRenderer {
       img.setData("tint", typeof p.tint === "number" ? p.tint : null);
     }
   }
+
+  /** Fire a one-shot Phaser load for a sprite key that wasn't ready
+   *  at diffSprites time. On completion, swap every placeholder
+   *  Image in `map` whose entry references the same key (the diff
+   *  could have spawned multiple). Idempotent — only one load fires
+   *  per key, tracked via `lazyLoadInflight`.
+   *
+   *  Uses Phaser's per-file `filecomplete-image-<key>` event rather
+   *  than the loader-wide `complete` event. The general event only
+   *  fires when the entire queued batch finishes and can miss when
+   *  the loader is already in a mid-cycle state; the per-file
+   *  variant fires exactly once for the matching key regardless of
+   *  what else is queued, which is what we need here.
+   */
+  private queueLazySpriteLoad(
+    spriteId: string,
+    spriteKey: string,
+    map: Map<string, Phaser.GameObjects.Image>,
+  ): void {
+    if (this.lazyLoadInflight.has(spriteKey)) return;
+    this.lazyLoadInflight.add(spriteKey);
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[WorldRenderer] sprite "${spriteKey}" was not preloaded; ` +
+        `lazy-loading. Add it to the host's preload list to avoid the ` +
+        `placeholder marker on first paint.`,
+    );
+    const url = withBasePath(`/sprites/${spriteKey}`);
+    this.scene.load.image(spriteKey, url);
+    this.scene.load.once(
+      `filecomplete-image-${spriteKey}`,
+      () => {
+        if (!this.scene.textures.exists(spriteKey)) return;
+        // Re-scan the live sprite map and swap every image whose
+        // texture still references the placeholder. A diff pass
+        // between queueing and completion could have moved entries
+        // around — we don't trust the captured spriteId alone.
+        for (const [, img] of map) {
+          if (img.texture.key !== spriteKey) {
+            // Capture: only swap if the image is currently the
+            // placeholder (or any non-target key). Skip images
+            // that already got their real texture from another
+            // path.
+            if (img.texture.key === "__party_marker") {
+              img.setTexture(spriteKey);
+            }
+          }
+        }
+        // Fast-path: also try the original spriteId in case the
+        // image is fine and just needs a swap.
+        const direct = map.get(spriteId);
+        if (
+          direct &&
+          direct.texture.key !== spriteKey &&
+          this.scene.textures.exists(spriteKey)
+        ) {
+          direct.setTexture(spriteKey);
+        }
+      },
+    );
+    this.scene.load.start();
+  }
+  /** Sprite keys we've already kicked off a lazy load for. Stops the
+   *  same key from re-firing on every diffSprites pass. */
+  private readonly lazyLoadInflight = new Set<string>();
 }
 
 // Re-export so callers can build their custom-overlay tinting against

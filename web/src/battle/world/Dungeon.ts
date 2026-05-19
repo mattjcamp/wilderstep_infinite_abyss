@@ -917,14 +917,39 @@ export function generateDungeonLevel(opts: GenerateLevelOptions): DungeonLevel {
   const grid = makeGrid(width, totalHeight, wallTile);
 
   // ── Carve rooms ──
+  // Room dims + target count scale with the grid area. The default
+  // profile assumes a "normal-sized" 32×32 grid; a 16×16 grid can't
+  // physically fit 6 rooms at 4–8 size + 1-cell padding, so without
+  // scaling the loop hits maxAttempts with only 1–2 rooms placed
+  // and the player lands in a sealed entrance room with no exits.
+  const minGridDim = Math.min(width, height);
+  const small = minGridDim < 24;
+  const roomMin = small ? 3 : 4;
+  const roomMax = small
+    ? Math.max(roomMin + 1, Math.floor(minGridDim / 3))
+    : 8;
+  // Area-based cap on room count. Average room footprint with
+  // padding is roughly (roomMid + 2)^2; we use that to compute how
+  // many rooms could plausibly fit before falling back to the
+  // difficulty profile's min/max.
+  const roomMid = (roomMin + roomMax) / 2 + 2;
+  const areaCap = Math.max(
+    2,
+    Math.floor((width * height) / (roomMid * roomMid)),
+  );
+  const targetMin = Math.min(profile.minRooms, areaCap);
+  const targetMax = Math.min(profile.maxRooms, areaCap);
   const rooms: Room[] = [];
-  const numRooms = randInt(rng, profile.minRooms, profile.maxRooms);
+  const numRooms = Math.max(
+    targetMin,
+    randInt(rng, targetMin, targetMax),
+  );
   const maxAttempts = numRooms * 20;
   let attempts = 0;
   while (rooms.length < numRooms && attempts < maxAttempts) {
     attempts += 1;
-    const w = randInt(rng, 4, 8);
-    const h = randInt(rng, 4, 8);
+    const w = randInt(rng, roomMin, roomMax);
+    const h = randInt(rng, roomMin, roomMax);
     const x = randInt(rng, 1, width - w - 1);
     const y = randInt(rng, 1, height - h - 1);
     const room = new Room(x, y, w, h);
@@ -932,6 +957,30 @@ export function generateDungeonLevel(opts: GenerateLevelOptions): DungeonLevel {
     carveRoom(grid, room, floorTile);
     if (rooms.length > 0) connectRooms(grid, rooms[rooms.length - 1], room, rng, floorTile);
     rooms.push(room);
+  }
+
+  // Top-up pass — when the first loop exits short of the target
+  // (typical on tight grids where many candidate boxes get rejected
+  // by `intersects`), try once more with the minimum room size + no
+  // padding so a few extra rooms slip in. Prevents the
+  // "single-room floor with no monsters" failure mode.
+  if (rooms.length < Math.min(3, targetMin)) {
+    const topUpTarget = Math.min(3, targetMin);
+    let extraAttempts = 0;
+    while (rooms.length < topUpTarget && extraAttempts < 200) {
+      extraAttempts += 1;
+      const w = roomMin;
+      const h = roomMin;
+      const x = randInt(rng, 1, width - w - 1);
+      const y = randInt(rng, 1, height - h - 1);
+      const room = new Room(x, y, w, h);
+      if (rooms.some((other) => room.intersects(other, 0))) continue;
+      carveRoom(grid, room, floorTile);
+      if (rooms.length > 0) {
+        connectRooms(grid, rooms[rooms.length - 1], room, rng, floorTile);
+      }
+      rooms.push(room);
+    }
   }
 
   // Bail-out: a malformed dimension combination could starve the room
@@ -1089,6 +1138,25 @@ export function generateDungeonLevel(opts: GenerateLevelOptions): DungeonLevel {
         placedAt = { col: mx, row: my };
         usedRooms.add(i);
         break;
+      }
+      // Last-resort fallback: drop into the entrance room when no
+      // other room is usable. Avoids the actual stairs cell so the
+      // creature doesn't sit on top of the spawn point. This is the
+      // safety net for the "tiny dungeon, only one room" failure
+      // mode — without it, accepting a kill-step on a dungeon that
+      // produced a single-room floor would silently fail to place
+      // the target monster and the player'd find an empty room.
+      if (!placedAt && rooms.length > 0) {
+        const r = rooms[0];
+        for (let dy = 0; dy < r.h && !placedAt; dy++) {
+          for (let dx = 0; dx < r.w && !placedAt; dx++) {
+            const mx = r.x + dx;
+            const my = r.y + dy;
+            if (getTile(grid, mx, my) !== floorTile) continue;
+            if (mx === stairsCol && my === stairsRow) continue;
+            placedAt = { col: mx, row: my };
+          }
+        }
       }
       if (!placedAt) continue;
       monsters.push({

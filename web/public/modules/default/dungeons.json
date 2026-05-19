@@ -25,7 +25,7 @@
         }
       ],
       "torch_density": 0.75,
-      "locked_doors": 1,
+      "locked_doors": 0.25,
       "style": "caves",
       "size": {
         "width": 16,

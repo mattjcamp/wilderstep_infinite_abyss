@@ -273,6 +273,16 @@ export function PlayHost() {
    *  Read by the load effect (to overlay the catalog with the
    *  dungeon's floor) and by `saveCurrent` / `handleLinked`. */
   const dungeonStateRef = useRef<DungeonState | null>(null);
+  /** Mirrors the React combat state into a ref so closures inside
+   *  long-lived callbacks (notably `onCombatResolved`, which is
+   *  memoized with a minimal dep list) read the live encounter
+   *  rather than a stale capture. Same pattern as `saveRef`. */
+  const combatRef = useRef<SpawnEncounterOptions | null>(null);
+  /** Mirrors the loaded catalog into a ref for the same reason —
+   *  callbacks created early in the React lifecycle (before the
+   *  catalog finished loading) need a live read at call time, not
+   *  the empty initial snapshot. */
+  const catalogRef = useRef<LoadedCatalog | null>(null);
   useEffect(() => {
     // Lock dialog, quest offer, AND active combat each gate keyboard
     // movement through the same ref so the world sim freezes under
@@ -280,6 +290,12 @@ export function PlayHost() {
     overlaysOpenRef.current =
       !!lockEncounter || !!combat || !!questOffer;
   }, [lockEncounter, combat, questOffer]);
+  useEffect(() => {
+    combatRef.current = combat;
+  }, [combat]);
+  useEffect(() => {
+    catalogRef.current = state.catalog ?? null;
+  }, [state.catalog]);
 
   // Load save + catalogs + map. Re-runs when `reloadKey` bumps.
   useEffect(() => {
@@ -480,6 +496,48 @@ export function PlayHost() {
       if (save.party.avatar) spriteKeys.add(save.party.avatar);
       for (const m of catalog.monsters) {
         if (m.sprite) spriteKeys.add(m.sprite);
+      }
+      // The placed-encounter renderer keys textures off each
+      // encounter's `monster_party_tile`. Most of those happen to
+      // match a monster's `sprite` path (and so they'd be preloaded
+      // by the loop above), but the two strings live in different
+      // files and can drift — and dungeon-generated encounter refs
+      // synthesise their tile from `DungeonMonster.name`, which is
+      // an `enc.monsterPartyTile` value rather than a monsters.json
+      // entry. Without this loop, a dungeon's quest-target rat
+      // would have its sprite resolved to a key the preload never
+      // queued, and diffSprites would fall back to PARTY_MARKER_TEX
+      // (the green hollow box).
+      for (const e of catalog.encounters) {
+        if (e.monster_party_tile) spriteKeys.add(e.monster_party_tile);
+      }
+      // Dungeon-specific defense: every placed DungeonMonster's
+      // `name` (which is the encounter's lead sprite path, despite
+      // the field's misleading docstring) gets queued too. The
+      // catalog.encounters loop above already covers the catalog
+      // entries that arrived through buildDungeonCatalog this
+      // render, but a persisted dungeon hydrated from save could
+      // carry monsters whose synthetic encounter ref hasn't been
+      // built yet at the time preload runs — better to load any
+      // sprite path the level might reference than to render a
+      // green placeholder.
+      const dungeonNow = dungeonStateRef.current;
+      if (dungeonNow) {
+        const lvl = dungeonNow.levels[dungeonNow.floorIdx];
+        if (lvl) {
+          for (const m of lvl.monsters) {
+            if (typeof m.name === "string" && m.name.length > 0) {
+              spriteKeys.add(m.name);
+            }
+            for (const id of m.encounterNames ?? []) {
+              // Roster monster ids — resolve to their sprite paths
+              // off catalog.monsters and queue those too so combat
+              // can paint them without going dark for a frame.
+              const sp = catalog.monsters.find((cm) => cm.id === id)?.sprite;
+              if (sp) spriteKeys.add(sp);
+            }
+          }
+        }
       }
       // Item-icon resolution: id → icon. Authors set `cell.item`
       // to an item id; the catalog says which icon sprite to draw.
@@ -1516,11 +1574,29 @@ export function PlayHost() {
       //      `gameState.partyData` which CombatScene mutated in place
       //      during the fight, and folds those deltas into the save's
       //      `members[]` + `party.gold` + `party.inventory`.
+      //   3. Quest-step credit — walk accepted quests, advance any
+      //      whose current step is a kill targeting monsters that
+      //      just fell (and matching the dungeon+level when the
+      //      step pins those). Has to read the just-won combat's
+      //      monsters list off the React state since the
+      //      SpawnEncounter snapshot lives there.
       //
       // Do (2) FIRST so saveRef.current carries the post-fight party
-      // before saveCurrent reads it.
+      // before saveCurrent reads it; then (3) layered on top so the
+      // step counter lands in the same write.
       if (saveRef.current) {
         saveRef.current = applyCombatResultToSave(saveRef.current);
+        // Read combat + catalog off refs rather than the closure-
+        // captured state. onCombatResolved is memoized with a
+        // narrow dep list, so its closure may have been built
+        // before the catalog loaded or before this combat fired;
+        // the refs always carry the live values.
+        saveRef.current = creditKillStep(
+          saveRef.current,
+          combatRef.current,
+          dungeonStateRef.current,
+          catalogRef.current?.quests ?? [],
+        );
       }
       saveCurrent();
       setCombat(null);
@@ -1723,14 +1799,17 @@ export function PlayHost() {
         </div>
       ) : null}
 
-      {/* Quest log — every accepted quest's name + first
-       *  uncompleted step's name + description. Hidden during combat.
-       *  Step completion isn't tracked yet, so we show step 0 as the
-       *  active objective for now; once the kernel grows step
-       *  tracking the index will read off the save's per-quest
-       *  progress. */}
+      {/* Quest log — every accepted quest's name + the active
+       *  step's name + description, or a "Complete" badge when all
+       *  steps are done. Hidden during combat. Step progress reads
+       *  off save.questStepProgress (kill steps advance on combat
+       *  victory against the target monster). */}
       {!combat && state.catalog && state.save?.acceptedQuests
-        ? renderQuestLog(state.catalog.quests, state.save.acceptedQuests)
+        ? renderQuestLog(
+            state.catalog.quests,
+            state.save.acceptedQuests,
+            state.save.questStepProgress ?? {},
+          )
         : null}
       <footer className="text-xs text-parchment/45">
         {combat
@@ -1747,16 +1826,14 @@ export function PlayHost() {
         />
       ) : null}
 
-      {questOffer ? (
-        <QuestDialogOverlay
-          quest={questOffer}
-          alreadyAccepted={
-            state.save?.acceptedQuests?.includes(questOffer.id) ?? false
-          }
-          onAccept={onQuestAccept}
-          onDecline={onQuestDecline}
-        />
-      ) : null}
+      {questOffer
+        ? renderQuestOffer({
+            quest: questOffer,
+            save: state.save ?? null,
+            onAccept: onQuestAccept,
+            onDecline: onQuestDecline,
+          })
+        : null}
     </main>
   );
 }
@@ -2063,6 +2140,11 @@ function buildDungeonCatalog(
     name: e.name,
     monster_party_tile: e.monster_party_tile,
     monsters: e.monsters,
+    // Preserve the per-entry tint so quest-target placements
+    // arrive at the kernel + renderer with their gold halo intact.
+    // A prior pass through this map() dropped the field silently,
+    // which is why the halo never appeared.
+    tint: e.tint,
   }));
   // The synthetic dungeon map record is structurally compatible with
   // PlayMapRecord — id / name / width / height / grid — and the cells
@@ -2080,6 +2162,111 @@ function buildDungeonCatalog(
 }
 
 /**
+ * Render the QuestDialogOverlay with the right step props pulled
+ * off the save. The accept / progress / complete states drive
+ * different copy in the overlay; this helper centralises the
+ * "compute step idx + active step name/description from raw
+ * quest record" plumbing so the JSX site stays compact.
+ */
+function renderQuestOffer({
+  quest,
+  save,
+  onAccept,
+  onDecline,
+}: {
+  quest: SimQuestRef;
+  save: WorldSave | null;
+  onAccept: () => void;
+  onDecline: () => void;
+}) {
+  const accepted = save?.acceptedQuests?.includes(quest.id) ?? false;
+  const steps =
+    (quest as unknown as {
+      steps?: ReadonlyArray<{ name?: string; description?: string }>;
+    }).steps ?? [];
+  const stepIdx = save?.questStepProgress?.[quest.id] ?? 0;
+  const stepCount = steps.length;
+  const active = stepIdx < stepCount ? steps[stepIdx] : undefined;
+  return (
+    <QuestDialogOverlay
+      quest={quest}
+      alreadyAccepted={accepted}
+      stepIdx={stepIdx}
+      stepCount={stepCount}
+      activeStepName={active?.name}
+      activeStepDescription={active?.description}
+      onAccept={onAccept}
+      onDecline={onDecline}
+    />
+  );
+}
+
+/**
+ * Walk every accepted quest, find its active step, and increment
+ * the per-quest progress counter when:
+ *
+ *   - the active step's `kind` is "kill"
+ *   - the step's `params.monster_id` was one of the monsters in the
+ *     just-resolved combat's roster
+ *   - if the step pins `dungeon_id` / `dungeon_level`, we're in
+ *     that dungeon on the matching floor
+ *
+ * Returns a fresh WorldSave with `questStepProgress` updated. When
+ * no quest credit applies, returns the input save unchanged.
+ *
+ * Step indexing convention: `questStepProgress[id]` is the index of
+ * the NEXT incomplete step (0 = first step pending, N = all done).
+ */
+function creditKillStep(
+  save: WorldSave,
+  combat: SpawnEncounterOptions | null,
+  dungeon: DungeonState | null,
+  quests: ReadonlyArray<SimQuestRef>,
+): WorldSave {
+  if (!combat || combat.monsters.length === 0) return save;
+  const accepted = save.acceptedQuests ?? [];
+  if (accepted.length === 0) return save;
+  const monsterIdsInCombat = new Set(combat.monsters);
+  const byId = new Map(quests.map((q) => [q.id, q]));
+  const progress: Record<string, number> = {
+    ...(save.questStepProgress ?? {}),
+  };
+  let changed = false;
+  for (const questId of accepted) {
+    const quest = byId.get(questId);
+    if (!quest) continue;
+    const steps =
+      (quest as unknown as {
+        steps?: ReadonlyArray<{
+          kind?: string;
+          params?: { monster_id?: string; count?: number } | null;
+          dungeon_id?: string;
+          dungeon_level?: number;
+        }>;
+      }).steps ?? [];
+    const activeIdx = progress[questId] ?? 0;
+    const step = steps[activeIdx];
+    if (!step || step.kind !== "kill") continue;
+    const targetMonsterId = step.params?.monster_id;
+    if (!targetMonsterId) continue;
+    if (!monsterIdsInCombat.has(targetMonsterId)) continue;
+    // Dungeon-pinned steps only credit when we're in the right
+    // dungeon and floor. Steps without dungeon_id credit anywhere.
+    if (step.dungeon_id) {
+      if (!dungeon || dungeon.dungeonId !== step.dungeon_id) continue;
+      if (typeof step.dungeon_level === "number") {
+        const expectedFloorIdx = Math.max(0, step.dungeon_level - 1);
+        if (dungeon.floorIdx !== expectedFloorIdx) continue;
+      }
+    }
+    progress[questId] = activeIdx + 1;
+    changed = true;
+  }
+  if (!changed) return save;
+  return { ...save, questStepProgress: progress };
+}
+
+/**
  * Render the quest-log strip — one row per accepted quest with the
  * quest name and the active step's name + description. Currently
  * "active step" is always step 0; once step completion lands the
@@ -2091,6 +2278,7 @@ function buildDungeonCatalog(
 function renderQuestLog(
   catalogQuests: ReadonlyArray<SimQuestRef>,
   accepted: ReadonlyArray<string>,
+  progress: Readonly<Record<string, number>>,
 ) {
   if (accepted.length === 0) return null;
   const byId = new Map(catalogQuests.map((q) => [q.id, q]));
@@ -2105,27 +2293,39 @@ function renderQuestLog(
       </header>
       <ul className="space-y-2">
         {rows.map((q) => {
-          // SimQuestRef doesn't carry steps today; the raw record
-          // loaded through `loadCatalog` does. We cast through to
-          // read the first step's name + description as the active
-          // objective. Future per-quest step state will pick the
-          // right one off the save.
-          const steps = (q as unknown as { steps?: ReadonlyArray<{
-            name?: string;
-            description?: string;
-          }> }).steps;
-          const step0 = steps?.[0];
+          const steps =
+            (q as unknown as {
+              steps?: ReadonlyArray<{
+                name?: string;
+                description?: string;
+              }>;
+            }).steps ?? [];
+          const stepIdx = progress[q.id] ?? 0;
+          const stepCount = steps.length;
+          const complete = stepCount > 0 && stepIdx >= stepCount;
+          const active = !complete ? steps[stepIdx] : undefined;
           return (
             <li key={q.id}>
-              <div className="font-medium text-parchment">{q.name}</div>
-              {step0?.name ? (
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="font-medium text-parchment">{q.name}</span>
+                <span
+                  className={`font-mono text-[10px] ${
+                    complete ? "text-emerald-300" : "text-parchment/50"
+                  }`}
+                >
+                  {complete
+                    ? "Complete"
+                    : `${stepIdx}/${stepCount} done`}
+                </span>
+              </div>
+              {active?.name ? (
                 <div className="text-[11px] text-parchment/70">
-                  → {step0.name}
+                  → {active.name}
                 </div>
               ) : null}
-              {step0?.description ? (
+              {active?.description ? (
                 <div className="text-[11px] italic text-parchment/55">
-                  {step0.description}
+                  {active.description}
                 </div>
               ) : null}
             </li>
