@@ -21,12 +21,21 @@
 
 import { useEffect, useState } from "react";
 import type { PartyInventoryEntry, SimParty } from "@/sim/types";
+import {
+  addToInventory,
+  consumeOneFromInventory,
+} from "@/play/inventoryStacking";
 
 interface ItemRef {
   id: string;
   name?: string;
   buy?: number | null;
   sell?: number | null;
+  stackable?: boolean;
+  /** Catalog charges — per-use effect, NOT inventory quantity. The
+   *  stacking helpers don't read this; just here so the shop's
+   *  itemsById map stays a faithful copy of items.json. */
+  charges?: number;
 }
 
 interface CounterRef {
@@ -92,17 +101,16 @@ export function CounterShopOverlay({
     if ((party.gold ?? 0) < price) return;
     party.gold = (party.gold ?? 0) - price;
     if (!Array.isArray(party.inventory)) party.inventory = [];
-    // Stack chargeable items (arrows, bolts, lockpicks…) onto an
-    // existing inventory row when one is present. Items the catalog
-    // doesn't mark as stackable always create a fresh row.
-    const existing = party.inventory.find(
-      (e) => e.item === itemId && typeof e.charges === "number",
-    );
-    if (existing) {
-      existing.charges = (existing.charges ?? 0) + 1;
-    } else {
-      party.inventory.push({ item: itemId });
-    }
+    // Use the shared stacking helper: merges into an existing stack
+    // when the catalog flags the item stackable, otherwise pushes a
+    // fresh row. One purchase = one physical item, regardless of how
+    // the catalog uses its `charges` field (that's per-USE effect).
+    party.inventory = addToInventory(
+      party.inventory,
+      itemId,
+      items,
+      1,
+    ) as PartyInventoryEntry[];
     stock.splice(stockIndex, 1);
     refresh();
   };
@@ -113,7 +121,14 @@ export function CounterShopOverlay({
     const entry = party.inventory[invIndex];
     const price = sellPrice(entry.item);
     if (price <= 0) return;
-    party.inventory.splice(invIndex, 1);
+    // Sell ONE physical item — for stackable rows the stack
+    // decrements; non-stackable rows splice in full. The shop's
+    // stock receives a matching +1 (one item id pushed back).
+    party.inventory = consumeOneFromInventory(
+      party.inventory,
+      invIndex,
+      items,
+    ) as PartyInventoryEntry[];
     party.gold = (party.gold ?? 0) + price;
     stock.push(entry.item);
     refresh();

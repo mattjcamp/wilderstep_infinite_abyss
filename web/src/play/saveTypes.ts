@@ -76,6 +76,25 @@ export interface SavedPartyState {
   torch_steps: number;
   galadriels_light_steps: number;
   infravision_active: boolean;
+  /** Step countdown for the Cleric's Light spell. Twin of
+   *  `galadriels_light_steps` — both contribute to the party's
+   *  emitted light radius via Math.max() in the sim. Absent in
+   *  legacy saves; the loader treats absence as 0. */
+  magic_light_steps?: number;
+  /** Ability ids the player has toggled on from the Party screen's
+   *  Effects panel. Persisted across reloads so a party who lit
+   *  Galadriel's Light (or flagged Detect Traps, Infravision, etc.)
+   *  keeps the effect engaged when they reopen the game.
+   *
+   *  Companion to the per-effect counters above — e.g. activating
+   *  "galadriels_light" both adds the id here AND seeds
+   *  `galadriels_light_steps` from the ability's duration. The
+   *  counter is what the sim actually consumes for lighting; this
+   *  field is the player's choice + the UI's source of truth for
+   *  "what's currently checked in the Effects list."
+   *
+   *  Absent in legacy saves; treated as empty. */
+  party_effects?: ReadonlyArray<string>;
   /** True when the party is currently riding a boat. Pairs with
    *  `currentBoatSprite`. Persisted so a reload mid-voyage drops
    *  the player back into the boat at the saved cell rather than

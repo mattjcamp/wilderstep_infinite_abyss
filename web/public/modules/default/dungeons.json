@@ -26,10 +26,10 @@
       ],
       "torch_density": 0.75,
       "locked_doors": 0.25,
-      "style": "caves",
+      "style": "ruins",
       "size": {
-        "width": 16,
-        "height": 16
+        "width": 25,
+        "height": 25
       }
     }
   ]

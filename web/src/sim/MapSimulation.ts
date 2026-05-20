@@ -177,6 +177,15 @@ export interface SceneBridge {
    *  `setInfravisionActive` toggle. Optional — hosts that don't
    *  support infravision rendering just ignore it. */
   setPartyInfravisionActive?(active: boolean): void;
+  /** Cells the host wants painted with a "detected trap" overlay
+   *  (typically a red X). Keys are `"col,row"`. The scene paints a
+   *  marker per entry and clears markers for cells that disappear
+   *  from the set. Called whenever the host decides the visible
+   *  set of detected traps has changed — usually after toggling the
+   *  Detect Traps party effect on/off, or after a trap fires and is
+   *  removed from the live trap list. Optional — hosts that don't
+   *  yet render the overlay can ignore it. */
+  setDetectedTraps?(cells: ReadonlySet<string>): void;
 }
 
 /** DC the Pick Lock attempt rolls against. Matches `Lock.ts`
@@ -450,6 +459,12 @@ export type SimEvent =
       pos: Position;
       returnPos: Position;
     }
+  /** Fired AFTER the party finishes stepping onto a `trap: true`
+   *  cell. The host picks a random alive party member, rolls 3 + d6
+   *  damage, applies it, and surfaces a log line. The kernel has
+   *  already disarmed the cell (set `trap = false`) before the event
+   *  fires so it can't double-trigger. */
+  | { kind: "trap_triggered"; pos: Position }
   /** Emitted whenever the *visible* simulation state changes — host
    *  uses this to re-render its panel (HP bars, torch countdown, …). */
   | { kind: "state" };
@@ -1183,6 +1198,20 @@ export class MapSimulation {
       this.bridge.floatText?.(to.col, to.row, text);
     }
 
+    // ── Trap ────────────────────────────────────────────────────────
+    // If the cell the party stepped onto hides a trap, disarm it on
+    // the cell (so a re-step / re-mount can't refire) and emit
+    // `trap_triggered`. The host owns damage application + the log
+    // line — the kernel just signals. We check this AFTER the moved
+    // emit so listeners see the new position first, but BEFORE the
+    // dungeon entrance / spawn / encounter checks since a triggered
+    // trap should resolve immediately and the cell is now plain
+    // floor for any subsequent effects.
+    if (target.trap) {
+      target.trap = false;
+      this.emit({ kind: "trap_triggered", pos: { col: to.col, row: to.row } });
+    }
+
     // ── Dungeon entrance ────────────────────────────────────────────
     // If the cell the party just stepped onto carries a `dungeon`
     // id, fire `dungeon_entered` and short-circuit the rest of the
@@ -1602,6 +1631,25 @@ export class MapSimulation {
     this.emit({
       kind: "log",
       message: `Galadriel's Light shines (${steps} steps).`,
+    });
+    this.emit({ kind: "state" });
+  }
+
+  /** Cast the Cleric's Light spell — sets a step countdown for the
+   *  divine-light party effect. Mechanically twin of `castMagicLight`
+   *  but writes to `magic_light_steps` so a Cleric's Light and an
+   *  Elf's Galadriel's Light can coexist (the lighting helper takes
+   *  the max across both counters; one ending early doesn't kill the
+   *  other). MP deduction is the caller's job — same convention as
+   *  `lightTorch`/`castMagicLight`. */
+  castLightSpell(steps = 100): void {
+    if (this.disposed) return;
+    this.party = { ...this.party, magic_light_steps: steps };
+    this.bridge.setPartyLight(this.computeLightSource());
+    this.bridge.relight();
+    this.emit({
+      kind: "log",
+      message: `Light shines (${steps} steps).`,
     });
     this.emit({ kind: "state" });
   }

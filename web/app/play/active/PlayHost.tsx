@@ -84,6 +84,8 @@ import {
 } from "@/battle/world/Quests";
 import { tintForCell } from "@/sim/lighting";
 import { TILE_SIZE, WorldRenderer } from "@/sim/scene/WorldRenderer";
+import { radialBurst, screenShake, VFX_COLOURS } from "@/vfx/Vfx";
+import { Sfx } from "@/battle/audio/Sfx";
 import {
   MINUTES_PER_STEP,
   advanceClock,
@@ -142,6 +144,7 @@ function mapStateFromSnapshot(
   };
 }
 import { loadWorld, saveWorld } from "@/play/save";
+import { addToInventory } from "@/play/inventoryStacking";
 import { applyCombatResultToSave } from "@/play/syncFromBattle";
 import type { WorldSave } from "@/play/saveTypes";
 import type {
@@ -198,6 +201,14 @@ interface PlayMapRecord {
 interface PlayItem {
   id: string;
   icon?: string;
+  /** True when multiple copies of this id collapse into one
+   *  inventory row (Torch, Arrows, Lockpicks, …). Read by the
+   *  stacking helpers when granting quest rewards or loot. */
+  stackable?: boolean;
+  /** Catalog charges — per-use effect, not inventory quantity. Kept
+   *  on this minimal type so the loader doesn't have to strip the
+   *  field. */
+  charges?: number;
 }
 
 /** Session-only state set when the party is exploring a dungeon.
@@ -357,6 +368,58 @@ export function PlayHost() {
    *  save shape is a follow-up — for now, on reload, status is
    *  re-inferred from acceptedQuests + questStepProgress.) */
   const questStatesRef = useRef<Map<string, QuestState>>(new Map());
+  /** Live set of cells (`"col,row"`) that currently hide an armed
+   *  trap. Seeded at sim mount from the catalog's grid (any cell with
+   *  `trap: true` after dungeonLevelToMap factored out already-
+   *  triggered cells); pruned when a trap fires. Used by
+   *  refreshDetectedTraps to push the right set to the renderer
+   *  whenever Detect Traps toggles. */
+  const liveTrapsRef = useRef<Set<string>>(new Set());
+  /** Repaint the detected-trap overlay. Pushes an empty set to the
+   *  renderer when Detect Traps isn't active (clears every red X).
+   *  When active, pushes only the cells within the party's current
+   *  light radius — traps far in the dark stay hidden until the
+   *  party walks into range, matching v1's "you can only detect what
+   *  you can see" rule. The radius is the same one
+   *  `partyLightRange` returns (torch / Galadriel / Light spell);
+   *  baseline 1-cell vision when the party emits no light is
+   *  enough that the cell the party stands on is always covered. */
+  const refreshDetectedTraps = useCallback(() => {
+    const r = rendererRef.current;
+    if (!r) return;
+    const cur = saveRef.current;
+    const hasDetect = !!cur?.party.party_effects?.includes("detect_traps");
+    if (!hasDetect || liveTrapsRef.current.size === 0) {
+      r.setDetectedTraps(new Set());
+      return;
+    }
+    const sim = simRef.current;
+    if (!sim) {
+      r.setDetectedTraps(new Set());
+      return;
+    }
+    const snap = sim.snapshot();
+    // Use 1 as the floor — even with no light source the party can
+    // see the tile they're standing on plus their cardinal
+    // neighbours; matches the lighting helper's implicit baseline.
+    const radius = Math.max(1, snap.lightRange);
+    const px = snap.pos.col;
+    const py = snap.pos.row;
+    const visible = new Set<string>();
+    for (const key of liveTrapsRef.current) {
+      const [cs, rs] = key.split(",");
+      const c = Number.parseInt(cs, 10);
+      const ro = Number.parseInt(rs, 10);
+      if (!Number.isFinite(c) || !Number.isFinite(ro)) continue;
+      // Chebyshev distance — same shape the lighting pool uses
+      // (square aura around the party). Euclidean would round-trip
+      // the corners off; we'd rather match what the player's eyes
+      // see in the lit area.
+      const cheby = Math.max(Math.abs(c - px), Math.abs(ro - py));
+      if (cheby <= radius) visible.add(key);
+    }
+    r.setDetectedTraps(visible);
+  }, []);
   useEffect(() => {
     // Lock dialog, quest offer, active combat, AND the party screen
     // each gate keyboard movement through the same ref so the world
@@ -495,16 +558,26 @@ export function PlayHost() {
     if (dungeonNow) {
       const session = peekDungeonSession(dungeonNow.dungeonId);
       const snapshot = session ? snapshotDungeonForSave(session) : null;
+      const snap = sim.snapshot();
       const next: WorldSave = {
         ...save,
         clockMinutes: clockRef.current,
         party: {
           ...save.party,
+          // Per-step counters (torch, magic light, galadriel's light)
+          // tick inside the sim each step — mirror those onto the
+          // save here so a reload mid-dungeon resumes with the right
+          // remaining duration AND so the Party screen overlay's
+          // Effects panel can show the live count when the player
+          // opens the screen mid-dungeon.
+          torch_steps: snap.party.torch_steps,
+          galadriels_light_steps: snap.party.galadriels_light_steps,
+          magic_light_steps: snap.party.magic_light_steps ?? 0,
           currentDungeon: {
             dungeonId: dungeonNow.dungeonId,
             floorIdx: dungeonNow.floorIdx,
-            col: sim.snapshot().pos.col,
-            row: sim.snapshot().pos.row,
+            col: snap.pos.col,
+            row: snap.pos.row,
             returnTo: dungeonNow.returnTo,
           },
         },
@@ -514,6 +587,8 @@ export function PlayHost() {
       };
       saveWorld(next);
       saveRef.current = next;
+      // Same rationale as the overworld branch below — no setState
+      // here. The overlay reads saveRef.current at mount.
       return;
     }
     const snap = sim.snapshot();
@@ -523,6 +598,27 @@ export function PlayHost() {
     // particular was being dropped by the cross-map branch, which
     // is why boats reset on every link).
     const mapState = mapStateFromSnapshot(snap);
+
+    // Reconcile `party_effects` with the per-step counters the sim
+    // ticked. Effects backed by a duration counter (Galadriel's Light,
+    // the Cleric's Light spell) auto-expire when the counter hits zero
+    // — drop the id so the Party screen no longer renders the effect
+    // as active. Toggle-only effects (Infravision) stay in lockstep
+    // with their own flag since the user explicitly turns those off.
+    const partyEffects: string[] = [];
+    for (const id of save.party.party_effects ?? []) {
+      if (id === "galadriels_light" && snap.party.galadriels_light_steps <= 0) {
+        continue; // burnt out — auto-remove
+      }
+      if (id === "magic_light" && (snap.party.magic_light_steps ?? 0) <= 0) {
+        continue; // Cleric's Light burnt out
+      }
+      if (id === "infravision" && !snap.party.infravision_active) {
+        continue; // disengaged — keep the two in lockstep
+      }
+      partyEffects.push(id);
+    }
+
     const next: WorldSave = {
       ...save,
       // Clock advances on every step via the sim event handler and
@@ -538,6 +634,8 @@ export function PlayHost() {
         infravision_active: !!snap.party.infravision_active,
         torch_steps: snap.party.torch_steps,
         galadriels_light_steps: snap.party.galadriels_light_steps,
+        magic_light_steps: snap.party.magic_light_steps ?? 0,
+        party_effects: partyEffects,
         // Mid-voyage state — onBoat flips during boarding /
         // disembarking; currentBoatSprite carries the sprite of the
         // boat the party is riding. Persisting both lets a reload
@@ -550,6 +648,15 @@ export function PlayHost() {
     };
     saveWorld(next);
     saveRef.current = next;
+    // NOTE: we do NOT call setState here. Pushing the save into
+    // React state every step caused the Phaser mount effect (which
+    // depends on `state.save`) to re-run, destroying + recreating
+    // the game scene mid-step — flicker on every walk and a
+    // deadlock when entering a dungeon. The Party screen reads
+    // `saveRef.current` at mount time instead (see the
+    // PlayPartyScreenOverlay mount below), so the Effects panel
+    // still sees the latest counters without React having to
+    // re-render the whole tree.
   }, []);
 
   // Phaser mount. Runs whenever we have a fresh catalog ready.
@@ -835,6 +942,26 @@ export function PlayHost() {
             }
           }
 
+          // Seed the live-traps set from the freshly-mounted catalog
+          // grid. dungeonLevelToMap already cleared the `trap` flag
+          // on cells the dungeon session marked as previously
+          // triggered, so anything still flagged here is armed.
+          // Refresh the detected-trap overlay so the player sees red
+          // Xs on every armed trap if Detect Traps is currently
+          // active (and an empty layer otherwise).
+          liveTrapsRef.current = new Set();
+          for (let r = 0; r < catalog.map.height; r++) {
+            for (let c = 0; c < catalog.map.width; c++) {
+              const cell = catalog.map.grid[r][c];
+              if (
+                (cell as { trap?: boolean } | undefined)?.trap
+              ) {
+                liveTrapsRef.current.add(`${c},${r}`);
+              }
+            }
+          }
+          refreshDetectedTraps();
+
           // Item overlays — one Image per cell whose `item` resolves
           // to a known icon. Authored via the editor's per-cell
           // `item` field; the icon comes from items.json. Sized at
@@ -1016,6 +1143,7 @@ export function PlayHost() {
             roster: [...save.party.roster],
             torch_steps: save.party.torch_steps,
             galadriels_light_steps: save.party.galadriels_light_steps,
+            magic_light_steps: save.party.magic_light_steps ?? 0,
             infravision_active: save.party.infravision_active,
             gold: save.party.gold,
             inventory: [...save.party.inventory],
@@ -1259,6 +1387,8 @@ export function PlayHost() {
               renderer.setCellSprite(col, row, sprite),
             setPartyInfravisionActive: (active) =>
               renderer.setPartyInfravisionActive(active),
+            setDetectedTraps: (cells) =>
+              renderer.setDetectedTraps(cells),
           };
 
           // While the party is inside a dungeon the per-floor
@@ -1411,6 +1541,13 @@ export function PlayHost() {
               // localStorage writes are sync but the save blob is
               // a few KB; the cost is invisible at this scale.
               saveCurrent();
+              // Refresh the detected-trap overlay so red Xs follow
+              // the party — traps that were just out of light range
+              // come into view, traps the party left behind fade
+              // back into the dark. refreshDetectedTraps no-ops
+              // immediately when Detect Traps isn't active, so the
+              // call is cheap on every step.
+              refreshDetectedTraps();
               return;
             }
             if (ev.kind === "log") {
@@ -1427,6 +1564,101 @@ export function PlayHost() {
             }
             if (ev.kind === "linked") {
               handleLinked(ev.link);
+              return;
+            }
+            if (ev.kind === "trap_triggered") {
+              // Trap feedback — fire-and-forget VFX/SFX so the
+              // player gets immediate "something just happened" cues
+              // independent of how the rest of the handler resolves
+              // (damage, log line, etc). Audio is a percussive
+              // "explosion" tone; visual is a fire-orange radial
+              // burst over the trap tile + a small screen shake.
+              // Wrapped in try/catch because both calls touch Phaser
+              // / WebAudio internals that can throw on a disposed
+              // scene; we don't want a render glitch to drop the
+              // damage application below.
+              const r = rendererRef.current;
+              try {
+                Sfx.play("explosion");
+              } catch {
+                /* audio context not ready — skip */
+              }
+              if (r) {
+                try {
+                  const px = ev.pos.col * TILE_SIZE + TILE_SIZE / 2;
+                  const py = ev.pos.row * TILE_SIZE + TILE_SIZE / 2;
+                  void radialBurst(
+                    r.scene,
+                    { x: px, y: py },
+                    VFX_COLOURS.fire,
+                    VFX_COLOURS.ember,
+                    64,
+                  );
+                  screenShake(r.scene, 0.008, 240);
+                } catch {
+                  /* scene disposed mid-step — skip */
+                }
+              }
+              // Dungeon trap fired. Pick a random ALIVE party member
+              // and deal 3 + d6 damage (v1's exact formula).
+              // We mutate the saveRef in place (no setState — same
+              // reasoning as elsewhere: that would force a Phaser
+              // remount and teleport the party). The Party screen
+              // reads from saveRef when opened, so the player will
+              // see the post-hit HP next time they bring up the
+              // sheet.
+              const cur = saveRef.current;
+              if (!cur) {
+                liveTrapsRef.current.delete(`${ev.pos.col},${ev.pos.row}`);
+                refreshDetectedTraps();
+                return;
+              }
+              const aliveIdxs: number[] = [];
+              cur.party.members.forEach((m, i) => {
+                if (m.hp > 0) aliveIdxs.push(i);
+              });
+              if (aliveIdxs.length === 0) {
+                liveTrapsRef.current.delete(`${ev.pos.col},${ev.pos.row}`);
+                refreshDetectedTraps();
+                return;
+              }
+              const victimIdx =
+                aliveIdxs[Math.floor(Math.random() * aliveIdxs.length)];
+              const victim = cur.party.members[victimIdx];
+              const damage = 3 + Math.floor(Math.random() * 6);
+              const newHp = Math.max(0, victim.hp - damage);
+              const nextMembers = cur.party.members.map((m, i) =>
+                i === victimIdx ? { ...m, hp: newHp } : m,
+              );
+              const nextSave: WorldSave = {
+                ...cur,
+                party: { ...cur.party, members: nextMembers },
+              };
+              saveRef.current = nextSave;
+              saveWorld(nextSave);
+              setLogMessages((prev) => {
+                const line = `Trap! ${victim.id} takes ${damage} damage.`;
+                const next = [...prev, line];
+                return next.length > MAX_LOG
+                  ? next.slice(next.length - MAX_LOG)
+                  : next;
+              });
+              // Remove the just-triggered tile from the live-traps
+              // set and persist into the in-memory DungeonLevel so a
+              // remount (e.g. floor transition back to this level)
+              // doesn't re-arm the trap. dungeonLevelToMap already
+              // honours `level.triggeredTraps` when building the
+              // cell grid. Then refresh the detected-trap overlay so
+              // any red X on this cell clears.
+              const key = `${ev.pos.col},${ev.pos.row}`;
+              liveTrapsRef.current.delete(key);
+              const dStateNow = dungeonStateRef.current;
+              if (dStateNow) {
+                const session = peekDungeonSession(dStateNow.dungeonId);
+                const level = session?.levels[dStateNow.floorIdx];
+                level?.triggeredTraps?.add(key);
+              }
+              refreshDetectedTraps();
               return;
             }
             if (ev.kind === "lock_encountered") {
@@ -2072,10 +2304,21 @@ export function PlayHost() {
         if (claim) {
           const save = saveRef.current;
           if (save) {
-            const nextInventory = [
-              ...save.party.inventory,
-              ...claim.items.map((id) => ({ item: id })),
-            ];
+            // Quest reward items merge into existing stacks where
+            // possible — picking up two more Lockpicks bumps an
+            // existing Lockpicks row from 3 to 5 instead of creating
+            // a second row. Falls back to a fresh row for non-
+            // stackable items (unique magic items, etc.).
+            const catalogItems = catalogRef.current?.items ?? [];
+            let nextInventory = save.party.inventory.map((e) => ({ ...e }));
+            for (const id of claim.items) {
+              nextInventory = addToInventory(
+                nextInventory,
+                id,
+                catalogItems,
+                1,
+              );
+            }
             // Persist the turned-in flag so a reload doesn't let the
             // player re-bump the giver and re-claim. De-dupe via the
             // Set indirection in case (defensively) the save already
@@ -2289,7 +2532,16 @@ export function PlayHost() {
       {partyScreenOpen && state.save ? (
         <PlayPartyScreenOverlay
           moduleId={state.save.moduleId}
-          save={state.save}
+          // Read the LIVE save from saveRef rather than state.save.
+          // saveCurrent updates saveRef every step but deliberately
+          // does NOT setState (that would force the Phaser mount
+          // effect to remount the whole scene per step → flicker).
+          // The overlay only mounts on partyScreenOpen flipping
+          // true; reading saveRef at that moment gives us the
+          // fresh counters (Light / Galadriel duration, HP, MP)
+          // for free, and once the screen is open the sim is paused
+          // so no further ticks happen.
+          save={saveRef.current ?? state.save}
           onClose={() => setPartyScreenOpen(false)}
           // Stash mutations from the Party screen (Use Torch, Send to
           // character, etc.) flow back here. Update saveRef.current so
@@ -2298,11 +2550,75 @@ export function PlayHost() {
           // so the next render of the host (and any open overlays) sees
           // the freshly-mutated save without a reload.
           onMutateSave={(next) => {
+            // Capture pre-mutation counters so we can detect Effect
+            // toggles (Galadriel's Light, Infravision) and push the
+            // change into the running sim — otherwise the kernel's
+            // internal `this.party` keeps the old counter and the
+            // lighting stays the same until the next map remount.
+            const prev = saveRef.current;
             saveRef.current = next;
             saveWorld(next);
-            setState((prev) =>
-              prev.kind === "ok" ? { ...prev, save: next } : prev,
+            // IMPORTANT: do NOT setState({save: next}) here. The
+            // Phaser mount effect's dep list includes state.save —
+            // pushing the updated save into React state caused it
+            // to remount, which destroyed + recreated the running
+            // game. When that happened inside a dungeon, the mount
+            // re-spawned the party from `save.party.col/row`
+            // (which still points at the overworld entrance, since
+            // the dungeon position lives on
+            // `save.party.currentDungeon`), so toggling Detect
+            // Traps would teleport the party to the dungeon entrance
+            // tile. saveRef + the explicit sim.castMagicLight /
+            // setInfravisionActive calls below propagate everything
+            // the gameplay surfaces care about; state.save stays
+            // stable until a legitimate map / dungeon transition
+            // bumps reloadKey.
+            const sim = simRef.current;
+            if (sim && prev) {
+              // Galadriel's Light — castMagicLight reseeds the counter
+              // and re-renders lighting in one call. Passing 0 turns
+              // the effect off; the log line it emits at 0 is a
+              // mildly off-tone but acceptable trade for not adding a
+              // sibling "extinguish" method.
+              if (
+                next.party.galadriels_light_steps !==
+                prev.party.galadriels_light_steps
+              ) {
+                sim.castMagicLight(next.party.galadriels_light_steps);
+              }
+              // Cleric's Light spell — same shape as Galadriel's but
+              // a different counter so the two coexist.
+              if (
+                (next.party.magic_light_steps ?? 0) !==
+                (prev.party.magic_light_steps ?? 0)
+              ) {
+                sim.castLightSpell(next.party.magic_light_steps ?? 0);
+              }
+              // Infravision toggle. setInfravisionActive no-ops when
+              // the value hasn't changed AND when no roster member has
+              // the racial ability — so calling it unconditionally
+              // here is safe.
+              if (
+                next.party.infravision_active !==
+                prev.party.infravision_active
+              ) {
+                sim.setInfravisionActive(!!next.party.infravision_active);
+              }
+            }
+            // Detect Traps toggle — refresh the red-X overlay layer.
+            // refreshDetectedTraps reads `saveRef.current` (which we
+            // just updated) to decide whether to paint or clear, and
+            // pushes the current liveTrapsRef contents through the
+            // bridge to the renderer.
+            const prevDetect = !!prev?.party.party_effects?.includes(
+              "detect_traps",
             );
+            const nextDetect = !!next.party.party_effects?.includes(
+              "detect_traps",
+            );
+            if (prevDetect !== nextDetect) {
+              refreshDetectedTraps();
+            }
           }}
         />
       ) : null}

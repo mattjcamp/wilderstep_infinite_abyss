@@ -20,6 +20,7 @@ import type {
 } from "./types";
 import {
   GALADRIELS_LIGHT_RANGE,
+  MAGIC_LIGHT_RANGE,
   TORCH_LIGHT_RANGE,
 } from "./types";
 
@@ -116,7 +117,10 @@ export function step(
  *  `_effects` are kept on the signature for future hooks (e.g. a
  *  proper "Light" spell effect) without churning the callers. */
 export function partyLightRange(
-  party: Pick<SimParty, "torch_steps" | "galadriels_light_steps">,
+  party: Pick<
+    SimParty,
+    "torch_steps" | "galadriels_light_steps" | "magic_light_steps"
+  >,
   _activeMembers: ReadonlyArray<SimCharacter>,
   _races: ReadonlyArray<SimRace>,
   _effects: ReadonlyArray<SimEffect>,
@@ -125,6 +129,9 @@ export function partyLightRange(
   if (party.torch_steps > 0) best = Math.max(best, TORCH_LIGHT_RANGE);
   if (party.galadriels_light_steps > 0) {
     best = Math.max(best, GALADRIELS_LIGHT_RANGE);
+  }
+  if ((party.magic_light_steps ?? 0) > 0) {
+    best = Math.max(best, MAGIC_LIGHT_RANGE);
   }
   return best;
 }
@@ -146,11 +153,18 @@ export function partyLightSource(
  *  movement is resolved (the v1 convention), so a torch with 1 step
  *  left illuminates the tile you step ONTO before burning out. */
 export function tickPartyTimers(
-  party: Pick<SimParty, "torch_steps" | "galadriels_light_steps">,
-): Pick<SimParty, "torch_steps" | "galadriels_light_steps"> {
+  party: Pick<
+    SimParty,
+    "torch_steps" | "galadriels_light_steps" | "magic_light_steps"
+  >,
+): Pick<
+  SimParty,
+  "torch_steps" | "galadriels_light_steps" | "magic_light_steps"
+> {
   return {
     torch_steps: Math.max(0, party.torch_steps - 1),
     galadriels_light_steps: Math.max(0, party.galadriels_light_steps - 1),
+    magic_light_steps: Math.max(0, (party.magic_light_steps ?? 0) - 1),
   };
 }
 

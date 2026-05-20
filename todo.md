@@ -6,6 +6,9 @@
 
 - Finish Party screen
 
+- The battle screne floats around, it should be fixed in the browser the same way other maps are
+- When you cast spells from the character sheet, you should have an animation and sound effect
+
 - Add inspector screens: Q for Quest, H for Help
 - tighten up the Quest Editor
 - add map level attribute to set lighting: world, twilight, darkness

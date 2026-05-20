@@ -112,6 +112,13 @@ export function dungeonLevelToMap(
       const base: DungeonMapCell = proto
         ? cloneProto(proto)
         : cloneProto(prototypeForTileId(0, style) ?? FALLBACK_WALL);
+      // A trap that's already been triggered in this dungeon session
+      // is just floor now — disarm the cell so it doesn't re-fire on
+      // re-mount. The TRAP_PROTO already paints the floor sprite, so
+      // we only need to clear the `trap` flag.
+      if (base.trap && level.triggeredTraps.has(`${c},${r}`)) {
+        base.trap = false;
+      }
       if (isChest) {
         // Identity bits carry over so the rest of the system can
         // tell "this is a chest cell" — walkability stays true (the
@@ -246,6 +253,7 @@ const FALLBACK_WALL: DungeonTilePrototype = {
   quest: "",
   dungeon: "",
   npc: "",
+  trap: false,
   link: null,
 };
 

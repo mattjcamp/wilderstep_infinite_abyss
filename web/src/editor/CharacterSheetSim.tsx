@@ -168,6 +168,7 @@ export function CharacterSheetSim({
   abilities = [],
   spells = [],
   onBack,
+  onCastSpell,
 }: {
   character: PartyCharacterRef;
   classes: ReadonlyArray<PartyClassRef>;
@@ -186,6 +187,12 @@ export function CharacterSheetSim({
   /** Optional Back button — shown when present. Lets the Party screen
    *  drill-in / drill-out, while standalone hosts can omit it. */
   onBack?: () => void;
+  /** Fires when the player clicks Cast on a party-castable spell.
+   *  The handler is responsible for any target picker (heals) or
+   *  immediate apply (self-cast like Light), MP deduction, and save
+   *  persistence. When omitted, Cast still shows a preview message
+   *  but no state changes (the screen stays a pure preview). */
+  onCastSpell?: (casterId: string, spellId: string) => void;
 }) {
   const className =
     classes.find((c) => c.id === character.class)?.name ?? character.class;
@@ -416,17 +423,22 @@ export function CharacterSheetSim({
                     typeof entry.item === "string" ? entry.item : null;
                   const def = id ? itemById.get(id) ?? null : null;
                   const label = def?.name ?? id ?? "(unknown)";
-                  const charges =
-                    typeof entry.charges === "number"
-                      ? ` (${entry.charges})`
-                      : "";
+                  // Quantity badge mirrors the stash list: only show
+                  // a count when the catalog flags the item stackable
+                  // AND the stack has more than one copy. Non-
+                  // stackable items show as just the name.
+                  const qty =
+                    def?.stackable && typeof entry.charges === "number"
+                      ? entry.charges
+                      : 1;
+                  const qtyLabel = qty > 1 ? ` (${qty})` : "";
                   return (
                     <li
                       key={`${id ?? "_"}-${i}`}
                       className="text-parchment/85"
                     >
                       {label}
-                      {charges}
+                      {qtyLabel}
                     </li>
                   );
                 })}
@@ -489,13 +501,23 @@ export function CharacterSheetSim({
               <SpellRow
                 key={s.id}
                 spell={s}
-                onCast={() =>
+                onCast={() => {
+                  // Fire the host-side handler first — if a real
+                  // handler is wired (PlayPartyScreenOverlay) it
+                  // mutates the save, opens a target picker, etc.
+                  // Either way, leave a one-line preview message
+                  // behind so the player sees feedback for spells
+                  // whose host-side handler hasn't been written
+                  // yet (e.g., Knock, Push).
+                  onCastSpell?.(character.id, s.id);
                   setLastAction(
-                    `Cast ${s.name ?? s.id} — preview only (MP ${
-                      s.mp_cost ?? 0
-                    }).`,
-                  )
-                }
+                    onCastSpell
+                      ? `Casting ${s.name ?? s.id}…`
+                      : `Cast ${s.name ?? s.id} — preview only (MP ${
+                          s.mp_cost ?? 0
+                        }).`,
+                  );
+                }}
               />
             ))}
           </ul>

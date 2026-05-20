@@ -172,6 +172,15 @@ export class WorldRenderer {
     string,
     Phaser.GameObjects.Image
   >();
+  /** Detected-trap overlay markers keyed `"col,row"`. Each entry is a
+   *  small red-X Graphics drawn over the cell that hides a trap the
+   *  Detect Traps effect has revealed. `setDetectedTraps` diffs this
+   *  against an incoming set of cell keys: cells that fell off the
+   *  set get their graphic destroyed; new cells get a fresh one. */
+  readonly detectedTrapMarks = new Map<
+    string,
+    Phaser.GameObjects.Graphics
+  >();
 
   /** The single party sprite. Null before `setPartyAt` fires. */
   partySprite: Phaser.GameObjects.Image | null = null;
@@ -364,6 +373,44 @@ export class WorldRenderer {
     if (!img) return;
     if (!this.scene.textures.exists(sprite)) return;
     img.setTexture(sprite);
+  }
+
+  /** Paint a red-X overlay on every cell whose key is in `cells`, and
+   *  erase the overlay from any cell that's no longer in the set.
+   *  The host calls this whenever the Detect Traps party effect
+   *  toggles or a trap fires (the kernel can't paint, so the host
+   *  diffs the live trap-positions list against the previously-
+   *  rendered set). Depth 95 sits above placed-encounter overlays
+   *  (80) and below the party sprite (300). */
+  setDetectedTraps(cells: ReadonlySet<string>): void {
+    // Drop markers for cells that are no longer detected.
+    for (const [key, g] of this.detectedTrapMarks) {
+      if (!cells.has(key)) {
+        g.destroy();
+        this.detectedTrapMarks.delete(key);
+      }
+    }
+    // Add markers for new cells.
+    for (const key of cells) {
+      if (this.detectedTrapMarks.has(key)) continue;
+      const [colStr, rowStr] = key.split(",");
+      const col = Number.parseInt(colStr, 10);
+      const row = Number.parseInt(rowStr, 10);
+      if (!Number.isFinite(col) || !Number.isFinite(row)) continue;
+      const px = col * TILE_SIZE + TILE_SIZE / 2;
+      const py = row * TILE_SIZE + TILE_SIZE / 2;
+      const inset = 8;
+      const g = this.scene.add.graphics();
+      g.lineStyle(3, 0xff3030, 0.95);
+      g.beginPath();
+      g.moveTo(px - TILE_SIZE / 2 + inset, py - TILE_SIZE / 2 + inset);
+      g.lineTo(px + TILE_SIZE / 2 - inset, py + TILE_SIZE / 2 - inset);
+      g.moveTo(px + TILE_SIZE / 2 - inset, py - TILE_SIZE / 2 + inset);
+      g.lineTo(px - TILE_SIZE / 2 + inset, py + TILE_SIZE / 2 - inset);
+      g.strokePath();
+      g.setDepth(95);
+      this.detectedTrapMarks.set(key, g);
+    }
   }
 
   /** Update the player-engaged infravision flag + trigger a relight.

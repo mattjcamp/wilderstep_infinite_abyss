@@ -16,35 +16,7 @@
   "inventory": [
     {
       "item": "torch",
-      "charges": 1
-    },
-    {
-      "item": "torch",
-      "charges": 1
-    },
-    {
-      "item": "torch",
-      "charges": 1
-    },
-    {
-      "item": "torch",
-      "charges": 1
-    },
-    {
-      "item": "torch",
-      "charges": 1
-    },
-    {
-      "item": "torch",
-      "charges": 1
-    },
-    {
-      "item": "torch",
-      "charges": 1
-    },
-    {
-      "item": "torch",
-      "charges": 1
+      "charges": 10
     },
     {
       "item": "arrows",

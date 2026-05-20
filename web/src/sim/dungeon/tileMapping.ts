@@ -77,6 +77,10 @@ export interface DungeonTilePrototype {
   quest: string;
   dungeon: string;
   npc: string;
+  /** True for TILE_TRAP cells — picked up by the kernel's step
+   *  handler to fire a `trap_triggered` event. Cleared once the
+   *  trap goes off so a single tile is one-shot. */
+  trap: boolean;
   flags?: Record<string, unknown>;
   link?: { map_id: string; x: number; y: number } | null;
   /** Optional overlay sprite drawn ON TOP of the cell's base
@@ -111,6 +115,7 @@ function proto(over: Partial<DungeonTilePrototype>): DungeonTilePrototype {
     quest: "",
     dungeon: "",
     npc: "",
+    trap: false,
     link: null,
     ...over,
   };
@@ -143,12 +148,15 @@ const CHEST_PROTO = proto({
 });
 
 const TRAP_PROTO = proto({
-  // Traps render as plain floor (concealed). The simulator doesn't
-  // implement trap mechanics yet — this is the visual stand-in until
-  // a trap subsystem lands.
+  // Traps render as plain floor (concealed) until the party either
+  // steps on one (triggers it, dealing 3-8 damage to a random alive
+  // member) or has the Detect Traps party effect active (host paints
+  // a red-X overlay through the bridge). The `trap: true` flag is
+  // what the kernel's step handler reads to emit `trap_triggered`.
   id: "dungeon_floor_trap",
   name: "Trap",
   sprite: "map/stone_floor.png",
+  trap: true,
 });
 
 const ARTIFACT_PROTO = proto({

@@ -88,6 +88,13 @@ export interface SimCell {
    *  the quest is accepted (the host calls `markQuestAccepted`),
    *  subsequent steps onto the cell don't re-fire. */
   quest?: string;
+  /** True when this cell hides a trap. Stepping onto a `trap` cell
+   *  fires a `trap_triggered` event AFTER the move resolves — the
+   *  party walks onto the cell, then takes damage. The kernel
+   *  disarms the cell on trigger (sets `trap = false`) so it can't
+   *  refire. Dungeon-generated cells set this from the `TILE_TRAP`
+   *  prototype; overworld cells can also carry it. */
+  trap?: boolean;
 }
 
 /** Minimal monsters.json record the sim reads — just the fields the
@@ -200,6 +207,15 @@ export interface SimParty {
   /** Step countdown for the Galadriel's Light effect (Elf race).
    *  >0 = +GALADRIELS_LIGHT_RANGE. Decrements one per step. */
   galadriels_light_steps: number;
+  /** Step countdown for the Light spell (Cleric/priest). Mechanically
+   *  identical to Galadriel's Light — bumps the party's emitted
+   *  light radius — but tracked separately so a caster's spell and
+   *  an Elf's racial effect can coexist without one ending the
+   *  other early. >0 = +MAGIC_LIGHT_RANGE. Decrements one per
+   *  step. Optional in the type because legacy SimParty inputs
+   *  (older tests, fresh saves) may omit it; the kernel coerces
+   *  absence to 0. */
+  magic_light_steps?: number;
   /** Whether the party has currently *engaged* their infravision
    *  ability. The ability itself is a passive race trait (Dwarf in
    *  the default module); this flag is the player-controlled
@@ -301,6 +317,9 @@ export interface SimEffect {
  *  the panel UI and the kernel agree on what "lighting a torch" means. */
 export const TORCH_LIGHT_RANGE = 3;
 export const GALADRIELS_LIGHT_RANGE = 5;
+/** Light range when the Cleric's Light spell is active. Matches the
+ *  Galadriel's Light radius — both are "magical orb of party light." */
+export const MAGIC_LIGHT_RANGE = 5;
 // INFRAVISION_RANGE used to live here as a stand-in for the
 // Dwarf infravision ability. It was implemented as a 999-cell
 // party light, which lit the entire map and meant a dwarf in

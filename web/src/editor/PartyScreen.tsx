@@ -151,6 +151,18 @@ export interface PartyItemRef {
    *  "Use" from the stash. When absent or false the Use button is
    *  greyed out. Hosts populate this from items.json's `usable` field. */
   usable?: boolean;
+  /** True when multiple copies of this id collapse into a single
+   *  inventory row (Torch, Arrows, Lockpicks, Potions, …). Read by
+   *  the inventory-stacking helpers in `@/play/inventoryStacking` to
+   *  decide whether to merge or push on add. Weapons / armor stay
+   *  one-row-per-copy. */
+  stackable?: boolean;
+  /** Catalog charges field — semantic is "per-USE effect" (e.g. a
+   *  Torch burns 150 steps when lit; a Lockpick has 5 attempts).
+   *  This is NOT inventory quantity; that lives on the inventory
+   *  entry's own `charges` field. Read by hosts at use-time to seed
+   *  whatever counter the use applies. */
+  charges?: number;
   /** Optional render hint copied from items.json — purely for the
    *  Examine readout right now. */
   icon?: string;
@@ -168,6 +180,12 @@ export interface PartySpellRef {
   usable_in?: string[];
   duration?: number | string | null;
   action?: string;
+  /** Spell-specific parameters. Shape varies by `action` — heals
+   *  carry `{ dice_count, dice_sides, stat_bonus, min_heal }`, the
+   *  Light spell carries `{ effect_id }`, etc. Left as `unknown` here
+   *  to keep the type loose; the cast handlers (PlayPartyScreenOverlay)
+   *  narrow as needed. */
+  action_params?: Record<string, unknown>;
   /** Per-class min_level overrides — keyed by class id. When the
    *  character's class id appears here, that level gates eligibility
    *  instead of the global `min_level`. */
@@ -255,7 +273,32 @@ type EffectRow = {
   available: boolean;
   /** True when the host has flagged it active in the preview set. */
   active: boolean;
+  /** Optional remaining-duration counter (in step ticks). Surfaced on
+   *  the row as "(N steps)" so the player can see how long an
+   *  effect like Light or Galadriel's Light has left before it
+   *  burns out. Undefined for effects without a duration counter
+   *  (toggle-only effects like Infravision or Detect Traps). */
+  durationSteps?: number;
 };
+
+/** Display-name fallback for synthesized effect rows (effects whose
+ *  id appears in `party_effects` but isn't backed by an Ability
+ *  record — e.g., the Cleric's Light spell). When the id is missing
+ *  from this table we fall back to a Title-Cased version of the id. */
+const SYNTHETIC_EFFECT_NAMES: Record<string, string> = {
+  magic_light: "Light",
+  galadriels_light: "Galadriel's Light",
+  infravision: "Infravision",
+  detect_traps: "Detect Traps",
+};
+
+function prettifyEffectId(id: string): string {
+  if (SYNTHETIC_EFFECT_NAMES[id]) return SYNTHETIC_EFFECT_NAMES[id];
+  return id
+    .split("_")
+    .map((p) => (p.length === 0 ? p : p[0].toUpperCase() + p.slice(1)))
+    .join(" ");
+}
 
 // ── Component ───────────────────────────────────────────────────────
 
@@ -272,6 +315,8 @@ export function PartyScreen({
   onReorderRoster,
   onUseStashItem,
   onSendStashItem,
+  onCastSpell,
+  effectDurations,
 }: {
   party: PartyRecord;
   /** Full character records for the party's roster ids. Missing ids
@@ -310,6 +355,19 @@ export function PartyScreen({
    *  the destination roster index. Host wires to
    *  PartyActions.giveStashItemTo. */
   onSendStashItem?: (stashIndex: number, memberIndex: number) => void;
+  /** Optional handler — when provided, Cast buttons on per-character
+   *  spell rows fire this callback (caster id + spell id). The host
+   *  resolves the spell's targeting (self / pick-an-ally / etc),
+   *  applies MP / HP / counter mutations, and persists to the save.
+   *  Omitted in editor previews where casting is a no-op. */
+  onCastSpell?: (casterId: string, spellId: string) => void;
+  /** Remaining-step counter per active effect id. Used to render a
+   *  "(N steps)" suffix on the matching effect row. Effects that
+   *  have a counter but aren't yet in `activeEffectIds` (e.g. a
+   *  spell-cast Light whose id isn't in the ability catalog) get a
+   *  synthesized row so the player can see the timer. Counters at
+   *  zero are treated as "no duration shown." */
+  effectDurations?: ReadonlyMap<string, number>;
 }) {
   // ── Resolve roster ──────────────────────────────────────────────
   const members = useMemo(() => {
@@ -352,15 +410,49 @@ export function PartyScreen({
   // omitted entirely — the player shouldn't see options they can't
   // use. The list is dynamic; there's no fixed slot count.
   const effectRows: EffectRow[] = useMemo(() => {
-    return abilities
+    const rows: EffectRow[] = abilities
       .filter((a) => a.party_effect === true && unlocked.has(a.id))
       .map((a) => ({
         kind: "effect" as const,
         ability: a,
         available: true,
         active: activeEffectIds.includes(a.id),
+        durationSteps:
+          effectDurations && effectDurations.get(a.id)
+            ? effectDurations.get(a.id)
+            : undefined,
       }));
-  }, [abilities, unlocked, activeEffectIds]);
+
+    // Synthesize rows for effects in the active list (or with a live
+    // duration counter) that DON'T have a backing ability — e.g., the
+    // Cleric's Light spell adds `magic_light` to `party_effects` but
+    // there's no Ability record for it. Without this pass, casting
+    // Light would silently activate without ever appearing in the
+    // Effects list.
+    const existingIds = new Set(rows.map((r) => r.ability.id));
+    const extraIds = new Set<string>();
+    for (const id of activeEffectIds) if (!existingIds.has(id)) extraIds.add(id);
+    if (effectDurations) {
+      for (const [id, steps] of effectDurations) {
+        if (steps > 0 && !existingIds.has(id)) extraIds.add(id);
+      }
+    }
+    for (const id of extraIds) {
+      const dur = effectDurations?.get(id);
+      rows.push({
+        kind: "effect",
+        ability: {
+          id,
+          name: prettifyEffectId(id),
+          party_effect: true,
+        },
+        available: true,
+        active: activeEffectIds.includes(id) || (dur ?? 0) > 0,
+        durationSteps: dur && dur > 0 ? dur : undefined,
+      });
+    }
+    return rows;
+  }, [abilities, unlocked, activeEffectIds, effectDurations]);
 
   // ── Selection state — which left-list row is highlighted ─────────
   // Default to the first available effect so the right pane shows
@@ -645,6 +737,7 @@ export function PartyScreen({
         abilities={abilities}
         spells={spells}
         onBack={() => setFocusedMemberId(null)}
+        onCastSpell={onCastSpell}
       />
     );
   }
@@ -695,6 +788,12 @@ export function PartyScreen({
                         <span className="text-parchment/40">○</span>
                       )}
                       <span>{row.ability.name ?? row.ability.id}</span>
+                      {row.durationSteps !== undefined ? (
+                        <span className="ml-auto font-mono text-[11px] text-parchment/55">
+                          {row.durationSteps}{" "}
+                          {row.durationSteps === 1 ? "step" : "steps"}
+                        </span>
+                      ) : null}
                     </button>
                   </li>
                 );
@@ -725,6 +824,16 @@ export function PartyScreen({
                   itemNameById.get(entry.item) ?? entry.item;
                 const isSel = i === stashSelectedIndex;
                 const cat = itemById.get(entry.item);
+                // Quantity badge — for stackable items, `entry.charges`
+                // is the number of physical items in this stack. We
+                // only render the badge when > 1 so a single Torch
+                // still reads as "Torch" (no noisy "(1)"). Non-
+                // stackable items don't carry a quantity at all — the
+                // catalog flag gates them out here.
+                const qty =
+                  cat?.stackable && typeof entry.charges === "number"
+                    ? entry.charges
+                    : 1;
                 return (
                   <li key={`${entry.item}-${i}`}>
                     <button
@@ -758,7 +867,7 @@ export function PartyScreen({
                     >
                       <span className="truncate">{label}</span>
                       <span className="ml-2 shrink-0 text-xs text-parchment/55">
-                        {entry.charges != null ? `(${entry.charges})` : ""}
+                        {qty > 1 ? `(${qty})` : ""}
                       </span>
                     </button>
                   </li>
