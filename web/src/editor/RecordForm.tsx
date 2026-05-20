@@ -395,7 +395,11 @@ function FieldRow({
           <span className="block text-[10px] text-parchment/40">map</span>
         </label>
         <div className="flex-1">
-          <MapPicker value={value} onChange={onChange} />
+          <MapPicker
+            value={value}
+            onChange={onChange}
+            requiredTag={mapConfig.requiredTag}
+          />
           {error ? <p className="mt-1 text-xs text-ember">{error}</p> : null}
         </div>
       </div>

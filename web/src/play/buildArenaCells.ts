@@ -67,7 +67,7 @@ type WorldGrid = ReadonlyArray<ReadonlyArray<WorldCell | null | undefined>>;
  *  prefixed + routed under `/sprites/` so the Phaser loader pulls
  *  the right file. Missing flags get sensible defaults — open
  *  ground, no obstruction, no light. */
-function toArenaCell(cell: WorldCell): ArenaCellInfo {
+export function toArenaCell(cell: WorldCell): ArenaCellInfo {
   const rawSprite = cell.sprite;
   const sprite =
     typeof rawSprite === "string" && rawSprite.length > 0
@@ -85,6 +85,44 @@ function toArenaCell(cell: WorldCell): ArenaCellInfo {
         ? cell.animation
         : undefined,
   };
+}
+
+/**
+ * Build an 18×16 matrix from a custom arena map — meant for spawn /
+ * encounter `custom_map` resolution where the map IS the arena (not
+ * a window into the overworld).
+ *
+ * Placement: the source map's `(0, 0)` cell lands at arena `(1, 1)`
+ * — inside the perimeter wall ring that CombatScene paints
+ * unconditionally for every `isWall(col, row)` cell. Without that
+ * offset, the map's leftmost column + topmost row would be hidden
+ * behind the wall.
+ *
+ * Effective canvas: the source map paints into the **interior**
+ * 16×14 region (arena cols 1..16, rows 1..14). Source cells past
+ * that bound silently truncate; smaller-than-16×14 maps null-pad
+ * (which the scene's default fill picks up).
+ */
+export function buildCustomArenaCells(
+  grid: WorldGrid,
+): (ArenaCellInfo | null)[][] {
+  const matrix: (ArenaCellInfo | null)[][] = [];
+  for (let r = 0; r < ARENA_ROWS; r++) {
+    const row: (ArenaCellInfo | null)[] = [];
+    const srcRow = r - 1;
+    const sourceRow = srcRow >= 0 ? grid[srcRow] : undefined;
+    for (let c = 0; c < ARENA_COLS; c++) {
+      const srcCol = c - 1;
+      const cell = sourceRow?.[srcCol];
+      if (!cell || srcCol < 0) {
+        row.push(null);
+        continue;
+      }
+      row.push(toArenaCell(cell));
+    }
+    matrix.push(row);
+  }
+  return matrix;
 }
 
 /**

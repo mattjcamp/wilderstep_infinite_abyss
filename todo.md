@@ -1,13 +1,20 @@
 # Notes
 
 - Battle Maps are a litle short right now: try 17x15
+18x16 according to LLM
+17x15 appeared more correct
+
+## Battle Arena Guidance
+
+16x14 is the playable interior
+
+(I counted 16 columns)
 
 # V2 MPV Launch Items
 
 - Finish Party screen
 
 - The battle screne floats around, it should be fixed in the browser the same way other maps are
-- When you cast spells from the character sheet, you should have an animation and sound effect
 
 - Add inspector screens: Q for Quest, H for Help
 - tighten up the Quest Editor

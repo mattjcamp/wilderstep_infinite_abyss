@@ -87,9 +87,18 @@ function describeMap(m: MapRecord): string {
 export function MapPicker({
   value,
   onChange,
+  requiredTag,
 }: {
   value: string;
   onChange: (value: string) => void;
+  /** When provided, only maps whose `tags` array includes this string
+   *  are shown in the dropdown. The catalog itself is still loaded
+   *  in full (cached at module scope), so filtering is a cheap
+   *  per-instance pass. Maps whose currently-selected id no longer
+   *  matches the filter still display as a warning row so the
+   *  designer notices a stale link rather than the picker silently
+   *  hiding their selection. */
+  requiredTag?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [state, setState] = useState<CatalogState>({ kind: "idle" });
@@ -112,6 +121,25 @@ export function MapPicker({
       ? state.maps.find((m) => m.id === value) ?? null
       : null;
 
+  /** Maps that pass the tag filter (or every map when no filter is
+   *  set). The currently-selected map is always retained in the list
+   *  even when it doesn't match — so the picker can show the warning
+   *  state and the author has a path to clear it. */
+  const filteredMaps =
+    state.kind === "ok"
+      ? !requiredTag
+        ? state.maps
+        : state.maps.filter(
+            (m) =>
+              (Array.isArray(m.tags) && m.tags.includes(requiredTag)) ||
+              m.id === value,
+          )
+      : [];
+
+  const currentMatchesFilter =
+    !requiredTag ||
+    (current?.tags && current.tags.includes(requiredTag));
+
   const summary = (() => {
     if (!value) return "(none)";
     if (state.kind === "loading" || state.kind === "error") return value;
@@ -121,9 +149,13 @@ export function MapPicker({
       return `${value} ⚠`;
     }
     const tail = describeMap(current);
-    return tail
+    const label = tail
       ? `${current.name ?? current.id} (${tail})`
       : (current.name ?? current.id);
+    // Selected map doesn't carry the required tag — flag it so the
+    // designer knows the selection is stale (e.g. the tag was
+    // removed from a map after it got linked here).
+    return currentMatchesFilter ? label : `${label} ⚠`;
   })();
 
   return (
@@ -181,7 +213,17 @@ export function MapPicker({
                   </span>
                 </button>
               </li>
-              {state.maps.map((m) => {
+              {requiredTag && filteredMaps.length === 0 ? (
+                <li className="px-2 py-1 text-[11px] text-parchment/55">
+                  No maps tagged{" "}
+                  <span className="font-mono text-parchment/80">
+                    {requiredTag}
+                  </span>{" "}
+                  exist in this module. Tag a map in the editor to use
+                  it as a custom battle arena.
+                </li>
+              ) : null}
+              {filteredMaps.map((m) => {
                 const isActive = m.id === value;
                 const tail = describeMap(m);
                 return (

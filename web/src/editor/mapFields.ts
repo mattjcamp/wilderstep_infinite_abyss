@@ -16,18 +16,26 @@
  * spriteFields' PER_MODEL map.
  */
 
-/** Tag for map-typed fields. Empty object today; the structure is
- *  here so per-field configuration can grow (filter by tag, default
- *  selection, restrict to "battle_screen_arena"-tagged maps, etc.)
- *  without restructuring callers. */
+/** Tag for map-typed fields. The picker consults this to decide how
+ *  to filter the maps catalog before rendering. */
 export interface MapFieldConfig {
-  /** Reserved for future per-field filtering. Currently unused. */
-  filter?: string;
+  /** When set, the picker only lists maps whose `tags` array includes
+   *  this string. Authors who haven't tagged their arenas accordingly
+   *  see an empty list (with a hint) rather than picking the wrong
+   *  shape of map. Today this is used to gate `custom_map` selection
+   *  on `"battle_screen_arena"` — combat needs an 18×16 grid with
+   *  the perimeter-wall convention, and accidentally pointing it at
+   *  an overworld map would crash placement. */
+  requiredTag?: string;
 }
 
 /** Global field-name → config map. */
 const FIELDS: Record<string, MapFieldConfig> = {
-  custom_map: {},
+  // Spawn / encounter custom_map: only maps tagged
+  // "battle_screen_arena" — the combat scene expects an 18×16
+  // arena layout. See web/src/battle/combat/Arena.ts for the
+  // constraints (perimeter walls, formation bands, etc.).
+  custom_map: { requiredTag: "battle_screen_arena" },
 };
 
 /** Returns the picker config for a field, or null if the field isn't

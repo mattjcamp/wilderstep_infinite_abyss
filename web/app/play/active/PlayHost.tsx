@@ -43,7 +43,7 @@ import { QuestDialogOverlay } from "@/editor/QuestDialogOverlay";
 import { PlayPartyScreenOverlay } from "./PlayPartyScreenOverlay";
 import type { CombatResolved } from "@/battle/scenes/CombatScene";
 import { PlayCombatHost } from "./PlayCombatHost";
-import { buildArenaCells } from "@/play/buildArenaCells";
+import { buildArenaCells, buildCustomArenaCells } from "@/play/buildArenaCells";
 import { generateDungeonFromRecord } from "@/sim/dungeon/generateFromRecord";
 import {
   dungeonEncounterRefs,
@@ -84,7 +84,13 @@ import {
 } from "@/battle/world/Quests";
 import { tintForCell } from "@/sim/lighting";
 import { TILE_SIZE, WorldRenderer } from "@/sim/scene/WorldRenderer";
-import { radialBurst, screenShake, VFX_COLOURS } from "@/vfx/Vfx";
+import {
+  glowAura,
+  healingSparkles,
+  radialBurst,
+  screenShake,
+  VFX_COLOURS,
+} from "@/vfx/Vfx";
 import { Sfx } from "@/battle/audio/Sfx";
 import {
   MINUTES_PER_STEP,
@@ -2620,6 +2626,50 @@ export function PlayHost() {
               refreshDetectedTraps();
             }
           }}
+          onSpellCast={(spellId) => {
+            // Paint the spell's animation + play its SFX on the
+            // party cell. The overlay is up so the player sees the
+            // effect framing the world canvas behind the modal —
+            // no need to dismiss the modal first. Wrapped in
+            // try/catch so a disposed scene or unready audio
+            // context can't bubble up and break the cast flow.
+            const r = rendererRef.current;
+            const sim = simRef.current;
+            if (!r || !sim) return;
+            const pos = sim.snapshot().pos;
+            const px = pos.col * TILE_SIZE + TILE_SIZE / 2;
+            const py = pos.row * TILE_SIZE + TILE_SIZE / 2;
+            try {
+              if (spellId === "light") {
+                // Soft expanding gold ring — matches `buff_aura`
+                // in the effect registry and the "Conjures a
+                // radiant orb of divine light" flavor in the
+                // catalog. Paired with a magic-burst chime so
+                // there's an audible cue.
+                void glowAura(r.scene, { x: px, y: py }, VFX_COLOURS.buff);
+                Sfx.play("magic_burst");
+              } else if (spellId === "heal" || spellId === "major_heal") {
+                // Rising green sparkles + the dedicated heal SFX.
+                // major_heal isn't party-castable today but we
+                // tolerate it here so future spell additions
+                // (mass_heal, etc.) Just Work without a code change.
+                void healingSparkles(r.scene, { x: px, y: py });
+                Sfx.play("heal");
+              } else {
+                // Unknown / unmapped spell — fall back to a generic
+                // arcane radial so SOMETHING fires. Better than a
+                // silent cast for spells the catalog adds later.
+                void radialBurst(
+                  r.scene,
+                  { x: px, y: py },
+                  VFX_COLOURS.arcane ?? 0xa0c8ff,
+                );
+                Sfx.play("magic_burst");
+              }
+            } catch {
+              /* scene disposed / audio not ready — skip */
+            }
+          }}
         />
       ) : null}
     </main>
@@ -2815,9 +2865,11 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
  * id is null / unknown (so the scene falls back to the generic
  * green-field arena).
  *
- * The custom map IS the arena, so we crop its grid centered on its
- * own midpoint rather than around any world coord. Smaller-than-18×16
- * maps null-pad at the edges via buildArenaCells's normal behavior.
+ * The custom map IS the arena, and `buildCustomArenaCells` places
+ * the source map's (0, 0) at arena (1, 1) so the perimeter-wall ring
+ * the combat scene paints unconditionally doesn't eat the map's
+ * leftmost column + topmost row. Effective drawing canvas is the
+ * 16×14 interior.
  */
 function resolveCustomArenaCells(
   customMapId: string | null,
@@ -2828,9 +2880,7 @@ function resolveCustomArenaCells(
   if (!customMapId) return undefined;
   const map = maps.find((m) => m.id === customMapId);
   if (!map) return undefined;
-  const centerCol = Math.floor((map.width || map.grid[0]?.length || 0) / 2);
-  const centerRow = Math.floor((map.height || map.grid.length) / 2);
-  return buildArenaCells(map.grid, centerCol, centerRow);
+  return buildCustomArenaCells(map.grid);
 }
 
 

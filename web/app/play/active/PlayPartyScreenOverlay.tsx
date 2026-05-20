@@ -75,6 +75,7 @@ export function PlayPartyScreenOverlay({
   save,
   onClose,
   onMutateSave,
+  onSpellCast,
 }: {
   moduleId: string;
   save: WorldSave;
@@ -85,6 +86,11 @@ export function PlayPartyScreenOverlay({
    *  PlayHost sees the change immediately on close. Optional so legacy
    *  callers without persistence (tests, storybook) still mount. */
   onMutateSave?: (next: WorldSave) => void;
+  /** Fires AFTER a spell successfully lands (MP deducted, save
+   *  committed). The host uses this to play the spell's animation +
+   *  sound on the party cell — the overlay has no access to the
+   *  Phaser scene from here, but the host owns the renderer. */
+  onSpellCast?: (spellId: string) => void;
 }) {
   const [state, setState] = useState<LoadState>({ kind: "loading" });
   /** The list of currently-active party-wide effect ids. Seeded from
@@ -552,8 +558,13 @@ export function PlayPartyScreenOverlay({
         ...cur,
         party: { ...cur.party, members: nextMembers },
       });
+      // Spell landed — let the host paint the heal-sparkles VFX +
+      // play the heal SFX on the world canvas behind the overlay.
+      // We don't gate on `actuallyHealed > 0`: even a wasted cast
+      // should feel like something happened.
+      onSpellCast?.(spell.id);
     },
-    [state, liveSave, commit],
+    [state, liveSave, commit, onSpellCast],
   );
 
   /** Cast a Light spell (self-targeted). Deducts caster MP and seeds
@@ -601,8 +612,13 @@ export function PlayPartyScreenOverlay({
           party_effects: [...nextPartyEffects],
         },
       });
+      // Spell landed — host paints the glow-aura VFX + plays the
+      // magic-burst SFX on the party cell. Done outside the commit
+      // so the audio/visual cue fires even if the host's onMutateSave
+      // path early-bails (e.g. before the sim is mounted).
+      onSpellCast?.(spell.id);
     },
-    [state, liveSave, commit],
+    [state, liveSave, commit, onSpellCast],
   );
 
   /** Route an incoming Cast intent. Self-targeted spells fire

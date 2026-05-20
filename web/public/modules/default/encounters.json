@@ -49,7 +49,7 @@
         "goblin",
         "giant_rat"
       ],
-      "custom_map": null
+      "custom_map": "id"
     },
     {
       "id": "goblin_ambush",
