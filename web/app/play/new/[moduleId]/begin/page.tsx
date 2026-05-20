@@ -7,12 +7,12 @@
  * the localStorage save and the player is routed to /play/active.
  */
 
-import { readAllModules } from "@/data_model/moduleIndex";
+import { isPlayableModule, readAllModules } from "@/data_model/moduleIndex";
 import { BeginningScreen } from "./BeginningScreen";
 
 export function generateStaticParams() {
   return readAllModules()
-    .filter((m) => m.role === "playable")
+    .filter(isPlayableModule)
     .map((m) => ({ moduleId: m.id }));
 }
 

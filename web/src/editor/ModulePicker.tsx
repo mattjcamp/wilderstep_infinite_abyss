@@ -25,12 +25,17 @@ import {
   loadDraft,
   loadIndexDraft,
   MANIFEST_KEY,
+  saveDraft,
   saveIndexDraft,
 } from "@/data_model/draft";
 import { ALL_MODEL_KEYS, MODELS, type ModelKey } from "@/data_model/models";
 import type { ModuleSummary } from "@/data_model/ModuleSource";
 import { publishItems, type PublishItem } from "@/data_model/publishClient";
 import { withBasePath } from "@/util/basePath";
+import {
+  ModulePropertiesDialog,
+  type ModulePropertiesPatch,
+} from "./ModulePropertiesDialog";
 import { NewModuleForm } from "./NewModuleForm";
 import { usePublishServer } from "./usePublishServer";
 
@@ -61,6 +66,12 @@ export function ModulePicker() {
   const [state, setState] = useState<State>({ kind: "loading" });
   const [creating, setCreating] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  /** The module whose Properties dialog is open, or null when no
+   *  dialog is mounted. Holds the full summary so the dialog can
+   *  seed itself without a second fetch. */
+  const [editingModule, setEditingModule] = useState<ModuleSummary | null>(
+    null,
+  );
 
   const refresh = useCallback(() => {
     const src = new StaticModuleSource();
@@ -297,6 +308,51 @@ export function ModulePicker() {
     refresh();
   };
 
+  /** Save the Module Properties dialog's edits into a manifest draft.
+   *  Starts from the existing on-disk manifest (or its current draft if
+   *  one is already pending) so untouched fields — `extends`, `uses`,
+   *  any future additions — survive the round-trip. */
+  const onSaveModuleAttrs = async (
+    m: ModuleSummary,
+    patch: ModulePropertiesPatch,
+  ) => {
+    // Existing draft takes priority over the on-disk manifest; the
+    // draft IS the source of truth once one exists. Falls back to the
+    // deployed file so untouched fields aren't lost on first edit.
+    let current: Record<string, unknown> | null = loadDraft<
+      Record<string, unknown>
+    >(m.id, MANIFEST_KEY);
+    if (!current) {
+      try {
+        const r = await fetch(
+          withBasePath(`/modules/${m.id}/module.json`),
+          { cache: "no-store" },
+        );
+        if (r.ok) current = (await r.json()) as Record<string, unknown>;
+      } catch {
+        // If the on-disk fetch fails we still have the summary in hand;
+        // build a manifest from that so the save isn't blocked.
+        current = null;
+      }
+    }
+    const next: Record<string, unknown> = current ? { ...current } : {};
+    // id is non-editable from the dialog — keep whatever was there,
+    // but fall back to the summary's id to be safe.
+    next.id = next.id ?? m.id;
+    next.title = patch.title;
+    if (patch.description) next.description = patch.description;
+    else delete next.description;
+    if (patch.author) next.author = patch.author;
+    else delete next.author;
+    if (patch.version) next.version = patch.version;
+    else delete next.version;
+    if (patch.role) next.role = patch.role;
+    else delete next.role;
+    saveDraft(m.id, MANIFEST_KEY, next);
+    setEditingModule(null);
+    refresh();
+  };
+
   if (state.kind === "loading") {
     return <p className="text-parchment/60">Loading modules…</p>;
   }
@@ -432,25 +488,47 @@ export function ModulePicker() {
                     </span>
                   </div>
                 </Link>
-                {!isProtected ? (
+                <div className="absolute right-2 top-2 flex gap-1">
                   <button
                     type="button"
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      onDeleteModule(m);
+                      setEditingModule(m);
                     }}
-                    className="absolute right-2 top-2 rounded border border-parchment/20 bg-ink/60 px-2 py-0.5 text-xs text-parchment/60 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
-                    title="Remove this module from the index and discard its in-browser drafts. The on-disk folder must be deleted manually."
+                    className="rounded border border-parchment/20 bg-ink/60 px-2 py-0.5 text-xs text-parchment/60 hover:border-parchment/50 hover:bg-ink/80 hover:text-parchment"
+                    title="Edit this module's metadata (title, description, author, version, role)."
                   >
-                    Delete
+                    Properties
                   </button>
-                ) : null}
+                  {!isProtected ? (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onDeleteModule(m);
+                      }}
+                      className="rounded border border-parchment/20 bg-ink/60 px-2 py-0.5 text-xs text-parchment/60 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
+                      title="Remove this module from the index and discard its in-browser drafts. The on-disk folder must be deleted manually."
+                    >
+                      Delete
+                    </button>
+                  ) : null}
+                </div>
               </li>
             );
           })}
         </ul>
       )}
+
+      {editingModule ? (
+        <ModulePropertiesDialog
+          initial={editingModule}
+          onSave={(patch) => onSaveModuleAttrs(editingModule, patch)}
+          onClose={() => setEditingModule(null)}
+        />
+      ) : null}
     </div>
   );
 }

@@ -54,6 +54,19 @@ export interface ModuleMetadata {
   role?: string;
 }
 
+/** Roles that explicitly disqualify a module from the play picker.
+ *  Anything else — including the conventional "omitted == playable"
+ *  case (per ModuleSummary.role) and an explicit "playable" — is
+ *  considered playable. Keeping this list centralized so the picker
+ *  page and the static-params route generators can't drift. */
+const NON_PLAYABLE_ROLES = new Set(["core", "library"]);
+
+/** True when this module should appear in /play/new and have its
+ *  per-module routes pre-rendered. */
+export function isPlayableModule(m: { role?: string }): boolean {
+  return !NON_PLAYABLE_ROLES.has((m.role ?? "").trim());
+}
+
 /** Synchronously read every module.json under `public/modules/`.
  *  Skips files / hidden dirs. Returns an empty list if the folder
  *  doesn't exist (clean checkout, broken deploy). Build-time only. */

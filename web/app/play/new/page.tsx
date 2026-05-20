@@ -6,14 +6,20 @@
  * "library" (asset packs other modules extend) don't appear — they're
  * not meant to be played directly.
  *
+ * Per ModuleSummary.role's contract, an omitted/blank role ALSO
+ * counts as playable (it's the conventional default). So the filter
+ * is "exclude core + library", not "must equal playable" — the
+ * latter would drop hand-authored manifests that just left the
+ * field out.
+ *
  * Click → /play/new/[moduleId]/party.
  */
 
 import Link from "next/link";
-import { readAllModules } from "@/data_model/moduleIndex";
+import { isPlayableModule, readAllModules } from "@/data_model/moduleIndex";
 
 export default function NewGameModulePicker() {
-  const modules = readAllModules().filter((m) => m.role === "playable");
+  const modules = readAllModules().filter(isPlayableModule);
 
   return (
     <main className="flex min-h-screen flex-col items-center gap-8 p-8">

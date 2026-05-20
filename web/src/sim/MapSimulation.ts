@@ -828,6 +828,34 @@ export class MapSimulation {
       }
     }
 
+    // Sweep the grid for authored `boat: true` cells that aren't in
+    // the live boatPositions map and downgrade them to plain water.
+    // This handles two cases:
+    //
+    //   1. The party spawned on a boat tile (line above deletes it
+    //      from boatPositions) — the original cell should not be
+    //      walkable on foot once the party sails off.
+    //   2. A save is being restored where the party has already moved
+    //      boats around in a prior session — `initialBoatPositions`
+    //      carries the live layout, and any authored `boat: true`
+    //      cell missing from that set was lifted before the save.
+    //
+    // Mirrors the in-session mutation in stepInDirection's "board"
+    // branch so behavior is identical regardless of whether the lift
+    // happened this session or a prior one.
+    for (let r = 0; r < this.grid.length; r++) {
+      const row = this.grid[r];
+      if (!row) continue;
+      for (let c = 0; c < row.length; c++) {
+        const cell = row[c];
+        if (!cell?.boat) continue;
+        if (this.boatPositions.has(`${c},${r}`)) continue;
+        cell.boat = false;
+        cell.walkable = false;
+        cell.tag = "water";
+      }
+    }
+
     // Initial scene push — the sprite + light source land in place
     // before the first keypress. Boat overlays land at the same time
     // so the static "moored" boats on the map render from frame one.
@@ -990,11 +1018,19 @@ export class MapSimulation {
     }
 
     const targetKey = `${targetCol},${targetRow}`;
-    const targetHasBoat =
-      this.boatPositions.has(targetKey) || target.boat === true;
-    /** Sprite of the boat at the target cell — first the live boat-
-     *  positions map (a boat disembarked here recently), then the
-     *  cell's own sprite (untouched boat tile from the palette). */
+    // The live `boatPositions` map is the ONLY source of truth for
+    // "is there a boat here right now." The cell's authored
+    // `boat: true` flag seeds that map at construction (see the
+    // grid scan in the constructor) but must not be consulted again
+    // afterward — once the party boards and sails away, the cell's
+    // flag is stale (the cell is now plain water). Reading it here
+    // is how revisits to a former boat tile re-spawned a fresh boat.
+    const targetHasBoat = this.boatPositions.has(targetKey);
+    /** Sprite of the boat at the target cell. Pulled from the live
+     *  boatPositions map; falls back to the cell's own sprite only
+     *  as a defensive default for the edge case where the map has
+     *  a boat-sprited cell whose row didn't make it into the seed
+     *  (shouldn't happen, but the prior behavior tolerated it). */
     const targetBoatSprite =
       this.boatPositions.get(targetKey) ?? target.sprite ?? "";
     const targetIsWater = (target.tag ?? "") === "water";
@@ -1070,6 +1106,19 @@ export class MapSimulation {
       this.currentBoatSprite = targetBoatSprite;
       this.boatPositions.delete(targetKey);
       this.onBoat = true;
+      // Mutate the source cell's underlying terrain to plain water.
+      // Without this, the authored `boat: true` + `walkable: true`
+      // flags would let the party walk back onto the tile on foot
+      // (now a water hex visually but still a walkable boat tile
+      // by data) — and a stale `boat:true` flag would risk other
+      // code paths treating the cell as a boat anchor. The cell is
+      // now indistinguishable from any other water tile: sailable
+      // by a boat, blocked on foot. The mutation is in-memory; on
+      // save reload, the constructor re-applies the same mutation
+      // (see the seed-time pass after boatPositions/onBoat are set).
+      target.boat = false;
+      target.walkable = false;
+      target.tag = "water";
       this.bridge.setBoatPositions(this.snapshotBoats());
       this.bridge.setPartyBoatAt(to.col, to.row, true, targetBoatSprite);
       this.emit({ kind: "boarded", pos: { ...to } });

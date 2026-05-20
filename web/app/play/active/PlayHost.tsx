@@ -100,6 +100,12 @@ import {
  *  3-4 lines, not the back-buffer. */
 const MAX_LOG = 6;
 
+/** Pixel height of the in-canvas bottom log strip — mirrors v1's
+ *  `LOG_HEIGHT` constant from SceneLog. Reserved by the camera's
+ *  setBounds (height + PLAY_LOG_HEIGHT) so the bottom row of tiles
+ *  can scroll above the strip rather than hide behind it. */
+const PLAY_LOG_HEIGHT = 32;
+
 /** Map the game clock's time-of-day classification onto the
  *  WorldRenderer's lighting mode. Dawn + dusk both render as
  *  "twilight" (the lighting helper uses softer falloff than full
@@ -112,6 +118,28 @@ function lightingModeFromClock(
   if (isDay(clock)) return "day";
   if (isDawn(clock) || isDusk(clock)) return "twilight";
   return "night";
+}
+
+/** Build the JSON-safe SavedMapState for a current sim snapshot.
+ *  Centralised so the three save sites — the explicit "save current"
+ *  checkpoint, the same-map teleport branch, and the cross-map link
+ *  branch — all persist the SAME fields. A missing field on any one
+ *  path resets that state on the next mount (e.g. boatPositions
+ *  falling back to a fresh grid scan, snapping every boat back to
+ *  its authored cell). */
+function mapStateFromSnapshot(
+  snap: ReturnType<MapSimulation["snapshot"]>,
+) {
+  const boatPositions: Record<string, string> = {};
+  for (const [key, sprite] of snap.boatPositions) {
+    boatPositions[key] = sprite;
+  }
+  return {
+    unlockedCells: Array.from(snap.unlockedCells),
+    defeatedEncounters: Array.from(snap.defeatedEncounters),
+    destroyedLairs: Array.from(snap.destroyedLairs),
+    boatPositions,
+  };
 }
 import { loadWorld, saveWorld } from "@/play/save";
 import { applyCombatResultToSave } from "@/play/syncFromBattle";
@@ -489,21 +517,12 @@ export function PlayHost() {
       return;
     }
     const snap = sim.snapshot();
-    // Per-map mutations for the current map.
-    // Boat positions serialise to a plain Record for JSON-safety.
-    // The kernel's snapshot exposes them as a ReadonlyMap; we
-    // flatten to { "col,row": sprite } so the save can round-trip
-    // through JSON.parse/stringify without any custom revivers.
-    const boatPositionsObj: Record<string, string> = {};
-    for (const [key, sprite] of snap.boatPositions) {
-      boatPositionsObj[key] = sprite;
-    }
-    const mapState = {
-      unlockedCells: Array.from(snap.unlockedCells),
-      defeatedEncounters: Array.from(snap.defeatedEncounters),
-      destroyedLairs: Array.from(snap.destroyedLairs),
-      boatPositions: boatPositionsObj,
-    };
+    // Per-map mutations for the current map. Centralised in
+    // mapStateFromSnapshot so the link-traversal branches below
+    // can't drift on which fields get persisted (boatPositions in
+    // particular was being dropped by the cross-map branch, which
+    // is why boats reset on every link).
+    const mapState = mapStateFromSnapshot(snap);
     const next: WorldSave = {
       ...save,
       // Clock advances on every step via the sim event handler and
@@ -656,22 +675,33 @@ export function PlayHost() {
           ?.sprite ?? "map/water.png";
       if (waterSprite) spriteKeys.add(waterSprite);
 
-      // Viewport: a fixed window centered on the party rather than
-      // the full map blown out to the page. The Phaser canvas stays
-      // at this size; the camera scrolls within the map's bounds as
-      // the party walks. Capped to the map's actual dimensions so a
-      // 16×16 building doesn't render black bars to the right /
-      // bottom.
+      // Viewport: a fixed 4:3 window matching the v1 web game's
+      // 960×720 canvas. The Phaser canvas always renders at this
+      // internal resolution — independent of the current map's
+      // size — so crossing a link to a smaller map doesn't shrink
+      // the play area. Scale.FIT (configured on the Game below)
+      // scales the rendered output to whatever space the parent
+      // container offers; tiles end up visually smaller on small
+      // windows rather than the canvas clipping.
       //
-      // 19×15 is a reasonable "around the party" frame — wide enough
-      // to read context (a few tiles in every direction), tight
-      // enough that the party doesn't get lost in a vast canvas.
-      const VIEWPORT_COLS = 19;
-      const VIEWPORT_ROWS = 15;
+      // For maps smaller than 30×22.5 tiles, the camera bounds set
+      // up by WorldRenderer clamp scrolling to the map's actual
+      // size — the canvas area outside the map just shows the
+      // background color. Trade-off accepted to keep the play
+      // framing consistent across map transitions.
+      //
+      // 960×720 at 32px tiles ≈ 30 × 22.5 visible tiles — enough
+      // map context that the party never feels cramped, matching
+      // the v1 game's framing.
+      const PLAY_CANVAS_WIDTH = 960;
+      const PLAY_CANVAS_HEIGHT = 720;
+      const width = PLAY_CANVAS_WIDTH;
+      const height = PLAY_CANVAS_HEIGHT;
+      // Pixel extent of the current map — independent of the canvas
+      // size now. Used below to set the camera's scroll bounds so the
+      // player can't pan past the map's edge into background pixels.
       const mapPixelWidth = catalog.map.width * TILE_SIZE;
       const mapPixelHeight = catalog.map.height * TILE_SIZE;
-      const width = Math.min(VIEWPORT_COLS * TILE_SIZE, mapPixelWidth);
-      const height = Math.min(VIEWPORT_ROWS * TILE_SIZE, mapPixelHeight);
 
       class PlayScene extends Phaser.Scene {
         world: WorldRenderer | null = null;
@@ -704,6 +734,17 @@ export function PlayHost() {
          *  party. Bobs gently via a perpetual sin-wave tween. Null
          *  while the party is on land. */
         partyBoatSprite: Phaser.GameObjects.Image | null = null;
+        /** Bottom log strip — a background bar pinned to the canvas
+         *  bottom via scrollFactor 0. Mirrors v1's SceneLog. Painted
+         *  during create() after the camera + sim are wired up. */
+        logBar: Phaser.GameObjects.Rectangle | null = null;
+        /** Time/date readout drawn over `logBar`. Refreshed by
+         *  `update()` when `clockRef.current` rolls over. */
+        logText: Phaser.GameObjects.Text | null = null;
+        /** Last clock value the log text was painted with — lets
+         *  `update()` skip the setText call on frames where the
+         *  minute hasn't changed. */
+        lastClockShown = 0;
         constructor() {
           super("PlayScene");
         }
@@ -855,22 +896,108 @@ export function PlayHost() {
           this.world.relight();
           this.mountSim();
 
-          // Lock the camera into a fixed viewport that follows the
-          // party. Bounds clamp scrolling to the map's pixel extent
-          // so we don't pan past the edge into the background. Lerp
-          // = 1 means the camera snaps; a smaller value would ease
-          // into position over a few frames, but combat / overworld
-          // movement reads cleaner without the lag. roundPixels
-          // keeps the pixel-art alignment sharp.
+          // Camera setup — mirrors v1's `installCamera` in
+          // OverworldScene exactly:
+          //
+          //   - Bounds extended downward by PLAY_LOG_HEIGHT so the
+          //     camera has headroom to scroll the bottom row of tiles
+          //     above the in-canvas log strip. Without that, when the
+          //     party walks the bottom row of a tall map the player
+          //     marker hides behind the strip pinned at the viewport
+          //     bottom.
+          //
+          //   - startFollow with lerp 0.2: the camera eases toward
+          //     the party rather than snapping, which reads smoother
+          //     when the camera actually has room to scroll.
+          //
+          //   - When the map is at-or-smaller than the viewport
+          //     (30×21 tiles or less, given the 32px log reservation),
+          //     `setBounds` is smaller than the camera viewport — so
+          //     Phaser clamps scroll to (0, 0) and the camera CANNOT
+          //     move regardless of where the party walks. That's how
+          //     v1 achieves its "locked" feel; design maps within the
+          //     viewport and the camera stays put.
+          //
+          //   - roundPixels keeps the pixel-art alignment sharp.
           if (this.world.partySprite) {
             this.cameras.main.setBounds(
               0,
               0,
               mapPixelWidth,
-              mapPixelHeight,
+              mapPixelHeight + PLAY_LOG_HEIGHT,
             );
             this.cameras.main.setRoundPixels(true);
-            this.cameras.main.startFollow(this.world.partySprite, true);
+            this.cameras.main.startFollow(
+              this.world.partySprite,
+              true,
+              0.2,
+              0.2,
+            );
+          }
+
+          // Install the bottom log strip — mirrors v1's
+          // `installSceneLog`. The strip uses scrollFactor 0 so its
+          // y is screen-relative (not world-relative): it stays put
+          // even as the camera scrolls on big maps. Depth 1000 keeps
+          // it above every world sprite.
+          //
+          // Position: flush against the map's bottom edge — `min` of
+          // the canvas bottom (for maps tall enough to fill or exceed
+          // the viewport, where the strip pins to the canvas bottom)
+          // and the map's pixel height (for shorter maps, where the
+          // strip rides up to sit right below the last row of tiles
+          // rather than leaving a dead gap of canvas bg between the
+          // map and the log).
+          const logY = Math.min(
+            PLAY_CANVAS_HEIGHT - PLAY_LOG_HEIGHT,
+            mapPixelHeight,
+          );
+          this.logBar = this.add
+            .rectangle(
+              0,
+              logY,
+              PLAY_CANVAS_WIDTH,
+              PLAY_LOG_HEIGHT,
+              0x161629,
+              1,
+            )
+            .setOrigin(0, 0)
+            .setScrollFactor(0)
+            .setDepth(1000)
+            .setStrokeStyle(1, 0x2a2a3a);
+          this.logText = this.add
+            .text(
+              12,
+              logY + 8,
+              fullStr({ totalMinutes: clockRef.current }) +
+                "  ·  " +
+                lunarPhaseName({ totalMinutes: clockRef.current }),
+              {
+                fontFamily: "monospace",
+                fontSize: "13px",
+                color: "#dcdcc8",
+              },
+            )
+            .setScrollFactor(0)
+            .setDepth(1001);
+          this.lastClockShown = clockRef.current;
+        }
+
+        /** Phaser update — runs every frame. We keep the log text
+         *  in sync with the React-side `clockRef` (which advances
+         *  per step via the sim's "moved" event handler). Guarded by
+         *  `lastClockShown` so we only call setText when the minute
+         *  actually rolled over — Text rebuilds are not free in
+         *  Phaser, and the loop runs at ~60fps. */
+        override update(): void {
+          if (!this.logText) return;
+          if (clockRef.current !== this.lastClockShown) {
+            this.lastClockShown = clockRef.current;
+            this.logText.setText(
+              fullStr({ totalMinutes: clockRef.current }) +
+                "  ·  " +
+                lunarPhaseName({ totalMinutes: clockRef.current }),
+            );
           }
         }
 
@@ -1080,6 +1207,28 @@ export function PlayHost() {
               }
             },
             onKey: (handler) => {
+              // Keys whose browser default would scroll the page —
+              // arrows, space, page-up/down, home/end. Without
+              // preventDefault, every arrow press here ALSO scrolls
+              // the page by ~40px, which is why the header/log
+              // strip kept marching off-screen as the party walked.
+              // Capture as a string set (matches against e.key) so
+              // we only suppress browser scroll for keys the world
+              // sim actually cares about; typing into the date/time
+              // header etc. still works because of the INPUT/TEXTAREA
+              // guard below.
+              const SCROLL_KEYS = new Set<string>([
+                "ArrowUp",
+                "ArrowDown",
+                "ArrowLeft",
+                "ArrowRight",
+                " ",
+                "Spacebar",
+                "PageUp",
+                "PageDown",
+                "Home",
+                "End",
+              ]);
               const listener = (e: KeyboardEvent) => {
                 const t = e.target as HTMLElement | null;
                 if (
@@ -1091,6 +1240,7 @@ export function PlayHost() {
                   return;
                 }
                 if (overlaysOpenRef.current) return;
+                if (SCROLL_KEYS.has(e.key)) e.preventDefault();
                 handler(e.key);
               };
               window.addEventListener("keydown", listener);
@@ -1396,6 +1546,15 @@ export function PlayHost() {
         parent: containerRef.current,
         backgroundColor: "#0c0c14",
         pixelArt: true,
+        // Match v1's framing: render at the chosen internal canvas
+        // size and FIT-scale to the parent container. On smaller
+        // windows the tiles shrink visually instead of getting
+        // clipped; on larger windows they grow without going blurry
+        // (pixelArt keeps the nearest-neighbor scaling crisp).
+        scale: {
+          mode: Phaser.Scale.FIT,
+          autoCenter: Phaser.Scale.CENTER_BOTH,
+        },
         scene: PlayScene,
       });
     })();
@@ -1662,9 +1821,14 @@ export function PlayHost() {
       if (link.map_id === save.party.currentMapId) {
         // Same-map portal — teleport in place. We still save the
         // post-teleport position so a reload puts the party on the
-        // landing cell, not the source one.
+        // landing cell, not the source one. We also persist the
+        // current map's full mutation snapshot (unlocked cells,
+        // defeated encounters, parked boats, etc.) and the party's
+        // boat-state so a refresh after teleporting doesn't reset
+        // any of it — the sim's in-memory state survives the
+        // teleport, but a reload would otherwise rebuild from the
+        // pre-teleport save.
         sim?.teleport(link.x, link.y);
-        // Update save with the post-teleport position.
         const snap = sim?.snapshot();
         if (snap) {
           const next: WorldSave = {
@@ -1678,6 +1842,12 @@ export function PlayHost() {
               ...save.party,
               col: snap.pos.col,
               row: snap.pos.row,
+              onBoat: snap.onBoat,
+              currentBoatSprite: snap.currentBoatSprite,
+            },
+            maps: {
+              ...save.maps,
+              [save.party.currentMapId]: mapStateFromSnapshot(snap),
             },
           };
           saveWorld(next);
@@ -1687,14 +1857,18 @@ export function PlayHost() {
       }
       // Cross-map link — snapshot the current map's mutations under
       // its key, advance currentMapId + position, save, remount.
+      // Use the shared mapStateFromSnapshot helper so we don't drop
+      // boatPositions (the bug that previously reset every parked
+      // boat to its authored cell whenever the party crossed a link).
       const snap = sim?.snapshot();
       const mapState = snap
-        ? {
-            unlockedCells: Array.from(snap.unlockedCells),
-            defeatedEncounters: Array.from(snap.defeatedEncounters),
-            destroyedLairs: Array.from(snap.destroyedLairs),
-          }
-        : { unlockedCells: [], defeatedEncounters: [], destroyedLairs: [] };
+        ? mapStateFromSnapshot(snap)
+        : {
+            unlockedCells: [],
+            defeatedEncounters: [],
+            destroyedLairs: [],
+            boatPositions: {},
+          };
       const next: WorldSave = {
         ...save,
         // Live clock from the ref — same reason as the same-map
@@ -1710,6 +1884,13 @@ export function PlayHost() {
           currentMapId: link.map_id,
           col: link.x,
           row: link.y,
+          // Persist mid-voyage state so a player who walks through
+          // a link while aboard a boat keeps the boat on the new
+          // map. Without these two fields the new map's mount
+          // re-seeds from `boat: true` cells and the party lands
+          // on foot at the link target.
+          onBoat: snap ? snap.onBoat : false,
+          currentBoatSprite: snap ? snap.currentBoatSprite : null,
         },
         maps: { ...save.maps, [save.party.currentMapId]: mapState },
       };
@@ -1970,48 +2151,35 @@ export function PlayHost() {
 
   return (
     <main className="flex min-h-screen flex-col items-center gap-3 p-4">
-      <header className="flex w-full max-w-5xl items-center justify-between">
-        <div>
-          <span className="font-display text-lg text-parchment">
-            {state.save?.moduleId}
-          </span>
-          <span className="ml-3 text-xs text-parchment/55">
-            on {state.save?.party.currentMapId}
-          </span>
-        </div>
-        {/* Date / time / moon phase. Advances per step via the
-         *  `moved` event handler. Hidden during combat — the combat
-         *  scene runs on its own time. */}
-        {!combat ? (
-          <div className="text-xs text-parchment/75">
-            <span className="font-mono">{fullStr({ totalMinutes: clockMinutes })}</span>
-            <span className="ml-3 text-parchment/55">
-              · {lunarPhaseName({ totalMinutes: clockMinutes })}
-            </span>
-          </div>
-        ) : null}
-        <div className="flex gap-3 text-sm">
-          <button
-            type="button"
-            onClick={() => {
-              saveCurrent();
-              router.push("/play");
-            }}
-            className="rounded border border-parchment/30 px-3 py-1 text-parchment/80 hover:bg-ink/50"
-          >
-            Save & Quit
-          </button>
-        </div>
-      </header>
+      {/* The top header used to carry module/map context, the clock,
+       *  and Save & Quit. Clock + lunar phase now live inside the
+       *  Phaser canvas (the bottom log strip), and the module/map
+       *  context was redundant with the rest of the UI — leaving
+       *  only Save & Quit, which we float as a small button over
+       *  the canvas's top-right corner so the canvas can use the
+       *  full vertical viewport (matches v1's minimal chrome and
+       *  keeps the bottom log strip visible without scrolling). */}
 
       {/* World canvas stays mounted under combat so re-rendering it
        *  on resolve doesn't require reloading + reseating sprites.
-       *  We just hide it visually + gate movement via overlaysOpenRef. */}
+       *  We just hide it visually + gate movement via overlaysOpenRef.
+       *
+       *  The wrapper pegs to v1's exact 960×720 frame so tiles
+       *  render at the same display size as v1 (32px each).
+       *  `max-w-full` lets it shrink (proportionally, via the 4:3
+       *  aspect ratio) on viewports narrower than 960px. We don't
+       *  cap height here — the page can scroll if a user's window
+       *  is too short, which is the same trade-off v1 made (its
+       *  page used h-screen + a flex-1 wrapper to give the canvas
+       *  all remaining vertical space; we don't have that layout
+       *  hierarchy, so a vertical scroll is the simpler escape
+       *  hatch). */}
       <div
         ref={containerRef}
-        className="rounded border border-parchment/20 bg-ink/80 shadow-xl"
+        className="aspect-[4/3] w-[960px] max-w-full overflow-hidden rounded border border-parchment/20 bg-ink/80 shadow-xl"
         style={{
-          display: combat ? "none" : "inline-block",
+          aspectRatio: "4 / 3",
+          display: combat ? "none" : "block",
         }}
       />
 

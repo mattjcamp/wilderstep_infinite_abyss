@@ -60,6 +60,7 @@ import { QuestDialogOverlay } from "./QuestDialogOverlay";
 import type { SimQuestRef } from "@/sim/types";
 import { CounterShopOverlay } from "./CounterShopOverlay";
 import { LockDialogOverlay } from "./LockDialogOverlay";
+import { MapAttributesDialog } from "./MapAttributesDialog";
 import { SpawnEncounterOverlay } from "./SpawnEncounterOverlay";
 import type {
   LockEncounterOptions,
@@ -583,6 +584,10 @@ export function MapEditor({
     }
   }, [simMode, partyScreenOpen]);
   const [publishing, setPublishing] = useState(false);
+  /** When true, the Map Properties modal is mounted. The dialog edits
+   *  the top-level Map record metadata (name, description, tags) —
+   *  the per-cell painting flow is unaffected. */
+  const [editingMapAttrs, setEditingMapAttrs] = useState(false);
 
   const [selectedCell, setSelectedCell] = useState<
     { col: number; row: number } | null
@@ -3181,6 +3186,53 @@ export function MapEditor({
     router.push(`/editor/${moduleId}/maps`);
   };
 
+  /** Commit edits from the Map Properties dialog into the draft.
+   *  Mirrors persistRef.current() but writes top-level metadata
+   *  (name, description, tags) rather than the painted grid. Grid
+   *  + every other field is preserved by spreading the existing
+   *  mapRecord first. Undefined values from the dialog (e.g. blank
+   *  description) explicitly clear the field in the saved file. */
+  const onSaveMapAttrs = (next: {
+    name: string;
+    description?: string;
+    tags?: string[];
+  }) => {
+    if (state.kind !== "ok") return;
+    const updatedMap: MapRecord = {
+      ...state.mapRecord,
+      name: next.name,
+    };
+    if (next.description !== undefined) {
+      updatedMap.description = next.description;
+    } else {
+      delete (updatedMap as Record<string, unknown>).description;
+    }
+    if (next.tags !== undefined) {
+      updatedMap.tags = next.tags;
+    } else {
+      delete (updatedMap as Record<string, unknown>).tags;
+    }
+
+    const baseFile: Record<string, unknown> = state.ownFile
+      ? { ...state.ownFile }
+      : { maps: [] };
+    const list = Array.isArray(baseFile.maps)
+      ? [...(baseFile.maps as MapRecord[])]
+      : [];
+    const idx = list.findIndex((m) => m.id === mapId);
+    if (idx >= 0) list[idx] = updatedMap;
+    else list.push(updatedMap);
+    baseFile.maps = list;
+    saveDraft(moduleId, MODEL_KEY, baseFile);
+    setState({
+      ...state,
+      mapRecord: updatedMap,
+      ownFile: baseFile,
+      isDraft: true,
+    });
+    setEditingMapAttrs(false);
+  };
+
   const onDiscardDraft = () => {
     if (typeof window === "undefined") return;
     if (!hasDraft(moduleId, MODEL_KEY)) return;
@@ -3265,9 +3317,22 @@ export function MapEditor({
     <div className="flex flex-1 flex-col">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-3 border-b border-parchment/10 bg-ink/30 px-4 py-2 text-sm">
-        <h1 className="font-display text-xl text-parchment">
+        {/* Clicking the name opens the Map Properties dialog — the
+            description (if any) surfaces as a tooltip so authors get
+            a hint without giving up toolbar real estate. */}
+        <button
+          type="button"
+          onClick={() => setEditingMapAttrs(true)}
+          title={
+            typeof mapRecord.description === "string" &&
+            mapRecord.description.trim().length > 0
+              ? mapRecord.description
+              : "Edit map properties (name, description, tags)"
+          }
+          className="rounded font-display text-xl text-parchment hover:text-ember focus:outline-none focus:text-ember"
+        >
           {mapRecord.name}
-        </h1>
+        </button>
         <span className="text-parchment/50">
           {mapRecord.width}×{mapRecord.height}
         </span>
@@ -3276,6 +3341,14 @@ export function MapEditor({
             tags: {mapRecord.tags.join(", ")}
           </span>
         ) : null}
+        <button
+          type="button"
+          onClick={() => setEditingMapAttrs(true)}
+          className="rounded border border-parchment/20 px-2 py-0.5 text-xs text-parchment/70 hover:bg-ink/40"
+          title="Edit map properties (name, description, tags)."
+        >
+          Properties
+        </button>
         <span className="text-parchment/40">·</span>
         <div
           role="group"
@@ -3780,6 +3853,45 @@ export function MapEditor({
                 party={state.simParty}
                 items={state.items as Parameters<typeof CounterShopOverlay>[0]["items"]}
                 onClose={() => setShopCounterId(null)}
+              />
+            );
+          })()
+        : null}
+      {/* Map Properties dialog — edits the Map record's metadata
+          (name / description / tags). Other maps in this module's
+          own file contribute their tags as suggestions so authors
+          stay consistent across the catalog. */}
+      {editingMapAttrs
+        ? (() => {
+            const otherMaps =
+              state.ownFile && Array.isArray(state.ownFile.maps)
+                ? (state.ownFile.maps as MapRecord[])
+                : [];
+            const tagSet = new Set<string>();
+            for (const m of otherMaps) {
+              if (Array.isArray(m.tags)) {
+                for (const t of m.tags) {
+                  if (typeof t === "string" && t.trim()) tagSet.add(t);
+                }
+              }
+            }
+            const existingTags = [...tagSet].sort();
+            return (
+              <MapAttributesDialog
+                mapId={mapRecord.id}
+                initial={{
+                  name: mapRecord.name,
+                  description:
+                    typeof mapRecord.description === "string"
+                      ? mapRecord.description
+                      : undefined,
+                  tags: Array.isArray(mapRecord.tags)
+                    ? mapRecord.tags
+                    : undefined,
+                }}
+                existingTags={existingTags}
+                onSave={onSaveMapAttrs}
+                onClose={() => setEditingMapAttrs(false)}
               />
             );
           })()

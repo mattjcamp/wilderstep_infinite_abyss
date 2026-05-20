@@ -11,12 +11,12 @@
  * own pre-rendered route at build time.
  */
 
-import { readAllModules } from "@/data_model/moduleIndex";
+import { isPlayableModule, readAllModules } from "@/data_model/moduleIndex";
 import { PartyFormation } from "./PartyFormation";
 
 export function generateStaticParams() {
   return readAllModules()
-    .filter((m) => m.role === "playable")
+    .filter(isPlayableModule)
     .map((m) => ({ moduleId: m.id }));
 }
 
