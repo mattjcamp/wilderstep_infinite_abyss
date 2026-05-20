@@ -40,6 +40,7 @@ import { mergeModel } from "@/data_model/merge";
 import { StaticModuleSource } from "@/data_model/StaticModuleSource";
 import { LockDialogOverlay } from "@/editor/LockDialogOverlay";
 import { QuestDialogOverlay } from "@/editor/QuestDialogOverlay";
+import { PlayPartyScreenOverlay } from "./PlayPartyScreenOverlay";
 import type { CombatResolved } from "@/battle/scenes/CombatScene";
 import { PlayCombatHost } from "./PlayCombatHost";
 import { buildArenaCells } from "@/play/buildArenaCells";
@@ -74,6 +75,7 @@ import {
   type SpawnEncounterOptions,
 } from "@/sim/MapSimulation";
 import {
+  claimQuestRewards,
   ensureQuestStates,
   parseQuestsFile,
   type CombatLocation,
@@ -276,6 +278,12 @@ export function PlayHost() {
    *  combat scene reports back via `onResolved`. While set the world
    *  Phaser game is unmounted and PlayCombatHost takes its place. */
   const [combat, setCombat] = useState<SpawnEncounterOptions | null>(null);
+  /** Party screen toggle — opens with the `P` key, closes with `P`
+   *  again (or ESC, or backdrop click). Mirrors the editor's
+   *  `partyScreenOpen` flag. While true, movement keys are gated
+   *  via overlaysOpenRef so the party doesn't keep stepping under
+   *  the modal. */
+  const [partyScreenOpen, setPartyScreenOpen] = useState(false);
   /** Scrolling log of in-world messages — text-on-step from cells
    *  with the `text` field, plus the kernel's narrated events (Edge
    *  of the map, You descend into the dungeon, Approach Lair: …).
@@ -322,15 +330,41 @@ export function PlayHost() {
    *  re-inferred from acceptedQuests + questStepProgress.) */
   const questStatesRef = useRef<Map<string, QuestState>>(new Map());
   useEffect(() => {
-    // Lock dialog, quest offer, AND active combat each gate keyboard
-    // movement through the same ref so the world sim freezes under
-    // any of them.
+    // Lock dialog, quest offer, active combat, AND the party screen
+    // each gate keyboard movement through the same ref so the world
+    // sim freezes under any of them.
     overlaysOpenRef.current =
-      !!lockEncounter || !!combat || !!questOffer;
-  }, [lockEncounter, combat, questOffer]);
+      !!lockEncounter || !!combat || !!questOffer || partyScreenOpen;
+  }, [lockEncounter, combat, questOffer, partyScreenOpen]);
   useEffect(() => {
     combatRef.current = combat;
   }, [combat]);
+  // P toggles the Party screen. Lives outside the sim's onKey bridge
+  // because the screen is a host concern (the kernel doesn't know
+  // about it) — same pattern MapEditor uses. Suppressed while any
+  // other modal is up so it doesn't pop on top of an open lock /
+  // quest / combat dialog. The overlay itself swallows the same key
+  // to close, so a second tap dismisses cleanly.
+  useEffect(() => {
+    const onPartyKey = (e: KeyboardEvent) => {
+      if (e.key !== "p" && e.key !== "P") return;
+      const t = e.target as HTMLElement | null;
+      if (
+        t &&
+        (t.tagName === "INPUT" ||
+          t.tagName === "TEXTAREA" ||
+          t.isContentEditable)
+      ) {
+        return;
+      }
+      if (lockEncounter || combat || questOffer) return;
+      if (partyScreenOpen) return;
+      e.preventDefault();
+      setPartyScreenOpen(true);
+    };
+    window.addEventListener("keydown", onPartyKey);
+    return () => window.removeEventListener("keydown", onPartyKey);
+  }, [lockEncounter, combat, questOffer, partyScreenOpen]);
   useEffect(() => {
     catalogRef.current = state.catalog ?? null;
   }, [state.catalog]);
@@ -1104,16 +1138,27 @@ export function PlayHost() {
           // the v2 loader so the sim receives structured QuestDef[]s
           // (kind, encounterId, count, locationKind, mapId, dungeonId,
           // dungeonLevel). Bootstrap each quest's state from the save
-          // so progress survives a reload: accepted quests promote to
-          // "active", questStepProgress[id] = N flips the first N
-          // stepProgress[] entries to true, and a quest whose every
-          // step is done lands on "completed". (Persisting the full
-          // QuestState shape into the save is a follow-up — for now
-          // the legacy acceptedQuests + questStepProgress fields are
-          // enough to round-trip the playable state.)
+          // so progress survives a reload:
+          //
+          //   - `acceptedQuests` → promote "available" to "active"
+          //   - `questStepProgress[id] = N` → flip first N
+          //     stepProgress[] entries to true; if that completes
+          //     every step, promote "active" → "completed"
+          //   - `turnedInQuests` → final promotion "completed" →
+          //     "turned_in" so the handoff dialog stays silent and
+          //     `claimQuestRewards` won't re-grant rewards
+          //
+          // The full QuestState shape isn't persisted; we
+          // reconstruct it from these three fields. Step-kill
+          // counters (`stepKills[i]`) intentionally reset on
+          // reload because the save only carries the "next pending
+          // step" index — partial progress within a multi-kill
+          // step rounds DOWN on reload. Acceptable trade-off given
+          // how many credits a single step typically takes.
           const questDefs = parseQuestsFile({ quests: catalog.quests });
           ensureQuestStates(questDefs, questStatesRef.current);
           const accepted = new Set(save.acceptedQuests ?? []);
+          const turnedIn = new Set(save.turnedInQuests ?? []);
           for (const def of questDefs) {
             const qs = questStatesRef.current.get(def.id);
             if (!qs) continue;
@@ -1130,6 +1175,9 @@ export function PlayHost() {
               qs.status === "active"
             ) {
               qs.status = "completed";
+            }
+            if (turnedIn.has(def.id) && qs.status === "completed") {
+              qs.status = "turned_in";
             }
           }
           questDefsRef.current = questDefs;
@@ -1807,17 +1855,85 @@ export function PlayHost() {
 
   /** Quest decline / close — routes both "Decline" (offer view) and
    *  "Close" (in-progress / complete view) through the same handler.
-   *  In the complete view we additionally flip status to "turned_in"
-   *  so the dialog stops re-opening on subsequent bumps. (We don't
-   *  persist that flip into the save shape yet — `turned_in` becomes
-   *  effectively "completed" on reload, which is harmless for now
-   *  since the dialog gracefully renders the same end-dialog copy
-   *  for both.) */
+   *
+   *  In the complete view we ALSO grant rewards: `claimQuestRewards`
+   *  atomically flips status to "turned_in" and returns the reward
+   *  payload (xp / gold / items) declared on the quest record. We
+   *  apply those to the live save:
+   *
+   *   - **gold** is added to `save.party.gold`
+   *   - **items** are appended to `save.party.inventory` as fresh
+   *     entries (one row per id — proper stack-merging via
+   *     `addToStash` is a follow-up that needs the full item
+   *     catalog, which PlayHost doesn't load today)
+   *   - **xp** is logged but not yet applied. Live PartyMembers
+   *     (with `exp`/`level`) only exist inside CombatScene's
+   *     `gameState.partyData`, and SavedCharacterState doesn't
+   *     persist XP. Wiring this through is a separate layer —
+   *     until it lands the log line tells the player what they'd
+   *     get, even if it doesn't bank.
+   *
+   *  Persistence: a single `saveWorld(nextSave)` commits gold +
+   *  inventory + the resulting `questStepProgress` (already
+   *  written by the `quest_kill_credited` handler on the way to
+   *  completion). Status mutation (turned_in) lives in the
+   *  questStatesRef and is rebuilt from save.acceptedQuests +
+   *  questStepProgress on reload — see the bootstrap pass in the
+   *  sim-construction effect. */
   const onQuestDecline = useCallback(() => {
     setQuestOffer((current) => {
       if (current?.complete) {
-        const qs = questStatesRef.current.get(current.questId);
-        if (qs) qs.status = "turned_in";
+        const claim = claimQuestRewards(
+          questDefsRef.current,
+          questStatesRef.current,
+          current.questId,
+        );
+        if (claim) {
+          const save = saveRef.current;
+          if (save) {
+            const nextInventory = [
+              ...save.party.inventory,
+              ...claim.items.map((id) => ({ item: id })),
+            ];
+            // Persist the turned-in flag so a reload doesn't let the
+            // player re-bump the giver and re-claim. De-dupe via the
+            // Set indirection in case (defensively) the save already
+            // carried the id from a prior race.
+            const turnedIn = new Set(save.turnedInQuests ?? []);
+            turnedIn.add(claim.questId);
+            const nextSave: WorldSave = {
+              ...save,
+              party: {
+                ...save.party,
+                gold: save.party.gold + claim.gold,
+                inventory: nextInventory,
+              },
+              turnedInQuests: [...turnedIn],
+            };
+            saveWorld(nextSave);
+            saveRef.current = nextSave;
+          }
+          // Player-facing summary in the log strip. Format mirrors
+          // the way combat reports loot: numbers prefixed with `+`,
+          // items spelled out, all in one line so the log doesn't
+          // flood.
+          const parts: string[] = [];
+          if (claim.gold > 0) parts.push(`+${claim.gold} gold`);
+          if (claim.xp > 0) parts.push(`+${claim.xp} XP`);
+          if (claim.items.length > 0) {
+            parts.push(`items: ${claim.items.join(", ")}`);
+          }
+          const summary =
+            parts.length > 0
+              ? `Quest complete — ${claim.questName}. Rewards: ${parts.join(", ")}.`
+              : `Quest complete — ${claim.questName}.`;
+          setLogMessages((prev) => {
+            const next = [...prev, summary];
+            return next.length > MAX_LOG
+              ? next.slice(next.length - MAX_LOG)
+              : next;
+          });
+        }
       }
       return null;
     });
@@ -2001,6 +2117,27 @@ export function PlayHost() {
             />
           )
         : null}
+
+      {partyScreenOpen && state.save ? (
+        <PlayPartyScreenOverlay
+          moduleId={state.save.moduleId}
+          save={state.save}
+          onClose={() => setPartyScreenOpen(false)}
+          // Stash mutations from the Party screen (Use Torch, Send to
+          // character, etc.) flow back here. Update saveRef.current so
+          // any subsequent kernel write sees the post-mutation party,
+          // persist the new value to localStorage, and refresh state.save
+          // so the next render of the host (and any open overlays) sees
+          // the freshly-mutated save without a reload.
+          onMutateSave={(next) => {
+            saveRef.current = next;
+            saveWorld(next);
+            setState((prev) =>
+              prev.kind === "ok" ? { ...prev, save: next } : prev,
+            );
+          }}
+        />
+      ) : null}
     </main>
   );
 }

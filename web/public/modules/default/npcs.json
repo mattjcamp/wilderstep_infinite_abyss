@@ -57,6 +57,16 @@
           "text": "I'm waiting for someone. They'll come back, eventually. Everyone does, eventually."
         }
       ]
+    },
+    {
+      "id": "armorer",
+      "name": "Alric the Armorer",
+      "sprite": "person/fighter17.png",
+      "counter": "armor",
+      "personal_history": null,
+      "dialogs": [
+        "Welcome to my weapons shop"
+      ]
     }
   ]
 }

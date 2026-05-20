@@ -1073,6 +1073,60 @@ export function markTurnedIn(states: Map<string, QuestState>, questName: string)
   return true;
 }
 
+/** Result of {@link claimQuestRewards} — a snapshot of what the host
+ *  should grant the party on turn-in. Empty for already-claimed or
+ *  not-yet-completed quests (the helper returns null in those cases
+ *  instead of returning a zeroed payload). */
+export interface QuestRewardClaim {
+  questId: string;
+  /** Display name of the quest, for log/banner copy. */
+  questName: string;
+  xp: number;
+  gold: number;
+  /** Catalog ids — host loops these and calls `addToStash` (or the
+   *  equivalent per-item granter) for each. */
+  items: ReadonlyArray<string>;
+}
+
+/**
+ * Single-shot turn-in helper. When `questId` is "completed", flips
+ * the status to "turned_in" and returns the reward payload. Returns
+ * null when the quest doesn't exist, isn't in the right state, or
+ * has already been turned in — so callers can safely call this from
+ * a button handler without their own idempotency guard.
+ *
+ * The helper does NOT apply the rewards itself — granting xp /
+ * gold / items lives on the host side because the runtime party
+ * shape varies (in-combat PartyMember, save-side SavedPartyState).
+ * The host calls this, reads `xp` / `gold` / `items`, and routes
+ * each through the right kernel call (`awardXp`, `party.gold +=`,
+ * `addToStash`).
+ *
+ * Combined with {@link applyWorldUnlocks} (which runs on map load
+ * for already-turned-in quests), this is the complete turn-in
+ * surface: claimQuestRewards handles the one-shot grants;
+ * applyWorldUnlocks handles the persistent tile mutations.
+ */
+export function claimQuestRewards(
+  defs: ReadonlyArray<QuestDef>,
+  states: ReadonlyMap<string, QuestState>,
+  questId: string,
+): QuestRewardClaim | null {
+  const def = defs.find((d) => d.id === questId);
+  if (!def) return null;
+  const state = states.get(questId);
+  if (!state) return null;
+  if (state.status !== "completed") return null;
+  state.status = "turned_in";
+  return {
+    questId: def.id,
+    questName: def.name,
+    xp: def.rewards.xp,
+    gold: def.rewards.gold,
+    items: [...def.rewards.items],
+  };
+}
+
 // ── World-unlock application ───────────────────────────────────
 
 /**

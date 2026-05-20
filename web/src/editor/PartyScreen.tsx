@@ -40,7 +40,7 @@
  * non-keyboard fallback while the Phaser equivalent is built.
  */
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   CharacterSheetSim,
   type SheetItemRef,
@@ -145,6 +145,15 @@ export interface PartyAbilityRef {
 export interface PartyItemRef {
   id: string;
   name?: string;
+  /** Flavor / mechanical description shown in the Examine pane. */
+  description?: string;
+  /** True for consumables / scrolls / etc. — anything the player can
+   *  "Use" from the stash. When absent or false the Use button is
+   *  greyed out. Hosts populate this from items.json's `usable` field. */
+  usable?: boolean;
+  /** Optional render hint copied from items.json — purely for the
+   *  Examine readout right now. */
+  icon?: string;
 }
 
 export interface PartySpellRef {
@@ -261,6 +270,8 @@ export function PartyScreen({
   activeEffectIds,
   onActiveEffectsChange,
   onReorderRoster,
+  onUseStashItem,
+  onSendStashItem,
 }: {
   party: PartyRecord;
   /** Full character records for the party's roster ids. Missing ids
@@ -287,6 +298,18 @@ export function PartyScreen({
    *  still works — mouse-down without a drag is a click, mouse-down +
    *  movement is a drag start. */
   onReorderRoster?: (newOrder: string[]) => void;
+  /** Optional handler — when provided, the Use button appears on
+   *  stash items the items catalog flags `usable`. The host wires it
+   *  to the matching PartyActions helper (consumeTorch /
+   *  consumeCampingSupplies / etc.) and persists. Receives the
+   *  stash-row index so duplicate items resolve unambiguously. */
+  onUseStashItem?: (stashIndex: number) => void;
+  /** Optional handler — when provided, the Send to… button appears on
+   *  every stash item. After the player picks a recipient (1-N or
+   *  click), the screen invokes this callback with the stash row +
+   *  the destination roster index. Host wires to
+   *  PartyActions.giveStashItemTo. */
+  onSendStashItem?: (stashIndex: number, memberIndex: number) => void;
 }) {
   // ── Resolve roster ──────────────────────────────────────────────
   const members = useMemo(() => {
@@ -307,6 +330,14 @@ export function PartyScreen({
   const itemNameById = useMemo(() => {
     const m = new Map<string, string>();
     for (const it of items) m.set(it.id, it.name ?? it.id);
+    return m;
+  }, [items]);
+  /** Catalog lookup by id — the stash detail panel reads description /
+   *  usable / icon off the full record. Built once per items change so
+   *  per-row lookups in the render don't iterate the catalog. */
+  const itemById = useMemo(() => {
+    const m = new Map<string, PartyItemRef>();
+    for (const it of items) m.set(it.id, it);
     return m;
   }, [items]);
 
@@ -347,6 +378,85 @@ export function PartyScreen({
   const focusedMember = focusedMemberId
     ? members.find((m) => m.id === focusedMemberId) ?? null
     : null;
+
+  // ── Shared stash interaction state ──────────────────────────────
+  // The stash list scrolls independently of the effects list. Players
+  // can navigate with ArrowUp/Down (when the stash pane has the
+  // keyboard mode) and act on the selected row with U/S/X — or click
+  // straight on the row + action buttons in the detail panel.
+  const stashEntries = party.inventory ?? [];
+  const [stashSelectedIndex, setStashSelectedIndex] = useState<number | null>(
+    stashEntries.length > 0 ? 0 : null,
+  );
+  /** When the stash shrinks (item used / sent away), the cursor may
+   *  fall off the end. Clamp it on every render so the detail panel
+   *  always points at a real row, and disappear it when the stash
+   *  empties. */
+  useEffect(() => {
+    if (stashEntries.length === 0) {
+      setStashSelectedIndex(null);
+      return;
+    }
+    setStashSelectedIndex((cur) => {
+      if (cur == null) return 0;
+      if (cur >= stashEntries.length) return stashEntries.length - 1;
+      return cur;
+    });
+  }, [stashEntries.length]);
+
+  /** "send" — the player picked Send and is now waiting for a roster
+   *  pick (1-N or click). "examine" — full description visible in the
+   *  detail panel. "none" — the resting state. */
+  type StashMode = "none" | "send" | "examine";
+  const [stashMode, setStashMode] = useState<StashMode>("none");
+  // Whenever the selection moves, drop out of send / examine so the
+  // detail panel always matches the cursor.
+  useEffect(() => {
+    setStashMode("none");
+  }, [stashSelectedIndex]);
+
+  const selectedStashEntry =
+    stashSelectedIndex != null ? stashEntries[stashSelectedIndex] : null;
+  const selectedStashCatalog = selectedStashEntry
+    ? itemById.get(selectedStashEntry.item)
+    : null;
+  const selectedStashName = selectedStashEntry
+    ? itemNameById.get(selectedStashEntry.item) ?? selectedStashEntry.item
+    : null;
+  const canUseSelected =
+    !!onUseStashItem && !!selectedStashCatalog?.usable;
+  const canSendSelected = !!onSendStashItem && members.length > 0;
+
+  // Helpers wrapping the callbacks so the keyboard + click paths share
+  // the same plumbing (and tests can assert on a single seam).
+  const triggerUse = useCallback(() => {
+    if (stashSelectedIndex == null) return;
+    if (!canUseSelected || !onUseStashItem) return;
+    onUseStashItem(stashSelectedIndex);
+    setStashMode("none");
+  }, [canUseSelected, onUseStashItem, stashSelectedIndex]);
+
+  const beginSend = useCallback(() => {
+    if (stashSelectedIndex == null) return;
+    if (!canSendSelected) return;
+    setStashMode("send");
+  }, [canSendSelected, stashSelectedIndex]);
+
+  const sendToMember = useCallback(
+    (memberIndex: number) => {
+      if (stashSelectedIndex == null) return;
+      if (!onSendStashItem) return;
+      if (memberIndex < 0 || memberIndex >= members.length) return;
+      onSendStashItem(stashSelectedIndex, memberIndex);
+      setStashMode("none");
+    },
+    [onSendStashItem, stashSelectedIndex, members.length],
+  );
+
+  const toggleExamine = useCallback(() => {
+    if (stashSelectedIndex == null) return;
+    setStashMode((cur) => (cur === "examine" ? "none" : "examine"));
+  }, [stashSelectedIndex]);
 
   // ── Drag-and-drop roster reorder ────────────────────────────────
   // `dragFromId` = the card the user is currently dragging.
@@ -392,6 +502,128 @@ export function PartyScreen({
       onActiveEffectsChange([...activeEffectIds, abilityId]);
     }
   };
+
+  // ── Keyboard navigation for the stash ───────────────────────────
+  // Registered at the window level with capture: true. React fires
+  // child effects BEFORE parent effects on mount, so this listener
+  // sits ahead of the surrounding overlay's keydown trap and gets a
+  // shot at arrow keys / U/S/X / 1-N before the overlay can
+  // `stopPropagation` them. We only `stopPropagation` on keys we
+  // actually consumed — ESC / P fall through to the overlay so the
+  // close-on-Esc behavior keeps working. Suspended while a member
+  // sheet is drilled into so the sheet's own keybinds win.
+  useEffect(() => {
+    if (focusedMember) return; // Sheet handles its own input.
+    const onKey = (e: KeyboardEvent) => {
+      // Don't fight the user when they're typing into an input
+      // (e.g., the dev console open over the modal).
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+
+      // ── "Send to…" picker mode ─────────────────────────────
+      // While active, the roster is the cursor: 1-9 / Enter pick a
+      // destination, ESC cancels back to the resting menu.
+      if (stashMode === "send") {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          e.stopPropagation();
+          setStashMode("none");
+          return;
+        }
+        const n = parseInt(e.key, 10);
+        if (Number.isFinite(n) && n >= 1 && n <= members.length) {
+          e.preventDefault();
+          e.stopPropagation();
+          sendToMember(n - 1);
+          return;
+        }
+        return; // swallow other keys while sending? no — let ESC/P bubble
+      }
+
+      // ── Examine popover open: ESC closes; other keys pass ──
+      if (stashMode === "examine") {
+        if (e.key === "Escape" || e.key === "x" || e.key === "X") {
+          e.preventDefault();
+          e.stopPropagation();
+          setStashMode("none");
+          return;
+        }
+        // Don't trap arrows here — let the user keep scrolling
+        // the stash with the examine panel re-rendering live.
+      }
+
+      // ── Stash scrolling + action hotkeys ───────────────────
+      if (stashEntries.length > 0) {
+        if (e.key === "ArrowDown" || e.key === "j" || e.key === "J") {
+          e.preventDefault();
+          e.stopPropagation();
+          setStashSelectedIndex((cur) => {
+            const last = stashEntries.length - 1;
+            if (cur == null) return 0;
+            return cur >= last ? last : cur + 1;
+          });
+          return;
+        }
+        if (e.key === "ArrowUp" || e.key === "k" || e.key === "K") {
+          e.preventDefault();
+          e.stopPropagation();
+          setStashSelectedIndex((cur) => {
+            if (cur == null) return 0;
+            return cur <= 0 ? 0 : cur - 1;
+          });
+          return;
+        }
+      }
+
+      // Action hotkeys — only meaningful when a stash row is selected.
+      if (stashSelectedIndex != null) {
+        if (e.key === "u" || e.key === "U") {
+          if (canUseSelected) {
+            e.preventDefault();
+            e.stopPropagation();
+            triggerUse();
+          }
+          return;
+        }
+        if (e.key === "s" || e.key === "S") {
+          if (canSendSelected) {
+            e.preventDefault();
+            e.stopPropagation();
+            beginSend();
+          }
+          return;
+        }
+        if (e.key === "x" || e.key === "X") {
+          e.preventDefault();
+          e.stopPropagation();
+          toggleExamine();
+          return;
+        }
+      }
+    };
+    window.addEventListener("keydown", onKey, { capture: true });
+    return () =>
+      window.removeEventListener("keydown", onKey, { capture: true });
+  }, [
+    focusedMember,
+    stashMode,
+    stashEntries.length,
+    stashSelectedIndex,
+    members.length,
+    canUseSelected,
+    canSendSelected,
+    triggerUse,
+    beginSend,
+    sendToMember,
+    toggleExamine,
+  ]);
 
   // ── Render ───────────────────────────────────────────────────────
 
@@ -470,35 +702,146 @@ export function PartyScreen({
             </ul>
           </section>
 
-          {/* SHARED STASH */}
+          {/* SHARED STASH — scrollable list, click or Up/Down to
+              select, Enter/U/S/X for actions. Max-height keeps a long
+              stash from blowing past the modal. */}
           <section>
             <h3 className="text-xs uppercase tracking-wide text-amber-300">
               Shared Stash{" "}
               <span className="text-parchment/45">
-                ({party.inventory?.length ?? 0} items)
+                ({stashEntries.length} items)
               </span>
             </h3>
-            <ul className="mt-1 space-y-0.5 text-sm">
-              {(party.inventory ?? []).length === 0 ? (
+            <ul
+              className="mt-1 max-h-48 space-y-0.5 overflow-y-auto pr-1 text-sm"
+              role="listbox"
+              aria-label="Shared stash"
+            >
+              {stashEntries.length === 0 ? (
                 <li className="text-xs text-parchment/45">(empty)</li>
               ) : null}
-              {(party.inventory ?? []).map((entry, i) => {
+              {stashEntries.map((entry, i) => {
                 const label =
                   itemNameById.get(entry.item) ?? entry.item;
+                const isSel = i === stashSelectedIndex;
+                const cat = itemById.get(entry.item);
                 return (
-                  <li
-                    key={`${entry.item}-${i}`}
-                    className="flex items-center justify-between px-2 py-0.5 text-parchment/85"
-                  >
-                    <span>{label}</span>
-                    <span className="text-xs text-parchment/55">
-                      {entry.charges != null ? `(${entry.charges})` : ""}
-                    </span>
+                  <li key={`${entry.item}-${i}`}>
+                    <button
+                      type="button"
+                      role="option"
+                      aria-selected={isSel}
+                      onClick={() => setStashSelectedIndex(i)}
+                      onDoubleClick={() => {
+                        setStashSelectedIndex(i);
+                        // Double-click is a power-user shortcut: Use if
+                        // we can, otherwise just Examine. Sending always
+                        // needs an explicit recipient so we never auto-send.
+                        if (
+                          onUseStashItem &&
+                          cat?.usable
+                        ) {
+                          onUseStashItem(i);
+                        } else {
+                          setStashMode("examine");
+                        }
+                      }}
+                      className={[
+                        "flex w-full items-center justify-between rounded border px-2 py-0.5 text-left",
+                        isSel
+                          ? "border-ember/60 bg-ember/15 text-parchment"
+                          : "border-transparent text-parchment/85 hover:bg-ink/50",
+                      ].join(" ")}
+                      title={
+                        cat?.description ?? "Click to select · X to examine"
+                      }
+                    >
+                      <span className="truncate">{label}</span>
+                      <span className="ml-2 shrink-0 text-xs text-parchment/55">
+                        {entry.charges != null ? `(${entry.charges})` : ""}
+                      </span>
+                    </button>
                   </li>
                 );
               })}
             </ul>
           </section>
+
+          {/* STASH ITEM DETAIL — Use / Send / Examine actions for the
+              row currently highlighted in the stash. Hidden when the
+              stash is empty so we don't render an empty action panel. */}
+          {selectedStashEntry && selectedStashName ? (
+            <section className="rounded border border-parchment/15 bg-ink/30 p-2">
+              <h3 className="text-xs uppercase tracking-wide text-amber-300">
+                Stash Item
+              </h3>
+              <div className="mt-1 space-y-1 text-sm">
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="font-display text-parchment">
+                    {selectedStashName}
+                  </span>
+                  {selectedStashEntry.charges != null ? (
+                    <span className="text-[11px] text-parchment/55">
+                      ×{selectedStashEntry.charges}
+                    </span>
+                  ) : null}
+                </div>
+                {stashMode === "examine" ? (
+                  <p className="text-xs text-parchment/75">
+                    {selectedStashCatalog?.description ??
+                      "(no description in items.json)"}
+                  </p>
+                ) : null}
+                {stashMode === "send" ? (
+                  <p className="text-xs text-amber-300">
+                    Send to which character? Press 1–{members.length} or
+                    click a roster card. ESC cancels.
+                  </p>
+                ) : null}
+                <div className="flex flex-wrap gap-1 pt-1">
+                  <ActionButton
+                    label="Use (U)"
+                    onClick={triggerUse}
+                    enabled={canUseSelected}
+                    hint={
+                      !onUseStashItem
+                        ? "Host hasn't wired Use yet."
+                        : !selectedStashCatalog?.usable
+                          ? "This item isn't usable from the stash."
+                          : "Use this item for the party."
+                    }
+                  />
+                  <ActionButton
+                    label="Send to… (S)"
+                    onClick={beginSend}
+                    enabled={canSendSelected && stashMode !== "send"}
+                    hint={
+                      !onSendStashItem
+                        ? "Host hasn't wired Send yet."
+                        : members.length === 0
+                          ? "No party members to receive it."
+                          : "Pick a character to receive this item."
+                    }
+                  />
+                  <ActionButton
+                    label={stashMode === "examine" ? "Hide (X)" : "Examine (X)"}
+                    onClick={toggleExamine}
+                    enabled={true}
+                    hint="Show the catalog description."
+                  />
+                  {stashMode === "send" ? (
+                    <button
+                      type="button"
+                      onClick={() => setStashMode("none")}
+                      className="rounded border border-parchment/30 bg-ink/40 px-2 py-0.5 text-xs text-parchment/75 hover:bg-ink/60"
+                    >
+                      Cancel
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+            </section>
+          ) : null}
         </div>
 
         {/* Right: roster + detail + gold */}
@@ -514,29 +857,51 @@ export function PartyScreen({
                   (no roster — check party.json)
                 </li>
               ) : null}
-              {members.map((m, i) => (
-                <RosterCard
-                  key={m.id}
-                  member={m}
-                  slotNumber={i + 1}
-                  className_={classById.get(m.class)?.name ?? m.class}
-                  raceName={raceById.get(m.race)?.name ?? m.race}
-                  xpNext={xpForNextLevel(m, raceById.get(m.race))}
-                  onOpen={() => setFocusedMemberId(m.id)}
-                  draggable={reorderEnabled}
-                  isDragging={dragFromId === m.id}
-                  isDropTarget={
-                    dropTargetId === m.id && dragFromId !== m.id
-                  }
-                  onDragStart={() => setDragFromId(m.id)}
-                  onDragEnterCard={() => setDropTargetId(m.id)}
-                  onDropOnCard={() => handleDrop(m.id)}
-                  onDragEnd={() => {
-                    setDragFromId(null);
-                    setDropTargetId(null);
-                  }}
-                />
-              ))}
+              {members.map((m, i) => {
+                // During send mode the roster acts as a destination
+                // picker — click a card to send the highlighted stash
+                // item there. Disable drag and the drill-in click for
+                // the duration so the gesture is unambiguous.
+                const sendingNow = stashMode === "send";
+                return (
+                  <RosterCard
+                    key={m.id}
+                    member={m}
+                    slotNumber={i + 1}
+                    className_={classById.get(m.class)?.name ?? m.class}
+                    raceName={raceById.get(m.race)?.name ?? m.race}
+                    xpNext={xpForNextLevel(m, raceById.get(m.race))}
+                    onOpen={
+                      sendingNow
+                        ? () => sendToMember(i)
+                        : () => setFocusedMemberId(m.id)
+                    }
+                    /** Surface a "drop target" ring while sending so the
+                     *  player can visually confirm where the item is
+                     *  about to land. Re-uses the existing drag/drop
+                     *  highlight styling — same affordance, different
+                     *  trigger. */
+                    isSendTarget={sendingNow}
+                    overrideTitle={
+                      sendingNow
+                        ? `Send to ${m.name} (press ${i + 1})`
+                        : undefined
+                    }
+                    draggable={reorderEnabled && !sendingNow}
+                    isDragging={dragFromId === m.id}
+                    isDropTarget={
+                      dropTargetId === m.id && dragFromId !== m.id
+                    }
+                    onDragStart={() => setDragFromId(m.id)}
+                    onDragEnterCard={() => setDropTargetId(m.id)}
+                    onDropOnCard={() => handleDrop(m.id)}
+                    onDragEnd={() => {
+                      setDragFromId(null);
+                      setDropTargetId(null);
+                    }}
+                  />
+                );
+              })}
             </ul>
           </section>
 
@@ -591,14 +956,56 @@ export function PartyScreen({
         </div>
       </div>
 
-      {/* Bottom hint bar (purely cosmetic — keys aren't wired in this
-          preview pass; click to select, double-click to toggle). */}
+      {/* Bottom hint bar. Reflects whichever mode is active so the
+          player isn't hunting for which keys do what. */}
       <div className="border-t border-parchment/15 pt-1 text-center font-mono text-[10px] uppercase tracking-wider text-parchment/45">
-        Click to select · Double-click to toggle active
-        {reorderEnabled ? " · Drag a character to reorder" : ""} · ESC to
-        close
+        {stashMode === "send"
+          ? `Press 1-${members.length} or click a roster card · ESC to cancel`
+          : stashMode === "examine"
+            ? "X / ESC to close · Up/Down to scroll stash"
+            : (
+              <>
+                Up/Down scroll stash · U use · S send · X examine
+                {reorderEnabled ? " · Drag to reorder" : ""} · ESC to close
+              </>
+            )}
       </div>
     </div>
+  );
+}
+
+/**
+ * Tiny pill-style action button used in the Stash Item detail panel.
+ * Greys out when `enabled` is false and forwards a tooltip describing
+ * why — keeps the affordance visible even when the action isn't
+ * applicable so the player can learn what unlocks it.
+ */
+function ActionButton({
+  label,
+  onClick,
+  enabled,
+  hint,
+}: {
+  label: string;
+  onClick: () => void;
+  enabled: boolean;
+  hint: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={!enabled}
+      title={hint}
+      className={[
+        "rounded border px-2 py-0.5 text-xs",
+        enabled
+          ? "border-ember/60 bg-ember/30 text-parchment hover:bg-ember/50"
+          : "cursor-not-allowed border-parchment/15 bg-ink/40 text-parchment/35",
+      ].join(" ")}
+    >
+      {label}
+    </button>
   );
 }
 
@@ -614,6 +1021,8 @@ function RosterCard({
   draggable = false,
   isDragging = false,
   isDropTarget = false,
+  isSendTarget = false,
+  overrideTitle,
   onDragStart,
   onDragEnterCard,
   onDropOnCard,
@@ -634,6 +1043,12 @@ function RosterCard({
   draggable?: boolean;
   isDragging?: boolean;
   isDropTarget?: boolean;
+  /** True while the parent is in "send to character" mode. Highlights
+   *  the card with the same drop-target ring + bumps the slot number
+   *  so the player has a clear visual hint of which key to press. */
+  isSendTarget?: boolean;
+  /** Tooltip override — wins over the default drag / drill-in titles. */
+  overrideTitle?: string;
   onDragStart?: () => void;
   onDragEnterCard?: () => void;
   onDropOnCard?: () => void;
@@ -655,7 +1070,7 @@ function RosterCard({
           ? "cursor-pointer hover:border-amber-300/40 hover:bg-ink/50"
           : "",
         isDragging ? "opacity-40" : "",
-        isDropTarget
+        isDropTarget || isSendTarget
           ? "border-amber-300/70 ring-1 ring-amber-300/50"
           : "",
       ].join(" ")}
@@ -689,11 +1104,12 @@ function RosterCard({
       }}
       onClick={onOpen}
       title={
-        draggable
+        overrideTitle ??
+        (draggable
           ? `Drag to reorder · click to open ${member.name}'s sheet`
           : onOpen
             ? `Open ${member.name}'s sheet`
-            : undefined
+            : undefined)
       }
     >
       {thumb ? (

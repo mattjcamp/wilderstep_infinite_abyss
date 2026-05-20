@@ -187,4 +187,18 @@ export interface WorldSave {
    *  dialog and quest log to switch between offer / in-progress /
    *  complete states. */
   questStepProgress?: Record<string, number>;
+  /** Quest ids the party has already turned in and claimed rewards
+   *  for. Distinct from `acceptedQuests` (which only tracks "yes I
+   *  took this") and `questStepProgress` (which tracks step
+   *  progress but can't distinguish "all steps done, rewards
+   *  pending" from "all steps done, rewards already claimed").
+   *
+   *  Without this field a reload-mid-turn-in would let the player
+   *  re-bump the quest giver and re-grant gold / items on every
+   *  Close. Absent in legacy saves; the loader treats absence as
+   *  an empty list (so an existing playthrough where the player
+   *  has already claimed rewards before this field shipped would
+   *  unfortunately let them re-claim once — acceptable migration
+   *  cost given how new the feature is). */
+  turnedInQuests?: ReadonlyArray<string>;
 }

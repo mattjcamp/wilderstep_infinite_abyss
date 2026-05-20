@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   activeKillStepsAt,
+  claimQuestRewards,
   creditQuestKill,
   ensureQuestStates,
   matchesLocation,
@@ -440,5 +441,99 @@ describe("creditQuestKill", () => {
     const { defs, states } = bootstrap();
     states.get("rats")!.status = "available";
     expect(creditQuestKill(defs, states, "rats", 0)).toBeNull();
+  });
+});
+
+describe("claimQuestRewards", () => {
+  /** Single-step kill quest with full rewards. */
+  function bootstrap(opts?: {
+    xp?: number;
+    gold?: number;
+    items?: string[];
+  }) {
+    const defs = parseQuestsFile({
+      quests: [
+        {
+          id: "rats",
+          name: "The Giant Rats",
+          steps: [
+            {
+              id: "s1",
+              name: "Kill the rats",
+              kind: "kill",
+              params: { encounter_id: "cellar_rats", count: 1 },
+              location_kind: "map",
+              map_id: "demo_map",
+            },
+          ],
+          rewards: {
+            xp: opts?.xp ?? 100,
+            gold: opts?.gold ?? 50,
+            items: opts?.items ?? ["camping_supplies"],
+          },
+        },
+      ],
+    });
+    const states = new Map<string, QuestState>();
+    ensureQuestStates(defs, states);
+    return { defs, states };
+  }
+
+  it("returns null when the quest hasn't been completed yet", () => {
+    const { defs, states } = bootstrap();
+    // Status is "available".
+    expect(claimQuestRewards(defs, states, "rats")).toBeNull();
+    // Status is "active".
+    states.get("rats")!.status = "active";
+    expect(claimQuestRewards(defs, states, "rats")).toBeNull();
+  });
+
+  it("grants rewards once when status is completed and flips to turned_in", () => {
+    const { defs, states } = bootstrap({ xp: 250, gold: 75, items: ["potion", "scroll"] });
+    states.get("rats")!.status = "completed";
+    const claim = claimQuestRewards(defs, states, "rats");
+    expect(claim).not.toBeNull();
+    expect(claim!.questId).toBe("rats");
+    expect(claim!.questName).toBe("The Giant Rats");
+    expect(claim!.xp).toBe(250);
+    expect(claim!.gold).toBe(75);
+    expect(claim!.items).toEqual(["potion", "scroll"]);
+    expect(states.get("rats")!.status).toBe("turned_in");
+  });
+
+  it("is idempotent — second call returns null and doesn't re-grant", () => {
+    const { defs, states } = bootstrap();
+    states.get("rats")!.status = "completed";
+    const first = claimQuestRewards(defs, states, "rats");
+    expect(first).not.toBeNull();
+    const second = claimQuestRewards(defs, states, "rats");
+    expect(second).toBeNull();
+    expect(states.get("rats")!.status).toBe("turned_in");
+  });
+
+  it("returns null for an unknown quest id", () => {
+    const { defs, states } = bootstrap();
+    states.get("rats")!.status = "completed";
+    expect(claimQuestRewards(defs, states, "no_such")).toBeNull();
+  });
+
+  it("handles quests with no rewards declared (defaults to 0/0/[])", () => {
+    const defs = parseQuestsFile({
+      quests: [
+        {
+          id: "favor",
+          name: "Small Favor",
+          steps: [{ id: "s1", name: "step", kind: "kill", params: { encounter_id: "rat", count: 1 } }],
+        },
+      ],
+    });
+    const states = new Map<string, QuestState>();
+    ensureQuestStates(defs, states);
+    states.get("favor")!.status = "completed";
+    const claim = claimQuestRewards(defs, states, "favor");
+    expect(claim).not.toBeNull();
+    expect(claim!.xp).toBe(0);
+    expect(claim!.gold).toBe(0);
+    expect(claim!.items).toEqual([]);
   });
 });

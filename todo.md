@@ -1,8 +1,14 @@
+# Notes
 
-- test quests
-- double check map attributes
+- Add inspector screens: P for Party
 
-- work on soundtrack feature: we want a general soundtrack but allow custom soundtrack for maps
+- Add UI to edit the top level items for maps once they are created
+- Add inspector screens: Q for Quest, H for Help
+- tighten up the Quest Editor
+- add map level attribute to set lighting: world, twilight, darkness
+- add soundtrack feature: soundtracks are module level and on random, maps and dungeons can overide the soundtrack if needed
+- Port over item durability system
+- Battle Maps are a litle short right now: try 17x15
 
 # V3 Ideas
 
