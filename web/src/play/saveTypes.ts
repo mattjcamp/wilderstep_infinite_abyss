@@ -46,9 +46,16 @@ export interface SavedCharacterState {
   custom: unknown | null;
   hp: number;
   mp: number;
-  /** Carried items + charges. Pattern matches v1's per-character
-   *  inventory (separate from the shared party stash). */
-  inventory: ReadonlyArray<{ item: string; charges?: number }>;
+  /** Carried items + charges + per-instance durability. Pattern matches
+   *  v1's per-character inventory (separate from the shared party
+   *  stash). `durability` rides on a per-row basis so two copies of the
+   *  same weapon can wear independently; absent means "fresh" (catalog
+   *  max) on next equip. */
+  inventory: ReadonlyArray<{
+    item: string;
+    charges?: number;
+    durability?: number;
+  }>;
   /** Active effects (buffs/debuffs/curses) with remaining durations.
    *  Same structure used by the simulator's effect tick. */
   effects: ReadonlyArray<{
@@ -61,6 +68,16 @@ export interface SavedCharacterState {
    *  loader treats absence as "fall back to the catalog character's
    *  authored equipment loadout" — preserves the starting kit. */
   equipped?: Record<string, string>;
+  /** Per-slot remaining durability for whatever's in `equipped`.
+   *  Mirrors the runtime `PartyMember.equipped_durability` tracker so
+   *  wear survives a reload-mid-adventure without going through an
+   *  unequip cycle. `null` means "indestructible or fresh"; absent
+   *  whole-object means a legacy save — the loader will lazy-init to
+   *  max on first hit, matching the v1 semantics. */
+  equipped_durability?: {
+    hands?: number | null;
+    body?: number | null;
+  };
 }
 
 /** The party's whole-team state — separate from each character's own
@@ -75,8 +92,15 @@ export interface SavedPartyState {
   row: number;
   avatar: string;
   gold: number;
-  /** Shared party stash (same shape as party.json inventory). */
-  inventory: ReadonlyArray<{ item: string; charges?: number }>;
+  /** Shared party stash (same shape as party.json inventory). Entries
+   *  may carry per-instance `durability` for non-stackable gear that
+   *  has been worn — wear travels with the item between stash and
+   *  character inventories. */
+  inventory: ReadonlyArray<{
+    item: string;
+    charges?: number;
+    durability?: number;
+  }>;
   /** Party-wide effects (Galadriel's Light step counter, Detect Traps,
    *  infravision-active toggle, etc.). */
   torch_steps: number;

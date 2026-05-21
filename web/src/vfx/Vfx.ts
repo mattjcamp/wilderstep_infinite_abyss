@@ -13,7 +13,23 @@
  *   - Every effect resolves on its own; awaiting them is optional.
  */
 
-import Phaser from "phaser";
+// `import type` so this module stays SSR-safe — Next.js prerenders
+// PlayHost's static shell on the server, and a runtime `import Phaser
+// from "phaser"` touches `navigator` at module load and crashes the
+// build. Phaser's value helpers (Math.Distance.Between / Math.Linear)
+// are inlined below as vanilla TS so the file no longer needs the
+// runtime side of phaser.
+import type Phaser from "phaser";
+
+/** Inline `Phaser.Math.Distance.Between` — Euclidean distance. */
+function distBetween(x1: number, y1: number, x2: number, y2: number): number {
+  return Math.hypot(x2 - x1, y2 - y1);
+}
+
+/** Inline `Phaser.Math.Linear` — single-axis lerp from `a` to `b`. */
+function lerp(a: number, b: number, t: number): number {
+  return a + (b - a) * t;
+}
 
 const TILE = 32;
 
@@ -88,7 +104,7 @@ export function projectileLine(
     const angle = Math.atan2(to.y - from.y, to.x - from.x);
     dot.rotation = angle;
     // Arc midpoint: slight upward bow.
-    const dist = Phaser.Math.Distance.Between(from.x, from.y, to.x, to.y);
+    const dist = distBetween(from.x, from.y, to.x, to.y);
     const apex = Math.min(28, dist * 0.18);
     const midX = (from.x + to.x) / 2;
     const midY = (from.y + to.y) / 2 - apex;
@@ -125,8 +141,8 @@ export function lightningZigzag(
     g.moveTo(from.x, from.y);
     for (let i = 1; i < segments; i++) {
       const t = i / segments;
-      const x = Phaser.Math.Linear(from.x, to.x, t);
-      const y = Phaser.Math.Linear(from.y, to.y, t);
+      const x = lerp(from.x, to.x, t);
+      const y = lerp(from.y, to.y, t);
       const jx = (Math.random() - 0.5) * 14;
       const jy = (Math.random() - 0.5) * 14;
       g.lineTo(x + jx, y + jy);

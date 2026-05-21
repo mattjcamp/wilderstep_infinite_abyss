@@ -24,14 +24,19 @@ import type {
 } from "./saveTypes";
 
 /** Convert a v1battle InventoryItem to the save's inventory entry
- *  shape. Both have `item: string` + optional `charges`; durability
- *  passes through. */
+ *  shape. Both have `item: string` + optional `charges` + optional
+ *  per-instance `durability` (the latter carries wear on non-stackable
+ *  gear so it survives across the combat ↔ save boundary). */
 function toSavedInventoryEntry(it: InventoryItem): {
   item: string;
   charges?: number;
+  durability?: number;
 } {
-  const entry: { item: string; charges?: number } = { item: it.item };
+  const entry: { item: string; charges?: number; durability?: number } = {
+    item: it.item,
+  };
   if (typeof it.charges === "number") entry.charges = it.charges;
+  if (typeof it.durability === "number") entry.durability = it.durability;
   return entry;
 }
 
@@ -44,11 +49,28 @@ function applyMemberDeltas(
   postMember: PartyMember | undefined,
 ): SavedCharacterState {
   if (!postMember) return saved;
+  // Rebuild the saved `equipped` map from the kernel's view so an
+  // item that shattered in combat (slot was cleared by
+  // useEquippedDurability) actually disappears from the save. Only
+  // include non-null entries; the slot's absence is the save's
+  // "unequipped" signal.
+  const nextEquipped: Record<string, string> = {};
+  if (postMember.equipped.hands) nextEquipped.hands = postMember.equipped.hands;
+  if (postMember.equipped.body) nextEquipped.body = postMember.equipped.body;
+  // Capture the current per-slot wear so a reload-mid-adventure
+  // resumes with the same durability the player just spent steps
+  // wearing down.
+  const nextEd: NonNullable<SavedCharacterState["equipped_durability"]> = {
+    hands: postMember.equipped_durability.hands,
+    body: postMember.equipped_durability.body,
+  };
   return {
     ...saved,
     hp: postMember.hp,
     mp: postMember.mp,
     inventory: postMember.inventory.map(toSavedInventoryEntry),
+    equipped: nextEquipped,
+    equipped_durability: nextEd,
     // Effects ride on the save but the v1 PartyMember doesn't expose
     // per-member effects directly; party_effects is on the Party. We
     // leave the saved effects list as-is for now — combat doesn't

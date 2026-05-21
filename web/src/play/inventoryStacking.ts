@@ -24,10 +24,17 @@
  * handleSendStashItem) build a `nextInv` copy before committing.
  */
 
-/** Inventory entry shape used by the save + every UI consumer. */
+/** Inventory entry shape used by the save + every UI consumer.
+ *
+ *  `durability` is a per-instance wear counter for non-stackable gear
+ *  (weapons, armor). Stackable rows ignore it. When an equipped item is
+ *  unequipped or displaced, its current durability rides back onto the
+ *  inventory entry so wear travels with the object across equip /
+ *  unequip / send-to-character / return-to-stash. */
 export interface InventoryEntry {
   item: string;
   charges?: number;
+  durability?: number;
 }
 
 /** Minimum catalog shape the helpers consult — kept loose so callers
@@ -80,20 +87,36 @@ export function quantityOf(
  *  non-stackable, appends a fresh entry (one row per copy — old
  *  behavior preserved). Returns a NEW array; caller assigns / commits.
  *  `count` defaults to 1; callers that purchase a bundle (e.g. a
- *  quiver of 20 arrows) pass the bundle size explicitly. */
+ *  quiver of 20 arrows) pass the bundle size explicitly.
+ *
+ *  `durability` is an optional per-instance wear value that rides
+ *  along when a non-stackable item lands in inventory (typically used
+ *  by the equip/unequip path to preserve wear). Ignored for stackable
+ *  items, and ignored when `count > 1` for non-stackables (those are
+ *  bundle additions of fresh gear). */
 export function addToInventory(
   inv: ReadonlyArray<InventoryEntry>,
   itemId: string,
   items: ReadonlyArray<StackableItemRef> | ReadonlyMap<string, StackableItemRef>,
   count = 1,
+  durability?: number,
 ): InventoryEntry[] {
   if (count <= 0) return inv.map((e) => ({ ...e }));
   if (!isStackable(itemId, items)) {
     // Non-stackable: one entry per copy. The historical shape was
     // `{ item }` with no charges field; preserve that so callers that
     // walked the inventory looking for stackable rows don't trip.
+    // When the caller threads a durability value (single-copy add,
+    // typical of the unequip / displace path), stamp it on the new
+    // row so wear travels with the item.
     const next = inv.map((e) => ({ ...e }));
-    for (let i = 0; i < count; i++) next.push({ item: itemId });
+    for (let i = 0; i < count; i++) {
+      const fresh: InventoryEntry = { item: itemId };
+      if (count === 1 && typeof durability === "number") {
+        fresh.durability = durability;
+      }
+      next.push(fresh);
+    }
     return next;
   }
   const next = inv.map((e) => ({ ...e }));

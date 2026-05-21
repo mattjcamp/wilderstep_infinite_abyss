@@ -1,23 +1,15 @@
 
 # V2 MPV Launch Items
 
-- Port over item durability system
+- Show an item's durablity as a progress bar graphic in the both the party and character inventory. 
 - add map level attribute to set lighting: world time, day, twilight, darkness
 - add soundtrack feature: soundtracks are module level and on random, maps and dungeons can overide the soundtrack if needed
-
-
-
-# Bugs
-
-
-- NPCs are not appearing in the game
 
 # V3 Ideas
 
 - More Robust Trap System
 - New Puzzle system (presure plates that open doors, etc)
 - Key system (certain keys open certain doors)
-
 
 # Notes
 

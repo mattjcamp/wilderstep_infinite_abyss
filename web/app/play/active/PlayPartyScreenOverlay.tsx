@@ -476,11 +476,15 @@ export function PlayPartyScreenOverlay({
 
       const entry = inv[stashIndex];
       const nextInv = consumeOneFromInventory(inv, stashIndex, state.items);
+      // Carry per-instance durability through so a worn weapon sent
+      // from the stash to a character keeps its wear. No-op for
+      // stackables — addToInventory ignores the durability arg there.
       const nextTargetInv = addToInventory(
         targetSaved.inventory,
         entry.item,
         state.items,
         1,
+        typeof entry.durability === "number" ? entry.durability : undefined,
       );
       const nextTarget: SavedCharacterState = {
         ...targetSaved,
@@ -573,15 +577,18 @@ export function PlayPartyScreenOverlay({
       const entry = inv[itemIndex];
 
       const nextMemberInv = consumeOneFromInventory(
-        inv as ReadonlyArray<{ item: string; charges?: number }>,
+        inv as ReadonlyArray<{ item: string; charges?: number; durability?: number }>,
         itemIndex,
         state.items,
       );
+      // Preserve per-instance durability across the personal →
+      // stash move so a worn item doesn't reset by being parked.
       const nextStash = addToInventory(
         cur.party.inventory,
         entry.item,
         state.items,
         1,
+        typeof entry.durability === "number" ? entry.durability : undefined,
       );
       const nextMember: SavedCharacterState = {
         ...member,
@@ -636,17 +643,33 @@ export function PlayPartyScreenOverlay({
         (charDef?.equipped ?? {}) as Record<string, string>;
       const displaced = currentlyEquipped[slot];
 
+      // Per-slot durability for whatever was previously equipped —
+      // when we bounce the displaced item back into inventory we want
+      // it to carry the wear it had on, not reset to fresh. The saved
+      // map is the source of truth (the runtime tracker syncs from it
+      // on combat seed / out of combat reads).
+      const savedEd = member.equipped_durability ?? {};
+      const displacedDur =
+        slot === "hands" ? savedEd.hands : slot === "body" ? savedEd.body : undefined;
+
       // Drop the new item out of inventory (one unit).
       let nextInv = consumeOneFromInventory(
-        inv as ReadonlyArray<{ item: string; charges?: number }>,
+        inv as ReadonlyArray<{ item: string; charges?: number; durability?: number }>,
         itemIndex,
         state.items,
       );
-      // Bounce the displaced item back into inventory (merge into
-      // an existing stack when possible). Weapons / armor are
-      // typically non-stackable, but the helper handles both shapes.
+      // Bounce the displaced item back into inventory, carrying its
+      // current durability so wear travels with the object. Weapons /
+      // armor are typically non-stackable; for stackable rows the
+      // helper ignores the durability arg.
       if (displaced) {
-        nextInv = addToInventory(nextInv, displaced, state.items, 1);
+        nextInv = addToInventory(
+          nextInv,
+          displaced,
+          state.items,
+          1,
+          typeof displacedDur === "number" ? displacedDur : undefined,
+        );
       }
 
       // Build the new equipped map: pre-existing slots persist
@@ -656,10 +679,22 @@ export function PlayPartyScreenOverlay({
         ...currentlyEquipped,
         [slot]: entry.item,
       };
+      // Update the per-slot wear tracker: seed from the entry's
+      // stored durability (carries wear into combat) or leave null so
+      // the combat-time helper lazy-initialises to catalog max.
+      const nextEd: NonNullable<SavedCharacterState["equipped_durability"]> = {
+        hands: savedEd.hands ?? null,
+        body: savedEd.body ?? null,
+      };
+      if (slot === "hands" || slot === "body") {
+        nextEd[slot] =
+          typeof entry.durability === "number" ? entry.durability : null;
+      }
       const nextMember: SavedCharacterState = {
         ...member,
         inventory: nextInv,
         equipped: nextEquipped,
+        equipped_durability: nextEd,
       };
       const nextMembers = cur.party.members.map((m) =>
         m.id === memberId ? nextMember : m,
@@ -687,20 +722,36 @@ export function PlayPartyScreenOverlay({
       const itemId = currentlyEquipped[slot];
       if (!itemId) return;
 
+      // Carry the slot's current wear back onto the inventory entry
+      // so unequipping doesn't reset durability to fresh.
+      const savedEd = member.equipped_durability ?? {};
+      const slotDur =
+        slot === "hands" ? savedEd.hands : slot === "body" ? savedEd.body : undefined;
       const nextInv = addToInventory(
         member.inventory,
         itemId,
         state.items,
         1,
+        typeof slotDur === "number" ? slotDur : undefined,
       );
       // Build the new equipped map without the cleared slot. Saved
       // equipped persists every other slot unchanged.
       const nextEquipped: Record<string, string> = { ...currentlyEquipped };
       delete nextEquipped[slot];
+      // Clear the slot's durability tracker too — the wear has moved
+      // back onto the inventory entry above.
+      const nextEd: NonNullable<SavedCharacterState["equipped_durability"]> = {
+        hands: savedEd.hands ?? null,
+        body: savedEd.body ?? null,
+      };
+      if (slot === "hands" || slot === "body") {
+        nextEd[slot] = null;
+      }
       const nextMember: SavedCharacterState = {
         ...member,
         inventory: nextInv,
         equipped: nextEquipped,
+        equipped_durability: nextEd,
       };
       const nextMembers = cur.party.members.map((m) =>
         m.id === memberId ? nextMember : m,

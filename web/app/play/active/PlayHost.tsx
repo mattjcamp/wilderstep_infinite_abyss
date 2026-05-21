@@ -2668,7 +2668,13 @@ export function PlayHost() {
           key={`${combat.sourcePos.col},${combat.sourcePos.row}`}
           moduleId={state.save.moduleId}
           monsterIds={combat.monsters}
-          save={state.save}
+          // Prefer saveRef.current — it carries every per-step + Party
+          // screen mutation (equip swaps, stash moves, effect toggles)
+          // that the host deliberately keeps off state.save to avoid
+          // forcing a Phaser remount. Without this, combat boots with
+          // the pre-mutation snapshot and any post-combat sync writes
+          // that stale equipment back over the player's swap.
+          save={saveRef.current ?? state.save}
           // If the spawn / encounter authored a `custom_map`, resolve
           // it against the module's maps catalog and feed the
           // CombatScene a cropped 18×16 window of that authored grid.

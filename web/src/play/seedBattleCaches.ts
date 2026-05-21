@@ -142,7 +142,10 @@ function buildPartyFromSave(
     // Saved `equipped` overlays the catalog's authored loadout too,
     // so a player who swapped weapons in the Party screen carries
     // that swap into combat rather than reverting to the starting
-    // kit when a fight starts.
+    // kit when a fight starts. Saved `inventory` carries
+    // per-instance `durability` for non-stackable gear; it flows
+    // through `normalizeInventory` since the field is a permissive
+    // extra on the InventoryItem shape.
     const withSaved = override
       ? {
           ...raw,
@@ -151,9 +154,27 @@ function buildPartyFromSave(
           ...(override.equipped
             ? { equipped: { ...override.equipped } }
             : {}),
+          ...(override.inventory
+            ? { inventory: override.inventory.map((e) => ({ ...e })) }
+            : {}),
         }
       : raw;
-    charactersById.set(raw.id, memberFromRaw(withSaved));
+    const member = memberFromRaw(withSaved);
+    // Seed the runtime equipped_durability tracker from the saved
+    // map. `memberFromRaw` initialises both slots to null (lazy-init
+    // to max on first hit); the saved snapshot wins when present so
+    // wear survives across reload-mid-adventure without needing the
+    // player to unequip/re-equip.
+    if (override?.equipped_durability) {
+      const ed = override.equipped_durability;
+      if (typeof ed.hands === "number" || ed.hands === null) {
+        member.equipped_durability.hands = ed.hands;
+      }
+      if (typeof ed.body === "number" || ed.body === null) {
+        member.equipped_durability.body = ed.body;
+      }
+    }
+    charactersById.set(raw.id, member);
   }
   // Synthesize the raw party.json shape from the save, then run it
   // through partyFromRaw so we get the same construction the live
