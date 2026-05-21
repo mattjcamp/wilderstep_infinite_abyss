@@ -21,6 +21,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { clearSave, loadPrevSave, restorePrevSave } from "@/play/save";
+import { Soundtrack } from "@/audio/SoundtrackPlayer";
 import type { WorldSave } from "@/play/saveTypes";
 
 export function EndScreen() {
@@ -33,6 +34,11 @@ export function EndScreen() {
 
   useEffect(() => {
     setBackup(loadPrevSave());
+    // Party wipe ends the session — silence the adventure music so
+    // the death-screen prose lands without a triumphant background
+    // track contradicting it. If the player chooses Continue, the
+    // active host will re-seed the playlist on remount.
+    Soundtrack.stop();
   }, []);
 
   const onContinue = () => {

@@ -681,12 +681,14 @@ export function PlayHost() {
     Soundtrack.setPlaylist(playlist ?? []);
   }, [state, reloadKey]);
 
-  // Stop the soundtrack when the play host unmounts (route change,
-  // tab close handled by the browser). Without this, navigating to
-  // /play/end or back to /play would leave music streaming behind.
-  useEffect(() => () => {
-    Soundtrack.stop();
-  }, []);
+  // No unmount cleanup for the soundtrack: in React strict mode dev
+  // double-invokes the mount/unmount cycle, and even in prod the
+  // brief PlayHost unmount during a same-route reload would chop the
+  // music. Letting the player module-scope singleton keep playing
+  // bridges the intro screen → catalog load gap without any silence.
+  // The pages that legitimately *end* a play session call
+  // `Soundtrack.stop()` themselves: the play picker at /play (a fresh
+  // session about to begin) and the death screen at /play/end.
 
   // Load save + catalogs + map. Re-runs when `reloadKey` bumps.
   useEffect(() => {

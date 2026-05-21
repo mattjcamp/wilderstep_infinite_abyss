@@ -1,7 +1,7 @@
+# PLaythrough
 
-# V2 MPV Launch Items
-
-- add soundtrack feature: soundtrack playlists are defined on the module data model level and play randomly, maps and dungeons can overide the soundtrack in their own data models. Make sure to add the soundtrack playing implementation.
+- Make Dragon of Something adventure and do a playthrough
+- Do a playthrough with the alternate party
 
 
 # V3 Ideas

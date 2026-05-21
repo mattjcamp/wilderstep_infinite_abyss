@@ -30,6 +30,7 @@ import { clockFromDate } from "@/battle/world/GameTime";
 import { setActiveModule, loadModuleConfig } from "@/battle/world/Module";
 import { saveWorld } from "@/play/save";
 import { clearAllDungeonSessions } from "@/sim/dungeon/dungeonSession";
+import { Soundtrack } from "@/audio/SoundtrackPlayer";
 import type {
   SavedCharacterState,
   SavedPartyState,
@@ -96,6 +97,33 @@ export function BeginningScreen({
     }
   }, [moduleId]);
 
+  // Seed the soundtrack as soon as the description screen mounts so
+  // the playlist is ready to go before the player commits. Walks the
+  // module's extends chain so a parent's default soundtrack still
+  // reaches a child module that doesn't override. Attempt an
+  // optimistic play() too — most browsers will refuse autoplay before
+  // a user gesture, but the keydown/click handler below also kicks
+  // play(), so the gesture-driven attempt will succeed. The
+  // SoundtrackPlayer is a module-scope singleton, so the playback
+  // survives the route transition into /play/active.
+  useEffect(() => {
+    const src = new StaticModuleSource();
+    let cancelled = false;
+    void src
+      .resolveModuleSoundtrack(moduleId)
+      .then((list) => {
+        if (cancelled) return;
+        Soundtrack.setPlaylist(list);
+        Soundtrack.play(); // best-effort — autoplay may reject
+      })
+      .catch(() => {
+        // Silent — silence is fine if the manifest read fails.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [moduleId]);
+
   // Fade in the "press any key" hint after a brief beat.
   useEffect(() => {
     if (draft === "loading" || draft == null) return;
@@ -137,10 +165,25 @@ export function BeginningScreen({
       }
     };
 
+    // The keypress / click is the user gesture browsers want before
+    // autoplay is allowed. Kick the soundtrack here BEFORE the
+    // commit/await so the audio.play() call lands inside the same
+    // tick as the user input — most browsers' "saw a gesture" flag
+    // attaches per-tick, so deferring this to after the async
+    // assembleInitialSave would miss the window.
+    const kickAudio = () => {
+      try {
+        Soundtrack.play();
+      } catch {
+        // Silent — failure shouldn't block the commit.
+      }
+    };
     const onKey = () => {
+      kickAudio();
       void commit();
     };
     const onClick = () => {
+      kickAudio();
       void commit();
     };
     window.addEventListener("keydown", onKey);

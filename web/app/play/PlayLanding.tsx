@@ -14,6 +14,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { loadWorld } from "@/play/save";
+import { Soundtrack } from "@/audio/SoundtrackPlayer";
 import type { WorldSave } from "@/play/saveTypes";
 
 export function PlayLanding() {
@@ -24,6 +25,12 @@ export function PlayLanding() {
 
   useEffect(() => {
     setSave(loadWorld());
+    // Title screen sits OUTSIDE an active session — kill whatever
+    // music a previous play-through (or the intro screen) left
+    // streaming on the singleton. Music starts again when the
+    // player commits a new module on the begin screen, or when the
+    // active host mounts.
+    Soundtrack.stop();
   }, []);
 
   return (
