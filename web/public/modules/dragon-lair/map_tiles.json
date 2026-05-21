@@ -14,6 +14,36 @@
       "spawn": null,
       "sprite": "map/stone_floor.png",
       "tag": "floor"
+    },
+    {
+      "id": "stairs_down",
+      "name": "Stairs Down",
+      "walkable": true,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": null,
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "map/stairs_down.png",
+      "tag": "town"
+    },
+    {
+      "id": "stairs_up",
+      "name": "Stairs Up",
+      "walkable": true,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": null,
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "map/stairs_up.png",
+      "tag": "town"
     }
   ]
 }
