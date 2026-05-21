@@ -76,6 +76,31 @@ export function PlayCombatHost({
     resolvedRef.current = onResolved;
   }, [onResolved]);
 
+  // Lock the document's scroll while combat is mounted. The earlier
+  // approach — a window-level `keydown` listener that called
+  // `preventDefault()` for arrows / space / page-up/down — was
+  // suppressing the browser's scroll BUT also breaking Phaser's
+  // own keyboard manager: Phaser 4's manager checks
+  // `event.defaultPrevented` and skips the per-key emit when it's
+  // true, so any `preventDefault()` on the same event silently
+  // killed combat's arrow / space bindings. Pinning `overflow:
+  // hidden` on `<html>` and `<body>` removes the scroll entirely —
+  // the browser still tries to scroll the page on those keys, but
+  // there's nothing to scroll, so nothing happens. Phaser sees the
+  // raw events unmolested and combat keys keep working.
+  useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+    const prevHtml = html.style.overflow;
+    const prevBody = body.style.overflow;
+    html.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    return () => {
+      html.style.overflow = prevHtml;
+      body.style.overflow = prevBody;
+    };
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     let game: import("phaser").Game | null = null;
@@ -99,7 +124,10 @@ export function PlayCombatHost({
       if (cancelled || !containerRef.current) return;
 
       // The v1 canvas is 960×720 by spec — CombatScene depends on
-      // that geometry for its hand-laid HUD layout.
+      // that geometry for its hand-laid HUD layout. Scale.FIT lets
+      // the canvas DOM element shrink to fit the parent box on
+      // smaller viewports without breaking the internal HUD math,
+      // matching what PlayHost does for the overworld.
       game = new Phaser.Game({
         type: Phaser.AUTO,
         width: 960,
@@ -107,6 +135,10 @@ export function PlayCombatHost({
         parent: containerRef.current,
         backgroundColor: "#0c0c14",
         pixelArt: true,
+        scale: {
+          mode: Phaser.Scale.FIT,
+          autoCenter: Phaser.Scale.CENTER_BOTH,
+        },
         scene: [],
         callbacks: {
           postBoot: (g) => {
@@ -168,10 +200,17 @@ export function PlayCombatHost({
   }, []);
 
   return (
+    // Mirrors the overworld canvas wrapper in PlayHost so the
+    // battle screen pegs to exactly 960×720 on a window with room
+    // (and shrinks proportionally via the 4:3 aspect on narrower
+    // viewports) instead of free-flowing as inline-block. Without
+    // this the canvas would size itself purely from the Phaser
+    // geometry and the surrounding page chrome could push it
+    // around as React rerendered.
     <div
       ref={containerRef}
-      className="rounded border border-parchment/20 bg-ink/80 shadow-xl"
-      style={{ display: "inline-block" }}
+      className="aspect-[4/3] w-[960px] max-w-full overflow-hidden rounded border border-parchment/20 bg-ink/80 shadow-xl"
+      style={{ aspectRatio: "4 / 3" }}
     />
   );
 }

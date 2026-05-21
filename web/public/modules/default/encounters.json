@@ -49,7 +49,7 @@
         "goblin",
         "giant_rat"
       ],
-      "custom_map": "id"
+      "custom_map": "default_battle_arena"
     },
     {
       "id": "goblin_ambush",

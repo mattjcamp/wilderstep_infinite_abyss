@@ -139,8 +139,19 @@ function buildPartyFromSave(
     // so the resulting PartyMember carries the in-play vitals (and
     // max_hp / max_mp track the saved peak rather than the catalog
     // default — close enough for v0; a proper peak field comes later).
+    // Saved `equipped` overlays the catalog's authored loadout too,
+    // so a player who swapped weapons in the Party screen carries
+    // that swap into combat rather than reverting to the starting
+    // kit when a fight starts.
     const withSaved = override
-      ? { ...raw, hp: override.hp, mp: override.mp }
+      ? {
+          ...raw,
+          hp: override.hp,
+          mp: override.mp,
+          ...(override.equipped
+            ? { equipped: { ...override.equipped } }
+            : {}),
+        }
       : raw;
     charactersById.set(raw.id, memberFromRaw(withSaved));
   }

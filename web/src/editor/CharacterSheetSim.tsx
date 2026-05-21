@@ -37,7 +37,7 @@
  *     the Characters editor (sim preview next to the editable sheet).
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type {
   PartyAbilityRef,
   PartyCharacterRef,
@@ -169,6 +169,10 @@ export function CharacterSheetSim({
   spells = [],
   onBack,
   onCastSpell,
+  onUsePersonalItem,
+  onReturnPersonalItem,
+  onEquipPersonalItem,
+  onUnequipSlot,
 }: {
   character: PartyCharacterRef;
   classes: ReadonlyArray<PartyClassRef>;
@@ -193,6 +197,26 @@ export function CharacterSheetSim({
    *  persistence. When omitted, Cast still shows a preview message
    *  but no state changes (the screen stays a pure preview). */
   onCastSpell?: (casterId: string, spellId: string) => void;
+  /** Fires when the player clicks "Use" on an item in this
+   *  character's personal inventory. Host applies the item's effect
+   *  (Torch → bump party light, etc.), decrements the stack, and
+   *  persists. When omitted (editor preview), the button is hidden. */
+  onUsePersonalItem?: (memberId: string, itemIndex: number) => void;
+  /** Fires when the player clicks "Return to stash" on a personal
+   *  inventory entry. Host moves ONE physical item back into the
+   *  shared stash and persists. When omitted, the button is hidden. */
+  onReturnPersonalItem?: (memberId: string, itemIndex: number) => void;
+  /** Fires when the player clicks "Equip" on a personal inventory
+   *  entry whose `slots` array names a known slot ("hands", "body").
+   *  Host moves the item from inventory into `equipped[slot]`,
+   *  bouncing whatever was already in that slot back into the
+   *  personal inventory. When omitted, the button is hidden. */
+  onEquipPersonalItem?: (memberId: string, itemIndex: number) => void;
+  /** Fires when the player clicks "Unequip" on a selected equipped
+   *  slot. Host removes the item from `equipped[slot]` and pushes
+   *  it into the personal inventory (merging with an existing
+   *  stack on stackable items). When omitted, the button is hidden. */
+  onUnequipSlot?: (memberId: string, slot: string) => void;
 }) {
   const className =
     classes.find((c) => c.id === character.class)?.name ?? character.class;
@@ -234,6 +258,52 @@ export function CharacterSheetSim({
   // state mutation, no targeting picker; real mechanics land when
   // the runtime is ready.
   const [lastAction, setLastAction] = useState<string | null>(null);
+
+  // ── Personal-items selection ────────────────────────────────────
+  // Click a row to highlight; Use / Return-to-stash buttons appear
+  // beneath the list operating on the selected row. Reset on
+  // character drill-out (the parent passes a different character.id)
+  // and clamp when the list shrinks past the cursor (e.g. the last
+  // Torch got Used, splicing the row).
+  const [personalSelectedIndex, setPersonalSelectedIndex] = useState<
+    number | null
+  >(null);
+  /** Equipped-slot selection. Mutually exclusive with the personal-
+   *  inventory cursor — clicking one clears the other so the action
+   *  row at the bottom of the right pane is unambiguous. */
+  const [equippedSelectedSlot, setEquippedSelectedSlot] = useState<
+    string | null
+  >(null);
+  useEffect(() => {
+    setPersonalSelectedIndex(null);
+    setEquippedSelectedSlot(null);
+  }, [character.id]);
+  const selectPersonal = (i: number | null) => {
+    setPersonalSelectedIndex(i);
+    setEquippedSelectedSlot(null);
+  };
+  const selectEquipped = (slot: string | null) => {
+    setEquippedSelectedSlot(slot);
+    setPersonalSelectedIndex(null);
+  };
+  /** Slot ids the sheet renders + accepts as equip targets. Adding a
+   *  third slot ("offhand", "head", etc.) means painting another
+   *  EquipRow + extending this set. */
+  const KNOWN_EQUIP_SLOTS = new Set(["hands", "body"]);
+  /** First slot this item can be equipped into, restricted to the
+   *  ones the sheet actually renders. Returns null when the item
+   *  has no `slots` array or names only unknown slots — i.e. it
+   *  isn't equippable from this screen. */
+  const equipSlotFor = (
+    def: SheetItemRef | null | undefined,
+  ): string | null => {
+    if (!def || !Array.isArray(def.slots) || def.slots.length === 0)
+      return null;
+    for (const s of def.slots) {
+      if (typeof s === "string" && KNOWN_EQUIP_SLOTS.has(s)) return s;
+    }
+    return null;
+  };
 
   const equipped = (character.equipped ?? {}) as Record<string, string>;
   const handsId = equipped.hands;
@@ -402,12 +472,46 @@ export function CharacterSheetSim({
             <ul className="mt-1 space-y-0.5 text-sm">
               <EquipRow
                 slot="Hands"
+                slotKey="hands"
                 itemId={handsId}
                 itemById={itemById}
-                highlight
+                selected={equippedSelectedSlot === "hands"}
+                onSelect={onUnequipSlot ? selectEquipped : undefined}
               />
-              <EquipRow slot="Body" itemId={bodyId} itemById={itemById} />
+              <EquipRow
+                slot="Body"
+                slotKey="body"
+                itemId={bodyId}
+                itemById={itemById}
+                selected={equippedSelectedSlot === "body"}
+                onSelect={onUnequipSlot ? selectEquipped : undefined}
+              />
             </ul>
+            {/* Unequip action — visible only when an equipped slot is
+                selected AND that slot actually holds an item. Clicking
+                fires the host handler with the slot key; the host
+                moves the item back into the personal inventory and
+                clears the slot. */}
+            {(() => {
+              if (!onUnequipSlot || !equippedSelectedSlot) return null;
+              const slotId =
+                equippedSelectedSlot === "hands" ? handsId : bodyId;
+              if (!slotId) return null;
+              return (
+                <div className="mt-2 flex gap-2 text-xs">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onUnequipSlot(character.id, equippedSelectedSlot)
+                    }
+                    className="rounded border border-parchment/30 px-2 py-1 text-parchment/85 hover:bg-ink/50"
+                    title="Return the equipped item to this character's personal inventory."
+                  >
+                    Unequip
+                  </button>
+                </div>
+              );
+            })()}
           </section>
 
           <section>
@@ -417,7 +521,11 @@ export function CharacterSheetSim({
             {personalItems.length === 0 ? (
               <p className="mt-1 text-sm text-parchment/45">(none)</p>
             ) : (
-              <ul className="mt-1 space-y-0.5 text-sm">
+              <ul
+                className="mt-1 space-y-0.5 text-sm"
+                role="listbox"
+                aria-label="Personal items"
+              >
                 {personalItems.map((entry, i) => {
                   const id =
                     typeof entry.item === "string" ? entry.item : null;
@@ -432,32 +540,124 @@ export function CharacterSheetSim({
                       ? entry.charges
                       : 1;
                   const qtyLabel = qty > 1 ? ` (${qty})` : "";
+                  const isSel = i === personalSelectedIndex;
+                  // When no host handlers are wired, fall back to
+                  // the original static `<li>` rendering — preserves
+                  // the editor preview's read-only behavior.
+                  const interactive =
+                    !!onUsePersonalItem || !!onReturnPersonalItem;
+                  if (!interactive) {
+                    return (
+                      <li
+                        key={`${id ?? "_"}-${i}`}
+                        className="text-parchment/85"
+                      >
+                        {label}
+                        {qtyLabel}
+                      </li>
+                    );
+                  }
                   return (
-                    <li
-                      key={`${id ?? "_"}-${i}`}
-                      className="text-parchment/85"
-                    >
-                      {label}
-                      {qtyLabel}
+                    <li key={`${id ?? "_"}-${i}`}>
+                      <button
+                        type="button"
+                        role="option"
+                        aria-selected={isSel}
+                        onClick={() => selectPersonal(i)}
+                        className={[
+                          "flex w-full items-center justify-between rounded border px-2 py-0.5 text-left",
+                          isSel
+                            ? "border-ember/60 bg-ember/15 text-parchment"
+                            : "border-transparent text-parchment/85 hover:bg-ink/50",
+                        ].join(" ")}
+                        title={def?.description ?? "Click to select"}
+                      >
+                        <span className="truncate">{label}</span>
+                        <span className="ml-2 shrink-0 text-xs text-parchment/55">
+                          {qty > 1 ? `(${qty})` : ""}
+                        </span>
+                      </button>
                     </li>
                   );
                 })}
               </ul>
             )}
+            {/* Action row for the selected personal item. Only
+                visible when at least one host handler is wired AND
+                the cursor points at a real row. Buttons gate
+                individually: Use shows only when the item is
+                catalog-flagged usable. */}
+            {(() => {
+              if (personalSelectedIndex == null) return null;
+              const entry = personalItems[personalSelectedIndex];
+              if (!entry) return null;
+              const id =
+                typeof entry.item === "string" ? entry.item : null;
+              const def = id ? itemById.get(id) ?? null : null;
+              const canUse = !!onUsePersonalItem && !!def?.usable;
+              const canReturn = !!onReturnPersonalItem;
+              const equipTarget = equipSlotFor(def);
+              const canEquip =
+                !!onEquipPersonalItem && equipTarget !== null;
+              if (!canUse && !canReturn && !canEquip) return null;
+              return (
+                <div className="mt-2 flex gap-2 text-xs">
+                  {canUse ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onUsePersonalItem?.(
+                          character.id,
+                          personalSelectedIndex,
+                        )
+                      }
+                      className="rounded border border-ember/60 bg-ember/20 px-2 py-1 text-parchment hover:bg-ember/40"
+                      title={`Use ${def?.name ?? id}.`}
+                    >
+                      Use
+                    </button>
+                  ) : null}
+                  {canEquip ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onEquipPersonalItem?.(
+                          character.id,
+                          personalSelectedIndex,
+                        )
+                      }
+                      className="rounded border border-ember/60 bg-ember/20 px-2 py-1 text-parchment hover:bg-ember/40"
+                      title={`Equip in the ${equipTarget} slot. Any item currently equipped there moves back to the inventory.`}
+                    >
+                      Equip
+                    </button>
+                  ) : null}
+                  {canReturn ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onReturnPersonalItem?.(
+                          character.id,
+                          personalSelectedIndex,
+                        )
+                      }
+                      className="rounded border border-parchment/30 px-2 py-1 text-parchment/85 hover:bg-ink/50"
+                      title="Move one back to the shared stash."
+                    >
+                      Return to stash
+                    </button>
+                  ) : null}
+                </div>
+              );
+            })()}
           </section>
 
-          <p className="text-[11px] text-parchment/45">
-            Read-only preview. The in-game sheet allows{" "}
-            <kbd className="rounded border border-parchment/30 px-1 font-mono">
-              Enter
-            </kbd>{" "}
-            to unequip and{" "}
-            <kbd className="rounded border border-parchment/30 px-1 font-mono">
-              R
-            </kbd>{" "}
-            to return an item to the stash; those actions land when the
-            game-side P screen is wired up.
-          </p>
+          {!onUsePersonalItem && !onReturnPersonalItem ? (
+            <p className="text-[11px] text-parchment/45">
+              Read-only preview. The play-time sheet lets the player
+              Use or Return-to-stash personal items.
+            </p>
+          ) : null}
         </div>
       </div>
 
@@ -545,28 +745,53 @@ export function CharacterSheetSim({
 
 function EquipRow({
   slot,
+  slotKey,
   itemId,
   itemById,
-  highlight,
+  selected,
+  onSelect,
 }: {
+  /** Label rendered on the left ("Hands", "Body"). */
   slot: string;
+  /** Slot id used by the data model ("hands", "body"). Passed back
+   *  to `onSelect` so the host can pick the right slot to mutate. */
+  slotKey: string;
   itemId: string | undefined;
   itemById: ReadonlyMap<string, SheetItemRef>;
-  /** When true, render with a left-side accent strip — used to echo
-   *  v1's selected-row highlight on the first slot. Purely visual. */
-  highlight?: boolean;
+  /** True when this row is the current selection (host highlights it
+   *  + reveals the Unequip action). */
+  selected?: boolean;
+  /** Optional click handler. When provided the row renders as a
+   *  button (click to select); when omitted the row is static and
+   *  shows the legacy highlight strip on the first slot only. */
+  onSelect?: (slotKey: string) => void;
 }) {
   const def = itemId ? itemById.get(itemId) ?? null : null;
   const label = def?.name ?? itemId ?? "(empty)";
+  const rowClass = [
+    "grid grid-cols-[80px_1fr] items-baseline gap-2 rounded px-2 py-0.5 text-left w-full",
+    selected
+      ? "border-l-2 border-ember/70 bg-ember/15 text-parchment"
+      : "border-l-2 border-transparent",
+  ].join(" ");
+  if (onSelect) {
+    return (
+      <li>
+        <button
+          type="button"
+          role="option"
+          aria-selected={selected}
+          onClick={() => onSelect(slotKey)}
+          className={`${rowClass} hover:bg-ink/50`}
+        >
+          <span className="text-parchment/70">{slot}</span>
+          <span className="text-parchment/95">{label}</span>
+        </button>
+      </li>
+    );
+  }
   return (
-    <li
-      className={[
-        "grid grid-cols-[80px_1fr] items-baseline gap-2 rounded px-2 py-0.5",
-        highlight
-          ? "border-l-2 border-ember/70 bg-ink/50"
-          : "border-l-2 border-transparent",
-      ].join(" ")}
-    >
+    <li className={rowClass}>
       <span className="text-parchment/70">{slot}</span>
       <span className="text-parchment/95">{label}</span>
     </li>

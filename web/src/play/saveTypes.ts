@@ -55,6 +55,12 @@ export interface SavedCharacterState {
     id: string;
     duration: number | "permanent" | "instant" | "until_save";
   }>;
+  /** Equipped items keyed by slot id ("hands", "body"). Persisted so
+   *  a player who swapped from their starting weapon to a +2 sword
+   *  finds the swap survives reload. Absent in legacy saves; the
+   *  loader treats absence as "fall back to the catalog character's
+   *  authored equipment loadout" — preserves the starting kit. */
+  equipped?: Record<string, string>;
 }
 
 /** The party's whole-team state — separate from each character's own

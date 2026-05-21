@@ -2,35 +2,44 @@
   "_comment": "Dungeon catalog (real data drives the schema). A Dungeon is an *authored* multi-level dungeon — id, display name, optional flavor description, optional tags (editor-side organizational labels — same convention as Map.tags), and an ordered list of inline Dungeon Level records under `levels[]`. Each level is `{ id, name, tags?, depth, map_id }` — the Map id points at the actual playable tile grid. Dungeon Levels live inline because they have no meaning outside their parent Dungeon (no other model references them). This is distinct from Dungeon Config (in dungeon_configs.json), which describes a *procedural* generator's input parameters — authored dungeons are entirely hand-painted maps, procedural ones are rolled at runtime. The catalog ships empty; populate as adventures are designed. See docs/data_dictionary/dungeon.md.",
   "dungeons": [
     {
-      "id": "the_hole",
-      "name": "The Giant Rat Hole",
-      "description": "A hole in the ground teaming with giant rats",
-      "tags": [
-        "giant_rat_hole"
-      ],
+      "id": "old_ruins",
+      "name": "Old Ruins",
+      "description": "An ancient city, fallen into the myst of time",
+      "tags": [],
+      "style": "ruins",
+      "difficulty": "normal",
+      "size": {
+        "width": 45,
+        "height": 32
+      },
+      "torch_density": 0.05,
+      "locked_doors": 0.05,
       "levels": [
         {
-          "id": "the_hole_l1",
+          "id": "old_ruins_l1",
           "name": "Level 1",
           "depth": 1,
-          "map_id": "",
-          "tags": [
-            "giant_rat_hole"
-          ]
+          "style": "caves",
+          "difficulty": "easy",
+          "torch_density": 0,
+          "locked_doors": 0
         },
         {
-          "id": "the_hole_l2",
+          "id": "old_ruins_l2",
           "name": "Level 2",
           "depth": 2
+        },
+        {
+          "id": "old_ruins_l3",
+          "name": "Level 3",
+          "depth": 3
+        },
+        {
+          "id": "old_ruins_l4",
+          "name": "Level 4",
+          "depth": 4
         }
-      ],
-      "torch_density": 0.75,
-      "locked_doors": 0.25,
-      "style": "ruins",
-      "size": {
-        "width": 25,
-        "height": 25
-      }
+      ]
     }
   ]
 }

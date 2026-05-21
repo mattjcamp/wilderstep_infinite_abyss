@@ -237,6 +237,12 @@ export function PlayPartyScreenOverlay({
             inventory: saved.inventory
               ? saved.inventory.map((e) => ({ ...e }))
               : c.inventory,
+            // Equipped overlay: saved-side wins (the player swapped
+            // gear at some point), otherwise the character's starting
+            // loadout from characters.json keeps showing.
+            equipped: saved.equipped
+              ? { ...saved.equipped }
+              : c.equipped,
           };
         });
 
@@ -337,6 +343,7 @@ export function PlayPartyScreenOverlay({
         }
       }
       let magicLight = liveSave.party.magic_light_steps ?? 0;
+      let torchSteps = liveSave.party.torch_steps;
       for (const id of removed) {
         if (id === "galadriels_light") {
           galadriels = 0;
@@ -345,6 +352,13 @@ export function PlayPartyScreenOverlay({
           // the Effects list. Mirrors the galadriels_light branch so
           // both light effects can be toggled off the same way.
           magicLight = 0;
+        } else if (id === "torch") {
+          // Un-checking Torch extinguishes the held torch — same
+          // shape as toggling the Light spell off. The remaining
+          // burn duration is lost (matches v1's "you stomp it out"
+          // semantics; the catalog's per-torch charges field is
+          // already off this stack because Use consumed one item).
+          torchSteps = 0;
         } else if (id === "infravision") {
           infravision = false;
         }
@@ -358,6 +372,7 @@ export function PlayPartyScreenOverlay({
           party_effects: [...nextIds],
           galadriels_light_steps: galadriels,
           magic_light_steps: magicLight,
+          torch_steps: torchSteps,
           infravision_active: infravision,
         },
       });
@@ -379,19 +394,27 @@ export function PlayPartyScreenOverlay({
       const inv = cur.party.inventory;
       if (stashIndex < 0 || stashIndex >= inv.length) return;
       const entry = inv[stashIndex];
-      const catItem = state.items.find((it) => it.id === entry.item);
 
       let torchSteps = cur.party.torch_steps;
       const nextMembers: ReadonlyArray<SavedCharacterState> = cur.party.members;
+      // Local copy of party_effects we may extend. Lighting a Torch
+      // adds "torch" so the Effects panel reflects the active light
+      // source (same shape Light spell / Galadriel's Light use).
+      const nextPartyEffects = new Set(cur.party.party_effects ?? []);
 
       if (entry.item === "Torch" || entry.item === "torch") {
-        // Catalog charges is the burn duration; falls back to the
-        // local default if a module ships a Torch without the field.
-        torchSteps =
-          Math.max(torchSteps, 0) +
-          (typeof catItem?.charges === "number"
-            ? catItem.charges
-            : TORCH_DEFAULT_STEPS_LOCAL);
+        // Torch burn duration. The items.json catalog DOES carry a
+        // `charges` field on torches, but in practice that field is
+        // overloaded across the catalog (it means "stack size per
+        // purchase" for Arrows/Lockpick/etc., not "per-use effect"),
+        // and the Torch entry today reads `charges: 1` — which would
+        // give us a single-step torch if we trusted it as burn time.
+        // Until a dedicated catalog field lands (e.g. `light_steps`),
+        // hardcode v1's canonical 150-step burn here. Stacking the
+        // remaining duration ("light a fresh torch off the old one")
+        // is intentional — matches v1's behavior.
+        torchSteps = Math.max(torchSteps, 0) + TORCH_DEFAULT_STEPS_LOCAL;
+        nextPartyEffects.add("torch");
       } else if (
         entry.item === "Camping Supplies" ||
         entry.item === "camping_supplies"
@@ -420,9 +443,14 @@ export function PlayPartyScreenOverlay({
           ...cur.party,
           inventory: nextInv,
           torch_steps: torchSteps,
+          party_effects: [...nextPartyEffects],
           members: nextMembers,
         },
       };
+      // Mirror into the overlay's React state so the Effects panel
+      // shows the new "torch" row immediately, without waiting for
+      // the next save round-trip. Matches what applyLight does.
+      setActiveEffectIds([...nextPartyEffects]);
       commit(next);
     },
     [state, liveSave, commit],
@@ -464,6 +492,222 @@ export function PlayPartyScreenOverlay({
       commit({
         ...cur,
         party: { ...cur.party, inventory: nextInv, members: nextMembers },
+      });
+    },
+    [state, liveSave, commit],
+  );
+
+  /** "Use" applied to a character's PERSONAL inventory row. Mirrors
+   *  handleUseStashItem but operates on member.inventory instead of
+   *  party.inventory. The per-use effect is identical — Torch bumps
+   *  the party's torch_steps + adds "torch" to party_effects;
+   *  Camping Supplies consumes one unit; other usables bail without
+   *  touching the stack. */
+  const handleUsePersonalItem = useCallback(
+    (memberId: string, itemIndex: number) => {
+      if (state.kind !== "ok") return;
+      const cur = liveSave;
+      const member = cur.party.members.find((m) => m.id === memberId);
+      if (!member) return;
+      const inv = member.inventory;
+      if (itemIndex < 0 || itemIndex >= inv.length) return;
+      const entry = inv[itemIndex];
+
+      let torchSteps = cur.party.torch_steps;
+      const nextPartyEffects = new Set(cur.party.party_effects ?? []);
+
+      if (entry.item === "Torch" || entry.item === "torch") {
+        torchSteps = Math.max(torchSteps, 0) + TORCH_DEFAULT_STEPS_LOCAL;
+        nextPartyEffects.add("torch");
+      } else if (
+        entry.item === "Camping Supplies" ||
+        entry.item === "camping_supplies"
+      ) {
+        // Same TODO as the stash side — rest mechanic lands when the
+        // per-member max_hp / max_mp peak fields ship. For now we
+        // just decrement the stack so the player sees depletion.
+      } else {
+        // Unknown / not-yet-wired usable. Bail without mutating —
+        // don't silently eat a charge for a no-op.
+        return;
+      }
+
+      const nextInv = consumeOneFromInventory(
+        inv as ReadonlyArray<{ item: string; charges?: number }>,
+        itemIndex,
+        state.items,
+      );
+      const nextMember: SavedCharacterState = {
+        ...member,
+        inventory: nextInv,
+      };
+      const nextMembers = cur.party.members.map((m) =>
+        m.id === memberId ? nextMember : m,
+      );
+      setActiveEffectIds([...nextPartyEffects]);
+      commit({
+        ...cur,
+        party: {
+          ...cur.party,
+          torch_steps: torchSteps,
+          party_effects: [...nextPartyEffects],
+          members: nextMembers,
+        },
+      });
+    },
+    [state, liveSave, commit],
+  );
+
+  /** Move ONE physical item from a character's personal inventory
+   *  back into the shared stash. Decrement the source stack, merge
+   *  into an existing stash row when stackable, push a fresh row
+   *  otherwise. Mirrors handleSendStashItem but in reverse. */
+  const handleReturnPersonalItem = useCallback(
+    (memberId: string, itemIndex: number) => {
+      if (state.kind !== "ok") return;
+      const cur = liveSave;
+      const member = cur.party.members.find((m) => m.id === memberId);
+      if (!member) return;
+      const inv = member.inventory;
+      if (itemIndex < 0 || itemIndex >= inv.length) return;
+      const entry = inv[itemIndex];
+
+      const nextMemberInv = consumeOneFromInventory(
+        inv as ReadonlyArray<{ item: string; charges?: number }>,
+        itemIndex,
+        state.items,
+      );
+      const nextStash = addToInventory(
+        cur.party.inventory,
+        entry.item,
+        state.items,
+        1,
+      );
+      const nextMember: SavedCharacterState = {
+        ...member,
+        inventory: nextMemberInv,
+      };
+      const nextMembers = cur.party.members.map((m) =>
+        m.id === memberId ? nextMember : m,
+      );
+      commit({
+        ...cur,
+        party: {
+          ...cur.party,
+          inventory: nextStash,
+          members: nextMembers,
+        },
+      });
+    },
+    [state, liveSave, commit],
+  );
+
+  /** Equip a personal-inventory item into one of the character's
+   *  equipment slots. The slot id comes from the item catalog's
+   *  `slots` array (first known slot wins — currently "hands" for
+   *  weapons, "body" for armor). If another item is already in
+   *  that slot, it gets bounced into the personal inventory (merging
+   *  into an existing stack on stackable items, which armor/weapons
+   *  typically aren't). The newly-equipped item is decremented out
+   *  of the personal inventory by 1. */
+  const handleEquipPersonalItem = useCallback(
+    (memberId: string, itemIndex: number) => {
+      if (state.kind !== "ok") return;
+      const cur = liveSave;
+      const member = cur.party.members.find((m) => m.id === memberId);
+      if (!member) return;
+      const inv = member.inventory;
+      if (itemIndex < 0 || itemIndex >= inv.length) return;
+      const entry = inv[itemIndex];
+      const def = state.items.find((it) => it.id === entry.item);
+      const slots = (def as { slots?: string[] } | undefined)?.slots;
+      if (!Array.isArray(slots) || slots.length === 0) return;
+      const slot = slots.find((s) => s === "hands" || s === "body");
+      if (!slot) return;
+
+      // Pull the static character record so we can look up what's
+      // already in the slot. equipped lives both on the merged
+      // PartyCharacterRef in state.characters AND on the save's
+      // members[].equipped when the player has previously swapped;
+      // the merge in the load effect favours saved over static, so
+      // reading from state.characters gives us the live value.
+      const charDef = state.characters.find((c) => c.id === memberId);
+      const currentlyEquipped =
+        (charDef?.equipped ?? {}) as Record<string, string>;
+      const displaced = currentlyEquipped[slot];
+
+      // Drop the new item out of inventory (one unit).
+      let nextInv = consumeOneFromInventory(
+        inv as ReadonlyArray<{ item: string; charges?: number }>,
+        itemIndex,
+        state.items,
+      );
+      // Bounce the displaced item back into inventory (merge into
+      // an existing stack when possible). Weapons / armor are
+      // typically non-stackable, but the helper handles both shapes.
+      if (displaced) {
+        nextInv = addToInventory(nextInv, displaced, state.items, 1);
+      }
+
+      // Build the new equipped map: pre-existing slots persist
+      // (saved-side equipped is the source of truth from now on
+      // because we're about to write it), plus the new slot value.
+      const nextEquipped: Record<string, string> = {
+        ...currentlyEquipped,
+        [slot]: entry.item,
+      };
+      const nextMember: SavedCharacterState = {
+        ...member,
+        inventory: nextInv,
+        equipped: nextEquipped,
+      };
+      const nextMembers = cur.party.members.map((m) =>
+        m.id === memberId ? nextMember : m,
+      );
+      commit({
+        ...cur,
+        party: { ...cur.party, members: nextMembers },
+      });
+    },
+    [state, liveSave, commit],
+  );
+
+  /** Unequip whatever is in `slot` and push it into the character's
+   *  personal inventory. The slot key is cleared on the saved
+   *  equipped map. Inverse of handleEquipPersonalItem. */
+  const handleUnequipSlot = useCallback(
+    (memberId: string, slot: string) => {
+      if (state.kind !== "ok") return;
+      const cur = liveSave;
+      const member = cur.party.members.find((m) => m.id === memberId);
+      if (!member) return;
+      const charDef = state.characters.find((c) => c.id === memberId);
+      const currentlyEquipped =
+        (charDef?.equipped ?? {}) as Record<string, string>;
+      const itemId = currentlyEquipped[slot];
+      if (!itemId) return;
+
+      const nextInv = addToInventory(
+        member.inventory,
+        itemId,
+        state.items,
+        1,
+      );
+      // Build the new equipped map without the cleared slot. Saved
+      // equipped persists every other slot unchanged.
+      const nextEquipped: Record<string, string> = { ...currentlyEquipped };
+      delete nextEquipped[slot];
+      const nextMember: SavedCharacterState = {
+        ...member,
+        inventory: nextInv,
+        equipped: nextEquipped,
+      };
+      const nextMembers = cur.party.members.map((m) =>
+        m.id === memberId ? nextMember : m,
+      );
+      commit({
+        ...cur,
+        party: { ...cur.party, members: nextMembers },
       });
     },
     [state, liveSave, commit],
@@ -738,6 +982,10 @@ export function PlayPartyScreenOverlay({
               onActiveEffectsChange={handleActiveEffectsChange}
               onUseStashItem={handleUseStashItem}
               onSendStashItem={handleSendStashItem}
+              onUsePersonalItem={handleUsePersonalItem}
+              onReturnPersonalItem={handleReturnPersonalItem}
+              onEquipPersonalItem={handleEquipPersonalItem}
+              onUnequipSlot={handleUnequipSlot}
               onCastSpell={handleCastSpell}
               effectDurations={
                 new Map<string, number>([
@@ -746,6 +994,7 @@ export function PlayPartyScreenOverlay({
                     "galadriels_light",
                     liveSave.party.galadriels_light_steps ?? 0,
                   ],
+                  ["torch", liveSave.party.torch_steps ?? 0],
                 ])
               }
             />

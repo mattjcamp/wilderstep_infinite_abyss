@@ -41,6 +41,9 @@ import { StaticModuleSource } from "@/data_model/StaticModuleSource";
 import { LockDialogOverlay } from "@/editor/LockDialogOverlay";
 import { QuestDialogOverlay } from "@/editor/QuestDialogOverlay";
 import { PlayPartyScreenOverlay } from "./PlayPartyScreenOverlay";
+import { PlayQuestLogOverlay } from "./PlayQuestLogOverlay";
+import { PlayHelpTipsOverlay } from "./PlayHelpTipsOverlay";
+import { PlayLogOverlay } from "./PlayLogOverlay";
 import type { CombatResolved } from "@/battle/scenes/CombatScene";
 import { PlayCombatHost } from "./PlayCombatHost";
 import { buildArenaCells, buildCustomArenaCells } from "@/play/buildArenaCells";
@@ -103,10 +106,12 @@ import {
   makeClock,
 } from "@/battle/world/GameTime";
 
-/** How many log lines the in-world message strip retains. Larger
- *  values cost rendering for marginal value — players read the bottom
- *  3-4 lines, not the back-buffer. */
-const MAX_LOG = 6;
+/** How many log lines the adventure log retains. The in-canvas
+ *  scene-log strip shows just the most recent one or two, but the
+ *  L-key Log overlay (PlayLogOverlay) renders the full buffer, so we
+ *  keep enough history to actually review a session. 200 lines is
+ *  a few KB of strings; cheap to hold in memory. */
+const MAX_LOG = 200;
 
 /** Pixel height of the in-canvas bottom log strip — mirrors v1's
  *  `LOG_HEIGHT` constant from SceneLog. Reserved by the camera's
@@ -329,6 +334,12 @@ export function PlayHost() {
    *  via overlaysOpenRef so the party doesn't keep stepping under
    *  the modal. */
   const [partyScreenOpen, setPartyScreenOpen] = useState(false);
+  /** Inspector-screen open flags. Each opens with its respective key
+   *  (Q/H/L) and closes on the same key or ESC. Gated through
+   *  overlaysOpenRef so the sim pauses while any of them are up. */
+  const [questLogOpen, setQuestLogOpen] = useState(false);
+  const [helpTipsOpen, setHelpTipsOpen] = useState(false);
+  const [logOpen, setLogOpen] = useState(false);
   /** Scrolling log of in-world messages — text-on-step from cells
    *  with the `text` field, plus the kernel's narrated events (Edge
    *  of the map, You descend into the dungeon, Approach Lair: …).
@@ -427,24 +438,52 @@ export function PlayHost() {
     r.setDetectedTraps(visible);
   }, []);
   useEffect(() => {
-    // Lock dialog, quest offer, active combat, AND the party screen
-    // each gate keyboard movement through the same ref so the world
-    // sim freezes under any of them.
+    // Lock dialog, quest offer, active combat, the Party screen, and
+    // each of the three inspector overlays (Q quest log, H help, L
+    // log) all gate keyboard movement through the same ref so the
+    // world sim freezes under any of them.
     overlaysOpenRef.current =
-      !!lockEncounter || !!combat || !!questOffer || partyScreenOpen;
-  }, [lockEncounter, combat, questOffer, partyScreenOpen]);
+      !!lockEncounter ||
+      !!combat ||
+      !!questOffer ||
+      partyScreenOpen ||
+      questLogOpen ||
+      helpTipsOpen ||
+      logOpen;
+  }, [
+    lockEncounter,
+    combat,
+    questOffer,
+    partyScreenOpen,
+    questLogOpen,
+    helpTipsOpen,
+    logOpen,
+  ]);
   useEffect(() => {
     combatRef.current = combat;
   }, [combat]);
-  // P toggles the Party screen. Lives outside the sim's onKey bridge
-  // because the screen is a host concern (the kernel doesn't know
-  // about it) — same pattern MapEditor uses. Suppressed while any
-  // other modal is up so it doesn't pop on top of an open lock /
-  // quest / combat dialog. The overlay itself swallows the same key
-  // to close, so a second tap dismisses cleanly.
+  // Inspector-screen keybindings:
+  //
+  //   P → Party screen        (roster + stash + effects)
+  //   Q → Quest log           (active / completed quests)
+  //   L → Adventure log       (full message back-buffer)
+  //   H → Help & tips         (keyboard shortcuts cheat sheet)
+  //
+  // Each opens its respective modal when no other modal / dialog /
+  // combat is in the way. The overlays themselves listen for their
+  // own key (and ESC) to close, so a second tap dismisses cleanly —
+  // this listener no-ops when its target is already open.
   useEffect(() => {
-    const onPartyKey = (e: KeyboardEvent) => {
-      if (e.key !== "p" && e.key !== "P") return;
+    const onInspectorKey = (e: KeyboardEvent) => {
+      const key = e.key.toLowerCase();
+      if (
+        key !== "p" &&
+        key !== "q" &&
+        key !== "l" &&
+        key !== "h"
+      ) {
+        return;
+      }
       const t = e.target as HTMLElement | null;
       if (
         t &&
@@ -455,13 +494,28 @@ export function PlayHost() {
         return;
       }
       if (lockEncounter || combat || questOffer) return;
-      if (partyScreenOpen) return;
+      // Already-open modal? The overlay's own listener handles the
+      // close; just bail so we don't try to re-open it.
+      if (partyScreenOpen || questLogOpen || helpTipsOpen || logOpen) {
+        return;
+      }
       e.preventDefault();
-      setPartyScreenOpen(true);
+      if (key === "p") setPartyScreenOpen(true);
+      else if (key === "q") setQuestLogOpen(true);
+      else if (key === "l") setLogOpen(true);
+      else if (key === "h") setHelpTipsOpen(true);
     };
-    window.addEventListener("keydown", onPartyKey);
-    return () => window.removeEventListener("keydown", onPartyKey);
-  }, [lockEncounter, combat, questOffer, partyScreenOpen]);
+    window.addEventListener("keydown", onInspectorKey);
+    return () => window.removeEventListener("keydown", onInspectorKey);
+  }, [
+    lockEncounter,
+    combat,
+    questOffer,
+    partyScreenOpen,
+    questLogOpen,
+    helpTipsOpen,
+    logOpen,
+  ]);
   useEffect(() => {
     catalogRef.current = state.catalog ?? null;
   }, [state.catalog]);
@@ -618,6 +672,9 @@ export function PlayHost() {
       }
       if (id === "magic_light" && (snap.party.magic_light_steps ?? 0) <= 0) {
         continue; // Cleric's Light burnt out
+      }
+      if (id === "torch" && snap.party.torch_steps <= 0) {
+        continue; // Torch burnt out — drop from the Effects panel
       }
       if (id === "infravision" && !snap.party.infravision_active) {
         continue; // disengaged — keep the two in lockstep
@@ -2482,29 +2539,10 @@ export function PlayHost() {
         />
       ) : null}
 
-      {/* In-world message log. Surfaces text-on-step + the kernel's
-       *  narrated events (locks, links, edge of map, boss approach).
-       *  Hidden during combat — the combat scene has its own log. */}
-      {!combat && logMessages.length > 0 ? (
-        <div className="w-full max-w-5xl rounded border border-parchment/15 bg-ink/60 p-2 font-mono text-xs leading-snug text-parchment/70">
-          {logMessages.map((msg, i) => (
-            <div key={`${i}-${msg}`}>{msg}</div>
-          ))}
-        </div>
-      ) : null}
-
-      {/* Quest log — every accepted quest's name + the active
-       *  step's name + description, or a "Complete" badge when all
-       *  steps are done. Hidden during combat. Step progress reads
-       *  off save.questStepProgress (kill steps advance on combat
-       *  victory against the target monster). */}
-      {!combat && state.catalog && state.save?.acceptedQuests
-        ? renderQuestLog(
-            state.catalog.quests,
-            state.save.acceptedQuests,
-            state.save.questStepProgress ?? {},
-          )
-        : null}
+      {/* Inline log + quest panels removed — both moved into
+       *  dedicated inspector overlays opened by L and Q below.
+       *  Keeps the play page chrome minimal while putting the same
+       *  information one keystroke away. */}
       <footer className="text-xs text-parchment/45">
         {combat
           ? "Combat resolves when one side falls."
@@ -2600,6 +2638,14 @@ export function PlayHost() {
               ) {
                 sim.castLightSpell(next.party.magic_light_steps ?? 0);
               }
+              // Torch — also a party-level light source. Lighting a
+              // torch (Use from the stash) or extinguishing one
+              // (un-checking it in the Effects panel) lands here.
+              // sim.lightTorch seeds torch_steps + triggers a
+              // relight in one call.
+              if (next.party.torch_steps !== prev.party.torch_steps) {
+                sim.lightTorch(next.party.torch_steps);
+              }
               // Infravision toggle. setInfravisionActive no-ops when
               // the value hasn't changed AND when no roster member has
               // the racial ability — so calling it unconditionally
@@ -2671,6 +2717,27 @@ export function PlayHost() {
             }
           }}
         />
+      ) : null}
+
+      {questLogOpen && state.catalog && state.save ? (
+        <PlayQuestLogOverlay
+          quests={state.catalog.quests}
+          acceptedQuests={state.save.acceptedQuests ?? []}
+          questStepProgress={state.save.questStepProgress ?? {}}
+          turnedInQuests={state.save.turnedInQuests ?? []}
+          onClose={() => setQuestLogOpen(false)}
+        />
+      ) : null}
+
+      {logOpen ? (
+        <PlayLogOverlay
+          messages={logMessages}
+          onClose={() => setLogOpen(false)}
+        />
+      ) : null}
+
+      {helpTipsOpen ? (
+        <PlayHelpTipsOverlay onClose={() => setHelpTipsOpen(false)} />
       ) : null}
     </main>
   );
@@ -2859,17 +2926,37 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
   };
 }
 
+/** Map id treated as the project-wide fallback battle arena. Lives
+ *  in the `default` module so every module inherits it through the
+ *  extends chain. When a spawn / encounter doesn't author a
+ *  `custom_map` — or authors an id that no longer resolves —
+ *  resolveCustomArenaCells falls back to this map's grid instead of
+ *  the combat scene's hard-coded green field. Authors can override
+ *  by adding their own map with the same id higher in the chain. */
+const DEFAULT_BATTLE_ARENA_ID = "default_battle_arena";
+
 /**
  * Resolve a spawn / encounter's `custom_map` Map id to the
- * `arenaCells` matrix CombatScene consumes, or `undefined` when the
- * id is null / unknown (so the scene falls back to the generic
- * green-field arena).
+ * `arenaCells` matrix CombatScene consumes.
  *
- * The custom map IS the arena, and `buildCustomArenaCells` places
- * the source map's (0, 0) at arena (1, 1) so the perimeter-wall ring
- * the combat scene paints unconditionally doesn't eat the map's
- * leftmost column + topmost row. Effective drawing canvas is the
- * 16×14 interior.
+ * Resolution order:
+ *   1. Authored `custom_map` id, if set AND it resolves in the
+ *      catalog. A set-but-unknown id falls through to step 2
+ *      (typoed ids see the themed default arena rather than the
+ *      engine's generic green field — friendlier than silently
+ *      using the wrong terrain).
+ *   2. The conventional `default_battle_arena` map id, which the
+ *      `default` module ships and every other module inherits via
+ *      the `extends` chain.
+ *   3. `undefined` — the combat scene falls back to its built-in
+ *      dark-green-fill arena. Only triggers when even the default
+ *      module is missing the map (e.g. a stripped-down test
+ *      module).
+ *
+ * `buildCustomArenaCells` places the source map's (0, 0) at arena
+ * (1, 1) so the perimeter-wall ring the combat scene paints
+ * unconditionally doesn't eat the map's leftmost column + topmost
+ * row. Effective drawing canvas is the 16×14 interior.
  */
 function resolveCustomArenaCells(
   customMapId: string | null,
@@ -2877,10 +2964,17 @@ function resolveCustomArenaCells(
 ):
   | ReadonlyArray<ReadonlyArray<ReturnType<typeof buildArenaCells>[number][number]>>
   | undefined {
-  if (!customMapId) return undefined;
-  const map = maps.find((m) => m.id === customMapId);
-  if (!map) return undefined;
-  return buildCustomArenaCells(map.grid);
+  if (customMapId) {
+    const map = maps.find((m) => m.id === customMapId);
+    if (map) return buildCustomArenaCells(map.grid);
+    // Authored id doesn't resolve — fall through to the default
+    // arena below rather than silently using the engine's generic
+    // green field. Typoed custom_map values still see a themed
+    // arena, which makes the bug easier to spot too.
+  }
+  const fallback = maps.find((m) => m.id === DEFAULT_BATTLE_ARENA_ID);
+  if (!fallback) return undefined;
+  return buildCustomArenaCells(fallback.grid);
 }
 
 
@@ -3064,75 +3158,9 @@ function creditKillStep(
   return { ...save, questStepProgress: progress };
 }
 
-/**
- * Render the quest-log strip — one row per accepted quest with the
- * quest name and the active step's name + description. Currently
- * "active step" is always step 0; once step completion lands the
- * per-quest progress lookup will drive the index.
- *
- * Returns null when the player has no accepted quests so the panel
- * doesn't render an empty box.
- */
-function renderQuestLog(
-  catalogQuests: ReadonlyArray<SimQuestRef>,
-  accepted: ReadonlyArray<string>,
-  progress: Readonly<Record<string, number>>,
-) {
-  if (accepted.length === 0) return null;
-  const byId = new Map(catalogQuests.map((q) => [q.id, q]));
-  const rows = accepted
-    .map((id) => byId.get(id))
-    .filter((q): q is SimQuestRef => !!q);
-  if (rows.length === 0) return null;
-  return (
-    <aside className="w-full max-w-5xl rounded border border-parchment/15 bg-ink/60 p-3 text-xs text-parchment/80">
-      <header className="mb-2 text-[10px] uppercase tracking-wide text-parchment/45">
-        Quest Log
-      </header>
-      <ul className="space-y-2">
-        {rows.map((q) => {
-          const steps =
-            (q as unknown as {
-              steps?: ReadonlyArray<{
-                name?: string;
-                description?: string;
-              }>;
-            }).steps ?? [];
-          const stepIdx = progress[q.id] ?? 0;
-          const stepCount = steps.length;
-          const complete = stepCount > 0 && stepIdx >= stepCount;
-          const active = !complete ? steps[stepIdx] : undefined;
-          return (
-            <li key={q.id}>
-              <div className="flex items-baseline justify-between gap-2">
-                <span className="font-medium text-parchment">{q.name}</span>
-                <span
-                  className={`font-mono text-[10px] ${
-                    complete ? "text-emerald-300" : "text-parchment/50"
-                  }`}
-                >
-                  {complete
-                    ? "Complete"
-                    : `${stepIdx}/${stepCount} done`}
-                </span>
-              </div>
-              {active?.name ? (
-                <div className="text-[11px] text-parchment/70">
-                  → {active.name}
-                </div>
-              ) : null}
-              {active?.description ? (
-                <div className="text-[11px] italic text-parchment/55">
-                  {active.description}
-                </div>
-              ) : null}
-            </li>
-          );
-        })}
-      </ul>
-    </aside>
-  );
-}
+// `renderQuestLog` used to be defined here for the inline quest log
+// strip. That UI moved into PlayQuestLogOverlay (Q-key inspector), so
+// the inline helper is no longer reachable.
 
 // Reference to silence "unused" lints — keeps the SavedCharacterState
 // import expressive in the source even though we don't reference it

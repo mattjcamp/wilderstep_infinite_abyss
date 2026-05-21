@@ -288,6 +288,7 @@ type EffectRow = {
 const SYNTHETIC_EFFECT_NAMES: Record<string, string> = {
   magic_light: "Light",
   galadriels_light: "Galadriel's Light",
+  torch: "Torch",
   infravision: "Infravision",
   detect_traps: "Detect Traps",
 };
@@ -316,6 +317,10 @@ export function PartyScreen({
   onUseStashItem,
   onSendStashItem,
   onCastSpell,
+  onUsePersonalItem,
+  onReturnPersonalItem,
+  onEquipPersonalItem,
+  onUnequipSlot,
   effectDurations,
 }: {
   party: PartyRecord;
@@ -361,6 +366,23 @@ export function PartyScreen({
    *  applies MP / HP / counter mutations, and persists to the save.
    *  Omitted in editor previews where casting is a no-op. */
   onCastSpell?: (casterId: string, spellId: string) => void;
+  /** Use one item from a character's personal inventory. The host
+   *  applies the effect (Torch → bumps party light, etc.) and
+   *  persists. Forwarded to CharacterSheetSim on drill-in; in the
+   *  resting Party screen the personal inventories aren't shown so
+   *  this is a no-op here. */
+  onUsePersonalItem?: (memberId: string, itemIndex: number) => void;
+  /** Move one item from a character's personal inventory back into
+   *  the shared stash. */
+  onReturnPersonalItem?: (memberId: string, itemIndex: number) => void;
+  /** Equip a personal inventory item into the slot named by its
+   *  `slots` array (weapons → hands, armor → body). The host
+   *  handles bouncing whatever was already in that slot back into
+   *  the inventory. */
+  onEquipPersonalItem?: (memberId: string, itemIndex: number) => void;
+  /** Move an equipped item back into the character's personal
+   *  inventory. */
+  onUnequipSlot?: (memberId: string, slot: string) => void;
   /** Remaining-step counter per active effect id. Used to render a
    *  "(N steps)" suffix on the matching effect row. Effects that
    *  have a counter but aren't yet in `activeEffectIds` (e.g. a
@@ -738,6 +760,10 @@ export function PartyScreen({
         spells={spells}
         onBack={() => setFocusedMemberId(null)}
         onCastSpell={onCastSpell}
+        onUsePersonalItem={onUsePersonalItem}
+        onReturnPersonalItem={onReturnPersonalItem}
+        onEquipPersonalItem={onEquipPersonalItem}
+        onUnequipSlot={onUnequipSlot}
       />
     );
   }

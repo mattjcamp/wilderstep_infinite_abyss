@@ -15,7 +15,7 @@
           "kind": "kill",
           "params": {
             "encounter_id": "rat_swarm",
-            "count": 1
+            "count": 6
           },
           "description": "Kill the Giant Rats in the cave under the shop",
           "tags": [
