@@ -46,6 +46,7 @@ import type {
   PartyRaceRef,
   PartySpellRef,
 } from "./PartyScreen";
+import { DurabilityBar } from "./DurabilityBar";
 import { resolveSpritePath } from "./spriteFields";
 
 const SPRITE_CONFIG = { category: "person", format: "path" } as const;
@@ -308,6 +309,14 @@ export function CharacterSheetSim({
   const equipped = (character.equipped ?? {}) as Record<string, string>;
   const handsId = equipped.hands;
   const bodyId = equipped.body;
+  // Per-slot current durability for whatever's in `equipped`. The
+  // host (PlayPartyScreenOverlay) merges the save's
+  // `equipped_durability` onto the character ref so a worn weapon
+  // shows partial wear; an unmerged record (editor preview) leaves
+  // the field undefined → bar paints full from the catalog max.
+  const equippedDur =
+    ((character as { equipped_durability?: Record<string, number | null> })
+      .equipped_durability ?? {}) as Record<string, number | null>;
   const weapon: SheetItemRef | null =
     handsId && itemById.get(handsId)?.category === "weapons"
       ? itemById.get(handsId) ?? null
@@ -475,6 +484,7 @@ export function CharacterSheetSim({
                 slotKey="hands"
                 itemId={handsId}
                 itemById={itemById}
+                durability={equippedDur.hands ?? null}
                 selected={equippedSelectedSlot === "hands"}
                 onSelect={onUnequipSlot ? selectEquipped : undefined}
               />
@@ -483,6 +493,7 @@ export function CharacterSheetSim({
                 slotKey="body"
                 itemId={bodyId}
                 itemById={itemById}
+                durability={equippedDur.body ?? null}
                 selected={equippedSelectedSlot === "body"}
                 onSelect={onUnequipSlot ? selectEquipped : undefined}
               />
@@ -540,6 +551,18 @@ export function CharacterSheetSim({
                       ? entry.charges
                       : 1;
                   const qtyLabel = qty > 1 ? ` (${qty})` : "";
+                  // Durability bar — only for non-stackable gear whose
+                  // catalog defines a positive max. Reads the per-
+                  // instance value off the inventory entry (so a worn
+                  // sword shows partial wear), falling back to the
+                  // catalog max for a fresh item with no stored value.
+                  const durMax = def?.durability ?? 0;
+                  const showDur = !def?.stackable && durMax > 0;
+                  const durCur = showDur
+                    ? (typeof entry.durability === "number"
+                        ? entry.durability
+                        : durMax)
+                    : 0;
                   const isSel = i === personalSelectedIndex;
                   // When no host handlers are wired, fall back to
                   // the original static `<li>` rendering — preserves
@@ -550,10 +573,15 @@ export function CharacterSheetSim({
                     return (
                       <li
                         key={`${id ?? "_"}-${i}`}
-                        className="text-parchment/85"
+                        className="flex items-center justify-between gap-2 text-parchment/85"
                       >
-                        {label}
-                        {qtyLabel}
+                        <span className="truncate">
+                          {label}
+                          {qtyLabel}
+                        </span>
+                        {showDur ? (
+                          <DurabilityBar current={durCur} max={durMax} />
+                        ) : null}
                       </li>
                     );
                   }
@@ -565,7 +593,7 @@ export function CharacterSheetSim({
                         aria-selected={isSel}
                         onClick={() => selectPersonal(i)}
                         className={[
-                          "flex w-full items-center justify-between rounded border px-2 py-0.5 text-left",
+                          "flex w-full items-center justify-between gap-2 rounded border px-2 py-0.5 text-left",
                           isSel
                             ? "border-ember/60 bg-ember/15 text-parchment"
                             : "border-transparent text-parchment/85 hover:bg-ink/50",
@@ -573,8 +601,11 @@ export function CharacterSheetSim({
                         title={def?.description ?? "Click to select"}
                       >
                         <span className="truncate">{label}</span>
-                        <span className="ml-2 shrink-0 text-xs text-parchment/55">
-                          {qty > 1 ? `(${qty})` : ""}
+                        <span className="ml-auto flex shrink-0 items-center gap-2 text-xs text-parchment/55">
+                          {showDur ? (
+                            <DurabilityBar current={durCur} max={durMax} />
+                          ) : null}
+                          {qty > 1 ? <span>({qty})</span> : null}
                         </span>
                       </button>
                     </li>
@@ -748,6 +779,7 @@ function EquipRow({
   slotKey,
   itemId,
   itemById,
+  durability,
   selected,
   onSelect,
 }: {
@@ -758,6 +790,11 @@ function EquipRow({
   slotKey: string;
   itemId: string | undefined;
   itemById: ReadonlyMap<string, SheetItemRef>;
+  /** Remaining durability for the item currently in this slot.
+   *  `null` (or `undefined`) means "uninitialised" — render the bar
+   *  at full when the item itself has a catalog max, or omit the bar
+   *  entirely for indestructible items. */
+  durability?: number | null;
   /** True when this row is the current selection (host highlights it
    *  + reveals the Unequip action). */
   selected?: boolean;
@@ -768,12 +805,29 @@ function EquipRow({
 }) {
   const def = itemId ? itemById.get(itemId) ?? null : null;
   const label = def?.name ?? itemId ?? "(empty)";
+  // Durability max from the catalog. 0 / absent means indestructible
+  // — no bar gets painted. The per-slot current value falls back to
+  // max when uninitialised (a freshly-equipped item reads full).
+  const durMax = def?.durability ?? 0;
+  const showDur = !!itemId && durMax > 0;
+  const durCur = showDur
+    ? (typeof durability === "number" ? durability : durMax)
+    : 0;
   const rowClass = [
-    "grid grid-cols-[80px_1fr] items-baseline gap-2 rounded px-2 py-0.5 text-left w-full",
+    "grid grid-cols-[80px_1fr_auto] items-baseline gap-2 rounded px-2 py-0.5 text-left w-full",
     selected
       ? "border-l-2 border-ember/70 bg-ember/15 text-parchment"
       : "border-l-2 border-transparent",
   ].join(" ");
+  const content = (
+    <>
+      <span className="text-parchment/70">{slot}</span>
+      <span className="truncate text-parchment/95">{label}</span>
+      <span className="justify-self-end">
+        {showDur ? <DurabilityBar current={durCur} max={durMax} /> : null}
+      </span>
+    </>
+  );
   if (onSelect) {
     return (
       <li>
@@ -784,18 +838,12 @@ function EquipRow({
           onClick={() => onSelect(slotKey)}
           className={`${rowClass} hover:bg-ink/50`}
         >
-          <span className="text-parchment/70">{slot}</span>
-          <span className="text-parchment/95">{label}</span>
+          {content}
         </button>
       </li>
     );
   }
-  return (
-    <li className={rowClass}>
-      <span className="text-parchment/70">{slot}</span>
-      <span className="text-parchment/95">{label}</span>
-    </li>
-  );
+  return <li className={rowClass}>{content}</li>;
 }
 
 function StatBar({

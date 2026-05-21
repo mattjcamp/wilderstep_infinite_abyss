@@ -243,6 +243,14 @@ export function PlayPartyScreenOverlay({
             equipped: saved.equipped
               ? { ...saved.equipped }
               : c.equipped,
+            // Per-slot durability tracker — flows through to the
+            // character sheet's equipped panel so each slot can
+            // paint a worn-down bar. Stored as an extra field on
+            // the PartyCharacterRef shape so the existing prop
+            // surface doesn't need a breaking change.
+            equipped_durability: saved.equipped_durability
+              ? { ...saved.equipped_durability }
+              : undefined,
           };
         });
 

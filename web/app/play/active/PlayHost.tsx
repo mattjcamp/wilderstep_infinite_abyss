@@ -135,6 +135,27 @@ function lightingModeFromClock(
   return "night";
 }
 
+/** Convert a map's authored lighting override to the renderer's
+ *  three-band lighting mode. Returns `null` when the map has no
+ *  override (default `"world_time"`) — callers fall back to
+ *  `lightingModeFromClock` in that case. The "darkness" authored
+ *  value maps to the renderer's "night" mode so torches still throw
+ *  light pools through it. */
+function mapForcedLightingMode(
+  map: { lighting?: "day" | "twilight" | "darkness" } | null | undefined,
+): "day" | "twilight" | "night" | null {
+  switch (map?.lighting) {
+    case "day":
+      return "day";
+    case "twilight":
+      return "twilight";
+    case "darkness":
+      return "night";
+    default:
+      return null;
+  }
+}
+
 /** Build the JSON-safe SavedMapState for a current sim snapshot.
  *  Centralised so the three save sites — the explicit "save current"
  *  checkpoint, the same-map teleport branch, and the cross-map link
@@ -206,6 +227,13 @@ interface PlayMapRecord {
   width: number;
   height: number;
   grid: PlayCell[][];
+  /** Optional authored lighting override. Absent → follow the world
+   *  clock (the default). The three explicit values force the
+   *  renderer into the matching band on this map regardless of the
+   *  in-game hour: "darkness" maps to the renderer's "night" mode so
+   *  torches throw real light pools, "day" / "twilight" lock the
+   *  ambient brightness. Surfaced via the Map Properties dialog. */
+  lighting?: "day" | "twilight" | "darkness";
 }
 
 /** Minimal item shape PlayHost uses to render overlays. The full
@@ -1065,11 +1093,16 @@ export function PlayHost() {
             // renderer.setLightingMode after each move.
             // Dungeons are dim by definition — every floor renders
             // in night mode so torches throw real light pools and
-            // the rest stays in shadow. The overworld inherits the
+            // the rest stays in shadow. Authored map overrides
+            // (`lighting: "darkness" | "twilight" | "day"` on the
+            // Map record) take precedence over the clock so an
+            // indoor map can stay perma-dark, a shrine perma-lit,
+            // etc. The overworld with no override inherits the
             // saved clock as before.
             initialLightingMode: dungeonStateRef.current
               ? "night"
-              : lightingModeFromClock(save.clockMinutes),
+              : (mapForcedLightingMode(catalog.map) ??
+                  lightingModeFromClock(save.clockMinutes)),
             initialInfravisionActive: !!save.party.infravision_active,
             // Tint item overlays in sync with the floor cell they
             // sit on so a sword on a dim corridor reads dim too,
@@ -1730,13 +1763,17 @@ export function PlayHost() {
               clockRef.current = advanced.totalMinutes;
               setClockMinutes(advanced.totalMinutes);
               const afterMode = lightingModeFromClock(advanced.totalMinutes);
+              // Map-level lighting override: when set on the
+              // current catalog map (or implied by being in a
+              // dungeon), the clock-driven band is ignored so the
+              // authored ambiance stays locked. Otherwise the
+              // renderer follows the clock as before.
+              const mapOverride = mapForcedLightingMode(catalogRef.current?.map);
               if (
                 afterMode !== beforeMode &&
-                !dungeonStateRef.current
+                !dungeonStateRef.current &&
+                !mapOverride
               ) {
-                // Suspended in dungeons — every dungeon floor stays
-                // in "night" mode regardless of the world clock so
-                // torch pools paint correctly.
                 rendererRef.current?.setLightingMode(afterMode);
               }
               // Persist every step. Without this the save only

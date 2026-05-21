@@ -3196,6 +3196,7 @@ export function MapEditor({
     name: string;
     description?: string;
     tags?: string[];
+    lighting?: "day" | "twilight" | "darkness" | "world_time";
   }) => {
     if (state.kind !== "ok") return;
     const updatedMap: MapRecord = {
@@ -3211,6 +3212,15 @@ export function MapEditor({
       updatedMap.tags = next.tags;
     } else {
       delete (updatedMap as Record<string, unknown>).tags;
+    }
+    // Lighting override: only persist the three explicit bands. The
+    // dialog folds "world_time" → undefined before calling us, but
+    // defend against that here too so a future caller that passes
+    // "world_time" explicitly also clears the field cleanly.
+    if (next.lighting && next.lighting !== "world_time") {
+      (updatedMap as Record<string, unknown>).lighting = next.lighting;
+    } else {
+      delete (updatedMap as Record<string, unknown>).lighting;
     }
 
     const baseFile: Record<string, unknown> = state.ownFile
@@ -3888,6 +3898,12 @@ export function MapEditor({
                   tags: Array.isArray(mapRecord.tags)
                     ? mapRecord.tags
                     : undefined,
+                  lighting: ((): "day" | "twilight" | "darkness" | "world_time" => {
+                    const v = (mapRecord as Record<string, unknown>).lighting;
+                    return v === "day" || v === "twilight" || v === "darkness"
+                      ? v
+                      : "world_time";
+                  })(),
                 }}
                 existingTags={existingTags}
                 onSave={onSaveMapAttrs}

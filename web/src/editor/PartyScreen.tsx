@@ -45,6 +45,7 @@ import {
   CharacterSheetSim,
   type SheetItemRef,
 } from "./CharacterSheetSim";
+import { DurabilityBar } from "./DurabilityBar";
 import { resolveSpritePath } from "./spriteFields";
 
 // ── Data shapes (loose by design — the host loads JSON, we render) ──
@@ -163,6 +164,12 @@ export interface PartyItemRef {
    *  entry's own `charges` field. Read by hosts at use-time to seed
    *  whatever counter the use applies. */
   charges?: number;
+  /** Max durability the catalog assigns to this item. 0 / absent
+   *  means indestructible — surfaced as "no bar" in the inventory
+   *  list. The per-instance current value lives on the inventory
+   *  entry's own `durability` field (and on `equipped_durability`
+   *  for currently-worn gear). */
+  durability?: number;
   /** Optional render hint copied from items.json — purely for the
    *  Examine readout right now. */
   icon?: string;
@@ -860,6 +867,15 @@ export function PartyScreen({
                   cat?.stackable && typeof entry.charges === "number"
                     ? entry.charges
                     : 1;
+                // Durability bar — only show for non-stackable gear
+                // whose catalog defines a positive max. Current value
+                // falls back to max when the entry hasn't been worn
+                // yet (a fresh item reads as full bar).
+                const durMax = cat?.durability ?? 0;
+                const showDur = !cat?.stackable && durMax > 0;
+                const durCur = showDur
+                  ? (typeof entry.durability === "number" ? entry.durability : durMax)
+                  : 0;
                 return (
                   <li key={`${entry.item}-${i}`}>
                     <button
@@ -882,7 +898,7 @@ export function PartyScreen({
                         }
                       }}
                       className={[
-                        "flex w-full items-center justify-between rounded border px-2 py-0.5 text-left",
+                        "flex w-full items-center justify-between gap-2 rounded border px-2 py-0.5 text-left",
                         isSel
                           ? "border-ember/60 bg-ember/15 text-parchment"
                           : "border-transparent text-parchment/85 hover:bg-ink/50",
@@ -892,8 +908,11 @@ export function PartyScreen({
                       }
                     >
                       <span className="truncate">{label}</span>
-                      <span className="ml-2 shrink-0 text-xs text-parchment/55">
-                        {qty > 1 ? `(${qty})` : ""}
+                      <span className="ml-auto flex shrink-0 items-center gap-2 text-xs text-parchment/55">
+                        {showDur ? (
+                          <DurabilityBar current={durCur} max={durMax} />
+                        ) : null}
+                        {qty > 1 ? <span>({qty})</span> : null}
                       </span>
                     </button>
                   </li>

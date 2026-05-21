@@ -31,10 +31,22 @@
 import { useEffect, useState } from "react";
 import { TagsPicker } from "./TagsPicker";
 
+/** Authored lighting override for a map. `world_time` (default,
+ *  expressed as `undefined`) defers to the world clock — day during
+ *  the day, twilight at dawn / dusk, darkness at night. The three
+ *  explicit values lock the map's ambient lighting regardless of
+ *  the clock. Useful for interiors that should always feel candle-
+ *  lit ("darkness"), permanent dusk ambiance ("twilight"), or
+ *  perpetually-bright shrines ("day"). */
+export type MapLighting = "world_time" | "day" | "twilight" | "darkness";
+
 interface MapAttributes {
   name: string;
   description?: string;
   tags?: string[];
+  /** Absent / "world_time" → follow the clock. The other three force
+   *  the renderer into the matching lighting band on this map. */
+  lighting?: MapLighting;
 }
 
 export function MapAttributesDialog({
@@ -53,6 +65,9 @@ export function MapAttributesDialog({
   const [name, setName] = useState(initial.name);
   const [description, setDescription] = useState(initial.description ?? "");
   const [tags, setTags] = useState<string[]>(initial.tags ?? []);
+  const [lighting, setLighting] = useState<MapLighting>(
+    initial.lighting ?? "world_time",
+  );
   const [nameError, setNameError] = useState<string | null>(null);
 
   // Close on Escape, save on Cmd/Ctrl+Enter — mirrors common
@@ -89,6 +104,11 @@ export function MapAttributesDialog({
       description: trimmedDesc ? trimmedDesc : undefined,
       // Same treatment for tags: drop the field when empty.
       tags: tags.length > 0 ? tags : undefined,
+      // World-time is the default — omit it from the persisted file
+      // so unchanged maps stay shape-identical (no field churn just
+      // because the player opened the dialog). The explicit three
+      // are stored verbatim.
+      lighting: lighting === "world_time" ? undefined : lighting,
     });
   };
 
@@ -164,6 +184,31 @@ export function MapAttributesDialog({
               visible in-game.
             </span>
           </div>
+
+          {/* Lighting -------------------------------------------- */}
+          {/* Selects how the renderer paints this map's ambient
+              lighting. World-time is the default — the in-game clock
+              decides. The three explicit values force the map into
+              the matching band regardless of the clock; useful for
+              perpetual-night interiors, always-dawn shrines, etc. */}
+          <label className="flex flex-col gap-1">
+            <span className="text-xs text-parchment/70 font-mono">lighting</span>
+            <select
+              value={lighting}
+              onChange={(e) => setLighting(e.target.value as MapLighting)}
+              className="rounded border border-parchment/20 bg-ink/40 px-2 py-1 text-sm text-parchment focus:border-parchment/45"
+            >
+              <option value="world_time">World time (default)</option>
+              <option value="day">Day</option>
+              <option value="twilight">Twilight</option>
+              <option value="darkness">Darkness</option>
+            </select>
+            <span className="text-[11px] text-parchment/45">
+              Override the world clock for this map. World-time follows
+              day / twilight / darkness as the in-game hour advances; the
+              three explicit values lock the lighting band.
+            </span>
+          </label>
         </div>
 
         <footer className="mt-4 flex items-center justify-end gap-2">

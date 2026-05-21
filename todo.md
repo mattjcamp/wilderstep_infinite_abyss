@@ -1,8 +1,6 @@
 
 # V2 MPV Launch Items
 
-- Show an item's durablity as a progress bar graphic in the both the party and character inventory. 
-- add map level attribute to set lighting: world time, day, twilight, darkness
 - add soundtrack feature: soundtracks are module level and on random, maps and dungeons can overide the soundtrack if needed
 
 # V3 Ideas
