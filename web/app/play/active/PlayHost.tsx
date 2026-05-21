@@ -44,6 +44,8 @@ import { PlayPartyScreenOverlay } from "./PlayPartyScreenOverlay";
 import { PlayQuestLogOverlay } from "./PlayQuestLogOverlay";
 import { PlayHelpTipsOverlay } from "./PlayHelpTipsOverlay";
 import { PlayLogOverlay } from "./PlayLogOverlay";
+import { PlayCounterShopOverlay } from "./PlayCounterShopOverlay";
+import { PlayNpcDialogOverlay } from "./PlayNpcDialogOverlay";
 import type { CombatResolved } from "@/battle/scenes/CombatScene";
 import { PlayCombatHost } from "./PlayCombatHost";
 import { buildArenaCells, buildCustomArenaCells } from "@/play/buildArenaCells";
@@ -211,6 +213,8 @@ interface PlayMapRecord {
  *  only the icon is read here. */
 interface PlayItem {
   id: string;
+  name?: string;
+  description?: string;
   icon?: string;
   /** True when multiple copies of this id collapse into one
    *  inventory row (Torch, Arrows, Lockpicks, …). Read by the
@@ -220,6 +224,62 @@ interface PlayItem {
    *  on this minimal type so the loader doesn't have to strip the
    *  field. */
   charges?: number;
+  /** Shop prices (gold). Used by the in-world counter shop overlay.
+   *  Items where the field is absent / null / 0 can't be bought
+   *  (or sold) at the corresponding side of a counter. */
+  buy?: number | null;
+  sell?: number | null;
+  /** True when the item is consumable from the party stash (Torch,
+   *  Camping Supplies, Antidote, etc). Surfaces the Use button in
+   *  the Party screen's stash list. */
+  usable?: boolean;
+}
+
+/** One line of NPC chatter from npcs.json. Surfaced in the
+ *  NPC-dialog modal so the player can cycle through what the NPC
+ *  has to say. */
+interface PlayNpcDialog {
+  id: string;
+  title?: string;
+  text: string;
+}
+
+/** Minimal NPC shape PlayHost cares about — id + name + sprite +
+ *  optional `counter` linking the NPC to a shop counter + optional
+ *  `dialogs` array. When a player walks into an NPC, the dialog
+ *  modal opens with the NPC's chatter; if the NPC also has a
+ *  counter, the modal offers a Visit Counter button that opens
+ *  the matching shop. */
+interface PlayNpc {
+  id: string;
+  name?: string;
+  sprite?: string;
+  counter?: string;
+  dialogs?: PlayNpcDialog[];
+}
+
+/** One temple-style service row on a `kind: "service"` counter
+ *  (Heal All HP, Cure Poisons, Raise Dead, etc.). Applied to the
+ *  whole party in one click; cost gates by gold. */
+interface PlayCounterService {
+  id: string;
+  name?: string;
+  description?: string;
+  cost?: number;
+}
+
+/** Shop / temple counter shape PlayHost needs for the in-world
+ *  buy/sell overlay. Mirrors counters.json: every counter has an
+ *  id + display name. Shops carry `items` (id strings); temples
+ *  set `kind: "service"` and carry `services[]` with apply-once
+ *  recipe rows. The overlay branches on `kind`. */
+interface PlayCounter {
+  id: string;
+  name?: string;
+  description?: string;
+  kind?: string;
+  items?: string[];
+  services?: PlayCounterService[];
 }
 
 /** Session-only state set when the party is exploring a dungeon.
@@ -268,6 +328,17 @@ interface LoadedCatalog {
    *  the host looks up the matching record, generates its levels,
    *  and swaps the world map for the dungeon's first floor. */
   dungeons: DungeonRecord[];
+  /** Authored NPC catalog. Cells carrying an `npc` id match against
+   *  this list; the matched record's `sprite` paints a small overlay
+   *  on the cell so the player can see who lives where. Identity
+   *  carries through to the npc_encountered event for future dialog
+   *  routing. */
+  npcs: PlayNpc[];
+  /** Authored counters catalog (shops, temples). Resolved at
+   *  counter_encountered time (and when an NPC with a `counter`
+   *  field is walked into) so the play host can mount the
+   *  matching shop overlay. */
+  counters: PlayCounter[];
   /** Authored quests catalog. Cells carrying a `quest` id match
    *  against this; on step the sim emits `quest_encountered` and
    *  the host opens the offer dialog. */
@@ -340,6 +411,16 @@ export function PlayHost() {
   const [questLogOpen, setQuestLogOpen] = useState(false);
   const [helpTipsOpen, setHelpTipsOpen] = useState(false);
   const [logOpen, setLogOpen] = useState(false);
+  /** When non-null, the play-side counter shop is open against this
+   *  counter id. Set when the party walks into a counter tile or an
+   *  NPC with a `counter` field. Cleared by the overlay's close
+   *  callback. */
+  const [counterShopId, setCounterShopId] = useState<string | null>(null);
+  /** NPC currently being talked to. Set when the party bumps an NPC
+   *  cell; the dialog modal renders the NPC's chatter and, when the
+   *  NPC has a counter, exposes a Visit Counter button that hands
+   *  off to the shop overlay. */
+  const [npcDialogId, setNpcDialogId] = useState<string | null>(null);
   /** Scrolling log of in-world messages — text-on-step from cells
    *  with the `text` field, plus the kernel's narrated events (Edge
    *  of the map, You descend into the dungeon, Approach Lair: …).
@@ -449,7 +530,9 @@ export function PlayHost() {
       partyScreenOpen ||
       questLogOpen ||
       helpTipsOpen ||
-      logOpen;
+      logOpen ||
+      counterShopId !== null ||
+      npcDialogId !== null;
   }, [
     lockEncounter,
     combat,
@@ -458,6 +541,8 @@ export function PlayHost() {
     questLogOpen,
     helpTipsOpen,
     logOpen,
+    counterShopId,
+    npcDialogId,
   ]);
   useEffect(() => {
     combatRef.current = combat;
@@ -833,6 +918,22 @@ export function PlayHost() {
           if (giverSprite) spriteKeys.add(giverSprite);
         }
       }
+      // NPC catalog + sprite preload. Cells whose `npc` field resolves
+      // to a record with a `sprite` get an overlay Image painted on
+      // top of their floor sprite. Identity (id, name) carries
+      // through to the npc_encountered event for future dialog
+      // overlays — today the play side just logs that the event
+      // fired, but the visual placement is what this slice surfaces.
+      const npcsById = new Map<string, PlayNpc>();
+      for (const npc of catalog.npcs) npcsById.set(npc.id, npc);
+      for (const row of catalog.map.grid) {
+        for (const cell of row) {
+          const npcId = (cell as { npc?: string }).npc;
+          if (typeof npcId !== "string" || !npcId) continue;
+          const npcSprite = npcsById.get(npcId)?.sprite;
+          if (npcSprite) spriteKeys.add(npcSprite);
+        }
+      }
       // Boat sprite + water sprite for the board / disembark
       // texture swaps. The kernel tracks which cells have loose
       // boats; the scene flips between the boat texture and the
@@ -890,6 +991,14 @@ export function PlayHost() {
          *  WorldRenderer onRelight hook so the giver dims into
          *  shadow on unlit cells just like other map sprites. */
         questOverlays: Map<string, Phaser.GameObjects.Image> = new Map();
+        /** Cell-bound NPC overlays keyed "col,row". One per cell whose
+         *  `npc` field resolves in the NPC catalog to a record with a
+         *  `sprite`. Rendered at depth 75 — above items (70), below
+         *  quest givers (80) and combat-fired overlays. Tinted via
+         *  the WorldRenderer's relight hook so a person standing in
+         *  shadow reads as shadowed. Mirrors the MapEditor's
+         *  `npcOverlays` rendering for parity between author + play. */
+        npcOverlays: Map<string, Phaser.GameObjects.Image> = new Map();
         /** Cells currently rendering a boat texture — keyed "col,row",
          *  value is the boat's sprite key. The map cell IS the boat:
          *  setBoatPositions diffs this against the kernel's live boat
@@ -973,6 +1082,14 @@ export function PlayHost() {
                 else img.setTint(t.value);
               }
               for (const [key, img] of this.questOverlays) {
+                const [cs, rs] = key.split(",");
+                const t = tintForCell(result, Number(cs), Number(rs));
+                if (t.mode === "clear") img.clearTint();
+                else img.setTint(t.value);
+              }
+              // NPC overlays — same shading rule as quest givers.
+              // A person standing on a dim cell should read dim.
+              for (const [key, img] of this.npcOverlays) {
                 const [cs, rs] = key.split(",");
                 const t = tintForCell(result, Number(cs), Number(rs));
                 if (t.mode === "clear") img.clearTint();
@@ -1080,6 +1197,34 @@ export function PlayHost() {
                 .setDisplaySize(TILE_SIZE, TILE_SIZE)
                 .setDepth(80);
               this.questOverlays.set(`${c},${r}`, img);
+            }
+          }
+
+          // NPC overlays — one Image per cell whose `npc` field
+          // resolves in the NPC catalog and carries a sprite. Drawn
+          // at depth 75, slightly smaller than the cell (95%) so the
+          // NPC reads as a person standing ON the tile rather than
+          // a sprite that consumes the whole cell. Matches the
+          // MapEditor render so authoring + play views agree.
+          for (let r = 0; r < catalog.map.height; r++) {
+            for (let c = 0; c < catalog.map.width; c++) {
+              const cell = catalog.map.grid[r][c];
+              const npcId = (cell as { npc?: string }).npc;
+              if (typeof npcId !== "string" || !npcId) continue;
+              const npcSprite = npcsById.get(npcId)?.sprite;
+              if (!npcSprite || !this.textures.exists(npcSprite)) {
+                continue;
+              }
+              const img = this.add
+                .image(
+                  c * TILE_SIZE + TILE_SIZE / 2,
+                  r * TILE_SIZE + TILE_SIZE / 2,
+                  npcSprite,
+                )
+                .setOrigin(0.5)
+                .setDisplaySize(TILE_SIZE * 0.95, TILE_SIZE * 0.95)
+                .setDepth(75);
+              this.npcOverlays.set(`${c},${r}`, img);
             }
           }
 
@@ -1821,14 +1966,40 @@ export function PlayHost() {
               }
               return;
             }
-            if (
-              ev.kind === "npc_encountered" ||
-              ev.kind === "counter_encountered"
-            ) {
-              // NPC + shop dialog routing arrives in Phase 4 polish.
-              // For now, log so a tester knows the event fired.
-              // eslint-disable-next-line no-console
-              console.info(`[play] ${ev.kind}`, ev);
+            if (ev.kind === "counter_encountered") {
+              // Tile-side counter — open the shop on the counter id
+              // the cell carried. Catalog mismatch (e.g. typoed
+              // counter id) silently no-ops; the player just walks
+              // into a tile that does nothing.
+              const id = ev.counterId;
+              const def = catalog.counters.find((c) => c.id === id);
+              if (def) setCounterShopId(id);
+              else
+                // eslint-disable-next-line no-console
+                console.warn(
+                  `[play] counter_encountered → no counter "${id}" in catalog`,
+                );
+              return;
+            }
+            if (ev.kind === "npc_encountered") {
+              // NPC tile — open the dialog modal. The modal renders
+              // the NPC's chatter and, when the NPC also carries a
+              // `counter` field, surfaces a Visit Counter button
+              // that routes the player to the matching shop /
+              // temple overlay. Opening dialog-first (instead of
+              // jumping straight to the shop) lets the player read
+              // the NPC's lines before transacting and lets NPCs
+              // without counters still surface chatter.
+              const npc = catalog.npcs.find((n) => n.id === ev.npcId);
+              if (!npc) {
+                // eslint-disable-next-line no-console
+                console.warn(
+                  `[play] npc_encountered → unknown npc "${ev.npcId}"`,
+                );
+                return;
+              }
+              setNpcDialogId(ev.npcId);
+              return;
             }
           });
         }
@@ -2739,6 +2910,82 @@ export function PlayHost() {
       {helpTipsOpen ? (
         <PlayHelpTipsOverlay onClose={() => setHelpTipsOpen(false)} />
       ) : null}
+
+      {npcDialogId && state.catalog ? (() => {
+        const npc = state.catalog.npcs.find((n) => n.id === npcDialogId);
+        if (!npc) {
+          setNpcDialogId(null);
+          return null;
+        }
+        const counterId = npc.counter;
+        // Visit Counter is gated on the catalog actually containing
+        // the named counter — bad data falls through to a missing-
+        // button rather than a dead click.
+        const hasCounter =
+          !!counterId &&
+          !!state.catalog.counters.find((c) => c.id === counterId);
+        return (
+          <PlayNpcDialogOverlay
+            npcName={npc.name ?? npc.id}
+            npcSprite={npc.sprite}
+            dialogs={npc.dialogs ?? []}
+            hasCounter={hasCounter}
+            onVisitCounter={() => {
+              if (!hasCounter || !counterId) return;
+              // Hand the player to the counter overlay. Closing the
+              // counter returns straight to the world (not back to
+              // the dialog) — same flow as walking up to a counter
+              // tile directly.
+              setNpcDialogId(null);
+              setCounterShopId(counterId);
+            }}
+            onClose={() => setNpcDialogId(null)}
+          />
+        );
+      })() : null}
+
+      {counterShopId && state.catalog && state.save ? (() => {
+        const counter = state.catalog.counters.find(
+          (c) => c.id === counterShopId,
+        );
+        if (!counter) {
+          // Catalog disappeared between open + render (module
+          // reload, defensive). Drop the overlay so the player
+          // isn't stuck.
+          setCounterShopId(null);
+          return null;
+        }
+        // Catalog HP/MP per character id — saved member state
+        // carries the live values but no peak, so the temple
+        // services (Heal All HP, Restore All MP, Raise Dead) read
+        // these maps to know where to clamp.
+        const maxHpById = new Map<string, number>();
+        const maxMpById = new Map<string, number>();
+        for (const c of state.catalog.characters) {
+          if (typeof c.hp === "number") maxHpById.set(c.id, c.hp);
+          if (typeof c.mp === "number") maxMpById.set(c.id, c.mp);
+        }
+        return (
+          <PlayCounterShopOverlay
+            counter={counter}
+            save={saveRef.current ?? state.save}
+            items={state.catalog.items}
+            maxHpById={maxHpById}
+            maxMpById={maxMpById}
+            onMutateSave={(next) => {
+              saveRef.current = next;
+              saveWorld(next);
+              // No setState here for the same reason
+              // PlayPartyScreenOverlay omits it — the Phaser mount
+              // effect depends on state.save, and re-running it
+              // mid-shop would tear down the world canvas behind
+              // the modal. The shop's own commit() pushes into its
+              // liveSave so the UI updates immediately.
+            }}
+            onClose={() => setCounterShopId(null)}
+          />
+        );
+      })() : null}
     </main>
   );
 }
@@ -2765,6 +3012,8 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
     itemsLayers,
     dungeonsLayers,
     questsLayers,
+    npcsLayers,
+    countersLayers,
   ] = await Promise.all([
     src.loadModelLayers(moduleId, "map_tiles"),
     src.loadModelLayers(moduleId, "maps"),
@@ -2779,6 +3028,8 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
     src.loadModelLayers(moduleId, "items").catch(() => null),
     src.loadModelLayers(moduleId, "dungeons").catch(() => null),
     src.loadModelLayers(moduleId, "quests").catch(() => null),
+    src.loadModelLayers(moduleId, "npcs").catch(() => null),
+    src.loadModelLayers(moduleId, "counters").catch(() => null),
   ]);
 
   const paletteDoc = (mergeModel(
@@ -2907,6 +3158,24 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
     questsLayers?.inherited ?? [],
     questsLayers?.ownFile ?? null,
   ) ?? {}) as { quests?: SimQuestRef[] };
+  // NPC catalog — the play scene paints `sprite` over any cell whose
+  // `npc` field resolves here. Identity (id, name) carries through
+  // for future dialog overlays. Loose typing because the underlying
+  // record has more fields (counter, dialogs, etc.) that the
+  // overlay doesn't read.
+  const npcsDoc = (mergeModel(
+    "npcs",
+    npcsLayers?.inherited ?? [],
+    npcsLayers?.ownFile ?? null,
+  ) ?? {}) as { npcs?: PlayNpc[] };
+  // Counters catalog — looked up by cell.counter or npc.counter at
+  // counter_encountered / npc_encountered time. The play host
+  // hands the matched record to PlayCounterShopOverlay.
+  const countersDoc = (mergeModel(
+    "counters",
+    countersLayers?.inherited ?? [],
+    countersLayers?.ownFile ?? null,
+  ) ?? {}) as { counters?: PlayCounter[] };
 
   return {
     map,
@@ -2921,6 +3190,8 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
     spawns: spawnsDoc.spawns ?? [],
     dungeons: dungeonsDoc.dungeons ?? [],
     quests: questsDoc.quests ?? [],
+    npcs: npcsDoc.npcs ?? [],
+    counters: countersDoc.counters ?? [],
     knockSpell,
     items: itemsDoc.items ?? [],
   };

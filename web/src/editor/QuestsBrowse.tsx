@@ -28,6 +28,7 @@ import {
 import { mergeModel } from "@/data_model/merge";
 import { publishItems } from "@/data_model/publishClient";
 import { StaticModuleSource } from "@/data_model/StaticModuleSource";
+import { EncounterPicker } from "./EncounterPicker";
 import { SpritePicker } from "./SpritePicker";
 import { ID_PATTERN, TagsPicker } from "./TagsPicker";
 import { usePublishServer } from "./usePublishServer";
@@ -37,7 +38,14 @@ const NPC_SPRITE_CONFIG = { category: "person", format: "path" } as const;
 const MODEL_KEY = "quests";
 const FILE_NAME = "quests.json";
 const UNTAGGED = "(untagged)";
-const KNOWN_KINDS = ["kill", "fetch", "visit", "talk"] as const;
+// Only `kill` quest steps are wired through the runtime today —
+// fetch / visit / talk steps would persist into the save but no
+// gameplay code actually reads them. Restricting the dropdown to
+// `kill` keeps authors from accidentally building quests that
+// never resolve. Existing records on the other three kinds still
+// render via the (custom) fallback option so they can be migrated
+// rather than silently truncated.
+const KNOWN_KINDS = ["kill"] as const;
 type StepKind = (typeof KNOWN_KINDS)[number] | string;
 
 interface QuestStep {
@@ -1241,27 +1249,107 @@ function StepRow({
             onChange={(tags) => onUpdate({ tags })}
           />
         </div>
-        <label className="block sm:col-span-2">
-          <span className="text-[10px] uppercase tracking-wide text-parchment/45">
-            Params (JSON object)
-          </span>
-          <textarea
-            value={paramsDraft}
-            onChange={(e) => setParamsDraft(e.target.value)}
-            onBlur={() => commitParams(paramsDraft)}
-            rows={3}
-            placeholder='e.g. { "map_id": "...", "col": 8, "row": 4 }'
-            className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-xs text-parchment/90"
-          />
-          {paramsError ? (
-            <p className="mt-1 text-xs text-ember/80">{paramsError}</p>
-          ) : (
-            <p className="mt-1 text-xs text-parchment/45">
-              Shape depends on <code>kind</code>. See quest_step.md for
-              recommendations.
+        {step.kind === "kill" ? (
+          // Kill steps get a dedicated UI: encounter sprite picker +
+          // a count input. Both write back into `step.params` —
+          // {encounter_id, count} — replacing the raw JSON textarea
+          // that authored other kinds. The runtime helpers in
+          // Quests.ts read `params.encounter_id` and `params.count`.
+          <fieldset className="sm:col-span-2 rounded border border-parchment/15 bg-ink/20 p-2">
+            <legend className="px-1 text-[10px] uppercase tracking-wide text-parchment/55">
+              Kill target
+            </legend>
+            <div className="grid gap-2 sm:grid-cols-[1fr_6rem]">
+              <div>
+                <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+                  Encounter
+                </span>
+                <EncounterPicker
+                  value={
+                    typeof step.params?.encounter_id === "string"
+                      ? (step.params.encounter_id as string)
+                      : ""
+                  }
+                  onChange={(id) => {
+                    const prev =
+                      (step.params as Record<string, unknown> | null) ?? {};
+                    const next: Record<string, unknown> = { ...prev };
+                    if (id) next.encounter_id = id;
+                    else delete next.encounter_id;
+                    onUpdate({
+                      params: Object.keys(next).length > 0 ? next : null,
+                    });
+                    // Keep the JSON textarea draft in sync for the
+                    // (rare) case the author flips to a non-kill
+                    // kind afterward and wants to see the underlying
+                    // shape.
+                    setParamsDraft(
+                      Object.keys(next).length > 0
+                        ? JSON.stringify(next, null, 2)
+                        : "",
+                    );
+                    setParamsError(null);
+                  }}
+                />
+              </div>
+              <label className="block">
+                <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+                  Count
+                </span>
+                <input
+                  type="number"
+                  min={1}
+                  value={
+                    typeof step.params?.count === "number"
+                      ? (step.params.count as number)
+                      : 1
+                  }
+                  onChange={(e) => {
+                    const n = Math.max(1, Number(e.target.value) || 1);
+                    const prev =
+                      (step.params as Record<string, unknown> | null) ?? {};
+                    const next: Record<string, unknown> = { ...prev, count: n };
+                    onUpdate({ params: next });
+                    setParamsDraft(JSON.stringify(next, null, 2));
+                    setParamsError(null);
+                  }}
+                  className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-xs text-parchment/90"
+                />
+              </label>
+            </div>
+            <p className="mt-1 text-[11px] text-parchment/45">
+              The party clears the kill step by defeating this encounter
+              the listed number of times. Pick a roster from the
+              encounter catalog — each row shows the lead monster's
+              sprite and the encounter's tier.
             </p>
-          )}
-        </label>
+          </fieldset>
+        ) : (
+          // Non-kill kinds keep the raw params textarea so existing
+          // data is editable, but the dropdown above no longer
+          // offers those kinds for new steps.
+          <label className="block sm:col-span-2">
+            <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+              Params (JSON object)
+            </span>
+            <textarea
+              value={paramsDraft}
+              onChange={(e) => setParamsDraft(e.target.value)}
+              onBlur={() => commitParams(paramsDraft)}
+              rows={3}
+              placeholder='e.g. { "map_id": "...", "col": 8, "row": 4 }'
+              className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-xs text-parchment/90"
+            />
+            {paramsError ? (
+              <p className="mt-1 text-xs text-ember/80">{paramsError}</p>
+            ) : (
+              <p className="mt-1 text-xs text-parchment/45">
+                Shape depends on <code>kind</code>. See quest_step.md for
+                recommendations.
+              </p>
+            )}
+          </label>
+        )}
 
         {/* Location picker — three sub-rows, conditional on
             `location_kind`. The kind dropdown sits on its own; the

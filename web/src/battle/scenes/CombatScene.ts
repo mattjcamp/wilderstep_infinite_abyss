@@ -544,6 +544,15 @@ export class CombatScene extends Phaser.Scene {
   private pickerCursor = 0;
   /** Per-target arena badges shown during pick-target mode. */
   private targetBadges: Phaser.GameObjects.Text[] = [];
+  /** Index into `currentTargetList()` currently highlighted by the
+   *  arrow-key cursor in pick-target mode. Arrow keys cycle it;
+   *  Enter / Space activate the highlighted target; 1-9 still
+   *  resolves directly by absolute index. */
+  private targetCursor = 0;
+  /** Reticle drawn around the targetCursor target so the player can
+   *  see which one Enter would fire on. Re-painted whenever badges
+   *  redraw or the cursor moves; destroyed in clearTargetBadges. */
+  private targetCursorGfx: Phaser.GameObjects.Graphics | null = null;
   /** Pick-tile state — current cursor position on the arena. */
   private tileCursorPos = { col: 0, row: 0 };
   /** Phaser objects rendered for the tile cursor + AOE preview.
@@ -1928,6 +1937,17 @@ export class CombatScene extends Phaser.Scene {
       if (key === "DOWN") return this.movePickerCursor(1);
       return; // ignore left/right in pickers
     }
+    // In pick-target mode arrow keys cycle the highlighted target
+    // — the 1-9 number row stays available too, but arrows + Enter
+    // give the player a keyboard path that doesn't depend on tiny
+    // badge digits being legible on top of monster sprites.
+    if (this.mode === "pick-target") {
+      // Map UP/LEFT → previous, DOWN/RIGHT → next. Wraps around the
+      // ends so a long thumb-press feels predictable.
+      if (key === "UP" || key === "LEFT") return this.moveTargetCursor(-1);
+      if (key === "DOWN" || key === "RIGHT") return this.moveTargetCursor(1);
+      return;
+    }
     // In tile-pick mode all four arrows nudge the reticle.
     if (this.mode === "pick-tile") {
       if (key === "UP")    return this.moveTileCursor(0, -1);
@@ -1958,6 +1978,27 @@ export class CombatScene extends Phaser.Scene {
     if (key === "DOWN")  return this.moveActionCursor(1);
     if (key === "LEFT" || key === "RIGHT") return;
     void this.tryPlayerStep(dir);
+  }
+
+  /** Walk the target-picker cursor through `currentTargetList()`
+   *  with wrap-around. Repaints the badges so the highlighted index
+   *  swaps from one target to the next and the ring follows. No-op
+   *  when there are no targets (the picker shows "no valid targets"
+   *  hint in that case and Enter would do nothing). */
+  private moveTargetCursor(delta: number): void {
+    const targets = this.currentTargetList();
+    if (targets.length === 0) return;
+    this.targetCursor =
+      (this.targetCursor + delta + targets.length) % targets.length;
+    // Re-render badges so the bold-cursor highlight + ring follow
+    // the cursor. drawTargetBadges destroys + recreates the badge
+    // text nodes; cheap on a list capped at 9.
+    const side =
+      this.pendingAction?.kind === "cast" &&
+      classifyCombatCast(this.pendingAction.spell) === "pick-ally"
+        ? "party"
+        : "enemies";
+    this.drawTargetBadges(side);
   }
 
   /** Move the picker cursor through the active option list. Re-renders
@@ -2048,6 +2089,16 @@ export class CombatScene extends Phaser.Scene {
       }
       this.startTargetingFor({ kind: "throw", item: opt.item }, "enemies");
       this.consumeThrowItem(opt);
+      return;
+    }
+    if (this.mode === "pick-target") {
+      // Enter / Space inside pick-target activates the highlighted
+      // target. Mirrors how 1-9 jumps to a specific row but uses
+      // the arrow-key cursor as the source of truth. No-op when
+      // the list is empty (the player still has Esc / End Turn).
+      const targets = this.currentTargetList();
+      const t = targets[this.targetCursor];
+      if (t) void this.resolveTarget(t);
       return;
     }
     if (this.mode === "pick-spell") {
@@ -2837,6 +2888,9 @@ export class CombatScene extends Phaser.Scene {
   private startTargetingFor(action: PendingAction, side: "party" | "enemies"): void {
     this.pendingAction = action;
     this.mode = "pick-target";
+    // Fresh target picker → reset the arrow-key cursor to the first
+    // valid target. `drawTargetBadges` clamps if the list is empty.
+    this.targetCursor = 0;
     this.clearPicker();
     this.drawTargetBadges(side);
     // Empty target list (e.g. all enemies out of range or behind
@@ -3300,25 +3354,37 @@ export class CombatScene extends Phaser.Scene {
     this.pickerObjects = [];
   }
 
-  /** Draw 1..N badges over each valid target on the arena. */
+  /** Draw 1..N badges over each valid target on the arena. The
+   *  badge at `targetCursor` is rendered larger + brighter and gets
+   *  a ring underneath so the arrow-key cursor reads clearly. */
   private drawTargetBadges(side: "party" | "enemies"): void {
     this.clearTargetBadges();
     // Reuse currentTargetList so range filtering / target side is
     // resolved in one place.
     const targets = this.currentTargetList();
     void side;
+    // Clamp the cursor to the list — entering pick-target with a
+    // fresh action resets to 0; remaining inside pick-target across
+    // re-renders (e.g. a target died) keeps the cursor pointed at a
+    // valid row.
+    if (this.targetCursor >= targets.length) {
+      this.targetCursor = Math.max(0, targets.length - 1);
+    }
     targets.forEach((t, i) => {
       const x = this.tileX(t.position.col);
       const y = this.tileY(t.position.row) - TILE / 2 - 4;
+      const isCursor = i === this.targetCursor;
       const badge = this.add
         .text(x, y, `${i + 1}`, {
           fontFamily: "Georgia, serif",
-          fontSize: "16px",
-          color: hex(C.gold),
+          fontSize: isCursor ? "20px" : "16px",
+          color: isCursor ? "#ffe580" : hex(C.gold),
           stroke: "#1a1a2e",
-          strokeThickness: 4,
+          strokeThickness: isCursor ? 5 : 4,
+          fontStyle: isCursor ? "bold" : "normal",
         })
-        .setOrigin(0.5, 1);
+        .setOrigin(0.5, 1)
+        .setDepth(80);
       this.targetBadges.push(badge);
       // Click target sprite directly to confirm.
       const body = this.bodies.get(t.id);
@@ -3327,11 +3393,38 @@ export class CombatScene extends Phaser.Scene {
         body.once("pointerdown", () => this.resolveTarget(t));
       }
     });
+    this.repaintTargetCursorRing(targets);
+  }
+
+  /** Paint a yellow ring on the targetCursor target's tile (or clear
+   *  it when the list is empty). Called when badges are drawn and
+   *  whenever the cursor moves. */
+  private repaintTargetCursorRing(targets: Combatant[]): void {
+    if (this.targetCursorGfx) {
+      this.targetCursorGfx.destroy();
+      this.targetCursorGfx = null;
+    }
+    const t = targets[this.targetCursor];
+    if (!t) return;
+    const x = this.tileX(t.position.col);
+    const y = this.tileY(t.position.row);
+    const g = this.add.graphics().setDepth(78);
+    // Soft outer halo + bright inner ring — reads against both
+    // bright floor and dark night tiles.
+    g.lineStyle(2, 0xffe580, 0.4);
+    g.strokeCircle(x, y, TILE / 2 + 6);
+    g.lineStyle(2, 0xffe580, 1);
+    g.strokeCircle(x, y, TILE / 2 + 2);
+    this.targetCursorGfx = g;
   }
 
   private clearTargetBadges(): void {
     for (const b of this.targetBadges) b.destroy();
     this.targetBadges = [];
+    if (this.targetCursorGfx) {
+      this.targetCursorGfx.destroy();
+      this.targetCursorGfx = null;
+    }
     // Drop the one-shot listeners we attached.
     for (const c of this.combat.combatants) {
       const body = this.bodies.get(c.id);

@@ -1,17 +1,15 @@
 
 # V2 MPV Launch Items
 
-- In the battle arena, allow spell casters to target using arrow keys to select a target instead of numbers, since the numbers are hard to see and limited
-- tighten up the Quest Editor UI
 - Port over item durability system
-- add map level attribute to set lighting: world, twilight, darkness
+- add map level attribute to set lighting: world time, day, twilight, darkness
 - add soundtrack feature: soundtracks are module level and on random, maps and dungeons can overide the soundtrack if needed
 
 
 
 # Bugs
 
-- The boat goes back to it's original position, after using the boat and then passing through a link on the map
+
 - NPCs are not appearing in the game
 
 # V3 Ideas
