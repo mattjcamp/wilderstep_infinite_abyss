@@ -1,0 +1,19 @@
+{
+  "map_tiles": [
+    {
+      "id": "dungeon_floor",
+      "name": "Dungeon Floor",
+      "walkable": true,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": null,
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "map/stone_floor.png",
+      "tag": "floor"
+    }
+  ]
+}

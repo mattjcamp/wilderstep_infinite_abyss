@@ -1,5 +1,4 @@
 {
-  "_comment": "Character catalog (real data drives the schema). Each Character is a person who can join a Party. The data here is the **starting state** — class, race, base stats, gear they begin with, personal inventory. Live state (HP/MP changes, XP gained, gear swapped during play) lives in the runtime Game save, not here. Party.roster lists the Character ids in the active adventuring group; every roster entry is in play (no separate active_party subset). `class` and `race` are id strings (snake_case) referencing character_classes.json and races.json respectively — the rest of v2's cross-references still use display names today, but Characters are a new model so we use ids from the start.",
   "characters": [
     {
       "id": "aldric",
@@ -7,18 +6,18 @@
       "class": "fighter",
       "race": "dwarf",
       "gender": "Male",
-      "level": 10,
+      "level": 1,
       "exp": 2,
-      "hp": 52,
-      "mp": 100,
+      "hp": 16,
+      "mp": 0,
       "strength": 16,
       "dexterity": 11,
       "constitution": 12,
       "intelligence": 8,
       "wisdom": 8,
       "equipped": {
-        "hands": "crossbow",
-        "body": "chain"
+        "hands": "club",
+        "body": "cloth"
       },
       "inventory": [],
       "sprite": "person/fighter6.png"
@@ -29,9 +28,9 @@
       "class": "thief",
       "race": "halfling",
       "gender": "Male",
-      "level": 10,
+      "level": 1,
       "exp": 0,
-      "hp": 23,
+      "hp": 8,
       "mp": 0,
       "strength": 6,
       "dexterity": 20,
@@ -39,8 +38,8 @@
       "intelligence": 8,
       "wisdom": 9,
       "equipped": {
-        "hands": "short_bow",
-        "body": "leather"
+        "hands": "dagger",
+        "body": "cloth"
       },
       "inventory": [],
       "sprite": "person/hobbit1.png"
@@ -51,18 +50,18 @@
       "class": "cleric",
       "race": "human",
       "gender": "Female",
-      "level": 10,
+      "level": 1,
       "exp": 0,
       "hp": 9,
-      "mp": 130,
+      "mp": 11,
       "strength": 8,
       "dexterity": 11,
       "constitution": 12,
       "intelligence": 8,
       "wisdom": 16,
       "equipped": {
-        "hands": "sling",
-        "body": "leather"
+        "hands": "club",
+        "body": "cloth"
       },
       "inventory": [],
       "sprite": "person/cleric1.png"
@@ -73,10 +72,10 @@
       "class": "wizard",
       "race": "human",
       "gender": "Male",
-      "level": 10,
+      "level": 1,
       "exp": 0,
       "hp": 6,
-      "mp": 180,
+      "mp": 13,
       "strength": 8,
       "dexterity": 12,
       "constitution": 10,

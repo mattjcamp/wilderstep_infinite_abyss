@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
+  canPursue,
+  hasLineOfSight,
+  PURSUIT_RADIUS,
   trySpawnRoamer,
   roamStep,
   findLairs,
@@ -158,6 +161,98 @@ describe("roamStep", () => {
       (c, r) => !(c === 1 && r === 0),
     );
     expect(out).toEqual({ col: 0, row: 0 });
+  });
+});
+
+describe("hasLineOfSight", () => {
+  // Build a 10×3 grid of clear floor with optional walls. Cells with
+  // obstructs:true block LOS; cells without obstructs (or null) don't.
+  function makeRow(cols: number, walls: number[]): SpawnCellInfo[] {
+    const row: SpawnCellInfo[] = [];
+    for (let c = 0; c < cols; c++) {
+      row.push({ walkable: !walls.includes(c), obstructs: walls.includes(c) });
+    }
+    return row;
+  }
+
+  it("returns true when source and destination are the same cell", () => {
+    const grid = [makeRow(10, [])];
+    expect(hasLineOfSight(grid, 4, 0, 4, 0)).toBe(true);
+  });
+
+  it("returns true on a clear straight horizontal line", () => {
+    const grid = [makeRow(10, [])];
+    expect(hasLineOfSight(grid, 0, 0, 9, 0)).toBe(true);
+  });
+
+  it("returns false when an obstructing cell sits between the endpoints", () => {
+    const grid = [makeRow(10, [5])];
+    expect(hasLineOfSight(grid, 0, 0, 9, 0)).toBe(false);
+  });
+
+  it("does not treat the destination cell's obstructs as a blocker", () => {
+    // The wall *is* the destination — visible from outside even though
+    // it would block anything trying to look past it. Mirrors the
+    // lighting model: a wall's facing edge stays lit.
+    const grid = [makeRow(10, [5])];
+    expect(hasLineOfSight(grid, 0, 0, 5, 0)).toBe(true);
+  });
+
+  it("treats out-of-grid cells as non-obstructing", () => {
+    // 3-wide grid; ask about a path that walks past col 5. Out-of-grid
+    // reads as undefined which should not be treated as a wall.
+    const grid = [makeRow(3, [])];
+    expect(hasLineOfSight(grid, 0, 0, 2, 0)).toBe(true);
+  });
+});
+
+describe("canPursue", () => {
+  // 20×3 clear-floor grid for the radius tests. A single column of
+  // wall at col 10 for the LOS tests.
+  function clearGrid(cols: number, rows: number): SpawnCellInfo[][] {
+    const grid: SpawnCellInfo[][] = [];
+    for (let r = 0; r < rows; r++) {
+      const row: SpawnCellInfo[] = [];
+      for (let c = 0; c < cols; c++) row.push({ walkable: true });
+      grid.push(row);
+    }
+    return grid;
+  }
+
+  it("PURSUIT_RADIUS is 8 — anything inside the 8-tile Chebyshev box is in range", () => {
+    expect(PURSUIT_RADIUS).toBe(8);
+  });
+
+  it("returns true when the party is within radius and visible", () => {
+    const grid = clearGrid(20, 3);
+    // Chebyshev distance 5, clear line.
+    expect(canPursue({ col: 2, row: 1 }, { col: 7, row: 1 }, grid)).toBe(true);
+  });
+
+  it("returns true at the exact radius boundary (distance 8)", () => {
+    const grid = clearGrid(20, 3);
+    expect(canPursue({ col: 2, row: 1 }, { col: 10, row: 1 }, grid)).toBe(true);
+  });
+
+  it("returns false when the party is one tile beyond the radius", () => {
+    const grid = clearGrid(20, 3);
+    // Chebyshev distance 9 — out of range even with clear LOS.
+    expect(canPursue({ col: 2, row: 1 }, { col: 11, row: 1 }, grid)).toBe(false);
+  });
+
+  it("returns false when an obstructs cell breaks line of sight", () => {
+    const grid = clearGrid(20, 3);
+    // Put a wall at col 5, row 1 — directly between monster and party.
+    grid[1][5] = { walkable: false, obstructs: true };
+    expect(canPursue({ col: 2, row: 1 }, { col: 7, row: 1 }, grid)).toBe(false);
+  });
+
+  it("honors a caller-supplied custom radius", () => {
+    const grid = clearGrid(20, 3);
+    // Distance 5 — inside the default 8 but outside an override of 3.
+    expect(
+      canPursue({ col: 2, row: 1 }, { col: 7, row: 1 }, grid, { radius: 3 }),
+    ).toBe(false);
   });
 });
 

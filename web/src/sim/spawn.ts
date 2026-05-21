@@ -87,12 +87,25 @@ export type SpawnRng = () => number;
  *  decoupled from the larger grid type. */
 export interface SpawnCellInfo {
   walkable: boolean;
+  /** True when the cell blocks line of sight (walls, dense foliage,
+   *  closed doors, etc.). Mirrors the `obstructs` field on SimCell
+   *  and the map-tile palette; consumed by {@link hasLineOfSight}
+   *  and {@link canPursue}. */
+  obstructs?: boolean;
   /** When set, the cell holds a spawn catalog id. */
   spawn?: string;
   /** When set, the cell carries a placed encounter (drives the
    *  one-shot roaming-encounter pursuit). */
   encounter?: string;
 }
+
+/** Chebyshev radius (in tiles) inside which a monster will pursue the
+ *  party — *and only when LOS is also clear*. v1 had no awareness gate
+ *  at all; v2 pulls one in so players can break contact by ducking
+ *  behind a wall or putting distance between themselves and a roamer.
+ *  Tune by adjusting this constant; the call sites in MapSimulation
+ *  read it through {@link canPursue}. */
+export const PURSUIT_RADIUS = 8;
 
 /** A live placed encounter — one is seeded per painted encounter cell
  *  on sim start. Carries the encounter id (so combat can read the
@@ -262,6 +275,78 @@ export function roamStep(
     }
   }
   return best;
+}
+
+/** Bresenham line-of-sight check between two grid cells. Returns true
+ *  when no cell along the straight line between source and destination
+ *  has `obstructs: true`. The source and destination cells themselves
+ *  are not tested — a monster standing inside a wall (shouldn't
+ *  happen) still sees out, and a wall's outward face still reads as
+ *  visible. Out-of-grid cells are treated as non-obstructing so the
+ *  helper is safe for partial maps; callers gating on bounds should
+ *  do so separately.
+ *
+ *  Mirrors the closed-over LOS logic in `sim/lighting.ts` so vision
+ *  agrees with what the player can actually see lit up. */
+export function hasLineOfSight(
+  grid: ReadonlyArray<
+    ReadonlyArray<{ obstructs?: boolean } | null | undefined>
+  >,
+  srcCol: number,
+  srcRow: number,
+  dstCol: number,
+  dstRow: number,
+): boolean {
+  if (srcCol === dstCol && srcRow === dstRow) return true;
+  const dx = Math.abs(dstCol - srcCol);
+  const dy = Math.abs(dstRow - srcRow);
+  const sx = srcCol < dstCol ? 1 : -1;
+  const sy = srcRow < dstRow ? 1 : -1;
+  let err = dx - dy;
+  let c = srcCol;
+  let r = srcRow;
+  const maxSteps = dx + dy + 2;
+  for (let i = 0; i < maxSteps; i++) {
+    const e2 = err * 2;
+    if (e2 > -dy) {
+      err -= dy;
+      c += sx;
+    }
+    if (e2 < dx) {
+      err += dx;
+      r += sy;
+    }
+    if (c === dstCol && r === dstRow) return true;
+    const cell = grid[r]?.[c];
+    if (cell?.obstructs) return false;
+  }
+  return false;
+}
+
+/** True when a monster at (col,row) can sense and reach the party for
+ *  pursuit this step: Chebyshev distance ≤ {@link PURSUIT_RADIUS} AND
+ *  line of sight is clear. Used to gate {@link roamStep} at the
+ *  simulator call sites — when this returns false the monster doesn't
+ *  move; it sits where it is until the party either steps back into
+ *  range or back into view. Collision detection is unaffected: a
+ *  monster already adjacent to the party still triggers the
+ *  encounter on the caller's existing `roamerCollidesWithParty`
+ *  check. */
+export function canPursue(
+  monster: { col: number; row: number },
+  party: Position,
+  grid: ReadonlyArray<
+    ReadonlyArray<{ obstructs?: boolean } | null | undefined>
+  >,
+  options?: { radius?: number },
+): boolean {
+  const radius = options?.radius ?? PURSUIT_RADIUS;
+  const dist = Math.max(
+    Math.abs(monster.col - party.col),
+    Math.abs(monster.row - party.row),
+  );
+  if (dist > radius) return false;
+  return hasLineOfSight(grid, monster.col, monster.row, party.col, party.row);
 }
 
 /** Find every painted spawn cell in the grid. Returns each lair's

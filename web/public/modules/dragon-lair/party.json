@@ -1,0 +1,36 @@
+{
+  "start_position": {
+    "map_id": "continent",
+    "col": 3,
+    "row": 12
+  },
+  "avatar": "person/fighter18.png",
+  "gold": 50,
+  "roster": [
+    "aldric",
+    "pippin",
+    "selina",
+    "elminster"
+  ],
+  "party_effects": [],
+  "inventory": [
+    {
+      "item": "torch",
+      "charges": 10
+    },
+    {
+      "item": "dagger"
+    },
+    {
+      "item": "rock",
+      "charges": 20
+    },
+    {
+      "item": "lockpick",
+      "charges": 10
+    }
+  ],
+  "torch_steps": 0,
+  "galadriels_light_steps": 0,
+  "party": []
+}

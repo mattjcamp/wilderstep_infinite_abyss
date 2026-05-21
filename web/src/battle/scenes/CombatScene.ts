@@ -2958,10 +2958,11 @@ export class CombatScene extends Phaser.Scene {
       return `${this.combat.current.name}: no enemies within ${max} tiles — ${action.weapon.name} can't reach. Move closer first.`;
     }
     if (action.kind === "throw") {
+      const max = maxRangeFor(action.item);
       if (!sideHasAnyone) {
         return `${this.combat.current.name}: no enemies left to throw at.`;
       }
-      return `${this.combat.current.name}: no enemies in range to throw ${action.item.name} at.`;
+      return `${this.combat.current.name}: no enemies within ${max} tiles — ${action.item.name} can't reach. Move closer first.`;
     }
     if (action.kind === "cast") {
       if (side === "party") {
@@ -2982,13 +2983,24 @@ export class CombatScene extends Phaser.Scene {
     let list = this.combat.combatants
       .filter((c) => c.side === side && c.hp > 0);
     const me = this.combat.current;
-    // Range action: only show targets within the weapon's max range
-    // (Chebyshev distance from the active member) AND with a clear
-    // line of sight. Arena cells flagged `obstructs: true` block the
-    // shot — a tree / boulder in the middle of the path drops the
-    // target from the picker.
-    if (this.pendingAction.kind === "range") {
-      const max = maxRangeFor(this.pendingAction.weapon);
+    // Range / Throw actions: only show targets within the weapon or
+    // throwable's max range (Chebyshev distance from the active
+    // member) AND with a clear line of sight. Arena cells flagged
+    // `obstructs: true` block the shot — a tree / boulder in the
+    // middle of the path drops the target from the picker. Both
+    // branches read their range from the item's `range` field via
+    // `maxRangeFor`, so throwables like Rock (range 4) and Dagger
+    // (range 3) are capped to the same circle the gold reach overlay
+    // already paints.
+    if (
+      this.pendingAction.kind === "range" ||
+      this.pendingAction.kind === "throw"
+    ) {
+      const sourceItem =
+        this.pendingAction.kind === "range"
+          ? this.pendingAction.weapon
+          : this.pendingAction.item;
+      const max = maxRangeFor(sourceItem);
       list = list.filter((t) => {
         const dc = Math.abs(t.position.col - me.position.col);
         const dr = Math.abs(t.position.row - me.position.row);
@@ -4979,9 +4991,11 @@ export class CombatScene extends Phaser.Scene {
       cells = this.targetReachCells(me, maxRangeFor(pending.weapon), true);
       color = C.rangeHint;
     } else if (this.mode === "pick-target" && pending?.kind === "throw") {
-      // Throw doesn't yet have a range cap upstream, but the hint
-      // gives the player a useful visual anchor — pin to the item's
-      // declared range (defaults to 4 for throwables via items.json).
+      // Throw range gating lives in `currentTargetList`: targets
+      // outside the item's `range` or behind cover never become
+      // selectable. This overlay paints the same circle so the
+      // player can see exactly which cells a thrown Rock / Dagger /
+      // Fire Oil can reach before they pick a target.
       cells = this.targetReachCells(me, maxRangeFor(pending.item), true);
       color = C.rangeHint;
     } else if (this.mode === "pick-target" && pending?.kind === "cast") {

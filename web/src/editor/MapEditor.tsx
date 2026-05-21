@@ -601,9 +601,9 @@ export function MapEditor({
    *  "inspect" → click/drag only selects (so you can read attributes
    *  without modifying the map). */
   const [tool, setTool] = useState<"paint" | "inspect" | "pan" | "fill">(
-    "paint",
+    "inspect",
   );
-  const toolRef = useRef<"paint" | "inspect" | "pan" | "fill">("paint");
+  const toolRef = useRef<"paint" | "inspect" | "pan" | "fill">("inspect");
   useEffect(() => {
     toolRef.current = tool;
   }, [tool]);

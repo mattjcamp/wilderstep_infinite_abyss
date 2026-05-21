@@ -1,0 +1,142 @@
+{
+  "dungeons": [
+    {
+      "id": "old_ruins",
+      "name": "Ruins of the Auric Throne",
+      "description": "All that remains of the kingdom that first chained the dragon beneath the Brimspire \u2014 pillared halls swallowed by ivy, broken sigils of a sun-and-chain crest, and bones in the dust that nobody has come to gather. Locals say the deeper levels remember the binding ritual, and now that the binding is broken, the ruins remember it as a wound.",
+      "tags": [],
+      "style": "ruins",
+      "difficulty": "normal",
+      "size": {
+        "width": 45,
+        "height": 32
+      },
+      "torch_density": 0.05,
+      "locked_doors": 0.05,
+      "levels": [
+        {
+          "id": "old_ruins_l1",
+          "name": "Level 1",
+          "depth": 1,
+          "style": "caves",
+          "difficulty": "easy",
+          "torch_density": 0,
+          "locked_doors": 0
+        },
+        {
+          "id": "old_ruins_l2",
+          "name": "Level 2",
+          "depth": 2
+        },
+        {
+          "id": "old_ruins_l3",
+          "name": "Level 3",
+          "depth": 3
+        },
+        {
+          "id": "old_ruins_l4",
+          "name": "Level 4",
+          "depth": 4
+        }
+      ]
+    },
+    {
+      "id": "goblins_den",
+      "name": "The Goblin Warrens",
+      "description": "Goblin Skarn the Crooked's tunnels under the lower slopes. The warrens were always filthy, but the dragon's waking drove the high-pass clans down into them, packed three and four to a chamber. Hungry. Armed. Squabbling over the same stolen larders.",
+      "tags": [],
+      "style": "caves",
+      "difficulty": "normal",
+      "size": {
+        "width": 32,
+        "height": 32
+      },
+      "torch_density": 0.15,
+      "locked_doors": 0.25,
+      "levels": [
+        {
+          "id": "goblins_den_l1",
+          "name": "Level 1",
+          "depth": 1
+        },
+        {
+          "id": "goblins_den_l2",
+          "name": "Level 2",
+          "depth": 2
+        },
+        {
+          "id": "goblins_den_l3",
+          "name": "Level 3",
+          "depth": 3
+        }
+      ]
+    },
+    {
+      "id": "orc_stronghold",
+      "name": "The Iron Mines",
+      "description": "Old human mines, abandoned when the deep seams ran dry, now reoccupied by Warlord Murgath's orcs as a fort. The galleries are deep enough that the dragon's roar barely reaches them, which is why the orcs picked the spot \u2014 and why anything fleeing the wyrm's shadow eventually finds its way to their gates.",
+      "tags": [],
+      "style": "ruins",
+      "difficulty": "normal",
+      "size": {
+        "width": 32,
+        "height": 32
+      },
+      "torch_density": 0.15,
+      "locked_doors": 0.25,
+      "levels": [
+        {
+          "id": "orc_stronghold_l1",
+          "name": "Level 1",
+          "depth": 1
+        },
+        {
+          "id": "orc_stronghold_l2",
+          "name": "Level 2",
+          "depth": 2
+        },
+        {
+          "id": "orc_stronghold_l3",
+          "name": "Level 3",
+          "depth": 3
+        }
+      ]
+    },
+    {
+      "id": "haunted_forest",
+      "name": "The Wandering Wood",
+      "description": "The wood that took Edda Marisol and never gave her back. The trees grow in wrong directions, the trails rearrange themselves between dusk and dawn, and the deeper paths brush against something far older than the dragon. Marisol still keeps her sister's iron pendant in the hope that the wood will, at last, return what it kept.",
+      "tags": [],
+      "style": "forest",
+      "difficulty": "hard",
+      "size": {
+        "width": 45,
+        "height": 45
+      },
+      "torch_density": 0,
+      "locked_doors": 0.05,
+      "levels": [
+        {
+          "id": "haunted_forest_l1",
+          "name": "Level 1",
+          "depth": 1
+        },
+        {
+          "id": "haunted_forest_l2",
+          "name": "Level 2",
+          "depth": 2
+        },
+        {
+          "id": "haunted_forest_l3",
+          "name": "Level 3",
+          "depth": 3
+        },
+        {
+          "id": "haunted_forest_l4",
+          "name": "Level 4",
+          "depth": 4
+        }
+      ]
+    }
+  ]
+}

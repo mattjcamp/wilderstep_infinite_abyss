@@ -29,6 +29,7 @@ import {
   tickPartyTimers,
 } from "./movement";
 import {
+  canPursue,
   findLairs,
   findPlacedEncounters,
   findQuestPlacedEncounters,
@@ -1326,15 +1327,28 @@ export class MapSimulation {
     for (const placed of this.placedEncounters) {
       const fromKey = `${placed.col},${placed.row}`;
       occupied.delete(fromKey);
-      const next = roamStep(
+      // Pursuit gate: stays put unless the party is within
+      // PURSUIT_RADIUS Chebyshev tiles AND has a clear line of sight.
+      // The collision check below still fires against the (possibly
+      // unchanged) position so an entity already adjacent to the
+      // party still triggers the encounter.
+      const next = canPursue(
         { col: placed.col, row: placed.row },
         this.pos,
-        (c, r) => {
-          const cell = cellAt(this.grid, c, r);
-          return cell !== null && cell.walkable;
-        },
-        (c, r) => occupied.has(`${c},${r}`),
-      );
+        this.grid as unknown as ReadonlyArray<
+          ReadonlyArray<{ obstructs?: boolean } | null | undefined>
+        >,
+      )
+        ? roamStep(
+            { col: placed.col, row: placed.row },
+            this.pos,
+            (c, r) => {
+              const cell = cellAt(this.grid, c, r);
+              return cell !== null && cell.walkable;
+            },
+            (c, r) => occupied.has(`${c},${r}`),
+          )
+        : { col: placed.col, row: placed.row };
       placed.col = next.col;
       placed.row = next.row;
       occupied.add(`${next.col},${next.row}`);
@@ -1501,15 +1515,28 @@ export class MapSimulation {
     for (const roamer of this.roamers) {
       const fromKey = `${roamer.col},${roamer.row}`;
       occupied.delete(fromKey);
-      const next = roamStep(
+      // Pursuit gate: stays put unless the party is within
+      // PURSUIT_RADIUS Chebyshev tiles AND has a clear line of sight.
+      // The collision check below still fires against the (possibly
+      // unchanged) position so a roamer already adjacent to the party
+      // still triggers the encounter.
+      const next = canPursue(
         { col: roamer.col, row: roamer.row },
         this.pos,
-        (c, r) => {
-          const cell = cellAt(this.grid, c, r);
-          return cell !== null && cell.walkable;
-        },
-        (c, r) => occupied.has(`${c},${r}`),
-      );
+        this.grid as unknown as ReadonlyArray<
+          ReadonlyArray<{ obstructs?: boolean } | null | undefined>
+        >,
+      )
+        ? roamStep(
+            { col: roamer.col, row: roamer.row },
+            this.pos,
+            (c, r) => {
+              const cell = cellAt(this.grid, c, r);
+              return cell !== null && cell.walkable;
+            },
+            (c, r) => occupied.has(`${c},${r}`),
+          )
+        : { col: roamer.col, row: roamer.row };
       roamer.col = next.col;
       roamer.row = next.row;
       occupied.add(`${next.col},${next.row}`);

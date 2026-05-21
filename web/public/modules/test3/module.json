@@ -1,9 +1,0 @@
-{
-  "_comment": "Draft module created in the editor. Export this file and drop it into web/public/modules/test3/module.json.",
-  "id": "test3",
-  "title": "Test 3",
-  "description": "Third iteration of  a playable module. Includes a basic map, town and quest",
-  "author": "Me",
-  "version": "0.1.0",
-  "extends": "default"
-}
