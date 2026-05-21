@@ -1,7 +1,8 @@
 
 # V2 MPV Launch Items
 
-- add soundtrack feature: soundtracks are module level and on random, maps and dungeons can overide the soundtrack if needed
+- add soundtrack feature: soundtrack playlists are defined on the module data model level and play randomly, maps and dungeons can overide the soundtrack in their own data models. Make sure to add the soundtrack playing implementation.
+
 
 # V3 Ideas
 

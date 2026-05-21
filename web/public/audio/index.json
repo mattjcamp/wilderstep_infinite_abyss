@@ -1,0 +1,25 @@
+{
+  "_comment": "Listing of every audio file under /public/audio/. Hand-maintained for now — Next.js static export can't directory-list at runtime, so the editor's SoundtrackPicker reads this file to know what tracks are available. Add a new entry whenever you drop a file in this folder. Each `path` is what gets stored on a module / map / dungeon's soundtrack list and is what the SoundtrackPlayer hands to <audio>.src; `name` is the display label in the picker.",
+  "tracks": [
+    {
+      "path": "/audio/aurelian_overture.mp3",
+      "name": "Aurelian Overture"
+    },
+    {
+      "path": "/audio/bards_ballad.mp3",
+      "name": "Bard's Ballad"
+    },
+    {
+      "path": "/audio/lost_in_the_labyrinth.mp3",
+      "name": "Lost in the Labyrinth"
+    },
+    {
+      "path": "/audio/scepter_of_the_celestial_guardian.mp3",
+      "name": "Scepter of the Celestial Guardian"
+    },
+    {
+      "path": "/audio/winds_of_destiny.mp3",
+      "name": "Winds of Destiny"
+    }
+  ]
+}

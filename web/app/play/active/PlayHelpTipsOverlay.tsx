@@ -9,7 +9,8 @@
  * Read-only. ESC and H close.
  */
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { Soundtrack } from "@/audio/SoundtrackPlayer";
 
 interface ShortcutRow {
   key: string;
@@ -49,6 +50,22 @@ export function PlayHelpTipsOverlay({
 }: {
   onClose: () => void;
 }) {
+  // Soundtrack mute toggle — reads the persisted flag on open so a
+  // refresh-then-open shows the right state. Local mirror is needed
+  // because the player module exposes a getter but not a subscribe
+  // hook; we treat this overlay as the canonical mute UI.
+  const [muted, setMuted] = useState<boolean>(() => Soundtrack.isMuted());
+  const [volume, setVolume] = useState<number>(() => Soundtrack.getVolume());
+  const handleMuteToggle = () => {
+    const next = !muted;
+    Soundtrack.setMuted(next);
+    setMuted(next);
+  };
+  const handleVolume = (v: number) => {
+    Soundtrack.setVolume(v);
+    setVolume(v);
+  };
+
   // ESC and H close. Capture so the underlying sim's movement keys
   // don't fire under the modal.
   useEffect(() => {
@@ -102,6 +119,37 @@ export function PlayHelpTipsOverlay({
           </button>
         </div>
         <div className="space-y-4 p-3">
+          {/* Audio — soundtrack mute + volume. Persisted to
+              localStorage by the SoundtrackPlayer module. */}
+          <section>
+            <h3 className="text-[11px] uppercase tracking-wide text-amber-300">
+              Audio
+            </h3>
+            <div className="mt-1 flex items-center gap-3 rounded border border-parchment/15 bg-ink/40 px-2 py-1.5 text-xs text-parchment/80">
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={muted}
+                  onChange={handleMuteToggle}
+                  className="accent-ember"
+                />
+                <span>Mute soundtrack</span>
+              </label>
+              <label className="ml-auto flex items-center gap-2">
+                <span className="text-parchment/55">Volume</span>
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  value={volume}
+                  onChange={(e) => handleVolume(Number(e.target.value))}
+                  disabled={muted}
+                  className="w-32 accent-ember disabled:opacity-40"
+                />
+              </label>
+            </div>
+          </section>
           <ShortcutSection title="Movement" rows={MOVE_SHORTCUTS} />
           <ShortcutSection title="Inspector Screens" rows={INSPECTOR_SHORTCUTS} />
           <ShortcutSection title="Combat" rows={COMBAT_SHORTCUTS} />

@@ -31,6 +31,7 @@
 
 import { useEffect, useState } from "react";
 import type { ModuleSummary } from "@/data_model/ModuleSource";
+import { SoundtrackPicker } from "./SoundtrackPicker";
 
 /** Subset of ModuleSummary that this dialog is allowed to mutate.
  *  Caller merges this back over the existing manifest so untouched
@@ -41,6 +42,11 @@ export interface ModulePropertiesPatch {
   author: string;
   version: string;
   role: string | undefined;
+  /** Default background-music playlist for the module. Each entry is
+   *  a file URL (typically under `/audio/...`). Empty array means
+   *  the field is dropped from the saved manifest so quiet modules
+   *  stay shape-clean. */
+  soundtrack: string[];
 }
 
 export function ModulePropertiesDialog({
@@ -62,6 +68,12 @@ export function ModulePropertiesDialog({
   const initialRole =
     initial.role === undefined || initial.role === "" ? "playable" : initial.role;
   const [role, setRole] = useState<string>(initialRole);
+  // Ordered list of audio paths. The SoundtrackPicker owns the
+  // selection UI (preview + reorder + add/remove); we just hold the
+  // working list here and pass it to the picker.
+  const [soundtrack, setSoundtrack] = useState<string[]>(
+    initial.soundtrack ? [...initial.soundtrack] : [],
+  );
   const [titleError, setTitleError] = useState<string | null>(null);
 
   // Same keyboard ergonomics as MapAttributesDialog — Escape closes,
@@ -80,7 +92,7 @@ export function ModulePropertiesDialog({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [title, description, author, version, role]);
+  }, [title, description, author, version, role, soundtrack]);
 
   const handleSave = () => {
     const trimmedTitle = title.trim();
@@ -96,6 +108,10 @@ export function ModulePropertiesDialog({
       // Translate the UI's "playable" sentinel back to omitted, keeping
       // file contents idiomatic per ModuleSummary's docstring.
       role: role === "playable" ? undefined : role,
+      // Picker hands back a clean ordered list; we forward it
+      // verbatim. Caller (ModulePicker) decides whether to persist
+      // or drop the field based on emptiness.
+      soundtrack: [...soundtrack],
     });
   };
 
@@ -206,6 +222,27 @@ export function ModulePropertiesDialog({
                 className="rounded border border-parchment/20 bg-ink/40 px-2 py-1 font-mono text-sm text-parchment focus:border-parchment/45"
               />
             </label>
+          </div>
+
+          {/* Soundtrack ----------------------------------------- */}
+          {/* Default background-music playlist for the module. The
+              picker reads /audio/index.json for available tracks
+              and supports preview + reorder. Per-map and per-dungeon
+              overrides live on the respective Map / Dungeon records. */}
+          <div className="flex flex-col gap-1">
+            <span className="text-xs text-parchment/70 font-mono">
+              soundtrack
+            </span>
+            <SoundtrackPicker
+              value={soundtrack}
+              onChange={setSoundtrack}
+              emptyHint="The play host stays silent unless a map or dungeon authors its own playlist."
+            />
+            <span className="text-[11px] text-parchment/45">
+              The play host picks a random track and rotates through
+              the list as tracks end. Maps and dungeons can override
+              this list from their own properties.
+            </span>
           </div>
 
           {/* Role ------------------------------------------------ */}

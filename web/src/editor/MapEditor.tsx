@@ -3197,6 +3197,7 @@ export function MapEditor({
     description?: string;
     tags?: string[];
     lighting?: "day" | "twilight" | "darkness" | "world_time";
+    soundtrack?: string[];
   }) => {
     if (state.kind !== "ok") return;
     const updatedMap: MapRecord = {
@@ -3221,6 +3222,13 @@ export function MapEditor({
       (updatedMap as Record<string, unknown>).lighting = next.lighting;
     } else {
       delete (updatedMap as Record<string, unknown>).lighting;
+    }
+    // Soundtrack: persist only when non-empty so quiet maps stay
+    // shape-clean rather than carrying an empty `"soundtrack": []`.
+    if (next.soundtrack && next.soundtrack.length > 0) {
+      (updatedMap as Record<string, unknown>).soundtrack = next.soundtrack;
+    } else {
+      delete (updatedMap as Record<string, unknown>).soundtrack;
     }
 
     const baseFile: Record<string, unknown> = state.ownFile
@@ -3903,6 +3911,14 @@ export function MapEditor({
                     return v === "day" || v === "twilight" || v === "darkness"
                       ? v
                       : "world_time";
+                  })(),
+                  soundtrack: ((): string[] | undefined => {
+                    const v = (mapRecord as Record<string, unknown>).soundtrack;
+                    if (!Array.isArray(v)) return undefined;
+                    const list = v.filter(
+                      (s): s is string => typeof s === "string" && s.length > 0,
+                    );
+                    return list.length > 0 ? list : undefined;
                   })(),
                 }}
                 existingTags={existingTags}

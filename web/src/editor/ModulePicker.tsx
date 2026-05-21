@@ -348,6 +348,14 @@ export function ModulePicker() {
     else delete next.version;
     if (patch.role) next.role = patch.role;
     else delete next.role;
+    // Soundtrack list — persist when non-empty, drop the key when
+    // the textarea was cleared. Keeps quiet modules shape-clean
+    // rather than committing a noisy `"soundtrack": []`.
+    if (patch.soundtrack && patch.soundtrack.length > 0) {
+      next.soundtrack = patch.soundtrack;
+    } else {
+      delete next.soundtrack;
+    }
     saveDraft(m.id, MANIFEST_KEY, next);
     setEditingModule(null);
     refresh();

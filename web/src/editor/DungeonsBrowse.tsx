@@ -33,6 +33,7 @@ import {
 import { mergeModel } from "@/data_model/merge";
 import { publishItems } from "@/data_model/publishClient";
 import { StaticModuleSource } from "@/data_model/StaticModuleSource";
+import { SoundtrackPicker } from "./SoundtrackPicker";
 import { ID_PATTERN, TagsPicker } from "./TagsPicker";
 import { usePublishServer } from "./usePublishServer";
 
@@ -79,6 +80,13 @@ interface DungeonRecord {
   torch_density: number;
   locked_doors: number;
   levels: DungeonLevel[];
+  /** Per-dungeon background-music playlist override. Each entry is
+   *  an audio file URL. When the party enters this dungeon, the
+   *  play host re-points the SoundtrackPlayer at this list; on
+   *  exit, the host falls back to the overworld map's playlist
+   *  (which itself defers to the module default). Absent / empty
+   *  inherits the module default. */
+  soundtrack?: string[];
 }
 
 type LoadState =
@@ -547,6 +555,30 @@ function DungeonEditor({
           existing={existingTags}
           onChange={(tags) => onUpdate({ tags })}
         />
+      </div>
+
+      {/* Soundtrack override — picks tracks from /audio/index.json
+          with preview + reorder. Empty inherits the module-level
+          default playlist. */}
+      <div className="mt-3">
+        <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+          Soundtrack
+        </span>
+        <div className="mt-1">
+          <SoundtrackPicker
+            value={dungeon.soundtrack ?? []}
+            onChange={(list) =>
+              onUpdate({
+                soundtrack: list.length > 0 ? list : undefined,
+              })
+            }
+            emptyHint="Inherits the module-level playlist."
+          />
+        </div>
+        <span className="mt-1 block text-[11px] text-parchment/45">
+          Per-dungeon playlist override. Empty inherits the module
+          default.
+        </span>
       </div>
 
       {/* Generator defaults — required on Dungeon, inherited by Levels */}

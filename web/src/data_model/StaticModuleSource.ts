@@ -89,6 +89,7 @@ function toSummary(
     id?: string;
     extends?: string;
     uses?: string[];
+    soundtrack?: string[];
   },
   fallback: { id: string; title?: string; role?: string },
 ): ModuleSummary {
@@ -101,6 +102,15 @@ function toSummary(
     role: meta.role ?? fallback.role,
     extends: meta.extends,
     uses: meta.uses,
+    // Carry the default soundtrack through so the Module Properties
+    // dialog re-opens with the current playlist instead of an empty
+    // picker. Filter to strings + drop blanks so a stale manifest
+    // with junk entries doesn't surface a misleading row.
+    soundtrack: Array.isArray(meta.soundtrack)
+      ? meta.soundtrack.filter(
+          (s): s is string => typeof s === "string" && s.length > 0,
+        )
+      : undefined,
   };
 }
 
@@ -271,6 +281,35 @@ export class StaticModuleSource implements ModuleSource {
     const meta = await loadModuleManifest(moduleId);
     if (!meta) return null;
     return meta as Record<string, unknown>;
+  }
+
+  /** Resolve the default soundtrack playlist for `moduleId`, walking
+   *  the extends chain leaf-first and returning the first ancestor's
+   *  list that's non-empty. Returns `[]` when nothing along the chain
+   *  defines a soundtrack.
+   *
+   *  Inheritance design: declaring a soundtrack on `default` means
+   *  every child module (test3, test4, …) inherits it for free,
+   *  matching how every other catalog (maps.json, monsters.json,
+   *  etc.) propagates down the chain. A child can still override by
+   *  setting its own soundtrack — leaf wins. */
+  async resolveModuleSoundtrack(moduleId: string): Promise<string[]> {
+    const chain = await walkExtendsChain(moduleId);
+    // walkExtendsChain returns leaf-first (index 0 = the requested
+    // module, end = root). Walk in that order; first non-empty list
+    // wins, so a leaf override beats a parent definition.
+    for (const summary of chain) {
+      const meta = await loadModuleManifest(summary.id);
+      if (!meta) continue;
+      const list = (meta as { soundtrack?: unknown }).soundtrack;
+      if (Array.isArray(list)) {
+        const clean = list.filter(
+          (s): s is string => typeof s === "string" && s.length > 0,
+        );
+        if (clean.length > 0) return clean;
+      }
+    }
+    return [];
   }
 
   /** Catalog of records available for import from the libraries this

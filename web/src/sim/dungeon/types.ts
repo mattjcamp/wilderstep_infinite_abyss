@@ -67,6 +67,11 @@ export interface DungeonRecord {
   torch_density?: number;
   locked_doors?: number;
   levels: DungeonLevelRecord[];
+  /** Per-dungeon background-music playlist override. Each entry is
+   *  an audio file URL. When the party enters this dungeon the play
+   *  host points the SoundtrackPlayer at this list; absent / empty
+   *  inherits the module default playlist. */
+  soundtrack?: string[];
 }
 
 /** Fully-resolved options for ONE generated floor — parent ⊕ Level

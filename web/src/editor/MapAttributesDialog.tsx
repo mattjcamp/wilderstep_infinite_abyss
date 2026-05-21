@@ -29,6 +29,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { SoundtrackPicker } from "./SoundtrackPicker";
 import { TagsPicker } from "./TagsPicker";
 
 /** Authored lighting override for a map. `world_time` (default,
@@ -47,6 +48,12 @@ interface MapAttributes {
   /** Absent / "world_time" → follow the clock. The other three force
    *  the renderer into the matching lighting band on this map. */
   lighting?: MapLighting;
+  /** Per-map background-music playlist override. Each entry is a
+   *  file URL. Absent / empty array → fall back to the module
+   *  manifest's default soundtrack (or silence if the module's is
+   *  also empty). The play host re-points the SoundtrackPlayer at
+   *  this list on map entry. */
+  soundtrack?: string[];
 }
 
 export function MapAttributesDialog({
@@ -68,6 +75,9 @@ export function MapAttributesDialog({
   const [lighting, setLighting] = useState<MapLighting>(
     initial.lighting ?? "world_time",
   );
+  const [soundtrack, setSoundtrack] = useState<string[]>(
+    initial.soundtrack ? [...initial.soundtrack] : [],
+  );
   const [nameError, setNameError] = useState<string | null>(null);
 
   // Close on Escape, save on Cmd/Ctrl+Enter — mirrors common
@@ -88,7 +98,7 @@ export function MapAttributesDialog({
     // handleSave is defined inside the component but is stable enough
     // for this — the closure reads the latest state via React.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [name, description, tags]);
+  }, [name, description, tags, lighting, soundtrack]);
 
   const handleSave = () => {
     const trimmedName = name.trim();
@@ -109,6 +119,10 @@ export function MapAttributesDialog({
       // because the player opened the dialog). The explicit three
       // are stored verbatim.
       lighting: lighting === "world_time" ? undefined : lighting,
+      // Soundtrack — empty array → undefined so the caller drops
+      // the field cleanly. Non-empty passes the picker's ordered
+      // list through verbatim.
+      soundtrack: soundtrack.length > 0 ? [...soundtrack] : undefined,
     });
   };
 
@@ -182,6 +196,25 @@ export function MapAttributesDialog({
             <span className="text-[11px] text-parchment/45">
               Editor-only labels for organizing maps in the browser. Not
               visible in-game.
+            </span>
+          </div>
+
+          {/* Soundtrack ----------------------------------------- */}
+          {/* Per-map playlist that overrides the module-level
+              default while the party is on this map. Leave empty
+              to inherit the module default. */}
+          <div className="flex flex-col gap-1">
+            <span className="text-xs text-parchment/70 font-mono">
+              soundtrack
+            </span>
+            <SoundtrackPicker
+              value={soundtrack}
+              onChange={setSoundtrack}
+              emptyHint="Inherits the module-level playlist."
+            />
+            <span className="text-[11px] text-parchment/45">
+              Overrides the module-level soundtrack while the party is
+              on this map. Empty inherits the module default.
             </span>
           </div>
 

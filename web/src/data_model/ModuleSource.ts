@@ -42,6 +42,14 @@ export interface ModuleSummary {
    *  `uses` declarations are inherited via the extends chain so a
    *  child picks up its parent's library list automatically. */
   uses?: string[];
+  /** Default soundtrack playlist for this module — array of audio
+   *  file URLs (relative to the deploy base, e.g.
+   *  "/audio/overworld_theme.mp3"). The play host loads one at random
+   *  on map entry and rotates through the list as tracks end. Maps
+   *  and dungeons can override this list on a per-record basis;
+   *  absent / empty here means "silence by default" unless a map
+   *  authors its own. */
+  soundtrack?: string[];
 }
 
 /** A loaded module, including its metadata plus a fully resolved

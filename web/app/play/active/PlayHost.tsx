@@ -37,6 +37,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { withBasePath } from "@/util/basePath";
 import { mergeModel } from "@/data_model/merge";
+import { loadDraft } from "@/data_model/draft";
 import { StaticModuleSource } from "@/data_model/StaticModuleSource";
 import { LockDialogOverlay } from "@/editor/LockDialogOverlay";
 import { QuestDialogOverlay } from "@/editor/QuestDialogOverlay";
@@ -97,6 +98,7 @@ import {
   VFX_COLOURS,
 } from "@/vfx/Vfx";
 import { Sfx } from "@/battle/audio/Sfx";
+import { Soundtrack } from "@/audio/SoundtrackPlayer";
 import {
   MINUTES_PER_STEP,
   advanceClock,
@@ -234,6 +236,11 @@ interface PlayMapRecord {
    *  torches throw real light pools, "day" / "twilight" lock the
    *  ambient brightness. Surfaced via the Map Properties dialog. */
   lighting?: "day" | "twilight" | "darkness";
+  /** Optional per-map background-music playlist. Each entry is an
+   *  audio file URL. When present + non-empty, this list overrides
+   *  the module-level default while the party is on this map;
+   *  absent / empty falls back to the module's playlist. */
+  soundtrack?: string[];
 }
 
 /** Minimal item shape PlayHost uses to render overlays. The full
@@ -376,6 +383,12 @@ interface LoadedCatalog {
    *  icon sprite (`item/<icon>.png`). Kernel doesn't read this
    *  directly; it's a scene-render concern. */
   items: PlayItem[];
+  /** Module-level default soundtrack — file URLs the SoundtrackPlayer
+   *  rotates through when neither the current map nor the active
+   *  dungeon has its own override. Loaded from the leaf module's
+   *  manifest at catalog-resolve time. Absent / empty means "silence
+   *  unless the map / dungeon authors a list." */
+  moduleSoundtrack: string[];
 }
 
 interface State {
@@ -632,6 +645,48 @@ export function PlayHost() {
   useEffect(() => {
     catalogRef.current = state.catalog ?? null;
   }, [state.catalog]);
+
+  // Soundtrack — switch the active playlist whenever the catalog
+  // changes (new map / module) or a dungeon transition fires
+  // (reloadKey bumps on every dungeon enter / exit + cross-map link).
+  // Resolution order: dungeon override → map override → module
+  // default. An empty effective list silences the player rather than
+  // continuing the prior track, so a map that explicitly clears the
+  // playlist gets actual quiet rather than music bleeding in from
+  // wherever the party just came from.
+  //
+  // We DON'T call Soundtrack.play() here when the browser hasn't
+  // seen a user gesture yet — that play() rejects under autoplay
+  // policy and the player ends up idle. Instead, the bridge's
+  // `moved` listener kicks `Soundtrack.play()` on the party's first
+  // step, which IS a guaranteed user gesture. Subsequent
+  // setPlaylist calls auto-pick a fresh random track because the
+  // player is already in the `_playing` state from that first kick.
+  useEffect(() => {
+    if (state.kind !== "ok") return;
+    const catalog = state.catalog;
+    if (!catalog) return;
+    const dungeon = dungeonStateRef.current;
+    const dungeonRecord = dungeon
+      ? catalog.dungeons.find((d) => d.id === dungeon.dungeonId) ?? null
+      : null;
+    const fromDungeon = dungeonRecord?.soundtrack;
+    const fromMap = catalog.map.soundtrack;
+    const playlist =
+      fromDungeon && fromDungeon.length > 0
+        ? fromDungeon
+        : fromMap && fromMap.length > 0
+          ? fromMap
+          : catalog.moduleSoundtrack;
+    Soundtrack.setPlaylist(playlist ?? []);
+  }, [state, reloadKey]);
+
+  // Stop the soundtrack when the play host unmounts (route change,
+  // tab close handled by the browser). Without this, navigating to
+  // /play/end or back to /play would leave music streaming behind.
+  useEffect(() => () => {
+    Soundtrack.stop();
+  }, []);
 
   // Load save + catalogs + map. Re-runs when `reloadKey` bumps.
   useEffect(() => {
@@ -1752,6 +1807,20 @@ export function PlayHost() {
 
           sim.subscribe((ev) => {
             if (ev.kind === "moved") {
+              // First-move soundtrack kick. Browsers refuse
+              // autoplay until the page has seen a user gesture,
+              // so the setPlaylist call in the load effect can't
+              // start playback on its own. The arrow-key press
+              // that fires this `moved` event IS a gesture, which
+              // means `Soundtrack.play()` here succeeds. It's
+              // idempotent (no-ops when already playing) so calling
+              // it every step is harmless.
+              try {
+                Soundtrack.play();
+              } catch {
+                // Silent — a missing audio element / unsupported
+                // codec shouldn't break movement.
+              }
               // Time of day advances per step. Recompute the
               // lighting mode whenever the clock crosses a band
               // boundary (day → twilight → night → twilight → day);
@@ -3082,10 +3151,16 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
   ) ?? {}) as { map_tiles?: PlayCell[] };
   const palette = paletteDoc.map_tiles ?? [];
 
+  // Prefer the localStorage draft of maps.json so unpublished edits
+  // (renamed tiles, new soundtrack overrides, fresh paint) show up
+  // in play without forcing a publish step. Mirrors the
+  // draft-overlay pattern used by MapEditor itself.
+  const mapsDraft = loadDraft<Record<string, unknown>>(moduleId, "maps");
+  const mapsOwn = mapsDraft ?? mapsLayers.ownFile;
   const mapsDoc = (mergeModel(
     "maps",
     mapsLayers.inherited,
-    mapsLayers.ownFile,
+    mapsOwn,
   ) ?? {}) as { maps?: PlayMapRecord[] };
   const allMaps = mapsDoc.maps ?? [];
   const mapId = save.party.currentMapId;
@@ -3191,10 +3266,18 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
     itemsLayers?.inherited ?? [],
     itemsLayers?.ownFile ?? null,
   ) ?? {}) as { items?: PlayItem[] };
+  // Same draft-overlay treatment for dungeons so an unpublished
+  // soundtrack / level edit shows up in play. DungeonsBrowse writes
+  // drafts under the same model key.
+  const dungeonsDraft = loadDraft<Record<string, unknown>>(
+    moduleId,
+    "dungeons",
+  );
+  const dungeonsOwn = dungeonsDraft ?? dungeonsLayers?.ownFile ?? null;
   const dungeonsDoc = (mergeModel(
     "dungeons",
     dungeonsLayers?.inherited ?? [],
-    dungeonsLayers?.ownFile ?? null,
+    dungeonsOwn,
   ) ?? {}) as { dungeons?: DungeonRecord[] };
   const questsDoc = (mergeModel(
     "quests",
@@ -3220,6 +3303,19 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
     countersLayers?.ownFile ?? null,
   ) ?? {}) as { counters?: PlayCounter[] };
 
+  // Module manifest — pull the default soundtrack playlist, walking
+  // the extends chain so a parent module's playlist propagates to
+  // every child unless the child overrides. Leaf wins; first
+  // non-empty list along the chain is the resolved value. Drafts
+  // are preferred over on-disk files at each level so unpublished
+  // edits also reach the player.
+  let moduleSoundtrack: string[] = [];
+  try {
+    moduleSoundtrack = await src.resolveModuleSoundtrack(moduleId);
+  } catch {
+    // Silent — silence is a fine default if the manifest read fails.
+  }
+
   return {
     map,
     allMaps,
@@ -3237,6 +3333,7 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
     counters: countersDoc.counters ?? [],
     knockSpell,
     items: itemsDoc.items ?? [],
+    moduleSoundtrack,
   };
 }
 
