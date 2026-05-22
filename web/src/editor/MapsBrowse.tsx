@@ -30,6 +30,15 @@ import {
 import { mergeModel } from "@/data_model/merge";
 import { publishItems } from "@/data_model/publishClient";
 import { StaticModuleSource } from "@/data_model/StaticModuleSource";
+import {
+  encounterTemplateFromRaw,
+  groupEncountersByArea,
+  type EncounterTemplate,
+  type RawEncounter,
+} from "@/battle/world/Encounters";
+import type { DungeonRecord } from "@/sim/dungeon/types";
+import { bakeDungeon } from "./dungeonBake";
+import { GenerateDungeonDialog } from "./GenerateDungeonDialog";
 import { ID_PATTERN, TagsPicker } from "./TagsPicker";
 import { usePublishServer } from "./usePublishServer";
 
@@ -81,6 +90,7 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
   const [state, setState] = useState<LoadState>({ kind: "loading" });
   const [creating, setCreating] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [generatingDungeon, setGeneratingDungeon] = useState(false);
 
   // ── Load palette + maps (draft-aware) ──────────────────────────
   const refresh = async () => {
@@ -182,6 +192,153 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
     setCreating(false);
     // Drop straight into the visual editor for the new map.
     router.push(`/editor/${moduleId}/maps/${rec.id}`);
+  };
+
+  /**
+   * Bake a DungeonRecord into a fresh set of map records appended to
+   * this module's maps.json (via the standard draft path). Each bake
+   * picks an auto-incrementing suffix so successive bakes stay
+   * independent — no overwrite, no destruction of prior edits.
+   *
+   * Loads encounters + monsters catalogs on demand (same pattern the
+   * DungeonSimLauncher uses) so the procedural generator inside the
+   * bake transform has real encounter pools to sample from. With no
+   * encounters loaded the bake still works — floors just generate
+   * empty of monsters.
+   */
+  const onBakeDungeon = async ({
+    record,
+    seed,
+  }: {
+    record: DungeonRecord;
+    seed: number;
+  }) => {
+    if (state.kind !== "ok") return;
+    try {
+      // Load encounters + monsters through the data-model layer
+      // (StaticModuleSource + mergeModel) — NOT the battle-side
+      // loadEncounters/loadMonsters fetchers, which only read the
+      // active module's own file and ignore the `extends` chain.
+      // Child modules like dragon-lair inherit from default; without
+      // honoring that chain we'd silently bake every floor empty of
+      // monsters when the child has no encounters.json of its own.
+      let encountersError: string | null = null;
+      const src = new StaticModuleSource();
+      const [encountersLayers, monstersLayers] = await Promise.all([
+        src.loadModelLayers(moduleId, "encounters").catch((e) => {
+          encountersError = e instanceof Error ? e.message : String(e);
+          return null;
+        }),
+        src.loadModelLayers(moduleId, "monsters").catch(() => null),
+      ]);
+      // Hydrate encounters: merge inherited+own, drop null entries,
+      // group by area for sampleEncounter's expected shape.
+      let encounters: Record<string, EncounterTemplate[]> = {};
+      if (encountersLayers) {
+        const merged = mergeModel(
+          "encounters",
+          encountersLayers.inherited,
+          encountersLayers.ownFile,
+        ) as { encounters?: RawEncounter[] } | null;
+        const rawList = merged?.encounters ?? [];
+        const templates = rawList
+          .map(encounterTemplateFromRaw)
+          .filter((t): t is EncounterTemplate => t !== null);
+        encounters = groupEncountersByArea(templates);
+      }
+      // Build a lean monster-difficulty lookup. The bake only needs
+      // `(id) => difficulty`; the full MonsterSpec hydration is
+      // overkill for that single field, and reading the merged raw
+      // records keeps us off the battle loader.
+      const monsterDifficulty: (id: string) => string | undefined = (() => {
+        if (!monstersLayers) return () => undefined;
+        const merged = mergeModel(
+          "monsters",
+          monstersLayers.inherited,
+          monstersLayers.ownFile,
+        ) as {
+          monsters?: Array<{ id?: string; difficulty?: string }>;
+        } | null;
+        const byId = new Map<string, string>();
+        for (const m of merged?.monsters ?? []) {
+          if (m.id && typeof m.difficulty === "string") {
+            byId.set(m.id, m.difficulty);
+          }
+        }
+        return (id: string) => byId.get(id);
+      })();
+      const dungeonEncounterCount = encounters.dungeon?.length ?? 0;
+      const result = bakeDungeon(record, {
+        seed,
+        existingMaps: state.maps,
+        encounters,
+        monsterDifficulty,
+      });
+      if (result.maps.length === 0) {
+        window.alert(
+          `Dungeon "${record.name}" has no levels to bake. Add at least one level to its record first.`,
+        );
+        return;
+      }
+      // Count encounter cells stamped per floor so the alert surfaces
+      // "the bake ran but no monsters were placed" loud and clear.
+      // Otherwise an empty-encounter bake looks identical to a normal
+      // one until the author opens a map and squints for sprites.
+      const stampedPerFloor = result.maps.map((m) => {
+        let n = 0;
+        for (const row of m.grid) {
+          for (const cell of row) {
+            if (cell.encounter && cell.encounter.length > 0) n++;
+          }
+        }
+        return { id: m.id, n };
+      });
+      const totalStamped = stampedPerFloor.reduce((s, x) => s + x.n, 0);
+      // Append the new maps to the draft. The dialog already showed
+      // the author exactly which ids would be minted; no second
+      // confirm here.
+      persistMaps([...state.maps, ...(result.maps as unknown as MapRecord[])]);
+      setGeneratingDungeon(false);
+      // Build a single multi-line alert that surfaces (a) the maps
+      // created, (b) the encounter catalog size that was sampled,
+      // (c) per-floor placement counts, and (d) the most common
+      // failure mode (encounters.json fetch error) when relevant.
+      const lines: string[] = [];
+      lines.push(
+        `Baked ${result.maps.length} map${
+          result.maps.length === 1 ? "" : "s"
+        } under tag "${result.groupTag}":`,
+      );
+      for (const s of stampedPerFloor) {
+        lines.push(`  · ${s.id} — ${s.n} encounter cell${s.n === 1 ? "" : "s"}`);
+      }
+      lines.push("");
+      if (encountersError) {
+        lines.push(
+          `⚠ Encounters catalog failed to load (${encountersError}). No monsters were placed. Check that this module has an encounters.json.`,
+        );
+      } else if (dungeonEncounterCount === 0) {
+        lines.push(
+          `⚠ No "dungeon"-area encounters found in this module's encounters.json. No monsters were placed.`,
+        );
+      } else if (totalStamped === 0) {
+        lines.push(
+          `⚠ ${dungeonEncounterCount} dungeon-area encounter${
+            dungeonEncounterCount === 1 ? "" : "s"
+          } loaded, but none qualified for this dungeon's difficulty band (${record.difficulty ?? "normal"}). Check that some encounters fall inside the band.`,
+        );
+      } else {
+        lines.push(
+          `Sampled from ${dungeonEncounterCount} dungeon-area encounters.`,
+        );
+      }
+      lines.push("Saved to the draft — Publish when ready.");
+      window.alert(lines.join("\n"));
+    } catch (e) {
+      window.alert(
+        `Bake failed: ${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
   };
 
   const onDelete = (id: string) => {
@@ -290,6 +447,14 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
               + New Map
             </button>
           ) : null}
+          <button
+            type="button"
+            onClick={() => setGeneratingDungeon(true)}
+            className="rounded border border-parchment/30 px-3 py-1 text-sm text-parchment/90 hover:bg-ink/40"
+            title="Generate a set of editable maps from a Dungeon record."
+          >
+            ⚙ Generate Dungeon Maps
+          </button>
           {state.isDraft ? (
             <button
               type="button"
@@ -388,6 +553,16 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
           </p>
         ) : null}
       </div>
+
+      {/* Generate Dungeon Maps dialog */}
+      {generatingDungeon ? (
+        <GenerateDungeonDialog
+          moduleId={moduleId}
+          existingMaps={state.maps}
+          onConfirm={onBakeDungeon}
+          onCancel={() => setGeneratingDungeon(false)}
+        />
+      ) : null}
     </div>
   );
 }

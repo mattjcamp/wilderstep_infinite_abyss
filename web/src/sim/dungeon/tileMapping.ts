@@ -153,11 +153,29 @@ const TRAP_PROTO = proto({
   // member) or has the Detect Traps party effect active (host paints
   // a red-X overlay through the bridge). The `trap: true` flag is
   // what the kernel's step handler reads to emit `trap_triggered`.
+  //
+  // The `sprite` here is a fallback — the actual rendered sprite is
+  // re-stamped per dungeon style at lookup time in `prototypeForTileId`
+  // so a cave-style dungeon's trap reads as a cave floor (not a
+  // ruins-style stone-block floor that pops as an obviously-different
+  // gray square in the surrounding map). Hardcoding stone_floor.png
+  // here only matched the "ruins" style by coincidence.
   id: "dungeon_floor_trap",
   name: "Trap",
   sprite: "map/stone_floor.png",
   trap: true,
 });
+
+/** Resolve the style-appropriate floor sprite. Mirrors the floor
+ *  resolution `prototypeForTileId` does for TILE_DFLOOR but is
+ *  surfaced as a tiny helper because the trap prototype needs the
+ *  same answer (so a trap reads as floor-on-the-current-style, not
+ *  as a hardcoded stone block). */
+function floorSpriteFor(style: DungeonStyle): string {
+  if (style === "caves") return CAVE_FLOOR_PROTO.sprite;
+  if (style === "forest") return FOREST_FLOOR_PROTO.sprite;
+  return DEFAULT_FLOOR_PROTO.sprite;
+}
 
 const ARTIFACT_PROTO = proto({
   id: "quest_artifact",
@@ -286,7 +304,12 @@ export function prototypeForTileId(
     case TILE_CHEST:
       return CHEST_PROTO;
     case TILE_TRAP:
-      return TRAP_PROTO;
+      // Concealed: a trap reads as the style's plain floor so the
+      // player can't spot it without Detect Traps. The red-X reveal
+      // is drawn separately by WorldRenderer.setDetectedTraps on top
+      // of this base sprite, so swapping the base doesn't affect
+      // detection.
+      return { ...TRAP_PROTO, sprite: floorSpriteFor(style) };
     case TILE_ARTIFACT:
       return ARTIFACT_PROTO;
     case TILE_WALL_TORCH:

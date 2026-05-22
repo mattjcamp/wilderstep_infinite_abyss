@@ -159,6 +159,14 @@ export interface DungeonMonster {
   encounterNames: string[];
   /** Display name of the encounter template. */
   encounterName: string;
+  /** Source EncounterTemplate id (from encounters.json) the generator
+   *  sampled for this placement. Captured at sample time so the
+   *  dungeon-bake feature in the editor can stamp real, persistable
+   *  encounter ids onto the baked map cells (vs. the synthetic
+   *  `__dungeon_enc_*__` ids the runtime uses). Optional because the
+   *  procedural runtime path doesn't need it — only `dungeonBake`
+   *  consumes it today. */
+  encounterId?: string;
   /**
    * Quest this monster was placed for. Set by the dungeon's
    * quest-spawn pass for kill-step targets (e.g. Goblin's Nest's
@@ -1072,6 +1080,7 @@ export function generateDungeonLevel(opts: GenerateLevelOptions): DungeonLevel {
         name: enc.monsterPartyTile,
         encounterNames: enc.monsters,
         encounterName: enc.name,
+        encounterId: enc.id,
       });
     }
   }
@@ -1166,6 +1175,7 @@ export function generateDungeonLevel(opts: GenerateLevelOptions): DungeonLevel {
         name: enc.monsterPartyTile,
         encounterNames: enc.monsters,
         encounterName: enc.name,
+        encounterId: enc.id,
         // Mark this as a quest-required placement so the renderer
         // can paint the soft gold halo the DungeonMonster doc
         // comment describes — the player sees which sprites are
@@ -1338,8 +1348,17 @@ export interface QuestKillSpawnRow {
    *  (`target_count - already_killed`). */
   remaining: number;
   /** Encounter template to clone — usually pulled via
-   *  `Quests.rosterFor(encounterTable, step.encounter)`. */
-  template: { name: string; monsters: string[]; monsterPartyTile: string };
+   *  `Quests.rosterFor(encounterTable, step.encounter)`. The `id`
+   *  field is optional for backwards compatibility with hand-built
+   *  template literals, but real `rosterFor` results carry it and
+   *  the dungeon-bake feature in the editor depends on it to stamp
+   *  real encounter ids onto baked map cells. */
+  template: {
+    id?: string;
+    name: string;
+    monsters: string[];
+    monsterPartyTile: string;
+  };
 }
 
 /**
@@ -1493,6 +1512,7 @@ export function placeQuestKillMonsters(
         name: row.template.monsterPartyTile,
         encounterNames: [...row.template.monsters],
         encounterName: row.template.name,
+        encounterId: row.template.id,
         questName: row.questName,
         stepIdx: row.stepIdx,
       });

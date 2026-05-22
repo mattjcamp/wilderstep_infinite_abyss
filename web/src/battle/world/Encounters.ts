@@ -54,7 +54,7 @@ export interface EncounterTemplate {
   darkness?: boolean;
 }
 
-interface RawEncounter {
+export interface RawEncounter {
   id?: string;
   area?: string;
   name?: string;
@@ -84,7 +84,31 @@ let _byAreaCache: Record<string, EncounterTemplate[]> | null = null;
  * shouldn't need a copy point here). The lone explicit override is
  * `monsterPartyTile`, which we *derive* from `monster_party_tile`
  * for a runtime camelCase alias the rest of the engine consumes.
+ *
+ * Exported for callers that load encounters through the data-model
+ * inheritance layer (StaticModuleSource + mergeModel) rather than
+ * the active-module-only `loadEncounters` fetch — they still need
+ * the same hydration so the rest of the engine sees a uniform
+ * EncounterTemplate shape regardless of source.
  */
+export function encounterTemplateFromRaw(
+  raw: RawEncounter,
+): EncounterTemplate | null {
+  return fromRaw(raw);
+}
+
+/** Group a flat list of hydrated encounters by `area`. The shape
+ *  matches what `sampleEncounter` / the dungeon generator expect. */
+export function groupEncountersByArea(
+  templates: ReadonlyArray<EncounterTemplate>,
+): Record<string, EncounterTemplate[]> {
+  const out: Record<string, EncounterTemplate[]> = {};
+  for (const e of templates) {
+    (out[e.area] ??= []).push(e);
+  }
+  return out;
+}
+
 function fromRaw(raw: RawEncounter): EncounterTemplate | null {
   const monsters = Array.isArray(raw.monsters)
     ? raw.monsters.filter((m): m is string => typeof m === "string" && m.length > 0)
