@@ -3,6 +3,8 @@
 - Make Dragon of Something adventure and do a playthrough
 - Do a playthrough with the alternate party
 
+# Polish
+- Clerics should be able to cast Light during battle. This will provide a torch-like effect but uses the fairy animation instead of the torch animation
 
 # V3 Ideas
 

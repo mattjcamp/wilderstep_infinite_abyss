@@ -43,6 +43,7 @@ import { LockDialogOverlay } from "@/editor/LockDialogOverlay";
 import { QuestDialogOverlay } from "@/editor/QuestDialogOverlay";
 import { PlayPartyScreenOverlay } from "./PlayPartyScreenOverlay";
 import { PlayQuestLogOverlay } from "./PlayQuestLogOverlay";
+import { PlayQuestCelebration } from "./PlayQuestCelebration";
 import { PlayHelpTipsOverlay } from "./PlayHelpTipsOverlay";
 import { PlayLogOverlay } from "./PlayLogOverlay";
 import { PlayCounterShopOverlay } from "./PlayCounterShopOverlay";
@@ -89,6 +90,7 @@ import {
   type QuestState,
 } from "@/battle/world/Quests";
 import { tintForCell } from "@/sim/lighting";
+import { computeQuestGlowCells } from "@/sim/questGlow";
 import { TILE_SIZE, WorldRenderer } from "@/sim/scene/WorldRenderer";
 import {
   glowAura,
@@ -457,6 +459,21 @@ export function PlayHost() {
    *  NPC with a `counter` field. Cleared by the overlay's close
    *  callback. */
   const [counterShopId, setCounterShopId] = useState<string | null>(null);
+  /** Queue of pending celebration placards. Pushed to whenever a
+   *  quest step transitions from incomplete to complete (kill credit
+   *  with `stepCompleted: true`) or when the player turns in a fully
+   *  complete quest. The head of the queue is rendered until its
+   *  `onDismiss` fires, then it shifts off. Stack semantics aren't
+   *  ideal because two events firing close together would otherwise
+   *  overdraw each other; queue lets them play in order. */
+  const [questCelebrations, setQuestCelebrations] = useState<
+    ReadonlyArray<{
+      key: string;
+      kind: "step" | "quest";
+      title: string;
+      subtitle?: string;
+    }>
+  >([]);
   /** NPC currently being talked to. Set when the party bumps an NPC
    *  cell; the dialog modal renders the NPC's chatter and, when the
    *  NPC has a counter, exposes a Visit Counter button that hands
@@ -558,6 +575,108 @@ export function PlayHost() {
       if (cheby <= radius) visible.add(key);
     }
     r.setDetectedTraps(visible);
+  }, []);
+
+  /** Enqueue a celebration placard + fire its sound and a gold
+   *  radial burst at the party's current tile. The placard itself
+   *  renders the React overlay; the burst + sfx are side effects
+   *  that should fire ONCE per credit (placard re-renders shouldn't
+   *  re-trigger them) so they're scheduled here, at the enqueue
+   *  point, rather than inside the component.
+   *
+   *  Three things happen synchronously:
+   *
+   *   1. Push the placard onto `questCelebrations`. The render
+   *      effect picks it up at the head of the queue and starts the
+   *      fade-in.
+   *   2. Play the matching SFX from the chiptune catalog. Both names
+   *      already exist; `level_up` for steps reads as "progress
+   *      tone", `victory` for quest-complete is the bigger fanfare.
+   *   3. Spawn a gold radial-burst particle effect at the party's
+   *      Phaser tile. The burst is purely cosmetic so a missing
+   *      scene (between map swaps) is silently no-op.
+   *
+   *  Idempotent on the placard side — the `key` makes each entry
+   *  unique so React doesn't collapse two back-to-back step
+   *  completions for the same quest into one node.  */
+  const fireQuestCelebration = useCallback(
+    (args: {
+      kind: "step" | "quest";
+      title: string;
+      subtitle?: string;
+    }) => {
+      const key = `${args.kind}-${Date.now()}-${Math.random()
+        .toString(36)
+        .slice(2, 7)}`;
+      setQuestCelebrations((prev) => [
+        ...prev,
+        { key, kind: args.kind, title: args.title, subtitle: args.subtitle },
+      ]);
+      Sfx.play(args.kind === "quest" ? "victory" : "level_up");
+      // Spawn the celebratory burst at the party's tile. Sim's
+      // snapshot has the live position; the renderer turns that into
+      // pixel coordinates. Skipping silently when either is missing
+      // (e.g. mid map-swap) keeps the celebration robust.
+      const r = rendererRef.current;
+      const sim = simRef.current;
+      if (r && sim) {
+        const snap = sim.snapshot();
+        const x = snap.pos.col * TILE_SIZE + TILE_SIZE / 2;
+        const y = snap.pos.row * TILE_SIZE + TILE_SIZE / 2;
+        // Gold burst — matches the quest-glow halo so the
+        // celebration reads as part of the same visual family.
+        // Larger radius for full quest completion vs. step credit.
+        radialBurst(
+          r.scene,
+          { x, y },
+          0xffd750,
+          0xffe580,
+          args.kind === "quest" ? 80 : 56,
+        ).catch(() => undefined);
+      }
+    },
+    [],
+  );
+
+  /** Push the quest-relevance halo set into the renderer. Computed
+   *  from the live grid + quest defs + the accepted-quests set in the
+   *  save. Quest givers glow unconditionally (the breadcrumb that
+   *  draws the player TO the quest); kill-step encounters and fetch-
+   *  step items glow only once the relevant quest is in
+   *  acceptedQuests. Called at:
+   *
+   *   - Map mount (initial seed)
+   *   - Quest accept (acceptedQuests grew)
+   *
+   *  Doesn't need to fire on kill credit or step turn-in:
+   *  encounter / item cells naturally disappear from the grid once
+   *  consumed, so the next relight's halo pass paints nothing for
+   *  them. The giver cell stays lit after turn-in (matches the
+   *  "always glow" rule for givers — easy to relax later if it
+   *  reads wrong). */
+  const refreshQuestGlow = useCallback(() => {
+    const r = rendererRef.current;
+    if (!r) return;
+    const grid = r.grid;
+    if (!grid) return;
+    const defs = questDefsRef.current ?? [];
+    const accepted = new Set<string>(saveRef.current?.acceptedQuests ?? []);
+    // Casts: WorldRenderer's `RenderGrid` types its cells as
+    // RenderCell (sprite/light_*/obstructs only) since those are the
+    // only fields the renderer itself reads, but the same cells
+    // carry `quest`/`encounter`/`item` at runtime (the catalog hands
+    // the full PlayCell shape in). The glow helper only reads those
+    // three string fields, so the unknown-cast is safe. QuestDef's
+    // steps are a structural superset of the helper's
+    // `{ kind, params }` requirement.
+    const cells = computeQuestGlowCells(
+      grid as unknown as ReadonlyArray<
+        ReadonlyArray<{ quest?: string; encounter?: string; item?: string }>
+      >,
+      defs,
+      { acceptedQuests: accepted },
+    );
+    r.setQuestGlowCells(cells);
   }, []);
   useEffect(() => {
     // Lock dialog, quest offer, active combat, the Party screen, and
@@ -1231,6 +1350,12 @@ export function PlayHost() {
             }
           }
           refreshDetectedTraps();
+          // Seed the quest-relevance halo for this map. Quest givers
+          // on the freshly-mounted grid glow immediately so the
+          // player can spot them; kill-step / fetch-step targets glow
+          // only for already-accepted quests carried over from a
+          // prior save.
+          refreshQuestGlow();
 
           // Item overlays — one Image per cell whose `item` resolves
           // to a known icon. Authored via the editor's per-cell
@@ -2039,6 +2164,27 @@ export function PlayHost() {
                   saveRef.current = nextSave;
                 }
               }
+              // Step transitioned to complete on this credit? Fire a
+              // celebration placard + sound + radial burst. We use
+              // the kernel-supplied `stepCompleted` flag rather than
+              // re-deriving it from stepProgress so a multi-kill
+              // step doesn't fire on every individual credit — only
+              // on the last one. Quest fully complete here is NOT
+              // celebrated yet: the player still has to walk back
+              // to the giver and claim rewards. That's where the
+              // bigger "Quest Complete" placard fires (see
+              // onQuestDecline's complete branch).
+              if (ev.stepCompleted) {
+                const def = questDefsRef.current.find(
+                  (d) => d.id === ev.questId,
+                );
+                const step = def?.steps[ev.stepIdx];
+                fireQuestCelebration({
+                  kind: "step",
+                  title: def?.name ?? ev.questId,
+                  subtitle: step?.name,
+                });
+              }
               return;
             }
             if (ev.kind === "dungeon_entered") {
@@ -2603,10 +2749,14 @@ export function PlayHost() {
             saveRef.current = nextSave;
           }
         }
+        // Newly-accepted quest may have kill-step / fetch-step targets
+        // already painted on the current map. Re-run the glow pass so
+        // those cells light up immediately.
+        refreshQuestGlow();
       }
       return null;
     });
-  }, []);
+  }, [refreshQuestGlow]);
 
   /** Quest decline / close — routes both "Decline" (offer view) and
    *  "Close" (in-progress / complete view) through the same handler.
@@ -2699,11 +2849,24 @@ export function PlayHost() {
               ? next.slice(next.length - MAX_LOG)
               : next;
           });
+          // Big celebration — bigger placard, victory fanfare, wider
+          // gold burst at the party. Fires AFTER state has been
+          // committed so the queue's render sees the post-claim
+          // state. Subtitle is the reward summary so the player sees
+          // what they got without flipping to the log strip.
+          fireQuestCelebration({
+            kind: "quest",
+            title: claim.questName,
+            subtitle:
+              parts.length > 0
+                ? `Rewards: ${parts.join(", ")}`
+                : "Rewards claimed",
+          });
         }
       }
       return null;
     });
-  }, []);
+  }, [fireQuestCelebration]);
 
   // Render shells.
   if (state.kind === "loading") {
@@ -3004,15 +3167,45 @@ export function PlayHost() {
         />
       ) : null}
 
-      {questLogOpen && state.catalog && state.save ? (
-        <PlayQuestLogOverlay
-          quests={state.catalog.quests}
-          acceptedQuests={state.save.acceptedQuests ?? []}
-          questStepProgress={state.save.questStepProgress ?? {}}
-          turnedInQuests={state.save.turnedInQuests ?? []}
-          onClose={() => setQuestLogOpen(false)}
+      {/* Quest celebration placard — renders the head of the queue.
+          The component fades itself in/out and calls onDismiss when
+          done, at which point we shift the head off so the next
+          enqueued placard (if any) gets its turn. */}
+      {questCelebrations.length > 0 ? (
+        <PlayQuestCelebration
+          key={questCelebrations[0].key}
+          kind={questCelebrations[0].kind}
+          title={questCelebrations[0].title}
+          subtitle={questCelebrations[0].subtitle}
+          onDismiss={() =>
+            setQuestCelebrations((prev) => prev.slice(1))
+          }
         />
       ) : null}
+
+      {questLogOpen && state.catalog && state.save ? (() => {
+        // Read from saveRef.current rather than state.save. Quest
+        // accept (~line 2603), turn-in (~2680), and kill-credit
+        // (~2039) all mutate saveRef.current and persist via
+        // saveWorld() but deliberately skip setState({ save }) to
+        // avoid remounting the Phaser scene (its mount effect's
+        // dep list includes state.save). state.save therefore lags
+        // behind by however many quest events have fired since the
+        // last setState. PartyScreen + Combat + CounterShop all
+        // already use this `saveRef.current ?? state.save` pattern
+        // for the same reason; the Quest Log was the last reader
+        // still pinned to the stale React-state copy.
+        const liveSave = saveRef.current ?? state.save;
+        return (
+          <PlayQuestLogOverlay
+            quests={state.catalog.quests}
+            acceptedQuests={liveSave.acceptedQuests ?? []}
+            questStepProgress={liveSave.questStepProgress ?? {}}
+            turnedInQuests={liveSave.turnedInQuests ?? []}
+            onClose={() => setQuestLogOpen(false)}
+          />
+        );
+      })() : null}
 
       {logOpen ? (
         <PlayLogOverlay

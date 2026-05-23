@@ -56,6 +56,7 @@ import {
   type LightingResult,
 } from "@/sim/lighting";
 import { ANIMATION_CONFIGS } from "@/sim/tileAnimations";
+import { QUEST_GLOW } from "@/sim/questGlow";
 import type { SimLightSource } from "@/sim/types";
 import { withBasePath } from "@/util/basePath";
 
@@ -181,6 +182,17 @@ export class WorldRenderer {
     string,
     Phaser.GameObjects.Graphics
   >();
+  /** Cells that should carry the soft golden quest-relevance halo.
+   *  Source of truth is the host (PlayHost): it computes the set via
+   *  computeQuestGlowCells whenever the grid or accepted-quest set
+   *  changes and pushes it here through `setQuestGlowCells`. The
+   *  actual circles are drawn into `questGlowGraphics` on every
+   *  `relight()` so the halo dims with ambient just like the cells. */
+  questGlowCells: ReadonlySet<string> = new Set();
+  /** Lazily-created Phaser Graphics layer the halo is drawn into.
+   *  Single graphics object cleared + redrawn per relight — cheap,
+   *  since the typical glow-cell set has a handful of entries. */
+  private questGlowGraphics: Phaser.GameObjects.Graphics | null = null;
 
   /** The single party sprite. Null before `setPartyAt` fires. */
   partySprite: Phaser.GameObjects.Image | null = null;
@@ -413,6 +425,74 @@ export class WorldRenderer {
     }
   }
 
+  /** Update the cell set that carries the quest-relevance halo. The
+   *  caller (PlayHost) computes the set from grid + quest defs +
+   *  accepted-quests via `computeQuestGlowCells` (sim/questGlow) and
+   *  pushes it in here whenever any input changes. We stash it and
+   *  trigger a repaint; the actual draw happens inside `relight()`
+   *  so the halo brightness tracks ambient lighting automatically.
+   *
+   *  Passing an empty set clears the halo. Idempotent — pushing the
+   *  same set twice does no work beyond the cheap repaint. */
+  setQuestGlowCells(cells: ReadonlySet<string>): void {
+    this.questGlowCells = cells;
+    this.repaintQuestGlow();
+  }
+
+  /** Redraw the quest-glow Graphics layer. Cleared and rebuilt from
+   *  the live `questGlowCells` set. Each cell gets a soft gold disc
+   *  whose RGB is multiplied by the cell's current ambient brightness
+   *  (read from the base sprite's tint) so dim corridors get a dim
+   *  halo. Pure side-effect on the Graphics object — called from
+   *  `relight()` (so brightness stays current) and from
+   *  `setQuestGlowCells` (so a set change shows up immediately even
+   *  if no relight happens).
+   *
+   *  The graphics object is lazily created on first use to avoid a
+   *  fixed setup cost for renderers that never use the halo (e.g. the
+   *  editor, which paints its own glow). */
+  private repaintQuestGlow(): void {
+    if (!this.questGlowGraphics && this.questGlowCells.size === 0) {
+      // Skip the lazy-init path if there's nothing to paint anyway.
+      return;
+    }
+    if (!this.questGlowGraphics) {
+      this.questGlowGraphics = this.scene.add.graphics();
+      // Behind placed-encounter sprites (depth 80) and party (300),
+      // ahead of base cells. Matches the editor's halo placement.
+      this.questGlowGraphics.setDepth(60);
+    }
+    const g = this.questGlowGraphics;
+    g.clear();
+    if (this.questGlowCells.size === 0) return;
+    const { baseColor, alpha, radiusFactor } = QUEST_GLOW;
+    for (const key of this.questGlowCells) {
+      const [csStr, rsStr] = key.split(",");
+      const cs = Number(csStr);
+      const rs = Number(rsStr);
+      if (!Number.isFinite(cs) || !Number.isFinite(rs)) continue;
+      // Brightness from the base cell's current tint. `relight` paints
+      // a grayscale tint where all three channels equal ambient * 255,
+      // so the low byte is the brightness 0..255. Untinted cells
+      // (Day mode / "clear") read brightness=1.
+      let brightness = 1;
+      const baseImg = this.cells.get(key);
+      if (baseImg && baseImg.isTinted) {
+        brightness = (baseImg.tintTopLeft & 0xff) / 255;
+      }
+      const r = Math.round(baseColor.r * brightness);
+      const gg = Math.round(baseColor.g * brightness);
+      const b = Math.round(baseColor.b * brightness);
+      const color = (r << 16) | (gg << 8) | b;
+      g.fillStyle(color, alpha);
+      const cx = cs * TILE_SIZE + TILE_SIZE / 2;
+      const cy = rs * TILE_SIZE + TILE_SIZE / 2;
+      // Slightly wider than the cell so the halo bleeds past sprite
+      // edges. Matches the editor.
+      g.fillCircle(cx, cy, TILE_SIZE * radiusFactor);
+    }
+  }
+
   /** Update the player-engaged infravision flag + trigger a relight.
    *  Called by hosts that toggle infravision from React UI; the sim
    *  kernel also routes its own toggle through the bridge to this. */
@@ -519,6 +599,10 @@ export class WorldRenderer {
     };
     for (const img of this.roamerSprites.values()) tintOverlay(img);
     for (const img of this.placedEncounterSprites.values()) tintOverlay(img);
+    // Quest-relevance halo. Repainted from scratch each relight so
+    // brightness tracks ambient — a quest target in a dim corridor
+    // gets a dim halo, a quest giver in daylight gets a bright one.
+    this.repaintQuestGlow();
     // Caller hook — tint custom overlays in sync with the shared
     // layers so a chest in a torchlit corridor reads at the same
     // ambient as the corridor floor.

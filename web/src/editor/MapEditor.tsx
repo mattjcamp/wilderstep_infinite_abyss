@@ -52,6 +52,7 @@ import {
   tintForCell,
 } from "@/sim/lighting";
 import { SimPanel } from "@/sim/SimPanel";
+import { computeQuestGlowCells } from "@/sim/questGlow";
 import { ANIMATION_CONFIGS } from "@/sim/tileAnimations";
 import type { AnimationKind } from "@/sim/tileAnimations";
 import { MapPartyScreenOverlay } from "./MapPartyScreenOverlay";
@@ -235,58 +236,10 @@ function cellMatchesPalette(cell: TileType, palette: TileType[]): boolean {
   return true;
 }
 
-/** Compute the set of `"col,row"` keys for cells that should carry the
- *  quest-related golden glow. A cell glows when any of the following
- *  is true:
- *
- *   - it has a non-empty `quest` field (the quest giver sits here);
- *   - it has an `encounter` whose id is named by a `kill`-kind step's
- *     `encounter_id`;
- *   - it has an `item` named by a `fetch`-kind step's `item_id`.
- *
- *  `visit` and `talk` steps don't drive glow today — those refer to
- *  coordinates and NPCs that the engine surfaces differently. */
-function computeQuestGlowCells(
-  grid: TileType[][],
-  quests: QuestRecord[],
-): Set<string> {
-  const questEncounterIds = new Set<string>();
-  const questItemIds = new Set<string>();
-  for (const q of quests) {
-    for (const s of q.steps ?? []) {
-      const params = (s.params ?? {}) as Record<string, unknown>;
-      if (s.kind === "kill") {
-        const eid = params.encounter_id;
-        if (typeof eid === "string" && eid) questEncounterIds.add(eid);
-      } else if (s.kind === "fetch") {
-        const iid = params.item_id;
-        if (typeof iid === "string" && iid) questItemIds.add(iid);
-      }
-    }
-  }
-
-  const glow = new Set<string>();
-  for (let r = 0; r < grid.length; r++) {
-    const row = grid[r];
-    if (!row) continue;
-    for (let c = 0; c < row.length; c++) {
-      const cell = row[c];
-      if (!cell) continue;
-      if (cell.quest) {
-        glow.add(`${c},${r}`);
-        continue;
-      }
-      if (cell.encounter && questEncounterIds.has(cell.encounter)) {
-        glow.add(`${c},${r}`);
-        continue;
-      }
-      if (cell.item && questItemIds.has(cell.item)) {
-        glow.add(`${c},${r}`);
-      }
-    }
-  }
-  return glow;
-}
+// Quest-relevance halo computation lives in @/sim/questGlow so the
+// play runtime can compute the same set. The editor passes no
+// acceptedQuests filter, which keeps the authoring view's "glow
+// everything quest-relevant" behaviour intact.
 
 function fieldDiffersFromPalette(
   cell: TileType,

@@ -1,0 +1,107 @@
+{
+  "quests": [
+    {
+      "id": "rats",
+      "name": "The Giant Rats",
+      "description": "Get rid of those giant rats in their giant rat hiole",
+      "tags": [
+        "rats"
+      ],
+      "steps": [
+        {
+          "id": "rats_step_1",
+          "name": "Step 1 Kill the Giant Rats",
+          "kind": "kill",
+          "params": {
+            "encounter_id": "rat_swarm",
+            "count": 2
+          },
+          "description": "Kill the Giant Rats in Hallowmere",
+          "tags": [
+            "rats"
+          ],
+          "location_kind": "map",
+          "map_id": "demo_town"
+        },
+        {
+          "id": "rats_step_2",
+          "name": "Step 2",
+          "kind": "kill",
+          "params": {
+            "encounter_id": "rat_nest",
+            "count": 3
+          },
+          "location_kind": "map",
+          "map_id": "demo_general_shop",
+          "description": "Kill the Rats in Mira's Shop"
+        },
+        {
+          "id": "rats_step_3",
+          "name": "Step 3",
+          "kind": "kill",
+          "params": {
+            "encounter_id": "rat_swarm",
+            "count": 2
+          },
+          "location_kind": "map",
+          "map_id": "show_basement",
+          "description": "Kill the Rats in the Shop Basement"
+        },
+        {
+          "id": "rats_step_4",
+          "name": "Step 4",
+          "kind": "kill",
+          "params": {
+            "encounter_id": "stray_goblin"
+          },
+          "description": "Deal with the Goblin",
+          "location_kind": "map",
+          "map_id": "show_basement"
+        }
+      ],
+      "quest_giver": {
+        "npc_name": "Jerald",
+        "npc_sprite": "person/hobbit2.png",
+        "start_dialog": "I'm a friend of Mira who knows the general shop over there, she is embarrased but we think her shop is source of all these Giant Rats and her basement is infested with them. Can you take care of this problem forhere?",
+        "end_dialog": "Thank you so much for getting rid of those rats and dealing goblin.... Who knew?"
+      },
+      "rewards": {
+        "xp": 100,
+        "gold": 100,
+        "items": [
+          "camping_supplies",
+          "torch"
+        ]
+      }
+    },
+    {
+      "id": "goblins",
+      "name": "The Goblins",
+      "description": "Get rid of those pesky Goblins",
+      "tags": [],
+      "steps": [
+        {
+          "id": "goblins_step_1",
+          "name": "Step 1",
+          "kind": "kill",
+          "params": {
+            "encounter_id": "goblin_raiders"
+          },
+          "description": "Kill the Goblins",
+          "location_kind": "map",
+          "map_id": "goblins_den_1_l3"
+        }
+      ],
+      "quest_giver": {
+        "npc_name": "",
+        "npc_sprite": "person/townsperson8.png",
+        "start_dialog": "Greetings! The people of Hallowmere believe that the nasty Goblins up north are the cause of the Giant Rat problem. It's time for revenge! Will you head up to their lair in the north and destroy the nasty Goblins?",
+        "end_dialog": "You did this and solved our Rat problem for good!"
+      },
+      "rewards": {
+        "xp": 100,
+        "gold": 100
+      }
+    }
+  ]
+}
