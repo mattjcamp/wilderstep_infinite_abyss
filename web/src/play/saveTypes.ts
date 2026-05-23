@@ -177,6 +177,19 @@ export interface SavedMapState {
    *  "scan the grid for boat:true cells", matching the kernel's
    *  default boot path. */
   boatPositions?: Record<string, string>;
+  /** Per-cell tile overrides — populated when a turned-in quest's
+   *  `rewards.tile_add` / `rewards.tile_remove` op paints this map.
+   *  Each entry is `{ col, row, tileId }`; `tileId` is a palette
+   *  id (map_tiles.json) that the load step copies into the map's
+   *  grid before the scene mounts. An empty `tileId` means "clear
+   *  to a passable default" (tile_remove semantics) — applied as
+   *  the first walkable palette tile at apply time. Absent on
+   *  legacy saves; the loader treats absence as the empty list. */
+  tileOverrides?: ReadonlyArray<{
+    col: number;
+    row: number;
+    tileId: string;
+  }>;
 }
 
 /** One floor inside a saved dungeon — same fields as

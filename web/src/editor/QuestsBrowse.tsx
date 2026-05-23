@@ -120,7 +120,6 @@ interface Rewards {
   xp?: number;
   gold?: number;
   items?: string[];
-  tile_remove?: TileOp[];
   tile_add?: TileAddOp[];
 }
 
@@ -880,18 +879,11 @@ function RewardsEditor({
             onChange={(arr) => patch({ items: arr })}
           />
 
-          {/* tile_remove */}
+          {/* tile_add — the only tile-mutation reward. Always
+              specifies a target tile_id; "removing" a tile is just
+              painting the replacement tile here. */}
           <TileOpsList
-            label="Tile removals"
-            ops={r.tile_remove ?? []}
-            maps={maps}
-            withTileId={false}
-            onChange={(arr) => patch({ tile_remove: arr as TileOp[] })}
-          />
-
-          {/* tile_add */}
-          <TileOpsList
-            label="Tile additions"
+            label="Tile changes"
             ops={r.tile_add ?? []}
             maps={maps}
             withTileId={true}
@@ -989,7 +981,10 @@ function ItemsList({
   );
 }
 
-// ── Tile-ops list (used for both tile_remove and tile_add) ──────────
+// ── Tile-ops list (used by the tile_add rewards section) ────────────
+// The component carries a `withTileId` flag for future tile-op kinds
+// that might omit the replacement id, but today the only caller passes
+// `withTileId={true}` — tile_add is the sole tile-mutation reward.
 
 function TileOpsList({
   label,

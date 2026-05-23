@@ -125,6 +125,12 @@
             "col": 13,
             "row": 9,
             "tile_id": "moongate"
+          },
+          {
+            "map": "demo_town",
+            "col": 14,
+            "row": 8,
+            "tile_id": "ship_frigate"
           }
         ]
       }

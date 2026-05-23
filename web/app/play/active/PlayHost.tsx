@@ -1100,6 +1100,16 @@ export function PlayHost() {
           if (cell.sprite) spriteKeys.add(cell.sprite);
         }
       }
+      // Also preload every palette tile's sprite. The grid walk above
+      // only sees sprites the authored map already uses, but quest
+      // tile_add rewards (applied on turn-in via `setCellSprite`) can
+      // swap cells to ANY palette tile id — including ones nowhere
+      // on the current grid. Without this, the post-quest swap would
+      // hit `textures.exists` false and silently no-op. Palette is
+      // small (~tens of entries) so the over-preload cost is fine.
+      for (const tile of catalog.palette) {
+        if (tile.sprite) spriteKeys.add(tile.sprite);
+      }
       if (save.party.avatar) spriteKeys.add(save.party.avatar);
       for (const m of catalog.monsters) {
         if (m.sprite) spriteKeys.add(m.sprite);
@@ -1157,6 +1167,27 @@ export function PlayHost() {
           if (typeof itemId !== "string" || !itemId) continue;
           const item = itemsById.get(itemId);
           const icon = item?.icon;
+          if (!icon) continue;
+          itemIconKeys.add(`item/${icon}.png`);
+        }
+      }
+      // Retrieve-step items aren't in the grid yet (the placement pass
+      // runs in create() AFTER preload), so the authored-item walk
+      // above misses them. Pre-resolve icons here so the preloader
+      // has them ready when (a) the create() pass stamps cells for
+      // already-accepted retrieve steps, or (b) a quest accepted
+      // mid-play places its item via the bridge — both paths gate on
+      // `this.textures.exists(tex)` and silently skip when the
+      // texture wasn't preloaded. We walk EVERY quest's retrieve
+      // steps targeting this map (not just accepted-but-unfinished
+      // ones) so a future accept doesn't blink an invisible item.
+      // Item icons are small PNGs; the over-preload cost is minimal.
+      for (const def of questDefsRef.current) {
+        for (const step of def.steps) {
+          if (step.kind !== "retrieve") continue;
+          if (step.mapId !== catalog.map.id) continue;
+          if (!step.itemId) continue;
+          const icon = itemsById.get(step.itemId)?.icon;
           if (!icon) continue;
           itemIconKeys.add(`item/${icon}.png`);
         }
@@ -1294,6 +1325,33 @@ export function PlayHost() {
           }
         }
         create() {
+          // Apply per-cell tile overrides from the save BEFORE
+          // anything reads catalog.map.grid. Each entry is `{ col,
+          // row, tileId }` — populated by the `rewards.tile_add`
+          // handler on quest turn-in. Missing palette ids (or out-
+          // of-bounds coords / empty tileId) skip silently so a
+          // broken record never crashes a load.
+          //
+          // The grid is mutated in place (the renderer + sim both
+          // capture it by reference, so subsequent createCells +
+          // step pipeline reads see the post-override values).
+          {
+            const overrides = save.maps[catalog.map.id]?.tileOverrides ?? [];
+            for (const ov of overrides) {
+              if (!ov.tileId) continue;
+              if (!Number.isFinite(ov.col) || !Number.isFinite(ov.row)) {
+                continue;
+              }
+              if (ov.row < 0 || ov.row >= catalog.map.height) continue;
+              if (ov.col < 0 || ov.col >= catalog.map.width) continue;
+              const source = catalog.palette.find((t) => t.id === ov.tileId);
+              if (!source) continue;
+              catalog.map.grid[ov.row][ov.col] = {
+                ...source,
+              } as typeof catalog.map.grid[number][number];
+            }
+          }
+
           // Detect race-driven infravision once at boot.
           const racesById = new Map(catalog.races.map((r) => [r.id, r]));
           const charactersById = new Map(
@@ -3071,6 +3129,77 @@ export function PlayHost() {
             // carried the id from a prior race.
             const turnedIn = new Set(save.turnedInQuests ?? []);
             turnedIn.add(claim.questId);
+            // ── Tile-mutation rewards ────────────────────────────
+            // Each tile_add op paints the named palette tile at
+            // (map, col, row). It's the only tile-mutation reward —
+            // "removal" is just a paint with the desired replacement
+            // tile, fully specified. The op gets recorded into the
+            // target map's `tileOverrides` so the mutation survives
+            // reload + re-entry. If the player is currently ON the
+            // affected map we ALSO mutate the live grid + repaint
+            // the cell sprite immediately so the change reads in the
+            // same frame as the turn-in dialog closes. Cells on
+            // other maps just get the override stamped on the save;
+            // the apply pass at map-mount picks them up next time
+            // the player visits.
+            const nextMaps: typeof save.maps = { ...save.maps };
+            const liveMap = catalogRef.current?.map;
+            const palette = catalogRef.current?.palette ?? [];
+            const r = rendererRef.current;
+            for (const op of claim.tileAdds) {
+              const mapId = op.map;
+              const { col, row, tile_id: tileId } = op;
+              if (!tileId) continue;
+              // Update the save's per-map override list (append; the
+              // mount-time apply pass picks them up in order so the
+              // latest write wins for repeat-paints of the same cell).
+              const prev = nextMaps[mapId] ?? {
+                unlockedCells: [],
+                defeatedEncounters: [],
+                destroyedLairs: [],
+              };
+              const nextOverrides = [
+                ...(prev.tileOverrides ?? []),
+                { col, row, tileId },
+              ];
+              nextMaps[mapId] = { ...prev, tileOverrides: nextOverrides };
+              // Live-update if on the same map: mutate the grid +
+              // setCellSprite. Out-of-bounds entries skip silently.
+              if (liveMap && mapId === liveMap.id) {
+                if (
+                  row >= 0 &&
+                  row < liveMap.height &&
+                  col >= 0 &&
+                  col < liveMap.width
+                ) {
+                  const source = palette.find((t) => t.id === tileId);
+                  if (source) {
+                    liveMap.grid[row][col] = {
+                      ...source,
+                    } as typeof liveMap.grid[number][number];
+                    if (r && source.sprite) {
+                      r.setCellSprite(col, row, source.sprite);
+                    }
+                    // If the new tile is flagged as a boat, register
+                    // it with the kernel's boatPositions map — the
+                    // seed-time grid scan only sees authored boats,
+                    // so a runtime boat addition needs an explicit
+                    // call here for the boarding logic to recognise
+                    // the cell on the next step. Cells stamped at
+                    // mount time (via the create() override pass)
+                    // don't need this path; the kernel's seed loop
+                    // picks them up before stepInDirection ever runs.
+                    if (
+                      (source as { boat?: boolean }).boat === true &&
+                      simRef.current &&
+                      source.sprite
+                    ) {
+                      simRef.current.addBoatAt(col, row, source.sprite);
+                    }
+                  }
+                }
+              }
+            }
             const nextSave: WorldSave = {
               ...save,
               party: {
@@ -3079,7 +3208,14 @@ export function PlayHost() {
                 inventory: nextInventory,
               },
               turnedInQuests: [...turnedIn],
+              maps: nextMaps,
             };
+            // Tile mutations may have changed walkability / light
+            // sources; trigger a relight so torches in newly-passable
+            // corridors light up immediately.
+            if (r && claim.tileAdds.length > 0) {
+              r.relight();
+            }
             saveWorld(nextSave);
             saveRef.current = nextSave;
           }

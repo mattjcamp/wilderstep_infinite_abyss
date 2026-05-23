@@ -56,6 +56,9 @@ describe("parseQuestsFile (v2 envelope)", () => {
       xp: 100,
       gold: 100,
       items: ["camping_supplies"],
+      // tileAdds is the sole tile-mutation reward; defaults to empty
+      // when the fixture doesn't author any.
+      tileAdds: [],
     });
     expect(q.steps).toHaveLength(1);
     const s = q.steps[0];

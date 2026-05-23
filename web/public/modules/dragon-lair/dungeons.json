@@ -3,7 +3,7 @@
     {
       "id": "old_ruins",
       "name": "Ruins of the Auric Throne",
-      "description": "All that remains of the kingdom that first chained the dragon beneath the Brimspire \u2014 pillared halls swallowed by ivy, broken sigils of a sun-and-chain crest, and bones in the dust that nobody has come to gather. Locals say the deeper levels remember the binding ritual, and now that the binding is broken, the ruins remember it as a wound.",
+      "description": "All that remains of the kingdom that first chained the dragon beneath the Brimspire — pillared halls swallowed by ivy, broken sigils of a sun-and-chain crest, and bones in the dust that nobody has come to gather. Locals say the deeper levels remember the binding ritual, and now that the binding is broken, the ruins remember it as a wound.",
       "tags": [],
       "style": "ruins",
       "difficulty": "normal",
@@ -74,7 +74,7 @@
     {
       "id": "orc_stronghold",
       "name": "The Iron Mines",
-      "description": "Old human mines, abandoned when the deep seams ran dry, now reoccupied by Warlord Murgath's orcs as a fort. The galleries are deep enough that the dragon's roar barely reaches them, which is why the orcs picked the spot \u2014 and why anything fleeing the wyrm's shadow eventually finds its way to their gates.",
+      "description": "Old human mines, abandoned when the deep seams ran dry, now reoccupied by Warlord Murgath's orcs as a fort. The galleries are deep enough that the dragon's roar barely reaches them, which is why the orcs picked the spot — and why anything fleeing the wyrm's shadow eventually finds its way to their gates.",
       "tags": [],
       "style": "ruins",
       "difficulty": "normal",
@@ -133,6 +133,42 @@
         },
         {
           "id": "haunted_forest_l4",
+          "name": "Level 4",
+          "depth": 4
+        }
+      ]
+    },
+    {
+      "id": "dragons_lair",
+      "name": "Dragon's Lair",
+      "description": "The dragon's lair",
+      "tags": [],
+      "style": "caves",
+      "difficulty": "deadly",
+      "size": {
+        "width": 32,
+        "height": 32
+      },
+      "torch_density": 0.15,
+      "locked_doors": 0.25,
+      "levels": [
+        {
+          "id": "dragons_lair_l1",
+          "name": "Level 1",
+          "depth": 1
+        },
+        {
+          "id": "dragons_lair_l2",
+          "name": "Level 2",
+          "depth": 2
+        },
+        {
+          "id": "dragons_lair_l3",
+          "name": "Level 3",
+          "depth": 3
+        },
+        {
+          "id": "dragons_lair_l4",
           "name": "Level 4",
           "depth": 4
         }

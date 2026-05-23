@@ -4,8 +4,7 @@
 - Do a playthrough with the alternate party
 
 # Polish
-- Add Retrieve Item Quest Step Type
-- Check that Quest Tiles rewards work, test using a Boat tile
+- I am not able to generate the forth dungeon
 
 # V3 Ideas
 

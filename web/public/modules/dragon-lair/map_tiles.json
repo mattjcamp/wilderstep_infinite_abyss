@@ -44,6 +44,38 @@
       "spawn": null,
       "sprite": "map/stairs_up.png",
       "tag": "town"
+    },
+    {
+      "boat": true,
+      "id": "ship_frigate",
+      "name": "Frigate",
+      "walkable": true,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": null,
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "map/ship_frigate.png",
+      "tag": "outdoor"
+    },
+    {
+      "boat": true,
+      "id": "ship_pirate",
+      "name": "Pirate Ship",
+      "walkable": true,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": null,
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "map/ship_pirate.png",
+      "tag": "outdoor"
     }
   ]
 }

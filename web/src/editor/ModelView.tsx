@@ -57,6 +57,32 @@ import { usePublishServer } from "./usePublishServer";
 
 type Record_ = Record<string, unknown>;
 
+/**
+ * Per-model field defaults that must surface in the auto-generated
+ * record form even when no existing record carries them yet.
+ *
+ * The auto-generator (RecordForm) infers field types by walking
+ * `Object.keys(template)` where `template` is the first record in
+ * the catalog. That works for fields every record carries (walkable,
+ * sprite, etc.) but misses sparse fields — a boolean that only one
+ * record toggles ends up invisible everywhere else.
+ *
+ * Listing the field here with a sensible default makes the form
+ * surface it with the right input type (boolean → checkbox, number
+ * → number input, …) on every record of that model. Existing
+ * records keep their JSON unchanged; new records pick up the
+ * default at create time via blankFromTemplate.
+ */
+const EXTRA_FIELD_DEFAULTS: Partial<Record<ModelKey, Record<string, unknown>>> = {
+  // Tile Palette: `boat` marks a tile that should render as a boat
+  // by default when painted onto a map (water-spanning movement,
+  // boarding mechanics). One tile in the default module already
+  // uses it ("boat"); surfacing the field across the catalog lets
+  // authors mark additional water-craft palette tiles without
+  // hand-editing JSON.
+  map_tiles: { boat: false },
+};
+
 type Layers = {
   inherited: Record_ | null;
   ownFile: Record_ | null;
@@ -361,8 +387,21 @@ export function ModelView({
     def.collectionKey ?? "",
     state.layers.inherited,
   );
-  const template =
+  // Compose the template from (a) per-model extras that must always
+  // surface as form fields and (b) the first available record from
+  // the merged view (own draft first, then inherited). Spread order
+  // puts the actual record AFTER the extras so existing values win;
+  // extras only contribute fields that the record didn't carry.
+  const extras = EXTRA_FIELD_DEFAULTS[modelKey];
+  const baseTemplate =
     derived.records[0] ?? inheritedRecordsForTemplate[0] ?? undefined;
+  const template: Record_ | undefined = baseTemplate
+    ? extras
+      ? { ...extras, ...baseTemplate }
+      : baseTemplate
+    : extras && Object.keys(extras).length > 0
+      ? { ...extras }
+      : undefined;
   const canExport = derived.ownEffective !== null;
   // Whether the table should grow a leading thumbnail column. Yes if
   // any displayed record or the template has a known sprite field.

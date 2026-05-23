@@ -153,11 +153,35 @@ export interface QuestGiver {
   endDialog: string;
 }
 
+/** A `tileAdds` reward — fully specifies a cell on a map and the
+ *  palette tile that should occupy it after the quest is turned in.
+ *
+ *  This is the only tile-mutation reward shape: "set cell at (map,
+ *  col, row) to `tile_id`". It covers both adding new tiles to empty
+ *  cells AND replacing existing tiles, since both operations are
+ *  mechanically identical — the cell becomes whatever the palette
+ *  tile says it is, with the previous contents overwritten. */
+export interface RewardTileAddOp {
+  /** Target map id (maps.json). */
+  map: string;
+  col: number;
+  row: number;
+  /** Palette tile id (map_tiles.json) to copy into the cell. */
+  tile_id: string;
+}
+
 /** The v2 `rewards` envelope. */
 export interface QuestRewards {
   xp: number;
   gold: number;
   items: string[];
+  /** Cells on named maps that should be painted with the named
+   *  palette tile when this quest is turned in. Authors a "build the
+   *  bridge after the quest" / "remove the rockslide" style mutation.
+   *  Applied immediately if the player is on the affected map;
+   *  persisted into save.maps[mapId].tileOverrides so the mutation
+   *  survives reload + re-entry. */
+  tileAdds: RewardTileAddOp[];
 }
 
 export interface QuestDef {
@@ -285,10 +309,20 @@ interface RawQuestGiver {
   end_dialog?: string;
 }
 
+interface RawRewardTileAddOp {
+  map?: string;
+  col?: number | string;
+  row?: number | string;
+  tile_id?: string;
+}
+
 interface RawRewards {
   xp?: number | string;
   gold?: number | string;
   items?: unknown;
+  /** v2 quests.json: list of cells to paint with a named palette
+   *  tile on quest turn-in. */
+  tile_add?: RawRewardTileAddOp[];
 }
 
 interface RawQuest {
@@ -510,6 +544,21 @@ function fromRaw(raw: RawQuest): QuestDef | null {
 
   // ── Rewards (v2 nested envelope, v1 flat fallback) ────────────
   const rewardsRaw = raw.rewards ?? null;
+  // Tile-mutation rewards (v2). Each entry must carry a real map id
+  // and finite col/row; malformed entries are dropped so a bad
+  // quests.json never crashes a load.
+  const tileAdds: RewardTileAddOp[] = [];
+  if (rewardsRaw && Array.isArray(rewardsRaw.tile_add)) {
+    for (const op of rewardsRaw.tile_add) {
+      if (!op || typeof op !== "object") continue;
+      const map = typeof op.map === "string" ? op.map : "";
+      const col = coerceInt(op.col);
+      const row = coerceInt(op.row);
+      const tile_id = typeof op.tile_id === "string" ? op.tile_id : "";
+      if (!map || col === undefined || row === undefined || !tile_id) continue;
+      tileAdds.push({ map, col, row, tile_id });
+    }
+  }
   const rewards: QuestRewards = {
     xp: coerceInt(rewardsRaw?.xp) ?? raw.reward_xp ?? 0,
     gold: coerceInt(rewardsRaw?.gold) ?? raw.reward_gold ?? 0,
@@ -518,6 +567,7 @@ function fromRaw(raw: RawQuest): QuestDef | null {
       : (Array.isArray(raw.reward_items)
           ? raw.reward_items.filter((s): s is string => typeof s === "string")
           : []),
+    tileAdds,
   };
 
   // v2 doesn't carry world unlocks yet; v1 fixtures might.
@@ -1178,6 +1228,9 @@ export interface QuestRewardClaim {
   /** Catalog ids — host loops these and calls `addToStash` (or the
    *  equivalent per-item granter) for each. */
   items: ReadonlyArray<string>;
+  /** Cells the host must paint with the named palette tile on the
+   *  named map. Empty when the quest didn't author any. */
+  tileAdds: ReadonlyArray<RewardTileAddOp>;
 }
 
 /**
@@ -1216,6 +1269,7 @@ export function claimQuestRewards(
     xp: def.rewards.xp,
     gold: def.rewards.gold,
     items: [...def.rewards.items],
+    tileAdds: [...def.rewards.tileAdds],
   };
 }
 

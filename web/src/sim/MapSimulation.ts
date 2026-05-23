@@ -2056,6 +2056,23 @@ export class MapSimulation {
     return true;
   }
 
+  /** Register a new boat cell at (col, row) AFTER construction. The
+   *  seed-time grid scan only sees authored `boat: true` cells; any
+   *  cell that gets `boat: true` mid-session (today: a quest-reward
+   *  `tile_add` painting a boat-flagged palette tile) needs to call
+   *  this so the boarding logic (`stepInDirection`'s "board" branch)
+   *  recognises the cell.
+   *
+   *  No-op when (col, row) is already registered. Pushes the updated
+   *  snapshot through the bridge so the scene's boat-overlay renderer
+   *  picks up the new cell. */
+  addBoatAt(col: number, row: number, sprite: string): void {
+    const key = `${col},${row}`;
+    if (this.boatPositions.has(key)) return;
+    this.boatPositions.set(key, sprite);
+    this.bridge.setBoatPositions(this.snapshotBoats());
+  }
+
   /** Re-evaluate the quest-driven placement pass against the current
    *  `questStates` and drop any newly-active kill step's encounter
    *  onto the map. Idempotent: rows whose `(questId, stepIdx)` is
