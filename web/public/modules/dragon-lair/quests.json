@@ -134,6 +134,73 @@
           }
         ]
       }
+    },
+    {
+      "id": "defeat_the_orcs",
+      "name": "Defeat the Orcs",
+      "description": "",
+      "tags": [],
+      "steps": [
+        {
+          "id": "defeat_the_orcs_step_1",
+          "name": "Step 1",
+          "kind": "kill",
+          "encounter_id": "shaman_s_guard",
+          "location_kind": "map",
+          "map_id": "orc_stronghold_1_l3"
+        }
+      ],
+      "quest_giver": {
+        "npc_name": "Old Guy",
+        "npc_sprite": "person/townsperson11.png",
+        "start_dialog": "See that hold. There are orcs. Defeat the orcs",
+        "end_dialog": "thx"
+      },
+      "rewards": {
+        "xp": 200,
+        "gold": 200,
+        "tile_add": [
+          {
+            "map": "continent",
+            "col": 2,
+            "row": 8,
+            "tile_id": "path"
+          }
+        ]
+      }
+    },
+    {
+      "id": "dragon",
+      "name": "Smite the Dragon",
+      "description": "Get Sun Sword, Smite Dragon",
+      "tags": [],
+      "steps": [
+        {
+          "id": "dragon_step_1",
+          "name": "Step 1",
+          "kind": "retrieve",
+          "item_id": "sun_sword",
+          "location_kind": "map",
+          "map_id": "water_shrine_3",
+          "col": 7,
+          "row": 7
+        },
+        {
+          "id": "dragon_step_2",
+          "name": "Step 2",
+          "kind": "kill",
+          "description": "Kill Dragon",
+          "location_kind": "map",
+          "map_id": "dragons_lair_1_l4",
+          "encounter_id": "ancient_dragon"
+        }
+      ],
+      "quest_giver": {
+        "npc_name": "Lord Welsh",
+        "npc_sprite": "person/king2.png",
+        "start_dialog": "",
+        "end_dialog": ""
+      }
     }
   ]
 }

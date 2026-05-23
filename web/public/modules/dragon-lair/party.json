@@ -22,6 +22,10 @@
       "item": "dagger"
     },
     {
+      "item": "camping_supplies",
+      "charges": 2
+    },
+    {
       "item": "rock",
       "charges": 20
     },

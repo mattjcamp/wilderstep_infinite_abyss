@@ -937,11 +937,16 @@ export function PlayPartyScreenOverlay({
         setCastMessage(`Unknown spell: ${spellId}.`);
         return;
       }
-      if (spell.action === "apply_effect" && spell.targeting === "self") {
-        // Today the only self-targeted apply_effect spell that's
-        // usable in the party menu is Light. If/when more land
-        // (Detect Magic, etc.) the handler dispatches on
-        // action_params.effect_id.
+      if (spell.action === "apply_effect") {
+        // Out-of-combat, `targeting` is a battle-only concern — a
+        // spell like Light is `select_tile` in battle (place the orb
+        // on a battlefield cell) but on the party screen it has no
+        // cell to land on and just attaches to the party as a
+        // party_effects entry. So we dispatch purely on
+        // action_params.effect_id and ignore targeting here. The
+        // sheet already filters spells by `usable_in.includes("party")`
+        // before showing the Cast button, so any apply_effect spell
+        // that reaches us is supposed to be castable here.
         const effectId =
           (spell.action_params as { effect_id?: string } | undefined)
             ?.effect_id ?? spell.id;

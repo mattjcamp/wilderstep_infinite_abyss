@@ -537,6 +537,15 @@ export function MapEditor({
     }
   }, [simMode, partyScreenOpen]);
   const [publishing, setPublishing] = useState(false);
+  /** Set true once a saveDraft call has thrown QuotaExceededError for
+   *  this module's maps.json — typically because the file has grown
+   *  past the ~5MB browser localStorage cap (very common after a
+   *  dungeon bake). When set, the toolbar surfaces a warning chip
+   *  telling the user to Publish to persist their in-memory edits.
+   *  Paint edits still apply to the React + Phaser state so the
+   *  editor remains usable; they just won't survive a reload until
+   *  the user clicks Publish. */
+  const [draftQuotaExceeded, setDraftQuotaExceeded] = useState(false);
   /** When true, the Map Properties modal is mounted. The dialog edits
    *  the top-level Map record metadata (name, description, tags) —
    *  the per-cell painting flow is unaffected. */
@@ -1093,7 +1102,27 @@ export function MapEditor({
       if (idx >= 0) list[idx] = updatedMap;
       else list.push(updatedMap);
       baseFile.maps = list;
-      saveDraft(moduleId, MODEL_KEY, baseFile);
+      // Best-effort write to localStorage. Paint fires this on every
+      // brush stroke, so we explicitly do NOT fall back to publishing
+      // straight to disk here — that would issue an HTTP POST per
+      // stroke for what may be a multi-megabyte file. Instead, catch
+      // the quota error, set the warning flag so the toolbar prompts
+      // the user to Publish, and still update React state so the
+      // brush stroke is visible. Edits made while the quota is full
+      // live in memory only until the user clicks Publish.
+      try {
+        saveDraft(moduleId, MODEL_KEY, baseFile);
+        if (draftQuotaExceeded) setDraftQuotaExceeded(false);
+      } catch (e) {
+        if (!draftQuotaExceeded) {
+          // eslint-disable-next-line no-console
+          console.warn(
+            "Map draft exceeded browser storage quota — edits will live in memory only until you Publish.",
+            e,
+          );
+          setDraftQuotaExceeded(true);
+        }
+      }
       setState({
         ...state,
         mapRecord: updatedMap,
@@ -1101,7 +1130,7 @@ export function MapEditor({
         isDraft: true,
       });
     };
-  }, [state, moduleId, mapId]);
+  }, [state, moduleId, mapId, draftQuotaExceeded]);
 
   // Override markers — a cell is "modified" when it diverges from its
   // palette-of-origin (matched by id). Recompute whenever state changes.
@@ -3116,10 +3145,61 @@ export function MapEditor({
   };
 
   // ── Mutators outside paint flow ─────────────────────────────────
+  /**
+   * Persist a full updated maps.json baseFile. Tries the local draft
+   * first; on QuotaExceededError, falls back to writing straight to
+   * disk via the publish server (and clears any pre-existing draft)
+   * so single-shot operations like Delete map or Save properties
+   * keep working once the module has outgrown the ~5MB browser cap.
+   * Returns `{ publishedDirectly }` so callers can react (e.g. clear
+   * the local quota-warning flag once we've persisted to disk).
+   */
+  const persistMapsFileWithFallback = async (
+    baseFile: Record<string, unknown>,
+  ): Promise<{ publishedDirectly: boolean }> => {
+    try {
+      saveDraft(moduleId, MODEL_KEY, baseFile);
+      return { publishedDirectly: false };
+    } catch (storageErr) {
+      if (publishAvailable !== true) {
+        throw new Error(
+          `Couldn't save to browser draft: ${
+            storageErr instanceof Error
+              ? storageErr.message
+              : String(storageErr)
+          }. Start the publish server to save directly to disk.`,
+        );
+      }
+      const res = await publishItems([
+        {
+          kind: "model",
+          moduleId,
+          modelKey: MODEL_KEY,
+          fileName: "maps.json",
+          content: baseFile,
+        },
+      ]);
+      const r0 = res.results[0];
+      if (!r0 || !r0.ok) {
+        throw new Error(
+          `Couldn't save to browser draft (${
+            storageErr instanceof Error
+              ? storageErr.message
+              : String(storageErr)
+          }) and direct publish also failed: ${r0?.error ?? "unknown error"}.`,
+        );
+      }
+      // Clear any pre-existing draft so the next load picks up the
+      // freshly-published file.
+      discardDraft(moduleId, MODEL_KEY);
+      return { publishedDirectly: true };
+    }
+  };
+
   /** Delete the current map from the module's maps file. Writes the
    *  pruned file as a draft + navigates back to the maps browse view.
    *  The user can still Publish or Discard afterward. */
-  const onDeleteMap = () => {
+  const onDeleteMap = async () => {
     if (typeof window === "undefined") return;
     if (state.kind !== "ok") return;
     const ok = window.confirm(
@@ -3135,7 +3215,14 @@ export function MapEditor({
       ? (baseFile.maps as MapRecord[]).filter((m) => m.id !== mapId)
       : [];
     baseFile.maps = list;
-    saveDraft(moduleId, MODEL_KEY, baseFile);
+    try {
+      await persistMapsFileWithFallback(baseFile);
+    } catch (e) {
+      window.alert(
+        `Couldn't delete map: ${e instanceof Error ? e.message : String(e)}`,
+      );
+      return;
+    }
     router.push(`/editor/${moduleId}/maps`);
   };
 
@@ -3145,7 +3232,7 @@ export function MapEditor({
    *  + every other field is preserved by spreading the existing
    *  mapRecord first. Undefined values from the dialog (e.g. blank
    *  description) explicitly clear the field in the saved file. */
-  const onSaveMapAttrs = (next: {
+  const onSaveMapAttrs = async (next: {
     name: string;
     description?: string;
     tags?: string[];
@@ -3194,13 +3281,26 @@ export function MapEditor({
     if (idx >= 0) list[idx] = updatedMap;
     else list.push(updatedMap);
     baseFile.maps = list;
-    saveDraft(moduleId, MODEL_KEY, baseFile);
+    let result: { publishedDirectly: boolean };
+    try {
+      result = await persistMapsFileWithFallback(baseFile);
+    } catch (e) {
+      window.alert(
+        `Couldn't save map properties: ${
+          e instanceof Error ? e.message : String(e)
+        }`,
+      );
+      return;
+    }
     setState({
       ...state,
       mapRecord: updatedMap,
       ownFile: baseFile,
-      isDraft: true,
+      isDraft: !result.publishedDirectly,
     });
+    if (result.publishedDirectly && draftQuotaExceeded) {
+      setDraftQuotaExceeded(false);
+    }
     setEditingMapAttrs(false);
   };
 
@@ -3237,6 +3337,7 @@ export function MapEditor({
       }
       discardDraft(moduleId, MODEL_KEY);
       setState({ ...state, isDraft: false });
+      if (draftQuotaExceeded) setDraftQuotaExceeded(false);
     } catch (e) {
       window.alert(
         `Publish error: ${e instanceof Error ? e.message : String(e)}`,
@@ -3496,6 +3597,14 @@ export function MapEditor({
           {isDraft ? (
             <span className="rounded bg-ember/30 px-2 py-0.5 text-xs text-parchment/90">
               draft
+            </span>
+          ) : null}
+          {draftQuotaExceeded ? (
+            <span
+              className="rounded border border-ember/60 bg-ember/20 px-2 py-0.5 text-xs text-ember"
+              title="This module's maps.json is too large to keep in browser local storage. Your latest edits live in memory only — click Publish to write them straight to disk."
+            >
+              draft full — Publish to save
             </span>
           ) : null}
           {isDraft ? (

@@ -4,7 +4,6 @@
 - Do a playthrough with the alternate party
 
 # Polish
-- I am not able to generate the forth dungeon
 
 # V3 Ideas
 

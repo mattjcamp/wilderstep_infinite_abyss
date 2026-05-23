@@ -171,24 +171,89 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
   }, [state]);
 
   // ── Mutators (persist via the draft system) ────────────────────
-  const persistMaps = (updatedMaps: MapRecord[]) => {
-    if (state.kind !== "ok") return;
+  /**
+   * Write the maps array to the local draft. If the browser refuses
+   * (typically a QuotaExceededError — baked dungeons can push
+   * maps.json past the ~5MB localStorage cap) AND the publish server
+   * is running, fall back to writing the merged file straight to
+   * disk and clear any pre-existing draft. Without this fallback,
+   * once a module's maps.json outgrows the storage budget every
+   * subsequent edit — including a simple Delete — crashes the page
+   * because saveDraft throws synchronously. With it, the bake / new
+   * / delete paths all degrade gracefully to direct-publish.
+   *
+   * Returns `{ publishedDirectly }` so callers (e.g. the bake flow)
+   * can tailor their success message; throws if neither save path
+   * succeeds.
+   */
+  const persistMaps = async (
+    updatedMaps: MapRecord[],
+  ): Promise<{ publishedDirectly: boolean }> => {
+    if (state.kind !== "ok") return { publishedDirectly: false };
     const baseFile: Record<string, unknown> = state.ownFile
       ? { ...state.ownFile }
       : { maps: [] };
     baseFile.maps = updatedMaps;
-    saveDraft(moduleId, MODEL_KEY, baseFile);
-    setState({
-      ...state,
-      maps: updatedMaps,
-      ownFile: baseFile,
-      isDraft: true,
-    });
+    try {
+      saveDraft(moduleId, MODEL_KEY, baseFile);
+      setState({
+        ...state,
+        maps: updatedMaps,
+        ownFile: baseFile,
+        isDraft: true,
+      });
+      return { publishedDirectly: false };
+    } catch (storageErr) {
+      if (publishAvailable !== true) {
+        throw new Error(
+          `Couldn't save to browser draft: ${
+            storageErr instanceof Error
+              ? storageErr.message
+              : String(storageErr)
+          }. Start the publish server to save directly to disk.`,
+        );
+      }
+      const res = await publishItems([
+        {
+          kind: "model",
+          moduleId,
+          modelKey: MODEL_KEY,
+          fileName: FILE_NAME,
+          content: baseFile,
+        },
+      ]);
+      const r0 = res.results[0];
+      if (!r0 || !r0.ok) {
+        throw new Error(
+          `Couldn't save to browser draft (${
+            storageErr instanceof Error
+              ? storageErr.message
+              : String(storageErr)
+          }) and direct publish also failed: ${r0?.error ?? "unknown error"}.`,
+        );
+      }
+      // Clear any pre-existing draft so the next load picks up the
+      // freshly-published file and the editor stops showing "draft
+      // active". Then refresh from disk so React state mirrors the
+      // new on-disk content.
+      discardDraft(moduleId, MODEL_KEY);
+      await refresh();
+      return { publishedDirectly: true };
+    }
   };
 
-  const onCreate = (rec: MapRecord) => {
+  const onCreate = async (rec: MapRecord) => {
     if (state.kind !== "ok") return;
-    persistMaps([...state.maps, rec]);
+    try {
+      await persistMaps([...state.maps, rec]);
+    } catch (e) {
+      window.alert(
+        `Couldn't save the new map: ${
+          e instanceof Error ? e.message : String(e)
+        }`,
+      );
+      return;
+    }
     setCreating(false);
     // Drop straight into the visual editor for the new map.
     router.push(`/editor/${moduleId}/maps/${rec.id}`);
@@ -294,65 +359,14 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
         return { id: m.id, n };
       });
       const totalStamped = stampedPerFloor.reduce((s, x) => s + x.n, 0);
-      // Append the new maps. Default path: write to the local draft
-      // via persistMaps (same as + New Map etc.). Fallback path: if
-      // the draft write fails (typically a localStorage quota error
-      // — baked dungeons + an already-large maps.json can blow past
-      // the browser's ~5MB cap) AND the publish server is running,
-      // publish the merged maps file directly to disk and clear the
-      // draft. This keeps the bake feature usable for modules whose
-      // maps.json has outgrown the browser storage budget.
+      // Append the new maps. persistMaps writes to the local draft
+      // by default and silently falls back to direct-publish if the
+      // browser storage quota is exceeded — see its docstring.
       const merged = [
         ...state.maps,
         ...(result.maps as unknown as MapRecord[]),
       ];
-      let publishedDirectly = false;
-      try {
-        persistMaps(merged);
-      } catch (storageErr) {
-        // Most often a QuotaExceededError, but any saveDraft failure
-        // routes here. We try the publish-direct fallback before
-        // surfacing the error.
-        if (publishAvailable !== true) {
-          throw new Error(
-            `Couldn't save to browser draft: ${
-              storageErr instanceof Error
-                ? storageErr.message
-                : String(storageErr)
-            }. Start the publish server to bake directly to disk.`,
-          );
-        }
-        const baseFile: Record<string, unknown> = state.ownFile
-          ? { ...state.ownFile }
-          : { maps: [] };
-        baseFile.maps = merged;
-        const res = await publishItems([
-          {
-            kind: "model",
-            moduleId,
-            modelKey: MODEL_KEY,
-            fileName: FILE_NAME,
-            content: baseFile,
-          },
-        ]);
-        const r0 = res.results[0];
-        if (!r0 || !r0.ok) {
-          throw new Error(
-            `Couldn't save to browser draft (${
-              storageErr instanceof Error
-                ? storageErr.message
-                : String(storageErr)
-            }) and direct publish also failed: ${r0?.error ?? "unknown error"}.`,
-          );
-        }
-        // Clear any pre-existing draft so the next load picks up the
-        // freshly-published file and the editor stops showing "draft
-        // active". Then refresh from disk so React state mirrors the
-        // new on-disk content.
-        discardDraft(moduleId, MODEL_KEY);
-        await refresh();
-        publishedDirectly = true;
-      }
+      const { publishedDirectly } = await persistMaps(merged);
       setGeneratingDungeon(false);
       // Build a single multi-line alert that surfaces (a) the maps
       // created, (b) the encounter catalog size that was sampled,
@@ -400,7 +414,7 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
     }
   };
 
-  const onDelete = (id: string) => {
+  const onDelete = async (id: string) => {
     if (state.kind !== "ok") return;
     if (
       typeof window !== "undefined" &&
@@ -409,7 +423,13 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
       )
     )
       return;
-    persistMaps(state.maps.filter((m) => m.id !== id));
+    try {
+      await persistMaps(state.maps.filter((m) => m.id !== id));
+    } catch (e) {
+      window.alert(
+        `Couldn't delete map: ${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
   };
 
   const onDiscardDraft = () => {

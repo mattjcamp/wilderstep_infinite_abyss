@@ -259,6 +259,16 @@ export function CharacterSheetSim({
   // state mutation, no targeting picker; real mechanics land when
   // the runtime is ready.
   const [lastAction, setLastAction] = useState<string | null>(null);
+  // Auto-clear after a few seconds so a synchronous Cast (e.g.
+  // Light) doesn't leave a misleading "Casting …" line stuck on
+  // screen indefinitely. The host (PlayPartyScreenOverlay) renders
+  // its own authoritative cast banner with its own timeout, so the
+  // sheet's local line is purely a click acknowledgement.
+  useEffect(() => {
+    if (!lastAction) return;
+    const t = setTimeout(() => setLastAction(null), 3000);
+    return () => clearTimeout(t);
+  }, [lastAction]);
 
   // ── Personal-items selection ────────────────────────────────────
   // Click a row to highlight; Use / Return-to-stash buttons appear
