@@ -294,10 +294,65 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
         return { id: m.id, n };
       });
       const totalStamped = stampedPerFloor.reduce((s, x) => s + x.n, 0);
-      // Append the new maps to the draft. The dialog already showed
-      // the author exactly which ids would be minted; no second
-      // confirm here.
-      persistMaps([...state.maps, ...(result.maps as unknown as MapRecord[])]);
+      // Append the new maps. Default path: write to the local draft
+      // via persistMaps (same as + New Map etc.). Fallback path: if
+      // the draft write fails (typically a localStorage quota error
+      // — baked dungeons + an already-large maps.json can blow past
+      // the browser's ~5MB cap) AND the publish server is running,
+      // publish the merged maps file directly to disk and clear the
+      // draft. This keeps the bake feature usable for modules whose
+      // maps.json has outgrown the browser storage budget.
+      const merged = [
+        ...state.maps,
+        ...(result.maps as unknown as MapRecord[]),
+      ];
+      let publishedDirectly = false;
+      try {
+        persistMaps(merged);
+      } catch (storageErr) {
+        // Most often a QuotaExceededError, but any saveDraft failure
+        // routes here. We try the publish-direct fallback before
+        // surfacing the error.
+        if (publishAvailable !== true) {
+          throw new Error(
+            `Couldn't save to browser draft: ${
+              storageErr instanceof Error
+                ? storageErr.message
+                : String(storageErr)
+            }. Start the publish server to bake directly to disk.`,
+          );
+        }
+        const baseFile: Record<string, unknown> = state.ownFile
+          ? { ...state.ownFile }
+          : { maps: [] };
+        baseFile.maps = merged;
+        const res = await publishItems([
+          {
+            kind: "model",
+            moduleId,
+            modelKey: MODEL_KEY,
+            fileName: FILE_NAME,
+            content: baseFile,
+          },
+        ]);
+        const r0 = res.results[0];
+        if (!r0 || !r0.ok) {
+          throw new Error(
+            `Couldn't save to browser draft (${
+              storageErr instanceof Error
+                ? storageErr.message
+                : String(storageErr)
+            }) and direct publish also failed: ${r0?.error ?? "unknown error"}.`,
+          );
+        }
+        // Clear any pre-existing draft so the next load picks up the
+        // freshly-published file and the editor stops showing "draft
+        // active". Then refresh from disk so React state mirrors the
+        // new on-disk content.
+        discardDraft(moduleId, MODEL_KEY);
+        await refresh();
+        publishedDirectly = true;
+      }
       setGeneratingDungeon(false);
       // Build a single multi-line alert that surfaces (a) the maps
       // created, (b) the encounter catalog size that was sampled,
@@ -332,7 +387,11 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
           `Sampled from ${dungeonEncounterCount} dungeon-area encounters.`,
         );
       }
-      lines.push("Saved to the draft — Publish when ready.");
+      lines.push(
+        publishedDirectly
+          ? "Published directly to disk (browser draft was too large)."
+          : "Saved to the draft — Publish when ready.",
+      );
       window.alert(lines.join("\n"));
     } catch (e) {
       window.alert(

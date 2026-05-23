@@ -12,6 +12,19 @@
 - New Puzzle system (presure plates that open doors, etc)
 - Key system (certain keys open certain doors)
 
+## Large Data Storage Issues
+
+Modules take up a lot of space and we may need to rethink how they are engineered. These were the options we could consider. It may also impact the notion that we will be thinking of creating a system were people can share modules so that is worth considering as part of the refactor.
+
+Yeah, agreed — flag it for v3. The bake-specific fallback handles your current use case (the one that surfaced the issue), and the rest of the editor's quota story is a more involved redesign worth doing once when it's the focus, not piecemeal.
+When you get to it, three options to weigh:
+
+IndexedDB instead of localStorage for drafts. Same key-value semantics, ~100× the quota, async API. Touches every call site in draft.ts but the surface area is small.
+Compression (CompressionStream is browser-native, no dependency). Gzip on JSON shrinks ~5–10×. Smaller change, but quota's still a ceiling for very large modules.
+Sparse cell storage — store only the deltas from a referenced palette tile id instead of the full inline cell. ~5× shrink on dungeon-style maps that are mostly walls + floors. Bigger refactor but solves it at the source.
+
+A combination (sparse cells + IndexedDB) probably handles even very large modules comfortably. None of it needs to happen today.
+
 # Notes
 
 ## Battle Arena Maps
