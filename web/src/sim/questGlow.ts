@@ -24,14 +24,20 @@ export interface QuestGlowCell {
   item?: string;
 }
 
-/** Minimal quest shape — id plus a steps array with `kind` and
- *  `params`. Mirrors what both the editor's QuestRecord and the
- *  play-runtime quest definitions carry; we don't need the rewards /
- *  giver fields for this computation. */
+/** Minimal quest shape — id plus a steps array with `kind` plus the
+ *  per-kind target fields (kill: `encounter_id`, fetch: `item_id`).
+ *  Mirrors what both the editor's QuestRecord and the play-runtime
+ *  quest definitions carry. `params` is a legacy nesting that older
+ *  on-disk data may still use; the resolver below reads it as a
+ *  fallback so a module that hasn't been re-saved through the new
+ *  editor still glows correctly. */
 export interface QuestGlowQuest {
   id: string;
   steps?: ReadonlyArray<{
     kind?: string;
+    encounter_id?: string;
+    item_id?: string;
+    /** @deprecated Read fallback for legacy quests.json data. */
     params?: Record<string, unknown> | null;
   }>;
 }
@@ -53,8 +59,9 @@ export interface QuestGlowOptions {
  *     Always lit.
  *   - it has an `encounter` named by a `kill`-step's `encounter_id`,
  *     AND (if `acceptedQuests` is supplied) the quest is accepted.
- *   - it has an `item` named by a `fetch`-step's `item_id`, AND (if
- *     `acceptedQuests` is supplied) the quest is accepted.
+ *   - it has an `item` named by a `retrieve`-step's `item_id` or a
+ *     legacy `fetch`-step's `item_id`, AND (if `acceptedQuests` is
+ *     supplied) the quest is accepted.
  *
  * `visit` and `talk` steps don't drive glow today — they refer to
  * coordinates / NPCs the engine surfaces differently.
@@ -71,14 +78,28 @@ export function computeQuestGlowCells(
   const itemToQuests = new Map<string, Set<string>>();
   for (const q of quests) {
     for (const s of q.steps ?? []) {
+      // First-class field first; fall back to params.* for legacy
+      // pre-cleanup data that still nests these inside `params`.
       const params = (s.params ?? {}) as Record<string, unknown>;
       if (s.kind === "kill") {
-        const eid = params.encounter_id;
+        const eid =
+          s.encounter_id ??
+          (typeof params.encounter_id === "string"
+            ? params.encounter_id
+            : undefined);
         if (typeof eid === "string" && eid) {
           (encounterToQuests.get(eid) ?? encounterToQuests.set(eid, new Set()).get(eid)!).add(q.id);
         }
-      } else if (s.kind === "fetch") {
-        const iid = params.item_id;
+      } else if (s.kind === "fetch" || s.kind === "retrieve") {
+        // `retrieve` is the current shape (item_id is first-class);
+        // `fetch` is the legacy kind name some pre-cleanup data may
+        // still carry. Both point at the cell that ends up holding
+        // the named item, so they share a glow rule.
+        const iid =
+          s.item_id ??
+          (typeof params.item_id === "string"
+            ? params.item_id
+            : undefined);
         if (typeof iid === "string" && iid) {
           (itemToQuests.get(iid) ?? itemToQuests.set(iid, new Set()).get(iid)!).add(q.id);
         }

@@ -38,14 +38,18 @@ const NPC_SPRITE_CONFIG = { category: "person", format: "path" } as const;
 const MODEL_KEY = "quests";
 const FILE_NAME = "quests.json";
 const UNTAGGED = "(untagged)";
-// Only `kill` quest steps are wired through the runtime today —
-// fetch / visit / talk steps would persist into the save but no
-// gameplay code actually reads them. Restricting the dropdown to
-// `kill` keeps authors from accidentally building quests that
-// never resolve. Existing records on the other three kinds still
-// render via the (custom) fallback option so they can be migrated
-// rather than silently truncated.
-const KNOWN_KINDS = ["kill"] as const;
+// Quest step kinds the editor knows how to author. `kill` finishes
+// when the party clears the named encounter the listed number of
+// times; `retrieve` finishes when the party walks onto a specific
+// (map, col, row) cell that the runtime stamps with the named item
+// at quest-accept time. Both have dedicated fieldsets below.
+//
+// Legacy data with `kind` set to anything outside this list (e.g.
+// `visit`/`fetch`/`talk` from before the cleanup) renders as a
+// disabled option in the dropdown plus an inline notice telling
+// the author to re-pick a supported kind. We don't silently coerce
+// — the change is the author's call.
+const KNOWN_KINDS = ["kill", "retrieve"] as const;
 type StepKind = (typeof KNOWN_KINDS)[number] | string;
 
 interface QuestStep {
@@ -54,26 +58,43 @@ interface QuestStep {
   tags?: string[];
   kind: StepKind;
   description?: string;
-  params?: Record<string, unknown> | null;
+  /** For `kind === "kill"` — the encounter id (from encounters.json)
+   *  this step wants cleared. First-class on the step record; we no
+   *  longer route through a generic `params` blob. JSON key:
+   *  `encounter_id`. */
+  encounter_id?: string;
+  /** For `kind === "kill"` (or any countable step) — how many
+   *  encounter clearings credit the step. Defaults to 1 at the
+   *  runtime when omitted. JSON key: `count`. */
+  count?: number;
+  /** For `kind === "retrieve"` — the item the runtime stamps onto
+   *  the target cell once the quest is accepted. JSON key:
+   *  `item_id`. */
+  item_id?: string;
+  /** For `kind === "retrieve"` — the cell on `map_id` where the
+   *  named item (`item_id`) appears once the quest is accepted.
+   *  The host stamps it onto `cell.item`; stepping onto it credits
+   *  the step and the item lands in the party's inventory. 0-based.
+   *  JSON keys: `col`, `row`. */
+  col?: number;
+  row?: number;
   /** Where this step physically takes place. The runtime uses this to
-   *  decide where to spawn monsters, place fetch items, or anchor a
-   *  talk encounter; the editor uses it to surface a dungeon/level
-   *  pair or a map id picker so authors don't hand-type ids.
+   *  decide where to spawn monsters / place fetch items / anchor a
+   *  talk encounter; the editor uses it to surface a map id picker so
+   *  authors don't hand-type ids.
    *
-   *  - "dungeon" pairs with `dungeon_id` + `dungeon_level` (the
-   *    dungeon's procedural floor index, 1-based; a hand-authored
-   *    dungeon's `levels[]` array uses the same `depth` integer).
    *  - "map" pairs with `map_id` (a static, hand-painted map).
    *  - Unset (or omitted) means the step has no fixed location —
    *    talk steps with the quest giver, abstract objectives, etc.
+   *
+   *  The legacy "dungeon" location kind was removed from the editor —
+   *  baked dungeons are just maps, so authors point at the specific
+   *  baked map instead of a dungeon+level pair. The runtime
+   *  `QuestLocationKind` still accepts "dungeon" for save-data
+   *  back-compat with quests authored before the bake feature.
+   *
    *  JSON key: `location_kind`. */
-  location_kind?: "dungeon" | "map";
-  /** Dungeon catalog id. Only consulted when `location_kind === "dungeon"`. */
-  dungeon_id?: string;
-  /** 1-based floor depth into the named dungeon. Procedural dungeons
-   *  have no fixed level count — this is the floor we want the step
-   *  to fire on. */
-  dungeon_level?: number;
+  location_kind?: "map";
   /** Map catalog id. Only consulted when `location_kind === "map"`. */
   map_id?: string;
 }
@@ -123,15 +144,6 @@ interface MapSummary {
   name?: string;
 }
 
-interface DungeonSummary {
-  id: string;
-  name?: string;
-  /** Number of authored levels — empty / missing for procedurally
-   *  generated dungeons; we still allow any positive integer in the
-   *  step editor so authors can target a procedural floor by number. */
-  levelCount?: number;
-}
-
 type LoadState =
   | { kind: "loading" }
   | {
@@ -139,7 +151,6 @@ type LoadState =
       quests: QuestRecord[];
       items: ItemSummary[];
       maps: MapSummary[];
-      dungeons: DungeonSummary[];
       ownFile: Record<string, unknown> | null;
       isDraft: boolean;
     }
@@ -155,15 +166,11 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
   const refresh = async () => {
     try {
       const src = new StaticModuleSource();
-      const [questsLayers, itemsLayers, mapsLayers, dungeonsLayers] =
+      const [questsLayers, itemsLayers, mapsLayers] =
         await Promise.all([
           src.loadModelLayers(moduleId, "quests"),
           src.loadModelLayers(moduleId, "items"),
           src.loadModelLayers(moduleId, "maps"),
-          // Dungeons feed the per-step "Location: Dungeon" picker.
-          // Non-fatal so the editor still boots in modules without
-          // dungeons authored yet.
-          src.loadModelLayers(moduleId, "dungeons").catch(() => null),
         ]);
       const draft = loadDraft<Record<string, unknown>>(moduleId, MODEL_KEY);
       const ownEffective =
@@ -195,34 +202,11 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
         name: m.name,
       }));
 
-      // Dungeon catalog → summary list for the step location picker.
-      // `levelCount` comes from each dungeon's authored `levels[]`
-      // length when present, otherwise undefined (procedural).
-      const dungeonsMerged =
-        dungeonsLayers &&
-        (mergeModel(
-          "dungeons",
-          dungeonsLayers.inherited,
-          dungeonsLayers.ownFile,
-        ) as {
-          dungeons?: Array<{
-            id: string;
-            name?: string;
-            levels?: unknown[];
-          }>;
-        } | null);
-      const dungeons = (dungeonsMerged?.dungeons ?? []).map((d) => ({
-        id: d.id,
-        name: d.name,
-        levelCount: Array.isArray(d.levels) ? d.levels.length : undefined,
-      }));
-
       setState({
         kind: "ok",
         quests,
         items,
         maps,
-        dungeons,
         ownFile: ownEffective ?? null,
         isDraft: hasDraft(moduleId, MODEL_KEY),
       });
@@ -317,8 +301,7 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
     const newStep: QuestStep = {
       id: `${questId}_step_${nextIdx}`,
       name: `Step ${nextIdx}`,
-      kind: "visit",
-      params: null,
+      kind: "kill",
     };
     onUpdateQuest(questId, { steps: [...(parent.steps ?? []), newStep] });
   };
@@ -548,7 +531,6 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
                       quest={q}
                       items={state.items}
                       maps={state.maps}
-                      dungeons={state.dungeons}
                       existingTags={allTags}
                       onUpdate={(patch) => onUpdateQuest(q.id, patch)}
                       onAddStep={() => onAddStep(q.id)}
@@ -584,12 +566,10 @@ function QuestEditor({
   onAddStep,
   onUpdateStep,
   onDeleteStep,
-  dungeons,
 }: {
   quest: QuestRecord;
   items: ItemSummary[];
   maps: MapSummary[];
-  dungeons: DungeonSummary[];
   existingTags: string[];
   onUpdate: (patch: Partial<QuestRecord>) => void;
   onAddStep: () => void;
@@ -661,7 +641,7 @@ function QuestEditor({
               existingTags={existingTags}
               indexLabel={i + 1}
               maps={maps}
-              dungeons={dungeons}
+              items={items}
               onUpdate={(patch) => onUpdateStep(i, patch)}
               onDelete={() => onDeleteStep(i)}
             />
@@ -1144,7 +1124,7 @@ function StepRow({
   existingTags,
   indexLabel,
   maps,
-  dungeons,
+  items,
   onUpdate,
   onDelete,
 }: {
@@ -1152,37 +1132,10 @@ function StepRow({
   existingTags: string[];
   indexLabel: number;
   maps: MapSummary[];
-  dungeons: DungeonSummary[];
+  items: ItemSummary[];
   onUpdate: (patch: Partial<QuestStep>) => void;
   onDelete: () => void;
 }) {
-  // Local-state copy of the params textarea so the user can type
-  // invalid JSON without losing focus on every keystroke. Commits to
-  // the parent on blur / valid JSON.
-  const [paramsDraft, setParamsDraft] = useState<string>(() =>
-    step.params == null ? "" : JSON.stringify(step.params, null, 2),
-  );
-  const [paramsError, setParamsError] = useState<string | null>(null);
-
-  const commitParams = (text: string) => {
-    if (text.trim() === "") {
-      onUpdate({ params: null });
-      setParamsError(null);
-      return;
-    }
-    try {
-      const parsed = JSON.parse(text);
-      if (typeof parsed !== "object" || Array.isArray(parsed)) {
-        setParamsError("params must be a JSON object");
-        return;
-      }
-      onUpdate({ params: parsed as Record<string, unknown> });
-      setParamsError(null);
-    } catch (e) {
-      setParamsError(e instanceof Error ? e.message : String(e));
-    }
-  };
-
   return (
     <li className="rounded border border-parchment/10 bg-ink/30 p-2">
       <div className="grid gap-2 sm:grid-cols-4">
@@ -1222,9 +1175,17 @@ function StepRow({
                 {k}
               </option>
             ))}
+            {/* Legacy data with `kind` set to a no-longer-supported
+                value (visit / fetch / talk) renders its current value
+                as a disabled option so the author SEES the deprecated
+                kind on the row, but the only re-selectable choice is
+                `kill`. Once they pick `kill` the legacy value drops
+                from the dropdown entirely. */}
             {!KNOWN_KINDS.includes(step.kind as (typeof KNOWN_KINDS)[number]) &&
             step.kind ? (
-              <option value={step.kind}>{step.kind} (custom)</option>
+              <option value={step.kind} disabled>
+                {step.kind} (deprecated)
+              </option>
             ) : null}
           </select>
         </label>
@@ -1250,11 +1211,11 @@ function StepRow({
           />
         </div>
         {step.kind === "kill" ? (
-          // Kill steps get a dedicated UI: encounter sprite picker +
-          // a count input. Both write back into `step.params` —
-          // {encounter_id, count} — replacing the raw JSON textarea
-          // that authored other kinds. The runtime helpers in
-          // Quests.ts read `params.encounter_id` and `params.count`.
+          // Kill steps: encounter picker + count input. Both write to
+          // top-level step fields (`encounter_id`, `count`) — the
+          // legacy `params: { encounter_id, count }` blob was removed
+          // in favour of first-class per-step attributes. Future step
+          // kinds will get their own dedicated fields the same way.
           <fieldset className="sm:col-span-2 rounded border border-parchment/15 bg-ink/20 p-2">
             <legend className="px-1 text-[10px] uppercase tracking-wide text-parchment/55">
               Kill target
@@ -1265,31 +1226,10 @@ function StepRow({
                   Encounter
                 </span>
                 <EncounterPicker
-                  value={
-                    typeof step.params?.encounter_id === "string"
-                      ? (step.params.encounter_id as string)
-                      : ""
+                  value={step.encounter_id ?? ""}
+                  onChange={(id) =>
+                    onUpdate({ encounter_id: id || undefined })
                   }
-                  onChange={(id) => {
-                    const prev =
-                      (step.params as Record<string, unknown> | null) ?? {};
-                    const next: Record<string, unknown> = { ...prev };
-                    if (id) next.encounter_id = id;
-                    else delete next.encounter_id;
-                    onUpdate({
-                      params: Object.keys(next).length > 0 ? next : null,
-                    });
-                    // Keep the JSON textarea draft in sync for the
-                    // (rare) case the author flips to a non-kill
-                    // kind afterward and wants to see the underlying
-                    // shape.
-                    setParamsDraft(
-                      Object.keys(next).length > 0
-                        ? JSON.stringify(next, null, 2)
-                        : "",
-                    );
-                    setParamsError(null);
-                  }}
                 />
               </div>
               <label className="block">
@@ -1300,18 +1240,11 @@ function StepRow({
                   type="number"
                   min={1}
                   value={
-                    typeof step.params?.count === "number"
-                      ? (step.params.count as number)
-                      : 1
+                    typeof step.count === "number" ? step.count : 1
                   }
                   onChange={(e) => {
                     const n = Math.max(1, Number(e.target.value) || 1);
-                    const prev =
-                      (step.params as Record<string, unknown> | null) ?? {};
-                    const next: Record<string, unknown> = { ...prev, count: n };
-                    onUpdate({ params: next });
-                    setParamsDraft(JSON.stringify(next, null, 2));
-                    setParamsError(null);
+                    onUpdate({ count: n });
                   }}
                   className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-xs text-parchment/90"
                 />
@@ -1324,40 +1257,101 @@ function StepRow({
               sprite and the encounter's tier.
             </p>
           </fieldset>
+        ) : step.kind === "retrieve" ? (
+          // Retrieve steps: item picker + (col, row) on the step's
+          // map. The runtime stamps `item_id` onto `grid[row][col].item`
+          // at quest-accept time so the item appears on the map with
+          // a quest glow; walking onto the cell credits the step and
+          // adds the item to the party's inventory. Use the Location
+          // block above to pick the map; this fieldset handles only
+          // the item + cell coords.
+          <fieldset className="sm:col-span-2 rounded border border-parchment/15 bg-ink/20 p-2">
+            <legend className="px-1 text-[10px] uppercase tracking-wide text-parchment/55">
+              Retrieve target
+            </legend>
+            <div className="grid gap-2 sm:grid-cols-[1fr_5rem_5rem]">
+              <label className="block">
+                <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+                  Item
+                </span>
+                <select
+                  value={step.item_id ?? ""}
+                  onChange={(e) =>
+                    onUpdate({ item_id: e.target.value || undefined })
+                  }
+                  className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-xs text-parchment/90"
+                >
+                  <option value="">(pick one…)</option>
+                  {!items.some((it) => it.id === step.item_id) &&
+                  step.item_id ? (
+                    <option value={step.item_id}>
+                      (missing) {step.item_id}
+                    </option>
+                  ) : null}
+                  {items.map((it) => (
+                    <option key={it.id} value={it.id}>
+                      {it.name ?? it.id} ({it.id})
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block">
+                <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+                  Col
+                </span>
+                <input
+                  type="number"
+                  min={0}
+                  value={typeof step.col === "number" ? step.col : 0}
+                  onChange={(e) =>
+                    onUpdate({ col: Math.max(0, Number(e.target.value) || 0) })
+                  }
+                  className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-xs text-parchment/90"
+                />
+              </label>
+              <label className="block">
+                <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+                  Row
+                </span>
+                <input
+                  type="number"
+                  min={0}
+                  value={typeof step.row === "number" ? step.row : 0}
+                  onChange={(e) =>
+                    onUpdate({ row: Math.max(0, Number(e.target.value) || 0) })
+                  }
+                  className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-xs text-parchment/90"
+                />
+              </label>
+            </div>
+            <p className="mt-1 text-[11px] text-parchment/45">
+              When the quest is accepted, this item is placed at
+              (col, row) on the step's <strong>Map</strong> (set in
+              the Location block below) and glows with the
+              quest-relevance halo. The step credits when the party
+              walks onto the cell — the item moves to inventory and
+              the cell clears.
+            </p>
+          </fieldset>
         ) : (
-          // Non-kill kinds keep the raw params textarea so existing
-          // data is editable, but the dropdown above no longer
-          // offers those kinds for new steps.
-          <label className="block sm:col-span-2">
-            <span className="text-[10px] uppercase tracking-wide text-parchment/45">
-              Params (JSON object)
-            </span>
-            <textarea
-              value={paramsDraft}
-              onChange={(e) => setParamsDraft(e.target.value)}
-              onBlur={() => commitParams(paramsDraft)}
-              rows={3}
-              placeholder='e.g. { "map_id": "...", "col": 8, "row": 4 }'
-              className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-xs text-parchment/90"
-            />
-            {paramsError ? (
-              <p className="mt-1 text-xs text-ember/80">{paramsError}</p>
-            ) : (
-              <p className="mt-1 text-xs text-parchment/45">
-                Shape depends on <code>kind</code>. See quest_step.md for
-                recommendations.
-              </p>
-            )}
-          </label>
+          // A step whose `kind` is something other than the supported
+          // set (legacy `visit` / `fetch` / `talk` data carried over
+          // from before the cleanup). The dropdown shows the value
+          // as disabled and there's no editor surface for these — the
+          // author needs to switch the kind to a supported value to
+          // make the step actionable.
+          <p className="sm:col-span-2 rounded border border-amber-400/30 bg-amber-400/5 p-2 text-[11px] text-amber-200/85">
+            This step's <code>kind</code> is no longer supported by the
+            editor. Set <strong>Kind</strong> to <code>kill</code> or{" "}
+            <code>retrieve</code> (above) to author this step against
+            the current data model.
+          </p>
         )}
 
-        {/* Location picker — three sub-rows, conditional on
-            `location_kind`. The kind dropdown sits on its own; the
-            dungeon picker + level (or the map picker) only render
-            when the kind matches, so authors never see a stale
-            field staring back at them. Setting kind back to "none"
-            clears the related ids so the JSON doesn't carry dead
-            references the runtime would have to ignore. */}
+        {/* Location picker — kind dropdown + a map picker that renders
+            when the kind is "map". Setting kind back to "(none)"
+            clears `map_id` so the JSON doesn't carry a dead reference
+            the runtime would have to ignore. */}
         <fieldset className="sm:col-span-4 rounded border border-parchment/15 bg-ink/20 p-2">
           <legend className="px-1 text-[10px] uppercase tracking-wide text-parchment/55">
             Location
@@ -1370,93 +1364,22 @@ function StepRow({
               <select
                 value={step.location_kind ?? ""}
                 onChange={(e) => {
-                  const next = e.target.value as "" | "dungeon" | "map";
+                  const next = e.target.value as "" | "map";
                   if (next === "") {
                     onUpdate({
                       location_kind: undefined,
-                      dungeon_id: undefined,
-                      dungeon_level: undefined,
-                      map_id: undefined,
-                    });
-                  } else if (next === "dungeon") {
-                    onUpdate({
-                      location_kind: "dungeon",
                       map_id: undefined,
                     });
                   } else {
-                    onUpdate({
-                      location_kind: "map",
-                      dungeon_id: undefined,
-                      dungeon_level: undefined,
-                    });
+                    onUpdate({ location_kind: "map" });
                   }
                 }}
                 className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
               >
                 <option value="">(none)</option>
-                <option value="dungeon">Dungeon</option>
                 <option value="map">Map</option>
               </select>
             </label>
-
-            {step.location_kind === "dungeon" ? (
-              <>
-                <label className="block sm:col-span-2">
-                  <span className="text-[10px] uppercase tracking-wide text-parchment/45">
-                    Dungeon
-                  </span>
-                  <select
-                    value={step.dungeon_id ?? ""}
-                    onChange={(e) =>
-                      onUpdate({ dungeon_id: e.target.value || undefined })
-                    }
-                    className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-xs text-parchment/90"
-                  >
-                    <option value="">(pick one…)</option>
-                    {dungeons.map((d) => (
-                      <option key={d.id} value={d.id}>
-                        {d.name ?? d.id}
-                        {typeof d.levelCount === "number"
-                          ? ` (${d.levelCount} authored)`
-                          : ""}
-                      </option>
-                    ))}
-                  </select>
-                  {step.dungeon_id &&
-                  !dungeons.some((d) => d.id === step.dungeon_id) ? (
-                    <p className="mt-1 text-xs text-ember/80">
-                      Unknown dungeon id — not present in dungeons.json.
-                    </p>
-                  ) : null}
-                </label>
-                <label className="block">
-                  <span className="text-[10px] uppercase tracking-wide text-parchment/45">
-                    Level (1-based)
-                  </span>
-                  <input
-                    type="number"
-                    min={1}
-                    value={
-                      typeof step.dungeon_level === "number"
-                        ? step.dungeon_level
-                        : ""
-                    }
-                    onChange={(e) => {
-                      const raw = e.target.value;
-                      if (raw === "") {
-                        onUpdate({ dungeon_level: undefined });
-                        return;
-                      }
-                      const n = parseInt(raw, 10);
-                      if (Number.isFinite(n) && n >= 1) {
-                        onUpdate({ dungeon_level: n });
-                      }
-                    }}
-                    className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
-                  />
-                </label>
-              </>
-            ) : null}
 
             {step.location_kind === "map" ? (
               <label className="block sm:col-span-3">

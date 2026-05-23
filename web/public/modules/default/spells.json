@@ -261,19 +261,21 @@
       "id": "light",
       "name": "Light",
       "animation_id": "status_aura",
-      "description": "Conjures a radiant orb of divine light that illuminates the darkest passages for the party.",
+      "description": "Conjures a radiant orb of divine light at a chosen spot — anywhere on the battlefield.",
       "casting_type": "priest",
       "min_level": 1,
       "mp_cost": 3,
       "range": 0,
-      "targeting": "self",
+      "targeting": "select_tile",
       "usable_in": [
-        "party"
+        "party",
+        "battle"
       ],
       "duration": 100,
       "action": "apply_effect",
       "action_params": {
-        "effect_id": "magic_light"
+        "effect_id": "magic_light",
+        "radius": 5
       }
     },
     {

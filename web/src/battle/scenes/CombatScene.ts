@@ -3524,13 +3524,25 @@ export class CombatScene extends Phaser.Scene {
       previewColor = 0xffb84d;
     }
     // Lift the reticle + radius preview above the darkness overlay
-    // (depth 20) in throw-tile mode. The whole point of throwing a
-    // torch is to aim into darkness, so the cursor MUST be visible
-    // through the shadow. Spell tile-picks land in lit conditions
-    // most of the time, so they stay at the legacy depths.
-    const isThrowTile = action.kind === "throw-tile";
-    const previewDepth = isThrowTile ? 21 : 15;
-    const cursorDepth = isThrowTile ? 22 : 16;
+    // (depth 20) any time the scene is in darkness mode. Otherwise
+    // the cursor sits at the legacy depth (15-16) underneath the
+    // shadow and the player can't see what they're targeting. This
+    // matters for two cases:
+    //
+    //   1. Throw-tile (lit torch): always pointed into the dark,
+    //      so we always lift here — same as it has been.
+    //   2. Spell tile-picks (Light, Fireball, etc) during a
+    //      darkness battle: the player needs to see the reticle
+    //      to aim, even on cells the party hasn't lit yet. The
+    //      Light spell in particular targets cells specifically
+    //      because they're dark; hiding the cursor under the
+    //      shadow defeats the spell's whole point.
+    //
+    // Outside darkness mode, no overlay is drawn, so legacy depths
+    // are fine.
+    const liftAboveDarkness = action.kind === "throw-tile" || this.darkness;
+    const previewDepth = liftAboveDarkness ? 21 : 15;
+    const cursorDepth = liftAboveDarkness ? 22 : 16;
     if (radius > 0) {
       for (let dr = -radius; dr <= radius; dr++) {
         for (let dc = -radius; dc <= radius; dc++) {
@@ -3888,6 +3900,63 @@ export class CombatScene extends Phaser.Scene {
         await this.resolveTeleport(me, spell, this.tileCursorPos);
       } else if (e === "summon") {
         await this.resolveSummonSkeleton(me, spell, this.tileCursorPos);
+      } else if (e === "magic_light") {
+        // Cleric's Light spell — drops a torch-equivalent light pool
+        // at the targeted cell with a fairy particle effect sitting
+        // on top (vs. the flame an authored torch shows). Targeting
+        // any arena cell, no caster-distance cap (the tile picker's
+        // only bound is the wall ring, which matches "no limited
+        // range"). Mirrors `igniteCell`'s pattern of "push a
+        // LightSource + create an emitter + refreshDarkness" but
+        // skips the damage / per-cell bookkeeping fire needs —
+        // magical light is decorative and hurts nothing.
+        //
+        // Outside a darkness battle (`this.darkness === false`) the
+        // light pool has nothing to illuminate, but the fairy
+        // emitter still renders so the player gets visual feedback
+        // that the spell fired.
+        const ev = spell.effect_value ?? {};
+        const lightRange =
+          typeof ev.radius === "number" && ev.radius > 0
+            ? ev.radius
+            : 5;
+        const { col, row } = this.tileCursorPos;
+        this.staticLights.push({ col, row, radius: lightRange });
+        // Lazy __particle source — same idempotent guard the other
+        // emitter-spawning paths (igniteCell, drawArena) use.
+        if (!this.textures.exists("__particle")) {
+          const g = this.add.graphics();
+          g.fillStyle(0xffffff, 1);
+          g.fillCircle(8, 8, 8);
+          g.generateTexture("__particle", 16, 16);
+          g.destroy();
+        }
+        const ex = ARENA_X + col * TILE + TILE / 2;
+        const ey = ARENA_Y + row * TILE + TILE / 2;
+        const cfg = ANIMATION_CONFIGS.fairy;
+        const emitter = this.add.particles(
+          ex,
+          ey,
+          "__particle",
+          cfg as unknown as Phaser.Types.GameObjects.Particles.ParticleEmitterConfig,
+        );
+        emitter.setDepth(160);
+        // Unique key so a Light dropped on a cell that already
+        // carries an authored animation (rare but possible — e.g.
+        // an arena painted with a torch) doesn't overwrite the
+        // existing arenaEmitters entry. refreshDarkness's
+        // visibility-gating pass reads the FIRST TWO comma-
+        // separated tokens via `key.split(",")` + destructure;
+        // `Number()` only consumes those two, so the third token
+        // is a free-form disambiguator.
+        this.arenaEmitters.set(
+          `${col},${row},magic_light_${me.id}_${this.staticLights.length}`,
+          emitter,
+        );
+        this.refreshDarkness();
+        this.combat.log.push(
+          `${me.name} casts ${spell.name} on (${col}, ${row}) — a divine glow illuminates the area (${lightRange}-tile light).`,
+        );
       } else {
         this.combat.log.push(
           `${me.name} casts ${spell.name} on a tile — no effect yet.`

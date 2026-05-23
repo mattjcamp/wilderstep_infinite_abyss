@@ -38,7 +38,7 @@ import { tileDef } from "./Tiles";
 import type { TileMap } from "./TileMap";
 
 export type QuestStatus = "available" | "active" | "completed" | "turned_in";
-export type QuestStepKind = "kill" | "collect";
+export type QuestStepKind = "kill" | "collect" | "retrieve";
 
 // ── World-unlock rewards ──────────────────────────────────────────
 //
@@ -101,6 +101,11 @@ export interface QuestStep {
   /** 1-based per the editor's "Level (1-based)" input. Undefined =
    *  any floor of the dungeon counts. */
   dungeonLevel?: number;
+  /** Specific cell on the step's `mapId`. Required for `retrieve`
+   *  steps (the cell the quest item appears on); ignored for other
+   *  step kinds today. 0-based. JSON keys: `col`, `row`. */
+  col: number;
+  row: number;
 
   // ── Convenience projections of `params` for the common kinds ───
   /** For `kind === "kill"` — the encounter id (encounters.json `id`)
@@ -226,11 +231,30 @@ interface RawQuestStep {
   description?: string;
   tags?: unknown;
   kind?: string;
+  /** First-class step attributes (kill steps). Replaces the legacy
+   *  `params.encounter_id` / `params.count` nesting. The loader still
+   *  reads `params` as a fallback so on-disk data from before the
+   *  cleanup keeps hydrating; new editor output uses these top-level
+   *  fields. */
+  encounter_id?: string;
+  count?: number | string;
+  /** First-class step attribute for fetch steps. Same migration story
+   *  as `encounter_id` — top-level now, `params.item_id` is a legacy
+   *  read fallback. */
+  item_id?: string;
+  /** Legacy free-form params blob. Still read on load so existing
+   *  on-disk data hydrates correctly, but no longer authored by the
+   *  editor. Newly-saved steps drop this field entirely. */
   params?: Record<string, unknown> | null;
   location_kind?: string;
   map_id?: string;
   dungeon_id?: string;
   dungeon_level?: number | string;
+  /** Specific cell on `map_id` — required for `retrieve` steps so the
+   *  host knows where to drop the quest item. Coerced from string or
+   *  number; defaults to 0 when absent. */
+  col?: number | string;
+  row?: number | string;
   // v1 legacy fields (kept so the loader can fall back to v1-shape
   // quests.json files during migration — strip once nothing in the
   // module catalog uses them)
@@ -332,31 +356,46 @@ function stepFromRaw(raw: RawQuestStep): QuestStep | null {
     ? raw.params as Record<string, unknown>
     : {};
 
-  // ── Convenience projections of params ─────────────────────────
-  // Pull the common kill / fetch fields out of params, falling back
-  // to v1 flat fields (raw.encounter / raw.target_count / raw.collect_item)
-  // so legacy authoring keeps working.
-  const encounterIdParam = typeof params.encounter_id === "string"
+  // ── First-class step attributes ───────────────────────────────
+  // Prefer the top-level `encounter_id` / `count` / `item_id`
+  // (current editor output) and fall back through legacy shapes in
+  // order: `params.<field>` (old quests.json from before the
+  // editor refactor) → v1 flat fields (`raw.encounter`,
+  // `raw.target_count`, `raw.collect_item`) so old hand-authored
+  // data still hydrates. Once the modules are migrated and v1
+  // fixtures are gone, both fallbacks can be deleted.
+  const encounterIdFromParams = typeof params.encounter_id === "string"
     ? params.encounter_id
     : "";
-  const encounterId = encounterIdParam || (raw.encounter ?? "");
+  const encounterId =
+    (raw.encounter_id ?? "") ||
+    encounterIdFromParams ||
+    (raw.encounter ?? "");
 
-  const countParam = coerceInt(params.count);
+  const countTop = coerceInt(raw.count);
+  const countFromParams = coerceInt(params.count);
   const count = Math.max(
     1,
-    countParam ?? raw.target_count ?? 1,
+    countTop ?? countFromParams ?? raw.target_count ?? 1,
   );
 
-  const itemIdParam = typeof params.item_id === "string"
+  const itemIdFromParams = typeof params.item_id === "string"
     ? params.item_id
     : "";
-  const itemId = itemIdParam || (raw.collect_item ?? "");
+  const itemId =
+    (raw.item_id ?? "") ||
+    itemIdFromParams ||
+    (raw.collect_item ?? "");
 
   // ── Location (v2 structured) ──────────────────────────────────
   const locationKind = coerceLocationKind(raw.location_kind);
   const mapId = typeof raw.map_id === "string" ? raw.map_id : "";
   const dungeonId = typeof raw.dungeon_id === "string" ? raw.dungeon_id : "";
   const dungeonLevel = coerceInt(raw.dungeon_level);
+  // Specific-cell coords (retrieve steps). Defaults to 0/0 when absent
+  // — non-retrieve steps don't read them.
+  const col = coerceInt(raw.col) ?? 0;
+  const row = coerceInt(raw.row) ?? 0;
 
   // ── v1-shape compat (derived) ─────────────────────────────────
   // `stepType` mirrors v1 with the union narrowed to "kill" | "collect";
@@ -382,6 +421,8 @@ function stepFromRaw(raw: RawQuestStep): QuestStep | null {
     mapId,
     dungeonId,
     dungeonLevel,
+    col,
+    row,
     encounterId,
     count,
     itemId,
@@ -1055,6 +1096,57 @@ export function creditQuestKill(
     }
   }
   return { questId, stepIdx, step, killsSoFar, stepCompleted, questCompleted };
+}
+
+// ── Retrieve credit ────────────────────────────────────────────
+
+/** Result of {@link creditQuestRetrieve}. Mirrors {@link QuestKillCredit}
+ *  but without the per-step counter (retrieve is single-pickup — one
+ *  step-on credits it in full). */
+export interface QuestRetrieveCredit {
+  questId: string;
+  stepIdx: number;
+  step: QuestStep;
+  /** Always true on a successful credit — retrieve has no multi-count
+   *  middle state. Exposed for parity with QuestKillCredit so the host
+   *  can use one celebration code path. */
+  stepCompleted: true;
+  /** True when this credit was the LAST step's completion — quest
+   *  status flipped from "active" to "completed". */
+  questCompleted: boolean;
+}
+
+/**
+ * Credit the party for retrieving a quest item. Returns null when the
+ * quest doesn't exist / isn't active / the step doesn't exist / the
+ * step isn't a `retrieve` kind / the step is already complete.
+ *
+ * On a successful credit, flips `stepProgress[stepIdx]` to true and
+ * bumps `state.status` to "completed" when that was the last
+ * outstanding step.
+ */
+export function creditQuestRetrieve(
+  defs: ReadonlyArray<QuestDef>,
+  states: ReadonlyMap<string, QuestState>,
+  questId: string,
+  stepIdx: number,
+): QuestRetrieveCredit | null {
+  const def = defs.find((d) => d.id === questId);
+  if (!def) return null;
+  const state = states.get(questId);
+  if (!state) return null;
+  if (state.status !== "active") return null;
+  const step = def.steps[stepIdx];
+  if (!step) return null;
+  if (step.kind !== "retrieve") return null;
+  if (state.stepProgress[stepIdx]) return null;
+  state.stepProgress[stepIdx] = true;
+  let questCompleted = false;
+  if (state.stepProgress.length > 0 && state.stepProgress.every((p) => p)) {
+    state.status = "completed";
+    questCompleted = true;
+  }
+  return { questId, stepIdx, step, stepCompleted: true, questCompleted };
 }
 
 // ── Acceptance / turn-in ───────────────────────────────────────

@@ -83,6 +83,7 @@ import {
 } from "@/sim/MapSimulation";
 import {
   claimQuestRewards,
+  creditQuestRetrieve,
   ensureQuestStates,
   parseQuestsFile,
   type CombatLocation,
@@ -495,6 +496,17 @@ export function PlayHost() {
    *  shortcuts setLightingMode without a React render hop. */
   const clockRef = useRef(0);
   const rendererRef = useRef<WorldRenderer | null>(null);
+  /** Per-cell item-overlay helpers exposed by the inline scene class.
+   *  PlayHost talks through this ref to (a) drop a quest item on a
+   *  cell when a retrieve step is accepted while the player is on
+   *  the target map, and (b) tear down the overlay sprite after the
+   *  party walks onto the cell to retrieve it (the kernel cleared
+   *  `cell.item` already, but the Phaser Image needs an explicit
+   *  destroy). Null between scene swaps. */
+  const itemOverlayBridgeRef = useRef<{
+    placeItem: (col: number, row: number, itemId: string) => void;
+    removeItem: (col: number, row: number) => void;
+  } | null>(null);
   const overlaysOpenRef = useRef(false);
   /** Session-only dungeon state. Null on the overworld. Populated
    *  when a `dungeon_entered` event lands; cleared when the party
@@ -678,6 +690,51 @@ export function PlayHost() {
     );
     r.setQuestGlowCells(cells);
   }, []);
+
+  /** Walk active retrieve steps and stamp their items onto the current
+   *  map's grid (via the bridge — which both updates `cell.item` and
+   *  creates the rendered overlay). Idempotent: a step whose target
+   *  cell already carries its item leaves the bridge's placeItem to
+   *  no-op via the existing-overlay guard.
+   *
+   *  Called at:
+   *   - Mount: items for already-accepted steps land in `cell.item`
+   *     directly in the scene's create() pass, before the overlay
+   *     loop runs. THIS function isn't strictly needed there.
+   *   - Quest accept: a newly-accepted quest may carry retrieve
+   *     steps on the current map; we need to drop their items
+   *     immediately so the player sees them.
+   *
+   *  Doesn't need to fire on step completion (the kernel cleared
+   *  cell.item already and the pickup handler calls removeItem on
+   *  the overlay). */
+  const refreshRetrievePlacements = useCallback(() => {
+    const bridge = itemOverlayBridgeRef.current;
+    if (!bridge) return;
+    const save = saveRef.current;
+    if (!save) return;
+    const map = catalogRef.current?.map;
+    if (!map) return;
+    const accepted = new Set(save.acceptedQuests ?? []);
+    const turnedIn = new Set(save.turnedInQuests ?? []);
+    const progress = save.questStepProgress ?? {};
+    for (const def of questDefsRef.current) {
+      if (!accepted.has(def.id)) continue;
+      if (turnedIn.has(def.id)) continue;
+      const completedIdx = progress[def.id] ?? 0;
+      for (let i = 0; i < def.steps.length; i++) {
+        if (i < completedIdx) continue;
+        const step = def.steps[i];
+        if (step.kind !== "retrieve") continue;
+        if (step.mapId !== map.id) continue;
+        if (!step.itemId) continue;
+        bridge.placeItem(step.col, step.row, step.itemId);
+      }
+    }
+    // Refresh the glow so newly-placed items light up immediately.
+    refreshQuestGlow();
+  }, [refreshQuestGlow]);
+
   useEffect(() => {
     // Lock dialog, quest offer, active combat, the Party screen, and
     // each of the three inspector overlays (Q quest log, H help, L
@@ -1357,10 +1414,45 @@ export function PlayHost() {
           // prior save.
           refreshQuestGlow();
 
+          // Retrieve-step item placement — drop each accepted-but-
+          // unfinished retrieve step's item onto its target cell on
+          // the current map BEFORE the item-overlay loop runs so the
+          // loop below picks them up alongside authored items. The
+          // matching map id check ignores dungeon floors etc. — only
+          // steps whose `mapId` equals the current map place here.
+          // Cells already carrying an authored item are left alone
+          // (the authored value wins; the retrieve step will appear
+          // unplaceable in that corner case, but the editor can warn
+          // about that later).
+          {
+            const acceptedSet = new Set(save.acceptedQuests ?? []);
+            const turnedInSet = new Set(save.turnedInQuests ?? []);
+            const progress = save.questStepProgress ?? {};
+            for (const def of questDefsRef.current) {
+              if (!acceptedSet.has(def.id)) continue;
+              if (turnedInSet.has(def.id)) continue;
+              const completedIdx = progress[def.id] ?? 0;
+              for (let i = 0; i < def.steps.length; i++) {
+                if (i < completedIdx) continue;
+                const step = def.steps[i];
+                if (step.kind !== "retrieve") continue;
+                if (step.mapId !== catalog.map.id) continue;
+                if (!step.itemId) continue;
+                const row = catalog.map.grid[step.row];
+                if (!row) continue;
+                const cell = row[step.col];
+                if (!cell) continue;
+                if (cell.item) continue; // don't trample authored items
+                (cell as { item?: string }).item = step.itemId;
+              }
+            }
+          }
+
           // Item overlays — one Image per cell whose `item` resolves
           // to a known icon. Authored via the editor's per-cell
-          // `item` field; the icon comes from items.json. Sized at
-          // 70% of the tile so the floor underneath is still visible
+          // `item` field (plus retrieve-step placements stamped just
+          // above); the icon comes from items.json. Sized at 70% of
+          // the tile so the floor underneath is still visible
           // (matches the "dropped on the floor" look from v1).
           for (let r = 0; r < catalog.map.height; r++) {
             for (let c = 0; c < catalog.map.width; c++) {
@@ -1383,6 +1475,56 @@ export function PlayHost() {
                 .setDepth(70);
               this.itemOverlays.set(`${c},${r}`, img);
             }
+          }
+
+          // Install the item-overlay bridge so PlayHost's React-side
+          // code can place / remove items at runtime (a retrieve
+          // quest accepted mid-play, a pickup completing a step).
+          // Captures the scene + the items lookup in closure so the
+          // helpers can build sprites with the same shape the boot
+          // loop above does.
+          {
+            const sceneSelf = this;
+            const mapRef = catalog.map;
+            itemOverlayBridgeRef.current = {
+              placeItem: (col, row, itemId) => {
+                const r = mapRef.grid[row];
+                if (!r) return;
+                const cell = r[col];
+                if (!cell) return;
+                (cell as { item?: string }).item = itemId;
+                const key = `${col},${row}`;
+                if (sceneSelf.itemOverlays.has(key)) return;
+                const item = itemsById.get(itemId);
+                const icon = item?.icon;
+                if (!icon) return;
+                const tex = `item/${icon}.png`;
+                if (!sceneSelf.textures.exists(tex)) return;
+                const img = sceneSelf.add
+                  .image(
+                    col * TILE_SIZE + TILE_SIZE / 2,
+                    row * TILE_SIZE + TILE_SIZE / 2,
+                    tex,
+                  )
+                  .setOrigin(0.5)
+                  .setDisplaySize(TILE_SIZE * 0.7, TILE_SIZE * 0.7)
+                  .setDepth(70);
+                sceneSelf.itemOverlays.set(key, img);
+              },
+              removeItem: (col, row) => {
+                const r = mapRef.grid[row];
+                if (r) {
+                  const cell = r[col];
+                  if (cell) (cell as { item?: string }).item = "";
+                }
+                const key = `${col},${row}`;
+                const existing = sceneSelf.itemOverlays.get(key);
+                if (existing) {
+                  existing.destroy();
+                  sceneSelf.itemOverlays.delete(key);
+                }
+              },
+            };
           }
 
           // Quest-giver overlays — one Image per cell whose `quest`
@@ -2102,6 +2244,112 @@ export function PlayHost() {
               refreshDetectedTraps();
               return;
             }
+            if (ev.kind === "item_picked") {
+              // Party stepped onto a cell carrying an item. We
+              // handle two cases:
+              //
+              //   1. Retrieve-quest item: matches an active retrieve
+              //      step's (mapId, col, row, itemId) tuple. Credit
+              //      the step, add the item to inventory, fire the
+              //      celebration placard, and tear down the overlay
+              //      sprite (the kernel cleared cell.item already).
+              //
+              //   2. Plain item drop: no matching quest step. Add
+              //      to inventory + log so the player still picks
+              //      it up, but no celebration.
+              //
+              // The kernel doesn't distinguish — it just signals.
+              // PlayHost owns the meaning.
+              const save = saveRef.current;
+              const map = catalogRef.current?.map;
+              if (!save || !map) return;
+              const accepted = new Set(save.acceptedQuests ?? []);
+              const turnedIn = new Set(save.turnedInQuests ?? []);
+              const progress = save.questStepProgress ?? {};
+              let matchedQuestId: string | null = null;
+              let matchedStepIdx = -1;
+              for (const def of questDefsRef.current) {
+                if (matchedQuestId) break;
+                if (!accepted.has(def.id)) continue;
+                if (turnedIn.has(def.id)) continue;
+                const completedIdx = progress[def.id] ?? 0;
+                for (let i = 0; i < def.steps.length; i++) {
+                  if (i < completedIdx) continue;
+                  const step = def.steps[i];
+                  if (step.kind !== "retrieve") continue;
+                  if (step.mapId !== map.id) continue;
+                  if (step.col !== ev.pos.col) continue;
+                  if (step.row !== ev.pos.row) continue;
+                  if (step.itemId !== ev.itemId) continue;
+                  matchedQuestId = def.id;
+                  matchedStepIdx = i;
+                  break;
+                }
+              }
+              // Add the picked item to the party inventory. We do
+              // this whether or not it matched a quest — the item
+              // catalog is the source of truth for stackability, so
+              // a quest item that's also a stackable consumable
+              // merges into the existing stack the same way reward
+              // items do.
+              const catalogItems = catalogRef.current?.items ?? [];
+              const nextInventory = addToInventory(
+                save.party.inventory.map((e) => ({ ...e })),
+                ev.itemId,
+                catalogItems,
+                1,
+              );
+              let nextSave: WorldSave = {
+                ...save,
+                party: { ...save.party, inventory: nextInventory },
+              };
+              // Quest credit (if matched) — update QuestState and
+              // save.questStepProgress in the same shape kill credit
+              // uses, so the save mirror stays consistent and the
+              // bootstrap pass on reload re-derives the right active
+              // step. fireQuestCelebration fires a step placard with
+              // the quest name + step name.
+              if (matchedQuestId && matchedStepIdx >= 0) {
+                const credit = creditQuestRetrieve(
+                  questDefsRef.current,
+                  questStatesRef.current,
+                  matchedQuestId,
+                  matchedStepIdx,
+                );
+                if (credit) {
+                  const qs = questStatesRef.current.get(matchedQuestId);
+                  if (qs) {
+                    let nextIdx = qs.stepProgress.findIndex((p) => !p);
+                    if (nextIdx === -1) nextIdx = qs.stepProgress.length;
+                    nextSave = {
+                      ...nextSave,
+                      questStepProgress: {
+                        ...(nextSave.questStepProgress ?? {}),
+                        [matchedQuestId]: nextIdx,
+                      },
+                    };
+                  }
+                  const def = questDefsRef.current.find(
+                    (d) => d.id === matchedQuestId,
+                  );
+                  fireQuestCelebration({
+                    kind: "step",
+                    title: def?.name ?? matchedQuestId,
+                    subtitle: credit.step.name,
+                  });
+                }
+              }
+              saveWorld(nextSave);
+              saveRef.current = nextSave;
+              // Tear down the sprite overlay — kernel already
+              // cleared cell.item but the Phaser Image is still
+              // sitting on the cell until we destroy it.
+              itemOverlayBridgeRef.current?.removeItem(ev.pos.col, ev.pos.row);
+              // Refresh quest glow — the just-picked cell no longer
+              // needs a halo, and any newly-active step might.
+              refreshQuestGlow();
+              return;
+            }
             if (ev.kind === "lock_encountered") {
               setLockEncounter(ev.options);
               return;
@@ -2753,10 +3001,16 @@ export function PlayHost() {
         // already painted on the current map. Re-run the glow pass so
         // those cells light up immediately.
         refreshQuestGlow();
+        // The accepted quest may also carry retrieve steps targeting
+        // cells on the current map. Stamp their items + create the
+        // overlay sprites so the player sees them right away
+        // (followed by another glow pass inside the helper so the
+        // gold halo wraps the new icon).
+        refreshRetrievePlacements();
       }
       return null;
     });
-  }, [refreshQuestGlow]);
+  }, [refreshQuestGlow, refreshRetrievePlacements]);
 
   /** Quest decline / close — routes both "Decline" (offer view) and
    *  "Close" (in-progress / complete view) through the same handler.

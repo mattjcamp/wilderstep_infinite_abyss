@@ -466,6 +466,13 @@ export type SimEvent =
    *  already disarmed the cell (set `trap = false`) before the event
    *  fires so it can't double-trigger. */
   | { kind: "trap_triggered"; pos: Position }
+  /** Fired AFTER the party finishes stepping onto a cell whose `item`
+   *  field is set. Carries the item id + the cell coords so the host
+   *  can decide what to do — add to inventory, credit a quest's
+   *  `retrieve` step, both, or neither. The kernel has already
+   *  cleared the cell's item before the event fires so a re-step
+   *  doesn't double-fire. */
+  | { kind: "item_picked"; itemId: string; pos: Position }
   /** Emitted whenever the *visible* simulation state changes — host
    *  uses this to re-render its panel (HP bars, torch countdown, …). */
   | { kind: "state" };
@@ -1211,6 +1218,24 @@ export class MapSimulation {
     if (target.trap) {
       target.trap = false;
       this.emit({ kind: "trap_triggered", pos: { col: to.col, row: to.row } });
+    }
+
+    // ── Item pickup ─────────────────────────────────────────────────
+    // Same disarm-and-emit pattern as traps. The kernel doesn't care
+    // WHY the item is there (authored on the map, dropped by a quest
+    // retrieve step's placement pass, future drop systems) — it just
+    // signals that the party walked onto it. The host listens and
+    // decides whether to add it to inventory, credit a quest, or
+    // ignore. Clearing `item` before emit keeps a re-step over the
+    // same cell quiet (matches the trap convention).
+    const pickupItemId = (target as { item?: string } | null)?.item;
+    if (typeof pickupItemId === "string" && pickupItemId.length > 0) {
+      (target as { item?: string }).item = "";
+      this.emit({
+        kind: "item_picked",
+        itemId: pickupItemId,
+        pos: { col: to.col, row: to.row },
+      });
     }
 
     // ── Dungeon entrance ────────────────────────────────────────────

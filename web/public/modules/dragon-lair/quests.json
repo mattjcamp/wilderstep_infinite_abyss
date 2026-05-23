@@ -12,51 +12,43 @@
           "id": "rats_step_1",
           "name": "Step 1 Kill the Giant Rats",
           "kind": "kill",
-          "params": {
-            "encounter_id": "rat_swarm",
-            "count": 2
-          },
           "description": "Kill the Giant Rats in Hallowmere",
           "tags": [
             "rats"
           ],
           "location_kind": "map",
-          "map_id": "demo_town"
+          "map_id": "demo_town",
+          "encounter_id": "rat_swarm",
+          "count": 2
         },
         {
           "id": "rats_step_2",
           "name": "Step 2",
           "kind": "kill",
-          "params": {
-            "encounter_id": "rat_nest",
-            "count": 3
-          },
           "location_kind": "map",
           "map_id": "demo_general_shop",
-          "description": "Kill the Rats in Mira's Shop"
+          "description": "Kill the Rats in Mira's Shop",
+          "encounter_id": "rat_nest",
+          "count": 3
         },
         {
           "id": "rats_step_3",
           "name": "Step 3",
           "kind": "kill",
-          "params": {
-            "encounter_id": "rat_swarm",
-            "count": 2
-          },
           "location_kind": "map",
           "map_id": "show_basement",
-          "description": "Kill the Rats in the Shop Basement"
+          "description": "Kill the Rats in the Shop Basement",
+          "encounter_id": "rat_swarm",
+          "count": 2
         },
         {
           "id": "rats_step_4",
           "name": "Step 4",
           "kind": "kill",
-          "params": {
-            "encounter_id": "stray_goblin"
-          },
           "description": "Deal with the Goblin",
           "location_kind": "map",
-          "map_id": "show_basement"
+          "map_id": "show_basement",
+          "encounter_id": "stray_goblin"
         }
       ],
       "quest_giver": {
@@ -84,12 +76,10 @@
           "id": "goblins_step_1",
           "name": "Step 1",
           "kind": "kill",
-          "params": {
-            "encounter_id": "goblin_raiders"
-          },
           "description": "Kill the Goblins",
           "location_kind": "map",
-          "map_id": "goblins_den_1_l3"
+          "map_id": "goblins_den_1_l3",
+          "encounter_id": "goblin_raiders"
         }
       ],
       "quest_giver": {
@@ -101,6 +91,42 @@
       "rewards": {
         "xp": 100,
         "gold": 100
+      }
+    },
+    {
+      "id": "the_lost_scroll",
+      "name": "The Lost Scroll",
+      "description": "Retrieve the scroll I left at the Armor Shop",
+      "tags": [],
+      "steps": [
+        {
+          "id": "the_lost_scroll_step_1",
+          "name": "Step 1",
+          "kind": "retrieve",
+          "item_id": "scroll_of_fire",
+          "location_kind": "map",
+          "map_id": "weapons_shop",
+          "col": 8,
+          "row": 1
+        }
+      ],
+      "quest_giver": {
+        "npc_name": "Lazy Warrior",
+        "npc_sprite": "person/fighter12.png",
+        "start_dialog": "Can you get my scroll from the armor?",
+        "end_dialog": "Thanks bruh"
+      },
+      "rewards": {
+        "xp": 50,
+        "gold": 24,
+        "tile_add": [
+          {
+            "map": "demo_town",
+            "col": 13,
+            "row": 9,
+            "tile_id": "moongate"
+          }
+        ]
       }
     }
   ]

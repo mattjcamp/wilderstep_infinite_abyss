@@ -32,13 +32,16 @@ const QUESTS: QuestGlowQuest[] = [
   {
     id: "Q",
     steps: [
-      { kind: "kill", params: { encounter_id: "wolves" } },
-      { kind: "fetch", params: { item_id: "lost_locket" } },
+      // Current shape: first-class top-level fields. The legacy
+      // `params: { encounter_id, item_id }` shape is still supported
+      // as a read fallback — exercised in a dedicated test below.
+      { kind: "kill", encounter_id: "wolves" },
+      { kind: "fetch", item_id: "lost_locket" },
     ],
   },
   {
     id: "Q2",
-    steps: [{ kind: "kill", params: { encounter_id: "boars" } }],
+    steps: [{ kind: "kill", encounter_id: "boars" }],
   },
 ];
 
@@ -92,6 +95,23 @@ describe("computeQuestGlowCells", () => {
     expect(cells).toEqual(new Set(["2,1"]));
   });
 
+  it("reveals retrieve-step items once the quest is accepted", () => {
+    // Same shape as fetch — `retrieve` is the v2 step kind for
+    // "item appears on a cell when quest is accepted; pick it up to
+    // credit the step". The glow path treats them identically.
+    const retrieveQuests: QuestGlowQuest[] = [
+      {
+        id: "R",
+        steps: [{ kind: "retrieve", item_id: "lost_locket" }],
+      },
+    ];
+    const g = grid("....\n..i.");
+    const cells = computeQuestGlowCells(g, retrieveQuests, {
+      acceptedQuests: new Set(["R"]),
+    });
+    expect(cells).toEqual(new Set(["2,1"]));
+  });
+
   it("ignores encounters / items not named by any quest step", () => {
     const g = grid("x..\n.x.");
     const noFilter = computeQuestGlowCells(g, QUESTS);
@@ -130,6 +150,26 @@ describe("computeQuestGlowCells", () => {
     const cells = computeQuestGlowCells(g, QUESTS);
     expect(cells).toEqual(new Set(["0,0"]));
     expect(cells.size).toBe(1);
+  });
+
+  it("falls back to legacy params.encounter_id / params.item_id for pre-cleanup data", () => {
+    // Older quests.json that hasn't been re-saved through the new
+    // editor still nests target fields inside `params`. The helper
+    // honours both shapes so a half-migrated module still glows.
+    const legacy: QuestGlowQuest[] = [
+      {
+        id: "Q",
+        steps: [
+          { kind: "kill", params: { encounter_id: "wolves" } },
+          { kind: "fetch", params: { item_id: "lost_locket" } },
+        ],
+      },
+    ];
+    const g = grid("...e\n..i.");
+    const cells = computeQuestGlowCells(g, legacy, {
+      acceptedQuests: new Set(["Q"]),
+    });
+    expect(cells).toEqual(new Set(["3,0", "2,1"]));
   });
 
   it("handles empty / missing rows defensively", () => {

@@ -4,7 +4,8 @@
 - Do a playthrough with the alternate party
 
 # Polish
-- Clerics should be able to cast Light during battle. This will provide a torch-like effect but uses the fairy animation instead of the torch animation
+- Add Retrieve Item Quest Step Type
+- Check that Quest Tiles rewards work, test using a Boat tile
 
 # V3 Ideas
 
