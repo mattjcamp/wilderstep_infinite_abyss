@@ -143,19 +143,15 @@
         "club",
         "mace",
         "sword",
-        "axe",
-        "halberd",
         "spear",
         "gloves",
         "sling",
         "short_bow",
         "long_bow",
-        "crossbow",
         "rock",
         "cloth",
         "leather",
-        "chain",
-        "plate"
+        "chain"
       ],
       "abilities": [
         {

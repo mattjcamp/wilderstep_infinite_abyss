@@ -1,12 +1,7 @@
 
 # Polish
 
-- Make sure we are not missing abilities, audit and change abilities if needed
-
-- Make sure the monster sprites have transparent backgrounds. Many have black backgrounds which make the monster look like a block on the maps.
-
-- Update the Data Dictionaries
-- Use the Data Model to create a Player's Manual using these items: Race, Character Class, Abilities, Spells, Items, Monsters. Make tables so they can compare items. For the Item table group by type of Item and sort by power (if applicable)
+- Playtest
 
 # V3 Ideas
 

@@ -44,6 +44,9 @@ A flat singleton object — the whole file is one Party record.
 | `inventory` | object[] | yes | Shared party stash. Each entry is `{ item, charges?, durability? }` where `item` is an [Item](item.md) `id` (snake_case). | TBD |
 | `torch_steps` | int | yes | Remaining lit-torch steps | TBD |
 | `galadriels_light_steps` | int | yes | Elven Light remaining steps | TBD |
+| `last_tinker_day` | int | no | Day index of the most recent Gnome Tinker use. The Tinker action is gated to one use per in-game day; the character sheet's Use button renders disabled when `last_tinker_day >= currentDay`. Dedicated field for legacy save compatibility — newer once-per-day abilities slot into `last_ability_day` below. | wired |
+| `last_ability_day` | object | no | Generic id → day-index record for once-per-day class / race abilities. Keys are [Ability](ability.md) ids (e.g. `"craft_arrows"`, `"craft_fire_arrows"`); values are the in-game day index when the ability last fired. The character sheet's Use button renders disabled with a "Used today" label when the entry equals today's day. Each ability has its own counter so a Ranger can craft both arrows AND fire arrows on the same day. Adding a future per-day ability is a one-line addition to the cooldown-map builder in `PlayPartyScreenOverlay`; no save-shape change needed. | wired |
+| `pickpocketedNpcs` | string[] | no | Set of NPC ids the party has already pickpocketed. Used to gate Halfling Pickpocket to one attempt per NPC per game. | wired |
 
 ## Cross-references to other models
 

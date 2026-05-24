@@ -60,6 +60,9 @@ Each record minimally has `id`, `name`, `category`. The rest of the fields are p
 | `character_can_equip` | bool | no | Eligible for a per-character equip slot. | TBD |
 | `buy` | number | no | Shop purchase price. | TBD |
 | `sell` | number | no | Shop sell-back price. | TBD |
+| `ignite` | bool | no | When `true`, using this item in combat (thrown torch, fire arrow on hit) **ignites the landing cell** — the cell becomes a fire tile that damages anyone standing on it via `applyFireDamageOnEntry` and adds a light source to the arena's static-light pool. Honoured by both `throwable` items (Torch) and `ammo` items (Fire Arrows). See *Fire-cell items* below. | wired |
+| `light_range` | number | no | Light radius (Chebyshev tiles) the ignited cell emits. Only consulted when `ignite: true`. Defaults to 3 if absent. Torch carries 5; Fire Arrows carry 3 (smaller pool to differentiate). | wired |
+| `targeting` | string | no | Ranged-weapon aiming mode. `"directional"` (short bow, long bow, sling) makes the Range action ask for a cardinal direction; absent / any other value uses the precision target picker (crossbow, silver bow). Fire-Arrow shots on a precision weapon override into tile-pick mode so the player can light any cell in range. | wired |
 
 ## Polymorphic discriminators
 
@@ -92,6 +95,25 @@ For weapons, `item_type` drives ranged-attack range lookups (the v1 implementati
 | `rest` | Consumes the item to camp / long-rest (Camping Supplies) |
 
 Items with `effect` values that have no v1 handler (`Scroll of Fire`, `Smoke Bomb`, `Rope`, `Holy Water`) are inventory placeholders today.
+
+## Fire-cell items
+
+Items that set `ignite: true` plant a **persistent fire on the landing cell** in combat:
+
+| Item id | item_type | When it fires | `power` (per-tick fire damage) | `light_range` |
+|---|---|---|---|---|
+| `torch` | `torch` | Thrown at a tile (`throw-tile` action) | 3 | 5 |
+| `fire_arrows` | `ammo` | Successful Range shot at a creature OR a fall-short into an empty tile (`range`, `range-direction`, `range-tile`) | 3 | 3 |
+
+Mechanics:
+- The cell is registered in `CombatScene.fireCells` with the item's `power` (damage per turn) and `light_range` (light radius).
+- A static light source is added to `staticLights` so the cell illuminates the arena.
+- `applyFireDamageOnEntry` damages any alive combatant on the cell once per turn — including the moment of impact.
+- For `ammo` items on a precision bow (e.g. Silver Bow), the Range action opens a tile picker so the player can shoot any cell in range, including empty / dark cells, to use the burning shaft as a flare.
+
+## Ammo families
+
+`AMMO_FAMILY` in `web/src/battle/world/Party.ts` maps a weapon's primary `ammo` id to an array of substitute ammo ids the same weapon can also load. Today: `arrows → [fire_arrows]`. When the party carries multiple compatible ammos the Range action opens an ammo picker before firing; carrying only one skips straight to target / direction selection. Adding a new alternate ammo is a one-line addition to that table plus the matching Item record.
 
 ## Cross-references to other models
 

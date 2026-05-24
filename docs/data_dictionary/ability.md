@@ -121,6 +121,44 @@ The class-side record specifies `min_level` per granter — Cleric @ 2, Paladin 
 }
 ```
 
+## Known `params` shapes by ability id
+
+`params` is a free-form bag whose keys depend on the runtime handler that consumes them. Below are the keys live handlers read today, so a new module author can copy the shape rather than re-derive it.
+
+**`herbalism`** (Druid / Alchemist passive — the holder finds reagents while walking foraging terrain)
+
+| Key | Type | Default | Meaning |
+|---|---|---|---|
+| `find_chance` | number | `0.02` | Per-step probability the holder spots a reagent. |
+| `alchemist_multiplier` | number | `2` | Multiplier applied to `find_chance` when the holder is an Alchemist. |
+| `terrain` | string[] | `["grass","grass2","forest","palm_tree"]` | Map-tile ids that count as foraging terrain. Adding a new tile id is a one-line edit; the helper reads the array directly. |
+| `dc` | number | `13` | (Reserved for the legacy "examine a tile" flavour — not consumed by the per-step path.) |
+| `save_stat` | string | `"intelligence"` | (Same — reserved.) |
+
+**`brew_potion`** (Alchemist active — opens the recipe picker on the character sheet)
+
+No `params` keys today. Reagent costs + produced potion live on each [Recipe](recipe.md) record; the ability just opens the picker.
+
+**`craft_arrows` / `craft_fire_arrows`** (Ranger active — once-per-day bundle craft)
+
+No `params` keys today. Each ability has its own once-per-day counter (`Party.last_ability_day[<ability_id>]`) and a hardcoded stock list (`craft_arrows → arrows + bolts`; `craft_fire_arrows → fire_arrows`). One pull produces a full bundle (the catalog Item's `charges` count, e.g. 20 arrows).
+
+**`backstab`**, **`shadow_step`** (Thief passive — combat-only)
+
+No `params` consumed today; the engine's bump-attack code path branches on the ability id presence + the character's class/level/weapon directly.
+
+**`smite_undead`** (Paladin passive — combat-only)
+
+No `params` consumed today; the engine doubles damage when the attacker is a Paladin and the target has `undead: true`.
+
+**`turn_undead`** (Cleric / Paladin active — see the example above for full param list)
+
+## Once-per-day class abilities
+
+Some active class abilities are gated to one use per in-game day via `Party.last_ability_day[<ability_id>]` (an id → dayIndex record). The character sheet's Use button renders disabled with a "Used today" label when the gate is closed — see [Party](party.md) for the storage shape.
+
+Today's gated abilities: `craft_arrows`, `craft_fire_arrows`. Tinker uses its own dedicated `Party.last_tinker_day` field for legacy save compatibility. Adding a new once-per-day class ability is a one-line addition to `PlayPartyScreenOverlay`'s cooldown-map builder plus the helper that stamps the day in its `attemptX` function.
+
 ## Notes and open questions
 
 - **Migrated from Effect + class_abilities + Spell.** The seed records came from three places: race perks (formerly `race.effects[]` Effect ids — `infravision`, `pickpocket`, `galadriels_light`, `tinker`, plus the newly-explicit `fast_learner`), class features (formerly inline records in `character_class.class_abilities[]` — `pick_locks`, `detect_traps`, `backstab`, `shadow_step`, `turn_undead`, `dual_casting`, `herbalism`), and one Spell that doubled as a class feature (`turn_undead` carried both representations in v1; the Spell record was merged into the Ability's `params` and removed from `spells.json`). The migrated Effect ids were also pruned from `effects.json` so the runtime-state and character-sheet surfaces don't carry parallel definitions for the same concept. The one exception is `magic_light` — that stayed in `effects.json` because it's the transient lit-aura status applied when Galadriel's Light is invoked, distinct from the Ability "Galadriel's Light" itself.
