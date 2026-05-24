@@ -4,9 +4,9 @@
 - Do a playthrough with the alternate party
 
 # Polish
-
-- Make sure that the Sun Sword is truly a relic scale weapon, compare damage vs other weapons, make sure it has a fire effect, and make sure it has an animation effect while equiped during combat  
-- The Turn Undead class ability does not seem to be available in the battle arena
+ 
+- Make sure the monster sprites have transparent backgrounds. Many have black backgrounds which make the monster look like a block on the maps.
+- Check the Race/Class abilities to see if they are implemented
 
 # V3 Ideas
 

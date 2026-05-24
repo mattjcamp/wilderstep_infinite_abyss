@@ -641,7 +641,9 @@ export function makeSummonedSkeleton(
 }
 
 /**
- * Turn Undead resolution — Cleric/Paladin holy blast.
+ * Turn Undead resolution — Cleric/Paladin holy blast. Invoked via
+ * the v2 Abilities dispatcher (CombatScene's `Abilities` picker
+ * routes ability id `turn_undead` here).
  *
  * Mirrors src/states/combat.py::_cast_turn_undead:
  *   - Filters monsters to those flagged `undead: true` in the data.
@@ -650,17 +652,21 @@ export function makeSummonedSkeleton(
  *   - Failure → HP set to 0 (destroyed completely).
  *   - Success → max(1, floor(maxHp * hp_percent)) damage.
  *
- * Returns per-target dice + damage so the scene can log and animate.
- * The `casterWisMod` argument lets the caller pre-compute the modifier
- * from PartyMember's wisdom score (or pass 0 for monster casters).
+ * `params` is the ability's raw config bag (`abilities.json`
+ * `params`), read for `hp_percent`, `save_dc_base`, `save_dc_stat`.
+ * Each falls back to sensible defaults so an ability authored with
+ * a partial bag still resolves. Returns per-target dice + damage
+ * so the scene can log and animate. `casterWisMod` lets the caller
+ * pre-compute the modifier from PartyMember's wisdom score (or
+ * pass 0 for monster casters).
  */
 export function resolveTurnUndead(
   enemies: Combatant[],
-  spell: Spell,
+  params: Record<string, unknown> | null | undefined,
   casterWisMod: number,
   rng: RNG,
 ): TurnUndeadResult {
-  const ev = (spell.effect_value ?? {}) as Record<string, unknown>;
+  const ev = (params ?? {}) as Record<string, unknown>;
   const hpPct = typeof ev.hp_percent === "number" ? (ev.hp_percent as number) : 0.5;
   const dcBase = typeof ev.save_dc_base === "number" ? (ev.save_dc_base as number) : 10;
   const dcStat = typeof ev.save_dc_stat === "string" ? (ev.save_dc_stat as string) : "wisdom";

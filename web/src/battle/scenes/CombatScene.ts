@@ -58,6 +58,11 @@ import { rollLootDrop } from "../world/Loot";
 import { addToStash } from "../world/TownActions";
 import { loadSpells, minLevelFor, type Spell } from "../world/Spells";
 import {
+  loadAbilities,
+  combatAbilitiesForMember,
+  type Ability,
+} from "../world/Abilities";
+import {
   loadParty,
   consumeAmmoFromStash,
   partyHasAmmo,
@@ -314,7 +319,15 @@ const FONT_MONO  = (color: number = C.dim)  => ({ fontFamily: "monospace",     f
 /** Action menu — what the active party member can do this turn.
  *  No "Flee" — once battle is joined, the party fights to win or
  *  loses (matches the Python game's combat loop). */
-type ActionId = "attack" | "range" | "throw" | "cast" | "use" | "equip" | "end";
+type ActionId =
+  | "attack"
+  | "range"
+  | "throw"
+  | "cast"
+  | "ability"
+  | "use"
+  | "equip"
+  | "end";
 
 interface ActionEntry {
   id: ActionId;
@@ -322,10 +335,17 @@ interface ActionEntry {
 }
 
 const PARTY_ACTIONS: ActionEntry[] = [
-  { id: "attack", label: "Attack"          },
-  { id: "range",  label: "Range"           },
-  { id: "throw",  label: "Throw"           },
-  { id: "cast",   label: "Cast"            },
+  { id: "attack",  label: "Attack"          },
+  { id: "range",   label: "Range"           },
+  { id: "throw",   label: "Throw"           },
+  { id: "cast",    label: "Cast"            },
+  // "Abilities" surfaces combat-active class/race abilities
+  // (today: Turn Undead). Separate from Cast because abilities
+  // and spells are different concepts — abilities don't cost MP,
+  // gate by class+level rather than casting catalog, and often
+  // carry once-per-encounter limits or other ability-specific
+  // rules the spell picker can't express.
+  { id: "ability", label: "Abilities"       },
   // "Use" surfaces combat-usable consumables — Healing Potion, Mana
   // Potion, Antidote, Healing Herb, the throwable poisons. Party-only
   // items (Torch, Camping Supplies, Lockpick) are filtered out by
@@ -353,7 +373,11 @@ type SceneMode =
   | "pick-target" | "pick-tile"
   /** Magic Dart-style spells: player presses an arrow key to fire
    *  along that cardinal direction up to the spell's range. */
-  | "pick-direction";
+  | "pick-direction"
+  /** Abilities picker — surfaces the active member's combat-active
+   *  class + race abilities (today: Turn Undead). Dispatched by
+   *  `runAbility`, NOT the spell pipeline. */
+  | "pick-ability";
 
 /** What to do once a target is picked. */
 type PendingAction =
@@ -411,6 +435,14 @@ export class CombatScene extends Phaser.Scene {
    *  flags). Empty set means no race grants the ability for this
    *  fight, which silently disables the infravision pass. */
   private infravisionRaces: Set<string> = new Set();
+  /** Full v2 races catalog (races.json) keyed by lowercase race id.
+   *  The Abilities picker consults the active member's race entry
+   *  via `combatAbilitiesForMember` to surface race-granted
+   *  abilities (none of the shipped races have combat-active
+   *  abilities today, but the field is wired up so a future
+   *  module that adds, say, a Dragonborn breath weapon
+   *  doesn't need a code change to show it in the picker). */
+  private raceCatalog: Map<string, { abilities?: string[] }> = new Map();
   /** Separate Graphics layer that paints the infravision red
    *  rectangles in MULTIPLY blend mode — so the underlying floor
    *  texture's coloured detail pixels show through as red (the
@@ -550,8 +582,14 @@ export class CombatScene extends Phaser.Scene {
    */
   private equipOptions: Array<{ item: Item; index: number }> = [];
   private spellOptions: Spell[] = [];
-  /** Shared cursor for the scrollable pickers (pick-throw / pick-spell).
-   *  Index into the corresponding options array. */
+  /** Combat-active class + race abilities the active member can use
+   *  on this turn — populated when the player opens the Abilities
+   *  picker. Filtered via `combatAbilitiesForMember` so passive
+   *  abilities and out-of-combat ones never appear. Cleared when
+   *  the picker closes or the turn ends. */
+  private abilityOptions: Ability[] = [];
+  /** Shared cursor for the scrollable pickers (pick-throw / pick-spell
+   *  / pick-ability). Index into the corresponding options array. */
   private pickerCursor = 0;
   /** Per-target arena badges shown during pick-target mode. */
   private targetBadges: Phaser.GameObjects.Text[] = [];
@@ -572,6 +610,12 @@ export class CombatScene extends Phaser.Scene {
   /** Items + Spells data, loaded lazily. */
   private items: Map<string, Item> = new Map();
   private spells: Spell[] = [];
+  /** Full v2 abilities catalog (abilities.json — class + race +
+   *  passive + active). The Abilities picker filters this down per
+   *  active member via `combatAbilitiesForMember`; passive abilities
+   *  in here are intentionally ignored by combat but kept on hand
+   *  for parity with `spells` (one catalog field per data file). */
+  private abilities: Ability[] = [];
   /** Class templates keyed by lowercased class name (e.g. "wizard").
    *  Loaded eagerly in create() so combatantsFromParty can read each
    *  class's per-turn movement budget. */
@@ -685,6 +729,7 @@ export class CombatScene extends Phaser.Scene {
     this.useOptions = [];
     this.equipOptions = [];
     this.spellOptions = [];
+    this.abilityOptions = [];
     this.pickerCursor = 0;
     // Picker / targeting / tile-cursor overlays are also
     // GameObjects — destroy them before resetting the arrays so a
@@ -743,6 +788,18 @@ export class CombatScene extends Phaser.Scene {
     try {
       this.items = await loadItems();
       this.spells = await loadSpells();
+      // Abilities catalog — backs the Abilities action picker. Read
+      // for both class and race ability lookups via
+      // `combatAbilitiesForMember`. Loaded eagerly here (the picker
+      // wants synchronous access) and falls back to an empty list
+      // when the module ships no abilities.json, in which case the
+      // Abilities row stays greyed out — no crash.
+      try {
+        this.abilities = await loadAbilities();
+      } catch {
+        // Keep going with an empty list; the picker disables itself.
+        this.abilities = [];
+      }
       // Make sure partyData is loaded too — the world scenes load it
       // lazily but combat may be entered before any party screen has
       // been opened.
@@ -772,15 +829,20 @@ export class CombatScene extends Phaser.Scene {
       try {
         const races = await loadRaces();
         const infraIds = new Set<string>();
+        const catalog = new Map<string, { abilities?: string[] }>();
         for (const [id, race] of races) {
           if ((race.abilities ?? []).includes("infravision")) {
             infraIds.add(id);
           }
+          // Mirror into the abilities-picker catalog so race-granted
+          // combat abilities resolve without a second loadRaces call.
+          catalog.set(id.toLowerCase(), { abilities: race.abilities });
         }
         this.infravisionRaces = infraIds;
+        this.raceCatalog = catalog;
       } catch {
-        // Leave the default empty set — no race grants
-        // infravision in the active fight.
+        // Leave the defaults empty — no race-granted abilities
+        // (infravision or otherwise) in the active fight.
       }
       // Spawn-tile fights use catalog names; warm the loader so
       // makeMonsterByName resolves stats / sprites correctly.
@@ -1905,6 +1967,7 @@ export class CombatScene extends Phaser.Scene {
     this.useOptions = [];
     this.equipOptions = [];
     this.spellOptions = [];
+    this.abilityOptions = [];
     this.pickerCursor = 0;
     this.clearPicker();
     this.clearTargetBadges();
@@ -2140,6 +2203,12 @@ export class CombatScene extends Phaser.Scene {
       void this.dispatchSpell(spell);
       return;
     }
+    if (this.mode === "pick-ability") {
+      const ability = this.abilityOptions[this.pickerCursor];
+      if (!ability) return;
+      void this.dispatchAbility(ability);
+      return;
+    }
     if (this.mode === "pick-use") {
       const opt = this.useOptions[this.pickerCursor];
       if (!opt) return;
@@ -2185,12 +2254,13 @@ export class CombatScene extends Phaser.Scene {
       this.refreshLog();
       return;
     }
-    if (a.id === "range") return this.startRangeAttack();
-    if (a.id === "throw") return this.openThrowPicker();
-    if (a.id === "cast")  return this.openSpellPicker();
-    if (a.id === "use")   return this.openUsePicker();
-    if (a.id === "equip") return this.openEquipPicker();
-    if (a.id === "end")   return this.onEndTurnClicked();
+    if (a.id === "range")   return this.startRangeAttack();
+    if (a.id === "throw")   return this.openThrowPicker();
+    if (a.id === "cast")    return this.openSpellPicker();
+    if (a.id === "ability") return this.openAbilityPicker();
+    if (a.id === "use")     return this.openUsePicker();
+    if (a.id === "equip")   return this.openEquipPicker();
+    if (a.id === "end")     return this.onEndTurnClicked();
   }
 
   /**
@@ -2619,35 +2689,13 @@ export class CombatScene extends Phaser.Scene {
       this.startDirectionPicking(spell);
       return;
     }
-    // Pre-flight for Turn Undead: if there are no undead enemies on
-    // the field the spell fizzles. The same fizzle path catches a
-    // second cast in the same encounter — the undead get used to
-    // the holy symbol after the first channel and shrug it off.
-    // Caster keeps both the MP and their turn so they can pick
-    // another action instead.
-    if (spell.effect_type === "undead_damage") {
-      if (this.turnUndeadUsed) {
-        this.clearPicker();
-        this.mode = "default";
-        this.combat.log.push(
-          `${this.combat.current.name} channels ${spell.name} — the undead here are already cowed; the holy energy has no further effect.`
-        );
-        this.refreshLog();
-        return;
-      }
-      const anyUndead = this.combat.combatants.some(
-        (c) => c.side === "enemies" && c.hp > 0 && c.undead,
-      );
-      if (!anyUndead) {
-        this.clearPicker();
-        this.mode = "default";
-        this.combat.log.push(
-          `${this.combat.current.name} channels ${spell.name} — no undead here, the holy energy has no effect.`
-        );
-        this.refreshLog();
-        return;
-      }
-    }
+    // Note: Turn Undead used to be back-routed through this picker
+    // (with a synthetic `effect_type: "undead_damage"` spell). It
+    // now lives in the Abilities picker — see `dispatchAbility` /
+    // `runTurnUndead`. Nothing in the shipped spells.json declares
+    // `undead_damage` anymore, so the mass-enemy branch below stays
+    // for genuinely spell-shaped future effects.
+    //
     // The remaining kinds resolve immediately. Spend MP, log, and
     // end the turn — same as a finished single-target cast would.
     if (member.max_mp > 0) {
@@ -2809,54 +2857,21 @@ export class CombatScene extends Phaser.Scene {
         );
       }
     } else if (kind === "mass-enemy") {
-      if (spell.effect_type === "undead_damage") {
-        // Turn Undead: each undead saves vs DC = save_dc_base + caster
-        // wisMod. Failure → destroyed completely; success → seared for
-        // hp_percent of maxHp. Non-undead are untouched (the pre-flight
-        // already covered the no-undead case).
-        // Mark "used this encounter" so further casts hit the
-        // already-cowed branch in the pre-flight above.
-        this.turnUndeadUsed = true;
-        const enemies = this.combat.combatants.filter((c) => c.side === "enemies");
-        const wisMod = abilityMod(member.wisdom);
-        const result = resolveTurnUndead(enemies, spell, wisMod, defaultRng);
-        this.combat.log.push(`${me.name} channels ${spell.name}!`);
-        let i = 0;
-        for (const o of result.outcomes) {
-          const target = this.combat.byId(o.targetId);
-          this.combat.log.push(
-            o.saved
-              ? `${target.name} resists (${o.saveRoll}+${Math.max(0, target.attackBonus - 2)}=${o.saveTotal} vs DC ${o.saveDc}) — seared for ${o.damage} damage!`
-              : `${target.name} fails its save (${o.saveRoll}+${Math.max(0, target.attackBonus - 2)}=${o.saveTotal} vs DC ${o.saveDc}) — DESTROYED!`
-          );
-          const body = this.bodies.get(target.id);
-          if (body) {
-            const at = { x: body.x, y: body.y };
-            this.time.delayedCall(i * 80, () => {
-              flashTarget(this, body, VFX_COLOURS.buff);
-              void playVisualAt(at);
-            });
-          }
-          i += 1;
-          this.refreshHp(target);
-        }
-        if (hitSfx) Sfx.play(hitSfx);
-      } else {
-        // Generic mass-enemy fallback (no other spells use this
-        // classifier today, but the branch keeps options open for
-        // future "blast every foe" effects without dropping into
-        // the unsupported message).
-        let total = 0;
-        for (const foe of this.combat.combatants) {
-          if (foe.side !== "enemies" || foe.hp <= 0) continue;
-          const r = resolveDamageSpell(me, foe, spell, defaultRng);
-          total += r.damage;
-          this.refreshHp(foe);
-        }
-        this.combat.log.push(
-          `${me.name} casts ${spell.name} — enemies take ${total} HP total.`
-        );
+      // Turn Undead used to live here; it now flows through the
+      // Abilities picker. Anything else that classifies as
+      // "mass-enemy" falls through to a generic per-foe damage
+      // pass so a future spell-shaped mass attack doesn't drop
+      // into the unsupported message.
+      let total = 0;
+      for (const foe of this.combat.combatants) {
+        if (foe.side !== "enemies" || foe.hp <= 0) continue;
+        const r = resolveDamageSpell(me, foe, spell, defaultRng);
+        total += r.damage;
+        this.refreshHp(foe);
       }
+      this.combat.log.push(
+        `${me.name} casts ${spell.name} — enemies take ${total} HP total.`,
+      );
     } else {
       // unsupported — needs a tile picker we haven't built.
       this.combat.log.push(
@@ -2905,6 +2920,202 @@ export class CombatScene extends Phaser.Scene {
       (s) => `${s.name.padEnd(18, " ")} ${s.mp_cost} MP   ${tagFor(s)}`
     );
     this.renderPicker("PICK SPELL", lines, this.pickerCursor);
+  }
+
+  // ── Abilities (class + race) ────────────────────────────────────
+  //
+  // Parallel to Cast, distinct from it. Class abilities (Turn Undead,
+  // …) and race abilities (none combat-active in the shipped data,
+  // but the path is wired) flow through `combatAbilitiesForMember`
+  // and then dispatch via `dispatchAbility` to a per-action resolver.
+  //
+  // Per-encounter / per-day cadences live on the scene (e.g.
+  // `turnUndeadUsed`), checked by the resolver — keeps the picker
+  // a thin "what's available" view and the resolver the single
+  // source of truth for "what happens when you click."
+
+  /** True iff the active member has at least one combat-active
+   *  ability granted by their class or race. Used by the action-menu
+   *  enable check + the picker's empty-state log line. */
+  private memberHasCombatAbility(): boolean {
+    const member = this.memberForCurrent();
+    if (!member) return false;
+    const tpl = this.classTemplates.get(member.class.toLowerCase()) ?? null;
+    const race = this.raceCatalog.get(member.race.toLowerCase()) ?? null;
+    return combatAbilitiesForMember(
+      member,
+      tpl,
+      race,
+      this.abilities,
+    ).length > 0;
+  }
+
+  private openAbilityPicker(): void {
+    const member = this.memberForCurrent();
+    if (!member) return;
+    const tpl = this.classTemplates.get(member.class.toLowerCase()) ?? null;
+    const race = this.raceCatalog.get(member.race.toLowerCase()) ?? null;
+    const opts = combatAbilitiesForMember(
+      member,
+      tpl,
+      race,
+      this.abilities,
+    );
+    if (opts.length === 0) {
+      // Empty-state log line — matches the spell picker's "nothing
+      // to cast" UX. The player can still see WHY the picker didn't
+      // open (class+level grant nothing combat-active yet, e.g. a
+      // level-1 Cleric before Turn Undead unlocks at level 2).
+      this.combat.log.push(
+        `${this.combat.current.name} has no combat ability available.`,
+      );
+      this.refreshLog();
+      return;
+    }
+    this.abilityOptions = opts;
+    this.pickerCursor = 0;
+    this.mode = "pick-ability";
+    this.refreshAbilityPicker();
+  }
+
+  /** Rebuild the ability picker — cursor / scroll-window refresh,
+   *  same shape as `refreshSpellPicker` so the player reads both
+   *  panels at a glance. The right-column tag identifies the
+   *  ability's grant lane (CLASS / RACE) since that's the most
+   *  useful at-a-glance differentiator in the picker. */
+  private refreshAbilityPicker(): void {
+    const tagFor = (a: Ability): string =>
+      a.type === "race" ? "RACE" : "CLASS";
+    const lines = this.abilityOptions.map(
+      (a) => `${a.name.padEnd(18, " ")}        ${tagFor(a)}`,
+    );
+    this.renderPicker("PICK ABILITY", lines, this.pickerCursor);
+  }
+
+  /** Route a picked ability to its resolver. Branches on
+   *  `ability.params.action` — the per-ability dispatch discriminator
+   *  declared in abilities.json. Unknown actions log a "not
+   *  implemented" line and bail without ending the turn so a
+   *  half-wired ability can't strand the player.
+   *
+   *  Today the only combat-active ability is Turn Undead; new
+   *  abilities slot in as additional branches here (Lay on Hands,
+   *  Wild Shape, etc.). */
+  private async dispatchAbility(ability: Ability): Promise<void> {
+    const member = this.memberForCurrent();
+    if (!member) return;
+    const action =
+      ability.params && typeof ability.params.action === "string"
+        ? ability.params.action
+        : "";
+    if (action === "turn_undead") {
+      await this.runTurnUndead(member, ability);
+      return;
+    }
+    this.combat.log.push(
+      `${this.combat.current.name} tries ${ability.name} — not yet implemented.`,
+    );
+    this.refreshLog();
+    this.mode = "default";
+    this.clearPicker();
+  }
+
+  /** Resolve a Turn Undead activation — extracted from the previous
+   *  spell-side path so the ability dispatcher can call it without
+   *  going through the Cast pipeline. Mirrors the Python game's
+   *  per-encounter cadence: undead get used to the holy symbol
+   *  after the first channel, so a second activation in the same
+   *  fight fizzles (caster keeps both their turn AND any MP — but
+   *  Turn Undead has none to spend, so just the turn). Pre-flight
+   *  filters out a fight with no undead at all so the player sees
+   *  a clear log line instead of a silent no-op.
+   *
+   *  The resolution itself delegates to `resolveTurnUndead` (pure
+   *  helper in CombatActions.ts); this method handles the scene-side
+   *  bookkeeping — log lines, per-target VFX timing, the cast/hit
+   *  SFX from the ability's animation_id, and end-of-turn cleanup. */
+  private async runTurnUndead(
+    member: PartyMember,
+    ability: Ability,
+  ): Promise<void> {
+    const me = this.combat.current;
+    // Pre-flight 1: already-used-this-encounter gate.
+    if (this.turnUndeadUsed) {
+      this.combat.log.push(
+        `${me.name} channels ${ability.name} — the undead here are already cowed; the holy energy has no further effect.`,
+      );
+      this.refreshLog();
+      this.mode = "default";
+      this.clearPicker();
+      return;
+    }
+    // Pre-flight 2: no undead at all → fizzle without burning the
+    // turn or marking the ability used. The player can still spend
+    // the turn on something else.
+    const anyUndead = this.combat.combatants.some(
+      (c) => c.side === "enemies" && c.hp > 0 && c.undead,
+    );
+    if (!anyUndead) {
+      this.combat.log.push(
+        `${me.name} channels ${ability.name} — no undead here, the holy energy has no effect.`,
+      );
+      this.refreshLog();
+      this.mode = "default";
+      this.clearPicker();
+      return;
+    }
+    // Commit the activation — closes the picker and locks the
+    // ability for the rest of the encounter.
+    this.mode = "default";
+    this.clearPicker();
+    this.turnUndeadUsed = true;
+    // Animation-driven dispatch. Same call shape as the spell path
+    // uses so the audio/visual catalog stays the single source for
+    // both pipelines.
+    await loadAnimations();
+    const animation = getAnimationById(ability.animation_id);
+    const castSfx = animation?.cast_sfx ?? "";
+    const hitSfx = animation?.hit_sfx ?? "";
+    const animVisual = (animation?.visual ?? "").trim();
+    const hasVisual = animVisual !== "" && animVisual !== "none";
+    const playVisualAt = async (point: { x: number; y: number }) => {
+      if (!hasVisual) return;
+      const fn = resolveProjectileEffect({ effect_type: animVisual });
+      await fn(this, point, point);
+    };
+    if (castSfx) Sfx.play(castSfx);
+    // Buff-toned caster glow — same colour the previous spell-path
+    // used for Turn Undead so the visual reads identically.
+    this.castGlowFor(me, VFX_COLOURS.buff);
+    const enemies = this.combat.combatants.filter((c) => c.side === "enemies");
+    const wisMod = abilityMod(member.wisdom);
+    const result = resolveTurnUndead(enemies, ability.params, wisMod, defaultRng);
+    this.combat.log.push(`${me.name} channels ${ability.name}!`);
+    let i = 0;
+    for (const o of result.outcomes) {
+      const target = this.combat.byId(o.targetId);
+      this.combat.log.push(
+        o.saved
+          ? `${target.name} resists (${o.saveRoll}+${Math.max(0, target.attackBonus - 2)}=${o.saveTotal} vs DC ${o.saveDc}) — seared for ${o.damage} damage!`
+          : `${target.name} fails its save (${o.saveRoll}+${Math.max(0, target.attackBonus - 2)}=${o.saveTotal} vs DC ${o.saveDc}) — DESTROYED!`,
+      );
+      const body = this.bodies.get(target.id);
+      if (body) {
+        const at = { x: body.x, y: body.y };
+        this.time.delayedCall(i * 80, () => {
+          flashTarget(this, body, VFX_COLOURS.buff);
+          void playVisualAt(at);
+        });
+      }
+      i += 1;
+      this.refreshHp(target);
+    }
+    if (hitSfx) Sfx.play(hitSfx);
+    // Burn the rest of the move budget — Turn Undead ends the turn.
+    this.combat.movePoints = 0;
+    this.refreshAll();
+    if (this.combat.isOver) return this.endEncounter();
+    this.endActorTurn();
   }
 
   /** Drain one unit of the picked throw item now (so the player can't
@@ -4980,13 +5191,20 @@ export class CombatScene extends Phaser.Scene {
     const canRange = !!equippedWeapon && isRanged(equippedWeapon) && ammoOk;
     const canUse = !!member && this.partyHasCombatUsable();
     const canEquip = !!member && this.memberHasEquippableItem(member);
+    // The Abilities row enables whenever the active member has at
+    // least one combat-active class/race ability — today that's
+    // Cleric L2+ / Paladin L5+ via Turn Undead. The picker re-runs
+    // the same filter at open time so a level-up mid-fight is
+    // surfaced on the very next refresh.
+    const canAbility = !!member && this.memberHasCombatAbility();
     const isEnabled = (id: ActionId): boolean => {
       if (!playerTurn) return false;
-      if (id === "range") return canRange;
-      if (id === "throw") return canThrow;
-      if (id === "cast")  return canCast;
-      if (id === "use")   return canUse;
-      if (id === "equip") return canEquip;
+      if (id === "range")   return canRange;
+      if (id === "throw")   return canThrow;
+      if (id === "cast")    return canCast;
+      if (id === "ability") return canAbility;
+      if (id === "use")     return canUse;
+      if (id === "equip")   return canEquip;
       return true;
     };
     for (let i = 0; i < PARTY_ACTIONS.length; i++) {

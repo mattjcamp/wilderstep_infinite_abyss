@@ -50,6 +50,12 @@ import {
   loadItems,
 } from "@/battle/world/Items";
 import { _clearSpellsCache, loadSpells } from "@/battle/world/Spells";
+import {
+  _clearAbilitiesCache,
+  abilityFromRaw,
+  _setAbilitiesCache,
+  type Ability,
+} from "@/battle/world/Abilities";
 import { _clearMonstersCache, loadMonsters } from "@/battle/data/monsters";
 import {
   _clearClassCaches,
@@ -241,6 +247,7 @@ function buildPartyFromSave(
 function clearAllSeededCaches(): void {
   _clearItemsCache();
   _clearSpellsCache();
+  _clearAbilitiesCache();
   _clearMonstersCache();
   _clearClassCaches();
   _clearEffectsCache();
@@ -272,6 +279,7 @@ export async function seedBattleCaches(
   const [
     items,
     spells,
+    abilities,
     monsters,
     races,
     effects,
@@ -280,6 +288,7 @@ export async function seedBattleCaches(
   ] = await Promise.all([
     loadMergedModel(src, moduleId, "items"),
     loadMergedModel(src, moduleId, "spells"),
+    loadMergedModel(src, moduleId, "abilities"),
     loadMergedModel(src, moduleId, "monsters"),
     loadMergedModel(src, moduleId, "races"),
     loadMergedModel(src, moduleId, "effects"),
@@ -319,6 +328,26 @@ export async function seedBattleCaches(
   _setClassCatalog(
     characterClasses as { character_classes?: never[] } | null,
   );
+
+  // Abilities catalog — same dedicated-setter approach as classes.
+  // `loadAbilities()` takes an optional URL but the play side
+  // doesn't have one handy mid-boot (the inheritance-aware merge
+  // happens above), so we hydrate the raw list directly and stamp
+  // it into the cache. An empty / missing abilities.json silently
+  // results in an empty cache — combat then surfaces no Ability
+  // rows for any member, which is the correct UX for a module
+  // that doesn't declare any.
+  if (abilities && Array.isArray((abilities as { abilities?: unknown }).abilities)) {
+    const raw = (abilities as { abilities: ReadonlyArray<Parameters<typeof abilityFromRaw>[0]> }).abilities;
+    const hydrated: Ability[] = [];
+    for (const r of raw) {
+      const a = abilityFromRaw(r);
+      if (a) hydrated.push(a);
+    }
+    _setAbilitiesCache(hydrated);
+  } else {
+    _setAbilitiesCache([]);
+  }
 
   // Party last — it depends on the characters catalog we just loaded
   // via `mergeModel`. Built directly from the save (authoritative

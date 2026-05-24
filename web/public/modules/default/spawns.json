@@ -82,10 +82,9 @@
       "xp_reward": 70,
       "gold_reward": 20,
       "loot": [
-        "bones",
-        "ancient_shield"
+        "arrows"
       ],
-      "custom_map": null
+      "custom_map": "arena_graveyard"
     },
     {
       "id": "dragon_lair",

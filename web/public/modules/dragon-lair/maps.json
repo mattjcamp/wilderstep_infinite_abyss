@@ -30843,7 +30843,7 @@
             "light_range": 0,
             "animation": "none",
             "counter": null,
-            "encounter": null,
+            "encounter": "skeleton_patrol",
             "spawn": null,
             "sprite": "map/grass1.png",
             "tag": "terrain"

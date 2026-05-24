@@ -118,7 +118,7 @@
         "skeleton",
         "skeleton"
       ],
-      "custom_map": null
+      "custom_map": "arena_graveyard"
     },
     {
       "id": "shambling_dead",
@@ -131,7 +131,7 @@
         "zombie",
         "zombie"
       ],
-      "custom_map": null
+      "custom_map": "arena_graveyard"
     },
     {
       "id": "skeleton_archers",
@@ -144,7 +144,7 @@
         "skeleton_archer",
         "skeleton_archer"
       ],
-      "custom_map": null
+      "custom_map": "arena_graveyard"
     },
     {
       "id": "wolves_and_goblins",
