@@ -59,6 +59,59 @@ describe("computeQuestGlowCells", () => {
     expect(empty).toEqual(new Set(["2,0"]));
   });
 
+  it("keeps a giver glowing while the quest is mid-flight (accepted but not yet turned in)", () => {
+    // Steps-complete-but-not-handed-in is exactly when the player
+    // needs the breadcrumb back to the giver, so the halo stays on.
+    const g = grid("..q.\n....");
+    const cells = computeQuestGlowCells(g, QUESTS, {
+      acceptedQuests: new Set(["Q"]),
+      turnedInQuests: new Set(),
+    });
+    expect(cells).toEqual(new Set(["2,0"]));
+  });
+
+  it("stops glowing a giver once their quest is in turnedInQuests", () => {
+    // Quest is fully done — giver has nothing left to offer the
+    // player, so the breadcrumb goes dark.
+    const g = grid("..q.\n....");
+    const cells = computeQuestGlowCells(g, QUESTS, {
+      acceptedQuests: new Set(["Q"]),
+      turnedInQuests: new Set(["Q"]),
+    });
+    expect(cells).toEqual(new Set());
+  });
+
+  it("only suppresses the giver of the turned-in quest, not other givers", () => {
+    // Two givers on the map, Q1 and Q2. Turning in Q1 must not
+    // dim Q2's breadcrumb.
+    const g: QuestGlowCell[][] = [
+      [{ quest: "Q" }, {}, { quest: "Q2" }],
+    ];
+    const cells = computeQuestGlowCells(g, QUESTS, {
+      acceptedQuests: new Set(["Q", "Q2"]),
+      turnedInQuests: new Set(["Q"]),
+    });
+    expect(cells).toEqual(new Set(["2,0"]));
+  });
+
+  it("falls through to encounter/item checks when a giver cell's quest is turned in", () => {
+    // A cell that's BOTH the giver for Q AND an encounter for Q2's
+    // kill step. Once Q is turned in the giver halo goes away, but
+    // the cell should still glow on the Q2 encounter axis (if Q2
+    // is accepted).
+    const quests: QuestGlowQuest[] = [
+      { id: "Q", steps: [] },
+      { id: "Q2", steps: [{ kind: "kill", encounter_id: "wolves" }] },
+    ];
+    const cell: QuestGlowCell = { quest: "Q", encounter: "wolves" };
+    const g = [[cell]];
+    const cells = computeQuestGlowCells(g, quests, {
+      acceptedQuests: new Set(["Q2"]),
+      turnedInQuests: new Set(["Q"]),
+    });
+    expect(cells).toEqual(new Set(["0,0"]));
+  });
+
   it("glows kill-step encounters when no filter is supplied (editor view)", () => {
     const g = grid("...e\n....");
     const cells = computeQuestGlowCells(g, QUESTS);

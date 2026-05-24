@@ -3,12 +3,13 @@
  * play save.
  *
  * CombatScene mutates `gameState.partyData` in place during a fight:
- * HP, MP, exp + level-ups, per-member inventory, the shared stash,
- * gold rewards. The play save's `members[]` array seeded the kernel
- * BEFORE combat ran; without this reconciliation it carries the
- * pre-fight state, and the next link-traversal save write commits
- * those stale numbers — a player wins a fight, takes damage, and on
- * reload shows full HP again.
+ * HP, MP, level-ups (level + exp + bumped max_hp/max_mp), per-member
+ * inventory, the shared stash, gold rewards. The play save's
+ * `members[]` array seeded the kernel BEFORE combat ran; without
+ * this reconciliation it carries the pre-fight state, and the next
+ * link-traversal save write commits those stale numbers — a player
+ * wins a fight, takes damage, levels up, and on reload shows full HP
+ * at level 1 again.
  *
  * Called from PlayHost.onCombatResolved (win path) before the save is
  * written. Pure: returns a new WorldSave with the updated fields,
@@ -75,6 +76,15 @@ function applyMemberDeltas(
     // would silently vanish on the next reload / next rest.
     max_hp: postMember.max_hp,
     max_mp: postMember.max_mp,
+    // Carry XP + level deltas through. Combat's awardXp pass mutated
+    // these on the live PartyMember (level-ups, accumulated exp);
+    // without copying them here the gains are stranded inside
+    // gameState.partyData and vanish the moment the save is next
+    // committed. With them, the Party screen + Character sheet show
+    // the new level, the next fight starts from the real exp value,
+    // and a reload mid-adventure preserves all the player's progress.
+    level: postMember.level,
+    exp: postMember.exp,
     inventory: postMember.inventory.map(toSavedInventoryEntry),
     equipped: nextEquipped,
     equipped_durability: nextEd,

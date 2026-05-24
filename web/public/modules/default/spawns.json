@@ -9,19 +9,20 @@
         "giant_rat",
         "wolf",
         "goblin",
-        "orc",
-        "lich"
+        "orc"
       ],
       "spawn_chance": 5,
       "spawn_radius": 5,
       "max_spawned": 2,
       "boss_monsters": [
-        "goblin"
+        "goblin",
+        "orc",
+        "orc",
+        "orc"
       ],
-      "xp_reward": 50,
-      "gold_reward": 25,
+      "xp_reward": 200,
+      "gold_reward": 200,
       "loot": [
-        "chain_plus_2",
         "arrows"
       ],
       "custom_map": null
@@ -49,8 +50,8 @@
         "orc_shaman",
         "orc"
       ],
-      "xp_reward": 60,
-      "gold_reward": 30,
+      "xp_reward": 300,
+      "gold_reward": 300,
       "loot": [
         "torch",
         "arrows"
@@ -93,15 +94,17 @@
       "spawn_monsters": [
         "dragon"
       ],
-      "spawn_chance": 2,
+      "spawn_chance": 5,
       "spawn_radius": 3,
-      "max_spawned": 2,
+      "max_spawned": 1,
       "boss_monsters": [
         "dragon",
+        "wyvern",
+        "wyvern",
         "dark_mage"
       ],
-      "xp_reward": 50,
-      "gold_reward": 25,
+      "xp_reward": 1000,
+      "gold_reward": 1000,
       "loot": [],
       "custom_map": null
     },
@@ -112,7 +115,7 @@
       "spawn_monsters": [
         "wyvern"
       ],
-      "spawn_chance": 20,
+      "spawn_chance": 5,
       "spawn_radius": 3,
       "max_spawned": 2,
       "boss_monsters": [
@@ -120,8 +123,8 @@
         "wyvern",
         "dark_mage"
       ],
-      "xp_reward": 50,
-      "gold_reward": 25,
+      "xp_reward": 500,
+      "gold_reward": 500,
       "loot": [],
       "custom_map": null
     },

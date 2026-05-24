@@ -43,7 +43,11 @@ import { LockDialogOverlay } from "@/editor/LockDialogOverlay";
 import { QuestDialogOverlay } from "@/editor/QuestDialogOverlay";
 import { PlayPartyScreenOverlay } from "./PlayPartyScreenOverlay";
 import { PlayQuestLogOverlay } from "./PlayQuestLogOverlay";
-import { PlayQuestCelebration } from "./PlayQuestCelebration";
+import {
+  PlayQuestCelebration,
+  returnToGiverSubtitle,
+  type PlayQuestCelebrationKind,
+} from "./PlayQuestCelebration";
 import { PlayHelpTipsOverlay } from "./PlayHelpTipsOverlay";
 import { PlayLogOverlay } from "./PlayLogOverlay";
 import { PlayCounterShopOverlay } from "./PlayCounterShopOverlay";
@@ -186,6 +190,7 @@ function mapStateFromSnapshot(
 import { loadWorld, saveWorld } from "@/play/save";
 import { addToInventory } from "@/play/inventoryStacking";
 import { applyCombatResultToSave } from "@/play/syncFromBattle";
+import { awardQuestXpToSavedMembers } from "@/play/awardQuestXp";
 import type { WorldSave } from "@/play/saveTypes";
 import type {
   SimCharacter,
@@ -471,7 +476,7 @@ export function PlayHost() {
   const [questCelebrations, setQuestCelebrations] = useState<
     ReadonlyArray<{
       key: string;
-      kind: "step" | "quest";
+      kind: PlayQuestCelebrationKind;
       title: string;
       subtitle?: string;
     }>
@@ -614,7 +619,7 @@ export function PlayHost() {
    *  completions for the same quest into one node.  */
   const fireQuestCelebration = useCallback(
     (args: {
-      kind: "step" | "quest";
+      kind: PlayQuestCelebrationKind;
       title: string;
       subtitle?: string;
     }) => {
@@ -625,6 +630,11 @@ export function PlayHost() {
         ...prev,
         { key, kind: args.kind, title: args.title, subtitle: args.subtitle },
       ]);
+      // SFX choice tracks how big the moment feels — quest turn-ins
+      // get the full victory fanfare, intermediate steps get the
+      // smaller level_up chirp, and final-step (objectives done but
+      // not yet turned in) uses the same chirp since the bigger
+      // payoff still belongs to the actual turn-in.
       Sfx.play(args.kind === "quest" ? "victory" : "level_up");
       // Spawn the celebratory burst at the party's tile. Sim's
       // snapshot has the live position; the renderer turns that into
@@ -638,35 +648,43 @@ export function PlayHost() {
         const y = snap.pos.row * TILE_SIZE + TILE_SIZE / 2;
         // Gold burst — matches the quest-glow halo so the
         // celebration reads as part of the same visual family.
-        // Larger radius for full quest completion vs. step credit.
-        radialBurst(
-          r.scene,
-          { x, y },
-          0xffd750,
-          0xffe580,
-          args.kind === "quest" ? 80 : 56,
-        ).catch(() => undefined);
+        // Burst radius grows with the moment: a mid-step credit
+        // gets a small puff (56), the final-step "objectives done"
+        // moment gets a wider one (68) so it stands out from the
+        // routine steps without stealing the full turn-in's
+        // payoff (80).
+        const burstRadius =
+          args.kind === "quest"
+            ? 80
+            : args.kind === "step-final"
+              ? 68
+              : 56;
+        radialBurst(r.scene, { x, y }, 0xffd750, 0xffe580, burstRadius).catch(
+          () => undefined,
+        );
       }
     },
     [],
   );
 
   /** Push the quest-relevance halo set into the renderer. Computed
-   *  from the live grid + quest defs + the accepted-quests set in the
-   *  save. Quest givers glow unconditionally (the breadcrumb that
-   *  draws the player TO the quest); kill-step encounters and fetch-
+   *  from the live grid + quest defs + the accepted-quests +
+   *  turned-in-quests sets in the save. Quest givers glow as a
+   *  breadcrumb that draws the player TO the quest in the first
+   *  place — and back for the handoff after the work is done —
+   *  but stop glowing once the quest is fully turned in (the giver
+   *  has nothing left to offer). Kill-step encounters and fetch-
    *  step items glow only once the relevant quest is in
    *  acceptedQuests. Called at:
    *
    *   - Map mount (initial seed)
    *   - Quest accept (acceptedQuests grew)
+   *   - Quest turn-in (turnedInQuests grew — giver cell goes dark)
    *
-   *  Doesn't need to fire on kill credit or step turn-in:
-   *  encounter / item cells naturally disappear from the grid once
-   *  consumed, so the next relight's halo pass paints nothing for
-   *  them. The giver cell stays lit after turn-in (matches the
-   *  "always glow" rule for givers — easy to relax later if it
-   *  reads wrong). */
+   *  Doesn't need to fire on kill credit or mid-quest step
+   *  completion: encounter / item cells naturally disappear from
+   *  the grid once consumed, so the next relight's halo pass
+   *  paints nothing for them. */
   const refreshQuestGlow = useCallback(() => {
     const r = rendererRef.current;
     if (!r) return;
@@ -674,6 +692,7 @@ export function PlayHost() {
     if (!grid) return;
     const defs = questDefsRef.current ?? [];
     const accepted = new Set<string>(saveRef.current?.acceptedQuests ?? []);
+    const turnedIn = new Set<string>(saveRef.current?.turnedInQuests ?? []);
     // Casts: WorldRenderer's `RenderGrid` types its cells as
     // RenderCell (sprite/light_*/obstructs only) since those are the
     // only fields the renderer itself reads, but the same cells
@@ -687,7 +706,7 @@ export function PlayHost() {
         ReadonlyArray<{ quest?: string; encounter?: string; item?: string }>
       >,
       defs,
-      { acceptedQuests: accepted },
+      { acceptedQuests: accepted, turnedInQuests: turnedIn },
     );
     r.setQuestGlowCells(cells);
   }, []);
@@ -939,7 +958,7 @@ export function PlayHost() {
         let backfilled = false;
         const nextMembers = save.party.members.map((m) => {
           const customRec = m.custom as
-            | { hp?: number; mp?: number }
+            | { hp?: number; mp?: number; level?: number; exp?: number }
             | null
             | undefined;
           const catalogRec = catalogById.get(m.id);
@@ -949,6 +968,25 @@ export function PlayHost() {
             (customRec?.hp as number | undefined) ?? catalogRec?.hp;
           const peakMpSource =
             (customRec?.mp as number | undefined) ?? catalogRec?.mp;
+          // Level + XP fall back to the custom/catalog character at
+          // load time so legacy saves (predating the XP-persistence
+          // layer) end up with concrete values on disk. Without this
+          // the Party screen's XP bar denominator is computed from
+          // an undefined level and renders NaN, and every subsequent
+          // save commit re-omits both fields. The catalog typically
+          // hands us level 1 (memberFromRaw's default) and exp 0
+          // (absent on characters.json); custom characters carry
+          // whatever the player set in the formation screen.
+          // SimCharacter declares `level` but not `exp` (the sim
+          // kernel doesn't read exp itself). The on-disk
+          // characters.json record may still carry a starting `exp`
+          // designed by the author, so we widen the lookup to read
+          // it if present — falling back to 0 for the common case.
+          const levelSource = customRec?.level ?? catalogRec?.level ?? 1;
+          const expSource =
+            customRec?.exp ??
+            (catalogRec as { exp?: number } | undefined)?.exp ??
+            0;
           let patched = m;
           if (
             typeof m.max_hp !== "number" &&
@@ -962,6 +1000,14 @@ export function PlayHost() {
             typeof peakMpSource === "number"
           ) {
             patched = { ...patched, max_mp: peakMpSource };
+            backfilled = true;
+          }
+          if (typeof m.level !== "number") {
+            patched = { ...patched, level: levelSource };
+            backfilled = true;
+          }
+          if (typeof m.exp !== "number") {
+            patched = { ...patched, exp: expSource };
             backfilled = true;
           }
           return patched;
@@ -2181,6 +2227,13 @@ export function PlayHost() {
             questDefs,
             questStates: questStatesRef.current,
             currentLocation,
+            // Per-turn NPC / quest-giver wander — each tagged cell
+            // rolls 50% per step to drift one cardinal tile. The
+            // editor's sim mode shares its grid with the authoring
+            // surface and intentionally leaves this off; the live
+            // play scene wants the ambient motion so towns don't
+            // feel static.
+            enableNpcWander: true,
           });
           simRef.current = sim;
 
@@ -2442,11 +2495,30 @@ export function PlayHost() {
                   const def = questDefsRef.current.find(
                     (d) => d.id === matchedQuestId,
                   );
-                  fireQuestCelebration({
-                    kind: "step",
-                    title: def?.name ?? matchedQuestId,
-                    subtitle: credit.step.name,
-                  });
+                  // Same final-step swap the kill-credit path does
+                  // — if THIS pickup closed out the quest's last
+                  // step, fire the louder "Objectives Complete"
+                  // placard with a "Return to {giver}" prompt
+                  // instead of the routine step placard. Matches
+                  // the player-facing model: both kill and
+                  // retrieve credits feed the same step-progress
+                  // bookkeeping, so they should both signal the
+                  // hand-off the same way.
+                  if (credit.questCompleted) {
+                    fireQuestCelebration({
+                      kind: "step-final",
+                      title: def?.name ?? matchedQuestId,
+                      subtitle: returnToGiverSubtitle(
+                        def?.questGiver?.npcName,
+                      ),
+                    });
+                  } else {
+                    fireQuestCelebration({
+                      kind: "step",
+                      title: def?.name ?? matchedQuestId,
+                      subtitle: credit.step.name,
+                    });
+                  }
                 }
               }
               saveWorld(nextSave);
@@ -2527,21 +2599,35 @@ export function PlayHost() {
               // the kernel-supplied `stepCompleted` flag rather than
               // re-deriving it from stepProgress so a multi-kill
               // step doesn't fire on every individual credit — only
-              // on the last one. Quest fully complete here is NOT
-              // celebrated yet: the player still has to walk back
-              // to the giver and claim rewards. That's where the
-              // bigger "Quest Complete" placard fires (see
-              // onQuestDecline's complete branch).
+              // on the last one. When this credit ALSO completed the
+              // last step of the quest (`ev.questCompleted`), swap
+              // to the `step-final` variant — same celebration
+              // footprint but with a brighter halo and a
+              // "Return to {giver}" subtitle so the player gets an
+              // immediate, in-game signal that the handoff is
+              // waiting. The bigger "Quest Complete" placard still
+              // fires at actual turn-in (see onQuestDecline's
+              // complete branch).
               if (ev.stepCompleted) {
                 const def = questDefsRef.current.find(
                   (d) => d.id === ev.questId,
                 );
                 const step = def?.steps[ev.stepIdx];
-                fireQuestCelebration({
-                  kind: "step",
-                  title: def?.name ?? ev.questId,
-                  subtitle: step?.name,
-                });
+                if (ev.questCompleted) {
+                  fireQuestCelebration({
+                    kind: "step-final",
+                    title: def?.name ?? ev.questId,
+                    subtitle: returnToGiverSubtitle(
+                      def?.questGiver?.npcName,
+                    ),
+                  });
+                } else {
+                  fireQuestCelebration({
+                    kind: "step",
+                    title: def?.name ?? ev.questId,
+                    subtitle: step?.name,
+                  });
+                }
               }
               return;
             }
@@ -2611,6 +2697,45 @@ export function PlayHost() {
                 return;
               }
               setNpcDialogId(ev.npcId);
+              return;
+            }
+            if (ev.kind === "npc_moved") {
+              // The kernel just drifted an NPC / quest giver from
+              // one cell to another (50% wander roll on this turn).
+              // The grid mutation has already landed; we just need
+              // to slide the corresponding Phaser overlay Image
+              // over and re-key our per-cell map. Doing this here
+              // keeps the visual in lockstep with the bump-detection
+              // tag — without the move, the player would see the
+              // sprite stuck at the old cell while bumping the new
+              // cell would trigger the dialog.
+              //
+              // Quest givers ALSO need the glow halo to follow them;
+              // we set a flag and refresh at the end of the loop so
+              // a multi-mover step only kicks one refresh.
+              const sceneSelf = this;
+              const fromKey = `${ev.from.col},${ev.from.row}`;
+              const toKey = `${ev.to.col},${ev.to.row}`;
+              const toX = ev.to.col * TILE_SIZE + TILE_SIZE / 2;
+              const toY = ev.to.row * TILE_SIZE + TILE_SIZE / 2;
+              const npcImg = sceneSelf.npcOverlays.get(fromKey);
+              if (npcImg) {
+                sceneSelf.npcOverlays.delete(fromKey);
+                npcImg.setPosition(toX, toY);
+                sceneSelf.npcOverlays.set(toKey, npcImg);
+              }
+              const questImg = sceneSelf.questOverlays.get(fromKey);
+              if (questImg) {
+                sceneSelf.questOverlays.delete(fromKey);
+                questImg.setPosition(toX, toY);
+                sceneSelf.questOverlays.set(toKey, questImg);
+              }
+              if (ev.questId) {
+                // Quest-glow cells track the live grid, which the
+                // wander pass already mutated. Re-running the pass
+                // moves the halo to follow the giver.
+                refreshQuestGlow();
+              }
               return;
             }
           });
@@ -3135,12 +3260,16 @@ export function PlayHost() {
    *     entries (one row per id — proper stack-merging via
    *     `addToStash` is a follow-up that needs the full item
    *     catalog, which PlayHost doesn't load today)
-   *   - **xp** is logged but not yet applied. Live PartyMembers
-   *     (with `exp`/`level`) only exist inside CombatScene's
-   *     `gameState.partyData`, and SavedCharacterState doesn't
-   *     persist XP. Wiring this through is a separate layer —
-   *     until it lands the log line tells the player what they'd
-   *     get, even if it doesn't bank.
+   *   - **xp** is banked into every alive member's
+   *     `SavedCharacterState.exp` via `awardQuestXpToSavedMembers`.
+   *     Fallen members (hp <= 0) don't get a share — same
+   *     "alive only" gate combat uses. The level-up math itself
+   *     defers to the next combat: `seedBattleCaches` overlays
+   *     the banked exp onto the PartyMember the kernel sees, and
+   *     `awardXp`'s `while (member.exp >= member.level * xpPer)`
+   *     loop catches up any pending thresholds in one pass. See
+   *     `awardQuestXp.ts` for the rationale on why we don't run
+   *     awardXp eagerly here.
    *
    *  Persistence: a single `saveWorld(nextSave)` commits gold +
    *  inventory + the resulting `questStepProgress` (already
@@ -3252,12 +3381,28 @@ export function PlayHost() {
                 }
               }
             }
+            // Bank the quest's XP into every alive member's saved
+            // `exp` field. Full XP per member (matching the combat
+            // reward semantics — no split). The level-up itself
+            // fires when combat next runs awardXp on a non-zero
+            // reward; see awardQuestXp.ts for the deferment
+            // rationale. `changed` lets us avoid an unnecessary
+            // members[] replacement when no one qualified (XP=0
+            // or party wipe).
+            const xpResult = awardQuestXpToSavedMembers(
+              save.party.members,
+              claim.xp,
+            );
+            const nextMembers = xpResult.changed
+              ? xpResult.nextMembers
+              : save.party.members;
             const nextSave: WorldSave = {
               ...save,
               party: {
                 ...save.party,
                 gold: save.party.gold + claim.gold,
                 inventory: nextInventory,
+                members: nextMembers,
               },
               turnedInQuests: [...turnedIn],
               maps: nextMaps,
@@ -3270,6 +3415,11 @@ export function PlayHost() {
             }
             saveWorld(nextSave);
             saveRef.current = nextSave;
+            // The just-turned-in quest's giver cell should stop
+            // glowing — the breadcrumb has done its job. Has to fire
+            // AFTER saveRef.current is committed so the glow pass
+            // sees the new turnedInQuests entry.
+            refreshQuestGlow();
           }
           // Player-facing summary in the log strip. Format mirrors
           // the way combat reports loot: numbers prefixed with `+`,
@@ -3308,7 +3458,7 @@ export function PlayHost() {
       }
       return null;
     });
-  }, [fireQuestCelebration]);
+  }, [fireQuestCelebration, refreshQuestGlow]);
 
   // Render shells.
   if (state.kind === "loading") {

@@ -42,6 +42,7 @@ import {
   type SimSpawn,
   type SpawnCellInfo,
 } from "./spawn";
+import { runNpcWander, type NpcMove } from "./npcWander";
 import {
   activeKillStepsAt,
   creditQuestKill,
@@ -473,6 +474,22 @@ export type SimEvent =
    *  cleared the cell's item before the event fires so a re-step
    *  doesn't double-fire. */
   | { kind: "item_picked"; itemId: string; pos: Position }
+  /** Fired once per NPC (or quest giver) that drifted to a new cell
+   *  on this turn's wander pass. The grid mutation (`npc` / `quest`
+   *  field follows the entity) has already landed by the time this
+   *  event fires — the host just needs to reposition the matching
+   *  overlay Image and re-run anything keyed off cell coords (the
+   *  quest-glow halo, in particular). A single party step can emit
+   *  several of these in row-major order. `npcId` and `questId` are
+   *  both surfaced so a cell carrying both (a person who hands out
+   *  a quest) lights up both overlay tracks on the host. */
+  | {
+      kind: "npc_moved";
+      from: Position;
+      to: Position;
+      npcId?: string;
+      questId?: string;
+    }
   /** Emitted whenever the *visible* simulation state changes — host
    *  uses this to re-render its panel (HP bars, torch countdown, …). */
   | { kind: "state" };
@@ -589,6 +606,16 @@ export interface MapSimulationOptions {
    *  {@link activeKillStepsAt} so only steps that match drop their
    *  encounters here. Omitted = no quest-driven placements. */
   currentLocation?: CombatLocation;
+  /** Enable the per-turn NPC / quest-giver wander pass — each
+   *  cell carrying an `npc` or `quest` tag gets a 50% roll to
+   *  drift one cardinal tile. The pass mutates the grid in place
+   *  (the tag follows the entity into its new home), so hosts
+   *  that share the grid reference with an authoring surface
+   *  (the map editor) should leave this off to keep designer
+   *  state pristine. The live /play runtime opts in; the editor's
+   *  sim mode and the test suite opt out unless they're explicitly
+   *  exercising the feature. Defaults to `false`. */
+  enableNpcWander?: boolean;
 }
 
 /** The simulation controller. One per active sim session; mounted by
@@ -686,6 +713,10 @@ export class MapSimulation {
   private pendingSpawn: SpawnEncounterOptions | null = null;
   /** Ground-tile fallback used by the destroy-lair path. */
   private readonly groundTile: SimCatalog["groundTile"];
+  /** Per-step NPC wander toggle — see
+   *  {@link MapSimulationOptions.enableNpcWander}. Captured at
+   *  construction; not mutable mid-run. */
+  private readonly npcWanderEnabled: boolean;
   private disposed = false;
 
   constructor(opts: MapSimulationOptions) {
@@ -710,6 +741,7 @@ export class MapSimulation {
     );
     this.acceptedQuests = new Set(opts.initialAcceptedQuests ?? []);
     this.groundTile = opts.catalog.groundTile;
+    this.npcWanderEnabled = opts.enableNpcWander ?? false;
     // Mutation state — seeded from per-session options so a host
     // remounting the same grid (e.g. dungeon floor revisits)
     // resumes where it left off. Cloned into new Sets so the
@@ -1330,7 +1362,57 @@ export class MapSimulation {
     this.bridge.setRoamerPositions?.(this.snapshotRoamers());
     this.bridge.setPlacedEncounterPositions?.(this.snapshotPlacedEncounters());
 
+    // ── NPC wander ───────────────────────────────────────────────────
+    // Every step, give each NPC / quest giver a 50% chance to drift
+    // one cardinal tile. Runs AFTER the spawn + roamer + placed-
+    // encounter passes so live monster positions block wander
+    // destinations (an NPC won't try to share a tile with a wolf).
+    // Skipped when an overlay is about to open — a turn that ends
+    // in combat / lock dialog / etc. doesn't tick world ambience.
+    // Gated on the opt-in flag so hosts that share the grid with an
+    // authoring surface (the editor) don't get their state mutated.
+    if (
+      this.npcWanderEnabled &&
+      !this.pendingSpawn &&
+      !this.pendingLock
+    ) {
+      this.runNpcWanderPass();
+    }
+
     this.emit({ kind: "state" });
+  }
+
+  /** Run one NPC wander tick + emit the diff. Pure helper does the
+   *  grid mutation; we just hand it an `isOccupied` predicate
+   *  covering the dynamic blockers (party, roamers, placed
+   *  encounters) and translate each returned move into an
+   *  `npc_moved` event so the host can reposition overlays. */
+  private runNpcWanderPass(): void {
+    const occupied = new Set<string>();
+    occupied.add(`${this.pos.col},${this.pos.row}`);
+    for (const r of this.roamers) occupied.add(`${r.col},${r.row}`);
+    for (const p of this.placedEncounters) occupied.add(`${p.col},${p.row}`);
+    const moves: NpcMove[] = runNpcWander(
+      this.grid,
+      (c, r) => occupied.has(`${c},${r}`),
+      Math.random,
+    );
+    for (const m of moves) {
+      // The destination cell now has the entity's tag(s); rebuild
+      // the dynamic-occupied set incrementally so a later move in
+      // the same emit loop sees prior wanderers. The pure helper
+      // already updated the grid so this is just for the rare case
+      // where downstream listeners care.
+      occupied.add(`${m.to.col},${m.to.row}`);
+      occupied.delete(`${m.from.col},${m.from.row}`);
+      this.emit({
+        kind: "npc_moved",
+        from: m.from,
+        to: m.to,
+        npcId: m.npcId,
+        questId: m.questId,
+      });
+    }
   }
 
   /** Move every placed encounter one cardinal step toward the party.

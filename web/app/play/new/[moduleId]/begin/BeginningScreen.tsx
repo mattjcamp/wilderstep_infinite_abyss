@@ -279,6 +279,13 @@ async function assembleInitialSave(
         custom: c,
         hp: c.hp,
         mp: c.mp,
+        // Seed level + exp directly from the character record so the
+        // Party screen + Character sheet read the right values on
+        // first launch. Custom characters are CharacterRecords with
+        // both fields required; module characters fall through the
+        // `??` for the same defaults memberFromRaw would apply.
+        level: c.level ?? 1,
+        exp: c.exp ?? 0,
         inventory: [],
         effects: [],
       });
@@ -296,6 +303,12 @@ async function assembleInitialSave(
         custom: null,
         hp: c.hp,
         mp: c.mp,
+        // characters.json typically authors `level` (default 1)
+        // and may author a starting `exp`. Honour both so a
+        // designer who wants a high-level NPC joining the party
+        // mid-adventure can ship that via the module.
+        level: c.level ?? 1,
+        exp: c.exp ?? 0,
         inventory: [],
         effects: [],
       });

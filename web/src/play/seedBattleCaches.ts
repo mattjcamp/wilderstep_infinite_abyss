@@ -163,6 +163,19 @@ function buildPartyFromSave(
           ...(typeof override.max_mp === "number"
             ? { max_mp: override.max_mp }
             : {}),
+          // Honour the save's persisted level + exp so the next fight
+          // starts the live PartyMember at the player's actual
+          // progress. Without this overlay, combat seeds from the
+          // catalog (typically level 1, exp 0) and any pending
+          // level-up — including XP banked at quest turn-in — is
+          // silently reset, so awardXp's threshold check after the
+          // fight runs against a stale baseline.
+          ...(typeof override.level === "number"
+            ? { level: override.level }
+            : {}),
+          ...(typeof override.exp === "number"
+            ? { exp: override.exp }
+            : {}),
           ...(override.equipped
             ? { equipped: { ...override.equipped } }
             : {}),

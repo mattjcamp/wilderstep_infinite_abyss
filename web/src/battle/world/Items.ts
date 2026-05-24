@@ -85,8 +85,37 @@ export interface Item {
   /** Extra damage dice rolled on top of base. */
   bonus_damage?: string | number;
   damage_type?: string;
-  /** Effect id this item confers on the party while equipped. */
+  /** Effect id this item confers on the party while equipped.
+   *  Surfaces in the HUD readout via `refreshItemGrantedEffects`.
+   *  Does NOT plug into the combat engine — for combat-side
+   *  passives, see {@link wielder_passives} below. */
   grants_effect?: string;
+  /** Passive effect ids that get stamped onto the *wielder's*
+   *  Combatant when the item is equipped (each slot — hands or
+   *  body — is walked, dedup'd, and applied to whoever has it
+   *  on). Mirrors monster-side `passives` so the combat engine's
+   *  existing `hasPassive(combatant, "fire_resistance")` check
+   *  works for party-side characters out of the box.
+   *
+   *  Today the combat engine recognises these ids:
+   *    - `"fire_resistance"` — halves fire-typed spell damage
+   *      (breath / fireball). The Sun Sword carries this so its
+   *      wielder shrugs off the dragon's breath.
+   *    - `"poison_immunity"` — reserved; combat hasn't wired the
+   *      poison branch yet but the id is honoured for parity.
+   *
+   *  Unknown ids are dropped silently in the bridge — adding a
+   *  new id here is harmless until the combat engine grows a
+   *  matching consumer. */
+  wielder_passives?: string[];
+  /** Optional combat-render hint: when the wielder is on the
+   *  battlefield, draw a pulsing colored aura beneath their
+   *  body sprite. Reserved for relic-tier gear where the visual
+   *  cue matters as much as the stat boost (Sun Sword's gold
+   *  halo, Mystic Sword's violet glow, etc.). Color is a packed
+   *  RGB integer — the CombatScene tweens a ring of this colour
+   *  every ~0.7s, anchored to the wielder's current cell. */
+  combat_aura?: { color?: number };
   /**
    * Firing mode for ranged weapons (`ranged: true`). `"target"` is
    * the familiar pick-an-enemy-from-the-list flow with LOS gating —

@@ -4,15 +4,16 @@
 - Do a playthrough with the alternate party
 
 # Polish
-- The Camping Supplies looked like they healed the party in the Party Screen, but when the party went into combat it was as if they were never healed (the effect did not persist)
-- When a quest giver's quest is complete, they should no longer glow.
-  
+
+- Make sure that the Sun Sword is truly a relic scale weapon, compare damage vs other weapons, make sure it has a fire effect, and make sure it has an animation effect while equiped during combat  
+- The Turn Undead class ability does not seem to be available in the battle arena
 
 # V3 Ideas
 
 - More Robust Trap System
 - New Puzzle system (presure plates that open doors, etc)
 - Key system (certain keys open certain doors)
+- Add place description placard to linked tiles as optional. It would worked by selecting showLinkPlacard option. Then when the party is over that tile they will get the placard with the linked map description and an indication whether they have explored that area yet
 
 ## Large Data Storage Issues
 

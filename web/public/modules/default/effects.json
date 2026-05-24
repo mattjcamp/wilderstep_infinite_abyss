@@ -148,6 +148,14 @@
       "description": "Immune to poison damage and the Poisoned status.",
       "duration": "permanent",
       "params": null
+    },
+    {
+      "id": "sun_sword_aura",
+      "name": "Sun Sword Aura",
+      "animation_id": null,
+      "description": "Warm golden light surrounds the wielder. Bathes the party in soft illumination and wards the wielder from fire.",
+      "duration": "permanent",
+      "params": null
     }
   ]
 }

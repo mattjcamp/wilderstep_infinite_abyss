@@ -113,12 +113,12 @@
       "quest_giver": {
         "npc_name": "Lazy Warrior",
         "npc_sprite": "person/fighter12.png",
-        "start_dialog": "Can you get my scroll from the armor?",
+        "start_dialog": "I lost my family's precious scroll, some where in town. Can you help me find it?",
         "end_dialog": "Thanks bruh"
       },
       "rewards": {
-        "xp": 50,
-        "gold": 24,
+        "xp": 100,
+        "gold": 100,
         "tile_add": [
           {
             "map": "demo_town",
@@ -176,8 +176,8 @@
           "item_id": "sun_sword",
           "location_kind": "map",
           "map_id": "water_shrine_3",
-          "col": 7,
-          "row": 7
+          "col": 13,
+          "row": 1
         },
         {
           "id": "dragon_step_2",
@@ -194,6 +194,36 @@
         "npc_sprite": "person/king2.png",
         "start_dialog": "",
         "end_dialog": ""
+      }
+    },
+    {
+      "id": "the_red_house",
+      "name": "The Red House",
+      "description": "A house in town appears to be haunted",
+      "tags": [],
+      "steps": [
+        {
+          "id": "the_red_house_step_1",
+          "name": "Step 1",
+          "kind": "kill",
+          "location_kind": "map",
+          "map_id": "demo_town_house",
+          "encounter_id": "shambling_dead"
+        }
+      ],
+      "quest_giver": {
+        "npc_name": "Old Guy",
+        "npc_sprite": "person/druid1.png",
+        "start_dialog": "My house, the red one, appears to be haunted. Can you unhaunt it?",
+        "end_dialog": "thx!"
+      },
+      "rewards": {
+        "xp": 100,
+        "gold": 100,
+        "items": [
+          "arrows",
+          "torch"
+        ]
       }
     }
   ]

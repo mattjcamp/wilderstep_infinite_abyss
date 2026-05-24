@@ -470,6 +470,17 @@ export class CombatScene extends Phaser.Scene {
   private bodies = new Map<string, Phaser.GameObjects.Image | Phaser.GameObjects.Rectangle>();
   private selRings = new Map<string, Phaser.GameObjects.Rectangle>();
   private moveHintRects: Phaser.GameObjects.Rectangle[] = [];
+  /** Repeating timers — one per combatant — that pulse a `glowAura`
+   *  ring beneath their body every few hundred ms. Started in
+   *  `drawCombatants` for any combatant whose equipped weapon
+   *  declared a `combat_aura.color` (currently just the Sun Sword);
+   *  paused-by-skip when the combatant drops to 0 HP so a corpse
+   *  doesn't keep glowing. The pulse is intentionally a fresh ring
+   *  per tick — we don't try to anchor a single sprite to the body,
+   *  so the aura naturally tracks the wielder's position when they
+   *  move across the arena. Cleared on scene init (defensive) and
+   *  re-seeded each `drawCombatants` rebuild. */
+  private wieldAuras = new Map<string, Phaser.Time.TimerEvent>();
   /** Per-party-member card UI, kept so we can refresh in place. The MP
    *  fields are absent for non-casters (Fighter / Thief / etc.). */
   private partyCards = new Map<string, {
@@ -615,6 +626,11 @@ export class CombatScene extends Phaser.Scene {
     this.bodies.clear();
     for (const ring of this.selRings.values()) ring?.destroy();
     this.selRings.clear();
+    // Stop any wielder-aura timers from the previous run before the
+    // bodies they reference are gone — otherwise the next tick fires
+    // a glowAura at a destroyed sprite's last-known coords.
+    for (const t of this.wieldAuras.values()) t.remove();
+    this.wieldAuras.clear();
     for (const r of this.moveHintRects) r?.destroy();
     this.moveHintRects.length = 0;
     // Tear down the previous run's darkness overlay so a re-entry
@@ -1721,6 +1737,11 @@ export class CombatScene extends Phaser.Scene {
     this.bodies.clear();
     for (const ring of this.selRings.values()) ring?.destroy();
     this.selRings.clear();
+    // Re-seed wielder auras too. Same idempotent-rebuild reasoning
+    // as bodies / selection rings — the timer references a body
+    // we're about to destroy, so cancelling here closes the race.
+    for (const t of this.wieldAuras.values()) t.remove();
+    this.wieldAuras.clear();
     for (const b of this.monsterHpBars.values()) {
       b.bg?.destroy();
       b.bar?.destroy();
@@ -1760,6 +1781,18 @@ export class CombatScene extends Phaser.Scene {
           .setStrokeStyle(2, 0x0a0a14);
       }
       this.bodies.set(c.id, body);
+
+      // Relic-tier wielder aura — Sun Sword draws a pulsing gold
+      // halo beneath the wielder each ~700ms so the player can see
+      // at a glance "this character is wielding something powerful."
+      // The pulse is a fresh ring per tick, anchored at the body's
+      // CURRENT coordinates, so the aura naturally tracks movement
+      // without per-frame position sync. Skipped at hp <= 0 inside
+      // the callback so a corpse doesn't keep glowing — and resumes
+      // automatically if the character is raised mid-fight.
+      if (typeof c.wieldAuraColor === "number") {
+        this.startWielderAura(c.id, c.wieldAuraColor);
+      }
 
       // Floating HP bar above each enemy. The party gets full HP/MP
       // cards in the HUD, so we keep the arena uncluttered for them.
@@ -2543,6 +2576,12 @@ export class CombatScene extends Phaser.Scene {
     // attack. Position, HP, buffs, sprite, etc. are intentionally
     // left untouched.
     refreshCombatantGear(me, member, this.items);
+    // refreshCombatantGear updated `wieldAuraColor` on the
+    // combatant — sheathing the Sun Sword should kill its halo,
+    // drawing it should start one. Sync the timer with the new
+    // value so the visual matches the gear state on the very next
+    // pulse.
+    this.syncWielderAura(me);
     this.combat.log.push(r.message);
     this.refreshLog();
     this.mode = "default";
@@ -4645,6 +4684,80 @@ export class CombatScene extends Phaser.Scene {
   /** Coloured aura ring around a target — buff/debuff status visual. */
   private auraOn(c: Combatant, color: number): Promise<void> {
     return glowAura(this, this.bodyXY(c), color);
+  }
+
+  /** Start the persistent wielder-aura pulse for `combatantId` —
+   *  a fresh `glowAura` ring fired every ~700ms beneath the body
+   *  sprite, in the supplied colour. Triggered for any combatant
+   *  whose equipped weapon declares a `combat_aura.color` (today
+   *  just the Sun Sword). Stored in `wieldAuras` keyed by id so
+   *  scene teardown / mid-fight gear swaps can stop it cleanly.
+   *
+   *  Per-pulse gates:
+   *   - Skip when `bodies.get(id)` is gone (mid-teardown race).
+   *   - Skip when the combatant is fallen (hp <= 0). The timer
+   *     keeps running so a raise-dead promotes the character back
+   *     into the visual without re-wiring the timer.
+   *
+   *  Each pulse fires the existing `glowAura` helper (Vfx.ts) at
+   *  the body's *current* position, so the aura tracks the wielder
+   *  across the arena without per-frame coordinate sync. The 700ms
+   *  cadence is tuned to overlap previous rings just enough that
+   *  the halo reads continuous rather than blinky. */
+  private startWielderAura(combatantId: string, color: number): void {
+    // Defensive: clear any prior timer for this id so a re-seed
+    // from `drawCombatants` doesn't double the pulse rate.
+    const prior = this.wieldAuras.get(combatantId);
+    if (prior) prior.remove();
+
+    const PULSE_MS = 700;
+    const tick = () => {
+      const body = this.bodies.get(combatantId);
+      if (!body) return;
+      const c = this.combat?.combatants.find((x) => x.id === combatantId);
+      if (!c || c.hp <= 0) return;
+      // `bodyXY` already falls back to tile coordinates when the
+      // sprite is missing, but we use body.x/y here directly so the
+      // aura reads off the live (possibly-mid-tween) position
+      // rather than the actor's logical cell.
+      glowAura(this, { x: body.x, y: body.y }, color).catch(() => undefined);
+    };
+
+    // Fire one immediately so the first pulse lands the moment the
+    // combatant appears — without it the player would wait the full
+    // PULSE_MS before seeing any aura at combat-start.
+    tick();
+    const timer = this.time.addEvent({
+      delay: PULSE_MS,
+      loop: true,
+      callback: tick,
+    });
+    this.wieldAuras.set(combatantId, timer);
+  }
+
+  /** Reconcile the live aura timer with the combatant's current
+   *  `wieldAuraColor` — fired after any mid-combat gear swap. Three
+   *  cases:
+   *   - aura color set + no live timer → start one.
+   *   - aura color absent + live timer → stop + remove the entry.
+   *   - both set / both absent → no-op (the existing timer keeps
+   *     pulsing in the current colour, which is fine even when the
+   *     player re-equipped a different aura-bearing weapon of the
+   *     same colour). */
+  private syncWielderAura(c: Combatant): void {
+    const live = this.wieldAuras.get(c.id) ?? null;
+    const color = c.wieldAuraColor;
+    if (typeof color === "number") {
+      if (!live) this.startWielderAura(c.id, color);
+      // A colour CHANGE doesn't restart the timer today — restarting
+      // mid-fight would look like a hitch. If we ship multiple
+      // aura-bearing weapons whose colours differ wildly, this is
+      // where to add a colour-diff check; for now Sun Sword is the
+      // only one and the policy is "first equip wins."
+    } else if (live) {
+      live.remove();
+      this.wieldAuras.delete(c.id);
+    }
   }
 
   /** Healing sparkle column rising over a target. */

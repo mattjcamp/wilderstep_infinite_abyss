@@ -11,9 +11,12 @@
  * relevant cells at all times — that's the "what's authored where"
  * view. The play runtime passes `acceptedQuests` so kill-step targets
  * and fetch-step items only glow once the player has actually accepted
- * the quest. Quest givers always glow regardless of status: they're
+ * the quest. Quest givers glow regardless of accept status: they're
  * the breadcrumb that draws the player TO the quest in the first place,
- * so suppressing them until accepted would defeat the purpose.
+ * so suppressing them until accepted would defeat the purpose. Once a
+ * quest is fully turned in, though, the giver has nothing left to
+ * offer, so passing `turnedInQuests` suppresses the giver halo for
+ * those specific quests — the cell goes dark.
  */
 
 /** Minimal cell shape consumed by the glow computation. The wider
@@ -45,9 +48,17 @@ export interface QuestGlowQuest {
 export interface QuestGlowOptions {
   /** When supplied, only kill-step encounters and fetch-step items
    *  belonging to one of these quest ids will glow. Quest givers
-   *  glow regardless (see module doc). Omit to glow every relevant
-   *  cell unconditionally — the editor's authoring view. */
+   *  glow regardless of accept status (see module doc). Omit to glow
+   *  every relevant cell unconditionally — the editor's authoring
+   *  view. */
   acceptedQuests?: ReadonlySet<string>;
+  /** Quests whose reward has been handed over to the player. The
+   *  giver cells for these quests are suppressed from the glow set —
+   *  the quest is done, the giver has nothing left to offer, the
+   *  breadcrumb should go dark. Omit (or pass an empty set) to keep
+   *  the legacy "always glow the giver" behaviour, which is what the
+   *  editor's authoring view wants. */
+  turnedInQuests?: ReadonlySet<string>;
 }
 
 /**
@@ -55,8 +66,11 @@ export interface QuestGlowOptions {
  *
  * A cell glows when ANY of the following is true:
  *
- *   - it has a non-empty `quest` field (quest giver sits here).
- *     Always lit.
+ *   - it has a non-empty `quest` field (quest giver sits here),
+ *     AND (if `turnedInQuests` is supplied) that quest id is NOT in
+ *     the turned-in set. Givers are otherwise always lit — the
+ *     breadcrumb that draws the player to the quest in the first
+ *     place, and back for the handoff after the work is done.
  *   - it has an `encounter` named by a `kill`-step's `encounter_id`,
  *     AND (if `acceptedQuests` is supplied) the quest is accepted.
  *   - it has an `item` named by a `retrieve`-step's `item_id` or a
@@ -108,6 +122,7 @@ export function computeQuestGlowCells(
   }
 
   const filter = opts.acceptedQuests;
+  const turnedIn = opts.turnedInQuests;
   // Helper: when filter is undefined the glow is unconditional. When
   // filter is supplied, at least one of the candidate quest ids must
   // be accepted.
@@ -126,8 +141,13 @@ export function computeQuestGlowCells(
     for (let c = 0; c < row.length; c++) {
       const cell = row[c];
       if (!cell) continue;
-      // Quest givers — always glow.
-      if (cell.quest) {
+      // Quest givers — glow as long as their quest hasn't been
+      // turned in. Once turned in, the giver has nothing left to
+      // offer, so the breadcrumb should go dark. We still fall
+      // through to the encounter / item checks below: the cell
+      // might double as a kill-target or item-stash for some other
+      // still-active quest.
+      if (cell.quest && (!turnedIn || !turnedIn.has(cell.quest))) {
         glow.add(`${c},${r}`);
         continue;
       }

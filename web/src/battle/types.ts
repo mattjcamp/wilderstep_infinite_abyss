@@ -52,6 +52,13 @@ export interface Combatant {
    *  Surfaced in the combat log so the player sees the magical flavor.
    *  Treated as "physical" when absent. */
   weaponDamageType?: string;
+  /** Packed RGB for the relic-tier "this weapon is powerful" aura
+   *  the CombatScene draws beneath the wielder's body. Stamped on
+   *  by the CombatBridge from the equipped weapon's `combat_aura`
+   *  field; the scene re-pulses a ring of this color every ~0.7s
+   *  while the combatant is alive. Absent for ordinary weapons —
+   *  the scene falls through to its no-aura render path. */
+  wieldAuraColor?: number;
   /** Full ability scores carried over from the PartyMember (or
    *  monster spec). Optional because legacy fixtures and some of the
    *  combat tests omit them — combat helpers default each to 10

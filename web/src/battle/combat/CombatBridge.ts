@@ -13,10 +13,66 @@
  */
 
 import type { Combatant, DamageRoll } from "../types";
+import type { MonsterPassive } from "../data/monsters";
 import type { PartyMember, Party, EquipmentSlots } from "../world/Party";
 import type { Item } from "../world/Items";
 import type { ClassTemplate } from "../world/Classes";
 import { activeMembers } from "../world/Party";
+
+/** Map a `wielder_passives` id (declared on an item) to the
+ *  monster-side passive shape the combat engine already consumes.
+ *  Returns null for unknown ids — that lets a future Item carry a
+ *  passive the engine hasn't taught itself to honour yet without
+ *  hard-failing the equip flow. Today the engine understands:
+ *
+ *   - `"fire_resistance"`: halves fire-typed spell damage (see
+ *     `Combat.rollMonsterSpellDamage` → `hasPassive`).
+ *   - `"poison_immunity"`: reserved; engine reads the flag but the
+ *     poison branch isn't wired yet.
+ *
+ *  `"regen"` is intentionally absent — it carries an `amount`
+ *  parameter that the data model doesn't yet let an item declare
+ *  through `wielder_passives` (the field is a flat string[]). When
+ *  we want item-driven regen, this map will grow to honour an
+ *  object form like `{ id: "regen", amount: 2 }`.
+ */
+function passiveFromWielderId(id: string): MonsterPassive | null {
+  if (id === "fire_resistance") return { type: "fire_resistance" };
+  if (id === "poison_immunity") return { type: "poison_immunity" };
+  return null;
+}
+
+/** Collect every passive an item's `wielder_passives` declares
+ *  across the supplied slots, dedupe by `type`, and return them in
+ *  the shape `Combatant.passives` expects. Pure: takes the equipped
+ *  map + items catalog by reference, returns a fresh array. Returns
+ *  `undefined` (not `[]`) when nothing applies so the assignment in
+ *  `combatantFromMember` leaves the field absent for ordinary gear —
+ *  the engine treats absent and empty identically, but absence keeps
+ *  the snapshot tight in debugger views. */
+function collectWielderPassives(
+  equipped: EquipmentSlots,
+  items: Map<string, Item>,
+): MonsterPassive[] | undefined {
+  const seen = new Set<MonsterPassive["type"]>();
+  const out: MonsterPassive[] = [];
+  const slots: Array<keyof EquipmentSlots> = ["hands", "body"];
+  for (const slot of slots) {
+    const id = equipped[slot];
+    if (!id) continue;
+    const it = items.get(id);
+    const declared = it?.wielder_passives;
+    if (!Array.isArray(declared)) continue;
+    for (const passiveId of declared) {
+      const p = passiveFromWielderId(passiveId);
+      if (!p) continue;
+      if (seen.has(p.type)) continue;
+      seen.add(p.type);
+      out.push(p);
+    }
+  }
+  return out.length > 0 ? out : undefined;
+}
 
 /** Fall-back tile movement budget when no class template is available
  *  (tests that don't pass a classes map, or a class file failed to
@@ -162,6 +218,20 @@ export function combatantFromMember(
   const equippedWeapon = member.equipped.hands
     ? items.get(member.equipped.hands) ?? null
     : null;
+  // Magic-gear passives — Sun Sword's `wielder_passives: ["fire_resistance"]`
+  // turns into a real `passives: [{ type: "fire_resistance" }]` entry
+  // on the Combatant here, which the combat engine's existing
+  // `hasPassive` check picks up when the dragon breathes fire.
+  // Walks BOTH equipped slots so future passive-granting armor
+  // (Bracers of Poison Immunity, etc.) folds in automatically.
+  const wielderPassives = collectWielderPassives(member.equipped, items);
+  // Relic-tier render hint — drives the persistent gold halo around
+  // the wielder in CombatScene. Absent for mundane weapons; only
+  // populated when the equipped weapon declares a `combat_aura` block.
+  const wieldAuraColor =
+    typeof equippedWeapon?.combat_aura?.color === "number"
+      ? equippedWeapon.combat_aura.color
+      : undefined;
   return {
     id: `pm:${member.id}`,
     name: member.name,
@@ -190,6 +260,8 @@ export function combatantFromMember(
     weaponName: stats.weaponName,
     weaponBonusDamage: equippedWeapon?.bonus_damage,
     weaponDamageType: equippedWeapon?.damage_type,
+    passives: wielderPassives,
+    wieldAuraColor,
   };
 }
 
@@ -244,6 +316,16 @@ export function refreshCombatantGear(
   // swings (and dropping back to a Sword should stop it).
   c.weaponBonusDamage = weapon?.bonus_damage;
   c.weaponDamageType = weapon?.damage_type;
+  // Refresh magic-item passives + aura — sheathing the Sun Sword
+  // drops fire_resistance on the next round, drawing it again
+  // restores it. The CombatScene watches `wieldAuraColor` to add
+  // or destroy the persistent halo so the visual matches the
+  // mechanical state.
+  c.passives = collectWielderPassives(member.equipped, items);
+  c.wieldAuraColor =
+    typeof weapon?.combat_aura?.color === "number"
+      ? weapon.combat_aura.color
+      : undefined;
 }
 
 /**

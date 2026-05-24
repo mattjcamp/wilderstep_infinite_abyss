@@ -334,7 +334,7 @@
       "category": "weapons",
       "name": "Sun Sword",
       "animation_id": null,
-      "description": "A radiant blade infused with solar energy. Burns those it strikes and bathes its wielder in light.",
+      "description": "A radiant blade infused with solar energy. Burns those it strikes, bathes its wielder in light, and wards them from fire.",
       "icon": "sword",
       "item_type": "sword",
       "power": 20,
@@ -349,6 +349,9 @@
       "durability": 0,
       "party_can_equip": false,
       "character_can_equip": true,
+      "grants_effect": "sun_sword_aura",
+      "wielder_passives": ["fire_resistance"],
+      "combat_aura": { "color": 16766800 },
       "buy": 0,
       "sell": 0
     },

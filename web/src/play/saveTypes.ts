@@ -56,6 +56,28 @@ export interface SavedCharacterState {
    *  max changes (level-up bonuses, equipment-granted +HP, etc.). */
   max_hp?: number;
   max_mp?: number;
+  /** Current level + accumulated XP. Both optional so legacy saves
+   *  (predating the XP-persistence layer) keep parsing; PlayHost's
+   *  load path backfills `level` from the catalog character (default
+   *  1) and `exp` to 0 when missing. Mutated from two sources:
+   *
+   *    1. Combat — CombatScene's post-fight `awardXp` bumps the live
+   *       PartyMember's exp/level, and `applyCombatResultToSave`
+   *       reads those deltas back here.
+   *    2. Quest turn-in — `PlayHost.onQuestDecline` banks the quest's
+   *       `xp` reward into every alive member's `exp`. Level-ups
+   *       triggered by banked XP don't fire at turn-in time; they
+   *       catch up the next time the kernel calls `awardXp` (i.e.
+   *       the next combat that awards any XP at all — the while
+   *       loop processes every pending threshold in one pass).
+   *
+   *  Both fields are read by `PlayPartyScreenOverlay` to display the
+   *  current level + XP bar on the Party screen and Character sheet,
+   *  and honoured by `seedBattleCaches.buildPartyFromSave` so the
+   *  next combat starts the live PartyMember at the player's real
+   *  progress instead of resetting to the catalog's level 1. */
+  level?: number;
+  exp?: number;
   /** Carried items + charges + per-instance durability. Pattern matches
    *  v1's per-character inventory (separate from the shared party
    *  stash). `durability` rides on a per-row basis so two copies of the

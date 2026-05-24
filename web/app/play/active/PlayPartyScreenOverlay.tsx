@@ -264,6 +264,18 @@ export function PlayPartyScreenOverlay({
             mp: typeof saved.mp === "number" ? saved.mp : c.mp,
             maxHp,
             ...(maxMp !== undefined ? { maxMp } : {}),
+            // Level + XP overlay. Without this the roster card and
+            // the character sheet inherit the catalog character's
+            // level (typically 1) and `exp` (typically 0 / absent),
+            // even after the player has won fights or turned in
+            // quests. Both fields are optional on SavedCharacterState
+            // (legacy saves predate the persistence layer);
+            // PlayHost's load-time backfill ensures every live save
+            // carries them, but we still narrow the type-check here
+            // so a hand-rolled save without them falls through to
+            // the catalog values rather than rendering `undefined`.
+            level: typeof saved.level === "number" ? saved.level : c.level,
+            exp: typeof saved.exp === "number" ? saved.exp : c.exp,
             inventory: saved.inventory
               ? saved.inventory.map((e) => ({ ...e }))
               : c.inventory,
