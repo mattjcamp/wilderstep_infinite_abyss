@@ -1558,6 +1558,36 @@ export function PlayPartyScreenOverlay({
               onUnequipSlot={handleUnequipSlot}
               onCastSpell={handleCastSpell}
               onUseAbility={handleUseAbility}
+              abilityCooldowns={(() => {
+                // Per-day class abilities — when the save's
+                // `last_ability_day[id]` equals today's day index,
+                // the ability is on cooldown until tomorrow. We
+                // build one entry per gated id so the sheet shows
+                // "Used today" on the button instead of leaving it
+                // hot + letting the player click into a refusal.
+                //
+                // Hardcoding the id list keeps the surface narrow —
+                // adding a future once-per-day class ability is a
+                // one-line edit here. Tinker uses its own dedicated
+                // `last_tinker_day` field (legacy compat) so we
+                // check it separately.
+                const today = dayIndex({
+                  totalMinutes: liveSave.clockMinutes ?? 0,
+                });
+                const out = new Map<string, string>();
+                const dayMap = liveSave.party.last_ability_day ?? {};
+                for (const abilityId of ["craft_arrows", "craft_fire_arrows"]) {
+                  const last = dayMap[abilityId];
+                  if (typeof last === "number" && last >= today) {
+                    out.set(abilityId, "Used today");
+                  }
+                }
+                const lastTinker = liveSave.party.last_tinker_day;
+                if (typeof lastTinker === "number" && lastTinker >= today) {
+                  out.set("tinker", "Used today");
+                }
+                return out;
+              })()}
               effectDurations={
                 new Map<string, number>([
                   ["magic_light", liveSave.party.magic_light_steps ?? 0],

@@ -348,6 +348,7 @@ export function PartyScreen({
   onReturnPersonalItem,
   onEquipPersonalItem,
   onUseAbility,
+  abilityCooldowns,
   onUnequipSlot,
   effectDurations,
 }: {
@@ -418,6 +419,14 @@ export function PartyScreen({
    *  player to use Steal from the NPC dialog, …). When omitted,
    *  the sheet falls back to its built-in "preview only" flash. */
   onUseAbility?: (memberId: string, ability: PartyAbilityRef) => void;
+  /** Per-ability cooldown labels keyed by ability id — passed
+   *  through to `CharacterSheetSim.abilityCooldowns` so a
+   *  once-per-day class ability (Craft Arrows, Craft Fire Arrows,
+   *  Tinker) shows the cooldown ON the button instead of just
+   *  refusing on click. Hosts compute the map from the live save's
+   *  `last_ability_day` against the current day. Absent / empty
+   *  map = no abilities on cooldown. */
+  abilityCooldowns?: ReadonlyMap<string, string>;
   /** Remaining-step counter per active effect id. Used to render a
    *  "(N steps)" suffix on the matching effect row. Effects that
    *  have a counter but aren't yet in `activeEffectIds` (e.g. a
@@ -807,6 +816,7 @@ export function PartyScreen({
         onEquipPersonalItem={onEquipPersonalItem}
         onUnequipSlot={onUnequipSlot}
         onUseAbility={onUseAbility}
+        abilityCooldowns={abilityCooldowns}
       />
     );
   }

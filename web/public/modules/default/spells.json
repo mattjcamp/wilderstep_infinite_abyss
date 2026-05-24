@@ -68,15 +68,13 @@
       "id": "knock",
       "name": "Knock",
       "animation_id": "utility_clack",
-      "description": "Sends a pulse of arcane force into a lock's mechanism, rattling tumblers and wards alike.",
+      "description": "Sends a pulse of arcane force into a lock's mechanism, rattling tumblers and wards alike. Cast from the locked-door dialog when the party bumps a lock.",
       "casting_type": "sorcerer",
       "min_level": 2,
       "mp_cost": 6,
       "range": 1,
       "targeting": "self",
-      "usable_in": [
-        "party"
-      ],
+      "usable_in": [],
       "duration": "instant",
       "action": "knock",
       "action_params": {

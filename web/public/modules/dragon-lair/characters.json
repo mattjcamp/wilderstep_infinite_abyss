@@ -16,7 +16,7 @@
       "intelligence": 8,
       "wisdom": 8,
       "equipped": {
-        "hands": "long_bow",
+        "hands": "silver_bow",
         "body": "cloth"
       },
       "inventory": [],
@@ -47,7 +47,7 @@
     {
       "id": "selina",
       "name": "Selina",
-      "class": "druid",
+      "class": "cleric",
       "race": "gnome",
       "gender": "Female",
       "level": 5,
@@ -70,9 +70,9 @@
       "id": "elminster",
       "name": "Elminster",
       "class": "alchemist",
-      "race": "elf",
+      "race": "human",
       "gender": "Male",
-      "level": 5,
+      "level": 10,
       "exp": 0,
       "hp": 6,
       "mp": 50,

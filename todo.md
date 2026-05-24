@@ -3,10 +3,6 @@
 
 - Make sure we are not missing abilities, audit and change abilities if needed
 
-- Remove the Knock spell "Use" button from the character sheet since it can only be casted at a locked door from the map
-
-- Fire Arrows probably need to be implemented, when a range attack happens if two types of arrows are present the player will need to choose which arrow to use
-
 - Make sure the monster sprites have transparent backgrounds. Many have black backgrounds which make the monster look like a block on the maps.
 
 - Update the Data Dictionaries

@@ -175,6 +175,7 @@ export function CharacterSheetSim({
   onEquipPersonalItem,
   onUnequipSlot,
   onUseAbility,
+  abilityCooldowns,
 }: {
   character: PartyCharacterRef;
   classes: ReadonlyArray<PartyClassRef>;
@@ -229,6 +230,15 @@ export function CharacterSheetSim({
    *  record so a single handler can branch on `ability.id` and
    *  route to the right picker / dispatcher. */
   onUseAbility?: (memberId: string, ability: PartyAbilityRef) => void;
+  /** Optional per-ability cooldown labels — `{ abilityId: "label" }`.
+   *  When an entry is present for an ability id, the sheet renders
+   *  the Use button disabled with the supplied label in place of
+   *  the click target ("Used today", "Resting", etc.). Hosts pass
+   *  this for the once-per-day class abilities (Craft Arrows /
+   *  Craft Fire Arrows / Tinker) so the player sees the cooldown
+   *  on the button itself, not just after clicking + reading a
+   *  refusal banner. Abilities not in the map render normally. */
+  abilityCooldowns?: ReadonlyMap<string, string>;
 }) {
   const className =
     classes.find((c) => c.id === character.class)?.name ?? character.class;
@@ -252,16 +262,35 @@ export function CharacterSheetSim({
     .filter((a): a is PartyAbilityRef => Boolean(a));
 
   // ── Resolve known spells ─────────────────────────────────────────
-  // Spell is castable when:
+  // A spell shows up on the character sheet's "Spells" list (with a
+  // Cast button) when ALL of:
   //   - the class's casting_type[] includes the spell's casting_type
   //   - character.level >= per-class override OR global min_level
+  //   - the spell's `usable_in` either omits the field OR contains
+  //     "party" — i.e. the spell can actually be cast from the party
+  //     screen. Spells that can ONLY be cast in a specific context
+  //     (Knock from the lock dialog, Long Shanks in combat, …) carry
+  //     a `usable_in` list that excludes "party"; rendering a Cast
+  //     button for those would just produce an "isn't wired up out
+  //     of combat" refusal, which is what the user reported for
+  //     Knock specifically. Empty / absent `usable_in` keeps the
+  //     legacy behaviour so a hand-rolled spell without the field
+  //     still surfaces — the filter is opt-out, not opt-in.
   const knownSpells: PartySpellRef[] = (klass?.casting_type
     ? spells.filter((s) => {
         if (!s.casting_type) return false;
         if (!klass.casting_type!.includes(s.casting_type)) return false;
         const gate =
           s.class_min_levels?.[klass.id] ?? s.min_level ?? 1;
-        return (character.level ?? 1) >= gate;
+        if ((character.level ?? 1) < gate) return false;
+        // usable_in gate: when the field is present + non-empty, it
+        // must include "party" for the sheet's Cast button to make
+        // sense. Absent / empty = unrestricted (legacy behaviour).
+        const usable = s.usable_in;
+        if (Array.isArray(usable) && usable.length > 0) {
+          if (!usable.includes("party")) return false;
+        }
+        return true;
       })
     : []) as PartySpellRef[];
 
@@ -766,6 +795,7 @@ export function CharacterSheetSim({
           title="Race Abilities"
           rows={raceAbilities}
           emptyHint={`${raceName} grants no listed abilities.`}
+          cooldowns={abilityCooldowns}
           onUse={(a) => {
             // Real handler wins when the host provides one (live
             // play overlay); editor preview falls through to the
@@ -780,6 +810,7 @@ export function CharacterSheetSim({
           title="Class Abilities"
           rows={classAbilities}
           emptyHint={`${className} grants no abilities at level ${level}.`}
+          cooldowns={abilityCooldowns}
           onUse={(a) => {
             if (onUseAbility) onUseAbility(character.id, a);
             else setLastAction(`Used ${a.name ?? a.id} — preview only.`);
@@ -965,11 +996,16 @@ function AbilitySection({
   rows,
   emptyHint,
   onUse,
+  cooldowns,
 }: {
   title: string;
   rows: ReadonlyArray<PartyAbilityRef>;
   emptyHint: string;
   onUse: (a: PartyAbilityRef) => void;
+  /** Optional cooldown labels keyed by ability id — when an entry
+   *  exists the button is rendered disabled with the label so the
+   *  player sees the gate without clicking. */
+  cooldowns?: ReadonlyMap<string, string>;
 }) {
   return (
     <section>
@@ -982,6 +1018,7 @@ function AbilitySection({
         <ul className="mt-1 space-y-1">
           {rows.map((a) => {
             const usable = (a.usable_in ?? []).includes("party");
+            const cooldownLabel = cooldowns?.get(a.id);
             return (
               <li
                 key={a.id}
@@ -992,13 +1029,29 @@ function AbilitySection({
                     {a.name ?? a.id}
                   </span>
                   {usable ? (
-                    <button
-                      type="button"
-                      onClick={() => onUse(a)}
-                      className="rounded border border-ember/60 bg-ember/30 px-2 py-0.5 text-[11px] text-parchment hover:bg-ember/50"
-                    >
-                      Use
-                    </button>
+                    cooldownLabel ? (
+                      // On cooldown — keep the button shape so the
+                      // layout doesn't shift, but disable the click
+                      // and dim it. The label tells the player why
+                      // (e.g. "Used today"). Hovering shows the
+                      // same label via `title` for accessibility.
+                      <button
+                        type="button"
+                        disabled
+                        title={cooldownLabel}
+                        className="rounded border border-parchment/15 bg-ink/20 px-2 py-0.5 text-[11px] text-parchment/45 cursor-not-allowed"
+                      >
+                        {cooldownLabel}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => onUse(a)}
+                        className="rounded border border-ember/60 bg-ember/30 px-2 py-0.5 text-[11px] text-parchment hover:bg-ember/50"
+                      >
+                        Use
+                      </button>
+                    )
                   ) : (
                     <span className="text-[10px] uppercase tracking-wider text-parchment/35">
                       {(a.usable_in ?? []).includes("battle")
