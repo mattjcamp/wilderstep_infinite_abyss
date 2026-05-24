@@ -174,6 +174,7 @@ export function CharacterSheetSim({
   onReturnPersonalItem,
   onEquipPersonalItem,
   onUnequipSlot,
+  onUseAbility,
 }: {
   character: PartyCharacterRef;
   classes: ReadonlyArray<PartyClassRef>;
@@ -218,6 +219,16 @@ export function CharacterSheetSim({
    *  it into the personal inventory (merging with an existing
    *  stack on stackable items). When omitted, the button is hidden. */
   onUnequipSlot?: (memberId: string, slot: string) => void;
+  /** Fires when the player clicks "Use" on a `usable_in: ["party"]`
+   *  ability row (Tinker today; Pickpocket would also flow here
+   *  but it really wants an NPC target so the play overlay points
+   *  the player to the NPC dialog instead). When omitted, the
+   *  button still appears but only flashes the local "preview
+   *  only" line — matches the editor's authoring-preview
+   *  semantics. The host gets the member id + the full ability
+   *  record so a single handler can branch on `ability.id` and
+   *  route to the right picker / dispatcher. */
+  onUseAbility?: (memberId: string, ability: PartyAbilityRef) => void;
 }) {
   const className =
     classes.find((c) => c.id === character.class)?.name ?? character.class;
@@ -755,17 +766,24 @@ export function CharacterSheetSim({
           title="Race Abilities"
           rows={raceAbilities}
           emptyHint={`${raceName} grants no listed abilities.`}
-          onUse={(a) =>
-            setLastAction(`Used ${a.name ?? a.id} — preview only.`)
-          }
+          onUse={(a) => {
+            // Real handler wins when the host provides one (live
+            // play overlay); editor preview falls through to the
+            // local "preview only" flash. The host decides whether
+            // to route to a picker, surface a "do this elsewhere"
+            // hint, or no-op.
+            if (onUseAbility) onUseAbility(character.id, a);
+            else setLastAction(`Used ${a.name ?? a.id} — preview only.`);
+          }}
         />
         <AbilitySection
           title="Class Abilities"
           rows={classAbilities}
           emptyHint={`${className} grants no abilities at level ${level}.`}
-          onUse={(a) =>
-            setLastAction(`Used ${a.name ?? a.id} — preview only.`)
-          }
+          onUse={(a) => {
+            if (onUseAbility) onUseAbility(character.id, a);
+            else setLastAction(`Used ${a.name ?? a.id} — preview only.`);
+          }}
         />
       </div>
 

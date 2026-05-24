@@ -35,8 +35,17 @@
 import { useEffect, useState } from "react";
 
 /** All placard variants. Exported so the host's celebration-queue
- *  state type stays in lockstep with the component's prop shape. */
-export type PlayQuestCelebrationKind = "step" | "step-final" | "quest";
+ *  state type stays in lockstep with the component's prop shape.
+ *  Quests use "step" / "step-final" / "quest"; race-active abilities
+ *  use "pickpocket" / "tinker" so the placard's label can describe
+ *  what just happened ("Pickpocketed!" / "Tinkered Up!") rather
+ *  than misreporting an ability use as a quest step. */
+export type PlayQuestCelebrationKind =
+  | "step"
+  | "step-final"
+  | "quest"
+  | "pickpocket"
+  | "tinker";
 
 export interface PlayQuestCelebrationProps {
   /** "step"       = an intermediate kill/retrieve credit, quest still ongoing.
@@ -66,6 +75,12 @@ const TIMINGS = {
   step:         { fadeIn: 200, hold: 2100, fadeOut: 500 },
   "step-final": { fadeIn: 230, hold: 2700, fadeOut: 550 },
   quest:        { fadeIn: 260, hold: 3000, fadeOut: 600 },
+  // Race-ability placards reuse the step footprint — the moment
+  // isn't quite a quest payoff but it IS something the player chose
+  // to do and should see acknowledged. Hold a little longer so the
+  // loot / item name has time to register.
+  pickpocket:   { fadeIn: 210, hold: 2500, fadeOut: 520 },
+  tinker:       { fadeIn: 210, hold: 2500, fadeOut: 520 },
 } as const;
 
 export function PlayQuestCelebration({
@@ -104,6 +119,7 @@ export function PlayQuestCelebration({
 
   const isQuest = kind === "quest";
   const isStepFinal = kind === "step-final";
+  const isRaceAbility = kind === "pickpocket" || kind === "tinker";
   const opacity = phase === "enter" || phase === "exit" ? 0 : 1;
   const translateY = phase === "enter" ? -8 : 0;
   const fadeDur =
@@ -117,7 +133,11 @@ export function PlayQuestCelebration({
       ? "Quest Complete"
       : kind === "step-final"
         ? "Objectives Complete"
-        : "Step Complete";
+        : kind === "pickpocket"
+          ? "Pickpocketed!"
+          : kind === "tinker"
+            ? "Tinkered Up!"
+            : "Step Complete";
 
   return (
     <div
@@ -129,21 +149,21 @@ export function PlayQuestCelebration({
           opacity,
           transform: `translateY(${translateY}px)`,
           transition: `opacity ${fadeDur}ms ease-out, transform ${fadeDur}ms ease-out`,
-          // Gold halo. The quest variant gets the full bloom; the
-          // step-final variant gets a softer bloom (so it reads
-          // brighter than a plain step but isn't competing visually
-          // with the eventual turn-in placard); plain step is just
-          // an inset ring.
+          // Gold halo. The quest variant gets the full bloom;
+          // step-final + race-ability variants share a softer bloom
+          // (so they read brighter than a plain step but aren't
+          // competing visually with the eventual turn-in placard);
+          // plain step is just an inset ring.
           boxShadow: isQuest
             ? "0 0 24px 4px rgba(255, 215, 80, 0.45), 0 0 0 1px rgba(255, 215, 80, 0.4) inset"
-            : isStepFinal
+            : isStepFinal || isRaceAbility
               ? "0 0 14px 2px rgba(255, 215, 80, 0.35), 0 0 0 1px rgba(255, 215, 80, 0.5) inset"
               : "0 0 0 1px rgba(255, 215, 80, 0.35) inset",
         }}
         className={
           isQuest
             ? "rounded-md border border-amber-300/50 bg-ink/90 px-6 py-3 text-center shadow-xl"
-            : isStepFinal
+            : isStepFinal || isRaceAbility
               ? "rounded border border-amber-300/45 bg-ink/90 px-4 py-2 text-center shadow-lg"
               : "rounded border border-amber-300/30 bg-ink/85 px-4 py-2 text-center shadow-lg"
         }
@@ -152,7 +172,7 @@ export function PlayQuestCelebration({
           className={
             isQuest
               ? "font-display text-[10px] uppercase tracking-[0.18em] text-amber-300/85"
-              : isStepFinal
+              : isStepFinal || isRaceAbility
                 ? "font-display text-[9px] uppercase tracking-[0.18em] text-amber-300/90"
                 : "font-display text-[9px] uppercase tracking-[0.18em] text-amber-300/75"
           }
@@ -173,10 +193,11 @@ export function PlayQuestCelebration({
             className={
               isQuest
                 ? "mt-0.5 text-xs italic text-parchment/70"
-                : isStepFinal
+                : isStepFinal || isRaceAbility
                   ? // Slightly brighter than a step subtitle so the
-                    // "Return to {giver}" prompt reads as an action
-                    // line, not background flavor.
+                    // "Return to {giver}" prompt (or the stolen-item
+                    // name) reads as an action line, not background
+                    // flavor.
                     "mt-0.5 text-[11px] text-amber-100/85"
                   : "mt-0.5 text-[11px] italic text-parchment/65"
             }

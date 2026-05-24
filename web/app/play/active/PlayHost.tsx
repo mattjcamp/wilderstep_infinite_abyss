@@ -191,6 +191,10 @@ import { loadWorld, saveWorld } from "@/play/save";
 import { addToInventory } from "@/play/inventoryStacking";
 import { applyCombatResultToSave } from "@/play/syncFromBattle";
 import { awardQuestXpToSavedMembers } from "@/play/awardQuestXp";
+import {
+  attemptPickpocket,
+  canPickpocket,
+} from "@/play/raceAbilities";
 import type { WorldSave } from "@/play/saveTypes";
 import type {
   SimCharacter,
@@ -631,11 +635,19 @@ export function PlayHost() {
         { key, kind: args.kind, title: args.title, subtitle: args.subtitle },
       ]);
       // SFX choice tracks how big the moment feels — quest turn-ins
-      // get the full victory fanfare, intermediate steps get the
-      // smaller level_up chirp, and final-step (objectives done but
-      // not yet turned in) uses the same chirp since the bigger
-      // payoff still belongs to the actual turn-in.
-      Sfx.play(args.kind === "quest" ? "victory" : "level_up");
+      // get the full victory fanfare; intermediate / final steps get
+      // the smaller level_up chirp; race-active abilities use a
+      // thematic cue (lockpick-style click for the Halfling's deft
+      // pickpocket, a magic-burst chime for the Gnome's tinkering).
+      const sfx =
+        args.kind === "quest"
+          ? "victory"
+          : args.kind === "pickpocket"
+            ? "lock_pick_success"
+            : args.kind === "tinker"
+              ? "magic_burst"
+              : "level_up";
+      Sfx.play(sfx);
       // Spawn the celebratory burst at the party's tile. Sim's
       // snapshot has the live position; the renderer turns that into
       // pixel coordinates. Skipping silently when either is missing
@@ -649,16 +661,19 @@ export function PlayHost() {
         // Gold burst — matches the quest-glow halo so the
         // celebration reads as part of the same visual family.
         // Burst radius grows with the moment: a mid-step credit
-        // gets a small puff (56), the final-step "objectives done"
-        // moment gets a wider one (68) so it stands out from the
-        // routine steps without stealing the full turn-in's
-        // payoff (80).
+        // gets a small puff (56), race-active abilities get a
+        // slightly wider one (62) so the player notices over the
+        // map chatter, the final-step "objectives done" moment
+        // gets a wider one (68) so it stands out from the routine
+        // steps without stealing the full turn-in's payoff (80).
         const burstRadius =
           args.kind === "quest"
             ? 80
             : args.kind === "step-final"
               ? 68
-              : 56;
+              : args.kind === "pickpocket" || args.kind === "tinker"
+                ? 62
+                : 56;
         radialBurst(r.scene, { x, y }, 0xffd750, 0xffe580, burstRadius).catch(
           () => undefined,
         );
@@ -3777,6 +3792,25 @@ export function PlayHost() {
               /* scene disposed / audio not ready — skip */
             }
           }}
+          onRaceAbilityFlash={(flash) => {
+            // The Tinker happened inside the modal overlay; the
+            // player needs an unmistakable confirmation that
+            // something happened — a placard with the item name + a
+            // matching SFX + a gold burst on the party tile.
+            // `fireQuestCelebration` already handles all three: it
+            // enqueues the placard, plays the kind-mapped SFX, and
+            // spawns the gold burst on the party's current pixel
+            // (via Phaser). Routing through it here keeps the
+            // race-ability cue in lockstep with the rest of the
+            // game's "you-just-did-something" feedback family.
+            if (flash.kind === "tinker") {
+              fireQuestCelebration({
+                kind: "tinker",
+                title: `${flash.memberName} tinkers`,
+                subtitle: flash.itemName,
+              });
+            }
+          }}
         />
       ) : null}
 
@@ -3844,6 +3878,16 @@ export function PlayHost() {
         const hasCounter =
           !!counterId &&
           !!state.catalog.counters.find((c) => c.id === counterId);
+        // Steal button — Halfling-only, once per NPC. The dialog
+        // hides the button entirely (rather than greying it) when
+        // unavailable, matching the action-menu convention.
+        // Read the LIVE save from saveRef (state.save lags behind
+        // quest / loot mutations that don't trigger setState) so
+        // freshly-pickpocketed NPCs disappear the button correctly.
+        const liveSave = saveRef.current ?? state.save;
+        const stealAvailable =
+          !!liveSave &&
+          canPickpocket(liveSave, state.catalog.characters, npc.id);
         return (
           <PlayNpcDialogOverlay
             npcName={npc.name ?? npc.id}
@@ -3858,6 +3902,91 @@ export function PlayHost() {
               // tile directly.
               setNpcDialogId(null);
               setCounterShopId(counterId);
+            }}
+            canSteal={stealAvailable}
+            onSteal={() => {
+              const save = saveRef.current;
+              const catalog = catalogRef.current;
+              if (!save || !catalog) return;
+              // Capture pre-attempt totals so we can compute exactly
+              // what was lifted (gold delta + new inventory row /
+              // bumped stack) and surface it on the placard, without
+              // re-parsing the helper's prose message.
+              const prevGold = save.party.gold;
+              const prevInvByItem = new Map(
+                save.party.inventory.map(
+                  (e) =>
+                    [e.item, e.charges ?? 1] as const,
+                ),
+              );
+              const result = attemptPickpocket(
+                save,
+                catalog.characters,
+                catalog.items.map((i) => ({
+                  id: i.id,
+                  // PlayItem doesn't model `stackable` in its slim
+                  // shape — widen the read so attemptPickpocket's
+                  // stacking branch fires on the right items
+                  // (Arrows, Lockpicks, etc.) just like the quest /
+                  // shop paths do.
+                  stackable: (i as { stackable?: boolean }).stackable,
+                })),
+                npc.id,
+              );
+              // Surface the outcome in the log regardless of
+              // success — refusals ("already pickpocketed") are
+              // information the player needs to see.
+              setLogMessages((prev) => {
+                const next = [...prev, result.message];
+                return next.length > MAX_LOG
+                  ? next.slice(next.length - MAX_LOG)
+                  : next;
+              });
+              if (result.ok && result.nextSave) {
+                saveWorld(result.nextSave);
+                saveRef.current = result.nextSave;
+                // Diff the new save against pre-attempt totals to
+                // figure out what the helper actually awarded.
+                // Gold delta wins when non-zero; otherwise scan
+                // for the inventory row that gained a charge or
+                // appeared fresh. Falls back to the helper's prose
+                // message when neither lane changed (defensive —
+                // shouldn't happen for an ok result).
+                const goldDelta =
+                  result.nextSave.party.gold - prevGold;
+                let lootLabel = "";
+                if (goldDelta > 0) {
+                  lootLabel = `+${goldDelta} gold`;
+                } else {
+                  for (const row of result.nextSave.party.inventory) {
+                    const prevQty = prevInvByItem.get(row.item) ?? 0;
+                    const newQty = row.charges ?? 1;
+                    if (newQty > prevQty) {
+                      const def = catalog.items.find(
+                        (i) => i.id === row.item,
+                      );
+                      lootLabel = def?.name ?? row.item;
+                      break;
+                    }
+                  }
+                }
+                fireQuestCelebration({
+                  kind: "pickpocket",
+                  // Title is "Stole from {npc}" so the player sees
+                  // both verbs in the placard's primary line.
+                  title: `Stole from ${npc.name ?? npc.id}`,
+                  // Subtitle is the loot — gold delta or item
+                  // name. Empty subtitle falls through to a
+                  // title-only placard (still informative; an
+                  // unknown loot lane is rare).
+                  subtitle: lootLabel || undefined,
+                });
+              }
+              // Close the dialog on success so the player can see
+              // the placard + log line without the modal in the way.
+              // On refusal leave it open so they can read the NPC's
+              // chatter or visit the counter.
+              if (result.ok) setNpcDialogId(null);
             }}
             onClose={() => setNpcDialogId(null)}
           />

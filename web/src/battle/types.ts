@@ -83,6 +83,15 @@ export interface Combatant {
    * class template's `range`; for monsters from `move_range`.
    */
   baseMoveRange: number;
+  /** Additional tiles added on top of `baseMoveRange` at every
+   *  turn refill — race-granted passive movement, today only the
+   *  Elf's Nimble ability (+3). Kept as a separate field rather
+   *  than folded into baseMoveRange so the HUD's `Moves: x/base`
+   *  readout can still expose the class-natural budget if it ever
+   *  wants to, and so a future "stat sheet" surface can show the
+   *  racial contribution as a discrete line. Absent for
+   *  combatants whose race grants no movement bonus. */
+  extraMoveRange?: number;
   /**
    * Position on the arena grid. Initial value is irrelevant — the
    * Combat constructor lays out party and enemies into starting
@@ -126,8 +135,19 @@ export interface Combatant {
   /** Effects rolled on a successful melee hit — drain HP from victim,
    *  Man Eater "consume" debuff, …. */
   onHitEffects?: import("./data/monsters").MonsterOnHit[];
-  /** Bonus tiles after a successful attack — Dragons hit-and-run with
-   *  `post_attack_move: 2`. Default 0. */
+  /** Tiles the actor has left to spend AFTER a bump-attack, in
+   *  place of the normal "attack zeros all movement" rule. Set on
+   *  party members whose race grants Nimble (`post_attack_range`
+   *  from abilities.json — Elves get 2) and on monster specs
+   *  declaring `post_attack_move` (Dragons: 2, for hit-and-run).
+   *
+   *  Composition with Thief Shadow Step: a level-7+ Thief who
+   *  KILLS with a bump retains ALL their remaining movement,
+   *  short-circuiting this field. On any other bump-attack
+   *  outcome (hit, miss, hit-but-no-kill), `postAttackMove` is
+   *  what the engine sets `movePoints` to (replacing the
+   *  default-zero). Absent / 0 = legacy behaviour: the attack
+   *  ends the turn. */
   postAttackMove?: number;
   /** True for humanoid monsters (Orcs, Goblins, Trolls, Dark Mages…).
    *  Charm-style spells filter on this. */

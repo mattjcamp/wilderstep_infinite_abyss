@@ -166,7 +166,7 @@
     {
       "id": "ranger",
       "name": "Ranger",
-      "range": 6,
+      "range": 4,
       "casting_type": [
         "priest"
       ],
@@ -180,17 +180,16 @@
         "long_bow",
         "crossbow",
         "cloth",
-        "leather",
-        "chain"
+        "leather"
       ],
       "abilities": [
         {
           "ability_id": "pick_locks",
-          "min_level": 3
+          "min_level": 5
         },
         {
-          "ability_id": "detect_traps",
-          "min_level": 3
+          "ability_id": "craft_arrows",
+          "min_level": 2
         }
       ]
     },

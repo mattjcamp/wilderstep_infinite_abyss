@@ -156,6 +156,15 @@
         "party"
       ],
       "params": {}
+    },
+    {
+      "id": "craft_arrows",
+      "name": "Craft Arrows",
+      "animation_id": null,
+      "type": "class",
+      "description": "Allows the character to craft a bundle of arrows once per day",
+      "duration": null,
+      "params": {}
     }
   ]
 }

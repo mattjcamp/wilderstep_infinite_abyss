@@ -560,6 +560,15 @@ export class CombatScene extends Phaser.Scene {
    */
   private staticDecor: Phaser.GameObjects.GameObject[] = [];
   private actionCursor = 0;
+  /** The subset of `PARTY_ACTIONS` currently rendered in the
+   *  action menu — repopulated on every `refreshActionMenu` pass to
+   *  contain only the rows whose enable check passes (Cast hides
+   *  when out of MP, Range hides without ammo, etc.). The pointer-
+   *  click + arrow-navigation paths read THIS list so a click on
+   *  rendered row N maps to whatever's actually drawn there, not
+   *  the static PARTY_ACTIONS[N]. Empty when it isn't the player's
+   *  turn (the whole menu collapses then). */
+  private visibleActions: ActionEntry[] = [];
 
   // Sub-mode + picker state
   private mode: SceneMode = "default";
@@ -904,7 +913,17 @@ export class CombatScene extends Phaser.Scene {
     // self-contained for testing.
     let party: Combatant[];
     if (this.fromWorld && gameState.partyData) {
-      party = combatantsFromParty(gameState.partyData, this.items, this.classTemplates);
+      // Race + abilities catalogs flow through so race-passive
+      // movement bonuses (Elf Nimble: +3 base, 2 post-attack) get
+      // stamped onto each combatant at construction. Missing
+      // catalogs degrade silently — combatants build the same way
+      // they did before Nimble landed.
+      party = combatantsFromParty(
+        gameState.partyData,
+        this.items,
+        this.classTemplates,
+        { races: this.raceCatalog, abilities: this.abilities },
+      );
     } else {
       party = makeSampleParty();
     }
@@ -1668,19 +1687,30 @@ export class CombatScene extends Phaser.Scene {
     );
     cy += 24;
 
-    // Action menu
+    // Action menu — one Phaser row per slot in PARTY_ACTIONS. The
+    // upper bound stays fixed so the layout reserves enough screen
+    // real estate for every action even when most are hidden; the
+    // refresh pass below blanks out rows it isn't using.
     for (let i = 0; i < PARTY_ACTIONS.length; i++) {
-      const a = PARTY_ACTIONS[i];
       const ry = cy + i * 22;
       const handle = this.add
         .rectangle(HUD_X + 12, ry, HUD_W - 24, 22, C.selectBg, 0)
         .setOrigin(0)
         .setInteractive({ useHandCursor: true });
+      // The captured `i` is the RENDERED row index — `refreshActionMenu`
+      // packs `visibleActions` into those rows top-down, so clicking
+      // row 2 means "whichever action is currently drawn at row 2."
+      // We look up the live action via the scene field so a refresh
+      // that just shifted rows (e.g. running out of MP hid Cast) still
+      // routes the click correctly.
       handle.on("pointerdown", () => {
-        // refreshActionMenu has the canonical enable check — re-use
-        // it by setting cursor + activating; activate() bails if the
-        // row is disabled at that moment.
-        this.actionCursor = i;
+        const action = this.visibleActions[i];
+        if (!action) return; // blank slot — nothing rendered, ignore.
+        // Translate back to the action's index in PARTY_ACTIONS so the
+        // arrow-key navigation (which still operates on the canonical
+        // list) stays consistent with what was just clicked.
+        const cursorIdx = PARTY_ACTIONS.findIndex((a) => a.id === action.id);
+        if (cursorIdx >= 0) this.actionCursor = cursorIdx;
         try {
           this.activateAction();
         } catch (err) {
@@ -2115,34 +2145,17 @@ export class CombatScene extends Phaser.Scene {
 
   private moveActionCursor(delta: number): void {
     if (this.mode !== "default") return;
-    const member = this.memberForCurrent();
-    const canThrow = !!member && this.partyHasThrowable();
-    const canCast =
-      !!member && member.max_mp > 0 &&
-      this.spells.some(
-        (s) =>
-          spellIsCombatCastable(s, this.classTemplates.get(member.class.toLowerCase()) ?? null) &&
-          member.level >= minLevelFor(s, member.class) &&
-          (member.mp) >= s.mp_cost
-      );
-    const equippedWeapon =
-      member && member.equipped.hands
-        ? this.items.get(member.equipped.hands) ?? null
-        : null;
-    const canRange = !!equippedWeapon && isRanged(equippedWeapon);
-    const canUse = !!member && this.partyHasCombatUsable();
-    const canEquip = !!member && this.memberHasEquippableItem(member);
-    const enabledIdx = PARTY_ACTIONS
-      .map((a, i) => {
-        if (a.id === "range" && !canRange) return -1;
-        if (a.id === "throw" && !canThrow) return -1;
-        if (a.id === "cast"  && !canCast)  return -1;
-        if (a.id === "use"   && !canUse)   return -1;
-        if (a.id === "equip" && !canEquip) return -1;
-        return i;
-      })
-      .filter((i) => i >= 0);
-    if (enabledIdx.length === 0) return;
+    // Shared source of truth with `refreshActionMenu` — both consult
+    // the same enable predicates so the cursor can never land on a
+    // hidden row. Earlier this method duplicated the predicate list
+    // and silently drifted (the Abilities row wasn't in its skip
+    // table, so up/down would stop on an invisible "Abilities" slot
+    // for any non-Cleric/Paladin). Centralising kills the drift.
+    const visible = this.computeVisibleActions();
+    if (visible.length === 0) return;
+    const enabledIdx = visible.map((a) =>
+      PARTY_ACTIONS.findIndex((p) => p.id === a.id),
+    );
     let cur = enabledIdx.indexOf(this.actionCursor);
     if (cur < 0) cur = 0;
     const next = (cur + delta + enabledIdx.length) % enabledIdx.length;
@@ -5147,17 +5160,28 @@ export class CombatScene extends Phaser.Scene {
     );
   }
 
-  private refreshActionMenu(): void {
+  /** Single source of truth for "which action rows should be
+   *  visible right now." Read by `refreshActionMenu` (drives what
+   *  gets rendered) AND by `moveActionCursor` (so arrow keys cycle
+   *  through the same set the player sees) — keeping the logic in
+   *  one place is what prevents drift bugs like the one where
+   *  Abilities was rendered-hidden but the cursor could still land
+   *  on it.
+   *
+   *  When it's not the player's turn the list collapses to empty;
+   *  the action menu hides entirely until control returns. */
+  private computeVisibleActions(): ActionEntry[] {
     // Player can act only on real party members, not on AI summons
     // that share the party side.
     // A consumed party member doesn't get a player turn — their
     // initiative slot is replaced by the engine's STR-save tick.
-    // Strip player control so the action menu greys out and the
-    // input gate (`canTakePlayerInput`) refuses keystrokes.
+    // During an AI / consumed turn nothing is selectable, so we
+    // collapse the menu to empty.
     const playerTurn =
       this.combat.current.side === "party" &&
       !isAiControlled(this.combat.current) &&
       !this.combat.current.consumed;
+    if (!playerTurn) return [];
     const member = this.memberForCurrent();
     // Per-action enable state — dynamic based on the active member.
     const canThrow = !!member && this.partyHasThrowable();
@@ -5198,34 +5222,68 @@ export class CombatScene extends Phaser.Scene {
     // surfaced on the very next refresh.
     const canAbility = !!member && this.memberHasCombatAbility();
     const isEnabled = (id: ActionId): boolean => {
-      if (!playerTurn) return false;
       if (id === "range")   return canRange;
       if (id === "throw")   return canThrow;
       if (id === "cast")    return canCast;
       if (id === "ability") return canAbility;
       if (id === "use")     return canUse;
       if (id === "equip")   return canEquip;
+      // Attack + End are always selectable during a player turn —
+      // Attack lets the player see "no adjacent enemy" feedback in
+      // the log; End is the no-op the player needs when nothing
+      // else applies.
       return true;
     };
+    return PARTY_ACTIONS.filter((a) => isEnabled(a.id));
+  }
+
+  private refreshActionMenu(): void {
+    // Build the visible subset — only enabled rows survive (so the
+    // menu naturally collapses to "Attack + End" for a fresh
+    // Fighter with no adjacent foes, or to nothing during a monster
+    // turn). Rendered top-down, with blank rows below the cluster
+    // to keep the reserved layout space available without showing
+    // anything. Stored on the scene so the pointerdown handlers
+    // (bound at create() to fixed row indices) can map row N back
+    // to the action currently drawn at that row.
+    this.visibleActions = this.computeVisibleActions();
+    // Snap the action cursor to the nearest enabled action when its
+    // current target just got filtered out (e.g. it sat on Cast and
+    // the caster ran out of MP). Without this the next ENTER press
+    // would activate an off-screen row, or worse, no row at all.
+    // Falls back to 0 (Attack) when the visible list is empty —
+    // benign because `activateAction` gates on player turn anyway.
+    if (
+      this.visibleActions.length > 0 &&
+      !this.visibleActions.some((a) => PARTY_ACTIONS.indexOf(a) === this.actionCursor)
+    ) {
+      this.actionCursor = PARTY_ACTIONS.indexOf(this.visibleActions[0]);
+    }
     for (let i = 0; i < PARTY_ACTIONS.length; i++) {
-      const a = PARTY_ACTIONS[i];
       const text = this.actionTexts[i];
       const handle = this.actionRowHandles[i];
-      const enabled = isEnabled(a.id);
-      const cursor = playerTurn && i === this.actionCursor;
-      // Enabled rows (whether or not the cursor is on them) share the
-      // same bright body colour — the leading `> ` arrow on the
-      // cursor row is the only differentiator. This sidesteps the
-      // "Attack looks dimmer than End Turn so I assume it's disabled"
-      // confusion that the previous `dim`-vs-`body` split caused.
-      // `setColor` rather than `setStyle` so Phaser flushes the
-      // colour change reliably even when the text body hasn't changed.
-      const color = enabled ? C.body : C.faint;
-      text.setColor(hex(color));
+      const action = this.visibleActions[i];
+      if (!action) {
+        // No backing action at this row — blank it out. Empty text +
+        // zero-alpha fill + no interactivity so a stray pointer
+        // can't activate it.
+        text.setText("");
+        handle.setFillStyle(C.selectBg, 0);
+        handle.disableInteractive();
+        continue;
+      }
+      // Re-enable interaction every refresh so a row that was just
+      // hidden (and had its hit-box dropped) wakes up cleanly when
+      // the conditions that disabled it reverse mid-fight.
+      handle.setInteractive({ useHandCursor: true });
+      // Cursor highlight — `actionCursor` is still an index into
+      // PARTY_ACTIONS, so the visible row "owns" the cursor when its
+      // PARTY_ACTIONS index matches.
+      const cursor = PARTY_ACTIONS.indexOf(action) === this.actionCursor;
+      text.setColor(hex(C.body));
       const prefix = cursor ? "> " : "  ";
-      const suffix = enabled ? "" : "  —";
-      text.setText(`${prefix}${a.label}${suffix}`);
-      handle.setFillStyle(C.selectBg, cursor && enabled ? 1 : 0);
+      text.setText(`${prefix}${action.label}`);
+      handle.setFillStyle(C.selectBg, cursor ? 1 : 0);
     }
   }
 

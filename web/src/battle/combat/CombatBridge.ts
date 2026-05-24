@@ -17,7 +17,79 @@ import type { MonsterPassive } from "../data/monsters";
 import type { PartyMember, Party, EquipmentSlots } from "../world/Party";
 import type { Item } from "../world/Items";
 import type { ClassTemplate } from "../world/Classes";
+import type { Ability } from "../world/Abilities";
 import { activeMembers } from "../world/Party";
+
+/** Minimal race shape the bridge consumes — just the list of
+ *  granted ability ids. Subset of `RaceInfo` so callers don't have
+ *  to import the larger type just to populate this map. */
+export interface BridgeRaceView {
+  abilities?: ReadonlyArray<string>;
+}
+
+/** Optional context for `combatantFromMember` / `combatantsFromParty`
+ *  beyond the class template — the race catalog plus the abilities
+ *  catalog so race-granted passive bonuses (Nimble's `extra_range`
+ *  + `post_attack_range`) can be resolved. Both are optional: when
+ *  either is missing the bridge skips race-side bonuses cleanly,
+ *  matching the legacy behaviour for fixtures and tests that
+ *  haven't plumbed them in. */
+export interface CombatantBuildContext {
+  races?: ReadonlyMap<string, BridgeRaceView>;
+  abilities?: ReadonlyArray<Ability>;
+}
+
+/** Aggregated per-turn / per-attack movement bonuses pulled out of
+ *  a race's ability list. Returned by {@link raceMovementBonuses}
+ *  and stamped onto the Combatant by `combatantFromMember`. Both
+ *  fields default to 0 when no ability contributes. Today the only
+ *  contributor is Nimble (Elf): `{ extra_range: 3, post_attack_range: 2 }`.
+ *  Adding a new race-granted movement passive is purely a data
+ *  change — drop the keys onto the ability's `params` bag and the
+ *  helper picks them up automatically. */
+export interface RaceMovementBonuses {
+  /** Tiles added to `baseMoveRange` at every turn refill. */
+  extraMove: number;
+  /** Tiles the actor has left after a bump-attack, in place of the
+   *  default-zero rule. Composes with Thief Shadow Step: a thief
+   *  who kills with their bump keeps ALL movement and ignores this
+   *  cap. */
+  postAttackMove: number;
+}
+
+/** Walk the race's granted abilities, find any that declare
+ *  movement-bonus keys on their `params` bag, and aggregate the
+ *  totals. Pure — caller passes the abilities catalog by reference.
+ *
+ *  The contributing keys are stable (`extra_range`,
+ *  `post_attack_range`) so a future race ability authored without
+ *  a corresponding code change still contributes movement bonuses
+ *  through the same channel. Unknown ability ids and abilities
+ *  without a `params` bag are silently skipped. */
+export function raceMovementBonuses(
+  raceAbilityIds: ReadonlyArray<string> | undefined,
+  abilities: ReadonlyArray<Ability> | undefined,
+): RaceMovementBonuses {
+  if (!raceAbilityIds || raceAbilityIds.length === 0) {
+    return { extraMove: 0, postAttackMove: 0 };
+  }
+  if (!abilities || abilities.length === 0) {
+    return { extraMove: 0, postAttackMove: 0 };
+  }
+  const grants = new Set(raceAbilityIds);
+  let extraMove = 0;
+  let postAttackMove = 0;
+  for (const a of abilities) {
+    if (!grants.has(a.id)) continue;
+    const params = a.params;
+    if (!params) continue;
+    const ex = params.extra_range;
+    if (typeof ex === "number" && Number.isFinite(ex)) extraMove += ex;
+    const pa = params.post_attack_range;
+    if (typeof pa === "number" && Number.isFinite(pa)) postAttackMove += pa;
+  }
+  return { extraMove, postAttackMove };
+}
 
 /** Map a `wielder_passives` id (declared on an item) to the
  *  monster-side passive shape the combat engine already consumes.
@@ -207,10 +279,21 @@ export function combatantFromMember(
   member: PartyMember,
   items: Map<string, Item>,
   classes?: Map<string, ClassTemplate>,
+  ctx?: CombatantBuildContext,
 ): Combatant {
   const stats = combatStatsFor(member, items);
   const tpl = classes?.get(member.class.toLowerCase());
   const baseMoveRange = tpl ? tpl.range : DEFAULT_MOVE_RANGE;
+  // Race-granted passive movement bonuses (Elf Nimble today —
+  // +3 extra tiles per turn, 2 tiles preserved after a bump-attack).
+  // Folded out into separate fields so the engine's refill and
+  // post-attack paths can read them without a second catalog
+  // lookup. Both default to 0 when the race grants none.
+  const raceView = ctx?.races?.get(member.race.toLowerCase());
+  const moveBonuses = raceMovementBonuses(
+    raceView?.abilities,
+    ctx?.abilities,
+  );
   // Pull the magic-item bonus damage / damage type straight from the
   // equipped weapon. Mirrors the Python game's `bonus_damage` +
   // `damage_type` read inside `_apply_weapon_damage`. Sun Sword shows
@@ -250,6 +333,16 @@ export function combatantFromMember(
     color: [200, 200, 200],
     sprite: member.sprite,
     baseMoveRange,
+    // Race-passive contributions — Nimble (Elf) sets these to
+    // 3 / 2 respectively. Absent fields on a member of a race
+    // that grants no movement passives leave the Combatant
+    // looking exactly like before this code landed.
+    ...(moveBonuses.extraMove > 0
+      ? { extraMoveRange: moveBonuses.extraMove }
+      : {}),
+    ...(moveBonuses.postAttackMove > 0
+      ? { postAttackMove: moveBonuses.postAttackMove }
+      : {}),
     position: { col: 0, row: 0 },
     // Class-ability inputs — Backstab reads class + level + weapon,
     // Shadow Step reads class + level. Stamped here so the Combat
@@ -268,13 +361,17 @@ export function combatantFromMember(
 /** Convert the active four PartyMembers into Combatants for the
  *  combat engine. Pass `classes` (lowercased class name → template)
  *  to honour per-class movement ranges; without it everyone defaults
- *  to the legacy 4-tile budget. */
+ *  to the legacy 4-tile budget. `ctx` carries the race + abilities
+ *  catalogs needed to resolve race-granted passive bonuses (Elf
+ *  Nimble); omitting it skips those bonuses (existing callers /
+ *  test fixtures continue to type-check). */
 export function combatantsFromParty(
   party: Party,
   items: Map<string, Item>,
   classes?: Map<string, ClassTemplate>,
+  ctx?: CombatantBuildContext,
 ): Combatant[] {
-  return activeMembers(party).map((m) => combatantFromMember(m, items, classes));
+  return activeMembers(party).map((m) => combatantFromMember(m, items, classes, ctx));
 }
 
 /**

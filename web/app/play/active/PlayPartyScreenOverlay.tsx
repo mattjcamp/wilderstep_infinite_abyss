@@ -44,6 +44,23 @@ import {
   addToInventory,
   consumeOneFromInventory,
 } from "@/play/inventoryStacking";
+import {
+  attemptTinker,
+  canTinker,
+  generalStockFor,
+  type RaceAbilityCharacterRef,
+} from "@/play/raceAbilities";
+import { dayIndex } from "@/battle/world/GameTime";
+
+/** Minimal counter shape — `id` to find the general store entry,
+ *  `items` for the stock list the Tinker picker presents. Loaded
+ *  from counters.json alongside the other catalogs so the Tinker
+ *  flow doesn't need to re-fetch. */
+interface OverlayCounterRef {
+  id: string;
+  name?: string;
+  items?: ReadonlyArray<string>;
+}
 
 type LoadState =
   | { kind: "loading" }
@@ -56,6 +73,10 @@ type LoadState =
       abilities: PartyAbilityRef[];
       items: PartyItemRef[];
       spells: PartySpellRef[];
+      /** Counters catalog — needed so the Tinker picker can list
+       *  the general-store stock the Gnome is allowed to craft
+       *  from. */
+      counters: OverlayCounterRef[];
       /** Static (catalog) HP/MP indexed by character id. Used by the
        *  Heal handler to cap the live HP at the character's max HP —
        *  the save shape only carries current HP, not the peak. */
@@ -71,6 +92,24 @@ interface PendingHeal {
   spellId: string;
 }
 
+/** Payload for a race-ability "flash" — the host listens for these
+ *  to fire SFX + Phaser visuals at the party tile (and to surface a
+ *  placard in the world view) so the player sees something happened
+ *  beyond the overlay's local cast-message banner. Kept as a
+ *  discriminated union keyed by `kind` so a future Pickpocket /
+ *  Tinker placard can carry ability-specific fields without a
+ *  type-cast on the host side. */
+export type RaceAbilityFlash =
+  | {
+      kind: "tinker";
+      /** Display name of the Gnome whose hands did the work. */
+      memberName: string;
+      /** Item id that was crafted (snake_case). */
+      itemId: string;
+      /** Display name from items.json — for the placard subtitle. */
+      itemName: string;
+    };
+
 export function PlayPartyScreenOverlay({
   moduleId,
   save,
@@ -78,6 +117,7 @@ export function PlayPartyScreenOverlay({
   onMutateSave,
   onSpellCast,
   onItemUse,
+  onRaceAbilityFlash,
 }: {
   moduleId: string;
   save: WorldSave;
@@ -100,6 +140,11 @@ export function PlayPartyScreenOverlay({
    *  Items that have nothing visual to play (Torch, etc.) can just
    *  not be dispatched in the host. */
   onItemUse?: (itemId: string) => void;
+  /** Fires AFTER a race-active ability resolves successfully (today:
+   *  Tinker). The host uses this to play SFX + a Phaser-side visual
+   *  on the party tile AND to render a celebration placard so the
+   *  player has confirmation beyond the overlay's local banner. */
+  onRaceAbilityFlash?: (flash: RaceAbilityFlash) => void;
 }) {
   const [state, setState] = useState<LoadState>({ kind: "loading" });
   /** The list of currently-active party-wide effect ids. Seeded from
@@ -113,6 +158,11 @@ export function PlayPartyScreenOverlay({
    *  then renders a target-picker modal listing the roster. Cleared
    *  on pick or cancel. */
   const [pendingHeal, setPendingHeal] = useState<PendingHeal | null>(null);
+  /** True while the Tinker item-picker overlay is open. Cleared on
+   *  pick / cancel. Modeled on `pendingHeal`'s shape but doesn't
+   *  need any payload — the picker reads its options from the
+   *  loaded counters + items. */
+  const [pendingTinker, setPendingTinker] = useState<boolean>(false);
   /** Transient banner shown after a successful cast / failed cast so
    *  the player gets feedback ("Aldric heals Brenna for 4 HP",
    *  "Not enough MP", etc.). Auto-clears after a short timeout. */
@@ -149,6 +199,7 @@ export function PlayPartyScreenOverlay({
           abilitiesLayers,
           itemsLayers,
           spellsLayers,
+          countersLayers,
         ] = await Promise.all([
           src.loadModelLayers(moduleId, "party"),
           src.loadModelLayers(moduleId, "characters"),
@@ -157,6 +208,7 @@ export function PlayPartyScreenOverlay({
           src.loadModelLayers(moduleId, "abilities"),
           src.loadModelLayers(moduleId, "items"),
           src.loadModelLayers(moduleId, "spells"),
+          src.loadModelLayers(moduleId, "counters"),
         ]);
         if (cancelled) return;
 
@@ -203,6 +255,12 @@ export function PlayPartyScreenOverlay({
             spellsLayers.inherited,
             spellsLayers.ownFile,
           ) as { spells?: PartySpellRef[] } | null)?.spells ?? [];
+        const counters =
+          (mergeModel(
+            "counters",
+            countersLayers.inherited,
+            countersLayers.ownFile,
+          ) as { counters?: OverlayCounterRef[] } | null)?.counters ?? [];
 
         // Overlay live save state on top of the static party record.
         // Spread first so any extra v2 fields (custom palette colours,
@@ -312,6 +370,7 @@ export function PlayPartyScreenOverlay({
           abilities,
           items,
           spells,
+          counters,
           maxHpById,
           maxMpById,
         });
@@ -355,6 +414,103 @@ export function PlayPartyScreenOverlay({
       onMutateSave?.(next);
     },
     [onMutateSave],
+  );
+
+  /** Resolve the player's pick from the Tinker picker. Runs the
+   *  pure `attemptTinker` helper, commits the new save on success,
+   *  and surfaces the result (loot or refusal) in the cast-message
+   *  banner. Refusals from a half-stale picker (item rotated out of
+   *  general stock, day rolled while the picker was open) leave
+   *  the save untouched and explain themselves to the player. */
+  const handleTinkerPick = useCallback(
+    (itemId: string) => {
+      if (state.kind !== "ok") return;
+      // dayIndex reads from the in-game clock — same source the
+      // overworld lighting + HUD clock use. Derived here so the
+      // overlay doesn't need a new prop just to know "what day is
+      // it right now."
+      const currentDay = dayIndex({ totalMinutes: liveSave.clockMinutes ?? 0 });
+      const result = attemptTinker(
+        liveSave,
+        state.characters as ReadonlyArray<RaceAbilityCharacterRef>,
+        state.counters,
+        state.items.map((i) => ({
+          id: i.id,
+          stackable: (i as { stackable?: boolean }).stackable,
+          // The cast keeps the structural overlap typed sanely
+          // while still letting addToInventory read item.stackable.
+        })),
+        itemId,
+        currentDay,
+      );
+      setCastMessage(result.message);
+      if (result.ok && result.nextSave) {
+        commit(result.nextSave);
+        // Notify the host of the celebration so it can fire SFX +
+        // a Phaser visual on the party tile. Doing it here (rather
+        // than from the picker itself) keeps the visual in lockstep
+        // with the save commit + result.
+        onRaceAbilityFlash?.({
+          kind: "tinker",
+          memberName:
+            (state.characters.find((c) => c.race?.toLowerCase() === "gnome")
+              ?.name as string | undefined) ?? "Gnome",
+          itemId,
+          itemName:
+            state.items.find((i) => i.id === itemId)?.name ?? itemId,
+        });
+      }
+      setPendingTinker(false);
+    },
+    [commit, liveSave, state, onRaceAbilityFlash],
+  );
+
+  /** Route the sheet's "Use" button to the right surface per ability
+   *  id. Tinker opens the existing item picker. Pickpocket points
+   *  the player at the NPC dialog (it needs an NPC target, which
+   *  this screen can't provide). Everything else falls through to a
+   *  generic "this ability isn't usable from here" line so a future
+   *  party-active ability that's not yet wired doesn't silently
+   *  no-op. */
+  const handleUseAbility = useCallback(
+    (memberId: string, ability: PartyAbilityRef) => {
+      // `memberId` is ignored today — Tinker is party-wide ("the
+      // Gnome tinkers up an item for the stash"), so the dispatcher
+      // doesn't need a per-member target. Kept in the signature so
+      // a future per-character ability can route by who clicked.
+      void memberId;
+      if (ability.id === "tinker") {
+        // canTinker re-evaluated at click time so a same-second
+        // double-click from the sheet doesn't try to tinker twice.
+        const currentDay = dayIndex({
+          totalMinutes: liveSave.clockMinutes ?? 0,
+        });
+        if (state.kind === "ok" &&
+          canTinker(
+            liveSave,
+            state.characters as ReadonlyArray<RaceAbilityCharacterRef>,
+            currentDay,
+          )) {
+          setPendingTinker(true);
+        } else {
+          setCastMessage("Tinker isn't available right now.");
+        }
+        return;
+      }
+      if (ability.id === "pickpocket") {
+        // Pickpocket needs an NPC target — there isn't one here.
+        // Point the player at the right surface so they don't think
+        // the ability is broken.
+        setCastMessage(
+          "Pickpocket: walk up to an NPC and choose Steal.",
+        );
+        return;
+      }
+      setCastMessage(
+        `${ability.name ?? ability.id} isn't usable from this screen.`,
+      );
+    },
+    [liveSave, state],
   );
 
   /** Per-effect activation side-effects. Mirrors what
@@ -1119,6 +1275,11 @@ export function PlayPartyScreenOverlay({
               {castMessage}
             </div>
           ) : null}
+          {/* Race-active abilities surface on the per-character sheet
+            * now (Use button on the matching ability row) rather than
+            * in a separate party-screen strip. Tinker opens the
+            * item picker below via `handleUseAbility`; Pickpocket
+            * gets a "go talk to an NPC and click Steal" hint. */}
           {state.kind === "loading" ? (
             <p className="text-sm text-parchment/55">Loading party…</p>
           ) : state.kind === "error" ? (
@@ -1141,6 +1302,7 @@ export function PlayPartyScreenOverlay({
               onEquipPersonalItem={handleEquipPersonalItem}
               onUnequipSlot={handleUnequipSlot}
               onCastSpell={handleCastSpell}
+              onUseAbility={handleUseAbility}
               effectDurations={
                 new Map<string, number>([
                   ["magic_light", liveSave.party.magic_light_steps ?? 0],
@@ -1177,6 +1339,105 @@ export function PlayPartyScreenOverlay({
           }}
         />
       ) : null}
+      {/* Tinker item picker — opens when the player clicks the
+       *  Tinker button on the actions strip above the Party
+       *  screen. Lists the General Store stock; clicking an item
+       *  runs the helper, surfaces the result in the cast-message
+       *  banner, and closes the picker. */}
+      {pendingTinker && state.kind === "ok" ? (
+        <TinkerPicker
+          stockIds={generalStockFor(state.counters)}
+          items={state.items}
+          onPick={handleTinkerPick}
+          onCancel={() => setPendingTinker(false)}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+/** Modal picker rendered over the Party screen when the player
+ *  clicks the Tinker action. Lists the deduped General Store
+ *  stock; each row is clickable and routes to `onPick(itemId)`.
+ *  Same dark-modal treatment HealTargetPicker uses for visual
+ *  consistency. ESC cancels (handled via the parent's keydown
+ *  capture, same as the heal picker). */
+function TinkerPicker({
+  stockIds,
+  items,
+  onPick,
+  onCancel,
+}: {
+  stockIds: ReadonlyArray<string>;
+  items: ReadonlyArray<PartyItemRef>;
+  onPick: (itemId: string) => void;
+  onCancel: () => void;
+}) {
+  const itemById = new Map(items.map((i) => [i.id, i] as const));
+  // ESC cancels — mirrors HealTargetPicker's listener pattern so the
+  // parent overlay's close-on-ESC doesn't drop the whole Party
+  // screen by mistake.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        onCancel();
+      }
+    };
+    window.addEventListener("keydown", onKey, { capture: true });
+    return () =>
+      window.removeEventListener("keydown", onKey, { capture: true });
+  }, [onCancel]);
+
+  return (
+    <div
+      onClick={onCancel}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="flex max-h-[80vh] w-full max-w-sm flex-col rounded-lg border border-parchment/25 bg-ink/95 shadow-2xl"
+      >
+        <div className="flex items-center justify-between border-b border-parchment/15 px-3 py-1.5">
+          <h3 className="font-display text-sm text-parchment">
+            Tinker — pick an item
+          </h3>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="rounded border border-parchment/20 px-2 py-0.5 text-xs text-parchment/70 hover:bg-ink/40"
+          >
+            Cancel
+          </button>
+        </div>
+        {stockIds.length === 0 ? (
+          <p className="px-3 py-4 text-sm text-parchment/55">
+            No general-store stock in this module.
+          </p>
+        ) : (
+          <ul className="flex flex-col gap-1 overflow-auto p-2">
+            {stockIds.map((id) => {
+              const def = itemById.get(id);
+              return (
+                <li key={id}>
+                  <button
+                    type="button"
+                    onClick={() => onPick(id)}
+                    className="flex w-full items-center justify-between rounded border border-parchment/20 bg-ink/40 px-3 py-2 text-left text-sm text-parchment hover:bg-ink/60"
+                    title={def?.description ?? id}
+                  >
+                    <span className="font-display">{def?.name ?? id}</span>
+                    <span className="font-mono text-[11px] text-parchment/55">
+                      {id}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }

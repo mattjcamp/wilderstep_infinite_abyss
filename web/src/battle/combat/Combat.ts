@@ -527,15 +527,38 @@ export class Combat {
         return { kind: "blocked", reason: "ally" };
       }
       // Enemy in the way → bump attack. Normally this zeros the
-      // remaining moves so the turn ends after the swing. Thief
-      // Shadow Step (level 7+) overrides this on a killing blow —
-      // the Thief keeps whatever movement they had left so they
-      // can step away from the corpse before the next enemy turn,
-      // matching the Python game's PHASE_SHADOW_STEP behaviour.
+      // remaining moves so the turn ends after the swing. Two
+      // overrides, in priority order:
+      //
+      //   1. Thief Shadow Step (level 7+, kill required) — keeps
+      //      ALL remaining movement. Strictly the most powerful
+      //      override; matches the Python game's
+      //      PHASE_SHADOW_STEP behaviour.
+      //   2. `postAttackMove` (Elf Nimble: 2, Dragon hit-and-run:
+      //      2) — caps movement at the actor's per-attack
+      //      allowance regardless of whether the attack killed.
+      //      Fires for hit / miss / hit-not-killed alike (the
+      //      ability description is "move after an attack," not
+      //      "move after a kill"). Replaces — not adds to —
+      //      whatever was left, so the player can't bank
+      //      pre-attack movement and then claim the post-attack
+      //      bonus on top.
+      //
+      // When neither applies the default zero-out runs, matching
+      // the legacy "attack ends the turn" rule.
       const result = this.attack(occupant.id);
       if (result.killed && canShadowStep(actor) && !this.isOver) {
         this.log.push(
           `${actor.name} Shadow Steps! (${this.movePoints} moves remaining)`,
+        );
+      } else if (
+        !this.isOver &&
+        typeof actor.postAttackMove === "number" &&
+        actor.postAttackMove > 0
+      ) {
+        this.movePoints = actor.postAttackMove;
+        this.log.push(
+          `${actor.name} darts back. (${actor.postAttackMove} moves remaining)`,
         );
       } else {
         this.movePoints = 0;
@@ -1172,10 +1195,12 @@ export class Combat {
   }
 
   private refillMovePoints(): void {
-    // baseMoveRange + active range_bonus buffs (Long Shanks). Mirrors
-    // the Python game's range_buffs entry being added to the per-turn
-    // movement allowance.
+    // baseMoveRange + race-passive `extraMoveRange` (Elf Nimble: +3)
+    // + active range_bonus buffs (Long Shanks). Mirrors the Python
+    // game's per-turn refill: the class budget, the race's innate
+    // bonus, and any currently-stacked buffs sum into one budget.
+    const racial = this.current.extraMoveRange ?? 0;
     const bonus = sumBuff(this.buffs.get(this.current.id), "range_bonus");
-    this.movePoints = this.current.baseMoveRange + bonus;
+    this.movePoints = this.current.baseMoveRange + racial + bonus;
   }
 }

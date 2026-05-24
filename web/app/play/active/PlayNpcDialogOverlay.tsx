@@ -28,6 +28,8 @@ export function PlayNpcDialogOverlay({
   dialogs,
   hasCounter,
   onVisitCounter,
+  canSteal,
+  onSteal,
   onClose,
 }: {
   npcName: string;
@@ -35,6 +37,17 @@ export function PlayNpcDialogOverlay({
   dialogs: ReadonlyArray<DialogLine>;
   hasCounter: boolean;
   onVisitCounter: () => void;
+  /** True when an alive Halfling is in the party AND this NPC
+   *  hasn't been pickpocketed yet. Surfaces the Steal button in
+   *  the footer. Hidden entirely (rather than greyed) when false,
+   *  matching the action-menu convention — the player only sees
+   *  the option when it's actually doable. */
+  canSteal?: boolean;
+  /** Fires when the player clicks Steal. The host runs the
+   *  Pickpocket attempt, persists the per-NPC marker into the
+   *  save, surfaces the loot / refusal message in the log, and
+   *  decides whether to close the dialog. */
+  onSteal?: () => void;
   onClose: () => void;
 }) {
   const [cursor, setCursor] = useState(0);
@@ -169,6 +182,20 @@ export function PlayNpcDialogOverlay({
             ) : null}
           </div>
           <div className="flex items-center gap-2">
+            {canSteal && onSteal ? (
+              <button
+                type="button"
+                onClick={onSteal}
+                // Same "ember" treatment Visit Counter uses since
+                // both are decisive actions the player is OPTING
+                // INTO. Keeps the visual weight aligned with their
+                // role; Leave stays neutral.
+                className="rounded border border-amber-400/60 bg-amber-400/20 px-3 py-1 text-xs text-parchment hover:bg-amber-400/35"
+                title="Halfling: attempt to pick this NPC's pocket. Once per NPC, with a chance of failure."
+              >
+                Steal
+              </button>
+            ) : null}
             {hasCounter ? (
               <button
                 type="button"

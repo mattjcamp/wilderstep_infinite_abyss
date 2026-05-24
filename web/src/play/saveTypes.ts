@@ -166,6 +166,19 @@ export interface SavedPartyState {
    *  on foot. Restored to the kernel via `initialCurrentBoatSprite`
    *  so the boat overlay re-renders with the right art. */
   currentBoatSprite?: string | null;
+  /** NPC ids the party has already pickpocketed this run. The
+   *  Halfling's race ability is once-per-NPC for the lifetime of
+   *  the save, so we persist the per-NPC marker here rather than
+   *  in the v1 `gameState.pickpocketedNpcs` sandbox set (which
+   *  doesn't survive a reload). Absent in legacy saves; treated
+   *  as the empty set. */
+  pickpocketedNpcs?: ReadonlyArray<string>;
+  /** In-game `dayIndex` (from GameTime) of the most recent Gnome
+   *  Tinker use. The ability gates on `currentDay !== last_tinker_day`
+   *  so the party can craft once per in-game day. Absent in legacy
+   *  saves; treated as "never used" so the first attempt succeeds
+   *  regardless of when the save was loaded. */
+  last_tinker_day?: number;
   /** Roster — ordered list of character ids. Identity stays in
    *  `members` keyed by id; this is just the turn order. */
   roster: ReadonlyArray<string>;

@@ -347,6 +347,7 @@ export function PartyScreen({
   onUsePersonalItem,
   onReturnPersonalItem,
   onEquipPersonalItem,
+  onUseAbility,
   onUnequipSlot,
   effectDurations,
 }: {
@@ -410,6 +411,13 @@ export function PartyScreen({
   /** Move an equipped item back into the character's personal
    *  inventory. */
   onUnequipSlot?: (memberId: string, slot: string) => void;
+  /** Fires when the player clicks "Use" on a race / class ability
+   *  in the drilled-in character sheet. Forwarded straight to
+   *  `CharacterSheetSim.onUseAbility`. Hosts route by `ability.id`
+   *  (Tinker → opens the item picker, Pickpocket → tells the
+   *  player to use Steal from the NPC dialog, …). When omitted,
+   *  the sheet falls back to its built-in "preview only" flash. */
+  onUseAbility?: (memberId: string, ability: PartyAbilityRef) => void;
   /** Remaining-step counter per active effect id. Used to render a
    *  "(N steps)" suffix on the matching effect row. Effects that
    *  have a counter but aren't yet in `activeEffectIds` (e.g. a
@@ -798,6 +806,7 @@ export function PartyScreen({
         onReturnPersonalItem={onReturnPersonalItem}
         onEquipPersonalItem={onEquipPersonalItem}
         onUnequipSlot={onUnequipSlot}
+        onUseAbility={onUseAbility}
       />
     );
   }
