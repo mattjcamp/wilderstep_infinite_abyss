@@ -79,11 +79,14 @@
       "name": "Herbalism",
       "animation_id": null,
       "type": "class",
-      "description": "Nature lore spots reagents in the wild. When the party examines a tile, the holder rolls an INT save (d20 + INT mod vs DC 13) — success identifies a potion reagent. Alchemists in particular benefit from a doubled find rate.",
+      "description": "Nature lore spots reagents in the wild while travelling. Each step on a foraging tile (grass, forest, …) has a small chance to turn up a potion reagent. Alchemists in particular benefit from a doubled find rate.",
       "duration": "permanent",
       "params": {
         "dc": 13,
-        "save_stat": "intelligence"
+        "save_stat": "intelligence",
+        "find_chance": 0.02,
+        "alchemist_multiplier": 2,
+        "terrain": ["grass", "grass2", "forest", "palm_tree"]
       }
     },
     {
@@ -162,8 +165,32 @@
       "name": "Craft Arrows",
       "animation_id": null,
       "type": "class",
-      "description": "Allows the character to craft a bundle of arrows once per day",
+      "description": "Allows the character to craft a bundle of arrows or bolts once per day.",
       "duration": null,
+      "usable_in": [
+        "party"
+      ],
+      "params": {}
+    },
+    {
+      "id": "smite_undead",
+      "name": "Smite Undead",
+      "animation_id": null,
+      "type": "class",
+      "description": "Attacks against undead creatures deal double damage",
+      "duration": null,
+      "params": {}
+    },
+    {
+      "id": "craft_fire_arrows",
+      "name": "Craft Fire Arrows",
+      "animation_id": null,
+      "type": "class",
+      "description": "Allows the character to craft a bundle of fire arrows once per day.",
+      "duration": null,
+      "usable_in": [
+        "party"
+      ],
       "params": {}
     }
   ]

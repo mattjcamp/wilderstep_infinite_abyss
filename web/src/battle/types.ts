@@ -188,6 +188,36 @@ export interface AttackResult {
    *  Always implies `critical === true`. The scene reads this flag to
    *  play the dedicated stinger animation/log line. */
   backstab?: boolean;
+  /** True when the attacker met the Backstab prerequisites
+   *  (`canBackstab` passed) AND the engine actually rolled the DEX-
+   *  vs-DC-12 save — regardless of whether the save succeeded. The
+   *  scene reads this to surface a "missed the opening" floater on
+   *  failure so the player can SEE that the ability was attempted
+   *  (the user reported confusion about whether Backstab was firing
+   *  at all when the save kept failing silently). When
+   *  `backstabAttempted` is true and `backstab` is false, the save
+   *  rolled but missed; when `backstab` is true, `backstabAttempted`
+   *  is also true. */
+  backstabAttempted?: boolean;
+  /** True when the attack triggered the Thief's Shadow Step — a
+   *  killing bump that left the attacker's remaining movement
+   *  intact instead of zeroing it. Set inside `Combat.tryMove`'s
+   *  bump branch (the field rides on the same AttackResult the
+   *  scene already consumes for backstab / killed / damage). The
+   *  scene reads this flag to start a brief "thief is in shadow
+   *  step" pulse on the attacker's body sprite — a subtle visual
+   *  cue that the ability fired without overshadowing the
+   *  Backstab punch. */
+  shadowStepped?: boolean;
+  /** True when the Paladin's Smite Undead doubled the rolled damage
+   *  on this swing (attacker is a Paladin, target carries the
+   *  `undead` flag, and the strike landed). The scene reads this to
+   *  paint a holy / gold burst over the target plus a "SMITE!" label
+   *  — the cue family that matches Backstab / Shadow Step so the
+   *  player can recognise "an active ability just fired" at a
+   *  glance. The damage field on the result already reflects the
+   *  doubled total, so no separate "smite damage" math is needed. */
+  smiteUndead?: boolean;
   /** Damage dealt; 0 on miss. */
   damage: number;
   /** Was the target reduced to 0 HP by this attack? */

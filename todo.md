@@ -1,15 +1,19 @@
-# PLaythrough
-
-- Make Dragon of Something adventure and do a playthrough
-- Do a playthrough with the alternate party
 
 # Polish
 
-- Check the Race/Class abilities to see if they are implemented 
-- Make sure we are not missing abilities, audit and change abilities if needed (Ranger can make arrows instead of thief abilites, Paladins are missing Smite Undead)
+- Make sure we are not missing abilities, audit and change abilities if needed
+- Make sure Herbalism is implemented
+
+- Implement Potion Brewing crafting ability
+
+- Remove the Knock spell "Use" button from the character sheet since it can only be casted at a locked door from the map
+
+- Fire Arrows probably need to be implemented, when a range attack happens if two types of arrows are present the player will need to choose which arrow to use
 
 - Make sure the monster sprites have transparent backgrounds. Many have black backgrounds which make the monster look like a block on the maps.
 
+- Update the Data Dictionaries
+- Use the Data Model to create a Player's Manual using these items: Race, Character Class, Abilities, Spells, Items, Monsters. Make tables so they can compare items. For the Item table group by type of Item and sort by power (if applicable)
 
 # V3 Ideas
 

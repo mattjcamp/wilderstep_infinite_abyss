@@ -86,6 +86,23 @@ export function BattleSimMount({
       const { setActiveModule } = await import("@/battle/world/Module");
       setActiveModule(moduleId);
 
+      // Reset gameState.partyData so the simulator always boots from
+      // the live characters.json catalog (level 10 demo party), not
+      // from a leftover save-derived snapshot.
+      //
+      // Background: the play-time path's seedBattleCaches() populates
+      // `gameState.partyData` from the active save (Pippin LVL 1, etc.).
+      // CombatScene.preload then does
+      //   `if (!gameState.partyData) gameState.partyData = await loadParty()`
+      // — which REUSES whatever is there. Without this reset, opening
+      // the simulator after a play session inherits the save's roster,
+      // making class abilities that gate on level (Backstab L3+,
+      // Shadow Step L7+, Turn Undead L2+, etc.) silently fail to fire
+      // even though characters.json puts the demo Thief at L10. The
+      // simulator is a "what-if" pane, so always start from the catalog.
+      const { gameState } = await import("@/battle/state");
+      gameState.partyData = null;
+
       // v1 canvas is 960×720 by spec.
       game = new Phaser.Game({
         type: Phaser.AUTO,

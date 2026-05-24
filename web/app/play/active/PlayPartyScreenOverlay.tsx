@@ -50,6 +50,11 @@ import {
   generalStockFor,
   type RaceAbilityCharacterRef,
 } from "@/play/raceAbilities";
+import {
+  attemptCraft,
+  canCraft,
+  craftStockFor,
+} from "@/play/craftAbilities";
 import { dayIndex } from "@/battle/world/GameTime";
 
 /** Minimal counter shape — `id` to find the general store entry,
@@ -108,6 +113,27 @@ export type RaceAbilityFlash =
       itemId: string;
       /** Display name from items.json — for the placard subtitle. */
       itemName: string;
+    }
+  | {
+      kind: "craft";
+      /** Display name of the Ranger whose hands did the work. */
+      memberName: string;
+      /** Item id that was crafted (snake_case). */
+      itemId: string;
+      /** Display name from items.json — for the placard subtitle. */
+      itemName: string;
+      /** How many items the craft paid out (full bundle from the
+       *  catalog — Arrows/Bolts/Fire Arrows = 20, single for any
+       *  future non-bundled stock item). The host shows this in the
+       *  placard subtitle ("Arrows ×20") so the player gets the same
+       *  bundle-count read the shop gives. */
+      count: number;
+      /** Which craft ability fired (craft_arrows / craft_fire_arrows).
+       *  Lets the host pick a more specific placard label if it
+       *  wants to differentiate the two crafts visually. */
+      abilityId: string;
+      /** Display name of the ability — for the placard title. */
+      abilityName: string;
     };
 
 export function PlayPartyScreenOverlay({
@@ -163,6 +189,15 @@ export function PlayPartyScreenOverlay({
    *  need any payload — the picker reads its options from the
    *  loaded counters + items. */
   const [pendingTinker, setPendingTinker] = useState<boolean>(false);
+  /** Pending Craft ability — non-null while the craft picker is
+   *  open. Carries the ability id so the picker knows which item
+   *  stock to show (Craft Arrows lists arrows + bolts; Craft Fire
+   *  Arrows lists fire arrows) AND so the pick handler routes the
+   *  result through the right `last_ability_day[id]` counter. */
+  const [pendingCraft, setPendingCraft] = useState<{
+    abilityId: string;
+    abilityName: string;
+  } | null>(null);
   /** Transient banner shown after a successful cast / failed cast so
    *  the player gets feedback ("Aldric heals Brenna for 4 HP",
    *  "Not enough MP", etc.). Auto-clears after a short timeout. */
@@ -465,19 +500,95 @@ export function PlayPartyScreenOverlay({
     [commit, liveSave, state, onRaceAbilityFlash],
   );
 
+  /** Resolve a Craft ability pick — same shape as `handleTinkerPick`
+   *  but routes through `attemptCraft` with the right ability id +
+   *  class. Both Ranger craft abilities share this handler; the
+   *  picker carries the ability id forward in `pendingCraft`. */
+  const handleCraftPick = useCallback(
+    (itemId: string) => {
+      if (state.kind !== "ok" || !pendingCraft) return;
+      const currentDay = dayIndex({
+        totalMinutes: liveSave.clockMinutes ?? 0,
+      });
+      const result = attemptCraft(
+        liveSave,
+        state.characters as ReadonlyArray<
+          RaceAbilityCharacterRef & { class?: string }
+        >,
+        // IMPORTANT: forward `charges` too — `attemptCraft` reads it
+        // to size each craft pull (Arrows/Bolts/Fire Arrows pay out
+        // a bundle of 20, matching the shop). Stripping it here
+        // silently degraded every craft to a single item.
+        state.items.map((i) => ({
+          id: i.id,
+          stackable: (i as { stackable?: boolean }).stackable,
+          charges: (i as { charges?: number }).charges,
+        })),
+        "ranger",
+        pendingCraft.abilityId,
+        itemId,
+        currentDay,
+      );
+      setCastMessage(result.message);
+      if (result.ok && result.nextSave) {
+        commit(result.nextSave);
+        // Find the Ranger's name for the placard subtitle. The
+        // craft helper already returned a prose message but the
+        // placard wants the actor + item separately so the
+        // "{Name} crafts" / "Arrows" framing reads cleanly.
+        const ranger = (state.characters as ReadonlyArray<
+          RaceAbilityCharacterRef & { class?: string }
+        >).find(
+          (c) =>
+            (c.class ?? "").toLowerCase() === "ranger" &&
+            // We don't have hp on the catalog row, so trust
+            // canCraft's earlier check that an alive Ranger exists
+            // — first matching catalog Ranger is fine for the
+            // display name.
+            true,
+        );
+        const rangerName = ranger?.name ?? "Ranger";
+        const itemDef = state.items.find((i) => i.id === itemId);
+        const itemName = itemDef?.name ?? itemId;
+        // Recompute the bundle size locally so the placard can show
+        // the count. attemptCraft already used the same rule on the
+        // save commit; mirroring it here keeps the placard truthful
+        // even though the helper doesn't return the count directly.
+        const count =
+          itemDef?.stackable && typeof itemDef.charges === "number" &&
+          itemDef.charges > 0
+            ? itemDef.charges
+            : 1;
+        onRaceAbilityFlash?.({
+          kind: "craft",
+          memberName: rangerName,
+          itemId,
+          itemName,
+          count,
+          abilityId: pendingCraft.abilityId,
+          abilityName: pendingCraft.abilityName,
+        });
+      }
+      setPendingCraft(null);
+    },
+    [commit, liveSave, state, pendingCraft, onRaceAbilityFlash],
+  );
+
   /** Route the sheet's "Use" button to the right surface per ability
    *  id. Tinker opens the existing item picker. Pickpocket points
    *  the player at the NPC dialog (it needs an NPC target, which
-   *  this screen can't provide). Everything else falls through to a
-   *  generic "this ability isn't usable from here" line so a future
-   *  party-active ability that's not yet wired doesn't silently
-   *  no-op. */
+   *  this screen can't provide). Craft abilities open the shared
+   *  craft picker with their ability-specific stock list. Everything
+   *  else falls through to a generic "this ability isn't usable from
+   *  here" line so a future party-active ability that's not yet
+   *  wired doesn't silently no-op. */
   const handleUseAbility = useCallback(
     (memberId: string, ability: PartyAbilityRef) => {
-      // `memberId` is ignored today — Tinker is party-wide ("the
-      // Gnome tinkers up an item for the stash"), so the dispatcher
-      // doesn't need a per-member target. Kept in the signature so
-      // a future per-character ability can route by who clicked.
+      // `memberId` is ignored today — Tinker / Craft are party-wide
+      // ("the Gnome / Ranger crafts an item for the stash"), so the
+      // dispatcher doesn't need a per-member target. Kept in the
+      // signature so a future per-character ability can route by
+      // who clicked.
       void memberId;
       if (ability.id === "tinker") {
         // canTinker re-evaluated at click time so a same-second
@@ -494,6 +605,41 @@ export function PlayPartyScreenOverlay({
           setPendingTinker(true);
         } else {
           setCastMessage("Tinker isn't available right now.");
+        }
+        return;
+      }
+      if (
+        ability.id === "craft_arrows" ||
+        ability.id === "craft_fire_arrows"
+      ) {
+        // Same per-click re-eval as Tinker so a double-click can't
+        // bypass the once-per-day gate. canCraft also checks that
+        // an alive Ranger is in the party (the sheet would only
+        // surface the button for an eligible character, but a stale
+        // sheet render shouldn't crash through).
+        const currentDay = dayIndex({
+          totalMinutes: liveSave.clockMinutes ?? 0,
+        });
+        if (
+          state.kind === "ok" &&
+          canCraft(
+            liveSave,
+            state.characters as ReadonlyArray<
+              RaceAbilityCharacterRef & { class?: string }
+            >,
+            "ranger",
+            ability.id,
+            currentDay,
+          )
+        ) {
+          setPendingCraft({
+            abilityId: ability.id,
+            abilityName: ability.name ?? ability.id,
+          });
+        } else {
+          setCastMessage(
+            `${ability.name ?? ability.id} isn't available right now.`,
+          );
         }
         return;
       }
@@ -1352,6 +1498,20 @@ export function PlayPartyScreenOverlay({
           onCancel={() => setPendingTinker(false)}
         />
       ) : null}
+      {/* Craft item picker — same shape as Tinker but the stock
+       *  list comes from `craftStockFor(abilityId)` so Craft Arrows
+       *  shows Arrows / Bolts and Craft Fire Arrows shows Fire
+       *  Arrows. The picker reuses TinkerPicker with a different
+       *  header label since the layout is identical. */}
+      {pendingCraft && state.kind === "ok" ? (
+        <TinkerPicker
+          title={`${pendingCraft.abilityName} — pick an item`}
+          stockIds={craftStockFor(pendingCraft.abilityId)}
+          items={state.items}
+          onPick={handleCraftPick}
+          onCancel={() => setPendingCraft(null)}
+        />
+      ) : null}
     </div>
   );
 }
@@ -1367,11 +1527,17 @@ function TinkerPicker({
   items,
   onPick,
   onCancel,
+  title = "Tinker — pick an item",
 }: {
   stockIds: ReadonlyArray<string>;
   items: ReadonlyArray<PartyItemRef>;
   onPick: (itemId: string) => void;
   onCancel: () => void;
+  /** Modal header label. Defaults to the Tinker prompt; the Craft
+   *  ability flow overrides with the ability's display name so the
+   *  same picker doubles for both ability families without
+   *  spawning a near-duplicate component. */
+  title?: string;
 }) {
   const itemById = new Map(items.map((i) => [i.id, i] as const));
   // ESC cancels — mirrors HealTargetPicker's listener pattern so the
@@ -1401,7 +1567,7 @@ function TinkerPicker({
       >
         <div className="flex items-center justify-between border-b border-parchment/15 px-3 py-1.5">
           <h3 className="font-display text-sm text-parchment">
-            Tinker — pick an item
+            {title}
           </h3>
           <button
             type="button"

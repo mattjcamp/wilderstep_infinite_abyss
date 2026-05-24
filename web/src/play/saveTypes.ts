@@ -179,6 +179,14 @@ export interface SavedPartyState {
    *  saves; treated as "never used" so the first attempt succeeds
    *  regardless of when the save was loaded. */
   last_tinker_day?: number;
+  /** Generic "last in-game day this ability was used" map, keyed by
+   *  ability id. Used by per-day class abilities (Ranger's Craft
+   *  Arrows / Craft Fire Arrows) so each ability ticks against its
+   *  own counter — a Ranger can craft regular arrows AND fire arrows
+   *  on the same day, but not the same ability twice. Tinker stayed
+   *  on its dedicated `last_tinker_day` field above for legacy save
+   *  compat; new once-per-day abilities slot into this record. */
+  last_ability_day?: Record<string, number>;
   /** Roster — ordered list of character ids. Identity stays in
    *  `members` keyed by id; this is just the turn order. */
   roster: ReadonlyArray<string>;

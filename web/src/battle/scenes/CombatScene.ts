@@ -513,6 +513,20 @@ export class CombatScene extends Phaser.Scene {
    *  move across the arena. Cleared on scene init (defensive) and
    *  re-seeded each `drawCombatants` rebuild. */
   private wieldAuras = new Map<string, Phaser.Time.TimerEvent>();
+  /** Alpha-yoyo tween that pulses a Thief's body sprite while
+   *  Shadow Step is "active" — i.e. between the killing bump that
+   *  triggered the ability and the moment the thief's turn ends.
+   *  Single-slot because only the current actor can be mid-shadow-
+   *  step at any time. Started in `tryPlayerStep` when the engine
+   *  flags `result.shadowStepped`; cleared in `endActorTurn` (and
+   *  defensively in `init()`) so a stale tween can't outlive the
+   *  thief's turn or carry over into the next encounter. */
+  private shadowStepPulse: Phaser.Tweens.Tween | null = null;
+  /** Combatant id whose body the shadow-step pulse is currently
+   *  tweening — kept so the cleanup path can restore the body's
+   *  alpha cleanly even if the body sprite list got rebuilt under
+   *  us. */
+  private shadowStepPulseId: string | null = null;
   /** Per-party-member card UI, kept so we can refresh in place. The MP
    *  fields are absent for non-casters (Fighter / Thief / etc.). */
   private partyCards = new Map<string, {
@@ -684,6 +698,11 @@ export class CombatScene extends Phaser.Scene {
     // a glowAura at a destroyed sprite's last-known coords.
     for (const t of this.wieldAuras.values()) t.remove();
     this.wieldAuras.clear();
+    // Same belt-and-braces for the shadow-step pulse — Phaser's
+    // shutdown should kill the tween, but a fast re-entry has been
+    // known to leak. stopShadowStepPulse is safe to call when no
+    // pulse is active.
+    this.stopShadowStepPulse();
     for (const r of this.moveHintRects) r?.destroy();
     this.moveHintRects.length = 0;
     // Tear down the previous run's darkness overlay so a re-entry
@@ -4635,6 +4654,16 @@ export class CombatScene extends Phaser.Scene {
           this.applyWeaponDurability(actor.id);
           this.applyArmorDurability(target.id);
         }
+        // Shadow Step active — the engine kept the attacker's
+        // movement intact after a killing bump. Pulse the thief's
+        // body so the player can see WHY they still have moves
+        // (otherwise the engine's silent "movePoints preserved"
+        // looks like a UI bug). Subtle by design — the user
+        // explicitly asked for a small, gradient cue rather than a
+        // showy burst.
+        if (result.result.shadowStepped) {
+          this.startShadowStepPulse(actor.id);
+        }
       } else {
         await this.animateBlocked(actor, dir);
       }
@@ -4648,6 +4677,11 @@ export class CombatScene extends Phaser.Scene {
 
   private endActorTurn(): void {
     this.clearMoveHints();
+    // Shadow Step's pulse ends when the thief's turn does — that's
+    // the canonical "ability is no longer active" moment. Restoring
+    // the alpha here keeps the cue tightly scoped to the post-kill
+    // window the player can actually use it in.
+    this.stopShadowStepPulse();
     this.combat.endTurn();
     // Reset the per-turn fire-damage gate so the next combatant can
     // be stung once if they happen to start or end their turn on
@@ -4984,6 +5018,86 @@ export class CombatScene extends Phaser.Scene {
     }
   }
 
+  /** Start a soft alpha pulse on the named combatant's body sprite —
+   *  the in-shadow-step visual cue the user asked for. Subtle by
+   *  design: alpha dips to 0.55 and back over ~360ms, yoyo'd, so
+   *  the thief reads as "phased / not quite here" without
+   *  overshadowing the regular bump-attack animations.
+   *
+   *  Idempotent on the timer side: a second call replaces any
+   *  prior pulse so a thief who keeps stepping through enemies
+   *  doesn't end up with stacked tweens fighting for the alpha.
+   *  Stops automatically on `stopShadowStepPulse` (called from
+   *  `endActorTurn` and `init()`'s cleanup pass). */
+  private startShadowStepPulse(combatantId: string): void {
+    const body = this.bodies.get(combatantId);
+    if (!body) return;
+    this.stopShadowStepPulse();
+    this.shadowStepPulseId = combatantId;
+    this.shadowStepPulse = this.tweens.add({
+      targets: body,
+      alpha: 0.55,
+      duration: 360,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut",
+    });
+    // One-shot trigger cue — without this, the steady pulse alone
+    // is too quiet for the player to register the *moment* the
+    // ability fires (the user reported witnessing Backstab but not
+    // Shadow Step). A small violet "SHADOW STEP!" floater over the
+    // thief + a quick arcane burst gives the same "the ability just
+    // fired" beat that BACKSTAB! gets over the target, while leaving
+    // the ongoing pulse to communicate "still active." Same colour
+    // family as Backstab so the two thief abilities read as siblings.
+    const t = this.add
+      .text(body.x, body.y - 18, "SHADOW STEP!", {
+        fontFamily: "Georgia, serif",
+        fontSize: "14px",
+        color: "#c28bff", // arcane violet — same as the Backstab label
+        stroke: "#1a1a2e",
+        strokeThickness: 4,
+      })
+      .setOrigin(0.5, 1);
+    this.tweens.add({
+      targets: t,
+      y: t.y - 26,
+      alpha: 0,
+      duration: 700,
+      onComplete: () => t.destroy(),
+    });
+    radialBurst(
+      this,
+      { x: body.x, y: body.y },
+      VFX_COLOURS.curse,
+      VFX_COLOURS.arcane,
+      36,
+    ).catch(() => undefined);
+    // SFX gives the ability an audible kick so the moment lands even
+    // when the player is looking at the log strip — borrows the
+    // critical-hit fanfare since Shadow Step is a peer-tier moment to
+    // a backstab crit.
+    Sfx.play("critical");
+  }
+
+  /** Tear down any active shadow-step pulse and restore the body's
+   *  alpha to 1. Looked-up-by-id so the cleanup is safe even when
+   *  the bodies map has been rebuilt mid-pulse (e.g. drawCombatants
+   *  fired a refresh). Called from `endActorTurn` (the canonical
+   *  end-of-shadow-step beat) and from `init()` so a re-entered
+   *  combat doesn't inherit a stray tween. */
+  private stopShadowStepPulse(): void {
+    if (this.shadowStepPulse) {
+      this.shadowStepPulse.stop();
+      this.shadowStepPulse = null;
+    }
+    if (this.shadowStepPulseId) {
+      const body = this.bodies.get(this.shadowStepPulseId);
+      if (body) body.setAlpha(1);
+      this.shadowStepPulseId = null;
+    }
+  }
+
   /** Healing sparkle column rising over a target. */
   private healTargetVfx(c: Combatant): Promise<void> {
     return healingSparkles(this, this.bodyXY(c));
@@ -5064,31 +5178,110 @@ export class CombatScene extends Phaser.Scene {
     return new Promise((resolve) => {
       const body = this.bodies.get(target.id);
       if (!body) return resolve();
+      // Backstab gets dedicated flair so the player can tell it
+      // apart from a routine crit: "BACKSTAB! -N" in violet, a
+      // matching violet flash, and a small dark-purple burst over
+      // the victim. The critical SFX + screen shake still fire from
+      // the regular crit branch below (backstab implies critical),
+      // so the punch lands without a second SFX layered on top.
+      const isBackstab = !!result.backstab;
+      // Smite Undead is a Paladin passive that doubled the rolled
+      // damage. Treated as a sibling of Backstab for visual
+      // language — same "ability fired" feedback family, just in a
+      // different palette (gold/buff) to read as holy rather than
+      // sneaky. The flag is mutually exclusive with backstab in
+      // practice (Paladin vs Thief) but if both were ever set the
+      // backstab branch wins below — keeps the violet stinger
+      // dedicated to the Thief.
+      const isSmite = !!result.smiteUndead;
+      // Distinct attempt-but-missed branch — the Thief's DEX save
+      // came up short. We surface a separate "no opening" floater
+      // over the ATTACKER so the player sees the ability was tried
+      // (otherwise a failed save is invisible — the user reported
+      // confusion about whether Backstab was wired at all). The
+      // target still gets the regular non-crit hit feedback below.
+      const isBackstabMiss =
+        !!result.backstabAttempted && !isBackstab;
       const label = result.hit
-        ? result.critical ? `CRIT! -${result.damage}` : `-${result.damage}`
+        ? isBackstab
+          ? `BACKSTAB! -${result.damage}`
+          : isSmite
+            ? `SMITE! -${result.damage}`
+            : result.critical
+              ? `CRIT! -${result.damage}`
+              : `-${result.damage}`
         : "miss";
-      const color = result.hit ? (result.critical ? "#ffd470" : "#ff6b6b") : "#bdb38a";
+      const color = result.hit
+        ? isBackstab
+          ? "#c28bff" // arcane violet — reads as sneaky / shadowy
+          : isSmite
+            ? "#ffe580" // bright holy gold — reads as divine wrath
+            : result.critical
+              ? "#ffd470"
+              : "#ff6b6b"
+        : "#bdb38a";
       // SFX + flash. Critical hits play the louder fanfare and shake
       // the camera; misses get the rising "whoosh"; ordinary hits use
       // the side-appropriate hurt SFX so the player can hear who took it.
       if (result.hit) {
-        if (result.critical) {
+        // Smite hits ride the same critical-tier SFX + shake as a
+        // nat-20 crit even when the underlying d20 wasn't a crit —
+        // the doubled damage IS the moment, so audio should match.
+        if (result.critical || isSmite) {
           Sfx.play("critical");
           screenShake(this, 0.006, 220);
         } else {
           Sfx.play(target.side === "party" ? "player_hurt" : "monster_hit");
         }
-        flashTarget(this, body, VFX_COLOURS.blood);
+        // Backstab swaps the blood-red flash for the curse-violet
+        // tone + adds a small radial burst — the visual cue the
+        // player needs to recognise the ability fired. A dedicated
+        // crit (nat-20 with no backstab) keeps the existing
+        // blood-flash so the two read as distinct events even when
+        // the math is similar.
+        if (isBackstab) {
+          flashTarget(this, body, VFX_COLOURS.curse);
+          radialBurst(
+            this,
+            { x: body.x, y: body.y },
+            VFX_COLOURS.curse,
+            VFX_COLOURS.arcane,
+            42,
+          ).catch(() => undefined);
+        } else if (isSmite) {
+          // Holy flash + gold burst — the Paladin's divine wrath cue.
+          // Same shape as the Backstab branch (flash + burst) but
+          // in the buff/holy palette so the ability reads as a
+          // sibling rather than a copy. The crit SFX above already
+          // fired because Smite implies an attention-worthy hit;
+          // we don't layer a second SFX so the moment stays clean.
+          flashTarget(this, body, VFX_COLOURS.buff);
+          radialBurst(
+            this,
+            { x: body.x, y: body.y },
+            VFX_COLOURS.buff,
+            VFX_COLOURS.buff,
+            44,
+          ).catch(() => undefined);
+        } else {
+          flashTarget(this, body, VFX_COLOURS.blood);
+        }
       } else {
         Sfx.play("miss");
         floatingX(this, { x: body.x, y: body.y });
       }
+      // BACKSTAB / SMITE success labels are larger and bolder than
+      // a routine crit / miss so the player can read them instantly
+      // across the arena. Same palette/flash family so each pairs
+      // visually as one event.
+      const isAbilityLabel = isBackstab || isSmite;
+      const labelFontSize = isAbilityLabel ? "17px" : "14px";
       const t = this.add.text(body.x, body.y - 12, label, {
         fontFamily: "Georgia, serif",
-        fontSize: "14px",
+        fontSize: labelFontSize,
         color,
         stroke: "#1a1a2e",
-        strokeThickness: 4,
+        strokeThickness: isAbilityLabel ? 5 : 4,
       }).setOrigin(0.5, 1);
       this.tweens.add({
         targets: t,
@@ -5096,6 +5289,34 @@ export class CombatScene extends Phaser.Scene {
         duration: 600,
         onComplete: () => { t.destroy(); resolve(); },
       });
+      // Backstab attempt-but-missed cue: a muted violet "no opening"
+      // floater over the ATTACKER (not the target) — drifts up + fades
+      // alongside the normal hit feedback. Anchored to the attacker so
+      // the player can tell which actor's ability rolled the save, and
+      // doesn't double-stack on the same coords as the damage label.
+      if (isBackstabMiss) {
+        const attackerBody = this.bodies.get(result.attackerId);
+        if (attackerBody) {
+          const noTxt = this.add
+            .text(attackerBody.x, attackerBody.y - 14, "no opening", {
+              fontFamily: "Georgia, serif",
+              fontSize: "11px",
+              color: "#8a78b8", // muted dusk-violet — fits the
+                                 // ability's colour family, dim
+                                 // enough to read as a non-event
+              stroke: "#1a1a2e",
+              strokeThickness: 3,
+            })
+            .setOrigin(0.5, 1);
+          this.tweens.add({
+            targets: noTxt,
+            y: noTxt.y - 18,
+            alpha: 0,
+            duration: 700,
+            onComplete: () => noTxt.destroy(),
+          });
+        }
+      }
       if (result.hit) {
         this.tweens.add({
           targets: body, alpha: 0.3,

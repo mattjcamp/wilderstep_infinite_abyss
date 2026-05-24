@@ -191,6 +191,7 @@ import { loadWorld, saveWorld } from "@/play/save";
 import { addToInventory } from "@/play/inventoryStacking";
 import { applyCombatResultToSave } from "@/play/syncFromBattle";
 import { awardQuestXpToSavedMembers } from "@/play/awardQuestXp";
+import { herbalismOnStep } from "@/play/herbalism";
 import {
   attemptPickpocket,
   canPickpocket,
@@ -396,6 +397,16 @@ interface LoadedCatalog {
    *  icon sprite (`item/<icon>.png`). Kernel doesn't read this
    *  directly; it's a scene-render concern. */
   items: PlayItem[];
+  /** Abilities catalog — read by per-step passive helpers
+   *  (Herbalism today, future passives later) so the gameplay
+   *  knobs (find chance, foraging terrain list, etc.) can live in
+   *  data rather than code. Loose typing because each consumer
+   *  reads its own subset of `params`. */
+  abilities: ReadonlyArray<{
+    id: string;
+    name?: string;
+    params?: Record<string, unknown> | null;
+  }>;
   /** Module-level default soundtrack — file URLs the SoundtrackPlayer
    *  rotates through when neither the current map nor the active
    *  dungeon has its own override. Loaded from the leaf module's
@@ -636,9 +647,11 @@ export function PlayHost() {
       ]);
       // SFX choice tracks how big the moment feels — quest turn-ins
       // get the full victory fanfare; intermediate / final steps get
-      // the smaller level_up chirp; race-active abilities use a
-      // thematic cue (lockpick-style click for the Halfling's deft
-      // pickpocket, a magic-burst chime for the Gnome's tinkering).
+      // the smaller level_up chirp; race / class-active abilities
+      // use a thematic cue (lockpick-style click for the Halfling's
+      // deft pickpocket, a magic-burst chime for the Gnome's
+      // tinkering, the level_up chirp for the Ranger's crafting
+      // since it's a more mundane workbench moment).
       const sfx =
         args.kind === "quest"
           ? "victory"
@@ -646,7 +659,9 @@ export function PlayHost() {
             ? "lock_pick_success"
             : args.kind === "tinker"
               ? "magic_burst"
-              : "level_up";
+              : args.kind === "craft"
+                ? "level_up"
+                : "level_up";
       Sfx.play(sfx);
       // Spawn the celebratory burst at the party's tile. Sim's
       // snapshot has the live position; the renderer turns that into
@@ -671,7 +686,9 @@ export function PlayHost() {
             ? 80
             : args.kind === "step-final"
               ? 68
-              : args.kind === "pickpocket" || args.kind === "tinker"
+              : args.kind === "pickpocket" ||
+                  args.kind === "tinker" ||
+                  args.kind === "craft"
                 ? 62
                 : 56;
         radialBurst(r.scene, { x, y }, 0xffd750, 0xffe580, burstRadius).catch(
@@ -2292,6 +2309,82 @@ export function PlayHost() {
               ) {
                 rendererRef.current?.setLightingMode(afterMode);
               }
+              // Herbalism — Druid / Alchemist passively trickle in
+              // potion reagents while walking foraging terrain
+              // (grass, forest, …). Read the just-stepped-onto cell
+              // and let the helper decide whether to roll AND what
+              // to drop. The helper short-circuits when no
+              // herbalist is alive or the tile isn't foragable, so
+              // the cost on the hot step path is a Map lookup +
+              // string check 99% of the time.
+              try {
+                const liveSave = saveRef.current;
+                const cat = catalogRef.current;
+                if (liveSave && cat) {
+                  const cell = cat.map?.grid?.[ev.to.row]?.[ev.to.col];
+                  const tileId =
+                    typeof cell === "string"
+                      ? cell
+                      : (cell as { id?: string } | null | undefined)?.id ?? null;
+                  const herb = herbalismOnStep(
+                    liveSave,
+                    cat.characters as ReadonlyArray<{
+                      id: string;
+                      name?: string;
+                      class?: string;
+                    }>,
+                    cat.items as ReadonlyArray<{
+                      id: string;
+                      name?: string;
+                      item_type?: string;
+                      stackable?: boolean;
+                      charges?: number;
+                    }>,
+                    cat.abilities,
+                    tileId,
+                  );
+                  if (herb.found && herb.nextSave) {
+                    // Commit the inventory mutation through the
+                    // saveRef so the next reads see the new stash.
+                    // Use the same mutate-and-mark pattern other
+                    // per-step state changes use (no full setState
+                    // / Phaser remount needed for inventory tweaks).
+                    saveRef.current = herb.nextSave;
+                    // Log line — subtle ("spots", not "FINDS!") so
+                    // it reads as a flavour beat rather than a
+                    // celebration moment. Matches the user's
+                    // "subtle" brief on the cue.
+                    const line = `${herb.found.finderName} spots a ${herb.found.itemName} in the brush.`;
+                    setLogMessages((prev) => {
+                      const next = [...prev, line];
+                      return next.length > MAX_LOG
+                        ? next.slice(next.length - MAX_LOG)
+                        : next;
+                    });
+                    // Subtle Phaser cue on the party tile — small
+                    // gold/green sparkle, no SFX (the user asked
+                    // for subtle and reserved the celebration
+                    // family for active abilities). Pixel coords
+                    // come from the same TILE_SIZE math the rest
+                    // of the burst sites use.
+                    const r = rendererRef.current;
+                    if (r?.scene) {
+                      const x = ev.to.col * TILE_SIZE + TILE_SIZE / 2;
+                      const y = ev.to.row * TILE_SIZE + TILE_SIZE / 2;
+                      radialBurst(
+                        r.scene,
+                        { x, y },
+                        0x9be8a0, // soft herb-green
+                        0xffe580, // gold accent
+                        20,
+                      ).catch(() => undefined);
+                    }
+                  }
+                }
+              } catch {
+                // Herbalism is a flavour passive — never let an
+                // error in the find path crash the step handler.
+              }
               // Persist every step. Without this the save only
               // committed on link crossings + combat resolution +
               // Save & Quit — so closing the tab mid-walk reverted
@@ -3793,21 +3886,38 @@ export function PlayHost() {
             }
           }}
           onRaceAbilityFlash={(flash) => {
-            // The Tinker happened inside the modal overlay; the
-            // player needs an unmistakable confirmation that
+            // The Tinker / Craft happened inside the modal overlay;
+            // the player needs an unmistakable confirmation that
             // something happened — a placard with the item name + a
             // matching SFX + a gold burst on the party tile.
             // `fireQuestCelebration` already handles all three: it
             // enqueues the placard, plays the kind-mapped SFX, and
             // spawns the gold burst on the party's current pixel
             // (via Phaser). Routing through it here keeps the
-            // race-ability cue in lockstep with the rest of the
-            // game's "you-just-did-something" feedback family.
+            // race / class-ability cue in lockstep with the rest of
+            // the game's "you-just-did-something" feedback family.
             if (flash.kind === "tinker") {
               fireQuestCelebration({
                 kind: "tinker",
                 title: `${flash.memberName} tinkers`,
                 subtitle: flash.itemName,
+              });
+            } else if (flash.kind === "craft") {
+              // Title carries both the Ranger's name and the
+              // ability variant ("Aldric • Craft Fire Arrows")
+              // so the player sees WHICH craft fired in addition
+              // to what came out of it. Subtitle includes the
+              // bundle count (e.g. "Arrows ×20") so the payout
+              // size is visible at a glance — matches the way
+              // the shop call-out shows bundle quantities.
+              const subtitle =
+                flash.count > 1
+                  ? `${flash.itemName} ×${flash.count}`
+                  : flash.itemName;
+              fireQuestCelebration({
+                kind: "craft",
+                title: `${flash.memberName} • ${flash.abilityName}`,
+                subtitle,
               });
             }
           }}
@@ -4059,6 +4169,7 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
     spawnsLayers,
     spellsLayers,
     itemsLayers,
+    abilitiesLayers,
     dungeonsLayers,
     questsLayers,
     npcsLayers,
@@ -4075,6 +4186,7 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
     src.loadModelLayers(moduleId, "spawns").catch(() => null),
     src.loadModelLayers(moduleId, "spells").catch(() => null),
     src.loadModelLayers(moduleId, "items").catch(() => null),
+    src.loadModelLayers(moduleId, "abilities").catch(() => null),
     src.loadModelLayers(moduleId, "dungeons").catch(() => null),
     src.loadModelLayers(moduleId, "quests").catch(() => null),
     src.loadModelLayers(moduleId, "npcs").catch(() => null),
@@ -4203,6 +4315,21 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
     itemsLayers?.inherited ?? [],
     itemsLayers?.ownFile ?? null,
   ) ?? {}) as { items?: PlayItem[] };
+  // Abilities catalog — read by per-step passive helpers (Herbalism
+  // today). Loose typing because each consumer reads its own
+  // params subset; merging plus a graceful empty fallback so a thin
+  // module without abilities still loads.
+  const abilitiesDoc = (mergeModel(
+    "abilities",
+    abilitiesLayers?.inherited ?? [],
+    abilitiesLayers?.ownFile ?? null,
+  ) ?? {}) as {
+    abilities?: Array<{
+      id: string;
+      name?: string;
+      params?: Record<string, unknown> | null;
+    }>;
+  };
   // Same draft-overlay treatment for dungeons so an unpublished
   // soundtrack / level edit shows up in play. DungeonsBrowse writes
   // drafts under the same model key.
@@ -4270,6 +4397,7 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
     counters: countersDoc.counters ?? [],
     knockSpell,
     items: itemsDoc.items ?? [],
+    abilities: abilitiesDoc.abilities ?? [],
     moduleSoundtrack,
   };
 }

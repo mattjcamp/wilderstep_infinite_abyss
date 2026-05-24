@@ -108,14 +108,34 @@ export function canBackstab(c: Combatant): boolean {
   return c.weaponName.toLowerCase() === "dagger";
 }
 
-/** True when a successful bump-attack should leave the attacker's
- *  remaining movement intact (Thief Shadow Step). Level 7+ Thieves
- *  only — the Python version requires the same. */
+/** True when a bump-attack should leave the attacker's remaining
+ *  movement intact (Thief Shadow Step). Level 7+ Thieves only —
+ *  Python required the same gate. Fires on hit, miss, OR kill: the
+ *  ability is a hit-and-run mobility tool, not a finisher bonus.
+ *  The kill-only gate that used to live alongside this predicate
+ *  was removed once the design intent was clarified. */
 export function canShadowStep(c: Combatant): boolean {
   if (c.hp <= 0) return false;
   if (!c.charClass) return false;
   if (c.charClass.toLowerCase() !== "thief") return false;
   return (c.level ?? 1) >= 7;
+}
+
+/** True when the attacker's strike against an undead target should
+ *  be doubled (Paladin Smite Undead). Mirrors the abilities.json
+ *  record: gates on Paladin class at level 1+ (every Paladin starts
+ *  with it). Sibling-shape with `canBackstab` / `canShadowStep` so
+ *  the engine's attack flow can read all three from one place.
+ *
+ *  Note that this only gates the attacker; the *target.undead* check
+ *  happens at the call site so this predicate stays usable wherever
+ *  we need a per-actor "could smite if undead were present" answer
+ *  (e.g. a future UI hint on the action menu). */
+export function canSmiteUndead(c: Combatant): boolean {
+  if (c.hp <= 0) return false;
+  if (!c.charClass) return false;
+  if (c.charClass.toLowerCase() !== "paladin") return false;
+  return (c.level ?? 1) >= 1;
 }
 
 /** True when this combatant's turns are run by the monster-AI loop. */
@@ -530,10 +550,12 @@ export class Combat {
       // remaining moves so the turn ends after the swing. Two
       // overrides, in priority order:
       //
-      //   1. Thief Shadow Step (level 7+, kill required) — keeps
-      //      ALL remaining movement. Strictly the most powerful
-      //      override; matches the Python game's
-      //      PHASE_SHADOW_STEP behaviour.
+      //   1. Thief Shadow Step (level 7+) — keeps ALL remaining
+      //      movement after ANY bump-attack (hit, miss, or kill).
+      //      The point of the ability is hit-and-run mobility: the
+      //      thief darts in, swings, and slips back out of reach
+      //      whether or not the strike landed. Strictly the most
+      //      powerful override.
       //   2. `postAttackMove` (Elf Nimble: 2, Dragon hit-and-run:
       //      2) — caps movement at the actor's per-attack
       //      allowance regardless of whether the attack killed.
@@ -547,9 +569,18 @@ export class Combat {
       // When neither applies the default zero-out runs, matching
       // the legacy "attack ends the turn" rule.
       const result = this.attack(occupant.id);
-      if (result.killed && canShadowStep(actor) && !this.isOver) {
+      if (canShadowStep(actor) && !this.isOver) {
+        // Mutate the result so the scene's player-step handler can
+        // start the "shadow step active" pulse on the thief's body
+        // without re-deriving the gate from the actor + result. The
+        // attack returned 0–2ms ago — nothing else has read the
+        // object yet, so the post-hoc field add is safe.
+        result.shadowStepped = true;
+        // Log line phrased generically ("steps away") since the
+        // ability now fires on hit, miss, AND kill. The remaining-
+        // moves count tells the player how much retreat they have.
         this.log.push(
-          `${actor.name} Shadow Steps! (${this.movePoints} moves remaining)`,
+          `${actor.name} Shadow Steps away! (${this.movePoints} moves remaining)`,
         );
       } else if (
         !this.isOver &&
@@ -598,20 +629,34 @@ export class Combat {
     // that wasn't already a nat-20 crit. The flag rides back on the
     // AttackResult so the scene can play the stinger animation.
     let backstab = false;
+    let backstabAttempted = false;
     let critical = roll.critical;
     if (roll.hit && !critical && canBackstab(attacker)) {
+      backstabAttempted = true;
       const saveRoll = rollD20(this.rng);
       const dexMod = getModifier(attacker.dexterity ?? 10);
-      if (saveRoll + dexMod >= 12) {
+      const total = saveRoll + dexMod;
+      const dice = `d20:${saveRoll}+${dexMod}=${total} vs DC 12`;
+      if (total >= 12) {
         backstab = true;
         critical = true;
         this.log.push(
-          `${attacker.name} finds an opening! (d20:${saveRoll}+${dexMod}=${saveRoll + dexMod} vs DC 12) — BACKSTAB!`,
+          `${attacker.name} finds an opening! (${dice}) — BACKSTAB!`,
+        );
+      } else {
+        // Tell the player the ability fired even when the save
+        // failed — without this the gate looks silently absent
+        // and the player can't tell whether Backstab is wired
+        // at all. Same dice-math format as the success line so
+        // both branches read consistently in the log strip.
+        this.log.push(
+          `${attacker.name} probes for an opening on ${target.name} (${dice}) — no opening.`,
         );
       }
     }
     let damage = 0;
     let bonusDamage = 0;
+    let smiteUndead = false;
     if (roll.hit) {
       // `damage_bonus` buffs (Elixir of Strength) add a flat amount on
       // top of the weapon's dice + base bonus. Critical hits double
@@ -632,6 +677,22 @@ export class Combat {
       if (attacker.weaponBonusDamage != null) {
         bonusDamage = rollBonusDamage(attacker.weaponBonusDamage, critical, this.rng);
         damage += bonusDamage;
+      }
+      // Paladin Smite Undead — straight 2x multiplier on the rolled
+      // total when the attacker is a Paladin AND the target carries
+      // the `undead` flag (Skeleton, Zombie, Wight, Lich, …). Applied
+      // AFTER the bonus-damage roll so a Sun Sword Paladin smiting a
+      // Lich doubles BOTH the dagger dice and the fire bonus — the
+      // ability's flavour ("divine wrath") reads as "everything hits
+      // harder," not "the holy bit, separately." Crits stack with
+      // smite multiplicatively (crit doubles the dice, smite doubles
+      // the total) so a crit-smite reads as the peak holy moment.
+      if (canSmiteUndead(attacker) && target.undead) {
+        smiteUndead = true;
+        damage *= 2;
+        this.log.push(
+          `${attacker.name} channels divine wrath against ${target.name} — SMITE!`,
+        );
       }
       target.hp = Math.max(0, target.hp - damage);
       this.applyOnHitEffects(attacker, target);
@@ -669,6 +730,8 @@ export class Combat {
       total: roll.total,
       critical,
       backstab,
+      backstabAttempted,
+      smiteUndead,
       damage,
       killed,
     };

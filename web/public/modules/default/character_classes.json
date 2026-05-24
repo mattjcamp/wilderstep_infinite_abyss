@@ -116,7 +116,8 @@
         "club",
         "mace",
         "sling",
-        "cloth"
+        "cloth",
+        "leather"
       ],
       "abilities": [
         {
@@ -160,6 +161,10 @@
         {
           "ability_id": "turn_undead",
           "min_level": 5
+        },
+        {
+          "ability_id": "smite_undead",
+          "min_level": 1
         }
       ]
     },
@@ -190,6 +195,10 @@
         {
           "ability_id": "craft_arrows",
           "min_level": 2
+        },
+        {
+          "ability_id": "craft_fire_arrows",
+          "min_level": 5
         }
       ]
     },

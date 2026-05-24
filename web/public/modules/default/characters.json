@@ -4,7 +4,7 @@
     {
       "id": "aldric",
       "name": "Aldric",
-      "class": "fighter",
+      "class": "paladin",
       "race": "elf",
       "gender": "Male",
       "level": 10,
@@ -17,7 +17,7 @@
       "intelligence": 8,
       "wisdom": 8,
       "equipped": {
-        "hands": "sun_sword",
+        "hands": "sword",
         "body": "chain"
       },
       "inventory": [],
@@ -39,7 +39,7 @@
       "intelligence": 8,
       "wisdom": 9,
       "equipped": {
-        "hands": "short_bow",
+        "hands": "dagger",
         "body": "leather"
       },
       "inventory": [],
@@ -70,7 +70,7 @@
     {
       "id": "elminster",
       "name": "Elminster",
-      "class": "wizard",
+      "class": "druid",
       "race": "elf",
       "gender": "Male",
       "level": 10,

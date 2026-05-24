@@ -45,7 +45,8 @@ export type PlayQuestCelebrationKind =
   | "step-final"
   | "quest"
   | "pickpocket"
-  | "tinker";
+  | "tinker"
+  | "craft";
 
 export interface PlayQuestCelebrationProps {
   /** "step"       = an intermediate kill/retrieve credit, quest still ongoing.
@@ -81,6 +82,9 @@ const TIMINGS = {
   // loot / item name has time to register.
   pickpocket:   { fadeIn: 210, hold: 2500, fadeOut: 520 },
   tinker:       { fadeIn: 210, hold: 2500, fadeOut: 520 },
+  // Craft (Ranger) shares the race-active footprint — same fade
+  // timings as Tinker so the placard family stays consistent.
+  craft:        { fadeIn: 210, hold: 2500, fadeOut: 520 },
 } as const;
 
 export function PlayQuestCelebration({
@@ -119,7 +123,8 @@ export function PlayQuestCelebration({
 
   const isQuest = kind === "quest";
   const isStepFinal = kind === "step-final";
-  const isRaceAbility = kind === "pickpocket" || kind === "tinker";
+  const isRaceAbility =
+    kind === "pickpocket" || kind === "tinker" || kind === "craft";
   const opacity = phase === "enter" || phase === "exit" ? 0 : 1;
   const translateY = phase === "enter" ? -8 : 0;
   const fadeDur =
@@ -137,7 +142,9 @@ export function PlayQuestCelebration({
           ? "Pickpocketed!"
           : kind === "tinker"
             ? "Tinkered Up!"
-            : "Step Complete";
+            : kind === "craft"
+              ? "Crafted!"
+              : "Step Complete";
 
   return (
     <div
