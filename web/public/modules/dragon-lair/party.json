@@ -5,7 +5,7 @@
     "row": 12
   },
   "avatar": "person/fighter18.png",
-  "gold": 50,
+  "gold": 5000,
   "roster": [
     "aldric",
     "pippin",
@@ -16,6 +16,10 @@
   "inventory": [
     {
       "item": "torch",
+      "charges": 10
+    },
+    {
+      "item": "fire_arrows",
       "charges": 10
     },
     {

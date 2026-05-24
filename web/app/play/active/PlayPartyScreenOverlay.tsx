@@ -55,6 +55,12 @@ import {
   canCraft,
   craftStockFor,
 } from "@/play/craftAbilities";
+import {
+  attemptBrew,
+  canBrew,
+  recipeShortages,
+  type RecipeRef,
+} from "@/play/potionCrafting";
 import { dayIndex } from "@/battle/world/GameTime";
 
 /** Minimal counter shape — `id` to find the general store entry,
@@ -82,6 +88,10 @@ type LoadState =
        *  the general-store stock the Gnome is allowed to craft
        *  from. */
       counters: OverlayCounterRef[];
+      /** Recipes catalog — needed so the brew_potion picker can
+       *  list every recipe the Alchemist could attempt + grey out
+       *  the ones the party can't currently supply reagents for. */
+      recipes: RecipeRef[];
       /** Static (catalog) HP/MP indexed by character id. Used by the
        *  Heal handler to cap the live HP at the character's max HP —
        *  the save shape only carries current HP, not the peak. */
@@ -134,6 +144,22 @@ export type RaceAbilityFlash =
       abilityId: string;
       /** Display name of the ability — for the placard title. */
       abilityName: string;
+    }
+  | {
+      kind: "brew";
+      /** Display name of the Alchemist who brewed the potion. */
+      memberName: string;
+      /** Recipe id the player picked (snake_case). Lets the host
+       *  differentiate which brew fired if it ever wants to fork
+       *  the placard art per recipe family. */
+      recipeId: string;
+      /** Display name of the recipe — for the placard title. */
+      recipeName: string;
+      /** Produced item id (snake_case). */
+      itemId: string;
+      /** Display name of the produced potion — for the placard
+       *  subtitle. */
+      itemName: string;
     };
 
 export function PlayPartyScreenOverlay({
@@ -198,6 +224,10 @@ export function PlayPartyScreenOverlay({
     abilityId: string;
     abilityName: string;
   } | null>(null);
+  /** Pending brew — non-null while the recipe picker is open.
+   *  No payload needed (the picker reads the recipes + items
+   *  catalogs from `state`). Cleared on pick / cancel. */
+  const [pendingBrew, setPendingBrew] = useState<boolean>(false);
   /** Transient banner shown after a successful cast / failed cast so
    *  the player gets feedback ("Aldric heals Brenna for 4 HP",
    *  "Not enough MP", etc.). Auto-clears after a short timeout. */
@@ -235,6 +265,7 @@ export function PlayPartyScreenOverlay({
           itemsLayers,
           spellsLayers,
           countersLayers,
+          recipesLayers,
         ] = await Promise.all([
           src.loadModelLayers(moduleId, "party"),
           src.loadModelLayers(moduleId, "characters"),
@@ -244,6 +275,7 @@ export function PlayPartyScreenOverlay({
           src.loadModelLayers(moduleId, "items"),
           src.loadModelLayers(moduleId, "spells"),
           src.loadModelLayers(moduleId, "counters"),
+          src.loadModelLayers(moduleId, "recipes"),
         ]);
         if (cancelled) return;
 
@@ -296,6 +328,12 @@ export function PlayPartyScreenOverlay({
             countersLayers.inherited,
             countersLayers.ownFile,
           ) as { counters?: OverlayCounterRef[] } | null)?.counters ?? [];
+        const recipes =
+          (mergeModel(
+            "recipes",
+            recipesLayers.inherited,
+            recipesLayers.ownFile,
+          ) as { recipes?: RecipeRef[] } | null)?.recipes ?? [];
 
         // Overlay live save state on top of the static party record.
         // Spread first so any extra v2 fields (custom palette colours,
@@ -406,6 +444,7 @@ export function PlayPartyScreenOverlay({
           items,
           spells,
           counters,
+          recipes,
           maxHpById,
           maxMpById,
         });
@@ -574,14 +613,64 @@ export function PlayPartyScreenOverlay({
     [commit, liveSave, state, pendingCraft, onRaceAbilityFlash],
   );
 
+  /** Resolve a brew_potion recipe pick — validate the recipe
+   *  through the pure `attemptBrew` helper, commit the new save
+   *  on success, surface a placard so the world view shows the
+   *  Alchemist did something. Reagent shortages bubble up as the
+   *  helper's refusal message and surface in the cast banner. */
+  const handleBrewPick = useCallback(
+    (recipeId: string) => {
+      if (state.kind !== "ok") return;
+      const result = attemptBrew(
+        liveSave,
+        state.characters as ReadonlyArray<
+          RaceAbilityCharacterRef & { class?: string }
+        >,
+        // Forward stackable + charges so the consume / merge math
+        // reads the catalog correctly — same fix the craft handler
+        // made (without `charges` a future bundle-output recipe
+        // would silently degrade).
+        state.items.map((i) => ({
+          id: i.id,
+          stackable: (i as { stackable?: boolean }).stackable,
+          charges: (i as { charges?: number }).charges,
+        })),
+        state.recipes,
+        recipeId,
+      );
+      setCastMessage(result.message);
+      if (result.ok && result.nextSave) {
+        commit(result.nextSave);
+        const recipe = state.recipes.find((r) => r.id === recipeId);
+        const alchemist = (state.characters as ReadonlyArray<
+          RaceAbilityCharacterRef & { class?: string }
+        >).find((c) => (c.class ?? "").toLowerCase() === "alchemist");
+        const itemDef = recipe
+          ? state.items.find((i) => i.id === recipe.result_item)
+          : undefined;
+        onRaceAbilityFlash?.({
+          kind: "brew",
+          memberName: alchemist?.name ?? "Alchemist",
+          recipeId,
+          recipeName: recipe?.name ?? recipeId,
+          itemId: recipe?.result_item ?? recipeId,
+          itemName: itemDef?.name ?? recipe?.result_item ?? recipeId,
+        });
+      }
+      setPendingBrew(false);
+    },
+    [commit, liveSave, state, onRaceAbilityFlash],
+  );
+
   /** Route the sheet's "Use" button to the right surface per ability
    *  id. Tinker opens the existing item picker. Pickpocket points
    *  the player at the NPC dialog (it needs an NPC target, which
    *  this screen can't provide). Craft abilities open the shared
-   *  craft picker with their ability-specific stock list. Everything
-   *  else falls through to a generic "this ability isn't usable from
-   *  here" line so a future party-active ability that's not yet
-   *  wired doesn't silently no-op. */
+   *  craft picker with their ability-specific stock list. brew_potion
+   *  opens the recipe picker. Everything else falls through to a
+   *  generic "this ability isn't usable from here" line so a future
+   *  party-active ability that's not yet wired doesn't silently
+   *  no-op. */
   const handleUseAbility = useCallback(
     (memberId: string, ability: PartyAbilityRef) => {
       // `memberId` is ignored today — Tinker / Craft are party-wide
@@ -650,6 +739,26 @@ export function PlayPartyScreenOverlay({
         setCastMessage(
           "Pickpocket: walk up to an NPC and choose Steal.",
         );
+        return;
+      }
+      if (ability.id === "brew_potion") {
+        // Open the recipe picker. canBrew gates on an alive
+        // Alchemist; the picker itself surfaces per-recipe
+        // reagent shortages so the player can see WHY a row is
+        // greyed out without leaving the screen.
+        if (
+          state.kind === "ok" &&
+          canBrew(
+            liveSave,
+            state.characters as ReadonlyArray<
+              RaceAbilityCharacterRef & { class?: string }
+            >,
+          )
+        ) {
+          setPendingBrew(true);
+        } else {
+          setCastMessage("Brew Potion: no Alchemist available.");
+        }
         return;
       }
       setCastMessage(
@@ -1512,6 +1621,21 @@ export function PlayPartyScreenOverlay({
           onCancel={() => setPendingCraft(null)}
         />
       ) : null}
+      {/* Brew Potion recipe picker — opens when the Alchemist
+       *  clicks brew_potion on their character sheet. Lists every
+       *  recipe in the catalog; recipes whose reagents the party
+       *  can't fully supply right now render greyed out with a
+       *  "missing 2x serpent_root" hover hint so the player can
+       *  see what to forage for. */}
+      {pendingBrew && state.kind === "ok" ? (
+        <BrewPicker
+          recipes={state.recipes}
+          items={state.items}
+          save={liveSave}
+          onPick={handleBrewPick}
+          onCancel={() => setPendingBrew(false)}
+        />
+      ) : null}
     </div>
   );
 }
@@ -1597,6 +1721,154 @@ function TinkerPicker({
                     <span className="font-mono text-[11px] text-parchment/55">
                       {id}
                     </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Modal picker rendered over the Party screen when the Alchemist
+ *  clicks the brew_potion ability. Lists every recipe in the
+ *  catalog; per-row "ready / missing X" status comes from
+ *  `recipeShortages`. Ready rows are clickable; short rows render
+ *  greyed out with a hint about what's missing so the player can
+ *  see what to forage for. Same dark-modal frame TinkerPicker /
+ *  HealTargetPicker use; ESC + backdrop click cancel.
+ *
+ *  Sorted ready-first so the player sees their options at the
+ *  top of the list — keeps the "what can I brew right now"
+ *  read instant. */
+function BrewPicker({
+  recipes,
+  items,
+  save,
+  onPick,
+  onCancel,
+}: {
+  recipes: ReadonlyArray<RecipeRef>;
+  items: ReadonlyArray<PartyItemRef>;
+  save: WorldSave;
+  onPick: (recipeId: string) => void;
+  onCancel: () => void;
+}) {
+  const itemById = new Map(items.map((i) => [i.id, i] as const));
+  // Precompute the shortage map per recipe — cheaper than two
+  // passes (filter for ready, then render) and lets the row render
+  // the missing-reagent hint without re-deriving.
+  const stockableItems = items.map((i) => ({
+    id: i.id,
+    stackable: (i as { stackable?: boolean }).stackable,
+    charges: (i as { charges?: number }).charges,
+  }));
+  const annotated = recipes.map((r) => ({
+    recipe: r,
+    shortages: recipeShortages(save, r, stockableItems),
+  }));
+  const ready = annotated.filter((a) => Object.keys(a.shortages).length === 0);
+  const short = annotated.filter((a) => Object.keys(a.shortages).length > 0);
+  // ESC cancels — capture-phase so the parent overlay's close-on-ESC
+  // doesn't swallow the Party screen by mistake.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        onCancel();
+      }
+    };
+    window.addEventListener("keydown", onKey, { capture: true });
+    return () =>
+      window.removeEventListener("keydown", onKey, { capture: true });
+  }, [onCancel]);
+
+  /** Format a shortage map into a hint line like
+   *  "missing 1× Moonpetal, 2× Spring Water". Names come from
+   *  items.json when known; falls back to the raw id otherwise. */
+  function shortageHint(s: Record<string, number>): string {
+    const parts: string[] = [];
+    for (const [id, count] of Object.entries(s)) {
+      const name = itemById.get(id)?.name ?? id;
+      parts.push(`${count}× ${name}`);
+    }
+    return `missing ${parts.join(", ")}`;
+  }
+
+  /** Format a recipe's reagent list into a one-line summary —
+   *  "Moonpetal, Spring Water" — shown under the recipe name so
+   *  the player can read the cost without expanding a tooltip. */
+  function reagentSummary(reagents: Record<string, number>): string {
+    return Object.entries(reagents)
+      .map(([id, count]) => {
+        const name = itemById.get(id)?.name ?? id;
+        return count > 1 ? `${count}× ${name}` : name;
+      })
+      .join(", ");
+  }
+
+  return (
+    <div
+      onClick={onCancel}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="flex max-h-[80vh] w-full max-w-md flex-col rounded-lg border border-parchment/25 bg-ink/95 shadow-2xl"
+      >
+        <div className="flex items-center justify-between border-b border-parchment/15 px-3 py-1.5">
+          <h3 className="font-display text-sm text-parchment">
+            Brew Potion — pick a recipe
+          </h3>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="rounded border border-parchment/20 px-2 py-0.5 text-xs text-parchment/70 hover:bg-ink/40"
+          >
+            Cancel
+          </button>
+        </div>
+        {recipes.length === 0 ? (
+          <p className="px-3 py-4 text-sm text-parchment/55">
+            No recipes in this module.
+          </p>
+        ) : (
+          <ul className="flex flex-col gap-1 overflow-auto p-2">
+            {[...ready, ...short].map(({ recipe, shortages }) => {
+              const out = itemById.get(recipe.result_item);
+              const isReady = Object.keys(shortages).length === 0;
+              return (
+                <li key={recipe.id}>
+                  <button
+                    type="button"
+                    onClick={() => (isReady ? onPick(recipe.id) : undefined)}
+                    disabled={!isReady}
+                    className={
+                      isReady
+                        ? "flex w-full flex-col rounded border border-parchment/20 bg-ink/40 px-3 py-2 text-left text-sm text-parchment hover:bg-ink/60"
+                        : "flex w-full flex-col rounded border border-parchment/10 bg-ink/20 px-3 py-2 text-left text-sm text-parchment/40 cursor-not-allowed"
+                    }
+                    title={out?.description ?? recipe.result_item}
+                  >
+                    <span className="flex items-center justify-between">
+                      <span className="font-display">
+                        {recipe.name ?? recipe.id}
+                      </span>
+                      <span className="font-mono text-[11px] text-parchment/55">
+                        {recipe.result_item}
+                      </span>
+                    </span>
+                    <span className="mt-0.5 text-[11px] text-parchment/55">
+                      {reagentSummary(recipe.reagents)}
+                    </span>
+                    {!isReady ? (
+                      <span className="mt-0.5 text-[11px] italic text-amber-300/70">
+                        {shortageHint(shortages)}
+                      </span>
+                    ) : null}
                   </button>
                 </li>
               );

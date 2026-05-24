@@ -6,7 +6,7 @@
       "class": "ranger",
       "race": "dwarf",
       "gender": "Male",
-      "level": 6,
+      "level": 10,
       "exp": 2,
       "hp": 16,
       "mp": 0,
@@ -16,7 +16,7 @@
       "intelligence": 8,
       "wisdom": 8,
       "equipped": {
-        "hands": "club",
+        "hands": "long_bow",
         "body": "cloth"
       },
       "inventory": [],
@@ -38,7 +38,7 @@
       "intelligence": 8,
       "wisdom": 9,
       "equipped": {
-        "hands": "dagger",
+        "hands": "short_bow",
         "body": "cloth"
       },
       "inventory": [],

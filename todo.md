@@ -2,9 +2,6 @@
 # Polish
 
 - Make sure we are not missing abilities, audit and change abilities if needed
-- Make sure Herbalism is implemented
-
-- Implement Potion Brewing crafting ability
 
 - Remove the Knock spell "Use" button from the character sheet since it can only be casted at a locked door from the map
 

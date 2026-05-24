@@ -64,6 +64,7 @@ import {
 } from "../world/Abilities";
 import {
   loadParty,
+  compatibleAmmoIds,
   consumeAmmoFromStash,
   partyHasAmmo,
   swapToMeleeIfOutOfAmmo,
@@ -377,12 +378,25 @@ type SceneMode =
   /** Abilities picker — surfaces the active member's combat-active
    *  class + race abilities (today: Turn Undead). Dispatched by
    *  `runAbility`, NOT the spell pipeline. */
-  | "pick-ability";
+  | "pick-ability"
+  /** Ammo picker — only opens when the player chooses Range AND
+   *  the party carries multiple compatible ammo types (Arrows +
+   *  Fire Arrows on any bow is the canonical case). The picked
+   *  ammo id rides forward on the pending range action so the
+   *  resolution code knows which one to consume + whether to
+   *  ignite the landing cell. Skipped when the party has only
+   *  one compatible ammo — no extra click for the common case. */
+  | "pick-ammo";
 
 /** What to do once a target is picked. */
 type PendingAction =
   | { kind: "throw"; item: Item }
-  | { kind: "range"; weapon: Item }
+  /** Precision-targeted range shot. `ammoId` carries the player's
+   *  pick from the ammo picker (omitted when the party only has
+   *  one compatible ammo — the resolver falls back to
+   *  `weapon.ammo` in that case). Set by `startRangeAttack` or
+   *  the ammo picker's commit handler. */
+  | { kind: "range"; weapon: Item; ammoId?: string }
   | { kind: "cast"; spell: Spell }
   /** Tile-targeted spell — resolution branches by effect_type. */
   | { kind: "tile"; spell: Spell }
@@ -393,6 +407,15 @@ type PendingAction =
    *  and empty ones — so they can light up the arena. Resolution
    *  is in `resolveThrowTile`. */
   | { kind: "throw-tile"; item: Item }
+  /** Tile-targeted RANGE shot — used when a precision bow fires
+   *  an ignitable arrow (Silver Bow + Fire Arrows is the canonical
+   *  case). Mirrors `throw-tile`'s "pick any cell in range" rule
+   *  so the player can shoot a fire arrow into an empty / dark
+   *  cell to light it up. `ammoId` is the ammo to consume +
+   *  ignite-source (always set since the picker only enters this
+   *  mode after the ammo has been chosen). Resolution lives in
+   *  `resolveRangeTile`. */
+  | { kind: "range-tile"; weapon: Item; ammoId: string }
   /** Directional spell — resolution waits on an arrow-key press. */
   | { kind: "direction"; spell: Spell }
   /** Volley-style ranged weapon — caster picks a cardinal direction,
@@ -400,8 +423,9 @@ type PendingAction =
    *  its path (friendly fire risk, just like directional spells).
    *  Used when Item.targeting === "directional" (short bow, long
    *  bow, sling). Crossbow / silver bow remain `range` with a
-   *  target picker. */
-  | { kind: "range-direction"; weapon: Item };
+   *  target picker. `ammoId` mirrors the picker on the precision
+   *  range branch. */
+  | { kind: "range-direction"; weapon: Item; ammoId?: string };
 
 export class CombatScene extends Phaser.Scene {
   private combat!: Combat;
@@ -611,6 +635,18 @@ export class CombatScene extends Phaser.Scene {
    *  abilities and out-of-combat ones never appear. Cleared when
    *  the picker closes or the turn ends. */
   private abilityOptions: Ability[] = [];
+  /** Ammo ids the player can choose between when firing the active
+   *  Range action — populated when entering `pick-ammo` mode and
+   *  cleared when the picker closes. The picker only opens when
+   *  this list has 2+ entries (single-ammo case skips straight to
+   *  target selection). Indexes the same way the other picker
+   *  options do; the Item def for each id is looked up via
+   *  `this.items.get(...)`. */
+  private ammoOptions: string[] = [];
+  /** Weapon the ammo picker is staging for. Cached on entry so the
+   *  commit handler can hand it to `startTargetingFor` without
+   *  re-deriving from the active member. */
+  private pendingRangeWeapon: Item | null = null;
   /** Shared cursor for the scrollable pickers (pick-throw / pick-spell
    *  / pick-ability). Index into the corresponding options array. */
   private pickerCursor = 0;
@@ -2017,6 +2053,8 @@ export class CombatScene extends Phaser.Scene {
     this.equipOptions = [];
     this.spellOptions = [];
     this.abilityOptions = [];
+    this.ammoOptions = [];
+    this.pendingRangeWeapon = null;
     this.pickerCursor = 0;
     this.clearPicker();
     this.clearTargetBadges();
@@ -2034,11 +2072,13 @@ export class CombatScene extends Phaser.Scene {
    */
   private onDigit(n: number): void {
     if (this.mode === "pick-throw" || this.mode === "pick-spell"
-        || this.mode === "pick-use" || this.mode === "pick-equip") {
+        || this.mode === "pick-use" || this.mode === "pick-equip"
+        || this.mode === "pick-ammo") {
       const total =
         this.mode === "pick-throw" ? this.throwOptions.length :
         this.mode === "pick-use"   ? this.useOptions.length :
         this.mode === "pick-equip" ? this.equipOptions.length :
+        this.mode === "pick-ammo"  ? this.ammoOptions.length :
         this.spellOptions.length;
       if (total === 0) return;
       const visibleMax = 12;
@@ -2077,7 +2117,8 @@ export class CombatScene extends Phaser.Scene {
     // In a scrollable picker UP/DOWN walks the picker cursor — not
     // the avatar.
     if (this.mode === "pick-throw" || this.mode === "pick-spell"
-        || this.mode === "pick-use" || this.mode === "pick-equip") {
+        || this.mode === "pick-use" || this.mode === "pick-equip"
+        || this.mode === "pick-ammo") {
       if (key === "UP")   return this.movePickerCursor(-1);
       if (key === "DOWN") return this.movePickerCursor(1);
       return; // ignore left/right in pickers
@@ -2153,13 +2194,15 @@ export class CombatScene extends Phaser.Scene {
       this.mode === "pick-throw" ? this.throwOptions.length :
       this.mode === "pick-spell" ? this.spellOptions.length :
       this.mode === "pick-use"   ? this.useOptions.length :
-      this.mode === "pick-equip" ? this.equipOptions.length : 0;
+      this.mode === "pick-equip" ? this.equipOptions.length :
+      this.mode === "pick-ammo"  ? this.ammoOptions.length : 0;
     if (total === 0) return;
     this.pickerCursor = (this.pickerCursor + delta + total) % total;
     if (this.mode === "pick-throw") this.refreshThrowPicker();
     else if (this.mode === "pick-spell") this.refreshSpellPicker();
     else if (this.mode === "pick-use") this.refreshUsePicker();
     else if (this.mode === "pick-equip") this.refreshEquipPicker();
+    else if (this.mode === "pick-ammo") this.refreshAmmoPicker();
   }
 
   private moveActionCursor(delta: number): void {
@@ -2241,6 +2284,10 @@ export class CombatScene extends Phaser.Scene {
       void this.dispatchAbility(ability);
       return;
     }
+    if (this.mode === "pick-ammo") {
+      this.commitAmmoPick();
+      return;
+    }
     if (this.mode === "pick-use") {
       const opt = this.useOptions[this.pickerCursor];
       if (!opt) return;
@@ -2255,11 +2302,15 @@ export class CombatScene extends Phaser.Scene {
     }
     if (this.mode === "pick-tile") {
       // pick-tile is shared between AOE / teleport / summon spells
-      // (kind: "tile") and ignitable thrown items (kind: "throw-tile").
-      // Branch on the pending action kind so the resolver picks the
-      // correct fire/spell handler.
+      // (kind: "tile"), ignitable thrown items (kind: "throw-tile"),
+      // and precision-bow fire arrows shot at a tile
+      // (kind: "range-tile") — the Silver Bow flavour that lets the
+      // player ignite empty cells to light up dark arenas. Branch
+      // on the pending action kind so the right resolver runs.
       if (this.pendingAction?.kind === "throw-tile") {
         void this.resolveThrowTile();
+      } else if (this.pendingAction?.kind === "range-tile") {
+        void this.resolveRangeTile();
       } else {
         void this.resolveTileSpell();
       }
@@ -2316,23 +2367,242 @@ export class CombatScene extends Phaser.Scene {
       this.refreshLog();
       return;
     }
-    // Branch on the weapon's targeting mode. Volley-style weapons
-    // (short bow, long bow, sling) ask for a cardinal direction —
-    // the bolt flies in a line and hits the first creature it sees.
-    // Precision weapons (crossbow, silver bow, default) open the
-    // numbered target picker the way they always have.
+    // Ammo picker — only opens when the party carries multiple
+    // compatible ammos for this weapon (Arrows + Fire Arrows on
+    // any bow is the canonical case). Single-ammo case skips
+    // straight to target / direction selection so the common
+    // path stays one-click. When the player picks an ammo the
+    // commit handler routes back through `proceedRangeWithAmmo`
+    // with the chosen id stamped on the pending action.
+    const partyData = gameState.partyData;
+    const ammos = partyData ? compatibleAmmoIds(weapon, partyData) : [];
+    if (ammos.length > 1) {
+      this.ammoOptions = ammos;
+      this.pendingRangeWeapon = weapon;
+      this.pickerCursor = 0;
+      this.mode = "pick-ammo";
+      this.refreshAmmoPicker();
+      return;
+    }
+    // Zero / one ammo — proceed directly. `ammos[0]` may be
+    // undefined if the gating was already wrong somehow; the
+    // resolver falls back to `weapon.ammo` in that case.
+    this.proceedRangeWithAmmo(weapon, ammos[0]);
+  }
+
+  /** Continue the Range flow once the ammo is decided. Pulled out
+   *  of `startRangeAttack` so the ammo picker's commit can reuse
+   *  the directional-vs-precision branch without duplicating it.
+   *
+   *  Three sub-paths today:
+   *    1. Directional weapon (short bow, long bow, sling) → pick a
+   *       direction; the arrow flies in a line.
+   *    2. Precision weapon + ignitable ammo (Silver Bow + Fire
+   *       Arrows, etc.) → pick ANY tile in range, including empty
+   *       / dark cells, so the player can use the burning shaft
+   *       as a flare to light up the arena.
+   *    3. Precision weapon + regular ammo → enemy target picker
+   *       (the legacy precision-bow flow). */
+  private proceedRangeWithAmmo(weapon: Item, ammoId?: string): void {
     if (weapon.targeting === "directional") {
-      this.pendingAction = { kind: "range-direction", weapon };
+      this.pendingAction = { kind: "range-direction", weapon, ammoId };
       this.mode = "pick-direction";
       this.clearPicker();
+      const ammoDef = ammoId ? this.items.get(ammoId) : undefined;
+      const ammoLabel = ammoDef?.name ?? weapon.name;
       this.combat.log.push(
-        `${this.combat.current.name} aims their ${weapon.name} — pick a direction.`,
+        `${this.combat.current.name} nocks ${ammoLabel} on their ${weapon.name} — pick a direction.`,
       );
       this.refreshLog();
       this.drawActionHints();
       return;
     }
-    this.startTargetingFor({ kind: "range", weapon }, "enemies");
+    // Precision branch — fork on whether the chosen ammo ignites.
+    // Fire-arrow shots open the tile picker (any cell, even empty /
+    // dark) so the player can use the burning shaft to scout dark
+    // arenas. Regular-ammo shots stay on the legacy enemy picker.
+    const ammoDef = ammoId ? this.items.get(ammoId) : undefined;
+    if (ammoId && ammoDef?.ignite) {
+      this.startRangeTilePicking(weapon, ammoId);
+      return;
+    }
+    this.startTargetingFor({ kind: "range", weapon, ammoId }, "enemies");
+  }
+
+  /** Begin tile selection for a precision-bow fire-arrow shot —
+   *  identical UX to `startThrowTilePicking` but the projectile is
+   *  a bow shot (ammo consumed from the stash) and the range
+   *  comes from the weapon, not the ammo. Cursor starts one tile
+   *  north of the caster so a quick Enter ignites the ground in
+   *  front of them. */
+  private startRangeTilePicking(weapon: Item, ammoId: string): void {
+    const me = this.combat.current;
+    const start = {
+      col: Math.max(1, Math.min(ARENA_COLS - 2, me.position.col)),
+      row: Math.max(1, Math.min(ARENA_ROWS - 2, me.position.row - 1)),
+    };
+    this.tileCursorPos = start;
+    this.pendingAction = { kind: "range-tile", weapon, ammoId };
+    this.mode = "pick-tile";
+    this.clearPicker();
+    this.refreshTileCursor();
+    this.renderRangeTilePickerHint(weapon, ammoId);
+    // Range overlay — same painter the throw-tile picker uses.
+    // drawActionHints reads the pending action's kind to size the
+    // reach grid; range-tile uses the weapon's max range.
+    this.drawActionHints();
+  }
+
+  /** Bottom-of-HUD prompt for the range-tile picker — describes the
+   *  weapon + ammo, the range, and the keyboard controls. Mirrors
+   *  the throw-tile hint so both pickers feel the same. */
+  private renderRangeTilePickerHint(weapon: Item, ammoId: string): void {
+    this.clearPicker();
+    const range = maxRangeFor(weapon);
+    const ammoDef = this.items.get(ammoId);
+    const ammoName = ammoDef?.name ?? ammoId;
+    const lines = [
+      `Firing: ${ammoName}`,
+      `Bow: ${weapon.name} (range ${range})`,
+      "[↑↓←→] move reticle",
+      "[Enter] ignite",
+      "[ESC]   cancel",
+    ];
+    const w = HUD_W - 12, h = lines.length * 18 + 28;
+    const x = HUD_X + 6, y = HUD_Y + HUD_H - 6 - h;
+    this.pickerObjects.push(
+      this.add.rectangle(x, y, w, h, 0x10101a, 0.98)
+        .setOrigin(0)
+        .setStrokeStyle(2, C.accent)
+    );
+    this.pickerObjects.push(
+      this.add.text(x + 10, y + 8, "PICK A TILE TO LIGHT", FONT_HEAD(C.accent))
+    );
+    lines.forEach((line, i) => {
+      this.pickerObjects.push(
+        this.add.text(x + 10, y + 30 + i * 18, line, FONT_BODY())
+      );
+    });
+  }
+
+  /** Resolve a confirmed range-tile fire-arrow shot. Mirrors
+   *  `resolveThrowTile` but consumes ammo from the party stash
+   *  (instead of decrementing a thrown-item stack) and uses the
+   *  weapon's projectile SFX. The picked cell is unconditionally
+   *  ignited — there's no d20 roll because there's no creature
+   *  to dodge; the arrow lands where the player aimed. Anyone
+   *  already standing on the cell takes the first fire tick via
+   *  `igniteCell → applyFireDamageOnEntry`. */
+  private async resolveRangeTile(): Promise<void> {
+    const action = this.pendingAction;
+    if (!action || action.kind !== "range-tile") return;
+    const me = this.combat.current;
+    const weapon = action.weapon;
+    const ammoId = action.ammoId;
+    const target = { ...this.tileCursorPos };
+    // Consume ammo first — if the stash is empty (race condition
+    // between the picker entry + this commit) fizzle cleanly.
+    const partyData = gameState.partyData;
+    if (partyData && !consumeAmmoFromStash(partyData, ammoId)) {
+      this.combat.log.push(`${me.name} is out of ${ammoId}!`);
+      this.refreshLog();
+      this.pendingAction = null;
+      this.mode = "default";
+      this.clearTileCursor();
+      this.clearPicker();
+      this.refreshActionMenu();
+      return;
+    }
+    const ammoDef = this.items.get(ammoId) ?? null;
+    this.busy = true;
+    this.mode = "default";
+    this.pendingAction = null;
+    this.clearTileCursor();
+    this.clearPicker();
+    this.clearMoveHints();
+    try {
+      // Bow whistle + ember-trail projectile from shooter → cell.
+      Sfx.play("arrow");
+      await this.animateBump(me, me.position, target);
+      const start = this.bodyXY(me);
+      const endPx = {
+        x: this.tileX(target.col),
+        y: this.tileY(target.row),
+      };
+      await projectileLine(this, start, endPx, VFX_COLOURS.ember, 240);
+      const ammoName = ammoDef?.name ?? ammoId;
+      this.combat.log.push(
+        `${me.name} fires ${ammoName} from ${weapon.name} at (${target.col}, ${target.row}).`,
+      );
+      // Ignite the cell. Same engine path the throw-torch + creature-
+      // shot branches use.
+      this.igniteCell(
+        target.col,
+        target.row,
+        ammoDef?.light_range ?? 3,
+        ammoDef?.power ?? 3,
+      );
+      const endX = this.tileX(target.col);
+      const endY = this.tileY(target.row);
+      radialBurst(
+        this,
+        { x: endX, y: endY },
+        VFX_COLOURS.fire,
+        VFX_COLOURS.ember,
+        44,
+      ).catch(() => undefined);
+      this.combat.log.push(
+        `The ${ammoName} catches the ground at (${target.col}, ${target.row}) on fire.`,
+      );
+      this.combat.movePoints = 0;
+      this.refreshAll();
+      if (this.combat.isOver) return this.endEncounter();
+      this.endActorTurn();
+    } finally {
+      this.busy = false;
+    }
+  }
+
+  /** Render the ammo picker — same numbered-list shape the throw /
+   *  use / spell pickers use. Each row carries the ammo's display
+   *  name, the count remaining in the stash, and a one-word tag
+   *  for fire-arrow variants so the player can see at a glance
+   *  which row plants a fire on impact. */
+  private refreshAmmoPicker(): void {
+    const partyData = gameState.partyData;
+    const lines = this.ammoOptions.map((id) => {
+      const def = this.items.get(id);
+      const name = def?.name ?? id;
+      let count = 0;
+      if (partyData) {
+        for (const e of partyData.inventory) {
+          if (e.item === id) count += e.charges ?? 1;
+        }
+      }
+      const tag = def?.ignite ? "  [ignites]" : "";
+      return `${name} ×${count}${tag}`;
+    });
+    this.renderPicker("PICK AMMO", lines, this.pickerCursor);
+  }
+
+  /** Commit the player's ammo pick and continue into target /
+   *  direction selection. Called by the picker-key dispatch when
+   *  the player presses Enter on a row (or the matching number
+   *  key for direct selection). */
+  private commitAmmoPick(): void {
+    const ammoId = this.ammoOptions[this.pickerCursor];
+    const weapon = this.pendingRangeWeapon;
+    this.ammoOptions = [];
+    this.pendingRangeWeapon = null;
+    this.clearPicker();
+    if (!ammoId || !weapon) {
+      // Defensive: a click into an empty picker drops back to
+      // default mode rather than crashing.
+      this.mode = "default";
+      this.refreshActionMenu();
+      return;
+    }
+    this.proceedRangeWithAmmo(weapon, ammoId);
   }
 
   // ── Throw / Cast / Target sub-modes ──────────────────────────────
@@ -3367,11 +3637,15 @@ export class CombatScene extends Phaser.Scene {
         // one bolt for crossbows, one stone for slings. Ammo is
         // pooled in the shared party stash so any character with the
         // matching weapon can draw from it. The Range option is gated
-        // upstream (refreshActions checks partyHasAmmo before
+        // upstream (refreshActions checks compatibleAmmoIds before
         // enabling the row), so reaching this branch with no ammo
         // shouldn't happen — but defend against it anyway with a
         // clean fizzle rather than a silent free shot.
-        const ammoName = action.weapon.ammo;
+        //
+        // `action.ammoId` is set by the ammo picker when the party
+        // carries multiple compatible ammo types; falls back to the
+        // weapon's default ammo for the single-ammo case.
+        const ammoName = action.ammoId ?? action.weapon.ammo;
         const partyData = gameState.partyData;
         if (ammoName && partyData && !consumeAmmoFromStash(partyData, ammoName)) {
           this.combat.log.push(`${me.name} is out of ${ammoName}!`);
@@ -3379,18 +3653,73 @@ export class CombatScene extends Phaser.Scene {
           this.refreshActionMenu();
           return;
         }
+        // Look up the ammo item's catalog entry so we can branch on
+        // `ignite` (fire arrows leave a fire on the target's cell)
+        // and pick a thematic projectile colour. Falls back to a
+        // featherless silhouette when the ammo doesn't resolve.
+        const ammoDef = ammoName ? this.items.get(ammoName) ?? null : null;
+        const ignites = !!ammoDef?.ignite;
         const result = resolveThrow(me, target, action.weapon, defaultRng);
+        const ammoLabel = ammoDef?.name ?? action.weapon.name;
         this.combat.log.push(
           result.hit
-            ? `${me.name} fires ${action.weapon.name} at ${target.name} (d20:${result.roll}=${result.total} vs AC${target.ac}) — ${result.damage} dmg${result.killed ? ", defeated!" : "."}`
-            : `${me.name} fires ${action.weapon.name} at ${target.name} — miss.`
+            ? `${me.name} fires ${ammoLabel} at ${target.name} (d20:${result.roll}=${result.total} vs AC${target.ac}) — ${result.damage} dmg${result.killed ? ", defeated!" : "."}`
+            : `${me.name} fires ${ammoLabel} at ${target.name} — miss.`
         );
-        // Bow / crossbow / sling whistle and projectile streak.
+        // Bow / crossbow / sling whistle and projectile streak. Fire
+        // arrows get an orange/red trail (VFX_COLOURS.ember) — same
+        // palette the existing thrown-torch path uses, so the two
+        // feedback families read as cousins.
         Sfx.play("arrow");
         await this.animateBump(me, me.position, target.position);
-        await this.flyProjectile(me, target, VFX_COLOURS.white);
+        await this.flyProjectile(
+          me,
+          target,
+          ignites ? VFX_COLOURS.ember : VFX_COLOURS.white,
+        );
         await this.animateHit(target, result);
         this.refreshHp(target);
+        // Fire arrows ALWAYS ignite the target's tile — even on a
+        // miss the burning shaft strikes the ground there and
+        // catches it. Before this rule the fire-arrow effect was
+        // easy to miss: a kill-shot left nothing alive on the tile
+        // for the fire-cell tick to damage, and a miss left no
+        // visible cue at all. Igniting unconditionally makes the
+        // ability visually unambiguous — the player can see flames
+        // on the ground regardless of the d20 outcome — and gives
+        // the smart play a meaningful tactical option (chuck a
+        // fire arrow at a tile to flush out a fighter, even if the
+        // shot itself fizzles).
+        if (ignites && ammoDef) {
+          this.igniteCell(
+            target.position.col,
+            target.position.row,
+            ammoDef.light_range ?? 3,
+            ammoDef.power ?? 3,
+          );
+          // On-impact fire burst — distinct from the standing
+          // emitter that follows. The user reported the fire
+          // wasn't visible at all; a one-shot bright burst makes
+          // the moment unmistakable while the longer-lived
+          // emitter shows the fire is still burning. Anchored
+          // to the body's pixel coordinates same as the damage
+          // floater above.
+          const targetBody = this.bodies.get(target.id);
+          if (targetBody) {
+            radialBurst(
+              this,
+              { x: targetBody.x, y: targetBody.y },
+              VFX_COLOURS.fire,
+              VFX_COLOURS.ember,
+              44,
+            ).catch(() => undefined);
+          }
+          this.combat.log.push(
+            result.hit
+              ? `${ammoLabel} ignites ${target.name}'s tile — fire spreads!`
+              : `${ammoLabel} thuds into the ground near ${target.name} and the tile bursts into flame.`,
+          );
+        }
         if (result.hit) {
           this.applyWeaponDurability(me.id);
           this.applyArmorDurability(target.id);
@@ -3762,13 +4091,18 @@ export class CombatScene extends Phaser.Scene {
     // Clamp to inside the wall ring (1..N-2).
     next.col = Math.max(1, Math.min(ARENA_COLS - 2, next.col));
     next.row = Math.max(1, Math.min(ARENA_ROWS - 2, next.row));
-    // For throw-tile, enforce the item's max range as a Chebyshev
-    // distance from the caster. Refuse moves that would step the
-    // reticle past the cap.
+    // For throw-tile + range-tile, enforce the item's / weapon's
+    // max range as a Chebyshev distance from the caster. Refuse
+    // moves that would step the reticle past the cap.
     const pending = this.pendingAction;
-    if (this.mode === "pick-tile" && pending?.kind === "throw-tile") {
+    if (
+      this.mode === "pick-tile" &&
+      (pending?.kind === "throw-tile" || pending?.kind === "range-tile")
+    ) {
       const caster = this.combat.current.position;
-      const range = maxRangeFor(pending.item);
+      const sourceItem =
+        pending.kind === "throw-tile" ? pending.item : pending.weapon;
+      const range = maxRangeFor(sourceItem);
       const cheb = Math.max(
         Math.abs(next.col - caster.col),
         Math.abs(next.row - caster.row),
@@ -3789,10 +4123,16 @@ export class CombatScene extends Phaser.Scene {
     if (this.mode !== "pick-tile") return;
     const action = this.pendingAction;
     if (!action) return;
-    if (action.kind !== "tile" && action.kind !== "throw-tile") return;
+    if (
+      action.kind !== "tile" &&
+      action.kind !== "throw-tile" &&
+      action.kind !== "range-tile"
+    )
+      return;
     const { col, row } = this.tileCursorPos;
     // Per-action preview radius: spells use `effect_value.radius`,
-    // ignitable throws use the item's `light_range` (default 3).
+    // ignitable throws / fire-arrow shots use the ammo / item's
+    // `light_range` (default 3).
     let radius = 0;
     let previewColor = 0xff8e3c;
     if (action.kind === "tile") {
@@ -3800,9 +4140,15 @@ export class CombatScene extends Phaser.Scene {
       radius = typeof (ev as Record<string, unknown>).radius === "number"
         ? (ev as { radius: number }).radius
         : 0;
-    } else {
+    } else if (action.kind === "throw-tile") {
       // throw-tile: preview the area the fire would light up.
       radius = action.item.light_range ?? 3;
+      previewColor = 0xffb84d;
+    } else {
+      // range-tile: preview the area the fire arrow would light up.
+      // light_range lives on the ammo record (Fire Arrows = 3).
+      const ammoDef = this.items.get(action.ammoId);
+      radius = ammoDef?.light_range ?? 3;
       previewColor = 0xffb84d;
     }
     // Lift the reticle + radius preview above the darkness overlay
@@ -3822,7 +4168,10 @@ export class CombatScene extends Phaser.Scene {
     //
     // Outside darkness mode, no overlay is drawn, so legacy depths
     // are fine.
-    const liftAboveDarkness = action.kind === "throw-tile" || this.darkness;
+    const liftAboveDarkness =
+      action.kind === "throw-tile" ||
+      action.kind === "range-tile" ||
+      this.darkness;
     const previewDepth = liftAboveDarkness ? 21 : 15;
     const cursorDepth = liftAboveDarkness ? 22 : 16;
     if (radius > 0) {
@@ -4035,7 +4384,11 @@ export class CombatScene extends Phaser.Scene {
     // bow with built-in ammo (Rock — both throwable AND ranged)
     // has no `ammo` string and shouldn't try to consume from the
     // stash, mirroring the existing target-range branch.
-    const ammoName = weapon.ammo;
+    //
+    // `action.ammoId` is set by the ammo picker when the party
+    // carries multiple compatible ammo types; falls back to the
+    // weapon's default ammo for the single-ammo case.
+    const ammoName = action.ammoId ?? weapon.ammo;
     const partyData = gameState.partyData;
     if (ammoName && partyData && !consumeAmmoFromStash(partyData, ammoName)) {
       this.combat.log.push(`${me.name} is out of ${ammoName}!`);
@@ -4045,6 +4398,10 @@ export class CombatScene extends Phaser.Scene {
       this.refreshActionMenu();
       return;
     }
+    // Catalog lookup so the directional fire-arrow branch can also
+    // tint the projectile + ignite the cell on hit.
+    const ammoDef = ammoName ? this.items.get(ammoName) ?? null : null;
+    const ignites = !!ammoDef?.ignite;
 
     this.busy = true;
     this.mode = "default";
@@ -4083,29 +4440,92 @@ export class CombatScene extends Phaser.Scene {
       };
       // Bow / crossbow / sling whistle and projectile streak — same
       // VFX as the target-range path so the two firing modes feel
-      // like cousins, not strangers.
-      await projectileLine(this, start, endPx, VFX_COLOURS.white, 220);
+      // like cousins, not strangers. Fire arrows get the ember
+      // palette so the trail reads as a burning shaft.
+      await projectileLine(
+        this,
+        start,
+        endPx,
+        ignites ? VFX_COLOURS.ember : VFX_COLOURS.white,
+        220,
+      );
 
       if (trace.hitId) {
         const target = this.combat.byId(trace.hitId);
         const result = resolveThrow(me, target, weapon, defaultRng);
         const friendly = target.side === me.side;
         const tag = friendly ? " — FRIENDLY FIRE!" : "";
+        const ammoLabel = ammoDef?.name ?? weapon.name;
         this.combat.log.push(
           result.hit
-            ? `${me.name} looses ${weapon.name} → ${target.name} (${dir.toUpperCase()})${tag} — ${result.damage} dmg${result.killed ? ", defeated!" : "."}`
-            : `${me.name} looses ${weapon.name} → ${target.name} (${dir.toUpperCase()}) — miss.`,
+            ? `${me.name} looses ${ammoLabel} → ${target.name} (${dir.toUpperCase()})${tag} — ${result.damage} dmg${result.killed ? ", defeated!" : "."}`
+            : `${me.name} looses ${ammoLabel} → ${target.name} (${dir.toUpperCase()}) — miss.`,
         );
         await this.animateHit(target, result);
         this.refreshHp(target);
+        // Fire arrows ignite the target's cell regardless of the
+        // d20 outcome — see the precision branch above for the
+        // full rationale. Hit OR miss, the burning shaft lights
+        // up the tile.
+        if (ignites && ammoDef) {
+          this.igniteCell(
+            target.position.col,
+            target.position.row,
+            ammoDef.light_range ?? 3,
+            ammoDef.power ?? 3,
+          );
+          const targetBody = this.bodies.get(target.id);
+          if (targetBody) {
+            radialBurst(
+              this,
+              { x: targetBody.x, y: targetBody.y },
+              VFX_COLOURS.fire,
+              VFX_COLOURS.ember,
+              44,
+            ).catch(() => undefined);
+          }
+          this.combat.log.push(
+            result.hit
+              ? `${ammoLabel} ignites ${target.name}'s tile — fire spreads!`
+              : `${ammoLabel} thuds into the ground near ${target.name} and the tile bursts into flame.`,
+          );
+        }
         if (result.hit) {
           this.applyWeaponDurability(me.id);
           this.applyArmorDurability(target.id);
         }
       } else {
-        this.combat.log.push(
-          `${me.name}'s ${weapon.name} flies ${dir.toUpperCase()} — nothing in line.`,
-        );
+        // No creature in line. For a regular arrow this is a fizzle.
+        // For a fire arrow the shaft still lands at the end of its
+        // path (trace.endCol / endRow — either the weapon's max
+        // range OR the first obstruction it stopped against), and
+        // the burning shaft ignites that cell. Lets the player
+        // shoot fire arrows down a dark corridor to light it up,
+        // hit-or-miss, exactly the player's request.
+        if (ignites && ammoDef) {
+          this.igniteCell(
+            trace.endCol,
+            trace.endRow,
+            ammoDef.light_range ?? 3,
+            ammoDef.power ?? 3,
+          );
+          const endX = this.tileX(trace.endCol);
+          const endY = this.tileY(trace.endRow);
+          radialBurst(
+            this,
+            { x: endX, y: endY },
+            VFX_COLOURS.fire,
+            VFX_COLOURS.ember,
+            44,
+          ).catch(() => undefined);
+          this.combat.log.push(
+            `${me.name}'s ${ammoDef.name ?? "Fire Arrows"} fall short — the tile at (${trace.endCol}, ${trace.endRow}) bursts into flame.`,
+          );
+        } else {
+          this.combat.log.push(
+            `${me.name}'s ${weapon.name} flies ${dir.toUpperCase()} — nothing in line.`,
+          );
+        }
       }
       // Same end-of-turn behaviour as throw/cast/target-range: the
       // shot consumes the rest of the turn.
@@ -5431,7 +5851,13 @@ export class CombatScene extends Phaser.Scene {
       // never need a quiver: the weapon IS the projectile.
       if (!equippedWeapon.ammo) return true;
       const partyData = gameState.partyData;
-      return !!partyData && partyHasAmmo(partyData, equippedWeapon.ammo);
+      if (!partyData) return false;
+      // Use compatibleAmmoIds (not partyHasAmmo on the primary
+      // alone) so a bow with only Fire Arrows in stash still
+      // enables the Range row — otherwise the player would see
+      // their Fire Arrows in the inventory but get no way to
+      // shoot them after the regular arrows ran out.
+      return compatibleAmmoIds(equippedWeapon, partyData).length > 0;
     })();
     const canRange = !!equippedWeapon && isRanged(equippedWeapon) && ammoOk;
     const canUse = !!member && this.partyHasCombatUsable();
@@ -5728,6 +6154,13 @@ export class CombatScene extends Phaser.Scene {
       // lifts.
       cells = this.throwTileReachCells(me, maxRangeFor(pending.item));
       color = C.rangeHint;
+    } else if (this.mode === "pick-tile" && pending?.kind === "range-tile") {
+      // Range-tile: same any-open-cell rule the throw-tile picker
+      // uses, but the range comes from the bow. Fire arrows
+      // explicitly target the dark, so no LOS / visibility gate —
+      // the player shoots into shadow to see what's there.
+      cells = this.throwTileReachCells(me, maxRangeFor(pending.weapon));
+      color = C.rangeHint;
     } else {
       // Other sub-modes (pick-throw, pick-use, pick-equip, pick-spell,
       // pick-tile for spells) own their own overlays / pickers. Clear
@@ -5741,7 +6174,10 @@ export class CombatScene extends Phaser.Scene {
     // layer in night fights — exactly the situation a throw-torch
     // reach overlay needs to be visible in.
     const hintDepth =
-      this.mode === "pick-tile" && pending?.kind === "throw-tile" ? 22 : 0;
+      this.mode === "pick-tile" &&
+      (pending?.kind === "throw-tile" || pending?.kind === "range-tile")
+        ? 22
+        : 0;
     for (const c of cells) {
       const hint = this.add
         .rectangle(this.tileX(c.col), this.tileY(c.row), TILE - 6, TILE - 6, color, 0.30)

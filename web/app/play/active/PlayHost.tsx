@@ -407,6 +407,16 @@ interface LoadedCatalog {
     name?: string;
     params?: Record<string, unknown> | null;
   }>;
+  /** Recipes catalog — read by the Alchemist's brew_potion
+   *  picker so a player can pick a recipe to convert reagents
+   *  into a finished potion. Shape mirrors recipes.json
+   *  (id, name, result_item, reagents-by-id-count). */
+  recipes: ReadonlyArray<{
+    id: string;
+    name?: string;
+    result_item: string;
+    reagents: Record<string, number>;
+  }>;
   /** Module-level default soundtrack — file URLs the SoundtrackPlayer
    *  rotates through when neither the current map nor the active
    *  dungeon has its own override. Loaded from the leaf module's
@@ -3919,6 +3929,17 @@ export function PlayHost() {
                 title: `${flash.memberName} • ${flash.abilityName}`,
                 subtitle,
               });
+            } else if (flash.kind === "brew") {
+              // Reuses the craft placard kind — structurally a brew
+              // is the same beat as a craft (recipe in, finished
+              // item out). Title names both the Alchemist and the
+              // recipe so the player sees who did what; subtitle
+              // is the produced potion's display name.
+              fireQuestCelebration({
+                kind: "craft",
+                title: `${flash.memberName} • ${flash.recipeName}`,
+                subtitle: flash.itemName,
+              });
             }
           }}
         />
@@ -4170,6 +4191,7 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
     spellsLayers,
     itemsLayers,
     abilitiesLayers,
+    recipesLayers,
     dungeonsLayers,
     questsLayers,
     npcsLayers,
@@ -4187,6 +4209,7 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
     src.loadModelLayers(moduleId, "spells").catch(() => null),
     src.loadModelLayers(moduleId, "items").catch(() => null),
     src.loadModelLayers(moduleId, "abilities").catch(() => null),
+    src.loadModelLayers(moduleId, "recipes").catch(() => null),
     src.loadModelLayers(moduleId, "dungeons").catch(() => null),
     src.loadModelLayers(moduleId, "quests").catch(() => null),
     src.loadModelLayers(moduleId, "npcs").catch(() => null),
@@ -4330,6 +4353,21 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
       params?: Record<string, unknown> | null;
     }>;
   };
+  // Recipes catalog — read by the Alchemist's brew_potion picker.
+  // Same merge pattern as items / abilities; missing-module
+  // tolerated (the picker just renders an empty list).
+  const recipesDoc = (mergeModel(
+    "recipes",
+    recipesLayers?.inherited ?? [],
+    recipesLayers?.ownFile ?? null,
+  ) ?? {}) as {
+    recipes?: Array<{
+      id: string;
+      name?: string;
+      result_item: string;
+      reagents: Record<string, number>;
+    }>;
+  };
   // Same draft-overlay treatment for dungeons so an unpublished
   // soundtrack / level edit shows up in play. DungeonsBrowse writes
   // drafts under the same model key.
@@ -4398,6 +4436,7 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
     knockSpell,
     items: itemsDoc.items ?? [],
     abilities: abilitiesDoc.abilities ?? [],
+    recipes: recipesDoc.recipes ?? [],
     moduleSoundtrack,
   };
 }

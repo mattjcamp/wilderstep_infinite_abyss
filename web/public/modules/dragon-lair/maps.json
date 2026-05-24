@@ -33185,19 +33185,19 @@
             "tag": "water"
           },
           {
-            "id": "grass",
-            "name": "Grass",
+            "id": "moongate",
+            "name": "Moon Gate",
             "walkable": true,
             "obstructs": false,
             "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
+            "light_source": true,
+            "light_range": 5,
+            "animation": null,
+            "counter": "reagent",
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass1.png",
-            "tag": "terrain"
+            "sprite": "map/moongate.png",
+            "tag": "dungeon"
           },
           {
             "id": "grass",

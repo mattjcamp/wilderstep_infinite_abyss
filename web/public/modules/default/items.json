@@ -1058,10 +1058,10 @@
       "category": "general",
       "name": "Fire Arrows",
       "animation_id": null,
-      "description": "A bundle of fire arrows. Fire arrows explode on impact and produce the same effect as a throw torch.",
+      "description": "A bundle of fire arrows. Fire arrows explode on impact and produce the same effect as a thrown torch — they light the tile they land on and damage anyone standing in it.",
       "icon": "ammo",
       "item_type": "ammo",
-      "power": 0,
+      "power": 3,
       "ranged": false,
       "throwable": false,
       "slots": [],
@@ -1070,8 +1070,10 @@
       "durability": 0,
       "party_can_equip": false,
       "character_can_equip": false,
-      "buy": 0,
-      "sell": 0
+      "buy": 25,
+      "sell": 10,
+      "ignite": true,
+      "light_range": 3
     }
   ]
 }

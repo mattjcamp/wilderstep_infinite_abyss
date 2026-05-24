@@ -4,7 +4,7 @@
     {
       "id": "aldric",
       "name": "Aldric",
-      "class": "paladin",
+      "class": "ranger",
       "race": "elf",
       "gender": "Male",
       "level": 10,
@@ -17,7 +17,7 @@
       "intelligence": 8,
       "wisdom": 8,
       "equipped": {
-        "hands": "sword",
+        "hands": "silver_bow",
         "body": "chain"
       },
       "inventory": [],
@@ -39,7 +39,7 @@
       "intelligence": 8,
       "wisdom": 9,
       "equipped": {
-        "hands": "dagger",
+        "hands": "short_bow",
         "body": "leather"
       },
       "inventory": [],

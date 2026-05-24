@@ -574,6 +574,46 @@ export function partyHasAmmo(party: Party, itemName: string): boolean {
   return findAmmoInStash(party, itemName) !== null;
 }
 
+/** Ammo-family aliases — when a weapon's `ammo` field names the
+ *  catalog's standard ammo for that weapon class, the player can
+ *  also load any item id in the family list as a substitute.
+ *  Fire Arrows are the canonical alternate today: they swap in
+ *  for regular Arrows on any bow, dealing the same shot damage
+ *  but igniting the target's cell on impact.
+ *
+ *  Adding a new alternate ammo (Silver Bolts, Poison Stones, …)
+ *  is a one-line addition here plus the matching item record.
+ *  Aliases are not symmetric: the weapon's primary ammo is the
+ *  KEY, substitutes are the values; "fire_arrows" doesn't alias
+ *  back to "arrows" (a weapon that takes only fire_arrows
+ *  wouldn't accept regular arrows). */
+const AMMO_FAMILY: Readonly<Record<string, ReadonlyArray<string>>> = {
+  arrows: ["fire_arrows"],
+};
+
+/** Every ammo id the party currently has that the weapon could
+ *  load, in display order: primary ammo first, then any family
+ *  aliases. Missing ammo (empty stack OR absent from the stash)
+ *  is filtered out — the result is a "what can I shoot right
+ *  now" list rather than a "what could this weapon ever accept"
+ *  list. Returns an empty list when the weapon has no `ammo`
+ *  field at all (melee / spell-only).
+ *
+ *  Drives two surfaces:
+ *    1. Range gating — when this list is empty the row is
+ *       disabled.
+ *    2. The ammo picker — when the list has 2+ entries the
+ *       combat scene prompts the player to choose before
+ *       resolving the shot. */
+export function compatibleAmmoIds(weapon: Item, party: Party): string[] {
+  if (!weapon.ammo) return [];
+  const candidates: string[] = [
+    weapon.ammo,
+    ...(AMMO_FAMILY[weapon.ammo] ?? []),
+  ];
+  return candidates.filter((id) => partyHasAmmo(party, id));
+}
+
 /**
  * If `member` is wielding a ranged weapon in the `hands` slot and the
  * shared stash has no matching ammo, there's no offhand to swap in

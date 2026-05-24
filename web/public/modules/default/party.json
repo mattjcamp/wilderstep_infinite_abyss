@@ -23,6 +23,10 @@
       "charges": 100
     },
     {
+      "item": "fire_arrows",
+      "charges": 20
+    },
+    {
       "item": "bolts",
       "charges": 100
     },
