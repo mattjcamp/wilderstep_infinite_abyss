@@ -4393,10 +4393,23 @@ export class CombatScene extends Phaser.Scene {
     // on the new actor's standing cell) sees an empty set.
     this.fireDamagedThisTurn.clear();
     // Anyone who STARTS the turn on a fire cell takes a hit before
-    // they can move. Mirrors the "stepped onto" case.
-    const cur = this.combat?.current;
-    if (cur && cur.hp > 0) {
+    // they can move. Mirrors the "stepped onto" case. If that hit
+    // kills them, keep advancing past them — without this we'd
+    // hand the dead actor off to kickOffCurrentTurn, which routes
+    // AI-controlled enemies into runMonsterTurn and the loop would
+    // try to attack from a dead actor. Bounded by combatants.length
+    // because endTurn itself bails when isOver is true.
+    while (true) {
+      const cur = this.combat?.current;
+      if (!cur || cur.hp <= 0) break;
       this.applyFireDamageOnEntry(cur.position.col, cur.position.row);
+      if (cur.hp > 0) break;
+      // Fire just killed the actor whose turn we were about to start.
+      // Advance again. If the encounter ends as a result, the post-
+      // loop isOver check below handles it.
+      this.combat.endTurn();
+      this.fireDamagedThisTurn.clear();
+      if (this.combat.isOver) break;
     }
     this.refreshAll();
     this.flashConsumeEvents();
@@ -4536,6 +4549,14 @@ export class CombatScene extends Phaser.Scene {
           // AI takes fire damage on entry too — same predicate the
           // player path uses, same per-turn gate.
           this.applyFireDamageOnEntry(moveResult.to.col, moveResult.to.row);
+          // If walking onto a fire (thrown torch, lit cell) just
+          // killed the active monster, bail out of the AI loop
+          // immediately. Without this break, the next iteration
+          // would call decideMonsterIntent on a dead actor and the
+          // attack path would throw "Attacker is down" — the
+          // engine's defensive guard catches it but we'd rather
+          // not even get there.
+          if (this.combat.current.hp <= 0) break;
         } else if (moveResult.kind === "attacked") {
           const target = this.combat.byId(moveResult.result.targetId);
           await this.animateBump(actor, before, target.position);

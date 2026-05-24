@@ -369,6 +369,100 @@ export function healingSparkles(
 }
 
 /**
+ * Campfire rest — fired when the party uses Camping Supplies on the
+ * Party screen. Plays a stack of three cues so the rest reads as
+ * something more substantial than a one-shot heal:
+ *
+ *   1. A warm orange glow pool at the party's feet (slow fade-in
+ *      then fade-out, like a settled fire).
+ *   2. A couple of flame-shaped "flicker" tongues licking upward
+ *      from the centre, slightly off-axis so they read as a fire
+ *      rather than a heal sparkle.
+ *   3. ~10 ember dots drifting upward and fading — the same idea
+ *      as healingSparkles but tinted ember / fire so it doesn't
+ *      look like a Cleric heal.
+ *
+ * Tunable counts default to a comfortable middle setting; tests
+ * can pass `embers: 0, flickers: 0` to keep the helper cheap.
+ */
+export function campfireRest(
+  scene: Phaser.Scene,
+  at: Pt,
+  opts: { embers?: number; flickers?: number } = {},
+): Promise<void> {
+  const embers = opts.embers ?? 10;
+  const flickers = opts.flickers ?? 3;
+  return new Promise((resolve) => {
+    // 1. Warm pool of light at the party's feet. Fades in over the
+    //    first third of the animation, holds briefly, then fades out.
+    const pool = scene.add
+      .circle(at.x, at.y + TILE * 0.25, TILE * 0.55, COLOURS.fire, 0)
+      .setDepth(44);
+    scene.tweens.add({
+      targets: pool,
+      alpha: 0.35,
+      duration: 320,
+      yoyo: true,
+      hold: 380,
+      onComplete: () => pool.destroy(),
+    });
+
+    // 2. Flame flicker tongues — short vertical ellipses that pop
+    //    up off the pool centre and fade as they rise.
+    for (let i = 0; i < flickers; i++) {
+      const ox = (Math.random() - 0.5) * TILE * 0.4;
+      const flame = scene.add
+        .ellipse(
+          at.x + ox,
+          at.y + TILE * 0.15,
+          TILE * 0.18,
+          TILE * 0.32,
+          COLOURS.ember,
+          0.85,
+        )
+        .setDepth(46);
+      scene.tweens.add({
+        targets: flame,
+        y: flame.y - TILE * 0.5,
+        scaleX: 0.6,
+        scaleY: 1.3,
+        alpha: 0,
+        duration: 480 + Math.random() * 160,
+        delay: 80 + i * 70,
+        onComplete: () => flame.destroy(),
+      });
+    }
+
+    // 3. Rising embers. Same broad idea as healingSparkles but
+    //    fire-tinted and lifted a little higher so the eye reads
+    //    "smoke + sparks off a fire" rather than "heal sparkles".
+    const colors = [COLOURS.ember, COLOURS.fire, 0xfff1c2];
+    for (let i = 0; i < embers; i++) {
+      const ox = (Math.random() - 0.5) * TILE * 0.7;
+      const sx = at.x + ox;
+      const sy = at.y + TILE / 3;
+      const dot = scene.add
+        .circle(sx, sy, 2 + Math.random() * 1.2, colors[i % colors.length], 1)
+        .setDepth(55);
+      scene.tweens.add({
+        targets: dot,
+        // Embers drift slightly side-to-side as they rise.
+        x: sx + (Math.random() - 0.5) * TILE * 0.5,
+        y: sy - TILE * 1.2 - Math.random() * 12,
+        alpha: 0,
+        duration: 900 + Math.random() * 400,
+        delay: 60 + Math.random() * 280,
+        onComplete: () => dot.destroy(),
+      });
+    }
+
+    // Resolve a little after the longest cue so callers awaiting the
+    // promise get a clean "rest finished" moment.
+    scene.time.delayedCall(1300, () => resolve());
+  });
+}
+
+/**
  * Buff aura — slow expanding ring around an ally. Used for Bless,
  * Shield, Long Shanks, Invisibility (slightly different colours per
  * source; caller picks).

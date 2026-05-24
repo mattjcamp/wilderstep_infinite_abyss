@@ -46,6 +46,16 @@ export interface SavedCharacterState {
   custom: unknown | null;
   hp: number;
   mp: number;
+  /** Peak HP / MP at the member's current level. Optional so legacy
+   *  saves still parse; PlayHost's load path backfills them from
+   *  the catalog (and combat's post-fight sync writes them back) so
+   *  every running save eventually carries real peak values. Without
+   *  these fields the Party screen's heal-to-full path has to scrape
+   *  max from the live characters.json — which breaks for custom
+   *  characters (no catalog entry) and for any future per-member
+   *  max changes (level-up bonuses, equipment-granted +HP, etc.). */
+  max_hp?: number;
+  max_mp?: number;
   /** Carried items + charges + per-instance durability. Pattern matches
    *  v1's per-character inventory (separate from the shared party
    *  stash). `durability` rides on a per-row basis so two copies of the

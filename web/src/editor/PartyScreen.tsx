@@ -79,6 +79,21 @@ export interface PartyCharacterRef {
   exp?: number;
   hp: number;
   mp?: number;
+  /** Peak HP / MP at the current level — sourced from the static
+   *  catalog character at load time and stitched on by the play
+   *  overlay (PlayPartyScreenOverlay). Absent in pure-catalog
+   *  contexts (editor preview), where consumers fall back to
+   *  treating current as max. */
+  maxHp?: number;
+  maxMp?: number;
+  /** Per-character active effects (poison, buffs, curses, etc.)
+   *  copied off SavedCharacterState by the play overlay so the
+   *  roster card and sheet can surface "Poisoned (4 steps)" etc.
+   *  Absent in editor preview. */
+  effects?: ReadonlyArray<{
+    id: string;
+    duration: number | "permanent" | "instant" | "until_save";
+  }>;
   /** Ability scores. Default to 10 (the canonical "no modifier"
    *  value) when the source record omits them — keeps the sheet's
    *  stat math sane for partial drafts. */
@@ -173,6 +188,11 @@ export interface PartyItemRef {
   /** Optional render hint copied from items.json — purely for the
    *  Examine readout right now. */
   icon?: string;
+  /** When false, the stash's "Send to…" button hides for this item.
+   *  Camping Supplies is the canonical example: it's used for the
+   *  whole party from the stash and never carried by one member.
+   *  Default (absent) is true. */
+  sendable_to_character?: boolean;
 }
 
 export interface PartySpellRef {
@@ -546,7 +566,14 @@ export function PartyScreen({
     : null;
   const canUseSelected =
     !!onUseStashItem && !!selectedStashCatalog?.usable;
-  const canSendSelected = !!onSendStashItem && members.length > 0;
+  // Send is blocked when the catalog flags the item party-only (e.g.
+  // Camping Supplies — it has no meaning in one character's inventory
+  // since the rest applies to the whole party). Absent flag defaults
+  // to sendable so existing items keep their behavior.
+  const itemIsSendable =
+    selectedStashCatalog?.sendable_to_character !== false;
+  const canSendSelected =
+    !!onSendStashItem && members.length > 0 && itemIsSendable;
 
   // Helpers wrapping the callbacks so the keyboard + click paths share
   // the same plumbing (and tests can assert on a single seam).
@@ -974,7 +1001,9 @@ export function PartyScreen({
                         ? "Host hasn't wired Send yet."
                         : members.length === 0
                           ? "No party members to receive it."
-                          : "Pick a character to receive this item."
+                          : !itemIsSendable
+                            ? "This item is used for the whole party — it stays in the stash."
+                            : "Pick a character to receive this item."
                     }
                   />
                   <ActionButton
@@ -1214,8 +1243,17 @@ function RosterCard({
   const hp = member.hp ?? 0;
   const mp = member.mp ?? 0;
   const exp = member.exp ?? 0;
-  // Treat the source hp/mp as both current and max for the preview —
-  // characters.json doesn't carry "current" state separately yet.
+  // Real max values when the play overlay stitched them on; for
+  // pure-catalog contexts (editor preview) fall back to treating
+  // current as max so the bar still renders something sane.
+  const maxHp = member.maxHp ?? hp;
+  const maxMp = member.maxMp ?? mp;
+  // Status flags driven by the live save. `fallen` greys the card
+  // and stamps a label so the player can spot downed members at a
+  // glance instead of squinting at "HP 0/9". `effects` lights up
+  // per-character condition pills (poison, curse, buff).
+  const fallen = hp <= 0;
+  const effects = member.effects ?? [];
   return (
     <li
       className={[
@@ -1227,6 +1265,7 @@ function RosterCard({
         isDropTarget || isSendTarget
           ? "border-amber-300/70 ring-1 ring-amber-300/50"
           : "",
+        fallen ? "opacity-60 saturate-50" : "",
       ].join(" ")}
       draggable={draggable}
       onDragStart={(e) => {
@@ -1292,15 +1331,15 @@ function RosterCard({
           <Bar
             label="HP"
             value={hp}
-            max={hp || 1}
+            max={Math.max(maxHp, 1)}
             color="bg-emerald-600/70"
           />
           <Bar
             label="MP"
             value={mp}
-            max={mp || 1}
+            max={Math.max(maxMp, 1)}
             color="bg-sky-600/70"
-            empty={mp === 0}
+            empty={maxMp === 0}
           />
           <Bar
             label="XP"
@@ -1310,8 +1349,37 @@ function RosterCard({
           />
         </div>
         <div className="mt-0.5 font-mono text-[10px] text-parchment/50">
-          LVL {member.level} · HP {hp}/{hp} · MP {mp}/{mp} · XP {exp}/{xpNext}
+          LVL {member.level} · HP {hp}/{maxHp} · MP {mp}/{maxMp} · XP {exp}/
+          {xpNext}
         </div>
+        {fallen || effects.length > 0 ? (
+          <div className="mt-1 flex flex-wrap items-center gap-1">
+            {fallen ? (
+              <span
+                className="rounded border border-ember/60 bg-ember/25 px-1.5 py-px font-mono text-[9px] uppercase tracking-wider text-ember"
+                title="Down — needs a Raise Dead at a temple."
+              >
+                Fallen
+              </span>
+            ) : null}
+            {effects.map((e) => (
+              <span
+                key={e.id}
+                className="rounded border border-parchment/25 bg-ink/50 px-1.5 py-px font-mono text-[9px] uppercase tracking-wider text-parchment/75"
+                title={`${prettifyEffectId(e.id)}${
+                  typeof e.duration === "number"
+                    ? ` — ${e.duration} steps left`
+                    : e.duration === "permanent"
+                      ? " — permanent"
+                      : ""
+                }`}
+              >
+                {prettifyEffectId(e.id)}
+                {typeof e.duration === "number" ? ` ${e.duration}` : ""}
+              </span>
+            ))}
+          </div>
+        ) : null}
       </div>
     </li>
   );

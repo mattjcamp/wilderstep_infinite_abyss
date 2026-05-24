@@ -341,6 +341,13 @@ export function CharacterSheetSim({
   const exp = character.exp ?? 0;
   const xpNext = xpForNextLevel(character, race);
   const level = character.level ?? 1;
+  // Real peak values when the play overlay attached them; otherwise
+  // fall back to current so the bar denominator stays sane in
+  // editor preview contexts.
+  const maxHp = character.maxHp ?? hp;
+  const maxMp = character.maxMp ?? mp;
+  const fallen = hp <= 0;
+  const characterEffects = character.effects ?? [];
 
   const portrait = character.sprite
     ? resolveSpritePath(character.sprite, SPRITE_CONFIG)
@@ -361,6 +368,14 @@ export function CharacterSheetSim({
           {raceName}
           <span className="text-parchment/40"> • </span>
           Lvl {level}
+          {fallen ? (
+            <span
+              className="ml-2 rounded border border-ember/60 bg-ember/25 px-1.5 py-px font-mono text-[10px] tracking-wider text-ember"
+              title="Fallen — needs Raise Dead at a temple."
+            >
+              FALLEN
+            </span>
+          ) : null}
         </div>
         {onBack ? (
           <button
@@ -420,17 +435,45 @@ export function CharacterSheetSim({
             <StatBar
               label="HP"
               value={hp}
-              max={Math.max(hp, 1)}
+              max={Math.max(maxHp, 1)}
               color="bg-emerald-500/80"
             />
             <StatBar
               label="MP"
               value={mp}
-              max={Math.max(mp, 1)}
+              max={Math.max(maxMp, 1)}
               color="bg-sky-500/70"
               dimWhenZero
             />
           </div>
+
+          {/* Per-character conditions — poison, curses, buffs.
+              Sourced from the live save's SavedCharacterState.effects
+              by way of the play overlay; absent in editor preview. */}
+          {characterEffects.length > 0 ? (
+            <section>
+              <h3 className="text-xs uppercase tracking-wide text-amber-300">
+                Conditions
+              </h3>
+              <ul className="mt-1 flex flex-wrap gap-1">
+                {characterEffects.map((e) => (
+                  <li
+                    key={e.id}
+                    className="rounded border border-parchment/25 bg-ink/50 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-parchment/85"
+                  >
+                    {e.id.replace(/_/g, " ")}
+                    {typeof e.duration === "number" ? (
+                      <span className="ml-1 text-parchment/55">
+                        {e.duration}
+                      </span>
+                    ) : e.duration === "permanent" ? (
+                      <span className="ml-1 text-parchment/55">∞</span>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
 
           {/* Combat block */}
           <section>

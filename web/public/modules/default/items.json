@@ -581,6 +581,7 @@
       "durability": null,
       "party_can_equip": false,
       "character_can_equip": false,
+      "sendable_to_character": false,
       "buy": 25,
       "sell": 12,
       "usable": true,

@@ -68,6 +68,13 @@ function applyMemberDeltas(
     ...saved,
     hp: postMember.hp,
     mp: postMember.mp,
+    // Capture the post-fight peak so an in-combat level-up (which
+    // bumps PartyMember.max_hp in Leveling.ts) survives back into
+    // the save. Without this the next save read would think the
+    // pre-fight peak was authoritative and the level-up's HP boost
+    // would silently vanish on the next reload / next rest.
+    max_hp: postMember.max_hp,
+    max_mp: postMember.max_mp,
     inventory: postMember.inventory.map(toSavedInventoryEntry),
     equipped: nextEquipped,
     equipped_durability: nextEd,

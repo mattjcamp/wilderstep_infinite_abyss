@@ -671,6 +671,14 @@ export class Combat {
     // the party side but flip aiControlled so they fight on their own.
     if (!isAiControlled(actor)) return { kind: "wait" };
     if (this.movePoints <= 0) return { kind: "wait" };
+    // Defensive: a fire cell (thrown torch, fire trap) can kill the
+    // current actor mid-turn AFTER endTurn already selected them. The
+    // scene's run loop checks the loop condition but neither it nor
+    // isAiControlled inspects hp, so without this guard we'd hand
+    // back an attack intent and Combat.attack would throw "Attacker
+    // is down". Treating dead actors as "wait" lets the run loop
+    // exit cleanly and endTurn skip them on the next advance.
+    if (actor.hp <= 0) return { kind: "wait" };
 
     // Hostile to whichever side the actor isn't on. Consumed party
     // members are off the board — exclude them from the AI target

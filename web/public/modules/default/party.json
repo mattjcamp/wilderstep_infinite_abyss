@@ -42,6 +42,10 @@
     {
       "item": "lockpick",
       "charges": 10
+    },
+    {
+      "item": "camping_supplies",
+      "charges": 3
     }
   ],
   "torch_steps": 0,

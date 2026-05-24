@@ -51,6 +51,13 @@ export interface Item {
   /** Whether a `usable` item can be drunk / applied during combat.
    *  Default `true`; `false` opts out (Camping Supplies). */
   combat_usable?: boolean;
+  /** Whether the item can be moved from the shared stash into a
+   *  single character's personal inventory via the Party screen's
+   *  "Send to…" button. Default `true`; `false` keeps the item
+   *  party-only (Camping Supplies — used for the whole party from
+   *  the stash, never carried by one member). The Use button is
+   *  unaffected. */
+  sendable_to_character?: boolean;
   /** Free-form effect tag for usable items (e.g. "heal_hp"). */
   effect?: string | null;
   // Combat / display stats — present where relevant.

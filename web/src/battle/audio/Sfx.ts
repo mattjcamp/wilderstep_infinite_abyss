@@ -269,6 +269,33 @@ function genChirp(ac: AudioContext, out: AudioNode, t0: number): void {
   tone(ac, out, noteHz("A5"), t0 + 0.05, 0.07, 0.18, "square", 0.002, 0.04);
 }
 
+function genRestComplete(ac: AudioContext, out: AudioNode, t0: number): void {
+  // "Camp rest complete" cue. Three beats:
+  //   1. A low triangle bed (~G3) opening softly — settles the ear,
+  //      reads as "resting".
+  //   2. A faint noise wash riding underneath the first half-second —
+  //      the suggestion of a small fire crackling without sounding
+  //      anything like the combat noise bursts.
+  //   3. A gentle ascending major-third chime (G5 → B5 → D6) that
+  //      finishes on a sustained high note — the "we're rested,
+  //      let's go" wake-up beat. Triangle voice keeps it warm and
+  //      avoids the harsher square-wave timbre the combat SFX use.
+  tone(ac, out, noteHz("G3"), t0,       0.55, 0.12, "triangle", 0.06, 0.30);
+  noise(ac, out,                t0,       0.45, 0.05,                0.04, 0.30);
+  const chime = ["G5", "B5", "D6"];
+  for (let i = 0; i < chime.length; i++) {
+    tone(
+      ac, out, noteHz(chime[i]),
+      t0 + 0.30 + i * 0.10,
+      0.18, 0.16, "triangle", 0.01, 0.12,
+    );
+  }
+  // Sustained top note — held a touch longer so the cue tails off
+  // naturally instead of cutting on the last arpeggio step.
+  tone(ac, out, noteHz("D6"), t0 + 0.62, 0.45, 0.14, "triangle", 0.01, 0.30);
+  tone(ac, out, noteHz("G6"), t0 + 0.62, 0.45, 0.08, "triangle", 0.01, 0.30);
+}
+
 function genLevelUp(ac: AudioContext, out: AudioNode, t0: number): void {
   // Bright triumphant arpeggio with a sparkle tail.
   const seq = ["C5", "E5", "G5", "C6"];
@@ -309,6 +336,8 @@ const GENERATORS: Record<string, Generator> = {
   encounter:          genEncounter,
   chirp:              genChirp,
   level_up:           genLevelUp,
+  // Item-driven
+  rest_complete:      genRestComplete,
 };
 
 /** Names of all SFX known to the catalog — handy for tests. */

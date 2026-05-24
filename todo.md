@@ -4,6 +4,9 @@
 - Do a playthrough with the alternate party
 
 # Polish
+- The Camping Supplies looked like they healed the party in the Party Screen, but when the party went into combat it was as if they were never healed (the effect did not persist)
+- When a quest giver's quest is complete, they should no longer glow.
+  
 
 # V3 Ideas
 

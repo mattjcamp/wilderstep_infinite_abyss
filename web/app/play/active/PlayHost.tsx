@@ -94,6 +94,7 @@ import { tintForCell } from "@/sim/lighting";
 import { computeQuestGlowCells } from "@/sim/questGlow";
 import { TILE_SIZE, WorldRenderer } from "@/sim/scene/WorldRenderer";
 import {
+  campfireRest,
   glowAura,
   healingSparkles,
   radialBurst,
@@ -870,7 +871,10 @@ export function PlayHost() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const save = loadWorld();
+      // `let` because the catalog-load step below may rewrite this
+      // reference once it backfills max_hp / max_mp onto save members
+      // that were saved before those fields existed.
+      let save = loadWorld();
       if (!save) {
         setState({ kind: "no-save" });
         return;
@@ -922,6 +926,54 @@ export function PlayHost() {
       try {
         const baseCatalog = await loadCatalog(save);
         if (cancelled) return;
+        // Backfill max_hp / max_mp on save members from the catalog
+        // any time the save is missing them. Legacy saves shipped
+        // before the field landed; without this the Party-screen
+        // heal-to-full path (Camping Supplies, future Rest spells)
+        // would have to derive max from the live characters.json,
+        // which silently no-ops for custom characters that aren't
+        // in the catalog. Once the backfill writes, every later
+        // commit propagates the field through automatically.
+        const catalogChars = baseCatalog.characters;
+        const catalogById = new Map(catalogChars.map((c) => [c.id, c]));
+        let backfilled = false;
+        const nextMembers = save.party.members.map((m) => {
+          const customRec = m.custom as
+            | { hp?: number; mp?: number }
+            | null
+            | undefined;
+          const catalogRec = catalogById.get(m.id);
+          // Source of truth for the peak: the custom-character
+          // record (player-created) or the catalog character.
+          const peakHpSource =
+            (customRec?.hp as number | undefined) ?? catalogRec?.hp;
+          const peakMpSource =
+            (customRec?.mp as number | undefined) ?? catalogRec?.mp;
+          let patched = m;
+          if (
+            typeof m.max_hp !== "number" &&
+            typeof peakHpSource === "number"
+          ) {
+            patched = { ...patched, max_hp: peakHpSource };
+            backfilled = true;
+          }
+          if (
+            typeof m.max_mp !== "number" &&
+            typeof peakMpSource === "number"
+          ) {
+            patched = { ...patched, max_mp: peakMpSource };
+            backfilled = true;
+          }
+          return patched;
+        });
+        if (backfilled) {
+          save = {
+            ...save,
+            party: { ...save.party, members: nextMembers },
+          };
+          saveRef.current = save;
+          saveWorld(save);
+        }
         // Overlay the dungeon's current floor when the party is
         // inside a dungeon. Both the dungeon mount and the
         // overworld mount run through the same Phaser scene below
@@ -3549,6 +3601,27 @@ export function PlayHost() {
                   VFX_COLOURS.arcane ?? 0xa0c8ff,
                 );
                 Sfx.play("magic_burst");
+              }
+            } catch {
+              /* scene disposed / audio not ready — skip */
+            }
+          }}
+          onItemUse={(itemId) => {
+            // Mirror of onSpellCast for usable items. Same party-cell
+            // pixel math, same try/catch so a disposed scene or
+            // unready audio context can't bubble up. Today only
+            // camping_supplies dispatches here; other items (Torch
+            // etc.) succeed without a VFX/SFX cue.
+            const r = rendererRef.current;
+            const sim = simRef.current;
+            if (!r || !sim) return;
+            const pos = sim.snapshot().pos;
+            const px = pos.col * TILE_SIZE + TILE_SIZE / 2;
+            const py = pos.row * TILE_SIZE + TILE_SIZE / 2;
+            try {
+              if (itemId === "camping_supplies") {
+                void campfireRest(r.scene, { x: px, y: py });
+                Sfx.play("rest_complete");
               }
             } catch {
               /* scene disposed / audio not ready — skip */

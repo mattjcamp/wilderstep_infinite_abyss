@@ -134,6 +134,19 @@ export function PlayCounterShopOverlay({
     return typeof it?.sell === "number" ? it.sell : 0;
   };
   const itemLabel = (id: string): string => itemsById.get(id)?.name ?? id;
+  /** How many physical items one purchase of `id` adds. For stackable
+   *  ammo / consumables this is the catalog's `charges` field (Arrows
+   *  bundle of 20, Lockpicks bundle of 5, etc.). For non-stackable
+   *  items it's always 1 — the catalog's `charges` semantic there is
+   *  per-instance durability, not bundle count, so we must not treat
+   *  it as quantity. Mirrors `stackSizeOf` in battle/world/Items.ts
+   *  but spelled out here so the play shop doesn't have to import
+   *  the heavier battle module. */
+  const bundleSize = (id: string): number => {
+    const it = itemsById.get(id);
+    if (!it?.stackable) return 1;
+    return typeof it.charges === "number" && it.charges > 0 ? it.charges : 1;
+  };
 
   const handleBuy = (stockIndex: number) => {
     if (stockIndex < 0 || stockIndex >= stock.length) return;
@@ -142,11 +155,17 @@ export function PlayCounterShopOverlay({
     if (price <= 0) return;
     const gold = liveSave.party.gold ?? 0;
     if (gold < price) return;
+    // Stackable ammo / consumables are sold as bundles — one shop
+    // click adds the catalog's `charges` count (Arrows = 20, Lockpick
+    // = 5, etc.) instead of a single physical item. Mirrors the
+    // bundle behavior `TownActions.addToStash` already uses for the
+    // tile-bump shop path so both code paths agree.
+    const bundle = bundleSize(itemId);
     const nextInventory = addToInventory(
       liveSave.party.inventory,
       itemId,
       items,
-      1,
+      bundle,
     );
     commit({
       ...liveSave,
@@ -369,6 +388,7 @@ export function PlayCounterShopOverlay({
               {stock.map((id, i) => {
                 const price = buyPrice(id);
                 const canAfford = gold >= price && price > 0;
+                const bundle = bundleSize(id);
                 return (
                   <li key={`${id}-${i}`}>
                     <button
@@ -380,7 +400,14 @@ export function PlayCounterShopOverlay({
                       }
                       className="flex w-full items-center justify-between rounded border border-parchment/20 bg-ink/40 px-2 py-1 text-left text-parchment hover:bg-ink/60 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      <span className="truncate">{itemLabel(id)}</span>
+                      <span className="truncate">
+                        {itemLabel(id)}
+                        {bundle > 1 ? (
+                          <span className="ml-1 text-parchment/55">
+                            ×{bundle}
+                          </span>
+                        ) : null}
+                      </span>
                       <span className="ml-2 shrink-0 font-mono text-xs text-parchment/65">
                         {price > 0 ? `${price}g` : "—"}
                       </span>

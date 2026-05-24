@@ -39,6 +39,7 @@ import {
   type PartySpellRef,
 } from "@/editor/PartyScreen";
 import type { WorldSave, SavedCharacterState } from "@/play/saveTypes";
+import { applyCampRest } from "@/play/campRest";
 import {
   addToInventory,
   consumeOneFromInventory,
@@ -76,6 +77,7 @@ export function PlayPartyScreenOverlay({
   onClose,
   onMutateSave,
   onSpellCast,
+  onItemUse,
 }: {
   moduleId: string;
   save: WorldSave;
@@ -91,6 +93,13 @@ export function PlayPartyScreenOverlay({
    *  sound on the party cell — the overlay has no access to the
    *  Phaser scene from here, but the host owns the renderer. */
   onSpellCast?: (spellId: string) => void;
+  /** Fires AFTER a usable item successfully resolves (stack
+   *  decremented, save committed). Same purpose as `onSpellCast` but
+   *  keyed by catalog item id so the host can play item-specific VFX
+   *  + SFX (e.g. camping_supplies → campfireRest + rest_complete).
+   *  Items that have nothing visual to play (Torch, etc.) can just
+   *  not be dispatched in the host. */
+  onItemUse?: (itemId: string) => void;
 }) {
   const [state, setState] = useState<LoadState>({ kind: "loading" });
   /** The list of currently-active party-wide effect ids. Seeded from
@@ -217,23 +226,44 @@ export function PlayPartyScreenOverlay({
         const savedById = new Map(
           liveSave.party.members.map((m) => [m.id, m] as const),
         );
-        // Capture static (catalog) HP/MP before the overlay step so
-        // heal handlers can cap at the peak. The save shape only
-        // tracks current HP, so without these maps we'd have nothing
-        // to compare against.
+        // Peak HP/MP, used by heal handlers + bar denominators. The
+        // save now carries these directly (backfilled at PlayHost
+        // load when absent); we prefer them when present and fall
+        // back to the catalog character's hp/mp for any member that
+        // somehow lacks them. This makes the lookup work for custom
+        // characters (which never had a catalog entry) AND for any
+        // future per-member max changes (level-up bonuses, etc.).
         const maxHpById = new Map<string, number>();
         const maxMpById = new Map<string, number>();
         for (const c of staticCharacters) {
           if (typeof c.hp === "number") maxHpById.set(c.id, c.hp);
           if (typeof c.mp === "number") maxMpById.set(c.id, c.mp);
         }
+        for (const m of liveSave.party.members) {
+          if (typeof m.max_hp === "number") maxHpById.set(m.id, m.max_hp);
+          if (typeof m.max_mp === "number") maxMpById.set(m.id, m.max_mp);
+        }
         const characters: PartyCharacterRef[] = staticCharacters.map((c) => {
           const saved = savedById.get(c.id);
-          if (!saved) return c;
+          // maxHp / maxMp ride on EVERY merged character (not just
+          // the saved ones) so unsaved members — or contexts where
+          // saved is null but the catalog character is in the roster
+          // — still get a real denominator for the bars.
+          const maxHp = maxHpById.get(c.id) ?? c.hp;
+          const maxMp = typeof c.mp === "number" ? maxMpById.get(c.id) ?? c.mp : undefined;
+          if (!saved) {
+            return {
+              ...c,
+              maxHp,
+              ...(maxMp !== undefined ? { maxMp } : {}),
+            };
+          }
           return {
             ...c,
             hp: saved.hp,
             mp: typeof saved.mp === "number" ? saved.mp : c.mp,
+            maxHp,
+            ...(maxMp !== undefined ? { maxMp } : {}),
             inventory: saved.inventory
               ? saved.inventory.map((e) => ({ ...e }))
               : c.inventory,
@@ -250,6 +280,13 @@ export function PlayPartyScreenOverlay({
             // surface doesn't need a breaking change.
             equipped_durability: saved.equipped_durability
               ? { ...saved.equipped_durability }
+              : undefined,
+            // Per-character active effects (poison, curses, buffs).
+            // Without this the roster card + sheet can't show
+            // "Poisoned (N steps)" — the save tracks it but the UI
+            // would render an unconditioned-looking member.
+            effects: saved.effects
+              ? saved.effects.map((e) => ({ ...e }))
               : undefined,
           };
         });
@@ -404,11 +441,15 @@ export function PlayPartyScreenOverlay({
       const entry = inv[stashIndex];
 
       let torchSteps = cur.party.torch_steps;
-      const nextMembers: ReadonlyArray<SavedCharacterState> = cur.party.members;
+      let nextMembers: ReadonlyArray<SavedCharacterState> = cur.party.members;
       // Local copy of party_effects we may extend. Lighting a Torch
       // adds "torch" so the Effects panel reflects the active light
       // source (same shape Light spell / Galadriel's Light use).
       const nextPartyEffects = new Set(cur.party.party_effects ?? []);
+      // Item id fired through onItemUse on a successful use, so the
+      // host can paint the right VFX + play the right SFX. Stays
+      // null when the branch has nothing to play (e.g. Torch).
+      let usedItemId: string | null = null;
 
       if (entry.item === "Torch" || entry.item === "torch") {
         // Torch burn duration. The items.json catalog DOES carry a
@@ -427,14 +468,24 @@ export function PlayPartyScreenOverlay({
         entry.item === "Camping Supplies" ||
         entry.item === "camping_supplies"
       ) {
-        // Camping Supplies' full HP/MP restore needs the per-member
-        // max_hp / max_mp peak — which the WorldSave doesn't track
-        // yet (see seedBattleCaches.ts: "a proper peak field comes
-        // later"). For now we just consume one unit so the stack
-        // shows depletion; the actual restore is a TODO that wires
-        // up alongside the missing peak fields. This still surfaces
-        // the action to the player without quietly faking a heal
-        // that could leave save state in a weird state.
+        // Camp rest, via the shared helper so the personal-inventory
+        // Use path stays in lockstep. Helper returns `applied: false`
+        // when nobody needs healing — we surface "already rested" and
+        // bail without consuming the supply (matches temple behavior).
+        const rest = applyCampRest(
+          cur.party.members,
+          (id) => state.maxHpById.get(id),
+          (id) => state.maxMpById.get(id),
+        );
+        if (!rest.applied) {
+          setCastMessage("The party is already fully rested.");
+          return;
+        }
+        nextMembers = rest.nextMembers;
+        setCastMessage(
+          "The party makes camp. Wounds close and magic returns.",
+        );
+        usedItemId = "camping_supplies";
       } else {
         // Unknown / not-yet-wired usable. Bail without mutating —
         // the catalog item.usable already gated this in the
@@ -460,8 +511,12 @@ export function PlayPartyScreenOverlay({
       // the next save round-trip. Matches what applyLight does.
       setActiveEffectIds([...nextPartyEffects]);
       commit(next);
+      // Fire the item-use VFX/SFX hook AFTER commit so the host's
+      // animation always lines up with a successfully-committed
+      // state (no flash of effect on a use we then rolled back).
+      if (usedItemId) onItemUse?.(usedItemId);
     },
-    [state, liveSave, commit],
+    [state, liveSave, commit, onItemUse],
   );
 
   /** "Send" — move ONE physical item from the shared stash into the
@@ -527,6 +582,11 @@ export function PlayPartyScreenOverlay({
 
       let torchSteps = cur.party.torch_steps;
       const nextPartyEffects = new Set(cur.party.party_effects ?? []);
+      // Members after any rest-style heal. Defaults to the existing
+      // roster (with the using member's inventory decremented below);
+      // the Camping Supplies branch swaps in healed members.
+      let restedMembers: ReadonlyArray<SavedCharacterState> | null = null;
+      let usedItemId: string | null = null;
 
       if (entry.item === "Torch" || entry.item === "torch") {
         torchSteps = Math.max(torchSteps, 0) + TORCH_DEFAULT_STEPS_LOCAL;
@@ -535,9 +595,25 @@ export function PlayPartyScreenOverlay({
         entry.item === "Camping Supplies" ||
         entry.item === "camping_supplies"
       ) {
-        // Same TODO as the stash side — rest mechanic lands when the
-        // per-member max_hp / max_mp peak fields ship. For now we
-        // just decrement the stack so the player sees depletion.
+        // Camp rest — identical flow to the shared-stash Use path
+        // (handleUseStashItem) via the same helper so personal-
+        // inventory Camping Supplies actually heal instead of just
+        // depleting the stack. Refuse + return early (no charge
+        // consumed) when nobody needs rest.
+        const rest = applyCampRest(
+          cur.party.members,
+          (id) => state.maxHpById.get(id),
+          (id) => state.maxMpById.get(id),
+        );
+        if (!rest.applied) {
+          setCastMessage("The party is already fully rested.");
+          return;
+        }
+        restedMembers = rest.nextMembers;
+        setCastMessage(
+          "The party makes camp. Wounds close and magic returns.",
+        );
+        usedItemId = "camping_supplies";
       } else {
         // Unknown / not-yet-wired usable. Bail without mutating —
         // don't silently eat a charge for a no-op.
@@ -549,12 +625,13 @@ export function PlayPartyScreenOverlay({
         itemIndex,
         state.items,
       );
-      const nextMember: SavedCharacterState = {
-        ...member,
-        inventory: nextInv,
-      };
-      const nextMembers = cur.party.members.map((m) =>
-        m.id === memberId ? nextMember : m,
+      // Build the post-use roster. Start from the rest-healed members
+      // when Camping Supplies fired, else from the live roster.
+      // Decrement the using member's personal inventory in either
+      // case so the consumed stack reflects the use.
+      const baseMembers = restedMembers ?? cur.party.members;
+      const nextMembers = baseMembers.map((m) =>
+        m.id === memberId ? { ...m, inventory: nextInv } : m,
       );
       setActiveEffectIds([...nextPartyEffects]);
       commit({
@@ -566,8 +643,9 @@ export function PlayPartyScreenOverlay({
           members: nextMembers,
         },
       });
+      if (usedItemId) onItemUse?.(usedItemId);
     },
-    [state, liveSave, commit],
+    [state, liveSave, commit, onItemUse],
   );
 
   /** Move ONE physical item from a character's personal inventory

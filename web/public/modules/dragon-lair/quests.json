@@ -19,7 +19,7 @@
           "location_kind": "map",
           "map_id": "demo_town",
           "encounter_id": "rat_swarm",
-          "count": 2
+          "count": 1
         },
         {
           "id": "rats_step_2",
@@ -29,7 +29,7 @@
           "map_id": "demo_general_shop",
           "description": "Kill the Rats in Mira's Shop",
           "encounter_id": "rat_nest",
-          "count": 3
+          "count": 1
         },
         {
           "id": "rats_step_3",
@@ -120,12 +120,6 @@
         "xp": 50,
         "gold": 24,
         "tile_add": [
-          {
-            "map": "demo_town",
-            "col": 13,
-            "row": 9,
-            "tile_id": "moongate"
-          },
           {
             "map": "demo_town",
             "col": 14,

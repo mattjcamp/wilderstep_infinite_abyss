@@ -65,6 +65,7 @@ import {
   type Party,
   type PartyMember,
 } from "@/battle/world/Party";
+import { gameState } from "@/battle/state";
 import type { CharacterRecord } from "@/editor/CharacterSheet";
 import type { WorldSave } from "./saveTypes";
 
@@ -151,6 +152,17 @@ function buildPartyFromSave(
           ...raw,
           hp: override.hp,
           mp: override.mp,
+          // Forward the on-save peak so memberFromRaw can keep
+          // max_hp / max_mp truly maxed for wounded characters.
+          // Without these, max collapses to current and a 5/9
+          // wounded member shows as 5/5 in combat — looking
+          // misleadingly "full" while actually still wounded.
+          ...(typeof override.max_hp === "number"
+            ? { max_hp: override.max_hp }
+            : {}),
+          ...(typeof override.max_mp === "number"
+            ? { max_mp: override.max_mp }
+            : {}),
           ...(override.equipped
             ? { equipped: { ...override.equipped } }
             : {}),
@@ -199,7 +211,20 @@ function buildPartyFromSave(
 
 /** Clear every v1battle cache this module seeds. Called at the start
  *  of every seed so a different play session (new module, post-wipe
- *  restart) doesn't accidentally reuse the prior run's data. */
+ *  restart) doesn't accidentally reuse the prior run's data.
+ *
+ *  Also nulls out `gameState.partyData`. That global is a SECOND
+ *  party cache, separate from `_setPartyCache` — CombatScene boots
+ *  with `if (!gameState.partyData) gameState.partyData = await
+ *  loadParty();`, so a non-null value here is reused *as-is* without
+ *  re-fetching. Without this reset, a player who took damage in
+ *  combat 1, rested via the Party screen (saveRef and the v1 party
+ *  cache both updated to healed HP), and walked into combat 2 would
+ *  see the stale wounded gameState.partyData from combat 1 used by
+ *  the new fight, completely bypassing the rest. The bug was
+ *  invisible to unit tests because it lives in module-scope global
+ *  state.
+ */
 function clearAllSeededCaches(): void {
   _clearItemsCache();
   _clearSpellsCache();
@@ -207,6 +232,7 @@ function clearAllSeededCaches(): void {
   _clearClassCaches();
   _clearEffectsCache();
   _clearPartyCache();
+  gameState.partyData = null;
 }
 
 /**

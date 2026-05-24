@@ -163,6 +163,13 @@ interface RawCharacter {
   exp?: number;
   hp?: number;
   mp?: number;
+  /** Optional explicit peak values. Saves built post-feature carry
+   *  these (back-filled at PlayHost load); honoring them lets a
+   *  wounded character preserve their true max in combat instead
+   *  of collapsing to current = max. Absent → fall back to hp/mp
+   *  as max, matching the prior shipping behavior. */
+  max_hp?: number;
+  max_mp?: number;
   strength?: number;
   dexterity?: number;
   constitution?: number;
@@ -268,6 +275,14 @@ export function memberFromRaw(raw: RawCharacter): PartyMember {
   const klass = (raw.class ?? "fighter").toLowerCase();
   const hp = raw.hp ?? 0;
   const mp = raw.mp ?? 0;
+  // Peak values: honor an explicit max from the raw record (saves
+  // back-filled at PlayHost load carry these) so a wounded character
+  // entering combat shows 5/9, not the misleading 5/5 we'd get from
+  // clamping max to current. Fall back to current when absent so
+  // legacy / minimal records (the editor's hand-rolled demo party,
+  // ad-hoc tests) keep their prior shipping behavior.
+  const maxHp = typeof raw.max_hp === "number" ? raw.max_hp : hp;
+  const maxMp = typeof raw.max_mp === "number" ? raw.max_mp : mp;
   const id = raw.id ?? (raw.name ?? "unknown").toLowerCase().replace(/\s+/g, "_");
   return {
     name: "?",
@@ -284,9 +299,9 @@ export function memberFromRaw(raw: RawCharacter): PartyMember {
     class: klass,
     race: (raw.race ?? "human").toLowerCase(),
     hp,
-    max_hp: hp,
+    max_hp: maxHp,
     mp,
-    max_mp: mp,
+    max_mp: maxMp,
     equipped: {
       hands: raw.equipped?.hands ?? null,
       body: raw.equipped?.body ?? null,
