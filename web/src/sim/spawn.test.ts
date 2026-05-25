@@ -424,4 +424,88 @@ describe("findQuestPlacedEncounters", () => {
     );
     expect(out[0].tint).toBe(0xff0000);
   });
+
+  it("honours authored positions in order when each cell is walkable", () => {
+    const walkable: Array<[number, number]> = [
+      [0, 0], [1, 0], [2, 0], [5, 12], [8, 12], [11, 12],
+    ];
+    const out = findQuestPlacedEncounters(
+      [
+        {
+          questId: "rats",
+          stepIdx: 0,
+          encounterId: "cellar_rats",
+          count: 3,
+          positions: [
+            { col: 5, row: 12 },
+            { col: 8, row: 12 },
+            { col: 11, row: 12 },
+          ],
+        },
+      ],
+      catalog,
+      walkable,
+      // The rng must not be called when every position is honoured —
+      // throwing here proves we never fell through to the random pick.
+      { rng: () => { throw new Error("rng should not run"); } },
+    );
+    expect(out.map((p) => [p.col, p.row])).toEqual([
+      [5, 12], [8, 12], [11, 12],
+    ]);
+    // Authored cells consumed from the pool; the four random-only
+    // cells remain.
+    expect(walkable).toHaveLength(3);
+    expect(walkable).toEqual([[0, 0], [1, 0], [2, 0]]);
+  });
+
+  it("falls back to a random pick when an authored position isn't walkable", () => {
+    const walkable: Array<[number, number]> = [[0, 0], [1, 0], [2, 0]];
+    const out = findQuestPlacedEncounters(
+      [
+        {
+          questId: "rats",
+          stepIdx: 0,
+          encounterId: "cellar_rats",
+          count: 2,
+          // First cell isn't in `walkable` → fall back to random.
+          // Second cell is in `walkable` → honoured.
+          positions: [
+            { col: 99, row: 99 },
+            { col: 1, row: 0 },
+          ],
+        },
+      ],
+      catalog,
+      walkable,
+      { rng: () => 0 }, // picks index 0 → [0,0]
+    );
+    expect(out.map((p) => [p.col, p.row])).toEqual([
+      [0, 0], // fell back to random — rng index 0 of the pool
+      [1, 0], // authored
+    ]);
+  });
+
+  it("falls back to random for copies beyond positions.length", () => {
+    const walkable: Array<[number, number]> = [[7, 7], [0, 0], [1, 0]];
+    const out = findQuestPlacedEncounters(
+      [
+        {
+          questId: "rats",
+          stepIdx: 0,
+          encounterId: "cellar_rats",
+          count: 3,
+          // Only one authored position; copies 2 and 3 use random.
+          positions: [{ col: 7, row: 7 }],
+        },
+      ],
+      catalog,
+      walkable,
+      { rng: () => 0 },
+    );
+    expect(out).toHaveLength(3);
+    // First copy honoured the authored position.
+    expect([out[0].col, out[0].row]).toEqual([7, 7]);
+    // Remaining two copies are pulled from the random pool.
+    expect(walkable).toHaveLength(0);
+  });
 });

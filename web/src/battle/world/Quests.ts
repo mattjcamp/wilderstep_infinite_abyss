@@ -118,6 +118,27 @@ export interface QuestStep {
   /** For `kind === "fetch"` — item id from `params.item_id`. */
   itemId: string;
 
+  /** For `kind === "kill"` — authored anchor cells the spawn pass
+   *  uses for placement, in order. The kernel consumes
+   *  `positions[0]` for the first copy, `positions[1]` for the second,
+   *  and so on; copies beyond `positions.length` fall back to random
+   *  walkable cells (the historical behaviour). A position is also
+   *  skipped (and replaced by a random pick) when its cell isn't
+   *  walkable at spawn time — defensive against the map evolving
+   *  after the quest was authored. Empty array = pure random
+   *  placement, matching how quests behaved before the field
+   *  existed. Always populated; absent JSON hydrates as `[]`. */
+  positions: ReadonlyArray<{ col: number; row: number }>;
+
+  /** Per-step rewards. Always populated — absent JSON authors as
+   *  `{ items: [], tileAdds: [] }` so callers don't need an
+   *  undefined-guard. Applied IMMEDIATELY when the step's
+   *  `stepProgress` flips true (see {@link QuestKillCredit.stepRewards}
+   *  / {@link QuestRetrieveCredit.stepRewards}), which is the lever
+   *  authors use to gate later steps on a map change or an item
+   *  drop. */
+  rewards: QuestStepRewards;
+
   // ── v1-shape compat fields ─────────────────────────────────────
   // Populated for backwards-compat with helpers ported from v1 (the
   // orphan `placeQuestInteriorMonsters` / `placeQuestInteriorItems`
@@ -182,6 +203,39 @@ export interface QuestRewards {
    *  persisted into save.maps[mapId].tileOverrides so the mutation
    *  survives reload + re-entry. */
   tileAdds: RewardTileAddOp[];
+}
+
+/** A step-scoped rewards envelope. Mirrors {@link QuestRewards} but
+ *  intentionally narrowed: steps grant **items** and **tile mutations**
+ *  only — XP and gold stay on the quest-level rewards so the bigger
+ *  numerical payoff still arrives at turn-in. The runtime applies
+ *  these IMMEDIATELY when the step's `stepProgress` flips from false
+ *  to true (in contrast to {@link QuestRewards}, which only land at
+ *  turn-in). That's the whole point of step rewards — they let the
+ *  next step depend on a map change ("a bridge appears so the player
+ *  can reach the next dungeon") or on an item the quest just handed
+ *  out ("here's the key for the door the next step opens"). Always
+ *  populated on a {@link QuestStep}; absent JSON authors as
+ *  `{ items: [], tileAdds: [] }`. */
+export interface QuestStepRewards {
+  /** Item catalog ids granted to the party on step completion.
+   *  Hosts merge into existing inventory stacks where stackable
+   *  (same `addToInventory` path quest-level rewards use). */
+  items: string[];
+  /** Cells on named maps to paint with the named palette tile when
+   *  the step completes. Same semantics as {@link QuestRewards.tileAdds}
+   *  — recorded into `save.maps[mapId].tileOverrides` so the mutation
+   *  survives reload + re-entry, and applied to the live grid when
+   *  the player is on the affected map at completion time. */
+  tileAdds: RewardTileAddOp[];
+}
+
+/** Builder for an empty {@link QuestStepRewards} payload. Used as the
+ *  default when a step's JSON doesn't author a `rewards` block, so
+ *  callers can read `step.rewards.items` / `step.rewards.tileAdds`
+ *  without an undefined guard. */
+function emptyStepRewards(): QuestStepRewards {
+  return { items: [], tileAdds: [] };
 }
 
 export interface QuestDef {
@@ -270,6 +324,17 @@ interface RawQuestStep {
    *  on-disk data hydrates correctly, but no longer authored by the
    *  editor. Newly-saved steps drop this field entirely. */
   params?: Record<string, unknown> | null;
+  /** Per-step rewards block. Mirrors the quest-level `rewards`
+   *  envelope but only honors `items` and `tile_add` — XP/gold are
+   *  not authored at the step level (see {@link QuestStepRewards}).
+   *  Optional; absent in fixtures that predate the step-rewards
+   *  feature. */
+  rewards?: RawStepRewards | null;
+  /** Authored anchor cells for `kind === "kill"` placement. Each
+   *  entry is `{ col, row }` on the step's `map_id`. Optional;
+   *  absent or empty leaves the spawn pass on its historical random
+   *  walkable-cell selection. See {@link QuestStep.positions}. */
+  positions?: Array<{ col?: number | string; row?: number | string }>;
   location_kind?: string;
   map_id?: string;
   dungeon_id?: string;
@@ -325,6 +390,14 @@ interface RawRewards {
   tile_add?: RawRewardTileAddOp[];
 }
 
+/** Raw shape of a step-level `rewards` block. Same key conventions
+ *  as the quest-level {@link RawRewards} but only `items` and
+ *  `tile_add` are honored — see {@link QuestStepRewards}. */
+interface RawStepRewards {
+  items?: unknown;
+  tile_add?: RawRewardTileAddOp[];
+}
+
 interface RawQuest {
   // v2 fields
   id?: string;
@@ -376,6 +449,58 @@ function coerceStringArray(v: unknown): string[] {
 function coerceLocationKind(v: unknown): QuestLocationKind {
   if (v === "dungeon" || v === "map") return v;
   return "";
+}
+
+/** Parse a `tile_add` array out of a raw rewards block (quest- or
+ *  step-scoped). Malformed entries (missing map id, non-finite coords,
+ *  empty `tile_id`) are dropped silently so a bad quests.json never
+ *  crashes a load. Returns an empty array when the input isn't an
+ *  array. */
+function parseTileAdds(raw: unknown): RewardTileAddOp[] {
+  if (!Array.isArray(raw)) return [];
+  const out: RewardTileAddOp[] = [];
+  for (const op of raw) {
+    if (!op || typeof op !== "object") continue;
+    const o = op as RawRewardTileAddOp;
+    const map = typeof o.map === "string" ? o.map : "";
+    const col = coerceInt(o.col);
+    const row = coerceInt(o.row);
+    const tile_id = typeof o.tile_id === "string" ? o.tile_id : "";
+    if (!map || col === undefined || row === undefined || !tile_id) continue;
+    out.push({ map, col, row, tile_id });
+  }
+  return out;
+}
+
+/** Parse an authored `positions` array out of raw step JSON. Entries
+ *  missing finite col/row coerce out silently — a hand-edited typo
+ *  shouldn't crash the load — and the result is always a fresh,
+ *  mutation-safe array. Returns `[]` when the input isn't an array. */
+function parsePositions(
+  raw: unknown,
+): Array<{ col: number; row: number }> {
+  if (!Array.isArray(raw)) return [];
+  const out: Array<{ col: number; row: number }> = [];
+  for (const op of raw) {
+    if (!op || typeof op !== "object") continue;
+    const o = op as { col?: unknown; row?: unknown };
+    const col = coerceInt(o.col);
+    const row = coerceInt(o.row);
+    if (col === undefined || row === undefined) continue;
+    out.push({ col, row });
+  }
+  return out;
+}
+
+/** Parse a step-level rewards block. Always returns a well-formed
+ *  {@link QuestStepRewards} — an absent or malformed block collapses
+ *  to `{ items: [], tileAdds: [] }`. */
+function parseStepRewards(raw: RawStepRewards | null | undefined): QuestStepRewards {
+  if (!raw || typeof raw !== "object") return emptyStepRewards();
+  const items = Array.isArray(raw.items)
+    ? raw.items.filter((s): s is string => typeof s === "string")
+    : [];
+  return { items, tileAdds: parseTileAdds(raw.tile_add) };
 }
 
 function stepFromRaw(raw: RawQuestStep): QuestStep | null {
@@ -460,6 +585,8 @@ function stepFromRaw(raw: RawQuestStep): QuestStep | null {
     encounterId,
     count,
     itemId,
+    positions: parsePositions(raw.positions),
+    rewards: parseStepRewards(raw.rewards),
     // v1-shape compat
     stepType,
     encounter: encounterId,
@@ -547,18 +674,7 @@ function fromRaw(raw: RawQuest): QuestDef | null {
   // Tile-mutation rewards (v2). Each entry must carry a real map id
   // and finite col/row; malformed entries are dropped so a bad
   // quests.json never crashes a load.
-  const tileAdds: RewardTileAddOp[] = [];
-  if (rewardsRaw && Array.isArray(rewardsRaw.tile_add)) {
-    for (const op of rewardsRaw.tile_add) {
-      if (!op || typeof op !== "object") continue;
-      const map = typeof op.map === "string" ? op.map : "";
-      const col = coerceInt(op.col);
-      const row = coerceInt(op.row);
-      const tile_id = typeof op.tile_id === "string" ? op.tile_id : "";
-      if (!map || col === undefined || row === undefined || !tile_id) continue;
-      tileAdds.push({ map, col, row, tile_id });
-    }
-  }
+  const tileAdds = parseTileAdds(rewardsRaw?.tile_add);
   const rewards: QuestRewards = {
     xp: coerceInt(rewardsRaw?.xp) ?? raw.reward_xp ?? 0,
     gold: coerceInt(rewardsRaw?.gold) ?? raw.reward_gold ?? 0,
@@ -1031,6 +1147,15 @@ export interface ActiveKillStepRow {
    *  (`step.count - already-killed`). Always ≥ 1 in returned rows;
    *  zero-remaining steps are dropped. */
   remaining: number;
+  /** Author-anchored cells the spawn pass should prefer when placing
+   *  this step's encounter copies. Slice of `step.positions` that
+   *  skips any already-credited copies (the first `kills_so_far`
+   *  entries are dropped so a partial-progress step on map re-entry
+   *  doesn't re-anchor copies the player already cleared). May be
+   *  empty when the step didn't author positions or all authored
+   *  cells have already been consumed — placement then falls back to
+   *  random walkable selection. */
+  positions: ReadonlyArray<{ col: number; row: number }>;
   /** Back-reference to the step itself, for callers that need
    *  additional fields (description, tags, etc.). */
   step: QuestStep;
@@ -1070,11 +1195,18 @@ export function activeKillStepsAt(
       const done = state.stepKills[i] ?? 0;
       const remaining = Math.max(0, step.count - done);
       if (remaining <= 0) continue;
+      // Skip the first `done` authored positions — they belong to
+      // the copies the party has already cleared. Without this slice,
+      // re-entering the map at 1/3 kills would re-anchor the first
+      // copy at positions[0] (already used) rather than honouring
+      // positions[1] for the second copy.
+      const positions = step.positions.slice(done);
       out.push({
         questId: def.id,
         stepIdx: i,
         encounterId: step.encounterId,
         remaining,
+        positions,
         step,
       });
     }
@@ -1103,6 +1235,13 @@ export interface QuestKillCredit {
    *  quest's status flipped from "active" to "completed" and the
    *  player can now return to the giver for the end-dialog. */
   questCompleted: boolean;
+  /** Step-scoped rewards the host should apply immediately when
+   *  `stepCompleted` is true — items to grant, map cells to mutate.
+   *  Null when this credit didn't complete the step (so the host
+   *  doesn't accidentally re-grant on every kill in a multi-count
+   *  step). Always a shallow copy of `step.rewards`, never the live
+   *  reference, so the caller can mutate it freely. */
+  stepRewards: QuestStepRewards | null;
 }
 
 /**
@@ -1145,7 +1284,27 @@ export function creditQuestKill(
       questCompleted = true;
     }
   }
-  return { questId, stepIdx, step, killsSoFar, stepCompleted, questCompleted };
+  return {
+    questId,
+    stepIdx,
+    step,
+    killsSoFar,
+    stepCompleted,
+    questCompleted,
+    stepRewards: stepCompleted ? snapshotStepRewards(step.rewards) : null,
+  };
+}
+
+/** Shallow-copy a step's rewards so callers can read / mutate the
+ *  payload without affecting the underlying QuestStep. Mirrors what
+ *  {@link claimQuestRewards} does for the quest-level envelope —
+ *  defensive copying keeps the credit result a stable snapshot even
+ *  if the quest def is reloaded mid-flight. */
+function snapshotStepRewards(rewards: QuestStepRewards): QuestStepRewards {
+  return {
+    items: [...rewards.items],
+    tileAdds: rewards.tileAdds.map((op) => ({ ...op })),
+  };
 }
 
 // ── Retrieve credit ────────────────────────────────────────────
@@ -1164,6 +1323,12 @@ export interface QuestRetrieveCredit {
   /** True when this credit was the LAST step's completion — quest
    *  status flipped from "active" to "completed". */
   questCompleted: boolean;
+  /** Step-scoped rewards the host should apply on this credit. Always
+   *  populated (retrieve credits are single-shot — a successful
+   *  return implies the step completed), so unlike
+   *  {@link QuestKillCredit.stepRewards} this is never null. Shallow
+   *  copy of `step.rewards`, safe for callers to mutate. */
+  stepRewards: QuestStepRewards;
 }
 
 /**
@@ -1196,7 +1361,14 @@ export function creditQuestRetrieve(
     state.status = "completed";
     questCompleted = true;
   }
-  return { questId, stepIdx, step, stepCompleted: true, questCompleted };
+  return {
+    questId,
+    stepIdx,
+    step,
+    stepCompleted: true,
+    questCompleted,
+    stepRewards: snapshotStepRewards(step.rewards),
+  };
 }
 
 // ── Acceptance / turn-in ───────────────────────────────────────

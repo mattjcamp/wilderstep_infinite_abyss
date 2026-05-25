@@ -4,6 +4,7 @@ import {
   activeKillStepsAt,
   claimQuestRewards,
   creditQuestKill,
+  creditQuestRetrieve,
   ensureQuestStates,
   matchesLocation,
   parseQuestsFile,
@@ -538,5 +539,352 @@ describe("claimQuestRewards", () => {
     expect(claim!.xp).toBe(0);
     expect(claim!.gold).toBe(0);
     expect(claim!.items).toEqual([]);
+  });
+});
+
+describe("step-level rewards", () => {
+  it("parses a step's `rewards` block with items + tile_add", () => {
+    const defs = parseQuestsFile({
+      quests: [
+        {
+          id: "amulet",
+          name: "Lost Amulet",
+          steps: [
+            {
+              id: "s1",
+              name: "Find the stone",
+              kind: "retrieve",
+              item_id: "river_stone",
+              location_kind: "map",
+              map_id: "forest_map",
+              col: 4,
+              row: 5,
+              rewards: {
+                items: ["lockpick", "torch"],
+                tile_add: [
+                  { map: "forest_map", col: 14, row: 7, tile_id: "bridge" },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    });
+    const step = defs[0].steps[0];
+    expect(step.rewards.items).toEqual(["lockpick", "torch"]);
+    expect(step.rewards.tileAdds).toEqual([
+      { map: "forest_map", col: 14, row: 7, tile_id: "bridge" },
+    ]);
+  });
+
+  it("defaults to empty rewards when the step omits the block", () => {
+    const defs = parseQuestsFile({
+      quests: [
+        {
+          id: "rats",
+          name: "rats",
+          steps: [
+            {
+              id: "s1",
+              name: "step",
+              kind: "kill",
+              params: { encounter_id: "rat", count: 1 },
+            },
+          ],
+        },
+      ],
+    });
+    const step = defs[0].steps[0];
+    expect(step.rewards).toEqual({ items: [], tileAdds: [] });
+  });
+
+  it("drops malformed tile_add entries on load (bad map id / coords)", () => {
+    const defs = parseQuestsFile({
+      quests: [
+        {
+          id: "amulet",
+          name: "Lost Amulet",
+          steps: [
+            {
+              id: "s1",
+              name: "step",
+              kind: "kill",
+              params: { encounter_id: "rat", count: 1 },
+              rewards: {
+                items: [42, "ok_item"], // 42 should drop
+                tile_add: [
+                  { map: "", col: 1, row: 1, tile_id: "bridge" }, // empty map
+                  { map: "ok_map", tile_id: "bridge" }, // missing coords
+                  { map: "ok_map", col: 1, row: 1, tile_id: "" }, // empty tile_id
+                  { map: "ok_map", col: 3, row: 4, tile_id: "bridge" }, // good
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    });
+    const step = defs[0].steps[0];
+    expect(step.rewards.items).toEqual(["ok_item"]);
+    expect(step.rewards.tileAdds).toEqual([
+      { map: "ok_map", col: 3, row: 4, tile_id: "bridge" },
+    ]);
+  });
+
+  it("creditQuestKill returns step rewards only on the credit that completes the step", () => {
+    const defs = parseQuestsFile({
+      quests: [
+        {
+          id: "rats",
+          name: "Rats",
+          steps: [
+            {
+              id: "s1",
+              name: "Kill 2 rats",
+              kind: "kill",
+              params: { encounter_id: "rat", count: 2 },
+              location_kind: "map",
+              map_id: "demo",
+              rewards: {
+                items: ["lockpick"],
+                tile_add: [
+                  { map: "demo", col: 1, row: 2, tile_id: "bridge" },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    });
+    const states = new Map<string, QuestState>();
+    ensureQuestStates(defs, states);
+    states.get("rats")!.status = "active";
+    // First credit: progress 1/2 — step NOT completed → stepRewards null.
+    const c1 = creditQuestKill(defs, states, "rats", 0);
+    expect(c1!.stepCompleted).toBe(false);
+    expect(c1!.stepRewards).toBeNull();
+    // Second credit: 2/2 → step completes → stepRewards populated.
+    const c2 = creditQuestKill(defs, states, "rats", 0);
+    expect(c2!.stepCompleted).toBe(true);
+    expect(c2!.stepRewards).not.toBeNull();
+    expect(c2!.stepRewards!.items).toEqual(["lockpick"]);
+    expect(c2!.stepRewards!.tileAdds).toEqual([
+      { map: "demo", col: 1, row: 2, tile_id: "bridge" },
+    ]);
+  });
+
+  it("snapshot returned by creditQuestKill is detached from the underlying def", () => {
+    const defs = parseQuestsFile({
+      quests: [
+        {
+          id: "q",
+          name: "q",
+          steps: [
+            {
+              id: "s1",
+              name: "step",
+              kind: "kill",
+              params: { encounter_id: "rat", count: 1 },
+              rewards: {
+                items: ["torch"],
+                tile_add: [{ map: "m", col: 0, row: 0, tile_id: "t" }],
+              },
+            },
+          ],
+        },
+      ],
+    });
+    const states = new Map<string, QuestState>();
+    ensureQuestStates(defs, states);
+    states.get("q")!.status = "active";
+    const c = creditQuestKill(defs, states, "q", 0);
+    expect(c!.stepRewards).not.toBeNull();
+    // Mutate the returned snapshot — the def's rewards must stay intact.
+    c!.stepRewards!.items.push("dagger");
+    c!.stepRewards!.tileAdds.push({
+      map: "x", col: 9, row: 9, tile_id: "y",
+    });
+    expect(defs[0].steps[0].rewards.items).toEqual(["torch"]);
+    expect(defs[0].steps[0].rewards.tileAdds).toEqual([
+      { map: "m", col: 0, row: 0, tile_id: "t" },
+    ]);
+  });
+
+  it("creditQuestRetrieve always returns step rewards on a successful credit", () => {
+    const defs = parseQuestsFile({
+      quests: [
+        {
+          id: "amulet",
+          name: "Lost Amulet",
+          steps: [
+            {
+              id: "s1",
+              name: "Find the stone",
+              kind: "retrieve",
+              item_id: "river_stone",
+              location_kind: "map",
+              map_id: "forest",
+              col: 3,
+              row: 3,
+              rewards: {
+                items: ["key"],
+                tile_add: [
+                  { map: "forest", col: 5, row: 5, tile_id: "bridge" },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    });
+    const states = new Map<string, QuestState>();
+    ensureQuestStates(defs, states);
+    states.get("amulet")!.status = "active";
+    const credit = creditQuestRetrieve(defs, states, "amulet", 0);
+    expect(credit).not.toBeNull();
+    expect(credit!.stepCompleted).toBe(true);
+    expect(credit!.questCompleted).toBe(true);
+    expect(credit!.stepRewards.items).toEqual(["key"]);
+    expect(credit!.stepRewards.tileAdds).toEqual([
+      { map: "forest", col: 5, row: 5, tile_id: "bridge" },
+    ]);
+  });
+
+  it("parses authored positions on a kill step", () => {
+    const defs = parseQuestsFile({
+      quests: [
+        {
+          id: "rats",
+          name: "Rats",
+          steps: [
+            {
+              id: "s1",
+              name: "Clear the patrols",
+              kind: "kill",
+              encounter_id: "rat",
+              count: 3,
+              location_kind: "map",
+              map_id: "sewer",
+              positions: [
+                { col: 5, row: 12 },
+                { col: 8, row: 12 },
+                { col: 11, row: 12 },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    const step = defs[0].steps[0];
+    expect(step.positions).toEqual([
+      { col: 5, row: 12 },
+      { col: 8, row: 12 },
+      { col: 11, row: 12 },
+    ]);
+  });
+
+  it("defaults positions to [] and drops malformed entries", () => {
+    const defs = parseQuestsFile({
+      quests: [
+        {
+          id: "rats",
+          name: "Rats",
+          steps: [
+            {
+              id: "s1",
+              name: "step a",
+              kind: "kill",
+              encounter_id: "rat",
+              count: 1,
+            },
+            {
+              id: "s2",
+              name: "step b",
+              kind: "kill",
+              encounter_id: "rat",
+              count: 1,
+              positions: [
+                { col: 1 }, // missing row → drop
+                { row: 2 }, // missing col → drop
+                "not an object", // not an object → drop
+                { col: 3, row: 4 }, // good
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    expect(defs[0].steps[0].positions).toEqual([]);
+    expect(defs[0].steps[1].positions).toEqual([{ col: 3, row: 4 }]);
+  });
+
+  it("activeKillStepsAt drops already-credited positions from its slice", () => {
+    const defs = parseQuestsFile({
+      quests: [
+        {
+          id: "rats",
+          name: "Rats",
+          steps: [
+            {
+              id: "s1",
+              name: "Clear",
+              kind: "kill",
+              encounter_id: "rat",
+              count: 3,
+              location_kind: "map",
+              map_id: "sewer",
+              positions: [
+                { col: 1, row: 1 },
+                { col: 2, row: 2 },
+                { col: 3, row: 3 },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    const states = new Map<string, QuestState>();
+    ensureQuestStates(defs, states);
+    states.get("rats")!.status = "active";
+    // Simulate two of the three already credited.
+    states.get("rats")!.stepKills[0] = 2;
+    const rows = activeKillStepsAt(defs, states, {
+      kind: "map",
+      mapId: "sewer",
+    });
+    expect(rows).toHaveLength(1);
+    expect(rows[0].remaining).toBe(1);
+    // First two authored positions have already been consumed; only
+    // the third remains for the outstanding copy.
+    expect(rows[0].positions).toEqual([{ col: 3, row: 3 }]);
+  });
+
+  it("creditQuestRetrieve returns an empty step-rewards object when the step authors none", () => {
+    const defs = parseQuestsFile({
+      quests: [
+        {
+          id: "amulet",
+          name: "Lost Amulet",
+          steps: [
+            {
+              id: "s1",
+              name: "Find the stone",
+              kind: "retrieve",
+              item_id: "river_stone",
+              location_kind: "map",
+              map_id: "forest",
+              col: 3,
+              row: 3,
+            },
+          ],
+        },
+      ],
+    });
+    const states = new Map<string, QuestState>();
+    ensureQuestStates(defs, states);
+    states.get("amulet")!.status = "active";
+    const credit = creditQuestRetrieve(defs, states, "amulet", 0);
+    expect(credit).not.toBeNull();
+    expect(credit!.stepRewards).toEqual({ items: [], tileAdds: [] });
   });
 });

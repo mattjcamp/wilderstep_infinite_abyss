@@ -794,6 +794,7 @@ export class MapSimulation {
           stepIdx: r.stepIdx,
           encounterId: r.encounterId,
           count: r.remaining,
+          positions: r.positions,
         }));
         const walkable = this.collectQuestPlacementCells(opts);
         const placedQuest = findQuestPlacedEncounters(
@@ -2195,6 +2196,7 @@ export class MapSimulation {
       stepIdx: r.stepIdx,
       encounterId: r.encounterId,
       count: r.remaining,
+      positions: r.positions,
     }));
     const walkable = this.liveWalkableCellsForQuestPlacement();
     const fresher = findQuestPlacedEncounters(

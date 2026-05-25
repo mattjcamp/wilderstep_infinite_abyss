@@ -67,6 +67,14 @@ interface QuestStep {
    *  encounter clearings credit the step. Defaults to 1 at the
    *  runtime when omitted. JSON key: `count`. */
   count?: number;
+  /** For `kind === "kill"` — authored anchor cells the runtime spawn
+   *  pass uses to place this step's encounter copies, in order. The
+   *  first copy lands at `positions[0]`, the second at `positions[1]`,
+   *  and so on. Copies beyond `positions.length` (or when an authored
+   *  cell isn't walkable at spawn time) fall back to random walkable
+   *  selection. Optional; omitting it or leaving it empty preserves
+   *  the historical pure-random placement. JSON key: `positions`. */
+  positions?: Array<{ col: number; row: number }>;
   /** For `kind === "retrieve"` — the item the runtime stamps onto
    *  the target cell once the quest is accepted. JSON key:
    *  `item_id`. */
@@ -97,6 +105,22 @@ interface QuestStep {
   location_kind?: "map";
   /** Map catalog id. Only consulted when `location_kind === "map"`. */
   map_id?: string;
+  /** Per-step rewards block. Mirrors the quest-level {@link Rewards}
+   *  envelope but narrowed to two keys — `items` and `tile_add`. XP
+   *  and gold are intentionally absent: those stay quest-level so the
+   *  bigger numerical payoff still lands at turn-in. Authored via the
+   *  Step Rewards section in the step row; the runtime applies these
+   *  IMMEDIATELY when the step's progress flips from false to true,
+   *  which is the lever authors use to gate the next step on a map
+   *  change or an item drop. JSON key: `rewards`. */
+  rewards?: StepRewards;
+}
+
+/** Editor-side shape for a single step's `rewards` block. Strict
+ *  subset of the quest-level {@link Rewards} — no XP / gold. */
+interface StepRewards {
+  items?: string[];
+  tile_add?: TileAddOp[];
 }
 
 interface QuestGiver {
@@ -900,6 +924,233 @@ function RewardsEditor({
   );
 }
 
+// ── Step-level rewards editor ───────────────────────────────────────
+//
+// Mirrors {@link RewardsEditor} but for a single QuestStep. The
+// step-level envelope is a strict subset — only items + tile_add —
+// because XP and gold stay on the quest-level rewards so the bigger
+// numerical payoff still lands at turn-in. Authors use this to gate
+// the next step on a map change (a bridge appears, a passage opens)
+// or seed inventory the next step needs (here's the key for the door
+// you're about to find).
+
+const EMPTY_STEP_REWARDS: StepRewards = {};
+
+function StepRewardsEditor({
+  rewards,
+  items,
+  maps,
+  onUpdate,
+}: {
+  rewards: StepRewards | undefined;
+  items: ItemSummary[];
+  maps: MapSummary[];
+  onUpdate: (rewards: StepRewards | undefined) => void;
+}) {
+  const has = rewards !== undefined;
+  const r = rewards ?? EMPTY_STEP_REWARDS;
+
+  // Drop empty / undefined keys so the persisted JSON stays clean —
+  // a step that authors no rewards round-trips as an absent `rewards`
+  // field rather than `{ items: [], tile_add: [] }`.
+  const patch = (p: Partial<StepRewards>) => {
+    const next: StepRewards = { ...r, ...p };
+    for (const k of Object.keys(next) as Array<keyof StepRewards>) {
+      const v = next[k];
+      if (v === undefined) delete next[k];
+      if (Array.isArray(v) && v.length === 0) delete next[k];
+    }
+    onUpdate(next);
+  };
+
+  return (
+    <fieldset className="sm:col-span-4 rounded border border-parchment/15 bg-ink/20 p-2">
+      <legend className="px-1 text-[10px] uppercase tracking-wide text-parchment/55">
+        Step Rewards
+      </legend>
+      <div className="flex items-center justify-between">
+        <p className="text-[11px] text-parchment/55">
+          Items and tile changes applied <strong>immediately</strong>{" "}
+          when this step completes — use to gate the next step on a
+          map change (build a bridge, open a passage) or seed inventory
+          the next step needs.
+        </p>
+        {has ? (
+          <button
+            type="button"
+            onClick={() => onUpdate(undefined)}
+            className="ml-2 shrink-0 rounded border border-parchment/20 px-2 py-0.5 text-[10px] text-parchment/60 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
+            title="Remove the rewards block from this step."
+          >
+            Remove
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => onUpdate({})}
+            className="ml-2 shrink-0 rounded border border-ember/50 bg-ember/20 px-2 py-0.5 text-[10px] text-parchment hover:bg-ember/40"
+          >
+            + Add
+          </button>
+        )}
+      </div>
+      {has ? (
+        <div className="mt-2 space-y-3">
+          {/* Items dropped into the party's inventory on step
+              completion. Reuses the quest-level ItemsList component
+              so add / remove / pick-from-catalog behavior stays
+              consistent across the two scopes. */}
+          <ItemsList
+            items={r.items ?? []}
+            catalog={items}
+            onChange={(arr) => patch({ items: arr })}
+          />
+          {/* tile_add — paint a palette tile at (map, col, row) on
+              completion. Same component the quest-level rewards use;
+              `withTileId` is always true because the only step
+              tile-mutation reward is a full paint. */}
+          <TileOpsList
+            label="Tile changes"
+            ops={r.tile_add ?? []}
+            maps={maps}
+            withTileId={true}
+            onChange={(arr) => patch({ tile_add: arr as TileAddOp[] })}
+          />
+        </div>
+      ) : null}
+    </fieldset>
+  );
+}
+
+// ── Encounter positions list (kill steps) ───────────────────────────
+//
+// Authored anchor cells for a kill step's spawn pass. Each row is a
+// (col, row) pair on the step's map; the runtime consumes them in
+// order — `positions[0]` for the first copy, `positions[1]` for the
+// second, etc. Copies beyond `positions.length` (or whose authored
+// cell isn't walkable at spawn time) fall back to random placement,
+// so a partial list is a valid mix of authored + random copies.
+//
+// The component shows a hint when `positions.length` doesn't match
+// `count` so the author notices a half-authored placement before
+// shipping the quest.
+
+function PositionsList({
+  positions,
+  count,
+  onChange,
+}: {
+  positions: Array<{ col: number; row: number }>;
+  count: number;
+  onChange: (next: Array<{ col: number; row: number }>) => void;
+}) {
+  const updateAt = (
+    idx: number,
+    patch: Partial<{ col: number; row: number }>,
+  ) => {
+    const next = positions.map((p) => ({ ...p }));
+    next[idx] = { ...next[idx], ...patch };
+    onChange(next);
+  };
+  const removeAt = (idx: number) => {
+    const next = positions.map((p) => ({ ...p }));
+    next.splice(idx, 1);
+    onChange(next);
+  };
+  const add = () => {
+    onChange([...positions, { col: 0, row: 0 }]);
+  };
+  // Help the author notice when authored count drifts from `count`.
+  // Over-authored (more positions than copies) silently truncates at
+  // spawn; under-authored copies fall back to random placement.
+  const drift =
+    positions.length === 0
+      ? null
+      : positions.length < count
+        ? `${count - positions.length} of ${count} copies will fall back to random placement.`
+        : positions.length > count
+          ? `${positions.length - count} extra position${positions.length - count === 1 ? "" : "s"} will be ignored (count is ${count}).`
+          : null;
+  return (
+    <div className="mt-2">
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] uppercase tracking-wide text-parchment/55">
+          Encounter positions ({positions.length})
+        </span>
+        <button
+          type="button"
+          onClick={add}
+          className="rounded border border-ember/50 bg-ember/20 px-2 py-0.5 text-[10px] text-parchment hover:bg-ember/40"
+        >
+          + Add position
+        </button>
+      </div>
+      {positions.length === 0 ? (
+        <p className="mt-1 text-[11px] text-parchment/45">
+          No positions authored. Encounter copies spawn on random
+          walkable cells (historical behaviour).
+        </p>
+      ) : (
+        <ul className="mt-1 space-y-1">
+          {positions.map((p, i) => (
+            <li
+              key={i}
+              className="grid items-center gap-1 sm:grid-cols-[auto_5rem_5rem_1fr_auto]"
+            >
+              <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+                #{i + 1}
+              </span>
+              <label className="block">
+                <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+                  Col
+                </span>
+                <input
+                  type="number"
+                  min={0}
+                  value={p.col}
+                  onChange={(e) =>
+                    updateAt(i, {
+                      col: Math.max(0, Number(e.target.value) || 0),
+                    })
+                  }
+                  className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-xs text-parchment/90"
+                />
+              </label>
+              <label className="block">
+                <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+                  Row
+                </span>
+                <input
+                  type="number"
+                  min={0}
+                  value={p.row}
+                  onChange={(e) =>
+                    updateAt(i, {
+                      row: Math.max(0, Number(e.target.value) || 0),
+                    })
+                  }
+                  className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-xs text-parchment/90"
+                />
+              </label>
+              <span aria-hidden />
+              <button
+                type="button"
+                onClick={() => removeAt(i)}
+                className="self-end rounded border border-parchment/20 px-2 py-0.5 text-[10px] text-parchment/60 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
+              >
+                Remove
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {drift ? (
+        <p className="mt-1 text-[11px] text-amber-200/85">{drift}</p>
+      ) : null}
+    </div>
+  );
+}
+
 // ── Items reward list ───────────────────────────────────────────────
 
 function ItemsList({
@@ -1251,6 +1502,22 @@ function StepRow({
               encounter catalog — each row shows the lead monster's
               sprite and the encounter's tier.
             </p>
+            {/* Authored anchor cells on the step's map. The runtime
+                spawn pass consumes positions[0..count-1] in order
+                when each position is walkable; copies beyond
+                positions.length (or whose authored cell isn't
+                walkable at spawn time) fall back to random. Leave
+                empty for pure random placement (historical
+                behavior). */}
+            <PositionsList
+              positions={step.positions ?? []}
+              count={
+                typeof step.count === "number" ? step.count : 1
+              }
+              onChange={(arr) =>
+                onUpdate({ positions: arr.length === 0 ? undefined : arr })
+              }
+            />
           </fieldset>
         ) : step.kind === "retrieve" ? (
           // Retrieve steps: item picker + (col, row) on the step's
@@ -1405,6 +1672,18 @@ function StepRow({
             ) : null}
           </div>
         </fieldset>
+
+        {/* Per-step rewards — items granted + tile mutations applied
+            immediately on completion. Distinct from the quest-level
+            Rewards block above the steps list: those land at turn-in,
+            these land the moment THIS step completes so the next
+            step can depend on a map change or an item drop. */}
+        <StepRewardsEditor
+          rewards={step.rewards}
+          items={items}
+          maps={maps}
+          onUpdate={(rewards) => onUpdate({ rewards })}
+        />
       </div>
       <div className="mt-2 flex justify-end">
         <button

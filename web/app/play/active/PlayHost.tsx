@@ -93,6 +93,7 @@ import {
   type CombatLocation,
   type QuestDef,
   type QuestState,
+  type QuestStepRewards,
 } from "@/battle/world/Quests";
 import { tintForCell } from "@/sim/lighting";
 import { computeQuestGlowCells } from "@/sim/questGlow";
@@ -166,6 +167,183 @@ function mapForcedLightingMode(
   }
 }
 
+/** Apply a {@link QuestStepRewards} payload to a {@link WorldSave} and
+ *  the live world side-effects (grid mutation, sprite repaint, boat
+ *  registration, relight). Used by the kill-credit and retrieve-credit
+ *  paths to fire step-scoped rewards the moment a step's
+ *  `stepProgress` flips from false to true.
+ *
+ *  Semantics match {@link QuestRewards} application in `onQuestDecline`:
+ *
+ *   - **items** merge into the party's inventory via `addToInventory`
+ *     (stack-aware via the items catalog). When `skipItems` is true
+ *     the caller has already handled item granting another way
+ *     (e.g. the kill-credit path mutates `gameState.partyData.inventory`
+ *     so the post-combat sync — which would otherwise overwrite
+ *     `save.party.inventory` from the kernel's view — preserves the
+ *     additions). `summary` still reports the items so the
+ *     celebration subtitle reads correctly.
+ *   - **tileAdds** append to `save.maps[mapId].tileOverrides` so the
+ *     mutation survives reload + re-entry. If the affected cell is on
+ *     the currently-mounted map, the live grid + cell sprite update in
+ *     the same frame so the player sees the bridge appear immediately;
+ *     boat-flagged tiles also register with the kernel via `addBoatAt`
+ *     so the boarding logic recognises the new cell. Cells on other
+ *     maps just get the override stamped; the mount-time apply pass
+ *     picks them up next visit.
+ *
+ *  Returns the next save plus a short summary suitable for appending
+ *  to a step-completion celebration subtitle (e.g.
+ *  `"+Camping Supplies · 1 map change"`) — empty when neither items
+ *  nor tileAdds were authored. The renderer is relit when at least
+ *  one tile_add landed, since walkability / light-source changes can
+ *  flip torch behaviour in newly-passable corridors. */
+function applyStepRewardsToSave(
+  save: WorldSave,
+  rewards: QuestStepRewards,
+  ctx: {
+    catalog: LoadedCatalog | null;
+    renderer: WorldRenderer | null;
+    sim: MapSimulation | null;
+    /** True when the caller has already added the items elsewhere
+     *  (e.g. directly into `gameState.partyData.inventory` during a
+     *  kill-credit, to survive the post-combat sync's inventory
+     *  overwrite). Defaults to false — the retrieve-credit path
+     *  takes the default since it runs outside combat resolution and
+     *  the save is the source of truth. */
+    skipItems?: boolean;
+  },
+): { nextSave: WorldSave; summary: string; hadTileAdds: boolean } {
+  if (rewards.items.length === 0 && rewards.tileAdds.length === 0) {
+    return { nextSave: save, summary: "", hadTileAdds: false };
+  }
+  const summaryParts: string[] = [];
+
+  // ── Items ───────────────────────────────────────────────────────
+  const catalogItems = ctx.catalog?.items ?? [];
+  let nextInventory = save.party.inventory;
+  if (!ctx.skipItems) {
+    nextInventory = save.party.inventory.map((e) => ({ ...e }));
+    for (const id of rewards.items) {
+      nextInventory = addToInventory(nextInventory, id, catalogItems, 1);
+    }
+  }
+  if (rewards.items.length > 0) {
+    // Use catalog display name when available; fall back to the raw
+    // id so a missing catalog entry still surfaces *something* the
+    // player can recognise.
+    const labels = rewards.items.map((id) => {
+      const def = catalogItems.find((it) => it.id === id);
+      return def?.name || id;
+    });
+    summaryParts.push(`+${labels.join(", ")}`);
+  }
+
+  // ── Tile adds ──────────────────────────────────────────────────
+  const nextMaps: typeof save.maps = { ...save.maps };
+  const liveMap = ctx.catalog?.map;
+  const palette = ctx.catalog?.palette ?? [];
+  const r = ctx.renderer;
+  let tileAddsApplied = 0;
+  for (const op of rewards.tileAdds) {
+    const { map: mapId, col, row, tile_id: tileId } = op;
+    if (!tileId) continue;
+    const prev = nextMaps[mapId] ?? {
+      unlockedCells: [],
+      defeatedEncounters: [],
+      destroyedLairs: [],
+    };
+    const nextOverrides = [
+      ...(prev.tileOverrides ?? []),
+      { col, row, tileId },
+    ];
+    nextMaps[mapId] = { ...prev, tileOverrides: nextOverrides };
+    tileAddsApplied += 1;
+    if (liveMap && mapId === liveMap.id) {
+      if (
+        row >= 0 &&
+        row < liveMap.height &&
+        col >= 0 &&
+        col < liveMap.width
+      ) {
+        const source = palette.find((t) => t.id === tileId);
+        if (source) {
+          liveMap.grid[row][col] = {
+            ...source,
+          } as typeof liveMap.grid[number][number];
+          if (r && source.sprite) {
+            r.setCellSprite(col, row, source.sprite);
+          }
+          if (
+            (source as { boat?: boolean }).boat === true &&
+            ctx.sim &&
+            source.sprite
+          ) {
+            ctx.sim.addBoatAt(col, row, source.sprite);
+          }
+        }
+      }
+    }
+  }
+  if (tileAddsApplied > 0) {
+    summaryParts.push(
+      tileAddsApplied === 1
+        ? "world changed"
+        : `${tileAddsApplied} world changes`,
+    );
+  }
+
+  const hadTileAdds = tileAddsApplied > 0;
+  const nextSave: WorldSave = {
+    ...save,
+    party: {
+      ...save.party,
+      inventory: nextInventory,
+    },
+    maps: nextMaps,
+  };
+  if (r && hadTileAdds) r.relight();
+  return { nextSave, summary: summaryParts.join(" · "), hadTileAdds };
+}
+
+/** Push step-reward items into the live `gameState.partyData.inventory`
+ *  so the post-combat `applyCombatResultToSave` pass picks them up.
+ *
+ *  Why this exists: kill-credit step rewards fire from inside
+ *  `resolveSpawnEncounter("won")` — which runs *before*
+ *  `applyCombatResultToSave` overwrites `save.party.inventory` from
+ *  `gameState.partyData.inventory`. If we only updated the save, the
+ *  combat sync would silently throw the items away. Mutating the
+ *  kernel's view ensures the additions survive the sync.
+ *
+ *  No-op when `gameState.partyData` is null (defensive — kill credits
+ *  only fire during combat resolution, so this should always be live).
+ *  Mirrors the stacking behaviour of `addToInventory` so a +1 Torch
+ *  reward bumps an existing Torch stack rather than spawning a
+ *  duplicate row.  */
+function applyStepItemsToBattleState(
+  items: ReadonlyArray<string>,
+  catalog: LoadedCatalog | null,
+): void {
+  if (items.length === 0) return;
+  const post = gameState.partyData;
+  if (!post) return;
+  const catalogItems = catalog?.items ?? [];
+  let next: ReadonlyArray<{
+    item: string;
+    charges?: number;
+    durability?: number;
+  }> = post.inventory;
+  for (const id of items) {
+    next = addToInventory(next, id, catalogItems, 1);
+  }
+  // Mutate in place — `applyCombatResultToSave` re-reads
+  // `gameState.partyData.inventory` so the array identity doesn't
+  // matter, just the contents.
+  post.inventory.length = 0;
+  for (const e of next) post.inventory.push(e);
+}
+
 /** Build the JSON-safe SavedMapState for a current sim snapshot.
  *  Centralised so the three save sites — the explicit "save current"
  *  checkpoint, the same-map teleport branch, and the cross-map link
@@ -221,6 +399,7 @@ function mapStateFromSnapshot(
 import { loadWorld, saveWorld } from "@/play/save";
 import { addToInventory } from "@/play/inventoryStacking";
 import { applyCombatResultToSave } from "@/play/syncFromBattle";
+import { gameState } from "@/battle/state";
 import { awardQuestXpToSavedMembers } from "@/play/awardQuestXp";
 import { herbalismOnStep } from "@/play/herbalism";
 import {
@@ -2654,6 +2833,7 @@ export function PlayHost() {
               // bootstrap pass on reload re-derives the right active
               // step. fireQuestCelebration fires a step placard with
               // the quest name + step name.
+              let stepRewardsSummary = "";
               if (matchedQuestId && matchedStepIdx >= 0) {
                 const credit = creditQuestRetrieve(
                   questDefsRef.current,
@@ -2674,6 +2854,27 @@ export function PlayHost() {
                       },
                     };
                   }
+                  // Apply the step's rewards immediately — items
+                  // merge into the inventory we already mutated for
+                  // the pickup; tile_add ops paint into the live
+                  // grid + save.maps overrides so a "bridge appears
+                  // after fetching the keystone" scenario reads in
+                  // the same frame as the pickup. Retrieve credits
+                  // always carry `stepRewards` (single-shot
+                  // completion → never null), so we can apply
+                  // unconditionally.
+                  const applied = applyStepRewardsToSave(
+                    nextSave,
+                    credit.stepRewards,
+                    {
+                      catalog: catalogRef.current,
+                      renderer: rendererRef.current,
+                      sim: simRef.current,
+                    },
+                  );
+                  nextSave = applied.nextSave;
+                  stepRewardsSummary = applied.summary;
+                  if (applied.hadTileAdds) refreshQuestGlow();
                   const def = questDefsRef.current.find(
                     (d) => d.id === matchedQuestId,
                   );
@@ -2695,10 +2896,27 @@ export function PlayHost() {
                       ),
                     });
                   } else {
+                    const subtitle = stepRewardsSummary
+                      ? credit.step.name
+                        ? `${credit.step.name} — ${stepRewardsSummary}`
+                        : stepRewardsSummary
+                      : credit.step.name;
                     fireQuestCelebration({
                       kind: "step",
                       title: def?.name ?? matchedQuestId,
-                      subtitle: credit.step.name,
+                      subtitle,
+                    });
+                  }
+                  // Mirror reward summary into the log strip so the
+                  // player can re-read what they got once the
+                  // placard fades.
+                  if (stepRewardsSummary) {
+                    setLogMessages((prev) => {
+                      const line = `Step reward: ${stepRewardsSummary}.`;
+                      const next = [...prev, line];
+                      return next.length > MAX_LOG
+                        ? next.slice(next.length - MAX_LOG)
+                        : next;
                     });
                   }
                 }
@@ -2760,21 +2978,66 @@ export function PlayHost() {
               // already understands.
               const qs = questStatesRef.current.get(ev.questId);
               const save = saveRef.current;
-              if (qs && save) {
+              // Step transitioned to complete? Apply the step's
+              // rewards (items + tile_add) IMMEDIATELY so the next
+              // step can depend on them — a bridge appearing, a key
+              // landing in inventory. The same write commits the
+              // questStepProgress bump below so a reload doesn't
+              // split the credit from its rewards.
+              let stepRewardsSummary = "";
+              let nextSave: WorldSave | null = save;
+              if (qs && nextSave) {
                 let nextIdx = qs.stepProgress.findIndex((p) => !p);
                 if (nextIdx === -1) nextIdx = qs.stepProgress.length;
-                const prevProgress = save.questStepProgress ?? {};
+                const prevProgress = nextSave.questStepProgress ?? {};
                 if (prevProgress[ev.questId] !== nextIdx) {
-                  const nextSave: WorldSave = {
-                    ...save,
+                  nextSave = {
+                    ...nextSave,
                     questStepProgress: {
                       ...prevProgress,
                       [ev.questId]: nextIdx,
                     },
                   };
-                  saveWorld(nextSave);
-                  saveRef.current = nextSave;
                 }
+              }
+              if (ev.stepCompleted && nextSave) {
+                const def = questDefsRef.current.find(
+                  (d) => d.id === ev.questId,
+                );
+                const stepRewards = def?.steps[ev.stepIdx]?.rewards;
+                if (stepRewards) {
+                  // Items go via gameState.partyData.inventory rather
+                  // than the save: we're inside resolveSpawnEncounter("won"),
+                  // which is called from onCombatResolved RIGHT BEFORE
+                  // applyCombatResultToSave overwrites save.party.inventory
+                  // from the kernel's view. Pushing into the kernel
+                  // side means the post-combat sync carries the
+                  // additions into the save instead of stomping them.
+                  applyStepItemsToBattleState(
+                    stepRewards.items,
+                    catalogRef.current,
+                  );
+                  const applied = applyStepRewardsToSave(
+                    nextSave,
+                    stepRewards,
+                    {
+                      catalog: catalogRef.current,
+                      renderer: rendererRef.current,
+                      sim: simRef.current,
+                      skipItems: true,
+                    },
+                  );
+                  nextSave = applied.nextSave;
+                  stepRewardsSummary = applied.summary;
+                  // Tile mutations can change walkability; refresh
+                  // the quest glow so a path opened by the reward
+                  // re-tints correctly.
+                  if (applied.hadTileAdds) refreshQuestGlow();
+                }
+              }
+              if (nextSave && nextSave !== save) {
+                saveWorld(nextSave);
+                saveRef.current = nextSave;
               }
               // Step transitioned to complete on this credit? Fire a
               // celebration placard + sound + radial burst. We use
@@ -2796,6 +3059,11 @@ export function PlayHost() {
                 );
                 const step = def?.steps[ev.stepIdx];
                 if (ev.questCompleted) {
+                  // Step-final wins over rewards in the subtitle —
+                  // the "Return to {giver}" prompt is the most
+                  // actionable thing the player can do. Rewards
+                  // earned here get spoken to in the log strip
+                  // below instead.
                   fireQuestCelebration({
                     kind: "step-final",
                     title: def?.name ?? ev.questId,
@@ -2804,10 +3072,31 @@ export function PlayHost() {
                     ),
                   });
                 } else {
+                  // Append the rewards summary to the step name so
+                  // the placard surfaces both — "Find the key" on
+                  // line 2 + "+Iron Key · world changed" on line 3
+                  // is what the player reads in one glance.
+                  const subtitle = stepRewardsSummary
+                    ? step?.name
+                      ? `${step.name} — ${stepRewardsSummary}`
+                      : stepRewardsSummary
+                    : step?.name;
                   fireQuestCelebration({
                     kind: "step",
                     title: def?.name ?? ev.questId,
-                    subtitle: step?.name,
+                    subtitle,
+                  });
+                }
+                // Mirror reward summary into the log strip so it
+                // survives the placard's fade-out and the player
+                // can re-read what they got.
+                if (stepRewardsSummary) {
+                  setLogMessages((prev) => {
+                    const line = `Step reward: ${stepRewardsSummary}.`;
+                    const next = [...prev, line];
+                    return next.length > MAX_LOG
+                      ? next.slice(next.length - MAX_LOG)
+                      : next;
                   });
                 }
               }

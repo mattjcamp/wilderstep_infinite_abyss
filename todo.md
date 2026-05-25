@@ -1,8 +1,6 @@
 
 # Polish
 
-
-
 - Water Shrine needs encounters
 - Dragon's Cave should have darkness property set
 - Capital City needs more mid-level quests

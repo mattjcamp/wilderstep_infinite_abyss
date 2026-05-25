@@ -175,9 +175,9 @@
           "kind": "retrieve",
           "item_id": "sun_sword",
           "location_kind": "map",
-          "map_id": "water_shrine_3",
-          "col": 13,
-          "row": 1
+          "map_id": "shrine_depths_3",
+          "col": 11,
+          "row": 5
         },
         {
           "id": "dragon_step_2",
@@ -186,7 +186,13 @@
           "description": "Kill Dragon",
           "location_kind": "map",
           "map_id": "dragons_lair_1_l4",
-          "encounter_id": "ancient_dragon"
+          "encounter_id": "ancient_dragon",
+          "positions": [
+            {
+              "col": 10,
+              "row": 23
+            }
+          ]
         }
       ],
       "quest_giver": {
@@ -208,7 +214,20 @@
           "kind": "kill",
           "location_kind": "map",
           "map_id": "demo_town_house",
-          "encounter_id": "shambling_dead"
+          "encounter_id": "shambling_dead",
+          "rewards": {
+            "tile_add": [
+              {
+                "map": "demo_town_house",
+                "col": 6,
+                "row": 1,
+                "tile_id": "portal1"
+              }
+            ],
+            "items": [
+              "fire_arrows"
+            ]
+          }
         }
       ],
       "quest_giver": {
@@ -224,6 +243,34 @@
           "arrows",
           "torch"
         ]
+      }
+    },
+    {
+      "id": "the_dragon_heart",
+      "name": "Retrieve the Dragon Heart",
+      "description": "Dive into the old ruins and retrieve the mage order's dragon heart relic",
+      "tags": [],
+      "steps": [
+        {
+          "id": "the_dragon_heart_step_1",
+          "name": "Step 1",
+          "kind": "retrieve",
+          "item_id": "dragonheart",
+          "col": 24,
+          "row": 22,
+          "location_kind": "map",
+          "map_id": "old_ruins_1_l4"
+        }
+      ],
+      "quest_giver": {
+        "npc_name": "Old Wizard",
+        "npc_sprite": "person/wizard2.png",
+        "start_dialog": "Retrieve the Dragon's Heart, the relic of my order. It is lost in the old ruins to our west",
+        "end_dialog": "Thx!"
+      },
+      "rewards": {
+        "xp": 500,
+        "gold": 250
       }
     }
   ]

@@ -441,6 +441,17 @@ export interface QuestPlacementRequest {
   /** How many copies of `encounterId` still need to be on the map.
    *  Typically `step.count - already_killed`. */
   count: number;
+  /** Author-anchored cells the placement pass should prefer for the
+   *  first N copies, in order. A position is honoured when its cell
+   *  is currently in `walkable`; otherwise it's skipped and the
+   *  copy falls back to a random pick (defensive against the map
+   *  evolving after the quest was authored — a forest tile turning
+   *  into water shouldn't strand the spawn). Copies beyond
+   *  `positions.length` always go random. Omitting the field (or
+   *  passing an empty array) preserves the historical pure-random
+   *  behaviour, so quests authored before the field existed don't
+   *  change shape. */
+  positions?: ReadonlyArray<{ col: number; row: number }>;
 }
 
 /** Default tint applied to quest-driven placed encounters — a soft
@@ -482,10 +493,34 @@ export function findQuestPlacedEncounters(
   for (const req of requests) {
     const enc = catalog.get(req.encounterId);
     if (!enc) continue;
+    const positions = req.positions ?? [];
     for (let n = 0; n < req.count; n++) {
-      if (walkable.length === 0) return out;
-      const idx = Math.floor(rng() * walkable.length);
-      const [c, r] = walkable.splice(idx, 1)[0];
+      let cell: [number, number] | null = null;
+      // ── Authored position pass ─────────────────────────────────
+      // For copy `n`, prefer `positions[n]` when it's still in the
+      // walkable list (the author asked for a specific cell). If
+      // the cell isn't walkable any more — map evolved, another
+      // spawn already consumed it, or the author typo'd a wall — we
+      // silently fall through to the random pick so the encounter
+      // still appears somewhere reachable. The historical contract
+      // (walkable list mutated as cells are consumed) is preserved
+      // either way.
+      if (n < positions.length) {
+        const want = positions[n];
+        const idx = walkable.findIndex(
+          ([c, r]) => c === want.col && r === want.row,
+        );
+        if (idx !== -1) {
+          cell = walkable.splice(idx, 1)[0];
+        }
+      }
+      // ── Random fallback ────────────────────────────────────────
+      if (!cell) {
+        if (walkable.length === 0) return out;
+        const idx = Math.floor(rng() * walkable.length);
+        cell = walkable.splice(idx, 1)[0];
+      }
+      const [c, r] = cell;
       out.push({
         id: `q-${req.questId}-${req.stepIdx}-${n}`,
         encounterId: req.encounterId,
