@@ -434,13 +434,13 @@
       "category": "armors",
       "name": "Cloth",
       "animation_id": null,
-      "description": "Simple cloth garments. Minimal protection.",
+      "description": "Simple cloth garments. Minimal protection — better than nothing.",
       "icon": "armor_light",
       "item_type": "cloth",
       "slots": [
         "body"
       ],
-      "evasion": 50,
+      "evasion": 52,
       "durability": 0,
       "party_can_equip": false,
       "character_can_equip": true,

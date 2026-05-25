@@ -175,12 +175,27 @@ function mapForcedLightingMode(
  *  its authored cell). */
 function mapStateFromSnapshot(
   snap: ReturnType<MapSimulation["snapshot"]>,
-) {
+  prev?: SavedMapState | undefined,
+): SavedMapState {
   const boatPositions: Record<string, string> = {};
   for (const [key, sprite] of snap.boatPositions) {
     boatPositions[key] = sprite;
   }
+  // Spread `prev` first so any field the live snapshot DOESN'T
+  // surface — today that's `tileOverrides`, tomorrow could be any
+  // future authored-content per-map field — carries forward across
+  // saves. Snapshot-derived fields overwrite the prev values
+  // because the sim is the source of truth for runtime state
+  // (boat positions, defeated encounters, etc.).
+  //
+  // Without this merge, crossing a cross-map link wiped any
+  // `tileOverrides` the quest-reward path had written into
+  // save.maps[id] — the snapshot built a fresh SavedMapState
+  // without that field and overwrote the prior one. Symptom: a
+  // quest that adds a boat-tile shows the boat until the party
+  // walks through a link, then the tile disappears.
   return {
+    ...(prev ?? {}),
     unlockedCells: Array.from(snap.unlockedCells),
     defeatedEncounters: Array.from(snap.defeatedEncounters),
     destroyedLairs: Array.from(snap.destroyedLairs),
@@ -196,7 +211,7 @@ import {
   attemptPickpocket,
   canPickpocket,
 } from "@/play/raceAbilities";
-import type { WorldSave } from "@/play/saveTypes";
+import type { SavedMapState, WorldSave } from "@/play/saveTypes";
 import type {
   SimCharacter,
   SimCharacterClass,
@@ -1142,8 +1157,14 @@ export function PlayHost() {
     // mapStateFromSnapshot so the link-traversal branches below
     // can't drift on which fields get persisted (boatPositions in
     // particular was being dropped by the cross-map branch, which
-    // is why boats reset on every link).
-    const mapState = mapStateFromSnapshot(snap);
+    // is why boats reset on every link). Passing the prior
+    // SavedMapState carries forward authored-content fields the
+    // live snapshot doesn't surface (today: `tileOverrides` from
+    // quest rewards).
+    const mapState = mapStateFromSnapshot(
+      snap,
+      saveRef.current?.maps?.[saveRef.current.party.currentMapId],
+    );
 
     // Reconcile `party_effects` with the per-step counters the sim
     // ticked. Effects backed by a duration counter (Galadriel's Light,
@@ -3168,7 +3189,13 @@ export function PlayHost() {
             },
             maps: {
               ...save.maps,
-              [save.party.currentMapId]: mapStateFromSnapshot(snap),
+              // Pass the prior SavedMapState so authored fields
+              // (tileOverrides from quest rewards) carry forward —
+              // the live snapshot doesn't surface them.
+              [save.party.currentMapId]: mapStateFromSnapshot(
+                snap,
+                save.maps?.[save.party.currentMapId],
+              ),
             },
           };
           saveWorld(next);
@@ -3180,11 +3207,20 @@ export function PlayHost() {
       // its key, advance currentMapId + position, save, remount.
       // Use the shared mapStateFromSnapshot helper so we don't drop
       // boatPositions (the bug that previously reset every parked
-      // boat to its authored cell whenever the party crossed a link).
+      // boat to its authored cell whenever the party crossed a link)
+      // OR tileOverrides (the bug that reset quest-added boat tiles
+      // when the party crossed a link off the source map).
       const snap = sim?.snapshot();
-      const mapState = snap
-        ? mapStateFromSnapshot(snap)
-        : {
+      // Carry forward the prior SavedMapState — authored fields
+      // (tileOverrides from quest rewards) need to survive the
+      // snapshot rebuild. The fallback `{}` is for the
+      // sim-missing edge case where there's no live snapshot to
+      // build from; we'd rather preserve whatever was saved
+      // before than wipe the map to empty.
+      const prevMapState = save.maps?.[save.party.currentMapId];
+      const mapState: SavedMapState = snap
+        ? mapStateFromSnapshot(snap, prevMapState)
+        : prevMapState ?? {
             unlockedCells: [],
             defeatedEncounters: [],
             destroyedLairs: [],

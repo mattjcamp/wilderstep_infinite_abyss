@@ -19,19 +19,19 @@
       "charges": 10
     },
     {
-      "item": "fire_arrows",
-      "charges": 10
-    },
-    {
       "item": "dagger"
     },
     {
       "item": "camping_supplies",
-      "charges": 2
+      "charges": 12
     },
     {
-      "item": "rock",
-      "charges": 20
+      "item": "arrows",
+      "charges": 40
+    },
+    {
+      "item": "stones",
+      "charges": 40
     },
     {
       "item": "lockpick",

@@ -179,10 +179,33 @@ function totalAcBonus(equipped: EquipmentSlots, items: Map<string, Item>): numbe
 }
 
 /**
- * Power-tier damage dice — direct port of `Member.get_damage_dice()`
- * in `src/party.py:956`. Power tier sets the die size; the wielder's
- * STR mod (or DEX mod for ranged weapons) is added as a bonus, and
- * power-1 weapons get an extra `-1` to round to roughly d3.
+ * Power-tier damage dice — extended from the Python port to keep
+ * rare / endgame weapons meaningful. The original `Member.get_damage_dice()`
+ * (`src/party.py:956`) capped at 1d10 for any `power >= 9`, which
+ * collapsed Sun Sword (power 20), Mystic Sword (10), Silver Bow (9),
+ * and Halberd (9) all into the same dice. The ladder below scales
+ * upward through 1d12, 2d6, and 2d8 so a legendary weapon visibly
+ * outdamages a mid-tier one.
+ *
+ * Power tier sets the die size; the wielder's STR mod (or DEX mod
+ * for ranged weapons) is added as a bonus, and power-1 weapons get
+ * an extra `-1` to round to roughly d3.
+ *
+ * | Power | Dice    | Avg | Examples (current catalog)             |
+ * |------:|---------|----:|---------------------------------------|
+ * |     1 | 1d4 − 1 | 1.5 | Dagger, Rock                          |
+ * |   2–3 | 1d4     | 2.5 | Mace, Sling                           |
+ * |   4–5 | 1d6     | 3.5 | Short Bow, Sword                      |
+ * |   6–8 | 1d8     | 4.5 | Spear, Iron Sword, Long Bow           |
+ * |  9–11 | 1d10    | 5.5 | Silver Bow, Halberd, Mystic Sword     |
+ * | 12–14 | 1d12    | 6.5 | (room to grow)                        |
+ * | 15–19 | 2d6     | 7.0 | (room to grow)                        |
+ * |   20+ | 2d8     | 9.0 | Sun Sword                             |
+ *
+ * Endgame ceiling: 2d8 + STR mod + Sun Sword's 1d6 fire = ~12–20 per
+ * swing pre-crit. A nat-20 crit doubles the dice → 4d8 + 2d6 fire +
+ * STR mod, easily 25+ in a single hit. That's the "legendary weapon
+ * actually feels legendary" the user asked for.
  */
 function damageForWeapon(member: PartyMember, weapon: Item | null): DamageRoll {
   if (!weapon || typeof weapon.power !== "number") {
@@ -196,12 +219,15 @@ function damageForWeapon(member: PartyMember, weapon: Item | null): DamageRoll {
   const isRanged = !!weapon.ranged;
   const statMod = isRanged ? mod(member.dexterity) : mod(member.strength);
   const wp = weapon.power;
-  if (wp <= 0) return { dice: 0, sides: 0, bonus: 1 };
-  if (wp === 1) return { dice: 1, sides: 4, bonus: statMod - 1 };
-  if (wp <= 3)  return { dice: 1, sides: 4, bonus: statMod };
-  if (wp <= 5)  return { dice: 1, sides: 6, bonus: statMod };
-  if (wp <= 8)  return { dice: 1, sides: 8, bonus: statMod };
-  return         { dice: 1, sides: 10, bonus: statMod };
+  if (wp <= 0)   return { dice: 0, sides: 0, bonus: 1 };
+  if (wp === 1)  return { dice: 1, sides: 4, bonus: statMod - 1 };
+  if (wp <= 3)   return { dice: 1, sides: 4, bonus: statMod };
+  if (wp <= 5)   return { dice: 1, sides: 6, bonus: statMod };
+  if (wp <= 8)   return { dice: 1, sides: 8, bonus: statMod };
+  if (wp <= 11)  return { dice: 1, sides: 10, bonus: statMod };
+  if (wp <= 14)  return { dice: 1, sides: 12, bonus: statMod };
+  if (wp <= 19)  return { dice: 2, sides: 6, bonus: statMod };
+  return           { dice: 2, sides: 8, bonus: statMod };
 }
 
 /**
@@ -211,9 +237,18 @@ function damageForWeapon(member: PartyMember, weapon: Item | null): DamageRoll {
  * a context-free "1d6 +4". Pure: depends only on the member + the
  * items catalog.
  *
- *   AC          = 10 + DEX_mod + (armor_evasion - 50)/5 + Σ acBonus
+ *   AC          = 10 + DEX_mod + (armor_evasion - 50)/2 + Σ acBonus
  *   atk bonus   = STR_mod (melee) or DEX_mod (ranged/thrown)
  *   damage      = power-tier dice + STR_mod (or DEX_mod for ranged)
+ *
+ * The /2 divisor (vs the legacy /5) turns the evasion field into a
+ * meaningful per-armor differentiator — Chain now gives +4 AC and
+ * Plate +5, instead of both collapsing to +1 or +2 buckets. Cloth's
+ * authored evasion (52) pays out +1; lesser armor never gives less
+ * than that because the user's intuition was correct that "even
+ * lesser armor shouldn't give zero." Higher-tier authored values
+ * scale linearly: Exotic 67 -> +8, the largest single-item AC
+ * contribution today.
  *
  * Used by `combatantFromMember` when staging a fight, and by the
  * Party screen so the player can see at a glance how their numbers
@@ -244,7 +279,12 @@ export function combatStatsFor(
     : null;
   const dexMod = mod(member.dexterity);
   const evasion = armor && typeof armor.evasion === "number" ? armor.evasion : 50;
-  const armorBonus = Math.floor((evasion - 50) / 5);
+  // /2 (was /5) so the evasion field's authored range (50–67) maps
+  // to a meaningful AC spread (0–8) instead of collapsing every
+  // armor into a +0/+1/+2/+3 bucket. Combined with Cloth's bump to
+  // evasion=52, every armor now contributes a visible AC change
+  // when equipped.
+  const armorBonus = Math.floor((evasion - 50) / 2);
   const ac = 10 + dexMod + armorBonus + totalAcBonus(member.equipped, items);
   const isRanged = !!(weapon && weapon.ranged);
   const attackBonus = isRanged ? dexMod : mod(member.strength);
@@ -398,7 +438,12 @@ export function refreshCombatantGear(
     : null;
   const dexMod = mod(member.dexterity);
   const evasion = armor && typeof armor.evasion === "number" ? armor.evasion : 50;
-  const armorBonus = Math.floor((evasion - 50) / 5);
+  // /2 (was /5) so the evasion field's authored range (50–67) maps
+  // to a meaningful AC spread (0–8) instead of collapsing every
+  // armor into a +0/+1/+2/+3 bucket. Combined with Cloth's bump to
+  // evasion=52, every armor now contributes a visible AC change
+  // when equipped.
+  const armorBonus = Math.floor((evasion - 50) / 2);
   c.ac = 10 + dexMod + armorBonus + totalAcBonus(member.equipped, items);
   const isRanged = !!(weapon && weapon.ranged);
   c.attackBonus = isRanged ? dexMod : mod(member.strength);

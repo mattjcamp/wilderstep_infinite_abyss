@@ -6,9 +6,9 @@
       "class": "fighter",
       "race": "dwarf",
       "gender": "Male",
-      "level": 1,
+      "level": 3,
       "exp": 0,
-      "hp": 16,
+      "hp": 23,
       "mp": 0,
       "strength": 16,
       "dexterity": 11,
@@ -16,8 +16,8 @@
       "intelligence": 8,
       "wisdom": 8,
       "equipped": {
-        "hands": "club",
-        "body": "cloth"
+        "hands": "sun_sword",
+        "body": "chain"
       },
       "inventory": [],
       "sprite": "person/fighter6.png"
@@ -28,9 +28,9 @@
       "class": "thief",
       "race": "halfling",
       "gender": "Male",
-      "level": 1,
+      "level": 4,
       "exp": 0,
-      "hp": 8,
+      "hp": 13,
       "mp": 0,
       "strength": 6,
       "dexterity": 20,
@@ -38,8 +38,8 @@
       "intelligence": 8,
       "wisdom": 9,
       "equipped": {
-        "hands": "club",
-        "body": "cloth"
+        "hands": "short_bow",
+        "body": "leather"
       },
       "inventory": [],
       "sprite": "person/hobbit1.png"
@@ -50,18 +50,18 @@
       "class": "cleric",
       "race": "human",
       "gender": "Female",
-      "level": 1,
+      "level": 4,
       "exp": 0,
-      "hp": 9,
-      "mp": 19,
+      "hp": 14,
+      "mp": 50,
       "strength": 8,
       "dexterity": 11,
       "constitution": 12,
       "intelligence": 8,
       "wisdom": 16,
       "equipped": {
-        "hands": "club",
-        "body": "cloth"
+        "hands": "sling",
+        "body": "leather"
       },
       "inventory": [],
       "sprite": "person/cleric1.png"
@@ -72,17 +72,17 @@
       "class": "wizard",
       "race": "human",
       "gender": "Male",
-      "level": 1,
+      "level": 4,
       "exp": 0,
-      "hp": 6,
-      "mp": 19,
+      "hp": 20,
+      "mp": 50,
       "strength": 8,
       "dexterity": 12,
       "constitution": 10,
       "intelligence": 17,
       "wisdom": 8,
       "equipped": {
-        "hands": "club",
+        "hands": "dagger",
         "body": "cloth"
       },
       "inventory": [],

@@ -77,10 +77,14 @@ function makeItems(): Map<string, Item> {
 }
 
 describe("Sun Sword vs. baseline sword — base damage math", () => {
-  it("upgrades the wielder's damage die from 1d6 to 1d10", () => {
-    // damageForWeapon's power tier table:
-    //   power 4-5 → 1d6 (Sword sits here)
-    //   power 9+  → 1d10 (Sun Sword)
+  it("upgrades the wielder's damage die from 1d6 to 2d8", () => {
+    // damageForWeapon's extended power-tier table:
+    //   power 4-5  → 1d6  (Sword sits here)
+    //   power 20+  → 2d8  (Sun Sword sits here)
+    // The mid-tier ladder (1d10 for 9-11, 1d12 for 12-14, 2d6 for
+    // 15-19) means Sun Sword now visibly outdamages every other
+    // weapon in the catalog instead of capping at the same 1d10
+    // a power-9 Halberd would roll.
     // STR 10 → mod 0 so the dice are bare.
     const items = makeItems();
     const swordHero = makeMember({ equipped: { hands: "sword", body: null } });
@@ -88,10 +92,14 @@ describe("Sun Sword vs. baseline sword — base damage math", () => {
     const swordStats = combatStatsFor(swordHero, items);
     const sunStats = combatStatsFor(sunHero, items);
     expect(swordStats.damage).toEqual({ dice: 1, sides: 6, bonus: 0 });
-    expect(sunStats.damage).toEqual({ dice: 1, sides: 10, bonus: 0 });
-    // Average roll: sword 3.5 vs Sun Sword 5.5 — a 57% bump on the
-    // BASE die alone, before the 1d6 fire bonus rolled per swing.
-    expect(sunStats.damage.sides).toBeGreaterThan(swordStats.damage.sides);
+    expect(sunStats.damage).toEqual({ dice: 2, sides: 8, bonus: 0 });
+    // Average roll: sword 3.5 vs Sun Sword 9 — a 157% bump on the
+    // BASE dice alone, before the 1d6 fire bonus rolled per swing.
+    // Strictly more dice + bigger die so the comparison is
+    // unambiguous; the audit's "rare weapons feel rare" goal.
+    const swordAvg = swordStats.damage.dice * (swordStats.damage.sides + 1) / 2;
+    const sunAvg = sunStats.damage.dice * (sunStats.damage.sides + 1) / 2;
+    expect(sunAvg).toBeGreaterThan(swordAvg);
   });
 
   it("threads the Sun Sword's bonus_damage + damage_type onto the Combatant", () => {

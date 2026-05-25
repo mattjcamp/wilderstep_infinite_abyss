@@ -48,12 +48,25 @@ import type {
 } from "./PartyScreen";
 import { DurabilityBar } from "./DurabilityBar";
 import { resolveSpritePath } from "./spriteFields";
+import {
+  abilityMod as sharedAbilityMod,
+  combatStatsFor as sharedCombatStatsFor,
+} from "./combatStats";
 
 const SPRITE_CONFIG = { category: "person", format: "path" } as const;
 
 /** Item shape with the combat-relevant fields the sheet reads. The
  *  catalog passes more — this interface just narrows what the sim
- *  consumes so callers can pass loose records. */
+ *  consumes so callers can pass loose records.
+ *
+ *  Magic-item fields (`bonus_damage`, `damage_type`, `wielder_passives`,
+ *  `grants_effect`) mirror what `web/src/battle/world/Items.ts` declares
+ *  on the full `Item` type — the sheet reads them so legendary gear
+ *  (Sun Sword, Mystic Sword) displays its actual mechanical payload
+ *  rather than collapsing back to its base power tier. `bonus_damage`
+ *  is `string | number` because items.json stores it as a dice
+ *  expression (`"1d6"`); the prior `number`-only typing was an oversight
+ *  that meant every Sun Sword on the sheet rendered as a plain sword. */
 export interface SheetItemRef extends PartyItemRef {
   category?: string;
   power?: number;
@@ -61,8 +74,20 @@ export interface SheetItemRef extends PartyItemRef {
   slots?: string[];
   evasion?: number;
   ac_bonus?: number;
-  bonus_damage?: number;
+  bonus_damage?: string | number;
   damage_type?: string;
+  /** Magic-item passive ids stamped onto the wielder while equipped.
+   *  Today's combat engine reads `"fire_resistance"` and
+   *  `"poison_immunity"` — see `web/src/battle/combat/CombatBridge.ts`
+   *  → `passiveFromWielderId`. Surfaced on the sheet as a small pill
+   *  under the Equipped panel so the player can see "Sun Sword grants
+   *  fire resistance" without diving into combat to find out. */
+  wielder_passives?: string[];
+  /** Party-wide effect granted while the item is equipped (Sun Sword's
+   *  `sun_sword_aura`, Mystic Sword's mana glow, etc.). Display-only
+   *  on the sheet; the actual HUD plumbing lives in
+   *  `refreshItemGrantedEffects`. */
+  grants_effect?: string;
 }
 
 const STAT_KEYS = [
@@ -84,10 +109,11 @@ const STAT_LABELS: Record<StatKey, string> = {
 
 // ── Helpers ────────────────────────────────────────────────────────
 
-/** D&D-style ability modifier (10 = 0, 18 = +4, 8 = -1, …). */
-function abilityMod(stat: number): number {
-  return Math.floor((stat - 10) / 2);
-}
+/** D&D-style ability modifier (10 = 0, 18 = +4, 8 = -1, …). Re-exports
+ *  the shared editor/combatStats helper so this module's call sites
+ *  keep the short local name without owning a second copy that could
+ *  drift from the combat engine's formula. */
+const abilityMod = sharedAbilityMod;
 
 /** Render +N / -N / 0, with color hints applied by the caller. */
 function fmtMod(n: number): string {
@@ -101,52 +127,69 @@ interface DamageRoll {
   bonus: number;
 }
 
-/** Power-tier damage dice — direct port of v1 CombatBridge. */
-function damageForWeapon(
-  member: PartyCharacterRef,
-  weapon: SheetItemRef | null,
-): DamageRoll {
-  if (!weapon || typeof weapon.power !== "number") {
-    return { dice: 0, sides: 0, bonus: 1 };
-  }
-  const isRanged = !!weapon.ranged;
-  const statMod = isRanged
-    ? abilityMod(member.dexterity ?? 10)
-    : abilityMod(member.strength ?? 10);
-  const wp = weapon.power;
-  if (wp <= 0) return { dice: 0, sides: 0, bonus: 1 };
-  if (wp === 1) return { dice: 1, sides: 4, bonus: statMod - 1 };
-  if (wp <= 3) return { dice: 1, sides: 4, bonus: statMod };
-  if (wp <= 5) return { dice: 1, sides: 6, bonus: statMod };
-  if (wp <= 8) return { dice: 1, sides: 8, bonus: statMod };
-  return { dice: 1, sides: 10, bonus: statMod };
-}
-
+/** Format the base damage roll. Bonus damage (Sun Sword's fire 1d6)
+ *  is appended separately in {@link fmtDamageWithBonus} so the sheet
+ *  reads e.g. "2d8 +3 (Sun Sword) +1d6 fire". */
 function fmtDamage(d: DamageRoll, weaponName: string | null): string {
   if (d.dice === 0) return `${d.bonus}${weaponName ? ` (${weaponName})` : ""}`;
   const sign = d.bonus === 0 ? "" : d.bonus > 0 ? ` +${d.bonus}` : ` ${d.bonus}`;
   return `${d.dice}d${d.sides}${sign}${weaponName ? ` (${weaponName})` : ""}`;
 }
 
-/** AC = 10 + DEX_mod + armor.evasion-derived bonus + Σ ac_bonus on
- *  any equipped item. Mirrors v1 (`(evasion - 50) / 5`). Cloth's
- *  evasion = 50 → 0, matches the screenshot. */
-function computeAc(
+/** Append the weapon's magic `bonus_damage` (+ optional damage type
+ *  tag) to the formatted base roll. Pure / no-op when the weapon
+ *  carries no bonus damage, so plain swords render exactly as before.
+ *  Numeric bonus_damage renders as a flat "+N", string values
+ *  (dice expressions like "1d6") pass through verbatim. */
+function fmtDamageWithBonus(
+  d: DamageRoll,
+  weapon: SheetItemRef | null,
+): string {
+  const base = fmtDamage(d, weapon?.name ?? null);
+  if (!weapon || weapon.bonus_damage == null) return base;
+  const bd = weapon.bonus_damage;
+  const bonusText =
+    typeof bd === "number" ? (bd >= 0 ? `+${bd}` : `${bd}`) : `+${bd}`;
+  const typeTag = weapon.damage_type ? ` ${weapon.damage_type}` : "";
+  return `${base} ${bonusText}${typeTag}`;
+}
+
+/** Human-readable label for a `wielder_passives` id. The engine-side
+ *  taxonomy is small (today: fire_resistance, poison_immunity); anything
+ *  it doesn't recognise falls back to a Title Cased version of the id
+ *  so a future passive surfaces immediately on the sheet without a
+ *  code change here. */
+const WIELDER_PASSIVE_LABELS: Record<string, string> = {
+  fire_resistance: "Fire Resistance",
+  poison_immunity: "Poison Immunity",
+};
+function prettifyPassiveId(id: string): string {
+  if (WIELDER_PASSIVE_LABELS[id]) return WIELDER_PASSIVE_LABELS[id];
+  return id
+    .split("_")
+    .map((p) => (p.length === 0 ? p : p[0].toUpperCase() + p.slice(1)))
+    .join(" ");
+}
+
+/** Collect deduped `wielder_passives` from every equipped slot — the
+ *  same walk CombatBridge does. Used to render the "Magic Gear" pill
+ *  strip under the Equipped panel so the player sees what passives
+ *  their gear is granting them out of combat. */
+function collectEquippedPassives(
   member: PartyCharacterRef,
   itemById: ReadonlyMap<string, SheetItemRef>,
-): number {
+): string[] {
   const equipped = (member.equipped ?? {}) as Record<string, string>;
-  const dexMod = abilityMod(member.dexterity ?? 10);
-  const bodyId = equipped.body;
-  const body = bodyId ? itemById.get(bodyId) ?? null : null;
-  const evasion = body && typeof body.evasion === "number" ? body.evasion : 50;
-  const armorBonus = Math.floor((evasion - 50) / 5);
-  let acBonusTotal = 0;
+  const seen = new Set<string>();
   for (const slotId of Object.values(equipped)) {
     const it = slotId ? itemById.get(slotId) ?? null : null;
-    if (it?.ac_bonus) acBonusTotal += it.ac_bonus;
+    const declared = it?.wielder_passives;
+    if (!Array.isArray(declared)) continue;
+    for (const p of declared) {
+      if (typeof p === "string" && !seen.has(p)) seen.add(p);
+    }
   }
-  return 10 + dexMod + armorBonus + acBonusTotal;
+  return [...seen];
 }
 
 /** XP threshold to the NEXT level — race-specific overrides apply
@@ -372,9 +415,19 @@ export function CharacterSheetSim({
       ? itemById.get(handsId) ?? null
       : null;
 
-  const ac = computeAc(character, itemById);
-  const damage = damageForWeapon(character, weapon);
-  const damageStr = fmtDamage(damage, weapon?.name ?? null);
+  // Source AC + base damage from the shared editor/combatStats helper
+  // so the sheet stays in lockstep with the live combat engine
+  // (`web/src/battle/combat/CombatBridge.ts`). The local
+  // `damageForWeapon` / `computeAc` we used to keep here drifted off the
+  // engine's updated formulas — Chain's `/2` evasion divisor and the
+  // extended 1d12 / 2d6 / 2d8 power tiers — which is why the screenshot
+  // showed AC 11 and "1d10 +3" for a Chain + Sun Sword fighter that
+  // should read AC 14 and "2d8 +3 (Sun Sword) +1d6 fire".
+  const stats = sharedCombatStatsFor(character, itemById);
+  const ac = stats.ac;
+  const damage: DamageRoll = stats.damage;
+  const damageStr = fmtDamageWithBonus(damage, weapon);
+  const equippedPassives = collectEquippedPassives(character, itemById);
 
   const hp = character.hp ?? 0;
   const mp = character.mp ?? 0;
@@ -591,6 +644,29 @@ export function CharacterSheetSim({
                 onSelect={onUnequipSlot ? selectEquipped : undefined}
               />
             </ul>
+            {/* Magic-gear passives — pulled from every equipped slot's
+                `wielder_passives` list (Sun Sword grants
+                fire_resistance, future Bracers might add
+                poison_immunity, etc.). Surfaces here so the player
+                sees the granted passive without having to enter
+                combat to discover it. Hidden when nothing's equipped
+                grants a passive. */}
+            {equippedPassives.length > 0 ? (
+              <div className="mt-2 flex flex-wrap items-center gap-1">
+                <span className="font-mono text-[10px] uppercase tracking-wider text-parchment/45">
+                  Grants
+                </span>
+                {equippedPassives.map((p) => (
+                  <span
+                    key={p}
+                    className="rounded border border-amber-300/40 bg-amber-300/10 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-amber-200/90"
+                    title={`Passive granted by your equipped gear: ${prettifyPassiveId(p)}.`}
+                  >
+                    {prettifyPassiveId(p)}
+                  </span>
+                ))}
+              </div>
+            ) : null}
             {/* Unequip action — visible only when an equipped slot is
                 selected AND that slot actually holds an item. Clicking
                 fires the host handler with the slot key; the host
