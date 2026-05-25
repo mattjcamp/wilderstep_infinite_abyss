@@ -2,6 +2,7 @@
 # Polish
 
 - Playtest
+- Set the Orc Stronghold to Darkness
 
 # V3 Ideas
 
