@@ -176,6 +176,16 @@ function mapForcedLightingMode(
 function mapStateFromSnapshot(
   snap: ReturnType<MapSimulation["snapshot"]>,
   prev?: SavedMapState | undefined,
+  /** Live fog-of-war visited set — owned by the renderer, not the
+   *  sim kernel (visibility is render-time LOS state, not gameplay
+   *  state). The host pulls this from `rendererRef.current?.
+   *  getVisitedCells()` at each save site so the union grown over
+   *  the course of the visit lands in the save next to the other
+   *  per-map deltas. When omitted (defensive default), the prior
+   *  `prev.visitedCells` carries through — that protects us from
+   *  accidentally clearing the fog on a save path that hasn't yet
+   *  been wired up to pass the live set. */
+  visitedCells?: ReadonlySet<string>,
 ): SavedMapState {
   const boatPositions: Record<string, string> = {};
   for (const [key, sprite] of snap.boatPositions) {
@@ -200,6 +210,12 @@ function mapStateFromSnapshot(
     defeatedEncounters: Array.from(snap.defeatedEncounters),
     destroyedLairs: Array.from(snap.destroyedLairs),
     boatPositions,
+    // Fog of war — prefer the live renderer set when supplied,
+    // else fall back to whatever was already on disk so unwired
+    // save paths don't reset the player's exploration progress.
+    visitedCells: visitedCells
+      ? Array.from(visitedCells)
+      : prev?.visitedCells ?? [],
   };
 }
 import { loadWorld, saveWorld } from "@/play/save";
@@ -1164,6 +1180,13 @@ export function PlayHost() {
     const mapState = mapStateFromSnapshot(
       snap,
       saveRef.current?.maps?.[saveRef.current.party.currentMapId],
+      // Fog-of-war memory lives on the renderer — pull the live set
+      // so the union grown over the course of this visit lands on
+      // disk next to the other per-map deltas. The renderer may not
+      // be mounted yet on the very first checkpoint of a fresh
+      // game; in that case `getVisitedCells` is unreachable and we
+      // fall back to "whatever was in the save already".
+      rendererRef.current?.getVisitedCells(),
     );
 
     // Reconcile `party_effects` with the per-step counters the sim
@@ -1586,6 +1609,26 @@ export function PlayHost() {
           this.world.ensureParticleTexture();
           this.world.createCells();
           this.world.createEmitters();
+
+          // Fog-of-war seed — restore the previously-visited set
+          // for this surface so the player walks back into a map
+          // already-mapped instead of pitch black. Dungeons store
+          // exploredTiles directly on the in-memory DungeonLevel
+          // (which serialises through dungeonSession); overworld /
+          // interior maps land it on `SavedMapState.visitedCells`.
+          // Defensive defaults to empty set so a brand-new game or
+          // legacy save reads as "no exploration yet" and rebuilds
+          // organically.
+          const dungeonForFog = dungeonStateRef.current;
+          if (dungeonForFog) {
+            const lvl = dungeonForFog.levels[dungeonForFog.floorIdx];
+            const seeded = lvl?.exploredTiles ?? new Set<string>();
+            this.world.setVisitedCells(seeded);
+          } else {
+            const persisted =
+              save.maps?.[save.party.currentMapId]?.visitedCells ?? [];
+            this.world.setVisitedCells(new Set(persisted));
+          }
 
           // Seed `boatTextures` from the authored grid BEFORE the
           // kernel's first `setBoatPositions` call lands. The grid's
@@ -2799,6 +2842,18 @@ export function PlayHost() {
                     defeatedEncounters: new Set(snap.defeatedEncounters),
                     destroyedLairs: new Set(snap.destroyedLairs),
                   });
+                  // Fog-of-war write-back — copy the renderer's live
+                  // visited set into the floor's exploredTiles so
+                  // ascending stairs / leaving the dungeon and
+                  // returning later still sees the mapped layout.
+                  // `exploredTiles` is the v1-shaped Set the
+                  // dungeon session serialiser already round-trips
+                  // to disk; we own one source of truth.
+                  const lvl = session.levels[dungeonNow.floorIdx];
+                  const live = rendererRef.current?.getVisitedCells();
+                  if (lvl && live) {
+                    lvl.exploredTiles = new Set(live);
+                  }
                 }
               }
               return;
@@ -3195,6 +3250,11 @@ export function PlayHost() {
               [save.party.currentMapId]: mapStateFromSnapshot(
                 snap,
                 save.maps?.[save.party.currentMapId],
+                // Same-map teleport — the renderer + its visited set
+                // survive the teleport. Pull the live set so the
+                // refresh-after-teleport path doesn't reset the fog
+                // back to the pre-teleport on-disk snapshot.
+                rendererRef.current?.getVisitedCells(),
               ),
             },
           };
@@ -3219,7 +3279,17 @@ export function PlayHost() {
       // before than wipe the map to empty.
       const prevMapState = save.maps?.[save.party.currentMapId];
       const mapState: SavedMapState = snap
-        ? mapStateFromSnapshot(snap, prevMapState)
+        ? mapStateFromSnapshot(
+            snap,
+            prevMapState,
+            // Cross-map link — the renderer is about to be torn
+            // down and rebuilt for the new map. Snapshot the
+            // outgoing map's visited set FIRST so the player's
+            // exploration of the source map persists; the new map's
+            // renderer will seed itself from save.maps[link.map_id]
+            // on mount.
+            rendererRef.current?.getVisitedCells(),
+          )
         : prevMapState ?? {
             unlockedCells: [],
             defeatedEncounters: [],

@@ -52,6 +52,7 @@ import type Phaser from "phaser";
 import {
   computeLighting,
   emitterVisibleAt,
+  overlayVisibleAt,
   tintForCell,
   type LightingResult,
 } from "@/sim/lighting";
@@ -218,6 +219,28 @@ export class WorldRenderer {
   /** `"day"` paints everything at full brightness; `"night"` runs the
    *  full Bresenham-LOS lighting model. */
   lightingMode: "day" | "twilight" | "night" = "night";
+
+  /** Fog-of-war "visited cells" memory — every `"col,row"` the party
+   *  has ever seen on this surface. Hosts seed it from persisted save
+   *  state and call `setVisitedCells` whenever the set replaces
+   *  wholesale (map swap, dungeon floor change). Each `relight()`
+   *  pass unions newly-visible cells into the same Set in-place; the
+   *  host's relight hook can read the updated set back via
+   *  {@link getVisitedCells} and persist when convenient.
+   *
+   *  Held as a mutable Set so the in-place grow is allocation-free on
+   *  the steady-state path (most relights add zero or one cell as the
+   *  party steps). Set to a fresh empty Set when fog-of-war is
+   *  disabled (today: never, but the field shape leaves the door
+   *  open for an editor "show full map" debug toggle). */
+  private visitedCells: Set<string> = new Set();
+
+  /** Most recent LightingResult, stashed so per-overlay refresh
+   *  paths (questGlow repaint, detected-trap repaint, future
+   *  out-of-band refresh helpers) can re-read fog-of-war / tint
+   *  bands without re-running the full Bresenham pass. Cleared
+   *  to null until the first relight fires. */
+  private lastLightingResult: LightingResult | null = null;
 
   private readonly onRelightHook?: (result: LightingResult) => void;
 
@@ -471,6 +494,17 @@ export class WorldRenderer {
       const cs = Number(csStr);
       const rs = Number(rsStr);
       if (!Number.isFinite(cs) || !Number.isFinite(rs)) continue;
+      // Fog-of-war gate — a quest target in a corridor the party
+      // already visited but isn't currently watching shouldn't
+      // glow. The halo is "where to go right now", not "where you
+      // went last turn" — leaking it onto remembered cells would
+      // turn the dim band into a quest beacon that bypasses
+      // exploration. Skip only when we're in fog-of-war mode (i.e.
+      // there's a party); paint mode keeps the prior behaviour.
+      if (this.hasParty) {
+        const info = this.lastLightingResult?.cells.get(key);
+        if (info?.isRemembered) continue;
+      }
       // Brightness from the base cell's current tint. `relight` paints
       // a grayscale tint where all three channels equal ambient * 255,
       // so the low byte is the brightness 0..255. Untinted cells
@@ -508,6 +542,28 @@ export class WorldRenderer {
     this.relight();
   }
 
+  /** Replace the fog-of-war visited set wholesale. Hosts call this on
+   *  map swap / dungeon-floor change to seed the renderer with the
+   *  persisted set for the new surface. Triggers a relight so the
+   *  swap is immediately reflected in the tints (previously-seen
+   *  cells light up dim, never-seen cells stay dark). Pass an empty
+   *  Set to reset the surface to "completely unexplored." */
+  setVisitedCells(cells: ReadonlySet<string>): void {
+    // Copy so the host can keep a private reference without us
+    // mutating it under them, and so our in-place `add` on grow
+    // doesn't leak back into the caller's source-of-truth set.
+    this.visitedCells = new Set(cells);
+    this.relight();
+  }
+
+  /** Snapshot the current visited set for the host to persist. The
+   *  set returned is a defensive copy — the host can freeze it,
+   *  serialise it, hand it to a save layer, without worrying about
+   *  the next relight mutating their reference. */
+  getVisitedCells(): ReadonlySet<string> {
+    return new Set(this.visitedCells);
+  }
+
   /** Run the shared lighting pipeline + apply tints. After the
    *  shared layers are tinted, fires `onRelight(result)` so callers
    *  can tint any custom overlays (chests, items, NPCs, etc.) using
@@ -534,7 +590,30 @@ export class WorldRenderer {
       partyInfravisionActive:
         this.partyHasInfravision && this.partyInfravisionActive,
       mode: this.lightingMode,
+      // Fog-of-war remembrance — only meaningful with a party on the
+      // surface (paint-mode previews don't have a party to "have
+      // seen" anything). Skipping the set when `hasParty` is false
+      // keeps the editor's idle painting view rendering exactly as
+      // before this change.
+      rememberedCells: this.hasParty ? this.visitedCells : null,
     });
+    // Stash for out-of-band readers (quest glow repaint reads
+    // isRemembered to decide whether to skip a cell, etc.).
+    this.lastLightingResult = result;
+    // Grow the visited set with everything the party can see right
+    // now. Done IN PLACE on the same Set the host handed us so the
+    // host's reference (e.g. the kernel's persisted set) sees the
+    // additions next time it's read — no allocation per relight on
+    // the steady-state path (typically zero or one new cell per
+    // party step). Skip in paint-mode (no party) since
+    // currentlyVisible would be the full grid and we'd silently
+    // mark the entire map "explored" the moment the author toggled
+    // sim mode on.
+    if (this.hasParty) {
+      for (const key of result.currentlyVisible) {
+        this.visitedCells.add(key);
+      }
+    }
     // Cells.
     for (const [key, img] of this.cells) {
       const [cs, rs] = key.split(",");
@@ -580,6 +659,19 @@ export class WorldRenderer {
     const tintOverlay = (img: Phaser.GameObjects.Image) => {
       const col = Math.round((img.x - TILE_SIZE / 2) / TILE_SIZE);
       const row = Math.round((img.y - TILE_SIZE / 2) / TILE_SIZE);
+      // Fog-of-war gate — overlays (roamers, NPCs, placed
+      // encounters) are LIVE entities. Even when the underlying
+      // cell renders in the dim "remembered" band, we don't want
+      // to draw the goblin that moved into that corridor since the
+      // party left — both because it's a small cheat and because
+      // the sprite would visibly teleport between frames. In
+      // paint mode the renderer keeps the old "always visible"
+      // behaviour (no party = no LOS gate = nothing to hide).
+      if (this.hasParty && !overlayVisibleAt(result, col, row)) {
+        img.setVisible(false);
+        return;
+      }
+      img.setVisible(true);
       const t = tintForCell(result, col, row);
       const spriteTint = img.getData("tint");
       const hasSpriteTint = typeof spriteTint === "number";

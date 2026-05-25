@@ -338,6 +338,147 @@ export function radialBurst(
 }
 
 /**
+ * Dragon's-breath cone — a torrent of flame erupting from `from`
+ * (the dragon's mouth, in screen px) toward `to` (the victim's
+ * cell, also screen px). Three composited layers carry the look:
+ *
+ *   1. A widening fire CONE — a triangular fan of overlapping
+ *      semi-transparent orange/yellow ellipses tracking from
+ *      caster to target. Each "tongue" is offset perpendicular
+ *      to the breath axis so the silhouette reads as a forked
+ *      jet, not a single beam.
+ *   2. A STREAM of jittering ember dots travelling along the
+ *      cone axis with slight perpendicular wobble — the visual
+ *      "fuel" of the breath, persistent over the whole cast so
+ *      the eye can't miss it.
+ *   3. A fire IMPACT at the target — a quick fireball-style
+ *      radial pop using the same VFX_COLOURS.fire / .ember
+ *      palette as the explicit `radialBurst` so the impact
+ *      reads at parity with caster-fired fireballs.
+ *
+ * Coordinates are screen pixels (caller resolves grid → px). The
+ * returned Promise resolves a beat after the longest cue so a
+ * caller can `await` before resolving HP damage or moving on to
+ * the next combat action without the breath cutting off mid-flight.
+ *
+ * `width` defaults to ~1.4 tiles at the target end — wide enough
+ * to read as a cone, narrow enough that the dragon isn't drawing
+ * fire across half the arena. `durationMs` is the cone's lifetime
+ * (the impact + linger add a small tail).
+ */
+export function breathOfFire(
+  scene: Phaser.Scene,
+  from: Pt,
+  to: Pt,
+  opts: { width?: number; durationMs?: number } = {},
+): Promise<void> {
+  const width = opts.width ?? TILE * 1.4;
+  const durationMs = opts.durationMs ?? 520;
+  return new Promise((resolve) => {
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const angle = Math.atan2(dy, dx);
+    const dist = Math.hypot(dx, dy);
+    // Perpendicular axis — used to fan tongues + jitter embers
+    // across the cone's width.
+    const px = -Math.sin(angle);
+    const py = Math.cos(angle);
+
+    // ── Layer 1: cone tongues ────────────────────────────────────
+    // Five overlapping flame "tongues", each a tall ellipse rotated
+    // along the breath axis. Tongues spawn at the dragon's mouth
+    // anchored to the caster end, scale outward toward the target,
+    // and fade as they go. The perpendicular spread grows linearly
+    // with travel so the silhouette opens into a proper cone.
+    const TONGUES = 5;
+    for (let i = 0; i < TONGUES; i++) {
+      // Spread offsets fan from -0.5 .. +0.5 of the cone width.
+      const spread = (i / (TONGUES - 1) - 0.5) * width;
+      const startX = from.x;
+      const startY = from.y;
+      const endX = to.x + px * spread;
+      const endY = to.y + py * spread;
+      // Each tongue's body is a thin ellipse — width along the
+      // cone axis, height perpendicular. Color alternates between
+      // the deep fire orange and the brighter ember yellow so the
+      // overlap reads as turbulence rather than a flat fill.
+      const colour = i % 2 === 0 ? COLOURS.fire : COLOURS.ember;
+      const tongue = scene.add
+        .ellipse(startX, startY, 4, 10, colour, 0.85)
+        .setDepth(58);
+      tongue.rotation = angle;
+      scene.tweens.add({
+        targets: tongue,
+        x: (startX + endX) / 2,
+        y: (startY + endY) / 2,
+        scaleX: Math.max(2, dist / 14),
+        scaleY: 1.6 + Math.random() * 0.6,
+        alpha: 0,
+        // Stagger each tongue slightly so the breath looks like
+        // it's pulsing forward rather than appearing all at once.
+        delay: i * 28,
+        duration: durationMs,
+        ease: "Quad.Out",
+        onComplete: () => tongue.destroy(),
+      });
+    }
+
+    // ── Layer 2: ember stream ────────────────────────────────────
+    // Lots of small dots travelling along the cone axis with random
+    // perpendicular jitter — the "fuel" of the breath. Spawned at a
+    // steady cadence over the breath's lifetime so the cone looks
+    // continuously alive rather than a single flash.
+    const EMBER_COUNT = 22;
+    const interval = durationMs / EMBER_COUNT;
+    const emberColors = [COLOURS.fire, COLOURS.ember, COLOURS.white];
+    for (let i = 0; i < EMBER_COUNT; i++) {
+      scene.time.delayedCall(i * interval * 0.6, () => {
+        // Small per-ember randomisation makes the stream feel
+        // alive — not every ember reaches the same depth, not
+        // every one drifts the same way.
+        const travel = 0.4 + Math.random() * 0.6;
+        const jitterStart = (Math.random() - 0.5) * (width * 0.18);
+        const jitterEnd = (Math.random() - 0.5) * width;
+        const sx = from.x + px * jitterStart;
+        const sy = from.y + py * jitterStart;
+        const ex = from.x + dx * travel + px * jitterEnd;
+        const ey = from.y + dy * travel + py * jitterEnd;
+        const c = emberColors[i % emberColors.length];
+        const dot = scene.add
+          .circle(sx, sy, 2 + Math.random() * 1.5, c, 1)
+          .setDepth(60);
+        scene.tweens.add({
+          targets: dot,
+          x: ex,
+          y: ey,
+          alpha: 0,
+          radius: 0.5,
+          duration: 380 + Math.random() * 240,
+          ease: "Cubic.Out",
+          onComplete: () => dot.destroy(),
+        });
+      });
+    }
+
+    // ── Layer 3: target impact ───────────────────────────────────
+    // Fire the impact ~70% of the way through the cone so it
+    // visually "follows" the leading edge of the breath rather
+    // than detonating before the flames arrive. radialBurst gives
+    // us a fireball-quality pop for free; the tighter radius
+    // keeps it inside the target tile.
+    const impactDelay = Math.round(durationMs * 0.7);
+    scene.time.delayedCall(impactDelay, () => {
+      void radialBurst(scene, to, COLOURS.fire, COLOURS.ember, 36);
+    });
+
+    // Resolve slightly after the impact + ember tail so an
+    // awaiting caller doesn't move on while flames are still
+    // visible.
+    scene.time.delayedCall(durationMs + 260, () => resolve());
+  });
+}
+
+/**
  * Rising green sparkles for heal-type spells. Spawns a handful of dots
  * just below the target sprite that float up while fading.
  */

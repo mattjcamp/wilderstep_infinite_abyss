@@ -714,6 +714,15 @@ export function MapEditor({
    *  controls (the SimPanel toggle) gate on this so a non-Dwarf
    *  party doesn't show an Activate Infravision button at all. */
   const partyHasInfravisionRef = useRef<boolean>(false);
+  /** Editor-local fog-of-war memory. Grown by the relight pass from
+   *  the lighting helper's `currentlyVisible` output so authors
+   *  playtesting their map in sim mode see the same dim "remembered"
+   *  band the live /play runtime renders. Reset to a fresh Set
+   *  whenever sim mode toggles off (see the `clearParty` branch
+   *  below), since the author hasn't actually "explored" anything
+   *  in their painting view. Not persisted — the editor never
+   *  writes back to the save layer. */
+  const visitedCellsRef = useRef<Set<string>>(new Set());
 
   // Selection follows the cursor.
   useEffect(() => {
@@ -1557,7 +1566,24 @@ export function MapEditor({
                   partyHasInfravisionRef.current &&
                   partyInfravisionActiveRef.current,
                 mode,
+                // Fog-of-war — only when sim mode is on (party is
+                // on the map). Painting view passes `null` so every
+                // cell renders at its native band and the author
+                // can see what they painted at any ambient. The
+                // visited set itself grows below from
+                // `result.currentlyVisible`.
+                rememberedCells: party ? visitedCellsRef.current : null,
               });
+              // Grow the in-memory visited set on every relight.
+              // Skipped in painting view so an author who toggles
+              // through twilight/night with sim off doesn't
+              // accidentally "remember" the whole grid — sim mode
+              // is the only legitimate way to map a cell.
+              if (party) {
+                for (const key of result.currentlyVisible) {
+                  visitedCellsRef.current.add(key);
+                }
+              }
               // Phaser dispatch — `tintForCell` returns the tint
               // value; we always use multiply mode. v2 tile sprites
               // lean heavily on "mostly black with coloured detail
@@ -2773,6 +2799,13 @@ export function MapEditor({
       },
       clearParty: () => {
         sceneApiRef.current?.clearParty();
+        // Sim mode just toggled off — wipe the editor-local
+        // fog-of-war so the next sim session starts fresh. Painting
+        // view doesn't care about the set (the relight skips fog
+        // entirely without a party), but resetting here keeps state
+        // tidy and stops a stale set from leaking into a different
+        // map the author switches to.
+        visitedCellsRef.current = new Set();
       },
       setPartyLight: (source) => {
         sceneApiRef.current?.setPartyLight(source);

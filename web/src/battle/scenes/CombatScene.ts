@@ -108,6 +108,7 @@ import {
   castGlow,
   projectileLine,
   radialBurst,
+  breathOfFire,
   healingSparkles,
   glowAura,
   screenShake,
@@ -5245,9 +5246,36 @@ export class CombatScene extends Phaser.Scene {
           // Cast a monster spell — Dragon's Fire Breath, Lich's Fireball,
           // Troll's Self Heal, etc. Resolves the math + state mutation,
           // animates a hit/heal flash on the target, ends the turn.
+          //
+          // Per-spell VFX branch: look up the spell from the actor's
+          // table by index BEFORE resolving, so the scene knows what
+          // animation to play. Today only `breath_fire` has its own
+          // cone effect — every other spell continues to fall back
+          // to the generic `animateHit` flash. The look-up is
+          // tolerant of out-of-range indices (defensive against
+          // mid-tick mutation) and missing tables (charmed party
+          // members invoking the spell branch).
+          const caster = this.combat.current;
+          const spellDef =
+            caster.monsterSpells?.[intent.spellIndex] ?? null;
           const result = this.combat.castMonsterSpell(intent.spellIndex, intent.targetId);
           this.combat.movePoints = 0;
           const target = this.combat.byId(result.targetId);
+          if (spellDef?.type === "breath_fire") {
+            // Dragon-style breath weapon — cone of fire from the
+            // caster's mouth to the target. Telegraph with a brief
+            // fire glow on the caster, then play the cone, then a
+            // sharp screen shake to sell the impact. Awaiting the
+            // breath ensures the HP flash from animateHit lands
+            // AFTER the flames arrive, not on top of them.
+            this.castGlowFor(caster, VFX_COLOURS.fire);
+            await breathOfFire(
+              this,
+              this.bodyXY(caster),
+              this.bodyXY(target),
+            );
+            screenShake(this, 0.007, 220);
+          }
           await this.animateHit(target, {
             attackerId: this.combat.current.id, targetId: target.id,
             hit: result.damage > 0 || result.heal > 0,

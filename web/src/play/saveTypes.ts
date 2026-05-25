@@ -243,6 +243,19 @@ export interface SavedMapState {
     row: number;
     tileId: string;
   }>;
+  /** Fog-of-war memory — `"col,row"` keys of every cell the party
+   *  has ever seen on this map. Used by the renderer's relight pass
+   *  (`sim/lighting.ts` → `rememberedCells`) to paint previously-
+   *  visited cells at a dim grayscale instead of collapsing them to
+   *  ambient darkness once the party walks out of LOS. Grown in
+   *  place by the renderer on every relight from the lighting
+   *  helper's `currentlyVisible` output; flushed to this field by
+   *  the host on the same save sites that persist the other map
+   *  deltas. Absent on legacy saves — the loader treats absence as
+   *  the empty list, so first-time entry to a map after upgrading
+   *  starts with no fog memory and the player rebuilds it
+   *  organically as they explore. */
+  visitedCells?: ReadonlyArray<string>;
 }
 
 /** One floor inside a saved dungeon — same fields as

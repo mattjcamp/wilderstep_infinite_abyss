@@ -31,6 +31,26 @@ export type LightingMode = "day" | "twilight" | "night";
  *  obviously different from torch light. */
 export const INFRAVISION_RED = 180;
 
+/** Grayscale brightness used for the "remembered" (fog-of-war) band —
+ *  cells the party has previously seen but can't see right now. Sits
+ *  comfortably above the night-mode ambient floor (~25) and well
+ *  below in-LOS torch-pool brightness (~150+) so the player can
+ *  spot at a glance "I've been here, but I'm not looking at it now."
+ *  Tuned by eye: 90 is dim enough to read as "memory" against a
+ *  fully-lit current view, bright enough to keep terrain readable
+ *  in a corridor the party already mapped. */
+export const REMEMBERED_BRIGHTNESS = 90;
+
+/** Lighting "currently illuminated" threshold used to decide which
+ *  cells the host should fold into its persistent visited set. Any
+ *  cell whose post-relight brightness clears this bar counts as
+ *  "the party can see this RIGHT NOW" — torchlit floor, party
+ *  baseline pool, infravision-revealed terrain — and gets added.
+ *  Sits above the night ambient (~25) but below the dimmest real
+ *  source contribution so cells that are merely dim-ambient don't
+ *  pollute the visited set. */
+export const VISIBILITY_THRESHOLD = 60;
+
 /** What `computeLighting` decides for one cell. The caller picks a
  *  Phaser tint from this — both fields are needed because overlay
  *  sprites (roamers, NPCs, etc.) inherit the same render band as
@@ -48,6 +68,17 @@ export interface CellLightingResult {
    *  (party in LOS, no other source reached it). Overlay sprites
    *  on this cell should tint red too, not grayscale. */
   isInfravisionRed: boolean;
+  /** True when the cell isn't currently visible to the party but
+   *  the host's `rememberedCells` set says the party has seen it
+   *  before — the "fog of war" band. Cells in this band render at
+   *  {@link REMEMBERED_BRIGHTNESS} so the player can still read the
+   *  map shape after walking away. Overlay sprites (roamers, NPCs,
+   *  emitters, quest glow) deliberately stay hidden on remembered-
+   *  only cells — what was there when the party visited may have
+   *  moved or burned out, so we only remember terrain. Mutually
+   *  exclusive with `isInfravisionRed` (an in-LOS cell is currently
+   *  visible, not remembered). */
+  isRemembered: boolean;
 }
 
 export interface LightingResult {
@@ -59,6 +90,15 @@ export interface LightingResult {
    *  wall). Drives particle-emitter visibility on torch cells. In
    *  Day mode every source reads `true`. */
   sourceVisible: Map<string, boolean>;
+  /** Set of `"col,row"` keys the party can currently see — every
+   *  cell whose post-lighting brightness clears
+   *  {@link VISIBILITY_THRESHOLD}, including infravision-red cells.
+   *  The host folds this into its persistent visited set on every
+   *  relight so subsequent frames render unvisited cells dark,
+   *  remembered cells dim, and currently-visible cells bright. In
+   *  Day mode this is every cell on the grid (the whole map is
+   *  considered visited the moment the party steps onto it). */
+  currentlyVisible: Set<string>;
 }
 
 export interface LightingInputs {
@@ -87,6 +127,20 @@ export interface LightingInputs {
   /** Override the ambient brightness for `"twilight"` / `"night"`.
    *  Optional — defaults to 0.4 / 0.1 (matches the editor today). */
   ambientByMode?: Partial<Record<LightingMode, number>>;
+  /** "Fog of war" — cells the party has visited at some point in
+   *  the past (current frame or earlier). Cells in this set that
+   *  aren't currently lit / in LOS render at a dim grayscale
+   *  ({@link REMEMBERED_BRIGHTNESS}) instead of being collapsed to
+   *  the ambient floor, so the player keeps a faint sense of map
+   *  shape after walking away.
+   *
+   *  Pass `null` (or omit) to disable the band entirely — every
+   *  cell falls back to the existing currently-lit-or-dark
+   *  behaviour. The editor's painting view + tests that don't
+   *  care about fog can leave this off. Day mode short-circuits
+   *  this band (every cell is already fully lit), so the host
+   *  doesn't have to special-case it. */
+  rememberedCells?: ReadonlySet<string> | null;
 }
 
 /** Default ambients. Day is special-cased to skip the math. */
@@ -103,26 +157,35 @@ const DEFAULT_AMBIENT: Record<LightingMode, number> = {
 export function computeLighting(inputs: LightingInputs): LightingResult {
   const { grid, party, partyLight, partyInfravisionActive, mode } = inputs;
   const ambient = inputs.ambientByMode?.[mode] ?? DEFAULT_AMBIENT[mode];
+  const rememberedCells = inputs.rememberedCells ?? null;
   const cells = new Map<string, CellLightingResult>();
   const sourceVisible = new Map<string, boolean>();
+  const currentlyVisible = new Set<string>();
 
   // ── Day fast path ────────────────────────────────────────────────
   // Full bright; no LOS gating. Every cell + every emitter shows.
+  // The fog-of-war band is meaningless here (no cell is dim enough
+  // for "remembered" to matter), so we skip it and add every cell
+  // to currentlyVisible — Day mode functionally "visits" the whole
+  // map on first relight.
   if (mode === "day") {
     for (let r = 0; r < grid.length; r++) {
       const row = grid[r];
       if (!row) continue;
       for (let c = 0; c < row.length; c++) {
         const cell = row[c];
-        cells.set(`${c},${r}`, {
+        const key = `${c},${r}`;
+        cells.set(key, {
           tint: null,
           brightness: 255,
           isInfravisionRed: false,
+          isRemembered: false,
         });
-        if (cell?.light_source) sourceVisible.set(`${c},${r}`, true);
+        currentlyVisible.add(key);
+        if (cell?.light_source) sourceVisible.set(key, true);
       }
     }
-    return { cells, sourceVisible };
+    return { cells, sourceVisible, currentlyVisible };
   }
 
   // ── Night / twilight ────────────────────────────────────────────
@@ -245,31 +308,66 @@ export function computeLighting(inputs: LightingInputs): LightingResult {
       //   (a) the party has the ability,
       //   (b) no real source already lit this cell,
       //   (c) the party has LOS to the cell.
+      const key = `${c},${r}`;
       const inInfraLOS =
         party !== null &&
         partyInfravisionActive &&
         !litByRealSource &&
         hasLOS(party.col, party.row, c, r);
       if (inInfraLOS) {
-        cells.set(`${c},${r}`, {
+        cells.set(key, {
           tint: (INFRAVISION_RED << 16) | 0 | 0,
           brightness: INFRAVISION_RED,
           isInfravisionRed: true,
+          isRemembered: false,
         });
+        currentlyVisible.add(key);
         continue;
       }
 
       const level = clampByte(Math.floor(brightness * 255));
-      cells.set(`${c},${r}`, {
+
+      // Fog-of-war band — when the cell is currently dim (no real
+      // source lit it, no infravision LOS) BUT the host's
+      // `rememberedCells` set says the party has been here before,
+      // paint it at the dim REMEMBERED_BRIGHTNESS grayscale instead
+      // of collapsing to ambient. Gate on `level < REMEMBERED_BRIGHTNESS`
+      // so a cell that's actually lit brighter than the fog band
+      // (e.g. inside the party's torch pool right now) doesn't get
+      // unintentionally dimmed — we only ever paint UP into the fog
+      // band, never down.
+      const isRemembered =
+        rememberedCells !== null &&
+        rememberedCells.has(key) &&
+        level < REMEMBERED_BRIGHTNESS;
+      if (isRemembered) {
+        cells.set(key, {
+          tint:
+            (REMEMBERED_BRIGHTNESS << 16) |
+            (REMEMBERED_BRIGHTNESS << 8) |
+            REMEMBERED_BRIGHTNESS,
+          brightness: REMEMBERED_BRIGHTNESS,
+          isInfravisionRed: false,
+          isRemembered: true,
+        });
+        // Remembered cells are NOT currently visible — they don't
+        // grow the visited set on this frame. They were added on a
+        // previous frame when the party stood within range.
+        continue;
+      }
+
+      cells.set(key, {
         tint:
           level >= 255 ? null : (level << 16) | (level << 8) | level,
         brightness: level,
         isInfravisionRed: false,
+        isRemembered: false,
       });
+      if (level >= VISIBILITY_THRESHOLD) currentlyVisible.add(key);
     }
   }
 
-  return { cells, sourceVisible };
+  return { cells, sourceVisible, currentlyVisible };
 }
 
 /** Caller-side instruction for applying a cell's tint to a sprite.
@@ -335,6 +433,38 @@ export function emitterVisibleAt(
   const info = result.cells.get(`${col},${row}`);
   if (!info) return false;
   if (info.isInfravisionRed) return false;
+  // Remembered cells aren't currently watched by the party — the
+  // brightness floor of REMEMBERED_BRIGHTNESS clears the >30 check
+  // below, so we have to explicitly suppress emitters here. Without
+  // this, every torch on a tile the party once visited would keep
+  // flickering even after the party walked back into darkness.
+  if (info.isRemembered) return false;
+  return info.brightness > 30;
+}
+
+/**
+ * Whether a moving / live overlay (roamer, NPC, placed encounter,
+ * quest glow, detected-trap mark) should currently render at the
+ * given cell. Stricter than {@link emitterVisibleAt} in one way:
+ * remembered cells are excluded here too, since the party can't see
+ * a goblin that's currently in a corridor they walked past last
+ * turn. (Showing them would be both a gameplay cheat and visually
+ * misleading — the goblin moves between frames.) Tile sprites
+ * themselves don't go through this gate; they're static and the
+ * dim "remembered" tint is exactly what we want for terrain.
+ */
+export function overlayVisibleAt(
+  result: LightingResult,
+  col: number,
+  row: number,
+): boolean {
+  const info = result.cells.get(`${col},${row}`);
+  if (!info) return false;
+  if (info.isRemembered) return false;
+  // Infravision sees moving things, so the red band counts as
+  // visible for overlays (matches the existing behaviour where
+  // roamers tint red on infravision tiles).
+  if (info.isInfravisionRed) return true;
   return info.brightness > 30;
 }
 

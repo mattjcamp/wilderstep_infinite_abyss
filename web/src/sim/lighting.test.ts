@@ -3,7 +3,10 @@ import {
   computeLighting,
   emitterVisibleAt,
   INFRAVISION_RED,
+  overlayVisibleAt,
+  REMEMBERED_BRIGHTNESS,
   tintForCell,
+  VISIBILITY_THRESHOLD,
 } from "./lighting";
 import type { SimCell, SimGrid } from "./types";
 
@@ -327,5 +330,212 @@ describe("emitterVisibleAt", () => {
       mode: "day",
     });
     expect(emitterVisibleAt(r, 99, 99)).toBe(false);
+  });
+});
+
+// ─── Fog of war (remembered cells) ────────────────────────────────
+// Three render bands compose:
+//   - currently visible: lit (party pool / torch / infravision) →
+//     bright tint, currentlyVisible set
+//   - remembered + currently dim: in the host's rememberedCells set
+//     but outside the current light pool → paint at the dim
+//     REMEMBERED_BRIGHTNESS gray
+//   - never seen + currently dim: ambient floor (~25), no fog
+//
+// Day mode short-circuits — every cell is already at full brightness
+// so the remembered band is moot, but currentlyVisible must still
+// include every cell so the host's union grows correctly.
+describe("computeLighting — fog of war", () => {
+  it("paints a remembered cell at REMEMBERED_BRIGHTNESS when it's currently outside the party's light pool", () => {
+    // 9-wide so cell (8,0) sits well outside the party's range-1
+    // baseline at (0,0).
+    const grid = makeGrid(9, 1);
+    const r = computeLighting({
+      grid,
+      party: { col: 0, row: 0 },
+      partyLight: null,
+      partyInfravisionActive: false,
+      mode: "night",
+      rememberedCells: new Set(["8,0"]),
+    });
+    const remembered = r.cells.get("8,0");
+    expect(remembered?.isRemembered).toBe(true);
+    expect(remembered?.brightness).toBe(REMEMBERED_BRIGHTNESS);
+    // Tint is grayscale at the band brightness.
+    const expectedTint =
+      (REMEMBERED_BRIGHTNESS << 16) |
+      (REMEMBERED_BRIGHTNESS << 8) |
+      REMEMBERED_BRIGHTNESS;
+    expect(remembered?.tint).toBe(expectedTint);
+    // A cell in the same row that ISN'T remembered stays at ambient.
+    const dark = r.cells.get("7,0");
+    expect(dark?.isRemembered).toBe(false);
+    expect(dark?.brightness).toBeLessThan(40);
+  });
+
+  it("never dims a currently-lit cell down into the remembered band", () => {
+    // Party at (1,1), so (0,1), (1,0), (1,1), (2,1), (1,2) are all
+    // in the range-1 baseline pool — fully bright. Mark all of them
+    // remembered. They must keep their full brightness, not collapse
+    // to the dim band.
+    const grid = makeGrid(3, 3);
+    const remembered = new Set([
+      "0,1", "1,0", "1,1", "1,2", "2,1",
+    ]);
+    const r = computeLighting({
+      grid,
+      party: { col: 1, row: 1 },
+      partyLight: null,
+      partyInfravisionActive: false,
+      mode: "night",
+      rememberedCells: remembered,
+    });
+    for (const key of remembered) {
+      const info = r.cells.get(key);
+      expect(info?.isRemembered).toBe(false);
+      expect(info?.brightness ?? 0).toBeGreaterThan(REMEMBERED_BRIGHTNESS);
+    }
+  });
+
+  it("returns currentlyVisible covering every cell whose brightness clears VISIBILITY_THRESHOLD", () => {
+    const grid = makeGrid(7, 1);
+    const r = computeLighting({
+      grid,
+      party: { col: 3, row: 0 },
+      partyLight: null,
+      partyInfravisionActive: false,
+      mode: "night",
+    });
+    // Party's range-1 pool covers (2,0), (3,0), (4,0). Verify all
+    // three are in currentlyVisible AND clear the threshold.
+    expect(r.currentlyVisible.has("3,0")).toBe(true);
+    expect(r.currentlyVisible.has("2,0")).toBe(true);
+    expect(r.currentlyVisible.has("4,0")).toBe(true);
+    for (const key of ["2,0", "3,0", "4,0"]) {
+      expect(r.cells.get(key)!.brightness).toBeGreaterThanOrEqual(
+        VISIBILITY_THRESHOLD,
+      );
+    }
+    // Dim corner — outside the pool, well below the threshold.
+    expect(r.currentlyVisible.has("0,0")).toBe(false);
+    expect(r.cells.get("0,0")!.brightness).toBeLessThan(VISIBILITY_THRESHOLD);
+  });
+
+  it("includes infravision-revealed cells in currentlyVisible (they count as 'currently seen')", () => {
+    // Dwarf with infravision standing at (0,0) — every cell in LOS
+    // gets the red band. Even (4,0) at the far end of the row
+    // should be in currentlyVisible so the host's union grows to
+    // cover the explored area.
+    const grid = makeGrid(5, 1);
+    const r = computeLighting({
+      grid,
+      party: { col: 0, row: 0 },
+      partyLight: null,
+      partyInfravisionActive: true,
+      mode: "night",
+    });
+    for (let c = 0; c < 5; c++) {
+      const key = `${c},0`;
+      expect(r.cells.get(key)?.isInfravisionRed).toBe(true);
+      expect(r.currentlyVisible.has(key)).toBe(true);
+    }
+  });
+
+  it("doesn't add remembered-only cells to currentlyVisible", () => {
+    // (8,0) is remembered but outside the party's pool. The fog
+    // band renders it dim, but the host hasn't seen it on THIS
+    // frame — so it must NOT appear in currentlyVisible (otherwise
+    // the renderer would keep marking fog-of-war cells as still-
+    // visited, which is a no-op but conceptually wrong).
+    const grid = makeGrid(9, 1);
+    const r = computeLighting({
+      grid,
+      party: { col: 0, row: 0 },
+      partyLight: null,
+      partyInfravisionActive: false,
+      mode: "night",
+      rememberedCells: new Set(["8,0"]),
+    });
+    expect(r.cells.get("8,0")?.isRemembered).toBe(true);
+    expect(r.currentlyVisible.has("8,0")).toBe(false);
+  });
+
+  it("day mode short-circuits fog: every cell is in currentlyVisible, none is remembered", () => {
+    const grid = makeGrid(3, 3);
+    const r = computeLighting({
+      grid,
+      party: { col: 1, row: 1 },
+      partyLight: null,
+      partyInfravisionActive: false,
+      mode: "day",
+      // Even with a populated rememberedCells set, day mode reads
+      // every cell as fully visible — fog is moot at noon.
+      rememberedCells: new Set(["0,0", "2,2"]),
+    });
+    expect(r.currentlyVisible.size).toBe(9);
+    for (const info of r.cells.values()) {
+      expect(info.isRemembered).toBe(false);
+      expect(info.brightness).toBe(255);
+    }
+  });
+
+  it("emitterVisibleAt hides emitters on remembered-only cells", () => {
+    // Without fog, a cell at brightness REMEMBERED_BRIGHTNESS (90)
+    // would clear emitterVisibleAt's `>30` threshold. But a
+    // remembered cell isn't being WATCHED — the party walked past.
+    // The emitter (torch flame, fairy lights, etc.) must hide.
+    const grid = makeGrid(5, 1);
+    const r = computeLighting({
+      grid,
+      party: { col: 0, row: 0 },
+      partyLight: null,
+      partyInfravisionActive: false,
+      mode: "night",
+      rememberedCells: new Set(["4,0"]),
+    });
+    expect(r.cells.get("4,0")?.isRemembered).toBe(true);
+    expect(emitterVisibleAt(r, 4, 0)).toBe(false);
+  });
+
+  it("overlayVisibleAt hides roamers on remembered cells but keeps them on infravision cells", () => {
+    // Remembered → false (a goblin that walked into the corridor
+    // since the party left should NOT render).
+    const grid = makeGrid(5, 1);
+    const remOnly = computeLighting({
+      grid,
+      party: { col: 0, row: 0 },
+      partyLight: null,
+      partyInfravisionActive: false,
+      mode: "night",
+      rememberedCells: new Set(["4,0"]),
+    });
+    expect(overlayVisibleAt(remOnly, 4, 0)).toBe(false);
+    // Infravision → true (the party IS watching).
+    const infra = computeLighting({
+      grid,
+      party: { col: 0, row: 0 },
+      partyLight: null,
+      partyInfravisionActive: true,
+      mode: "night",
+    });
+    expect(overlayVisibleAt(infra, 4, 0)).toBe(true);
+  });
+
+  it("omitting rememberedCells preserves the legacy single-band behaviour", () => {
+    // No remembered set passed — every cell that isn't in LOS reads
+    // as plain ambient dark, no fog tint, isRemembered always false.
+    const grid = makeGrid(5, 1);
+    const r = computeLighting({
+      grid,
+      party: { col: 0, row: 0 },
+      partyLight: null,
+      partyInfravisionActive: false,
+      mode: "night",
+    });
+    for (const info of r.cells.values()) {
+      expect(info.isRemembered).toBe(false);
+    }
+    // (4,0) is just ambient-dim, not REMEMBERED_BRIGHTNESS.
+    expect(r.cells.get("4,0")!.brightness).toBeLessThan(REMEMBERED_BRIGHTNESS);
   });
 });

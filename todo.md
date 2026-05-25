@@ -1,8 +1,11 @@
 
 # Polish
 
-- Playtest
-- Set the Orc Stronghold to Darkness
+
+
+- Water Shrine needs encounters
+- Dragon's Cave should have darkness property set
+- Capital City needs more mid-level quests
 
 # V3 Ideas
 
