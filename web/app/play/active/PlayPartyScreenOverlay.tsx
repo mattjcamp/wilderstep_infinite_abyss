@@ -348,12 +348,36 @@ export function PlayPartyScreenOverlay({
           galadriels_light_steps: liveSave.party.galadriels_light_steps,
         };
 
+        // Custom (player-rolled) characters live in
+        // `liveSave.party.members[].custom` rather than in the module's
+        // characters.json. Combine them with the static catalog so the
+        // roster join below finds them — without this, every PartyScreen
+        // lookup (`byId.get(rosterId)`) misses the custom id and the
+        // member silently disappears from the Party screen, the
+        // race-ability handlers, the heal / casting handlers, and any
+        // other consumer that reads `state.characters`. The save's
+        // `custom` blob is a full CharacterRecord (id / name / class /
+        // race / stats / sprite); its shape is a structural superset of
+        // PartyCharacterRef, so a spread is enough.
+        const customCharacters: PartyCharacterRef[] = [];
+        for (const m of liveSave.party.members) {
+          if (!m.custom) continue;
+          const c = m.custom as PartyCharacterRef;
+          // Dedupe defensively against the static catalog — a save
+          // that ended up with both a custom blob AND a same-id
+          // module entry would otherwise render two cards. The
+          // custom blob wins (it's the player's choice).
+          if (staticCharacters.some((sc) => sc.id === c.id)) continue;
+          customCharacters.push(c);
+        }
+        const allCharacters: PartyCharacterRef[] = [
+          ...staticCharacters,
+          ...customCharacters,
+        ];
+
         // Per-member overlay: merge HP / MP / personal inventory from
-        // SavedCharacterState onto the static characters.json entry
-        // for the same id. Members not in the static catalog (custom
-        // characters with a `custom` blob, theoretically) fall
-        // through silently — populating their full record from the
-        // blob is a follow-up.
+        // SavedCharacterState onto the catalog entry (static or
+        // custom) for the same id.
         const savedById = new Map(
           liveSave.party.members.map((m) => [m.id, m] as const),
         );
@@ -366,7 +390,7 @@ export function PlayPartyScreenOverlay({
         // future per-member max changes (level-up bonuses, etc.).
         const maxHpById = new Map<string, number>();
         const maxMpById = new Map<string, number>();
-        for (const c of staticCharacters) {
+        for (const c of allCharacters) {
           if (typeof c.hp === "number") maxHpById.set(c.id, c.hp);
           if (typeof c.mp === "number") maxMpById.set(c.id, c.mp);
         }
@@ -374,7 +398,7 @@ export function PlayPartyScreenOverlay({
           if (typeof m.max_hp === "number") maxHpById.set(m.id, m.max_hp);
           if (typeof m.max_mp === "number") maxMpById.set(m.id, m.max_mp);
         }
-        const characters: PartyCharacterRef[] = staticCharacters.map((c) => {
+        const characters: PartyCharacterRef[] = allCharacters.map((c) => {
           const saved = savedById.get(c.id);
           // maxHp / maxMp ride on EVERY merged character (not just
           // the saved ones) so unsaved members — or contexts where

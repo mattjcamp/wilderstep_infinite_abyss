@@ -3,17 +3,30 @@
 /**
  * PartyFormation — pick + create your adventuring party.
  *
- * The module ships a default roster in party.json. Each entry is a
- * slot here; the player can either keep the module-provided character
- * or replace the slot with one they build themselves via
- * CharacterCreator. Slots can't be added, removed, or reordered in
- * this first pass — the module decides party size.
+ * The module ships a default roster in party.json. The player can:
+ *   - **Create** a new character via the prominent CTA at the top of
+ *     the page. New characters auto-join the party when there's a
+ *     free slot; otherwise they land in the Available pool so the
+ *     player can swap them in.
+ *   - **Reorder** their party by drag-and-drop (HTML5 native — no
+ *     dependency). Position 1 is the lead member shown on the world
+ *     map and acts first in combat.
+ *   - **Remove** a party member, sending them back to the Available
+ *     pool. Module-supplied characters can be re-added; custom ones
+ *     stay around for the lifetime of the formation flow.
+ *   - **Add** any character from the Available pool to the party as
+ *     long as there's room.
+ *
+ * Party size is soft-capped at `max(rosterSize, 4)` — the module's
+ * default party size, but never less than four so a one-character
+ * tutorial module doesn't strand the player. Begin is disabled when
+ * the party is empty.
  *
  * On "Begin", the assembled party (slot resolution + custom-character
- * records for any replaced slots) is stashed in sessionStorage so the
- * beginning-screen page can read it. Refreshing the page resets the
- * draft on purpose — it's a short flow, no need for persistence across
- * a hard reload.
+ * records for any non-module slots) is stashed in sessionStorage so
+ * the beginning-screen page can read it. Refreshing the page resets
+ * the draft on purpose — it's a short flow, no need for persistence
+ * across a hard reload.
  */
 
 import { useEffect, useMemo, useState } from "react";
@@ -62,15 +75,35 @@ interface LoadedCatalog {
   abilities: AbilityRecord[];
 }
 
+/** Hard floor on party size when the module ships a smaller roster —
+ *  four slots is the canonical CRPG party shape and matches what the
+ *  combat scene's layout was designed against. Modules that ship six
+ *  characters get six slots; one-character tutorial modules still
+ *  give the player up to four. */
+const MIN_PARTY_CAP = 4;
+
 export function PartyFormation({ moduleId }: { moduleId: string }) {
   const router = useRouter();
   const [state, setState] = useState<
     { kind: "loading" } | { kind: "ok"; catalog: LoadedCatalog } | { kind: "error"; message: string }
   >({ kind: "loading" });
   const [slots, setSlots] = useState<Slot[]>([]);
-  /** Which slot index is currently being replaced. `null` = no inline
-   *  creator open. Mutually exclusive — one creator at a time. */
-  const [editingIdx, setEditingIdx] = useState<number | null>(null);
+  /** Custom (player-created) characters that exist for this formation
+   *  session. A character lands here on creation and STAYS here even
+   *  if removed from the party — so the player can swap them back in
+   *  without re-rolling. Module-supplied characters live in
+   *  `catalog.characters` and aren't duplicated here. */
+  const [customChars, setCustomChars] = useState<CharacterRecord[]>([]);
+  /** True when the inline CharacterCreator is open. Mutually
+   *  exclusive — one creator at a time. */
+  const [creating, setCreating] = useState(false);
+  /** Index of the slot currently being dragged. `null` = no drag in
+   *  flight. */
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+  /** Index the dragged row is currently hovering over — drives the
+   *  drop-indicator line so the player can see where the row will
+   *  land before they release. */
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
 
   // Load the module's party + character catalogs. Same pattern the
   // editor's CharactersBrowse uses, scoped down to the fields we
@@ -128,8 +161,7 @@ export function PartyFormation({ moduleId }: { moduleId: string }) {
         };
         setState({ kind: "ok", catalog });
         // Initial slot state: every roster id resolves to a module
-        // slot. The player can replace any of them with a fresh
-        // creation; refreshing the page resets to module defaults.
+        // slot. Refreshing the page resets to module defaults.
         setSlots(
           (catalog.party.roster ?? []).map((id) => ({
             kind: "module",
@@ -155,35 +187,87 @@ export function PartyFormation({ moduleId }: { moduleId: string }) {
     return new Map(state.catalog.characters.map((c) => [c.id, c]));
   }, [state]);
 
+  // Set of character ids currently in the party — used to filter
+  // the Available pool so the same character can't be in two places.
+  // Module slots resolve to their `characterId`; custom slots use
+  // the embedded record's id (CharacterCreator guarantees unique
+  // ids via `usedIds` collision avoidance).
+  const inPartyIds = useMemo(() => {
+    const s = new Set<string>();
+    for (const slot of slots) {
+      s.add(slot.kind === "module" ? slot.characterId : slot.character.id);
+    }
+    return s;
+  }, [slots]);
+
+  // Available pool: every character (module + custom) not currently
+  // in the party. Module characters keep their kind so the slot type
+  // round-trips correctly when added back.
+  const availableModule = useMemo(() => {
+    if (state.kind !== "ok") return [];
+    return state.catalog.characters.filter((c) => !inPartyIds.has(c.id));
+  }, [state, inPartyIds]);
+  const availableCustom = useMemo(
+    () => customChars.filter((c) => !inPartyIds.has(c.id)),
+    [customChars, inPartyIds],
+  );
+
   // Ids already in use — passed to CharacterCreator so a freshly
   // rolled character can't collide with a module character or with
-  // another slot's custom character. The creator suffixes a "_2" /
-  // "_3" automatically if the player picks a name whose slug is taken.
+  // an existing custom one (in or out of the party).
   const usedIds = useMemo(() => {
     const ids = new Set<string>();
     for (const c of charactersById.values()) ids.add(c.id);
-    for (const s of slots) {
-      if (s.kind === "custom") ids.add(s.character.id);
-    }
+    for (const c of customChars) ids.add(c.id);
     return ids;
-  }, [charactersById, slots]);
+  }, [charactersById, customChars]);
 
-  const onReplace = (idx: number, rec: CharacterRecord) => {
-    setSlots((prev) => {
-      const next = [...prev];
-      next[idx] = { kind: "custom", character: rec };
-      return next;
-    });
-    setEditingIdx(null);
+  // Soft cap on party size: never less than four (so a tiny module
+  // still lets the player build a real party), otherwise the
+  // module's original roster size.
+  const partyCap = useMemo(() => {
+    if (state.kind !== "ok") return MIN_PARTY_CAP;
+    return Math.max(MIN_PARTY_CAP, state.catalog.party.roster?.length ?? 0);
+  }, [state]);
+
+  const canAddMore = slots.length < partyCap;
+
+  const onCreateComplete = (rec: CharacterRecord) => {
+    // Add to the custom pool first; if there's room in the party,
+    // auto-join so the player doesn't have to click Add as a second
+    // step. They can drag the new character to any position
+    // afterwards.
+    setCustomChars((prev) => [...prev, rec]);
+    setSlots((prev) =>
+      prev.length < partyCap
+        ? [...prev, { kind: "custom", character: rec }]
+        : prev,
+    );
+    setCreating(false);
   };
 
-  const onRevert = (idx: number) => {
-    if (state.kind !== "ok") return;
-    const originalId = state.catalog.party.roster?.[idx];
-    if (!originalId) return;
+  const onAddModule = (id: string) => {
+    if (!canAddMore) return;
+    setSlots((prev) => [...prev, { kind: "module", characterId: id }]);
+  };
+
+  const onAddCustom = (rec: CharacterRecord) => {
+    if (!canAddMore) return;
+    setSlots((prev) => [...prev, { kind: "custom", character: rec }]);
+  };
+
+  const onRemove = (idx: number) => {
+    setSlots((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  /** Move the slot at `from` so it lands AT `to` in the resulting
+   *  array (insertion-style, not swap). No-op when from === to. */
+  const onReorder = (from: number, to: number) => {
+    if (from === to) return;
     setSlots((prev) => {
       const next = [...prev];
-      next[idx] = { kind: "module", characterId: originalId };
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
       return next;
     });
   };
@@ -191,14 +275,8 @@ export function PartyFormation({ moduleId }: { moduleId: string }) {
   const onBegin = () => {
     if (state.kind !== "ok") return;
     if (typeof window === "undefined") return;
-    // Stash the assembled party so the begin screen can write the
-    // initial save. Custom characters carry their full record;
-    // module slots carry just the id (the loader joins against
-    // characters.json on the next page).
-    const draft = {
-      moduleId,
-      slots,
-    };
+    if (slots.length === 0) return;
+    const draft = { moduleId, slots };
     try {
       window.sessionStorage.setItem(
         draftKey(moduleId),
@@ -235,46 +313,199 @@ export function PartyFormation({ moduleId }: { moduleId: string }) {
       <header>
         <h1 className="font-display text-3xl text-parchment">Form the Party</h1>
         <p className="mt-1 text-sm text-parchment/65">
-          The module ships with a roster of {slots.length}{" "}
-          {slots.length === 1 ? "adventurer" : "adventurers"}. Keep them, or
-          replace any slot with someone you create.
+          Build a roster of up to {partyCap}{" "}
+          {partyCap === 1 ? "adventurer" : "adventurers"}. Create your own,
+          pick from the module's heroes, and drag to set marching order — the
+          first slot leads on the world map and acts first in combat.
         </p>
       </header>
 
-      <ul className="flex flex-col gap-3">
-        {slots.map((slot, idx) => (
-          <li
-            key={idx}
-            className="rounded-md border border-parchment/20 bg-ink/40 p-4"
-          >
-            {editingIdx === idx ? (
-              <div>
-                <h2 className="mb-3 font-display text-lg text-parchment">
-                  Create a new character for slot {idx + 1}
-                </h2>
-                <CharacterCreator
-                  existingIds={usedIds}
-                  races={catalog.races}
-                  classes={catalog.classes}
-                  abilities={catalog.abilities}
-                  onComplete={(rec) => onReplace(idx, rec)}
-                  onCancel={() => setEditingIdx(null)}
-                />
+      {/* ── Prominent create CTA ────────────────────────────────────
+          Sits above everything so a player who wants to roll their
+          own party sees the option immediately. When the creator is
+          open, the CTA card expands inline to host the wizard so
+          the player keeps the rest of the page in view. */}
+      {creating ? (
+        <section className="rounded-md border border-ember/60 bg-ember/10 p-4">
+          <h2 className="mb-3 font-display text-lg text-parchment">
+            Create a new character
+          </h2>
+          <CharacterCreator
+            existingIds={usedIds}
+            races={catalog.races}
+            classes={catalog.classes}
+            abilities={catalog.abilities}
+            onComplete={onCreateComplete}
+            onCancel={() => setCreating(false)}
+          />
+        </section>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setCreating(true)}
+          className="flex items-center justify-between gap-4 rounded-md border-2 border-dashed border-ember/60 bg-ember/10 p-4 text-left transition hover:border-ember hover:bg-ember/20"
+        >
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full border border-ember/60 bg-ember/20 text-2xl font-bold text-ember">
+              +
+            </div>
+            <div>
+              <div className="font-display text-lg text-parchment">
+                Create a new character
               </div>
-            ) : (
-              <SlotSummary
-                slot={slot}
-                idx={idx}
-                charactersById={charactersById}
-                onEdit={() => setEditingIdx(idx)}
-                onRevert={
-                  slot.kind === "custom" ? () => onRevert(idx) : null
-                }
-              />
-            )}
-          </li>
-        ))}
-      </ul>
+              <div className="text-xs text-parchment/65">
+                Roll your own hero —{" "}
+                {canAddMore
+                  ? "they'll join the party automatically."
+                  : "your party is full, so they'll land in the Available pool."}
+              </div>
+            </div>
+          </div>
+          <span className="rounded border border-ember/60 px-3 py-1 text-xs uppercase tracking-wide text-ember">
+            Create
+          </span>
+        </button>
+      )}
+
+      {/* ── Your Party (ordered, drag-to-reorder) ──────────────────
+          Each row is draggable; dragging shows a thin amber line at
+          the would-be drop position so the player can see where the
+          row is about to land. The "lead" badge on row 0 reinforces
+          that order matters. Remove is a per-row button — removed
+          members fall back into the Available pool. */}
+      <section>
+        <div className="mb-2 flex items-baseline justify-between">
+          <h2 className="font-display text-xl text-parchment">
+            Your Party
+          </h2>
+          <span className="text-xs text-parchment/55">
+            {slots.length} / {partyCap}
+            {slots.length > 0 ? " · drag to reorder" : ""}
+          </span>
+        </div>
+
+        {slots.length === 0 ? (
+          <div className="rounded-md border border-dashed border-parchment/20 bg-ink/30 p-6 text-center text-sm text-parchment/55">
+            No characters in the party yet. Create one above, or add
+            from Available Characters below.
+          </div>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {slots.map((slot, idx) => {
+              const isDragging = dragIdx === idx;
+              const showLineAbove =
+                dragOverIdx === idx &&
+                dragIdx !== null &&
+                dragIdx !== idx &&
+                dragIdx > idx;
+              const showLineBelow =
+                dragOverIdx === idx &&
+                dragIdx !== null &&
+                dragIdx !== idx &&
+                dragIdx < idx;
+              return (
+                <li
+                  key={
+                    slot.kind === "module"
+                      ? `m-${slot.characterId}`
+                      : `c-${slot.character.id}`
+                  }
+                  draggable
+                  onDragStart={(e) => {
+                    setDragIdx(idx);
+                    // Required for Firefox to fire drag events.
+                    e.dataTransfer.effectAllowed = "move";
+                    e.dataTransfer.setData("text/plain", String(idx));
+                  }}
+                  onDragOver={(e) => {
+                    // Calling preventDefault here is what tells the
+                    // browser this element is a valid drop target —
+                    // without it, onDrop never fires.
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = "move";
+                    if (dragOverIdx !== idx) setDragOverIdx(idx);
+                  }}
+                  onDragLeave={() => {
+                    if (dragOverIdx === idx) setDragOverIdx(null);
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    if (dragIdx !== null) onReorder(dragIdx, idx);
+                    setDragIdx(null);
+                    setDragOverIdx(null);
+                  }}
+                  onDragEnd={() => {
+                    setDragIdx(null);
+                    setDragOverIdx(null);
+                  }}
+                  className={`rounded-md border bg-ink/40 p-4 transition ${
+                    isDragging
+                      ? "border-ember/60 opacity-50"
+                      : "border-parchment/20"
+                  } ${showLineAbove ? "border-t-2 border-t-ember" : ""} ${
+                    showLineBelow ? "border-b-2 border-b-ember" : ""
+                  }`}
+                >
+                  <PartyMemberRow
+                    slot={slot}
+                    idx={idx}
+                    charactersById={charactersById}
+                    onRemove={() => onRemove(idx)}
+                  />
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
+      {/* ── Available Characters pool ──────────────────────────────
+          Module-supplied characters not currently in the party are
+          listed first, then any custom characters the player rolled
+          and later removed. "Add to party" puts them at the END of
+          the party list; the player can then drag them anywhere. */}
+      {(availableModule.length > 0 || availableCustom.length > 0) && (
+        <section>
+          <div className="mb-2 flex items-baseline justify-between">
+            <h2 className="font-display text-xl text-parchment">
+              Available Characters
+            </h2>
+            {!canAddMore ? (
+              <span className="text-xs text-amber-200/85">
+                Party full — remove a member to add another.
+              </span>
+            ) : null}
+          </div>
+          <ul className="flex flex-col gap-2">
+            {availableModule.map((c) => (
+              <li
+                key={`avail-m-${c.id}`}
+                className="rounded-md border border-parchment/15 bg-ink/30 p-4"
+              >
+                <AvailableRow
+                  character={c}
+                  origin="module"
+                  canAdd={canAddMore}
+                  onAdd={() => onAddModule(c.id)}
+                />
+              </li>
+            ))}
+            {availableCustom.map((c) => (
+              <li
+                key={`avail-c-${c.id}`}
+                className="rounded-md border border-parchment/15 bg-ink/30 p-4"
+              >
+                <AvailableRow
+                  character={c}
+                  origin="custom"
+                  canAdd={canAddMore}
+                  onAdd={() => onAddCustom(c)}
+                />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <footer className="mt-2 flex items-center justify-between gap-4">
         <Link
@@ -283,31 +514,40 @@ export function PartyFormation({ moduleId }: { moduleId: string }) {
         >
           Back to module picker
         </Link>
-        <button
-          type="button"
-          onClick={onBegin}
-          disabled={editingIdx !== null || slots.length === 0}
-          className="rounded-md border border-parchment/40 bg-ember/90 px-8 py-2 text-parchment shadow transition hover:bg-ember disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          Begin →
-        </button>
+        <div className="flex items-center gap-3">
+          {slots.length === 0 ? (
+            <span className="text-xs text-amber-200/85">
+              Add at least one character to begin.
+            </span>
+          ) : null}
+          <button
+            type="button"
+            onClick={onBegin}
+            disabled={creating || slots.length === 0}
+            className="rounded-md border border-parchment/40 bg-ember/90 px-8 py-2 text-parchment shadow transition hover:bg-ember disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Begin →
+          </button>
+        </div>
       </footer>
     </main>
   );
 }
 
-function SlotSummary({
+/** A row inside the party list. Shows the drag handle, lead-position
+ *  badge (for idx 0), portrait, summary, and a Remove button. The
+ *  drag affordance is the entire row (`draggable` is on the <li>);
+ *  the handle is a visual hint, not a separate event surface. */
+function PartyMemberRow({
   slot,
   idx,
   charactersById,
-  onEdit,
-  onRevert,
+  onRemove,
 }: {
   slot: Slot;
   idx: number;
   charactersById: Map<string, CharacterRecord>;
-  onEdit: () => void;
-  onRevert: (() => void) | null;
+  onRemove: () => void;
 }) {
   const character: CharacterRecord | null =
     slot.kind === "custom"
@@ -325,10 +565,10 @@ function SlotSummary({
         </div>
         <button
           type="button"
-          onClick={onEdit}
-          className="rounded border border-parchment/30 px-3 py-1 text-xs text-parchment/80 hover:bg-ink/50"
+          onClick={onRemove}
+          className="rounded border border-parchment/20 px-3 py-1 text-xs text-parchment/65 hover:bg-ink/50"
         >
-          Create one
+          Remove
         </button>
       </div>
     );
@@ -336,14 +576,32 @@ function SlotSummary({
 
   return (
     <div className="flex items-center gap-4">
+      <div
+        className="cursor-grab select-none text-parchment/40"
+        title="Drag to reorder"
+        aria-hidden
+      >
+        ⋮⋮
+      </div>
       <SpritePortrait sprite={character.sprite} />
       <div className="flex-1">
-        <div className="font-display text-lg text-parchment">
-          {character.name}
+        <div className="flex items-center gap-2">
+          <span className="font-display text-lg text-parchment">
+            {character.name}
+          </span>
+          {idx === 0 ? (
+            <span className="rounded border border-ember/60 bg-ember/15 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-ember">
+              Lead
+            </span>
+          ) : null}
+          {slot.kind === "custom" ? (
+            <span className="rounded border border-parchment/25 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-parchment/55">
+              New
+            </span>
+          ) : null}
         </div>
         <div className="text-xs text-parchment/65">
           Lv {character.level} {character.race} {character.class}
-          {slot.kind === "custom" ? " · new" : ""}
         </div>
         <div className="mt-1 text-xs text-parchment/45">
           HP {character.hp} · MP {character.mp} · STR {character.strength} DEX{" "}
@@ -351,24 +609,64 @@ function SlotSummary({
           {character.intelligence} WIS {character.wisdom}
         </div>
       </div>
-      <div className="flex flex-col gap-1">
-        <button
-          type="button"
-          onClick={onEdit}
-          className="rounded border border-parchment/30 px-3 py-1 text-xs text-parchment/80 hover:bg-ink/50"
-        >
-          Replace with new…
-        </button>
-        {onRevert ? (
-          <button
-            type="button"
-            onClick={onRevert}
-            className="rounded border border-parchment/15 px-3 py-1 text-xs text-parchment/55 hover:bg-ink/50"
-          >
-            Revert
-          </button>
-        ) : null}
+      <button
+        type="button"
+        onClick={onRemove}
+        className="rounded border border-parchment/20 px-3 py-1 text-xs text-parchment/65 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
+      >
+        Remove
+      </button>
+    </div>
+  );
+}
+
+/** A row inside the Available Characters pool. Same portrait +
+ *  summary footprint as a party row, but with an Add button instead
+ *  of drag + Remove. The "Custom" badge differentiates player-rolled
+ *  characters from the module's roster so the player remembers which
+ *  ones they made. */
+function AvailableRow({
+  character,
+  origin,
+  canAdd,
+  onAdd,
+}: {
+  character: CharacterRecord;
+  origin: "module" | "custom";
+  canAdd: boolean;
+  onAdd: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-4">
+      <SpritePortrait sprite={character.sprite} />
+      <div className="flex-1">
+        <div className="flex items-center gap-2">
+          <span className="font-display text-lg text-parchment">
+            {character.name}
+          </span>
+          {origin === "custom" ? (
+            <span className="rounded border border-parchment/25 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-parchment/55">
+              Custom
+            </span>
+          ) : null}
+        </div>
+        <div className="text-xs text-parchment/65">
+          Lv {character.level} {character.race} {character.class}
+        </div>
+        <div className="mt-1 text-xs text-parchment/45">
+          HP {character.hp} · MP {character.mp} · STR {character.strength} DEX{" "}
+          {character.dexterity} CON {character.constitution} INT{" "}
+          {character.intelligence} WIS {character.wisdom}
+        </div>
       </div>
+      <button
+        type="button"
+        onClick={onAdd}
+        disabled={!canAdd}
+        className="rounded border border-ember/60 bg-ember/15 px-3 py-1 text-xs text-parchment hover:bg-ember/30 disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        Add to party
+      </button>
     </div>
   );
 }

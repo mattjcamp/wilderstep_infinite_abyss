@@ -2,7 +2,7 @@
   "_comment": "Draft module created in the editor. Export this file and drop it into web/public/modules/dragon-lair/module.json.",
   "id": "dragon-lair",
   "title": "The Dragon's Lair",
-  "description": "A dragon is threatening the realm, will you have the fortitude to smite the beast and save your people?",
+  "description": "An ancient wyrm has woken in the mountains beyond Hallowmere. Forge the steel, gather the courage, and lay the dragon low — before its fire consumes the realm.",
   "author": "hyperbolic",
   "version": "0.1.0",
   "role": "playable",

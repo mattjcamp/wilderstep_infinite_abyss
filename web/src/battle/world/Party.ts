@@ -589,6 +589,11 @@ export function partyHasAmmo(party: Party, itemName: string): boolean {
  *  wouldn't accept regular arrows). */
 const AMMO_FAMILY: Readonly<Record<string, ReadonlyArray<string>>> = {
   arrows: ["fire_arrows"],
+  // Crossbow analog — bolts swap in for fire_bolts the same way
+  // arrows do for fire_arrows. Lets a Ranger who crafts a bundle
+  // of fire_bolts (via Craft Fire Arrows) actually load them into
+  // a crossbow.
+  bolts: ["fire_bolts"],
 };
 
 /** Every ammo id the party currently has that the weapon could

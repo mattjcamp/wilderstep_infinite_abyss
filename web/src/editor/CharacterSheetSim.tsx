@@ -192,14 +192,29 @@ function collectEquippedPassives(
   return [...seen];
 }
 
-/** XP threshold to the NEXT level — race-specific overrides apply
- *  (Humans level faster at 1125, others 1500). */
-function xpForNextLevel(
+/** XP progress *within the current level* — `member.exp` is
+ *  cumulative across every level the character has ever reached
+ *  (see Leveling.ts `awardXp`), so the bar / readout must subtract
+ *  the previous level's threshold to read as "progress toward the
+ *  next level" rather than "progress through the entire XP curve".
+ *  `into` is 0 the instant a member levels up; equals `needed` the
+ *  instant they're about to level again. Race-specific overrides
+ *  apply (Humans level faster at 1125, others 1500). */
+function xpProgressInLevel(
   member: PartyCharacterRef,
   race?: PartyRaceRef,
-): number {
+): { into: number; needed: number } {
   const base = race?.exp_per_level ?? 1500;
-  return (member.level ?? 1) * base;
+  const level = member.level ?? 1;
+  const exp = member.exp ?? 0;
+  const prevThreshold = Math.max(0, level - 1) * base;
+  const nextThreshold = level * base;
+  return {
+    into: Math.max(0, exp - prevThreshold),
+    // Floor at 1 to keep the bar's fill math safe if a future race
+    // ever ships with exp_per_level = 0.
+    needed: Math.max(1, nextThreshold - prevThreshold),
+  };
 }
 
 // ── Component ──────────────────────────────────────────────────────
@@ -431,8 +446,14 @@ export function CharacterSheetSim({
 
   const hp = character.hp ?? 0;
   const mp = character.mp ?? 0;
-  const exp = character.exp ?? 0;
-  const xpNext = xpForNextLevel(character, race);
+  // Per-level XP progress — see xpProgressInLevel for why the
+  // readout can't show `character.exp` directly (cumulative XP would
+  // make a freshly-levelled character look 50% of the way to the
+  // NEXT level instead of having just reset to 0).
+  const { into: xpInto, needed: xpNeeded } = xpProgressInLevel(
+    character,
+    race,
+  );
   const level = character.level ?? 1;
   // Real peak values when the play overlay attached them; otherwise
   // fall back to current so the bar denominator stays sane in
@@ -518,7 +539,7 @@ export function CharacterSheetSim({
               </div>
               <div className="mt-0.5 font-mono text-[11px] text-parchment/55">
                 Level {level} <span className="text-parchment/35">•</span> EXP{" "}
-                {exp} / {xpNext}
+                {xpInto} / {xpNeeded}
               </div>
             </div>
           </div>

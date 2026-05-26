@@ -72,13 +72,14 @@ const FIGHTER_HERO: RaceAbilityCharacterRef & { class?: string } = {
 
 function makeItems(): StackableItemRef[] {
   // `charges` on a stackable catalog entry is the per-bundle pay-out
-  // count (matches items.json: arrows/bolts/fire_arrows = 20). The
-  // craft helper reads this through `craftBundleSize` so a successful
+  // count (matches items.json: arrows/bolts/fire_arrows/fire_bolts = 20).
+  // The craft helper reads this through `craftBundleSize` so a successful
   // craft adds a full bundle, just like a shop purchase.
   return [
     { id: "arrows", stackable: true, charges: 20 },
     { id: "bolts", stackable: true, charges: 20 },
     { id: "fire_arrows", stackable: true, charges: 20 },
+    { id: "fire_bolts", stackable: true, charges: 20 },
     // Noise items the picker should never offer for either ability.
     { id: "torch", stackable: true, charges: 1 },
     { id: "lockpick", stackable: true, charges: 5 },
@@ -90,8 +91,11 @@ describe("craftStockFor", () => {
     expect(craftStockFor("craft_arrows")).toEqual(["arrows", "bolts"]);
   });
 
-  it("returns fire_arrows for craft_fire_arrows", () => {
-    expect(craftStockFor("craft_fire_arrows")).toEqual(["fire_arrows"]);
+  it("returns fire_arrows + fire_bolts for craft_fire_arrows", () => {
+    expect(craftStockFor("craft_fire_arrows")).toEqual([
+      "fire_arrows",
+      "fire_bolts",
+    ]);
   });
 
   it("returns an empty list for unknown ids (defensive)", () => {
@@ -374,5 +378,30 @@ describe("attemptCraft — craft_fire_arrows", () => {
     );
     expect(r.ok).toBe(true);
     expect(r.nextSave!.party.last_ability_day?.craft_fire_arrows).toBe(6);
+  });
+
+  it("succeeds with fire_bolts and stamps the craft_fire_arrows counter", () => {
+    const save = makeSave({}, [savedMember({ id: "p1" })]);
+    const r = attemptCraft(
+      save,
+      [RANGER_HERO],
+      makeItems(),
+      "ranger",
+      "craft_fire_arrows",
+      "fire_bolts",
+      5,
+    );
+    expect(r.ok).toBe(true);
+    // Fresh row at bundle size (20), matching the fire_arrows path.
+    expect(r.nextSave!.party.inventory).toEqual([
+      { item: "fire_bolts", charges: 20 },
+    ]);
+    // Same per-ability counter as fire_arrows — fire bolts and fire
+    // arrows share the once-per-day budget, so a Ranger can't craft
+    // both flavours on the same day.
+    expect(r.nextSave!.party.last_ability_day?.craft_fire_arrows).toBe(5);
+    // craft_arrows counter is untouched — independence between
+    // ability counters is preserved.
+    expect(r.nextSave!.party.last_ability_day?.craft_arrows).toBeUndefined();
   });
 });

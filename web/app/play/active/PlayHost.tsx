@@ -871,17 +871,22 @@ export function PlayHost() {
       // use a thematic cue (lockpick-style click for the Halfling's
       // deft pickpocket, a magic-burst chime for the Gnome's
       // tinkering, the level_up chirp for the Ranger's crafting
-      // since it's a more mundane workbench moment).
+      // since it's a more mundane workbench moment). Quest accept
+      // borrows the magic_burst chime — feels like a calling rather
+      // than a milestone, and stays sonically distinct from
+      // level_up which is the workhorse "step credited" chime.
       const sfx =
         args.kind === "quest"
           ? "victory"
-          : args.kind === "pickpocket"
-            ? "lock_pick_success"
-            : args.kind === "tinker"
-              ? "magic_burst"
-              : args.kind === "craft"
-                ? "level_up"
-                : "level_up";
+          : args.kind === "quest-accept"
+            ? "magic_burst"
+            : args.kind === "pickpocket"
+              ? "lock_pick_success"
+              : args.kind === "tinker"
+                ? "magic_burst"
+                : args.kind === "craft"
+                  ? "level_up"
+                  : "level_up";
       Sfx.play(sfx);
       // Spawn the celebratory burst at the party's tile. Sim's
       // snapshot has the live position; the renderer turns that into
@@ -893,27 +898,45 @@ export function PlayHost() {
         const snap = sim.snapshot();
         const x = snap.pos.col * TILE_SIZE + TILE_SIZE / 2;
         const y = snap.pos.row * TILE_SIZE + TILE_SIZE / 2;
-        // Gold burst — matches the quest-glow halo so the
-        // celebration reads as part of the same visual family.
-        // Burst radius grows with the moment: a mid-step credit
-        // gets a small puff (56), race-active abilities get a
-        // slightly wider one (62) so the player notices over the
-        // map chatter, the final-step "objectives done" moment
-        // gets a wider one (68) so it stands out from the routine
-        // steps without stealing the full turn-in's payoff (80).
-        const burstRadius =
-          args.kind === "quest"
-            ? 80
-            : args.kind === "step-final"
-              ? 68
-              : args.kind === "pickpocket" ||
-                  args.kind === "tinker" ||
-                  args.kind === "craft"
-                ? 62
-                : 56;
-        radialBurst(r.scene, { x, y }, 0xffd750, 0xffe580, burstRadius).catch(
-          () => undefined,
-        );
+        if (args.kind === "quest-accept") {
+          // Accept gets a sky-blue treatment instead of the gold of
+          // the completion family — a soft expanding ring (glowAura)
+          // as the primary cue plus a smaller, lighter radial burst
+          // in the same palette so the moment reads as deliberate
+          // without competing with the bigger gold turn-in placard.
+          // VFX_COLOURS.lightning (0xa9d4ff) lines up with the
+          // sky-300 border + halo on the placard.
+          glowAura(r.scene, { x, y }, 0xa9d4ff).catch(() => undefined);
+          radialBurst(
+            r.scene,
+            { x, y },
+            0xa9d4ff,
+            0xc6e3ff,
+            48,
+          ).catch(() => undefined);
+        } else {
+          // Gold burst — matches the quest-glow halo so the
+          // celebration reads as part of the same visual family.
+          // Burst radius grows with the moment: a mid-step credit
+          // gets a small puff (56), race-active abilities get a
+          // slightly wider one (62) so the player notices over the
+          // map chatter, the final-step "objectives done" moment
+          // gets a wider one (68) so it stands out from the routine
+          // steps without stealing the full turn-in's payoff (80).
+          const burstRadius =
+            args.kind === "quest"
+              ? 80
+              : args.kind === "step-final"
+                ? 68
+                : args.kind === "pickpocket" ||
+                    args.kind === "tinker" ||
+                    args.kind === "craft"
+                  ? 62
+                  : 56;
+          radialBurst(r.scene, { x, y }, 0xffd750, 0xffe580, burstRadius).catch(
+            () => undefined,
+          );
+        }
       }
     },
     [],
@@ -3721,8 +3744,12 @@ export function PlayHost() {
   /** Quest accept — mark the quest accepted on the kernel (so the
    *  trigger tile stops re-offering), flip the QuestState's status
    *  to "active", ask the sim to drop any newly-eligible kill-step
-   *  encounters onto the live map, and persist the accepted-set
-   *  into the save. */
+   *  encounters onto the live map, persist the accepted-set into
+   *  the save, and fire a celebration placard + sky-blue glow burst
+   *  at the party so the player gets a satisfying acknowledgment
+   *  that they've taken on the calling. The placard's subtitle
+   *  surfaces the first step's name so the player has an immediate
+   *  "what next" signal once it fades. */
   const onQuestAccept = useCallback(() => {
     setQuestOffer((current) => {
       if (!current) return null;
@@ -3755,10 +3782,34 @@ export function PlayHost() {
         // (followed by another glow pass inside the helper so the
         // gold halo wraps the new icon).
         refreshRetrievePlacements();
+        // Celebration — placard + sky-blue glow burst + magic_burst
+        // chime at the party tile. Gated on `newlyAccepted` so a
+        // re-bump of the giver tile (already-accepted quest re-opens
+        // the dialog so the player can re-read the brief) doesn't
+        // re-fire the cue. Subtitle pulls the FIRST step's name so
+        // the player gets an "and your first task is…" prompt as
+        // the placard fades. Falls back to the quest description
+        // when steps aren't authored.
+        const def = questDefsRef.current.find((d) => d.id === id);
+        const firstStep = def?.steps[0];
+        const stepLabel =
+          firstStep?.name ||
+          firstStep?.description ||
+          def?.description ||
+          undefined;
+        fireQuestCelebration({
+          kind: "quest-accept",
+          title: def?.name ?? id,
+          subtitle: stepLabel,
+        });
       }
       return null;
     });
-  }, [refreshQuestGlow, refreshRetrievePlacements]);
+  }, [
+    fireQuestCelebration,
+    refreshQuestGlow,
+    refreshRetrievePlacements,
+  ]);
 
   /** Quest decline / close — routes both "Decline" (offer view) and
    *  "Close" (in-progress / complete view) through the same handler.

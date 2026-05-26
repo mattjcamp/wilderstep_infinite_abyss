@@ -19,27 +19,6 @@
       "charges": 10
     },
     {
-      "item": "arrows",
-      "charges": 100
-    },
-    {
-      "item": "fire_arrows",
-      "charges": 20
-    },
-    {
-      "item": "bolts",
-      "charges": 100
-    },
-    {
-      "item": "short_bow"
-    },
-    {
-      "item": "sword"
-    },
-    {
-      "item": "dagger"
-    },
-    {
       "item": "rock",
       "charges": 20
     },

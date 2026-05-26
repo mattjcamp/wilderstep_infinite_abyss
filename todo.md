@@ -1,9 +1,7 @@
 
 # Polish
 
-- Water Shrine needs encounters
-- Dragon's Cave should have darkness property set
-- Capital City needs more mid-level quests
+- When a character with the Nimble ability moves after an attack, he is able to keep attacking indefinetely. He should not be able to attack and merely be able to use any remaining steps to move away from danger.
 
 # V3 Ideas
 

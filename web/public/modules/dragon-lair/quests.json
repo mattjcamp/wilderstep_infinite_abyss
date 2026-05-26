@@ -2,17 +2,17 @@
   "quests": [
     {
       "id": "rats",
-      "name": "The Giant Rats",
-      "description": "Get rid of those giant rats in their giant rat hiole",
+      "name": "Vermin in the Larder",
+      "description": "Hallowmere's general shop has been overrun. The cellar crawls with rats, and Mira Hask is too proud to ask for help — but her friend Jerald has fewer scruples.",
       "tags": [
         "rats"
       ],
       "steps": [
         {
           "id": "rats_step_1",
-          "name": "Step 1 Kill the Giant Rats",
+          "name": "Drive Them from the Square",
           "kind": "kill",
-          "description": "Kill the Giant Rats in Hallowmere",
+          "description": "Run the giant rats out of the streets of Hallowmere.",
           "tags": [
             "rats"
           ],
@@ -23,29 +23,29 @@
         },
         {
           "id": "rats_step_2",
-          "name": "Step 2",
+          "name": "Search the Shop Floor",
           "kind": "kill",
           "location_kind": "map",
           "map_id": "demo_general_shop",
-          "description": "Kill the Rats in Mira's Shop",
+          "description": "Hunt down the rats that have taken the run of Mira's shop.",
           "encounter_id": "rat_nest",
           "count": 1
         },
         {
           "id": "rats_step_3",
-          "name": "Step 3",
+          "name": "Into the Cellar",
           "kind": "kill",
           "location_kind": "map",
           "map_id": "show_basement",
-          "description": "Kill the Rats in the Shop Basement",
+          "description": "The deepest infestation festers in the shop's basement. Clear out the swarms below.",
           "encounter_id": "rat_swarm",
           "count": 2
         },
         {
           "id": "rats_step_4",
-          "name": "Step 4",
+          "name": "The Lurking Goblin",
           "kind": "kill",
-          "description": "Deal with the Goblin",
+          "description": "A stray goblin has taken root in the cellar's dark corners. Put it down before it can scurry home for help.",
           "location_kind": "map",
           "map_id": "show_basement",
           "encounter_id": "stray_goblin"
@@ -54,8 +54,8 @@
       "quest_giver": {
         "npc_name": "Jerald",
         "npc_sprite": "person/hobbit2.png",
-        "start_dialog": "I'm a friend of Mira who knows the general shop over there, she is embarrased but we think her shop is source of all these Giant Rats and her basement is infested with them. Can you take care of this problem forhere?",
-        "end_dialog": "Thank you so much for getting rid of those rats and dealing goblin.... Who knew?"
+        "start_dialog": "Pardon me, traveller. I come on behalf of Mira Hask — you'll know her shop, the general store on the square. She's mortified, but the truth is her place has become a haven for giant rats, and her cellar is fairly crawling with them. Would you put an end to it before her livelihood is gnawed away?",
+        "end_dialog": "I can't thank you enough — and a goblin too? Skulking in her own basement! Mira will sleep easier tonight. Take this, with our gratitude."
       },
       "rewards": {
         "xp": 100,
@@ -68,15 +68,15 @@
     },
     {
       "id": "goblins",
-      "name": "The Goblins",
-      "description": "Get rid of those pesky Goblins",
+      "name": "Reckoning at the Warren",
+      "description": "With the rats routed, suspicion turns north — to the goblin warren said to have driven the vermin into Hallowmere in the first place.",
       "tags": [],
       "steps": [
         {
           "id": "goblins_step_1",
-          "name": "Step 1",
+          "name": "Storm the Warren",
           "kind": "kill",
-          "description": "Kill the Goblins",
+          "description": "Cut a path through the goblin raiders holed up in their den north of Hallowmere.",
           "location_kind": "map",
           "map_id": "goblins_den_1_l3",
           "encounter_id": "goblin_raiders"
@@ -85,8 +85,8 @@
       "quest_giver": {
         "npc_name": "",
         "npc_sprite": "person/townsperson8.png",
-        "start_dialog": "Greetings! The people of Hallowmere believe that the nasty Goblins up north are the cause of the Giant Rat problem. It's time for revenge! Will you head up to their lair in the north and destroy the nasty Goblins?",
-        "end_dialog": "You did this and solved our Rat problem for good!"
+        "start_dialog": "We've been talking, the village and I. Everyone knows there's a goblin warren up the north road, and we reckon it's no coincidence the rats came tumbling down when they did. Would you go up there and put a stop to it? Hallowmere wants to sleep through the night again.",
+        "end_dialog": "Word's already gone round the alehouses — the warren is broken, the green-skins scattered. You've done right by Hallowmere, friend."
       },
       "rewards": {
         "xp": 100,
@@ -95,14 +95,15 @@
     },
     {
       "id": "the_lost_scroll",
-      "name": "The Lost Scroll",
-      "description": "Retrieve the scroll I left at the Armor Shop",
+      "name": "A Scroll Long Misplaced",
+      "description": "A self-styled warrior swears he left a family heirloom somewhere in town — and would very much rather you fetched it than he.",
       "tags": [],
       "steps": [
         {
           "id": "the_lost_scroll_step_1",
-          "name": "Step 1",
+          "name": "Comb the Weapons Shop",
           "kind": "retrieve",
+          "description": "The scroll is somewhere among the racks of the weapons shop. Find it and bring it back.",
           "item_id": "scroll_of_fire",
           "location_kind": "map",
           "map_id": "weapons_shop",
@@ -113,8 +114,8 @@
       "quest_giver": {
         "npc_name": "Lazy Warrior",
         "npc_sprite": "person/fighter12.png",
-        "start_dialog": "I lost my family's precious scroll, some where in town. Can you help me find it?",
-        "end_dialog": "Thanks bruh"
+        "start_dialog": "Listen, friend — I had this scroll, real heirloom of my house, and somewhere between here and the weapons shop I, ah, set it down. If you happen by, give the place a look, would you? My boots are giving me trouble today.",
+        "end_dialog": "Stars and steel — you actually found it! I knew I had a good feeling about you. Take this, and tell no one I owe you. Oh — and the family had a little something else stashed down at the docks. Look there. Call it interest on the debt."
       },
       "rewards": {
         "xp": 100,
@@ -131,14 +132,15 @@
     },
     {
       "id": "defeat_the_orcs",
-      "name": "Defeat the Orcs",
-      "description": "",
+      "name": "The Orc Stronghold",
+      "description": "An orc warband has dug into the hill-fort to the west. While their banners fly, no road south of Hallowmere is safe to travel.",
       "tags": [],
       "steps": [
         {
           "id": "defeat_the_orcs_step_1",
-          "name": "Step 1",
+          "name": "Break the Stronghold",
           "kind": "kill",
+          "description": "Cross blades with the shaman's guard and topple the orc hold from within.",
           "encounter_id": "shaman_s_guard",
           "location_kind": "map",
           "map_id": "orc_stronghold_1_l3"
@@ -147,8 +149,8 @@
       "quest_giver": {
         "npc_name": "Old Guy",
         "npc_sprite": "person/townsperson11.png",
-        "start_dialog": "See that hold. There are orcs. Defeat the orcs",
-        "end_dialog": "thx"
+        "start_dialog": "See that hold on the hill? Orcs. Been there a fortnight, and not a wagon's reached us from the south since they raised their banners. Cut them down, would you? The road needs reopening.",
+        "end_dialog": "Aye, the smoke's been seen from town. You've earned more than coin for this one — the southern road is yours to walk freely."
       },
       "rewards": {
         "xp": 200,
@@ -166,13 +168,14 @@
     {
       "id": "dragon",
       "name": "Smite the Dragon",
-      "description": "Get Sun Sword, Smite Dragon",
+      "description": "Aurigax the Wyrm stirs in his mountain lair, and Hallowmere will burn unless a hero rises. Recover the Sun Sword from the drowned shrine, climb the lair, and end the dragon — or watch the realm turn to ash.",
       "tags": [],
       "steps": [
         {
           "id": "dragon_step_1",
-          "name": "Step 1",
+          "name": "Recover the Sun Sword",
           "kind": "retrieve",
+          "description": "The Sun Sword lies sealed in the depths of the old shrine. Only its light can pierce a dragon's hide — claim it before you climb the mountain.",
           "item_id": "sun_sword",
           "location_kind": "map",
           "map_id": "shrine_depths_3",
@@ -181,9 +184,9 @@
         },
         {
           "id": "dragon_step_2",
-          "name": "Step 2",
+          "name": "Slay Aurigax",
           "kind": "kill",
-          "description": "Kill Dragon",
+          "description": "Climb to the lair and put an end to the wyrm. Strike true — there will be no second chance.",
           "location_kind": "map",
           "map_id": "dragons_lair_1_l4",
           "encounter_id": "ancient_dragon",
@@ -198,20 +201,21 @@
       "quest_giver": {
         "npc_name": "Lord Welsh",
         "npc_sprite": "person/king2.png",
-        "start_dialog": "",
-        "end_dialog": ""
+        "start_dialog": "Hero — come closer. You have done much for this realm, and I would not call on you again were the need not absolute. The wyrm Aurigax has woken in the mountain, and every dawn we count the smoke. No blade in Hallowmere will bite him. But the old shrine, deep in its drowned halls, still holds the Sun Sword — the relic that felled his sire in the elder age. Find it. Climb the lair. End him. Do this, and the realm will remember your name for as long as it stands.",
+        "end_dialog": "Aurigax is fallen. The skies are quiet. There are no words in any tongue I know that will repay what you have given Hallowmere — but the throne thanks you, the people thank you, and so do I. Rest, hero. The realm is yours to walk in peace."
       }
     },
     {
       "id": "the_red_house",
       "name": "The Red House",
-      "description": "A house in town appears to be haunted",
+      "description": "A house at the edge of town has gone strangely quiet — and the lights inside burn without a candle. The owner suspects ghosts.",
       "tags": [],
       "steps": [
         {
           "id": "the_red_house_step_1",
-          "name": "Step 1",
+          "name": "Cleanse the Red House",
           "kind": "kill",
+          "description": "Whatever has taken the red house has stopped being polite about it. Step inside and put the restless dead back where they belong.",
           "location_kind": "map",
           "map_id": "demo_town_house",
           "encounter_id": "shambling_dead",
@@ -233,8 +237,8 @@
       "quest_giver": {
         "npc_name": "Old Guy",
         "npc_sprite": "person/druid1.png",
-        "start_dialog": "My house, the red one, appears to be haunted. Can you unhaunt it?",
-        "end_dialog": "thx!"
+        "start_dialog": "It's my house, you understand — the red one at the lane's end. I haven't been able to set foot inside for a week. The candles light themselves. The doors close on their own. Could you go in and… whatever it is, make it not be there any more?",
+        "end_dialog": "I felt the cold lift from across the square. Bless you, friend — the house is mine again."
       },
       "rewards": {
         "xp": 100,
@@ -247,14 +251,15 @@
     },
     {
       "id": "the_dragon_heart",
-      "name": "Retrieve the Dragon Heart",
-      "description": "Dive into the old ruins and retrieve the mage order's dragon heart relic",
+      "name": "The Dragon Heart Relic",
+      "description": "Deep in the old ruins lies the Dragon Heart — a relic of the elder mage order, lost when their tower fell. Recover it before something else does.",
       "tags": [],
       "steps": [
         {
           "id": "the_dragon_heart_step_1",
-          "name": "Step 1",
+          "name": "Descend the Old Ruins",
           "kind": "retrieve",
+          "description": "Cut through the ruin's lower halls and find the chamber where the Dragon Heart rests. Bring it back unbroken.",
           "item_id": "dragonheart",
           "col": 24,
           "row": 22,
@@ -265,8 +270,8 @@
       "quest_giver": {
         "npc_name": "Old Wizard",
         "npc_sprite": "person/wizard2.png",
-        "start_dialog": "Retrieve the Dragon's Heart, the relic of my order. It is lost in the old ruins to our west",
-        "end_dialog": "Thx!"
+        "start_dialog": "Listen well — the Dragon Heart is no trinket. It is the bound, slow-beating ember of the first wyrm my order ever felled, and it must not lie unguarded a day longer. The relic is in the old ruins, west of here. Bring it to me, and the realm will be the safer for it.",
+        "end_dialog": "Ah — yes. Yes. I had feared the worst. You hold in your hand the work of a hundred mages and a hundred years. You have done the order, and your realm, a service that I will not soon forget."
       },
       "rewards": {
         "xp": 500,

@@ -1074,6 +1074,28 @@
       "sell": 10,
       "ignite": true,
       "light_range": 3
+    },
+    {
+      "id": "fire_bolts",
+      "category": "general",
+      "name": "Fire Bolts",
+      "animation_id": null,
+      "description": "A bundle of fire bolts for crossbows. Tipped with the same alchemical compound as fire arrows — they explode on impact, lighting the tile they land on and damaging anyone standing in it.",
+      "icon": "ammo",
+      "item_type": "ammo",
+      "power": 3,
+      "ranged": false,
+      "throwable": false,
+      "slots": [],
+      "stackable": true,
+      "charges": 20,
+      "durability": 0,
+      "party_can_equip": false,
+      "character_can_equip": false,
+      "buy": 30,
+      "sell": 12,
+      "ignite": true,
+      "light_range": 3
     }
   ]
 }

@@ -223,11 +223,40 @@ const SPRITE_CONFIG = { category: "person", format: "path" } as const;
 
 // ── Helpers ─────────────────────────────────────────────────────────
 
-/** XP threshold to the NEXT level, falling back to the canonical
- *  human curve (1125). Mirrors v1's per-race override semantics. */
-function xpForNextLevel(member: PartyCharacterRef, race?: PartyRaceRef): number {
+/** XP progress *within the current level* — the numbers driving the
+ *  roster card's XP bar. `member.exp` is cumulative across every
+ *  level the character has ever reached (Leveling.ts increments
+ *  `level` on a threshold cross but leaves `exp` untouched), so the
+ *  bar must subtract the previous level's threshold to read as
+ *  "progress toward the next level" rather than "progress through
+ *  the entire XP curve".
+ *
+ *  - `into` — XP earned since the start of this level. 0 the instant
+ *    a member levels up; equals `needed` the instant they're about
+ *    to level again.
+ *  - `needed` — XP the character has to earn during this level to
+ *    cross into the next. In practice this is just `race.exp_per_level`
+ *    (or the 1500 default) since the curve is linear; expressed as
+ *    `next - prev` so a future non-linear curve doesn't silently
+ *    break the math.
+ *
+ *  Falls back to the canonical 1500-per-level curve when the race's
+ *  `exp_per_level` override is absent. Mirrors v1's per-race semantics. */
+function xpProgressInLevel(
+  member: PartyCharacterRef,
+  race?: PartyRaceRef,
+): { into: number; needed: number } {
   const base = race?.exp_per_level ?? 1500;
-  return member.level * base;
+  const level = member.level ?? 1;
+  const exp = member.exp ?? 0;
+  const prevThreshold = Math.max(0, level - 1) * base;
+  const nextThreshold = level * base;
+  return {
+    into: Math.max(0, exp - prevThreshold),
+    // Floor at 1 so a 0-XP-per-level race (theoretical) doesn't
+    // divide-by-zero in the Bar component's fill math.
+    needed: Math.max(1, nextThreshold - prevThreshold),
+  };
 }
 
 /** Resolve the set of ability ids unlocked by `members`. An ability is
@@ -1072,7 +1101,7 @@ export function PartyScreen({
                     slotNumber={i + 1}
                     className_={classById.get(m.class)?.name ?? m.class}
                     raceName={raceById.get(m.race)?.name ?? m.race}
-                    xpNext={xpForNextLevel(m, raceById.get(m.race))}
+                    xpProgress={xpProgressInLevel(m, raceById.get(m.race))}
                     onOpen={
                       sendingNow
                         ? () => sendToMember(i)
@@ -1218,7 +1247,7 @@ function RosterCard({
   slotNumber,
   className_,
   raceName,
-  xpNext,
+  xpProgress,
   onOpen,
   draggable = false,
   isDragging = false,
@@ -1234,7 +1263,12 @@ function RosterCard({
   slotNumber: number;
   className_: string;
   raceName: string;
-  xpNext: number;
+  /** XP progress within the current level — drives the amber bar's
+   *  fill AND the inline numeric readout. Resets to `{ into: 0,
+   *  needed: <xpPer> }` at the moment a level-up commits, so the bar
+   *  visually empties and starts filling again toward the next
+   *  threshold (rather than carrying over the cumulative XP curve). */
+  xpProgress: { into: number; needed: number };
   /** When provided, the whole card becomes a button that drills into
    *  the CharacterSheetSim for this member. The Party screen passes
    *  this; standalone uses can omit it. */
@@ -1261,7 +1295,11 @@ function RosterCard({
     : null;
   const hp = member.hp ?? 0;
   const mp = member.mp ?? 0;
-  const exp = member.exp ?? 0;
+  // Per-level XP progress — see xpProgressInLevel for why the bar
+  // can't just read `member.exp` directly (the field is cumulative,
+  // not per-level).
+  const xpInto = xpProgress.into;
+  const xpNeeded = xpProgress.needed;
   // Real max values when the play overlay stitched them on; for
   // pure-catalog contexts (editor preview) fall back to treating
   // current as max so the bar still renders something sane.
@@ -1362,14 +1400,14 @@ function RosterCard({
           />
           <Bar
             label="XP"
-            value={exp}
-            max={xpNext}
+            value={xpInto}
+            max={xpNeeded}
             color="bg-amber-400/60"
           />
         </div>
         <div className="mt-0.5 font-mono text-[10px] text-parchment/50">
-          LVL {member.level} · HP {hp}/{maxHp} · MP {mp}/{maxMp} · XP {exp}/
-          {xpNext}
+          LVL {member.level} · HP {hp}/{maxHp} · MP {mp}/{maxMp} · XP {xpInto}/
+          {xpNeeded}
         </div>
         {fallen || effects.length > 0 ? (
           <div className="mt-1 flex flex-wrap items-center gap-1">

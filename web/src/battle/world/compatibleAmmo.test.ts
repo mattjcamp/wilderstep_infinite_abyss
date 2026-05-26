@@ -101,4 +101,34 @@ describe("compatibleAmmoIds", () => {
     ]);
     expect(compatibleAmmoIds(crossbow, party)).toEqual(["bolts"]);
   });
+
+  it("aliases bolts to fire_bolts so crossbows can load Ranger-crafted fire bolts", () => {
+    const crossbow = makeWeapon({ id: "crossbow", ammo: "bolts" });
+    const party = makeParty([
+      { item: "bolts", charges: 3 },
+      { item: "fire_bolts", charges: 5 },
+    ]);
+    // Primary first; the picker lists "Bolts" before "Fire Bolts".
+    expect(compatibleAmmoIds(crossbow, party)).toEqual([
+      "bolts",
+      "fire_bolts",
+    ]);
+  });
+
+  it("returns only fire_bolts on a crossbow when regular bolts are out", () => {
+    const crossbow = makeWeapon({ id: "crossbow", ammo: "bolts" });
+    const party = makeParty([{ item: "fire_bolts", charges: 4 }]);
+    expect(compatibleAmmoIds(crossbow, party)).toEqual(["fire_bolts"]);
+  });
+
+  it("does NOT alias arrows to fire_bolts — alternates are per-primary", () => {
+    // Symmetric to the bolts → fire_arrows test above; a bow shouldn't
+    // load crossbow ammo just because the party crafted some.
+    const bow = makeWeapon(); // primary ammo = "arrows"
+    const party = makeParty([
+      { item: "arrows", charges: 3 },
+      { item: "fire_bolts", charges: 3 }, // should NOT join the list
+    ]);
+    expect(compatibleAmmoIds(bow, party)).toEqual(["arrows"]);
+  });
 });

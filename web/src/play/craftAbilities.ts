@@ -58,13 +58,14 @@ function craftBundleSize(
  *  craft ability is a one-line addition here plus the matching
  *  abilities.json record + min_level wiring on the class.
  *
- *  Item ids are the v2 snake_case keys from items.json — both
- *  `arrows` and `bolts` are stackable (charges = 20 per bundle);
- *  `fire_arrows` is stackable too. `addToInventory` handles the
- *  merge into existing stash rows. */
+ *  Item ids are the v2 snake_case keys from items.json. Both
+ *  craft abilities offer the bow + crossbow flavours of their
+ *  ammo so a Ranger wielding a crossbow isn't stuck crafting
+ *  ammo they can't load. All four ids are stackable (charges = 20
+ *  per bundle); `addToInventory` merges into existing stash rows. */
 const CRAFT_STOCK: Readonly<Record<string, ReadonlyArray<string>>> = {
   craft_arrows: ["arrows", "bolts"],
-  craft_fire_arrows: ["fire_arrows"],
+  craft_fire_arrows: ["fire_arrows", "fire_bolts"],
 };
 
 /** What the craft picker should list for `abilityId`. Returns an

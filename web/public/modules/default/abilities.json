@@ -186,7 +186,7 @@
       "name": "Craft Fire Arrows",
       "animation_id": null,
       "type": "class",
-      "description": "Allows the character to craft a bundle of fire arrows once per day.",
+      "description": "Allows the character to craft a bundle of fire arrows or fire bolts once per day.",
       "duration": null,
       "usable_in": [
         "party"

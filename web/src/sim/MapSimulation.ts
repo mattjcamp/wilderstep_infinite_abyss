@@ -1939,8 +1939,26 @@ export class MapSimulation {
     const message = success
       ? `${enc.picker.name} picks the lock! (d20:${roll}${sign}${mod}=${total} vs DC ${PICK_LOCK_DC})`
       : `${enc.picker.name} fumbles the pick. (d20:${roll}${sign}${mod}=${total} vs DC ${PICK_LOCK_DC}) — one lockpick snapped.`;
-    if (success) this.applyUnlock(enc.pos, "picked");
-    this.pendingLock = null;
+    if (success) {
+      this.applyUnlock(enc.pos, "picked");
+      // Clear ONLY on success — keep the lock pending on failure so
+      // the LockDialogOverlay can fire another `attemptPickLock` /
+      // `attemptKnock` for the same door without the player having
+      // to walk away and re-bump the cell. The kernel still
+      // consumed the lockpick above, so a retry has the same cost
+      // as the first attempt. `dismissLock` clears `pendingLock`
+      // when the player closes the dialog without success.
+      this.pendingLock = null;
+    } else {
+      // Refresh the pending encounter's `lockpickCharges` mirror so
+      // a subsequent rebuild (e.g. a `lock_encountered` re-emit on
+      // re-bump) sees the depleted stash — the encounter object is
+      // a snapshot, not a live view.
+      this.pendingLock = {
+        ...enc,
+        lockpickCharges: Math.max(0, enc.lockpickCharges - 1),
+      };
+    }
     this.emit({ kind: "log", message });
     this.emit({ kind: "state" });
     return { kind: "pick", success, roll, mod, total, dc: PICK_LOCK_DC, message };
@@ -1986,8 +2004,19 @@ export class MapSimulation {
     const message = success
       ? `${enc.knockCaster.name} casts Knock — the lock snaps open! (d20:${roll}${sign}${mod}=${total} vs DC ${dc})`
       : `${enc.knockCaster.name} casts Knock and the spell fizzles. (d20:${roll}${sign}${mod}=${total} vs DC ${dc}) — ${cost} MP gone.`;
-    if (success) this.applyUnlock(enc.pos, "knocked");
-    this.pendingLock = null;
+    if (success) {
+      this.applyUnlock(enc.pos, "knocked");
+      // Symmetric to attemptPickLock — only clear pendingLock on
+      // success so the dialog can keep firing retry attempts. MP
+      // was already deducted above, so a retry pays the same cost
+      // (and the row gates re-evaluate against the new mp value
+      // on the next click; out-of-MP collapses the row).
+      this.pendingLock = null;
+    }
+    // On failure the pendingLock stays as-is — its `knockCaster.mp`
+    // mirror was mutated in place above when we decremented the
+    // catalog character's `mp`, so the next click sees the depleted
+    // value through the same reference.
     this.emit({ kind: "log", message });
     this.emit({ kind: "state" });
     return { kind: "knock", success, roll, mod, total, dc, message };
