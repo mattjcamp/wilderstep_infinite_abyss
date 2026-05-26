@@ -173,4 +173,92 @@ describe("Combat — bump-attack preserves postAttackMove", () => {
     expect(result.kind).toBe("attacked");
     expect(combat.movePoints).toBe(0);
   });
+
+  it("blocks a second bump-attack the same turn (no infinite Nimble chain)", () => {
+    // Regression for the "Nimble can attack indefinitely" bug.
+    // Park TWO goblins flanking the elf so the post-attack movement
+    // bonus could, in principle, carry the elf into a second swing:
+    //
+    //   . G1 .       elf at (4,4)
+    //   .  E . G2    G1 west-of-elf at (3,4), G2 east-of-elf at (5,4)
+    //
+    // Pre-fix: tryMove("e") attacks G2, refills movePoints to 2,
+    // then tryMove("w") would attack G1, refill to 2 again — etc.
+    // Post-fix: the second bump is blocked, but the elf still has
+    // their `postAttackMove` budget to disengage onto empty tiles.
+    const elf = makeCombatant({
+      id: "elf",
+      name: "Elf",
+      side: "party",
+      baseMoveRange: 4,
+      extraMoveRange: 3,
+      postAttackMove: 2,
+      dexMod: 5,
+      attackBonus: 20,
+      damage: { dice: 1, sides: 1, bonus: 0 },
+    });
+    const g1 = makeCombatant({
+      id: "g1",
+      name: "Goblin 1",
+      side: "enemies",
+      hp: 50,
+      maxHp: 50,
+      ac: 0,
+      dexMod: 0,
+    });
+    const g2 = makeCombatant({
+      id: "g2",
+      name: "Goblin 2",
+      side: "enemies",
+      hp: 50,
+      maxHp: 50,
+      ac: 0,
+      dexMod: 0,
+    });
+    const combat = new Combat([elf], [g1, g2], mulberry32(1));
+    elf.position = { col: 4, row: 4 };
+    g1.position = { col: 3, row: 4 };
+    g2.position = { col: 5, row: 4 };
+
+    // First swing — east into G2.
+    const first = combat.tryMove("e");
+    expect(first.kind).toBe("attacked");
+    expect(combat.movePoints).toBe(2);
+
+    // Second swing attempt — west into G1. Must be blocked with the
+    // new "already-attacked" reason, NOT resolve as another attack.
+    const second = combat.tryMove("w");
+    expect(second.kind).toBe("blocked");
+    if (second.kind === "blocked") {
+      expect(second.reason).toBe("already-attacked");
+    }
+    // Movement budget is untouched by the blocked attempt — the elf
+    // can still spend it on empty tiles to disengage.
+    expect(combat.movePoints).toBe(2);
+
+    // Step north onto an empty tile to prove disengagement still works.
+    const retreat = combat.tryMove("n");
+    expect(retreat.kind).toBe("moved");
+    expect(combat.movePoints).toBe(1);
+  });
+
+  it("reopens the bump-attack gate on the next turn", () => {
+    // Sanity: the per-turn lock resets so the elf can attack again
+    // after their turn ends and comes back around.
+    const { combat } = fightFixture();
+    expect(combat.current.id).toBe("elf");
+    combat.tryMove("e"); // first swing — locks the gate
+    const blocked = combat.tryMove("e"); // goblin still adjacent? no — it took 1 dmg but still parked at (5,4)
+    // The goblin survived (HP 50), so it's still at (5,4). A second
+    // east step should now report "already-attacked" rather than
+    // resolving another bump.
+    expect(blocked.kind).toBe("blocked");
+
+    // Hand the turn to the goblin and back to the elf — gate reopens.
+    combat.endTurn(); // goblin's turn
+    combat.endTurn(); // back to elf
+    expect(combat.current.id).toBe("elf");
+    const second = combat.tryMove("e");
+    expect(second.kind).toBe("attacked");
+  });
 });

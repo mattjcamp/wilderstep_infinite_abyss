@@ -1568,7 +1568,17 @@ export function PlayHost() {
       // steps targeting this map (not just accepted-but-unfinished
       // ones) so a future accept doesn't blink an invisible item.
       // Item icons are small PNGs; the over-preload cost is minimal.
-      for (const def of questDefsRef.current) {
+      //
+      // Parse the quest defs FRESH from catalog.quests rather than
+      // relying on `questDefsRef.current`: the ref is only populated
+      // later in create() by mountSim(), so on the very first scene
+      // mount of a session (or a hard reload mid-dungeon) the ref is
+      // still its initial empty array and every retrieve step gets
+      // silently skipped — which is the bug that made authored
+      // quest items vanish on level 4. parseQuestsFile is idempotent
+      // and inexpensive enough to run twice per scene mount.
+      const questDefsForPreload = parseQuestsFile({ quests: catalog.quests });
+      for (const def of questDefsForPreload) {
         for (const step of def.steps) {
           if (step.kind !== "retrieve") continue;
           if (step.mapId !== catalog.map.id) continue;
@@ -1888,11 +1898,27 @@ export function PlayHost() {
           // (the authored value wins; the retrieve step will appear
           // unplaceable in that corner case, but the editor can warn
           // about that later).
+          //
+          // Parse the quest defs FRESH from catalog.quests instead of
+          // reading `questDefsRef.current` — the ref isn't populated
+          // until mountSim() runs later in this same create() pass,
+          // so on the first scene mount of a session (or a hard
+          // reload mid-dungeon) the ref's initial empty array
+          // silently skipped every retrieve step. That left authored
+          // quest items (e.g. the Dragon Heart Relic on Auric Ruins
+          // L4) missing from their target cell. We also stamp the
+          // ref here so any handler that fires between now and
+          // mountSim() — including refreshRetrievePlacements — sees
+          // the live defs.
           {
             const acceptedSet = new Set(save.acceptedQuests ?? []);
             const turnedInSet = new Set(save.turnedInQuests ?? []);
             const progress = save.questStepProgress ?? {};
-            for (const def of questDefsRef.current) {
+            const questDefsForPlacement = parseQuestsFile({
+              quests: catalog.quests,
+            });
+            questDefsRef.current = questDefsForPlacement;
+            for (const def of questDefsForPlacement) {
               if (!acceptedSet.has(def.id)) continue;
               if (turnedInSet.has(def.id)) continue;
               const completedIdx = progress[def.id] ?? 0;
@@ -4722,8 +4748,13 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
     customCharacters.push(m.custom as unknown as SimCharacter);
   }
   const characters = [...moduleCharacters, ...customCharacters];
-  // Apply the saved HP/MP onto each catalog character so a player
-  // mid-adventure returns at the right health. inventory + effects
+  // Apply the saved HP/MP/level onto each catalog character so a
+  // player mid-adventure returns at the right health AND at the
+  // right level. Level matters for the lock-dialog's Knock-spell
+  // eligibility check (`m.level < spell.min_level`) — without this
+  // sync a wizard who level-ups from L1 to L2+ in play would still
+  // look L1 to `findKnockCaster` and the Cast Knock row would say
+  // "no eligible caster" even with full MP. inventory + effects
   // tracked separately on SavedCharacterState — kernel doesn't yet
   // consume per-character runtime inventory, so we leave it on the
   // save for the future inventory UI.
@@ -4732,6 +4763,7 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
     if (!c) continue;
     c.hp = m.hp;
     c.mp = m.mp;
+    if (typeof m.level === "number") c.level = m.level;
   }
 
   const racesDoc = (mergeModel(

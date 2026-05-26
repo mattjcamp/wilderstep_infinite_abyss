@@ -1,14 +1,14 @@
 
 # Polish
 
-- When a character with the Nimble ability moves after an attack, he is able to keep attacking indefinetely. He should not be able to attack and merely be able to use any remaining steps to move away from danger.
-
 # V3 Ideas
 
 - More Robust Trap System
 - New Puzzle system (presure plates that open doors, etc)
 - Key system (certain keys open certain doors)
 - Add place description placard to linked tiles as optional. It would worked by selecting showLinkPlacard option. Then when the party is over that tile they will get the placard with the linked map description and an indication whether they have explored that area yet
+
+# Technical Debt
 
 ## Large Data Storage Issues
 

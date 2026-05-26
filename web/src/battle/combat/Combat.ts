@@ -149,7 +149,19 @@ export function isAiControlled(c: Combatant): boolean {
 export type MoveResult =
   | { kind: "moved"; from: GridPos; to: GridPos; pointsLeft: number }
   | { kind: "attacked"; result: AttackResult }
-  | { kind: "blocked"; reason: "wall" | "ally" | "no-points" | "out-of-turn" };
+  | {
+      kind: "blocked";
+      reason:
+        | "wall"
+        | "ally"
+        | "no-points"
+        | "out-of-turn"
+        /** Tried to bump-attack a second enemy in the same turn. Nimble
+         *  / Shadow Step / Dragon hit-and-run keep movement alive after
+         *  a swing so the actor can retreat — but only one attack per
+         *  turn. Remaining moves are still spendable on empty tiles. */
+        | "already-attacked";
+    };
 
 /** Events the round-end consume tick produces. The scene drains
  *  these via `popConsumeEvents()` after each `endTurn()` so it can
@@ -174,6 +186,17 @@ export class Combat {
   private cursor = 0;
   /** Tiles the current actor has left to spend this turn. */
   movePoints = 0;
+  /**
+   * True once the current actor has resolved a bump-attack this turn.
+   * Gates further bump-attacks so abilities that preserve movement
+   * after a swing (Elf Nimble's `postAttackMove`, Dragon hit-and-run,
+   * Thief Shadow Step) can't be chained into attack → step → attack
+   * → step indefinitely. Remaining `movePoints` are still spendable
+   * on empty tiles — the design intent of those abilities is "swing
+   * and retreat," not "swing and keep swinging." Reset by
+   * `refillMovePoints` on every turn refill.
+   */
+  private attackedThisTurn = false;
   readonly log: string[] = [];
   /**
    * Numerical buffs / debuffs keyed by combatant id. Mirrors the
@@ -546,6 +569,14 @@ export class Combat {
       if (occupant.side === actor.side) {
         return { kind: "blocked", reason: "ally" };
       }
+      // Already swung this turn — block any further bump-attacks.
+      // Abilities that preserve movement after a swing (Nimble,
+      // Shadow Step, Dragon hit-and-run) are intended for retreat,
+      // not for chaining attacks. The actor can still spend their
+      // remaining movement on empty tiles to disengage.
+      if (this.attackedThisTurn) {
+        return { kind: "blocked", reason: "already-attacked" };
+      }
       // Enemy in the way → bump attack. Normally this zeros the
       // remaining moves so the turn ends after the swing. Two
       // overrides, in priority order:
@@ -569,6 +600,10 @@ export class Combat {
       // When neither applies the default zero-out runs, matching
       // the legacy "attack ends the turn" rule.
       const result = this.attack(occupant.id);
+      // Lock the per-turn attack gate BEFORE the override branches —
+      // every bump-attack path (Shadow Step, postAttackMove, default
+      // zero-out) consumes the actor's one swing for the turn.
+      this.attackedThisTurn = true;
       if (canShadowStep(actor) && !this.isOver) {
         // Mutate the result so the scene's player-step handler can
         // start the "shadow step active" pulse on the thief's body
@@ -1265,5 +1300,8 @@ export class Combat {
     const racial = this.current.extraMoveRange ?? 0;
     const bonus = sumBuff(this.buffs.get(this.current.id), "range_bonus");
     this.movePoints = this.current.baseMoveRange + racial + bonus;
+    // Fresh turn — the actor hasn't swung yet, so the bump-attack
+    // gate reopens. Paired with the lock in `tryMove`'s bump branch.
+    this.attackedThisTurn = false;
   }
 }

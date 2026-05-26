@@ -254,6 +254,124 @@ describe("MapSimulation.stepInDirection — locked tiles", () => {
     expect(events.find((e) => e.kind === "lock_encountered")).toBeDefined();
     expect(events.find((e) => e.kind === "moved")).toBeUndefined();
   });
+
+  it("Knock-row caster eligibility reads the level off the SimCharacter the sim was handed", () => {
+    // Regression for the "Cast Knock says 'no eligible caster' even
+    // with a L2+ wizard" bug. The kernel's `findKnockCaster` checks
+    // `m.level < spell.min_level` against the SimCharacter in
+    // `activeMembers`, which is built directly from
+    // `catalog.characters` at construction. The play-side loader is
+    // responsible for syncing the save's live level onto those
+    // catalog records (alongside hp/mp) before constructing the
+    // sim — without that sync a wizard who levelled up from L1 to
+    // L2+ in play still looks L1 to the kernel and the dialog gates
+    // them out.
+    //
+    // This test pins the kernel-side contract: when handed a
+    // wizard SimCharacter at level 2, a knock spell at min_level 2,
+    // and a wizard class with `casting_type: ["sorcerer"]`, the
+    // emitted lock_encountered event MUST surface that wizard as
+    // `knockCaster`. The companion check below confirms a level-1
+    // wizard is correctly rejected, so the gate itself still works —
+    // the regression we're guarding against is the level field
+    // being stale, not the gate being too lenient.
+    const grid = makeGrid();
+    grid[0][1] = cell({ walkable: false, locked: true });
+    const wizard = {
+      id: "elminster",
+      name: "Elminster",
+      class: "wizard",
+      race: "human",
+      level: 2,
+      hp: 6,
+      mp: 20,
+      sprite: "person/wizard.png",
+      intelligence: 18,
+    };
+    const wizardClass = {
+      id: "wizard",
+      name: "Wizard",
+      casting_type: ["sorcerer"],
+    };
+    const knockSpell = {
+      id: "knock",
+      name: "Knock",
+      casting_type: "sorcerer",
+      min_level: 2,
+      mp_cost: 6,
+      action: "knock",
+    };
+    const sim = new MapSimulation({
+      grid,
+      party: { ...makeParty(), roster: ["elminster"] },
+      catalog: {
+        characters: [wizard],
+        races: [],
+        effects: [],
+        characterClasses: [wizardClass],
+        knockSpell,
+      },
+      classNameById: new Map([["wizard", "Wizard"]]),
+      bridge: fakeBridge(),
+    });
+    const events = captureEvents(sim);
+    sim.stepInDirection("right");
+    const lock = events.find((e) => e.kind === "lock_encountered");
+    if (lock?.kind !== "lock_encountered") throw new Error("type narrow");
+    expect(lock.options.knockCaster?.id).toBe("elminster");
+    expect(lock.options.knockMpCost).toBe(6);
+  });
+
+  it("Knock row stays gated when the SimCharacter is still below min_level", () => {
+    // Companion to the regression above — proves the level check
+    // is still doing its job. Same fixture, but the wizard is L1;
+    // findKnockCaster should reject and the dialog should show the
+    // "no eligible caster" copy.
+    const grid = makeGrid();
+    grid[0][1] = cell({ walkable: false, locked: true });
+    const wizard = {
+      id: "elminster",
+      name: "Elminster",
+      class: "wizard",
+      race: "human",
+      level: 1, // below min_level
+      hp: 6,
+      mp: 20,
+      sprite: "person/wizard.png",
+      intelligence: 18,
+    };
+    const wizardClass = {
+      id: "wizard",
+      name: "Wizard",
+      casting_type: ["sorcerer"],
+    };
+    const knockSpell = {
+      id: "knock",
+      name: "Knock",
+      casting_type: "sorcerer",
+      min_level: 2,
+      mp_cost: 6,
+      action: "knock",
+    };
+    const sim = new MapSimulation({
+      grid,
+      party: { ...makeParty(), roster: ["elminster"] },
+      catalog: {
+        characters: [wizard],
+        races: [],
+        effects: [],
+        characterClasses: [wizardClass],
+        knockSpell,
+      },
+      classNameById: new Map([["wizard", "Wizard"]]),
+      bridge: fakeBridge(),
+    });
+    const events = captureEvents(sim);
+    sim.stepInDirection("right");
+    const lock = events.find((e) => e.kind === "lock_encountered");
+    if (lock?.kind !== "lock_encountered") throw new Error("type narrow");
+    expect(lock.options.knockCaster).toBeNull();
+  });
 });
 
 describe("MapSimulation.stepInDirection — boat handling", () => {
