@@ -488,6 +488,11 @@ interface PlayItem {
    *  (or sold) at the corresponding side of a counter. */
   buy?: number | null;
   sell?: number | null;
+  /** Catalog peak durability for non-stackable wear. Read by the
+   *  counter shop overlay's durability-scaled sell pricing — a
+   *  half-worn weapon nets half its base sell. Absent for items
+   *  that don't wear (consumables, quest tokens). */
+  durability?: number;
   /** True when the item is consumable from the party stash (Torch,
    *  Camping Supplies, Antidote, etc). Surfaces the Use button in
    *  the Party screen's stash list. */
@@ -4607,15 +4612,53 @@ export function PlayHost() {
           setCounterShopId(null);
           return null;
         }
-        // Catalog HP/MP per character id — saved member state
-        // carries the live values but no peak, so the temple
-        // services (Heal All HP, Restore All MP, Raise Dead) read
-        // these maps to know where to clamp.
+        // Peak HP/MP per character id — temple services (Heal All
+        // HP, Restore All MP, Raise Dead) compare against these to
+        // know whether each member has work to be done AND where to
+        // clamp on apply. Source of truth is `save.party.members[].
+        // max_hp / max_mp`: the load effect backfills those from
+        // the catalog at first sight (line ~1273) and combat's
+        // post-fight `applyMemberDeltas` keeps them current through
+        // level-up bumps. The catalog characters themselves are NOT
+        // a usable source — `loadCatalog` overwrites their `hp` /
+        // `mp` fields with the SAVE'S LIVE values for the sim's
+        // benefit, so reading `c.hp` here would (and did) yield the
+        // current wounded value masquerading as a peak, collapsing
+        // every `m.mp < max` check to `5 < 5` = false and greying
+        // out Restore-All-MP even when the wizard clearly needed
+        // restoration. Only fall back to the catalog (likely also
+        // live by then) when the save predates the max_hp/max_mp
+        // fields entirely.
         const maxHpById = new Map<string, number>();
         const maxMpById = new Map<string, number>();
-        for (const c of state.catalog.characters) {
-          if (typeof c.hp === "number") maxHpById.set(c.id, c.hp);
-          if (typeof c.mp === "number") maxMpById.set(c.id, c.mp);
+        const memberNameById = new Map<string, string>();
+        const catalogById = new Map(
+          state.catalog.characters.map((c) => [c.id, c] as const),
+        );
+        for (const m of (saveRef.current ?? state.save).party.members) {
+          const fallback = catalogById.get(m.id);
+          const peakHp =
+            typeof m.max_hp === "number"
+              ? m.max_hp
+              : typeof fallback?.hp === "number"
+                ? fallback.hp
+                : undefined;
+          const peakMp =
+            typeof m.max_mp === "number"
+              ? m.max_mp
+              : typeof fallback?.mp === "number"
+                ? fallback.mp
+                : undefined;
+          if (typeof peakHp === "number") maxHpById.set(m.id, peakHp);
+          if (typeof peakMp === "number") maxMpById.set(m.id, peakMp);
+          // Display name for the temple counter's party panel.
+          // Source of truth is the catalog character (`characters
+          // .json`); custom characters carry their name on `m.custom`.
+          const customName = (m.custom as { name?: string } | null)?.name;
+          const name = customName ?? fallback?.name;
+          if (typeof name === "string" && name.length > 0) {
+            memberNameById.set(m.id, name);
+          }
         }
         return (
           <PlayCounterShopOverlay
@@ -4624,6 +4667,7 @@ export function PlayHost() {
             items={state.catalog.items}
             maxHpById={maxHpById}
             maxMpById={maxMpById}
+            memberNameById={memberNameById}
             onMutateSave={(next) => {
               saveRef.current = next;
               saveWorld(next);

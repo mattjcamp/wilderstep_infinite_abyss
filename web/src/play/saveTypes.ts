@@ -329,4 +329,24 @@ export interface WorldSave {
    *  unfortunately let them re-claim once — acceptable migration
    *  cost given how new the feature is). */
   turnedInQuests?: ReadonlyArray<string>;
+  /** Per-counter live stock, keyed by counter id.
+   *
+   *  Counters now own a persistent inventory: items bought disappear
+   *  from the row, items sold land in the counter and stick around
+   *  (with their current per-instance durability) so the player can
+   *  re-buy a worn-in dagger as the same worn-in dagger. The catalog
+   *  `counter.items` field is only the SEED — the first time a
+   *  counter is opened on a save without an entry here, the seed is
+   *  expanded into one row per id and stamped into this record. From
+   *  then on, every buy/sell mutates the saved array; no restocking,
+   *  no per-session reset.
+   *
+   *  Absent in legacy saves; treated as "use the catalog seed". A
+   *  counter with an explicit empty array `[]` is meaningfully
+   *  different — "the player cleared it out" — and stays empty until
+   *  the player sells something back. */
+  counters?: Record<
+    string,
+    ReadonlyArray<{ item: string; charges?: number; durability?: number }>
+  >;
 }

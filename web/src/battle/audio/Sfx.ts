@@ -296,6 +296,31 @@ function genRestComplete(ac: AudioContext, out: AudioNode, t0: number): void {
   tone(ac, out, noteHz("G6"), t0 + 0.62, 0.45, 0.08, "triangle", 0.01, 0.30);
 }
 
+function genBuy(ac: AudioContext, out: AudioNode, t0: number): void {
+  // Counter "buy" cue. Reads as "item set on the counter":
+  //   1. A low, short triangle thump (~F3) suggesting weight landing
+  //      on wood — anchors the action with body, not melody.
+  //   2. A single mid-bright square chime on top (~B4) acknowledging
+  //      the transaction without sounding like victory or healing.
+  // Kept under ~0.20s total so the player can buy multiple items in
+  // quick succession without notes piling up. Voices intentionally
+  // different from the sell cue so a player rebuying after a sell
+  // hears the direction change.
+  tone(ac, out, noteHz("F3"), t0,        0.08, 0.22, "triangle", 0.002, 0.06);
+  tone(ac, out, noteHz("B4"), t0 + 0.04, 0.10, 0.18, "square",   0.003, 0.07);
+}
+
+function genSell(ac: AudioContext, out: AudioNode, t0: number): void {
+  // Counter "sell" cue. Twin high pings spaced just enough to read
+  // as two coins dropping into the till — bright, fast, distinct
+  // from the buy cue's woodier thump. Triangle voice keeps the
+  // tone clean so it doesn't blend with combat hit SFX. Total
+  // length stays under 0.20s so rapid-fire sells don't overlap
+  // themselves into a buzz.
+  tone(ac, out, noteHz("C6"), t0,        0.06, 0.18, "triangle", 0.001, 0.04);
+  tone(ac, out, noteHz("E6"), t0 + 0.06, 0.07, 0.18, "triangle", 0.001, 0.05);
+}
+
 function genLevelUp(ac: AudioContext, out: AudioNode, t0: number): void {
   // Bright triumphant arpeggio with a sparkle tail.
   const seq = ["C5", "E5", "G5", "C6"];
@@ -338,6 +363,12 @@ const GENERATORS: Record<string, Generator> = {
   level_up:           genLevelUp,
   // Item-driven
   rest_complete:      genRestComplete,
+  // Town / shop transactions — heard from the counter shop overlay
+  // on a successful buy or sell. Distinct from one another so the
+  // player can hear which direction the transaction went without
+  // looking at the gold readout.
+  buy:                genBuy,
+  sell:               genSell,
 };
 
 /** Names of all SFX known to the catalog — handy for tests. */
