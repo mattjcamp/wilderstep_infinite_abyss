@@ -4727,7 +4727,7 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
   // (renamed tiles, new soundtrack overrides, fresh paint) show up
   // in play without forcing a publish step. Mirrors the
   // draft-overlay pattern used by MapEditor itself.
-  const mapsDraft = loadDraft<Record<string, unknown>>(moduleId, "maps");
+  const mapsDraft = await loadDraft<Record<string, unknown>>(moduleId, "maps");
   const mapsOwn = mapsDraft ?? mapsLayers.ownFile;
   const mapsDoc = (mergeModel(
     "maps",
@@ -4877,7 +4877,7 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
   // Same draft-overlay treatment for dungeons so an unpublished
   // soundtrack / level edit shows up in play. DungeonsBrowse writes
   // drafts under the same model key.
-  const dungeonsDraft = loadDraft<Record<string, unknown>>(
+  const dungeonsDraft = await loadDraft<Record<string, unknown>>(
     moduleId,
     "dungeons",
   );

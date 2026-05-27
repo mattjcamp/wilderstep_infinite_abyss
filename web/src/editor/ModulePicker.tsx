@@ -100,8 +100,8 @@ export function ModulePicker() {
     refresh();
   }, [refresh]);
 
-  const onExportIndex = () => {
-    const draft = loadIndexDraft<unknown>();
+  const onExportIndex = async () => {
+    const draft = await loadIndexDraft<unknown>();
     if (!draft) return;
     downloadJson("index.json", draft);
   };
@@ -130,7 +130,7 @@ export function ModulePicker() {
     const knownModelKeys = new Set<string>(ALL_MODEL_KEYS);
 
     for (const { moduleId, modelKey } of listDraftKeys()) {
-      const content = loadDraft<unknown>(moduleId, modelKey);
+      const content = await loadDraft<unknown>(moduleId, modelKey);
       if (content === null || content === undefined) continue;
       if (modelKey === MANIFEST_KEY) {
         items.push({ kind: "manifest", moduleId, content });
@@ -146,7 +146,7 @@ export function ModulePicker() {
       }
     }
 
-    const indexDraft = loadIndexDraft<{ modules?: { id: string }[] }>();
+    const indexDraft = await loadIndexDraft<{ modules?: { id: string }[] }>();
     if (indexDraft !== null) {
       items.push({ kind: "index", content: indexDraft });
     }
@@ -272,7 +272,7 @@ export function ModulePicker() {
     refresh();
   };
 
-  const onDeleteModule = (m: ModuleSummary) => {
+  const onDeleteModule = async (m: ModuleSummary) => {
     if (typeof window === "undefined") return;
     const ok = window.confirm(
       `Delete module "${m.id}"?\n\n` +
@@ -286,7 +286,7 @@ export function ModulePicker() {
     // Build the next index from whatever's current (draft if present,
     // else the on-disk index reconstructed from the current summary list).
     const currentIndex =
-      loadIndexDraft<IndexFile>() ?? {
+      (await loadIndexDraft<IndexFile>()) ?? {
         modules: state.kind === "ok"
           ? state.modules.map((s) => ({
               id: s.id,
@@ -298,7 +298,7 @@ export function ModulePicker() {
     const nextEntries = (currentIndex.modules ?? []).filter(
       (e) => e.id !== m.id,
     );
-    saveIndexDraft({
+    await saveIndexDraft({
       _comment:
         currentIndex._comment ??
         "Modules index — managed by the editor in draft form; export and drop into web/public/modules/index.json to commit.",
@@ -319,7 +319,7 @@ export function ModulePicker() {
     // Existing draft takes priority over the on-disk manifest; the
     // draft IS the source of truth once one exists. Falls back to the
     // deployed file so untouched fields aren't lost on first edit.
-    let current: Record<string, unknown> | null = loadDraft<
+    let current: Record<string, unknown> | null = await loadDraft<
       Record<string, unknown>
     >(m.id, MANIFEST_KEY);
     if (!current) {
@@ -356,7 +356,7 @@ export function ModulePicker() {
     } else {
       delete next.soundtrack;
     }
-    saveDraft(m.id, MANIFEST_KEY, next);
+    await saveDraft(m.id, MANIFEST_KEY, next);
     setEditingModule(null);
     refresh();
   };

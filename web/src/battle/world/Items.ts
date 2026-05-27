@@ -249,14 +249,19 @@ export function slotsForItem(
 /**
  * "Stack size" for a stackable item — how many uses one purchase /
  * drop / loot pickup adds to the inventory entry's `charges` count.
+ *
+ * Reads only `item.charges` so callers can pass slimmer item-shape
+ * records (the play-side shop overlay's `ShopItemRef`, etc.) without
+ * dragging the full {@link Item} type across module boundaries.
  */
-export function stackSizeOf(item: Item): number {
+export function stackSizeOf(item: { charges?: number }): number {
   if (typeof item.charges === "number" && item.charges > 0) return item.charges;
   return 1;
 }
 
-/** True for items the inventory should consolidate. */
-export function isStackable(item: Item): boolean {
+/** True for items the inventory should consolidate. Slim parameter
+ *  shape — see {@link stackSizeOf}. */
+export function isStackable(item: { stackable?: boolean }): boolean {
   return !!item.stackable;
 }
 

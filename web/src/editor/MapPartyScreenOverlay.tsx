@@ -55,13 +55,16 @@ export function MapPartyScreenOverlay({
   /** Reorder handler — drag-and-drop on the roster writes the new
    *  order into the party draft (localStorage) so the Party editor +
    *  any later sim session see the change. Local state updates in
-   *  place to keep the overlay responsive. */
+   *  place to keep the overlay responsive.
+   *
+   *  `saveDraft` is async (gzip); fire-and-forget per the same
+   *  rationale documented in PartyBrowse.onReorderRoster. */
   const onReorderRoster = useCallback(
     (newOrder: string[]) => {
       setState((prev) => {
         if (prev.kind !== "ok") return prev;
         const nextParty: PartyRecord = { ...prev.party, roster: newOrder };
-        saveDraft(
+        void saveDraft(
           moduleId,
           "party",
           nextParty as unknown as Record<string, unknown>,
@@ -98,7 +101,7 @@ export function MapPartyScreenOverlay({
 
         // Honor any pending party draft so reorders done in the Party
         // editor (or earlier in this sim session) are reflected here.
-        const partyDraft = loadDraft<Record<string, unknown>>(
+        const partyDraft = await loadDraft<Record<string, unknown>>(
           moduleId,
           "party",
         );

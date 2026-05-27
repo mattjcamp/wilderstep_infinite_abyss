@@ -98,7 +98,7 @@ export function CharactersBrowse({ moduleId }: { moduleId: string }) {
         src.loadModelLayers(moduleId, "items"),
         src.loadModelLayers(moduleId, "spells"),
       ]);
-      const draft = loadDraft<Record<string, unknown>>(moduleId, MODEL_KEY);
+      const draft = await loadDraft<Record<string, unknown>>(moduleId, MODEL_KEY);
       const ownEffective =
         draft ??
         (charactersLayers.ownFile as Record<string, unknown> | null);
@@ -170,13 +170,18 @@ export function CharactersBrowse({ moduleId }: { moduleId: string }) {
   }, [moduleId]);
 
   // ── Mutators ───────────────────────────────────────────────────
+  // `saveDraft` is async (gzip compression runs on every write —
+  // see data_model/draft.ts). UI handlers call `persist` fire-and-
+  // forget; the React state update runs synchronously before the
+  // localStorage flush completes, which is fine because reads come
+  // from in-memory `state`, not from localStorage.
   const persist = (updated: CharacterRecord[]) => {
     if (state.kind !== "ok") return;
     const baseFile: Record<string, unknown> = state.ownFile
       ? { ...state.ownFile }
       : { characters: [] };
     baseFile.characters = updated;
-    saveDraft(moduleId, MODEL_KEY, baseFile);
+    void saveDraft(moduleId, MODEL_KEY, baseFile);
     setState({
       ...state,
       characters: updated,

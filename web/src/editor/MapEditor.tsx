@@ -877,7 +877,7 @@ export function MapEditor({
         const npcs = npcsMerged?.npcs ?? [];
 
         // Resolve maps with draft applied so a half-painted map survives reloads.
-        const draft = loadDraft<Record<string, unknown>>(moduleId, MODEL_KEY);
+        const draft = await loadDraft<Record<string, unknown>>(moduleId, MODEL_KEY);
         const ownEffective =
           draft ?? (mapsLayers.ownFile as Record<string, unknown> | null);
         const mapsMerged = mergeModel(
@@ -1092,6 +1092,14 @@ export function MapEditor({
   // ── Persist grid edits into the draft ────────────────────────────
   // Defined as a callback that captures `state` via a ref so the scene
   // always invokes the latest version (state.ownFile changes after each save).
+  //
+  // `saveDraft` is async (gzip compression — see data_model/draft.ts),
+  // so the closure itself returns a promise. The brush-stroke caller
+  // doesn't await it; React state is updated synchronously up front so
+  // the stroke is visible regardless of how long the localStorage
+  // flush takes, and the quota-error warning toggle moves into the
+  // promise's `.catch`. The synchronous `setState` is the UI source
+  // of truth — the persist is purely for navigation survival.
   useEffect(() => {
     persistRef.current = () => {
       if (state.kind !== "ok") return;
@@ -1111,33 +1119,36 @@ export function MapEditor({
       if (idx >= 0) list[idx] = updatedMap;
       else list.push(updatedMap);
       baseFile.maps = list;
-      // Best-effort write to localStorage. Paint fires this on every
-      // brush stroke, so we explicitly do NOT fall back to publishing
-      // straight to disk here — that would issue an HTTP POST per
-      // stroke for what may be a multi-megabyte file. Instead, catch
-      // the quota error, set the warning flag so the toolbar prompts
-      // the user to Publish, and still update React state so the
-      // brush stroke is visible. Edits made while the quota is full
-      // live in memory only until the user clicks Publish.
-      try {
-        saveDraft(moduleId, MODEL_KEY, baseFile);
-        if (draftQuotaExceeded) setDraftQuotaExceeded(false);
-      } catch (e) {
-        if (!draftQuotaExceeded) {
-          // eslint-disable-next-line no-console
-          console.warn(
-            "Map draft exceeded browser storage quota — edits will live in memory only until you Publish.",
-            e,
-          );
-          setDraftQuotaExceeded(true);
-        }
-      }
+      // Synchronous UI update first — paint visibility shouldn't
+      // depend on the storage flush completing.
       setState({
         ...state,
         mapRecord: updatedMap,
         ownFile: baseFile,
         isDraft: true,
       });
+      // Best-effort write to localStorage. Paint fires this on every
+      // brush stroke, so we explicitly do NOT fall back to publishing
+      // straight to disk here — that would issue an HTTP POST per
+      // stroke for what may be a multi-megabyte file. Instead, catch
+      // the quota error (now via promise rejection), set the warning
+      // flag so the toolbar prompts the user to Publish, and let the
+      // in-memory state above carry the stroke until Publish lands.
+      saveDraft(moduleId, MODEL_KEY, baseFile).then(
+        () => {
+          if (draftQuotaExceeded) setDraftQuotaExceeded(false);
+        },
+        (e) => {
+          if (!draftQuotaExceeded) {
+            // eslint-disable-next-line no-console
+            console.warn(
+              "Map draft exceeded browser storage quota — edits will live in memory only until you Publish.",
+              e,
+            );
+            setDraftQuotaExceeded(true);
+          }
+        },
+      );
     };
   }, [state, moduleId, mapId, draftQuotaExceeded]);
 
@@ -3190,7 +3201,7 @@ export function MapEditor({
     baseFile: Record<string, unknown>,
   ): Promise<{ publishedDirectly: boolean }> => {
     try {
-      saveDraft(moduleId, MODEL_KEY, baseFile);
+      await saveDraft(moduleId, MODEL_KEY, baseFile);
       return { publishedDirectly: false };
     } catch (storageErr) {
       if (publishAvailable !== true) {

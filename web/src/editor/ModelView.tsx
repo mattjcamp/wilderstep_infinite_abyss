@@ -117,16 +117,20 @@ export function ModelView({
   const [creating, setCreating] = useState(false);
   const [publishing, setPublishing] = useState(false);
 
-  // Load layers + library catalog in parallel.
+  // Load layers + library catalog in parallel. `loadDraft` is async
+  // (gzip), so the whole load runs inside an async IIFE rather than
+  // the previous `.then` chain — keeps the await for the draft on
+  // the same code path as the layers + catalog fetches.
   useEffect(() => {
     let cancelled = false;
     const src = new StaticModuleSource();
     setState({ kind: "loading" });
-    Promise.all([
-      src.loadModelLayers(moduleId, modelKey),
-      src.listLibraryRecords(moduleId, modelKey),
-    ])
-      .then(([rawLayers, catalog]) => {
+    (async () => {
+      try {
+        const [rawLayers, catalog] = await Promise.all([
+          src.loadModelLayers(moduleId, modelKey),
+          src.listLibraryRecords(moduleId, modelKey),
+        ]);
         if (cancelled) return;
         const layers: Layers = {
           inherited: (rawLayers.inherited as Record_ | null) ?? null,
@@ -134,21 +138,22 @@ export function ModelView({
           parentId: rawLayers.parentId,
           usedLibraryIds: rawLayers.usedLibraryIds ?? [],
         };
-        const draft = loadDraft<Record_ | null>(moduleId, modelKey);
+        const draft = await loadDraft<Record_ | null>(moduleId, modelKey);
+        if (cancelled) return;
         setState({
           kind: "ok",
           layers,
           ownDraft: draft ?? null,
           catalog,
         });
-      })
-      .catch((e: unknown) => {
+      } catch (e: unknown) {
         if (cancelled) return;
         setState({
           kind: "error",
           message: e instanceof Error ? e.message : String(e),
         });
-      });
+      }
+    })();
     return () => {
       cancelled = true;
     };
@@ -242,8 +247,12 @@ export function ModelView({
   }, [state, def.collectionKey]);
 
   // ── mutators (all go through saveOwn so localStorage stays in sync) ─
+  // `saveDraft` is async (gzip compression — see data_model/draft.ts).
+  // We fire it off without awaiting because the UI's source of truth
+  // is the in-memory `state` we update synchronously below; the
+  // localStorage flush is just for navigation survival.
   const saveOwn = (next: Record_ | null) => {
-    saveDraft(moduleId, modelKey, next);
+    void saveDraft(moduleId, modelKey, next);
     setState((s) =>
       s.kind === "ok" ? { ...s, ownDraft: next } : s,
     );

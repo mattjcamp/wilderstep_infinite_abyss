@@ -60,13 +60,20 @@ export function PartyBrowse({ moduleId }: { moduleId: string }) {
   /** Reorder handler — the PartyScreen drag-and-drop fires this with
    *  the new id order. We write the updated party object into the
    *  party draft (localStorage) so the change survives navigation,
-   *  then update local state in place to avoid a network re-fetch. */
+   *  then update local state in place to avoid a network re-fetch.
+   *
+   *  `saveDraft` is async (gzip compression — see data_model/draft.ts).
+   *  We can't await inside the `setState` updater, so we read the
+   *  current state via the updater (to compute `nextParty`), kick
+   *  off the persist as fire-and-forget, and synchronously return the
+   *  new state. The in-memory state is the UI's source of truth; the
+   *  localStorage flush is just for navigation survival. */
   const onReorderRoster = useCallback(
     (newOrder: string[]) => {
       setState((prev) => {
         if (prev.kind !== "ok") return prev;
         const nextParty: PartyRecord = { ...prev.party, roster: newOrder };
-        saveDraft(
+        void saveDraft(
           moduleId,
           "party",
           nextParty as unknown as Record<string, unknown>,
@@ -104,7 +111,7 @@ export function PartyBrowse({ moduleId }: { moduleId: string }) {
         // Draft overrides the on-disk own file. This lets in-screen
         // edits (reordering the roster, future toggles) survive page
         // navigation until the user publishes.
-        const partyDraft = loadDraft<Record<string, unknown>>(
+        const partyDraft = await loadDraft<Record<string, unknown>>(
           moduleId,
           "party",
         );

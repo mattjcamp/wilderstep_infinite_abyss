@@ -1,7 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
   attemptBrew,
-  availableRecipes,
   canBrew,
   findAliveBrewer,
   recipeShortages,
@@ -146,25 +145,6 @@ describe("recipeShortages", () => {
       moonpetal: 1,
       spring_water: 1,
     });
-  });
-});
-
-describe("availableRecipes", () => {
-  it("filters to recipes the party has reagents for", () => {
-    const save = makeSave({
-      inventory: [
-        { item: "moonpetal", charges: 1 },
-        { item: "spring_water", charges: 1 },
-        // No brimite_ore -> fire_oil should NOT make the cut.
-        { item: "glowcap_mushroom", charges: 1 },
-      ],
-    });
-    const ready = availableRecipes(
-      save,
-      [HEALING_RECIPE, FIRE_OIL_RECIPE],
-      makeItems(),
-    );
-    expect(ready.map((r) => r.id)).toEqual(["healing_potion"]);
   });
 });
 

@@ -107,7 +107,7 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
       ) as { map_tiles?: TileType[] } | null;
       const palette = paletteMerged?.map_tiles ?? [];
 
-      const draft = loadDraft<Record<string, unknown>>(moduleId, MODEL_KEY);
+      const draft = await loadDraft<Record<string, unknown>>(moduleId, MODEL_KEY);
       const ownEffective =
         draft ?? (mapsLayers.ownFile as Record<string, unknown> | null);
       const mapsMerged = mergeModel(
@@ -173,14 +173,17 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
   // ── Mutators (persist via the draft system) ────────────────────
   /**
    * Write the maps array to the local draft. If the browser refuses
-   * (typically a QuotaExceededError — baked dungeons can push
-   * maps.json past the ~5MB localStorage cap) AND the publish server
-   * is running, fall back to writing the merged file straight to
-   * disk and clear any pre-existing draft. Without this fallback,
-   * once a module's maps.json outgrows the storage budget every
-   * subsequent edit — including a simple Delete — crashes the page
-   * because saveDraft throws synchronously. With it, the bake / new
-   * / delete paths all degrade gracefully to direct-publish.
+   * (typically a QuotaExceededError — even a heavily-gzipped baked
+   * dungeon can in extreme cases push past the ~5MB localStorage cap)
+   * AND the publish server is running, fall back to writing the
+   * merged file straight to disk and clear any pre-existing draft.
+   * Without this fallback, once a module's maps.json outgrows the
+   * storage budget every subsequent edit — including a simple
+   * Delete — would error. With it, the bake / new / delete paths
+   * all degrade gracefully to direct-publish.
+   *
+   * `saveDraft` is async (gzip runs on every write); the await also
+   * surfaces the QuotaExceededError the catch block needs to see.
    *
    * Returns `{ publishedDirectly }` so callers (e.g. the bake flow)
    * can tailor their success message; throws if neither save path
@@ -195,7 +198,7 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
       : { maps: [] };
     baseFile.maps = updatedMaps;
     try {
-      saveDraft(moduleId, MODEL_KEY, baseFile);
+      await saveDraft(moduleId, MODEL_KEY, baseFile);
       setState({
         ...state,
         maps: updatedMaps,

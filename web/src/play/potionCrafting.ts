@@ -24,10 +24,10 @@
  *     success. Callers commit `nextSave` and surface `message`
  *     in the log / placard.
  *
- * Listing helpers (`canBrew`, `recipeShortages`,
- * `availableRecipes`) live alongside `attemptBrew` so the picker
- * UI can render an at-a-glance "ready to brew" indicator next to
- * each recipe without duplicating the validation math.
+ * Listing helpers (`canBrew`, `recipeShortages`) live alongside
+ * `attemptBrew` so the picker UI can render an at-a-glance "ready
+ * to brew" indicator next to each recipe without duplicating the
+ * validation math.
  */
 
 import type { WorldSave } from "./saveTypes";
@@ -127,21 +127,6 @@ export function recipeShortages(
     }
   }
   return out;
-}
-
-/** Filter the catalog to recipes whose reagents the party can
- *  fully supply right now. Used by the picker to surface the
- *  ready-to-brew list as a fast top-of-screen prompt; the picker
- *  still renders the rest (greyed out) so the player can see
- *  what they need to forage for. */
-export function availableRecipes(
-  save: WorldSave,
-  recipes: ReadonlyArray<RecipeRef>,
-  items: ReadonlyArray<StackableItemRef>,
-): RecipeRef[] {
-  return recipes.filter(
-    (r) => Object.keys(recipeShortages(save, r, items)).length === 0,
-  );
 }
 
 /** Consume `count` of `itemId` from the inventory. For stackable

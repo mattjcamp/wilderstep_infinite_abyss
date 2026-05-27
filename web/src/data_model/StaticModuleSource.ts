@@ -74,7 +74,7 @@ async function tryFetchJson(url: string): Promise<unknown | null> {
 async function loadModuleManifest(
   moduleId: string,
 ): Promise<(Partial<ModuleSummary> & { id?: string }) | null> {
-  const draft = loadDraft<Partial<ModuleSummary> & { id?: string }>(
+  const draft = await loadDraft<Partial<ModuleSummary> & { id?: string }>(
     moduleId,
     MANIFEST_KEY,
   );
@@ -169,7 +169,7 @@ export class StaticModuleSource implements ModuleSource {
   async list(): Promise<ModuleSummary[]> {
     // Prefer the localStorage index draft so newly-created modules
     // show up in the picker before the user exports anything.
-    const draftIndex = loadIndexDraft<IndexFile>();
+    const draftIndex = await loadIndexDraft<IndexFile>();
     const index = draftIndex ?? ((await fetchJson(
       withBasePath("/modules/index.json"),
     )) as IndexFile);

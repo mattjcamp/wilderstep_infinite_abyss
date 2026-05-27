@@ -82,7 +82,7 @@ export function NewModuleForm({
     !idError &&
     title.trim().length > 0;
 
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canSubmit) return;
 
@@ -98,18 +98,19 @@ export function NewModuleForm({
     if (extendsId && extendsId !== "(none)") {
       newManifest.extends = extendsId;
     }
-    saveDraft(trimmedId, MANIFEST_KEY, newManifest);
+    await saveDraft(trimmedId, MANIFEST_KEY, newManifest);
 
     // Update the index draft: read current index (draft if present,
     // else fall back to a minimal shell — the picker will populate it
     // on next load if not).
     const currentIndex =
-      loadIndexDraft<IndexFile>() ?? buildIndexFromSummaries(existingModules);
+      (await loadIndexDraft<IndexFile>()) ??
+      buildIndexFromSummaries(existingModules);
     const nextEntries: IndexEntry[] = [
       ...(currentIndex.modules ?? []),
       { id: trimmedId, title: title.trim(), role },
     ];
-    saveIndexDraft({
+    await saveIndexDraft({
       _comment:
         currentIndex._comment ??
         "Modules index — managed by the editor in draft form; export and drop into web/public/modules/index.json to commit.",

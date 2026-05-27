@@ -123,7 +123,9 @@ export function LibrariesPanel({ moduleId }: { moduleId: string }) {
     const nextManifest: Manifest = { ...state.manifest, uses: nextUses };
     // Drop the `uses` key if empty, to keep manifests tidy.
     if (nextUses.length === 0) delete (nextManifest as Manifest).uses;
-    saveDraft(moduleId, MANIFEST_KEY, nextManifest);
+    // saveDraft is async (gzip) — fire-and-forget; the React state
+    // update below is what UI reads.
+    void saveDraft(moduleId, MANIFEST_KEY, nextManifest);
     setState({ ...state, manifest: nextManifest, isDraft: true });
   };
 

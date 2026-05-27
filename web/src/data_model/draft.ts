@@ -13,10 +13,29 @@
  * "Discard Draft" deletes the entry and the next load falls back to
  * the source.
  *
+ * **Compression.** Stored payloads run through {@link compressJson} /
+ * {@link decompressJson} — gzip wrapped in a `gz1:`-prefixed base64
+ * string. Repetitive JSON (especially `maps.json` with thousands of
+ * uniform cells) compresses to ~1% of its raw size, which buys
+ * roughly two orders of magnitude of localStorage headroom and
+ * keeps multi-MB module drafts fitting comfortably inside the
+ * browser's per-origin quota. The read path auto-detects legacy
+ * uncompressed payloads (drafts written before this codec landed)
+ * and passes them through, so there's no flag day.
+ *
+ * **Async surface.** Because gzip is exposed via the WHATWG
+ * Compression Streams API (Promise-based), `loadDraft` / `saveDraft`
+ * / `loadIndexDraft` / `saveIndexDraft` return promises. The
+ * existence-and-key-only helpers (`hasDraft`, `discardDraft`,
+ * `listDraftKeys`, etc.) stay synchronous — they don't touch the
+ * value payload.
+ *
  * This module is intentionally tiny — it doesn't know about model
  * shapes, only about persistence. All shape-aware logic lives in the
  * editor components and the source/loader.
  */
+
+import { compressJson, decompressJson } from "./compress";
 
 const DRAFT_PREFIX = "drafts";
 
@@ -30,29 +49,38 @@ function key(moduleId: string, modelKey: string): string {
   return `${DRAFT_PREFIX}/${moduleId}/${modelKey}`;
 }
 
-/** Read the draft for a model, or null if none / unavailable. */
-export function loadDraft<T = unknown>(
+/** Read the draft for a model, or null if none / unavailable. Returns
+ *  null on any storage / decode failure so callers can treat
+ *  "no draft" and "draft is corrupt" identically (the caller's
+ *  fallback to the on-disk source matches both shapes). */
+export async function loadDraft<T = unknown>(
   moduleId: string,
   modelKey: string,
-): T | null {
+): Promise<T | null> {
   if (typeof window === "undefined") return null;
   try {
     const raw = window.localStorage.getItem(key(moduleId, modelKey));
     if (raw === null) return null;
-    return JSON.parse(raw) as T;
+    return await decompressJson<T>(raw);
   } catch {
     return null;
   }
 }
 
-/** Write the draft for a model. Overwrites any existing draft. */
-export function saveDraft(
+/** Write the draft for a model. Overwrites any existing draft. The
+ *  serialised payload is gzip-compressed before it lands in
+ *  localStorage (see module docstring). A QuotaExceededError from
+ *  localStorage propagates to the caller — the existing editor
+ *  surfaces a banner on quota failure and the compression dramatically
+ *  reduces how often we get there. */
+export async function saveDraft(
   moduleId: string,
   modelKey: string,
   data: unknown,
-): void {
+): Promise<void> {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(key(moduleId, modelKey), JSON.stringify(data));
+  const encoded = await compressJson(data);
+  window.localStorage.setItem(key(moduleId, modelKey), encoded);
 }
 
 /** Remove the draft for a model — next read falls back to the source. */
@@ -61,7 +89,8 @@ export function discardDraft(moduleId: string, modelKey: string): void {
   window.localStorage.removeItem(key(moduleId, modelKey));
 }
 
-/** True if a draft is currently stored. */
+/** True if a draft is currently stored. Cheap — checks key presence
+ *  without decompressing the payload. */
 export function hasDraft(moduleId: string, modelKey: string): boolean {
   if (typeof window === "undefined") return false;
   return window.localStorage.getItem(key(moduleId, modelKey)) !== null;
@@ -70,21 +99,22 @@ export function hasDraft(moduleId: string, modelKey: string): boolean {
 // ── Module index draft (single global file) ─────────────────────────
 
 /** Read the modules-index draft, or null if none. */
-export function loadIndexDraft<T = unknown>(): T | null {
+export async function loadIndexDraft<T = unknown>(): Promise<T | null> {
   if (typeof window === "undefined") return null;
   try {
     const raw = window.localStorage.getItem(INDEX_KEY);
     if (raw === null) return null;
-    return JSON.parse(raw) as T;
+    return await decompressJson<T>(raw);
   } catch {
     return null;
   }
 }
 
 /** Write the modules-index draft. Overwrites any existing draft. */
-export function saveIndexDraft(data: unknown): void {
+export async function saveIndexDraft(data: unknown): Promise<void> {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(INDEX_KEY, JSON.stringify(data));
+  const encoded = await compressJson(data);
+  window.localStorage.setItem(INDEX_KEY, encoded);
 }
 
 /** Remove the modules-index draft. */

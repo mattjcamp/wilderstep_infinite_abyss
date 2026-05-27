@@ -31,6 +31,7 @@ import {
   setCounterStock,
   type CounterStockEntry,
 } from "@/play/counterStock";
+import { isStackable, stackSizeOf } from "@/battle/world/Items";
 import { Sfx } from "@/battle/audio/Sfx";
 
 interface ShopItemRef {
@@ -206,13 +207,11 @@ export function PlayCounterShopOverlay({
    *  bundle of 20, Lockpicks bundle of 5, etc.). For non-stackable
    *  items it's always 1 — the catalog's `charges` semantic there is
    *  per-instance durability, not bundle count, so we must not treat
-   *  it as quantity. Mirrors `stackSizeOf` in battle/world/Items.ts
-   *  but spelled out here so the play shop doesn't have to import
-   *  the heavier battle module. */
+   *  it as quantity. Stays a one-liner over the shared `stackSizeOf`
+   *  / `isStackable` helpers so the rule lives in one place. */
   const bundleSize = (id: string): number => {
     const it = itemsById.get(id);
-    if (!it?.stackable) return 1;
-    return typeof it.charges === "number" && it.charges > 0 ? it.charges : 1;
+    return it && isStackable(it) ? stackSizeOf(it) : 1;
   };
 
   const handleBuy = (stockIndex: number) => {

@@ -195,7 +195,7 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
           src.loadModelLayers(moduleId, "items"),
           src.loadModelLayers(moduleId, "maps"),
         ]);
-      const draft = loadDraft<Record<string, unknown>>(moduleId, MODEL_KEY);
+      const draft = await loadDraft<Record<string, unknown>>(moduleId, MODEL_KEY);
       const ownEffective =
         draft ?? (questsLayers.ownFile as Record<string, unknown> | null);
       const merged = mergeModel(
@@ -281,7 +281,8 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
       ? { ...state.ownFile }
       : { quests: [] };
     baseFile.quests = updated;
-    saveDraft(moduleId, MODEL_KEY, baseFile);
+    // saveDraft is async — fire-and-forget; see CharactersBrowse.persist.
+    void saveDraft(moduleId, MODEL_KEY, baseFile);
     setState({
       ...state,
       quests: updated,

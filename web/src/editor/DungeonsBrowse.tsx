@@ -121,7 +121,7 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
     try {
       const src = new StaticModuleSource();
       const layers = await src.loadModelLayers(moduleId, "dungeons");
-      const draft = loadDraft<Record<string, unknown>>(moduleId, MODEL_KEY);
+      const draft = await loadDraft<Record<string, unknown>>(moduleId, MODEL_KEY);
       const ownEffective =
         draft ?? (layers.ownFile as Record<string, unknown> | null);
       const merged = mergeModel(
@@ -188,7 +188,9 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
       ? { ...state.ownFile }
       : { dungeons: [] };
     baseFile.dungeons = updated;
-    saveDraft(moduleId, MODEL_KEY, baseFile);
+    // saveDraft is async — fire-and-forget; the React state update
+    // below is what UI reads. See CharactersBrowse.persist comment.
+    void saveDraft(moduleId, MODEL_KEY, baseFile);
     setState({
       ...state,
       dungeons: updated,
