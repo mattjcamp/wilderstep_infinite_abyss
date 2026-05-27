@@ -35,7 +35,7 @@
  * merge layer.
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { StaticModuleSource } from "@/data_model/StaticModuleSource";
 import {
   discardDraft,
@@ -116,6 +116,14 @@ export function ModelView({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  /** Tag-section collapse state for models that group by tag (the Tile
+   *  Palette today). Tags are expanded by default; entries in this
+   *  Set are the exceptions. Lives on the ModelView so navigating
+   *  away and back resets the view to "all expanded" — matches the
+   *  MapEditor side panel's behaviour and keeps state lightweight. */
+  const [collapsedTags, setCollapsedTags] = useState<Set<string>>(
+    () => new Set(),
+  );
 
   // Load layers + library catalog in parallel. `loadDraft` is async
   // (gzip), so the whole load runs inside an async IIFE rather than
@@ -514,6 +522,43 @@ export function ModelView({
             </div>
           ) : null}
 
+          {modelKey === "map_tiles" && derived.records.length > 0
+            ? (() => {
+                // Mirror the tag bucketing the table uses so the
+                // collapse-all toggle knows the full set of headers.
+                const UNTAGGED = "(untagged)";
+                const allTags = new Set<string>();
+                for (const r of derived.records) {
+                  const rawTag = r["tag"];
+                  const tag =
+                    typeof rawTag === "string" && rawTag.trim()
+                      ? rawTag
+                      : UNTAGGED;
+                  allTags.add(tag);
+                }
+                if (allTags.size <= 1) return null;
+                const allCollapsed = collapsedTags.size >= allTags.size;
+                return (
+                  <div className="mt-4 flex items-center justify-end">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setCollapsedTags(allCollapsed ? new Set() : allTags)
+                      }
+                      className="rounded border border-parchment/20 px-2 py-1 text-xs uppercase tracking-wide text-parchment/65 hover:bg-ink/40 hover:text-parchment/90"
+                      title={
+                        allCollapsed
+                          ? "Expand every tag section"
+                          : "Collapse every tag section"
+                      }
+                    >
+                      {allCollapsed ? "Expand all" : "Collapse all"}
+                    </button>
+                  </div>
+                );
+              })()
+            : null}
+
           <div className="mt-4 overflow-auto rounded border border-parchment/10">
             <table className="w-full text-left text-sm">
               <thead className="bg-ink/60 text-parchment/70">
@@ -530,8 +575,15 @@ export function ModelView({
                   <th className="w-24 px-2 py-1"></th>
                 </tr>
               </thead>
-              <tbody>
-                {derived.records.map((r, i) => {
+              {(() => {
+                // Total cells per row — used by tag-header colSpan so
+                // the header spans the whole table width.
+                const totalCols =
+                  2 + def.columns.length + (hasSpriteColumn ? 1 : 0);
+                // Helper that produces the <RowGroup> for one record so
+                // both the grouped (tile palette) and flat paths render
+                // identical rows.
+                const renderRow = (r: Record_, i: number) => {
                   const id = String(r.id ?? i);
                   const isOpen = openId === id;
                   const isEditing = editingId === id;
@@ -567,8 +619,84 @@ export function ModelView({
                       template={template ?? r}
                     />
                   );
-                })}
-              </tbody>
+                };
+                // Tile Palette gets tag-grouped, collapsible sections —
+                // mirrors the bucketing used by the MapEditor's tile
+                // palette side panel so authors see the same structure
+                // in both views.
+                if (modelKey === "map_tiles") {
+                  const UNTAGGED = "(untagged)";
+                  const groups = new Map<string, Array<{ rec: Record_; idx: number }>>();
+                  derived.records.forEach((r, i) => {
+                    const rawTag = r["tag"];
+                    const tag =
+                      typeof rawTag === "string" && rawTag.trim()
+                        ? rawTag
+                        : UNTAGGED;
+                    if (!groups.has(tag)) groups.set(tag, []);
+                    groups.get(tag)!.push({ rec: r, idx: i });
+                  });
+                  const ordered = [...groups.keys()].sort((a, b) => {
+                    if (a === UNTAGGED) return 1;
+                    if (b === UNTAGGED) return -1;
+                    return a.localeCompare(b);
+                  });
+                  return (
+                    <tbody>
+                      {ordered.map((tag) => {
+                        const rows = groups.get(tag)!;
+                        const isCollapsed = collapsedTags.has(tag);
+                        return (
+                          <Fragment key={`tag-${tag}`}>
+                            <tr
+                              className="cursor-pointer border-t border-parchment/10 bg-ink/40 hover:bg-ink/55"
+                              onClick={() =>
+                                setCollapsedTags((prev) => {
+                                  const next = new Set(prev);
+                                  if (next.has(tag)) next.delete(tag);
+                                  else next.add(tag);
+                                  return next;
+                                })
+                              }
+                              title={
+                                isCollapsed
+                                  ? `Expand "${tag}" tiles`
+                                  : `Collapse "${tag}" tiles`
+                              }
+                            >
+                              <td
+                                colSpan={totalCols}
+                                className="px-2 py-1 text-xs uppercase tracking-wide text-parchment/70"
+                              >
+                                <span className="mr-2 text-parchment/55">
+                                  {isCollapsed ? "▸" : "▾"}
+                                </span>
+                                <span className="text-parchment/85">
+                                  {tag}
+                                </span>
+                                <span className="ml-2 normal-case tracking-normal text-parchment/45">
+                                  {rows.length} tile
+                                  {rows.length === 1 ? "" : "s"}
+                                </span>
+                              </td>
+                            </tr>
+                            {!isCollapsed
+                              ? rows.map(({ rec, idx }) =>
+                                  renderRow(rec, idx),
+                                )
+                              : null}
+                          </Fragment>
+                        );
+                      })}
+                    </tbody>
+                  );
+                }
+                return (
+                  <tbody>
+                    {derived.records.map((r, i) => renderRow(r, i))}
+                  </tbody>
+                );
+              })()}
             </table>
           </div>
 

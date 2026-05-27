@@ -2,6 +2,7 @@
   "_comment": "Tile Palette — reusable tile types used to paint maps. Each tile carries: `id` (the cell reference), display `name`, `tag` (string used to group tiles in the editor palette panel — empty for untagged), `sprite` (path under /sprites/map/), and the behavioral attributes — `walkable` (blocks movement when false), `obstructs` (blocks light + ranged line-of-sight when true), `locked` (gates passage/interaction until unlocked), `light_source` (the tile emits light), `light_range` (light radius in cells), `animation` (visual effect — \"none\" | \"torch\" | \"fire\" | \"fairy\" | \"smoke\"), `counter` (id from counters.json — empty for none), `encounter` (id from encounters.json — empty for none; the encounter sprite renders as an overlay), and `spawn` (id from spawns.json — empty for none). Optional `link` is a one-way portal: `{ \"map_id\": \"<target>\", \"x\": <col>, \"y\": <row> }`. Map cells are full copies of palette entries; palette edits don't auto-propagate to painted cells.",
   "map_tiles": [
     {
+      "boat": false,
       "id": "grass",
       "name": "Grass",
       "walkable": true,
@@ -14,7 +15,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/grass1.png",
-      "tag": "terrain"
+      "tag": "walkable"
     },
     {
       "id": "water",
@@ -32,6 +33,7 @@
       "tag": "water"
     },
     {
+      "boat": false,
       "id": "mountain",
       "name": "Mountain",
       "walkable": false,
@@ -40,13 +42,14 @@
       "light_source": false,
       "light_range": 0,
       "animation": "none",
-      "counter": "",
-      "encounter": "",
-      "spawn": "",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
       "sprite": "map/mountains.png",
-      "tag": "outdoor"
+      "tag": "wall"
     },
     {
+      "boat": false,
       "id": "path",
       "name": "Path",
       "walkable": true,
@@ -59,9 +62,10 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/path.png",
-      "tag": "terrain"
+      "tag": "walkable"
     },
     {
+      "boat": false,
       "id": "floor",
       "name": "Floor",
       "walkable": true,
@@ -74,7 +78,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/town_floor.png",
-      "tag": "floor"
+      "tag": "walkable"
     },
     {
       "id": "wall",
@@ -92,6 +96,7 @@
       "tag": "wall"
     },
     {
+      "boat": false,
       "id": "town",
       "name": "Town",
       "walkable": true,
@@ -104,9 +109,10 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/town.png",
-      "tag": "outdoor"
+      "tag": "building"
     },
     {
+      "boat": false,
       "id": "forest",
       "name": "Forest",
       "walkable": true,
@@ -119,9 +125,10 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/forest2.png",
-      "tag": "outdoor"
+      "tag": "walkable"
     },
     {
+      "boat": false,
       "id": "castle",
       "name": "Castle",
       "walkable": true,
@@ -134,7 +141,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/ruined_tower.png",
-      "tag": "outdoor"
+      "tag": "building"
     },
     {
       "id": "wall_brown",
@@ -152,6 +159,7 @@
       "tag": "wall"
     },
     {
+      "boat": false,
       "id": "building_abandoned",
       "name": "Abandoned Building",
       "walkable": true,
@@ -164,9 +172,10 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/abandoned_building.png",
-      "tag": "outdoor"
+      "tag": "building"
     },
     {
+      "boat": false,
       "id": "dungeon_entrance",
       "name": "Dungeon Entrane",
       "walkable": true,
@@ -179,7 +188,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/dungeon_entrance.png",
-      "tag": "outdoor"
+      "tag": "building"
     },
     {
       "id": "alter",
@@ -212,6 +221,7 @@
       "tag": "indoor"
     },
     {
+      "boat": false,
       "id": "door",
       "name": "Door",
       "walkable": true,
@@ -224,9 +234,10 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/dungeon_door.png",
-      "tag": "town"
+      "tag": "indoor"
     },
     {
+      "boat": false,
       "id": "floor_brown",
       "name": "Brown Floor",
       "walkable": true,
@@ -239,9 +250,10 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/floor_brown.png",
-      "tag": "floor"
+      "tag": "walkable"
     },
     {
+      "boat": false,
       "id": "floor_gray",
       "name": "Gray Floor",
       "walkable": true,
@@ -254,9 +266,10 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/floor_gray.png",
-      "tag": "floor"
+      "tag": "walkable"
     },
     {
+      "boat": false,
       "id": "grass2",
       "name": "Grass",
       "walkable": true,
@@ -269,7 +282,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/grass2.png",
-      "tag": "terrain"
+      "tag": "walkable"
     },
     {
       "id": "brick_wall_brown",
@@ -317,6 +330,7 @@
       "tag": "wall"
     },
     {
+      "boat": false,
       "id": "gate",
       "name": "Gate",
       "walkable": true,
@@ -329,9 +343,10 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/gate.png",
-      "tag": "town"
+      "tag": "indoor"
     },
     {
+      "boat": false,
       "id": "shrine",
       "name": "Shrine",
       "walkable": true,
@@ -344,7 +359,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/shrine.png",
-      "tag": "town"
+      "tag": "building"
     },
     {
       "id": "ship_frigate",
@@ -392,6 +407,7 @@
       "tag": "outdoor"
     },
     {
+      "boat": false,
       "id": "village",
       "name": "Village",
       "walkable": true,
@@ -404,7 +420,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/village.png",
-      "tag": "outdoor"
+      "tag": "building"
     },
     {
       "id": "water_shallow",
@@ -422,6 +438,7 @@
       "tag": "water"
     },
     {
+      "boat": false,
       "id": "window",
       "name": "Window",
       "walkable": false,
@@ -434,7 +451,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/window.png",
-      "tag": "town"
+      "tag": "indoor"
     },
     {
       "id": "lava1",
@@ -482,6 +499,7 @@
       "tag": "outdoor"
     },
     {
+      "boat": false,
       "id": "sand_dense",
       "name": "Dense Sand",
       "walkable": true,
@@ -494,7 +512,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/sand_copy.png",
-      "tag": "terrain"
+      "tag": "walkable"
     },
     {
       "id": "palm_tree",
@@ -542,6 +560,7 @@
       "tag": "dungeon"
     },
     {
+      "boat": false,
       "id": "machine",
       "name": "Machine",
       "walkable": false,
@@ -554,9 +573,10 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/machine.png",
-      "tag": "dungeon"
+      "tag": "indoor"
     },
     {
+      "boat": false,
       "id": "door_locked",
       "name": "Locked Door",
       "walkable": false,
@@ -569,9 +589,10 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/locked_door.png",
-      "tag": "dungeon"
+      "tag": "indoor"
     },
     {
+      "boat": false,
       "id": "keyslot",
       "name": "Key Slot",
       "walkable": false,
@@ -584,9 +605,10 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/keyslot.png",
-      "tag": "dungeon"
+      "tag": "indoor"
     },
     {
+      "boat": false,
       "id": "swamp",
       "name": "Swamp",
       "walkable": true,
@@ -599,7 +621,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/swamp.png",
-      "tag": "terrain"
+      "tag": "walkable"
     },
     {
       "id": "moongate",
@@ -617,6 +639,7 @@
       "tag": "dungeon"
     },
     {
+      "boat": false,
       "id": "shop_sign",
       "name": "Shop Sign",
       "walkable": false,
@@ -629,7 +652,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/shop_sign.png",
-      "tag": "town"
+      "tag": "outdoor"
     },
     {
       "id": "whirlpool1",
@@ -677,6 +700,7 @@
       "tag": "dungeon"
     },
     {
+      "boat": false,
       "id": "sand",
       "name": "Sand",
       "walkable": true,
@@ -689,7 +713,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/sand.png",
-      "tag": "terrain"
+      "tag": "walkable"
     },
     {
       "id": "boat",
@@ -706,6 +730,38 @@
       "spawn": null,
       "sprite": "map/ship_frigate.png",
       "tag": "water"
+    },
+    {
+      "boat": false,
+      "id": "stairs_up",
+      "name": "Stairs Up",
+      "walkable": true,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": null,
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "map/stairs_up.png",
+      "tag": "indoor"
+    },
+    {
+      "boat": false,
+      "id": "stairs_down",
+      "name": "Stairs Down",
+      "walkable": true,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": null,
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "map/stairs_down.png",
+      "tag": "indoor"
     }
   ]
 }
