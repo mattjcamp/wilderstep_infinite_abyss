@@ -439,7 +439,6 @@ export function DungeonSimMount({
             avatar: "",
             roster: [],
             torch_steps: 0,
-            galadriels_light_steps: 0,
           };
           const classNameById = new Map<string, string>();
           // Capture renderer in a local for the bridge closures —

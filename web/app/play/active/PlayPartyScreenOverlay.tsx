@@ -246,8 +246,8 @@ export function PlayPartyScreenOverlay({
   useEffect(() => {
     setLiveSave(save);
     // Re-sync the effects list whenever the upstream save changes —
-    // the world sim ticks Galadriel's Light down per step and may
-    // have auto-expired the effect since the overlay last opened.
+    // duration-backed effects (Magic Light) may have auto-expired
+    // since the overlay last opened.
     setActiveEffectIds([...(save.party.party_effects ?? [])]);
   }, [save]);
 
@@ -345,7 +345,6 @@ export function PlayPartyScreenOverlay({
           roster: [...liveSave.party.roster],
           inventory: liveSave.party.inventory.map((e) => ({ ...e })),
           torch_steps: liveSave.party.torch_steps,
-          galadriels_light_steps: liveSave.party.galadriels_light_steps,
         };
 
         // Custom (player-rolled) characters live in
@@ -814,35 +813,21 @@ export function PlayPartyScreenOverlay({
       // boolean / number fields are immutable in the ReadonlyArray-
       // typed shape; we mirror them into mutable locals and write
       // back at the bottom.
-      let galadriels = liveSave.party.galadriels_light_steps;
       let infravision = liveSave.party.infravision_active;
 
-      const abilityById = new Map(
-        state.abilities.map((a) => [a.id, a] as const),
-      );
-
       for (const id of added) {
-        const ability = abilityById.get(id);
-        if (id === "galadriels_light") {
-          // Seed the step counter from the ability's duration. Falls
-          // back to 500 — same default as the Python game — when the
-          // catalog leaves duration off.
-          const dur =
-            typeof ability?.duration === "number" ? ability.duration : 500;
-          galadriels = dur;
-        } else if (id === "infravision") {
+        if (id === "infravision") {
           infravision = true;
         }
       }
       let magicLight = liveSave.party.magic_light_steps ?? 0;
       let torchSteps = liveSave.party.torch_steps;
       for (const id of removed) {
-        if (id === "galadriels_light") {
-          galadriels = 0;
-        } else if (id === "magic_light") {
+        if (id === "magic_light") {
           // Allow dismissing a cast Light spell by un-checking it in
-          // the Effects list. Mirrors the galadriels_light branch so
-          // both light effects can be toggled off the same way.
+          // the Effects list. Same toggle shape as Torch / Infravision
+          // so all three light-style effects can be turned off the
+          // same way.
           magicLight = 0;
         } else if (id === "torch") {
           // Un-checking Torch extinguishes the held torch — same
@@ -862,14 +847,13 @@ export function PlayPartyScreenOverlay({
         party: {
           ...liveSave.party,
           party_effects: [...nextIds],
-          galadriels_light_steps: galadriels,
           magic_light_steps: magicLight,
           torch_steps: torchSteps,
           infravision_active: infravision,
         },
       });
     },
-    [state, liveSave, commit],
+    [liveSave, commit],
   );
 
   /** "Use" a stash entry — decrements the stack by ONE physical item
@@ -891,7 +875,7 @@ export function PlayPartyScreenOverlay({
       let nextMembers: ReadonlyArray<SavedCharacterState> = cur.party.members;
       // Local copy of party_effects we may extend. Lighting a Torch
       // adds "torch" so the Effects panel reflects the active light
-      // source (same shape Light spell / Galadriel's Light use).
+      // source (same shape the Magic Light spell uses).
       const nextPartyEffects = new Set(cur.party.party_effects ?? []);
       // Item id fired through onItemUse on a successful use, so the
       // host can paint the right VFX + play the right SFX. Stays
@@ -1615,10 +1599,6 @@ export function PlayPartyScreenOverlay({
               effectDurations={
                 new Map<string, number>([
                   ["magic_light", liveSave.party.magic_light_steps ?? 0],
-                  [
-                    "galadriels_light",
-                    liveSave.party.galadriels_light_steps ?? 0,
-                  ],
                   ["torch", liveSave.party.torch_steps ?? 0],
                 ])
               }

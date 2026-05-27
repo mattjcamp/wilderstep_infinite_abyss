@@ -795,9 +795,9 @@ export function PlayHost() {
    *  light radius — traps far in the dark stay hidden until the
    *  party walks into range, matching v1's "you can only detect what
    *  you can see" rule. The radius is the same one
-   *  `partyLightRange` returns (torch / Galadriel / Light spell);
-   *  baseline 1-cell vision when the party emits no light is
-   *  enough that the cell the party stands on is always covered. */
+   *  `partyLightRange` returns (torch / Light spell); baseline
+   *  1-cell vision when the party emits no light is enough that the
+   *  cell the party stands on is always covered. */
   const refreshDetectedTraps = useCallback(() => {
     const r = rendererRef.current;
     if (!r) return;
@@ -1348,14 +1348,13 @@ export function PlayHost() {
         clockMinutes: clockRef.current,
         party: {
           ...save.party,
-          // Per-step counters (torch, magic light, galadriel's light)
-          // tick inside the sim each step — mirror those onto the
-          // save here so a reload mid-dungeon resumes with the right
-          // remaining duration AND so the Party screen overlay's
-          // Effects panel can show the live count when the player
-          // opens the screen mid-dungeon.
+          // Per-step counters (torch, magic light) tick inside the
+          // sim each step — mirror those onto the save here so a
+          // reload mid-dungeon resumes with the right remaining
+          // duration AND so the Party screen overlay's Effects
+          // panel can show the live count when the player opens
+          // the screen mid-dungeon.
           torch_steps: snap.party.torch_steps,
-          galadriels_light_steps: snap.party.galadriels_light_steps,
           magic_light_steps: snap.party.magic_light_steps ?? 0,
           currentDungeon: {
             dungeonId: dungeonNow.dungeonId,
@@ -1397,16 +1396,13 @@ export function PlayHost() {
     );
 
     // Reconcile `party_effects` with the per-step counters the sim
-    // ticked. Effects backed by a duration counter (Galadriel's Light,
-    // the Cleric's Light spell) auto-expire when the counter hits zero
-    // — drop the id so the Party screen no longer renders the effect
-    // as active. Toggle-only effects (Infravision) stay in lockstep
-    // with their own flag since the user explicitly turns those off.
+    // ticked. The Cleric's Light spell and the Torch auto-expire
+    // when their counter hits zero — drop the id so the Party
+    // screen no longer renders the effect as active. Toggle-only
+    // effects (Infravision) stay in lockstep with their own flag
+    // since the user explicitly turns those off.
     const partyEffects: string[] = [];
     for (const id of save.party.party_effects ?? []) {
-      if (id === "galadriels_light" && snap.party.galadriels_light_steps <= 0) {
-        continue; // burnt out — auto-remove
-      }
       if (id === "magic_light" && (snap.party.magic_light_steps ?? 0) <= 0) {
         continue; // Cleric's Light burnt out
       }
@@ -1433,7 +1429,6 @@ export function PlayHost() {
         row: snap.pos.row,
         infravision_active: !!snap.party.infravision_active,
         torch_steps: snap.party.torch_steps,
-        galadriels_light_steps: snap.party.galadriels_light_steps,
         magic_light_steps: snap.party.magic_light_steps ?? 0,
         party_effects: partyEffects,
         // Mid-voyage state — onBoat flips during boarding /
@@ -2202,7 +2197,6 @@ export function PlayHost() {
             avatar: save.party.avatar,
             roster: [...save.party.roster],
             torch_steps: save.party.torch_steps,
-            galadriels_light_steps: save.party.galadriels_light_steps,
             magic_light_steps: save.party.magic_light_steps ?? 0,
             infravision_active: save.party.infravision_active,
             gold: save.party.gold,
@@ -4217,9 +4211,9 @@ export function PlayHost() {
           // effect to remount the whole scene per step → flicker).
           // The overlay only mounts on partyScreenOpen flipping
           // true; reading saveRef at that moment gives us the
-          // fresh counters (Light / Galadriel duration, HP, MP)
-          // for free, and once the screen is open the sim is paused
-          // so no further ticks happen.
+          // fresh counters (Light duration, HP, MP) for free, and
+          // once the screen is open the sim is paused so no further
+          // ticks happen.
           save={saveRef.current ?? state.save}
           onClose={() => setPartyScreenOpen(false)}
           // Stash mutations from the Party screen (Use Torch, Send to
@@ -4230,7 +4224,7 @@ export function PlayHost() {
           // the freshly-mutated save without a reload.
           onMutateSave={(next) => {
             // Capture pre-mutation counters so we can detect Effect
-            // toggles (Galadriel's Light, Infravision) and push the
+            // toggles (Light spell, Torch, Infravision) and push the
             // change into the running sim — otherwise the kernel's
             // internal `this.party` keeps the old counter and the
             // lighting stays the same until the next map remount.
@@ -4247,26 +4241,16 @@ export function PlayHost() {
             // the dungeon position lives on
             // `save.party.currentDungeon`), so toggling Detect
             // Traps would teleport the party to the dungeon entrance
-            // tile. saveRef + the explicit sim.castMagicLight /
+            // tile. saveRef + the explicit sim.castLightSpell /
             // setInfravisionActive calls below propagate everything
             // the gameplay surfaces care about; state.save stays
             // stable until a legitimate map / dungeon transition
             // bumps reloadKey.
             const sim = simRef.current;
             if (sim && prev) {
-              // Galadriel's Light — castMagicLight reseeds the counter
-              // and re-renders lighting in one call. Passing 0 turns
-              // the effect off; the log line it emits at 0 is a
-              // mildly off-tone but acceptable trade for not adding a
-              // sibling "extinguish" method.
-              if (
-                next.party.galadriels_light_steps !==
-                prev.party.galadriels_light_steps
-              ) {
-                sim.castMagicLight(next.party.galadriels_light_steps);
-              }
-              // Cleric's Light spell — same shape as Galadriel's but
-              // a different counter so the two coexist.
+              // Cleric's Light spell — castLightSpell reseeds the
+              // counter and re-renders lighting in one call. Passing
+              // 0 turns the effect off.
               if (
                 (next.party.magic_light_steps ?? 0) !==
                 (prev.party.magic_light_steps ?? 0)

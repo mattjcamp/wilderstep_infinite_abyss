@@ -106,13 +106,13 @@ export interface GameState {
    * the first scene that loads `quests.json` (TownScene / OverworldScene)
    * via `ensureQuestStates`. Persists across scene transitions so a
    * quest accepted in one town stays active when the party walks out.
-   * The map is mutated in place by `Quests.creditKills` and
-   * `Quests.creditCollect`. */
+   * The map is mutated in place by `Quests.creditQuestKill` and
+   * `Quests.creditQuestRetrieve`. */
   moduleQuestStates: Map<string, QuestState>;
   /**
-   * Location string passed to `creditKills` so kill credit only fires
-   * when the combat location matches a step's `spawn_location`. Set by
-   * the scene that triggered combat:
+   * Location string for the scene that triggered combat — used by
+   * legacy / debug consumers to disambiguate kill credit on the
+   * matching step's location. Set by the scene:
    *   - DungeonScene: `dungeon:<name>` (or `dungeon:<name> - Floor N`
    *     for multi-level dungeons).
    *   - TownScene:    `town:<name>` (when town interior combat lands).
@@ -125,8 +125,7 @@ export interface GameState {
    * Names of monsters defeated in the most recent combat. Populated
    * by CombatScene's victory branch and read by the scene that
    * launched combat (DungeonScene right now) to credit quest kill
-   * steps via `Quests.creditKills`. Cleared after credit so a single
-   * fight credits steps once.
+   * steps. Cleared after credit so a single fight credits steps once.
    */
   pendingKilledMonsters: string[];
   /**
@@ -224,8 +223,8 @@ export interface InteriorMonster {
   name: string;
   /** Encounter roster handed to CombatScene. */
   encounterNames: string[];
-  /** Encounter template name — needed by `creditKills` so the right
-   *  quest step gets credited when this monster is defeated. */
+  /** Encounter template name — needed when the kill credit pass
+   *  resolves this monster back to its quest step. */
   encounterName: string;
   /** Quest this monster was placed for. Lets the spawn pass tell
    *  "already placed for this step" apart from "this is for some

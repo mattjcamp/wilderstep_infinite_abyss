@@ -62,7 +62,6 @@ function makeSave(members: SavedCharacterState[]): WorldSave {
       gold: 5,
       inventory: [],
       torch_steps: 0,
-      galadriels_light_steps: 0,
       infravision_active: false,
       onBoat: false,
       currentBoatSprite: null,
@@ -84,7 +83,6 @@ function kernelParty(roster: PartyMember[]): Party {
     inventory: [],
     torch_steps: 0,
     magic_light_steps: 0,
-    galadriels_light_steps: 0,
   };
 }
 

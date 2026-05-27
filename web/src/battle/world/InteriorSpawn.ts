@@ -1,26 +1,28 @@
 /**
- * Pure placement helpers for interior + building-space quest spawns.
+ * Authored-encounter helpers shared between the town/interior code path
+ * and CombatScene's defeat tracker.
  *
- * TownScene calls into these on every entry to keep the spawn-pass
- * code testable without standing up Phaser. The companion tests live
- * in `InteriorSpawn.test.ts`.
+ * Historical note: this module also used to host
+ * `placeQuestInteriorMonsters` / `placeQuestInteriorItems` and their
+ * supporting input types — the entrypoints the v1 town spawn pass used
+ * to satisfy quest kill/collect steps. Both were dead exports (their
+ * call site was `TownScene`, which the v2 codebase no longer mounts)
+ * and they were the only remaining readers of v1 QuestStep fields like
+ * `collectItem` / `spawnCol` / `spawnRow`. Removed in the same cleanup
+ * pass that dropped the v1 quest compat surface from `Quests.ts`.
  *
- * These helpers don't read or write `gameState` directly — the scene
- * passes in the existing list and gets back the new one. That keeps
- * the contract a pure (existing → next) transform that can be
- * exercised in isolation.
+ * What survives here is the small set of helpers `CombatScene` actually
+ * still imports: the authored-encounter id / defeat-key plumbing plus
+ * the `appendAuthoredEncounters` placement routine kept around for the
+ * imminent town-mode revival. `tileMapWalk` + `snapToWalkable` are also
+ * preserved because they're the natural extension points if/when the
+ * encounter list ever grows back into a per-cell spawn pass.
  */
-
 import type { TileMap } from "./TileMap";
 import type { EncounterTemplate } from "./Encounters";
-import type { QuestStep } from "./Quests";
 import { rosterFor } from "./Quests";
 import type { AuthoredEncounter } from "./Towns";
-import type { InteriorMonster, InteriorQuestItem } from "../state";
-
-/** RNG hook — defaults to `Math.random`. Tests inject a deterministic
- *  generator so a placement assertion picks a known cell. */
-export type Rng = () => number;
+import type { InteriorMonster } from "../state";
 
 /** Walkability + per-cell occupancy oracle. We don't take a TileMap
  *  directly because tests want to drive specific layouts without
@@ -29,254 +31,6 @@ export interface WalkOracle {
   width: number;
   height: number;
   isWalkable(col: number, row: number): boolean;
-}
-
-/**
- * Flood-fill the walkable cells reachable from `(startCol, startRow)`
- * using 4-connected steps. Returns the set of `"col,row"` keys —
- * `null` when the start tile itself isn't walkable (or out of bounds),
- * which signals to callers that the supplied entry can't anchor a
- * reachability check (they should fall back to plain walkability).
- *
- * Used by the spawn pass so a quest artifact / guardian never lands in
- * a cut-off room the player can't reach. Without this, a basement with
- * a walled-off chamber could still pass the per-cell `isWalkable`
- * filter and trap the scroll behind a wall.
- */
-export function reachableFrom(
-  walk: WalkOracle,
-  startCol: number,
-  startRow: number,
-): Set<string> | null {
-  if (
-    startCol < 0 || startCol >= walk.width ||
-    startRow < 0 || startRow >= walk.height
-  ) return null;
-  if (!walk.isWalkable(startCol, startRow)) return null;
-  const visited = new Set<string>();
-  const queue: Array<[number, number]> = [[startCol, startRow]];
-  visited.add(`${startCol},${startRow}`);
-  while (queue.length > 0) {
-    const [c, r] = queue.shift()!;
-    for (const [dc, dr] of [[0, -1], [0, 1], [-1, 0], [1, 0]] as const) {
-      const nc = c + dc;
-      const nr = r + dr;
-      if (nc < 0 || nc >= walk.width || nr < 0 || nr >= walk.height) continue;
-      const k = `${nc},${nr}`;
-      if (visited.has(k)) continue;
-      if (!walk.isWalkable(nc, nr)) continue;
-      visited.add(k);
-      queue.push([nc, nr]);
-    }
-  }
-  return visited;
-}
-
-/** Minimum context every spawn-row needs. Both kill-step rows and
- *  guardian rows funnel through `placeQuestInteriorMonsters` to
- *  share occupancy bookkeeping, so they share the input shape. */
-export interface QuestKillRow {
-  questName: string;
-  stepIdx: number;
-  /** Encounter name to look up in `encounters` for the roster + the
-   *  monster_party_tile (used as the on-map sprite). */
-  encounter: string;
-  /** How many copies still need to be on the floor. After the spawn
-   *  pass, the placed list will hold `existing.count(this row) +
-   *  remaining` entries for the row, capped by walkable cells. */
-  remaining: number;
-  /** True for collect-step guardians (they're identified separately
-   *  from kill-step monsters when topping up so a return visit
-   *  doesn't double-count them). */
-  isGuardian?: boolean;
-}
-
-/** Subset of TownScene state the placement pass needs. */
-export interface PlacementContext {
-  walk: WalkOracle;
-  /** Cells the placement pass should treat as already occupied even
-   *  before any prior spawns: the entry tile, every NPC home tile. */
-  reserved: Iterable<readonly [number, number]>;
-  /** Monsters left over from a prior visit that we should keep —
-   *  also reserves their cells so we don't drop a new spawn on top. */
-  existing: ReadonlyArray<InteriorMonster>;
-  /** Encounter table (encounters.json) — keyed by category, but we
-   *  flatten it via `rosterFor` so callers don't need to know the
-   *  shape. */
-  encounters: Record<string, EncounterTemplate[]>;
-  rng?: Rng;
-  /** Stable id-suffix counter so tests can assert id strings. Defaults
-   *  to the existing.length so re-entries produce monotonically
-   *  growing ids. */
-  startId?: number;
-  /** Optional entry tile for reachability filtering. When provided, the
-   *  placement pass restricts the walkable pool to cells reachable
-   *  from `(entryCol, entryRow)` — so a cut-off chamber never receives
-   *  a spawn the player can't reach. Falls back to plain walkability
-   *  when the entry tile itself isn't walkable (the safer of two
-   *  bad options — "spawn somewhere" beats "spawn nothing"). */
-  entryCol?: number;
-  entryRow?: number;
-}
-
-/**
- * Top up the interior-monster list to satisfy each row's remaining
- * count. Mirrors the body of `TownScene.spawnInteriorMonstersIfNeeded`
- * — we keep both copies in sync so the scene stays a thin shell over
- * the testable helper.
- */
-export function placeQuestInteriorMonsters(
-  rows: ReadonlyArray<QuestKillRow>,
-  ctx: PlacementContext,
-): InteriorMonster[] {
-  const rng = ctx.rng ?? Math.random;
-  const placed: InteriorMonster[] = [...ctx.existing];
-  const occupied = new Set<string>();
-  for (const [c, r] of ctx.reserved) occupied.add(`${c},${r}`);
-  for (const m of ctx.existing) occupied.add(`${m.col},${m.row}`);
-
-  const reachable = ctx.entryCol !== undefined && ctx.entryRow !== undefined
-    ? reachableFrom(ctx.walk, ctx.entryCol, ctx.entryRow)
-    : null;
-  const walkable: Array<[number, number]> = [];
-  for (let r = 0; r < ctx.walk.height; r++) {
-    for (let c = 0; c < ctx.walk.width; c++) {
-      if (!ctx.walk.isWalkable(c, r)) continue;
-      if (reachable && !reachable.has(`${c},${r}`)) continue;
-      if (occupied.has(`${c},${r}`)) continue;
-      walkable.push([c, r]);
-    }
-  }
-
-  let nextId = ctx.startId ?? placed.length;
-  for (const row of rows) {
-    const tmpl = rosterFor(ctx.encounters, row.encounter);
-    if (!tmpl || tmpl.monsters.length === 0) continue;
-    const have = ctx.existing.filter(
-      (m) =>
-        m.questName === row.questName &&
-        m.stepIdx === row.stepIdx &&
-        Boolean(m.isGuardian) === Boolean(row.isGuardian),
-    ).length;
-    const needed = row.remaining - have;
-    for (let n = 0; n < needed; n++) {
-      if (walkable.length === 0) break;
-      const idx = Math.floor(rng() * walkable.length);
-      const [c, r] = walkable.splice(idx, 1)[0];
-      const idPrefix = row.isGuardian ? "g" : "q";
-      placed.push({
-        id: `${idPrefix}-${row.questName}-${row.stepIdx}-${nextId++}`,
-        col: c,
-        row: r,
-        name: tmpl.monsterPartyTile,
-        encounterNames: [...tmpl.monsters],
-        encounterName: tmpl.name,
-        questName: row.questName,
-        stepIdx: row.stepIdx,
-        isGuardian: row.isGuardian,
-      });
-    }
-  }
-  return placed;
-}
-
-export interface QuestCollectRow {
-  questName: string;
-  stepIdx: number;
-  step: QuestStep;
-}
-
-export interface ItemPlacementContext {
-  walk: WalkOracle;
-  reserved: Iterable<readonly [number, number]>;
-  existing: ReadonlyArray<InteriorQuestItem>;
-  /** Cells held by interior monsters — quest items shouldn't land on
-   *  top of a guardian's tile (the player would walk into combat
-   *  rather than picking up the artifact, so the artifact would be
-   *  unreachable until the guardian moved). */
-  monsterCells?: Iterable<readonly [number, number]>;
-  rng?: Rng;
-  startId?: number;
-  /** Entry tile for reachability filtering — see PlacementContext. */
-  entryCol?: number;
-  entryRow?: number;
-}
-
-/**
- * Top up the interior-item list to satisfy each row's collect step.
- * One item per (quest, step) pair — duplicates are ignored. Honours
- * `step.spawnCol` / `step.spawnRow` overrides when the pinned cell
- * is walkable and unoccupied; otherwise falls back to a random
- * walkable cell.
- *
- * This is the helper the Veyron Heirloom fix hinges on — without it
- * the scroll never lands in the basement.
- */
-export function placeQuestInteriorItems(
-  rows: ReadonlyArray<QuestCollectRow>,
-  ctx: ItemPlacementContext,
-): InteriorQuestItem[] {
-  const rng = ctx.rng ?? Math.random;
-  const placed: InteriorQuestItem[] = [...ctx.existing];
-  const occupied = new Set<string>();
-  for (const [c, r] of ctx.reserved) occupied.add(`${c},${r}`);
-  for (const [c, r] of ctx.monsterCells ?? []) occupied.add(`${c},${r}`);
-  for (const it of ctx.existing) occupied.add(`${it.col},${it.row}`);
-
-  const reachable = ctx.entryCol !== undefined && ctx.entryRow !== undefined
-    ? reachableFrom(ctx.walk, ctx.entryCol, ctx.entryRow)
-    : null;
-  const walkable: Array<[number, number]> = [];
-  for (let r = 0; r < ctx.walk.height; r++) {
-    for (let c = 0; c < ctx.walk.width; c++) {
-      if (!ctx.walk.isWalkable(c, r)) continue;
-      if (reachable && !reachable.has(`${c},${r}`)) continue;
-      if (occupied.has(`${c},${r}`)) continue;
-      walkable.push([c, r]);
-    }
-  }
-
-  let nextId = ctx.startId ?? placed.length;
-  for (const row of rows) {
-    const already = ctx.existing.some(
-      (it) => it.questName === row.questName && it.stepIdx === row.stepIdx,
-    );
-    if (already) continue;
-
-    let pos: [number, number] | null = null;
-    const sc = row.step.spawnCol;
-    const sr = row.step.spawnRow;
-    // Pinned coords also have to be reachable — otherwise an author
-    // typo could pin the artifact behind a wall the player can't get
-    // to. Falls back to a random walkable+reachable cell when the pin
-    // is unwalkable, occupied, or in a cut-off room.
-    if (
-      typeof sc === "number" && typeof sr === "number" &&
-      ctx.walk.isWalkable(sc, sr) &&
-      (!reachable || reachable.has(`${sc},${sr}`)) &&
-      !occupied.has(`${sc},${sr}`)
-    ) {
-      pos = [sc, sr];
-      const idx = walkable.findIndex(([c, r]) => c === sc && r === sr);
-      if (idx >= 0) walkable.splice(idx, 1);
-    } else if (walkable.length > 0) {
-      const idx = Math.floor(rng() * walkable.length);
-      pos = walkable.splice(idx, 1)[0];
-    }
-    if (!pos) break;
-
-    const [c, r] = pos;
-    occupied.add(`${c},${r}`);
-    placed.push({
-      id: `qi-${row.questName}-${row.stepIdx}-${nextId++}`,
-      col: c,
-      row: r,
-      itemName: row.step.collectItem,
-      questName: row.questName,
-      stepIdx: row.stepIdx,
-    });
-  }
-  return placed;
 }
 
 /**

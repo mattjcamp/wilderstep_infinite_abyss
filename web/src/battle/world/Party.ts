@@ -121,8 +121,7 @@ export interface Party {
    *  subset). */
   roster: PartyMember[];
   /** Flat list of effect ids currently active on the party. Detect
-   *  Traps, Infravision, Galadriel's Light — anything the player has
-   *  toggled on. */
+   *  Traps, Infravision — anything the player has toggled on. */
   party_effects: string[];
   /** Stash — items shared across the party. */
   inventory: InventoryItem[];
@@ -134,8 +133,6 @@ export interface Party {
    *  other is MP-driven). The HUD readout shows them as two
    *  entries so the player can see each counter burn down. */
   magic_light_steps: number;
-  /** Remaining steps before Galadriel's Light burns out. */
-  galadriels_light_steps: number;
   /** `dayIndex` (from GameTime) the last time a Gnome tinkered up an
    *  item. Used by the once-per-day gate on the TINKER action. */
   last_tinker_day?: number;
@@ -195,7 +192,6 @@ interface RawParty {
   inventory?: unknown;
   torch_steps?: number;
   magic_light_steps?: number;
-  galadriels_light_steps?: number;
   last_tinker_day?: number;
 }
 
@@ -350,7 +346,6 @@ export function partyFromRaw(
     gold: 0,
     torch_steps: 0,
     magic_light_steps: 0,
-    galadriels_light_steps: 0,
     ...raw,
     start_position: {
       map_id: raw.start_position?.map_id,
@@ -383,7 +378,6 @@ function partyToRaw(p: Party): RawParty {
     inventory: p.inventory,
     torch_steps: p.torch_steps,
     magic_light_steps: p.magic_light_steps,
-    galadriels_light_steps: p.galadriels_light_steps,
     last_tinker_day: p.last_tinker_day,
   };
 }

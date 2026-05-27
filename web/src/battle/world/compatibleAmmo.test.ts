@@ -43,7 +43,6 @@ function makeParty(
     start_position: { map_id: "world", col: 0, row: 0 },
     torch_steps: 0,
     magic_light_steps: 0,
-    galadriels_light_steps: 0,
   } as unknown as Party;
 }
 

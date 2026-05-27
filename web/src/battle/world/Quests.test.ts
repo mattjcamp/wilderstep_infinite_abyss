@@ -103,69 +103,6 @@ describe("parseQuestsFile (v2 envelope)", () => {
     expect(s.count).toBe(3);
   });
 
-  it("populates v1-shape compat fields from v2 data", () => {
-    const defs = parseQuestsFile({
-      quests: [
-        {
-          id: "rats",
-          name: "The Giant Rats",
-          steps: [
-            {
-              id: "s1",
-              name: "go",
-              kind: "kill",
-              params: { encounter_id: "cellar_rats", count: 2 },
-              location_kind: "map",
-              map_id: "demo_map",
-            },
-          ],
-          quest_giver: { npc_name: "Jerald", npc_sprite: "person/hobbit2.png" },
-          rewards: { xp: 50, gold: 25, items: [] },
-        },
-      ],
-    });
-    const q = defs[0];
-    expect(q.giverNpc).toBe("Jerald");
-    expect(q.giverSprite).toBe("person/hobbit2.png");
-    expect(q.rewardXp).toBe(50);
-    expect(q.rewardGold).toBe(25);
-    const s = q.steps[0];
-    // Legacy aliases — same values as the v2-native fields.
-    expect(s.stepType).toBe("kill");
-    expect(s.encounter).toBe("cellar_rats");
-    expect(s.targetCount).toBe(2);
-    // Synthesized location string so the legacy string matcher
-    // returns sensible results.
-    expect(s.spawnLocation).toBe("map:demo_map");
-  });
-
-  it("still parses a v1 flat-shape step as a fallback", () => {
-    const defs = parseQuestsFile({
-      quests: [
-        {
-          name: "Old Quest",
-          steps: [
-            {
-              step_type: "kill",
-              encounter: "cellar_rats",
-              target_count: 1,
-              spawn_location: "dungeon:Crypt - Floor 2",
-            },
-          ],
-        },
-      ],
-    });
-    const s = defs[0].steps[0];
-    expect(s.kind).toBe("kill");
-    expect(s.encounterId).toBe("cellar_rats");
-    expect(s.count).toBe(1);
-    expect(s.spawnLocation).toBe("dungeon:Crypt - Floor 2");
-    // No structured fields when reading v1 input.
-    expect(s.locationKind).toBe("");
-    expect(s.mapId).toBe("");
-    expect(s.dungeonId).toBe("");
-  });
-
   it("accepts a bare-array shape too (no envelope)", () => {
     const defs = parseQuestsFile([
       { id: "bare", name: "Bare", steps: [] },
@@ -202,14 +139,10 @@ describe("matchesLocation (v2 structured)", () => {
     mapId: over.mapId ?? "",
     dungeonId: over.dungeonId ?? "",
     dungeonLevel: over.dungeonLevel,
-    // v1 compat
-    stepType: "kill" as const,
-    encounter: "",
-    collectItem: "",
-    hasGuardian: false,
-    guardianEncounter: "",
-    spawnLocation: "",
-    targetCount: 1,
+    col: 0,
+    row: 0,
+    positions: [],
+    rewards: { items: [], tileAdds: [] },
   });
 
   it("empty location_kind matches anywhere", () => {

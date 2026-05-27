@@ -8,7 +8,7 @@
  *   │ EFFECTS              │ PARTY [1-N]    │
  *   │ ▸ Detect Traps       │ ┌──┐ 1 Aldric  │
  *   │   Infravision REQ…   │ │  │ Fighter…  │
- *   │   Galadriel's Light  │ └──┘ HP ▓▓▓▓   │
+ *   │   Magic Light        │ └──┘ HP ▓▓▓▓   │
  *   │ ──────               │ … per member   │
  *   │ CAST SPELL           │ ──────         │
  *   │ PICKPOCKET (race)    │ AVAILABLE      │
@@ -65,7 +65,6 @@ export interface PartyRecord {
   party_effects?: string[];
   inventory?: PartyInventoryEntry[];
   torch_steps?: number;
-  galadriels_light_steps?: number;
   [k: string]: unknown;
 }
 
@@ -330,10 +329,10 @@ type EffectRow = {
   /** True when the host has flagged it active in the preview set. */
   active: boolean;
   /** Optional remaining-duration counter (in step ticks). Surfaced on
-   *  the row as "(N steps)" so the player can see how long an
-   *  effect like Light or Galadriel's Light has left before it
-   *  burns out. Undefined for effects without a duration counter
-   *  (toggle-only effects like Infravision or Detect Traps). */
+   *  the row as "(N steps)" so the player can see how long the
+   *  Magic Light spell has left before it burns out. Undefined for
+   *  effects without a duration counter (toggle-only effects like
+   *  Infravision or Detect Traps). */
   durationSteps?: number;
 };
 
@@ -343,7 +342,6 @@ type EffectRow = {
  *  from this table we fall back to a Title-Cased version of the id. */
 const SYNTHETIC_EFFECT_NAMES: Record<string, string> = {
   magic_light: "Light",
-  galadriels_light: "Galadriel's Light",
   torch: "Torch",
   infravision: "Infravision",
   detect_traps: "Detect Traps",

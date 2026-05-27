@@ -344,7 +344,6 @@ async function assembleInitialSave(
     gold: party.gold ?? 0,
     inventory: party.inventory ?? [],
     torch_steps: 0,
-    galadriels_light_steps: 0,
     infravision_active: false,
     // Fresh game — party starts on foot. The kernel's grid-scan
     // boat-spawn-cell heuristic still handles the "party started

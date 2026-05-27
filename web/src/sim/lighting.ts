@@ -109,8 +109,8 @@ export interface LightingInputs {
    *  on torches. Used by the editor's painting view (no sim
    *  active) so the relight pass still produces sensible tints. */
   party: Position | null;
-  /** Party's emitted light source — torch / Galadriel's Light /
-   *  whatever the sim contributes via `setPartyLight`. `null` when
+  /** Party's emitted light source — torch / Magic Light / whatever
+   *  the sim contributes via `setPartyLight`. `null` when
    *  the party emits no light; the 1-tile baseline still applies. */
   partyLight: SimLightSource | null;
   /** True when the party should render with infravision: any

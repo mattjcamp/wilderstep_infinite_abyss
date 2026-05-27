@@ -204,17 +204,11 @@ export interface SimParty {
   /** Step countdown for a held torch. >0 = +TORCH_LIGHT_RANGE to the
    *  party's emitted light radius. Decrements one per step. */
   torch_steps: number;
-  /** Step countdown for the Galadriel's Light effect (Elf race).
-   *  >0 = +GALADRIELS_LIGHT_RANGE. Decrements one per step. */
-  galadriels_light_steps: number;
-  /** Step countdown for the Light spell (Cleric/priest). Mechanically
-   *  identical to Galadriel's Light — bumps the party's emitted
-   *  light radius — but tracked separately so a caster's spell and
-   *  an Elf's racial effect can coexist without one ending the
-   *  other early. >0 = +MAGIC_LIGHT_RANGE. Decrements one per
-   *  step. Optional in the type because legacy SimParty inputs
-   *  (older tests, fresh saves) may omit it; the kernel coerces
-   *  absence to 0. */
+  /** Step countdown for the Light spell (Cleric/priest). >0 =
+   *  +MAGIC_LIGHT_RANGE to the party's emitted light radius.
+   *  Decrements one per step. Optional in the type because legacy
+   *  SimParty inputs (older tests, fresh saves) may omit it; the
+   *  kernel coerces absence to 0. */
   magic_light_steps?: number;
   /** Whether the party has currently *engaged* their infravision
    *  ability. The ability itself is a passive race trait (Dwarf in
@@ -316,9 +310,7 @@ export interface SimEffect {
 /** Light range constants — same magic numbers v1 used. Held here so
  *  the panel UI and the kernel agree on what "lighting a torch" means. */
 export const TORCH_LIGHT_RANGE = 3;
-export const GALADRIELS_LIGHT_RANGE = 5;
-/** Light range when the Cleric's Light spell is active. Matches the
- *  Galadriel's Light radius — both are "magical orb of party light." */
+/** Light range when the Cleric's Light spell is active. */
 export const MAGIC_LIGHT_RANGE = 5;
 // INFRAVISION_RANGE used to live here as a stand-in for the
 // Dwarf infravision ability. It was implemented as a 999-cell

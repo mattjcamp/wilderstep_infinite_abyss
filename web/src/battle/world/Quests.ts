@@ -1,82 +1,46 @@
 /**
- * Module quest data + state.
+ * Module quest data + runtime state.
  *
- * Mirrors the relevant subset of `src/quest_manager.py` from the
- * Python project — same status lifecycle, same kill/collect step
- * semantics, same location-matching rules. Quest definitions are
- * loaded from the active module's `quests.json`; per-quest progress
- * lives on `gameState.moduleQuestStates`.
+ * Authored quests live in the active module's `quests.json` (parsed
+ * via {@link parseQuestsFile} / {@link loadQuests}); per-quest progress
+ * lives on `gameState.moduleQuestStates`. The runtime surface here is
+ * deliberately small — only the helpers the sim / scene / play host
+ * actually call survive. The v1 string-keyed compat layer that used to
+ * cover `quest_manager.py` shapes has been removed; modules now all
+ * author the v2 structured form (`kind` + `location_kind` + per-kind
+ * id fields).
  *
  * **Status lifecycle.**
  *   `available` → `active` (player accepted the quest)
  *                 → `completed` (every step's progress flag is true)
  *                                → `turned_in` (rewards claimed; terminal)
  *
- * **Step kinds.** v1 supports two:
- *   - `"kill"` — defeat the named encounter (from encounters.json)
- *               at `spawn_location`, `target_count` times.
- *   - `"collect"` — pick up `collect_item` at `spawn_location`.
+ * **Step kinds.** The current runtime branches on three:
+ *   - `"kill"` — defeat the named `encounter_id` at a location until
+ *               the per-step `count` is reached.
+ *   - `"retrieve"` — pick up `item_id` from the cell `(col, row)` on
+ *               the step's `map_id`.
+ *   - `"collect"` — legacy alias of retrieve kept on the enum so older
+ *               quests.json that still uses `"collect"` hydrates; new
+ *               authoring writes `"retrieve"`.
  *
- * **Location matching** (`locationMatches`) accepts:
- *   - empty step location → any combat location credits
- *   - `"overview"` / `"Overview Map"` → overworld combat
- *   - exact case-insensitive match for `"town:X"`, `"interior:X/Y"`,
- *     `"space:X/Y"`, `"building:X"`
- *   - `"dungeon:X"` → matches `"dungeon:X"` and `"dungeon:X - Floor N"`
- *   - `"building:X"` → also matches `"space:X/Y"` for any sub-space
- *
- * v1 explicitly does NOT implement quest-tag verification (the Python
- * "this monster must be the quest's specific spawn" rule). That's a
- * fix-up to preserve the cinematic boss moment in localized steps;
- * for v1 a roster name + location match is the user-facing
- * simplification called out in the port plan.
+ * **Location matching.** Use {@link matchesLocation} — it consumes a
+ * {@link CombatLocation} (`{ kind, mapId | dungeonId, dungeonLevel? }`)
+ * and a step's structured fields. The legacy string matcher was
+ * removed in the same cleanup pass that dropped the v1 surface.
  */
 
 import { modulePath } from "./Module";
 import { sampleEncounter, type EncounterTemplate } from "./Encounters";
-import { tileDef } from "./Tiles";
-import type { TileMap } from "./TileMap";
 
 export type QuestStatus = "available" | "active" | "completed" | "turned_in";
 export type QuestStepKind = "kill" | "collect" | "retrieve";
-
-// ── World-unlock rewards ──────────────────────────────────────────
-//
-// A quest can declare a list of overworld tile mutations that fire
-// when the quest is turned in — used in modules like Dragon of
-// Dagorn to drop a Bridge across an impassable river once the
-// Stolen Sealstone quest is delivered. The Python implementation
-// lives in `src/module_editor_quest.py:apply_world_unlocks`; this
-// is a faithful port.
-//
-// `kind` is preserved as a designer hint so the quest editor can
-// re-open the right tile picker on a round-trip; at runtime the
-// two kinds are identical (a single `set_tile`):
-//   - "add_tile"        — paint any overworld tile id
-//   - "remove_obstacle" — paint a passable tile (subset of add_tile)
-//
-// Out-of-bounds entries and ones missing required ints are skipped
-// silently rather than crashing on a malformed quests.json.
-export type WorldUnlockKind = "add_tile" | "remove_obstacle" | "";
-
-export interface WorldUnlock {
-  kind: WorldUnlockKind;
-  col: number;
-  row: number;
-  tile: number;
-}
-
-/** Triple returned by `applyWorldUnlocks` — used by the reward-summary
- *  line so the player sees "World changed: Bridge at (5,13)" when a
- *  quest's world-unlock op completes. */
-export type AppliedUnlock = readonly [col: number, row: number, tile: number];
 
 /** Where a step plays out in the v2 structured form. Empty means
  *  "any location credits the step." */
 export type QuestLocationKind = "dungeon" | "map" | "";
 
 export interface QuestStep {
-  // ── v2-native fields ───────────────────────────────────────────
   /** Stable per-step id, unique within the parent Quest's `steps[]`.
    *  In v2 JSON this is `step.id`. */
   id: string;
@@ -85,13 +49,15 @@ export interface QuestStep {
   description: string;
   /** Editor-side organizational labels. Gameplay doesn't read them. */
   tags: string[];
-  /** Discriminator for what the step is — `"kill"`, `"fetch"`, `"visit"`,
-   *  `"talk"`, or any future kind. Open enum; the runtime branches on
-   *  known values and skips unknown ones. */
+  /** Discriminator for what the step is — `"kill"`, `"retrieve"`,
+   *  `"collect"` (legacy alias of retrieve), or any future kind. Open
+   *  enum; the runtime branches on known values and skips unknown ones. */
   kind: QuestStepKind;
-  /** Free-form params blob the v2 JSON carries. The fields below are
-   *  typed projections of the common shapes (kill: encounter_id+count;
-   *  fetch: item_id+count; visit: map_id+col+row; talk: npc_id). */
+  /** Free-form params blob the v2 JSON carries. The typed projections
+   *  below (`encounterId`, `count`, `itemId`) cover the common shapes
+   *  the kernel reads; `params` itself is preserved verbatim so
+   *  per-step custom fields (e.g. `monster_id` on kill steps) can be
+   *  consumed by call sites that cast through `as unknown`. */
   params: Record<string, unknown>;
   /** v2 structured location. Use {@link matchesLocation} to check
    *  whether a current combat location satisfies the step. */
@@ -109,13 +75,13 @@ export interface QuestStep {
 
   // ── Convenience projections of `params` for the common kinds ───
   /** For `kind === "kill"` — the encounter id (encounters.json `id`)
-   *  the step wants cleared. Pulled from `params.encounter_id`. */
+   *  the step wants cleared. */
   encounterId: string;
   /** For `kind === "kill"` (or any countable step) — how many
-   *  encounter clearings to credit. Pulled from `params.count`; defaults
-   *  to 1 when absent. */
+   *  encounter clearings to credit. Defaults to 1 when absent. */
   count: number;
-  /** For `kind === "fetch"` — item id from `params.item_id`. */
+  /** For `kind === "retrieve"` — item id to drop on the step's
+   *  `(col, row)`. */
   itemId: string;
 
   /** For `kind === "kill"` — authored anchor cells the spawn pass
@@ -138,31 +104,6 @@ export interface QuestStep {
    *  authors use to gate later steps on a map change or an item
    *  drop. */
   rewards: QuestStepRewards;
-
-  // ── v1-shape compat fields ─────────────────────────────────────
-  // Populated for backwards-compat with helpers ported from v1 (the
-  // orphan `placeQuestInteriorMonsters` / `placeQuestInteriorItems`
-  // path, the string-based `locationMatches`, the kill-credit
-  // helpers). v2 quests don't carry data for these so they're
-  // derived/empty; once the v1 helpers are deleted, these go too.
-  /** @deprecated Use {@link kind} (alias for back-compat). */
-  stepType: QuestStepKind;
-  /** @deprecated Use {@link encounterId}. */
-  encounter: string;
-  /** @deprecated Use {@link itemId}. v2 quests don't author this. */
-  collectItem: string;
-  /** @deprecated v2 quests don't author this. */
-  hasGuardian: boolean;
-  /** @deprecated v2 quests don't author this. */
-  guardianEncounter: string;
-  /** @deprecated Use {@link locationKind} + {@link mapId} / {@link dungeonId}. */
-  spawnLocation: string;
-  /** @deprecated Use {@link count}. */
-  targetCount: number;
-  /** @deprecated v2 quests don't author this. */
-  spawnCol?: number;
-  /** @deprecated v2 quests don't author this. */
-  spawnRow?: number;
 }
 
 /** The v2 `quest_giver` envelope. The giver's *placement* lives on a
@@ -239,9 +180,8 @@ function emptyStepRewards(): QuestStepRewards {
 }
 
 export interface QuestDef {
-  // ── v2-native fields ───────────────────────────────────────────
-  /** Stable Quest id from quests.json (e.g. `"rats"`). v2's primary
-   *  key for runtime state lookup. */
+  /** Stable Quest id from quests.json (e.g. `"rats"`). Primary key
+   *  for runtime state lookup. */
   id: string;
   name: string;
   description: string;
@@ -250,37 +190,6 @@ export interface QuestDef {
   steps: QuestStep[];
   questGiver: QuestGiver;
   rewards: QuestRewards;
-
-  // ── v1-shape compat fields ─────────────────────────────────────
-  // Populated from the v2 envelope so helpers ported from v1
-  // (Towns.ts giver placement, applyTurnedInWorldUnlocks, etc.)
-  // still compile. v2 doesn't author location/coords on the quest
-  // record so those are empty/zero; v2 doesn't author world unlocks
-  // or a final-quest flag yet so those are empty/false.
-  /** @deprecated Use {@link questGiver}.npcName. */
-  giverNpc: string;
-  /** @deprecated Use {@link questGiver}.npcSprite. */
-  giverSprite: string;
-  /** @deprecated v2 doesn't author this. */
-  giverLocation: string;
-  /** @deprecated Use {@link questGiver}.startDialog. */
-  giverDialogue: string;
-  /** @deprecated v2 doesn't author this — giver position lives on a map cell. */
-  giverCol: number;
-  /** @deprecated v2 doesn't author this. */
-  giverRow: number;
-  /** @deprecated Use {@link rewards}.xp. */
-  rewardXp: number;
-  /** @deprecated Use {@link rewards}.gold. */
-  rewardGold: number;
-  /** @deprecated Use {@link rewards}.items. */
-  rewardItems: string[];
-  /** @deprecated v2 doesn't author this yet. */
-  rewardWorldUnlocks: WorldUnlock[];
-  /** @deprecated v2 doesn't author this yet. */
-  isFinalQuest: boolean;
-  /** @deprecated v2 doesn't author this yet. */
-  victoryText: string;
 }
 
 export interface QuestState {
@@ -303,26 +212,19 @@ export interface QuestState {
 }
 
 interface RawQuestStep {
-  // v2 fields
   id?: string;
   name?: string;
   description?: string;
   tags?: unknown;
   kind?: string;
-  /** First-class step attributes (kill steps). Replaces the legacy
-   *  `params.encounter_id` / `params.count` nesting. The loader still
-   *  reads `params` as a fallback so on-disk data from before the
-   *  cleanup keeps hydrating; new editor output uses these top-level
-   *  fields. */
+  /** First-class step attribute for kill steps. */
   encounter_id?: string;
   count?: number | string;
-  /** First-class step attribute for fetch steps. Same migration story
-   *  as `encounter_id` — top-level now, `params.item_id` is a legacy
-   *  read fallback. */
+  /** First-class step attribute for retrieve steps. */
   item_id?: string;
-  /** Legacy free-form params blob. Still read on load so existing
-   *  on-disk data hydrates correctly, but no longer authored by the
-   *  editor. Newly-saved steps drop this field entirely. */
+  /** Free-form params blob — preserved verbatim onto QuestStep.params
+   *  for call sites that read kind-specific fields beyond what the
+   *  parser projects. */
   params?: Record<string, unknown> | null;
   /** Per-step rewards block. Mirrors the quest-level `rewards`
    *  envelope but only honors `items` and `tile_add` — XP/gold are
@@ -344,27 +246,6 @@ interface RawQuestStep {
    *  number; defaults to 0 when absent. */
   col?: number | string;
   row?: number | string;
-  // v1 legacy fields (kept so the loader can fall back to v1-shape
-  // quests.json files during migration — strip once nothing in the
-  // module catalog uses them)
-  step_type?: string;
-  encounter?: string;
-  collect_item?: string;
-  has_guardian?: string | boolean;
-  guardian_encounter?: string;
-  spawn_location?: string;
-  target?: string;
-  target_count?: number;
-  optional?: string;
-  spawn_col?: number | string;
-  spawn_row?: number | string;
-}
-
-interface RawWorldUnlock {
-  kind?: string;
-  col?: number | string;
-  row?: number | string;
-  tile?: number | string;
 }
 
 interface RawQuestGiver {
@@ -399,7 +280,6 @@ interface RawStepRewards {
 }
 
 interface RawQuest {
-  // v2 fields
   id?: string;
   name?: string;
   description?: string;
@@ -407,19 +287,6 @@ interface RawQuest {
   steps?: RawQuestStep[];
   quest_giver?: RawQuestGiver | null;
   rewards?: RawRewards | null;
-  // v1 legacy fields (fallback during migration)
-  giver_npc?: string;
-  giver_sprite?: string;
-  giver_location?: string;
-  giver_dialogue?: string;
-  giver_col?: number;
-  giver_row?: number;
-  reward_xp?: number;
-  reward_gold?: number;
-  reward_items?: string[];
-  reward_world_unlocks?: RawWorldUnlock[];
-  is_final_quest?: boolean;
-  victory_text?: string;
 }
 
 /** Top-level envelope. v2 quests.json wraps the list as
@@ -504,49 +371,32 @@ function parseStepRewards(raw: RawStepRewards | null | undefined): QuestStepRewa
 }
 
 function stepFromRaw(raw: RawQuestStep): QuestStep | null {
-  // v2 `kind` is the discriminator; fall back to v1 `step_type` so a
-  // module that still has v1-shape quests.json can hydrate without the
-  // step collapsing to defaults. "kill" / "collect" stay as legacy
-  // values; anything else passes through as the open enum.
-  const kindRaw = raw.kind ?? raw.step_type ?? "kill";
-  const kind = kindRaw as QuestStepKind;
+  const kind = (raw.kind ?? "kill") as QuestStepKind;
 
   const params = (raw.params && typeof raw.params === "object")
     ? raw.params as Record<string, unknown>
     : {};
 
-  // ── First-class step attributes ───────────────────────────────
-  // Prefer the top-level `encounter_id` / `count` / `item_id`
-  // (current editor output) and fall back through legacy shapes in
-  // order: `params.<field>` (old quests.json from before the
-  // editor refactor) → v1 flat fields (`raw.encounter`,
-  // `raw.target_count`, `raw.collect_item`) so old hand-authored
-  // data still hydrates. Once the modules are migrated and v1
-  // fixtures are gone, both fallbacks can be deleted.
+  // Prefer the top-level `encounter_id` / `count` / `item_id` (current
+  // editor output) and fall back to `params.<field>` so quests.json
+  // authored before the editor's top-level migration still hydrates.
+  // The truly v1 flat fields (`raw.encounter`, `raw.target_count`,
+  // `raw.collect_item`) were removed in the same cleanup that dropped
+  // the v1 derived view — no production module ever shipped them.
   const encounterIdFromParams = typeof params.encounter_id === "string"
     ? params.encounter_id
     : "";
-  const encounterId =
-    (raw.encounter_id ?? "") ||
-    encounterIdFromParams ||
-    (raw.encounter ?? "");
+  const encounterId = (raw.encounter_id ?? "") || encounterIdFromParams;
 
   const countTop = coerceInt(raw.count);
   const countFromParams = coerceInt(params.count);
-  const count = Math.max(
-    1,
-    countTop ?? countFromParams ?? raw.target_count ?? 1,
-  );
+  const count = Math.max(1, countTop ?? countFromParams ?? 1);
 
   const itemIdFromParams = typeof params.item_id === "string"
     ? params.item_id
     : "";
-  const itemId =
-    (raw.item_id ?? "") ||
-    itemIdFromParams ||
-    (raw.collect_item ?? "");
+  const itemId = (raw.item_id ?? "") || itemIdFromParams;
 
-  // ── Location (v2 structured) ──────────────────────────────────
   const locationKind = coerceLocationKind(raw.location_kind);
   const mapId = typeof raw.map_id === "string" ? raw.map_id : "";
   const dungeonId = typeof raw.dungeon_id === "string" ? raw.dungeon_id : "";
@@ -556,20 +406,7 @@ function stepFromRaw(raw: RawQuestStep): QuestStep | null {
   const col = coerceInt(raw.col) ?? 0;
   const row = coerceInt(raw.row) ?? 0;
 
-  // ── v1-shape compat (derived) ─────────────────────────────────
-  // `stepType` mirrors v1 with the union narrowed to "kill" | "collect";
-  // anything else (visit/talk/...) maps to "kill" so the few v1 helpers
-  // that branch on stepType don't crash. Once those helpers are
-  // deleted this whole block goes too.
-  const stepType: QuestStepKind = (kind === "collect" ? "collect" : "kill");
-  // Synthesize a v1-style spawn_location string from the structured v2
-  // form so the string-based `locationMatches` keeps returning sensible
-  // results for legacy callers. Empty when no location_kind is set.
-  const spawnLocation = synthesizeSpawnLocation(locationKind, mapId, dungeonId, dungeonLevel)
-    || (raw.spawn_location ?? "");
-
   return {
-    // v2-native
     id: raw.id ?? "",
     name: raw.name ?? "",
     description: raw.description ?? "",
@@ -587,69 +424,14 @@ function stepFromRaw(raw: RawQuestStep): QuestStep | null {
     itemId,
     positions: parsePositions(raw.positions),
     rewards: parseStepRewards(raw.rewards),
-    // v1-shape compat
-    stepType,
-    encounter: encounterId,
-    collectItem: itemId,
-    hasGuardian: raw.has_guardian === "yes" || raw.has_guardian === true,
-    guardianEncounter: raw.guardian_encounter ?? "",
-    spawnLocation,
-    targetCount: count,
-    spawnCol: coerceInt(raw.spawn_col),
-    spawnRow: coerceInt(raw.spawn_row),
   };
-}
-
-/** Build a v1-style location string from v2's structured fields so the
- *  legacy string-based `locationMatches` and any orphan helpers that
- *  read `step.spawnLocation` keep agreeing with the structured matcher.
- *  Empty `locationKind` → empty string (= "any location credits"). */
-function synthesizeSpawnLocation(
-  kind: QuestLocationKind,
-  mapId: string,
-  dungeonId: string,
-  dungeonLevel?: number,
-): string {
-  if (kind === "map") {
-    return mapId ? `map:${mapId}` : "";
-  }
-  if (kind === "dungeon") {
-    if (!dungeonId) return "";
-    if (typeof dungeonLevel === "number") {
-      return `dungeon:${dungeonId} - Floor ${dungeonLevel}`;
-    }
-    return `dungeon:${dungeonId}`;
-  }
-  return "";
-}
-
-function unlockFromRaw(raw: RawWorldUnlock): WorldUnlock | null {
-  if (!raw || typeof raw !== "object") return null;
-  const c = coerceInt(raw.col);
-  const r = coerceInt(raw.row);
-  const t = coerceInt(raw.tile);
-  if (c === undefined || r === undefined || t === undefined) return null;
-  // Accept anything the editor might have written for `kind`, but only
-  // round-trip the two values the editor surfaces; anything else
-  // (including the empty string) collapses to "add_tile" so a hand-
-  // edited entry without a kind still applies cleanly at runtime.
-  let kind: WorldUnlockKind = "add_tile";
-  if (raw.kind === "remove_obstacle") kind = "remove_obstacle";
-  else if (raw.kind === "add_tile" || raw.kind === undefined || raw.kind === "") {
-    kind = "add_tile";
-  } else {
-    // Unknown kinds still apply — preserve the string the editor wrote
-    // so a future round-trip doesn't lose data, but TS narrows it to
-    // the empty-string branch of the union for callers.
-    kind = "";
-  }
-  return { kind, col: c, row: r, tile: t };
 }
 
 function fromRaw(raw: RawQuest): QuestDef | null {
   if (!raw || typeof raw !== "object") return null;
-  // v2 keys quests by `id`. v1 keyed them by `name`. Accept either —
-  // a quest must have at least one of the two to be addressable.
+  // Stable id is the primary key for state lookup; name falls back to
+  // id when the JSON only set one of the two. A quest with neither
+  // is unaddressable and gets dropped.
   const id = typeof raw.id === "string" && raw.id.length > 0
     ? raw.id
     : (typeof raw.name === "string" ? raw.name : "");
@@ -660,41 +442,26 @@ function fromRaw(raw: RawQuest): QuestDef | null {
     .map(stepFromRaw)
     .filter((s): s is QuestStep => s !== null);
 
-  // ── Quest giver (v2 nested envelope, v1 flat fallback) ────────
   const giverRaw = raw.quest_giver ?? null;
   const questGiver: QuestGiver = {
-    npcName: giverRaw?.npc_name ?? raw.giver_npc ?? "",
-    npcSprite: giverRaw?.npc_sprite ?? raw.giver_sprite ?? "",
-    startDialog: giverRaw?.start_dialog ?? raw.giver_dialogue ?? "",
+    npcName: giverRaw?.npc_name ?? "",
+    npcSprite: giverRaw?.npc_sprite ?? "",
+    startDialog: giverRaw?.start_dialog ?? "",
     endDialog: giverRaw?.end_dialog ?? "",
   };
 
-  // ── Rewards (v2 nested envelope, v1 flat fallback) ────────────
   const rewardsRaw = raw.rewards ?? null;
-  // Tile-mutation rewards (v2). Each entry must carry a real map id
-  // and finite col/row; malformed entries are dropped so a bad
-  // quests.json never crashes a load.
   const tileAdds = parseTileAdds(rewardsRaw?.tile_add);
   const rewards: QuestRewards = {
-    xp: coerceInt(rewardsRaw?.xp) ?? raw.reward_xp ?? 0,
-    gold: coerceInt(rewardsRaw?.gold) ?? raw.reward_gold ?? 0,
+    xp: coerceInt(rewardsRaw?.xp) ?? 0,
+    gold: coerceInt(rewardsRaw?.gold) ?? 0,
     items: rewardsRaw && Array.isArray(rewardsRaw.items)
       ? rewardsRaw.items.filter((s): s is string => typeof s === "string")
-      : (Array.isArray(raw.reward_items)
-          ? raw.reward_items.filter((s): s is string => typeof s === "string")
-          : []),
+      : [],
     tileAdds,
   };
 
-  // v2 doesn't carry world unlocks yet; v1 fixtures might.
-  const rewardWorldUnlocks = Array.isArray(raw.reward_world_unlocks)
-    ? raw.reward_world_unlocks
-        .map(unlockFromRaw)
-        .filter((u): u is WorldUnlock => u !== null)
-    : [];
-
   return {
-    // v2-native
     id,
     name,
     description: raw.description ?? "",
@@ -702,19 +469,6 @@ function fromRaw(raw: RawQuest): QuestDef | null {
     steps,
     questGiver,
     rewards,
-    // v1-shape compat (derived)
-    giverNpc: questGiver.npcName || name,
-    giverSprite: questGiver.npcSprite,
-    giverLocation: raw.giver_location ?? "",
-    giverDialogue: questGiver.startDialog,
-    giverCol: raw.giver_col ?? 0,
-    giverRow: raw.giver_row ?? 0,
-    rewardXp: rewards.xp,
-    rewardGold: rewards.gold,
-    rewardItems: rewards.items,
-    rewardWorldUnlocks,
-    isFinalQuest: raw.is_final_quest === true,
-    victoryText: raw.victory_text ?? "",
   };
 }
 
@@ -729,8 +483,8 @@ export async function loadQuests(url = modulePath("quests.json")): Promise<Quest
   return _cache;
 }
 
-/** Parse a `quests.json` payload (either v2's `{ quests: [...] }`
- *  envelope or a bare v1 array) into the runtime QuestDef[]. Exposed
+/** Parse a `quests.json` payload (either the v2 `{ quests: [...] }`
+ *  envelope or a bare array) into the runtime QuestDef[]. Exposed
  *  for tests so the loader can be exercised without a fetch. */
 export function parseQuestsFile(raw: unknown): QuestDef[] {
   const list: RawQuest[] = Array.isArray(raw)
@@ -762,9 +516,6 @@ export function ensureQuestStates(
   states: Map<string, QuestState>,
 ): void {
   for (const def of defs) {
-    // v2 keys state by `def.id` (the quests.json stable id). v1
-    // fixtures whose `id` falls back to `name` still hit the same
-    // bucket, so this isn't a breaking change for old data.
     let state = states.get(def.id);
     if (!state) {
       state = {
@@ -788,12 +539,6 @@ export function ensureQuestStates(
 
 // ── Location matching ───────────────────────────────────────────
 
-/**
- * Strip a trailing " - Floor N" from a `dungeon:` location so a step
- * targeting `"dungeon:Crypt"` credits combat on any floor.
- */
-const FLOOR_SUFFIX = /\s*-\s*floor\s+\d+$/i;
-
 /** Where the party currently is when combat resolves — the input to
  *  the structured location matcher. Mirrors v2's `location_kind` +
  *  the relevant ids (`map_id` for "map" locations; `dungeon_id` plus
@@ -813,14 +558,13 @@ export interface CombatLocation {
 }
 
 /**
- * Returns true when a v2 step's structured `locationKind` / `mapId`
- * / `dungeonId` / `dungeonLevel` is satisfied by the current
- * {@link CombatLocation}. Replaces the legacy string-based
- * {@link locationMatches}.
+ * Returns true when a step's structured `locationKind` / `mapId` /
+ * `dungeonId` / `dungeonLevel` is satisfied by the current
+ * {@link CombatLocation}.
  *
  * Rules:
- *   - Empty `step.locationKind` → matches any location (the v1
- *     "no location requirement" semantic).
+ *   - Empty `step.locationKind` → matches any location ("no location
+ *     requirement").
  *   - `step.locationKind === "map"` → satisfied when `loc.kind ===
  *     "map"` AND (step.mapId is empty OR matches loc.mapId).
  *   - `step.locationKind === "dungeon"` → satisfied when `loc.kind
@@ -841,65 +585,7 @@ export function matchesLocation(step: QuestStep, loc: CombatLocation): boolean {
   return true;
 }
 
-/**
- * Legacy v1 string-based matcher. Kept so the orphan v1 helpers in
- * this file (and the InteriorSpawn / Dungeon quest-placement code
- * that hasn't been re-wired yet) keep working.
- *
- * Returns true when a combat-location string satisfies a step's
- * spawn_location. Mirrors `_location_matches` in quest_manager.py.
- *
- * @deprecated Use {@link matchesLocation} for v2-structured matching.
- */
-export function locationMatches(stepLocation: string, combatLocation: string): boolean {
-  if (!stepLocation) return true;
-  if (stepLocation === "overview" || stepLocation === "Overview Map") {
-    return combatLocation === "overview" || combatLocation === "overworld" || combatLocation === "";
-  }
-  if (!combatLocation) return false;
-  const sl = stepLocation.toLowerCase();
-  const cl = combatLocation.toLowerCase();
-  if (sl === cl) return true;
-  if (sl.startsWith("building:")) {
-    const bld = sl.slice("building:".length);
-    if (cl.startsWith("space:") && cl.slice("space:".length).startsWith(bld + "/")) return true;
-  }
-  if (sl.startsWith("dungeon:")) {
-    const base = sl.slice("dungeon:".length);
-    if (cl.startsWith("dungeon:")) {
-      const clBase = cl.slice("dungeon:".length).replace(FLOOR_SUFFIX, "");
-      if (clBase === base) return true;
-    }
-  }
-  return false;
-}
-
-// ── Monster-name normalisation ─────────────────────────────────
-
-/**
- * Build the variant set the Python quest manager builds: original,
- * lowercase, snake_case, Title Case, lowercase-with-spaces. A roster
- * monster matches a killed monster if their variant sets intersect.
- */
-function nameVariants(name: string): Set<string> {
-  if (!name) return new Set();
-  const out = new Set<string>();
-  out.add(name);
-  out.add(name.toLowerCase());
-  out.add(name.replace(/\s+/g, "_").toLowerCase());
-  // Title Case on the spaced form
-  const spaced = name.replace(/_/g, " ");
-  out.add(spaced.replace(/\b\w/g, (c) => c.toUpperCase()));
-  out.add(spaced.toLowerCase());
-  return out;
-}
-
-function variantsOverlap(a: Set<string>, b: Set<string>): boolean {
-  for (const v of a) if (b.has(v)) return true;
-  return false;
-}
-
-// ── Step credit ────────────────────────────────────────────────
+// ── Active-step queries ─────────────────────────────────────────
 
 export interface QuestStepCallout {
   questName: string;
@@ -908,234 +594,8 @@ export interface QuestStepCallout {
   questComplete: boolean;
 }
 
-export interface KillCreditResult {
-  /** Player-facing summary lines, one per progress event. */
-  messages: string[];
-  /** Quests that crossed into `completed` on this credit. */
-  newlyCompleted: string[];
-  /** Step-completion callouts to surface as banners. One per step
-   *  that flipped from incomplete → done in this credit pass. */
-  callouts: QuestStepCallout[];
-}
-
-/**
- * Credit any kill steps satisfied by the names of monsters killed in
- * a single combat at `combatLocation`. Mutates the relevant quest
- * states in place.
- *
- * `encounters` is the loaded encounters.json table — we look up each
- * step's `encounter` name to get its roster, then test whether any
- * killed monster name is in that roster (variant-fuzzy match).
- */
-export function creditKills(
-  defs: QuestDef[],
-  states: Map<string, QuestState>,
-  encounters: Record<string, EncounterTemplate[]>,
-  killedNames: string[],
-  combatLocation: string,
-): KillCreditResult {
-  const messages: string[] = [];
-  const newlyCompleted: string[] = [];
-  const callouts: QuestStepCallout[] = [];
-  if (killedNames.length === 0) return { messages, newlyCompleted, callouts };
-
-  const killedVariants = new Set<string>();
-  for (const n of killedNames) for (const v of nameVariants(n)) killedVariants.add(v);
-
-  // Flat map of encounter name → roster (across all areas).
-  const rosterByName = new Map<string, string[]>();
-  for (const list of Object.values(encounters)) {
-    for (const e of list) {
-      if (!rosterByName.has(e.name)) rosterByName.set(e.name, e.monsters);
-    }
-  }
-
-  for (const def of defs) {
-    const state = states.get(def.name);
-    if (!state || state.status !== "active") continue;
-    let stepCompleted = false;
-
-    for (let i = 0; i < def.steps.length; i++) {
-      const step = def.steps[i];
-      if (state.stepProgress[i]) continue;
-      if (step.stepType !== "kill") continue;
-      if (!step.encounter) continue;
-      if (!locationMatches(step.spawnLocation, combatLocation)) continue;
-      const roster = rosterByName.get(step.encounter);
-      if (!roster) continue;
-      let rosterHit = false;
-      for (const m of roster) {
-        if (variantsOverlap(nameVariants(m), killedVariants)) { rosterHit = true; break; }
-      }
-      if (!rosterHit) continue;
-
-      const prev = state.stepKills[i] ?? 0;
-      const now = prev + 1;
-      state.stepKills[i] = now;
-      if (now >= step.targetCount) {
-        state.stepProgress[i] = true;
-        stepCompleted = true;
-        messages.push(`Quest "${def.name}": ${step.description} — Complete!`);
-        const willCompleteQuest = state.stepProgress.every((p) => p);
-        callouts.push({
-          questName: def.name,
-          description: step.description,
-          questComplete: willCompleteQuest,
-        });
-      } else {
-        messages.push(`${step.encounter} defeated! (${now}/${step.targetCount})`);
-      }
-    }
-
-    if (stepCompleted && state.stepProgress.every((p) => p)) {
-      // status was "active" at the loop guard above; TS narrows it
-      // here, so we can flip directly without re-checking.
-      state.status = "completed";
-      newlyCompleted.push(def.name);
-      messages.push("All steps done! Return to the quest giver for your reward.");
-    }
-  }
-  return { messages, newlyCompleted, callouts };
-}
-
-export interface CollectCreditResult {
-  message: string;
-  /** True when this credit completed the quest. */
-  questNowCompleted: boolean;
-  /** Banner payload for the credited step. Null only when the
-   *  quest / step weren't found (the message becomes a generic
-   *  pickup line in that case). */
-  callout: QuestStepCallout | null;
-}
-
-/**
- * Credit a single collect step. Returns a UI message and a flag for
- * whether the quest just transitioned to `completed`. The caller is
- * responsible for removing the artifact from the world (mirrors the
- * Python `collect_quest_item` contract).
- */
-export function creditCollect(
-  defs: QuestDef[],
-  states: Map<string, QuestState>,
-  questName: string,
-  stepIdx: number,
-  itemName: string,
-): CollectCreditResult {
-  const def = findQuest(defs, questName);
-  const state = states.get(questName);
-  if (!def || !state) return { message: `Found ${itemName}!`, questNowCompleted: false, callout: null };
-  if (stepIdx < 0 || stepIdx >= state.stepProgress.length) {
-    return { message: `Found ${itemName}!`, questNowCompleted: false, callout: null };
-  }
-  state.stepProgress[stepIdx] = true;
-  const stepDesc = def.steps[stepIdx]?.description ?? `Step ${stepIdx + 1}`;
-  const allDone = state.stepProgress.every((p) => p);
-  if (allDone && state.status === "active") {
-    state.status = "completed";
-    return {
-      message: `Collected ${itemName}! Quest "${def.name}" complete — return to ${def.giverNpc}.`,
-      questNowCompleted: true,
-      callout: { questName: def.name, description: stepDesc, questComplete: true },
-    };
-  }
-  return {
-    message: `Collected ${itemName}! (${stepDesc})`,
-    questNowCompleted: false,
-    callout: { questName: def.name, description: stepDesc, questComplete: false },
-  };
-}
-
-/**
- * Find the active quest + step that wants its `collect_item` placed
- * at the given `dungeonName`. Used by the dungeon generator to know
- * whether to paint a TILE_ARTIFACT and where.
- *
- * Returns the first match — modules are authored such that one
- * dungeon hosts at most one collect step at a time.
- */
-export function activeCollectStepFor(
-  defs: QuestDef[],
-  states: Map<string, QuestState>,
-  combatLocation: string,
-): { questName: string; stepIdx: number; step: QuestStep } | null {
-  for (const def of defs) {
-    const state = states.get(def.name);
-    if (!state || state.status !== "active") continue;
-    for (let i = 0; i < def.steps.length; i++) {
-      const step = def.steps[i];
-      if (step.stepType !== "collect") continue;
-      if (state.stepProgress[i]) continue;
-      if (!locationMatches(step.spawnLocation, combatLocation)) continue;
-      return { questName: def.name, stepIdx: i, step };
-    }
-  }
-  return null;
-}
-
-/**
- * Every active collect step whose `spawn_location` resolves to the
- * given `combatLocation` (per `locationMatches`). Companion to
- * `activeKillStepsForLocation` — TownScene calls this when entering a
- * building space (or interior) to figure out which artifacts to drop
- * on the floor. A single space hosts at most one collect step in v1,
- * but we return a list so a future module that pins two artifacts to
- * the same room (e.g. the binding-rite + the keystone) doesn't lose
- * one silently.
- */
-export function activeCollectStepsForLocation(
-  defs: QuestDef[],
-  states: Map<string, QuestState>,
-  combatLocation: string,
-): Array<{ questName: string; stepIdx: number; step: QuestStep }> {
-  const out: Array<{ questName: string; stepIdx: number; step: QuestStep }> = [];
-  for (const def of defs) {
-    const state = states.get(def.name);
-    if (!state || state.status !== "active") continue;
-    for (let i = 0; i < def.steps.length; i++) {
-      const step = def.steps[i];
-      if (step.stepType !== "collect") continue;
-      if (state.stepProgress[i]) continue;
-      if (!locationMatches(step.spawnLocation, combatLocation)) continue;
-      out.push({ questName: def.name, stepIdx: i, step });
-    }
-  }
-  return out;
-}
-
-/**
- * Every active kill step whose `spawn_location` resolves to the given
- * `combatLocation` (per `locationMatches`). Used by TownScene on
- * interior entry to figure out which encounters to spawn — and how
- * many copies of each — so a player who accepted "Rat Problem" sees
- * the rats actually appear in the shop floor.
- */
-export function activeKillStepsForLocation(
-  defs: QuestDef[],
-  states: Map<string, QuestState>,
-  combatLocation: string,
-): Array<{ questName: string; stepIdx: number; step: QuestStep; remaining: number }> {
-  const out: Array<{ questName: string; stepIdx: number; step: QuestStep; remaining: number }> = [];
-  for (const def of defs) {
-    const state = states.get(def.name);
-    if (!state || state.status !== "active") continue;
-    for (let i = 0; i < def.steps.length; i++) {
-      const step = def.steps[i];
-      if (step.stepType !== "kill") continue;
-      if (state.stepProgress[i]) continue;
-      if (!step.encounter) continue;
-      if (!locationMatches(step.spawnLocation, combatLocation)) continue;
-      const done = state.stepKills[i] ?? 0;
-      const remaining = Math.max(0, step.targetCount - done);
-      if (remaining <= 0) continue;
-      out.push({ questName: def.name, stepIdx: i, step, remaining });
-    }
-  }
-  return out;
-}
-
 /** One row per active kill step that wants encounters spawned at
- *  `loc`. Returned by {@link activeKillStepsAt} — the v2-structured
- *  successor to {@link activeKillStepsForLocation}. */
+ *  `loc`. Returned by {@link activeKillStepsAt}. */
 export interface ActiveKillStepRow {
   /** Stable quest id (matches the key in `moduleQuestStates`). */
   questId: string;
@@ -1162,8 +622,8 @@ export interface ActiveKillStepRow {
 }
 
 /**
- * Every active kill step whose v2-structured `locationKind` /
- * `mapId` / `dungeonId` / `dungeonLevel` matches the current
+ * Every active kill step whose structured `locationKind` / `mapId` /
+ * `dungeonId` / `dungeonLevel` matches the current
  * {@link CombatLocation}. The caller (MapSimulation, the dungeon
  * scene, etc.) uses the returned rows to drive placement.
  *
@@ -1418,11 +878,6 @@ export interface QuestRewardClaim {
  * The host calls this, reads `xp` / `gold` / `items`, and routes
  * each through the right kernel call (`awardXp`, `party.gold +=`,
  * `addToStash`).
- *
- * Combined with {@link applyWorldUnlocks} (which runs on map load
- * for already-turned-in quests), this is the complete turn-in
- * surface: claimQuestRewards handles the one-shot grants;
- * applyWorldUnlocks handles the persistent tile mutations.
  */
 export function claimQuestRewards(
   defs: ReadonlyArray<QuestDef>,
@@ -1445,123 +900,7 @@ export function claimQuestRewards(
   };
 }
 
-// ── World-unlock application ───────────────────────────────────
-
-/**
- * Display name for a tile id — falls back to "Tile <id>" when the
- * runtime def table doesn't recognise it. Mirrors the Python
- * `world_unlock_tile_name` so reward summary text reads identically
- * across the two ports ("World changed: Bridge at (5,13)").
- */
-export function worldUnlockTileName(tileId: number): string {
-  const name = tileDef(tileId).name;
-  return name && name !== "Unknown" ? name : `Tile ${tileId}`;
-}
-
-/**
- * Apply a list of world-unlock ops to *tileMap* in place. Returns
- * the entries that actually landed — useful for the reward summary
- * the turn-in dialog shows. Bad / out-of-bounds entries are skipped
- * silently so a malformed quests.json never crashes a run.
- *
- * Mirrors `apply_world_unlocks` in `src/module_editor_quest.py`.
- */
-export function applyWorldUnlocks(
-  tileMap: TileMap | null | undefined,
-  unlocks: readonly WorldUnlock[] | null | undefined,
-): AppliedUnlock[] {
-  const applied: AppliedUnlock[] = [];
-  if (!tileMap || !unlocks || unlocks.length === 0) return applied;
-  for (const op of unlocks) {
-    if (!op || typeof op !== "object") continue;
-    const c = op.col;
-    const r = op.row;
-    const t = op.tile;
-    if (!Number.isFinite(c) || !Number.isFinite(r) || !Number.isFinite(t)) continue;
-    if (c < 0 || c >= tileMap.width || r < 0 || r >= tileMap.height) continue;
-    tileMap.setTile(c, r, t);
-    applied.push([c, r, t]);
-  }
-  return applied;
-}
-
-/**
- * Re-apply every turned-in quest's world unlocks to the overworld
- * tile map. Called by OverworldScene after `loadTileMap()` so the
- * reward survives the natural "fetch fresh JSON on every scene
- * boot" lifecycle of the web port — same idempotent design the
- * Python game's save/load path uses (see
- * `_apply_turned_in_world_unlocks` in `src/save_load.py`).
- *
- * Returns the flat list of applied triples in the order they were
- * walked, mainly for tests and the resume-time reward log.
- */
-export function applyTurnedInWorldUnlocks(
-  tileMap: TileMap | null | undefined,
-  defs: QuestDef[],
-  states: Map<string, QuestState>,
-): AppliedUnlock[] {
-  const applied: AppliedUnlock[] = [];
-  if (!tileMap) return applied;
-  for (const def of defs) {
-    if (def.rewardWorldUnlocks.length === 0) continue;
-    const state = states.get(def.name);
-    if (!state || state.status !== "turned_in") continue;
-    for (const a of applyWorldUnlocks(tileMap, def.rewardWorldUnlocks)) {
-      applied.push(a);
-    }
-  }
-  return applied;
-}
-
-/**
- * Build a short description of an applied world-unlock list — used
- * by the turn-in reward summary line. Single-tile unlocks name the
- * tile and coords ("Bridge at (5,13)"); multi-tile unlocks roll up
- * to a count to keep the dialog from overflowing.
- */
-export function summariseUnlocks(applied: readonly AppliedUnlock[]): string {
-  if (applied.length === 0) return "";
-  if (applied.length === 1) {
-    const [c, r, t] = applied[0];
-    return `World changed: ${worldUnlockTileName(t)} at (${c},${r})`;
-  }
-  return `World changed: ${applied.length} tiles updated`;
-}
-
-// ── Misc helpers ────────────────────────────────────────────────
-
-/**
- * Build a short adventurer's-note line listing the dungeons referenced
- * by a quest's steps + a hint when a guardian fight is coming. Empty
- * string when the quest doesn't go into any dungeon.
- *
- * Mirrors `build_quest_location_hint` in quest_manager.py.
- */
-export function locationHint(def: QuestDef): string {
-  const dungeons: string[] = [];
-  let hasGuardian = false;
-  for (const step of def.steps) {
-    if (step.spawnLocation.startsWith("dungeon:")) {
-      const name = step.spawnLocation.slice("dungeon:".length).trim();
-      if (name && !dungeons.includes(name)) dungeons.push(name);
-    }
-    if (step.hasGuardian) hasGuardian = true;
-  }
-  if (dungeons.length === 0) return "";
-  let line: string;
-  if (dungeons.length === 1) {
-    line = `[Adventurer's Note: This quest will take you into the ${dungeons[0]} dungeon — tread carefully.]`;
-  } else {
-    const head = dungeons.slice(0, -1).join(", ");
-    const tail = dungeons[dungeons.length - 1];
-    line = `[Adventurer's Note: This quest will take you into the following dungeons: ${head} and ${tail}.]`;
-  }
-  if (hasGuardian) {
-    line = line.slice(0, -1) + " A powerful guardian is said to watch over what you seek.]";
-  }
-  return line;
-}
+// ── Encounter sampling helpers ─────────────────────────────────
 
 /** Sample roster for a kill step's encounter — surfaces the monster
  *  catalog so the dungeon scene's combat dispatch builds the right

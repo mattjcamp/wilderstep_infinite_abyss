@@ -223,7 +223,6 @@ function buildPartyFromSave(
     inventory: [...save.party.inventory],
     torch_steps: save.party.torch_steps,
     magic_light_steps: 0,
-    galadriels_light_steps: save.party.galadriels_light_steps,
   };
   return partyFromRaw(rawParty, charactersById);
 }

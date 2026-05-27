@@ -87,7 +87,7 @@ export function SimPanel({
           light radius: {snap.lightRange}
         </p>
         <p className="font-mono text-xs text-parchment/80">
-          torch: {snap.party.torch_steps} · galadriel: {snap.party.galadriels_light_steps}
+          torch: {snap.party.torch_steps} · light: {snap.party.magic_light_steps ?? 0}
         </p>
         {snap.partyHasInfravision ? (
           <p className="font-mono text-xs text-parchment/80">
@@ -106,9 +106,9 @@ export function SimPanel({
           </button>
           <button
             type="button"
-            onClick={() => sim.castMagicLight()}
+            onClick={() => sim.castLightSpell()}
             className="rounded border border-parchment/20 px-2 py-0.5 text-xs hover:bg-ink/50"
-            title="Set galadriels_light_steps to 200 — same idea, bigger radius."
+            title="Set magic_light_steps to 100 — Cleric's Light spell, same idea as a torch but bigger radius."
           >
             Magic Light
           </button>

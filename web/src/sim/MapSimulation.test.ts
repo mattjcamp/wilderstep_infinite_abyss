@@ -52,7 +52,6 @@ function makeParty(over: Partial<SimParty> = {}): SimParty {
     avatar: "",
     roster: [],
     torch_steps: 0,
-    galadriels_light_steps: 0,
     ...over,
   };
 }

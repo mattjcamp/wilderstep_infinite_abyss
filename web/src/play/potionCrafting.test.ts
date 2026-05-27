@@ -44,7 +44,6 @@ function makeSave(
       gold: 0,
       inventory: [],
       torch_steps: 0,
-      galadriels_light_steps: 0,
       infravision_active: false,
       onBoat: false,
       currentBoatSprite: null,

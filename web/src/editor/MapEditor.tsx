@@ -2884,7 +2884,6 @@ export function MapEditor({
       avatar: "",
       roster: [],
       torch_steps: 0,
-      galadriels_light_steps: 0,
     };
 
     // Pick a ground tile the destroy-lair path can revert a defeated

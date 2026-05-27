@@ -103,7 +103,7 @@ function applyMemberDeltas(
  *   - party.inventory  ← gameState.partyData.inventory (shared stash)
  *   - party.members[]  ← per-id hp/mp/inventory from the v1 roster
  *
- * Other party-level fields (torch_steps, galadriels_light_steps,
+ * Other party-level fields (torch_steps, magic_light_steps,
  * infravision_active, position) survive intact — those live on the
  * world-sim kernel which isn't disposed during combat, so the host's
  * separate saveCurrent() snapshots them correctly.

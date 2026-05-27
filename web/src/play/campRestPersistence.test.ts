@@ -59,7 +59,6 @@ function woundedSave(): WorldSave {
     gold: 50,
     inventory: [{ item: "camping_supplies", charges: 3 }],
     torch_steps: 0,
-    galadriels_light_steps: 0,
     infravision_active: false,
     roster: ["selina", "aldric"],
     members: [selina, aldric],

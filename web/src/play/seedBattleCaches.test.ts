@@ -37,7 +37,6 @@ function minimalSave(): WorldSave {
       gold: 0,
       inventory: [],
       torch_steps: 0,
-      galadriels_light_steps: 0,
       infravision_active: false,
       roster: [],
       members: [],
@@ -53,7 +52,6 @@ function stalePartySentinel(): Party {
   return {
     gold: 999_999,
     torch_steps: 0,
-    galadriels_light_steps: 0,
     magic_light_steps: 0,
     roster: [],
     inventory: [],

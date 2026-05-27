@@ -121,9 +121,9 @@ export function partyHasEffect(party: Party, effectId: string): boolean {
 // the bottom log strip. Combines three data sources:
 //
 //   1. Slotted `partyEffects` entries — Detect Traps, Infravision,
-//      Galadriel's Light. Names + charge data come from the loaded
-//      effects.json; we keep a tiny fallback table here so the
-//      readout still works in scenes that haven't loaded the file.
+//      etc. Names + charge data come from the loaded effects.json;
+//      we keep a tiny fallback table here so the readout still
+//      works in scenes that haven't loaded the file.
 //   2. The `torchSteps` counter — physical torches from the stash.
 //      Not a partyEffects slot, but the player thinks of it as
 //      "Torch is on" — surfacing it here keeps the mental model
@@ -136,16 +136,16 @@ export function partyHasEffect(party: Party, effectId: string): boolean {
 //
 // Lighting effects are sorted to the front so the player can find
 // their light source without scanning. Charge counts ride along on
-// effects that have them (Torch / Magic Light / Galadriel's Light)
-// so the reader knows how many steps of light remain.
+// effects that have them (Torch / Magic Light) so the reader knows
+// how many steps of light remain.
 
 export interface ActiveEffectReadout {
   /** Stable id — empty for the synthetic Torch / Magic Light entries. */
   id: string;
   /** Display name suitable for the HUD strip. */
   name: string;
-  /** True for light sources — Torch, Magic Light, Galadriel's Light,
-   *  Infravision — so the renderer can flag them with a warm tint. */
+  /** True for light sources — Torch, Magic Light, Infravision — so
+   *  the renderer can flag them with a warm tint. */
   isLight: boolean;
   /** Remaining steps for time-limited effects. Undefined for
    *  permanent effects (Detect Traps, Infravision). */
@@ -157,7 +157,6 @@ export interface ActiveEffectReadout {
  *  the effects those helpers boost the lighting overlay for. */
 const LIGHT_EFFECT_IDS: ReadonlySet<string> = new Set([
   "infravision",
-  "galadriels_light",
   // Sun Sword's "warm golden light" aura — surfaces via the
   // item-granted lane (grants_effect on the equipped Sun Sword), not
   // a manual party-effect slot. Listing it here flags it as a light
@@ -210,16 +209,15 @@ export function refreshItemGrantedEffects(
 const FALLBACK_EFFECT_NAMES: Record<string, string> = {
   detect_traps: "Detect Traps",
   infravision: "Infravision",
-  galadriels_light: "Galadriel's Light",
   sun_sword_aura: "Sun Sword Aura",
 };
 
 /**
  * Build the ordered list of active effects to render in the bottom
- * log strip. Lighting effects come first (Torch, then Galadriel's
- * Light, then Infravision); permanent non-light effects (Detect
- * Traps) come after. Effects with charge counters carry the
- * remaining-step value so the renderer can display "Torch 78".
+ * log strip. Lighting effects come first (Torch, then Magic Light,
+ * then Infravision); permanent non-light effects (Detect Traps)
+ * come after. Effects with charge counters carry the remaining-step
+ * value so the renderer can display "Torch 78".
  *
  * `effects` is optional — when provided, names come from the loaded
  * `effects.json`; otherwise the helper uses a built-in fallback
@@ -260,18 +258,14 @@ export function summariseActiveEffects(
 
   // party_effects is a flat list in v2 — walk it in order. The
   // ordering is stable across saves because the player's toggle
-  // order is preserved.
+  // order is preserved. None of today's effects carry their own
+  // burn-down counter on the party (the Light spell + torch tally
+  // their steps separately above); permanent effects like Detect
+  // Traps and Infravision simply omit `charges`.
   for (const id of party.party_effects) {
     if (!id) continue;
     const isLight = LIGHT_EFFECT_IDS.has(id);
-    let charges: number | undefined;
-    // Only Galadriel's Light burns down today. Other effects either
-    // tick on their own clock (Detect Traps is permanent) or aren't
-    // wired into the HUD yet.
-    if (id === "galadriels_light" && party.galadriels_light_steps > 0) {
-      charges = party.galadriels_light_steps;
-    }
-    out.push({ id, name: nameFor(id), isLight, charges });
+    out.push({ id, name: nameFor(id), isLight });
   }
 
   // Item-granted effects — Sun Sword Aura while the Sun Sword is
@@ -303,24 +297,22 @@ export function summariseActiveEffects(
 
 /**
  * The party's effective light radius (in tiles) for the lighting
- * overlay. Mirrors the Python game's "party has light" predicate
- * (`interior_lighting.party_has_light`) — Infravision, Galadriel's
- * Light, the Light spell, and a lit torch each act as a light
- * source. Returns the larger of the boost and the supplied default.
+ * overlay. Infravision, the Light spell, and a lit torch each act
+ * as a light source. Returns the larger of the boost and the
+ * supplied default.
  *
- * All four sources currently share the SAME 8-tile boost. The earlier
- * pygame-style tiering (Infravision 8 / Galadriel's 5 / Torch + Light
- * 4) made the lesser sources feel almost useless once the player got
- * used to Infravision's reach, so the radii were levelled up to keep
- * every source equally worth carrying. The duration / consumable
- * difference (Torch and Light spell burn down with steps, Galadriel's
- * burns down with steps, Infravision lasts as long as it stays
- * equipped) is what now differentiates them.
+ * All three sources share the SAME 8-tile boost. The earlier
+ * pygame-style tiering (Infravision 8 / Torch + Light 4) made the
+ * lesser sources feel almost useless once the player got used to
+ * Infravision's reach, so the radii were levelled up to keep every
+ * source equally worth carrying. The duration / consumable
+ * difference (Torch and Light spell burn down with steps,
+ * Infravision lasts as long as it stays equipped) is what now
+ * differentiates them.
  */
 const PARTY_LIGHT_BOOST = 8;
 export function partyLightRadius(party: Party, defaultRadius: number): number {
   if (partyHasEffect(party, "infravision")) return Math.max(defaultRadius, PARTY_LIGHT_BOOST);
-  if (partyHasEffect(party, "galadriels_light")) return Math.max(defaultRadius, PARTY_LIGHT_BOOST);
   // Light spell and physical torch share the boost — both are
   // illumination orbs. Either being active is enough; their counters
   // tick independently in the dark-scene move handlers.
@@ -331,9 +323,9 @@ export function partyLightRadius(party: Party, defaultRadius: number): number {
 }
 
 /**
- * Post-processing tint for the party light. Mirrors the pygame
- * tints: Infravision shifts the visible area to red ("infrared"),
- * Galadriel's Light to a cool, washed-out blue ("moonlight").
+ * Post-processing tint for the party light. Infravision shifts the
+ * visible area to red ("infrared"); the Light spell and a lit torch
+ * tint the floor with a warm orange "candle pool" glow.
  *
  * Returns the colour and an alpha scaling factor — callers multiply
  * the scale by the per-cell brightness so the tint fades with the
@@ -345,20 +337,16 @@ export interface PartyTint {
   alphaScale: number;
 }
 export function partyLightTint(party: Party): PartyTint | null {
-  // Infravision wins when both are equipped — same precedence the
-  // Python renderer uses (`if has_infravision and not has_equipped_light`).
+  // Infravision wins when it's equipped — its red tint reads as
+  // "thermal vision" and would muddy any other source's color.
   if (partyHasEffect(party, "infravision")) {
     return { color: 0xc02020, alphaScale: 0.55 };
   }
-  if (partyHasEffect(party, "galadriels_light")) {
-    return { color: 0x9bb6e0, alphaScale: 0.45 };
-  }
   if (party.magic_light_steps > 0 || party.torch_steps > 0) {
-    // Warm orange flicker — much smaller alpha than Galadriel's so it
-    // reads as a candle pool, not a magical glow. Light spell and
-    // torch share the tint since both are "an illumination orb";
-    // the readout strip is what tells the player which (or both) is
-    // burning.
+    // Warm orange flicker — reads as a candle pool, not a magical
+    // glow. Light spell and torch share the tint since both are "an
+    // illumination orb"; the readout strip is what tells the player
+    // which (or both) is burning.
     return { color: 0xff9a3c, alphaScale: 0.30 };
   }
   return null;
@@ -390,12 +378,6 @@ export function assignEffectToParty(
     return { ok: true, message: `${effect.name} is already active.` };
   }
   party.party_effects.push(effect.id);
-  // Galadriel's Light burns out after `duration` steps — seed the
-  // counter from effects.json so the web version matches the
-  // Python game's 500-step limit.
-  if (effect.id === "galadriels_light" && typeof effect.duration === "number") {
-    party.galadriels_light_steps = effect.duration;
-  }
   return { ok: true, message: `${effect.name} active.` };
 }
 
@@ -412,25 +394,7 @@ export function removeEffectFromParty(
     return { ok: true, message: `${effect.name} was not active.` };
   }
   party.party_effects.splice(idx, 1);
-  if (effect.id === "galadriels_light") {
-    party.galadriels_light_steps = 0;
-  }
   return { ok: true, message: `${effect.name} dispelled.` };
-}
-
-/**
- * Decrement Galadriel's Light by one step. When the counter hits zero
- * the effect is removed from `party_effects`. Returns true on the
- * step that the light fades, so callers can show a message.
- */
-export function tickGaladrielsLight(party: Party): boolean {
-  if (!partyHasEffect(party, "galadriels_light")) return false;
-  if (party.galadriels_light_steps <= 0) return false;
-  party.galadriels_light_steps -= 1;
-  if (party.galadriels_light_steps > 0) return false;
-  const idx = party.party_effects.indexOf("galadriels_light");
-  if (idx >= 0) party.party_effects.splice(idx, 1);
-  return true;
 }
 
 // ── Stash ↔ personal inventory ─────────────────────────────────────
@@ -1200,12 +1164,11 @@ export function classifyMenuCast(spell: Spell): MenuCastKind {
   if (spell.effect_type === "heal" || spell.effect_type === "major_heal") {
     return "single-ally";
   }
-  // Light is a self-cast utility spell — adds torch-step lighting to
-  // the party without prompting for a target. Mirrors the Python
-  // game's `_on_spell_magic_light` (a hook that toggles the dungeon's
-  // torch state), but routed through the same `party.torch_steps`
-  // counter the web port uses for physical torches and Galadriel's
-  // Light, so the lighting renderer doesn't need a separate path.
+  // Light is a self-cast utility spell — adds magic-light steps to
+  // the party without prompting for a target. The lighting renderer
+  // reads `party.magic_light_steps` alongside the physical-torch
+  // counter so a Cleric's Light contributes to the same
+  // illumination math without a separate code path.
   if (spell.effect_type === "magic_light") return "self";
   // Other utility spells (knock, reveal_map, etc.) need world-state
   // hooks (unlock door, light tile) we haven't built yet.

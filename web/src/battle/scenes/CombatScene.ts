@@ -6435,11 +6435,11 @@ export class CombatScene extends Phaser.Scene {
           );
         }
       }
-      // Quest kill credit: stash the names of every defeated enemy so
-      // the scene we're returning to (DungeonScene right now) can
-      // call `Quests.creditKills`. Mirrors the Python game's
+      // Quest kill credit: stash the names of every defeated enemy
+      // so the scene we're returning to (DungeonScene right now)
+      // can credit kill steps. Mirrors the Python game's
       // `pending_killed_monsters` list. Names are catalog form —
-      // `creditKills` does its own variant fuzz to match rosters.
+      // the credit pass does its own variant fuzz to match rosters.
       const slain = this.combat.combatants
         .filter((c) => c.side === "enemies")
         .map((c) => c.name);

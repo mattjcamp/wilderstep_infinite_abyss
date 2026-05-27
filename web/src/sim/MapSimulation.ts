@@ -1756,27 +1756,10 @@ export class MapSimulation {
     this.emit({ kind: "state" });
   }
 
-  /** Cast Galadriel's Light — sets a step countdown for the Elven
-   *  light effect. Same caveat as lightTorch re: MP costs. */
-  castMagicLight(steps = 200): void {
-    if (this.disposed) return;
-    this.party = { ...this.party, galadriels_light_steps: steps };
-    this.bridge.setPartyLight(this.computeLightSource());
-    this.bridge.relight();
-    this.emit({
-      kind: "log",
-      message: `Galadriel's Light shines (${steps} steps).`,
-    });
-    this.emit({ kind: "state" });
-  }
-
   /** Cast the Cleric's Light spell — sets a step countdown for the
-   *  divine-light party effect. Mechanically twin of `castMagicLight`
-   *  but writes to `magic_light_steps` so a Cleric's Light and an
-   *  Elf's Galadriel's Light can coexist (the lighting helper takes
-   *  the max across both counters; one ending early doesn't kill the
-   *  other). MP deduction is the caller's job — same convention as
-   *  `lightTorch`/`castMagicLight`. */
+   *  divine-light party effect that bumps the party's emitted light
+   *  radius by MAGIC_LIGHT_RANGE for `steps` moves. MP deduction is
+   *  the caller's job — same convention as `lightTorch`. */
   castLightSpell(steps = 100): void {
     if (this.disposed) return;
     this.party = { ...this.party, magic_light_steps: steps };
