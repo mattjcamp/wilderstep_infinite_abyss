@@ -33479,9 +33479,9 @@
             "tag": "water"
           },
           {
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
+            "id": "water",
+            "name": "Water",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -33490,8 +33490,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass1.png",
-            "tag": "terrain"
+            "sprite": "map/water.png",
+            "tag": "water"
           },
           {
             "id": "water",

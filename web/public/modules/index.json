@@ -15,6 +15,11 @@
       "id": "dragon-lair",
       "title": "The Dragon's Lair",
       "role": "playable"
+    },
+    {
+      "id": "maps-mix-in",
+      "title": "Maps and Buildings",
+      "role": "playable"
     }
   ]
 }

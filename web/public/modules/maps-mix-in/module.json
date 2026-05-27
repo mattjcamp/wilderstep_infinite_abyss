@@ -1,0 +1,10 @@
+{
+  "_comment": "Draft module created in the editor. Export this file and drop it into web/public/modules/maps-mix-in/module.json.",
+  "id": "maps-mix-in",
+  "title": "Maps and Buildings",
+  "description": "A module for ready to use maps, buildings, shrines, and dungeons",
+  "author": "hyperbolic",
+  "version": "0.1.0",
+  "role": "library",
+  "extends": "default"
+}
