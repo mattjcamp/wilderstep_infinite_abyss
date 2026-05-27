@@ -36,7 +36,7 @@
       "monsters": [
         "goblin"
       ],
-      "custom_map": null
+      "custom_map": "outdoor_arena"
     },
     {
       "id": "goblin_squatters",
@@ -49,7 +49,7 @@
         "goblin",
         "giant_rat"
       ],
-      "custom_map": "default_battle_arena"
+      "custom_map": "outdoor_arena"
     },
     {
       "id": "goblin_ambush",
@@ -63,7 +63,7 @@
         "goblin",
         "goblin"
       ],
-      "custom_map": null
+      "custom_map": "outdoor_arena"
     },
     {
       "id": "wolf_pack",
@@ -105,7 +105,7 @@
         "giant_rat",
         "giant_rat"
       ],
-      "custom_map": "battle_arena_1"
+      "custom_map": "outdoor_arena"
     },
     {
       "id": "skeleton_patrol",
@@ -173,7 +173,7 @@
         "goblin",
         "goblin"
       ],
-      "custom_map": null
+      "custom_map": "outdoor_arena"
     },
     {
       "id": "undead_horde",
@@ -228,7 +228,7 @@
         "skeleton",
         "wolf"
       ],
-      "custom_map": null
+      "custom_map": "outdoor_arena"
     },
     {
       "id": "wild_pack",
@@ -256,7 +256,7 @@
         "orc",
         "orc"
       ],
-      "custom_map": null
+      "custom_map": "outdoor_arena"
     },
     {
       "id": "orc_raiding_party",
@@ -270,7 +270,7 @@
         "orc",
         "orc_shaman"
       ],
-      "custom_map": null
+      "custom_map": "outdoor_arena"
     },
     {
       "id": "dark_coven",
@@ -325,7 +325,7 @@
         "wolf",
         "wolf"
       ],
-      "custom_map": null
+      "custom_map": "outdoor_arena"
     },
     {
       "id": "troll_and_minions",
@@ -384,7 +384,7 @@
         "orc",
         "orc_shaman"
       ],
-      "custom_map": null
+      "custom_map": "outdoor_arena"
     },
     {
       "id": "troll_warband",
@@ -427,7 +427,7 @@
         "orc",
         "orc_shaman"
       ],
-      "custom_map": null
+      "custom_map": "outdoor_arena"
     },
     {
       "id": "necromancer_s_guard",
@@ -520,7 +520,7 @@
         "orc_shaman",
         "orc_shaman"
       ],
-      "custom_map": null
+      "custom_map": "outdoor_arena"
     },
     {
       "id": "troll_kings",
