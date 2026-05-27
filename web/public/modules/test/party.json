@@ -1,0 +1,36 @@
+{
+  "start_position": {
+    "map_id": "hallowmere_inn_basement",
+    "col": 4,
+    "row": 19
+  },
+  "avatar": "person/fighter18.png",
+  "gold": 50,
+  "roster": [
+    "aldric",
+    "legolas",
+    "selina",
+    "elminster"
+  ],
+  "party_effects": [],
+  "inventory": [
+    {
+      "item": "torch",
+      "charges": 10
+    },
+    {
+      "item": "rock",
+      "charges": 20
+    },
+    {
+      "item": "lockpick",
+      "charges": 10
+    },
+    {
+      "item": "camping_supplies",
+      "charges": 3
+    }
+  ],
+  "torch_steps": 0,
+  "party": []
+}

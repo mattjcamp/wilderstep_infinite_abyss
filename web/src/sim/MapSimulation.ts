@@ -373,6 +373,18 @@ export type SimEvent =
       from: Position;
       to: Position;
       link: { map_id: string; x: number; y: number };
+      /** True when the party crossed the portal while aboard a boat
+       *  (the sail-onto-linked-water path). The host should mount the
+       *  destination map with `initialOnBoat: true` + the matching
+       *  boat sprite so the same vessel keeps carrying the party on
+       *  the other side instead of vanishing on arrival. False for
+       *  ordinary on-foot link traversal. */
+      onBoat: boolean;
+      /** Sprite key of the boat the party rode through the portal.
+       *  `null` whenever `onBoat` is false; non-null and identifying
+       *  the boat the host should render on the destination cell
+       *  when `onBoat` is true. */
+      boatSprite: string | null;
     }
   | { kind: "log"; message: string }
   /** Fired after a successful step onto a cell whose `npc` field is
@@ -583,7 +595,17 @@ export interface MapSimulationOptions {
   /** Whether the party starts mounted on a boat. When true,
    *  `initialCurrentBoatSprite` should also be supplied so the host
    *  can render the right sprite under the party. Defaults to false
-   *  (party starts on foot). */
+   *  (party starts on foot).
+   *
+   *  Two callers set this today:
+   *    1. Save-restore for a session that ended mid-voyage.
+   *    2. Boat link traversal — the source sim's `linked` event
+   *       carries `onBoat` + `boatSprite`; the host pipes them into
+   *       these options when mounting the destination map so the same
+   *       vessel keeps carrying the party on the other side. When set
+   *       this way the spawn rule trusts `startAt` even if the link
+   *       target is a non-walkable water cell (analogous to teleport's
+   *       "designer's coord is authoritative" rule). */
   initialOnBoat?: boolean;
   /** Boat sprite the party is currently riding. Paired with
    *  `initialOnBoat`; ignored when that's false. */
@@ -835,7 +857,22 @@ export class MapSimulation {
           col: this.party.start_position.col,
           row: this.party.start_position.row,
         };
-    this.pos = findSpawn(opts.grid, preferred);
+    // Arriving aboard a boat — link destinations on water are
+    // intentionally non-walkable (water tiles can't be stood on),
+    // so `findSpawn` would spiral the party away to the nearest land
+    // and leave the boat behind. Trust the host's `startAt` instead
+    // when the caller flagged the spawn as boat-borne; only fall back
+    // to the spiral search if the coord is out of bounds. Same
+    // "designer's coord is authoritative" rule as `teleport`.
+    if (opts.initialOnBoat && opts.startAt && cellAt(
+      opts.grid,
+      opts.startAt.col,
+      opts.startAt.row,
+    )) {
+      this.pos = { col: opts.startAt.col, row: opts.startAt.row };
+    } else {
+      this.pos = findSpawn(opts.grid, preferred);
+    }
 
     // Seed boat positions. Two paths:
     //   1. A saved game restoring this map — `initialBoatPositions`
@@ -962,11 +999,13 @@ export class MapSimulation {
    *    1. NPC bump — never lets the party walk through the cell
    *    2. Off-grid — always blocked
    *    3. Boat boarding — on land stepping onto a loose boat
-   *    4. Boat sailing — already aboard, stepping onto a water-tagged cell
-   *    5. Boat disembark — already aboard, stepping onto walkable land
-   *    6. Boat blocked — aboard but target is non-water non-walkable
+   *    4. Boat-link — aboard, stepping onto a water tile that carries a
+   *       link (sea route to another map); traverses like a land link
+   *    5. Boat sailing — already aboard, stepping onto a water-tagged cell
+   *    6. Boat disembark — already aboard, stepping onto walkable land
+   *    7. Boat blocked — aboard but target is non-water non-walkable
    *       (mountain in the sea, second boat in the way, …)
-   *    7. Normal walking — falls through to step()
+   *    8. Normal walking — falls through to step()
    */
   stepInDirection(direction: Direction): void {
     if (this.disposed) return;
@@ -1114,6 +1153,12 @@ export class MapSimulation {
     let kind: MoveKind;
     if (this.onBoat) {
       if (targetHasBoat) kind = "blocked-boat";
+      // Sailing onto a water tile that carries a link traverses the
+      // portal just like a footstep onto a linked land tile would.
+      // Checked before the plain "sail" branch so authored link cells
+      // on water (sea routes between maps) actually fire.
+      else if (targetIsWater && target.link && target.link.map_id)
+        kind = "linked";
       else if (targetIsWater) kind = "sail";
       else if (targetWalkable) kind = "disembark";
       else kind = "blocked";
@@ -1206,6 +1251,15 @@ export class MapSimulation {
       });
     }
 
+    // Linking while aboard — none of the boat side-effect branches above
+    // fire for kind="linked", so keep the boat sprite glued under the
+    // party for the brief frame before the host transitions to the new
+    // map. Visually it reads as the boat carrying the party through
+    // the portal rather than vanishing on the source tile.
+    if (kind === "linked" && this.onBoat) {
+      this.bridge.setPartyBoatAt(to.col, to.row, true);
+    }
+
     // Lighting re-pass after the party (and any boat) has moved.
     this.bridge.setPartyLight(this.computeLightSource());
     this.bridge.relight();
@@ -1218,6 +1272,12 @@ export class MapSimulation {
         from,
         to,
         link: target.link,
+        // Forward the boat state at the moment of traversal so the
+        // host can mount the destination map already aboard. Captured
+        // here (not on the destination side) because the source sim
+        // is the only one that knows which boat the party was riding.
+        onBoat: this.onBoat,
+        boatSprite: this.onBoat ? this.currentBoatSprite : null,
       });
       this.emit({
         kind: "log",

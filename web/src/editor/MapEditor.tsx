@@ -2715,6 +2715,12 @@ export function MapEditor({
    *  Consumed by the lifecycle effect on sim mount, then cleared so
    *  a subsequent exit-then-restart doesn't reuse a stale coord. */
   const spawnAtRef = useRef<{ col: number; row: number } | null>(null);
+  /** Pending boat-borne arrival hint for the next sim mount. Set by
+   *  the URL-query auto-entry when `?boat=1` is present (a sail-onto-
+   *  link traversal from another map). Consumed by the lifecycle
+   *  effect alongside `spawnAtRef` and cleared so a subsequent
+   *  exit-then-restart doesn't seed the party aboard a phantom boat. */
+  const spawnOnBoatRef = useRef<{ sprite: string | null } | null>(null);
   // Honor `?sim=1` on initial render — drop straight into "active"
   // sim mode at the entry coord. This is how link traversal lands:
   // we push to the new map URL with these params, and the new
@@ -2731,6 +2737,15 @@ export function MapEditor({
     const row = rowStr != null ? Number(rowStr) : NaN;
     if (Number.isFinite(col) && Number.isFinite(row)) {
       spawnAtRef.current = { col, row };
+    }
+    // Boat-borne arrival — the sender adds `boat=1` (+ optional
+    // `boatSprite=<key>`) when the party crossed the link aboard.
+    // We capture both here so the sim mount can pipe them through
+    // to `initialOnBoat` / `initialCurrentBoatSprite`.
+    if (searchParams.get("boat") === "1") {
+      spawnOnBoatRef.current = {
+        sprite: searchParams.get("boatSprite"),
+      };
     }
     // Link arrivals skip "placing" — we already know the entry cell.
     setSimMode("active");
@@ -2762,7 +2777,14 @@ export function MapEditor({
   }, [state]);
 
   const onLinkTraversed = useCallback(
-    (link: { map_id: string; x: number; y: number }) => {
+    (
+      link: { map_id: string; x: number; y: number },
+      // Boat-borne traversal — when the party sailed onto the link
+      // tile, the source sim hands us its boat state so the
+      // destination map can mount with the same vessel under the
+      // party. Optional: ordinary on-foot links omit it.
+      boat?: { onBoat: boolean; boatSprite: string | null },
+    ) => {
       // Same-map portals (e.g. a teleporter pair on one map) can't
       // route through the URL: Next's App Router treats a push to the
       // current pathname with new query params as same-route, so
@@ -2779,9 +2801,19 @@ export function MapEditor({
       }
       // Cross-map: route through the URL so the new MapEditor mount
       // picks the entry coord up via searchParams and seeds spawnAt.
-      const url =
-        `/editor/${moduleId}/maps/${link.map_id}` +
-        `?sim=1&entryCol=${link.x}&entryRow=${link.y}`;
+      // For a boat-borne traversal we also ferry the on-boat flag +
+      // boat sprite via the query so the destination sim spawns
+      // already aboard the same vessel.
+      const params = new URLSearchParams({
+        sim: "1",
+        entryCol: String(link.x),
+        entryRow: String(link.y),
+      });
+      if (boat?.onBoat) {
+        params.set("boat", "1");
+        if (boat.boatSprite) params.set("boatSprite", boat.boatSprite);
+      }
+      const url = `/editor/${moduleId}/maps/${link.map_id}?${params.toString()}`;
       router.push(url);
     },
     [moduleId, router, state, mapId],
@@ -2958,6 +2990,13 @@ export function MapEditor({
       classNameById,
       bridge,
       startAt: spawnAtRef.current ?? undefined,
+      // Boat-borne arrival from a sail-onto-link traversal. The
+      // sim's constructor treats `initialOnBoat` + `startAt` as a
+      // trusted spawn (water tiles are accepted, walkability check
+      // bypassed) so the destination map renders the party aboard
+      // the same vessel that carried them through the portal.
+      initialOnBoat: spawnOnBoatRef.current !== null,
+      initialCurrentBoatSprite: spawnOnBoatRef.current?.sprite ?? null,
       // Quest-driven encounter placement. Hand the sim the parsed
       // quest defs + the sandbox state map; on construction it runs
       // `activeKillStepsAt({ kind: "map", mapId })` and drops each
@@ -2970,11 +3009,18 @@ export function MapEditor({
     });
     // Consume the one-shot spawn coord so a subsequent exit + Simulate
     // returns the user to the "placing" picker rather than reusing
-    // the previous spot.
+    // the previous spot. Boat-borne arrival hint is one-shot for the
+    // same reason: a re-entry on foot should NOT mount aboard.
     spawnAtRef.current = null;
+    spawnOnBoatRef.current = null;
 
     const unsubscribe = sim.subscribe((ev) => {
-      if (ev.kind === "linked") onLinkTraversed(ev.link);
+      if (ev.kind === "linked") {
+        onLinkTraversed(ev.link, {
+          onBoat: ev.onBoat,
+          boatSprite: ev.boatSprite,
+        });
+      }
       if (ev.kind === "npc_encountered") {
         // Open the NPC dialog overlay. Movement is gated via
         // overlaysOpenRef so the party doesn't keep stepping while

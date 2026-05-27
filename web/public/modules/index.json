@@ -19,6 +19,11 @@
     {
       "id": "maps-mix-in",
       "title": "Maps and Buildings",
+      "role": "library"
+    },
+    {
+      "id": "test",
+      "title": "Test",
       "role": "playable"
     }
   ]

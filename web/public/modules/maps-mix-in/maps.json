@@ -20004,6 +20004,7 @@
       "grid": [
         [
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -20019,6 +20020,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -20034,6 +20036,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -20049,6 +20052,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -20064,6 +20068,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -20079,6 +20084,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -20094,6 +20100,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -20109,6 +20116,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -20124,6 +20132,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -20139,6 +20148,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -20154,6 +20164,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -20169,6 +20180,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -20184,6 +20196,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -20199,6 +20212,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -20214,6 +20228,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -20229,248 +20244,7 @@
             "tag": "outdoor"
           },
           {
-            "id": "mountain",
-            "name": "Mountain",
-            "walkable": false,
-            "obstructs": true,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": "",
-            "encounter": "",
-            "spawn": "",
-            "sprite": "map/mountains.png",
-            "tag": "outdoor"
-          }
-        ],
-        [
-          {
-            "id": "mountain",
-            "name": "Mountain",
-            "walkable": false,
-            "obstructs": true,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": "",
-            "encounter": "",
-            "spawn": "",
-            "sprite": "map/mountains.png",
-            "tag": "outdoor"
-          },
-          {
-            "id": "mountain",
-            "name": "Mountain",
-            "walkable": false,
-            "obstructs": true,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": "",
-            "encounter": "",
-            "spawn": "",
-            "sprite": "map/mountains.png",
-            "tag": "outdoor"
-          },
-          {
-            "id": "mountain",
-            "name": "Mountain",
-            "walkable": false,
-            "obstructs": true,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": "",
-            "encounter": "",
-            "spawn": "",
-            "sprite": "map/mountains.png",
-            "tag": "outdoor"
-          },
-          {
-            "id": "lava1",
-            "name": "Yellow Lava",
-            "walkable": false,
-            "obstructs": false,
-            "locked": false,
-            "light_source": true,
-            "light_range": 3,
-            "animation": null,
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/lava_vent.png",
-            "tag": "dungeon"
-          },
-          {
-            "id": "lava1",
-            "name": "Yellow Lava",
-            "walkable": false,
-            "obstructs": false,
-            "locked": false,
-            "light_source": true,
-            "light_range": 3,
-            "animation": null,
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/lava_vent.png",
-            "tag": "dungeon"
-          },
-          {
-            "id": "mountain",
-            "name": "Mountain",
-            "walkable": false,
-            "obstructs": true,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": "",
-            "encounter": "",
-            "spawn": "",
-            "sprite": "map/mountains.png",
-            "tag": "outdoor"
-          },
-          {
-            "id": "mountain",
-            "name": "Mountain",
-            "walkable": false,
-            "obstructs": true,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": "",
-            "encounter": "",
-            "spawn": "",
-            "sprite": "map/mountains.png",
-            "tag": "outdoor"
-          },
-          {
-            "id": "mountain",
-            "name": "Mountain",
-            "walkable": false,
-            "obstructs": true,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": "",
-            "encounter": "",
-            "spawn": "",
-            "sprite": "map/mountains.png",
-            "tag": "outdoor"
-          },
-          {
-            "id": "mountain",
-            "name": "Mountain",
-            "walkable": false,
-            "obstructs": true,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": "",
-            "encounter": "",
-            "spawn": "",
-            "sprite": "map/mountains.png",
-            "tag": "outdoor"
-          },
-          {
-            "id": "mountain",
-            "name": "Mountain",
-            "walkable": false,
-            "obstructs": true,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": "",
-            "encounter": "",
-            "spawn": "",
-            "sprite": "map/mountains.png",
-            "tag": "outdoor"
-          },
-          {
-            "id": "mountain",
-            "name": "Mountain",
-            "walkable": false,
-            "obstructs": true,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": "",
-            "encounter": "",
-            "spawn": "",
-            "sprite": "map/mountains.png",
-            "tag": "outdoor"
-          },
-          {
-            "id": "mountain",
-            "name": "Mountain",
-            "walkable": false,
-            "obstructs": true,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": "",
-            "encounter": "",
-            "spawn": "",
-            "sprite": "map/mountains.png",
-            "tag": "outdoor"
-          },
-          {
-            "id": "mountain",
-            "name": "Mountain",
-            "walkable": false,
-            "obstructs": true,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": "",
-            "encounter": "",
-            "spawn": "",
-            "sprite": "map/mountains.png",
-            "tag": "outdoor"
-          },
-          {
-            "id": "mountain",
-            "name": "Mountain",
-            "walkable": false,
-            "obstructs": true,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": "",
-            "encounter": "",
-            "spawn": "",
-            "sprite": "map/mountains.png",
-            "tag": "outdoor"
-          },
-          {
-            "id": "mountain",
-            "name": "Mountain",
-            "walkable": false,
-            "obstructs": true,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": "",
-            "encounter": "",
-            "spawn": "",
-            "sprite": "map/mountains.png",
-            "tag": "outdoor"
-          },
-          {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -20488,6 +20262,7 @@
         ],
         [
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -20503,6 +20278,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -20518,6 +20294,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -20548,51 +20325,22 @@
             "tag": "dungeon"
           },
           {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
+            "id": "lava1",
+            "name": "Yellow Lava",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
+            "light_source": true,
+            "light_range": 3,
+            "animation": null,
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
+            "sprite": "map/lava_vent.png",
+            "tag": "dungeon"
           },
           {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          },
-          {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -20608,6 +20356,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -20623,6 +20372,297 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "obstructs": true,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": "",
+            "encounter": "",
+            "spawn": "",
+            "sprite": "map/mountains.png",
+            "tag": "outdoor"
+          },
+          {
+            "boat": false,
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "obstructs": true,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": "",
+            "encounter": "",
+            "spawn": "",
+            "sprite": "map/mountains.png",
+            "tag": "outdoor"
+          },
+          {
+            "boat": false,
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "obstructs": true,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": "",
+            "encounter": "",
+            "spawn": "",
+            "sprite": "map/mountains.png",
+            "tag": "outdoor"
+          },
+          {
+            "boat": false,
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "obstructs": true,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": "",
+            "encounter": "",
+            "spawn": "",
+            "sprite": "map/mountains.png",
+            "tag": "outdoor"
+          },
+          {
+            "boat": false,
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "obstructs": true,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": "",
+            "encounter": "",
+            "spawn": "",
+            "sprite": "map/mountains.png",
+            "tag": "outdoor"
+          },
+          {
+            "boat": false,
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "obstructs": true,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": "",
+            "encounter": "",
+            "spawn": "",
+            "sprite": "map/mountains.png",
+            "tag": "outdoor"
+          },
+          {
+            "boat": false,
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "obstructs": true,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": "",
+            "encounter": "",
+            "spawn": "",
+            "sprite": "map/mountains.png",
+            "tag": "outdoor"
+          },
+          {
+            "boat": false,
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "obstructs": true,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": "",
+            "encounter": "",
+            "spawn": "",
+            "sprite": "map/mountains.png",
+            "tag": "outdoor"
+          },
+          {
+            "boat": false,
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "obstructs": true,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": "",
+            "encounter": "",
+            "spawn": "",
+            "sprite": "map/mountains.png",
+            "tag": "outdoor"
+          }
+        ],
+        [
+          {
+            "boat": false,
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "obstructs": true,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": "",
+            "encounter": "",
+            "spawn": "",
+            "sprite": "map/mountains.png",
+            "tag": "outdoor"
+          },
+          {
+            "boat": false,
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "obstructs": true,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": "",
+            "encounter": "",
+            "spawn": "",
+            "sprite": "map/mountains.png",
+            "tag": "outdoor"
+          },
+          {
+            "boat": false,
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "obstructs": true,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": "",
+            "encounter": "",
+            "spawn": "",
+            "sprite": "map/mountains.png",
+            "tag": "outdoor"
+          },
+          {
+            "id": "lava1",
+            "name": "Yellow Lava",
+            "walkable": false,
+            "obstructs": false,
+            "locked": false,
+            "light_source": true,
+            "light_range": 3,
+            "animation": null,
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/lava_vent.png",
+            "tag": "dungeon"
+          },
+          {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain",
+            "npc": "elder_marisol"
+          },
+          {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "obstructs": true,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": "",
+            "encounter": "",
+            "spawn": "",
+            "sprite": "map/mountains.png",
+            "tag": "outdoor"
+          },
+          {
+            "boat": false,
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "obstructs": true,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": "",
+            "encounter": "",
+            "spawn": "",
+            "sprite": "map/mountains.png",
+            "tag": "outdoor"
+          },
+          {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -20668,6 +20708,7 @@
             "tag": "indoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -20683,6 +20724,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -20698,6 +20740,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -20730,6 +20773,7 @@
         ],
         [
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -20745,6 +20789,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -20820,6 +20865,7 @@
             "tag": "wall"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -20835,6 +20881,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -20850,6 +20897,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -20865,6 +20913,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -20880,6 +20929,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -20895,6 +20945,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -20910,6 +20961,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -20925,6 +20977,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -20940,248 +20993,7 @@
             "tag": "terrain"
           },
           {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "wall_gray",
-            "name": "Gray Wall",
-            "walkable": false,
-            "obstructs": true,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": null,
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/wall_light.png",
-            "tag": "wall"
-          }
-        ],
-        [
-          {
-            "id": "mountain",
-            "name": "Mountain",
-            "walkable": false,
-            "obstructs": true,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": "",
-            "encounter": "",
-            "spawn": "",
-            "sprite": "map/mountains.png",
-            "tag": "outdoor"
-          },
-          {
-            "id": "mountain",
-            "name": "Mountain",
-            "walkable": false,
-            "obstructs": true,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": "",
-            "encounter": "",
-            "spawn": "",
-            "sprite": "map/mountains.png",
-            "tag": "outdoor"
-          },
-          {
-            "id": "wall_gray",
-            "name": "Gray Wall",
-            "walkable": false,
-            "obstructs": true,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": null,
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/wall_light.png",
-            "tag": "wall"
-          },
-          {
-            "id": "floor_gray",
-            "name": "Gray Floor",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": null,
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/floor_gray.png",
-            "tag": "floor"
-          },
-          {
-            "id": "floor_gray",
-            "name": "Gray Floor",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": null,
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/floor_gray.png",
-            "tag": "floor"
-          },
-          {
-            "id": "floor_gray",
-            "name": "Gray Floor",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": null,
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/floor_gray.png",
-            "tag": "floor"
-          },
-          {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          },
-          {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -21214,6 +21026,7 @@
         ],
         [
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -21229,6 +21042,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -21259,6 +21073,263 @@
             "tag": "wall"
           },
           {
+            "boat": false,
+            "id": "floor_gray",
+            "name": "Gray Floor",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": null,
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/floor_gray.png",
+            "tag": "floor"
+          },
+          {
+            "boat": false,
+            "id": "floor_gray",
+            "name": "Gray Floor",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": null,
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/floor_gray.png",
+            "tag": "floor"
+          },
+          {
+            "boat": false,
+            "id": "floor_gray",
+            "name": "Gray Floor",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": null,
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/floor_gray.png",
+            "tag": "floor"
+          },
+          {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain"
+          },
+          {
+            "id": "wall_gray",
+            "name": "Gray Wall",
+            "walkable": false,
+            "obstructs": true,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": null,
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/wall_light.png",
+            "tag": "wall"
+          }
+        ],
+        [
+          {
+            "boat": false,
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "obstructs": true,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": "",
+            "encounter": "",
+            "spawn": "",
+            "sprite": "map/mountains.png",
+            "tag": "outdoor"
+          },
+          {
+            "boat": false,
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "obstructs": true,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": "",
+            "encounter": "",
+            "spawn": "",
+            "sprite": "map/mountains.png",
+            "tag": "outdoor"
+          },
+          {
+            "id": "wall_gray",
+            "name": "Gray Wall",
+            "walkable": false,
+            "obstructs": true,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": null,
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/wall_light.png",
+            "tag": "wall"
+          },
+          {
+            "boat": false,
             "id": "shrine",
             "name": "Shrine",
             "walkable": false,
@@ -21274,6 +21345,7 @@
             "tag": "town"
           },
           {
+            "boat": false,
             "id": "floor_gray",
             "name": "Gray Floor",
             "walkable": true,
@@ -21287,9 +21359,10 @@
             "spawn": null,
             "sprite": "map/floor_gray.png",
             "tag": "floor",
-            "quest": "dragon"
+            "quest": ""
           },
           {
+            "boat": false,
             "id": "floor_gray",
             "name": "Gray Floor",
             "walkable": true,
@@ -21305,6 +21378,7 @@
             "tag": "floor"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -21320,6 +21394,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -21335,6 +21410,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -21350,6 +21426,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -21365,6 +21442,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -21380,6 +21458,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -21395,6 +21474,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -21410,6 +21490,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -21425,6 +21506,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -21440,6 +21522,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "gate",
             "name": "Gate",
             "walkable": true,
@@ -21462,6 +21545,7 @@
         ],
         [
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -21477,6 +21561,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -21507,6 +21592,7 @@
             "tag": "wall"
           },
           {
+            "boat": false,
             "id": "floor_gray",
             "name": "Gray Floor",
             "walkable": true,
@@ -21522,6 +21608,7 @@
             "tag": "floor"
           },
           {
+            "boat": false,
             "id": "floor_gray",
             "name": "Gray Floor",
             "walkable": true,
@@ -21537,6 +21624,7 @@
             "tag": "floor"
           },
           {
+            "boat": false,
             "id": "floor_gray",
             "name": "Gray Floor",
             "walkable": true,
@@ -21552,6 +21640,7 @@
             "tag": "floor"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -21567,6 +21656,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -21582,6 +21672,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -21597,6 +21688,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -21612,6 +21704,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -21627,6 +21720,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -21642,6 +21736,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -21657,6 +21752,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -21672,6 +21768,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -21704,6 +21801,7 @@
         ],
         [
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -21719,6 +21817,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -21794,6 +21893,7 @@
             "tag": "wall"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -21809,6 +21909,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -21824,6 +21925,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -21839,6 +21941,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -21854,6 +21957,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -21869,6 +21973,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -21884,6 +21989,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -21899,6 +22005,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -21912,9 +22019,10 @@
             "spawn": null,
             "sprite": "map/path.png",
             "tag": "terrain",
-            "quest": "the_dragon_heart"
+            "quest": ""
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -21947,6 +22055,7 @@
         ],
         [
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -21992,6 +22101,7 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -22007,6 +22117,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -22022,6 +22133,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -22037,6 +22149,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -22052,6 +22165,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -22067,6 +22181,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -22082,6 +22197,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -22097,6 +22213,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -22112,6 +22229,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -22127,6 +22245,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -22142,6 +22261,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -22157,6 +22277,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -22189,6 +22310,7 @@
         ],
         [
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22234,6 +22356,7 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22249,6 +22372,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22264,6 +22388,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -22279,6 +22404,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -22294,6 +22420,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -22309,6 +22436,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -22324,6 +22452,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -22339,6 +22468,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -22354,6 +22484,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -22369,6 +22500,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -22384,6 +22516,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22399,6 +22532,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22431,6 +22565,7 @@
         ],
         [
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22446,6 +22581,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22476,6 +22612,7 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22491,6 +22628,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22506,6 +22644,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22521,6 +22660,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22536,21 +22676,22 @@
             "tag": "outdoor"
           },
           {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
+            "id": "counter",
+            "name": "Counter",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
-            "animation": "none",
-            "counter": null,
+            "animation": null,
+            "counter": "potion_shop",
             "encounter": null,
             "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
+            "sprite": "map/counter.png",
+            "tag": "indoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22566,6 +22707,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22581,6 +22723,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22611,6 +22754,7 @@
             "tag": "indoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22626,6 +22770,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22641,6 +22786,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22673,6 +22819,7 @@
         ],
         [
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22688,6 +22835,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22703,6 +22851,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22718,6 +22867,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22733,6 +22883,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22748,6 +22899,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22763,6 +22915,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22778,6 +22931,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22793,6 +22947,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22808,6 +22963,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22823,6 +22979,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22838,6 +22995,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22853,6 +23011,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22868,6 +23027,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22883,6 +23043,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22898,6 +23059,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,

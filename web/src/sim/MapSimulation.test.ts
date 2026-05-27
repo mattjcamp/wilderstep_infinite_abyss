@@ -56,7 +56,14 @@ function makeParty(over: Partial<SimParty> = {}): SimParty {
   };
 }
 
-function makeSim(opts?: { grid?: SimGrid; party?: SimParty }) {
+function makeSim(opts?: {
+  grid?: SimGrid;
+  party?: SimParty;
+  startAt?: { col: number; row: number };
+  initialOnBoat?: boolean;
+  initialCurrentBoatSprite?: string | null;
+  bridge?: SceneBridge;
+}) {
   const grid = opts?.grid ?? makeGrid();
   const party = opts?.party ?? makeParty();
   return new MapSimulation({
@@ -64,7 +71,10 @@ function makeSim(opts?: { grid?: SimGrid; party?: SimParty }) {
     party,
     catalog: { characters: [], races: [], effects: [] },
     classNameById: new Map(),
-    bridge: fakeBridge(),
+    bridge: opts?.bridge ?? fakeBridge(),
+    startAt: opts?.startAt,
+    initialOnBoat: opts?.initialOnBoat,
+    initialCurrentBoatSprite: opts?.initialCurrentBoatSprite,
   });
 }
 
@@ -418,6 +428,184 @@ describe("MapSimulation.stepInDirection — boat handling", () => {
     // The boat sits behind on the cell we just left.
     expect(dis.boatAt).toEqual({ col: 1, row: 0 });
     expect(sim.snapshot().pos).toEqual({ col: 2, row: 0 });
+  });
+
+  it("traverses a link when sailing onto a linked water tile", () => {
+    // Sea route: stand on land, board a boat at (1,0), then sail
+    // east into a water tile that carries an inter-map link. The
+    // portal should fire exactly like a footstep onto a linked land
+    // tile — `linked` event with the authored destination, party
+    // position moved to the link cell, no `disembarked` in between.
+    const grid = makeGrid();
+    grid[0][1] = cell({ boat: true, sprite: "map/boat.png" });
+    grid[0][2] = cell({
+      walkable: false,
+      tag: "water",
+      sprite: "map/water.png",
+      link: { map_id: "other_map", x: 3, y: 4 },
+    });
+    const sim = makeSim({ grid });
+    sim.stepInDirection("right"); // board
+    const events: SimEvent[] = [];
+    sim.subscribe((ev) => events.push(ev));
+    sim.stepInDirection("right"); // sail into link
+    const linked = events.find((e) => e.kind === "linked");
+    expect(linked).toBeDefined();
+    if (linked?.kind !== "linked") throw new Error("type narrow");
+    expect(linked.link).toEqual({ map_id: "other_map", x: 3, y: 4 });
+    expect(linked.from).toEqual({ col: 1, row: 0 });
+    expect(linked.to).toEqual({ col: 2, row: 0 });
+    // Boat state carried on the event so the destination map mounts
+    // with the party already aboard the same vessel.
+    expect(linked.onBoat).toBe(true);
+    expect(linked.boatSprite).toBe("map/boat.png");
+    // `moved` must fire before `linked` so listeners that re-read the
+    // snapshot on link see the new position (same ordering rule as
+    // the land case).
+    const ks = kinds(events);
+    expect(ks.indexOf("moved")).toBeGreaterThanOrEqual(0);
+    expect(ks.indexOf("linked")).toBeGreaterThan(ks.indexOf("moved"));
+    // Crossing a portal isn't disembarking — the party stays aboard
+    // and the host handles the boat state on the destination map.
+    expect(events.find((e) => e.kind === "disembarked")).toBeUndefined();
+    expect(sim.snapshot().pos).toEqual({ col: 2, row: 0 });
+  });
+
+  it("reports onBoat=false + boatSprite=null for an on-foot link traversal", () => {
+    // Negative case for the new fields — a plain land link must not
+    // flag the party as boat-borne or invent a boat sprite. Without
+    // this, hosts piping the event into the next map's mount would
+    // spawn the party on a phantom boat.
+    const grid = makeGrid();
+    grid[0][1] = cell({
+      link: { map_id: "other_map", x: 0, y: 0 },
+    });
+    const sim = makeSim({ grid });
+    const events = captureEvents(sim);
+    sim.stepInDirection("right");
+    const linked = events.find((e) => e.kind === "linked");
+    expect(linked).toBeDefined();
+    if (linked?.kind !== "linked") throw new Error("type narrow");
+    expect(linked.onBoat).toBe(false);
+    expect(linked.boatSprite).toBeNull();
+  });
+
+  it("ignores empty link.map_id on water (treats cell as a normal sail)", () => {
+    // Malformed authoring — link object present but no destination
+    // map_id. The sail-onto-link branch must require map_id, matching
+    // the land link behavior covered above.
+    const grid = makeGrid();
+    grid[0][1] = cell({ boat: true, sprite: "map/boat.png" });
+    grid[0][2] = cell({
+      walkable: false,
+      tag: "water",
+      sprite: "map/water.png",
+      link: { map_id: "", x: 0, y: 0 },
+    });
+    const sim = makeSim({ grid });
+    sim.stepInDirection("right"); // board
+    const events: SimEvent[] = [];
+    sim.subscribe((ev) => events.push(ev));
+    sim.stepInDirection("right"); // sail
+    expect(events.find((e) => e.kind === "linked")).toBeUndefined();
+    expect(events.find((e) => e.kind === "moved")).toBeDefined();
+    expect(sim.snapshot().pos).toEqual({ col: 2, row: 0 });
+  });
+});
+
+describe("MapSimulation — boat-borne arrival via link", () => {
+  it("seeds initialOnBoat + sprite at a non-walkable water startAt", () => {
+    // Destination side of a boat link traversal — the host mounts a
+    // new sim at the link's target cell (water, not walkable) with
+    // `initialOnBoat: true` and the boat sprite the party rode in
+    // on. The party must land exactly on that cell (no spiral away
+    // to land), still aboard, with the same sprite reported by the
+    // bridge's setPartyBoatAt call.
+    const grid = makeGrid();
+    grid[0][2] = cell({
+      walkable: false,
+      tag: "water",
+      sprite: "map/water.png",
+    });
+    const bridge = fakeBridge();
+    const sim = makeSim({
+      grid,
+      bridge,
+      startAt: { col: 2, row: 0 },
+      initialOnBoat: true,
+      initialCurrentBoatSprite: "map/boat.png",
+    });
+    expect(sim.snapshot().pos).toEqual({ col: 2, row: 0 });
+    // The bridge call that paints the boat sprite under the party
+    // ran during construction — assert it lands at the link target
+    // with the carried sprite.
+    expect(bridge.setPartyBoatAt).toHaveBeenCalledWith(
+      2,
+      0,
+      true,
+      "map/boat.png",
+    );
+  });
+
+  it("lets the boat-borne party sail off the arrival cell immediately", () => {
+    // A boat that survives the portal has to still work as a boat —
+    // stepping into the next water tile should sail, not bump.
+    const grid = makeGrid();
+    grid[0][2] = cell({
+      walkable: false,
+      tag: "water",
+      sprite: "map/water.png",
+    });
+    grid[0][3] = cell({
+      walkable: false,
+      tag: "water",
+      sprite: "map/water.png",
+    });
+    const sim = makeSim({
+      grid,
+      startAt: { col: 2, row: 0 },
+      initialOnBoat: true,
+      initialCurrentBoatSprite: "map/boat.png",
+    });
+    const events = captureEvents(sim);
+    sim.stepInDirection("right");
+    expect(sim.snapshot().pos).toEqual({ col: 3, row: 0 });
+    expect(events.find((e) => e.kind === "moved")).toBeDefined();
+    expect(events.find((e) => e.kind === "blocked")).toBeUndefined();
+  });
+
+  it("disembarks normally on the destination map once the party reaches land", () => {
+    // Round-trip the journey: arrive aboard on water at (2,0), sail
+    // one cell, then step onto walkable land at (4,0). The boat
+    // should drop behind on (3,0) the same way as an in-map disembark.
+    const grid = makeGrid();
+    grid[0][2] = cell({
+      walkable: false,
+      tag: "water",
+      sprite: "map/water.png",
+    });
+    grid[0][3] = cell({
+      walkable: false,
+      tag: "water",
+      sprite: "map/water.png",
+    });
+    // (0,4) is walkable grass by default.
+    const sim = makeSim({
+      grid,
+      startAt: { col: 2, row: 0 },
+      initialOnBoat: true,
+      initialCurrentBoatSprite: "map/pirate-ship.png",
+    });
+    sim.stepInDirection("right"); // sail to (3,0)
+    const events: SimEvent[] = [];
+    sim.subscribe((ev) => events.push(ev));
+    sim.stepInDirection("right"); // step ashore at (4,0)
+    const dis = events.find((e) => e.kind === "disembarked");
+    expect(dis).toBeDefined();
+    if (dis?.kind !== "disembarked") throw new Error("type narrow");
+    expect(dis.pos).toEqual({ col: 4, row: 0 });
+    expect(dis.boatAt).toEqual({ col: 3, row: 0 });
+    expect(sim.snapshot().pos).toEqual({ col: 4, row: 0 });
   });
 });
 
