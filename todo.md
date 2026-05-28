@@ -5,17 +5,19 @@
 - - Adventure Log
 
 UI Improvements (add arrows for controls instead of redoing the whole UI in Phaser)
-- - Party Screen
-- - Character Screen
 - NPC Dialog
 - Quest Dialog
 - Counter Screen
 - Lock Pick Screen
+(Try to make mouse clicks unneeded)
 
 Make Fog of War tiles less saturated
 
-# V3 Ideas
+Make the chest Tile Palette sprite background transparent
 
+Port Tile Sprite Editor
+
+# V3 Ideas
 
 - More Robust Trap System
 - New Puzzle system (presure plates that open doors, etc)

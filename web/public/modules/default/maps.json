@@ -2820,19 +2820,19 @@
           },
           {
             "boat": false,
-            "id": "path",
-            "name": "Path",
+            "id": "bridge",
+            "name": "Bridge",
             "walkable": true,
             "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
-            "animation": "none",
+            "animation": null,
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "walkable"
+            "sprite": "map/bridge.png",
+            "tag": "outdoor"
           },
           {
             "id": "water",
@@ -3138,19 +3138,19 @@
           },
           {
             "boat": false,
-            "id": "path",
-            "name": "Path",
+            "id": "bridge",
+            "name": "Bridge",
             "walkable": true,
             "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
-            "animation": "none",
+            "animation": null,
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "walkable"
+            "sprite": "map/bridge.png",
+            "tag": "outdoor"
           },
           {
             "id": "water",
@@ -14876,8 +14876,8 @@
           },
           {
             "boat": false,
-            "id": "floor_brown",
-            "name": "Brown Floor",
+            "id": "chest",
+            "name": "Chest",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -14887,8 +14887,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/floor_brown.png",
-            "tag": "floor"
+            "sprite": "map/chest_tile.png",
+            "tag": "indoor"
           },
           {
             "boat": false,

@@ -386,6 +386,7 @@ export function PartyScreen({
   abilityCooldowns,
   onUnequipSlot,
   effectDurations,
+  onClose,
 }: {
   party: PartyRecord;
   /** Full character records for the party's roster ids. Missing ids
@@ -469,6 +470,20 @@ export function PartyScreen({
    *  synthesized row so the player can see the timer. Counters at
    *  zero are treated as "no duration shown." */
   effectDurations?: ReadonlyMap<string, number>;
+  /** Dismiss callback — when provided, PartyScreen owns Escape
+   *  handling end-to-end: pressing Escape in the regular two-pane
+   *  view calls this; pressing Escape inside a drilled-in
+   *  CharacterSheetSim pops back to the two-pane view instead.
+   *
+   *  Previously the host overlays (PlayPartyScreenOverlay,
+   *  MapPartyScreenOverlay) installed their own window-level Esc
+   *  handlers that called their `onClose` directly, and PartyScreen
+   *  tried to win the listener race to intercept Esc-while-drilled.
+   *  That race turned out to be too brittle (registration order,
+   *  StrictMode double-mounts, …), so closing is centralized here
+   *  now. Hosts still own the modal's open/close state; this is
+   *  just the keystroke routing. */
+  onClose?: () => void;
 }) {
   // ── Resolve roster ──────────────────────────────────────────────
   const members = useMemo(() => {
@@ -618,13 +633,32 @@ export function PartyScreen({
   // applies the reducer's output to, and pushes back. Doing it this
   // way means the existing mouse-driven flows + existing renderers
   // keep working unchanged.
-  type FocusZone = "effects" | "stash" | "actions" | "send";
+  type FocusZone = "effects" | "stash" | "actions" | "send" | "roster";
+  type LeftZone = "effects" | "stash" | "actions";
   const [focusZone, setFocusZone] = useState<FocusZone>("effects");
   const [actionIndex, setActionIndex] = useState<number>(ACTION_USE);
   const [sendIndex, setSendIndex] = useState<number>(0);
+  /** Cursor in the roster (right pane) when the player has arrowed
+   *  across the column boundary. Independent of `sendIndex` —
+   *  pressing Enter on the focused card drills into the character
+   *  sheet, not delivers a stash item. */
+  const [rosterIndex, setRosterIndex] = useState<number>(0);
+  /** Which left-column zone the cursor was in immediately before
+   *  hopping into the roster. ArrowLeft out of the roster lands on
+   *  this zone so the round-trip feels seamless. */
+  const [lastLeftZone, setLastLeftZone] = useState<LeftZone>("effects");
   /** Ref on the stash <ul> so the auto-scroll effect below can
    *  query the focused row and `scrollIntoView` it. */
   const stashListRef = useRef<HTMLUListElement | null>(null);
+  /** Ref onto the currently-selected effect row's <button> so the
+   *  focus effect can drive DOM focus onto it when the cursor lands
+   *  there via arrow keys. This is what lets Enter toggle: the
+   *  browser's default Enter-activates-focused-button behavior runs
+   *  in parallel with the reducer's effect-toggle action, so even if
+   *  the window-level reducer dispatch ever misses, the button's own
+   *  click handler still fires and toggles the effect. Belt-and-
+   *  braces; the reducer is the primary path. */
+  const selectedEffectButtonRef = useRef<HTMLButtonElement | null>(null);
   // Whenever the selection moves, drop out of send / examine so the
   // detail panel always matches the cursor.
   useEffect(() => {
@@ -716,15 +750,28 @@ export function PartyScreen({
   const selectedRow = effectRows.find((r) => r.ability.id === selectedId);
 
   // ── Toggle helper for the "active" preview set ───────────────────
-  const toggleActive = (abilityId: string, available: boolean) => {
-    if (!available) return;
-    const present = activeEffectIds.includes(abilityId);
-    if (present) {
-      onActiveEffectsChange(activeEffectIds.filter((x) => x !== abilityId));
-    } else {
-      onActiveEffectsChange([...activeEffectIds, abilityId]);
-    }
-  };
+  // Memoised — the keydown effect (below) lists it as a dependency,
+  // and an inline arrow on every render would force the effect to
+  // re-mount its window-level listener every render. The effect also
+  // captures `toggleActive` in its closure; without useCallback that
+  // capture would be a fresh reference on each render and the effect
+  // would have to either accept stale state OR be re-registered every
+  // tick. Stable identity here lets the dep array stay honest while
+  // keeping the listener long-lived.
+  const toggleActive = useCallback(
+    (abilityId: string, available: boolean) => {
+      if (!available) return;
+      const present = activeEffectIds.includes(abilityId);
+      if (present) {
+        onActiveEffectsChange(
+          activeEffectIds.filter((x) => x !== abilityId),
+        );
+      } else {
+        onActiveEffectsChange([...activeEffectIds, abilityId]);
+      }
+    },
+    [activeEffectIds, onActiveEffectsChange],
+  );
 
   // ── Keyboard navigation — reducer-driven ────────────────────────
   // The old handler hand-rolled stash up/down + U/S/X accelerators
@@ -779,6 +826,8 @@ export function PartyScreen({
           stashIndex: stashSelectedIndex ?? -1,
           actionIndex,
           sendIndex,
+          rosterIndex,
+          lastLeftZone,
         },
         { kind: "key", key: e.key },
         navCtx,
@@ -800,6 +849,10 @@ export function PartyScreen({
       }
       if (next.actionIndex !== actionIndex) setActionIndex(next.actionIndex);
       if (next.sendIndex !== sendIndex) setSendIndex(next.sendIndex);
+      if (next.rosterIndex !== rosterIndex) setRosterIndex(next.rosterIndex);
+      if (next.lastLeftZone !== lastLeftZone) {
+        setLastLeftZone(next.lastLeftZone);
+      }
       // Zone sync: `send` zone maps to stashMode="send"; leaving
       // send while stashMode was "send" pops it back to "none".
       // The action handler below toggles examine separately.
@@ -821,14 +874,39 @@ export function PartyScreen({
           toggleExamine();
           break;
         case "effect-toggle": {
+          // Reducer no longer emits this — Enter on an effect row
+          // is handled via the focused-button native click path
+          // instead. Kept here as a no-op (with a deliberate
+          // unreachable comment) so the switch is still exhaustive
+          // against the union of action kinds.
           const row = effectRows[next.effectIndex];
           if (row) toggleActive(row.ability.id, row.available);
           break;
         }
+        case "roster-drill-in": {
+          // Enter on a focused roster card opens that character's
+          // sheet — same path as clicking the card via
+          // RosterCard.onOpen → setFocusedMemberId. The reducer
+          // gives us the index; we map it to the member's id since
+          // the focus state is keyed by id (members may reorder).
+          const member = members[result.action.memberIndex];
+          if (member) setFocusedMemberId(member.id);
+          break;
+        }
         case "close":
-          // Reducer wants the Esc to bubble. We left `consumed`
-          // false so the overlay's keydown trap can close the
-          // screen. Nothing else to do here.
+          // Esc in the regular two-pane view → close the modal.
+          // Hosts pass an `onClose` callback (PlayPartyScreenOverlay
+          // / MapPartyScreenOverlay both wire it to their own close
+          // state); we no longer rely on the overlay's window-level
+          // Esc handler to do the job, because that handler was
+          // also firing while the player was drilled into a
+          // character sheet (where we want Esc to pop the sheet
+          // instead of closing the whole screen).
+          if (onClose) {
+            e.preventDefault();
+            e.stopPropagation();
+            onClose();
+          }
           break;
         case "none":
           break;
@@ -843,20 +921,89 @@ export function PartyScreen({
     effectIndex,
     stashEntries.length,
     stashSelectedIndex,
+    members,
     members.length,
     canUseSelected,
     canSendSelected,
     triggerUse,
     sendToMember,
     toggleExamine,
+    toggleActive,
     selectedId,
     actionIndex,
     sendIndex,
+    rosterIndex,
+    lastLeftZone,
     focusZone,
     liveZone,
     stashMode,
-    toggleExamine,
+    onClose,
   ]);
+
+  // ── Character-sheet Escape capture ──────────────────────────────
+  // While drilled into a member's sheet, the main reducer listener
+  // is suspended (see the `if (focusedMember) return;` near the top
+  // of that effect — the sheet owns its own input). The wrapping
+  // host overlay (PlayPartyScreenOverlay / MapPartyScreenOverlay)
+  // ALSO registers a window-capture keydown handler that closes the
+  // whole Party screen on Esc. Without an intercept, pressing Esc
+  // in the sheet would drop the player all the way back to the map
+  // — surprising, because they got into the sheet via the Party
+  // screen and expect Esc to pop one level at a time.
+  //
+  // Subtleties that bit a previous attempt:
+  //
+  //   1. The overlay's window-capture listener AND ours are both on
+  //      `window`. `stopPropagation` only halts propagation through
+  //      the DOM tree — it does NOT stop other listeners on the SAME
+  //      target. We need `stopImmediatePropagation` to actually
+  //      prevent the overlay's listener from running.
+  //
+  //   2. Capture-phase listeners on the same node fire in
+  //      *registration order*. React fires child effects before
+  //      parent effects on mount, so a PartyScreen-level effect that
+  //      registers at mount time wins over the parent overlay. But
+  //      an effect gated on `focusedMember` only registers AFTER the
+  //      overlay (the overlay's effect already ran), and so loses
+  //      the race.
+  //
+  // The fix: register this listener ONCE at mount with an empty dep
+  // array so it claims first-registered slot, then read the live
+  // `focusedMember` via a ref so the listener doesn't need to be
+  // re-registered when the drill-in state flips. Two mount-time
+  // effects (this one + the ref mirror) sit at slots 1 and 2 in the
+  // window queue ahead of the overlay's slot 3, so Esc routes
+  // through this handler first every time.
+  const focusedMemberIdRef = useRef<string | null>(focusedMemberId);
+  useEffect(() => {
+    focusedMemberIdRef.current = focusedMemberId;
+  }, [focusedMemberId]);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (focusedMemberIdRef.current == null) return; // sheet not open
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      setFocusedMemberId(null);
+    };
+    window.addEventListener("keydown", onKey, { capture: true });
+    return () =>
+      window.removeEventListener("keydown", onKey, { capture: true });
+    // Empty deps on purpose — see comment block above. The listener
+    // reads `focusedMemberIdRef` for current state instead of having
+    // `focusedMemberId` in the dep list (which would re-register the
+    // listener and push it to the back of the queue).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Auto-scroll the stash list so the currently-selected row is in
   // view. The list itself uses `max-h-48 overflow-y-auto`, which
@@ -874,6 +1021,32 @@ export function PartyScreen({
     );
     if (sel) sel.scrollIntoView({ block: "nearest" });
   }, [stashSelectedIndex]);
+
+  // Drive DOM focus onto the selected effect button whenever the
+  // effects zone owns the keyboard cursor. Two effects fall out of
+  // this:
+  //
+  //   1. The browser draws its native focus ring around the row, so
+  //      the player has an unambiguous "this is where Enter will
+  //      act" cue even if the colored-bar section indicator slips
+  //      past their eye.
+  //   2. Pressing Enter on a focused <button> dispatches a click as
+  //      the browser's default keydown action. That click flows
+  //      through the button's `onClick`, which we wire to also call
+  //      `toggleActive` — so even on the off chance the reducer
+  //      dispatch path misses (a stale closure, an unfortunate event
+  //      ordering, an extension stopping our window listener), the
+  //      native click path still toggles. Defense in depth.
+  //
+  // We `focus({ preventScroll: true })` so the focus call doesn't
+  // jank the modal's scroll position in cases where the highlighted
+  // row sits inside a scroll container.
+  useEffect(() => {
+    if (focusZone !== "effects") return;
+    const btn = selectedEffectButtonRef.current;
+    if (!btn) return;
+    btn.focus({ preventScroll: true });
+  }, [focusZone, selectedId]);
 
   // Reset send / action cursors when the stash row changes — same
   // ergonomic the original component already had for `stashMode`:
@@ -907,9 +1080,18 @@ export function PartyScreen({
   };
   const sectionHeaderClass = (zone: FocusZone): string => {
     const focused = focusZone === zone;
-    return `text-xs uppercase tracking-wide ${
-      focused ? "text-amber-200" : "text-amber-300/70"
-    }`;
+    // Focused header gets a colored left bar + brighter amber so the
+    // player can see at a glance which list Enter will act on. The
+    // ▶ marker alone was too easy to miss against the rest of the
+    // chrome (the player report that started this fix said pressing
+    // Enter "didn't toggle the effect" — the actual cause was that
+    // focus had drifted to the stash without a clear visual cue).
+    return [
+      "text-xs uppercase tracking-wide pl-2 -ml-2",
+      focused
+        ? "border-l-2 border-amber-200 text-amber-200"
+        : "border-l-2 border-transparent text-amber-300/70",
+    ].join(" ");
   };
 
   // ── Render ───────────────────────────────────────────────────────
@@ -972,13 +1154,24 @@ export function PartyScreen({
                   <li key={row.ability.id}>
                     <button
                       type="button"
+                      ref={
+                        isSel
+                          ? selectedEffectButtonRef
+                          : undefined
+                      }
                       onClick={() => {
+                        // Clicking — or pressing Enter on a focused
+                        // effect row, which the browser dispatches
+                        // as a synthetic click — toggles the effect
+                        // AND parks the cursor on the effects zone.
+                        // See the reducer's Enter-on-effects branch
+                        // for why both paths converge here.
                         setSelectedId(row.ability.id);
                         setFocusZone("effects");
+                        if (row.available) {
+                          toggleActive(row.ability.id, true);
+                        }
                       }}
-                      onDoubleClick={() =>
-                        toggleActive(row.ability.id, true)
-                      }
                       className={[
                         "flex w-full items-center gap-2 rounded border px-2 py-0.5 text-left text-sm text-parchment/90",
                         rowSelClass("effects", isSel),
@@ -1203,8 +1396,8 @@ export function PartyScreen({
         <div className="space-y-2">
           {/* Roster */}
           <section>
-            <h3 className="text-xs uppercase tracking-wide text-amber-300">
-              Party [1-{members.length}]
+            <h3 className={sectionHeaderClass("roster")}>
+              {focusZone === "roster" ? "▸ " : ""}Party [1-{members.length}]
             </h3>
             <ul className="mt-1 space-y-1">
               {members.length === 0 ? (
@@ -1229,7 +1422,15 @@ export function PartyScreen({
                     onOpen={
                       sendingNow
                         ? () => sendToMember(i)
-                        : () => setFocusedMemberId(m.id)
+                        : () => {
+                            // Click on a roster card: park keyboard
+                            // focus on the roster zone with the
+                            // cursor on this row, then drill in.
+                            // Matching what arrow-then-Enter does.
+                            setFocusZone("roster");
+                            setRosterIndex(i);
+                            setFocusedMemberId(m.id);
+                          }
                     }
                     /** Surface a "drop target" ring while sending so the
                      *  player can visually confirm where the item is
@@ -1241,6 +1442,18 @@ export function PartyScreen({
                      *  keyboard `sendIndex` is currently pointing at.
                      *  Only meaningful in send mode (sendingNow). */
                     isSendFocused={sendingNow && i === sendIndex}
+                    /** Roster-zone cursor outline — set when the
+                     *  player has arrowed into the right pane and
+                     *  this is the card the keyboard cursor points
+                     *  at. Distinct from `isSendFocused` so the two
+                     *  modes can stack rings if a future flow ever
+                     *  has the cursor land on the same card in both
+                     *  states. */
+                    isRosterFocused={
+                      !sendingNow &&
+                      focusZone === "roster" &&
+                      i === rosterIndex
+                    }
                     overrideTitle={
                       sendingNow
                         ? `Send to ${m.name} (press ${i + 1})`
@@ -1393,6 +1606,7 @@ function RosterCard({
   isDropTarget = false,
   isSendTarget = false,
   isSendFocused = false,
+  isRosterFocused = false,
   overrideTitle,
   onDragStart,
   onDragEnterCard,
@@ -1429,6 +1643,11 @@ function RosterCard({
    *  can see "Enter sends to *this* card" without losing the "any of
    *  these cards is a valid destination" affordance. */
   isSendFocused?: boolean;
+  /** Set when the keyboard cursor is in the roster zone (the right
+   *  pane) and this is the card it's pointing at. Pressing Enter
+   *  from this state drills into the character sheet. Same visual
+   *  affordance as `isSendFocused`. */
+  isRosterFocused?: boolean;
   /** Tooltip override — wins over the default drag / drill-in titles. */
   overrideTitle?: string;
   onDragStart?: () => void;
@@ -1468,7 +1687,7 @@ function RosterCard({
         isDropTarget || isSendTarget
           ? "border-amber-300/70 ring-1 ring-amber-300/50"
           : "",
-        isSendFocused
+        isSendFocused || isRosterFocused
           ? "ring-2 ring-ember/80 ring-offset-1 ring-offset-ink/60"
           : "",
         fallen ? "opacity-60 saturate-50" : "",

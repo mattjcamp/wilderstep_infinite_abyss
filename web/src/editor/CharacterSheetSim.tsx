@@ -37,7 +37,14 @@
  *     the Characters editor (sim preview next to the editable sheet).
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  initialCharSheetNavState,
+  reduceCharSheetNav,
+  type CharSheetNavContext,
+  type CharSheetNavState,
+  type CharSheetZone,
+} from "./characterSheetNav";
 import type {
   PartyAbilityRef,
   PartyCharacterRef,
@@ -471,8 +478,269 @@ export function CharacterSheetSim({
     ? (character.inventory as Array<Record<string, unknown>>)
     : [];
 
+  // ── Keyboard navigation across sections ─────────────────────────
+  // The sheet is a vertical stack of interactive lists: Equipped →
+  // Personal → (Race | Class abilities side-by-side) → Spells. The
+  // arrow-nav reducer in ./characterSheetNav owns the cross-section
+  // spill rules; we synthesise its context from whatever lists are
+  // currently rendered, run it on every keydown, and dispatch
+  // trigger actions back to the host callbacks (Unequip / Use /
+  // Equip / Return / Cast). Esc is handled by PartyScreen's drill-
+  // in listener (sheet-level Esc pops back to the two-pane view),
+  // so this handler deliberately ignores it.
+  const navCtx: CharSheetNavContext = useMemo(
+    () => ({
+      equippedCount: 2,
+      personalCount: personalItems.length,
+      raceCount: raceAbilities.length,
+      classCount: classAbilities.length,
+      spellCount: knownSpells.length,
+      canEquippedAct: !!onUnequipSlot,
+      canPersonalAct:
+        !!onUsePersonalItem ||
+        !!onEquipPersonalItem ||
+        !!onReturnPersonalItem,
+      canAbilityAct: !!onUseAbility,
+      canSpellAct: !!onCastSpell,
+    }),
+    [
+      personalItems.length,
+      raceAbilities.length,
+      classAbilities.length,
+      knownSpells.length,
+      onUnequipSlot,
+      onUsePersonalItem,
+      onEquipPersonalItem,
+      onReturnPersonalItem,
+      onUseAbility,
+      onCastSpell,
+    ],
+  );
+  const [navState, setNavState] = useState<CharSheetNavState>(() =>
+    initialCharSheetNavState(navCtx),
+  );
+  // Reset nav state on character drill-out so the next member's
+  // sheet starts on Equipped[0] instead of inheriting the previous
+  // member's cursor. character.id is the parent-driven key.
+  useEffect(() => {
+    setNavState(initialCharSheetNavState(navCtx));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [character.id]);
+
+  // Mirror reducer-driven cursor into the existing legacy selection
+  // state so the same Personal action row + Equipped Unequip button
+  // surface for keyboard nav as they did for click. Goes one-way:
+  // arrow key → legacy selection. Mouse clicks still call
+  // selectPersonal / selectEquipped directly (which set both legacy
+  // state AND call into the reducer via the keydown effect's mouse
+  // setters below). The "this zone" gate prevents arrow-away from
+  // clobbering whatever was last clicked.
+  useEffect(() => {
+    if (navState.zone === "personal" && navState.personalIndex >= 0) {
+      setPersonalSelectedIndex(navState.personalIndex);
+      setEquippedSelectedSlot(null);
+    } else if (navState.zone === "equipped") {
+      const slot = navState.equippedIndex === 0 ? "hands" : "body";
+      setEquippedSelectedSlot(slot);
+      setPersonalSelectedIndex(null);
+    }
+  }, [navState.zone, navState.personalIndex, navState.equippedIndex]);
+
+  // Mirror the host callbacks into a ref so the (empty-deps)
+  // keydown listener below can call the LATEST closures when Enter
+  // fires a trigger. Without this we'd either re-register the
+  // listener on every render (losing first-registered ordering vs.
+  // PartyScreen's drill-in Esc handler) or capture stale callbacks.
+  const handlersRef = useRef({
+    onUnequipSlot,
+    onUsePersonalItem,
+    onEquipPersonalItem,
+    onReturnPersonalItem,
+    onUseAbility,
+    onCastSpell,
+    setLastAction,
+  });
+  useEffect(() => {
+    handlersRef.current = {
+      onUnequipSlot,
+      onUsePersonalItem,
+      onEquipPersonalItem,
+      onReturnPersonalItem,
+      onUseAbility,
+      onCastSpell,
+      setLastAction,
+    };
+  });
+
+  // Live nav state + context refs so the keydown listener can read
+  // fresh values without depending on them — same first-registered
+  // listener trick used by PartyScreen's drill-in Esc handler.
+  const navStateRef = useRef(navState);
+  useEffect(() => {
+    navStateRef.current = navState;
+  }, [navState]);
+  const navCtxRef = useRef(navCtx);
+  useEffect(() => {
+    navCtxRef.current = navCtx;
+  }, [navCtx]);
+  // Static data the trigger dispatcher needs to look up by index.
+  const triggerDataRef = useRef({
+    character,
+    personalItems,
+    raceAbilities,
+    classAbilities,
+    knownSpells,
+    itemById,
+    equipSlotFor,
+  });
+  useEffect(() => {
+    triggerDataRef.current = {
+      character,
+      personalItems,
+      raceAbilities,
+      classAbilities,
+      knownSpells,
+      itemById,
+      equipSlotFor,
+    };
+  });
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      // Ignore typing into form fields (dev console, future rename).
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+      // Sheet-level Esc is owned by PartyScreen's drill-in listener
+      // (it pops focusedMemberId back to null). Don't trap it here.
+      if (e.key === "Escape") return;
+      const cur = navStateRef.current;
+      const liveCtx = navCtxRef.current;
+      const result = reduceCharSheetNav(
+        cur,
+        { kind: "key", key: e.key },
+        liveCtx,
+      );
+      if (result.consumed) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      if (result.state !== cur) {
+        setNavState(result.state);
+      }
+      if (result.action.kind === "trigger") {
+        const h = handlersRef.current;
+        const d = triggerDataRef.current;
+        const zone = result.action.zone;
+        const idx = result.action.index;
+        switch (zone) {
+          case "equipped": {
+            // Map index → slot id ("hands" / "body"). Bail when the
+            // slot is empty or the host hasn't wired Unequip.
+            const slot = idx === 0 ? "hands" : "body";
+            const equipped = (d.character.equipped ?? {}) as Record<
+              string,
+              string
+            >;
+            if (!h.onUnequipSlot || !equipped[slot]) break;
+            h.onUnequipSlot(d.character.id, slot);
+            break;
+          }
+          case "personal": {
+            const entry = d.personalItems[idx];
+            if (!entry) break;
+            const id =
+              typeof entry.item === "string" ? entry.item : null;
+            const def = id ? d.itemById.get(id) ?? null : null;
+            // Try Use first (most common consumable action), then
+            // Equip (gear), then Return-to-stash (least-likely Enter
+            // intent — kept as a click-only path for now).
+            if (h.onUsePersonalItem && def?.usable) {
+              h.onUsePersonalItem(d.character.id, idx);
+              break;
+            }
+            const equipSlot = d.equipSlotFor(def);
+            if (h.onEquipPersonalItem && equipSlot) {
+              h.onEquipPersonalItem(d.character.id, idx);
+              break;
+            }
+            // Nothing actionable — quietly do nothing rather than
+            // surprise the player with a Return-to-stash.
+            break;
+          }
+          case "race-abilities":
+          case "class-abilities": {
+            const rows =
+              zone === "race-abilities"
+                ? d.raceAbilities
+                : d.classAbilities;
+            const a = rows[idx];
+            if (!a) break;
+            const usable = (a.usable_in ?? []).includes("party");
+            if (!usable) break;
+            if (h.onUseAbility) h.onUseAbility(d.character.id, a);
+            else
+              h.setLastAction(
+                `Used ${a.name ?? a.id} — preview only.`,
+              );
+            break;
+          }
+          case "spells": {
+            const s = d.knownSpells[idx];
+            if (!s) break;
+            const usable = (s.usable_in ?? []).includes("party");
+            if (!usable) break;
+            if (h.onCastSpell) h.onCastSpell(d.character.id, s.id);
+            else
+              h.setLastAction(
+                `Cast ${s.name ?? s.id} — preview only.`,
+              );
+            break;
+          }
+        }
+      }
+    };
+    window.addEventListener("keydown", onKey, { capture: true });
+    return () =>
+      window.removeEventListener("keydown", onKey, { capture: true });
+    // Empty deps — listener reads everything via refs. Keeps it at a
+    // stable position in the window-capture listener queue (relevant
+    // when the sheet is mounted under PartyScreen, whose Esc handler
+    // also lives at the window level).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── Auto-scroll the focused row into view ───────────────────────
+  // The sheet itself is non-scrolling, but the PartyScreen overlay
+  // wraps it in a `max-h-[90vh] overflow-auto` container. When the
+  // nav cursor walks past the bottom of that container — into the
+  // Spells section on a long sheet, typically — the focused row
+  // sits off-screen and the player has nothing to react to.
+  //
+  // Mirrors PartyScreen's stash auto-scroll: tag the focused row
+  // with `data-nav-focused="true"` per zone, then query for it and
+  // call scrollIntoView({ block: "nearest" }). `nearest` only moves
+  // the row when it's actually outside the viewport, so navigating
+  // among already-visible rows doesn't jitter the container.
+  const sheetRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const root = sheetRef.current;
+    if (!root) return;
+    const el = root.querySelector<HTMLElement>('[data-nav-focused="true"]');
+    if (el) el.scrollIntoView({ block: "nearest" });
+  }, [navState]);
+
   return (
-    <div className="flex flex-col gap-2 rounded-md border border-parchment/15 bg-ink/40 p-3 text-parchment/90">
+    <div
+      ref={sheetRef}
+      className="flex flex-col gap-2 rounded-md border border-parchment/15 bg-ink/40 p-3 text-parchment/90"
+    >
       {/* Title bar — character name + class • race • level */}
       <div className="flex items-center justify-between gap-2 border-b border-parchment/15 pb-1">
         <div className="flex-1 text-center font-display text-base uppercase tracking-[0.25em] text-amber-300">
@@ -653,7 +921,24 @@ export function CharacterSheetSim({
                 itemById={itemById}
                 durability={equippedDur.hands ?? null}
                 selected={equippedSelectedSlot === "hands"}
-                onSelect={onUnequipSlot ? selectEquipped : undefined}
+                navFocused={
+                  navState.zone === "equipped" &&
+                  navState.equippedIndex === 0
+                }
+                onSelect={
+                  onUnequipSlot
+                    ? (slot) => {
+                        selectEquipped(slot);
+                        setNavState((cur) =>
+                          reduceCharSheetNav(
+                            cur,
+                            { kind: "set-equipped", index: 0 },
+                            navCtx,
+                          ).state,
+                        );
+                      }
+                    : undefined
+                }
               />
               <EquipRow
                 slot="Body"
@@ -662,7 +947,24 @@ export function CharacterSheetSim({
                 itemById={itemById}
                 durability={equippedDur.body ?? null}
                 selected={equippedSelectedSlot === "body"}
-                onSelect={onUnequipSlot ? selectEquipped : undefined}
+                navFocused={
+                  navState.zone === "equipped" &&
+                  navState.equippedIndex === 1
+                }
+                onSelect={
+                  onUnequipSlot
+                    ? (slot) => {
+                        selectEquipped(slot);
+                        setNavState((cur) =>
+                          reduceCharSheetNav(
+                            cur,
+                            { kind: "set-equipped", index: 1 },
+                            navCtx,
+                          ).state,
+                        );
+                      }
+                    : undefined
+                }
               />
             </ul>
             {/* Magic-gear passives — pulled from every equipped slot's
@@ -775,13 +1077,26 @@ export function CharacterSheetSim({
                       </li>
                     );
                   }
+                  const isNavFocused =
+                    navState.zone === "personal" &&
+                    navState.personalIndex === i;
                   return (
                     <li key={`${id ?? "_"}-${i}`}>
                       <button
                         type="button"
                         role="option"
                         aria-selected={isSel}
-                        onClick={() => selectPersonal(i)}
+                        data-nav-focused={isNavFocused ? "true" : undefined}
+                        onClick={() => {
+                          selectPersonal(i);
+                          setNavState((cur) =>
+                            reduceCharSheetNav(
+                              cur,
+                              { kind: "set-personal", index: i },
+                              navCtx,
+                            ).state,
+                          );
+                        }}
                         className={[
                           "flex w-full items-center justify-between gap-2 rounded border px-2 py-0.5 text-left",
                           isSel
@@ -893,6 +1208,14 @@ export function CharacterSheetSim({
           rows={raceAbilities}
           emptyHint={`${raceName} grants no listed abilities.`}
           cooldowns={abilityCooldowns}
+          sectionFocused={navState.zone === "race-abilities"}
+          focusedIndex={navState.raceIndex}
+          onRowFocus={(i) =>
+            setNavState((s) =>
+              reduceCharSheetNav(s, { kind: "set-race", index: i }, navCtx)
+                .state,
+            )
+          }
           onUse={(a) => {
             // Real handler wins when the host provides one (live
             // play overlay); editor preview falls through to the
@@ -908,6 +1231,14 @@ export function CharacterSheetSim({
           rows={classAbilities}
           emptyHint={`${className} grants no abilities at level ${level}.`}
           cooldowns={abilityCooldowns}
+          sectionFocused={navState.zone === "class-abilities"}
+          focusedIndex={navState.classIndex}
+          onRowFocus={(i) =>
+            setNavState((s) =>
+              reduceCharSheetNav(s, { kind: "set-class", index: i }, navCtx)
+                .state,
+            )
+          }
           onUse={(a) => {
             if (onUseAbility) onUseAbility(character.id, a);
             else setLastAction(`Used ${a.name ?? a.id} — preview only.`);
@@ -916,8 +1247,15 @@ export function CharacterSheetSim({
       </div>
 
       <section>
-        <h3 className="text-xs uppercase tracking-wide text-amber-300">
-          Spells
+        <h3
+          className={[
+            "text-xs uppercase tracking-wide pl-2 -ml-2 border-l-2",
+            navState.zone === "spells"
+              ? "border-amber-200 text-amber-200"
+              : "border-transparent text-amber-300/80",
+          ].join(" ")}
+        >
+          {navState.zone === "spells" ? "▸ " : ""}Spells
         </h3>
         {knownSpells.length === 0 ? (
           <p className="mt-1 text-sm text-parchment/45">
@@ -927,10 +1265,22 @@ export function CharacterSheetSim({
           </p>
         ) : (
           <ul className="mt-1 space-y-1">
-            {knownSpells.map((s) => (
+            {knownSpells.map((s, i) => (
               <SpellRow
                 key={s.id}
                 spell={s}
+                focused={
+                  navState.zone === "spells" && navState.spellIndex === i
+                }
+                onFocus={() =>
+                  setNavState((cur) =>
+                    reduceCharSheetNav(
+                      cur,
+                      { kind: "set-spell", index: i },
+                      navCtx,
+                    ).state,
+                  )
+                }
                 onCast={() => {
                   // Fire the host-side handler first — if a real
                   // handler is wired (PlayPartyScreenOverlay) it
@@ -980,6 +1330,7 @@ function EquipRow({
   itemById,
   durability,
   selected,
+  navFocused = false,
   onSelect,
 }: {
   /** Label rendered on the left ("Hands", "Body"). */
@@ -997,6 +1348,13 @@ function EquipRow({
   /** True when this row is the current selection (host highlights it
    *  + reveals the Unequip action). */
   selected?: boolean;
+  /** True when the keyboard nav cursor is on this slot. Drives the
+   *  `data-nav-focused` attribute used by the sheet's auto-scroll
+   *  effect — kept separate from `selected` so a click that selects
+   *  a slot without engaging the keyboard cursor doesn't trigger a
+   *  scroll. (In practice `selected` and this flag track 1:1, but
+   *  keeping them distinct makes the contract explicit.) */
+  navFocused?: boolean;
   /** Optional click handler. When provided the row renders as a
    *  button (click to select); when omitted the row is static and
    *  shows the legacy highlight strip on the first slot only. */
@@ -1034,6 +1392,7 @@ function EquipRow({
           type="button"
           role="option"
           aria-selected={selected}
+          data-nav-focused={navFocused ? "true" : undefined}
           onClick={() => onSelect(slotKey)}
           className={`${rowClass} hover:bg-ink/50`}
         >
@@ -1094,6 +1453,9 @@ function AbilitySection({
   emptyHint,
   onUse,
   cooldowns,
+  focusedIndex,
+  sectionFocused = false,
+  onRowFocus,
 }: {
   title: string;
   rows: ReadonlyArray<PartyAbilityRef>;
@@ -1103,23 +1465,53 @@ function AbilitySection({
    *  exists the button is rendered disabled with the label so the
    *  player sees the gate without clicking. */
   cooldowns?: ReadonlyMap<string, string>;
+  /** Index of the row the keyboard cursor is pointing at, or -1
+   *  when the cursor is somewhere else. Only renders a focus ring
+   *  when `sectionFocused` is true (i.e., this section's zone owns
+   *  the cursor) — keeps the visual ring from showing on whichever
+   *  section was last navigated when focus has moved on. */
+  focusedIndex?: number;
+  /** True iff this section's zone (race-abilities OR class-abilities)
+   *  is the active keyboard zone. Drives the section header's
+   *  amber-bar focus indicator + which row shows the cursor ring. */
+  sectionFocused?: boolean;
+  /** Click handler — clicking a row's body (not the Use button)
+   *  parks the keyboard cursor on this section + row. Optional so
+   *  read-only editor previews can omit it. */
+  onRowFocus?: (index: number) => void;
 }) {
   return (
     <section>
-      <h3 className="text-xs uppercase tracking-wide text-amber-300">
-        {title}
+      <h3
+        className={[
+          "text-xs uppercase tracking-wide pl-2 -ml-2 border-l-2",
+          sectionFocused
+            ? "border-amber-200 text-amber-200"
+            : "border-transparent text-amber-300/80",
+        ].join(" ")}
+      >
+        {sectionFocused ? "▸ " : ""}{title}
       </h3>
       {rows.length === 0 ? (
         <p className="mt-1 text-sm text-parchment/45">{emptyHint}</p>
       ) : (
         <ul className="mt-1 space-y-1">
-          {rows.map((a) => {
+          {rows.map((a, i) => {
             const usable = (a.usable_in ?? []).includes("party");
             const cooldownLabel = cooldowns?.get(a.id);
+            const isFocused = sectionFocused && i === focusedIndex;
             return (
               <li
                 key={a.id}
-                className="rounded border border-parchment/10 bg-ink/30 px-2 py-1"
+                onClick={() => onRowFocus?.(i)}
+                data-nav-focused={isFocused ? "true" : undefined}
+                className={[
+                  "rounded border bg-ink/30 px-2 py-1 transition-colors",
+                  isFocused
+                    ? "border-ember/70 ring-1 ring-ember/40"
+                    : "border-parchment/10",
+                  onRowFocus ? "cursor-pointer" : "",
+                ].join(" ")}
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-sm text-parchment/95">
@@ -1174,13 +1566,31 @@ function AbilitySection({
 function SpellRow({
   spell,
   onCast,
+  focused = false,
+  onFocus,
 }: {
   spell: PartySpellRef;
   onCast: () => void;
+  /** True iff the keyboard cursor is on this row. Drives an ember
+   *  ring on the row so the player can see what Enter would Cast. */
+  focused?: boolean;
+  /** Optional click handler — clicking the row body (not the Cast
+   *  button) parks the keyboard cursor here. */
+  onFocus?: () => void;
 }) {
   const usable = (spell.usable_in ?? []).includes("party");
   return (
-    <li className="rounded border border-parchment/10 bg-ink/30 px-2 py-1">
+    <li
+      onClick={onFocus}
+      data-nav-focused={focused ? "true" : undefined}
+      className={[
+        "rounded border bg-ink/30 px-2 py-1 transition-colors",
+        focused
+          ? "border-ember/70 ring-1 ring-ember/40"
+          : "border-parchment/10",
+        onFocus ? "cursor-pointer" : "",
+      ].join(" ")}
+    >
       <div className="flex items-center justify-between gap-2">
         <span className="text-sm text-parchment/95">
           {spell.name ?? spell.id}

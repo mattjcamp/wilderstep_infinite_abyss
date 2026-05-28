@@ -171,11 +171,13 @@ export function MapPartyScreenOverlay({
     };
   }, [moduleId]);
 
-  // ESC and P both close. Stop propagation so the underlying sim
-  // movement keys don't fire while the modal is open.
+  // P closes the screen. Esc is owned by PartyScreen end-to-end now
+  // (so Esc-inside-a-drilled-in-character-sheet can pop back to the
+  // two-pane view instead of dismissing the whole modal); see the
+  // `onClose` prop comment on PartyScreen for the full rationale.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" || e.key === "p" || e.key === "P") {
+      if (e.key === "p" || e.key === "P") {
         e.stopPropagation();
         e.preventDefault();
         onClose();
@@ -246,6 +248,7 @@ export function MapPartyScreenOverlay({
               activeEffectIds={activeEffectIds}
               onActiveEffectsChange={setActiveEffectIds}
               onReorderRoster={onReorderRoster}
+              onClose={onClose}
             />
           )}
         </div>

@@ -853,7 +853,22 @@ export function PlayPartyScreenOverlay({
         },
       });
     },
-    [liveSave, commit],
+    // `state` MUST be in the dep array — the `if (state.kind !== "ok")`
+    // guard at the top of this body reads `state.kind`, and if the
+    // useCallback isn't recomputed when state changes, the closure
+    // freezes at whatever kind `state` had when the overlay first
+    // rendered. The overlay mounts in `state.kind === "loading"`
+    // (catalog is async-loaded by the effect below), so without
+    // `state` in the deps every Effects toggle silently no-ops:
+    // the click handler runs, the early-return fires, and nothing
+    // ever reaches setActiveEffectIds / commit.
+    //
+    // Every other handler in this file (handleUseStashItem,
+    // handleSendStashItem, etc.) already lists `state` for this
+    // exact reason; this one was the outlier and the symptom was
+    // "press Enter on Infravision and even the Add to active button
+    // does nothing."
+    [state, liveSave, commit],
   );
 
   /** "Use" a stash entry — decrements the stack by ONE physical item
@@ -1479,12 +1494,22 @@ export function PlayPartyScreenOverlay({
     [state, applyLight],
   );
 
-  // ESC and P both close. Stop propagation so the underlying sim's
-  // movement keys (or the host's own P listener that opened us) don't
-  // fire while the modal is open.
+  // P closes the screen — same as the inspector-key shortcut that
+  // opened it. We deliberately do NOT trap Escape here anymore:
+  // PartyScreen owns Escape end-to-end (its reducer calls our
+  // `onClose` for the regular two-pane view; a dedicated handler
+  // pops back to the two-pane view when the player is drilled into
+  // a CharacterSheetSim). Having two window listeners both racing
+  // on Escape was the bug that let Esc-in-sheet dismiss the whole
+  // modal — see PartyScreen's `onClose` prop comment for context.
+  //
+  // The arrow/WASD swallow stays — it's defense in depth against
+  // the world sim picking up movement keys while a modal is up
+  // (overlaysOpenRef in PlayHost is the primary gate; this is
+  // belt-and-braces).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" || e.key === "p" || e.key === "P") {
+      if (e.key === "p" || e.key === "P") {
         e.stopPropagation();
         e.preventDefault();
         onClose();
@@ -1558,6 +1583,7 @@ export function PlayPartyScreenOverlay({
               spells={state.spells}
               activeEffectIds={activeEffectIds}
               onActiveEffectsChange={handleActiveEffectsChange}
+              onClose={onClose}
               onUseStashItem={handleUseStashItem}
               onSendStashItem={handleSendStashItem}
               onUsePersonalItem={handleUsePersonalItem}

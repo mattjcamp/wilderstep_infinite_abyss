@@ -40,7 +40,18 @@
  */
 
 /** Which list / submenu owns the keyboard cursor right now. */
-export type PartyNavZone = "effects" | "stash" | "actions" | "send";
+export type PartyNavZone =
+  | "effects"
+  | "stash"
+  | "actions"
+  | "send"
+  | "roster";
+
+/** Zones that live in the left-hand column of the screen. Tracked
+ *  on the nav state as `lastLeftZone` so ArrowLeft out of the
+ *  roster returns to whichever left-column list the cursor came
+ *  from (effects vs. stash vs. the actions submenu). */
+export type PartyNavLeftZone = "effects" | "stash" | "actions";
 
 /** Cursor within the action submenu. Matches the painted order in
  *  the screen: 0 = Use, 1 = Send to…, 2 = Examine. */
@@ -64,6 +75,16 @@ export interface PartyNavState {
   /** Cursor in the send-to roster picker. Only meaningful when
    *  `zone === "send"`. Reset to 0 each time send opens. */
   sendIndex: number;
+  /** Cursor in the roster (right-hand column) when the player has
+   *  arrowed right out of the left column. Distinct from `sendIndex`
+   *  — the roster zone is for opening a character sheet, send mode
+   *  is for delivering a stash item to a character. */
+  rosterIndex: number;
+  /** Which left-column zone to fall back to when the cursor exits
+   *  the roster via ArrowLeft. Updated whenever the cursor enters
+   *  the roster so the back-trip lands on whichever list (effects,
+   *  stash, or the actions submenu) the player came from. */
+  lastLeftZone: PartyNavLeftZone;
 }
 
 /** Pure context the reducer needs to decide what's valid. The
@@ -97,6 +118,12 @@ export type PartyNavInput =
   /** User clicked an action button (or its underlying control).
    *  Moves focus to actions and parks the cursor on that action. */
   | { kind: "set-action"; index: number }
+  /** User clicked a roster card. Moves focus to the roster zone and
+   *  parks the cursor on that card. Distinct from `set-send-target`
+   *  (which would be the send-mode equivalent) — clicks during send
+   *  mode are still routed through the existing onSendStashItem
+   *  callback path, the reducer doesn't see them. */
+  | { kind: "set-roster"; index: number }
   /** Reset state to its "screen just opened" shape — used when the
    *  parent overlay remounts the screen for a new context. */
   | { kind: "reset" };
@@ -115,6 +142,10 @@ export type PartyNavAction =
   | { kind: "examine-toggle" }
   /** Toggle the currently selected effect's "active" state. */
   | { kind: "effect-toggle" }
+  /** Drill into the focused roster member's character sheet. The
+   *  component translates this into `setFocusedMemberId(m.id)`,
+   *  which is what RosterCard.onOpen invokes today on click. */
+  | { kind: "roster-drill-in"; memberIndex: number }
   /** Bubble Esc to the overlay so it closes the whole screen. The
    *  reducer fires this when Esc would have nothing else to do. */
   | { kind: "close" };
@@ -144,6 +175,8 @@ export function initialPartyNavState(
       : -1,
     actionIndex: ACTION_USE,
     sendIndex: 0,
+    rosterIndex: 0,
+    lastLeftZone: "effects",
   };
 }
 
@@ -201,6 +234,19 @@ export function reducePartyNav(
       consumed: false,
     };
   }
+  if (input.kind === "set-roster") {
+    return {
+      state: {
+        ...s,
+        zone: "roster",
+        rosterIndex: ctx.memberCount > 0
+          ? clamp(input.index, 0, ctx.memberCount - 1)
+          : 0,
+      },
+      action: { kind: "none" },
+      consumed: false,
+    };
+  }
 
   // From here on out the input is a key press.
   const { key } = input;
@@ -213,6 +259,8 @@ export function reducePartyNav(
       return reduceActionsKey(s, key, ctx);
     case "send":
       return reduceSendKey(s, key, ctx);
+    case "roster":
+      return reduceRosterKey(s, key, ctx);
   }
 }
 
@@ -242,18 +290,28 @@ function reduceEffectsKey(
     return consumed({ ...s, effectIndex: s.effectIndex - 1 });
   }
   if (key === "Enter") {
-    // Toggle the highlighted effect's active state. The "available"
-    // check (roster unlocks this effect) is on the caller side —
-    // we just emit the action.
-    if (!ctx.effectAvailable) return consumed(s);
-    return {
-      state: s,
-      action: { kind: "effect-toggle" },
-      consumed: true,
-    };
+    // Enter on an effect row is a passthrough — we deliberately do
+    // NOT consume the key. The component drives DOM focus onto the
+    // selected effect's <button> whenever the effects zone owns the
+    // cursor, so the browser's native "Enter on a focused button
+    // dispatches click" behavior fires the button's onClick, which
+    // toggles the effect via `toggleActive`. We tried emitting an
+    // `effect-toggle` action here and calling preventDefault, but
+    // that path proved brittle: focused-button click was preempted
+    // by the preventDefault, the reducer-driven dispatch had a
+    // closure / dep-array hole that sometimes fired stale state,
+    // and the symptom was "press Return — nothing happens." Routing
+    // through the native click path is a single source of truth
+    // and gives us screen-reader + a11y semantics for free.
+    return passthrough(s);
   }
   if (key === "Escape") {
     return { state: s, action: { kind: "close" }, consumed: false };
+  }
+  if (isRightKey(key)) {
+    // Cross-column hop into the roster — remember we came from the
+    // effects column so ArrowLeft will round-trip back here.
+    return enterRoster(s, ctx, "effects");
   }
   if (key === "Tab") {
     // Tab also walks into the stash for screen-reader users. Shift+Tab
@@ -320,6 +378,11 @@ function reduceStashKey(
       };
     }
   }
+  if (isRightKey(key)) {
+    // Cross-column hop from the stash list into the roster. Same
+    // round-trip semantics as the effects branch above.
+    return enterRoster(s, ctx, "stash");
+  }
   if (key === "Escape") {
     return { state: s, action: { kind: "close" }, consumed: false };
   }
@@ -331,7 +394,7 @@ function reduceActionsKey(
   key: string,
   ctx: PartyNavContext,
 ): PartyNavResult {
-  if (isRightKey(key) || isDownKey(key)) {
+  if (isDownKey(key)) {
     // Cycle to the next enabled action. Disabled actions are skipped
     // so a player who can't Use the highlighted item can still tab to
     // Send / Examine without bouncing through dead entries.
@@ -340,11 +403,23 @@ function reduceActionsKey(
       actionIndex: nextEnabledAction(s.actionIndex, +1, ctx),
     });
   }
-  if (isLeftKey(key) || isUpKey(key)) {
+  if (isUpKey(key)) {
     return consumed({
       ...s,
       actionIndex: nextEnabledAction(s.actionIndex, -1, ctx),
     });
+  }
+  if (isRightKey(key)) {
+    // Cross-column hop from the action submenu into the roster.
+    // Mirrors the same behavior in effects + stash so Left/Right is
+    // consistently "switch column" everywhere in the left pane. The
+    // submenu's own up/down arrows handle cycling between actions.
+    return enterRoster(s, ctx, "actions");
+  }
+  if (isLeftKey(key)) {
+    // ArrowLeft from the submenu pops back out to the stash list —
+    // gives the player a way to walk back up without pressing Esc.
+    return consumed({ ...s, zone: "stash" });
   }
   if (key === "Enter") {
     switch (s.actionIndex) {
@@ -389,6 +464,49 @@ function reduceActionsKey(
       action: { kind: "examine-toggle" },
       consumed: true,
     };
+  }
+  return passthrough(s);
+}
+
+function reduceRosterKey(
+  s: PartyNavState,
+  key: string,
+  ctx: PartyNavContext,
+): PartyNavResult {
+  if (isDownKey(key)) {
+    if (ctx.memberCount === 0) return consumed(s);
+    return consumed({
+      ...s,
+      rosterIndex: Math.min(ctx.memberCount - 1, s.rosterIndex + 1),
+    });
+  }
+  if (isUpKey(key)) {
+    return consumed({
+      ...s,
+      rosterIndex: Math.max(0, s.rosterIndex - 1),
+    });
+  }
+  if (isLeftKey(key)) {
+    // Round-trip back to whichever left-column zone the cursor came
+    // from. `lastLeftZone` was stamped when we entered the roster
+    // (see `enterRoster`). The cursors in those zones haven't been
+    // touched, so the player lands exactly where they left off.
+    return consumed({ ...s, zone: s.lastLeftZone });
+  }
+  if (key === "Enter") {
+    if (ctx.memberCount === 0) return consumed(s);
+    const target = clamp(s.rosterIndex, 0, ctx.memberCount - 1);
+    return {
+      state: s,
+      action: { kind: "roster-drill-in", memberIndex: target },
+      consumed: true,
+    };
+  }
+  if (key === "Escape") {
+    // Esc bubbles out of the screen entirely — same as in the
+    // effects/stash zones. We don't pop back to lastLeftZone on Esc
+    // because the player's intent there is "close this view".
+    return { state: s, action: { kind: "close" }, consumed: false };
   }
   return passthrough(s);
 }
@@ -488,6 +606,9 @@ function clampState(
     sendIndex: ctx.memberCount > 0
       ? clamp(s.sendIndex, 0, ctx.memberCount - 1)
       : 0,
+    rosterIndex: ctx.memberCount > 0
+      ? clamp(s.rosterIndex, 0, ctx.memberCount - 1)
+      : 0,
   };
 }
 
@@ -513,6 +634,26 @@ function enterEffects(
   if (ctx.effectCount === 0) return consumed(s);
   const idx = mode === "last" ? ctx.effectCount - 1 : 0;
   return consumed({ ...s, zone: "effects", effectIndex: idx });
+}
+
+/** Cross-column hop from a left-pane zone into the roster.
+ *  `from` is stamped on `lastLeftZone` so ArrowLeft out of the
+ *  roster lands back on the same zone. The rosterIndex is kept
+ *  (clamped) so repeated round-trips don't reset the player's
+ *  position in the right pane. */
+function enterRoster(
+  s: PartyNavState,
+  ctx: PartyNavContext,
+  from: PartyNavLeftZone,
+): PartyNavResult {
+  if (ctx.memberCount === 0) return consumed(s);
+  const idx = clamp(s.rosterIndex, 0, ctx.memberCount - 1);
+  return consumed({
+    ...s,
+    zone: "roster",
+    rosterIndex: idx,
+    lastLeftZone: from,
+  });
 }
 
 /** Pick the first action button that's currently enabled, falling

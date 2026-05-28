@@ -84,16 +84,20 @@ describe("Effects zone navigation", () => {
     expect(r.consumed).toBe(true);
   });
 
-  it("Enter on an available effect emits effect-toggle", () => {
+  it("Enter on an effect is a passthrough (the focused button handles it natively)", () => {
+    // The reducer deliberately does NOT consume Enter in the
+    // effects zone. The component focuses the selected effect's
+    // <button> when the cursor lands there, the browser's native
+    // "Enter on a focused button dispatches click" behavior fires
+    // the row's onClick, which toggles via `toggleActive`.
+    //
+    // Routing through that one path (instead of also emitting an
+    // `effect-toggle` action here) eliminates a class of dispatch
+    // bugs where the reducer's preventDefault preempts the native
+    // click but the reducer's own callback path fires stale state.
     const s = initialPartyNavState(ctx());
     const r = key(s, "Enter", ctx());
-    expect(r.action).toEqual({ kind: "effect-toggle" });
-    expect(r.consumed).toBe(true);
-  });
-
-  it("Enter on a locked effect does nothing", () => {
-    const s = initialPartyNavState(ctx());
-    const r = key(s, "Enter", ctx({ effectAvailable: false }));
+    expect(r.consumed).toBe(false);
     expect(r.action).toEqual({ kind: "none" });
   });
 
@@ -185,30 +189,39 @@ describe("Actions submenu", () => {
     return { ...initialPartyNavState(ctx()), zone: "actions", actionIndex };
   }
 
-  it("ArrowRight cycles forward through enabled actions", () => {
-    const r = key(actionsState(ACTION_USE), "ArrowRight", ctx());
-    expect(r.state.actionIndex).toBe(ACTION_SEND);
-  });
-
-  it("ArrowRight wraps around at the end", () => {
-    const r = key(actionsState(ACTION_EXAMINE), "ArrowRight", ctx());
-    expect(r.state.actionIndex).toBe(ACTION_USE);
-  });
-
-  it("ArrowLeft cycles backward", () => {
-    const r = key(actionsState(ACTION_USE), "ArrowLeft", ctx());
-    expect(r.state.actionIndex).toBe(ACTION_EXAMINE);
-  });
-
-  it("ArrowDown also cycles forward (vertical nav works too)", () => {
+  it("ArrowDown cycles forward through enabled actions", () => {
     const r = key(actionsState(ACTION_USE), "ArrowDown", ctx());
     expect(r.state.actionIndex).toBe(ACTION_SEND);
   });
 
-  it("ArrowRight skips over a disabled Send", () => {
-    const c = ctx({ canSend: false });
-    const r = key(actionsState(ACTION_USE), "ArrowRight", c);
+  it("ArrowDown wraps around at the end", () => {
+    const r = key(actionsState(ACTION_EXAMINE), "ArrowDown", ctx());
+    expect(r.state.actionIndex).toBe(ACTION_USE);
+  });
+
+  it("ArrowUp cycles backward", () => {
+    const r = key(actionsState(ACTION_USE), "ArrowUp", ctx());
     expect(r.state.actionIndex).toBe(ACTION_EXAMINE);
+  });
+
+  it("ArrowDown skips over a disabled Send", () => {
+    const c = ctx({ canSend: false });
+    const r = key(actionsState(ACTION_USE), "ArrowDown", c);
+    expect(r.state.actionIndex).toBe(ACTION_EXAMINE);
+  });
+
+  it("ArrowRight switches to the roster zone (column hop)", () => {
+    // Left/Right used to cycle the action submenu, but Up/Down
+    // handle that and Left/Right are reserved for column-switching
+    // now so the model is consistent across all left-pane zones.
+    const r = key(actionsState(ACTION_SEND), "ArrowRight", ctx());
+    expect(r.state.zone).toBe("roster");
+    expect(r.state.lastLeftZone).toBe("actions");
+  });
+
+  it("ArrowLeft pops back to the stash list", () => {
+    const r = key(actionsState(ACTION_SEND), "ArrowLeft", ctx());
+    expect(r.state.zone).toBe("stash");
   });
 
   it("Enter on Use emits use and returns to stash", () => {
@@ -297,6 +310,120 @@ describe("Send-to picker", () => {
   });
 });
 
+describe("Roster zone navigation", () => {
+  function rosterState(rosterIndex = 0): PartyNavState {
+    return {
+      ...initialPartyNavState(ctx()),
+      zone: "roster",
+      rosterIndex,
+      lastLeftZone: "effects",
+    };
+  }
+
+  it("ArrowRight from effects enters the roster + remembers origin", () => {
+    const s = initialPartyNavState(ctx());
+    const r = key(s, "ArrowRight", ctx());
+    expect(r.state.zone).toBe("roster");
+    expect(r.state.lastLeftZone).toBe("effects");
+    expect(r.consumed).toBe(true);
+  });
+
+  it("ArrowRight from stash enters the roster, remembering origin", () => {
+    const s = { ...initialPartyNavState(ctx()), zone: "stash" as const };
+    const r = key(s, "ArrowRight", ctx());
+    expect(r.state.zone).toBe("roster");
+    expect(r.state.lastLeftZone).toBe("stash");
+  });
+
+  it("ArrowRight from actions enters the roster, remembering origin", () => {
+    const s = { ...initialPartyNavState(ctx()), zone: "actions" as const };
+    const r = key(s, "ArrowRight", ctx());
+    expect(r.state.zone).toBe("roster");
+    expect(r.state.lastLeftZone).toBe("actions");
+  });
+
+  it("ArrowRight from a left zone with no roster members is a no-op", () => {
+    const c = ctx({ memberCount: 0 });
+    const r = key(initialPartyNavState(c), "ArrowRight", c);
+    expect(r.state.zone).toBe("effects"); // stayed put
+  });
+
+  it("ArrowLeft from roster returns to lastLeftZone (effects)", () => {
+    const r = key(
+      { ...rosterState(0), lastLeftZone: "effects" },
+      "ArrowLeft",
+      ctx(),
+    );
+    expect(r.state.zone).toBe("effects");
+  });
+
+  it("ArrowLeft from roster returns to lastLeftZone (stash)", () => {
+    const r = key(
+      { ...rosterState(0), lastLeftZone: "stash" },
+      "ArrowLeft",
+      ctx(),
+    );
+    expect(r.state.zone).toBe("stash");
+  });
+
+  it("ArrowLeft from roster returns to lastLeftZone (actions)", () => {
+    const r = key(
+      { ...rosterState(0), lastLeftZone: "actions" },
+      "ArrowLeft",
+      ctx(),
+    );
+    expect(r.state.zone).toBe("actions");
+  });
+
+  it("ArrowDown advances the roster cursor", () => {
+    const r = key(rosterState(0), "ArrowDown", ctx());
+    expect(r.state.rosterIndex).toBe(1);
+  });
+
+  it("ArrowDown clamps at the last member", () => {
+    const r = key(rosterState(3), "ArrowDown", ctx());
+    expect(r.state.rosterIndex).toBe(3);
+  });
+
+  it("ArrowUp clamps at the first member", () => {
+    const r = key(rosterState(0), "ArrowUp", ctx());
+    expect(r.state.rosterIndex).toBe(0);
+  });
+
+  it("Enter emits roster-drill-in with the focused member index", () => {
+    const r = key(rosterState(2), "Enter", ctx());
+    expect(r.action).toEqual({ kind: "roster-drill-in", memberIndex: 2 });
+    expect(r.consumed).toBe(true);
+  });
+
+  it("Enter on an empty roster does nothing", () => {
+    const c = ctx({ memberCount: 0 });
+    const r = key({ ...rosterState(0), lastLeftZone: "effects" }, "Enter", c);
+    expect(r.action).toEqual({ kind: "none" });
+  });
+
+  it("Escape bubbles (close action, not consumed) — same as effects", () => {
+    const r = key(rosterState(1), "Escape", ctx());
+    expect(r.action).toEqual({ kind: "close" });
+    expect(r.consumed).toBe(false);
+  });
+
+  it("Cursor position survives a round-trip out and back", () => {
+    // ArrowRight, move down twice, ArrowLeft, ArrowRight — the
+    // rosterIndex should still be 2 the second time we arrive.
+    let s = initialPartyNavState(ctx());
+    s = key(s, "ArrowRight", ctx()).state;
+    s = key(s, "ArrowDown", ctx()).state;
+    s = key(s, "ArrowDown", ctx()).state;
+    expect(s.rosterIndex).toBe(2);
+    s = key(s, "ArrowLeft", ctx()).state;
+    expect(s.zone).toBe("effects");
+    s = key(s, "ArrowRight", ctx()).state;
+    expect(s.zone).toBe("roster");
+    expect(s.rosterIndex).toBe(2);
+  });
+});
+
 describe("Mouse-driven setters", () => {
   it("set-effect parks focus on effects with the given index", () => {
     const s = { ...initialPartyNavState(ctx()), zone: "stash" as const };
@@ -331,6 +458,25 @@ describe("Mouse-driven setters", () => {
     expect(r.state.actionIndex).toBe(ACTION_EXAMINE);
   });
 
+  it("set-roster parks focus on the roster zone with the given index", () => {
+    const r = reducePartyNav(
+      initialPartyNavState(ctx()),
+      { kind: "set-roster", index: 2 },
+      ctx(),
+    );
+    expect(r.state.zone).toBe("roster");
+    expect(r.state.rosterIndex).toBe(2);
+  });
+
+  it("set-roster clamps to the actual member count", () => {
+    const r = reducePartyNav(
+      initialPartyNavState(ctx()),
+      { kind: "set-roster", index: 99 },
+      ctx(),
+    );
+    expect(r.state.rosterIndex).toBe(3); // memberCount=4 → last valid is 3
+  });
+
   it("reset returns to a fresh state", () => {
     const s: PartyNavState = {
       zone: "send",
@@ -338,12 +484,16 @@ describe("Mouse-driven setters", () => {
       stashIndex: 3,
       actionIndex: ACTION_SEND,
       sendIndex: 2,
+      rosterIndex: 2,
+      lastLeftZone: "stash",
     };
     const r = reducePartyNav(s, { kind: "reset" }, ctx());
     expect(r.state.zone).toBe("effects");
     expect(r.state.effectIndex).toBe(0);
     expect(r.state.stashIndex).toBe(0);
     expect(r.state.sendIndex).toBe(0);
+    expect(r.state.rosterIndex).toBe(0);
+    expect(r.state.lastLeftZone).toBe("effects");
   });
 });
 
