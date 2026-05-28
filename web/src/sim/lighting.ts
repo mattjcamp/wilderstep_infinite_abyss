@@ -36,10 +36,25 @@ export const INFRAVISION_RED = 180;
  *  comfortably above the night-mode ambient floor (~25) and well
  *  below in-LOS torch-pool brightness (~150+) so the player can
  *  spot at a glance "I've been here, but I'm not looking at it now."
+ *
  *  Tuned by eye: 90 is dim enough to read as "memory" against a
  *  fully-lit current view, bright enough to keep terrain readable
- *  in a corridor the party already mapped. */
+ *  in a corridor the party already mapped. Don't lower this further
+ *  without raising `REMEMBERED_ALPHA` to compensate — the two stack
+ *  multiplicatively (final brightness ≈ brightness/255 × alpha) and
+ *  combining a low brightness with a low alpha collapses the cell
+ *  to near-invisible against the dark canvas background. */
 export const REMEMBERED_BRIGHTNESS = 90;
+
+/** Alpha applied to remembered cells by `WorldRenderer.relight()`.
+ *  Subtly fades the cell to make it read as background; combined
+ *  with the per-sprite grayscale postFX the renderer adds on
+ *  remembered cells, this is the dim hint that says "memory."
+ *  In-LOS cells reset to 1.0 each frame so a cell that re-enters
+ *  the party's vision pool snaps back to full opacity. Kept at
+ *  0.85 — strong enough to read as faded, light enough to keep
+ *  terrain silhouettes legible. */
+export const REMEMBERED_ALPHA = 0.85;
 
 /** Lighting "currently illuminated" threshold used to decide which
  *  cells the host should fold into its persistent visited set. Any

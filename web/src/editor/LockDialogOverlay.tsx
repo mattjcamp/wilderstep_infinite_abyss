@@ -34,7 +34,7 @@
  * roll math and isn't left tapping Leave.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type {
   LockAttemptResult,
   LockEncounterOptions,
@@ -169,6 +169,126 @@ export function LockDialogOverlay({
   // player can retry without re-bumping the lock cell.
   const lockedByResult = !!result && result.success;
 
+  // ── Keyboard navigation ─────────────────────────────────────────
+  // Build the action list dynamically so the cursor walks the same
+  // set the player sees: Pick Lock → (Cast Knock when the module
+  // declares it) → Leave. Each entry carries its current disabled
+  // state so Enter can no-op on a disabled row, but arrow keys
+  // still let the player navigate to it (the disabled body text
+  // explains why — handy for "what do I need" debugging).
+  type ActionKind = "pick" | "knock" | "leave";
+  interface Action {
+    kind: ActionKind;
+    disabled: boolean;
+  }
+  const actions = useMemo<Action[]>(() => {
+    const list: Action[] = [];
+    list.push({ kind: "pick", disabled: pickRow.disabled });
+    if (knockRow) list.push({ kind: "knock", disabled: knockRow.disabled });
+    list.push({ kind: "leave", disabled: false });
+    return list;
+  }, [pickRow.disabled, knockRow]);
+
+  // Initial cursor lands on the first enabled action. A locked door
+  // the party can pick (Pick Lock enabled) lands on Pick → Enter
+  // immediately attempts the pick. A door the party can't pick or
+  // knock falls through to Leave so Enter is a clean cancel rather
+  // than a confusing no-op on a disabled top row.
+  const initialFocusIdx = useMemo(() => {
+    const i = actions.findIndex((a) => !a.disabled);
+    return i < 0 ? actions.length - 1 : i;
+  }, [actions]);
+  const [focusIdx, setFocusIdx] = useState(initialFocusIdx);
+
+  // After a *failed* attempt the kernel retains the pending lock,
+  // the row's label flips to "Try Again — …", and the action row is
+  // still enabled. Refocus the failed action so a second Enter is
+  // an immediate retry rather than a hop to Leave. Skip when the
+  // failed row collapsed to disabled (no more lockpicks, no more
+  // MP) — better to leave the cursor where it is so the player
+  // sees the disable.
+  useEffect(() => {
+    if (!result || result.success) return;
+    const i = actions.findIndex((a) => a.kind === result.kind);
+    if (i >= 0 && !actions[i].disabled) setFocusIdx(i);
+  }, [result, actions]);
+
+  // Esc closes; Up/Down cycle the action list (wraps at both ends);
+  // Enter fires whichever row the cursor is on, gated on the action
+  // not being disabled and the dialog not being locked-by-success.
+  // Capture-phase so the underlying sim's movement keys don't fire
+  // under the modal.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        e.preventDefault();
+        if (!lockedByResult) onClose();
+        return;
+      }
+      if (e.key === "ArrowDown") {
+        e.stopPropagation();
+        e.preventDefault();
+        if (lockedByResult) return;
+        setFocusIdx((i) => (i + 1) % actions.length);
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.stopPropagation();
+        e.preventDefault();
+        if (lockedByResult) return;
+        setFocusIdx(
+          (i) => (i - 1 + actions.length) % actions.length,
+        );
+        return;
+      }
+      if (e.key === "Enter") {
+        e.stopPropagation();
+        e.preventDefault();
+        if (lockedByResult) return;
+        const a = actions[focusIdx];
+        if (!a || a.disabled) return;
+        if (a.kind === "pick") handlePick();
+        else if (a.kind === "knock") handleKnock();
+        else if (a.kind === "leave") onClose();
+        return;
+      }
+      if (
+        e.key === "ArrowLeft" ||
+        e.key === "ArrowRight" ||
+        e.key === "w" ||
+        e.key === "a" ||
+        e.key === "s" ||
+        e.key === "d" ||
+        e.key === "W" ||
+        e.key === "A" ||
+        e.key === "S" ||
+        e.key === "D"
+      ) {
+        e.stopPropagation();
+      }
+    };
+    window.addEventListener("keydown", onKey, { capture: true });
+    return () =>
+      window.removeEventListener("keydown", onKey, { capture: true });
+  }, [
+    actions,
+    focusIdx,
+    lockedByResult,
+    onClose,
+    handlePick,
+    handleKnock,
+  ]);
+
   return (
     <div
       className="fixed inset-0 z-40 flex items-center justify-center bg-black/65"
@@ -207,61 +327,98 @@ export function LockDialogOverlay({
         ) : null}
 
         <div className="flex flex-col gap-2">
-          <button
-            type="button"
-            onClick={handlePick}
-            disabled={pickRow.disabled || lockedByResult}
-            title={pickRow.reason ?? undefined}
-            className="rounded border border-parchment/25 bg-ink/60 px-3 py-2 text-left text-sm hover:bg-ink/80 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <div className="font-medium">
-              {result && !result.success && result.kind === "pick"
-                ? `Try Again — ${pickRow.label}`
-                : pickRow.label}
-            </div>
-            {pickRow.reason ? (
-              <div className="text-[11px] text-parchment/55">{pickRow.reason}</div>
-            ) : (
-              <div className="text-[11px] text-parchment/55">
-                d20 + DEX vs DC 12 (consumes one Lockpick).
-              </div>
-            )}
-          </button>
+          {(() => {
+            // Resolve each action's slot in `actions` once so the
+            // amber outline + click→focus sync stay correct as the
+            // visible button set shifts (Cast Knock dropping out
+            // when the module has no Knock spell, etc.).
+            const focusRing =
+              "outline outline-2 outline-amber-200 outline-offset-1";
+            const pickIdx = actions.findIndex((a) => a.kind === "pick");
+            const knockIdx = actions.findIndex((a) => a.kind === "knock");
+            const leaveIdx = actions.findIndex((a) => a.kind === "leave");
+            return (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFocusIdx(pickIdx);
+                    handlePick();
+                  }}
+                  disabled={pickRow.disabled || lockedByResult}
+                  title={pickRow.reason ?? undefined}
+                  className={[
+                    "rounded border border-parchment/25 bg-ink/60 px-3 py-2 text-left text-sm hover:bg-ink/80 disabled:cursor-not-allowed disabled:opacity-50",
+                    focusIdx === pickIdx ? focusRing : "",
+                  ].join(" ")}
+                >
+                  <div className="font-medium">
+                    {result && !result.success && result.kind === "pick"
+                      ? `Try Again — ${pickRow.label}`
+                      : pickRow.label}
+                  </div>
+                  {pickRow.reason ? (
+                    <div className="text-[11px] text-parchment/55">
+                      {pickRow.reason}
+                    </div>
+                  ) : (
+                    <div className="text-[11px] text-parchment/55">
+                      d20 + DEX vs DC 12 (consumes one Lockpick).
+                    </div>
+                  )}
+                </button>
 
-          {knockRow ? (
-            <button
-              type="button"
-              onClick={handleKnock}
-              disabled={knockRow.disabled || lockedByResult}
-              title={knockRow.reason ?? undefined}
-              className="rounded border border-parchment/25 bg-ink/60 px-3 py-2 text-left text-sm hover:bg-ink/80 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <div className="font-medium">
-                {result && !result.success && result.kind === "knock"
-                  ? `Try Again — ${knockRow.label}`
-                  : knockRow.label}
-              </div>
-              {knockRow.reason ? (
-                <div className="text-[11px] text-parchment/55">{knockRow.reason}</div>
-              ) : (
-                <div className="text-[11px] text-parchment/55">
-                  d20 + INT vs DC 12 (MP deducted on attempt).
-                </div>
-              )}
-            </button>
-          ) : null}
+                {knockRow ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFocusIdx(knockIdx);
+                      handleKnock();
+                    }}
+                    disabled={knockRow.disabled || lockedByResult}
+                    title={knockRow.reason ?? undefined}
+                    className={[
+                      "rounded border border-parchment/25 bg-ink/60 px-3 py-2 text-left text-sm hover:bg-ink/80 disabled:cursor-not-allowed disabled:opacity-50",
+                      focusIdx === knockIdx ? focusRing : "",
+                    ].join(" ")}
+                  >
+                    <div className="font-medium">
+                      {result && !result.success && result.kind === "knock"
+                        ? `Try Again — ${knockRow.label}`
+                        : knockRow.label}
+                    </div>
+                    {knockRow.reason ? (
+                      <div className="text-[11px] text-parchment/55">
+                        {knockRow.reason}
+                      </div>
+                    ) : (
+                      <div className="text-[11px] text-parchment/55">
+                        d20 + INT vs DC 12 (MP deducted on attempt).
+                      </div>
+                    )}
+                  </button>
+                ) : null}
 
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={lockedByResult}
-            className="rounded border border-parchment/20 bg-ink/40 px-3 py-2 text-left text-sm hover:bg-ink/60 disabled:opacity-50"
-          >
-            <div className="font-medium">Leave</div>
-            <div className="text-[11px] text-parchment/55">
-              Step back; the door stays locked.
-            </div>
-          </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFocusIdx(leaveIdx);
+                    onClose();
+                  }}
+                  disabled={lockedByResult}
+                  className={[
+                    "rounded border border-parchment/20 bg-ink/40 px-3 py-2 text-left text-sm hover:bg-ink/60 disabled:opacity-50",
+                    focusIdx === leaveIdx ? focusRing : "",
+                  ].join(" ")}
+                >
+                  <div className="font-medium">Leave</div>
+                  <div className="text-[11px] text-parchment/55">
+                    Step back; the door stays locked.
+                  </div>
+                </button>
+              </>
+            );
+          })()}
         </div>
       </div>
     </div>

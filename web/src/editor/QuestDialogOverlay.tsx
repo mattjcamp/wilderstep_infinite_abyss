@@ -18,6 +18,7 @@
  * here — that's a later pass.
  */
 
+import { useEffect, useMemo, useState } from "react";
 import { withBasePath } from "@/util/basePath";
 import type { SimQuestRef } from "@/sim/types";
 
@@ -57,6 +58,83 @@ export function QuestDialogOverlay({
 }: Props) {
   const complete =
     alreadyAccepted && stepCount > 0 && stepIdx >= stepCount;
+
+  // Build the visible action list based on the dialog's three
+  // states (offered / in-progress / complete). The labels match the
+  // button copy below so the keyboard cursor walks the same set the
+  // player sees. The order is intentional — Accept is what most
+  // players want to do first on an offered quest, so Enter on the
+  // dialog opening fires Accept.
+  type QuestAction = "accept" | "decline" | "close";
+  const actions = useMemo<QuestAction[]>(() => {
+    if (complete) return ["close"];
+    if (alreadyAccepted) return ["close"];
+    return ["accept", "decline"];
+  }, [complete, alreadyAccepted]);
+  const [focusedAction, setFocusedAction] = useState<number>(0);
+  // Clamp the focus when the action set shrinks (e.g. the host
+  // re-renders the dialog after an Accept resolves and we're now in
+  // the in-progress single-button view).
+  useEffect(() => {
+    setFocusedAction((cur) => Math.min(cur, actions.length - 1));
+  }, [actions.length]);
+
+  // Up/Down cycle through the visible buttons; Enter fires whichever
+  // one is focused; Esc closes (Decline / Close depending on state).
+  // Capture-phase + stopPropagation so the wrapping host's overlay
+  // listeners don't ALSO act on the same keys (PlayHost gates the
+  // sim via `overlaysOpenRef` while a quest dialog is up).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        e.stopPropagation();
+        setFocusedAction((i) => (i + 1) % actions.length);
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        e.stopPropagation();
+        setFocusedAction(
+          (i) => (i - 1 + actions.length) % actions.length,
+        );
+        return;
+      }
+      if (e.key === "Enter") {
+        e.preventDefault();
+        e.stopPropagation();
+        const a = actions[focusedAction];
+        if (a === "accept") onAccept();
+        else onDecline(); // covers "decline" and "close"
+        return;
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        // Esc is always "back out one level" — for the quest dialog
+        // that maps to Decline (offered state) or Close (in-progress
+        // / complete states). Both flow through onDecline, which the
+        // host wires to dismiss the modal without persisting an
+        // accept. Matches the same Esc-as-cancel idiom the lock and
+        // npc-dialog overlays use.
+        onDecline();
+        return;
+      }
+    };
+    window.addEventListener("keydown", onKey, { capture: true });
+    return () =>
+      window.removeEventListener("keydown", onKey, { capture: true });
+  }, [actions, focusedAction, onAccept, onDecline]);
+
   const giver = quest.quest_giver;
   const giverSprite = giver?.npc_sprite
     ? withBasePath(`/sprites/${giver.npc_sprite}`)
@@ -143,57 +221,98 @@ export function QuestDialogOverlay({
         ) : null}
 
         <div className="flex flex-col gap-2">
-          {complete ? (
-            <button
-              type="button"
-              onClick={onDecline}
-              className="rounded border border-emerald-500/50 bg-emerald-700/25 px-3 py-2 text-left text-sm text-emerald-50 hover:bg-emerald-700/45"
-            >
-              <div className="font-medium">Close</div>
-              <div className="text-[11px] text-emerald-100/75">
-                Every objective is finished. Rewards arrive when the
-                completion flow lands; for now, well done.
-              </div>
-            </button>
-          ) : alreadyAccepted ? (
-            <button
-              type="button"
-              onClick={onDecline}
-              className="rounded border border-parchment/20 bg-ink/40 px-3 py-2 text-left text-sm hover:bg-ink/60"
-            >
-              <div className="font-medium">Close</div>
-              <div className="text-[11px] text-parchment/55">
-                The quest is already in your log. Return when the
-                objective is complete.
-              </div>
-            </button>
-          ) : (
-            <>
-              <button
-                type="button"
-                onClick={onAccept}
-                className="rounded border border-ember/60 bg-ember/25 px-3 py-2 text-left text-sm hover:bg-ember/45"
-              >
-                <div className="font-medium">Accept the quest</div>
-                <div className="text-[11px] text-parchment/55">
-                  Add it to your quest log. You can talk to the
-                  quest giver again any time.
-                </div>
-              </button>
+          {(() => {
+            // Each button looks up its own slot in `actions` so the
+            // amber outline ring + click → keyboard cursor sync stay
+            // in lockstep regardless of which view is rendered. The
+            // ring is an `outline` (not a border) so it doesn't
+            // affect the button's box size — focus moves between
+            // buttons cleanly without layout jitter.
+            const focusRing =
+              "outline outline-2 outline-amber-200 outline-offset-1";
+            const acceptIdx = actions.indexOf("accept");
+            const declineIdx = actions.indexOf("decline");
+            const closeIdx = actions.indexOf("close");
+            return (
+              <>
+                {complete ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFocusedAction(closeIdx);
+                      onDecline();
+                    }}
+                    className={[
+                      "rounded border border-emerald-500/50 bg-emerald-700/25 px-3 py-2 text-left text-sm text-emerald-50 hover:bg-emerald-700/45",
+                      focusedAction === closeIdx ? focusRing : "",
+                    ].join(" ")}
+                  >
+                    <div className="font-medium">Close</div>
+                    <div className="text-[11px] text-emerald-100/75">
+                      Every objective is finished. Rewards arrive when
+                      the completion flow lands; for now, well done.
+                    </div>
+                  </button>
+                ) : alreadyAccepted ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFocusedAction(closeIdx);
+                      onDecline();
+                    }}
+                    className={[
+                      "rounded border border-parchment/20 bg-ink/40 px-3 py-2 text-left text-sm hover:bg-ink/60",
+                      focusedAction === closeIdx ? focusRing : "",
+                    ].join(" ")}
+                  >
+                    <div className="font-medium">Close</div>
+                    <div className="text-[11px] text-parchment/55">
+                      The quest is already in your log. Return when
+                      the objective is complete.
+                    </div>
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFocusedAction(acceptIdx);
+                        onAccept();
+                      }}
+                      className={[
+                        "rounded border border-ember/60 bg-ember/25 px-3 py-2 text-left text-sm hover:bg-ember/45",
+                        focusedAction === acceptIdx ? focusRing : "",
+                      ].join(" ")}
+                    >
+                      <div className="font-medium">Accept the quest</div>
+                      <div className="text-[11px] text-parchment/55">
+                        Add it to your quest log. You can talk to the
+                        quest giver again any time.
+                      </div>
+                    </button>
 
-              <button
-                type="button"
-                onClick={onDecline}
-                className="rounded border border-parchment/20 bg-ink/40 px-3 py-2 text-left text-sm hover:bg-ink/60"
-              >
-                <div className="font-medium">Decline for now</div>
-                <div className="text-[11px] text-parchment/55">
-                  Close the dialog. Step adjacent and bump the
-                  quest giver to re-open this offer.
-                </div>
-              </button>
-            </>
-          )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFocusedAction(declineIdx);
+                        onDecline();
+                      }}
+                      className={[
+                        "rounded border border-parchment/20 bg-ink/40 px-3 py-2 text-left text-sm hover:bg-ink/60",
+                        focusedAction === declineIdx ? focusRing : "",
+                      ].join(" ")}
+                    >
+                      <div className="font-medium">Decline for now</div>
+                      <div className="text-[11px] text-parchment/55">
+                        Close the dialog. Step adjacent and bump the
+                        quest giver to re-open this offer.
+                      </div>
+                    </button>
+                  </>
+                )}
+              </>
+            );
+          })()}
         </div>
       </div>
     </div>

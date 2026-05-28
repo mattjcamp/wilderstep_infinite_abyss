@@ -53,6 +53,7 @@ import {
   computeLighting,
   emitterVisibleAt,
   overlayVisibleAt,
+  REMEMBERED_ALPHA,
   tintForCell,
   type LightingResult,
 } from "@/sim/lighting";
@@ -67,6 +68,7 @@ import { withBasePath } from "@/util/basePath";
  *  doesn't care about gameplay fields (encounter, locked, etc.),
  *  only render properties. Subset, so callers can pass their own
  *  richer cell type without conversion. */
+
 export interface RenderCell {
   sprite?: string;
   /** Optional animation key — torch / fairy / fire / smoke — mapped
@@ -158,6 +160,24 @@ export class WorldRenderer {
 
   /** Per-cell base sprite, keyed `"col,row"`. */
   readonly cells = new Map<string, Phaser.GameObjects.Image>();
+  /** Per-cell original texture key, captured at create time so the
+   *  relight pass can swap between original and grayscale textures
+   *  without re-reading the grid cell. */
+  private readonly cellTextureKeys = new Map<string, string>();
+  /** Maps an original texture key to its grayscale-rendered variant
+   *  key. Lazily populated by `ensureGrayscaleTexture` — the first
+   *  time a given tile sprite appears in `createCells`, we render
+   *  it through a canvas `filter: "grayscale(100%)"` and register
+   *  the result under `${origKey}_gray`. Subsequent cells using the
+   *  same tile share the cached variant.
+   *
+   *  Why texture swap instead of postFX: Phaser 4's per-sprite FX
+   *  pipeline didn't apply at runtime for the bulk cell-tinting
+   *  pass; remembered cells kept their hue. Texture replacement is
+   *  unconditional, works in both WebGL and Canvas, and costs zero
+   *  per-frame — relight just calls `setTexture(grayKey)` vs
+   *  `setTexture(origKey)`. */
+  private readonly grayTextureCache = new Map<string, string>();
   /** Particle emitters for cell animations. Same key shape. Hidden
    *  by the relight pass on cells the party can't see. */
   readonly emitters = new Map<
@@ -289,7 +309,10 @@ export class WorldRenderer {
 
   /** First-time render of every cell. Skips cells whose `sprite` is
    *  empty or whose texture hasn't loaded — the scene's preload step
-   *  is responsible for queuing every needed sprite. */
+   *  is responsible for queuing every needed sprite. Also pre-builds
+   *  a grayscale variant of each unique tile texture (cached across
+   *  cells using the same sprite) so the relight pass can swap
+   *  textures cheaply when a cell enters the remembered band. */
   createCells(): void {
     for (let r = 0; r < this.grid.length; r++) {
       const row = this.grid[r];
@@ -303,8 +326,56 @@ export class WorldRenderer {
           .setOrigin(0)
           .setDisplaySize(TILE_SIZE, TILE_SIZE);
         this.cells.set(`${c},${r}`, img);
+        this.cellTextureKeys.set(`${c},${r}`, tex);
+        // Eagerly build the gray variant the first time a given
+        // texture appears. Doing it here (vs. lazily in relight)
+        // amortises the cost into the initial scene-mount frame
+        // rather than spreading hitches across early gameplay as
+        // the party first walks past each tile type.
+        this.ensureGrayscaleTexture(tex);
       }
     }
+  }
+
+  /** Render a grayscale variant of `texKey` to a new Phaser
+   *  texture and return the new key. Cached — subsequent calls
+   *  for the same texture return the same key without re-rendering.
+   *  Uses 2D canvas's built-in `filter: "grayscale(100%)"`, which
+   *  is the WHATWG-spec luminance formula (0.2126·R + 0.7152·G +
+   *  0.0722·B) applied per pixel. Works in both WebGL and Canvas
+   *  rendering modes since the output is just another texture. */
+  private ensureGrayscaleTexture(texKey: string): string | null {
+    const cached = this.grayTextureCache.get(texKey);
+    if (cached) return cached;
+    const grayKey = `${texKey}__gray`;
+    if (this.scene.textures.exists(grayKey)) {
+      this.grayTextureCache.set(texKey, grayKey);
+      return grayKey;
+    }
+    const source = this.scene.textures
+      .get(texKey)
+      .getSourceImage() as
+      | HTMLImageElement
+      | HTMLCanvasElement
+      | undefined;
+    if (!source) return null;
+    const w =
+      (source as HTMLImageElement).naturalWidth || source.width || 32;
+    const h =
+      (source as HTMLImageElement).naturalHeight || source.height || 32;
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+    // The CSS `grayscale` filter is supported in every browser the
+    // app targets. Pixel art keeps sharp edges since we don't
+    // resample.
+    ctx.filter = "grayscale(100%)";
+    ctx.drawImage(source as CanvasImageSource, 0, 0);
+    this.scene.textures.addCanvas(grayKey, canvas);
+    this.grayTextureCache.set(texKey, grayKey);
+    return grayKey;
   }
 
   /** Particle emitter pass — one per cell whose `animation` value
@@ -614,12 +685,50 @@ export class WorldRenderer {
         this.visitedCells.add(key);
       }
     }
-    // Cells.
+    // Cells. Remembered ("fog-of-war") cells get TWO compounding
+    // tweaks on top of the lighting tint:
+    //
+    //   1. A grayscale texture swap — `setTexture(grayKey)` switches
+    //      the sprite to the pre-rendered desaturated variant of
+    //      its tile texture. True per-pixel grayscale via the canvas
+    //      `filter: "grayscale(100%)"` we ran at create time, so a
+    //      vivid-green grass tile reads as gray of the same
+    //      luminance, water as a distinct (darker) gray, etc.
+    //      Tile-type distinction is preserved through luminance
+    //      variation even though hue is gone.
+    //
+    //   2. A fractional alpha — fades the gray sprite so it reads
+    //      as "background" relative to currently-lit terrain.
+    //
+    // Why texture swap instead of postFX: a previous pass tried
+    // `image.postFX.addColorMatrix().grayscale(1)` lazily per cell.
+    // The Phaser 4 FX pipeline didn't apply at runtime for this
+    // bulk per-cell path; cells kept their hue. Swapping textures
+    // is unconditional, costs zero per frame after the create-time
+    // bake, and avoids the FX framebuffer overhead entirely.
+    //
+    // In-LOS cells reset alpha to 1.0 + restore the original
+    // texture every frame so a cell that re-enters the party's
+    // vision pool snaps back to full opacity + full colour rather
+    // than carrying a stale fade from a previous-frame "remembered"
+    // state.
     for (const [key, img] of this.cells) {
       const [cs, rs] = key.split(",");
-      const t = tintForCell(result, Number(cs), Number(rs));
+      const c = Number(cs);
+      const r = Number(rs);
+      const t = tintForCell(result, c, r);
       if (t.mode === "clear") img.clearTint();
       else img.setTint(t.value);
+      const info = result.cells.get(`${c},${r}`);
+      const remembered = info?.isRemembered ?? false;
+      img.setAlpha(remembered ? REMEMBERED_ALPHA : 1);
+      const origKey = this.cellTextureKeys.get(key);
+      if (!origKey) continue;
+      const grayKey = this.grayTextureCache.get(origKey);
+      const desiredKey = remembered && grayKey ? grayKey : origKey;
+      if (img.texture.key !== desiredKey) {
+        img.setTexture(desiredKey);
+      }
     }
     // Emitters — hide on cells beyond party LOS so torch flames
     // don't leak through darkness. In painting view (`hasParty`

@@ -1,5 +1,5 @@
 {
-  "_comment": "Quest catalog (real data drives the schema). A Quest is an authored adventure thread: id, display name, optional flavor description, optional tags (editor-side organizational labels \u2014 group related quests like \"main_story\", \"side\", \"temple_arc\"), and an ordered list of inline Quest Step records under `steps[]`. Each step is `{ id, name, tags?, kind, description?, params? }` \u2014 the `kind` discriminator names what the objective is (kill / fetch / visit / talk / \u2026) and `params` carries kind-specific data. Quest Steps live inline because they have no meaning outside their parent Quest. Catalog ships empty. See docs/data_dictionary/quest.md.",
+  "_comment": "Quest catalog (real data drives the schema). A Quest is an authored adventure thread: id, display name, optional flavor description, optional tags (editor-side organizational labels — group related quests like \"main_story\", \"side\", \"temple_arc\"), and an ordered list of inline Quest Step records under `steps[]`. Each step is `{ id, name, tags?, kind, description?, params? }` — the `kind` discriminator names what the objective is (kill / fetch / visit / talk / …) and `params` carries kind-specific data. Quest Steps live inline because they have no meaning outside their parent Quest. Catalog ships empty. See docs/data_dictionary/quest.md.",
   "quests": [
     {
       "id": "rats",
@@ -18,9 +18,21 @@
             "rats"
           ],
           "location_kind": "map",
-          "map_id": "demo_town",
+          "map_id": "hollowmere_general_shop",
           "encounter_id": "rat_swarm",
           "count": 6
+        },
+        {
+          "id": "rats_step_2",
+          "name": "Step 2: Kill the Basement Rats 2!!!",
+          "kind": "kill",
+          "encounter_id": "rat_nest",
+          "tags": [
+            "rats"
+          ],
+          "location_kind": "map",
+          "map_id": "show_basement",
+          "description": "Kill the rats inthe basement too!!!!!"
         }
       ],
       "quest_giver": {

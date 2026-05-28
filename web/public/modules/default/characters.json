@@ -26,7 +26,7 @@
     {
       "id": "legolas",
       "name": "Legolas",
-      "class": "ranger",
+      "class": "thief",
       "race": "elf",
       "gender": "Male",
       "level": 1,

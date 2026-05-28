@@ -93,7 +93,7 @@ import {
   type QuestState,
   type QuestStepRewards,
 } from "@/battle/world/Quests";
-import { tintForCell } from "@/sim/lighting";
+import { overlayVisibleAt, tintForCell } from "@/sim/lighting";
 import { computeQuestGlowCells } from "@/sim/questGlow";
 import { TILE_SIZE, WorldRenderer } from "@/sim/scene/WorldRenderer";
 import { PaintedHelpScreen } from "@/sim/scene/PaintedHelpScreen";
@@ -709,6 +709,17 @@ export function PlayHost() {
    *  NPC with a `counter` field. Cleared by the overlay's close
    *  callback. */
   const [counterShopId, setCounterShopId] = useState<string | null>(null);
+  /** When the counter shop was opened from an NPC dialog (Visit
+   *  Counter button), remember that NPC's id so closing the counter
+   *  pops back to the same dialog the player came from instead of
+   *  dropping them to the world map. Null for the tile-walk-into-
+   *  counter path (no parent dialog to return to). Cleared the
+   *  moment we restore the dialog, or on any forced close that
+   *  shouldn't surface the NPC again (currently none, but kept as
+   *  the explicit reset point). */
+  const [counterReturnToNpcId, setCounterReturnToNpcId] = useState<
+    string | null
+  >(null);
   /** Queue of pending celebration placards. Pushed to whenever a
    *  quest step transitions from incomplete to complete (kill credit
    *  with `stepCompleted: true`) or when the player turns in a fully
@@ -1844,29 +1855,60 @@ export function PlayHost() {
               : (mapForcedLightingMode(catalog.map) ??
                   lightingModeFromClock(save.clockMinutes)),
             initialInfravisionActive: !!save.party.infravision_active,
-            // Tint item overlays in sync with the floor cell they
-            // sit on so a sword on a dim corridor reads dim too,
-            // and so they pick up infravision red when relevant.
+            // Tint + visibility for the PlayScene-managed overlays
+            // (items, quest givers, NPCs). These are the "static"
+            // layer above the cell sprites — distinct from the
+            // WorldRenderer-managed roamer + placed-encounter
+            // overlays which run their own visibility pass via
+            // `tintOverlay` → `overlayVisibleAt` inside the
+            // renderer.
+            //
+            // Visibility rule (matches `overlayVisibleAt`): show
+            // only when the cell is currently in the party's vision
+            // pool (lit brightness > 30 or infravision-red). Cells
+            // in the *remembered* band — terrain the party has seen
+            // before but isn't looking at right now — get the
+            // grayscale tile treatment for the floor itself, but
+            // entities standing there are hidden. The user can't
+            // see a goblin or shopkeeper that's currently in a
+            // corridor they walked past last turn — both because
+            // it'd be a gameplay cheat (lets you spy on patrol
+            // routes through the fog) and because it'd visibly
+            // teleport between frames as the entity moves.
+            //
+            // Quest givers + items get the same gate even though
+            // they're effectively stationary today: it'd be
+            // jarring for the player to see a quest icon glowing
+            // through a wall in a corridor they remember.
+            //
+            // Tint still applies when visible so a sword on a dim
+            // corridor reads dim alongside the cell, and so any
+            // overlay picks up infravision red when relevant.
             onRelight: (result) => {
-              for (const [key, img] of this.itemOverlays) {
+              const applyOverlayCellState = (
+                img: Phaser.GameObjects.Image,
+                key: string,
+              ) => {
                 const [cs, rs] = key.split(",");
-                const t = tintForCell(result, Number(cs), Number(rs));
+                const c = Number(cs);
+                const r = Number(rs);
+                if (!overlayVisibleAt(result, c, r)) {
+                  img.setVisible(false);
+                  return;
+                }
+                img.setVisible(true);
+                const t = tintForCell(result, c, r);
                 if (t.mode === "clear") img.clearTint();
                 else img.setTint(t.value);
+              };
+              for (const [key, img] of this.itemOverlays) {
+                applyOverlayCellState(img, key);
               }
               for (const [key, img] of this.questOverlays) {
-                const [cs, rs] = key.split(",");
-                const t = tintForCell(result, Number(cs), Number(rs));
-                if (t.mode === "clear") img.clearTint();
-                else img.setTint(t.value);
+                applyOverlayCellState(img, key);
               }
-              // NPC overlays — same shading rule as quest givers.
-              // A person standing on a dim cell should read dim.
               for (const [key, img] of this.npcOverlays) {
-                const [cs, rs] = key.split(",");
-                const t = tintForCell(result, Number(cs), Number(rs));
-                if (t.mode === "clear") img.clearTint();
-                else img.setTint(t.value);
+                applyOverlayCellState(img, key);
               }
             },
           });
@@ -4580,10 +4622,15 @@ export function PlayHost() {
             hasCounter={hasCounter}
             onVisitCounter={() => {
               if (!hasCounter || !counterId) return;
-              // Hand the player to the counter overlay. Closing the
-              // counter returns straight to the world (not back to
-              // the dialog) — same flow as walking up to a counter
-              // tile directly.
+              // Hand the player to the counter overlay. Stamp the
+              // current NPC id so the counter's close path can pop
+              // back to the same dialog the player came from —
+              // matches the player's expectation that Escape walks
+              // up the dialog stack one level at a time (same model
+              // as the character sheet → Party screen → world map).
+              // Tile-walk-into-counter (line ~3285) skips this stamp
+              // since there's no parent dialog to return to.
+              setCounterReturnToNpcId(npcDialogId);
               setNpcDialogId(null);
               setCounterShopId(counterId);
             }}
@@ -4754,7 +4801,20 @@ export function PlayHost() {
               // the modal. The shop's own commit() pushes into its
               // liveSave so the UI updates immediately.
             }}
-            onClose={() => setCounterShopId(null)}
+            onClose={() => {
+              // Close the counter, then — if the player got here
+              // via an NPC's Visit Counter button — re-open that
+              // NPC's dialog. The id was captured at the moment we
+              // opened the counter; clearing it here makes the
+              // restore one-shot (a future Esc inside the
+              // re-opened NPC dialog goes back to the map, not
+              // back into the counter we just left).
+              setCounterShopId(null);
+              if (counterReturnToNpcId) {
+                setNpcDialogId(counterReturnToNpcId);
+                setCounterReturnToNpcId(null);
+              }
+            }}
           />
         );
       })() : null}

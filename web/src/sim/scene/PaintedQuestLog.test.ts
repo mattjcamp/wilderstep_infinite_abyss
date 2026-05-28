@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   PaintedQuestLog,
   bucketQuests,
+  stepStatusFor,
   type PaintedQuestLogData,
   type PaintedQuestLogQuest,
 } from "./PaintedQuestLog";
@@ -587,5 +588,51 @@ describe("PaintedQuestLog — backdrop click", () => {
     cb();
     expect(onClose).toHaveBeenCalledTimes(1);
     expect(screen.isOpen()).toBe(false);
+  });
+});
+
+describe("stepStatusFor", () => {
+  it("active quest: steps before stepIdx are done", () => {
+    expect(stepStatusFor("active", false, 2, 0)).toBe("done");
+    expect(stepStatusFor("active", false, 2, 1)).toBe("done");
+  });
+
+  it("active quest: step at stepIdx is current", () => {
+    expect(stepStatusFor("active", false, 2, 2)).toBe("current");
+  });
+
+  it("active quest: steps after stepIdx are pending", () => {
+    expect(stepStatusFor("active", false, 2, 3)).toBe("pending");
+    expect(stepStatusFor("active", false, 2, 4)).toBe("pending");
+  });
+
+  it("active quest at stepIdx 0: only step 0 is current", () => {
+    expect(stepStatusFor("active", false, 0, 0)).toBe("current");
+    expect(stepStatusFor("active", false, 0, 1)).toBe("pending");
+  });
+
+  it("rewards-pending quest: every step reads as done", () => {
+    // The bucketing logic only puts a quest in rewards-pending when
+    // stepIdx has caught up to stepCount, but the helper takes no
+    // chances — it flips the whole row to done regardless of
+    // questStepIdx so the displayed log can't disagree with the
+    // section header.
+    expect(stepStatusFor("rewards-pending", false, 0, 0)).toBe("done");
+    expect(stepStatusFor("rewards-pending", false, 0, 1)).toBe("done");
+    expect(stepStatusFor("rewards-pending", true, 3, 2)).toBe("done");
+  });
+
+  it("turned-in quest: every step reads as done", () => {
+    expect(stepStatusFor("turned-in", false, 0, 0)).toBe("done");
+    expect(stepStatusFor("turned-in", true, 3, 1)).toBe("done");
+  });
+
+  it("active + complete (stepIdx ≥ stepCount): every step reads as done", () => {
+    // A quest that the bucketing logic moved into pending but the
+    // caller still labels "active" — the `complete` flag short-
+    // circuits everything to done. Belt-and-braces against an
+    // off-by-one in the bucketing pass.
+    expect(stepStatusFor("active", true, 3, 0)).toBe("done");
+    expect(stepStatusFor("active", true, 3, 2)).toBe("done");
   });
 });

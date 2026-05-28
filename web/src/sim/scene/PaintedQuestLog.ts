@@ -93,6 +93,13 @@ const COLOR_DIM_TEXT = "#a0a098";
 const COLOR_STATUS_REWARDS = "#e8c97a";
 const COLOR_STATUS_COMPLETE = "#7dd3a3";
 const COLOR_STATUS_TURNED_IN = "#a0a098";
+// Per-step status colors. Picked to share family with the section
+// tags (rewards-amber / complete-green / dim) so the player can
+// pattern-match between "what's the quest doing" and "what's the
+// current step doing" without re-learning a palette.
+const COLOR_STEP_DONE = "#7dd3a3";
+const COLOR_STEP_CURRENT = "#e8c97a";
+const COLOR_STEP_PENDING = "#7a7a82";
 const COLOR_ENTRY_BG = 0x1f1f33;
 const COLOR_ENTRY_BORDER = 0x3a3a4a;
 const FONT = "monospace";
@@ -420,7 +427,6 @@ export class PaintedQuestLog {
     const innerWidth = PANEL_WIDTH - PANEL_PADDING * 2 - ENTRY_INNER_PADDING * 2;
     const steps = quest.steps ?? [];
     const complete = steps.length > 0 && stepIdx >= steps.length;
-    const activeStep = !complete ? steps[stepIdx] : undefined;
     const statusColor = statusColorFor(state, complete);
     const statusLabel = statusLabelFor(state, complete, stepIdx, steps.length);
 
@@ -460,29 +466,72 @@ export class PaintedQuestLog {
         .setScrollFactor(0);
       rowY += desc.height + 2;
     }
-    let stepName: Phaser.GameObjects.Text | null = null;
-    let stepDesc: Phaser.GameObjects.Text | null = null;
-    if (activeStep?.name) {
-      stepName = this.scene.add
-        .text(entryX, rowY, `→ ${activeStep.name}`, {
-          fontFamily: FONT,
-          fontSize: "11px",
-          color: COLOR_BODY_TEXT,
-        })
-        .setScrollFactor(0);
-      rowY += stepName.height + 2;
-    }
-    if (activeStep?.description) {
-      stepDesc = this.scene.add
-        .text(entryX, rowY, activeStep.description, {
-          fontFamily: FONT,
-          fontSize: "11px",
-          color: COLOR_DIM_TEXT,
-          fontStyle: "italic",
-          wordWrap: { width: innerWidth },
-        })
-        .setScrollFactor(0);
-      rowY += stepDesc.height + 2;
+    // Per-step list. Replaces the older "active step only" view —
+    // quests aren't always tackled in order (a Detect-Traps step
+    // might close while the party hasn't returned to the giver yet,
+    // a quest with parallel kill steps can have steps 1 and 3 done
+    // before step 2), and showing only the current pending step
+    // gave the player no way to track which others were finished.
+    //
+    // Step status:
+    //   i  < stepIdx                                   → done
+    //   i == stepIdx (and quest not yet complete)      → current
+    //   i  > stepIdx                                   → pending
+    //
+    // Turned-in + rewards-pending quests use `complete=true` which
+    // flips every row to "done" regardless of stepIdx (those quests
+    // have no remaining current step). Within the painted log we
+    // also indent the steps slightly and show the current row's
+    // description verbatim — past steps' descriptions are dropped
+    // to keep the long-quest view scannable.
+    const stepTexts: Phaser.GameObjects.Text[] = [];
+    if (steps.length > 0) {
+      const stepIndent = entryX + 6;
+      const stepInnerWidth = innerWidth - 6;
+      for (let i = 0; i < steps.length; i++) {
+        const step = steps[i];
+        const stepStatus = stepStatusFor(state, complete, stepIdx, i);
+        const glyph =
+          stepStatus === "done"
+            ? "✓"
+            : stepStatus === "current"
+              ? "→"
+              : "·";
+        const color =
+          stepStatus === "done"
+            ? COLOR_STEP_DONE
+            : stepStatus === "current"
+              ? COLOR_STEP_CURRENT
+              : COLOR_STEP_PENDING;
+        const stepName = step?.name ?? `Step ${i + 1}`;
+        const row = this.scene.add
+          .text(stepIndent, rowY, `${glyph} ${stepName}`, {
+            fontFamily: FONT,
+            fontSize: "11px",
+            color,
+            wordWrap: { width: stepInnerWidth },
+          })
+          .setScrollFactor(0);
+        stepTexts.push(row);
+        rowY += row.height + 2;
+        // Surface the description right below ONLY for the current
+        // step (the one the player is actively working on). Done
+        // steps' descriptions are noise; pending steps' descriptions
+        // would spoil future objectives.
+        if (stepStatus === "current" && step?.description) {
+          const sub = this.scene.add
+            .text(stepIndent + 14, rowY, step.description, {
+              fontFamily: FONT,
+              fontSize: "11px",
+              color: COLOR_DIM_TEXT,
+              fontStyle: "italic",
+              wordWrap: { width: stepInnerWidth - 14 },
+            })
+            .setScrollFactor(0);
+          stepTexts.push(sub);
+          rowY += sub.height + 2;
+        }
+      }
     }
 
     const totalHeight =
@@ -508,8 +557,7 @@ export class PaintedQuestLog {
     content.add(name);
     content.add(tag);
     if (desc) content.add(desc);
-    if (stepName) content.add(stepName);
-    if (stepDesc) content.add(stepDesc);
+    for (const t of stepTexts) content.add(t);
 
     return { height: totalHeight };
   }
@@ -668,4 +716,23 @@ function statusLabelFor(
   if (complete) return "Complete";
   if (stepCount > 0) return `${stepIdx}/${stepCount} steps`;
   return "In progress";
+}
+
+/** Per-step status used by the painted entry. Quests in `turned-in`
+ *  or `rewards-pending` buckets have all steps done by definition;
+ *  the `complete` flag carries the same signal for an active quest
+ *  whose stepIdx has caught up to stepCount. Otherwise each step
+ *  compares against the quest's current cursor. */
+export function stepStatusFor(
+  state: "active" | "rewards-pending" | "turned-in",
+  complete: boolean,
+  questStepIdx: number,
+  stepIdx: number,
+): "done" | "current" | "pending" {
+  if (state === "turned-in" || state === "rewards-pending" || complete) {
+    return "done";
+  }
+  if (stepIdx < questStepIdx) return "done";
+  if (stepIdx === questStepIdx) return "current";
+  return "pending";
 }

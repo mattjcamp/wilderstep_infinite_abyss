@@ -1,15 +1,7 @@
 
 # Pre-V3 Ideas
 
-- Do Phaser versions (like the Help Screen and Quest Log) of these screens:
-- - Adventure Log
-
 UI Improvements (add arrows for controls instead of redoing the whole UI in Phaser)
-- NPC Dialog
-- Quest Dialog
-- Counter Screen
-- Lock Pick Screen
-(Try to make mouse clicks unneeded)
 
 Make Fog of War tiles less saturated
 

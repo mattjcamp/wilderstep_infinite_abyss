@@ -19,7 +19,7 @@
  * Escape, the backdrop, or the Close button dismisses.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { WorldSave } from "@/play/saveTypes";
 import {
   addToInventory,
@@ -147,35 +147,57 @@ export function PlayCounterShopOverlay({
     [],
   );
 
-  // ESC closes — capture-phase so the underlying sim's movement
-  // keys don't fire under the modal.
+  // ── Keyboard navigation state ───────────────────────────────────
+  // Counter mode dictates the zone set:
+  //   shop    → "stock" (left list) ↔ "stash" (right list); Up/Down
+  //             scrolls within the column, Left/Right hops columns.
+  //   service → single "services" zone; party panel is read-only.
+  // Esc closes from any zone (handled by the existing dismiss path
+  // via the keydown listener below).
+  const isService = counter.kind === "service";
+  type FocusZone = "stock" | "stash" | "services";
+  const [focusZone, setFocusZone] = useState<FocusZone>(
+    isService ? "services" : "stock",
+  );
+  const [focusIndex, setFocusIndex] = useState(0);
+  // Derived counts the listener clamps against on each press. Live
+  // (stock.length / inventory.length) re-derives per render so a
+  // buy that removes a row keeps the cursor pointing at something
+  // sensible. Counts the service-counter services array when in
+  // service mode; otherwise it stays 0.
+  const services = useMemo(() => counter.services ?? [], [counter.services]);
+  // Clamp focusIndex on size changes so a buy that empties a stock
+  // row, or a sale that removes an inventory entry, doesn't strand
+  // the cursor off the end.
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.stopPropagation();
-        e.preventDefault();
-        onClose();
-      } else if (
-        e.key === "ArrowUp" ||
-        e.key === "ArrowDown" ||
-        e.key === "ArrowLeft" ||
-        e.key === "ArrowRight" ||
-        e.key === "w" ||
-        e.key === "a" ||
-        e.key === "s" ||
-        e.key === "d" ||
-        e.key === "W" ||
-        e.key === "A" ||
-        e.key === "S" ||
-        e.key === "D"
-      ) {
-        e.stopPropagation();
-      }
-    };
-    window.addEventListener("keydown", onKey, { capture: true });
-    return () =>
-      window.removeEventListener("keydown", onKey, { capture: true });
-  }, [onClose]);
+    setFocusIndex((cur) => {
+      const max =
+        focusZone === "stock"
+          ? Math.max(0, stock.length - 1)
+          : focusZone === "stash"
+            ? Math.max(0, liveSave.party.inventory.length - 1)
+            : Math.max(0, services.length - 1);
+      return Math.min(cur, max);
+    });
+  }, [
+    focusZone,
+    stock.length,
+    liveSave.party.inventory.length,
+    services.length,
+  ]);
+
+  // Ref onto the modal's outer scroll-area so the auto-scroll effect
+  // below can query for the focused row regardless of which zone
+  // ends up holding it. The query is scoped to this overlay so a
+  // matching attribute in a sibling modal (e.g. a future inline help
+  // tooltip) can't accidentally drive scroll here.
+  const overlayRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const root = overlayRef.current;
+    if (!root) return;
+    const el = root.querySelector<HTMLElement>('[data-nav-focused="true"]');
+    if (el) el.scrollIntoView({ block: "nearest" });
+  }, [focusZone, focusIndex]);
 
   const itemsById = new Map(items.map((i) => [i.id, i]));
   const commit = useCallback(
@@ -401,8 +423,142 @@ export function PlayCounterShopOverlay({
   const gold = liveSave.party.gold ?? 0;
   const inventory = liveSave.party.inventory;
 
+  // ── Counter keyboard handler ────────────────────────────────────
+  // Placed at the bottom so it can close over `handleBuy` /
+  // `handleSell` / `handleService` plus the gating helpers
+  // (`buyPrice`, `sellPriceFor`, `serviceAvailable`) without forward
+  // references. Re-registers per render — the dep list is large but
+  // this isn't a hot path and there's no other window listener we
+  // need to win a registration race against (the wrapping host's
+  // overlaysOpenRef already gates the sim).
+  //
+  //   Up/Down  — navigate within the current zone
+  //   Left/Right — swap columns (shop mode only)
+  //   Enter    — trigger the focused row's action (buy / sell /
+  //              apply service); no-op when the row is disabled
+  //   Esc      — close (same dismiss path as the close button)
+  //   WASD     — swallowed so the underlying sim doesn't react
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        e.preventDefault();
+        onClose();
+        return;
+      }
+      if (e.key === "ArrowDown") {
+        e.stopPropagation();
+        e.preventDefault();
+        const max =
+          focusZone === "stock"
+            ? stock.length
+            : focusZone === "stash"
+              ? inventory.length
+              : services.length;
+        if (max > 0) {
+          setFocusIndex((i) => Math.min(i + 1, max - 1));
+        }
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.stopPropagation();
+        e.preventDefault();
+        setFocusIndex((i) => Math.max(0, i - 1));
+        return;
+      }
+      if (!isService) {
+        if (e.key === "ArrowRight" && focusZone === "stock") {
+          e.stopPropagation();
+          e.preventDefault();
+          setFocusZone("stash");
+          setFocusIndex((i) =>
+            Math.min(i, Math.max(0, inventory.length - 1)),
+          );
+          return;
+        }
+        if (e.key === "ArrowLeft" && focusZone === "stash") {
+          e.stopPropagation();
+          e.preventDefault();
+          setFocusZone("stock");
+          setFocusIndex((i) =>
+            Math.min(i, Math.max(0, stock.length - 1)),
+          );
+          return;
+        }
+      }
+      if (e.key === "Enter") {
+        e.stopPropagation();
+        e.preventDefault();
+        if (focusZone === "stock") {
+          const entry = stock[focusIndex];
+          if (!entry) return;
+          const price = buyPrice(entry.item);
+          if (price > 0 && gold >= price) handleBuy(focusIndex);
+          return;
+        }
+        if (focusZone === "stash") {
+          const entry = inventory[focusIndex];
+          if (!entry) return;
+          if (sellPriceFor(entry) > 0) handleSell(focusIndex);
+          return;
+        }
+        if (focusZone === "services") {
+          const s = services[focusIndex];
+          if (!s) return;
+          const cost = s.cost ?? 0;
+          if (gold >= cost && serviceAvailable(s.id)) handleService(s);
+          return;
+        }
+      }
+      if (
+        e.key === "ArrowLeft" ||
+        e.key === "ArrowRight" ||
+        e.key === "w" ||
+        e.key === "a" ||
+        e.key === "s" ||
+        e.key === "d" ||
+        e.key === "W" ||
+        e.key === "A" ||
+        e.key === "S" ||
+        e.key === "D"
+      ) {
+        // Movement keys swallowed (defense in depth on top of the
+        // host's overlaysOpenRef gate).
+        e.stopPropagation();
+      }
+    };
+    window.addEventListener("keydown", onKey, { capture: true });
+    return () =>
+      window.removeEventListener("keydown", onKey, { capture: true });
+  }, [
+    onClose,
+    focusZone,
+    focusIndex,
+    isService,
+    stock,
+    inventory,
+    services,
+    gold,
+    handleBuy,
+    handleSell,
+    handleService,
+    buyPrice,
+    sellPriceFor,
+    serviceAvailable,
+  ]);
+
   return (
     <div
+      ref={overlayRef}
       className="fixed inset-0 z-40 flex items-center justify-center bg-black/65 p-4"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
@@ -553,7 +709,7 @@ export function PlayCounterShopOverlay({
                 This temple has no services available.
               </p>
             ) : null}
-            {(counter.services ?? []).map((s) => {
+            {(counter.services ?? []).map((s, i) => {
               const cost = s.cost ?? 0;
               const canAfford = gold >= cost;
               const available = serviceAvailable(s.id);
@@ -563,14 +719,26 @@ export function PlayCounterShopOverlay({
                 : !canAfford
                   ? `Need ${cost}g (you have ${gold}g).`
                   : s.description ?? "Apply this service.";
+              const focused =
+                focusZone === "services" && focusIndex === i;
               return (
                 <button
                   key={s.id}
                   type="button"
-                  onClick={() => handleService(s)}
+                  onClick={() => {
+                    setFocusZone("services");
+                    setFocusIndex(i);
+                    handleService(s);
+                  }}
                   disabled={disabled}
                   title={reason}
-                  className="flex flex-col gap-1 rounded border border-parchment/20 bg-ink/40 p-2 text-left text-sm text-parchment hover:bg-ink/60 disabled:cursor-not-allowed disabled:opacity-50"
+                  data-nav-focused={focused ? "true" : undefined}
+                  className={[
+                    "flex flex-col gap-1 rounded border border-parchment/20 bg-ink/40 p-2 text-left text-sm text-parchment hover:bg-ink/60 disabled:cursor-not-allowed disabled:opacity-50",
+                    focused
+                      ? "outline outline-2 outline-amber-200 outline-offset-1"
+                      : "",
+                  ].join(" ")}
                 >
                   <span className="flex items-baseline justify-between gap-2">
                     <span className="font-display">
@@ -593,8 +761,15 @@ export function PlayCounterShopOverlay({
         <div className="grid flex-1 grid-cols-2 gap-3 overflow-hidden p-3">
           {/* Stock — click to buy */}
           <section className="flex min-h-0 flex-col">
-            <h3 className="mb-1 text-[11px] uppercase tracking-wide text-amber-300">
-              Stock ({stock.length})
+            <h3
+              className={[
+                "mb-1 text-[11px] uppercase tracking-wide pl-2 -ml-2 border-l-2",
+                focusZone === "stock"
+                  ? "border-amber-200 text-amber-200"
+                  : "border-transparent text-amber-300/80",
+              ].join(" ")}
+            >
+              {focusZone === "stock" ? "▸ " : ""}Stock ({stock.length})
             </h3>
             <ul className="flex-1 space-y-1 overflow-auto pr-1 text-sm">
               {stock.length === 0 ? (
@@ -618,14 +793,25 @@ export function PlayCounterShopOverlay({
                   def.durability > 0
                     ? ` (${entry.durability}/${def.durability})`
                     : "";
+                const focused = focusZone === "stock" && focusIndex === i;
                 return (
                   <li key={`${id}-${i}`}>
                     <button
                       type="button"
-                      onClick={() => handleBuy(i)}
+                      onClick={() => {
+                        setFocusZone("stock");
+                        setFocusIndex(i);
+                        handleBuy(i);
+                      }}
                       disabled={!canAfford}
                       title={def?.description ?? itemLabel(id)}
-                      className="flex w-full items-center justify-between rounded border border-parchment/20 bg-ink/40 px-2 py-1 text-left text-parchment hover:bg-ink/60 disabled:cursor-not-allowed disabled:opacity-50"
+                      data-nav-focused={focused ? "true" : undefined}
+                      className={[
+                        "flex w-full items-center justify-between rounded border border-parchment/20 bg-ink/40 px-2 py-1 text-left text-parchment hover:bg-ink/60 disabled:cursor-not-allowed disabled:opacity-50",
+                        focused
+                          ? "outline outline-2 outline-amber-200 outline-offset-1"
+                          : "",
+                      ].join(" ")}
                     >
                       <span className="truncate">
                         {itemLabel(id)}
@@ -652,8 +838,15 @@ export function PlayCounterShopOverlay({
 
           {/* Party inventory — click to sell */}
           <section className="flex min-h-0 flex-col">
-            <h3 className="mb-1 text-[11px] uppercase tracking-wide text-amber-300">
-              Your Stash ({inventory.length})
+            <h3
+              className={[
+                "mb-1 text-[11px] uppercase tracking-wide pl-2 -ml-2 border-l-2",
+                focusZone === "stash"
+                  ? "border-amber-200 text-amber-200"
+                  : "border-transparent text-amber-300/80",
+              ].join(" ")}
+            >
+              {focusZone === "stash" ? "▸ " : ""}Your Stash ({inventory.length})
             </h3>
             <ul className="flex-1 space-y-1 overflow-auto pr-1 text-sm">
               {inventory.length === 0 ? (
@@ -680,17 +873,28 @@ export function PlayCounterShopOverlay({
                   basePrice > 0 &&
                   price > 0 &&
                   price < basePrice;
+                const focused = focusZone === "stash" && focusIndex === i;
                 return (
                   <li key={`${entry.item}-${i}`}>
                     <button
                       type="button"
-                      onClick={() => handleSell(i)}
+                      onClick={() => {
+                        setFocusZone("stash");
+                        setFocusIndex(i);
+                        handleSell(i);
+                      }}
                       disabled={price <= 0}
                       title={
                         def?.description ??
                         itemLabel(entry.item)
                       }
-                      className="flex w-full items-center justify-between rounded border border-parchment/20 bg-ink/40 px-2 py-1 text-left text-parchment hover:bg-ink/60 disabled:cursor-not-allowed disabled:opacity-50"
+                      data-nav-focused={focused ? "true" : undefined}
+                      className={[
+                        "flex w-full items-center justify-between rounded border border-parchment/20 bg-ink/40 px-2 py-1 text-left text-parchment hover:bg-ink/60 disabled:cursor-not-allowed disabled:opacity-50",
+                        focused
+                          ? "outline outline-2 outline-amber-200 outline-offset-1"
+                          : "",
+                      ].join(" ")}
                     >
                       <span className="truncate">
                         {itemLabel(entry.item)}

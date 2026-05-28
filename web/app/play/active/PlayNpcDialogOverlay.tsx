@@ -13,7 +13,7 @@
  * and the backdrop dismiss.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { withBasePath } from "@/util/basePath";
 
 interface DialogLine {
@@ -54,9 +54,45 @@ export function PlayNpcDialogOverlay({
   const total = dialogs.length;
   const current = total > 0 ? dialogs[Math.min(cursor, total - 1)] : null;
 
-  // ESC closes. Arrow keys cycle through dialog lines so the player
-  // can read at their own pace. Capture-phase so the underlying
-  // sim doesn't react to the same arrows.
+  // Build the action list dynamically from the visibility gates the
+  // host wired. The order — Steal → Visit Counter → Leave — matches
+  // the left-to-right order in the footer so the keyboard cursor
+  // walks the same path the player's eye does.
+  //
+  // Each entry carries its own onClick so the keydown handler +
+  // click handlers funnel through a single place. The label is kept
+  // for screen-reader / debugging contexts; the visible UI reads
+  // off the button JSX below for finer-grained styling control.
+  interface DialogAction {
+    label: "Steal" | "Visit Counter" | "Leave";
+    onClick: () => void;
+  }
+  const actions = useMemo<DialogAction[]>(() => {
+    const list: DialogAction[] = [];
+    if (canSteal && onSteal) list.push({ label: "Steal", onClick: onSteal });
+    if (hasCounter)
+      list.push({ label: "Visit Counter", onClick: onVisitCounter });
+    list.push({ label: "Leave", onClick: onClose });
+    return list;
+  }, [canSteal, hasCounter, onSteal, onVisitCounter, onClose]);
+  /** Which action button the keyboard cursor is on. Up/Down wraps
+   *  through it; Enter fires the highlighted action. Defaults to 0
+   *  — the first non-Leave entry when one exists, otherwise Leave
+   *  alone, which Enter activates as "close the dialog." That makes
+   *  the always-safe default of opening + immediately pressing
+   *  Enter just dismiss the screen, matching the legacy click-only
+   *  behavior where the player's first move was usually Leave. */
+  const [actionIndex, setActionIndex] = useState(0);
+  // Clamp when the visible set shrinks (host re-renders with a
+  // different `canSteal` after a Pickpocket attempt resolves).
+  useEffect(() => {
+    setActionIndex((cur) => Math.min(cur, Math.max(0, actions.length - 1)));
+  }, [actions.length]);
+
+  // ESC closes. Left/Right cycle dialog lines (read at your own
+  // pace); Up/Down cycle action buttons; Enter fires whichever
+  // action is highlighted. Capture-phase so the underlying sim
+  // doesn't react to the same arrows.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -65,16 +101,41 @@ export function PlayNpcDialogOverlay({
         onClose();
         return;
       }
-      if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+      if (e.key === "ArrowRight") {
         e.stopPropagation();
         e.preventDefault();
         if (total > 0) setCursor((i) => (i + 1) % total);
         return;
       }
-      if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+      if (e.key === "ArrowLeft") {
         e.stopPropagation();
         e.preventDefault();
         if (total > 0) setCursor((i) => (i - 1 + total) % total);
+        return;
+      }
+      if (e.key === "ArrowDown") {
+        e.stopPropagation();
+        e.preventDefault();
+        if (actions.length > 0) {
+          setActionIndex((i) => (i + 1) % actions.length);
+        }
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.stopPropagation();
+        e.preventDefault();
+        if (actions.length > 0) {
+          setActionIndex(
+            (i) => (i - 1 + actions.length) % actions.length,
+          );
+        }
+        return;
+      }
+      if (e.key === "Enter") {
+        e.stopPropagation();
+        e.preventDefault();
+        const a = actions[actionIndex];
+        if (a) a.onClick();
         return;
       }
       if (
@@ -94,7 +155,7 @@ export function PlayNpcDialogOverlay({
     window.addEventListener("keydown", onKey, { capture: true });
     return () =>
       window.removeEventListener("keydown", onKey, { capture: true });
-  }, [onClose, total]);
+  }, [onClose, total, actions, actionIndex]);
 
   return (
     <div
@@ -182,37 +243,70 @@ export function PlayNpcDialogOverlay({
             ) : null}
           </div>
           <div className="flex items-center gap-2">
-            {canSteal && onSteal ? (
-              <button
-                type="button"
-                onClick={onSteal}
-                // Same "ember" treatment Visit Counter uses since
-                // both are decisive actions the player is OPTING
-                // INTO. Keeps the visual weight aligned with their
-                // role; Leave stays neutral.
-                className="rounded border border-amber-400/60 bg-amber-400/20 px-3 py-1 text-xs text-parchment hover:bg-amber-400/35"
-                title="Halfling: attempt to pick this NPC's pocket. Once per NPC, with a chance of failure."
-              >
-                Steal
-              </button>
-            ) : null}
-            {hasCounter ? (
-              <button
-                type="button"
-                onClick={onVisitCounter}
-                className="rounded border border-ember/60 bg-ember/30 px-3 py-1 text-xs text-parchment hover:bg-ember/50"
-                title="Open this NPC's shop / temple."
-              >
-                Visit Counter
-              </button>
-            ) : null}
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded border border-parchment/20 px-3 py-1 text-xs text-parchment/85 hover:bg-ink/50"
-            >
-              Leave
-            </button>
+            {/* Each action button looks up its slot in the dynamic
+                `actions` list so the cursor highlight + click sync
+                stay correct as the visible set changes (e.g. Steal
+                disappears after a Pickpocket marks the NPC). The
+                ring is an `outline` so it sits on top of the
+                button's existing border without changing layout. */}
+            {(() => {
+              const focusRing =
+                "outline outline-2 outline-amber-200 outline-offset-1";
+              const stealIdx = actions.findIndex((a) => a.label === "Steal");
+              const counterIdx = actions.findIndex(
+                (a) => a.label === "Visit Counter",
+              );
+              const leaveIdx = actions.findIndex((a) => a.label === "Leave");
+              return (
+                <>
+                  {stealIdx >= 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActionIndex(stealIdx);
+                        actions[stealIdx].onClick();
+                      }}
+                      className={[
+                        "rounded border border-amber-400/60 bg-amber-400/20 px-3 py-1 text-xs text-parchment hover:bg-amber-400/35",
+                        actionIndex === stealIdx ? focusRing : "",
+                      ].join(" ")}
+                      title="Halfling: attempt to pick this NPC's pocket. Once per NPC, with a chance of failure."
+                    >
+                      Steal
+                    </button>
+                  ) : null}
+                  {counterIdx >= 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActionIndex(counterIdx);
+                        actions[counterIdx].onClick();
+                      }}
+                      className={[
+                        "rounded border border-ember/60 bg-ember/30 px-3 py-1 text-xs text-parchment hover:bg-ember/50",
+                        actionIndex === counterIdx ? focusRing : "",
+                      ].join(" ")}
+                      title="Open this NPC's shop / temple."
+                    >
+                      Visit Counter
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActionIndex(leaveIdx);
+                      actions[leaveIdx].onClick();
+                    }}
+                    className={[
+                      "rounded border border-parchment/20 px-3 py-1 text-xs text-parchment/85 hover:bg-ink/50",
+                      actionIndex === leaveIdx ? focusRing : "",
+                    ].join(" ")}
+                  >
+                    Leave
+                  </button>
+                </>
+              );
+            })()}
           </div>
         </footer>
       </div>

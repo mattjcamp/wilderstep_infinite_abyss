@@ -37896,7 +37896,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/town_floor.png",
-            "tag": "walkable"
+            "tag": "walkable",
+            "quest": "rats"
           },
           {
             "boat": false,
@@ -38850,7 +38851,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/town_floor.png",
-            "tag": "walkable"
+            "tag": "walkable",
+            "npc": "elder_marisol"
           },
           {
             "boat": false,
