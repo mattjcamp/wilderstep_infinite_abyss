@@ -2820,8 +2820,9 @@
           },
           {
             "boat": false,
-            "id": "bridge",
-            "name": "Bridge",
+            "boat_passable": true,
+            "id": "bridge_2",
+            "name": "Bridge 2",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2831,7 +2832,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/bridge.png",
+            "sprite": "map/bridge_copy.png",
             "tag": "outdoor"
           },
           {
@@ -3138,8 +3139,9 @@
           },
           {
             "boat": false,
-            "id": "bridge",
-            "name": "Bridge",
+            "boat_passable": true,
+            "id": "bridge_2",
+            "name": "Bridge 2",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -3149,7 +3151,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/bridge.png",
+            "sprite": "map/bridge_copy.png",
             "tag": "outdoor"
           },
           {

@@ -112,6 +112,7 @@ import {
 } from "@/vfx/Vfx";
 import { Sfx } from "@/battle/audio/Sfx";
 import { Soundtrack } from "@/audio/SoundtrackPlayer";
+import { loadSpriteDraft } from "@/data_model/spriteDraft";
 import {
   MINUTES_PER_STEP,
   advanceClock,
@@ -450,6 +451,11 @@ interface PlayCell {
   npc?: string;
   dungeon?: string;
   boat?: boolean;
+  /** True = a boat can sail UNDER this tile (bridge semantics). The
+   *  tile stays walkable on foot; the sim treats it as a sail-through
+   *  for boat movement, and the play scene paints a bridge-top
+   *  overlay above the boat so the vessel reads as passing beneath. */
+  boat_passable?: boolean;
   tag?: string;
   link?: { map_id: string; x: number; y: number } | null;
   [k: string]: unknown;
@@ -1788,6 +1794,20 @@ export function PlayHost() {
          *  parked there). Initial state captured during the scene's
          *  create() pass from cells whose `boat` field is true. */
         boatTextures: Map<string, string> = new Map();
+        /** Bridge-top overlays keyed "col,row". One per cell whose
+         *  palette flag `boat_passable` is true (wooden footbridges,
+         *  stone arches, etc.). The base cell still draws at depth 0
+         *  (where the party sprite at depth 300 covers it when the
+         *  party walks across — normal "I'm on the bridge" look).
+         *  The overlay duplicates the cell's sprite at depth 350,
+         *  ABOVE the party-boat sprite (300), so that when the party
+         *  is sailing under the bridge the structure visually covers
+         *  the boat. The overlay is HIDDEN while the party is on
+         *  foot — otherwise it would also cover the party walking
+         *  across — and SHOWN when the party boards a boat. Toggled
+         *  by the same `setPartyBoatAt` bridge call that mounts /
+         *  destroys `partyBoatSprite`. */
+        bridgeOverlays: Map<string, Phaser.GameObjects.Image> = new Map();
         /** Single Image that follows the party while they're aboard.
          *  Depth 300 matches the party sprite — when this is visible
          *  the partySprite is hidden, so the boat visually IS the
@@ -1809,8 +1829,17 @@ export function PlayHost() {
           super("PlayScene");
         }
         preload() {
+          // Sprite drafts (from the in-browser pixel editor) win over
+          // the on-disk PNG. Phaser's load.image accepts data URLs
+          // verbatim, so the draft's base64 payload threads through
+          // without a separate codec. The draft module is keyed by
+          // moduleId so edits in one module don't leak into another.
           for (const key of spriteKeys) {
-            this.load.image(key, withBasePath(`/sprites/${key}`));
+            const draft = loadSpriteDraft(save.moduleId, key);
+            this.load.image(
+              key,
+              draft ?? withBasePath(`/sprites/${key}`),
+            );
           }
         }
         create() {
@@ -1983,6 +2012,28 @@ export function PlayHost() {
               if (cell.boat && cell.sprite) {
                 this.boatTextures.set(`${c},${r}`, cell.sprite);
               }
+            }
+          }
+
+          // Bridge-top overlays — paint a second copy of the bridge
+          // sprite at depth 350 for every cell flagged `boat_passable`.
+          // Hidden until the party boards a boat; the setPartyBoatAt
+          // bridge call below flips them visible/invisible so a
+          // walking party doesn't get covered while a sailing party
+          // appears to pass under the bridge.
+          for (let r = 0; r < catalog.map.height; r++) {
+            for (let c = 0; c < catalog.map.width; c++) {
+              const cell = catalog.map.grid[r][c];
+              if (!cell.boat_passable) continue;
+              const tex = cell.sprite;
+              if (!tex || !this.textures.exists(tex)) continue;
+              const img = this.add
+                .image(c * TILE_SIZE, r * TILE_SIZE, tex)
+                .setOrigin(0)
+                .setDisplaySize(TILE_SIZE, TILE_SIZE)
+                .setDepth(350)
+                .setVisible(false);
+              this.bridgeOverlays.set(`${c},${r}`, img);
             }
           }
 
@@ -2511,6 +2562,18 @@ export function PlayHost() {
             },
             setPartyBoatAt: (col, row, visible, sprite) => {
               const scene = this;
+              // Bridge-top overlay visibility tracks the boat. When
+              // the party is sailing, the overlays paint above the
+              // boat sprite so the structure visually covers the
+              // vessel as it slides under. When the party is on
+              // foot, the overlays are hidden so they don't paint
+              // over the walking party sprite — the bridge cell's
+              // base render at depth 0 is enough since the party
+              // (depth 300) is already above the floor.
+              const showBridgeTops = visible;
+              for (const img of scene.bridgeOverlays.values()) {
+                img.setVisible(showBridgeTops);
+              }
               if (!visible) {
                 if (scene.partyBoatSprite) {
                   scene.tweens.killTweensOf(scene.partyBoatSprite);

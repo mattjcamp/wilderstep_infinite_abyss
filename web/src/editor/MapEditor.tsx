@@ -39,6 +39,7 @@ import {
 } from "@/data_model/draft";
 import { mergeModel } from "@/data_model/merge";
 import { withBasePath } from "@/util/basePath";
+import { loadSpriteDraft } from "@/data_model/spriteDraft";
 import { publishItems } from "@/data_model/publishClient";
 import { MapSimulation, type SceneBridge } from "@/sim/MapSimulation";
 import {
@@ -101,6 +102,12 @@ interface TileType {
    *  Not "passable by boat" — that distinction is a tile being water,
    *  which is conveyed by the tile's other gameplay attributes. */
   boat: boolean;
+  /** True = a boat can sail UNDER this tile (bridge semantics). The
+   *  tile stays walkable on foot; the sim treats it like water for
+   *  the boat-classification branch, and the play renderer paints a
+   *  "bridge top" overlay above the party boat sprite so the vessel
+   *  reads as passing beneath the structure. Default false. */
+  boat_passable: boolean;
   /** True = passage/interaction is gated until unlocked (key, scripted
    *  unlock, etc.). Pairs with link or interactive tile types. */
   locked: boolean;
@@ -217,6 +224,8 @@ function cellMatchesPalette(cell: TileType, palette: TileType[]): boolean {
   if (cell.walkable !== base.walkable) return false;
   if (cell.obstructs !== base.obstructs) return false;
   if ((cell.boat ?? false) !== (base.boat ?? false)) return false;
+  if ((cell.boat_passable ?? false) !== (base.boat_passable ?? false))
+    return false;
   if ((cell.text ?? "") !== (base.text ?? "")) return false;
   if ((cell.locked ?? false) !== (base.locked ?? false)) return false;
   if ((cell.light_source ?? false) !== (base.light_source ?? false))
@@ -913,6 +922,7 @@ export function MapEditor({
                     walkable: true,
                     obstructs: false,
                     boat: false,
+                    boat_passable: false,
                     locked: false,
                     light_source: false,
                     light_range: 0,
@@ -1364,8 +1374,16 @@ export function MapEditor({
         fillPreviewGraphics: Phaser.GameObjects.Graphics | null = null;
 
         preload() {
+          // Sprite drafts (from the in-browser pixel editor) override
+          // the on-disk PNG. Authors painting in /editor/<m>/sprites
+          // see their edits land in this scene's textures via the
+          // data URL on the next remount.
           for (const sprite of spriteKeys) {
-            this.load.image(sprite, withBasePath(`/sprites/${sprite}`));
+            const draft = loadSpriteDraft(moduleId, sprite);
+            this.load.image(
+              sprite,
+              draft ?? withBasePath(`/sprites/${sprite}`),
+            );
           }
         }
 
@@ -4332,6 +4350,22 @@ function Inspector({
             canReset={!!base}
             onChange={(v) => onUpdate({ boat: v })}
             onReset={() => onUpdate({ boat: undefined })}
+          />
+
+          <BoolEditor
+            label="Boat passable"
+            help="True = a boat can sail UNDER this tile (bridge semantics). The tile stays walkable on foot; the play scene paints a bridge-top overlay above the boat so the vessel reads as passing beneath."
+            value={instance.boat_passable ?? false}
+            paletteValue={
+              base?.boat_passable ?? instance.boat_passable ?? false
+            }
+            isModified={
+              !!base &&
+              fieldDiffersFromPalette(instance, palette, "boat_passable")
+            }
+            canReset={!!base}
+            onChange={(v) => onUpdate({ boat_passable: v })}
+            onReset={() => onUpdate({ boat_passable: undefined })}
           />
 
           <BoolEditor

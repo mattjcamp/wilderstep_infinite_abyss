@@ -1241,6 +1241,15 @@ export class MapSimulation {
     const targetBoatSprite =
       this.boatPositions.get(targetKey) ?? target.sprite ?? "";
     const targetIsWater = (target.tag ?? "") === "water";
+    // Bridge semantics — palette tiles flagged `boat_passable` (e.g.
+    // wooden footbridges) accept a sailing boat as if they were
+    // water. The renderer paints a "bridge top" overlay above the
+    // party-boat sprite so the vessel reads as passing UNDER the
+    // structure. Distinct from `tag === "water"` because the tile is
+    // also walkable on foot — the foot-walk branch below sees no
+    // change.
+    const targetIsBoatPassable = target.boat_passable === true;
+    const targetSailable = targetIsWater || targetIsBoatPassable;
 
     // Decide the kind. Boat-aware classification first, then fall
     // through to the normal walking path for the on-land non-boat case.
@@ -1269,9 +1278,16 @@ export class MapSimulation {
       // portal just like a footstep onto a linked land tile would.
       // Checked before the plain "sail" branch so authored link cells
       // on water (sea routes between maps) actually fire.
-      else if (targetIsWater && target.link && target.link.map_id)
+      else if (targetSailable && target.link && target.link.map_id)
         kind = "linked";
-      else if (targetIsWater) kind = "sail";
+      // Bridge tiles (`boat_passable: true`) and water tiles both
+      // sail-through. Order matters: a bridge tile is ALSO walkable,
+      // so we have to commit to "sail" here rather than letting it
+      // fall through to the disembark branch — the player aboard a
+      // boat sliding under a bridge should keep sailing, not pop
+      // out onto the bridge deck. Disembark stays reserved for plain
+      // walkable land.
+      else if (targetSailable) kind = "sail";
       else if (targetWalkable) kind = "disembark";
       else kind = "blocked";
     } else {

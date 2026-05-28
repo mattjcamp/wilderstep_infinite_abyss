@@ -46,6 +46,15 @@ export interface SimCell {
    *  tiles tagged "water" until they step onto walkable land again,
    *  at which point the boat stays behind on the last water cell. */
   boat?: boolean;
+  /** True = a boat can sail through this cell (the boat passes UNDER
+   *  it). Authored on bridge tiles so the bridge stays walkable on
+   *  foot AND sailable underneath; the sim's classification treats
+   *  the cell like water for boat-move purposes, while the renderer
+   *  paints a "bridge top" overlay above the boat sprite so the
+   *  vessel reads as passing beneath the structure. Distinct from
+   *  `tag === "water"` because a bridge tile is still walkable on
+   *  foot — water tiles are not. */
+  boat_passable?: boolean;
   /** Free-form designer tag. The sim only reads "water" — boats can
    *  sail across cells whose `tag === "water"`. Other tag values are
    *  ignored by the kernel. */

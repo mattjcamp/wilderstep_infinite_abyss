@@ -25,6 +25,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { withBasePath } from "@/util/basePath";
+import { loadSpriteDraft } from "@/data_model/spriteDraft";
 import {
   TILE_STAIRS,
   type DungeonLevel,
@@ -337,8 +338,15 @@ export function DungeonSimMount({
         }
 
         preload() {
+          // Sprite drafts (in-browser pixel editor) take precedence
+          // over the on-disk PNG — see PlayHost preload for the same
+          // pattern.
           for (const key of spriteKeys) {
-            this.load.image(key, withBasePath(`/sprites/${key}`));
+            const draft = loadSpriteDraft(moduleId, key);
+            this.load.image(
+              key,
+              draft ?? withBasePath(`/sprites/${key}`),
+            );
           }
         }
 

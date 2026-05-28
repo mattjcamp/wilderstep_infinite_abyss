@@ -30,7 +30,23 @@ export type PublishItem =
       content: unknown;
     }
   | { kind: "index"; content: unknown }
-  | { kind: "delete-module"; moduleId: string };
+  | { kind: "delete-module"; moduleId: string }
+  // ── Sprite assets ───────────────────────────────────────────────
+  // Sprites live in their own tree (public/sprites/<category>/…) and
+  // the server keeps `index.json` in sync after every write/delete so
+  // the editor's catalog refresh costs one publish round-trip.
+  | {
+      kind: "sprite";
+      /** Folder name under public/sprites/. Server enforces
+       *  /^[a-z][a-z0-9_]*$/. New categories materialise on first use. */
+      category: string;
+      /** PNG filename. Server enforces /^[a-z0-9_][a-z0-9_-]*\.png$/i. */
+      fileName: string;
+      /** Base64 data URL — must start with `data:image/png;base64,`. */
+      dataUrl: string;
+    }
+  | { kind: "sprite-index" }
+  | { kind: "delete-sprite"; category: string; fileName: string };
 
 export interface PublishItemResult {
   ok: boolean;

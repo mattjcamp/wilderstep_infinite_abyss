@@ -1335,3 +1335,110 @@ describe("MapSimulation — picked-item persistence", () => {
     expect(sim.snapshot().pickedItemCells.size).toBe(3);
   });
 });
+
+describe("MapSimulation.stepInDirection — boat_passable (bridge) cells", () => {
+  // `boat_passable: true` on a palette tile lets a sailing boat treat
+  // the cell like water (sail-through) while keeping the tile walkable
+  // on foot. The play renderer paints a bridge-top overlay so the
+  // boat reads as passing UNDER the structure — the kernel only sees
+  // movement classification, which is what these tests assert.
+
+  it("treats boat_passable cells as sail-through while aboard", () => {
+    // Land → boat → bridge: stepping from the boat tile onto the
+    // bridge should `sail` (boat moves through the cell), not
+    // `disembark` (party hops off onto walkable terrain).
+    const grid = makeGrid();
+    grid[0][1] = cell({ boat: true, sprite: "map/boat.png" });
+    grid[0][2] = cell({
+      walkable: true, // bridges stay walkable on foot
+      boat_passable: true,
+      sprite: "map/bridge.png",
+    });
+    const sim = makeSim({ grid });
+    sim.stepInDirection("right"); // board
+    const events: SimEvent[] = [];
+    sim.subscribe((ev) => events.push(ev));
+    sim.stepInDirection("right"); // sail under the bridge
+    expect(events.find((e) => e.kind === "moved")).toBeDefined();
+    // No disembark — the party is still aboard the boat.
+    expect(events.find((e) => e.kind === "disembarked")).toBeUndefined();
+    expect(sim.snapshot().pos).toEqual({ col: 2, row: 0 });
+    expect(sim.snapshot().onBoat).toBe(true);
+  });
+
+  it("foot traffic across a boat_passable bridge still walks normally", () => {
+    // A walking party (no boat) stepping onto a bridge tile uses the
+    // normal walk branch. The boat_passable flag does NOT change
+    // foot-walkability — bridges stay walkable on foot.
+    const grid = makeGrid();
+    grid[0][1] = cell({
+      walkable: true,
+      boat_passable: true,
+      sprite: "map/bridge.png",
+    });
+    const sim = makeSim({ grid });
+    const events = captureEvents(sim);
+    sim.stepInDirection("right"); // walk onto the bridge
+    expect(events.find((e) => e.kind === "moved")).toBeDefined();
+    expect(events.find((e) => e.kind === "boarded")).toBeUndefined();
+    expect(sim.snapshot().pos).toEqual({ col: 1, row: 0 });
+    expect(sim.snapshot().onBoat).toBe(false);
+  });
+
+  it("sailing onto a linked boat_passable cell still traverses the link", () => {
+    // Stack a link on a bridge tile that's also boat_passable. The
+    // linked branch runs before the plain sail branch so the portal
+    // fires even though the cell isn't tagged "water".
+    const grid = makeGrid();
+    grid[0][1] = cell({ boat: true, sprite: "map/boat.png" });
+    grid[0][2] = cell({
+      walkable: true,
+      boat_passable: true,
+      sprite: "map/bridge.png",
+      link: { map_id: "next_map", x: 0, y: 0 },
+    });
+    const sim = makeSim({ grid });
+    sim.stepInDirection("right"); // board
+    const events: SimEvent[] = [];
+    sim.subscribe((ev) => events.push(ev));
+    sim.stepInDirection("right"); // sail into link
+    const linked = events.find((e) => e.kind === "linked");
+    expect(linked).toBeDefined();
+    if (linked?.kind !== "linked") throw new Error("type narrow");
+    expect(linked.link.map_id).toBe("next_map");
+    // Boat state carries across the link — same vessel on the other
+    // side, mirroring the water-link case.
+    expect(linked.onBoat).toBe(true);
+    expect(linked.boatSprite).toBe("map/boat.png");
+  });
+
+  it("disembarks onto plain walkable land but sails through bridges", () => {
+    // Belt-and-braces: in the same step series, the party should be
+    // able to sail through a bridge and then disembark onto plain
+    // grass on the far side. This is the canonical "river crossing"
+    // path the feature is meant to support.
+    const grid = makeGrid();
+    grid[0][1] = cell({ boat: true, sprite: "map/boat.png" });
+    grid[0][2] = cell({
+      walkable: true,
+      boat_passable: true,
+      sprite: "map/bridge.png",
+    });
+    grid[0][3] = cell({ walkable: true, sprite: "map/grass.png" });
+    const sim = makeSim({ grid });
+    sim.stepInDirection("right"); // board
+    sim.stepInDirection("right"); // sail under bridge
+    expect(sim.snapshot().onBoat).toBe(true);
+    const events: SimEvent[] = [];
+    sim.subscribe((ev) => events.push(ev));
+    sim.stepInDirection("right"); // step off onto grass
+    const dis = events.find((e) => e.kind === "disembarked");
+    expect(dis).toBeDefined();
+    if (dis?.kind !== "disembarked") throw new Error("type narrow");
+    expect(dis.pos).toEqual({ col: 3, row: 0 });
+    // The boat drops back onto the bridge cell — the party can come
+    // back and re-board it. boatAt is the cell the party JUST left.
+    expect(dis.boatAt).toEqual({ col: 2, row: 0 });
+    expect(sim.snapshot().onBoat).toBe(false);
+  });
+});

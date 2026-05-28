@@ -79,8 +79,10 @@ const EXTRA_FIELD_DEFAULTS: Partial<Record<ModelKey, Record<string, unknown>>> =
   // boarding mechanics). One tile in the default module already
   // uses it ("boat"); surfacing the field across the catalog lets
   // authors mark additional water-craft palette tiles without
-  // hand-editing JSON.
-  map_tiles: { boat: false },
+  // hand-editing JSON. `boat_passable` is the bridge counterpart —
+  // tiles a vessel can sail UNDER (walkable on foot, sail-through
+  // for a boat) such as wooden footbridges.
+  map_tiles: { boat: false, boat_passable: false },
 };
 
 type Layers = {
