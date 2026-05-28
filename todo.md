@@ -1,7 +1,21 @@
 
-# Polish
+# Pre-V3 Ideas
+
+- Do Phaser versions (like the Help Screen and Quest Log) of these screens:
+- - Adventure Log
+
+UI Improvements (add arrows for controls instead of redoing the whole UI in Phaser)
+- - Party Screen
+- - Character Screen
+- NPC Dialog
+- Quest Dialog
+- Counter Screen
+- Lock Pick Screen
+
+Make Fog of War tiles less saturated
 
 # V3 Ideas
+
 
 - More Robust Trap System
 - New Puzzle system (presure plates that open doors, etc)

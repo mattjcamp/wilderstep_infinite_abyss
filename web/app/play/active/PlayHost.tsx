@@ -42,13 +42,11 @@ import { StaticModuleSource } from "@/data_model/StaticModuleSource";
 import { LockDialogOverlay } from "@/editor/LockDialogOverlay";
 import { QuestDialogOverlay } from "@/editor/QuestDialogOverlay";
 import { PlayPartyScreenOverlay } from "./PlayPartyScreenOverlay";
-import { PlayQuestLogOverlay } from "./PlayQuestLogOverlay";
 import {
   PlayQuestCelebration,
   returnToGiverSubtitle,
   type PlayQuestCelebrationKind,
 } from "./PlayQuestCelebration";
-import { PlayHelpTipsOverlay } from "./PlayHelpTipsOverlay";
 import { PlayLogOverlay } from "./PlayLogOverlay";
 import { PlayCounterShopOverlay } from "./PlayCounterShopOverlay";
 import { PlayNpcDialogOverlay } from "./PlayNpcDialogOverlay";
@@ -98,6 +96,11 @@ import {
 import { tintForCell } from "@/sim/lighting";
 import { computeQuestGlowCells } from "@/sim/questGlow";
 import { TILE_SIZE, WorldRenderer } from "@/sim/scene/WorldRenderer";
+import { PaintedHelpScreen } from "@/sim/scene/PaintedHelpScreen";
+import {
+  PaintedQuestLog,
+  type PaintedQuestLogData,
+} from "@/sim/scene/PaintedQuestLog";
 import {
   campfireRest,
   glowAura,
@@ -742,6 +745,20 @@ export function PlayHost() {
    *  shortcuts setLightingMode without a React render hop. */
   const clockRef = useRef(0);
   const rendererRef = useRef<WorldRenderer | null>(null);
+  /** Painted in-canvas Help & Tips screen. Lives inside the Phaser
+   *  scene and replaces the React `PlayHelpTipsOverlay` modal — first
+   *  of the inspector screens to be painted (see PaintedHelpScreen
+   *  comment for the rationale). Null between scene swaps; the
+   *  helpTipsOpen sync effect calls `open()` / `close()` on it. */
+  const helpScreenRef = useRef<PaintedHelpScreen | null>(null);
+  /** Painted in-canvas Quest Log screen. Same pattern as
+   *  `helpScreenRef` — React state owns the open boolean, the
+   *  painter owns the pixels. The sync effect calls `open(data)`
+   *  with a fresh snapshot from `saveRef.current` so the log always
+   *  shows the live state (quest accepts + step credits mutate
+   *  saveRef without re-rendering React; see the quest-log mount
+   *  block for the same caveat the React overlay used to address). */
+  const questLogScreenRef = useRef<PaintedQuestLog | null>(null);
   /** Per-cell item-overlay helpers exposed by the inline scene class.
    *  PlayHost talks through this ref to (a) drop a quest item on a
    *  cell when a retrieve step is accepted while the player is on
@@ -1064,6 +1081,42 @@ export function PlayHost() {
   useEffect(() => {
     combatRef.current = combat;
   }, [combat]);
+  // Sync the painted Help & Tips screen with its React state flag.
+  // Pattern that future painted screens will copy: React owns the
+  // boolean (so overlaysOpenRef + the inspector-key listener don't
+  // change), the painter owns the pixels. The painter's own onClose
+  // callback flips the boolean back when the user dismisses with
+  // H/Esc/click-outside; that re-enters this effect and the call
+  // to `close()` is a safe no-op.
+  useEffect(() => {
+    const screen = helpScreenRef.current;
+    if (!screen) return;
+    if (helpTipsOpen) screen.open();
+    else screen.close();
+  }, [helpTipsOpen]);
+  // Sync the painted Quest Log with its React state flag. Same
+  // pattern as the help screen except `open()` takes data — we read
+  // it fresh from `saveRef.current` here so the log shows quest
+  // accepts / step credits / turn-ins that mutated the save without
+  // triggering a React re-render (the play loop deliberately keeps
+  // those off `state.save` to avoid remounting the Phaser scene).
+  useEffect(() => {
+    const screen = questLogScreenRef.current;
+    if (!screen) return;
+    if (questLogOpen) {
+      const liveSave = saveRef.current ?? state.save;
+      if (!liveSave || !state.catalog) return;
+      const data: PaintedQuestLogData = {
+        quests: state.catalog.quests,
+        acceptedQuests: liveSave.acceptedQuests ?? [],
+        questStepProgress: liveSave.questStepProgress ?? {},
+        turnedInQuests: liveSave.turnedInQuests ?? [],
+      };
+      screen.open(data);
+    } else {
+      screen.close();
+    }
+  }, [questLogOpen, state.catalog, state.save]);
   // Inspector-screen keybindings:
   //
   //   P → Party screen        (roster + stash + effects)
@@ -2163,6 +2216,33 @@ export function PlayHost() {
             .setScrollFactor(0)
             .setDepth(1001);
           this.lastClockShown = clockRef.current;
+
+          // Painted Help & Tips screen — first of the inspector
+          // overlays to live inside Phaser. The host's `helpTipsOpen`
+          // React state still drives open/close (so `overlaysOpenRef`
+          // gating is unchanged), but the visible UI is painted into
+          // this scene rather than a DOM modal layered on top. See
+          // the PaintedHelpScreen module for the visual + lifecycle
+          // contract. The instance is stashed on `helpScreenRef`
+          // for the sync effect below to drive.
+          helpScreenRef.current = new PaintedHelpScreen({
+            scene: this,
+            canvasWidth: PLAY_CANVAS_WIDTH,
+            canvasHeight: PLAY_CANVAS_HEIGHT,
+            soundtrack: Soundtrack,
+            onClose: () => setHelpTipsOpen(false),
+          });
+          // Painted Quest Log — same family as the help screen.
+          // Constructed alongside so the React→Phaser sync effect
+          // below has somewhere to call into. The actual quest data
+          // is handed in at `open()` time so the log always reads
+          // the live save snapshot.
+          questLogScreenRef.current = new PaintedQuestLog({
+            scene: this,
+            canvasWidth: PLAY_CANVAS_WIDTH,
+            canvasHeight: PLAY_CANVAS_HEIGHT,
+            onClose: () => setQuestLogOpen(false),
+          });
         }
 
         /** Phaser update — runs every frame. We keep the log text
@@ -3670,6 +3750,15 @@ export function PlayHost() {
       sim?.dispose();
       sim = null;
       simRef.current = null;
+      // Painted help screen lives inside the scene, but its keydown
+      // listener is registered against `window`. Dispose explicitly
+      // before tearing the game down so a scene swap (cross-map link,
+      // dungeon transition) doesn't leak the listener.
+      helpScreenRef.current?.dispose();
+      helpScreenRef.current = null;
+      // Quest Log painter — same window-listener teardown concern.
+      questLogScreenRef.current?.dispose();
+      questLogScreenRef.current = null;
       if (game) {
         game.destroy(true);
         game = null;
@@ -4079,41 +4168,56 @@ export function PlayHost() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center gap-3 p-4">
-      {/* The top header used to carry module/map context, the clock,
-       *  and Save & Quit. Clock + lunar phase now live inside the
-       *  Phaser canvas (the bottom log strip), and the module/map
-       *  context was redundant with the rest of the UI — leaving
-       *  only Save & Quit, which we float as a small button over
-       *  the canvas's top-right corner so the canvas can use the
-       *  full vertical viewport (matches v1's minimal chrome and
-       *  keeps the bottom log strip visible without scrolling). */}
-
-      {/* World canvas stays mounted under combat so re-rendering it
-       *  on resolve doesn't require reloading + reseating sprites.
-       *  We just hide it visually + gate movement via overlaysOpenRef.
+    // Fixed-viewport play frame — no browser-level scroll, ever. The
+    // page is a 2-row grid: the canvas stage takes whatever vertical
+    // space is left after the footer claims its single auto row, and
+    // Phaser's Scale.FIT mode letterboxes the 960×720 game inside
+    // whatever rectangle the stage cell ends up at.
+    //
+    // Why dvh + overflow-hidden instead of min-h-screen + scroll:
+    //   - On a short window (or with the mobile address bar visible),
+    //     `min-h-screen + flex` stacked padding + footer + a fixed-
+    //     aspect 960×720 canvas above the fold, pushing the bottom
+    //     log strip and the last row of tiles below the visible area.
+    //     The user had to scroll the browser window to see them.
+    //   - `h-dvh` is the *dynamic* viewport height — collapses with
+    //     the mobile URL bar so we don't lose pixels when it shows,
+    //     and grows back when it hides. Static `vh` would clip on
+    //     mobile.
+    //   - `overflow-hidden` on the outer main is a belt-and-braces
+    //     guard against a future child overshooting. Modal overlays
+    //     use `fixed inset-0` so they don't share this flow and stay
+    //     unaffected.
+    //
+    // Scope: /play only. The editors live under app/editor/* with
+    // their own h-full layout chain and aren't affected by this. */
+    <main className="grid h-dvh w-screen grid-rows-[1fr_auto] overflow-hidden bg-[#0c0c14]">
+      {/* Stage cell — flexible row. Houses the world canvas AND the
+       *  combat canvas as absolutely-positioned siblings so toggling
+       *  combat is a `display: none` swap rather than a layout shift.
+       *  `min-h-0` is the CSS grid idiom for "this row may shrink
+       *  below its content"; without it the row's auto size would
+       *  push the footer off-screen on tight viewports.
        *
-       *  The wrapper pegs to v1's exact 960×720 frame so tiles
-       *  render at the same display size as v1 (32px each).
-       *  `max-w-full` lets it shrink (proportionally, via the 4:3
-       *  aspect ratio) on viewports narrower than 960px. We don't
-       *  cap height here — the page can scroll if a user's window
-       *  is too short, which is the same trade-off v1 made (its
-       *  page used h-screen + a flex-1 wrapper to give the canvas
-       *  all remaining vertical space; we don't have that layout
-       *  hierarchy, so a vertical scroll is the simpler escape
-       *  hatch). */}
-      <div
-        ref={containerRef}
-        className="aspect-[4/3] w-[960px] max-w-full overflow-hidden rounded border border-parchment/20 bg-ink/80 shadow-xl"
-        style={{
-          aspectRatio: "4 / 3",
-          display: combat ? "none" : "block",
-        }}
-      />
+       *  The canvas wrappers themselves are intentionally bare —
+       *  Phaser's Scale.FIT + CENTER_BOTH handles the letterboxing
+       *  inside the cell, so any aspect-ratio styling on the
+       *  wrappers would just fight the game's own scaling. */}
+      <div className="relative min-h-0 overflow-hidden">
+        {/* World canvas stays mounted under combat so re-rendering it
+         *  on resolve doesn't require reloading + reseating sprites.
+         *  We just hide it visually + gate movement via overlaysOpenRef.
+         *  v1's 960×720 frame is preserved by Phaser internally; the
+         *  wrapper just hands it an arbitrary-sized container to
+         *  letterbox into. */}
+        <div
+          ref={containerRef}
+          className="absolute inset-0 overflow-hidden"
+          style={{ display: combat ? "none" : "block" }}
+        />
 
-      {combat && state.save ? (
-        <PlayCombatHost
+        {combat && state.save ? (
+          <PlayCombatHost
           // Reseat the Phaser game per fight via React's key — every
           // new encounter gets a fresh CombatScene instance with the
           // right monster roster.
@@ -4167,12 +4271,13 @@ export function PlayHost() {
           onResolved={onCombatResolved}
         />
       ) : null}
+      </div>
 
-      {/* Inline log + quest panels removed — both moved into
-       *  dedicated inspector overlays opened by L and Q below.
-       *  Keeps the play page chrome minimal while putting the same
-       *  information one keystroke away. */}
-      <footer className="text-xs text-parchment/45">
+      {/* Footer row — auto-sized, sits at the bottom of the dvh
+       *  grid. Inline log + quest panels were removed and moved into
+       *  dedicated inspector overlays opened by L and Q. The footer
+       *  is the only persistent chrome below the canvas now. */}
+      <footer className="flex-none px-3 py-1.5 text-center text-xs text-parchment/45">
         {combat
           ? "Combat resolves when one side falls."
           : "Arrow keys to move. Walking onto a link saves automatically."}
@@ -4422,29 +4527,14 @@ export function PlayHost() {
         />
       ) : null}
 
-      {questLogOpen && state.catalog && state.save ? (() => {
-        // Read from saveRef.current rather than state.save. Quest
-        // accept (~line 2603), turn-in (~2680), and kill-credit
-        // (~2039) all mutate saveRef.current and persist via
-        // saveWorld() but deliberately skip setState({ save }) to
-        // avoid remounting the Phaser scene (its mount effect's
-        // dep list includes state.save). state.save therefore lags
-        // behind by however many quest events have fired since the
-        // last setState. PartyScreen + Combat + CounterShop all
-        // already use this `saveRef.current ?? state.save` pattern
-        // for the same reason; the Quest Log was the last reader
-        // still pinned to the stale React-state copy.
-        const liveSave = saveRef.current ?? state.save;
-        return (
-          <PlayQuestLogOverlay
-            quests={state.catalog.quests}
-            acceptedQuests={liveSave.acceptedQuests ?? []}
-            questStepProgress={liveSave.questStepProgress ?? {}}
-            turnedInQuests={liveSave.turnedInQuests ?? []}
-            onClose={() => setQuestLogOpen(false)}
-          />
-        );
-      })() : null}
+      {/* Quest Log is painted inside the Phaser scene — see
+          PaintedQuestLog and the questLogOpen sync effect that
+          drives open(data) / close(). The boolean is still the
+          source of truth for `overlaysOpenRef` and the inspector-key
+          listener. Live save data is read from `saveRef.current` at
+          open time, matching the pattern PartyScreen + Combat +
+          CounterShop already use to bypass the stale React
+          state.save during a long play session. */}
 
       {logOpen ? (
         <PlayLogOverlay
@@ -4453,9 +4543,11 @@ export function PlayHost() {
         />
       ) : null}
 
-      {helpTipsOpen ? (
-        <PlayHelpTipsOverlay onClose={() => setHelpTipsOpen(false)} />
-      ) : null}
+      {/* Help & Tips is painted inside the Phaser scene now — see
+          PaintedHelpScreen and the sync effect that drives open/close
+          off `helpTipsOpen`. No React modal lives at this spot
+          anymore; the boolean is still the source of truth for
+          `overlaysOpenRef` and the inspector-key listener. */}
 
       {npcDialogId && state.catalog ? (() => {
         const npc = state.catalog.npcs.find((n) => n.id === npcDialogId);

@@ -2191,8 +2191,8 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
+            "id": "path",
+            "name": "Path",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2202,8 +2202,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass1.png",
-            "tag": "terrain"
+            "sprite": "map/path.png",
+            "tag": "walkable"
           },
           {
             "boat": false,
@@ -2509,8 +2509,8 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
+            "id": "path",
+            "name": "Path",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2520,8 +2520,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass1.png",
-            "tag": "terrain"
+            "sprite": "map/path.png",
+            "tag": "walkable"
           },
           {
             "boat": false,
@@ -2815,12 +2815,13 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "water"
+            "tag": "water",
+            "link": null
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
+            "id": "path",
+            "name": "Path",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2830,39 +2831,39 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass1.png",
-            "tag": "terrain"
+            "sprite": "map/path.png",
+            "tag": "walkable"
           },
           {
-            "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/grass1.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "wall_brown",
-            "name": null,
+            "id": "water",
+            "name": "Water",
             "walkable": false,
-            "obstructs": true,
+            "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
-            "animation": null,
+            "animation": "none",
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/brick_wall_brown.png",
-            "tag": "wall"
+            "sprite": "map/water.png",
+            "tag": "water",
+            "link": null
+          },
+          {
+            "id": "water",
+            "name": "Water",
+            "walkable": false,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/water.png",
+            "tag": "water"
           }
         ],
         [
@@ -3132,12 +3133,13 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "water"
+            "tag": "water",
+            "link": null
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
+            "id": "path",
+            "name": "Path",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -3147,39 +3149,39 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass1.png",
-            "tag": "terrain"
+            "sprite": "map/path.png",
+            "tag": "walkable"
           },
           {
-            "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/grass1.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "wall_brown",
-            "name": null,
+            "id": "water",
+            "name": "Water",
             "walkable": false,
-            "obstructs": true,
+            "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
-            "animation": null,
+            "animation": "none",
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/brick_wall_brown.png",
-            "tag": "wall"
+            "sprite": "map/water.png",
+            "tag": "water",
+            "link": null
+          },
+          {
+            "id": "water",
+            "name": "Water",
+            "walkable": false,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/water.png",
+            "tag": "water"
           }
         ],
         [
@@ -3449,8 +3451,8 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
+            "id": "path",
+            "name": "Path",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -3460,8 +3462,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass1.png",
-            "tag": "terrain"
+            "sprite": "map/path.png",
+            "tag": "walkable"
           },
           {
             "boat": false,
@@ -3769,8 +3771,8 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
+            "id": "path",
+            "name": "Path",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -3780,8 +3782,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass1.png",
-            "tag": "terrain"
+            "sprite": "map/path.png",
+            "tag": "walkable"
           },
           {
             "boat": false,
@@ -40160,7 +40162,8 @@
             "tag": "wall"
           }
         ]
-      ]
+      ],
+      "lighting": "darkness"
     },
     {
       "id": "outdoor_arena",

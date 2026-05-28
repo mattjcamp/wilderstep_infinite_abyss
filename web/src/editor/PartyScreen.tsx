@@ -40,7 +40,15 @@
  * non-keyboard fallback while the Phaser equivalent is built.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  initialPartyNavState,
+  reducePartyNav,
+  ACTION_USE,
+  ACTION_SEND,
+  ACTION_EXAMINE,
+  type PartyNavContext,
+} from "./partyScreenNav";
 import {
   CharacterSheetSim,
   type SheetItemRef,
@@ -594,6 +602,29 @@ export function PartyScreen({
    *  detail panel. "none" — the resting state. */
   type StashMode = "none" | "send" | "examine";
   const [stashMode, setStashMode] = useState<StashMode>("none");
+
+  // ── Keyboard navigation focus tracking ──────────────────────────
+  // `focusZone` is the cursor's *column*. Up/Down inside Effects or
+  // Stash navigates within the list; the cursor spills between them
+  // at the boundaries (Down at the last effect → first stash item,
+  // Up at the first stash item → last effect). Enter on a stash row
+  // opens the action submenu — `actionIndex` tracks which of
+  // Use/Send/Examine is highlighted. Send mode owns its own cursor
+  // (`sendIndex`) for the roster picker.
+  //
+  // None of these subsume `selectedId` / `stashSelectedIndex` /
+  // `stashMode` — they're independent fields that the keydown
+  // handler synthesises a `PartyNavState` from on every dispatch,
+  // applies the reducer's output to, and pushes back. Doing it this
+  // way means the existing mouse-driven flows + existing renderers
+  // keep working unchanged.
+  type FocusZone = "effects" | "stash" | "actions" | "send";
+  const [focusZone, setFocusZone] = useState<FocusZone>("effects");
+  const [actionIndex, setActionIndex] = useState<number>(ACTION_USE);
+  const [sendIndex, setSendIndex] = useState<number>(0);
+  /** Ref on the stash <ul> so the auto-scroll effect below can
+   *  query the focused row and `scrollIntoView` it. */
+  const stashListRef = useRef<HTMLUListElement | null>(null);
   // Whenever the selection moves, drop out of send / examine so the
   // detail panel always matches the cursor.
   useEffect(() => {
@@ -695,20 +726,34 @@ export function PartyScreen({
     }
   };
 
-  // ── Keyboard navigation for the stash ───────────────────────────
-  // Registered at the window level with capture: true. React fires
-  // child effects BEFORE parent effects on mount, so this listener
-  // sits ahead of the surrounding overlay's keydown trap and gets a
-  // shot at arrow keys / U/S/X / 1-N before the overlay can
-  // `stopPropagation` them. We only `stopPropagation` on keys we
-  // actually consumed — ESC / P fall through to the overlay so the
-  // close-on-Esc behavior keeps working. Suspended while a member
-  // sheet is drilled into so the sheet's own keybinds win.
+  // ── Keyboard navigation — reducer-driven ────────────────────────
+  // The old handler hand-rolled stash up/down + U/S/X accelerators
+  // and bolted send / examine modes on top. Adding effect-column
+  // navigation, cross-column wraps, and an arrow-driven action
+  // submenu made the inline logic untenable, so the state machine
+  // lives in `./partyScreenNav` and this effect is just a thin
+  // adapter: synthesise a PartyNavState from the live state, run
+  // the reducer, push the result back. `consumed` controls whether
+  // we stop the event (Esc still bubbles when the reducer says so,
+  // so the overlay's close-on-Esc keeps working).
+  //
+  // Suspended while a member sheet is drilled into so the sheet's
+  // own keybinds win — same as the original behavior.
+  //
+  // Map the current zone back from existing component state so a
+  // mouse interaction that changed `stashMode` (e.g. clicked Send)
+  // shows up in the reducer's view of the world on the next press.
+  const effectIndex = useMemo(
+    () => {
+      const i = effectRows.findIndex((r) => r.ability.id === selectedId);
+      return i < 0 ? 0 : i;
+    },
+    [effectRows, selectedId],
+  );
+  const liveZone: FocusZone = stashMode === "send" ? "send" : focusZone;
   useEffect(() => {
     if (focusedMember) return; // Sheet handles its own input.
     const onKey = (e: KeyboardEvent) => {
-      // Don't fight the user when they're typing into an input
-      // (e.g., the dev console open over the modal).
       const target = e.target as HTMLElement | null;
       if (
         target &&
@@ -718,86 +763,75 @@ export function PartyScreen({
       ) {
         return;
       }
-
-      // ── "Send to…" picker mode ─────────────────────────────
-      // While active, the roster is the cursor: 1-9 / Enter pick a
-      // destination, ESC cancels back to the resting menu.
-      if (stashMode === "send") {
-        if (e.key === "Escape") {
-          e.preventDefault();
-          e.stopPropagation();
-          setStashMode("none");
-          return;
-        }
-        const n = parseInt(e.key, 10);
-        if (Number.isFinite(n) && n >= 1 && n <= members.length) {
-          e.preventDefault();
-          e.stopPropagation();
-          sendToMember(n - 1);
-          return;
-        }
-        return; // swallow other keys while sending? no — let ESC/P bubble
+      const navCtx: PartyNavContext = {
+        effectCount: effectRows.length,
+        stashCount: stashEntries.length,
+        memberCount: members.length,
+        canUse: canUseSelected,
+        canSend: canSendSelected,
+        effectAvailable:
+          effectRows[effectIndex]?.available === true,
+      };
+      const result = reducePartyNav(
+        {
+          zone: liveZone,
+          effectIndex,
+          stashIndex: stashSelectedIndex ?? -1,
+          actionIndex,
+          sendIndex,
+        },
+        { kind: "key", key: e.key },
+        navCtx,
+      );
+      if (result.consumed) {
+        e.preventDefault();
+        e.stopPropagation();
       }
-
-      // ── Examine popover open: ESC closes; other keys pass ──
-      if (stashMode === "examine") {
-        if (e.key === "Escape" || e.key === "x" || e.key === "X") {
-          e.preventDefault();
-          e.stopPropagation();
-          setStashMode("none");
-          return;
-        }
-        // Don't trap arrows here — let the user keep scrolling
-        // the stash with the examine panel re-rendering live.
+      // Push the new cursor state back into the existing fields so
+      // the renderer + click handlers (which still read these) see
+      // the same view of the world the reducer just decided on.
+      const next = result.state;
+      const nextEffectId =
+        effectRows[next.effectIndex]?.ability.id ?? null;
+      if (nextEffectId !== selectedId) setSelectedId(nextEffectId);
+      const nextStashIdx = next.stashIndex < 0 ? null : next.stashIndex;
+      if (nextStashIdx !== stashSelectedIndex) {
+        setStashSelectedIndex(nextStashIdx);
       }
-
-      // ── Stash scrolling + action hotkeys ───────────────────
-      if (stashEntries.length > 0) {
-        if (e.key === "ArrowDown" || e.key === "j" || e.key === "J") {
-          e.preventDefault();
-          e.stopPropagation();
-          setStashSelectedIndex((cur) => {
-            const last = stashEntries.length - 1;
-            if (cur == null) return 0;
-            return cur >= last ? last : cur + 1;
-          });
-          return;
-        }
-        if (e.key === "ArrowUp" || e.key === "k" || e.key === "K") {
-          e.preventDefault();
-          e.stopPropagation();
-          setStashSelectedIndex((cur) => {
-            if (cur == null) return 0;
-            return cur <= 0 ? 0 : cur - 1;
-          });
-          return;
-        }
+      if (next.actionIndex !== actionIndex) setActionIndex(next.actionIndex);
+      if (next.sendIndex !== sendIndex) setSendIndex(next.sendIndex);
+      // Zone sync: `send` zone maps to stashMode="send"; leaving
+      // send while stashMode was "send" pops it back to "none".
+      // The action handler below toggles examine separately.
+      if (next.zone === "send" && stashMode !== "send") {
+        setStashMode("send");
+      } else if (next.zone !== "send" && stashMode === "send") {
+        setStashMode("none");
       }
+      if (next.zone !== focusZone) setFocusZone(next.zone);
 
-      // Action hotkeys — only meaningful when a stash row is selected.
-      if (stashSelectedIndex != null) {
-        if (e.key === "u" || e.key === "U") {
-          if (canUseSelected) {
-            e.preventDefault();
-            e.stopPropagation();
-            triggerUse();
-          }
-          return;
-        }
-        if (e.key === "s" || e.key === "S") {
-          if (canSendSelected) {
-            e.preventDefault();
-            e.stopPropagation();
-            beginSend();
-          }
-          return;
-        }
-        if (e.key === "x" || e.key === "X") {
-          e.preventDefault();
-          e.stopPropagation();
+      switch (result.action.kind) {
+        case "use":
+          triggerUse();
+          break;
+        case "send":
+          sendToMember(result.action.memberIndex);
+          break;
+        case "examine-toggle":
           toggleExamine();
-          return;
+          break;
+        case "effect-toggle": {
+          const row = effectRows[next.effectIndex];
+          if (row) toggleActive(row.ability.id, row.available);
+          break;
         }
+        case "close":
+          // Reducer wants the Esc to bubble. We left `consumed`
+          // false so the overlay's keydown trap can close the
+          // screen. Nothing else to do here.
+          break;
+        case "none":
+          break;
       }
     };
     window.addEventListener("keydown", onKey, { capture: true });
@@ -805,17 +839,78 @@ export function PartyScreen({
       window.removeEventListener("keydown", onKey, { capture: true });
   }, [
     focusedMember,
-    stashMode,
+    effectRows,
+    effectIndex,
     stashEntries.length,
     stashSelectedIndex,
     members.length,
     canUseSelected,
     canSendSelected,
     triggerUse,
-    beginSend,
     sendToMember,
     toggleExamine,
+    selectedId,
+    actionIndex,
+    sendIndex,
+    focusZone,
+    liveZone,
+    stashMode,
+    toggleExamine,
   ]);
+
+  // Auto-scroll the stash list so the currently-selected row is in
+  // view. The list itself uses `max-h-48 overflow-y-auto`, which
+  // means arrow-navigating past the bottom of the visible window
+  // would otherwise leave the highlight hidden. `block: "nearest"`
+  // keeps the scroll quiet — it only moves the row into view if the
+  // row is currently off-screen, so navigating among already-visible
+  // rows doesn't jitter the container.
+  useEffect(() => {
+    if (stashSelectedIndex == null) return;
+    const ul = stashListRef.current;
+    if (!ul) return;
+    const sel = ul.querySelector<HTMLElement>(
+      '[aria-selected="true"]',
+    );
+    if (sel) sel.scrollIntoView({ block: "nearest" });
+  }, [stashSelectedIndex]);
+
+  // Reset send / action cursors when the stash row changes — same
+  // ergonomic the original component already had for `stashMode`:
+  // moving the cursor to a new item should drop us back to a clean
+  // "no submenu open, no send target picked" state so the player
+  // can re-engage explicitly. Otherwise arrowing through the stash
+  // would leave a stale send-target ring on the last roster card.
+  useEffect(() => {
+    setSendIndex(0);
+    setActionIndex(ACTION_USE);
+  }, [stashSelectedIndex]);
+
+  // Clamp sendIndex when the roster shrinks (e.g., a member died
+  // mid-overlay — unlikely, but the reducer assumes a valid index
+  // and we don't want to crash if React state lags behind).
+  useEffect(() => {
+    setSendIndex((cur) => {
+      if (members.length === 0) return 0;
+      return Math.min(cur, members.length - 1);
+    });
+  }, [members.length]);
+
+  // Visual helpers — selected rows are bright when their zone owns
+  // the cursor, dim when another zone does. Keeps the reader's eye
+  // on the active list while still showing the player which row
+  // they'll come back to when they tab columns.
+  const rowSelClass = (zone: FocusZone, isSelected: boolean): string => {
+    if (!isSelected) return "border-transparent hover:bg-ink/50";
+    if (focusZone === zone) return "border-ember/60 bg-ember/15";
+    return "border-ember/30 bg-ember/5";
+  };
+  const sectionHeaderClass = (zone: FocusZone): string => {
+    const focused = focusZone === zone;
+    return `text-xs uppercase tracking-wide ${
+      focused ? "text-amber-200" : "text-amber-300/70"
+    }`;
+  };
 
   // ── Render ───────────────────────────────────────────────────────
 
@@ -861,8 +956,8 @@ export function PartyScreen({
         <div className="space-y-2">
           {/* EFFECTS list */}
           <section>
-            <h3 className="text-xs uppercase tracking-wide text-amber-300">
-              Effects
+            <h3 className={sectionHeaderClass("effects")}>
+              {focusZone === "effects" ? "▸ " : ""}Effects
             </h3>
             <ul className="mt-1 space-y-0.5">
               {effectRows.length === 0 ? (
@@ -877,15 +972,16 @@ export function PartyScreen({
                   <li key={row.ability.id}>
                     <button
                       type="button"
-                      onClick={() => setSelectedId(row.ability.id)}
+                      onClick={() => {
+                        setSelectedId(row.ability.id);
+                        setFocusZone("effects");
+                      }}
                       onDoubleClick={() =>
                         toggleActive(row.ability.id, true)
                       }
                       className={[
                         "flex w-full items-center gap-2 rounded border px-2 py-0.5 text-left text-sm text-parchment/90",
-                        isSel
-                          ? "border-ember/60 bg-ember/15"
-                          : "border-transparent hover:bg-ink/50",
+                        rowSelClass("effects", isSel),
                       ].join(" ")}
                     >
                       {row.active ? (
@@ -907,17 +1003,22 @@ export function PartyScreen({
             </ul>
           </section>
 
-          {/* SHARED STASH — scrollable list, click or Up/Down to
-              select, Enter/U/S/X for actions. Max-height keeps a long
-              stash from blowing past the modal. */}
+          {/* SHARED STASH — scrollable list. Up/Down navigates (and
+              spills back into Effects past the first row); Enter
+              opens the Use / Send / Examine submenu. U / S / X still
+              work as direct accelerators. Max-height keeps a long
+              stash from blowing past the modal; the auto-scroll
+              effect keeps the highlighted row in view as the cursor
+              walks past the visible window. */}
           <section>
-            <h3 className="text-xs uppercase tracking-wide text-amber-300">
-              Shared Stash{" "}
+            <h3 className={sectionHeaderClass("stash")}>
+              {focusZone === "stash" ? "▸ " : ""}Shared Stash{" "}
               <span className="text-parchment/45">
                 ({stashEntries.length} items)
               </span>
             </h3>
             <ul
+              ref={stashListRef}
               className="mt-1 max-h-48 space-y-0.5 overflow-y-auto pr-1 text-sm"
               role="listbox"
               aria-label="Shared stash"
@@ -955,9 +1056,13 @@ export function PartyScreen({
                       type="button"
                       role="option"
                       aria-selected={isSel}
-                      onClick={() => setStashSelectedIndex(i)}
+                      onClick={() => {
+                        setStashSelectedIndex(i);
+                        setFocusZone("stash");
+                      }}
                       onDoubleClick={() => {
                         setStashSelectedIndex(i);
+                        setFocusZone("stash");
                         // Double-click is a power-user shortcut: Use if
                         // we can, otherwise just Examine. Sending always
                         // needs an explicit recipient so we never auto-send.
@@ -973,11 +1078,11 @@ export function PartyScreen({
                       className={[
                         "flex w-full items-center justify-between gap-2 rounded border px-2 py-0.5 text-left",
                         isSel
-                          ? "border-ember/60 bg-ember/15 text-parchment"
+                          ? `${rowSelClass("stash", true)} text-parchment`
                           : "border-transparent text-parchment/85 hover:bg-ink/50",
                       ].join(" ")}
                       title={
-                        cat?.description ?? "Click to select · X to examine"
+                        cat?.description ?? "Click to select · Enter for actions"
                       }
                     >
                       <span className="truncate">{label}</span>
@@ -1021,15 +1126,21 @@ export function PartyScreen({
                 ) : null}
                 {stashMode === "send" ? (
                   <p className="text-xs text-amber-300">
-                    Send to which character? Press 1–{members.length} or
-                    click a roster card. ESC cancels.
+                    Send to which character? ↑↓ to pick + Enter, or
+                    press 1–{members.length}, or click a roster card.
+                    Esc cancels.
                   </p>
                 ) : null}
                 <div className="flex flex-wrap gap-1 pt-1">
                   <ActionButton
                     label="Use (U)"
-                    onClick={triggerUse}
+                    onClick={() => {
+                      setFocusZone("actions");
+                      setActionIndex(ACTION_USE);
+                      triggerUse();
+                    }}
                     enabled={canUseSelected}
+                    focused={focusZone === "actions" && actionIndex === ACTION_USE}
                     hint={
                       !onUseStashItem
                         ? "Host hasn't wired Use yet."
@@ -1040,8 +1151,16 @@ export function PartyScreen({
                   />
                   <ActionButton
                     label="Send to… (S)"
-                    onClick={beginSend}
+                    onClick={() => {
+                      setFocusZone("actions");
+                      setActionIndex(ACTION_SEND);
+                      beginSend();
+                    }}
                     enabled={canSendSelected && stashMode !== "send"}
+                    focused={
+                      (focusZone === "actions" && actionIndex === ACTION_SEND) ||
+                      stashMode === "send"
+                    }
                     hint={
                       !onSendStashItem
                         ? "Host hasn't wired Send yet."
@@ -1054,8 +1173,15 @@ export function PartyScreen({
                   />
                   <ActionButton
                     label={stashMode === "examine" ? "Hide (X)" : "Examine (X)"}
-                    onClick={toggleExamine}
+                    onClick={() => {
+                      setFocusZone("actions");
+                      setActionIndex(ACTION_EXAMINE);
+                      toggleExamine();
+                    }}
                     enabled={true}
+                    focused={
+                      focusZone === "actions" && actionIndex === ACTION_EXAMINE
+                    }
                     hint="Show the catalog description."
                   />
                   {stashMode === "send" ? (
@@ -1111,6 +1237,10 @@ export function PartyScreen({
                      *  highlight styling — same affordance, different
                      *  trigger. */
                     isSendTarget={sendingNow}
+                    /** Brighter cursor outline on whichever card the
+                     *  keyboard `sendIndex` is currently pointing at.
+                     *  Only meaningful in send mode (sendingNow). */
+                    isSendFocused={sendingNow && i === sendIndex}
                     overrideTitle={
                       sendingNow
                         ? `Send to ${m.name} (press ${i + 1})`
@@ -1214,11 +1344,19 @@ function ActionButton({
   onClick,
   enabled,
   hint,
+  focused = false,
 }: {
   label: string;
   onClick: () => void;
   enabled: boolean;
   hint: string;
+  /** When true the button is the keyboard-selected target — Enter
+   *  inside the actions zone will fire its `onClick`. Adds a brighter
+   *  outline so the cursor is visible without showing a browser-
+   *  default focus ring (which we can't always reach because the
+   *  reducer drives the cursor at the window level rather than
+   *  through the DOM focus tree). */
+  focused?: boolean;
 }) {
   return (
     <button
@@ -1231,6 +1369,9 @@ function ActionButton({
         enabled
           ? "border-ember/60 bg-ember/30 text-parchment hover:bg-ember/50"
           : "cursor-not-allowed border-parchment/15 bg-ink/40 text-parchment/35",
+        focused
+          ? "ring-1 ring-amber-200 ring-offset-1 ring-offset-ink/60"
+          : "",
       ].join(" ")}
     >
       {label}
@@ -1251,6 +1392,7 @@ function RosterCard({
   isDragging = false,
   isDropTarget = false,
   isSendTarget = false,
+  isSendFocused = false,
   overrideTitle,
   onDragStart,
   onDragEnterCard,
@@ -1281,6 +1423,12 @@ function RosterCard({
    *  the card with the same drop-target ring + bumps the slot number
    *  so the player has a clear visual hint of which key to press. */
   isSendTarget?: boolean;
+  /** Set on exactly one card while in send mode — the one the
+   *  keyboard cursor is currently pointing at. Stacks on top of the
+   *  send-target ring with a brighter ember outline so the player
+   *  can see "Enter sends to *this* card" without losing the "any of
+   *  these cards is a valid destination" affordance. */
+  isSendFocused?: boolean;
   /** Tooltip override — wins over the default drag / drill-in titles. */
   overrideTitle?: string;
   onDragStart?: () => void;
@@ -1319,6 +1467,9 @@ function RosterCard({
         isDragging ? "opacity-40" : "",
         isDropTarget || isSendTarget
           ? "border-amber-300/70 ring-1 ring-amber-300/50"
+          : "",
+        isSendFocused
+          ? "ring-2 ring-ember/80 ring-offset-1 ring-offset-ink/60"
           : "",
         fallen ? "opacity-60 saturate-50" : "",
       ].join(" ")}

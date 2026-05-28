@@ -200,17 +200,16 @@ export function PlayCombatHost({
   }, []);
 
   return (
-    // Mirrors the overworld canvas wrapper in PlayHost so the
-    // battle screen pegs to exactly 960×720 on a window with room
-    // (and shrinks proportionally via the 4:3 aspect on narrower
-    // viewports) instead of free-flowing as inline-block. Without
-    // this the canvas would size itself purely from the Phaser
-    // geometry and the surrounding page chrome could push it
-    // around as React rerendered.
+    // Fills the play page's stage cell — PlayHost now wraps the
+    // canvas + combat in a single dvh-bound grid cell with no
+    // browser-level scroll, so the combat canvas slots into the same
+    // rectangle the overworld canvas would have filled. Phaser's
+    // Scale.FIT mode letterboxes the 960×720 battle scene inside
+    // whichever pixel size the cell ends up at, so the wrapper
+    // itself can be aspect-agnostic.
     <div
       ref={containerRef}
-      className="aspect-[4/3] w-[960px] max-w-full overflow-hidden rounded border border-parchment/20 bg-ink/80 shadow-xl"
-      style={{ aspectRatio: "4 / 3" }}
+      className="absolute inset-0 overflow-hidden"
     />
   );
 }
