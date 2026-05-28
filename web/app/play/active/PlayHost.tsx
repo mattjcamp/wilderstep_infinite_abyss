@@ -39,6 +39,7 @@ import { withBasePath } from "@/util/basePath";
 import { mergeModel } from "@/data_model/merge";
 import { loadDraft } from "@/data_model/draft";
 import { StaticModuleSource } from "@/data_model/StaticModuleSource";
+import { ChestDialogOverlay } from "@/editor/ChestDialogOverlay";
 import { LockDialogOverlay } from "@/editor/LockDialogOverlay";
 import { QuestDialogOverlay } from "@/editor/QuestDialogOverlay";
 import { PlayPartyScreenOverlay } from "./PlayPartyScreenOverlay";
@@ -397,6 +398,10 @@ function mapStateFromSnapshot(
     visitedCells: visitedCells
       ? Array.from(visitedCells)
       : prev?.visitedCells ?? [],
+    // Picked-item cells — flushed from the kernel's running set so
+    // collected items (regular walk-onto + chest-Open) stay gone
+    // when the catalog reloads on the next map mount.
+    pickedItemCells: Array.from(snap.pickedItemCells),
   };
 }
 import { loadWorld, saveWorld } from "@/play/save";
@@ -500,6 +505,19 @@ interface PlayItem {
    *  Camping Supplies, Antidote, etc). Surfaces the Use button in
    *  the Party screen's stash list. */
   usable?: boolean;
+  /** True when the catalog record describes a treasure chest. Cells
+   *  whose `item` is a chest fire `chest_encountered` on bump
+   *  (Open / Leave dialog) instead of the normal walk-to-pickup
+   *  `item_picked` flow. The host reads `contents` to apply the
+   *  payload to the save on Open. */
+  is_chest?: boolean;
+  /** Authored payload delivered to the party when the chest is
+   *  opened. Both fields are optional; an empty chest still opens
+   *  but is a flavour-only encounter. */
+  contents?: {
+    gold?: number;
+    items?: ReadonlyArray<{ id: string; qty?: number }>;
+  };
 }
 
 /** One line of NPC chatter from npcs.json. Surfaced in the
@@ -664,6 +682,15 @@ export function PlayHost() {
    *  success. Movement is gated on this via `overlaysOpenRef`. */
   const [lockEncounter, setLockEncounter] =
     useState<LockEncounterOptions | null>(null);
+  /** Chest dialog state — set on `chest_encountered` (the sim emits
+   *  this when the party bumps a cell whose `item` is flagged
+   *  `is_chest: true` in the catalog). Cleared on Open / Leave.
+   *  Carries the catalog id + cell position; the rendered dialog
+   *  resolves the chest's `contents` from `state.catalog.items`. */
+  const [chestEncounter, setChestEncounter] = useState<{
+    chestId: string;
+    pos: { col: number; row: number };
+  } | null>(null);
   /** Quest dialog state — set on `quest_encountered`, cleared on
    *  Accept / Decline / Close. The kernel re-fires this event every
    *  time the party bumps the quest-giver tile (no status-based
@@ -1070,6 +1097,7 @@ export function PlayHost() {
     // world sim freezes under any of them.
     overlaysOpenRef.current =
       !!lockEncounter ||
+      !!chestEncounter ||
       !!combat ||
       !!questOffer ||
       partyScreenOpen ||
@@ -1080,6 +1108,7 @@ export function PlayHost() {
       npcDialogId !== null;
   }, [
     lockEncounter,
+    chestEncounter,
     combat,
     questOffer,
     partyScreenOpen,
@@ -2005,6 +2034,33 @@ export function PlayHost() {
           // ref here so any handler that fires between now and
           // mountSim() — including refreshRetrievePlacements — sees
           // the live defs.
+          // Picked-item clears — apply BEFORE retrieve-step placement
+          // (so an active retrieve step targeting a previously-picked
+          // cell can re-populate it: its placement guards on
+          // `cell.item` being empty, and we just made it so) and
+          // BEFORE the overlay paint loop (so cleared cells don't
+          // paint a stale sprite). The kernel re-applies the same
+          // clears in its constructor for snapshot consistency, but
+          // both passes here run before mount so they're needed at
+          // the host level too.
+          {
+            const picked =
+              save.maps[catalog.map.id]?.pickedItemCells ?? [];
+            for (const key of picked) {
+              const [cs, rs] = key.split(",");
+              const c = Number(cs);
+              const r = Number(rs);
+              if (!Number.isFinite(c) || !Number.isFinite(r)) continue;
+              if (r < 0 || r >= catalog.map.height) continue;
+              if (c < 0 || c >= catalog.map.width) continue;
+              const row = catalog.map.grid[r];
+              if (!row) continue;
+              const cell = row[c];
+              if (!cell) continue;
+              (cell as { item?: string }).item = "";
+            }
+          }
+
           {
             const acceptedSet = new Set(save.acceptedQuests ?? []);
             const turnedInSet = new Set(save.turnedInQuests ?? []);
@@ -2344,6 +2400,14 @@ export function PlayHost() {
           const initialBoatPositions = mutations?.boatPositions
             ? new Map(Object.entries(mutations.boatPositions))
             : undefined;
+          // Picked-item cells — re-applied by the kernel during
+          // construction so the freshly-loaded JSON catalog's items
+          // don't respawn on a map re-entry / browser reload. Both
+          // the regular walk-onto pickup path and the chest-Open
+          // path feed this set; the host treats them uniformly here.
+          const initialPickedItemCells = mutations?.pickedItemCells
+            ? new Set(mutations.pickedItemCells)
+            : undefined;
 
           // Ground tile for destroy-lair revert: grab the first
           // grass-tagged or first walkable palette entry.
@@ -2413,17 +2477,24 @@ export function PlayHost() {
               const wanted = new Map(
                 positions.map((p) => [`${p.col},${p.row}`, p.sprite]),
               );
+              // Route through `renderer.setCellSprite` instead of
+              // poking the cell image directly: the renderer needs to
+              // update its `cellTextureKeys` map alongside the live
+              // texture so the fog-of-war relight pass treats the new
+              // sprite as the cell's "original" (otherwise relight
+              // would revert a boarded boat cell back to the boat
+              // texture on the next frame). setCellSprite also pre-
+              // bakes a grayscale variant so the swapped cell still
+              // grayscales correctly once it enters the remembered
+              // band.
+              //
               // Cells that lost their boat (party boarded here) →
               // back to the water sprite.
               for (const [key] of scene.boatTextures) {
                 if (wanted.has(key)) continue;
-                const baseImg = renderer.cells.get(key);
-                if (
-                  baseImg &&
-                  waterSprite &&
-                  scene.textures.exists(waterSprite)
-                ) {
-                  baseImg.setTexture(waterSprite);
+                if (waterSprite && scene.textures.exists(waterSprite)) {
+                  const [cs, rs] = key.split(",");
+                  renderer.setCellSprite(Number(cs), Number(rs), waterSprite);
                 }
                 scene.boatTextures.delete(key);
               }
@@ -2431,13 +2502,9 @@ export function PlayHost() {
               // boot from a save where the party left a boat behind).
               for (const [key, sprite] of wanted) {
                 if (scene.boatTextures.get(key) === sprite) continue;
-                const baseImg = renderer.cells.get(key);
-                if (
-                  baseImg &&
-                  sprite &&
-                  scene.textures.exists(sprite)
-                ) {
-                  baseImg.setTexture(sprite);
+                if (sprite && scene.textures.exists(sprite)) {
+                  const [cs, rs] = key.split(",");
+                  renderer.setCellSprite(Number(cs), Number(rs), sprite);
                 }
                 scene.boatTextures.set(key, sprite);
               }
@@ -2663,6 +2730,12 @@ export function PlayHost() {
               monsters: catalog.monsters,
               encounters: catalog.encounters,
               quests: catalog.quests,
+              // Items catalog — the sim only reads is_chest +
+              // contents (via SimItemRef) to route the bump pipeline
+              // between chest_encountered and item_picked. The cast
+              // narrows the host's richer PlayItem to the sim's
+              // minimal shape; the extra fields are ignored.
+              items: catalog.items,
               groundTile,
             },
             classNameById,
@@ -2677,6 +2750,7 @@ export function PlayHost() {
               dungeonMutations?.destroyedLairs ?? initialDestroyedLairs,
             initialAcceptedQuests: new Set(save.acceptedQuests ?? []),
             initialBoatPositions,
+            initialPickedItemCells,
             initialOnBoat: save.party.onBoat,
             initialCurrentBoatSprite: save.party.currentBoatSprite,
             questDefs,
@@ -3104,6 +3178,15 @@ export function PlayHost() {
             }
             if (ev.kind === "lock_encountered") {
               setLockEncounter(ev.options);
+              return;
+            }
+            if (ev.kind === "chest_encountered") {
+              // Mount the Chest dialog. We don't pre-resolve the
+              // contents here — the React render reads
+              // `state.catalog.items` to look up the chest record
+              // and pass its `contents` + display data to the
+              // overlay. Keeps the event payload minimal.
+              setChestEncounter({ chestId: ev.chestId, pos: ev.pos });
               return;
             }
             if (ev.kind === "quest_encountered") {
@@ -4333,6 +4416,102 @@ export function PlayHost() {
           onClose={onLockClose}
         />
       ) : null}
+
+      {chestEncounter && state.catalog ? (() => {
+        // Resolve the chest record off the live catalog. A null
+        // record means the chest id no longer exists (catalog edit
+        // mid-session) — dismiss the dialog silently rather than
+        // rendering a broken view.
+        const chest = state.catalog.items.find(
+          (i) => i.id === chestEncounter.chestId,
+        );
+        if (!chest) {
+          setChestEncounter(null);
+          return null;
+        }
+        // Pre-resolve per-item display data (name + icon stem) for
+        // each line in the chest's contents so the dialog can paint
+        // proper labels + sprites without itself reaching back into
+        // the catalog.
+        const itemDisplay = (chest.contents?.items ?? []).map((row) => {
+          const def = state.catalog!.items.find((i) => i.id === row.id);
+          return {
+            id: row.id,
+            name: def?.name,
+            icon: def?.icon,
+            qty: row.qty,
+          };
+        });
+        const onOpen = () => {
+          // Merge gold + items into the live save in one commit. We
+          // read off `saveRef.current` (the kernel mutates it per
+          // step; state.save lags by deliberate design — same
+          // pattern PartyScreen + Combat + CounterShop use).
+          const save = saveRef.current ?? state.save;
+          if (!save) {
+            setChestEncounter(null);
+            return;
+          }
+          const goldGained = chest.contents?.gold ?? 0;
+          let nextInventory = save.party.inventory.map((e) => ({ ...e }));
+          for (const row of chest.contents?.items ?? []) {
+            const qty = row.qty ?? 1;
+            nextInventory = addToInventory(
+              nextInventory,
+              row.id,
+              state.catalog!.items,
+              qty,
+            );
+          }
+          const nextSave = {
+            ...save,
+            party: {
+              ...save.party,
+              gold: (save.party.gold ?? 0) + goldGained,
+              inventory: nextInventory,
+            },
+          };
+          saveRef.current = nextSave;
+          saveWorld(nextSave);
+          // Treasure cue. Fires whether the chest had loot or was
+          // empty — the lid-opening sound is the right ack for the
+          // player's commit either way, and an empty chest is rare
+          // enough that the player will read the dialog before they
+          // click. Sfx.play silently no-ops if audio is muted or
+          // unavailable, so no need to guard.
+          Sfx.play("chest_open");
+          // Clear the chest off the live grid via the kernel — this
+          // also fires a `state` event so any downstream listeners
+          // (visited-cells, glow refresh) see the change.
+          simRef.current?.clearCellItem(
+            chestEncounter.pos.col,
+            chestEncounter.pos.row,
+          );
+          // Tear down the chest sprite overlay (the same item
+          // overlay layer the normal item_picked path uses; the
+          // bridge wraps the destroy + Map<col,row> bookkeeping).
+          itemOverlayBridgeRef.current?.removeItem(
+            chestEncounter.pos.col,
+            chestEncounter.pos.row,
+          );
+          setChestEncounter(null);
+        };
+        const onLeave = () => {
+          // No save mutation. The chest stays in place; the cell's
+          // `item` is untouched. The player can come back later.
+          setChestEncounter(null);
+        };
+        return (
+          <ChestDialogOverlay
+            chestName={chest.name ?? chest.id}
+            chestIcon={chest.icon}
+            contents={chest.contents}
+            itemDisplay={itemDisplay}
+            onOpen={onOpen}
+            onLeave={onLeave}
+          />
+        );
+      })() : null}
 
       {questOffer
         ? (

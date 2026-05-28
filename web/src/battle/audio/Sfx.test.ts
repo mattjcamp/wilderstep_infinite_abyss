@@ -22,6 +22,15 @@ describe("Sfx catalog — registered generators", () => {
     expect(SFX_NAMES).toContain("sell");
   });
 
+  it("knows the chest_open treasure cue", () => {
+    // Treasure-chest dialog calls `Sfx.play("chest_open")` from its
+    // Open handler. If the generator gets unregistered the call
+    // silently no-ops — which is exactly the kind of "I swear I
+    // wired this up" bug this test exists to catch.
+    expect(Sfx.has("chest_open")).toBe(true);
+    expect(SFX_NAMES).toContain("chest_open");
+  });
+
   it("returns false for unknown names rather than throwing", () => {
     // Defensive: a typoed name should be a quiet no-op, not a
     // crash. The overlay's call sites bank on this so they don't

@@ -20857,6 +20857,7 @@
             "tag": "water"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -20887,6 +20888,7 @@
             "tag": "water"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -20902,6 +20904,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -20917,81 +20920,7 @@
             "tag": "terrain"
           },
           {
-            "id": "sand_dense",
-            "name": "Dense Sand",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": null,
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/sand_copy.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "water",
-            "name": "Water",
-            "walkable": false,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/water.png",
-            "tag": "water"
-          },
-          {
-            "id": "sand_dense",
-            "name": "Dense Sand",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": null,
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/sand_copy.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "sand_dense",
-            "name": "Dense Sand",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": null,
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/sand_copy.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "sand_dense",
-            "name": "Dense Sand",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": null,
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/sand_copy.png",
-            "tag": "terrain"
-          },
-          {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -21022,19 +20951,68 @@
             "tag": "water"
           },
           {
-            "id": "water",
-            "name": "Water",
-            "walkable": false,
+            "boat": false,
+            "id": "sand_dense",
+            "name": "Dense Sand",
+            "walkable": true,
             "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
-            "animation": "none",
+            "animation": null,
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/water.png",
-            "tag": "water"
+            "sprite": "map/sand_copy.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "sand_dense",
+            "name": "Dense Sand",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": null,
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/sand_copy.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "sand_dense",
+            "name": "Dense Sand",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": null,
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/sand_copy.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "sand_dense",
+            "name": "Dense Sand",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": null,
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/sand_copy.png",
+            "tag": "terrain"
           },
           {
             "id": "water",
@@ -21067,6 +21045,37 @@
             "tag": "water"
           },
           {
+            "id": "water",
+            "name": "Water",
+            "walkable": false,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/water.png",
+            "tag": "water"
+          },
+          {
+            "id": "water",
+            "name": "Water",
+            "walkable": false,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/water.png",
+            "tag": "water"
+          },
+          {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -21234,6 +21243,7 @@
             "tag": "water"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -21249,6 +21259,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -21264,6 +21275,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -21279,6 +21291,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -21294,6 +21307,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -21324,6 +21338,7 @@
             "tag": "water"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -21339,6 +21354,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -21354,6 +21370,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -21369,6 +21386,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -21384,6 +21402,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -21429,6 +21448,7 @@
             "tag": "water"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -21444,6 +21464,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -21459,6 +21480,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -21596,6 +21618,7 @@
             "tag": "water"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -21611,6 +21634,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -21626,6 +21650,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -21641,6 +21666,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -21656,6 +21682,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -21671,6 +21698,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -21686,6 +21714,24 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain",
+            "item": "treasure_chest"
+          },
+          {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -21701,6 +21747,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -21716,6 +21763,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -21731,6 +21779,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -21743,24 +21792,11 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/path.png",
-            "tag": "terrain"
+            "tag": "terrain",
+            "item": "gloves"
           },
           {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          },
-          {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -21776,6 +21812,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -21806,6 +21843,7 @@
             "tag": "water"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -21821,6 +21859,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -21836,6 +21875,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -21851,6 +21891,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -21973,6 +22014,7 @@
             "tag": "water"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -21988,6 +22030,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22003,6 +22046,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22018,6 +22062,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -22033,6 +22078,24 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain",
+            "item": "treasure_chest"
+          },
+          {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -22048,6 +22111,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -22063,6 +22127,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -22078,21 +22143,7 @@
             "tag": "terrain"
           },
           {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          },
-          {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22108,6 +22159,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22123,6 +22175,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22138,6 +22191,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -22213,6 +22267,7 @@
             "tag": "water"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -22228,6 +22283,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -22243,6 +22299,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -22350,6 +22407,7 @@
             "tag": "water"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -22365,6 +22423,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22380,6 +22439,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22395,6 +22455,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -22410,6 +22471,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -22425,6 +22487,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22440,6 +22503,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22455,6 +22519,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22470,6 +22535,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "dungeon_entrance",
             "name": "Dungeon Entrane",
             "walkable": true,
@@ -22485,6 +22551,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "forest",
             "name": "Forest",
             "walkable": true,
@@ -22500,6 +22567,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22515,6 +22583,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -22545,6 +22614,7 @@
             "tag": "water"
           },
           {
+            "boat": false,
             "id": "castle",
             "name": "Castle",
             "walkable": true,
@@ -22560,6 +22630,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22590,6 +22661,7 @@
             "tag": "water"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -22605,6 +22677,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22620,6 +22693,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -22727,6 +22801,7 @@
             "tag": "water"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -22742,6 +22817,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22757,6 +22833,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22772,6 +22849,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22787,6 +22865,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -22802,6 +22881,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22817,6 +22897,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22832,6 +22913,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "forest",
             "name": "Forest",
             "walkable": true,
@@ -22847,6 +22929,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "forest",
             "name": "Forest",
             "walkable": true,
@@ -22862,6 +22945,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "forest",
             "name": "Forest",
             "walkable": true,
@@ -22877,6 +22961,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -22892,6 +22977,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -22922,6 +23008,7 @@
             "tag": "water"
           },
           {
+            "boat": false,
             "id": "sand",
             "name": "Sand",
             "walkable": true,
@@ -22937,6 +23024,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand",
             "name": "Sand",
             "walkable": true,
@@ -22967,6 +23055,7 @@
             "tag": "water"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -22982,6 +23071,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -22997,6 +23087,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -23104,6 +23195,7 @@
             "tag": "water"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -23119,6 +23211,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -23134,6 +23227,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -23149,6 +23243,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -23164,6 +23259,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -23179,6 +23275,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -23194,6 +23291,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -23209,6 +23307,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "forest",
             "name": "Forest",
             "walkable": true,
@@ -23224,6 +23323,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "forest",
             "name": "Forest",
             "walkable": true,
@@ -23239,6 +23339,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "forest",
             "name": "Forest",
             "walkable": true,
@@ -23254,6 +23355,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -23269,6 +23371,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -23344,6 +23447,7 @@
             "tag": "water"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -23359,760 +23463,7 @@
             "tag": "terrain"
           },
           {
-            "id": "sand_dense",
-            "name": "Dense Sand",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": null,
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/sand_copy.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "water",
-            "name": "Water",
-            "walkable": false,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/water.png",
-            "tag": "water"
-          },
-          {
-            "id": "water",
-            "name": "Water",
-            "walkable": false,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/water.png",
-            "tag": "water"
-          },
-          {
-            "id": "water",
-            "name": "Water",
-            "walkable": false,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/water.png",
-            "tag": "water"
-          },
-          {
-            "id": "water",
-            "name": "Water",
-            "walkable": false,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/water.png",
-            "tag": "water"
-          }
-        ],
-        [
-          {
-            "id": "water",
-            "name": "Water",
-            "walkable": false,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/water.png",
-            "tag": "water"
-          },
-          {
-            "id": "water",
-            "name": "Water",
-            "walkable": false,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/water.png",
-            "tag": "water"
-          },
-          {
-            "id": "water",
-            "name": "Water",
-            "walkable": false,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/water.png",
-            "tag": "water"
-          },
-          {
-            "id": "sand_dense",
-            "name": "Dense Sand",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": null,
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/sand_copy.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "sand_dense",
-            "name": "Dense Sand",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": null,
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/sand_copy.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "mountain",
-            "name": "Mountain",
-            "walkable": false,
-            "obstructs": true,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": "",
-            "encounter": "",
-            "spawn": "",
-            "sprite": "map/mountains.png",
-            "tag": "outdoor"
-          },
-          {
-            "id": "mountain",
-            "name": "Mountain",
-            "walkable": false,
-            "obstructs": true,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": "",
-            "encounter": "",
-            "spawn": "",
-            "sprite": "map/mountains.png",
-            "tag": "outdoor"
-          },
-          {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "mountain",
-            "name": "Mountain",
-            "walkable": false,
-            "obstructs": true,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": "",
-            "encounter": "",
-            "spawn": "",
-            "sprite": "map/mountains.png",
-            "tag": "outdoor"
-          },
-          {
-            "id": "mountain",
-            "name": "Mountain",
-            "walkable": false,
-            "obstructs": true,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": "",
-            "encounter": "",
-            "spawn": "",
-            "sprite": "map/mountains.png",
-            "tag": "outdoor"
-          },
-          {
-            "id": "mountain",
-            "name": "Mountain",
-            "walkable": false,
-            "obstructs": true,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": "",
-            "encounter": "",
-            "spawn": "",
-            "sprite": "map/mountains.png",
-            "tag": "outdoor"
-          },
-          {
-            "id": "forest",
-            "name": "Forest",
-            "walkable": true,
-            "obstructs": true,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": null,
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/forest2.png",
-            "tag": "outdoor"
-          },
-          {
-            "id": "forest",
-            "name": "Forest",
-            "walkable": true,
-            "obstructs": true,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": null,
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/forest2.png",
-            "tag": "outdoor"
-          },
-          {
-            "id": "forest",
-            "name": "Forest",
-            "walkable": true,
-            "obstructs": true,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": null,
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/forest2.png",
-            "tag": "outdoor"
-          },
-          {
-            "id": "sand_dense",
-            "name": "Dense Sand",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": null,
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/sand_copy.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "sand_dense",
-            "name": "Dense Sand",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": null,
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/sand_copy.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "sand_dense",
-            "name": "Dense Sand",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": null,
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/sand_copy.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "sand_dense",
-            "name": "Dense Sand",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": null,
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/sand_copy.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "sand_dense",
-            "name": "Dense Sand",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": null,
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/sand_copy.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "sand_dense",
-            "name": "Dense Sand",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": null,
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/sand_copy.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "water",
-            "name": "Water",
-            "walkable": false,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/water.png",
-            "tag": "water"
-          },
-          {
-            "id": "water",
-            "name": "Water",
-            "walkable": false,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/water.png",
-            "tag": "water"
-          },
-          {
-            "id": "water",
-            "name": "Water",
-            "walkable": false,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/water.png",
-            "tag": "water"
-          },
-          {
-            "id": "water",
-            "name": "Water",
-            "walkable": false,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/water.png",
-            "tag": "water"
-          },
-          {
-            "id": "water",
-            "name": "Water",
-            "walkable": false,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/water.png",
-            "tag": "water"
-          }
-        ],
-        [
-          {
-            "id": "water",
-            "name": "Water",
-            "walkable": false,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/water.png",
-            "tag": "water"
-          },
-          {
-            "id": "water",
-            "name": "Water",
-            "walkable": false,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/water.png",
-            "tag": "water"
-          },
-          {
-            "id": "water",
-            "name": "Water",
-            "walkable": false,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/water.png",
-            "tag": "water"
-          },
-          {
-            "id": "water",
-            "name": "Water",
-            "walkable": false,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/water.png",
-            "tag": "water"
-          },
-          {
-            "id": "sand_dense",
-            "name": "Dense Sand",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": null,
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/sand_copy.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "mountain",
-            "name": "Mountain",
-            "walkable": false,
-            "obstructs": true,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": "",
-            "encounter": "",
-            "spawn": "",
-            "sprite": "map/mountains.png",
-            "tag": "outdoor"
-          },
-          {
-            "id": "mountain",
-            "name": "Mountain",
-            "walkable": false,
-            "obstructs": true,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": "",
-            "encounter": "",
-            "spawn": "",
-            "sprite": "map/mountains.png",
-            "tag": "outdoor"
-          },
-          {
-            "id": "mountain",
-            "name": "Mountain",
-            "walkable": false,
-            "obstructs": true,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": "",
-            "encounter": "",
-            "spawn": "",
-            "sprite": "map/mountains.png",
-            "tag": "outdoor"
-          },
-          {
-            "id": "mountain",
-            "name": "Mountain",
-            "walkable": false,
-            "obstructs": true,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": "",
-            "encounter": "",
-            "spawn": "",
-            "sprite": "map/mountains.png",
-            "tag": "outdoor"
-          },
-          {
-            "id": "mountain",
-            "name": "Mountain",
-            "walkable": false,
-            "obstructs": true,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": "",
-            "encounter": "",
-            "spawn": "",
-            "sprite": "map/mountains.png",
-            "tag": "outdoor"
-          },
-          {
-            "id": "forest",
-            "name": "Forest",
-            "walkable": true,
-            "obstructs": true,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": null,
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/forest2.png",
-            "tag": "outdoor"
-          },
-          {
-            "id": "forest",
-            "name": "Forest",
-            "walkable": true,
-            "obstructs": true,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": null,
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/forest2.png",
-            "tag": "outdoor"
-          },
-          {
-            "id": "forest",
-            "name": "Forest",
-            "walkable": true,
-            "obstructs": true,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": null,
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/forest2.png",
-            "tag": "outdoor"
-          },
-          {
-            "id": "mountain",
-            "name": "Mountain",
-            "walkable": false,
-            "obstructs": true,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": "",
-            "encounter": "",
-            "spawn": "",
-            "sprite": "map/mountains.png",
-            "tag": "outdoor"
-          },
-          {
-            "id": "mountain",
-            "name": "Mountain",
-            "walkable": false,
-            "obstructs": true,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": "",
-            "encounter": "",
-            "spawn": "",
-            "sprite": "map/mountains.png",
-            "tag": "outdoor"
-          },
-          {
-            "id": "mountain",
-            "name": "Mountain",
-            "walkable": false,
-            "obstructs": true,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": "",
-            "encounter": "",
-            "spawn": "",
-            "sprite": "map/mountains.png",
-            "tag": "outdoor"
-          },
-          {
-            "id": "sand_dense",
-            "name": "Dense Sand",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": null,
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/sand_copy.png",
-            "tag": "terrain"
-          },
-          {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -24235,6 +23586,7 @@
             "tag": "water"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -24250,6 +23602,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -24265,6 +23618,39 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "obstructs": true,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": "",
+            "encounter": "",
+            "spawn": "",
+            "sprite": "map/mountains.png",
+            "tag": "outdoor"
+          },
+          {
+            "boat": false,
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "obstructs": true,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": "",
+            "encounter": "",
+            "spawn": "",
+            "sprite": "map/mountains.png",
+            "tag": "outdoor"
+          },
+          {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -24280,6 +23666,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -24295,6 +23682,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -24310,6 +23698,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -24325,6 +23714,352 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
+            "id": "forest",
+            "name": "Forest",
+            "walkable": true,
+            "obstructs": true,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": null,
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/forest2.png",
+            "tag": "outdoor"
+          },
+          {
+            "boat": false,
+            "id": "forest",
+            "name": "Forest",
+            "walkable": true,
+            "obstructs": true,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": null,
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/forest2.png",
+            "tag": "outdoor"
+          },
+          {
+            "boat": false,
+            "id": "forest",
+            "name": "Forest",
+            "walkable": true,
+            "obstructs": true,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": null,
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/forest2.png",
+            "tag": "outdoor"
+          },
+          {
+            "boat": false,
+            "id": "sand_dense",
+            "name": "Dense Sand",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": null,
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/sand_copy.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "sand_dense",
+            "name": "Dense Sand",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": null,
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/sand_copy.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "sand_dense",
+            "name": "Dense Sand",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": null,
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/sand_copy.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "sand_dense",
+            "name": "Dense Sand",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": null,
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/sand_copy.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "sand_dense",
+            "name": "Dense Sand",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": null,
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/sand_copy.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "sand_dense",
+            "name": "Dense Sand",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": null,
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/sand_copy.png",
+            "tag": "terrain"
+          },
+          {
+            "id": "water",
+            "name": "Water",
+            "walkable": false,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/water.png",
+            "tag": "water"
+          },
+          {
+            "id": "water",
+            "name": "Water",
+            "walkable": false,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/water.png",
+            "tag": "water"
+          },
+          {
+            "id": "water",
+            "name": "Water",
+            "walkable": false,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/water.png",
+            "tag": "water"
+          },
+          {
+            "id": "water",
+            "name": "Water",
+            "walkable": false,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/water.png",
+            "tag": "water"
+          },
+          {
+            "id": "water",
+            "name": "Water",
+            "walkable": false,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/water.png",
+            "tag": "water"
+          }
+        ],
+        [
+          {
+            "id": "water",
+            "name": "Water",
+            "walkable": false,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/water.png",
+            "tag": "water"
+          },
+          {
+            "id": "water",
+            "name": "Water",
+            "walkable": false,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/water.png",
+            "tag": "water"
+          },
+          {
+            "id": "water",
+            "name": "Water",
+            "walkable": false,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/water.png",
+            "tag": "water"
+          },
+          {
+            "id": "water",
+            "name": "Water",
+            "walkable": false,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/water.png",
+            "tag": "water"
+          },
+          {
+            "boat": false,
+            "id": "sand_dense",
+            "name": "Dense Sand",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": null,
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/sand_copy.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -24340,6 +24075,167 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "obstructs": true,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": "",
+            "encounter": "",
+            "spawn": "",
+            "sprite": "map/mountains.png",
+            "tag": "outdoor"
+          },
+          {
+            "boat": false,
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "obstructs": true,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": "",
+            "encounter": "",
+            "spawn": "",
+            "sprite": "map/mountains.png",
+            "tag": "outdoor"
+          },
+          {
+            "boat": false,
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "obstructs": true,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": "",
+            "encounter": "",
+            "spawn": "",
+            "sprite": "map/mountains.png",
+            "tag": "outdoor"
+          },
+          {
+            "boat": false,
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "obstructs": true,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": "",
+            "encounter": "",
+            "spawn": "",
+            "sprite": "map/mountains.png",
+            "tag": "outdoor"
+          },
+          {
+            "boat": false,
+            "id": "forest",
+            "name": "Forest",
+            "walkable": true,
+            "obstructs": true,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": null,
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/forest2.png",
+            "tag": "outdoor"
+          },
+          {
+            "boat": false,
+            "id": "forest",
+            "name": "Forest",
+            "walkable": true,
+            "obstructs": true,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": null,
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/forest2.png",
+            "tag": "outdoor"
+          },
+          {
+            "boat": false,
+            "id": "forest",
+            "name": "Forest",
+            "walkable": true,
+            "obstructs": true,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": null,
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/forest2.png",
+            "tag": "outdoor"
+          },
+          {
+            "boat": false,
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "obstructs": true,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": "",
+            "encounter": "",
+            "spawn": "",
+            "sprite": "map/mountains.png",
+            "tag": "outdoor"
+          },
+          {
+            "boat": false,
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "obstructs": true,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": "",
+            "encounter": "",
+            "spawn": "",
+            "sprite": "map/mountains.png",
+            "tag": "outdoor"
+          },
+          {
+            "boat": false,
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "obstructs": true,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": "",
+            "encounter": "",
+            "spawn": "",
+            "sprite": "map/mountains.png",
+            "tag": "outdoor"
+          },
+          {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -24355,6 +24251,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -24370,6 +24267,114 @@
             "tag": "terrain"
           },
           {
+            "id": "water",
+            "name": "Water",
+            "walkable": false,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/water.png",
+            "tag": "water"
+          },
+          {
+            "id": "water",
+            "name": "Water",
+            "walkable": false,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/water.png",
+            "tag": "water"
+          },
+          {
+            "id": "water",
+            "name": "Water",
+            "walkable": false,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/water.png",
+            "tag": "water"
+          },
+          {
+            "id": "water",
+            "name": "Water",
+            "walkable": false,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/water.png",
+            "tag": "water"
+          }
+        ],
+        [
+          {
+            "id": "water",
+            "name": "Water",
+            "walkable": false,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/water.png",
+            "tag": "water"
+          },
+          {
+            "id": "water",
+            "name": "Water",
+            "walkable": false,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/water.png",
+            "tag": "water"
+          },
+          {
+            "id": "water",
+            "name": "Water",
+            "walkable": false,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/water.png",
+            "tag": "water"
+          },
+          {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -24385,6 +24390,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -24400,6 +24406,151 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "obstructs": true,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": "",
+            "encounter": "",
+            "spawn": "",
+            "sprite": "map/mountains.png",
+            "tag": "outdoor"
+          },
+          {
+            "boat": false,
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "obstructs": true,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": "",
+            "encounter": "",
+            "spawn": "",
+            "sprite": "map/mountains.png",
+            "tag": "outdoor"
+          },
+          {
+            "boat": false,
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "obstructs": true,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": "",
+            "encounter": "",
+            "spawn": "",
+            "sprite": "map/mountains.png",
+            "tag": "outdoor"
+          },
+          {
+            "boat": false,
+            "id": "mountain",
+            "name": "Mountain",
+            "walkable": false,
+            "obstructs": true,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": "",
+            "encounter": "",
+            "spawn": "",
+            "sprite": "map/mountains.png",
+            "tag": "outdoor"
+          },
+          {
+            "boat": false,
+            "id": "sand_dense",
+            "name": "Dense Sand",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": null,
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/sand_copy.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "sand_dense",
+            "name": "Dense Sand",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": null,
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/sand_copy.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "sand_dense",
+            "name": "Dense Sand",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": null,
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/sand_copy.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "sand_dense",
+            "name": "Dense Sand",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": null,
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/sand_copy.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
             "id": "forest",
             "name": "Forest",
             "walkable": true,
@@ -24430,6 +24581,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "forest",
             "name": "Forest",
             "walkable": true,
@@ -24445,6 +24597,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -24460,6 +24613,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -24475,6 +24629,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -24490,6 +24645,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -24505,6 +24661,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -24612,6 +24769,7 @@
             "tag": "water"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -24627,6 +24785,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -24642,6 +24801,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -24657,6 +24817,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -24672,6 +24833,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -24687,6 +24849,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -24702,6 +24865,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -24717,6 +24881,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -24762,6 +24927,7 @@
             "tag": "water"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -24777,6 +24943,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "forest",
             "name": "Forest",
             "walkable": true,
@@ -24792,6 +24959,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "forest",
             "name": "Forest",
             "walkable": true,
@@ -24807,6 +24975,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "forest",
             "name": "Forest",
             "walkable": true,
@@ -24822,6 +24991,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -24837,6 +25007,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -24852,6 +25023,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -24867,6 +25039,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -24989,6 +25162,7 @@
             "tag": "water"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -25004,6 +25178,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -25019,6 +25194,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -25139,6 +25315,7 @@
             "tag": "water"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -25154,6 +25331,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -25169,6 +25347,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -25184,6 +25363,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "forest",
             "name": "Forest",
             "walkable": true,
@@ -25199,6 +25379,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -25214,6 +25395,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -25229,6 +25411,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -25244,6 +25427,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -25259,6 +25443,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -25381,6 +25566,7 @@
             "tag": "water"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -25396,6 +25582,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -25411,6 +25598,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -25426,51 +25614,7 @@
             "tag": "terrain"
           },
           {
-            "id": "sand_dense",
-            "name": "Dense Sand",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": null,
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/sand_copy.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "water",
-            "name": "Water",
-            "walkable": false,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/water.png",
-            "tag": "water"
-          },
-          {
-            "id": "sand_dense",
-            "name": "Dense Sand",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": null,
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/sand_copy.png",
-            "tag": "terrain"
-          },
-          {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -25501,21 +25645,7 @@
             "tag": "water"
           },
           {
-            "id": "water",
-            "name": "Water",
-            "walkable": false,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/water.png",
-            "tag": "water"
-          },
-          {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -25531,6 +25661,69 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
+            "id": "sand_dense",
+            "name": "Dense Sand",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": null,
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/sand_copy.png",
+            "tag": "terrain"
+          },
+          {
+            "id": "water",
+            "name": "Water",
+            "walkable": false,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/water.png",
+            "tag": "water"
+          },
+          {
+            "id": "water",
+            "name": "Water",
+            "walkable": false,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/water.png",
+            "tag": "water"
+          },
+          {
+            "boat": false,
+            "id": "sand_dense",
+            "name": "Dense Sand",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": null,
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/sand_copy.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -25546,6 +25739,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -25561,6 +25755,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -25576,6 +25771,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -25591,6 +25787,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -25606,6 +25803,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -25621,6 +25819,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -25636,6 +25835,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -25743,6 +25943,7 @@
             "tag": "water"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -25758,6 +25959,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -25773,6 +25975,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -25788,6 +25991,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "dungeon_entrance",
             "name": "Dungeon Entrane",
             "walkable": true,
@@ -25803,6 +26007,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -25833,6 +26038,7 @@
             "tag": "water"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -25848,6 +26054,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -25863,6 +26070,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -25878,6 +26086,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -25893,6 +26102,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -25908,6 +26118,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -25923,6 +26134,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -25938,6 +26150,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -25953,6 +26166,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -25968,6 +26182,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -26013,6 +26228,7 @@
             "tag": "water"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -26135,6 +26351,7 @@
             "tag": "water"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -26150,6 +26367,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "village",
             "name": "Village",
             "walkable": true,
@@ -26165,6 +26383,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -26180,6 +26399,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -26210,6 +26430,7 @@
             "tag": "water"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -26225,6 +26446,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -26240,6 +26462,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -26255,6 +26478,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -26270,6 +26494,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -26285,6 +26510,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -26300,6 +26526,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -26315,6 +26542,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -26330,6 +26558,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -26345,6 +26574,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -26360,6 +26590,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -26542,6 +26773,7 @@
             "tag": "water"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -26587,6 +26819,7 @@
             "tag": "water"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -26602,6 +26835,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -26617,6 +26851,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -26632,6 +26867,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -26647,6 +26883,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -26662,6 +26899,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -26677,6 +26915,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -26692,6 +26931,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -26707,6 +26947,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -26722,6 +26963,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -26737,6 +26979,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -26752,6 +26995,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -26767,6 +27011,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -26949,6 +27194,7 @@
             "tag": "water"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -26964,6 +27210,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -26979,6 +27226,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -26994,6 +27242,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -27009,6 +27258,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -27024,6 +27274,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -27039,6 +27290,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "dungeon_entrance",
             "name": "Dungeon Entrane",
             "walkable": true,
@@ -27054,6 +27306,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -27099,6 +27352,7 @@
             "tag": "water"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -27114,6 +27368,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -27129,6 +27384,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -27144,6 +27400,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -27311,6 +27568,7 @@
             "tag": "water"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -27326,6 +27584,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -27341,6 +27600,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -27356,6 +27616,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -27371,6 +27632,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -27386,6 +27648,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -27401,6 +27664,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -27416,6 +27680,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -27431,6 +27696,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -27446,6 +27712,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -27491,6 +27758,7 @@
             "tag": "water"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -27506,6 +27774,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -27673,6 +27942,7 @@
             "tag": "water"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -27688,6 +27958,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -27703,6 +27974,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -27718,6 +27990,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -27733,6 +28006,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -27748,6 +28022,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -27763,6 +28038,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -27778,6 +28054,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -27793,6 +28070,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -27808,6 +28086,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -27823,6 +28102,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -27838,6 +28118,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "sand_dense",
             "name": "Dense Sand",
             "walkable": true,
@@ -38497,7 +38778,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/town_floor.png",
-            "tag": "walkable"
+            "tag": "walkable",
+            "item": "treasure_chest"
           },
           {
             "boat": false,

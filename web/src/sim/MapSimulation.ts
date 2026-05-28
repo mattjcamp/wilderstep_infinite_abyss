@@ -59,6 +59,7 @@ import type {
   SimEffect,
   SimEncounterRef,
   SimGrid,
+  SimItemRef,
   SimLightSource,
   SimMonsterRef,
   SimParty,
@@ -267,6 +268,16 @@ export interface SimCatalog {
    *  opens the offer dialog. Empty / omitted = quest tiles silently
    *  no-op. */
   quests?: ReadonlyArray<SimQuestRef>;
+  /** Items catalog (items.json) — only the slim subset the sim
+   *  consumes (id + is_chest + contents + a couple of display
+   *  fields). Drives the bump branch that distinguishes treasure
+   *  chests (bump-to-open) from normal pickup items (walk-to-grab).
+   *  Empty / omitted = every item on a cell takes the normal
+   *  walk-to-pickup path. The host's richer catalog still flows
+   *  through its own props (inventory rendering, durability, etc.);
+   *  this slot is the minimum the sim needs to make the chest /
+   *  regular-item routing decision at bump time. */
+  items?: ReadonlyArray<SimItemRef>;
   /** Fallback sprite + tile id the destroy-lair path uses when a
    *  Monster Spawn is defeated. Captured from the module's tile
    *  palette (typically grass). Optional — when missing, the destroy
@@ -486,6 +497,22 @@ export type SimEvent =
    *  cleared the cell's item before the event fires so a re-step
    *  doesn't double-fire. */
   | { kind: "item_picked"; itemId: string; pos: Position }
+  /** Fired when the party bumps a cell whose `item` is a treasure
+   *  chest (the item record carries `is_chest: true` in the catalog
+   *  passed to the sim). Distinct from `item_picked` in two ways:
+   *
+   *    1. Pre-movement — the party stops at the chest, just like the
+   *       NPC / counter / lock bumps. Host opens the Chest dialog
+   *       with Open + Leave choices; only Open delivers the loot.
+   *       On Leave the cell keeps the chest in place.
+   *    2. The kernel does NOT clear the cell's `item` field here.
+   *       The host owns the clear path — it fires after the player
+   *       accepts the Open via `clearCellItem(col, row)` (added on
+   *       the kernel for that purpose). This keeps a chest the
+   *       player closed without opening from disappearing.
+   *
+   *  Cell `pos` is the chest's cell, not the party's. */
+  | { kind: "chest_encountered"; chestId: string; pos: Position }
   /** Fired once per NPC (or quest giver) that drifted to a new cell
    *  on this turn's wander pass. The grid mutation (`npc` / `quest`
    *  field follows the entity) has already landed by the time this
@@ -541,6 +568,11 @@ export interface SimSnapshot {
    *  reload. Excludes the boat the party is currently riding (if
    *  any) — that one is tracked via `currentBoatSprite`. */
   boatPositions: ReadonlyMap<string, string>;
+  /** Cells whose authored `item` has been consumed during this
+   *  session (or carried in from a prior one). Hosts persist this
+   *  in their per-map save delta so a map re-mount can clear the
+   *  same cells before the scene paints. */
+  pickedItemCells: ReadonlySet<string>;
   /** True iff the party is currently riding a boat. Persisted across
    *  link / quit boundaries so a reload mid-voyage drops the player
    *  back into the boat at their saved cell. */
@@ -592,6 +624,13 @@ export interface MapSimulationOptions {
    *  elsewhere). When omitted, the kernel falls back to scanning
    *  the grid for cells with `boat: true`. */
   initialBoatPositions?: ReadonlyMap<string, string>;
+  /** Pre-populated picked-item cells — `"col,row"` keys for cells
+   *  whose authored `item` was already collected in a prior session
+   *  (regular walk-onto pickup or chest-Open). The kernel applies
+   *  these clears to the grid at construction so re-entering a map
+   *  doesn't re-spawn items the party has already taken. Default
+   *  empty — a fresh save sees the authored items. */
+  initialPickedItemCells?: ReadonlySet<string>;
   /** Whether the party starts mounted on a boat. When true,
    *  `initialCurrentBoatSprite` should also be supplied so the host
    *  can render the right sprite under the party. Defaults to false
@@ -691,6 +730,28 @@ export class MapSimulation {
   /** Quests catalog, keyed by `SimQuestRef.id` for cell→quest lookup
    *  when emitting `quest_encountered`. */
   private readonly questCatalog: ReadonlyMap<string, SimQuestRef>;
+  /** Item ids whose catalog record carries `is_chest: true`. Looked
+   *  up by the bump pipeline to decide whether `cell.item` triggers
+   *  the chest-encounter dialog (bump-to-open) or the normal
+   *  walk-to-pickup flow. Built once at construction so the per-step
+   *  read is a single Set.has() call rather than a catalog scan. */
+  private readonly chestItemIds: ReadonlySet<string>;
+  /** Cells whose authored `item` has been consumed during this or a
+   *  prior session — `"col,row"` keys. Populated by:
+   *
+   *   1. The walk-onto `item_picked` path (clears `cell.item` and
+   *      records the cell).
+   *   2. The chest-Open path via `clearCellItem`.
+   *
+   *  Snapshotted out to `SavedMapState.pickedItemCells` so the host
+   *  can persist it; seeded back on construction via
+   *  `initialPickedItemCells` so the kernel can re-apply the clears
+   *  to the freshly-loaded catalog grid on a map re-entry / browser
+   *  reload. Without this layer, the JSON catalog reloads with all
+   *  the authored items back in place every time the player crosses
+   *  a link or reopens the game, which read as "the chest I emptied
+   *  has refilled itself". */
+  private readonly pickedItemCells: Set<string>;
   /** Quest ids the party has accepted. Suppresses the
    *  `quest_encountered` emit on cells whose `quest` id is in this
    *  set. Seeded from `MapSimulationOptions.initialAcceptedQuests`;
@@ -761,6 +822,16 @@ export class MapSimulation {
     this.questCatalog = new Map(
       (opts.catalog.quests ?? []).map((q) => [q.id, q]),
     );
+    // Build the chest-id set once from the items catalog. The bump
+    // pipeline checks `chestItemIds.has(cell.item)` per step; pre-
+    // computing avoids a per-step scan of the full items array.
+    // Items omitted from `opts.catalog.items` (or with `is_chest`
+    // unset) silently take the normal walk-to-pickup path.
+    this.chestItemIds = new Set(
+      (opts.catalog.items ?? [])
+        .filter((it) => it.is_chest === true)
+        .map((it) => it.id),
+    );
     this.acceptedQuests = new Set(opts.initialAcceptedQuests ?? []);
     this.groundTile = opts.catalog.groundTile;
     this.npcWanderEnabled = opts.enableNpcWander ?? false;
@@ -771,6 +842,22 @@ export class MapSimulation {
     this.unlockedCells = new Set(opts.initialUnlockedCells ?? []);
     this.destroyedLairs = new Set(opts.initialDestroyedLairs ?? []);
     this.defeatedEncounters = new Set(opts.initialDefeatedEncounters ?? []);
+    // Picked-item cells — clone the host's set and immediately apply
+    // the clears to the grid so any cell whose authored `item` was
+    // already consumed in a prior session reads as empty for the
+    // rest of the construction pass (item-overlay paint, chest
+    // detection, retrieve-step placement). Without this the freshly-
+    // loaded JSON catalog re-spawns the item every map mount.
+    this.pickedItemCells = new Set(opts.initialPickedItemCells ?? []);
+    for (const key of this.pickedItemCells) {
+      const [cs, rs] = key.split(",");
+      const c = Number(cs);
+      const r = Number(rs);
+      if (!Number.isFinite(c) || !Number.isFinite(r)) continue;
+      const cell = cellAt(this.grid, c, r);
+      if (!cell) continue;
+      (cell as { item?: string }).item = "";
+    }
     // Seed placed-encounter entities. Each painted encounter cell
     // spawns one roaming entity at the cell's coords. They start
     // there and march toward the party every step. Defeated cells
@@ -1112,6 +1199,31 @@ export class MapSimulation {
       }
     }
 
+    // 2.7. Treasure-chest bump. A cell whose `item` resolves to an
+    // items-catalog record flagged `is_chest: true` blocks movement
+    // and emits `chest_encountered` instead of routing through the
+    // post-move `item_picked` pickup path. The host opens an Open /
+    // Leave dialog; only the Open path delivers the contents AND
+    // clears the cell's `item` (via `clearCellItem` below). Leave
+    // keeps the chest in place so the player can come back.
+    //
+    // Sits AFTER lock + spawn checks so designers can stack a
+    // locked chest (cell.locked + chest item) — the unlock dialog
+    // fires first; the next step bumps the chest. Sits BEFORE the
+    // walkable check + movement commit so the party always stops
+    // at the cell rather than walking through and emitting
+    // `item_picked` after.
+    const chestId = target.item;
+    if (chestId && this.chestItemIds.has(chestId)) {
+      this.emit({
+        kind: "chest_encountered",
+        chestId,
+        pos: { col: targetCol, row: targetRow },
+      });
+      this.emit({ kind: "log", message: "A treasure chest!" });
+      return;
+    }
+
     const targetKey = `${targetCol},${targetRow}`;
     // The live `boatPositions` map is the ONLY source of truth for
     // "is there a boat here right now." The cell's authored
@@ -1324,6 +1436,12 @@ export class MapSimulation {
     const pickupItemId = (target as { item?: string } | null)?.item;
     if (typeof pickupItemId === "string" && pickupItemId.length > 0) {
       (target as { item?: string }).item = "";
+      // Persist the pickup so the host can write it into the per-map
+      // save delta; the next mount applies the same clear before
+      // overlay paint so the item stays gone across link traversal /
+      // browser reload. Mirrored on the chest-Open path in
+      // `clearCellItem` below.
+      this.pickedItemCells.add(`${to.col},${to.row}`);
       this.emit({
         kind: "item_picked",
         itemId: pickupItemId,
@@ -1930,6 +2048,7 @@ export class MapSimulation {
       destroyedLairs: this.destroyedLairs,
       acceptedQuests: this.acceptedQuests,
       boatPositions: this.boatPositions,
+      pickedItemCells: this.pickedItemCells,
       onBoat: this.onBoat,
       currentBoatSprite: this.currentBoatSprite,
     };
@@ -2341,6 +2460,30 @@ export class MapSimulation {
       kind: "log",
       message: `${spawn.name} destroyed — the lair falls silent.`,
     });
+  }
+
+  /** Clear the `item` field on the cell at (col, row). Used by the
+   *  host on the Chest dialog's Open path — the kernel doesn't auto-
+   *  clear the cell when the `chest_encountered` event fires (unlike
+   *  the post-move `item_picked` path), because the dialog gives the
+   *  player a Leave option that has to keep the chest in place. The
+   *  host calls this exactly when the contents have been merged into
+   *  the save and the chest should disappear from the map.
+   *
+   *  No-op when the cell is off-grid or already empty; idempotent so
+   *  a double-call from a glitchy host doesn't surface anything. */
+  clearCellItem(col: number, row: number): void {
+    if (this.disposed) return;
+    const cell = cellAt(this.grid, col, row);
+    if (!cell) return;
+    if (!cell.item) return;
+    cell.item = "";
+    // Mirror the walk-onto pickup path: record the cleared cell so
+    // the host can persist it via the snapshot and re-apply on the
+    // next map mount. Without this an opened chest re-appears full
+    // of loot after crossing a link or reloading the browser.
+    this.pickedItemCells.add(`${col},${row}`);
+    this.emit({ kind: "state" });
   }
 
   /** Close the lock dialog without trying anything. The cell stays

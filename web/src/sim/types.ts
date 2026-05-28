@@ -95,6 +95,54 @@ export interface SimCell {
    *  refire. Dungeon-generated cells set this from the `TILE_TRAP`
    *  prototype; overworld cells can also carry it. */
   trap?: boolean;
+  /** Catalog id of an item lying on this tile. Walking onto a normal
+   *  item fires `item_picked` after the move resolves and the kernel
+   *  clears this field. When the catalog flags the item as a chest
+   *  (`is_chest: true`), the kernel routes the bump through the
+   *  `chest_encountered` event instead — the party blocks at the
+   *  cell and the host opens the chest dialog. Empty / undefined =
+   *  no item here.
+   *
+   *  Always typed as `string` so authors / saves can serialise it
+   *  uniformly. The field was previously cast dynamically; pinning
+   *  it on the interface makes the read sites typecheck without the
+   *  per-call `as { item?: string }` boilerplate. */
+  item?: string;
+}
+
+/** Minimal record describing the chest contents the host will hand
+ *  the party on Open. Both fields are optional so an authored chest
+ *  can be gold-only, items-only, or mixed. Listed item ids are
+ *  resolved against the items catalog by the host (the sim doesn't
+ *  consume them — they pass through verbatim on the
+ *  `chest_encountered` event). */
+export interface ChestContents {
+  gold?: number;
+  items?: ReadonlyArray<{ id: string; qty?: number }>;
+}
+
+/** Minimal items.json record the sim reads. Only the fields the
+ *  bump pipeline + the host-side chest dialog actually consume —
+ *  the full catalog item carries many more fields (durability,
+ *  power, slots, stackable, …) which stay in the host catalog. */
+export interface SimItemRef {
+  id: string;
+  name?: string;
+  /** Stem of an icon under `/sprites/item/<icon>.png`. Optional;
+   *  the chest dialog and overlay renderer fall back to the id
+   *  when missing. */
+  icon?: string;
+  /** True = this is a treasure chest. The bump pipeline switches
+   *  from the post-move `item_picked` flow to a pre-move
+   *  `chest_encountered` event so the party stops, the host opens
+   *  the Open / Leave dialog, and only the dialog's Open path
+   *  delivers the chest's `contents`. */
+  is_chest?: boolean;
+  /** Authored contents revealed when the chest opens. The kernel
+   *  passes the chest id through to the host on the
+   *  `chest_encountered` event; the host reads this off the
+   *  matching catalog record and applies it to the save. */
+  contents?: ChestContents;
 }
 
 /** Minimal monsters.json record the sim reads — just the fields the

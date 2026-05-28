@@ -247,6 +247,16 @@ export interface SavedMapState {
    *  starts with no fog memory and the player rebuilds it
    *  organically as they explore. */
   visitedCells?: ReadonlyArray<string>;
+  /** Cells whose authored `item` the party has already collected on
+   *  this map — `"col,row"` keys. Populated by both pickup paths
+   *  (walk-onto `item_picked` + chest-Open `clearCellItem`) and
+   *  re-applied on map re-entry so the freshly-loaded JSON catalog
+   *  doesn't respawn the same item / chest contents. Absent on
+   *  legacy saves; the loader treats absence as the empty list, so
+   *  the first cross-map link after upgrading will respawn items
+   *  the party had collected pre-upgrade. That one-time bleed-
+   *  through is acceptable; subsequent pickups persist. */
+  pickedItemCells?: ReadonlyArray<string>;
 }
 
 /** One floor inside a saved dungeon — same fields as

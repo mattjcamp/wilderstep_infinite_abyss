@@ -63,18 +63,37 @@ function makeSim(opts?: {
   initialOnBoat?: boolean;
   initialCurrentBoatSprite?: string | null;
   bridge?: SceneBridge;
+  /** Items catalog forwarded into the sim. Tests that exercise the
+   *  chest bump path pass entries with `is_chest: true` here; the
+   *  default empty array keeps the legacy walk-to-pickup flow on
+   *  for every other test. */
+  items?: ReadonlyArray<{
+    id: string;
+    name?: string;
+    icon?: string;
+    is_chest?: boolean;
+    contents?: {
+      gold?: number;
+      items?: ReadonlyArray<{ id: string; qty?: number }>;
+    };
+  }>;
+  /** Pre-cleared cells — drives the picked-item persistence pass.
+   *  Tests use this to assert that a re-mounted kernel applies the
+   *  same clears the host wrote into the save delta. */
+  initialPickedItemCells?: ReadonlySet<string>;
 }) {
   const grid = opts?.grid ?? makeGrid();
   const party = opts?.party ?? makeParty();
   return new MapSimulation({
     grid,
     party,
-    catalog: { characters: [], races: [], effects: [] },
+    catalog: { characters: [], races: [], effects: [], items: opts?.items },
     classNameById: new Map(),
     bridge: opts?.bridge ?? fakeBridge(),
     startAt: opts?.startAt,
     initialOnBoat: opts?.initialOnBoat,
     initialCurrentBoatSprite: opts?.initialCurrentBoatSprite,
+    initialPickedItemCells: opts?.initialPickedItemCells,
   });
 }
 
@@ -1121,5 +1140,198 @@ describe("MapSimulation — quest-driven placed encounters", () => {
     // One cell is available for placement: (1,0). Party is on (0,0).
     expect(placed).toHaveLength(1);
     expect(placed[0]).toMatchObject({ col: 1, row: 0 });
+  });
+});
+
+describe("MapSimulation.stepInDirection — treasure chest dispatch", () => {
+  const CHEST = {
+    id: "rusty_chest",
+    name: "Rusty Chest",
+    is_chest: true,
+    contents: { gold: 50, items: [{ id: "potion", qty: 1 }] },
+  };
+
+  it("emits chest_encountered when bumping a chest tile + party doesn't move", () => {
+    const grid = makeGrid();
+    grid[0][1] = cell({ item: "rusty_chest" });
+    const sim = makeSim({ grid, items: [CHEST] });
+    const events = captureEvents(sim);
+    sim.stepInDirection("right");
+    const chest = events.find((e) => e.kind === "chest_encountered");
+    expect(chest).toBeDefined();
+    if (chest?.kind !== "chest_encountered") throw new Error("type narrow");
+    expect(chest.chestId).toBe("rusty_chest");
+    expect(chest.pos).toEqual({ col: 1, row: 0 });
+    // Party stayed put — chest is a bump, not a walk-onto.
+    expect(sim.snapshot().pos).toEqual({ col: 0, row: 0 });
+    // No item_picked fires for a chest bump.
+    expect(events.find((e) => e.kind === "item_picked")).toBeUndefined();
+  });
+
+  it("does NOT clear the cell's item field on bump (Leave keeps the chest)", () => {
+    const grid = makeGrid();
+    grid[0][1] = cell({ item: "rusty_chest" });
+    const sim = makeSim({ grid, items: [CHEST] });
+    sim.stepInDirection("right");
+    // Cell.item is still set so the chest stays visible and a Leave
+    // path can come back to it. The Open path on the host calls
+    // sim.clearCellItem to wipe it explicitly.
+    expect(grid[0][1].item).toBe("rusty_chest");
+  });
+
+  it("regular (non-chest) items still walk-pickup with item_picked", () => {
+    // A regular item id NOT in the chest set falls through to the
+    // existing post-move pickup flow. Belt-and-braces against the
+    // new branch accidentally swallowing all `cell.item` cells.
+    const grid = makeGrid();
+    grid[0][1] = cell({ item: "potion" });
+    const sim = makeSim({
+      grid,
+      items: [
+        { id: "potion", name: "Potion" }, // no is_chest flag
+      ],
+    });
+    const events = captureEvents(sim);
+    sim.stepInDirection("right");
+    expect(sim.snapshot().pos).toEqual({ col: 1, row: 0 });
+    const picked = events.find((e) => e.kind === "item_picked");
+    expect(picked).toBeDefined();
+    if (picked?.kind !== "item_picked") throw new Error("type narrow");
+    expect(picked.itemId).toBe("potion");
+  });
+
+  it("locked-chest cell fires lock_encountered first (lock takes priority)", () => {
+    // Stack a chest item on a locked tile. The lock pipeline runs
+    // before the chest bump, so the player has to unlock the cell
+    // before the chest dialog appears on a subsequent step.
+    const grid = makeGrid();
+    grid[0][1] = cell({ item: "rusty_chest", locked: true, walkable: false });
+    const sim = makeSim({ grid, items: [CHEST] });
+    const events = captureEvents(sim);
+    sim.stepInDirection("right");
+    const ks = events.map((e) => e.kind);
+    expect(ks).toContain("lock_encountered");
+    expect(ks).not.toContain("chest_encountered");
+  });
+
+  it("with no items catalog, every item id takes the legacy walk path", () => {
+    // Defensive: a module that doesn't author any chests (or a host
+    // that omits the items field on the sim catalog) must keep the
+    // legacy walk-to-pickup flow for plain items.
+    const grid = makeGrid();
+    grid[0][1] = cell({ item: "potion" });
+    const sim = makeSim({ grid }); // no items field
+    const events = captureEvents(sim);
+    sim.stepInDirection("right");
+    expect(events.find((e) => e.kind === "item_picked")).toBeDefined();
+    expect(events.find((e) => e.kind === "chest_encountered")).toBeUndefined();
+  });
+
+  it("clearCellItem wipes the cell + emits state so the host can dismiss", () => {
+    // Drives the Open path from the host's POV: after the player
+    // commits, the host calls clearCellItem to remove the chest from
+    // the map. Assert the grid mutation + the state event.
+    const grid = makeGrid();
+    grid[0][1] = cell({ item: "rusty_chest" });
+    const sim = makeSim({ grid, items: [CHEST] });
+    sim.stepInDirection("right");
+    const events: SimEvent[] = [];
+    sim.subscribe((ev) => events.push(ev));
+    sim.clearCellItem(1, 0);
+    expect(grid[0][1].item).toBe("");
+    expect(events.find((e) => e.kind === "state")).toBeDefined();
+  });
+
+  it("clearCellItem on an empty / off-grid cell is a silent no-op", () => {
+    const grid = makeGrid();
+    const sim = makeSim({ grid, items: [CHEST] });
+    const events: SimEvent[] = [];
+    sim.subscribe((ev) => events.push(ev));
+    sim.clearCellItem(2, 2); // cell has no item set
+    sim.clearCellItem(99, 99); // off-grid
+    expect(events.find((e) => e.kind === "state")).toBeUndefined();
+  });
+});
+
+describe("MapSimulation — picked-item persistence", () => {
+  // The host writes the picked set into the save delta, then a future
+  // mount feeds it back via `initialPickedItemCells`. These tests lock
+  // in the round-trip so a regression that resurfaces collected chests
+  // (or regular items) gets caught here instead of in playtest.
+
+  it("snapshot.pickedItemCells captures walk-onto pickups", () => {
+    const grid = makeGrid();
+    grid[0][1] = cell({ item: "potion" });
+    const sim = makeSim({
+      grid,
+      items: [{ id: "potion", name: "Potion" }],
+    });
+    sim.stepInDirection("right");
+    expect(Array.from(sim.snapshot().pickedItemCells)).toEqual(["1,0"]);
+  });
+
+  it("snapshot.pickedItemCells captures chest-Open clears", () => {
+    const grid = makeGrid();
+    grid[0][1] = cell({ item: "rusty_chest" });
+    const sim = makeSim({
+      grid,
+      items: [
+        {
+          id: "rusty_chest",
+          name: "Rusty Chest",
+          is_chest: true,
+          contents: { gold: 5 },
+        },
+      ],
+    });
+    sim.stepInDirection("right"); // bump
+    sim.clearCellItem(1, 0);       // host's Open path
+    expect(Array.from(sim.snapshot().pickedItemCells)).toEqual(["1,0"]);
+  });
+
+  it("initialPickedItemCells clears the authored item before the bump pipeline runs", () => {
+    // Re-mounting a map: the JSON catalog freshly authored a chest at
+    // (1,0), but the save delta says the party already opened it.
+    // The kernel should apply the clear at construction so a bump into
+    // that cell behaves as if it were empty — no chest_encountered and
+    // no item_picked.
+    const grid = makeGrid();
+    grid[0][1] = cell({ item: "rusty_chest" });
+    const sim = makeSim({
+      grid,
+      items: [
+        {
+          id: "rusty_chest",
+          name: "Rusty Chest",
+          is_chest: true,
+          contents: { gold: 5 },
+        },
+      ],
+      initialPickedItemCells: new Set(["1,0"]),
+    });
+    expect(grid[0][1].item).toBe("");
+    const events = captureEvents(sim);
+    sim.stepInDirection("right"); // would have bumped a chest pre-clear
+    expect(events.find((e) => e.kind === "chest_encountered")).toBeUndefined();
+    expect(events.find((e) => e.kind === "item_picked")).toBeUndefined();
+    // Snapshot still surfaces the persisted entry so a subsequent
+    // save round-trips the same set instead of dropping it.
+    expect(Array.from(sim.snapshot().pickedItemCells)).toEqual(["1,0"]);
+  });
+
+  it("malformed / off-grid keys in initialPickedItemCells are ignored", () => {
+    // Defensive: a corrupted save entry shouldn't throw at mount.
+    const grid = makeGrid();
+    grid[0][1] = cell({ item: "potion" });
+    const sim = makeSim({
+      grid,
+      items: [{ id: "potion", name: "Potion" }],
+      initialPickedItemCells: new Set(["not-a-key", "99,99", "1,0"]),
+    });
+    // The valid "1,0" entry still applies; the others are no-ops.
+    expect(grid[0][1].item).toBe("");
+    // All three round-trip in the snapshot (the kernel doesn't
+    // sanitise the set — it just doesn't crash on lookups).
+    expect(sim.snapshot().pickedItemCells.size).toBe(3);
   });
 });

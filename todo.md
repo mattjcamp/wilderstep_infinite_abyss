@@ -1,12 +1,6 @@
 
 # Pre-V3 Ideas
 
-UI Improvements (add arrows for controls instead of redoing the whole UI in Phaser)
-
-Make Fog of War tiles less saturated
-
-Make the chest Tile Palette sprite background transparent
-
 Port Tile Sprite Editor
 
 # V3 Ideas

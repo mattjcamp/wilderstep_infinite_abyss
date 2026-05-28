@@ -471,14 +471,35 @@ export class WorldRenderer {
     this.diffSprites(this.placedEncounterSprites, positions);
   }
 
-  /** Swap a single cell's texture (used by the destroy-lair path so a
-   *  defeated Monster Spawn renders as grass). Idempotent — guards
-   *  against missing textures and unknown cell keys. */
+  /** Swap a single cell's *live* texture. Used today by:
+   *
+   *   1. The destroy-lair path — defeated Monster Spawn → grass.
+   *   2. The boat-position bridge — boat boards → water tile beneath
+   *      the cell; boat disembarks → boat tile under the now-empty
+   *      water cell. (PlayHost wraps this in its setBoatPositions
+   *      diff.)
+   *
+   *  Critically, this updates `cellTextureKeys` alongside the live
+   *  image. The relight pass treats `cellTextureKeys[key]` as the
+   *  *current* base sprite and chooses between it and its grayscale
+   *  variant each frame; if we only swapped the image without
+   *  updating the map, the next relight would revert the cell to its
+   *  authored sprite (a boarded boat cell would re-paint its boat,
+   *  a destroyed lair would re-paint its lair). We also eagerly bake
+   *  the grayscale variant of the new sprite so cells that later
+   *  fall into remembered-fog still grayscale correctly.
+   *
+   *  Idempotent — guards against missing textures and unknown cell
+   *  keys. Skips the texture-swap call when the live image already
+   *  matches the requested sprite. */
   setCellSprite(col: number, row: number, sprite: string): void {
-    const img = this.cells.get(`${col},${row}`);
+    const key = `${col},${row}`;
+    const img = this.cells.get(key);
     if (!img) return;
     if (!this.scene.textures.exists(sprite)) return;
-    img.setTexture(sprite);
+    if (img.texture.key !== sprite) img.setTexture(sprite);
+    this.cellTextureKeys.set(key, sprite);
+    this.ensureGrayscaleTexture(sprite);
   }
 
   /** Paint a red-X overlay on every cell whose key is in `cells`, and

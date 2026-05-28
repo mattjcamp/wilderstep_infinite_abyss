@@ -1096,6 +1096,26 @@
       "sell": 12,
       "ignite": true,
       "light_range": 3
+    },
+    {
+      "id": "treasure_chest",
+      "category": "general",
+      "name": "Treasure Chest",
+      "animation_id": null,
+      "description": "What treasure lies inside?",
+      "icon": "chest",
+      "item_type": "general",
+      "power": 0,
+      "ranged": false,
+      "throwable": false,
+      "slots": [],
+      "durability": 0,
+      "party_can_equip": false,
+      "character_can_equip": false,
+      "buy": 0,
+      "sell": 0,
+      "is_chest": true,
+      "contents": { "gold": 50, "items": [{ "id": "potion_minor", "qty": 2 }] }
     }
   ]
 }

@@ -321,6 +321,33 @@ function genSell(ac: AudioContext, out: AudioNode, t0: number): void {
   tone(ac, out, noteHz("E6"), t0 + 0.06, 0.07, 0.18, "triangle", 0.001, 0.05);
 }
 
+function genChestOpen(ac: AudioContext, out: AudioNode, t0: number): void {
+  // Treasure-chest "Open" cue. Two beats stacked into ~0.7s so the
+  // dialog can dismiss without the SFX getting cut off:
+  //   1. Lid creak — a brief noise wash plus a low triangle sweep
+  //      rising from ~120Hz to ~280Hz. Reads as wood scraping
+  //      against wood; intentionally short so it doesn't sound like
+  //      the noisier combat hit SFX.
+  //   2. Ascending arpeggio (C5 → E5 → G5 → C6) on a triangle
+  //      voice — the "loot revealed" beat. Triangle keeps it warm
+  //      and clearly different from the brighter square-wave
+  //      level-up arpeggio, which has a similar shape but a more
+  //      triumphant timbre. A held E6 sparkle on top finishes the
+  //      cue so it tails off naturally instead of cutting on the
+  //      last arpeggio step.
+  noise(ac, out, t0, 0.08, 0.10, 0.005, 0.05);
+  sweep(ac, out, 120, 280, t0, 0.10, 0.15, "triangle");
+  const seq = ["C5", "E5", "G5", "C6"];
+  for (let i = 0; i < seq.length; i++) {
+    tone(
+      ac, out, noteHz(seq[i]),
+      t0 + 0.12 + i * 0.08,
+      0.10, 0.20, "triangle", 0.005, 0.06,
+    );
+  }
+  tone(ac, out, noteHz("E6"), t0 + 0.50, 0.18, 0.14, "triangle", 0.005, 0.14);
+}
+
 function genLevelUp(ac: AudioContext, out: AudioNode, t0: number): void {
   // Bright triumphant arpeggio with a sparkle tail.
   const seq = ["C5", "E5", "G5", "C6"];
@@ -363,6 +390,11 @@ const GENERATORS: Record<string, Generator> = {
   level_up:           genLevelUp,
   // Item-driven
   rest_complete:      genRestComplete,
+  // Treasure-chest "Open" cue — heard from the chest dialog when
+  // the player commits to opening (or curiosity-opening an empty
+  // chest). Distinct timbre from level_up / victory so the player
+  // can tell a loot grab apart from a milestone.
+  chest_open:         genChestOpen,
   // Town / shop transactions — heard from the counter shop overlay
   // on a successful buy or sell. Distinct from one another so the
   // player can hear which direction the transaction went without
