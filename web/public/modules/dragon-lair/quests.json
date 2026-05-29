@@ -17,7 +17,7 @@
             "rats"
           ],
           "location_kind": "map",
-          "map_id": "demo_town",
+          "map_id": "hollowmere_town",
           "encounter_id": "rat_swarm",
           "count": 1
         },
@@ -26,7 +26,7 @@
           "name": "Search the Shop Floor",
           "kind": "kill",
           "location_kind": "map",
-          "map_id": "demo_general_shop",
+          "map_id": "hollowmere_general_shop",
           "description": "Hunt down the rats that have taken the run of Mira's shop.",
           "encounter_id": "rat_nest",
           "count": 1
@@ -119,15 +119,7 @@
       },
       "rewards": {
         "xp": 100,
-        "gold": 100,
-        "tile_add": [
-          {
-            "map": "demo_town",
-            "col": 14,
-            "row": 8,
-            "tile_id": "ship_frigate"
-          }
-        ]
+        "gold": 100
       }
     },
     {
@@ -217,7 +209,7 @@
           "kind": "kill",
           "description": "Whatever has taken the red house has stopped being polite about it. Step inside and put the restless dead back where they belong.",
           "location_kind": "map",
-          "map_id": "demo_town_house",
+          "map_id": "hollowmere_town_house",
           "encounter_id": "shambling_dead",
           "rewards": {
             "tile_add": [

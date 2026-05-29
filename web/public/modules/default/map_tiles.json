@@ -811,6 +811,23 @@
       "spawn": null,
       "sprite": "map/bridge_copy.png",
       "tag": "outdoor"
+    },
+    {
+      "boat": false,
+      "boat_passable": false,
+      "id": "roof",
+      "name": "Roof",
+      "walkable": false,
+      "obstructs": true,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": null,
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "map/roof.png",
+      "tag": "outdoor"
     }
   ]
 }

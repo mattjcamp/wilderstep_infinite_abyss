@@ -1,14 +1,14 @@
+# Polish
 
-# Pre-V3 Ideas
+- The Tinker menu should allow Arrow Key and Enter Key in the dialog
 
-Port Tile Sprite Editor
 
 # V3 Ideas
 
-- More Robust Trap System
 - New Puzzle system (presure plates that open doors, etc)
-- Key system (certain keys open certain doors)
+- Key system (certain keys open certain doors, party gets a keyring)
 - Add place description placard to linked tiles as optional. It would worked by selecting showLinkPlacard option. Then when the party is over that tile they will get the placard with the linked map description and an indication whether they have explored that area yet
+- More Robust Trap System: Traps data model, explosive, poison, teleporting
 
 # Technical Debt
 
@@ -20,7 +20,3 @@ Target size: 16 cols × 14 rows. That fills the playable interior perfectly. Map
 
 Don't bother painting walls at the outer edges — the engine's perimeter wall covers those.
 The combat formation bands sit at rows 1-4 (enemies) and rows 11-14 (party). Leave those bands as walkable floor so combatants spawn cleanly. The middle bands (rows 5-10) are where pillars, pits, and obstacles read best.
-
-# Boat and Bridge System
-
-If you ever want to take the visuals further, two natural next steps would be a partial-transparency "bridge underside" sprite so the boat is more visible while passing through, and per-cell bridge_top_sprite so the underside and topside can be different art. Both build on the same overlay layer, so neither would require revisiting the gameplay logic.
