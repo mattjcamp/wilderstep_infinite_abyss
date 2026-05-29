@@ -828,6 +828,23 @@
       "spawn": null,
       "sprite": "map/roof.png",
       "tag": "outdoor"
+    },
+    {
+      "boat": false,
+      "boat_passable": false,
+      "id": "table_top",
+      "name": "Table Top",
+      "walkable": false,
+      "obstructs": true,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": null,
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "map/table.png",
+      "tag": "indoor"
     }
   ]
 }

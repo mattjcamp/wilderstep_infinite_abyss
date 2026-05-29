@@ -46,7 +46,19 @@ export type PublishItem =
       dataUrl: string;
     }
   | { kind: "sprite-index" }
-  | { kind: "delete-sprite"; category: string; fileName: string };
+  | { kind: "delete-sprite"; category: string; fileName: string }
+  // ── Audio catalog ───────────────────────────────────────────────
+  // The soundtrack catalog (public/audio/index.json) is a flat
+  // `tracks: [{ path, name?, gain? }]` list. The editor sends the
+  // whole list back when an author adjusts per-track volume; the
+  // server validates each entry (path under /audio/, gain clamped to
+  // [0,1]) and rewrites the file. `gain` is a playback multiplier —
+  // 1 (or absent) means full volume, lower values attenuate a track
+  // that's too loud relative to the rest of the soundtrack.
+  | {
+      kind: "audio-index";
+      tracks: Array<{ path: string; name?: string; gain?: number }>;
+    };
 
 export interface PublishItemResult {
   ok: boolean;

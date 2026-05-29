@@ -45,6 +45,13 @@ const SPRITES_ROOT = path.resolve(
   process.env.PUBLISH_SPRITES_ROOT ||
     path.join(__dirname, "..", "public", "sprites"),
 );
+// Audio catalog lives under public/audio/ with a flat index.json. The
+// `audio-index` item kind rewrites that index when an author tweaks
+// per-track volume in the editor; same path-traversal protection.
+const AUDIO_ROOT = path.resolve(
+  process.env.PUBLISH_AUDIO_ROOT ||
+    path.join(__dirname, "..", "public", "audio"),
+);
 
 const MODULE_ID_RE = /^[a-z][a-z0-9-]*$/;
 const FILENAME_RE = /^[a-z][a-z0-9_]*\.json$/;
@@ -61,6 +68,13 @@ const SPRITE_FILENAME_RE = /^[a-z0-9_][a-z0-9_-]*\.png$/i;
 const PROTECTED_MODULE_IDS = new Set(["default"]);
 const SPRITE_INDEX_COMMENT =
   "Sprite catalog (generated). Each top-level key is a category folder under web/public/sprites/; each value is the list of PNG filenames in that folder. Resolve a sprite path as `/sprites/<category>/<filename>` (apply basePath at runtime).";
+// Audio track paths the editor sends back must look like
+// `/audio/<filename>.<ext>` — no directories, no traversal, a known
+// audio extension. The on-disk write target is derived from the
+// basename only, then re-checked against AUDIO_ROOT.
+const AUDIO_PATH_RE = /^\/audio\/[A-Za-z0-9][A-Za-z0-9_.-]*\.(mp3|ogg|wav|m4a)$/i;
+const AUDIO_INDEX_COMMENT =
+  "Listing of every audio file under /public/audio/. Hand-maintained for now — Next.js static export can't directory-list at runtime, so the editor's SoundtrackPicker reads this file to know what tracks are available. Run `npm run reindex-audio` after dropping a file in this folder to regenerate it. Each `path` is what gets stored on a module / map / dungeon's soundtrack list and is what the SoundtrackPlayer hands to <audio>.src; `name` is the display label in the picker; optional `gain` (0-1) attenuates a track that's too loud relative to the rest of the soundtrack.";
 
 function corsHeaders() {
   return {
@@ -103,6 +117,48 @@ function resolveInsideSpritesRoot(absPath) {
     throw new Error(`Refusing path outside sprites root: ${resolved}`);
   }
   return resolved;
+}
+
+/** Same guard as resolveInsideRoot but for AUDIO_ROOT. */
+function resolveInsideAudioRoot(absPath) {
+  const resolved = path.resolve(absPath);
+  const root = path.resolve(AUDIO_ROOT);
+  if (resolved !== root && !resolved.startsWith(root + path.sep)) {
+    throw new Error(`Refusing path outside audio root: ${resolved}`);
+  }
+  return resolved;
+}
+
+/** Validate + normalise the editor's audio track list into the
+ *  on-disk index shape. Rejects malformed paths (path-traversal in
+ *  depth — only basenames under /audio/ with a known extension pass),
+ *  clamps `gain` to [0,1], and drops it when it's the default 1 so
+ *  the file stays clean. De-dupes by path, last write wins. */
+function sanitizeAudioTracks(tracks) {
+  if (!Array.isArray(tracks)) {
+    throw new Error("audio-index requires a `tracks` array");
+  }
+  const byPath = new Map();
+  for (const t of tracks) {
+    if (!t || typeof t.path !== "string" || !AUDIO_PATH_RE.test(t.path)) {
+      throw new Error(`Invalid audio track path: ${JSON.stringify(t && t.path)}`);
+    }
+    // Re-assert the basename resolves inside the audio root.
+    resolveInsideAudioRoot(path.join(AUDIO_ROOT, path.basename(t.path)));
+    const entry = { path: t.path };
+    if (typeof t.name === "string" && t.name.length > 0) entry.name = t.name;
+    if (t.gain != null) {
+      const g = Number(t.gain);
+      if (!Number.isFinite(g)) {
+        throw new Error(`Invalid gain for ${t.path}: ${JSON.stringify(t.gain)}`);
+      }
+      const clamped = Math.max(0, Math.min(1, g));
+      // Omit the default so untouched tracks don't carry noise.
+      if (clamped !== 1) entry.gain = clamped;
+    }
+    byPath.set(entry.path, entry);
+  }
+  return Array.from(byPath.values());
 }
 
 /** Decode the editor's "data:image/png;base64,…" payload into a
@@ -289,6 +345,19 @@ async function handleItem(item) {
     await fs.rm(filePath, { force: true });
     const indexResult = await regenerateSpriteIndex();
     return { path: filePath, indexPath: indexResult.path };
+  }
+
+  if (item.kind === "audio-index") {
+    // Rewrite public/audio/index.json from the editor's track list.
+    // The editor sends the whole catalog back (paths + names + the
+    // per-track gain the author just set); we validate, normalise,
+    // and write it with the canonical comment.
+    const tracks = sanitizeAudioTracks(item.tracks);
+    const filePath = resolveInsideAudioRoot(
+      path.join(AUDIO_ROOT, "index.json"),
+    );
+    await writeJson(filePath, { _comment: AUDIO_INDEX_COMMENT, tracks });
+    return { path: filePath, totalTracks: tracks.length };
   }
 
   throw new Error(`Unknown item kind: ${JSON.stringify(item.kind)}`);

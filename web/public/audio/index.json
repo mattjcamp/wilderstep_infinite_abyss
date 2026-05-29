@@ -1,6 +1,11 @@
 {
-  "_comment": "Listing of every audio file under /public/audio/. Hand-maintained for now — Next.js static export can't directory-list at runtime, so the editor's SoundtrackPicker reads this file to know what tracks are available. Add a new entry whenever you drop a file in this folder. Each `path` is what gets stored on a module / map / dungeon's soundtrack list and is what the SoundtrackPlayer hands to <audio>.src; `name` is the display label in the picker.",
+  "_comment": "Listing of every audio file under /public/audio/. Hand-maintained for now — Next.js static export can't directory-list at runtime, so the editor's SoundtrackPicker reads this file to know what tracks are available. Run `npm run reindex-audio` after dropping a file in this folder to regenerate it. Each `path` is what gets stored on a module / map / dungeon's soundtrack list and is what the SoundtrackPlayer hands to <audio>.src; `name` is the display label in the picker; optional `gain` (0-1) attenuates a track that's too loud relative to the rest of the soundtrack.",
   "tracks": [
+    {
+      "path": "/audio/africa.mp3",
+      "name": "Africa",
+      "gain": 0.05
+    },
     {
       "path": "/audio/aurelian_overture.mp3",
       "name": "Aurelian Overture"
@@ -10,16 +15,57 @@
       "name": "Bard's Ballad"
     },
     {
+      "path": "/audio/chromatics_shadow.mp3",
+      "name": "Chromatics Shadow"
+    },
+    {
+      "path": "/audio/creep.mp3",
+      "name": "Creep",
+      "gain": 0.05
+    },
+    {
+      "path": "/audio/dont_fear_the_reaper.mp3",
+      "name": "Don't Fear the Reaper",
+      "gain": 0.04
+    },
+    {
+      "path": "/audio/fear_of_the_dark.mp3",
+      "name": "Fear of the Dark",
+      "gain": 0.07
+    },
+    {
+      "path": "/audio/hallowed_be_thy_name.mp3",
+      "name": "Hallowed Be Thy Name",
+      "gain": 0.04
+    },
+    {
       "path": "/audio/lost_in_the_labyrinth.mp3",
       "name": "Lost in the Labyrinth"
     },
     {
+      "path": "/audio/one.mp3",
+      "name": "One",
+      "gain": 0.07
+    },
+    {
       "path": "/audio/scepter_of_the_celestial_guardian.mp3",
-      "name": "Scepter of the Celestial Guardian"
+      "name": "Scepter of the Celestial Guardian",
+      "gain": 0.73
+    },
+    {
+      "path": "/audio/the_trooper.mp3",
+      "name": "The Trooper",
+      "gain": 0.05
+    },
+    {
+      "path": "/audio/the_unforgiven.mp3",
+      "name": "The Unforgiven",
+      "gain": 0.06
     },
     {
       "path": "/audio/winds_of_destiny.mp3",
-      "name": "Winds of Destiny"
+      "name": "Winds of Destiny",
+      "gain": 0.88
     }
   ]
 }

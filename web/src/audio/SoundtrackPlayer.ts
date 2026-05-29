@@ -31,6 +31,22 @@
  * Persistence: the mute flag lives in localStorage so a refresh
  * remembers it. Volume is in-memory only — the player ships at a
  * comfortable default that doesn't drown out SFX.
+ *
+ * Per-track gain: some tracks are mastered louder than others. The
+ * audio catalog (/audio/index.json) can carry an optional `gain`
+ * (0..1) per track; the player loads it once and folds it into the
+ * effective volume — `el.volume = userVolume * trackGain` — so a
+ * too-loud track sits level with the rest without the player having
+ * to ride the master volume slider. Authors set these in the
+ * Soundtrack editor.
+ *
+ * Fades: transitions between tracks are eased with a brief volume
+ * ramp rather than a hard cut. A new track fades up from silence to
+ * its effective volume; a track nearing its end (or being replaced by
+ * a scope change) fades down to silence first. Fades always ramp
+ * toward the gain-aware target, so per-track levelling and the master
+ * volume are respected throughout. An explicit volume / mute change
+ * cancels any in-flight fade and snaps to the new target.
  */
 
 import { withBasePath } from "@/util/basePath";
@@ -39,6 +55,13 @@ const STORAGE_KEY = "wsia.soundtrack.muted";
 const VOLUME_KEY = "wsia.soundtrack.volume";
 /** Default volume — moderate so sound effects ride on top of it. */
 const DEFAULT_VOLUME = 0.5;
+/** Fade duration (ms) for track-to-track transitions. Brief on
+ *  purpose — long enough to soften the seam, short enough not to
+ *  feel like a gap. */
+const FADE_MS = 600;
+/** Step interval (ms) for the fade ramp. ~20 steps over FADE_MS —
+ *  smooth to the ear without flooding the event loop. */
+const FADE_STEP_MS = 30;
 
 let _audio: HTMLAudioElement | null = null;
 let _playlist: ReadonlyArray<string> = [];
@@ -51,6 +74,12 @@ let _lastIndex: number | null = null;
  *  from the audio element's `paused` state because the element may
  *  also be paused while a track loads. */
 let _playing = false;
+
+/** Handle for the in-flight fade ramp (setInterval id), or null. */
+let _fadeHandle: ReturnType<typeof setInterval> | null = null;
+/** Guards the end-of-track fade so a single track only kicks off one
+ *  fade-out as it approaches its end. Reset when a new track starts. */
+let _endFadeStarted = false;
 
 let _muted = (() => {
   if (typeof localStorage === "undefined") return false;
@@ -65,6 +94,118 @@ let _volume = (() => {
   return Number.isFinite(v) && v >= 0 && v <= 1 ? v : DEFAULT_VOLUME;
 })();
 
+/** Authored per-track gain, keyed by the catalog path (e.g.
+ *  "/audio/foo.mp3"). Populated lazily from /audio/index.json the
+ *  first time the player is used. Missing entries default to 1. */
+const _gainByPath = new Map<string, number>();
+let _gainsLoaded = false;
+let _gainsInflight: Promise<void> | null = null;
+
+/** Effective gain for the currently-loaded track. 1 when unknown
+ *  (catalog not loaded yet, or the track carries no override). */
+function currentTrackGain(): number {
+  if (_lastIndex == null) return 1;
+  const url = _playlist[_lastIndex];
+  if (!url) return 1;
+  const g = _gainByPath.get(url);
+  return typeof g === "number" && Number.isFinite(g) ? g : 1;
+}
+
+const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
+
+/** The volume the current track should ultimately sit at:
+ *  `muted ? 0 : userVolume * trackGain`. Fades ramp toward this. */
+function targetVolume(): number {
+  return _muted ? 0 : clamp01(_volume * currentTrackGain());
+}
+
+/** Stop any in-flight fade ramp. */
+function cancelFade(): void {
+  if (_fadeHandle != null) {
+    clearInterval(_fadeHandle);
+    _fadeHandle = null;
+  }
+}
+
+/** Push the effective volume onto the audio element immediately,
+ *  cancelling any fade in progress. Single chokepoint for explicit
+ *  changes — mute, master volume, per-track gain — that should snap
+ *  rather than ramp. */
+function applyVolume(): void {
+  cancelFade();
+  const el = _audio;
+  if (!el) return;
+  el.volume = targetVolume();
+}
+
+/** Ramp the element's volume to `target` over `ms`, then run `done`.
+ *  Cancels any prior fade. Falls back to an instant set when there's
+ *  no element, no timer environment, or a zero/no-op duration. */
+function fadeTo(target: number, ms: number, done?: () => void): void {
+  cancelFade();
+  const el = _audio;
+  if (!el) {
+    done?.();
+    return;
+  }
+  const to = clamp01(target);
+  const from = clamp01(el.volume);
+  if (
+    typeof setInterval === "undefined" ||
+    ms <= 0 ||
+    Math.abs(to - from) < 0.001
+  ) {
+    el.volume = to;
+    done?.();
+    return;
+  }
+  const steps = Math.max(1, Math.round(ms / FADE_STEP_MS));
+  let i = 0;
+  _fadeHandle = setInterval(() => {
+    i += 1;
+    el.volume = clamp01(from + (to - from) * (i / steps));
+    if (i >= steps) {
+      el.volume = to;
+      cancelFade();
+      done?.();
+    }
+  }, FADE_STEP_MS);
+}
+
+/** Fetch /audio/index.json once and cache each track's gain. Safe to
+ *  call repeatedly — only the first call hits the network. Re-applies
+ *  the volume on completion so a track already playing picks up its
+ *  gain as soon as the catalog arrives. No-op outside the browser. */
+function ensureGainsLoaded(): void {
+  if (_gainsLoaded || _gainsInflight) return;
+  if (typeof window === "undefined" || typeof fetch === "undefined") return;
+  _gainsInflight = fetch(withBasePath("/audio/index.json"))
+    .then((r) => (r.ok ? r.json() : null))
+    .then((idx: unknown) => {
+      const tracks =
+        idx && typeof idx === "object" && Array.isArray((idx as { tracks?: unknown }).tracks)
+          ? ((idx as { tracks: Array<{ path?: unknown; gain?: unknown }> }).tracks)
+          : [];
+      for (const t of tracks) {
+        if (t && typeof t.path === "string" && Number.isFinite(t.gain as number)) {
+          _gainByPath.set(t.path, Math.max(0, Math.min(1, Number(t.gain))));
+        }
+      }
+      _gainsLoaded = true;
+      // Re-level a track that's already playing — but don't stomp an
+      // in-flight fade (it already ramps toward the gain-aware
+      // target and will land correctly).
+      if (_fadeHandle == null) applyVolume();
+    })
+    .catch(() => {
+      // Catalog missing / malformed → every track plays at gain 1.
+      _gainsLoaded = true;
+    })
+    .finally(() => {
+      _gainsInflight = null;
+    });
+}
+
 /** Acquire the shared HTMLAudioElement, lazily building it on first
  *  use. Returns `null` when there's no `window` (SSR / Node test). */
 function audioEl(): HTMLAudioElement | null {
@@ -74,12 +215,31 @@ function audioEl(): HTMLAudioElement | null {
   }
   const el = new Audio();
   el.preload = "auto";
-  el.volume = _muted ? 0 : _volume;
-  // When a track finishes, slide into the next random pick. Defensive
-  // against an empty / single-track playlist (handled in pickNextIndex).
+  _audio = el;
+  // Load per-track gains in the background; applyVolume re-runs when
+  // they arrive.
+  ensureGainsLoaded();
+  applyVolume();
+  // When a track finishes, slide into the next random pick (which
+  // fades in). Defensive against an empty / single-track playlist
+  // (handled in pickNextIndex).
   el.addEventListener("ended", () => {
     if (!_playing) return;
     startRandom();
+  });
+  // Fade the current track down as it approaches its end so the seam
+  // into the next track is a soft dip-and-rise rather than a hard
+  // cut. Guarded by `_endFadeStarted` so it fires once per track; the
+  // `ended` handler then rolls into the next pick.
+  el.addEventListener("timeupdate", () => {
+    if (!_playing || _muted || _endFadeStarted) return;
+    const d = el.duration;
+    if (!Number.isFinite(d) || d <= 0) return;
+    const remainingMs = (d - el.currentTime) * 1000;
+    if (remainingMs > 0 && remainingMs <= FADE_MS) {
+      _endFadeStarted = true;
+      fadeTo(0, Math.min(FADE_MS, remainingMs));
+    }
   });
   // Surface playback errors (404, codec, CORS) so the player can
   // see why a track isn't playing instead of sitting silently.
@@ -92,7 +252,6 @@ function audioEl(): HTMLAudioElement | null {
       { src: el.src, code: el.error?.code, message: el.error?.message },
     );
   });
-  _audio = el;
   return el;
 }
 
@@ -129,16 +288,27 @@ function startRandom(): void {
   // basePath is empty and the path passes through untouched.
   el.src = withBasePath(_playlist[idx]);
   el.currentTime = 0;
+  // Fresh track: re-arm the end-of-track fade guard and start from
+  // silence so we can ramp up. fadeTo ramps toward the gain-aware
+  // target, so per-track levelling is respected.
+  _endFadeStarted = false;
+  cancelFade();
+  el.volume = 0;
   // Browser autoplay policy: the first play after a fresh page load
   // may reject until the user has interacted. Warn but swallow —
   // the next user-triggered play() call will succeed.
-  el.play().catch((err: unknown) => {
-    // eslint-disable-next-line no-console
-    console.warn(
-      "[soundtrack] play() rejected — likely autoplay policy",
-      err instanceof Error ? err.message : err,
-    );
-  });
+  el.play()
+    .then(() => fadeTo(targetVolume(), FADE_MS))
+    .catch((err: unknown) => {
+      // Autoplay blocked: don't leave the element stuck at 0 — set
+      // the target directly so a later resume isn't silent.
+      el.volume = targetVolume();
+      // eslint-disable-next-line no-console
+      console.warn(
+        "[soundtrack] play() rejected — likely autoplay policy",
+        err instanceof Error ? err.message : err,
+      );
+    });
 }
 
 /**
@@ -167,8 +337,12 @@ export function setPlaylist(urls: ReadonlyArray<string>): void {
   if (clean.length === 0) {
     _lastIndex = null;
     if (el) {
-      el.pause();
-      el.removeAttribute("src");
+      // Fade out before clearing so leaving a scored area doesn't
+      // cut to silence abruptly.
+      fadeTo(0, FADE_MS, () => {
+        el.pause();
+        el.removeAttribute("src");
+      });
     }
     return;
   }
@@ -184,7 +358,9 @@ export function setPlaylist(urls: ReadonlyArray<string>): void {
     return;
   }
   if (_playing) {
-    startRandom();
+    // Scope change to a different track: fade the outgoing track down,
+    // then startRandom fades the incoming one up.
+    fadeTo(0, FADE_MS, () => startRandom());
   }
 }
 
@@ -230,8 +406,15 @@ export function stop(): void {
   _lastIndex = null;
   const el = audioEl();
   if (el) {
-    el.pause();
-    el.removeAttribute("src");
+    // Fade out, then clear — but only if we're still stopped when the
+    // ramp finishes, so a quick stop→play (e.g. a remount) doesn't get
+    // its fresh track yanked out from under it.
+    fadeTo(0, FADE_MS, () => {
+      if (!_playing) {
+        el.pause();
+        el.removeAttribute("src");
+      }
+    });
   }
 }
 
@@ -245,8 +428,8 @@ export function setMuted(b: boolean): void {
     if (b) localStorage.setItem(STORAGE_KEY, "1");
     else localStorage.removeItem(STORAGE_KEY);
   }
-  const el = audioEl();
-  if (el) el.volume = b ? 0 : _volume;
+  audioEl();
+  applyVolume();
 }
 
 /** Current mute state. */
@@ -263,8 +446,8 @@ export function setVolume(v: number): void {
   if (typeof localStorage !== "undefined") {
     localStorage.setItem(VOLUME_KEY, String(clamped));
   }
-  const el = audioEl();
-  if (el && !_muted) el.volume = clamped;
+  audioEl();
+  applyVolume();
 }
 
 /** Current volume — useful for a slider UI. */

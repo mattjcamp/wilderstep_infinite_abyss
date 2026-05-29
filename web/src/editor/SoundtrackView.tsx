@@ -1,50 +1,105 @@
 "use client";
 
 /**
- * Soundtrack browser — fetches /soundtrack/index.json at runtime and
- * renders tracks grouped by category with native HTML5 audio controls
- * per card. Click a track row to surface its path in the preview panel
- * (handy when filling in data fields that reference a soundtrack file
- * — e.g., a future Map.music or Encounter.theme).
+ * Soundtrack browser + volume mixer — fetches /audio/index.json at
+ * runtime and renders every track with native HTML5 audio controls
+ * per card. Click a track row to surface its path in the preview
+ * panel (handy when filling in data fields that reference a track —
+ * e.g. a module / map / dungeon `soundtrack` list).
+ *
+ * This reads the SAME catalog the SoundtrackPicker and the in-game
+ * SoundtrackPlayer use (/audio/index.json, a flat
+ * `tracks: [{ path, name?, gain? }]` list), so what you see here is
+ * exactly what's selectable in the Module Properties dialog. Audio
+ * files live in web/public/audio/.
+ *
+ * Per-track volume: each card has a gain slider (0–100%). Lowering it
+ * tames a track that's mastered louder than the rest of the
+ * soundtrack — the preview player auditions at that level so you can
+ * match tracks by ear. Gain is stored back into index.json (via the
+ * publish-server's `audio-index` op) and the in-game player folds it
+ * into playback as `userVolume * trackGain`. Saving requires the
+ * local publish-server (started by `npm run dev:all`); without it the
+ * sliders still preview but can't persist.
  *
  * Only one track plays at a time: starting playback on one card pauses
- * any other that was playing. The native <audio controls> element
- * handles scrub/volume/loop on its own.
- *
- * The index.json file is hand-maintained for now, like sprites/index.json.
- * When the prebuild pipeline lands, this generation should move to a
- * build script next to build-module-index.mjs.
+ * any other that was playing.
  */
 
 import { useEffect, useRef, useState } from "react";
 import { withBasePath } from "@/util/basePath";
+import { publishItems } from "@/data_model/publishClient";
+import { usePublishServer } from "./usePublishServer";
 
-interface SoundtrackIndex {
+interface AudioTrack {
+  path: string;
+  name?: string;
+  gain?: number;
+}
+
+interface AudioIndex {
   _comment?: string;
-  categories: Record<string, string[]>;
+  tracks: AudioTrack[];
 }
 
 type LoadState =
   | { kind: "loading" }
-  | { kind: "ok"; index: SoundtrackIndex }
+  | { kind: "ok"; tracks: AudioTrack[] }
   | { kind: "error"; message: string };
+
+type SaveState =
+  | { kind: "idle" }
+  | { kind: "saving" }
+  | { kind: "saved" }
+  | { kind: "error"; message: string };
+
+const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
+
+/** Normalise a track's gain to [0,1], defaulting to 1 (full). */
+function gainOf(t: AudioTrack): number {
+  return typeof t.gain === "number" && Number.isFinite(t.gain)
+    ? clamp01(t.gain)
+    : 1;
+}
 
 export function SoundtrackView() {
   const [state, setState] = useState<LoadState>({ kind: "loading" });
   const [selected, setSelected] = useState<string | null>(null);
   const [filter, setFilter] = useState("");
-  // Track the currently-playing audio element so we can pause it when
-  // another one starts.
+  // Working gain values, keyed by track path. Seeded from the loaded
+  // catalog; edited by the sliders.
+  const [gains, setGains] = useState<Record<string, number>>({});
+  // The last-persisted gains, so we can tell whether there are unsaved
+  // changes (and reset cleanly after a save).
+  const [savedGains, setSavedGains] = useState<Record<string, number>>({});
+  const [saveState, setSaveState] = useState<SaveState>({ kind: "idle" });
+  const { available } = usePublishServer();
+
+  // Live handles to the per-card <audio> elements so a slider drag
+  // updates the audition volume immediately while a track is playing.
+  const audioRefs = useRef<Map<string, HTMLAudioElement>>(new Map());
   const playingRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     setState({ kind: "loading" });
-    fetch(withBasePath("/soundtrack/index.json"))
+    fetch(withBasePath("/audio/index.json"))
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
       })
-      .then((index: SoundtrackIndex) => setState({ kind: "ok", index }))
+      .then((index: AudioIndex) => {
+        const tracks = Array.isArray(index.tracks)
+          ? index.tracks.filter(
+              (t): t is AudioTrack =>
+                !!t && typeof t.path === "string" && t.path.length > 0,
+            )
+          : [];
+        const seeded: Record<string, number> = {};
+        for (const t of tracks) seeded[t.path] = gainOf(t);
+        setGains(seeded);
+        setSavedGains(seeded);
+        setState({ kind: "ok", tracks });
+      })
       .catch((e: unknown) =>
         setState({
           kind: "error",
@@ -67,18 +122,74 @@ export function SoundtrackView() {
     );
   }
 
-  const categories = state.index.categories;
-  const total = Object.values(categories).reduce(
-    (n, arr) => n + arr.length,
-    0,
-  );
   const needle = filter.trim().toLowerCase();
+  const basename = (p: string) => p.split("/").pop() ?? p;
+  const labelFor = (t: AudioTrack) =>
+    t.name && t.name.length > 0
+      ? t.name
+      : basename(t.path)
+          .replace(/\.(mp3|ogg|wav|m4a)$/i, "")
+          .replace(/_/g, " ");
 
-  const onPlay = (el: HTMLAudioElement) => {
+  const allTracks = state.tracks;
+  const tracks = needle
+    ? allTracks.filter(
+        (t) =>
+          labelFor(t).toLowerCase().includes(needle) ||
+          t.path.toLowerCase().includes(needle),
+      )
+    : allTracks;
+
+  const dirty = allTracks.some(
+    (t) => (gains[t.path] ?? 1) !== (savedGains[t.path] ?? 1),
+  );
+
+  const onPlay = (el: HTMLAudioElement, path: string) => {
     if (playingRef.current && playingRef.current !== el) {
       playingRef.current.pause();
     }
+    el.volume = clamp01(gains[path] ?? 1);
     playingRef.current = el;
+  };
+
+  const setGain = (path: string, v: number) => {
+    const next = clamp01(v);
+    setGains((g) => ({ ...g, [path]: next }));
+    // Update the audition volume live if this track is loaded.
+    const el = audioRefs.current.get(path);
+    if (el) el.volume = next;
+    if (saveState.kind !== "idle") setSaveState({ kind: "idle" });
+  };
+
+  const resetGains = () => {
+    setGains(savedGains);
+    for (const [path, el] of audioRefs.current) {
+      el.volume = clamp01(savedGains[path] ?? 1);
+    }
+    setSaveState({ kind: "idle" });
+  };
+
+  const save = async () => {
+    setSaveState({ kind: "saving" });
+    try {
+      const payload = allTracks.map((t) => {
+        const g = clamp01(gains[t.path] ?? 1);
+        const out: AudioTrack = { path: t.path };
+        if (t.name) out.name = t.name;
+        if (g !== 1) out.gain = g;
+        return out;
+      });
+      const res = await publishItems([{ kind: "audio-index", tracks: payload }]);
+      const failed = res.results.find((r) => !r.ok);
+      if (failed) throw new Error(failed.error ?? "publish failed");
+      setSavedGains({ ...gains });
+      setSaveState({ kind: "saved" });
+    } catch (e: unknown) {
+      setSaveState({
+        kind: "error",
+        message: e instanceof Error ? e.message : String(e),
+      });
+    }
   };
 
   return (
@@ -89,9 +200,10 @@ export function SoundtrackView() {
             Soundtrack
           </h1>
           <p className="mt-1 text-sm text-parchment/60">
-            {total} track{total === 1 ? "" : "s"} across{" "}
-            {Object.keys(categories).length} categories · served from{" "}
-            <code className="text-parchment/80">/soundtrack/</code>
+            {tracks.length}
+            {needle ? ` of ${allTracks.length}` : ""} track
+            {allTracks.length === 1 ? "" : "s"} · served from{" "}
+            <code className="text-parchment/80">/audio/</code>
           </p>
         </div>
         <input
@@ -103,6 +215,14 @@ export function SoundtrackView() {
         />
       </header>
 
+      <SaveBar
+        available={available}
+        dirty={dirty}
+        saveState={saveState}
+        onSave={save}
+        onReset={resetGains}
+      />
+
       {selected && (
         <SelectedPreview
           path={selected}
@@ -110,67 +230,151 @@ export function SoundtrackView() {
         />
       )}
 
-      <div className="mt-6 space-y-6">
-        {Object.entries(categories).map(([cat, files]) => {
-          const filtered = needle
-            ? files.filter((f) => f.toLowerCase().includes(needle))
-            : files;
-          if (filtered.length === 0) return null;
-          return (
-            <section key={cat}>
-              <h2 className="mb-2 text-xs uppercase tracking-wide text-parchment/40">
-                {cat} · {filtered.length}
-                {filtered.length !== files.length
-                  ? ` of ${files.length}`
-                  : ""}
-              </h2>
-              <ul className="grid gap-2 sm:grid-cols-2">
-                {filtered.map((file) => {
-                  const path = `/soundtrack/${cat}/${file}`;
-                  const isSelected = selected === path;
-                  const label = file
-                    .replace(/\.(mp3|ogg|wav|m4a)$/i, "")
-                    .replace(/_/g, " ");
-                  return (
-                    <li key={file}>
-                      <div
-                        className={`rounded border bg-ink/40 p-3 transition ${
-                          isSelected
-                            ? "border-ember/60 bg-ember/10"
-                            : "border-parchment/10 hover:border-parchment/30"
-                        }`}
-                      >
-                        <button
-                          type="button"
-                          onClick={() => setSelected(path)}
-                          className="block w-full text-left text-sm text-parchment hover:text-parchment"
-                          title="Select to see the path you can paste into a data record."
-                        >
-                          <span className="font-display capitalize">
-                            {label}
-                          </span>
-                          <span className="ml-2 text-xs text-parchment/40">
-                            {file}
-                          </span>
-                        </button>
-                        <audio
-                          controls
-                          preload="none"
-                          src={withBasePath(path)}
-                          onPlay={(e) => onPlay(e.currentTarget)}
-                          className="mt-2 w-full"
-                        >
-                          Your browser doesn&apos;t support inline audio
-                          playback.
-                        </audio>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            </section>
-          );
-        })}
+      {allTracks.length === 0 ? (
+        <p className="mt-6 text-sm text-parchment/50">
+          No tracks in <code className="text-parchment/80">/audio/index.json</code> yet
+          — drop files in <code className="text-parchment/80">web/public/audio/</code>{" "}
+          and run <code className="text-parchment/80">npm run reindex-audio</code>.
+        </p>
+      ) : (
+        <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+          {tracks.map((track) => {
+            const path = track.path;
+            const isSelected = selected === path;
+            const label = labelFor(track);
+            const gain = gains[path] ?? 1;
+            const pct = Math.round(gain * 100);
+            return (
+              <li key={path}>
+                <div
+                  className={`rounded border bg-ink/40 p-3 transition ${
+                    isSelected
+                      ? "border-ember/60 bg-ember/10"
+                      : "border-parchment/10 hover:border-parchment/30"
+                  }`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setSelected(path)}
+                    className="block w-full text-left text-sm text-parchment hover:text-parchment"
+                    title="Select to see the path you can paste into a data record."
+                  >
+                    <span className="font-display">{label}</span>
+                    <span className="ml-2 text-xs text-parchment/40">
+                      {basename(path)}
+                    </span>
+                  </button>
+
+                  <div className="mt-2 flex items-center gap-2">
+                    <span
+                      className="text-xs text-parchment/40"
+                      title="Track volume: attenuates this track relative to the rest of the soundtrack. Applied in-game and to the preview below."
+                    >
+                      vol
+                    </span>
+                    <input
+                      type="range"
+                      min={0}
+                      max={1}
+                      step={0.05}
+                      value={gain}
+                      onChange={(e) => setGain(path, Number(e.target.value))}
+                      className="h-1 flex-1 accent-ember"
+                      aria-label={`${label} volume`}
+                    />
+                    <span
+                      className={`w-10 text-right font-mono text-xs ${
+                        gain !== (savedGains[path] ?? 1)
+                          ? "text-ember"
+                          : "text-parchment/50"
+                      }`}
+                    >
+                      {pct}%
+                    </span>
+                  </div>
+
+                  <audio
+                    ref={(el) => {
+                      if (el) {
+                        el.volume = clamp01(gains[path] ?? 1);
+                        audioRefs.current.set(path, el);
+                      } else {
+                        audioRefs.current.delete(path);
+                      }
+                    }}
+                    controls
+                    preload="none"
+                    src={withBasePath(path)}
+                    onPlay={(e) => onPlay(e.currentTarget, path)}
+                    className="mt-2 w-full"
+                  >
+                    Your browser doesn&apos;t support inline audio
+                    playback.
+                  </audio>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function SaveBar({
+  available,
+  dirty,
+  saveState,
+  onSave,
+  onReset,
+}: {
+  available: boolean | null;
+  dirty: boolean;
+  saveState: SaveState;
+  onSave: () => void;
+  onReset: () => void;
+}) {
+  // Probing — say nothing until we know whether saving is possible.
+  if (available === null && !dirty) return null;
+
+  return (
+    <div className="mt-4 flex flex-wrap items-center gap-3 rounded border border-parchment/10 bg-ink/30 px-3 py-2 text-sm">
+      <span className="text-parchment/60">
+        Drag a track&apos;s <span className="text-parchment/80">vol</span> slider
+        to level it against the rest of the soundtrack.
+      </span>
+      <div className="ml-auto flex items-center gap-2">
+        {saveState.kind === "saved" && !dirty && (
+          <span className="text-xs text-parchment/50">Saved.</span>
+        )}
+        {saveState.kind === "error" && (
+          <span className="text-xs text-ember">
+            Save failed: {saveState.message}
+          </span>
+        )}
+        {dirty && (
+          <button
+            type="button"
+            onClick={onReset}
+            className="rounded border border-parchment/20 px-3 py-1 text-xs text-parchment/80 hover:bg-ink/40"
+          >
+            Reset
+          </button>
+        )}
+        {available ? (
+          <button
+            type="button"
+            onClick={onSave}
+            disabled={!dirty || saveState.kind === "saving"}
+            className="rounded border border-ember/50 bg-ember/10 px-3 py-1 text-xs text-parchment hover:bg-ember/20 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {saveState.kind === "saving" ? "Saving…" : "Save volumes"}
+          </button>
+        ) : (
+          <span className="text-xs text-parchment/40">
+            Start the publish server (<code>npm run dev:all</code>) to save.
+          </span>
+        )}
       </div>
     </div>
   );

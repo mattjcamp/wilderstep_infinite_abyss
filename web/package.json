@@ -11,7 +11,8 @@
     "test": "vitest run",
     "publish-server": "node scripts/publish-server.mjs",
     "reindex-sprites": "node scripts/reindex-sprites.mjs",
-    "dev:all": "node scripts/publish-server.mjs & next dev"
+    "reindex-audio": "node scripts/reindex-audio.mjs",
+    "dev:all": "node scripts/reindex-audio.mjs && (node scripts/publish-server.mjs & next dev)"
   },
   "dependencies": {
     "next": "14.2.18",

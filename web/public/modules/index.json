@@ -7,11 +7,6 @@
       "role": "core"
     },
     {
-      "id": "tiefling-pack",
-      "title": "Tiefling Pack",
-      "role": "library"
-    },
-    {
       "id": "dragon-lair",
       "title": "The Dragon's Lair",
       "role": "playable"
@@ -20,11 +15,6 @@
       "id": "maps-mix-in",
       "title": "Maps and Buildings",
       "role": "library"
-    },
-    {
-      "id": "test",
-      "title": "Test",
-      "role": "playable"
     }
   ]
 }
