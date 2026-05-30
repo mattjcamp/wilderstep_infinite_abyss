@@ -5000,6 +5000,26 @@ export function PlayHost() {
               // chatter or visit the counter.
               if (result.ok) setNpcDialogId(null);
             }}
+            onAskToMove={() => {
+              // Politely nudge the NPC one tile so the party can get
+              // past. The kernel relocates it (and repositions the
+              // sprite via the npc_moved event); we surface the
+              // outcome in the log and close the dialog on success so
+              // the player can step onto the freed tile.
+              const sim = simRef.current;
+              if (!sim) return;
+              const moved = sim.requestNpcMove(npc.id);
+              setLogMessages((prev) => {
+                const msg = moved
+                  ? `${npc.name ?? npc.id} steps aside.`
+                  : `There's nowhere for ${npc.name ?? npc.id} to step.`;
+                const next = [...prev, msg];
+                return next.length > MAX_LOG
+                  ? next.slice(next.length - MAX_LOG)
+                  : next;
+              });
+              if (moved) setNpcDialogId(null);
+            }}
             onClose={() => setNpcDialogId(null)}
           />
         );

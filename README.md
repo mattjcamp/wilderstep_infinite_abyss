@@ -1,11 +1,19 @@
 # Wilderstep Infinite Abyss
 
-An Ultima III  and D&D inspired top-down, turn-based RPG built with TypeScript and Phaser. Lead a party of four adventurers through a procedurally generated world of overworld exploration, town visits, dungeon delving, and tactical grid combat.
+An Ultima III  and D&D inspired top-down, turn-based RPG built with TypeScript and Phaser. Lead a party of four adventurers through an open world of overworld exploration, town visits, dungeon delving, and tactical grid combat.
 
-[You can try Wilderstep Infinite Abyss by clicking here to play online.](https://mattjcamp.github.io/wilderstep_infinite_abyss/play/) 
+<table>
+<tr>
+<td align="center"><img src="docs/blog/v1/Screenshot 2026-05-29 at 9.01.40 PM.png" width="400" alt="Town exploration"></td>
+<td align="center"><img src="docs/blog/v1/Screenshot 2026-05-29 at 9.02.27 PM.png" width="400" alt="Overworld map"></td>
+</tr>
+<tr>
+<td align="center"><img src="docs/blog/v1/Screenshot 2026-05-29 at 9.03.21 PM.png" width="400" alt="Town exploration"></td>
+<td align="center"><img src="docs/blog/v1/Screenshot 2026-05-29 at 9.06.49 PM.png" width="400" alt="Overworld map"></td>
+</tr>
+</table>
 
-[Wilderstep Player's Manual](docs/manual/manual.md) 
-
+Play Now! [You can try Wilderstep Infinite Abyss by clicking here to play in your browser.](https://mattjcamp.github.io/wilderstep_infinite_abyss/play/) 
 
 ## Features
 
@@ -27,14 +35,4 @@ An Ultima III  and D&D inspired top-down, turn-based RPG built with TypeScript a
 - More module packs with unique adventures
 - More content and game features
 
-<table>
-<tr>
-<td align="center"><img src="docs/blog/v1/Screenshot 2026-05-29 at 9.01.40 PM.png" width="400" alt="Town exploration"></td>
-<td align="center"><img src="docs/blog/v1/Screenshot 2026-05-29 at 9.02.27 PM.png" width="400" alt="Overworld map"></td>
-</tr>
-<tr>
-<td align="center"><img src="docs/blog/v1/Screenshot 2026-05-29 at 9.03.21 PM.png" width="400" alt="Town exploration"></td>
-<td align="center"><img src="docs/blog/v1/Screenshot 2026-05-29 at 9.06.49 PM.png" width="400" alt="Overworld map"></td>
-</tr>
-</table>
-
+[Wilderstep Player's Manual](docs/manual/manual.md) 

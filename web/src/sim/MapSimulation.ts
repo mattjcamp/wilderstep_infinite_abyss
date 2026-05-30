@@ -42,7 +42,11 @@ import {
   type SimSpawn,
   type SpawnCellInfo,
 } from "./spawn";
-import { runNpcWander, type NpcMove } from "./npcWander";
+import {
+  isWanderDestination,
+  runNpcWander,
+  type NpcMove,
+} from "./npcWander";
 import {
   activeKillStepsAt,
   creditQuestKill,
@@ -1519,6 +1523,46 @@ export class MapSimulation {
       }
     }
 
+    this.runWorldAmbiencePass();
+
+    this.emit({ kind: "state" });
+  }
+
+  /**
+   * Pass a turn WITHOUT moving the party. Ticks the party's per-step
+   * counters (a torch burns a step), re-lights, then runs the same
+   * world-ambience pass a move does — spawns, roamer / placed-
+   * encounter pursuit, and the NPC wander roll. The headline use is
+   * unsticking the party when an NPC has wandered into their only
+   * exit: wait a beat and the NPC drifts off on its own. Bound to the
+   * Space key in `onKey`.
+   *
+   * Like a move, a wait can END in an encounter — a pursuing roamer
+   * that catches up while you dawdle still opens the battle overlay.
+   */
+  waitTurn(): void {
+    if (this.disposed) return;
+    // Step counters tick on a wait exactly as they do on a move — a
+    // turn passed, so the torch burned a step. Matches the v1
+    // convention that the world advances whether or not you stepped.
+    this.party = { ...this.party, ...tickPartyTimers(this.party) };
+    this.bridge.setPartyLight(this.computeLightSource());
+    this.bridge.relight();
+    this.emit({ kind: "log", message: "The party waits." });
+    this.runWorldAmbiencePass();
+    this.emit({ kind: "state" });
+  }
+
+  /**
+   * Advance the world one turn's worth of ambience: the spawn pass,
+   * roamer + placed-encounter pursuit (with their collision emits),
+   * sprite-position snapshots, and the NPC wander roll. Shared by a
+   * normal move and by {@link waitTurn} so skipping a turn ticks the
+   * world exactly like stepping does. Does NOT emit the final `state`
+   * event — the caller does, so it can emit its own preceding log
+   * lines (e.g. "The party waits.") first.
+   */
+  private runWorldAmbiencePass(): void {
     // The spawn pass + roamer pursuit + placed-encounter pursuit all
     // ADVANCE regardless of whether the party is in a boat — roaming
     // monsters keep moving around on shore even when their target
@@ -1573,8 +1617,6 @@ export class MapSimulation {
     ) {
       this.runNpcWanderPass();
     }
-
-    this.emit({ kind: "state" });
   }
 
   /** Run one NPC wander tick + emit the diff. Pure helper does the
@@ -1608,6 +1650,92 @@ export class MapSimulation {
         questId: m.questId,
       });
     }
+  }
+
+  /**
+   * Politely relocate a specific NPC one tile — the "Ask to move"
+   * dialog option. Finds the cell currently tagged with `npcId`, then
+   * steps it to an eligible adjacent cell, preferring the neighbour
+   * that puts the most distance between the NPC and the party (so it
+   * reads as the NPC stepping ASIDE rather than into the party's
+   * face, and frees the tile the party was bumping). Carries a
+   * co-located `quest` tag along, mirroring the wander pass.
+   *
+   * Returns true when the NPC moved, false when it's boxed in (no
+   * walkable, unoccupied, tag-free neighbour) so the caller can tell
+   * the player "there's nowhere for them to go." Emits `npc_moved`
+   * (the host repositions the sprite) + `state`.
+   */
+  requestNpcMove(npcId: string): boolean {
+    if (this.disposed) return false;
+    // Locate the NPC's current cell by scanning for its tag — robust
+    // even if it wandered since the dialog opened.
+    let from: Position | null = null;
+    for (let r = 0; r < this.grid.length && !from; r++) {
+      const row = this.grid[r];
+      if (!row) continue;
+      for (let c = 0; c < row.length; c++) {
+        if (row[c]?.npc === npcId) {
+          from = { col: c, row: r };
+          break;
+        }
+      }
+    }
+    if (!from) return false;
+    const fromCell = this.grid[from.row]?.[from.col];
+    if (!fromCell) return false;
+
+    // Dynamic blockers the NPC can't step onto.
+    const occupied = new Set<string>();
+    occupied.add(`${this.pos.col},${this.pos.row}`);
+    for (const r of this.roamers) occupied.add(`${r.col},${r.row}`);
+    for (const p of this.placedEncounters) occupied.add(`${p.col},${p.row}`);
+
+    const cards = [
+      { dc: 0, dr: -1 },
+      { dc: 0, dr: 1 },
+      { dc: -1, dr: 0 },
+      { dc: 1, dr: 0 },
+    ];
+    const cheby = (p: Position) =>
+      Math.max(Math.abs(p.col - this.pos.col), Math.abs(p.row - this.pos.row));
+    const eligible: Position[] = [];
+    for (const { dc, dr } of cards) {
+      const c = from.col + dc;
+      const r = from.row + dr;
+      if (c < 0 || r < 0) continue;
+      const row = this.grid[r];
+      if (!row || c >= row.length) continue;
+      if (!isWanderDestination(row[c])) continue;
+      if (occupied.has(`${c},${r}`)) continue;
+      eligible.push({ col: c, row: r });
+    }
+    if (eligible.length === 0) return false;
+
+    // Step AWAY from the party: keep only the farthest-distance
+    // candidates, break ties randomly.
+    const maxDist = Math.max(...eligible.map(cheby));
+    const farthest = eligible.filter((p) => cheby(p) === maxDist);
+    const pick = farthest[Math.floor(Math.random() * farthest.length)];
+
+    const toCell = this.grid[pick.row]?.[pick.col];
+    if (!toCell) return false;
+    const questId = (fromCell as SimCell & { quest?: string }).quest;
+    toCell.npc = npcId;
+    fromCell.npc = "";
+    if (questId) {
+      (toCell as SimCell & { quest?: string }).quest = questId;
+      (fromCell as SimCell & { quest?: string }).quest = "";
+    }
+    this.emit({
+      kind: "npc_moved",
+      from,
+      to: pick,
+      npcId,
+      questId: questId || undefined,
+    });
+    this.emit({ kind: "state" });
+    return true;
   }
 
   /** Move every placed encounter one cardinal step toward the party.
@@ -2608,6 +2736,12 @@ export class MapSimulation {
   // ── internals ───────────────────────────────────────────────────
 
   private onKey(key: string): void {
+    // Space (either spelling) waits a turn in place — lets a blocking
+    // NPC drift out of the way without the party having to move.
+    if (key === " " || key === "Spacebar") {
+      this.waitTurn();
+      return;
+    }
     const dir = directionForKey(key);
     if (!dir) return;
     this.stepInDirection(dir);

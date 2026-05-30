@@ -30,6 +30,7 @@ export function PlayNpcDialogOverlay({
   onVisitCounter,
   canSteal,
   onSteal,
+  onAskToMove,
   onClose,
 }: {
   npcName: string;
@@ -37,6 +38,11 @@ export function PlayNpcDialogOverlay({
   dialogs: ReadonlyArray<DialogLine>;
   hasCounter: boolean;
   onVisitCounter: () => void;
+  /** Fires when the player asks the NPC to step aside. The host
+   *  relocates the NPC one tile (if it can) and decides whether to
+   *  close the dialog. Hidden when not provided (e.g. a context
+   *  where moving the NPC makes no sense). */
+  onAskToMove?: () => void;
   /** True when an alive Halfling is in the party AND this NPC
    *  hasn't been pickpocketed yet. Surfaces the Steal button in
    *  the footer. Hidden entirely (rather than greyed) when false,
@@ -64,7 +70,7 @@ export function PlayNpcDialogOverlay({
   // for screen-reader / debugging contexts; the visible UI reads
   // off the button JSX below for finer-grained styling control.
   interface DialogAction {
-    label: "Steal" | "Visit Counter" | "Leave";
+    label: "Steal" | "Visit Counter" | "Ask to Move" | "Leave";
     onClick: () => void;
   }
   const actions = useMemo<DialogAction[]>(() => {
@@ -72,9 +78,11 @@ export function PlayNpcDialogOverlay({
     if (canSteal && onSteal) list.push({ label: "Steal", onClick: onSteal });
     if (hasCounter)
       list.push({ label: "Visit Counter", onClick: onVisitCounter });
+    if (onAskToMove)
+      list.push({ label: "Ask to Move", onClick: onAskToMove });
     list.push({ label: "Leave", onClick: onClose });
     return list;
-  }, [canSteal, hasCounter, onSteal, onVisitCounter, onClose]);
+  }, [canSteal, hasCounter, onSteal, onVisitCounter, onAskToMove, onClose]);
   /** Which action button the keyboard cursor is on. Up/Down wraps
    *  through it; Enter fires the highlighted action. Defaults to 0
    *  — the first non-Leave entry when one exists, otherwise Leave
@@ -256,6 +264,9 @@ export function PlayNpcDialogOverlay({
               const counterIdx = actions.findIndex(
                 (a) => a.label === "Visit Counter",
               );
+              const askMoveIdx = actions.findIndex(
+                (a) => a.label === "Ask to Move",
+              );
               const leaveIdx = actions.findIndex((a) => a.label === "Leave");
               return (
                 <>
@@ -289,6 +300,22 @@ export function PlayNpcDialogOverlay({
                       title="Open this NPC's shop / temple."
                     >
                       Visit Counter
+                    </button>
+                  ) : null}
+                  {askMoveIdx >= 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActionIndex(askMoveIdx);
+                        actions[askMoveIdx].onClick();
+                      }}
+                      className={[
+                        "rounded border border-parchment/20 px-3 py-1 text-xs text-parchment/85 hover:bg-ink/50",
+                        actionIndex === askMoveIdx ? focusRing : "",
+                      ].join(" ")}
+                      title="Ask this NPC to step aside so you can pass."
+                    >
+                      Ask to Move
                     </button>
                   ) : null}
                   <button

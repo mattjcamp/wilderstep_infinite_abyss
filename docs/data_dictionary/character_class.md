@@ -31,6 +31,7 @@ The "Used?" column reflects the v2 TypeScript implementation under `web/`. The c
 |---|---|---|---|---|
 | `id` | string | yes | Stable identifier in snake_case (e.g. `"fighter"`, `"wizard"`) | TBD |
 | `name` | string | yes | Display label (PascalCase: `"Fighter"`, `"Wizard"`) | TBD |
+| `description` | string | no | Short prose blurb describing the class's role / playstyle, grounded in its mechanics (movement, casting, allowed gear, signature abilities). Surfaced in the Player's Manual class gallery; available to any future in-game / editor surface. Mirrors `Race.description`. | wired (manual) |
 | `range` | number | yes | Tiles of movement per combat turn | TBD |
 | `casting_type` | string[] | yes | Which spell catalog(s) this class can cast from. Values: `"none"`, `"sorcerer"`, `"priest"`. `["none"]` for non-casters; one entry for single-catalog casters; both `"sorcerer"` and `"priest"` for hybrid casters like Druid. | TBD |
 | `abilities` | object[] | no | Non-spell class features (e.g. Herbalism, Pick Locks, Detect Traps). Each entry references an [Ability](ability.md) by id with a per-class level gate. See *abilities entry* below. | TBD |

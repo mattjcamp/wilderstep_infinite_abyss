@@ -1,0 +1,75 @@
+{
+  "dungeons": [
+    {
+      "id": "old_ruins",
+      "name": "Old Ruins",
+      "description": "An ancient city, fallen into the myst of time",
+      "tags": [],
+      "style": "ruins",
+      "difficulty": "normal",
+      "size": {
+        "width": 45,
+        "height": 32
+      },
+      "torch_density": 0.05,
+      "locked_doors": 0.05,
+      "levels": [
+        {
+          "id": "old_ruins_l1",
+          "name": "Level 1",
+          "depth": 1,
+          "style": "caves",
+          "difficulty": "easy",
+          "torch_density": 0,
+          "locked_doors": 0
+        },
+        {
+          "id": "old_ruins_l2",
+          "name": "Level 2",
+          "depth": 2
+        },
+        {
+          "id": "old_ruins_l3",
+          "name": "Level 3",
+          "depth": 3
+        },
+        {
+          "id": "old_ruins_l4",
+          "name": "Level 4",
+          "depth": 4
+        }
+      ]
+    },
+    {
+      "id": "caves",
+      "name": "Caves",
+      "description": "Caves",
+      "tags": [],
+      "style": "caves",
+      "difficulty": "normal",
+      "size": {
+        "width": 40,
+        "height": 40
+      },
+      "torch_density": 0.05,
+      "locked_doors": 0.25,
+      "levels": [
+        {
+          "id": "caves_l1",
+          "name": "Level 1",
+          "depth": 1
+        },
+        {
+          "id": "caves_l2",
+          "name": "Level 2",
+          "depth": 2
+        },
+        {
+          "id": "caves_l3",
+          "name": "Level 3",
+          "depth": 3
+        }
+      ]
+    }
+  ]
+}

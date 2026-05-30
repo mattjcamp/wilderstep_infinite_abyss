@@ -1,19 +1,113 @@
 # Wilderstep Infinite Abyss — Player's Manual
 
+<p align="center">
+  <img src="assets/cover_art_transparent.png" alt="A party of adventurers — wizard, dwarf, ranger, and young archer — on the shore beneath a distant keep" width="720">
+</p>
+
 _Generated 2026-05-24 from the default module's data._
 
-This manual is a quick reference for everything you can pick, equip, learn, brew, or fight. Tables let you compare options at a glance; items are grouped by type and sorted by power so the strongest one in each category is at the top.
+This manual is a quick reference for everything you can pick, equip, learn, brew, or fight. The first section, **Getting Started**, walks you through how to play; the sections after it are reference tables that let you compare options at a glance — items are grouped by type and sorted by power so the strongest one in each category is at the top.
 
 ---
 
 **Contents**
 
+- [Getting Started](#getting-started)
+  - [Choosing Your Party](#choosing-your-party)
+  - [Navigating the Map](#navigating-the-map)
+  - [The Combat Arena](#the-combat-arena)
+  - [Completing Quests](#completing-quests)
+  - [Exploring Dungeons](#exploring-dungeons)
 - [Races](#races)
 - [Character Classes](#character-classes)
 - [Abilities](#abilities)
 - [Spells](#spells)
 - [Items](#items)
 - [Monsters](#monsters)
+
+---
+
+## Getting Started
+
+Wilderstep Infinite Abyss is a turn-based RPG. You assemble a party of adventurers, explore an open world one tile at a time, talk to its people, take on quests, and descend into dungeons full of danger and treasure. This section covers the basics; the reference tables later in the manual fill in the details on every race, class, spell, item, and monster you'll meet.
+
+Your progress is saved automatically as you play, so you can step away and pick up where you left off.
+
+### Choosing Your Party
+
+A new game opens on the party formation screen, where you build the group you'll lead into the world.
+
+The module provides a starting roster of ready-made characters, and you can also **create your own** from the button at the top of the screen. A custom character is built by picking a race and a class — your race grants innate abilities and adjusts your starting stats, while your class sets your combat role, how far you can move each turn, what weapons and armor you can equip, and which spells (if any) you can learn. The [Races](#races) and [Character Classes](#character-classes) tables lay out every option so you can plan a balanced group.
+
+Characters waiting on the sidelines sit in an **Available** pool; add any of them to fill your ranks, or remove a member to send them back. You can **reorder** the party by dragging members up and down, and order matters: the member in the first slot is your **lead** — the figure shown walking the world map, and the one who acts first in battle. A common setup puts a sturdy front-liner in the lead and keeps fragile spellcasters further back.
+
+When your party is ready, choose **Begin** to enter the world. A good first party mixes durability, damage, and a little magic — a Fighter or Paladin to absorb hits, a Cleric or Wizard for spells, and a Thief or Ranger to handle locks and traps.
+
+### Navigating the Map
+
+You explore the world on a grid, moving **one tile per step**.
+
+| Key | Action |
+|---|---|
+| `↑ ↓ ← →` or `W A S D` | Move the party one tile |
+| `Space` | Wait a turn in place (the world still moves around you) |
+| `P` | Party screen — roster, gold, shared stash, active effects |
+| `Q` | Quest log — active and completed quests |
+| `L` | Adventure log — the full back-buffer of in-world messages |
+| `H` | Help & tips (and the soundtrack mute / volume controls) |
+
+Almost everything in the world is reached by **walking into it**. Step into a townsperson to talk, into a shop counter to browse its wares, into a locked door to try the lock, and into a quest giver to hear what they need. The same step-to-interact rule covers it all.
+
+The world keeps moving even when you don't: townsfolk wander a little each turn. If someone drifts into a doorway and blocks your only way out, you have two ways past them. Press `Space` to **wait** — a turn passes without you moving, and they'll usually amble off on their own. Or walk into them to start a conversation and choose **Ask to Move**, and they'll politely step aside so you can pass.
+
+Light matters once you leave open daylight. The party carries a light radius that brightens nearby tiles; a lit **Torch** or the **Light** spell extends it, and a Dwarf's Infravision lets that character see in pure darkness without one. Effects that last for a number of steps — light included — tick down as you move, so keep an eye on the Effects panel of the Party screen (`P`). If a party member can **Detect Traps** (any Thief, or a Ranger from level 3), hidden traps within your light radius show up as red marks before you blunder onto them.
+
+A few other things you'll find out in the world: boats stay where you leave them — step onto one to sail across water, and onto land to disembark — and unattended shop counters and temples let you trade or buy healing without an NPC to broker it.
+
+### The Combat Arena
+
+When the party meets a hostile creature, the game switches to a dedicated **battle screen**: a turn-based arena where your party lines up on one side and the enemies on the other. Turns proceed in order, and your party acts in the order you arranged on the formation screen — your lead goes first.
+
+On a character's turn you can move up to that class's movement budget (the `Range` value in the [Character Classes](#character-classes) table — a nimble Thief covers far more ground than a Wizard) and then take one action:
+
+| Action | What it does |
+|---|---|
+| **Attack** | Strike an adjacent enemy with your equipped weapon |
+| **Range** | Fire a bow, crossbow, or sling at a distant foe (consumes ammo) |
+| **Throw** | Hurl a throwable item — a rock, a flask, a lit torch |
+| **Cast** | Spend MP to cast a spell from your catalog |
+| **Abilities** | Use a combat ability such as a Cleric's Turn Undead |
+| **Use Item** | Drink a potion, apply an antidote, or use another combat consumable |
+| **Equip Item** | Swap the weapon or armor you're holding (uses your turn) |
+| **End Turn** | Pass to the next combatant |
+
+Controls in the arena:
+
+| Key | Action |
+|---|---|
+| `↑ ↓ ← →` | Move the cursor, or step the active combatant |
+| `Enter` | Activate the highlighted action / confirm a target |
+| `1`–`9` | Pick an option from a list (target, spell, item) |
+| `Space` | End your turn |
+| `Esc` | Cancel the current sub-mode (e.g. back out of the target picker) |
+
+#### Darkness in Combat
+
+Your character can only target monsters that he can see, so when fighting in the dark it helps to throw a torch or to cast a light spell.
+
+There is no fleeing — once battle is joined, you fight to win or fall. The fight ends when one side is wiped out; win, and you return to the map with any spoils.
+
+### Completing Quests
+
+Quests are offered by the world's people and markers. Walk into a quest giver and you'll see what they're asking, with the choice to **Accept** or **Decline**. Accepting adds the quest to your log.
+
+Press `Q` at any time to open the **Quest Log**, which shows your active quests and what each still needs from you, alongside the ones you've already finished. As you meet a quest's objectives — defeating a particular foe, reaching a place, recovering an item — your progress updates automatically, and finishing a step or a whole quest is marked with a brief celebration. Rewards (experience, gold, or items) arrive as you complete the work, and some quests change the world itself, opening a path or handing you a key you'll need next.
+
+### Exploring Dungeons
+
+Dungeons are the deep, dangerous heart of the game. Step onto a dungeon entrance on the world map to descend; you'll move through it tile by tile just like the overworld, but dungeons run **multiple floors deep** and are far darker, so a Torch, the Light spell, or a Dwarf's Infravision becomes essential to see what's around you.
+
+Down here you'll find monster **lairs** and waiting **encounters**. Engaging one drops you into the combat arena; importantly, a lair you clear and a placed encounter you defeat are **gone for good** — neither respawns — so every fight you win makes the dungeon a little safer to backtrack through. Watch for traps, pick or unlock the doors barring your way, and gather the treasure the depths are hiding. When you've had your fill (or found what you came for), make your way back to the entrance to return to the surface.
 
 ---
 
@@ -43,6 +137,118 @@ Class determines combat role, movement range per turn, which weapons and armor t
 | **Ranger** | 4 | priest | fists, dagger, club, sword, sling, short_bow, long_bow, crossbow, cloth, leather | Pick Locks (L5)<br/>Craft Arrows (L2)<br/>Craft Fire Arrows (L5) |
 | **Thief** | 6 | none | fists, dagger, club, sling, short_bow, cloth, leather | Pick Locks (L1)<br/>Detect Traps (L1)<br/>Backstab (L3)<br/>Shadow Step (L7) |
 | **Wizard** | 2 | sorcerer | fists, dagger, club, cloth | — |
+
+<!-- BEGIN GENERATED: class-gallery — run `python3 docs/manual/build_class_gallery.py` to refresh -->
+
+### Class Gallery
+
+A closer look at each class — how it plays, and what it brings to the party. _(This section is generated from `character_classes.json`; edit the data, not the prose here.)_
+
+#### Alchemist
+
+<table><tr>
+<td width="170"><img src="assets/portrait_alchemist.png" width="150" alt="Alchemist"></td>
+<td>
+
+A support specialist who turns the wild into an arsenal. Alchemists forage reagents (Herbalism) and Brew Potions from level 1, keeping the party stocked with healing and buffs. They cast from the sorcerer catalog but fight poorly — only a dagger, sling, and cloth — so they shine in the back ranks as a crafter and caster.
+
+`Move 4` · `Sorcerer` · `3 weapon types · up to cloth armor` · `Brew Potion (L1), Herbalism (L1)`
+
+</td>
+</tr></table>
+
+#### Cleric
+
+<table><tr>
+<td>
+
+The party's divine anchor. Clerics draw on the priest catalog to heal and protect, wade in wearing chain with a mace or sling, and from level 2 can Turn Undead to wither the unliving. Slow on their feet at two tiles a turn, they reward patient, central positioning over aggression.
+
+`Move 2` · `Priest` · `4 weapon types · up to chain armor` · `Turn Undead (L2)`
+
+</td>
+<td width="170"><img src="assets/portrait_cleric.png" width="150" alt="Cleric"></td>
+</tr></table>
+
+#### Druid
+
+<table><tr>
+<td width="170"><img src="assets/portrait_druid.png" width="150" alt="Druid"></td>
+<td>
+
+The only class that wields both arcane and divine magic, thanks to Dual Casting from level 1. Druids forage for reagents as they travel (Herbalism) and fight in leather with simple weapons. Versatile but slow at two tiles a turn and squishier than a true warrior — a flexible spellcaster for players who like options.
+
+`Move 2` · `Sorcerer + Priest` · `5 weapon types · up to leather armor` · `Dual Casting (L1), Herbalism (L1)`
+
+</td>
+</tr></table>
+
+#### Fighter
+
+<table><tr>
+<td>
+
+The workhorse of any party. Fighters command the widest armory in the game — every weapon family from fists to halberds and every armor from cloth to plate — and cover a brisk four tiles a turn. They cast no spells and have no special tricks; their strength is sheer durability and reliability, which makes them ideal in the lead slot soaking the first blows.
+
+`Move 4` · `No spells` · `All weapons & armor` · `—`
+
+</td>
+<td width="170"><img src="assets/portrait_fighter.png" width="150" alt="Fighter"></td>
+</tr></table>
+
+#### Paladin
+
+<table><tr>
+<td width="170"><img src="assets/portrait_paladin.png" width="150" alt="Paladin"></td>
+<td>
+
+A holy warrior who fights on the front line and channels divine power. Paladins move four tiles a turn, wear chain and wield swords and spears, Smite Undead for double damage from level 1, and gain Turn Undead at level 5. They trade the Cleric's spell depth for martial muscle — the party's anti-undead vanguard.
+
+`Move 4` · `Priest` · `11 weapon types · up to chain armor` · `Smite Undead (L1), Turn Undead (L5)`
+
+</td>
+</tr></table>
+
+#### Ranger
+
+<table><tr>
+<td>
+
+A wilderness hunter built around ranged combat. Rangers favor bows — the crossbow included — and craft their own Arrows (level 2) and Fire Arrows (level 5) so they never run dry. They draw on a small priest catalog, pick locks from level 5, and move a nimble four tiles a turn: a self-sufficient skirmisher.
+
+`Move 4` · `Priest` · `8 weapon types · up to leather armor` · `Craft Arrows (L2), Craft Fire Arrows (L5), Pick Locks (L5)`
+
+</td>
+<td width="170"><img src="assets/portrait_ranger.png" width="150" alt="Ranger"></td>
+</tr></table>
+
+#### Thief
+
+<table><tr>
+<td width="170"><img src="assets/portrait_thief.png" width="150" alt="Thief"></td>
+<td>
+
+The fastest, sneakiest member of any party, covering six tiles a turn. Thieves pick locks and spot traps from level 1, land devastating Backstab criticals with daggers from level 3, and at level 7 can Shadow Step to move again after striking. Lightly armored and non-magical, they win through speed, utility, and hit-and-run positioning.
+
+`Move 6` · `No spells` · `5 weapon types · up to leather armor` · `Detect Traps (L1), Pick Locks (L1), Backstab (L3), Shadow Step (L7)`
+
+</td>
+</tr></table>
+
+#### Wizard
+
+<table><tr>
+<td>
+
+A glass cannon of raw arcane power. Wizards cast from the sorcerer catalog but are the frailest class — limited to cloth and a dagger or club, and only two tiles of movement. Keep them well behind the front line: their spells can decide a fight, but a single solid hit can end them.
+
+`Move 2` · `Sorcerer` · `3 weapon types · up to cloth armor` · `—`
+
+</td>
+<td width="170"><img src="assets/portrait_wizard.png" width="150" alt="Wizard"></td>
+</tr></table>
+
+<!-- END GENERATED: class-gallery -->
 
 ## Abilities
 

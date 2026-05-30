@@ -1442,3 +1442,81 @@ describe("MapSimulation.stepInDirection — boat_passable (bridge) cells", () =>
     expect(sim.snapshot().onBoat).toBe(false);
   });
 });
+
+describe("MapSimulation.waitTurn — skip a turn in place", () => {
+  it("keeps the party put, ticks step counters, and re-lights", () => {
+    const bridge = fakeBridge();
+    const sim = makeSim({
+      party: makeParty({ start_position: { col: 2, row: 2 }, torch_steps: 3 }),
+      startAt: { col: 2, row: 2 },
+      bridge,
+    });
+    const events = captureEvents(sim);
+
+    sim.waitTurn();
+
+    // Party did not move.
+    expect(sim.snapshot().pos).toEqual({ col: 2, row: 2 });
+    // A turn passed — the torch burned one step.
+    expect(sim.snapshot().party.torch_steps).toBe(2);
+    // Re-lit and emitted a wait log + a state snapshot.
+    expect(bridge.relight).toHaveBeenCalled();
+    expect(
+      events.some((e) => e.kind === "log" && /waits/i.test(e.message)),
+    ).toBe(true);
+    expect(kinds(events)).toContain("state");
+  });
+});
+
+describe("MapSimulation.requestNpcMove — Ask to Move", () => {
+  it("relocates a blocking NPC to the tile farthest from the party", () => {
+    const grid = makeGrid();
+    grid[2][2] = cell({ npc: "guard" }); // NPC at col 2, row 2
+    const sim = makeSim({
+      grid,
+      party: makeParty({ start_position: { col: 1, row: 2 } }),
+      startAt: { col: 1, row: 2 }, // party west of the NPC
+    });
+    const events = captureEvents(sim);
+
+    const moved = sim.requestNpcMove("guard");
+
+    expect(moved).toBe(true);
+    // Vacated its old cell; stepped east (away from the party) to (3,2).
+    expect(grid[2][2].npc ?? "").toBe("");
+    expect(grid[2][3].npc).toBe("guard");
+    const movedEv = events.find((e) => e.kind === "npc_moved");
+    expect(movedEv).toMatchObject({
+      npcId: "guard",
+      from: { col: 2, row: 2 },
+      to: { col: 3, row: 2 },
+    });
+  });
+
+  it("returns false and stays put when the NPC is boxed in", () => {
+    const grid = makeGrid();
+    grid[2][2] = cell({ npc: "guard" });
+    // Wall off all four cardinal neighbours.
+    grid[1][2] = cell({ walkable: false });
+    grid[3][2] = cell({ walkable: false });
+    grid[2][1] = cell({ walkable: false });
+    grid[2][3] = cell({ walkable: false });
+    const sim = makeSim({
+      grid,
+      party: makeParty({ start_position: { col: 0, row: 0 } }),
+      startAt: { col: 0, row: 0 },
+    });
+    const events = captureEvents(sim);
+
+    const moved = sim.requestNpcMove("guard");
+
+    expect(moved).toBe(false);
+    expect(grid[2][2].npc).toBe("guard"); // unchanged
+    expect(kinds(events)).not.toContain("npc_moved");
+  });
+
+  it("returns false for an unknown npc id", () => {
+    const sim = makeSim();
+    expect(sim.requestNpcMove("nobody")).toBe(false);
+  });
+});
