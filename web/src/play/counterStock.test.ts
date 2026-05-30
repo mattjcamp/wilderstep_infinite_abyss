@@ -1,9 +1,89 @@
 import { describe, it, expect } from "vitest";
 import {
   computeSellPrice,
+  counterStockKey,
   getCounterStock,
   setCounterStock,
 } from "./counterStock";
+
+describe("counterStock — counterStockKey", () => {
+  it("keys an NPC-mediated shop by the NPC id", () => {
+    expect(counterStockKey({ counterId: "general", npcId: "merchant_bob" })).toBe(
+      "npc:merchant_bob:general",
+    );
+  });
+
+  it("keys a tile-planted shop by location + coordinates", () => {
+    expect(
+      counterStockKey({
+        counterId: "general",
+        location: "map:overworld",
+        pos: { col: 5, row: 7 },
+      }),
+    ).toBe("map:overworld@5,7:general");
+  });
+
+  it("distinguishes the same counter id across two tiles", () => {
+    const a = counterStockKey({
+      counterId: "general",
+      location: "map:overworld",
+      pos: { col: 5, row: 7 },
+    });
+    const b = counterStockKey({
+      counterId: "general",
+      location: "map:overworld",
+      pos: { col: 12, row: 3 },
+    });
+    expect(a).not.toBe(b);
+  });
+
+  it("distinguishes the same tile across overworld and a dungeon floor", () => {
+    const over = counterStockKey({
+      counterId: "general",
+      location: "map:overworld",
+      pos: { col: 5, row: 5 },
+    });
+    const dungeon = counterStockKey({
+      counterId: "general",
+      location: "dungeon:crypt:2",
+      pos: { col: 5, row: 5 },
+    });
+    expect(over).not.toBe(dungeon);
+  });
+
+  it("falls back to the bare counter id when no placement is given", () => {
+    expect(counterStockKey({ counterId: "general" })).toBe("general");
+  });
+});
+
+describe("counterStock — per-placement independence", () => {
+  it("buying out one placement leaves another sharing the same seed intact", () => {
+    const seed = ["sword", "mace"];
+    const keyA = counterStockKey({
+      counterId: "weapon",
+      location: "map:overworld",
+      pos: { col: 1, row: 1 },
+    });
+    const keyB = counterStockKey({
+      counterId: "weapon",
+      location: "map:overworld",
+      pos: { col: 9, row: 9 },
+    });
+    let counters: Record<
+      string,
+      ReadonlyArray<{ item: string; charges?: number; durability?: number }>
+    > = {};
+    // Player clears out placement A entirely.
+    counters = setCounterStock(counters, keyA, []);
+    // Placement B has never been touched → still seeds fresh from the
+    // catalog, unaffected by A being emptied.
+    expect(getCounterStock(counters, keyA, seed)).toEqual([]);
+    expect(getCounterStock(counters, keyB, seed)).toEqual([
+      { item: "sword" },
+      { item: "mace" },
+    ]);
+  });
+});
 
 describe("counterStock — getCounterStock", () => {
   it("seeds an empty save from the catalog list (one row per id)", () => {

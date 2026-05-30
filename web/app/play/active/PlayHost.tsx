@@ -407,6 +407,7 @@ function mapStateFromSnapshot(
 }
 import { loadWorld, saveWorld } from "@/play/save";
 import { addToInventory } from "@/play/inventoryStacking";
+import { counterStockKey } from "@/play/counterStock";
 import { applyCombatResultToSave } from "@/play/syncFromBattle";
 import { gameState } from "@/battle/state";
 import { awardQuestXpToSavedMembers } from "@/play/awardQuestXp";
@@ -742,6 +743,15 @@ export function PlayHost() {
    *  NPC with a `counter` field. Cleared by the overlay's close
    *  callback. */
   const [counterShopId, setCounterShopId] = useState<string | null>(null);
+  /** Persistent stock key for the counter currently open — built at
+   *  open time via `counterStockKey()` so each PHYSICAL counter (this
+   *  tile on this map/floor, or this NPC vendor) keeps its own
+   *  inventory on `save.counters` rather than sharing one bucket per
+   *  catalog id. Set alongside `counterShopId`; the overlay reads it
+   *  to seed / persist stock. */
+  const [counterStockKeyVal, setCounterStockKeyVal] = useState<string | null>(
+    null,
+  );
   /** When the counter shop was opened from an NPC dialog (Visit
    *  Counter button), remember that NPC's id so closing the counter
    *  pops back to the same dialog the player came from instead of
@@ -894,6 +904,18 @@ export function PlayHost() {
       if (cheby <= radius) visible.add(key);
     }
     r.setDetectedTraps(visible);
+  }, []);
+
+  /** Location prefix for the counter-stock key — distinguishes the
+   *  same tile coordinates across the overworld vs. each dungeon
+   *  floor so a shop tile at (5,5) in the crypt isn't conflated with
+   *  one at (5,5) on the overworld map. Reads refs so it's always
+   *  current at the moment a shop opens. */
+  const activeLocationPrefix = useCallback((): string => {
+    const d = dungeonStateRef.current;
+    if (d) return `dungeon:${d.dungeonId}:${d.floorIdx}`;
+    const mapId = saveRef.current?.party.currentMapId ?? "map";
+    return `map:${mapId}`;
   }, []);
 
   /** Enqueue a celebration placard + fire its sound and a gold
@@ -3470,8 +3492,19 @@ export function PlayHost() {
               // into a tile that does nothing.
               const id = ev.counterId;
               const def = catalog.counters.find((c) => c.id === id);
-              if (def) setCounterShopId(id);
-              else
+              if (def) {
+                // Key this shop to its physical tile on the active
+                // map / floor so two counters of the same id keep
+                // independent stock.
+                setCounterStockKeyVal(
+                  counterStockKey({
+                    counterId: id,
+                    location: activeLocationPrefix(),
+                    pos: ev.pos,
+                  }),
+                );
+                setCounterShopId(id);
+              } else
                 // eslint-disable-next-line no-console
                 console.warn(
                   `[play] counter_encountered → no counter "${id}" in catalog`,
@@ -4873,6 +4906,12 @@ export function PlayHost() {
               // Tile-walk-into-counter (line ~3285) skips this stamp
               // since there's no parent dialog to return to.
               setCounterReturnToNpcId(npcDialogId);
+              // Key the shop to this NPC vendor — stable as they
+              // wander, and distinct from any tile-planted counter
+              // that happens to share the same catalog id.
+              setCounterStockKeyVal(
+                counterStockKey({ counterId, npcId: npc.id }),
+              );
               setNpcDialogId(null);
               setCounterShopId(counterId);
             }}
@@ -5028,6 +5067,7 @@ export function PlayHost() {
         return (
           <PlayCounterShopOverlay
             counter={counter}
+            stockKey={counterStockKeyVal ?? counter.id}
             save={saveRef.current ?? state.save}
             items={state.catalog.items}
             maxHpById={maxHpById}

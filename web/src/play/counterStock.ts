@@ -24,6 +24,46 @@
  * Pure functions — the overlay handles React state + save commits.
  */
 
+/**
+ * Build the persistent stock key for ONE physical counter.
+ *
+ * Stock lives on `WorldSave.counters[key]`. Keying by the bare
+ * counter id would make every placement of the same counter (two
+ * "general store" tiles, or a tile shop + an NPC selling the same
+ * catalog counter) share a single inventory. Instead we key by the
+ * physical vendor:
+ *
+ *   - NPC-mediated shop → the NPC id. The NPC *is* the vendor, so the
+ *     key is stable even as they wander; tying in the counterId keeps
+ *     a (hypothetical) NPC fronting two counters separate.
+ *   - Tile-planted shop → the active location (overworld map id or
+ *     dungeon id + floor) plus the tile coordinates. Two general
+ *     stores in different rooms — or on different floors — get
+ *     distinct keys.
+ *
+ * Falls back to the bare counter id when neither discriminator is
+ * supplied (defensive; mirrors the legacy behaviour so a caller that
+ * forgets to thread placement info still resolves *a* stock rather
+ * than crashing).
+ */
+export function counterStockKey(args: {
+  counterId: string;
+  /** NPC id when the shop is reached through an NPC's dialog. */
+  npcId?: string;
+  /** Location prefix for tile-planted shops, e.g. `"map:overworld"`
+   *  or `"dungeon:crypt:2"`. Pair with `pos`. */
+  location?: string;
+  /** Tile coordinates for tile-planted shops. Pair with `location`. */
+  pos?: { col: number; row: number };
+}): string {
+  const { counterId, npcId, location, pos } = args;
+  if (npcId) return `npc:${npcId}:${counterId}`;
+  if (location && pos) {
+    return `${location}@${pos.col},${pos.row}:${counterId}`;
+  }
+  return counterId;
+}
+
 /** A single row in a counter's stock. Mirrors `InventoryEntry`. */
 export interface CounterStockEntry {
   item: string;

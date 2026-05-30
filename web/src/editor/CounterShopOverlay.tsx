@@ -7,12 +7,15 @@
  *   Left  — counter stock (one button per item; click to buy)
  *   Right — party inventory (one button per row; click to sell)
  *
- * Header shows the party's current gold. Buy / sell operations
- * mutate the party + stock arrays in place; the host re-renders by
- * tracking a tick counter (the arrays are shared by reference with
- * MapEditor's state, so this works without an explicit notification
- * channel). Transactions are lost on page reload because the
- * editor's simulation is intentionally a sandbox.
+ * Header shows the party's current gold. The counter's stock is held
+ * in a LOCAL working copy seeded from `counter.items` — buy/sell
+ * mutate that copy via state, never the shared catalog array, so the
+ * sandbox shop can't corrupt the authored `counters.json` data (each
+ * counter stays decoupled from the catalog and from every other
+ * counter). The party object is still mutated in place since the
+ * editor shares it by reference with MapEditor's sim state.
+ * Transactions reset when the overlay is reopened — the editor's
+ * simulation is intentionally a sandbox.
  *
  * Item shape comes from items.json — each Item has `buy` and `sell`
  * integer fields. An item with buy=0 cannot be purchased (shown but
@@ -59,9 +62,24 @@ export function CounterShopOverlay({
   items: ItemRef[];
   onClose: () => void;
 }) {
-  // Force a re-render after a transaction. The party + counter arrays
-  // are mutated in place, so React doesn't see a state change on its
-  // own; bumping this tick is the simplest nudge.
+  // Local working copy of this counter's stock, seeded from the
+  // catalog the first time the overlay mounts for a given counter.
+  // Buy/sell update THIS array (via setState), leaving the shared
+  // catalog `counter.items` untouched. Reseed when the counter id
+  // changes so swapping which shop is open shows the right shelves.
+  const [stock, setStock] = useState<string[]>(() =>
+    Array.isArray(counter.items) ? [...counter.items] : [],
+  );
+  useEffect(() => {
+    setStock(Array.isArray(counter.items) ? [...counter.items] : []);
+    // Reseed on identity change only; mutating `stock` must not
+    // re-trigger this. The catalog array is stable (we never write
+    // to it), so keying on the id is the correct trigger.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [counter.id]);
+
+  // Party gold/inventory are still mutated in place (shared by ref
+  // with the sim); bump a tick so those changes re-render too.
   const [, setTick] = useState(0);
   const refresh = () => setTick((n) => n + 1);
 
@@ -79,7 +97,6 @@ export function CounterShopOverlay({
   }, [onClose]);
 
   const itemsById = new Map(items.map((i) => [i.id, i]));
-  const stock = Array.isArray(counter.items) ? counter.items : [];
   const inventory = Array.isArray(party.inventory) ? party.inventory : [];
   const gold = typeof party.gold === "number" ? party.gold : 0;
 
@@ -111,7 +128,7 @@ export function CounterShopOverlay({
       items,
       1,
     ) as PartyInventoryEntry[];
-    stock.splice(stockIndex, 1);
+    setStock((s) => s.filter((_, i) => i !== stockIndex));
     refresh();
   };
 
@@ -130,7 +147,7 @@ export function CounterShopOverlay({
       items,
     ) as PartyInventoryEntry[];
     party.gold = (party.gold ?? 0) + price;
-    stock.push(entry.item);
+    setStock((s) => [...s, entry.item]);
     refresh();
   };
 

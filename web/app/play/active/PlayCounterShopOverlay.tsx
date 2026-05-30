@@ -67,6 +67,7 @@ interface CounterRef {
 
 export function PlayCounterShopOverlay({
   counter,
+  stockKey,
   save,
   items,
   maxHpById,
@@ -76,6 +77,12 @@ export function PlayCounterShopOverlay({
   onClose,
 }: {
   counter: CounterRef;
+  /** Persistent key for THIS physical counter's stock on
+   *  `save.counters`. Built by the host via `counterStockKey()` so
+   *  two placements of the same catalog counter (two general stores,
+   *  a tile shop vs. an NPC selling the same counter) keep separate
+   *  inventories. Seeded from `counter.items` on first open. */
+  stockKey: string;
   save: WorldSave;
   items: ReadonlyArray<ShopItemRef>;
   /** Catalog peak HP per character id — used by the Heal-All-HP /
@@ -110,7 +117,7 @@ export function PlayCounterShopOverlay({
   // (autosave, dungeon transition) shows through immediately.
   const stock: CounterStockEntry[] = getCounterStock(
     liveSave.counters,
-    counter.id,
+    stockKey,
     counter.items,
   );
 
@@ -264,7 +271,7 @@ export function PlayCounterShopOverlay({
     );
     const nextCounters = setCounterStock(
       liveSave.counters,
-      counter.id,
+      stockKey,
       stock.filter((_, i) => i !== stockIndex),
     );
     commit({
@@ -403,7 +410,7 @@ export function PlayCounterShopOverlay({
     }
     const nextCounters = setCounterStock(
       liveSave.counters,
-      counter.id,
+      stockKey,
       [...stock, counterRow],
     );
     const gold = liveSave.party.gold ?? 0;
