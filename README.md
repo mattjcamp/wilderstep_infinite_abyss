@@ -1,5 +1,9 @@
 # Wilderstep Infinite Abyss
 
+<p align="center">
+  <img src="docs/manual/assets/cover_art_transparent.png" alt="A party of adventurers — wizard, dwarf, ranger, and young archer — on the shore beneath a distant keep" width="720">
+</p>
+
 An Ultima III  and D&D inspired top-down, turn-based RPG built with TypeScript and Phaser. Lead a party of four adventurers through an open world of overworld exploration, town visits, dungeon delving, and tactical grid combat.
 
 <table>
@@ -13,7 +17,7 @@ An Ultima III  and D&D inspired top-down, turn-based RPG built with TypeScript a
 </tr>
 </table>
 
-Play Now! [You can try Wilderstep Infinite Abyss by clicking here to play in your browser.](https://mattjcamp.github.io/wilderstep_infinite_abyss/play/) 
+[Play Wilderstep Now!](https://mattjcamp.github.io/wilderstep_infinite_abyss/play/) You can play right in your web browser, no installation required.
 
 ## Features
 
@@ -36,3 +40,5 @@ Play Now! [You can try Wilderstep Infinite Abyss by clicking here to play in you
 - More content and game features
 
 [Wilderstep Player's Manual](docs/manual/manual.md) 
+
+[Play Wilderstep](https://mattjcamp.github.io/wilderstep_infinite_abyss/play/)
