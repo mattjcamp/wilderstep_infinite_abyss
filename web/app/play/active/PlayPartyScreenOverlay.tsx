@@ -25,7 +25,7 @@
  * carries. Pressing P / ESC / clicking the backdrop dismisses.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { mergeModel } from "@/data_model/merge";
 import { StaticModuleSource } from "@/data_model/StaticModuleSource";
 import {
@@ -1724,21 +1724,51 @@ function TinkerPicker({
   title?: string;
 }) {
   const itemById = new Map(items.map((i) => [i.id, i] as const));
-  // ESC cancels — mirrors HealTargetPicker's listener pattern so the
-  // parent overlay's close-on-ESC doesn't drop the whole Party
-  // screen by mistake.
+  // Keyboard navigation: Up/Down move the highlight, Enter picks the
+  // highlighted row, ESC cancels. Capture phase so the parent
+  // overlay's close-on-ESC + the underlying sim's movement keys don't
+  // fire under the modal.
+  const [focusIndex, setFocusIndex] = useState(0);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  // Clamp the cursor if the stock list shrinks between renders.
+  useEffect(() => {
+    setFocusIndex((i) => Math.min(i, Math.max(0, stockIds.length - 1)));
+  }, [stockIds.length]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.preventDefault();
         e.stopPropagation();
         onCancel();
+        return;
+      }
+      if (stockIds.length === 0) return;
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        e.stopPropagation();
+        setFocusIndex((i) => Math.min(i + 1, stockIds.length - 1));
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        e.stopPropagation();
+        setFocusIndex((i) => Math.max(0, i - 1));
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        e.stopPropagation();
+        const id = stockIds[focusIndex];
+        if (id) onPick(id);
       }
     };
     window.addEventListener("keydown", onKey, { capture: true });
     return () =>
       window.removeEventListener("keydown", onKey, { capture: true });
-  }, [onCancel]);
+  }, [onCancel, onPick, stockIds, focusIndex]);
+  // Keep the highlighted row in view as the cursor moves.
+  useEffect(() => {
+    const el = rootRef.current?.querySelector<HTMLElement>(
+      '[data-nav-focused="true"]',
+    );
+    if (el) el.scrollIntoView({ block: "nearest" });
+  }, [focusIndex]);
 
   return (
     <div
@@ -1746,6 +1776,7 @@ function TinkerPicker({
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
     >
       <div
+        ref={rootRef}
         onClick={(e) => e.stopPropagation()}
         className="flex max-h-[80vh] w-full max-w-sm flex-col rounded-lg border border-parchment/25 bg-ink/95 shadow-2xl"
       >
@@ -1767,14 +1798,22 @@ function TinkerPicker({
           </p>
         ) : (
           <ul className="flex flex-col gap-1 overflow-auto p-2">
-            {stockIds.map((id) => {
+            {stockIds.map((id, i) => {
               const def = itemById.get(id);
+              const focused = i === focusIndex;
               return (
                 <li key={id}>
                   <button
                     type="button"
                     onClick={() => onPick(id)}
-                    className="flex w-full items-center justify-between rounded border border-parchment/20 bg-ink/40 px-3 py-2 text-left text-sm text-parchment hover:bg-ink/60"
+                    onMouseEnter={() => setFocusIndex(i)}
+                    data-nav-focused={focused ? "true" : undefined}
+                    className={[
+                      "flex w-full items-center justify-between rounded border border-parchment/20 bg-ink/40 px-3 py-2 text-left text-sm text-parchment hover:bg-ink/60",
+                      focused
+                        ? "outline outline-2 outline-amber-200 outline-offset-1"
+                        : "",
+                    ].join(" ")}
                     title={def?.description ?? id}
                   >
                     <span className="font-display">{def?.name ?? id}</span>
@@ -1831,20 +1870,50 @@ function BrewPicker({
   }));
   const ready = annotated.filter((a) => Object.keys(a.shortages).length === 0);
   const short = annotated.filter((a) => Object.keys(a.shortages).length > 0);
-  // ESC cancels — capture-phase so the parent overlay's close-on-ESC
-  // doesn't swallow the Party screen by mistake.
+  // Keyboard navigation moves only through the BREWABLE (ready)
+  // recipes — the greyed-out short rows aren't actionable, so the
+  // highlight skips them. Up/Down move, Enter brews the highlighted
+  // recipe, ESC cancels. Ready rows render first, so their position
+  // in the list equals their index in `ready`.
+  const [focusIndex, setFocusIndex] = useState(0);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    setFocusIndex((i) => Math.min(i, Math.max(0, ready.length - 1)));
+  }, [ready.length]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.preventDefault();
         e.stopPropagation();
         onCancel();
+        return;
+      }
+      if (ready.length === 0) return;
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        e.stopPropagation();
+        setFocusIndex((i) => Math.min(i + 1, ready.length - 1));
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        e.stopPropagation();
+        setFocusIndex((i) => Math.max(0, i - 1));
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        e.stopPropagation();
+        const pick = ready[focusIndex];
+        if (pick) onPick(pick.recipe.id);
       }
     };
     window.addEventListener("keydown", onKey, { capture: true });
     return () =>
       window.removeEventListener("keydown", onKey, { capture: true });
-  }, [onCancel]);
+  }, [onCancel, onPick, ready, focusIndex]);
+  useEffect(() => {
+    const el = rootRef.current?.querySelector<HTMLElement>(
+      '[data-nav-focused="true"]',
+    );
+    if (el) el.scrollIntoView({ block: "nearest" });
+  }, [focusIndex]);
 
   /** Format a shortage map into a hint line like
    *  "missing 1× Moonpetal, 2× Spring Water". Names come from
@@ -1876,6 +1945,7 @@ function BrewPicker({
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
     >
       <div
+        ref={rootRef}
         onClick={(e) => e.stopPropagation()}
         className="flex max-h-[80vh] w-full max-w-md flex-col rounded-lg border border-parchment/25 bg-ink/95 shadow-2xl"
       >
@@ -1897,20 +1967,29 @@ function BrewPicker({
           </p>
         ) : (
           <ul className="flex flex-col gap-1 overflow-auto p-2">
-            {[...ready, ...short].map(({ recipe, shortages }) => {
+            {[...ready, ...short].map(({ recipe, shortages }, i) => {
               const out = itemById.get(recipe.result_item);
               const isReady = Object.keys(shortages).length === 0;
+              // Ready rows render first, so their list index doubles
+              // as their index into `ready` — that's what the cursor
+              // tracks.
+              const focused = isReady && i === focusIndex;
               return (
                 <li key={recipe.id}>
                   <button
                     type="button"
                     onClick={() => (isReady ? onPick(recipe.id) : undefined)}
+                    onMouseEnter={() => (isReady ? setFocusIndex(i) : undefined)}
                     disabled={!isReady}
-                    className={
+                    data-nav-focused={focused ? "true" : undefined}
+                    className={[
                       isReady
                         ? "flex w-full flex-col rounded border border-parchment/20 bg-ink/40 px-3 py-2 text-left text-sm text-parchment hover:bg-ink/60"
-                        : "flex w-full flex-col rounded border border-parchment/10 bg-ink/20 px-3 py-2 text-left text-sm text-parchment/40 cursor-not-allowed"
-                    }
+                        : "flex w-full flex-col rounded border border-parchment/10 bg-ink/20 px-3 py-2 text-left text-sm text-parchment/40 cursor-not-allowed",
+                      focused
+                        ? "outline outline-2 outline-amber-200 outline-offset-1"
+                        : "",
+                    ].join(" ")}
                     title={out?.description ?? recipe.result_item}
                   >
                     <span className="flex items-center justify-between">
