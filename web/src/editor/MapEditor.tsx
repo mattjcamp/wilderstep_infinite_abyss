@@ -61,6 +61,7 @@ import { NpcDialogOverlay } from "./NpcDialogOverlay";
 import { QuestDialogOverlay } from "./QuestDialogOverlay";
 import type { SimQuestRef } from "@/sim/types";
 import { CounterShopOverlay } from "./CounterShopOverlay";
+import { LinkPlacard } from "@/play/LinkPlacard";
 import { LockDialogOverlay } from "./LockDialogOverlay";
 import { MapAttributesDialog } from "./MapAttributesDialog";
 import { SpawnEncounterOverlay } from "./SpawnEncounterOverlay";
@@ -148,6 +149,12 @@ interface TileType {
   sprite: string;
   flags?: Record<string, unknown>;
   link?: { map_id: string; x: number; y: number } | null;
+  /** When true on a link or dungeon-entrance tile, the play host
+   *  shows a confirm placard (destination name + description +
+   *  explored badge) before traversing/entering, instead of crossing
+   *  immediately. Opt-in so only the tiles authors choose (dungeon
+   *  mouths, region portals) announce themselves. */
+  show_link_placard?: boolean;
 }
 
 interface RefRecord {
@@ -241,6 +248,10 @@ function cellMatchesPalette(cell: TileType, palette: TileType[]): boolean {
   if ((cell.npc ?? "") !== (base.npc ?? "")) return false;
   if (cell.sprite !== base.sprite) return false;
   if (JSON.stringify(cell.link ?? null) !== JSON.stringify(base.link ?? null))
+    return false;
+  if (
+    (cell.show_link_placard ?? false) !== (base.show_link_placard ?? false)
+  )
     return false;
   return true;
 }
@@ -409,6 +420,18 @@ export function MapEditor({
     activeStepName?: string;
     activeStepDescription?: string;
   } | null>(null);
+  /** Confirm placard for a flagged link / dungeon tile in sim mode.
+   *  Lets the author test the `show_link_placard` attribute: the sim
+   *  holds, this placard pops, and confirming runs the same traversal
+   *  / dungeon route the immediate path would. The action to run on
+   *  confirm is stashed in `pendingPlaceActionRef`. */
+  const [placard, setPlacard] = useState<{
+    placeKind: "link" | "dungeon";
+    name: string;
+    description?: string;
+    explored: boolean;
+  } | null>(null);
+  const pendingPlaceActionRef = useRef<(() => void) | null>(null);
   /** Mirrors npcEncounterId/shopCounterId in a ref so the sim's
    *  keyboard listener can gate movement without re-binding on every
    *  state change. */
@@ -432,7 +455,8 @@ export function MapEditor({
       partyScreenOpen ||
       !!lockEncounter ||
       !!spawnEncounter ||
-      !!questEncounter;
+      !!questEncounter ||
+      !!placard;
   }, [
     npcEncounterId,
     shopCounterId,
@@ -440,6 +464,7 @@ export function MapEditor({
     lockEncounter,
     spawnEncounter,
     questEncounter,
+    placard,
   ]);
   /** Callback the Phaser scene invokes when the user clicks a tile
    *  during "placing" — held in a ref so the scene closure stays
@@ -2539,7 +2564,9 @@ export function MapEditor({
             (existing.npc ?? "") === (brushTile.npc ?? "") &&
             existing.sprite === brushTile.sprite &&
             JSON.stringify(existing.link ?? null) ===
-              JSON.stringify(brushTile.link ?? null)
+              JSON.stringify(brushTile.link ?? null) &&
+            (existing.show_link_placard ?? false) ===
+              (brushTile.show_link_placard ?? false)
           ) {
             return;
           }
@@ -3038,6 +3065,43 @@ export function MapEditor({
           onBoat: ev.onBoat,
           boatSprite: ev.boatSprite,
         });
+      }
+      if (ev.kind === "place_encountered") {
+        // Flagged link / dungeon tile — pop the confirm placard so the
+        // author can test the show_link_placard attribute in sim. On
+        // confirm we run the SAME transition the immediate path would
+        // (link traversal / dungeon route); cancel just dismisses.
+        // The sandbox has no persistent save, so "explored" is always
+        // false here.
+        if (ev.placeKind === "link") {
+          const link = ev.link;
+          const name =
+            (state.kind === "ok"
+              ? state.availableMaps.find((m) => m.id === link.map_id)?.name
+              : undefined) ?? link.map_id;
+          pendingPlaceActionRef.current = () =>
+            onLinkTraversed(link, { onBoat: false, boatSprite: null });
+          setPlacard({ placeKind: "link", name, explored: false });
+        } else {
+          const dungeonId = ev.dungeonId;
+          const returnPos = ev.returnPos;
+          const name =
+            (state.kind === "ok"
+              ? state.availableDungeons.find((d) => d.id === dungeonId)?.name
+              : undefined) ?? dungeonId;
+          pendingPlaceActionRef.current = () => {
+            const params = new URLSearchParams({
+              id: dungeonId,
+              return: state.kind === "ok" ? state.mapRecord.id : mapId,
+              col: String(returnPos.col),
+              row: String(returnPos.row),
+            });
+            router.push(
+              `/editor/${moduleId}/sim/dungeon?${params.toString()}`,
+            );
+          };
+          setPlacard({ placeKind: "dungeon", name, explored: false });
+        }
       }
       if (ev.kind === "npc_encountered") {
         // Open the NPC dialog overlay. Movement is gated via
@@ -4044,6 +4108,27 @@ export function MapEditor({
             );
           })()
         : null}
+      {/* Place placard — confirm prompt for a flagged link / dungeon
+          tile, so authors can test the show_link_placard attribute in
+          sim. Confirm runs the stashed transition; cancel dismisses. */}
+      {placard ? (
+        <LinkPlacard
+          placeKind={placard.placeKind}
+          name={placard.name}
+          description={placard.description}
+          explored={placard.explored}
+          onConfirm={() => {
+            const act = pendingPlaceActionRef.current;
+            pendingPlaceActionRef.current = null;
+            setPlacard(null);
+            act?.();
+          }}
+          onCancel={() => {
+            pendingPlaceActionRef.current = null;
+            setPlacard(null);
+          }}
+        />
+      ) : null}
       {/* Map Properties dialog — edits the Map record's metadata
           (name / description / tags). Other maps in this module's
           own file contribute their tags as suggestions so authors
@@ -4379,6 +4464,22 @@ function Inspector({
             canReset={!!base}
             onChange={(v) => onUpdate({ locked: v })}
             onReset={() => onUpdate({ locked: undefined })}
+          />
+
+          <BoolEditor
+            label="Show place placard"
+            help="On a Link or Dungeon tile: show a confirm placard (destination name + description + explored badge) before crossing, instead of entering immediately. Opt-in per tile."
+            value={instance.show_link_placard ?? false}
+            paletteValue={
+              base?.show_link_placard ?? instance.show_link_placard ?? false
+            }
+            isModified={
+              !!base &&
+              fieldDiffersFromPalette(instance, palette, "show_link_placard")
+            }
+            canReset={!!base}
+            onChange={(v) => onUpdate({ show_link_placard: v })}
+            onReset={() => onUpdate({ show_link_placard: undefined })}
           />
 
           <BoolEditor

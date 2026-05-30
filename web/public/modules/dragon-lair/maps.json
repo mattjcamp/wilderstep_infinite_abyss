@@ -61768,7 +61768,8 @@
               "map_id": "hollowmere_town",
               "x": 10,
               "y": 0
-            }
+            },
+            "show_link_placard": true
           },
           {
             "id": "water",

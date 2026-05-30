@@ -31,6 +31,14 @@ export interface SimCell {
   light_range: number;
   /** Inter-map portal — null/undefined when this cell does not link. */
   link?: { map_id: string; x: number; y: number } | null;
+  /** When true on a link OR dungeon-entrance cell, stepping onto it
+   *  shows a confirm placard (destination name + description +
+   *  explored badge) instead of traversing/entering immediately —
+   *  the party only crosses if the player confirms. Opt-in per tile
+   *  so mundane doors don't interrupt every step; flagged tiles
+   *  (dungeon mouths, region portals) announce themselves. Absent /
+   *  false → traverse or enter immediately, the original behaviour. */
+  show_link_placard?: boolean;
   /** NPC id from npcs.json — when the party steps onto this cell, the
    *  sim emits an npc_encountered event so the host can open a dialog
    *  overlay. Empty / undefined when no NPC stands here. */

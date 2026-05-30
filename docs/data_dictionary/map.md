@@ -49,6 +49,22 @@ TBD. As fields are added, this section will list which other models this one poi
 }
 ```
 
+## Per-cell tile attributes
+
+Beyond the shared tile-catalog fields, individual painted cells in a map's
+grid can carry per-cell overrides the simulation reads (see `SimCell` in
+`web/src/sim/types.ts` and `TileType` in the editor). The interaction-relevant
+ones today:
+
+| Cell field | Type | Meaning |
+|---|---|---|
+| `link` | `{ map_id, x, y }` | Inter-map portal. Stepping onto the cell traverses to `(map_id, x, y)`. |
+| `show_link_placard` | bool | When set on a `link` **or** dungeon-entrance cell, the play host shows a confirm placard (destination name + description + an Explored/Unexplored badge) before crossing, instead of traversing/entering immediately. Opt-in per tile so only authored landmarks (dungeon mouths, region portals) announce themselves; mundane doors keep crossing instantly. The placard's text comes from the destination [Map](map.md) / Dungeon `description`. |
+| `dungeon` | string | Dungeon id. Stepping onto the cell descends into that dungeon (honours `show_link_placard`). |
+| `locked` | bool | Passage gated until unlocked (key / pick / scripted). |
+| `npc` / `counter` | string | NPC dialog / shop counter planted on the cell. |
+
 ## Notes and open questions
 
 - Schema is a placeholder. Fields beyond `id` and `name` are still to be decided.
+- `description` (string) is authored per map and surfaces in the link placard above; the play host threads it through the runtime map record.

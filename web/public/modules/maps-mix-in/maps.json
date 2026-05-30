@@ -104213,7 +104213,8 @@
             "link": null
           }
         ]
-      ]
+      ],
+      "lighting": "darkness"
     },
     {
       "id": "caves_1_l2",
@@ -140071,7 +140072,8 @@
             "link": null
           }
         ]
-      ]
+      ],
+      "lighting": "darkness"
     },
     {
       "id": "caves_1_l3",
@@ -176325,7 +176327,8 @@
             "link": null
           }
         ]
-      ]
+      ],
+      "lighting": "darkness"
     }
   ]
 }

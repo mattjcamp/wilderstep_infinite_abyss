@@ -1520,3 +1520,65 @@ describe("MapSimulation.requestNpcMove — Ask to Move", () => {
     expect(sim.requestNpcMove("nobody")).toBe(false);
   });
 });
+
+describe("MapSimulation — show_link_placard confirm", () => {
+  it("a flagged link tile emits `place_encountered` and does NOT traverse", () => {
+    const grid = makeGrid();
+    grid[0][1] = cell({
+      link: { map_id: "other_map", x: 5, y: 7 },
+      show_link_placard: true,
+    });
+    const sim = makeSim({ grid });
+    const events = captureEvents(sim);
+    sim.stepInDirection("right");
+
+    const place = events.find((e) => e.kind === "place_encountered");
+    expect(place).toBeDefined();
+    if (place?.kind !== "place_encountered") throw new Error("narrow");
+    expect(place.placeKind).toBe("link");
+    if (place.placeKind !== "link") throw new Error("narrow");
+    expect(place.link).toEqual({ map_id: "other_map", x: 5, y: 7 });
+    // Held: no traversal, party stays put (host crosses on confirm).
+    expect(kinds(events)).not.toContain("linked");
+    expect(kinds(events)).not.toContain("moved");
+    expect(sim.snapshot().pos).toEqual({ col: 0, row: 0 });
+  });
+
+  it("an UNflagged link tile still traverses immediately", () => {
+    const grid = makeGrid();
+    grid[0][1] = cell({ link: { map_id: "other_map", x: 0, y: 0 } });
+    const sim = makeSim({ grid });
+    const events = captureEvents(sim);
+    sim.stepInDirection("right");
+    expect(kinds(events)).toContain("linked");
+    expect(kinds(events)).not.toContain("place_encountered");
+  });
+
+  it("a flagged dungeon entrance emits `place_encountered` instead of entering", () => {
+    const grid = makeGrid();
+    grid[0][1] = cell({ dungeon: "crypt", show_link_placard: true });
+    const sim = makeSim({ grid });
+    const events = captureEvents(sim);
+    sim.stepInDirection("right");
+
+    const place = events.find((e) => e.kind === "place_encountered");
+    expect(place).toBeDefined();
+    if (place?.kind !== "place_encountered") throw new Error("narrow");
+    if (place.placeKind !== "dungeon") throw new Error("narrow");
+    expect(place.dungeonId).toBe("crypt");
+    expect(place.returnPos).toEqual({ col: 0, row: 0 });
+    expect(kinds(events)).not.toContain("dungeon_entered");
+    // Party has stepped onto the entrance tile (descends on confirm).
+    expect(sim.snapshot().pos).toEqual({ col: 1, row: 0 });
+  });
+
+  it("an UNflagged dungeon entrance enters immediately", () => {
+    const grid = makeGrid();
+    grid[0][1] = cell({ dungeon: "crypt" });
+    const sim = makeSim({ grid });
+    const events = captureEvents(sim);
+    sim.stepInDirection("right");
+    expect(kinds(events)).toContain("dungeon_entered");
+    expect(kinds(events)).not.toContain("place_encountered");
+  });
+});

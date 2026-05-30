@@ -51,6 +51,7 @@ import {
 import { PlayLogOverlay } from "./PlayLogOverlay";
 import { PlayCounterShopOverlay } from "./PlayCounterShopOverlay";
 import { PlayNpcDialogOverlay } from "./PlayNpcDialogOverlay";
+import { LinkPlacard } from "@/play/LinkPlacard";
 import type { CombatResolved } from "@/battle/scenes/CombatScene";
 import { PlayCombatHost } from "./PlayCombatHost";
 import { buildArenaCells, buildCustomArenaCells } from "@/play/buildArenaCells";
@@ -465,6 +466,10 @@ interface PlayCell {
 interface PlayMapRecord {
   id: string;
   name: string;
+  /** Authored prose about the place — shown in the link/dungeon
+   *  confirm placard when an entering tile is flagged
+   *  `show_link_placard`. Optional. */
+  description?: string;
   width: number;
   height: number;
   grid: PlayCell[][];
@@ -738,6 +743,18 @@ export function PlayHost() {
   const [questLogOpen, setQuestLogOpen] = useState(false);
   const [helpTipsOpen, setHelpTipsOpen] = useState(false);
   const [logOpen, setLogOpen] = useState(false);
+  /** Confirm placard for a flagged link / dungeon tile. Non-null while
+   *  the placard is up; carries the resolved display info. The actual
+   *  transition (traverse / descend) is stashed in
+   *  `pendingPlaceActionRef` so the Confirm button can run the same
+   *  handler the immediate path would. */
+  const [placard, setPlacard] = useState<{
+    placeKind: "link" | "dungeon";
+    name: string;
+    description?: string;
+    explored: boolean;
+  } | null>(null);
+  const pendingPlaceActionRef = useRef<(() => void) | null>(null);
   /** When non-null, the play-side counter shop is open against this
    *  counter id. Set when the party walks into a counter tile or an
    *  NPC with a `counter` field. Cleared by the overlay's close
@@ -1133,7 +1150,8 @@ export function PlayHost() {
       helpTipsOpen ||
       logOpen ||
       counterShopId !== null ||
-      npcDialogId !== null;
+      npcDialogId !== null ||
+      placard !== null;
   }, [
     lockEncounter,
     chestEncounter,
@@ -1145,6 +1163,7 @@ export function PlayHost() {
     logOpen,
     counterShopId,
     npcDialogId,
+    placard,
   ]);
   useEffect(() => {
     combatRef.current = combat;
@@ -3000,6 +3019,40 @@ export function PlayHost() {
             }
             if (ev.kind === "linked") {
               handleLinked(ev.link);
+              return;
+            }
+            if (ev.kind === "place_encountered") {
+              // Flagged link / dungeon tile — show a confirm placard
+              // instead of crossing. Resolve the destination's display
+              // info here (host owns the catalogs + save) and stash the
+              // real transition so the placard's Confirm can run it.
+              if (ev.placeKind === "link") {
+                const dest = catalog.allMaps.find(
+                  (m) => m.id === ev.link.map_id,
+                );
+                const link = ev.link;
+                pendingPlaceActionRef.current = () => handleLinked(link);
+                setPlacard({
+                  placeKind: "link",
+                  name: dest?.name ?? ev.link.map_id,
+                  description: dest?.description,
+                  explored: !!saveRef.current?.maps?.[ev.link.map_id],
+                });
+              } else {
+                const dest = catalog.dungeons.find(
+                  (d) => d.id === ev.dungeonId,
+                ) as { name?: string; description?: string } | undefined;
+                const dungeonId = ev.dungeonId;
+                const returnPos = ev.returnPos;
+                pendingPlaceActionRef.current = () =>
+                  handleDungeonEntered(dungeonId, returnPos);
+                setPlacard({
+                  placeKind: "dungeon",
+                  name: dest?.name ?? ev.dungeonId,
+                  description: dest?.description,
+                  explored: !!saveRef.current?.dungeons?.[ev.dungeonId],
+                });
+              }
               return;
             }
             if (ev.kind === "trap_triggered") {
@@ -5024,6 +5077,25 @@ export function PlayHost() {
           />
         );
       })() : null}
+
+      {placard ? (
+        <LinkPlacard
+          placeKind={placard.placeKind}
+          name={placard.name}
+          description={placard.description}
+          explored={placard.explored}
+          onConfirm={() => {
+            const act = pendingPlaceActionRef.current;
+            pendingPlaceActionRef.current = null;
+            setPlacard(null);
+            act?.();
+          }}
+          onCancel={() => {
+            pendingPlaceActionRef.current = null;
+            setPlacard(null);
+          }}
+        />
+      ) : null}
 
       {counterShopId && state.catalog && state.save ? (() => {
         const counter = state.catalog.counters.find(

@@ -401,6 +401,27 @@ export type SimEvent =
        *  when `onBoat` is true. */
       boatSprite: string | null;
     }
+  /** Fired INSTEAD of `linked` / `dungeon_entered` when the party
+   *  steps onto a link or dungeon-entrance cell flagged
+   *  `show_link_placard`. The kernel does NOT traverse / enter — it
+   *  holds while the host shows a confirm placard (the host resolves
+   *  the destination's name / description / explored state from its
+   *  catalogs + save). On confirm the host performs the same
+   *  transition it would for `linked` / `dungeon_entered`; on cancel
+   *  it simply dismisses. `placeKind` discriminates the payload. */
+  | {
+      kind: "place_encountered";
+      placeKind: "link";
+      pos: Position;
+      link: { map_id: string; x: number; y: number };
+    }
+  | {
+      kind: "place_encountered";
+      placeKind: "dungeon";
+      pos: Position;
+      dungeonId: string;
+      returnPos: Position;
+    }
   | { kind: "log"; message: string }
   /** Fired after a successful step onto a cell whose `npc` field is
    *  set. The host opens a dialog overlay; the kernel doesn't render
@@ -1319,6 +1340,22 @@ export class MapSimulation {
       return;
     }
 
+    // Confirm placard for a flagged link tile — hold here instead of
+    // traversing. The host shows the destination placard and only
+    // crosses on confirm (re-running the same link transition via its
+    // `linked` handler). Plain (unflagged) links fall through to the
+    // immediate traversal in the commit block below, unchanged.
+    if (kind === "linked" && target.show_link_placard && target.link?.map_id) {
+      this.emit({
+        kind: "place_encountered",
+        placeKind: "link",
+        pos: { col: targetCol, row: targetRow },
+        link: target.link,
+      });
+      this.emit({ kind: "log", message: "A path leads onward from here." });
+      return;
+    }
+
     // Movement commits — same side-effects regardless of move kind.
     const from = { ...this.pos };
     const to: Position = { col: targetCol, row: targetRow };
@@ -1479,6 +1516,27 @@ export class MapSimulation {
     // host can dispose+remount cleanly when the party exits.
     const dungeonId = this.dungeonIdAt(to);
     if (dungeonId) {
+      // Confirm placard for a flagged dungeon mouth — hold here
+      // (the party stands on the entrance) and let the host show the
+      // dungeon placard; it enters on confirm by running the same
+      // dungeon_entered transition. Unflagged dungeon tiles descend
+      // immediately, the original behaviour.
+      const entranceCell = cellAt(this.grid, to.col, to.row);
+      if (entranceCell?.show_link_placard) {
+        this.emit({
+          kind: "place_encountered",
+          placeKind: "dungeon",
+          pos: { col: to.col, row: to.row },
+          dungeonId,
+          returnPos: { col: from.col, row: from.row },
+        });
+        this.emit({
+          kind: "log",
+          message: "A dungeon entrance yawns before you.",
+        });
+        this.emit({ kind: "state" });
+        return;
+      }
       this.emit({
         kind: "dungeon_entered",
         dungeonId,
