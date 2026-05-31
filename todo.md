@@ -1,8 +1,5 @@
 # Polish
 
-- center maps in the browswer window
-- make sure the bottom bar fits the window gracefully
-
 # V3 Ideas
 
 - Add place description placard to linked tiles as optional. It would worked by selecting showLinkPlacard option. Then when the party is over that tile they will get the placard with the linked map description and an indication whether they have explored that area yet
