@@ -435,6 +435,42 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
     }
   };
 
+  /**
+   * Duplicate a map — deep-clone every cell + its metadata into a new
+   * record with a fresh id, append it to this module's own maps file,
+   * and drop straight into the editor for the copy. Lets authors build
+   * a variant (a re-themed town, a mirrored arena) without repainting
+   * from a blank grid. Non-destructive: the source map is untouched,
+   * and duplicating an INHERITED map lands the copy in this module's
+   * own file (the original stays in its parent module).
+   */
+  const onDuplicate = async (src: MapRecord) => {
+    if (state.kind !== "ok") return;
+    const existing = new Set(state.maps.map((m) => m.id));
+    // Unique id: "<id>_copy", then "_copy_2", "_copy_3", … if taken.
+    let newId = `${src.id}_copy`;
+    if (existing.has(newId)) {
+      let n = 2;
+      while (existing.has(`${src.id}_copy_${n}`)) n++;
+      newId = `${src.id}_copy_${n}`;
+    }
+    // Deep clone via JSON round-trip — the grid is plain data (nested
+    // TileType rows + link objects), so this fully detaches the copy
+    // from the source.
+    const clone: MapRecord = JSON.parse(JSON.stringify(src));
+    clone.id = newId;
+    clone.name = `${src.name} (copy)`;
+    try {
+      await persistMaps([...state.maps, clone]);
+    } catch (e) {
+      window.alert(
+        `Couldn't copy map: ${e instanceof Error ? e.message : String(e)}`,
+      );
+      return;
+    }
+    router.push(`/editor/${moduleId}/maps/${newId}`);
+  };
+
   const onDiscardDraft = () => {
     if (typeof window === "undefined") return;
     if (!hasDraft(moduleId, MODEL_KEY)) return;
@@ -611,6 +647,18 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
                         </span>
                       ) : null}
                     </Link>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onDuplicate(m);
+                      }}
+                      className="rounded border border-parchment/20 px-2 py-0.5 text-xs text-parchment/60 hover:border-parchment/50 hover:bg-ink/50 hover:text-parchment"
+                      title="Duplicate this map into a new copy and open it in the editor."
+                    >
+                      Copy
+                    </button>
                     <button
                       type="button"
                       onClick={(e) => {

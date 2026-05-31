@@ -2321,43 +2321,50 @@ export function PlayHost() {
           this.world.relight();
           this.mountSim();
 
-          // Camera setup — mirrors v1's `installCamera` in
-          // OverworldScene exactly:
-          //
-          //   - Bounds extended downward by PLAY_LOG_HEIGHT so the
-          //     camera has headroom to scroll the bottom row of tiles
-          //     above the in-canvas log strip. Without that, when the
-          //     party walks the bottom row of a tall map the player
-          //     marker hides behind the strip pinned at the viewport
-          //     bottom.
-          //
-          //   - startFollow with lerp 0.2: the camera eases toward
-          //     the party rather than snapping, which reads smoother
-          //     when the camera actually has room to scroll.
-          //
-          //   - When the map is at-or-smaller than the viewport
-          //     (30×21 tiles or less, given the 32px log reservation),
-          //     `setBounds` is smaller than the camera viewport — so
-          //     Phaser clamps scroll to (0, 0) and the camera CANNOT
-          //     move regardless of where the party walks. That's how
-          //     v1 achieves its "locked" feel; design maps within the
-          //     viewport and the camera stays put.
-          //
-          //   - roundPixels keeps the pixel-art alignment sharp.
-          if (this.world.partySprite) {
-            this.cameras.main.setBounds(
-              0,
-              0,
-              mapPixelWidth,
-              mapPixelHeight + PLAY_LOG_HEIGHT,
-            );
-            this.cameras.main.setRoundPixels(true);
-            this.cameras.main.startFollow(
-              this.world.partySprite,
-              true,
-              0.2,
-              0.2,
-            );
+          // Camera setup. We don't use Phaser's startFollow/setBounds
+          // (its sub-viewport behaviour clamps a too-small map into the
+          // top-left corner). Instead `recenterCamera` positions the
+          // camera with independent per-axis rules every frame:
+          //   - an axis the map FITS within is centered + locked, so
+          //     the map sits in the middle of the play area rather than
+          //     hugging a corner / the top;
+          //   - an axis the map OVERFLOWS follows the party (eased),
+          //     clamped to the map edges, with the bottom clamp leaving
+          //     the log strip's headroom so the last row clears it.
+          // This handles all four cases — fits both, overflows both,
+          // and the two mixed (wide-short / tall-narrow) maps — with
+          // one code path. roundPixels keeps the pixel-art sharp.
+          // Per-axis camera framing (see `recenterCamera`). Each axis
+          // is handled independently: an axis the map FITS within is
+          // centered and locked; an axis the map OVERFLOWS follows the
+          // party, clamped to the map edges. This is why a wide-but-
+          // short overworld scrolls left/right yet sits vertically
+          // centered between the top and the log strip — instead of
+          // hugging the top with dead space above the log.
+          this.cameras.main.setRoundPixels(true);
+          this.recenterCamera(true);
+
+          // Frame the map when it fits the play area on BOTH axes, so a
+          // small centered scene reads as intentional rather than
+          // floating in the void: a faint panel just outside the map's
+          // edges, behind the tiles.
+          const usableHeight = PLAY_CANVAS_HEIGHT - PLAY_LOG_HEIGHT;
+          const mapFitsView =
+            mapPixelWidth <= PLAY_CANVAS_WIDTH &&
+            mapPixelHeight <= usableHeight;
+          if (mapFitsView) {
+            const pad = 10;
+            this.add
+              .rectangle(
+                mapPixelWidth / 2,
+                mapPixelHeight / 2,
+                mapPixelWidth + pad * 2,
+                mapPixelHeight + pad * 2,
+                0x12121f,
+                1,
+              )
+              .setDepth(-10)
+              .setStrokeStyle(2, 0x2a2a3a);
           }
 
           // Install the bottom log strip — mirrors v1's
@@ -2373,10 +2380,12 @@ export function PlayHost() {
           // strip rides up to sit right below the last row of tiles
           // rather than leaving a dead gap of canvas bg between the
           // map and the log).
-          const logY = Math.min(
-            PLAY_CANVAS_HEIGHT - PLAY_LOG_HEIGHT,
-            mapPixelHeight,
-          );
+          // Always pin the log / clock strip to the bottom of the
+          // game screen. (It used to ride up to sit flush under short
+          // maps, which left it floating mid-canvas with dead space
+          // below — it now stays put at the canvas bottom for every
+          // map.) scrollFactor 0 keeps it screen-relative.
+          const logY = PLAY_CANVAS_HEIGHT - PLAY_LOG_HEIGHT;
           this.logBar = this.add
             .rectangle(
               0,
@@ -2442,6 +2451,9 @@ export function PlayHost() {
          *  actually rolled over — Text rebuilds are not free in
          *  Phaser, and the loop runs at ~60fps. */
         override update(): void {
+          // Ease the camera toward its per-axis target every frame so
+          // following (on overflow axes) stays smooth.
+          this.recenterCamera(false);
           if (!this.logText) return;
           if (clockRef.current !== this.lastClockShown) {
             this.lastClockShown = clockRef.current;
@@ -2451,6 +2463,45 @@ export function PlayHost() {
                 lunarPhaseName({ totalMinutes: clockRef.current }),
             );
           }
+        }
+
+        /** Position the camera with independent per-axis rules:
+         *   - an axis the map FITS within is centered (locked) — the
+         *     map sits in the middle of the play area rather than
+         *     hugging the top-left corner;
+         *   - an axis the map OVERFLOWS follows the party, clamped to
+         *     the map's edges so we never pan into background.
+         *  The vertical fit is measured against the play area ABOVE the
+         *  log strip, and overflow-follow leaves the log's headroom so
+         *  the bottom row clears the strip. `instant` snaps (mount);
+         *  otherwise we ease toward the target for smooth scrolling. */
+        recenterCamera(instant: boolean): void {
+          const cam = this.cameras.main;
+          const sprite = this.world?.partySprite;
+          const viewW = PLAY_CANVAS_WIDTH;
+          const usableH = PLAY_CANVAS_HEIGHT - PLAY_LOG_HEIGHT;
+          const px = sprite ? sprite.x : mapPixelWidth / 2;
+          const py = sprite ? sprite.y : mapPixelHeight / 2;
+          const tx =
+            mapPixelWidth <= viewW
+              ? (mapPixelWidth - viewW) / 2
+              : Math.min(Math.max(px - viewW / 2, 0), mapPixelWidth - viewW);
+          const ty =
+            mapPixelHeight <= usableH
+              ? (mapPixelHeight - usableH) / 2
+              : Math.min(
+                  Math.max(py - usableH / 2, 0),
+                  mapPixelHeight - usableH,
+                );
+          if (instant) {
+            cam.setScroll(Math.round(tx), Math.round(ty));
+            return;
+          }
+          // Ease, then snap when within a pixel so we don't jitter or
+          // get stuck a pixel off the target once the party stops.
+          const nx = Math.abs(tx - cam.scrollX) <= 1 ? tx : cam.scrollX + (tx - cam.scrollX) * 0.2;
+          const ny = Math.abs(ty - cam.scrollY) <= 1 ? ty : cam.scrollY + (ty - cam.scrollY) * 0.2;
+          cam.setScroll(Math.round(nx), Math.round(ny));
         }
 
         mountSim() {
