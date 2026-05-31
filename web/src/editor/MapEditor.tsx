@@ -1316,6 +1316,10 @@ export function MapEditor({
 
       class MapScene extends Phaser.Scene {
         cells: Map<string, Phaser.GameObjects.Image> = new Map();
+        /** Sprite keys with a runtime (post-preload) load in flight, so
+         *  `ensureTexture` doesn't queue the same image twice while a
+         *  freshly-created sprite is loading. */
+        loadingTextures: Set<string> = new Set();
         gridGraphics: Phaser.GameObjects.Graphics | null = null;
         selectionGraphics: Phaser.GameObjects.Graphics | null = null;
         overrideGraphics: Phaser.GameObjects.Graphics | null = null;
@@ -1399,6 +1403,31 @@ export function MapEditor({
         fillPreviewGraphics: Phaser.GameObjects.Graphics | null = null;
 
         preload() {
+          // Resilience: if a sprite fails to load — most commonly a
+          // draft data URL that can't decode — fall back to the
+          // on-disk PNG so the canvas still shows the published sprite.
+          // Without this, a broken draft renders fine in the palette
+          // (which reads the on-disk file via a plain <img>) but leaves
+          // the map cell blank. Retry each key from disk at most once
+          // so a genuinely-missing file can't loop forever.
+          const retriedFromDisk = new Set<string>();
+          this.load.on(
+            "loaderror",
+            (file: Phaser.Loader.File) => {
+              const key = file?.key;
+              if (
+                !key ||
+                retriedFromDisk.has(key) ||
+                this.textures.exists(key)
+              ) {
+                return;
+              }
+              retriedFromDisk.add(key);
+              this.loadingTextures.delete(key);
+              this.load.image(key, withBasePath(`/sprites/${key}`));
+              if (!this.load.isLoading()) this.load.start();
+            },
+          );
           // Sprite drafts (from the in-browser pixel editor) override
           // the on-disk PNG. Authors painting in /editor/<m>/sprites
           // see their edits land in this scene's textures via the
@@ -1410,6 +1439,33 @@ export function MapEditor({
               draft ?? withBasePath(`/sprites/${sprite}`),
             );
           }
+        }
+
+        /** Make sure `key`'s texture is loaded, then run `onReady`.
+         *  Lets a tile whose sprite was created mid-session (and so
+         *  wasn't in the mount-time preload set) render the moment it's
+         *  painted, instead of staying blank until the editor reloads.
+         *  Draft-first with the same on-disk fallback as preload
+         *  (the `loaderror` handler above covers the retry). No-op for
+         *  empty keys or textures already present. */
+        ensureTexture(key: string, onReady: () => void): void {
+          if (!key) return;
+          if (this.textures.exists(key)) {
+            onReady();
+            return;
+          }
+          // Fire onReady when this specific image finishes loading.
+          this.load.once(`filecomplete-image-${key}`, () => {
+            if (this.textures.exists(key)) onReady();
+          });
+          if (this.loadingTextures.has(key)) return; // already queued
+          this.loadingTextures.add(key);
+          this.load.once(`filecomplete-image-${key}`, () =>
+            this.loadingTextures.delete(key),
+          );
+          const draft = loadSpriteDraft(moduleId, key);
+          this.load.image(key, draft ?? withBasePath(`/sprites/${key}`));
+          if (!this.load.isLoading()) this.load.start();
         }
 
         create() {
@@ -2575,8 +2631,14 @@ export function MapEditor({
           const fresh: TileType = { ...brushTile };
           gridRef.current[r][c] = fresh;
           const img = this.cells.get(`${c},${r}`);
-          if (img && fresh.sprite && this.textures.exists(fresh.sprite)) {
-            img.setTexture(fresh.sprite);
+          if (img && fresh.sprite) {
+            // Load the texture on demand if it wasn't preloaded — e.g.
+            // a sprite the author just created this session — so the
+            // painted cell shows it immediately rather than staying on
+            // its previous texture until a reload.
+            this.ensureTexture(fresh.sprite, () =>
+              img.setTexture(fresh.sprite),
+            );
           }
           persistRef.current();
         }
@@ -2682,12 +2744,12 @@ export function MapEditor({
               const fresh: TileType = { ...brushTile };
               gridRef.current[row][col] = fresh;
               const img = this.cells.get(`${col},${row}`);
-              if (
-                img &&
-                fresh.sprite &&
-                this.textures.exists(fresh.sprite)
-              ) {
-                img.setTexture(fresh.sprite);
+              if (img && fresh.sprite) {
+                // Load on demand if not yet preloaded (a mid-session
+                // sprite) so the filled cells render immediately.
+                this.ensureTexture(fresh.sprite, () =>
+                  img.setTexture(fresh.sprite),
+                );
               }
               changed = true;
             }
@@ -3855,6 +3917,7 @@ export function MapEditor({
             </p>
           ) : (
             <PaletteByTag
+              moduleId={moduleId}
               palette={palette}
               activeBrush={activeBrush}
               collapsed={collapsedTags}
@@ -3969,6 +4032,7 @@ export function MapEditor({
           <SimPlacingPanel onCancel={() => setSimMode("off")} />
         ) : (
           <Inspector
+            moduleId={moduleId}
             selectedCell={selectedCell}
             instance={selectedInstance}
             base={selectedBase}
@@ -4227,13 +4291,25 @@ function SimPlacingPanel({ onCancel }: { onCancel: () => void }) {
 /** Group + collapse the Tile Palette side panel by tag. Each section
  *  is a clickable header (toggles collapsed/expanded) and a body of
  *  tiles. Untagged tiles bucket as "(untagged)" at the end. */
+/** Resolve a sprite thumbnail's <img> src the SAME way the map canvas
+ *  + game do: prefer the in-browser draft (pixel-editor edits) over the
+ *  on-disk PNG. Keeps the palette / inspector thumbnails in lockstep
+ *  with what's actually painted, so an unpublished draft can't silently
+ *  show one image in the palette and another on the map. */
+function spriteThumbSrc(moduleId: string, sprite: string): string {
+  if (!sprite) return "";
+  return loadSpriteDraft(moduleId, sprite) ?? withBasePath(`/sprites/${sprite}`);
+}
+
 function PaletteByTag({
+  moduleId,
   palette,
   activeBrush,
   collapsed,
   onToggleTag,
   onPickBrush,
 }: {
+  moduleId: string;
   palette: TileType[];
   activeBrush: string | null;
   collapsed: Set<string>;
@@ -4293,7 +4369,7 @@ function PaletteByTag({
                         }`}
                       >
                         <img
-                          src={withBasePath(`/sprites/${t.sprite}`)}
+                          src={spriteThumbSrc(moduleId, t.sprite)}
                           alt=""
                           width={24}
                           height={24}
@@ -4317,6 +4393,7 @@ function PaletteByTag({
 }
 
 function Inspector({
+  moduleId,
   selectedCell,
   instance,
   base,
@@ -4331,6 +4408,7 @@ function Inspector({
   availableQuests,
   onUpdate,
 }: {
+  moduleId: string;
   selectedCell: { col: number; row: number } | null;
   /** The tile data living at the selected cell. The cell IS this data. */
   instance: TileType | null;
@@ -4383,7 +4461,7 @@ function Inspector({
 
           <div className="flex items-start gap-3">
             <img
-              src={withBasePath(`/sprites/${instance.sprite}`)}
+              src={spriteThumbSrc(moduleId, instance.sprite)}
               alt=""
               width={48}
               height={48}
