@@ -253,6 +253,12 @@ export function PixelEditor({
   /** Live drag flag. Mousedown sets it true and snapshots; mouseup
    *  clears. While true, mousemove paints continuously. */
   const draggingRef = useRef<boolean>(false);
+  /** Bumped to force the source/draft load effect to re-run in place —
+   *  e.g. after Discard (draft gone → reload the on-disk PNG) or
+   *  Publish (now-published PNG becomes the source). Without this the
+   *  canvas kept showing the in-memory draft after Discard, so the
+   *  button looked like it did nothing. */
+  const [reloadNonce, setReloadNonce] = useState(0);
 
   // ── Source / draft load ───────────────────────────────────────────
   useEffect(() => {
@@ -329,7 +335,7 @@ export function PixelEditor({
     return () => {
       cancelled = true;
     };
-  }, [moduleId, path, startBlank, newSpriteSize?.w, newSpriteSize?.h]);
+  }, [moduleId, path, startBlank, newSpriteSize?.w, newSpriteSize?.h, reloadNonce]);
 
   // ── Paint helpers ─────────────────────────────────────────────────
   /** Active "paint colour" — either the picked hex or the transparent
@@ -496,7 +502,11 @@ export function PixelEditor({
 
   const handleDiscard = useCallback(() => {
     discardSpriteDraft(moduleId, path);
-    setStatusMessage("Draft discarded. Reload to see the on-disk PNG.");
+    // Reload the canvas from the on-disk PNG right away so the artist
+    // SEES the draft revert (the button used to clear the draft but
+    // leave the stale pixels on screen, so it looked like a no-op).
+    setReloadNonce((n) => n + 1);
+    setStatusMessage("Draft discarded — reverted to the published sprite.");
     onDiscarded?.();
   }, [moduleId, path, onDiscarded]);
 
