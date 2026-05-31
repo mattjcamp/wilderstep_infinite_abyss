@@ -62,6 +62,7 @@ import { QuestDialogOverlay } from "./QuestDialogOverlay";
 import type { SimQuestRef } from "@/sim/types";
 import { CounterShopOverlay } from "./CounterShopOverlay";
 import { LinkPlacard } from "@/play/LinkPlacard";
+import { SpritePicker } from "./SpritePicker";
 import { LockDialogOverlay } from "./LockDialogOverlay";
 import { MapAttributesDialog } from "./MapAttributesDialog";
 import { SpawnEncounterOverlay } from "./SpawnEncounterOverlay";
@@ -147,6 +148,12 @@ interface TileType {
    *  see at a glance where each villager / quest-giver stands. */
   npc: string;
   sprite: string;
+  /** Optional purely-visual background sprite drawn BEHIND `sprite`
+   *  and lit the same way. A foreground tile with transparent pixels
+   *  reveals it, so one tower/tree foreground can sit on any terrain
+   *  background without baking a combined tile per terrain. Absent →
+   *  the dark canvas shows through. No gameplay meaning. */
+  background_sprite?: string;
   flags?: Record<string, unknown>;
   link?: { map_id: string; x: number; y: number } | null;
   /** When true on a link or dungeon-entrance tile, the play host
@@ -251,6 +258,10 @@ function cellMatchesPalette(cell: TileType, palette: TileType[]): boolean {
     return false;
   if (
     (cell.show_link_placard ?? false) !== (base.show_link_placard ?? false)
+  )
+    return false;
+  if (
+    (cell.background_sprite ?? "") !== (base.background_sprite ?? "")
   )
     return false;
   return true;
@@ -1262,9 +1273,15 @@ export function MapEditor({
       // item's icon so we can render placed-sprite overlays on cells
       // that reference one.
       const spriteKeys = new Set<string>();
-      for (const t of palette) if (t.sprite) spriteKeys.add(t.sprite);
+      for (const t of palette) {
+        if (t.sprite) spriteKeys.add(t.sprite);
+        if (t.background_sprite) spriteKeys.add(t.background_sprite);
+      }
       for (const row of gridRef.current) {
-        for (const cell of row) if (cell?.sprite) spriteKeys.add(cell.sprite);
+        for (const cell of row) {
+          if (cell?.sprite) spriteKeys.add(cell.sprite);
+          if (cell?.background_sprite) spriteKeys.add(cell.background_sprite);
+        }
       }
       for (const e of encounters) {
         const s = e.monster_party_tile;
@@ -1316,6 +1333,10 @@ export function MapEditor({
 
       class MapScene extends Phaser.Scene {
         cells: Map<string, Phaser.GameObjects.Image> = new Map();
+        /** Optional per-cell background sprite, drawn under the base
+         *  tile (depth below 0) so a transparent foreground reveals
+         *  it. Only present for cells whose `background_sprite` is set. */
+        backgroundCells: Map<string, Phaser.GameObjects.Image> = new Map();
         /** Sprite keys with a runtime (post-preload) load in flight, so
          *  `ensureTexture` doesn't queue the same image twice while a
          *  freshly-created sprite is loading. */
@@ -1468,6 +1489,33 @@ export function MapEditor({
           if (!this.load.isLoading()) this.load.start();
         }
 
+        /** Create / update / remove the optional background image for a
+         *  cell so it matches `bgSprite`. Drawn at depth -10 (under the
+         *  base tile). Loads the texture on demand if it wasn't
+         *  preloaded. Passing an empty/undefined sprite removes it. */
+        syncBackgroundCell(c: number, r: number, bgSprite?: string): void {
+          const key = `${c},${r}`;
+          const existing = this.backgroundCells.get(key);
+          if (bgSprite) {
+            if (existing) {
+              this.ensureTexture(bgSprite, () =>
+                existing.setTexture(bgSprite),
+              );
+            } else {
+              const bg = this.add
+                .image(c * TILE_SIZE, r * TILE_SIZE, bgSprite)
+                .setOrigin(0)
+                .setDisplaySize(TILE_SIZE, TILE_SIZE)
+                .setDepth(-10);
+              this.backgroundCells.set(key, bg);
+              this.ensureTexture(bgSprite, () => bg.setTexture(bgSprite));
+            }
+          } else if (existing) {
+            existing.destroy();
+            this.backgroundCells.delete(key);
+          }
+        }
+
         create() {
           for (let r = 0; r < mapRecord.height; r++) {
             for (let c = 0; c < mapRecord.width; c++) {
@@ -1480,6 +1528,7 @@ export function MapEditor({
                 .setOrigin(0)
                 .setDisplaySize(TILE_SIZE, TILE_SIZE);
               this.cells.set(`${c},${r}`, img);
+              this.syncBackgroundCell(c, r, cell?.background_sprite);
             }
           }
           // Draw the grid lines once into a Graphics layer, then toggle
@@ -1717,6 +1766,13 @@ export function MapEditor({
                 if (!img) continue;
                 const [cs, rs] = key.split(",");
                 applyTint(img, Number(cs), Number(rs));
+              }
+              // Background cells get the same per-cell tint as their
+              // foreground so the layer behind a transparent tile
+              // lights identically.
+              for (const [key, bgImg] of this.backgroundCells) {
+                const [cs, rs] = key.split(",");
+                applyTint(bgImg, Number(cs), Number(rs));
               }
               // Placed overlays share their cell's render band so
               // a goblin in red infravision territory reads as red,
@@ -2619,6 +2675,8 @@ export function MapEditor({
             (existing.dungeon ?? "") === (brushTile.dungeon ?? "") &&
             (existing.npc ?? "") === (brushTile.npc ?? "") &&
             existing.sprite === brushTile.sprite &&
+            (existing.background_sprite ?? "") ===
+              (brushTile.background_sprite ?? "") &&
             JSON.stringify(existing.link ?? null) ===
               JSON.stringify(brushTile.link ?? null) &&
             (existing.show_link_placard ?? false) ===
@@ -2640,6 +2698,7 @@ export function MapEditor({
               img.setTexture(fresh.sprite),
             );
           }
+          this.syncBackgroundCell(c, r, fresh.background_sprite);
           persistRef.current();
         }
 
@@ -2736,6 +2795,10 @@ export function MapEditor({
                 (existing.quest ?? "") === (brushTile.quest ?? "") &&
                 (existing.dungeon ?? "") === (brushTile.dungeon ?? "") &&
                 existing.sprite === brushTile.sprite &&
+                (existing.background_sprite ?? "") ===
+                  (brushTile.background_sprite ?? "") &&
+                (existing.show_link_placard ?? false) ===
+                  (brushTile.show_link_placard ?? false) &&
                 JSON.stringify(existing.link ?? null) ===
                   JSON.stringify(brushTile.link ?? null)
               ) {
@@ -2744,6 +2807,7 @@ export function MapEditor({
               const fresh: TileType = { ...brushTile };
               gridRef.current[row][col] = fresh;
               const img = this.cells.get(`${col},${row}`);
+              this.syncBackgroundCell(col, row, fresh.background_sprite);
               if (img && fresh.sprite) {
                 // Load on demand if not yet preloaded (a mid-session
                 // sprite) so the filled cells render immediately.
@@ -4477,6 +4541,29 @@ function Inspector({
               </p>
             </div>
           </div>
+
+          <InspectorRow
+            label="Background"
+            isModified={
+              !!base &&
+              fieldDiffersFromPalette(instance, palette, "background_sprite")
+            }
+            canReset={!!base}
+            onReset={() => onUpdate({ background_sprite: undefined })}
+          >
+            <SpritePicker
+              value={instance.background_sprite ?? ""}
+              config={{ category: "map", format: "path" }}
+              onChange={(v) =>
+                onUpdate({ background_sprite: v ? v : undefined })
+              }
+            />
+            <p className="mt-1 text-[10px] leading-snug text-parchment/45">
+              Optional terrain drawn behind this tile; the tile&apos;s
+              transparent pixels reveal it. Blank = the dark canvas
+              (the default).
+            </p>
+          </InspectorRow>
 
           <WalkableEditor
             value={instance.walkable}

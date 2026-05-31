@@ -9289,7 +9289,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/tower_2.png",
-            "tag": null
+            "tag": null,
+            "background_sprite": "map/path.png"
           },
           {
             "boat": false,
