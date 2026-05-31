@@ -58,6 +58,8 @@ ones today:
 
 | Cell field | Type | Meaning |
 |---|---|---|
+| `sprite` | string | The cell's main (foreground) graphic. Carries the tile's gameplay role via its Tile Palette entry. May have transparent pixels. |
+| `background_sprite` | string | Optional purely-visual sprite drawn BEHIND `sprite` and lit identically. Lets a transparent foreground (tower, tree) sit on a chosen terrain (grass, forest, mountain) without baking a combined tile per terrain. Absent → the dark canvas shows through (original look). No gameplay meaning of its own. |
 | `link` | `{ map_id, x, y }` | Inter-map portal. Stepping onto the cell traverses to `(map_id, x, y)`. |
 | `show_link_placard` | bool | When set on a `link` **or** dungeon-entrance cell, the play host shows a confirm placard (destination name + description + an Explored/Unexplored badge) before crossing, instead of traversing/entering immediately. Opt-in per tile so only authored landmarks (dungeon mouths, region portals) announce themselves; mundane doors keep crossing instantly. The placard's text comes from the destination [Map](map.md) / Dungeon `description`. |
 | `dungeon` | string | Dungeon id. Stepping onto the cell descends into that dungeon (honours `show_link_placard`). |

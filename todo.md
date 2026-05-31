@@ -1,6 +1,11 @@
-# Polish
 
-# V3 Ideas
+# Playthrough Polish
+
+- Return dungeons to their original intended state of being procedurally generated and resuable on a per game level. So, we should have variations of one dungeon that has a unique layout for each game. And we can use a dungeon data model multiple times on one map and each one would be unique within the game. Dungeons can still be used to seed maps, but quests may need to be limited to simple steps like "reach bottom floor" aka: seplunking quest.
+
+seplunking quest
+
+## Big Ideas
 
 - New Puzzle system (presure plates that open doors, etc)
 - Key system (certain keys open certain doors, party gets a keyring)

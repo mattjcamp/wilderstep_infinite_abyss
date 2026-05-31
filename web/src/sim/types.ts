@@ -31,6 +31,14 @@ export interface SimCell {
   light_range: number;
   /** Inter-map portal — null/undefined when this cell does not link. */
   link?: { map_id: string; x: number; y: number } | null;
+  /** Optional purely-visual background sprite, drawn BEHIND the
+   *  cell's main `sprite` and tinted by the same lighting pass. Lets a
+   *  foreground tile with transparent pixels (a tower, a tree) sit on
+   *  a chosen terrain (grass, forest, mountain) instead of the dark
+   *  canvas — without needing a separate combined tile per terrain.
+   *  Absent → nothing is drawn behind, so the dark canvas shows
+   *  through (the original look). Carries NO gameplay meaning. */
+  background_sprite?: string;
   /** When true on a link OR dungeon-entrance cell, stepping onto it
    *  shows a confirm placard (destination name + description +
    *  explored badge) instead of traversing/entering immediately —

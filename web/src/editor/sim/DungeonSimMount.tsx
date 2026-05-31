@@ -305,6 +305,8 @@ export function DungeonSimMount({
       for (const row of floorRecord.grid) {
         for (const cell of row) {
           if (cell.sprite) spriteKeys.add(cell.sprite);
+          const bg = (cell as { background_sprite?: string }).background_sprite;
+          if (bg) spriteKeys.add(bg);
         }
       }
       // Party sprite + monster sprites.

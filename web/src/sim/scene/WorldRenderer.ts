@@ -71,6 +71,8 @@ import { withBasePath } from "@/util/basePath";
 
 export interface RenderCell {
   sprite?: string;
+  /** Optional background sprite drawn under `sprite` (purely visual). */
+  background_sprite?: string;
   /** Optional animation key — torch / fairy / fire / smoke — mapped
    *  to a particle emitter config in `ANIMATION_CONFIGS`. Cells
    *  without this field (or with `"none"`) get no emitter. */
@@ -94,6 +96,10 @@ export type RenderGrid = ReadonlyArray<ReadonlyArray<RenderCell>>;
  *  scene have always used 32×32; centralising it here means every
  *  consumer agrees on tile pitch + sprite display size. */
 export const TILE_SIZE = 32;
+
+/** Depth for the optional per-cell background sprite — below the base
+ *  tile (default depth 0) so a transparent foreground reveals it. */
+const BACKGROUND_CELL_DEPTH = -10;
 
 /** Roamer / placed-encounter row entry — what `setRoamerPositions`
  *  and `setPlacedEncounterPositions` accept. Matches the kernel's
@@ -160,6 +166,11 @@ export class WorldRenderer {
 
   /** Per-cell base sprite, keyed `"col,row"`. */
   readonly cells = new Map<string, Phaser.GameObjects.Image>();
+  /** Per-cell OPTIONAL background sprite, keyed `"col,row"`, drawn at
+   *  a depth below the base cell (so a transparent foreground reveals
+   *  it). Only present for cells whose `background_sprite` is set.
+   *  Tinted by the relight pass exactly like the base cell. */
+  readonly backgroundCells = new Map<string, Phaser.GameObjects.Image>();
   /** Per-cell original texture key, captured at create time so the
    *  relight pass can swap between original and grayscale textures
    *  without re-reading the grid cell. */
@@ -319,6 +330,19 @@ export class WorldRenderer {
       if (!row) continue;
       for (let c = 0; c < row.length; c++) {
         const cell = row[c];
+        // Optional background sprite — drawn UNDER the base tile
+        // (depth -10) so a transparent foreground reveals it. Created
+        // independently of the foreground so a cell can have just a
+        // background, just a foreground, or both.
+        const bgTex = cell?.background_sprite;
+        if (bgTex && this.scene.textures.exists(bgTex)) {
+          const bgImg = this.scene.add
+            .image(c * TILE_SIZE, r * TILE_SIZE, bgTex)
+            .setOrigin(0)
+            .setDisplaySize(TILE_SIZE, TILE_SIZE)
+            .setDepth(BACKGROUND_CELL_DEPTH);
+          this.backgroundCells.set(`${c},${r}`, bgImg);
+        }
         const tex = cell?.sprite;
         if (!tex || !this.scene.textures.exists(tex)) continue;
         const img = this.scene.add
@@ -750,6 +774,21 @@ export class WorldRenderer {
       if (img.texture.key !== desiredKey) {
         img.setTexture(desiredKey);
       }
+    }
+    // Background cells — tint + fade them exactly like the base tile
+    // so the layer behind a transparent foreground lights the same.
+    // (No grayscale-texture swap for the remembered band here; the
+    // alpha fade is enough to read background terrain as "remembered"
+    // without doubling the gray-texture cache.)
+    for (const [key, bgImg] of this.backgroundCells) {
+      const [cs, rs] = key.split(",");
+      const c = Number(cs);
+      const r = Number(rs);
+      const t = tintForCell(result, c, r);
+      if (t.mode === "clear") bgImg.clearTint();
+      else bgImg.setTint(t.value);
+      const info = result.cells.get(`${c},${r}`);
+      bgImg.setAlpha(info?.isRemembered ? REMEMBERED_ALPHA : 1);
     }
     // Emitters — hide on cells beyond party LOS so torch flames
     // don't leak through darkness. In painting view (`hasParty`

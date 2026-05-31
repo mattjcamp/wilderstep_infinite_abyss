@@ -441,6 +441,8 @@ import type { CharacterRecord } from "@/editor/CharacterSheet";
 interface PlayCell {
   id: string;
   sprite?: string;
+  /** Optional purely-visual background sprite drawn behind `sprite`. */
+  background_sprite?: string;
   walkable?: boolean;
   obstructs?: boolean;
   locked?: boolean;
@@ -1624,6 +1626,8 @@ export function PlayHost() {
       for (const row of catalog.map.grid) {
         for (const cell of row) {
           if (cell.sprite) spriteKeys.add(cell.sprite);
+          const bg = (cell as { background_sprite?: string }).background_sprite;
+          if (bg) spriteKeys.add(bg);
         }
       }
       // Also preload every palette tile's sprite. The grid walk above
