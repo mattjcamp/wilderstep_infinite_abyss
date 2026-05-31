@@ -2,7 +2,6 @@
 
 # V3 Ideas
 
-- Add place description placard to linked tiles as optional. It would worked by selecting showLinkPlacard option. Then when the party is over that tile they will get the placard with the linked map description and an indication whether they have explored that area yet
 - New Puzzle system (presure plates that open doors, etc)
 - Key system (certain keys open certain doors, party gets a keyring)
 - More Robust Trap System: Traps data model, explosive, poison, teleporting. Traps should now be placeable directly on the map
