@@ -129,6 +129,15 @@ export interface ModuleConfig {
      *  absent the game clock stays at its epoch default (year 1,
      *  Jan 1 SUN 12:00 PM). */
     startTime?: ModuleStartTime;
+    /** Per-lighting-mode exploration sight radius (in tiles) that
+     *  drives how much of a surface the party maps into fog-of-war
+     *  memory each step. Partial — any mode omitted falls back to the
+     *  engine's `DEFAULT_SIGHT_RADIUS` (day 10 / twilight 6 /
+     *  night 1). The party's torch / Magic Light range is folded in on
+     *  top at render time, so these are floors: in a dark dungeon the
+     *  torch pool reveals at least its own radius even if `night` here
+     *  is 1. Absent whole-object → defaults for every mode. */
+    sightRadius?: Partial<Record<"day" | "twilight" | "night", number>>;
   };
 }
 
@@ -136,6 +145,9 @@ interface RawModuleJson {
   metadata?: ModuleConfig["metadata"];
   settings?: {
     start_time?: ModuleStartTime;
+    /** snake_case mirror of `ModuleConfig.settings.sightRadius`. Keys
+     *  are the three lighting modes; values are tile radii. */
+    sight_radius?: Partial<Record<"day" | "twilight" | "night", number>>;
   };
 }
 
@@ -157,6 +169,7 @@ export async function loadModuleConfig(): Promise<ModuleConfig> {
       metadata: raw.metadata ?? {},
       settings: {
         startTime: raw.settings?.start_time,
+        sightRadius: raw.settings?.sight_radius,
       },
     };
   } catch {

@@ -66,6 +66,29 @@ export const REMEMBERED_ALPHA = 0.85;
  *  pollute the visited set. */
 export const VISIBILITY_THRESHOLD = 60;
 
+/** Default per-lighting-mode "sight radius" — how many tiles out from
+ *  the party a cell can be and still be folded into the fog-of-war
+ *  memory ({@link LightingResult.currentlyVisible}) on a relight. This
+ *  is the unified exploration-reveal model: in bright daylight the
+ *  party maps a wide circle around themselves; at twilight a smaller
+ *  one; in full dark only the party's own light reaches.
+ *
+ *  These are *floors* — the effective radius the caller passes as
+ *  {@link LightingInputs.sightRadius} should be `max(modeRadius,
+ *  partyLightRange)` so a torch / Magic Light in a pitch-dark dungeon
+ *  reveals exactly as far as its pool reaches and never less. `night`
+ *  sits at the 1-tile party baseline so an unlit dungeon only ever
+ *  remembers the tile underfoot plus whatever the torch lights.
+ *
+ *  Modules can override these via `settings.sight_radius` in
+ *  module.json; the host threads the parsed values into the renderer,
+ *  which falls back to these defaults field-by-field. */
+export const DEFAULT_SIGHT_RADIUS: Record<LightingMode, number> = {
+  day: 10,
+  twilight: 6,
+  night: 1,
+};
+
 /** What `computeLighting` decides for one cell. The caller picks a
  *  Phaser tint from this — both fields are needed because overlay
  *  sprites (roamers, NPCs, etc.) inherit the same render band as
@@ -156,6 +179,29 @@ export interface LightingInputs {
    *  this band (every cell is already fully lit), so the host
    *  doesn't have to special-case it. */
   rememberedCells?: ReadonlySet<string> | null;
+  /** Exploration "sight radius" — the Chebyshev distance out from the
+   *  party within which a cell, if the party has LOS to it, counts as
+   *  "seen this frame" and is folded into {@link
+   *  LightingResult.currentlyVisible} (the fog-of-war memory the host
+   *  persists). Unifies the reveal model across surfaces: daylight maps
+   *  reveal a wide circle, twilight a smaller one, and a dark dungeon
+   *  reveals only as far as the party's torch pool reaches.
+   *
+   *  Pass `max(DEFAULT_SIGHT_RADIUS[mode], partyLight.range)` so a
+   *  light source always reveals at least its own pool. When omitted
+   *  (or `null`) the radius defaults to {@link DEFAULT_SIGHT_RADIUS}
+   *  for the active mode, with no light-range fold-in — fine for the
+   *  editor's painting view and tests that don't exercise fog.
+   *
+   *  Note this gates EXPLORATION MEMORY only; it does not dim a cell.
+   *  A torch beyond the radius still lights its pool (you can see it),
+   *  but a cell you can see without having "reached" it the normal way
+   *  still won't be permanently mapped unless it's within sight range.
+   *  In practice the radius is always ≥ the light range so the two
+   *  agree, but keeping them separate means a future "you glimpsed a
+   *  distant bonfire but didn't map the corridor to it" effect is
+   *  expressible without reworking the model. */
+  sightRadius?: number | null;
 }
 
 /** Default ambients. Day is special-cased to skip the math. */
@@ -177,50 +223,11 @@ export function computeLighting(inputs: LightingInputs): LightingResult {
   const sourceVisible = new Map<string, boolean>();
   const currentlyVisible = new Set<string>();
 
-  // ── Day fast path ────────────────────────────────────────────────
-  // Full bright; no LOS gating. Every cell + every emitter shows.
-  // The fog-of-war band is meaningless here (no cell is dim enough
-  // for "remembered" to matter), so we skip it and add every cell
-  // to currentlyVisible — Day mode functionally "visits" the whole
-  // map on first relight.
-  if (mode === "day") {
-    for (let r = 0; r < grid.length; r++) {
-      const row = grid[r];
-      if (!row) continue;
-      for (let c = 0; c < row.length; c++) {
-        const cell = row[c];
-        const key = `${c},${r}`;
-        cells.set(key, {
-          tint: null,
-          brightness: 255,
-          isInfravisionRed: false,
-          isRemembered: false,
-        });
-        currentlyVisible.add(key);
-        if (cell?.light_source) sourceVisible.set(key, true);
-      }
-    }
-    return { cells, sourceVisible, currentlyVisible };
-  }
-
-  // ── Night / twilight ────────────────────────────────────────────
-  // Two source bands stack:
-  //   1. Party baseline — range 1 by default, expanded by
-  //      `partyLight.range` when the sim contributes a real source.
-  //      Tracked separately from `sources` so the infravision pass
-  //      can tell "lit by a real source" from "lit by baseline."
-  //   2. Torches with LOS to the party — each one becomes a source
-  //      that casts light to its surroundings (subject to LOS from
-  //      the source too, so walls cast shadows).
-  const partyBaselineRange =
-    partyLight && partyLight.range > 0 ? partyLight.range : 1;
-  const partyBaselineIsRealLight =
-    partyLight !== null && partyLight.range > 1;
-
   /** Bresenham LOS between two cells. The source + destination
    *  cells themselves are NOT checked, so a wall's visible face
    *  still reads as lit even though it blocks light beyond. Empty
-   *  / out-of-grid cells don't obstruct. */
+   *  / out-of-grid cells don't obstruct. Hoisted above the day-mode
+   *  branch so the exploration-reveal gate can use it in every mode. */
   const hasLOS = (
     srcCol: number,
     srcRow: number,
@@ -252,6 +259,71 @@ export function computeLighting(inputs: LightingInputs): LightingResult {
     }
     return false;
   };
+
+  // Exploration-reveal gate. A cell is folded into the persistent
+  // fog-of-war memory (`currentlyVisible`) only when the party is on
+  // the map, the cell sits within the sight radius for the current
+  // mode (Chebyshev distance), AND the party has unobstructed LOS to
+  // it. This is what stops daylight from instantly mapping the whole
+  // surface (the original bug: the day fast-path added every cell) and
+  // makes dungeons reveal exactly as far as the torch pool reaches.
+  //
+  // The radius defaults to DEFAULT_SIGHT_RADIUS[mode] when the caller
+  // doesn't pass one; callers that care about fog pass
+  // `max(modeRadius, partyLight.range)` so a light source always
+  // reveals at least its own pool. When there's no party (painting
+  // view) nothing is gated as "explored" — the day branch keeps its
+  // old "every cell visible right now" semantics for rendering but
+  // grows no memory, which is exactly what the renderer wants when
+  // hasParty is false.
+  const sightRadius = inputs.sightRadius ?? DEFAULT_SIGHT_RADIUS[mode];
+  const withinSight = (c: number, r: number): boolean => {
+    if (!party) return false;
+    const dist = Math.max(Math.abs(c - party.col), Math.abs(r - party.row));
+    if (dist > sightRadius) return false;
+    return hasLOS(party.col, party.row, c, r);
+  };
+
+  // ── Day fast path ────────────────────────────────────────────────
+  // Full bright; no LOS gating for RENDERING — every cell + every
+  // emitter still shows, so a daylight map reads as fully lit (the
+  // fog-of-war dim band is meaningless at noon). But the fog MEMORY
+  // only grows for cells inside the party's sight radius with LOS, so
+  // walking into a map no longer instantly marks the entire surface
+  // explored. With no party (editor painting view) nothing is added.
+  if (mode === "day") {
+    for (let r = 0; r < grid.length; r++) {
+      const row = grid[r];
+      if (!row) continue;
+      for (let c = 0; c < row.length; c++) {
+        const cell = row[c];
+        const key = `${c},${r}`;
+        cells.set(key, {
+          tint: null,
+          brightness: 255,
+          isInfravisionRed: false,
+          isRemembered: false,
+        });
+        if (withinSight(c, r)) currentlyVisible.add(key);
+        if (cell?.light_source) sourceVisible.set(key, true);
+      }
+    }
+    return { cells, sourceVisible, currentlyVisible };
+  }
+
+  // ── Night / twilight ────────────────────────────────────────────
+  // Two source bands stack:
+  //   1. Party baseline — range 1 by default, expanded by
+  //      `partyLight.range` when the sim contributes a real source.
+  //      Tracked separately from `sources` so the infravision pass
+  //      can tell "lit by a real source" from "lit by baseline."
+  //   2. Torches with LOS to the party — each one becomes a source
+  //      that casts light to its surroundings (subject to LOS from
+  //      the source too, so walls cast shadows).
+  const partyBaselineRange =
+    partyLight && partyLight.range > 0 ? partyLight.range : 1;
+  const partyBaselineIsRealLight =
+    partyLight !== null && partyLight.range > 1;
 
   // Walk every light-source cell once: a torch with LOS to the
   // party contributes to the source list AND keeps its emitter
@@ -336,6 +408,12 @@ export function computeLighting(inputs: LightingInputs): LightingResult {
           isInfravisionRed: true,
           isRemembered: false,
         });
+        // Infravision has no range cap in this model — any in-LOS
+        // cell is rendered red, i.e. the party demonstrably sees it,
+        // so it's mapped regardless of the ambient sight radius. (The
+        // `inInfraLOS` check above already required LOS, so we don't
+        // re-gate through `withinSight`, whose radius would otherwise
+        // shrink heat-vision down to the 1-tile night floor.)
         currentlyVisible.add(key);
         continue;
       }
@@ -378,7 +456,9 @@ export function computeLighting(inputs: LightingInputs): LightingResult {
         isInfravisionRed: false,
         isRemembered: false,
       });
-      if (level >= VISIBILITY_THRESHOLD) currentlyVisible.add(key);
+      if (level >= VISIBILITY_THRESHOLD && withinSight(c, r)) {
+        currentlyVisible.add(key);
+      }
     }
   }
 

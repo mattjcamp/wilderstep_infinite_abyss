@@ -679,6 +679,13 @@ interface LoadedCatalog {
    *  manifest at catalog-resolve time. Absent / empty means "silence
    *  unless the map / dungeon authors a list." */
   moduleSoundtrack: string[];
+  /** Per-lighting-mode exploration sight radius from the module's
+   *  `settings.sight_radius` (resolved up the extends chain). Partial:
+   *  any mode absent falls back to the engine's `DEFAULT_SIGHT_RADIUS`
+   *  inside WorldRenderer. Drives how far each step maps the surface
+   *  into fog-of-war memory; the party's torch range is folded in on
+   *  top at render time so dungeons reveal their light pool. */
+  sightRadius: Partial<Record<"day" | "twilight" | "night", number>>;
 }
 
 interface State {
@@ -1975,6 +1982,15 @@ export function PlayHost() {
               : (mapForcedLightingMode(catalog.map) ??
                   lightingModeFromClock(save.clockMinutes)),
             initialInfravisionActive: !!save.party.infravision_active,
+            // Exploration sight radius (module settings.sight_radius,
+            // resolved up the extends chain). Drives how far each step
+            // maps the surface into fog-of-war memory; absent modes
+            // fall back to the engine's DEFAULT_SIGHT_RADIUS and the
+            // party's torch range is folded in on top so a dark
+            // dungeon still reveals its light pool. Shared between the
+            // overworld and dungeon mounts (dungeon catalog inherits
+            // this field via buildDungeonCatalog's spread).
+            sightRadiusByMode: catalog.sightRadius,
             // Tint + visibility for the PlayScene-managed overlays
             // (items, quest givers, NPCs). These are the "static"
             // layer above the cell sprites — distinct from the
@@ -5582,6 +5598,16 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
     // Silent — silence is a fine default if the manifest read fails.
   }
 
+  // Module-level exploration sight radius (settings.sight_radius),
+  // resolved up the extends chain. Empty object on failure → the
+  // renderer falls back to DEFAULT_SIGHT_RADIUS for every mode.
+  let sightRadius: Partial<Record<"day" | "twilight" | "night", number>> = {};
+  try {
+    sightRadius = await src.resolveModuleSightRadius(moduleId);
+  } catch {
+    // Silent — engine defaults apply if the manifest read fails.
+  }
+
   return {
     map,
     allMaps,
@@ -5609,6 +5635,7 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
     abilities: abilitiesDoc.abilities ?? [],
     recipes: recipesDoc.recipes ?? [],
     moduleSoundtrack,
+    sightRadius,
   };
 }
 

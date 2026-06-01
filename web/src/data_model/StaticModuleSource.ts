@@ -90,6 +90,7 @@ function toSummary(
     extends?: string;
     uses?: string[];
     soundtrack?: string[];
+    settings?: { sight_radius?: Record<string, unknown> };
   },
   fallback: { id: string; title?: string; role?: string },
 ): ModuleSummary {
@@ -111,7 +112,32 @@ function toSummary(
           (s): s is string => typeof s === "string" && s.length > 0,
         )
       : undefined,
+    // Surface the manifest's own `settings.sight_radius` (NOT the
+    // inheritance-resolved value — the dialog edits THIS module's
+    // file, so it must show only what this file declares). Sanitised
+    // to finite non-negative numbers per mode; unknown / junk entries
+    // are dropped so the dialog never shows a bogus row.
+    sightRadius: sanitizeSightRadius(meta.settings?.sight_radius),
   };
+}
+
+/** Pull a clean `{ day?, twilight?, night? }` radius map out of a raw
+ *  manifest `settings.sight_radius` blob. Returns `undefined` when the
+ *  input is absent or contributes no valid entries, so callers can
+ *  treat "no overrides" uniformly. */
+function sanitizeSightRadius(
+  raw: unknown,
+): Partial<Record<"day" | "twilight" | "night", number>> | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const byMode = raw as Record<string, unknown>;
+  const out: Partial<Record<"day" | "twilight" | "night", number>> = {};
+  for (const mode of ["day", "twilight", "night"] as const) {
+    const v = byMode[mode];
+    if (typeof v === "number" && Number.isFinite(v) && v >= 0) {
+      out[mode] = v;
+    }
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
 }
 
 /** Gather library ids from an extends chain. Walks root-first so that
@@ -310,6 +336,42 @@ export class StaticModuleSource implements ModuleSource {
       }
     }
     return [];
+  }
+
+  /** Resolve the per-lighting-mode exploration sight radius for
+   *  `moduleId` from `settings.sight_radius` in module.json, walking
+   *  the extends chain leaf-first. Returns a partial map (only the
+   *  modes the chain actually specifies); the engine fills the rest
+   *  from `DEFAULT_SIGHT_RADIUS`. Same inheritance contract as the
+   *  soundtrack: a leaf module's value for a given mode wins over an
+   *  ancestor's, resolved mode-by-mode so a child can widen just
+   *  `day` while inheriting the parent's `night`. Non-numeric / out-
+   *  of-range entries are dropped. */
+  async resolveModuleSightRadius(
+    moduleId: string,
+  ): Promise<Partial<Record<"day" | "twilight" | "night", number>>> {
+    const chain = await walkExtendsChain(moduleId);
+    const out: Partial<Record<"day" | "twilight" | "night", number>> = {};
+    const modes = ["day", "twilight", "night"] as const;
+    // Leaf-first walk: the first ancestor to define a given mode wins,
+    // so we only write a mode the first time we see it.
+    for (const summary of chain) {
+      const meta = await loadModuleManifest(summary.id);
+      if (!meta) continue;
+      const settings = (meta as { settings?: { sight_radius?: unknown } })
+        .settings;
+      const raw = settings?.sight_radius;
+      if (!raw || typeof raw !== "object") continue;
+      const byMode = raw as Record<string, unknown>;
+      for (const mode of modes) {
+        if (out[mode] !== undefined) continue;
+        const v = byMode[mode];
+        if (typeof v === "number" && Number.isFinite(v) && v >= 0) {
+          out[mode] = v;
+        }
+      }
+    }
+    return out;
   }
 
   /** Catalog of records available for import from the libraries this

@@ -5,9 +5,14 @@
   "description": "A crack has appeared in a far away land, not far away enough",
   "author": "hyperbolic",
   "version": "0.1.0",
-  "role": "playable",
   "extends": "default",
   "uses": [
     "maps-mix-in"
-  ]
+  ],
+  "settings": {
+    "sight_radius": {
+      "day": 6,
+      "twilight": 3
+    }
+  }
 }

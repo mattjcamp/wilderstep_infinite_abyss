@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   computeLighting,
+  DEFAULT_SIGHT_RADIUS,
   emitterVisibleAt,
   INFRAVISION_RED,
   overlayVisibleAt,
@@ -460,7 +461,7 @@ describe("computeLighting — fog of war", () => {
     expect(r.currentlyVisible.has("8,0")).toBe(false);
   });
 
-  it("day mode short-circuits fog: every cell is in currentlyVisible, none is remembered", () => {
+  it("day mode renders every cell bright, none remembered; small map fully within sight is all mapped", () => {
     const grid = makeGrid(3, 3);
     const r = computeLighting({
       grid,
@@ -469,14 +470,94 @@ describe("computeLighting — fog of war", () => {
       partyInfravisionActive: false,
       mode: "day",
       // Even with a populated rememberedCells set, day mode reads
-      // every cell as fully visible — fog is moot at noon.
+      // every cell as fully lit — the dim fog band is moot at noon.
       rememberedCells: new Set(["0,0", "2,2"]),
     });
-    expect(r.currentlyVisible.size).toBe(9);
+    // Every cell is at full brightness, none in the dim band.
     for (const info of r.cells.values()) {
       expect(info.isRemembered).toBe(false);
       expect(info.brightness).toBe(255);
     }
+    // The 3x3 sits entirely inside the default daylight sight radius
+    // (10), so all 9 cells get mapped into the fog memory this frame.
+    expect(r.currentlyVisible.size).toBe(9);
+  });
+
+  it("day mode does NOT map cells beyond the daylight sight radius (the fog-of-war bug)", () => {
+    // A wide open map. Party at the far-left edge. In daylight every
+    // cell renders bright, but only cells within DEFAULT_SIGHT_RADIUS
+    // .day (10) of the party should be folded into the visited set —
+    // the bug was that the whole grid got marked explored on entry.
+    const width = 30;
+    const grid = makeGrid(width, 1);
+    const r = computeLighting({
+      grid,
+      party: { col: 0, row: 0 },
+      partyLight: null,
+      partyInfravisionActive: false,
+      mode: "day",
+    });
+    // Rendering: every cell is fully lit (daylight, no fog dimming).
+    for (const info of r.cells.values()) {
+      expect(info.brightness).toBe(255);
+      expect(info.isRemembered).toBe(false);
+    }
+    // Memory: cells within radius 10 are mapped, cell 0..10 inclusive.
+    expect(r.currentlyVisible.has("0,0")).toBe(true);
+    expect(r.currentlyVisible.has(`${DEFAULT_SIGHT_RADIUS.day},0`)).toBe(true);
+    // Cell just outside the radius is NOT mapped — stays unexplored
+    // until the party walks closer.
+    expect(r.currentlyVisible.has(`${DEFAULT_SIGHT_RADIUS.day + 1},0`)).toBe(
+      false,
+    );
+    expect(r.currentlyVisible.has(`${width - 1},0`)).toBe(false);
+  });
+
+  it("no party (paint view) maps nothing even in day mode", () => {
+    // The editor's painting view has no party; nothing should be
+    // folded into the fog memory regardless of mode.
+    const grid = makeGrid(5, 5);
+    const r = computeLighting({
+      grid,
+      party: null,
+      partyLight: null,
+      partyInfravisionActive: false,
+      mode: "day",
+    });
+    expect(r.currentlyVisible.size).toBe(0);
+  });
+
+  it("night mode maps only the party's own pool; an explicit sightRadius widens it", () => {
+    // Open 1-row corridor, party at far left, no emitted light. With
+    // the default night sight radius (1) only the party cell + the two
+    // adjacent cells (the range-1 baseline pool with LOS) are mapped.
+    const grid = makeGrid(9, 1);
+    const tight = computeLighting({
+      grid,
+      party: { col: 0, row: 0 },
+      partyLight: null,
+      partyInfravisionActive: false,
+      mode: "night",
+    });
+    expect(tight.currentlyVisible.has("0,0")).toBe(true);
+    expect(tight.currentlyVisible.has("1,0")).toBe(true);
+    // Cell 2 is outside both the night radius (1) and the lit pool.
+    expect(tight.currentlyVisible.has("2,0")).toBe(false);
+
+    // A wider explicit radius (e.g. a Light spell extending reach to 5)
+    // maps further out — but ONLY cells the party can actually see and
+    // that clear the visibility threshold. Pass a real party light so
+    // the pool itself extends, matching how the renderer folds
+    // max(modeRadius, partyLight.range) in.
+    const wide = computeLighting({
+      grid,
+      party: { col: 0, row: 0 },
+      partyLight: { range: 5 } as never,
+      partyInfravisionActive: false,
+      mode: "night",
+      sightRadius: 5,
+    });
+    expect(wide.currentlyVisible.has("3,0")).toBe(true);
   });
 
   it("emitterVisibleAt hides emitters on remembered-only cells", () => {

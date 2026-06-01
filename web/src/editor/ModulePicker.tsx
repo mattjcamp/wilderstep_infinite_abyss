@@ -356,6 +356,34 @@ export function ModulePicker() {
     } else {
       delete next.soundtrack;
     }
+    // Fog-of-war sight radius — nested under `settings.sight_radius`,
+    // one key per lighting mode. Only the modes the author actually
+    // set a number for are written; blank modes are dropped so they
+    // fall back to the engine default. When no mode is set the whole
+    // sight_radius block (and an emptied settings object) is removed,
+    // keeping default modules shape-clean. Other settings.* keys
+    // (e.g. start_time) are preserved.
+    {
+      const sr = patch.sightRadius;
+      const settings: Record<string, unknown> =
+        next.settings && typeof next.settings === "object"
+          ? { ...(next.settings as Record<string, unknown>) }
+          : {};
+      const sightOut: Record<string, number> = {};
+      if (typeof sr.day === "number") sightOut.day = sr.day;
+      if (typeof sr.twilight === "number") sightOut.twilight = sr.twilight;
+      if (typeof sr.night === "number") sightOut.night = sr.night;
+      if (Object.keys(sightOut).length > 0) {
+        settings.sight_radius = sightOut;
+      } else {
+        delete settings.sight_radius;
+      }
+      if (Object.keys(settings).length > 0) {
+        next.settings = settings;
+      } else {
+        delete next.settings;
+      }
+    }
     await saveDraft(m.id, MANIFEST_KEY, next);
     setEditingModule(null);
     refresh();

@@ -1,13 +1,16 @@
 
 # Playthrough Polish
 
+- Dial in LOS, Fog of War, Tile Reveal
+- Move Begin button to top with the create new character
+
 ## Big Ideas
 
 - New Puzzle system (presure plates that open doors, etc)
 - Key system (certain keys open certain doors, party gets a keyring)
 - More Robust Trap System: Traps data model, explosive, poison, teleporting. Traps should now be placeable directly on the map
 - Better Save Game functionality
-- Module Publishing made available
+- Make module publishing available
 
 # Notes
 
