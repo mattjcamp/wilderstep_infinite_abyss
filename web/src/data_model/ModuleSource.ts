@@ -50,6 +50,14 @@ export interface ModuleSummary {
    *  absent / empty here means "silence by default" unless a map
    *  authors its own. */
   soundtrack?: string[];
+  /** Per-lighting-mode fog-of-war sight radius (in tiles), mirrored
+   *  from the manifest's `settings.sight_radius`. Controls how far
+   *  from the party each step reveals + maps the surface. Partial:
+   *  any mode omitted falls back to the engine default (day 10 /
+   *  twilight 6 / night 1). The party's torch range is folded in on
+   *  top at render time, so these are floors, not caps. Absent
+   *  whole-object means "defaults for every mode." */
+  sightRadius?: Partial<Record<"day" | "twilight" | "night", number>>;
 }
 
 /** A loaded module, including its metadata plus a fully resolved

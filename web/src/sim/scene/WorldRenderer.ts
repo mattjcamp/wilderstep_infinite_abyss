@@ -51,11 +51,13 @@
 import type Phaser from "phaser";
 import {
   computeLighting,
+  DEFAULT_SIGHT_RADIUS,
   emitterVisibleAt,
   overlayVisibleAt,
   REMEMBERED_ALPHA,
   tintForCell,
   type LightingResult,
+  type LightingMode,
 } from "@/sim/lighting";
 import { ANIMATION_CONFIGS } from "@/sim/tileAnimations";
 import { QUEST_GLOW } from "@/sim/questGlow";
@@ -143,6 +145,16 @@ export interface WorldRendererConfig {
   /** Initial value of the player-controlled "is infravision engaged"
    *  flag. Combined with `partyHasInfravision` at relight time. */
   initialInfravisionActive?: boolean;
+  /** Per-lighting-mode exploration sight radius — how far from the
+   *  party the fog-of-war memory grows each relight (see
+   *  `LightingInputs.sightRadius`). Partial: any mode omitted falls
+   *  back to {@link DEFAULT_SIGHT_RADIUS}. Hosts thread the module's
+   *  `settings.sight_radius` here so a campaign can widen / tighten
+   *  exploration reveal globally. The party's emitted light range is
+   *  folded in at relight time (`max(modeRadius, partyLight.range)`)
+   *  so a torch always reveals at least its own pool regardless of
+   *  the mode floor. */
+  sightRadiusByMode?: Partial<Record<LightingMode, number>>;
   /** Hook fired after each relight pass — receives the shared
    *  LightingResult so callers can tint their own overlays in sync.
    *  Use `tintForCell(result, col, row)` (re-exported from this
@@ -251,6 +263,12 @@ export class WorldRenderer {
    *  full Bresenham-LOS lighting model. */
   lightingMode: "day" | "twilight" | "night" = "night";
 
+  /** Per-mode exploration sight-radius overrides (module-driven). Any
+   *  mode absent here falls back to {@link DEFAULT_SIGHT_RADIUS}. The
+   *  relight pass folds the party's emitted light range in on top, so
+   *  this is a floor, not a cap. */
+  sightRadiusByMode: Partial<Record<LightingMode, number>> = {};
+
   /** Fog-of-war "visited cells" memory — every `"col,row"` the party
    *  has ever seen on this surface. Hosts seed it from persisted save
    *  state and call `setVisitedCells` whenever the set replaces
@@ -282,6 +300,7 @@ export class WorldRenderer {
     this.partyHasInfravision = !!cfg.partyHasInfravision;
     this.partyInfravisionActive = !!cfg.initialInfravisionActive;
     this.lightingMode = cfg.initialLightingMode ?? "night";
+    this.sightRadiusByMode = cfg.sightRadiusByMode ?? {};
     this.onRelightHook = cfg.onRelight;
   }
 
@@ -712,6 +731,22 @@ export class WorldRenderer {
       // keeps the editor's idle painting view rendering exactly as
       // before this change.
       rememberedCells: this.hasParty ? this.visitedCells : null,
+      // Exploration reveal radius for the fog-of-war memory. Take the
+      // larger of the module-configured (or default) per-mode radius
+      // and the party's emitted light range, so a torch / Magic Light
+      // in a dark dungeon always maps at least its own pool while a
+      // sunlit overworld maps the wide daylight circle. Only
+      // meaningful with a party on the map; the helper ignores it when
+      // `party` is null.
+      sightRadius: this.hasParty
+        ? Math.max(
+            this.sightRadiusByMode[this.lightingMode] ??
+              DEFAULT_SIGHT_RADIUS[this.lightingMode],
+            this.partyLight && this.partyLight.range > 0
+              ? this.partyLight.range
+              : 0,
+          )
+        : null,
     });
     // Stash for out-of-band readers (quest glow repaint reads
     // isRemembered to decide whether to skip a cell, etc.).

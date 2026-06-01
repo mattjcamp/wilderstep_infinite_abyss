@@ -47,7 +47,22 @@ export interface ModulePropertiesPatch {
    *  the field is dropped from the saved manifest so quiet modules
    *  stay shape-clean. */
   soundtrack: string[];
+  /** Per-lighting-mode fog-of-war sight radius (tiles). A mode set to
+   *  `undefined` means "use the engine default" and is dropped from
+   *  the saved manifest; a number is persisted under
+   *  `settings.sight_radius.<mode>`. When all three are undefined the
+   *  whole `settings.sight_radius` block is removed. */
+  sightRadius: {
+    day: number | undefined;
+    twilight: number | undefined;
+    night: number | undefined;
+  };
 }
+
+/** Engine fallbacks shown as placeholder text so the author sees what
+ *  they'll get if they leave a field blank. Must match
+ *  `DEFAULT_SIGHT_RADIUS` in `sim/lighting.ts`. */
+const SIGHT_RADIUS_DEFAULTS = { day: 10, twilight: 6, night: 1 } as const;
 
 export function ModulePropertiesDialog({
   initial,
@@ -74,6 +89,22 @@ export function ModulePropertiesDialog({
   const [soundtrack, setSoundtrack] = useState<string[]>(
     initial.soundtrack ? [...initial.soundtrack] : [],
   );
+  // Fog-of-war sight radius per lighting mode. Held as strings so the
+  // inputs can be cleared back to "" (= "use engine default"); parsed
+  // to numbers on save. Seeded from the module's own manifest values
+  // (blank when the module doesn't override that mode).
+  const radiusToInput = (v: number | undefined): string =>
+    typeof v === "number" ? String(v) : "";
+  const [sightDay, setSightDay] = useState(
+    radiusToInput(initial.sightRadius?.day),
+  );
+  const [sightTwilight, setSightTwilight] = useState(
+    radiusToInput(initial.sightRadius?.twilight),
+  );
+  const [sightNight, setSightNight] = useState(
+    radiusToInput(initial.sightRadius?.night),
+  );
+
   const [titleError, setTitleError] = useState<string | null>(null);
 
   // Same keyboard ergonomics as MapAttributesDialog — Escape closes,
@@ -92,7 +123,17 @@ export function ModulePropertiesDialog({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [title, description, author, version, role, soundtrack]);
+  }, [
+    title,
+    description,
+    author,
+    version,
+    role,
+    soundtrack,
+    sightDay,
+    sightTwilight,
+    sightNight,
+  ]);
 
   const handleSave = () => {
     const trimmedTitle = title.trim();
@@ -112,8 +153,30 @@ export function ModulePropertiesDialog({
       // verbatim. Caller (ModulePicker) decides whether to persist
       // or drop the field based on emptiness.
       soundtrack: [...soundtrack],
+      // Parse each radius field. Blank → undefined ("use the engine
+      // default"); a valid non-negative number is forwarded. Garbage
+      // / negative input is treated as blank so a typo can't write a
+      // broken radius into the manifest.
+      sightRadius: {
+        day: parseRadius(sightDay),
+        twilight: parseRadius(sightTwilight),
+        night: parseRadius(sightNight),
+      },
     });
   };
+
+  /** Parse a sight-radius input string. Returns `undefined` for blank
+   *  / invalid / negative input so those modes fall back to the
+   *  engine default rather than persisting a bad value. */
+  function parseRadius(s: string): number | undefined {
+    const t = s.trim();
+    if (t === "") return undefined;
+    const n = Number(t);
+    if (!Number.isFinite(n) || n < 0) return undefined;
+    // Whole tiles only — the LOS gate uses an integer Chebyshev
+    // distance, so floor any decimal the author typed.
+    return Math.floor(n);
+  }
 
   // If the module is currently "core" we keep that option in the
   // radio group so the user can leave it. NewModuleForm only offers
@@ -244,6 +307,52 @@ export function ModulePropertiesDialog({
               this list from their own properties.
             </span>
           </div>
+
+          {/* Fog of war (sight radius) --------------------------- */}
+          {/* Per-lighting-mode reveal radius. How many tiles out from
+              the party a surface is uncovered + remembered each step.
+              Blank = use the engine default (shown as placeholder). A
+              party torch always reveals at least its own light pool on
+              top of these, so a dark dungeon is governed by the
+              torch, not by `night`. */}
+          <fieldset className="flex flex-col gap-1">
+            <legend className="text-xs text-parchment/70 font-mono">
+              fog of war — sight radius (tiles)
+            </legend>
+            <div className="flex gap-3">
+              {(
+                [
+                  ["day", sightDay, setSightDay],
+                  ["twilight", sightTwilight, setSightTwilight],
+                  ["night", sightNight, setSightNight],
+                ] as const
+              ).map(([mode, value, setValue]) => (
+                <label key={mode} className="flex flex-1 flex-col gap-1">
+                  <span className="text-[11px] text-parchment/60 font-mono">
+                    {mode}
+                  </span>
+                  <input
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={value}
+                    onChange={(e) => setValue(e.target.value)}
+                    placeholder={`default ${SIGHT_RADIUS_DEFAULTS[mode]}`}
+                    className="rounded border border-parchment/20 bg-ink/40 px-2 py-1 font-mono text-sm text-parchment focus:border-parchment/45"
+                  />
+                </label>
+              ))}
+            </div>
+            <span className="text-[11px] text-parchment/45">
+              How far the party uncovers + remembers the map each step,
+              by time of day. Leave blank to use the defaults (day{" "}
+              {SIGHT_RADIUS_DEFAULTS.day}, twilight{" "}
+              {SIGHT_RADIUS_DEFAULTS.twilight}, night{" "}
+              {SIGHT_RADIUS_DEFAULTS.night}). A carried torch always
+              reveals at least its own light pool, so dungeons stay lit
+              by the torch regardless of the night value.
+            </span>
+          </fieldset>
 
           {/* Role ------------------------------------------------ */}
           <fieldset className="flex flex-col gap-1">
