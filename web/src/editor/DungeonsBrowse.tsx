@@ -31,6 +31,7 @@ import {
   saveDraft,
 } from "@/data_model/draft";
 import { mergeModel } from "@/data_model/merge";
+import type { LibraryCatalogEntry } from "@/data_model/ModuleSource";
 import { publishItems } from "@/data_model/publishClient";
 import { StaticModuleSource } from "@/data_model/StaticModuleSource";
 import { SoundtrackPicker } from "./SoundtrackPicker";
@@ -94,6 +95,11 @@ type LoadState =
   | {
       kind: "ok";
       dungeons: DungeonRecord[];
+      /** Dungeons available to import from `uses` libraries (e.g.
+       *  "Maps and Buildings"). Not auto-merged — surfaced for
+       *  explicit import, mirroring MapsBrowse + the generic
+       *  ModelView. */
+      catalog: LibraryCatalogEntry[];
       ownFile: Record<string, unknown> | null;
       isDraft: boolean;
     }
@@ -120,7 +126,12 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
   const refresh = async () => {
     try {
       const src = new StaticModuleSource();
-      const layers = await src.loadModelLayers(moduleId, "dungeons");
+      const [layers, catalog] = await Promise.all([
+        src.loadModelLayers(moduleId, "dungeons"),
+        // Dungeons offered by `uses` libraries. Not part of the
+        // resolved view — the import section below copies them in.
+        src.listLibraryRecords(moduleId, "dungeons"),
+      ]);
       const draft = await loadDraft<Record<string, unknown>>(moduleId, MODEL_KEY);
       const ownEffective =
         draft ?? (layers.ownFile as Record<string, unknown> | null);
@@ -133,6 +144,7 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
       setState({
         kind: "ok",
         dungeons,
+        catalog,
         ownFile: ownEffective ?? null,
         isDraft: hasDraft(moduleId, MODEL_KEY),
       });
@@ -204,6 +216,33 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
     persist([...state.dungeons, rec]);
     setCreating(false);
     setExpanded((prev) => new Set(prev).add(rec.id));
+  };
+
+  /**
+   * Import one or more dungeons from a `uses` library into THIS
+   * module's own dungeons file. Deep-clones each record so the copy
+   * decouples from the library.
+   *
+   * IDs are preserved, NOT renamed: a dungeon id is a referenceable
+   * key (a spelunking quest's `reach` step pins `dungeon_id`, a map's
+   * dungeon-entrance cell carries the dungeon id), so renaming on
+   * import would break those references. The import catalog already
+   * filters out ids present in the resolved view, so collisions are
+   * limited to the rare case of two libraries exposing the same id;
+   * those are skipped rather than renamed.
+   */
+  const onImportDungeons = (records: DungeonRecord[]) => {
+    if (state.kind !== "ok") return;
+    const existing = new Set(state.dungeons.map((d) => d.id));
+    const toAdd: DungeonRecord[] = [];
+    for (const rec of records) {
+      if (!rec.id || existing.has(rec.id)) continue;
+      const clone: DungeonRecord = JSON.parse(JSON.stringify(rec));
+      toAdd.push(clone);
+      existing.add(clone.id);
+    }
+    if (toAdd.length === 0) return;
+    persist([...state.dungeons, ...toAdd]);
   };
 
   const onDeleteDungeon = (id: string) => {
@@ -348,6 +387,17 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
 
   const existingIds = new Set(state.dungeons.map((d) => d.id));
   const canExport = state.ownFile !== null;
+
+  // Library dungeons available to import, with ids already present in
+  // the resolved view filtered out. Empty libraries drop out.
+  const availableCatalog = state.catalog
+    .map((entry) => ({
+      libraryId: entry.libraryId,
+      records: (entry.records as unknown as DungeonRecord[]).filter(
+        (r) => r.id && !existingIds.has(r.id),
+      ),
+    }))
+    .filter((entry) => entry.records.length > 0);
 
   const toggleExpanded = (id: string) =>
     setExpanded((prev) => {
@@ -500,6 +550,94 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
           </p>
         ) : null}
       </div>
+
+      {/* Available from libraries (uses) — explicit import, not
+          auto-merged. Each dungeon is a self-contained record, so the
+          granularity is per-dungeon, with a per-library "Import all"
+          for convenience. Ids are preserved so quests / map entrances
+          that reference a dungeon by id keep resolving. */}
+      {availableCatalog.length > 0 ? (
+        <section className="mt-8">
+          <h2 className="mb-1 text-xs uppercase tracking-wide text-parchment/45">
+            Available from libraries
+            <span className="ml-2 normal-case tracking-normal text-parchment/35">
+              (
+              {availableCatalog.reduce((n, e) => n + e.records.length, 0)}{" "}
+              dungeon
+              {availableCatalog.reduce((n, e) => n + e.records.length, 0) === 1
+                ? ""
+                : "s"}{" "}
+              ready to import)
+            </span>
+          </h2>
+          <p className="mb-3 text-xs text-parchment/45">
+            Dungeons from libraries this module uses. Importing copies a
+            dungeon into this module&apos;s own file (ids preserved, so a
+            spelunking quest or a map&apos;s dungeon entrance that points
+            at it still resolves) — edit it freely afterward without
+            affecting the library.
+          </p>
+          <div className="space-y-4">
+            {availableCatalog.map((entry) => (
+              <div
+                key={entry.libraryId}
+                className="rounded border border-parchment/10 bg-ink/20"
+              >
+                <div className="flex items-center justify-between gap-3 border-b border-parchment/10 bg-ink/40 px-3 py-1.5">
+                  <span className="text-xs text-parchment/70">
+                    <span className="text-parchment/85">{entry.libraryId}</span>
+                    <span className="ml-2 text-parchment/40">
+                      ({entry.records.length} available)
+                    </span>
+                  </span>
+                  {entry.records.length > 1 ? (
+                    <button
+                      type="button"
+                      onClick={() => onImportDungeons(entry.records)}
+                      className="shrink-0 rounded border border-ember/60 bg-ember/30 px-2 py-0.5 text-xs text-parchment hover:bg-ember/50"
+                      title={`Import all ${entry.records.length} dungeons from ${entry.libraryId}.`}
+                    >
+                      + Import all ({entry.records.length})
+                    </button>
+                  ) : null}
+                </div>
+                <ul className="divide-y divide-parchment/5">
+                  {entry.records.map((d) => (
+                    <li
+                      key={`${entry.libraryId}::${d.id}`}
+                      className="flex items-center justify-between gap-3 px-3 py-2"
+                    >
+                      <div className="min-w-0 flex-1 truncate text-sm text-parchment/85">
+                        <span className="font-display">{d.name}</span>
+                        <span className="ml-2 font-mono text-xs text-parchment/45">
+                          {d.id}
+                        </span>
+                        <span className="ml-2 text-xs text-parchment/40">
+                          {d.levels?.length ?? 0} level
+                          {(d.levels?.length ?? 0) === 1 ? "" : "s"}
+                        </span>
+                        {d.style || d.difficulty ? (
+                          <span className="ml-2 text-xs text-parchment/40">
+                            {[d.style, d.difficulty].filter(Boolean).join(" · ")}
+                          </span>
+                        ) : null}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => onImportDungeons([d])}
+                        className="shrink-0 rounded border border-ember/50 bg-ember/20 px-2 py-0.5 text-xs text-parchment hover:bg-ember/40"
+                        title={`Import just this dungeon from ${entry.libraryId}.`}
+                      >
+                        + Import
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }

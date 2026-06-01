@@ -14,9 +14,15 @@ export default function ModuleEditorLayout({
   params: { moduleId: string };
 }) {
   return (
-    <div className="flex min-h-screen">
+    // h-screen (not min-h-screen) bounds the editor shell to the
+    // viewport so the content area scrolls INSIDE itself rather than
+    // growing the page. That's what lets a tall map's canvas viewport
+    // produce its own vertical scrollbar / pan instead of the whole
+    // body scrolling. overflow-hidden on the row keeps the shell put;
+    // the sidebar + content each manage their own overflow.
+    <div className="flex h-screen overflow-hidden">
       <Sidebar moduleId={params.moduleId} />
-      <div className="flex-1 overflow-auto">{children}</div>
+      <div className="min-w-0 flex-1 overflow-auto">{children}</div>
     </div>
   );
 }

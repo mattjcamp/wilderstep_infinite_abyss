@@ -49,7 +49,11 @@ const UNTAGGED = "(untagged)";
 // disabled option in the dropdown plus an inline notice telling
 // the author to re-pick a supported kind. We don't silently coerce
 // — the change is the author's call.
-const KNOWN_KINDS = ["kill", "retrieve"] as const;
+// `reach` is the "spelunking" kind: the author picks a dungeon and
+// leaves the level blank; at load time the runtime fans the single
+// step out into one reach step per floor of that dungeon, each
+// credited simply by arriving on the matching floor.
+const KNOWN_KINDS = ["kill", "retrieve", "reach"] as const;
 type StepKind = (typeof KNOWN_KINDS)[number] | string;
 
 interface QuestStep {
@@ -105,6 +109,12 @@ interface QuestStep {
   location_kind?: "map";
   /** Map catalog id. Only consulted when `location_kind === "map"`. */
   map_id?: string;
+  /** For `kind === "reach"` (spelunking) — the dungeon record whose
+   *  floors this quest tracks. The author picks the dungeon and leaves
+   *  the level unset; the runtime's `expandSpelunkingQuests` fans this
+   *  single step into one reach step per floor. JSON key:
+   *  `dungeon_id`. */
+  dungeon_id?: string;
   /** Per-step rewards block. Mirrors the quest-level {@link Rewards}
    *  envelope but narrowed to two keys — `items` and `tile_add`. XP
    *  and gold are intentionally absent: those stay quest-level so the
@@ -167,6 +177,14 @@ interface MapSummary {
   name?: string;
 }
 
+interface DungeonSummary {
+  id: string;
+  name?: string;
+  /** Floor count surfaced in the picker so the author sees how many
+   *  reach steps a spelunking quest will expand into. */
+  floors?: number;
+}
+
 type LoadState =
   | { kind: "loading" }
   | {
@@ -174,6 +192,7 @@ type LoadState =
       quests: QuestRecord[];
       items: ItemSummary[];
       maps: MapSummary[];
+      dungeons: DungeonSummary[];
       ownFile: Record<string, unknown> | null;
       isDraft: boolean;
     }
@@ -189,11 +208,12 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
   const refresh = async () => {
     try {
       const src = new StaticModuleSource();
-      const [questsLayers, itemsLayers, mapsLayers] =
+      const [questsLayers, itemsLayers, mapsLayers, dungeonsLayers] =
         await Promise.all([
           src.loadModelLayers(moduleId, "quests"),
           src.loadModelLayers(moduleId, "items"),
           src.loadModelLayers(moduleId, "maps"),
+          src.loadModelLayers(moduleId, "dungeons"),
         ]);
       const draft = await loadDraft<Record<string, unknown>>(moduleId, MODEL_KEY);
       const ownEffective =
@@ -225,11 +245,25 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
         name: m.name,
       }));
 
+      const dungeonsMerged = mergeModel(
+        "dungeons",
+        dungeonsLayers.inherited,
+        dungeonsLayers.ownFile,
+      ) as {
+        dungeons?: Array<{ id: string; name?: string; levels?: unknown[] }>;
+      } | null;
+      const dungeons = (dungeonsMerged?.dungeons ?? []).map((d) => ({
+        id: d.id,
+        name: d.name,
+        floors: Array.isArray(d.levels) ? d.levels.length : undefined,
+      }));
+
       setState({
         kind: "ok",
         quests,
         items,
         maps,
+        dungeons,
         ownFile: ownEffective ?? null,
         isDraft: hasDraft(moduleId, MODEL_KEY),
       });
@@ -555,6 +589,7 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
                       quest={q}
                       items={state.items}
                       maps={state.maps}
+                      dungeons={state.dungeons}
                       existingTags={allTags}
                       onUpdate={(patch) => onUpdateQuest(q.id, patch)}
                       onAddStep={() => onAddStep(q.id)}
@@ -585,6 +620,7 @@ function QuestEditor({
   quest,
   items,
   maps,
+  dungeons,
   existingTags,
   onUpdate,
   onAddStep,
@@ -594,6 +630,7 @@ function QuestEditor({
   quest: QuestRecord;
   items: ItemSummary[];
   maps: MapSummary[];
+  dungeons: DungeonSummary[];
   existingTags: string[];
   onUpdate: (patch: Partial<QuestRecord>) => void;
   onAddStep: () => void;
@@ -666,6 +703,7 @@ function QuestEditor({
               indexLabel={i + 1}
               maps={maps}
               items={items}
+              dungeons={dungeons}
               onUpdate={(patch) => onUpdateStep(i, patch)}
               onDelete={() => onDeleteStep(i)}
             />
@@ -1372,6 +1410,7 @@ function StepRow({
   indexLabel,
   maps,
   items,
+  dungeons,
   onUpdate,
   onDelete,
 }: {
@@ -1380,6 +1419,7 @@ function StepRow({
   indexLabel: number;
   maps: MapSummary[];
   items: ItemSummary[];
+  dungeons: DungeonSummary[];
   onUpdate: (patch: Partial<QuestStep>) => void;
   onDelete: () => void;
 }) {
@@ -1594,6 +1634,53 @@ function StepRow({
               quest-relevance halo. The step credits when the party
               walks onto the cell — the item moves to inventory and
               the cell clears.
+            </p>
+          </fieldset>
+        ) : step.kind === "reach" ? (
+          // Reach (spelunking): pick the dungeon and leave the level
+          // implicit. At load time the runtime fans this single step
+          // out into one reach step per floor of the chosen dungeon,
+          // each credited just by arriving on that floor. No
+          // encounter, no item, no cell — the descent is the
+          // objective.
+          <fieldset className="sm:col-span-2 rounded border border-parchment/15 bg-ink/20 p-2">
+            <legend className="px-1 text-[10px] uppercase tracking-wide text-parchment/55">
+              Spelunking dungeon
+            </legend>
+            <label className="block">
+              <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+                Dungeon
+              </span>
+              <select
+                value={step.dungeon_id ?? ""}
+                onChange={(e) =>
+                  onUpdate({ dungeon_id: e.target.value || undefined })
+                }
+                className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-xs text-parchment/90"
+              >
+                <option value="">(pick one…)</option>
+                {!dungeons.some((d) => d.id === step.dungeon_id) &&
+                step.dungeon_id ? (
+                  <option value={step.dungeon_id}>
+                    (missing) {step.dungeon_id}
+                  </option>
+                ) : null}
+                {dungeons.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.name ?? d.id}
+                    {typeof d.floors === "number"
+                      ? ` — ${d.floors} floor${d.floors === 1 ? "" : "s"}`
+                      : ""}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <p className="mt-1 text-[11px] text-parchment/45">
+              This one step expands at play time into a step for each
+              floor of the chosen dungeon — the party credits each by
+              reaching it. Leave the rest of the step (and the Location
+              block) untouched; the dungeon picker is all this kind
+              needs.
             </p>
           </fieldset>
         ) : (

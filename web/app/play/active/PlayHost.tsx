@@ -64,6 +64,7 @@ import {
 } from "@/sim/dungeon/dungeonLevelToMap";
 import {
   clearAllDungeonSessions,
+  dungeonInstanceKey,
   getOrCreateDungeonSession,
   getFloorMutations,
   hydrateDungeonLevels,
@@ -89,6 +90,7 @@ import {
   claimQuestRewards,
   creditQuestRetrieve,
   ensureQuestStates,
+  expandSpelunkingQuests,
   parseQuestsFile,
   type CombatLocation,
   type QuestDef,
@@ -591,6 +593,10 @@ interface PlayCounter {
  *  floor. */
 interface DungeonState {
   dungeonId: string;
+  /** Per-placement instance key (see `dungeonInstanceKey`). The
+   *  store + save record live under this, NOT the bare dungeonId,
+   *  so the same record at two entrances is two distinct runs. */
+  instanceId: string;
   seed: number;
   levels: DungeonLevel[];
   floorIdx: number;
@@ -1329,15 +1335,24 @@ export function PlayHost() {
       // same rolled layout the save captured comes back; no fresh
       // generation runs on reload.
       const cdRaw = save.party.currentDungeon;
-      const persistedRaw = cdRaw ? save.dungeons?.[cdRaw.dungeonId] : null;
-      if (cdRaw && persistedRaw && !dungeonStateRef.current) {
+      // Legacy saves keyed dungeons by bare dungeon id and carried no
+      // instanceId on currentDungeon — fall back to dungeonId so they
+      // keep resolving (one instance per record, the old behaviour).
+      const cdInstanceId = cdRaw
+        ? cdRaw.instanceId ?? cdRaw.dungeonId
+        : null;
+      const persistedRaw = cdInstanceId
+        ? save.dungeons?.[cdInstanceId]
+        : null;
+      if (cdRaw && cdInstanceId && persistedRaw && !dungeonStateRef.current) {
         const hydratedLevels = hydrateDungeonLevels(
           persistedRaw.levels,
         ) as DungeonLevel[];
         const session = getOrCreateDungeonSession(
-          cdRaw.dungeonId,
+          cdInstanceId,
           persistedRaw.seed,
           () => hydratedLevels,
+          cdRaw.dungeonId,
         );
         // Replay per-floor mutations into the in-memory session
         // store so the kernel mount picks them up via
@@ -1351,6 +1366,7 @@ export function PlayHost() {
         }
         dungeonStateRef.current = {
           dungeonId: cdRaw.dungeonId,
+          instanceId: cdInstanceId,
           seed: persistedRaw.seed,
           levels: hydratedLevels,
           floorIdx: cdRaw.floorIdx,
@@ -1482,7 +1498,7 @@ export function PlayHost() {
     // the rolled layout intact.
     const dungeonNow = dungeonStateRef.current;
     if (dungeonNow) {
-      const session = peekDungeonSession(dungeonNow.dungeonId);
+      const session = peekDungeonSession(dungeonNow.instanceId);
       const snapshot = session ? snapshotDungeonForSave(session) : null;
       const snap = sim.snapshot();
       const next: WorldSave = {
@@ -1500,6 +1516,7 @@ export function PlayHost() {
           magic_light_steps: snap.party.magic_light_steps ?? 0,
           currentDungeon: {
             dungeonId: dungeonNow.dungeonId,
+            instanceId: dungeonNow.instanceId,
             floorIdx: dungeonNow.floorIdx,
             col: snap.pos.col,
             row: snap.pos.row,
@@ -1507,7 +1524,7 @@ export function PlayHost() {
           },
         },
         dungeons: snapshot
-          ? { ...save.dungeons, [dungeonNow.dungeonId]: snapshot }
+          ? { ...save.dungeons, [dungeonNow.instanceId]: snapshot }
           : save.dungeons,
       };
       saveWorld(next);
@@ -3099,13 +3116,24 @@ export function PlayHost() {
                 ) as { name?: string; description?: string } | undefined;
                 const dungeonId = ev.dungeonId;
                 const returnPos = ev.returnPos;
+                const entrancePos = ev.pos;
                 pendingPlaceActionRef.current = () =>
-                  handleDungeonEntered(dungeonId, returnPos);
+                  handleDungeonEntered(dungeonId, returnPos, entrancePos);
+                // "Explored" reflects THIS entrance's instance, not
+                // any other door into the same record.
+                const instanceId = saveRef.current
+                  ? dungeonInstanceKey({
+                      dungeonId,
+                      mapId: saveRef.current.party.currentMapId,
+                      col: entrancePos.col,
+                      row: entrancePos.row,
+                    })
+                  : dungeonId;
                 setPlacard({
                   placeKind: "dungeon",
                   name: dest?.name ?? ev.dungeonId,
                   description: dest?.description,
-                  explored: !!saveRef.current?.dungeons?.[ev.dungeonId],
+                  explored: !!saveRef.current?.dungeons?.[instanceId],
                 });
               }
               return;
@@ -3198,7 +3226,7 @@ export function PlayHost() {
               liveTrapsRef.current.delete(key);
               const dStateNow = dungeonStateRef.current;
               if (dStateNow) {
-                const session = peekDungeonSession(dStateNow.dungeonId);
+                const session = peekDungeonSession(dStateNow.instanceId);
                 const level = session?.levels[dStateNow.floorIdx];
                 level?.triggeredTraps?.add(key);
               }
@@ -3549,7 +3577,7 @@ export function PlayHost() {
               return;
             }
             if (ev.kind === "dungeon_entered") {
-              handleDungeonEntered(ev.dungeonId, ev.returnPos);
+              handleDungeonEntered(ev.dungeonId, ev.returnPos, ev.pos);
               return;
             }
             if (ev.kind === "spawn_encountered") {
@@ -3569,7 +3597,7 @@ export function PlayHost() {
               // directions.
               const dungeonNow = dungeonStateRef.current;
               if (dungeonNow && sim) {
-                const session = peekDungeonSession(dungeonNow.dungeonId);
+                const session = peekDungeonSession(dungeonNow.instanceId);
                 if (session) {
                   const snap = sim.snapshot();
                   writeFloorMutations(session, dungeonNow.floorIdx, {
@@ -3702,6 +3730,17 @@ export function PlayHost() {
       });
     })();
 
+    /** Push a log line for each spelunking reach-step that just
+     *  credited on a floor arrival. No-op when nothing credited. */
+    function logReachCredits(credited: string[]) {
+      if (credited.length === 0) return;
+      setLogMessages((prev) => {
+        const lines = credited.map((name) => `Spelunking: ${name}.`);
+        const next = [...prev, ...lines];
+        return next.length > MAX_LOG ? next.slice(next.length - MAX_LOG) : next;
+      });
+    }
+
     /** Resolve a dungeon record's catalog id, generate its levels
      *  (or fetch the cached session), and remount the world against
      *  the entrance floor. The overworld save's currentMapId stays
@@ -3711,6 +3750,10 @@ export function PlayHost() {
     function handleDungeonEntered(
       dungeonId: string,
       returnPos: { col: number; row: number },
+      /** The dungeon-mouth cell the party stepped onto. Folded into
+       *  the instance key so the same record at two entrances rolls
+       *  two distinct dungeons. */
+      entrancePos: { col: number; row: number },
     ) {
       const save = saveRef.current;
       const cat = state.kind === "ok" ? state.catalog : null;
@@ -3729,7 +3772,17 @@ export function PlayHost() {
       // pre-population that runs in the load effect). Otherwise
       // roll a fresh seed and bind it to the save below — that's
       // what makes this dungeon "fixed for the rest of the game".
-      const persisted = save.dungeons?.[dungeonId];
+      // Per-placement instance key: the same dungeon record planted
+      // at two entrances gets two independent runs (own seed/layout
+      // + own explored/cleared state). Keyed on the entrance map +
+      // the mouth cell so re-entering via the same door resumes it.
+      const instanceId = dungeonInstanceKey({
+        dungeonId,
+        mapId: save.party.currentMapId,
+        col: entrancePos.col,
+        row: entrancePos.row,
+      });
+      const persisted = save.dungeons?.[instanceId];
       const seed = persisted
         ? persisted.seed
         : Math.floor(Math.random() * 0x7fffffff);
@@ -3786,13 +3839,17 @@ export function PlayHost() {
           requiredByFloor.set(floorIdx, bucket);
         }
       }
-      const session = getOrCreateDungeonSession(dungeonId, seed, () =>
-        generateDungeonFromRecord(record, {
-          seed,
-          encounters: encountersByArea,
-          monsterDifficulty,
-          requiredMonstersByFloor: requiredByFloor,
-        }),
+      const session = getOrCreateDungeonSession(
+        instanceId,
+        seed,
+        () =>
+          generateDungeonFromRecord(record, {
+            seed,
+            encounters: encountersByArea,
+            monsterDifficulty,
+            requiredMonstersByFloor: requiredByFloor,
+          }),
+        dungeonId,
       );
       const lvl0 = session.levels[0];
       if (!lvl0) {
@@ -3812,6 +3869,7 @@ export function PlayHost() {
       };
       dungeonStateRef.current = {
         dungeonId,
+        instanceId,
         seed: session.seed,
         levels: session.levels,
         floorIdx: 0,
@@ -3830,6 +3888,7 @@ export function PlayHost() {
           ...save.party,
           currentDungeon: {
             dungeonId,
+            instanceId,
             floorIdx: 0,
             col: lvl0.entryCol,
             row: lvl0.entryRow,
@@ -3837,11 +3896,20 @@ export function PlayHost() {
           },
         },
         dungeons: dungeonSnapshot
-          ? { ...save.dungeons, [dungeonId]: dungeonSnapshot }
+          ? { ...save.dungeons, [instanceId]: dungeonSnapshot }
           : save.dungeons,
       };
-      saveWorld(nextSave);
-      saveRef.current = nextSave;
+      // Spelunking: arriving on the entrance floor (floorIdx 0 =
+      // level 1) credits the first reach step of any active quest
+      // pinned to this dungeon.
+      const reach = creditReachStep(
+        nextSave,
+        { dungeonId, floorIdx: 0 },
+        cat.quests,
+      );
+      saveWorld(reach.save);
+      saveRef.current = reach.save;
+      logReachCredits(reach.credited);
       // Bump the reload key so the load effect re-runs, the dungeon
       // overlay kicks in via buildDungeonCatalog, and the Phaser
       // game remounts against the synthetic floor.
@@ -3868,7 +3936,7 @@ export function PlayHost() {
         // doors. We keep save.dungeons[id] populated even after
         // exit — that's how the seed stays bound for the rest of
         // the game.
-        const session = peekDungeonSession(dungeonNow.dungeonId);
+        const session = peekDungeonSession(dungeonNow.instanceId);
         const snapshot = session ? snapshotDungeonForSave(session) : null;
         const next: WorldSave = {
           ...save,
@@ -3881,7 +3949,7 @@ export function PlayHost() {
             currentDungeon: undefined,
           },
           dungeons: snapshot
-            ? { ...save.dungeons, [dungeonNow.dungeonId]: snapshot }
+            ? { ...save.dungeons, [dungeonNow.instanceId]: snapshot }
             : save.dungeons,
         };
         saveWorld(next);
@@ -3931,7 +3999,7 @@ export function PlayHost() {
             // a reload mid-transition (or right after) resumes on
             // the new floor with the prior floor's mutations
             // preserved.
-            const session = peekDungeonSession(dungeonNow.dungeonId);
+            const session = peekDungeonSession(dungeonNow.instanceId);
             const snapshot = session
               ? snapshotDungeonForSave(session)
               : null;
@@ -3942,6 +4010,7 @@ export function PlayHost() {
                 ...save.party,
                 currentDungeon: {
                   dungeonId: dungeonNow.dungeonId,
+                  instanceId: dungeonNow.instanceId,
                   floorIdx: targetFloor,
                   col: landing.col,
                   row: landing.row,
@@ -3949,11 +4018,19 @@ export function PlayHost() {
                 },
               },
               dungeons: snapshot
-                ? { ...save.dungeons, [dungeonNow.dungeonId]: snapshot }
+                ? { ...save.dungeons, [dungeonNow.instanceId]: snapshot }
                 : save.dungeons,
             };
-            saveWorld(next);
-            saveRef.current = next;
+            // Spelunking: arriving on a new floor credits that floor's
+            // reach step for any active quest pinned to this dungeon.
+            const reach = creditReachStep(
+              next,
+              { dungeonId: dungeonNow.dungeonId, floorIdx: targetFloor },
+              catalogRef.current?.quests ?? [],
+            );
+            saveWorld(reach.save);
+            saveRef.current = reach.save;
+            logReachCredits(reach.credited);
             setReloadKey((k) => k + 1);
             return;
           }
@@ -5517,7 +5594,14 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
     encounters: encountersDoc.encounters ?? [],
     spawns: spawnsDoc.spawns ?? [],
     dungeons: dungeonsDoc.dungeons ?? [],
-    quests: questsDoc.quests ?? [],
+    // Fan out any "spelunking" template steps (a single `reach` step
+    // pinned to a dungeon with no concrete level) into one reach step
+    // per floor, using the dungeon's authored floor count. Pure +
+    // idempotent — non-spelunking quests pass straight through.
+    quests: expandSpelunkingQuests(
+      questsDoc.quests ?? [],
+      dungeonsDoc.dungeons ?? [],
+    ),
     npcs: npcsDoc.npcs ?? [],
     counters: countersDoc.counters ?? [],
     knockSpell,
@@ -5629,6 +5713,7 @@ function snapshotDungeonForSave(
   );
   return {
     dungeonId: session.dungeonId,
+    instanceId: session.instanceId,
     seed: session.seed,
     levels: serialiseDungeonLevels(session.levels as unknown[]),
     floors,
@@ -5758,6 +5843,70 @@ function creditKillStep(
   }
   if (!changed) return save;
   return { ...save, questStepProgress: progress };
+}
+
+/**
+ * Floor-arrival quest credit — the "spelunking" path. Walks every
+ * accepted quest; if a quest's active step is `kind: "reach"` and
+ * pinned to the dungeon + floor the party just arrived on, advances
+ * its per-quest progress counter. Sequential model identical to
+ * {@link creditKillStep}: `questStepProgress[id]` is the index of the
+ * next incomplete step.
+ *
+ * Because dungeon floors are reached in order and the expanded reach
+ * steps are in floor order, one arrival advances at most one step per
+ * quest. Re-entering the dungeon or backtracking up a floor can't
+ * double-credit or regress: the active step has already moved past
+ * the arrived floor's level, so the level check fails.
+ *
+ * Returns the (possibly unchanged) save plus the display names of any
+ * steps that just credited, so the host can surface a log line.
+ */
+function creditReachStep(
+  save: WorldSave,
+  dungeon: { dungeonId: string; floorIdx: number } | null,
+  quests: ReadonlyArray<SimQuestRef>,
+): { save: WorldSave; credited: string[] } {
+  if (!dungeon) return { save, credited: [] };
+  const accepted = save.acceptedQuests ?? [];
+  if (accepted.length === 0) return { save, credited: [] };
+  const byId = new Map(quests.map((q) => [q.id, q]));
+  const progress: Record<string, number> = {
+    ...(save.questStepProgress ?? {}),
+  };
+  const credited: string[] = [];
+  let changed = false;
+  // Expanded reach steps carry a 1-based `dungeon_level`; floorIdx is
+  // 0-based, so the arrived level is floorIdx + 1.
+  const arrivedLevel = dungeon.floorIdx + 1;
+  for (const questId of accepted) {
+    const quest = byId.get(questId);
+    if (!quest) continue;
+    const steps =
+      (quest as unknown as {
+        steps?: ReadonlyArray<{
+          kind?: string;
+          name?: string;
+          dungeon_id?: string;
+          dungeon_level?: number;
+        }>;
+      }).steps ?? [];
+    const activeIdx = progress[questId] ?? 0;
+    const step = steps[activeIdx];
+    if (!step || step.kind !== "reach") continue;
+    if (step.dungeon_id && step.dungeon_id !== dungeon.dungeonId) continue;
+    if (
+      typeof step.dungeon_level === "number" &&
+      step.dungeon_level !== arrivedLevel
+    ) {
+      continue;
+    }
+    progress[questId] = activeIdx + 1;
+    credited.push(step.name || `Floor ${arrivedLevel}`);
+    changed = true;
+  }
+  if (!changed) return { save, credited: [] };
+  return { save: { ...save, questStepProgress: progress }, credited };
 }
 
 // `renderQuestLog` used to be defined here for the inline quest log

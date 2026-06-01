@@ -51,7 +51,7 @@ export default function MapEditorPage({
 }) {
   if (!params.moduleId || !params.mapId) notFound();
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden">
       <nav className="border-b border-parchment/10 bg-ink/40 px-4 py-2 text-xs text-parchment/50">
         <Link
           href={`/editor/${params.moduleId}`}

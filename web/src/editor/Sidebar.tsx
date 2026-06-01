@@ -35,7 +35,7 @@ export function Sidebar({ moduleId }: { moduleId: string }) {
   };
 
   return (
-    <aside className="w-56 shrink-0 border-r border-parchment/10 bg-ink/30 p-3">
+    <aside className="w-56 shrink-0 overflow-y-auto border-r border-parchment/10 bg-ink/30 p-3">
       <Link
         href="/editor"
         className="mb-1 block text-xs uppercase tracking-wide text-parchment/55 hover:text-parchment/85"

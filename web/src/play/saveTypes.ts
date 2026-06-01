@@ -193,6 +193,12 @@ export interface SavedPartyState {
    *  when they leave the dungeon. */
   currentDungeon?: {
     dungeonId: string;
+    /** Per-placement instance key (see `dungeonInstanceKey`) — the
+     *  key under which this run lives in `save.dungeons`. The same
+     *  dungeon record entered via two different map entrances has
+     *  two distinct instance ids. Absent in legacy saves; the
+     *  loader falls back to `dungeonId` (one instance per record). */
+    instanceId?: string;
     floorIdx: number;
     col: number;
     row: number;
@@ -273,6 +279,11 @@ export interface SavedFloorState {
  *  hydrated at read time. */
 export interface SavedDungeonSession {
   dungeonId: string;
+  /** Per-placement instance key this run was stored under (see
+   *  `dungeonInstanceKey`). Mirrors the `save.dungeons` record key.
+   *  Absent in legacy saves keyed by bare dungeon id; the loader
+   *  falls back to `dungeonId`. */
+  instanceId?: string;
   seed: number;
   /** DungeonLevel[] structure, with internal Sets serialised as
    *  arrays. Typed as `unknown` here to keep the save module from
@@ -301,8 +312,14 @@ export interface WorldSave {
    *  never visited are absent — `loadMapState` treats absence as
    *  empty Sets. */
   maps: Record<string, SavedMapState>;
-  /** Per-dungeon session keyed by dungeon id. Same absence-=-empty
-   *  semantics: a dungeon the party hasn't entered isn't in the map. */
+  /** Per-dungeon session keyed by *instance id* (see
+   *  `dungeonInstanceKey`) — one entry per physical entrance the
+   *  party has stepped through, so the same dungeon record placed
+   *  at two map entrances stores two independent runs. Legacy saves
+   *  are keyed by bare dungeon id; the loader treats a missing
+   *  `instanceId` as "this key IS the dungeon id" so old saves keep
+   *  resolving. Same absence-=-empty semantics: a dungeon the party
+   *  hasn't entered isn't in the map. */
   dungeons: Record<string, SavedDungeonSession>;
   /** Quest ids the party has accepted. Stops the quest-tile trigger
    *  from re-offering an already-accepted quest. Absent on legacy

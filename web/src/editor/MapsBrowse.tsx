@@ -28,6 +28,7 @@ import {
   saveDraft,
 } from "@/data_model/draft";
 import { mergeModel } from "@/data_model/merge";
+import type { LibraryCatalogEntry } from "@/data_model/ModuleSource";
 import { publishItems } from "@/data_model/publishClient";
 import { StaticModuleSource } from "@/data_model/StaticModuleSource";
 import {
@@ -79,10 +80,38 @@ type LoadState =
       kind: "ok";
       palette: TileType[];
       maps: MapRecord[];
+      /** Maps available to import from `uses` libraries (e.g. "Maps
+       *  and Buildings"). Not auto-merged — surfaced for explicit
+       *  import, mirroring the generic ModelView. */
+      catalog: LibraryCatalogEntry[];
       ownFile: Record<string, unknown> | null;
       isDraft: boolean;
     }
   | { kind: "error"; message: string };
+
+/** Group maps by tag for the library-import view. A map carrying
+ *  several tags appears under each (so a shared "shop" map shows up in
+ *  both the building it belongs to and any cross-cutting tag); untagged
+ *  maps fall into the "(untagged)" bucket. Returns entries sorted
+ *  alphabetically with "(untagged)" last — same ordering as the main
+ *  tree. */
+function groupRecordsByTag(records: MapRecord[]): [string, MapRecord[]][] {
+  const groups = new Map<string, MapRecord[]>();
+  for (const m of records) {
+    const tags =
+      Array.isArray(m.tags) && m.tags.length > 0 ? m.tags : [UNTAGGED];
+    for (const tag of tags) {
+      if (!groups.has(tag)) groups.set(tag, []);
+      groups.get(tag)!.push(m);
+    }
+  }
+  const keys = [...groups.keys()].sort((a, b) => {
+    if (a === UNTAGGED) return 1;
+    if (b === UNTAGGED) return -1;
+    return a.localeCompare(b);
+  });
+  return keys.map((k) => [k, groups.get(k)!]);
+}
 
 export function MapsBrowse({ moduleId }: { moduleId: string }) {
   const router = useRouter();
@@ -96,9 +125,12 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
   const refresh = async () => {
     try {
       const src = new StaticModuleSource();
-      const [paletteLayers, mapsLayers] = await Promise.all([
+      const [paletteLayers, mapsLayers, catalog] = await Promise.all([
         src.loadModelLayers(moduleId, "map_tiles"),
         src.loadModelLayers(moduleId, "maps"),
+        // Maps offered by `uses` libraries. Not part of the resolved
+        // view — the import section below copies them in on demand.
+        src.listLibraryRecords(moduleId, "maps"),
       ]);
       const paletteMerged = mergeModel(
         "map_tiles",
@@ -120,6 +152,7 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
         kind: "ok",
         palette,
         maps,
+        catalog,
         ownFile: ownEffective ?? null,
         isDraft: hasDraft(moduleId, MODEL_KEY),
       });
@@ -471,6 +504,45 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
     router.push(`/editor/${moduleId}/maps/${newId}`);
   };
 
+  /**
+   * Import one or more maps from a `uses` library into THIS module's
+   * own maps file, in a single write. Deep-clones each record so the
+   * copies fully decouple from the library (later edits on either
+   * side don't cross over).
+   *
+   * IDs are preserved, NOT renamed. Buildings are multi-map and wire
+   * themselves together by `link.map_id` (a town square links to its
+   * shop interior, the shop links back, etc.) — renaming on import
+   * would sever those links. The import catalog already filters out
+   * ids present in the resolved view, so collisions are limited to
+   * the rare case of two libraries exposing the same id (or the same
+   * map reachable under two tags in one "Import all"); those are
+   * skipped rather than renamed, keeping every surviving link intact.
+   *
+   * Batching matters: importing a whole building in one persistMaps
+   * call means all its maps land together, so the moment the import
+   * finishes every inter-map link already resolves.
+   */
+  const onImportMaps = async (records: MapRecord[]) => {
+    if (state.kind !== "ok") return;
+    const existing = new Set(state.maps.map((m) => m.id));
+    const toAdd: MapRecord[] = [];
+    for (const rec of records) {
+      if (!rec.id || existing.has(rec.id)) continue; // already present — skip, keep links intact
+      const clone: MapRecord = JSON.parse(JSON.stringify(rec));
+      toAdd.push(clone);
+      existing.add(clone.id); // guard against the same map appearing twice in one batch
+    }
+    if (toAdd.length === 0) return;
+    try {
+      await persistMaps([...state.maps, ...toAdd]);
+    } catch (e) {
+      window.alert(
+        `Couldn't import maps: ${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
+  };
+
   const onDiscardDraft = () => {
     if (typeof window === "undefined") return;
     if (!hasDraft(moduleId, MODEL_KEY)) return;
@@ -535,6 +607,18 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
 
   const existingIds = new Set(state.maps.map((m) => m.id));
   const canExport = state.ownFile !== null;
+
+  // Library maps available to import, with ids already present in the
+  // resolved view filtered out (a map you've imported / inherited no
+  // longer needs an import button). Empty libraries drop out.
+  const availableCatalog = state.catalog
+    .map((entry) => ({
+      libraryId: entry.libraryId,
+      records: (entry.records as unknown as MapRecord[]).filter(
+        (r) => r.id && !existingIds.has(r.id),
+      ),
+    }))
+    .filter((entry) => entry.records.length > 0);
 
   return (
     <div className="p-4">
@@ -683,6 +767,109 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
           </p>
         ) : null}
       </div>
+
+      {/* Available from libraries (uses) — explicit import, not
+          auto-merged. Grouped by tag because a "building" (a town and
+          its interiors, a dungeon and its floors) is authored as a set
+          of maps sharing a tag and linked to each other by id. The
+          "Import all" button on a tag pulls the whole set in one go so
+          the links resolve immediately. */}
+      {availableCatalog.length > 0 ? (
+        <section className="mt-8">
+          <h2 className="mb-1 text-xs uppercase tracking-wide text-parchment/45">
+            Available from libraries
+            <span className="ml-2 normal-case tracking-normal text-parchment/35">
+              (
+              {availableCatalog.reduce((n, e) => n + e.records.length, 0)} map
+              {availableCatalog.reduce((n, e) => n + e.records.length, 0) === 1
+                ? ""
+                : "s"}{" "}
+              ready to import)
+            </span>
+          </h2>
+          <p className="mb-3 text-xs text-parchment/45">
+            Maps from libraries this module uses, grouped by tag. A tagged
+            group is usually one building or area whose maps link to each
+            other — use <strong>Import all</strong> to pull the whole set
+            in (ids are preserved so the links keep working). Importing
+            copies the maps into this module&apos;s own file; edit them
+            freely afterward without affecting the library.
+          </p>
+          <div className="space-y-4">
+            {availableCatalog.map((entry) => (
+              <div
+                key={entry.libraryId}
+                className="rounded border border-parchment/10 bg-ink/20"
+              >
+                <div className="border-b border-parchment/10 bg-ink/40 px-3 py-1 text-xs text-parchment/70">
+                  <span className="text-parchment/85">{entry.libraryId}</span>
+                  <span className="ml-2 text-parchment/40">
+                    ({entry.records.length} available)
+                  </span>
+                </div>
+                <div className="divide-y divide-parchment/10">
+                  {groupRecordsByTag(entry.records).map(([tag, maps]) => (
+                    <div key={`${entry.libraryId}::tag::${tag}`}>
+                      <div className="flex items-center justify-between gap-3 bg-ink/30 px-3 py-1.5">
+                        <h3 className="text-xs uppercase tracking-wide text-parchment/55">
+                          {tag}
+                          <span className="ml-2 normal-case tracking-normal text-parchment/35">
+                            ({maps.length})
+                          </span>
+                        </h3>
+                        {tag !== UNTAGGED ? (
+                          <button
+                            type="button"
+                            onClick={() => onImportMaps(maps)}
+                            className="shrink-0 rounded border border-ember/60 bg-ember/30 px-2 py-0.5 text-xs text-parchment hover:bg-ember/50"
+                            title={`Import all ${maps.length} maps tagged "${tag}" — the whole building/area, links preserved.`}
+                          >
+                            + Import all ({maps.length})
+                          </button>
+                        ) : null}
+                      </div>
+                      <ul className="divide-y divide-parchment/5">
+                        {maps.map((m) => (
+                          <li
+                            key={`${entry.libraryId}::${tag}::${m.id}`}
+                            className="flex items-center justify-between gap-3 px-3 py-2"
+                          >
+                            <div className="min-w-0 flex-1 truncate text-sm text-parchment/85">
+                              <span className="font-display">{m.name}</span>
+                              <span className="ml-2 font-mono text-xs text-parchment/45">
+                                {m.id}
+                              </span>
+                              {typeof m.width === "number" &&
+                              typeof m.height === "number" ? (
+                                <span className="ml-2 text-xs text-parchment/40">
+                                  {m.width}×{m.height}
+                                </span>
+                              ) : null}
+                              {Array.isArray(m.tags) && m.tags.length > 1 ? (
+                                <span className="ml-2 text-xs text-parchment/40">
+                                  also: {m.tags.filter((t) => t !== tag).join(", ")}
+                                </span>
+                              ) : null}
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => onImportMaps([m])}
+                              className="shrink-0 rounded border border-ember/50 bg-ember/20 px-2 py-0.5 text-xs text-parchment hover:bg-ember/40"
+                              title={`Import just this map from ${entry.libraryId}.`}
+                            >
+                              + Import
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {/* Generate Dungeon Maps dialog */}
       {generatingDungeon ? (
