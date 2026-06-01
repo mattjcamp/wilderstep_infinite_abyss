@@ -168,6 +168,16 @@ const PARTY_MARKER_TEX = "__party_marker";
 /** Key for the white particle source texture used by every animation
  *  emitter. Shared with editor-side code that may also create it. */
 const PARTICLE_TEX = "__particle";
+/** Key for the procedurally-generated cloud-cover texture drawn over
+ *  unexplored cells in day / twilight (see `relight`). One shared
+ *  texture, instanced per cell. */
+const CLOUD_TEX = "__cloud_cover";
+/** Depth for the cloud-cover layer. Sits ABOVE every terrain + overlay
+ *  band (base cells 0, quest glow 60, detected traps 95, emitters 160,
+ *  roamer / placed-encounter sprites 250) so undiscovered ground hides
+ *  whatever stands on it, but BELOW the party sprite (300) — the party
+ *  is always on an explored cell, so they never get clouded. */
+const CLOUD_CELL_DEPTH = 280;
 
 export class WorldRenderer {
   readonly scene: Phaser.Scene;
@@ -201,6 +211,12 @@ export class WorldRenderer {
    *  per-frame — relight just calls `setTexture(grayKey)` vs
    *  `setTexture(origKey)`. */
   private readonly grayTextureCache = new Map<string, string>();
+  /** Per-cell cloud-cover sprite, keyed `"col,row"`. Lazily created
+   *  the first time a cell goes unexplored-in-daylight and reused
+   *  after (toggled visible/invisible each relight) so scouting a
+   *  region and walking back doesn't thrash sprite allocation. A cell
+   *  that never goes unexplored-in-daylight never allocates one. */
+  private readonly cloudCells = new Map<string, Phaser.GameObjects.Image>();
   /** Particle emitters for cell animations. Same key shape. Hidden
    *  by the relight pass on cells the party can't see. */
   readonly emitters = new Map<
@@ -333,6 +349,36 @@ export class WorldRenderer {
       g.lineStyle(2, 0x4a1c00, 1);
       g.strokeCircle(16, 16, 13);
       g.generateTexture(PARTY_MARKER_TEX, 32, 32);
+      g.destroy();
+    }
+    // Cloud-cover tile — a soft greyish-white puff that fully covers
+    // one cell's footprint. Built from a stack of overlapping
+    // translucent circles so the silhouette reads as a billow rather
+    // than a flat square; the per-instance `setAlpha` in relight makes
+    // it semi-transparent so a hint of the (unknown) terrain colour
+    // bleeds through, while neighbouring cloud tiles overlap into a
+    // continuous cover. Drawn at TILE_SIZE so one texture maps 1:1 to
+    // a cell.
+    if (!this.scene.textures.exists(CLOUD_TEX)) {
+      const g = this.scene.add.graphics();
+      const s = TILE_SIZE;
+      // Base fill — covers the whole cell so there are no transparent
+      // gaps at the corners when tiles sit edge-to-edge.
+      g.fillStyle(0xc8ccd4, 1);
+      g.fillRect(0, 0, s, s);
+      // Lighter billows on top for a cloudy texture. Hand-placed puffs
+      // (centre + four quadrants) at varying radius read as cloud
+      // rather than a flat tile while staying tileable at the seams.
+      g.fillStyle(0xe8ebf0, 1);
+      const puffs: Array<[number, number, number]> = [
+        [s * 0.5, s * 0.5, s * 0.42],
+        [s * 0.28, s * 0.34, s * 0.3],
+        [s * 0.72, s * 0.32, s * 0.3],
+        [s * 0.32, s * 0.72, s * 0.3],
+        [s * 0.7, s * 0.7, s * 0.32],
+      ];
+      for (const [cx, cy, rad] of puffs) g.fillCircle(cx, cy, rad);
+      g.generateTexture(CLOUD_TEX, s, s);
       g.destroy();
     }
   }
@@ -808,6 +854,66 @@ export class WorldRenderer {
       const desiredKey = remembered && grayKey ? grayKey : origKey;
       if (img.texture.key !== desiredKey) {
         img.setTexture(desiredKey);
+      }
+    }
+    // Unexplored-cover layer — drape never-seen cells so the player
+    // can't read terrain the party hasn't scouted. This covers EVERY
+    // lighting mode, not just daylight: at night an unexplored cell
+    // otherwise falls to the ambient floor (~grey 25), which is dim
+    // but still leaks the tile's silhouette against the dark canvas —
+    // the "we can still see clouded areas in grey at night" report.
+    // The same cell that gets a white cloud at noon gets a near-black
+    // cover at night, so it reads as solid void and stays clearly
+    // distinct from the lighter grey REMEMBERED band (terrain the
+    // party HAS seen).
+    //
+    // We tint the one shared cloud texture per mode rather than
+    // swapping textures. The cover is fully OPAQUE in every mode — the
+    // party hasn't seen this ground, so nothing of the terrain should
+    // bleed through. Only the colour changes by time of day:
+    //   - day      → bright cloud-white.
+    //   - twilight → dusk-dimmed cloud.
+    //   - night    → near-black void.
+    //
+    // (The cloud texture itself has fully-opaque pixels across the
+    // whole cell footprint, so setAlpha(1) leaves no gaps.)
+    //
+    // `isUnexplored` is only ever set when fog is active and the party
+    // is on the map (see lighting.ts), so paint-mode / no-party frames
+    // naturally show no cover without a special case here. Sprites are
+    // created lazily and then just toggled, so a fully-explored map
+    // carries none and a re-covered cell reuses its instance.
+    const coverTint =
+      this.lightingMode === "night"
+        ? 0x05070b // near-black void
+        : this.lightingMode === "twilight"
+          ? 0x6b7280 // dusk-dimmed cloud
+          : 0xffffff; // daylight cloud (texture's own colour)
+    const coverAlpha = 1;
+    for (const key of this.cells.keys()) {
+      const info = result.cells.get(key);
+      const covered = info?.isUnexplored ?? false;
+      let cloud = this.cloudCells.get(key);
+      if (covered && !cloud) {
+        // Lazy-create on first need. Anchor + size match the base
+        // cell (origin 0, TILE_SIZE square) so the cover lines up.
+        const [cs, rs] = key.split(",");
+        const c = Number(cs);
+        const r = Number(rs);
+        cloud = this.scene.add
+          .image(c * TILE_SIZE, r * TILE_SIZE, CLOUD_TEX)
+          .setOrigin(0)
+          .setDisplaySize(TILE_SIZE, TILE_SIZE)
+          .setDepth(CLOUD_CELL_DEPTH);
+        this.cloudCells.set(key, cloud);
+      }
+      if (cloud) {
+        cloud.setVisible(covered);
+        if (covered) {
+          cloud.setAlpha(coverAlpha);
+          if (coverTint === 0xffffff) cloud.clearTint();
+          else cloud.setTint(coverTint);
+        }
       }
     }
     // Background cells — tint + fade them exactly like the base tile
