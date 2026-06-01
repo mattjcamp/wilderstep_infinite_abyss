@@ -15,6 +15,11 @@
       "id": "maps-mix-in",
       "title": "Maps and Buildings",
       "role": "library"
+    },
+    {
+      "id": "underworld-invaders",
+      "title": "The Underworld Invaders",
+      "role": "playable"
     }
   ]
 }

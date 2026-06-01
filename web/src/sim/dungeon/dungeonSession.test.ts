@@ -3,6 +3,7 @@ import type { DungeonLevel } from "@/battle/world/Dungeon";
 import {
   clearAllDungeonSessions,
   clearDungeonSession,
+  dungeonInstanceKey,
   getFloorMutations,
   getOrCreateDungeonSession,
   peekDungeonSession,
@@ -66,6 +67,80 @@ describe("getOrCreateDungeonSession", () => {
     expect(second).not.toBe(first);
     expect(second.seed).toBe(99);
     expect(second.levels[0].name).toBe("F1@99");
+  });
+});
+
+describe("dungeonInstanceKey", () => {
+  it("folds the entrance map + cell into the dungeon id", () => {
+    expect(
+      dungeonInstanceKey({
+        dungeonId: "grotto",
+        mapId: "overworld",
+        col: 3,
+        row: 7,
+      }),
+    ).toBe("grotto@overworld:3,7");
+  });
+
+  it("is distinct for two entrances of the same record", () => {
+    const a = dungeonInstanceKey({
+      dungeonId: "grotto",
+      mapId: "overworld",
+      col: 3,
+      row: 7,
+    });
+    const b = dungeonInstanceKey({
+      dungeonId: "grotto",
+      mapId: "overworld",
+      col: 20,
+      row: 2,
+    });
+    expect(a).not.toBe(b);
+  });
+});
+
+describe("per-entrance instancing", () => {
+  it("generates two independent runs for one record at two entrances", () => {
+    // The same dungeon record ("grotto") placed at two map mouths
+    // resolves to two distinct instance keys → two sessions, each
+    // rolled once, with its own mutation state.
+    const keyA = dungeonInstanceKey({
+      dungeonId: "grotto",
+      mapId: "overworld",
+      col: 3,
+      row: 7,
+    });
+    const keyB = dungeonInstanceKey({
+      dungeonId: "grotto",
+      mapId: "overworld",
+      col: 20,
+      row: 2,
+    });
+    const genA = vi.fn(() => [fakeLevel("grottoA")]);
+    const genB = vi.fn(() => [fakeLevel("grottoB")]);
+    const a = getOrCreateDungeonSession(keyA, 11, genA, "grotto");
+    const b = getOrCreateDungeonSession(keyB, 22, genB, "grotto");
+
+    // Distinct sessions, distinct layouts, but both carry the shared
+    // record id for catalog lookups.
+    expect(a).not.toBe(b);
+    expect(a.dungeonId).toBe("grotto");
+    expect(b.dungeonId).toBe("grotto");
+    expect(a.instanceId).toBe(keyA);
+    expect(b.instanceId).toBe(keyB);
+    expect(a.levels[0].name).toBe("grottoA");
+    expect(b.levels[0].name).toBe("grottoB");
+
+    // Mutating one instance's floor state doesn't bleed into the
+    // other — independent exploration / cleared rooms.
+    getFloorMutations(a, 0).defeatedEncounters.add("5,5");
+    expect(getFloorMutations(b, 0).defeatedEncounters.has("5,5")).toBe(
+      false,
+    );
+
+    // Re-entering via the SAME mouth resumes the same instance.
+    expect(getOrCreateDungeonSession(keyA, 11, genA, "grotto")).toBe(a);
+    expect(genA).toHaveBeenCalledTimes(1);
   });
 });
 

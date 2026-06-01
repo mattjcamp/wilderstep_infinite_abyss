@@ -3683,7 +3683,7 @@ export function MapEditor({
   const { palette, mapRecord, isDraft } = state;
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="flex min-h-0 flex-1 flex-col">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-3 border-b border-parchment/10 bg-ink/30 px-4 py-2 text-sm">
         {/* Clicking the name opens the Map Properties dialog — the
@@ -3935,7 +3935,7 @@ export function MapEditor({
       </div>
 
       {/* Body: palette + canvas */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex min-h-0 flex-1 overflow-hidden">
         <aside className="w-52 shrink-0 overflow-auto border-r border-parchment/10 bg-ink/20 p-3">
           {(() => {
             // Derive the full set of tag-section headers so the toggle
@@ -4000,7 +4000,7 @@ export function MapEditor({
 
         <div
           ref={canvasScrollRef}
-          className="flex flex-1 items-start justify-start overflow-auto bg-ink/40 p-4"
+          className="flex min-h-0 min-w-0 flex-1 items-start justify-start overflow-auto bg-ink/40 p-4"
           style={{
             // Contain scroll so two-finger trackpad swipes at the
             // map's edge don't trigger the browser's back/forward

@@ -11,12 +11,38 @@
  * shape is deliberately plain (Maps + Sets) so a save pass is
  * straight JSON.
  *
- * Keyed by dungeon id (the v2 record's `id`). A single in-flight
- * game session is assumed; multiple parallel runs would extend
- * this with a session-level prefix.
+ * Keyed by *instance id* — a per-placement key, not the bare
+ * dungeon record id. The same dungeon record planted at two
+ * separate map entrances yields two independent instances (each
+ * its own rolled layout + explored/cleared state). The instance
+ * key folds the entrance's map id + cell coords into the dungeon
+ * id (see `dungeonInstanceKey`). Callers that don't care about
+ * per-placement instancing (the editor's dungeon tester) pass the
+ * bare dungeon id as the instance id — one instance, as before.
  */
 
 import type { DungeonLevel } from "@/battle/world/Dungeon";
+
+/** Build the per-placement session key for a dungeon entrance.
+ *
+ *  A single dungeon record (`grotto`) placed at two separate map
+ *  entrances should generate two distinct dungeons — same record,
+ *  independent layouts + state. We achieve that by keying the
+ *  session store on the *entrance* (map id + the entrance cell's
+ *  coords) folded into the dungeon id, rather than on the dungeon
+ *  id alone. Mirrors the per-physical-counter `counterStockKey`
+ *  pattern.
+ *
+ *  Pure + stable: the same entrance always yields the same key, so
+ *  re-entering a dungeon via the same mouth resumes its instance. */
+export function dungeonInstanceKey(args: {
+  dungeonId: string;
+  mapId: string;
+  col: number;
+  row: number;
+}): string {
+  return `${args.dungeonId}@${args.mapId}:${args.col},${args.row}`;
+}
 
 /** Mutation state for a single floor — the bits a re-mount of the
  *  same grid needs in order to resume. Cell-coordinate keys
@@ -32,6 +58,14 @@ export interface FloorMutationState {
  *  every subsequent mount of any floor reads the same grid +
  *  the floor's accumulated mutations. */
 export interface DungeonSession {
+  /** Store key — the per-placement instance id (see
+   *  `dungeonInstanceKey`). For the editor tester this equals
+   *  `dungeonId`. */
+  instanceId: string;
+  /** The dungeon *record* id this instance was generated from.
+   *  Used for catalog lookups (encounter tables, soundtrack, the
+   *  synthetic floor map ids) and persisted to the save so a
+   *  reload can re-resolve the record. */
   dungeonId: string;
   /** Seed used to generate `levels`. Stored so the editor can
    *  display it / a future "save with seed" flow can reproduce
@@ -58,28 +92,32 @@ const sessions = new Map<string, DungeonSession>();
  *  directly — it keeps the "generated once" invariant in one
  *  place. */
 export function getOrCreateDungeonSession(
-  dungeonId: string,
+  instanceId: string,
   seed: number,
   generateLevels: () => DungeonLevel[],
+  /** Dungeon *record* id. Defaults to `instanceId` for callers
+   *  (the editor tester) that don't instance per-placement. */
+  dungeonId: string = instanceId,
 ): DungeonSession {
-  const existing = sessions.get(dungeonId);
-  // Treat a different seed for the same id as a fresh roll — the
-  // launcher's manual seed override should rebuild the dungeon.
+  const existing = sessions.get(instanceId);
+  // Treat a different seed for the same instance as a fresh roll —
+  // the launcher's manual seed override should rebuild the dungeon.
   if (existing && existing.seed === seed) return existing;
   const session: DungeonSession = {
+    instanceId,
     dungeonId,
     seed,
     levels: generateLevels(),
     floors: new Map(),
   };
-  sessions.set(dungeonId, session);
+  sessions.set(instanceId, session);
   return session;
 }
 
 /** Drop a dungeon's session. Used by the launcher's "Regenerate"
  *  flow + the eventual "new game" reset. */
-export function clearDungeonSession(dungeonId: string): void {
-  sessions.delete(dungeonId);
+export function clearDungeonSession(instanceId: string): void {
+  sessions.delete(instanceId);
 }
 
 /** Drop every session — invoked when a new game starts. */
@@ -90,9 +128,9 @@ export function clearAllDungeonSessions(): void {
 /** Read-only peek at a session for tests / UI; returns undefined
  *  when no session has been created for this dungeon. */
 export function peekDungeonSession(
-  dungeonId: string,
+  instanceId: string,
 ): DungeonSession | undefined {
-  return sessions.get(dungeonId);
+  return sessions.get(instanceId);
 }
 
 /** Get the mutation state for a floor, creating an empty entry if

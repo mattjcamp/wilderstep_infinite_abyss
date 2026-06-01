@@ -91,11 +91,45 @@ Open-ended enum. Anticipated values:
 | Value | Meaning | Likely `params` |
 |---|---|---|
 | `"kill"` | Clear a specific encounter the listed number of times | `{ "encounter_id": "...", "count": 1 }` |
+| `"retrieve"` | Pick up an item stamped on a specific `(map_id, col, row)` cell | top-level `item_id` / `col` / `row` |
+| `"reach"` | Credited simply by arriving on a dungeon floor — the basis of "spelunking" quests. See *Spelunking (`reach`) steps* below. | `dungeon_id` (+ runtime-filled `dungeon_level`) |
 | `"fetch"` | Obtain an item and bring it back | `{ "item_id": "...", "count": 1 }` |
 | `"visit"` | Step on a specific map cell | `{ "map_id": "...", "col": 0, "row": 0 }` |
 | `"talk"` | Talk to a specific NPC | `{ "npc_id": "..." }` |
 
 Add new kinds as needed; the runtime branches on `kind` for completion-check logic.
+
+## Spelunking (`reach`) steps
+
+Procedurally generated dungeons are hard to write kill/retrieve quests for — you don't know the layout in advance. A `reach` step sidesteps that: the objective is simply to **arrive on a dungeon floor**, credited the moment the party steps onto it. No encounter, no item, no cell.
+
+Because the floor *count* of a dungeon is authored (a Dungeon's `levels[]`) even though each floor's *layout* is random, one `reach` step can be fanned out into one step per floor automatically. This is the "spelunking" pattern:
+
+- Author **one** step with `kind: "reach"` and a `dungeon_id`, and **leave `dungeon_level` unset**.
+- At load time the runtime (`expandSpelunkingQuests`) replaces that single step with one `reach` step per floor of the named dungeon — `dungeon_level` 1..N (from each level's `depth`), `location_kind: "dungeon"`, and a per-floor name derived from the level's authored name.
+- The party credits each floor's step on first arrival. Since floors are reached in order and the steps are in floor order, the strict-linear `steps[]` model advances exactly one step per descent. Backtracking up and re-entering can't double-credit — the active step has already moved past that floor.
+
+The number of steps always matches the dungeon's floor count, so regenerating the dungeon for a new game (new layout, same floor count) doesn't change the quest's shape.
+
+If you instead pin a concrete `dungeon_level` on a `reach` step, it stays a single explicit "reach floor N" objective and is **not** expanded — useful for a one-off "get to the bottom" beat inside a larger quest.
+
+```json
+{
+  "id": "spelunk_grotto",
+  "name": "Spelunk the Grotto",
+  "description": "Map every floor of the grotto.",
+  "steps": [
+    {
+      "id": "descend",
+      "name": "Descend",
+      "kind": "reach",
+      "dungeon_id": "grotto"
+    }
+  ]
+}
+```
+
+For a 3-floor `grotto`, this authors as one step but plays as three: "Descend: Mouth", "Descend: Tunnels", "Descend: The Deep" (using each floor's authored name), credited as the party reaches floors 1, 2, and 3.
 
 ## Cross-references to other models
 

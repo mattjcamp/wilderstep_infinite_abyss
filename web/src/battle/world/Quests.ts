@@ -15,7 +15,7 @@
  *                 → `completed` (every step's progress flag is true)
  *                                → `turned_in` (rewards claimed; terminal)
  *
- * **Step kinds.** The current runtime branches on three:
+ * **Step kinds.** The current runtime branches on four:
  *   - `"kill"` — defeat the named `encounter_id` at a location until
  *               the per-step `count` is reached.
  *   - `"retrieve"` — pick up `item_id` from the cell `(col, row)` on
@@ -23,6 +23,12 @@
  *   - `"collect"` — legacy alias of retrieve kept on the enum so older
  *               quests.json that still uses `"collect"` hydrates; new
  *               authoring writes `"retrieve"`.
+ *   - `"reach"` — credited simply by arriving on a dungeon floor that
+ *               matches the step's `dungeon_id` + `dungeon_level`. The
+ *               basis of "spelunking" quests: author ONE reach step
+ *               with a `dungeon_id` and no level, and
+ *               {@link expandSpelunkingQuests} fans it out into one
+ *               reach step per floor of that dungeon.
  *
  * **Location matching.** Use {@link matchesLocation} — it consumes a
  * {@link CombatLocation} (`{ kind, mapId | dungeonId, dungeonLevel? }`)
@@ -34,7 +40,7 @@ import { modulePath } from "./Module";
 import { sampleEncounter, type EncounterTemplate } from "./Encounters";
 
 export type QuestStatus = "available" | "active" | "completed" | "turned_in";
-export type QuestStepKind = "kill" | "collect" | "retrieve";
+export type QuestStepKind = "kill" | "collect" | "retrieve" | "reach";
 
 /** Where a step plays out in the v2 structured form. Empty means
  *  "any location credits the step." */
@@ -500,6 +506,134 @@ export function parseQuestsFile(raw: unknown): QuestDef[] {
 /** Test-only: clear the cache. */
 export function _clearQuestsCache(): void {
   _cache = null;
+}
+
+// ── Spelunking auto-expansion ───────────────────────────────────
+
+/** Loose raw-step shape the expansion pass reads/writes. Kept
+ *  structural (not the typed {@link QuestStep}) because expansion
+ *  runs on the catalog's raw JSON quest records BEFORE
+ *  {@link parseQuestsFile} narrows them — it must preserve every
+ *  field it doesn't touch. */
+interface RawStepLike {
+  id?: string;
+  name?: string;
+  kind?: string;
+  dungeon_id?: string;
+  dungeon_level?: number | string | null;
+  location_kind?: string;
+  [k: string]: unknown;
+}
+
+/** Loose raw-quest shape — only `steps` is read; everything else is
+ *  passed through untouched. */
+interface RawQuestLike {
+  id?: string;
+  steps?: RawStepLike[];
+  [k: string]: unknown;
+}
+
+/** Minimal dungeon info the expansion needs: the record id + its
+ *  ordered floor list (only `name` / `depth` are read). Mirrors the
+ *  fields {@link DungeonRecord.levels} carries. */
+export interface DungeonFloorInfo {
+  id: string;
+  levels?: ReadonlyArray<{ name?: string; depth?: number }>;
+}
+
+/**
+ * Fan out "spelunking template" steps into one `reach` step per
+ * dungeon floor.
+ *
+ * A template step is `kind: "reach"` with a `dungeon_id` set and NO
+ * concrete `dungeon_level`. For each one, this pass looks up the
+ * named dungeon's floor count (`levels.length`) and replaces the
+ * single template with N reach steps — `dungeon_level` 1..N (using
+ * each level's `depth`), `location_kind: "dungeon"`, and a name
+ * derived from the level's authored name (falling back to
+ * "Floor N"). The party credits each step just by arriving on the
+ * matching floor (see PlayHost's `creditReachStep`); since floors are
+ * reached in order, the sequential progress model advances one step
+ * per descent.
+ *
+ * Untouched: reach steps that already pin a `dungeon_level` (explicit
+ * single-floor steps), every non-reach step, and any template whose
+ * `dungeon_id` doesn't resolve to a dungeon with floors (left as-is so
+ * a bad id doesn't silently delete the step).
+ *
+ * Pure + idempotent: expanded steps carry concrete levels, so a
+ * second pass finds nothing left to expand. Returns a new array;
+ * inputs are not mutated.
+ */
+export function expandSpelunkingQuests<Q>(
+  quests: ReadonlyArray<Q>,
+  dungeons: ReadonlyArray<DungeonFloorInfo>,
+): Q[] {
+  const floorsById = new Map<
+    string,
+    ReadonlyArray<{ name?: string; depth?: number }>
+  >();
+  for (const d of dungeons) {
+    if (d && typeof d.id === "string" && d.id.length > 0) {
+      floorsById.set(d.id, d.levels ?? []);
+    }
+  }
+  return quests.map((q) => {
+    const qq = q as RawQuestLike;
+    const steps = Array.isArray(qq.steps) ? qq.steps : null;
+    if (!steps) return q;
+    let touched = false;
+    const out: RawStepLike[] = [];
+    for (const step of steps) {
+      const lvlRaw = step?.dungeon_level;
+      const hasConcreteLevel =
+        typeof lvlRaw === "number"
+          ? lvlRaw > 0
+          : typeof lvlRaw === "string"
+            ? lvlRaw.trim().length > 0 && lvlRaw.trim() !== "0"
+            : false;
+      const isTemplate =
+        !!step &&
+        step.kind === "reach" &&
+        typeof step.dungeon_id === "string" &&
+        step.dungeon_id.length > 0 &&
+        !hasConcreteLevel;
+      if (!isTemplate) {
+        out.push(step);
+        continue;
+      }
+      const levels = floorsById.get(step.dungeon_id as string);
+      if (!levels || levels.length === 0) {
+        // Unknown dungeon / no floors — leave the template intact so
+        // the author can see (and fix) the dangling reference.
+        out.push(step);
+        continue;
+      }
+      touched = true;
+      const baseId = step.id && step.id.length > 0 ? step.id : "reach";
+      const baseName = typeof step.name === "string" ? step.name : "";
+      for (let i = 0; i < levels.length; i++) {
+        const lvl = levels[i];
+        const depth =
+          typeof lvl?.depth === "number" && lvl.depth > 0 ? lvl.depth : i + 1;
+        const floorName =
+          typeof lvl?.name === "string" && lvl.name.length > 0
+            ? lvl.name
+            : `Floor ${depth}`;
+        out.push({
+          ...step,
+          id: `${baseId}_f${depth}`,
+          name: baseName ? `${baseName}: ${floorName}` : floorName,
+          kind: "reach",
+          location_kind: "dungeon",
+          dungeon_id: step.dungeon_id,
+          dungeon_level: depth,
+        });
+      }
+    }
+    if (!touched) return q;
+    return { ...(q as Record<string, unknown>), steps: out } as Q;
+  });
 }
 
 export function findQuest(defs: QuestDef[], name: string): QuestDef | null {

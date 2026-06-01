@@ -6,6 +6,7 @@ import {
   creditQuestKill,
   creditQuestRetrieve,
   ensureQuestStates,
+  expandSpelunkingQuests,
   matchesLocation,
   parseQuestsFile,
   type CombatLocation,
@@ -819,5 +820,113 @@ describe("step-level rewards", () => {
     const credit = creditQuestRetrieve(defs, states, "amulet", 0);
     expect(credit).not.toBeNull();
     expect(credit!.stepRewards).toEqual({ items: [], tileAdds: [] });
+  });
+});
+
+describe("expandSpelunkingQuests", () => {
+  const dungeons = [
+    {
+      id: "grotto",
+      levels: [
+        { name: "Mouth", depth: 1 },
+        { name: "Tunnels", depth: 2 },
+        { name: "The Deep", depth: 3 },
+      ],
+    },
+    { id: "empty_pit", levels: [] },
+  ];
+
+  it("fans a template reach step into one step per floor", () => {
+    const quests = [
+      {
+        id: "spelunk_grotto",
+        name: "Spelunk the Grotto",
+        steps: [
+          {
+            id: "descend",
+            name: "Descend",
+            kind: "reach",
+            dungeon_id: "grotto",
+          },
+        ],
+      },
+    ];
+    const [q] = expandSpelunkingQuests(quests, dungeons);
+    expect(q.steps).toHaveLength(3);
+    expect(q.steps.map((s) => s.dungeon_level)).toEqual([1, 2, 3]);
+    expect(q.steps.map((s) => s.kind)).toEqual(["reach", "reach", "reach"]);
+    // Each carries the dungeon id + a dungeon location + a name built
+    // from the level's authored name.
+    expect(q.steps.every((s) => s.dungeon_id === "grotto")).toBe(true);
+    expect(q.steps.every((s) => s.location_kind === "dungeon")).toBe(true);
+    expect(q.steps[0].name).toBe("Descend: Mouth");
+    expect(q.steps[2].name).toBe("Descend: The Deep");
+    // Step ids are made unique per floor.
+    expect(new Set(q.steps.map((s) => s.id)).size).toBe(3);
+  });
+
+  it("is idempotent — a second pass changes nothing", () => {
+    const quests = [
+      {
+        id: "spelunk_grotto",
+        name: "Spelunk the Grotto",
+        steps: [{ id: "descend", name: "Descend", kind: "reach", dungeon_id: "grotto" }],
+      },
+    ];
+    const once = expandSpelunkingQuests(quests, dungeons);
+    const twice = expandSpelunkingQuests(once, dungeons);
+    expect(twice).toEqual(once);
+  });
+
+  it("leaves reach steps that already pin a level untouched", () => {
+    const quests = [
+      {
+        id: "q",
+        name: "Q",
+        steps: [
+          {
+            id: "floor2",
+            name: "Reach floor 2",
+            kind: "reach",
+            dungeon_id: "grotto",
+            dungeon_level: 2,
+          },
+        ],
+      },
+    ];
+    const [q] = expandSpelunkingQuests(quests, dungeons);
+    expect(q.steps).toHaveLength(1);
+    expect(q.steps[0].dungeon_level).toBe(2);
+  });
+
+  it("leaves non-reach steps and unknown / empty dungeons alone", () => {
+    const quests = [
+      {
+        id: "mixed",
+        name: "Mixed",
+        steps: [
+          { id: "kill", name: "Kill", kind: "kill", encounter_id: "rats" },
+          { id: "bad", name: "Bad", kind: "reach", dungeon_id: "nope" },
+          { id: "empty", name: "Empty", kind: "reach", dungeon_id: "empty_pit" },
+        ],
+      },
+    ];
+    const [q] = expandSpelunkingQuests(quests, dungeons);
+    // Nothing expanded — kill is untouched, the two bad templates stay
+    // as-is (1 step each) so the author can see the dangling ref.
+    expect(q.steps).toHaveLength(3);
+    expect(q.steps.map((s) => s.id)).toEqual(["kill", "bad", "empty"]);
+  });
+
+  it("does not mutate the input quests", () => {
+    const quests = [
+      {
+        id: "q",
+        name: "Q",
+        steps: [{ id: "descend", name: "Descend", kind: "reach", dungeon_id: "grotto" }],
+      },
+    ];
+    expandSpelunkingQuests(quests, dungeons);
+    expect(quests[0].steps).toHaveLength(1);
   });
 });

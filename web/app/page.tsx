@@ -17,7 +17,7 @@ export default function HomePage() {
           Wilderstep: Infinite Abyss
         </h1>
         <p className="mt-3 text-parchment/70">
-          Workflow stub. No game content yet.
+          
         </p>
       </header>
       <nav className="flex flex-col gap-4 sm:flex-row">
