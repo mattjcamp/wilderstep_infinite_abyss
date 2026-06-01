@@ -513,6 +513,79 @@ describe("computeLighting — fog of war", () => {
     expect(r.currentlyVisible.has(`${width - 1},0`)).toBe(false);
   });
 
+  it("flags never-seen cells isUnexplored in day mode (drives the cloud layer); seen/remembered cells are not", () => {
+    // 30-wide daylight map, party at the left edge, an explicit
+    // remembered cell far away. Cells within sight are seen (not
+    // unexplored); the remembered cell is remembered (not unexplored);
+    // a never-seen cell outside both is flagged for cloud cover.
+    const grid = makeGrid(30, 1);
+    const r = computeLighting({
+      grid,
+      party: { col: 0, row: 0 },
+      partyLight: null,
+      partyInfravisionActive: false,
+      mode: "day",
+      rememberedCells: new Set(["20,0"]),
+    });
+    // In-sight cell: visible now → not unexplored.
+    expect(r.cells.get("0,0")?.isUnexplored).toBe(false);
+    expect(r.currentlyVisible.has("0,0")).toBe(true);
+    // Remembered cell: previously seen → not unexplored (no cloud).
+    expect(r.cells.get("20,0")?.isUnexplored).toBe(false);
+    // Never-seen cell beyond the sight radius: clouded.
+    expect(r.cells.get("29,0")?.isUnexplored).toBe(true);
+  });
+
+  it("flags never-seen cells isUnexplored at night too (renderer covers them as void)", () => {
+    // The reported bug: at night, a never-seen cell fell to the
+    // ambient floor and its silhouette leaked through. The flag must
+    // be set in night mode as well so the renderer can cover it.
+    const grid = makeGrid(9, 1);
+    const r = computeLighting({
+      grid,
+      party: { col: 0, row: 0 },
+      partyLight: null,
+      partyInfravisionActive: false,
+      mode: "night",
+      rememberedCells: new Set(["7,0"]),
+    });
+    // Party cell is lit + seen → not unexplored.
+    expect(r.cells.get("0,0")?.isUnexplored).toBe(false);
+    // Remembered cell → not unexplored (gets the grey band, not cover).
+    expect(r.cells.get("7,0")?.isUnexplored).toBe(false);
+    // A far, dim, never-seen cell → flagged for cover even at night.
+    const far = r.cells.get("5,0");
+    expect(far?.isRemembered).toBe(false);
+    expect(far?.isUnexplored).toBe(true);
+  });
+
+  it("does not flag isUnexplored when fog is disabled (no rememberedCells) or there's no party", () => {
+    const grid = makeGrid(20, 1);
+    // No rememberedCells → fog inactive → never clouded, even in day.
+    const noFog = computeLighting({
+      grid,
+      party: { col: 0, row: 0 },
+      partyLight: null,
+      partyInfravisionActive: false,
+      mode: "day",
+    });
+    for (const info of noFog.cells.values()) {
+      expect(info.isUnexplored).toBe(false);
+    }
+    // No party (paint view) → never clouded regardless of fog set.
+    const noParty = computeLighting({
+      grid,
+      party: null,
+      partyLight: null,
+      partyInfravisionActive: false,
+      mode: "day",
+      rememberedCells: new Set(["5,0"]),
+    });
+    for (const info of noParty.cells.values()) {
+      expect(info.isUnexplored).toBe(false);
+    }
+  });
+
   it("no party (paint view) maps nothing even in day mode", () => {
     // The editor's painting view has no party; nothing should be
     // folded into the fog memory regardless of mode.

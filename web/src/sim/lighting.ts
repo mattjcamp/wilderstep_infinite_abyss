@@ -117,6 +117,20 @@ export interface CellLightingResult {
    *  exclusive with `isInfravisionRed` (an in-LOS cell is currently
    *  visible, not remembered). */
   isRemembered: boolean;
+  /** True when the cell is neither currently visible NOR previously
+   *  remembered — i.e. the party has never seen it. In night/twilight
+   *  this is already painted near-black by the ambient floor, so the
+   *  flag is mostly redundant there. Its purpose is the DAY case: a
+   *  daylight map renders every cell fully lit, so unexplored terrain
+   *  would otherwise be plainly visible. The renderer draws a cloud-
+   *  cover sprite over cells with this flag so undiscovered ground
+   *  reads as "under cloud" until the party scouts it. Only ever true
+   *  when a `rememberedCells` set was supplied (fog-of-war active) and
+   *  the party is on the map; without fog every cell is considered
+   *  seen and this stays false so the editor's painting view + legacy
+   *  callers are unaffected. Mutually exclusive with both
+   *  `isRemembered` and `isInfravisionRed`. */
+  isUnexplored: boolean;
 }
 
 export interface LightingResult {
@@ -284,6 +298,23 @@ export function computeLighting(inputs: LightingInputs): LightingResult {
     return hasLOS(party.col, party.row, c, r);
   };
 
+  // Cloud-cover gate. A cell is "unexplored" — flagged for the
+  // renderer's cloud layer — only when fog-of-war is active (a
+  // rememberedCells set was supplied AND the party is on the map),
+  // the party can't see it right now, and they've never seen it
+  // before. The two arguments let each branch pass what it already
+  // computed (current visibility, remembered state) without recomputing.
+  const fogActive = rememberedCells !== null && party !== null;
+  const isUnexploredCell = (
+    key: string,
+    currentlyVisibleNow: boolean,
+    remembered: boolean,
+  ): boolean =>
+    fogActive &&
+    !currentlyVisibleNow &&
+    !remembered &&
+    !rememberedCells!.has(key);
+
   // ── Day fast path ────────────────────────────────────────────────
   // Full bright; no LOS gating for RENDERING — every cell + every
   // emitter still shows, so a daylight map reads as fully lit (the
@@ -298,13 +329,17 @@ export function computeLighting(inputs: LightingInputs): LightingResult {
       for (let c = 0; c < row.length; c++) {
         const cell = row[c];
         const key = `${c},${r}`;
+        const visibleNow = withinSight(c, r);
+        if (visibleNow) currentlyVisible.add(key);
         cells.set(key, {
           tint: null,
           brightness: 255,
           isInfravisionRed: false,
           isRemembered: false,
+          // Day renders fully lit, so this is the case that matters:
+          // never-seen ground gets the cloud layer until scouted.
+          isUnexplored: isUnexploredCell(key, visibleNow, false),
         });
-        if (withinSight(c, r)) currentlyVisible.add(key);
         if (cell?.light_source) sourceVisible.set(key, true);
       }
     }
@@ -407,6 +442,7 @@ export function computeLighting(inputs: LightingInputs): LightingResult {
           brightness: INFRAVISION_RED,
           isInfravisionRed: true,
           isRemembered: false,
+          isUnexplored: false,
         });
         // Infravision has no range cap in this model — any in-LOS
         // cell is rendered red, i.e. the party demonstrably sees it,
@@ -442,6 +478,7 @@ export function computeLighting(inputs: LightingInputs): LightingResult {
           brightness: REMEMBERED_BRIGHTNESS,
           isInfravisionRed: false,
           isRemembered: true,
+          isUnexplored: false,
         });
         // Remembered cells are NOT currently visible — they don't
         // grow the visited set on this frame. They were added on a
@@ -449,16 +486,22 @@ export function computeLighting(inputs: LightingInputs): LightingResult {
         continue;
       }
 
+      const visibleNow = level >= VISIBILITY_THRESHOLD && withinSight(c, r);
+      if (visibleNow) currentlyVisible.add(key);
       cells.set(key, {
         tint:
           level >= 255 ? null : (level << 16) | (level << 8) | level,
         brightness: level,
         isInfravisionRed: false,
         isRemembered: false,
+        // Flagged for the renderer's unexplored-cover layer in EVERY
+        // mode. Day/twilight render distant unexplored terrain bright
+        // enough to read, and even night's ambient floor (~grey 25)
+        // leaks a faint silhouette against the dark canvas — so the
+        // renderer covers these cells in all modes (white cloud by
+        // day, near-black void at night). See WorldRenderer.relight.
+        isUnexplored: isUnexploredCell(key, visibleNow, false),
       });
-      if (level >= VISIBILITY_THRESHOLD && withinSight(c, r)) {
-        currentlyVisible.add(key);
-      }
     }
   }
 
