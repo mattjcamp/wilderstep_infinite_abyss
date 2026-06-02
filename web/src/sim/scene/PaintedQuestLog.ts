@@ -34,6 +34,11 @@ import type Phaser from "phaser";
  *  consumer (this screen, the React overlay, the kill-credit pass)
  *  reads it as `{ name?, description? }[]`. */
 interface QuestStep {
+  /** Stable per-step id (quest JSON `step.id`). Used to look the step
+   *  up in the order-independent `questStepsDone` set so completion is
+   *  tracked per-step, not by position. Optional for back-compat with
+   *  test fixtures that omit it; the painter falls back to index. */
+  id?: string;
   name?: string;
   description?: string;
 }
@@ -57,6 +62,12 @@ export interface PaintedQuestLogData {
    *  is `>= quest.steps.length` the quest's body is complete and the
    *  party just needs to return to the giver to claim rewards. */
   questStepProgress: Readonly<Record<string, number>>;
+  /** `questId → completed step ids` — the order-independent record.
+   *  When present this is authoritative for which steps render done;
+   *  the painter falls back to `questStepProgress` (leading run) only
+   *  for quests absent here. Lets the checklist show step 3 ticked
+   *  while 1-2 are still open. */
+  questStepsDone?: Readonly<Record<string, ReadonlyArray<string>>>;
   /** Quest ids whose rewards have been claimed. Surface them in the
    *  Completed section so the player can review finished adventures
    *  without losing them in the active queue. */
@@ -301,7 +312,7 @@ export class PaintedQuestLog {
         cursorY,
         "ACTIVE",
         buckets.active,
-        data.questStepProgress,
+        data,
         "active",
       );
       cursorY = this.paintSection(
@@ -309,7 +320,7 @@ export class PaintedQuestLog {
         cursorY,
         "READY TO TURN IN",
         buckets.pending,
-        data.questStepProgress,
+        data,
         "rewards-pending",
       );
       cursorY = this.paintSection(
@@ -317,7 +328,7 @@ export class PaintedQuestLog {
         cursorY,
         "COMPLETED",
         buckets.turnedIn,
-        data.questStepProgress,
+        data,
         "turned-in",
       );
     }
@@ -380,7 +391,7 @@ export class PaintedQuestLog {
     startY: number,
     title: string,
     quests: ReadonlyArray<PaintedQuestLogQuest>,
-    questStepProgress: Readonly<Record<string, number>>,
+    data: PaintedQuestLogData,
     state: "active" | "rewards-pending" | "turned-in",
   ): number {
     // Sections with no entries collapse entirely — same as the React
@@ -403,7 +414,7 @@ export class PaintedQuestLog {
         content,
         cursorY,
         q,
-        questStepProgress[q.id] ?? 0,
+        doneSetForQuest(data, q),
         state,
       );
       cursorY += geom.height + ENTRY_SPACING;
@@ -415,7 +426,7 @@ export class PaintedQuestLog {
     content: Phaser.GameObjects.Container,
     startY: number,
     quest: PaintedQuestLogQuest,
-    stepIdx: number,
+    doneIds: ReadonlySet<string>,
     state: "active" | "rewards-pending" | "turned-in",
   ): PaintedEntryGeometry {
     // Pre-paint pass: figure out which text rows the entry will have
@@ -426,9 +437,14 @@ export class PaintedQuestLog {
     // multi-line content are in play.
     const innerWidth = PANEL_WIDTH - PANEL_PADDING * 2 - ENTRY_INNER_PADDING * 2;
     const steps = quest.steps ?? [];
-    const complete = steps.length > 0 && stepIdx >= steps.length;
+    const stepId = (i: number): string => steps[i]?.id ?? `__idx_${i}`;
+    const doneCount = steps.reduce(
+      (n, _s, i) => (doneIds.has(stepId(i)) ? n + 1 : n),
+      0,
+    );
+    const complete = steps.length > 0 && doneCount >= steps.length;
     const statusColor = statusColorFor(state, complete);
-    const statusLabel = statusLabelFor(state, complete, stepIdx, steps.length);
+    const statusLabel = statusLabelFor(state, complete, doneCount, steps.length);
 
     let rowY = startY + ENTRY_INNER_PADDING;
     const entryX = ENTRY_INNER_PADDING;
@@ -484,13 +500,27 @@ export class PaintedQuestLog {
     // also indent the steps slightly and show the current row's
     // description verbatim — past steps' descriptions are dropped
     // to keep the long-quest view scannable.
+    // The "current" step (for the description hint + arrow glyph) is
+    // the FIRST not-yet-done step. With out-of-order completion there
+    // isn't a single linear cursor, so "first incomplete" is the most
+    // useful single step to surface — it's what the player most likely
+    // still needs to find. Completed quests have no current step.
+    const firstIncompleteIdx = complete
+      ? -1
+      : steps.findIndex((_s, i) => !doneIds.has(stepId(i)));
+
     const stepTexts: Phaser.GameObjects.Text[] = [];
     if (steps.length > 0) {
       const stepIndent = entryX + 6;
       const stepInnerWidth = innerWidth - 6;
       for (let i = 0; i < steps.length; i++) {
         const step = steps[i];
-        const stepStatus = stepStatusFor(state, complete, stepIdx, i);
+        const stepStatus = stepStatusFor(
+          state,
+          complete,
+          doneIds.has(stepId(i)),
+          i === firstIncompleteIdx,
+        );
         const glyph =
           stepStatus === "done"
             ? "✓"
@@ -687,12 +717,34 @@ export function bucketQuests(data: PaintedQuestLogData): {
       continue;
     }
     const steps = q.steps ?? [];
-    const stepIdx = data.questStepProgress[id] ?? 0;
-    const complete = steps.length > 0 && stepIdx >= steps.length;
+    const done = doneSetForQuest(data, q);
+    const complete =
+      steps.length > 0 && steps.every((s, i) => done.has(s.id ?? `__idx_${i}`));
     if (complete) pending.push(q);
     else active.push(q);
   }
   return { active, pending, turnedIn };
+}
+
+/** Resolve the set of completed step ids for one quest. Prefers the
+ *  authoritative `questStepsDone`; falls back to deriving from the
+ *  legacy linear `questStepProgress` integer (first N step ids) for
+ *  quests / saves that predate the per-step record. Index-based
+ *  synthetic ids (`__idx_N`) mirror the credit path so fixtures and
+ *  real data agree even when a step omits its `id`. */
+function doneSetForQuest(
+  data: PaintedQuestLogData,
+  quest: PaintedQuestLogQuest,
+): Set<string> {
+  const steps = quest.steps ?? [];
+  const explicit = data.questStepsDone?.[quest.id];
+  if (explicit) return new Set(explicit);
+  const n = data.questStepProgress[quest.id] ?? 0;
+  const out = new Set<string>();
+  for (let i = 0; i < Math.min(n, steps.length); i++) {
+    out.add(steps[i].id ?? `__idx_${i}`);
+  }
+  return out;
 }
 
 function statusColorFor(
@@ -708,31 +760,34 @@ function statusColorFor(
 function statusLabelFor(
   state: "active" | "rewards-pending" | "turned-in",
   complete: boolean,
-  stepIdx: number,
+  doneCount: number,
   stepCount: number,
 ): string {
   if (state === "rewards-pending") return "Return to the giver";
   if (state === "turned-in") return "Turned in";
   if (complete) return "Complete";
-  if (stepCount > 0) return `${stepIdx}/${stepCount} steps`;
+  // Count of completed steps regardless of order (e.g. "1/4 steps"
+  // even if the one done is step 3).
+  if (stepCount > 0) return `${doneCount}/${stepCount} steps`;
   return "In progress";
 }
 
-/** Per-step status used by the painted entry. Quests in `turned-in`
- *  or `rewards-pending` buckets have all steps done by definition;
- *  the `complete` flag carries the same signal for an active quest
- *  whose stepIdx has caught up to stepCount. Otherwise each step
- *  compares against the quest's current cursor. */
+/** Per-step status used by the painted entry. Order-independent: a
+ *  step is "done" when its id is in the completed set, "current" when
+ *  it's the first incomplete step (the one the player is most likely
+ *  still hunting), and "pending" otherwise. Quests in `turned-in` /
+ *  `rewards-pending` buckets — or any active quest flagged `complete`
+ *  — render every step done. */
 export function stepStatusFor(
   state: "active" | "rewards-pending" | "turned-in",
   complete: boolean,
-  questStepIdx: number,
-  stepIdx: number,
+  stepDone: boolean,
+  isFirstIncomplete: boolean,
 ): "done" | "current" | "pending" {
   if (state === "turned-in" || state === "rewards-pending" || complete) {
     return "done";
   }
-  if (stepIdx < questStepIdx) return "done";
-  if (stepIdx === questStepIdx) return "current";
+  if (stepDone) return "done";
+  if (isFirstIncomplete) return "current";
   return "pending";
 }

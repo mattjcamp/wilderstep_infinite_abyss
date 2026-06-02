@@ -85,6 +85,12 @@ export interface SimCell {
    *  unlocked (success or designer override) the gate lifts and the
    *  normal `walkable` check decides movement. */
   locked?: boolean;
+  /** RESERVED for the future multi-lock system — inert today. When
+   *  set, names the lock category this door belongs to; only a key
+   *  whose {@link SimItemRef.opens} matches (or a generic key with no
+   *  `opens`) will fit. Unset = a plain lock any generic key opens,
+   *  which is every locked door today. Nothing reads this yet. */
+  lock_type?: string;
   /** Catalog id from spawns.json — when set, this cell is a monster
    *  lair. The sim's spawn loop drops roamers from `spawn_monsters`
    *  around it each step; stepping onto the cell starts a boss
@@ -168,6 +174,22 @@ export interface SimItemRef {
    *  `chest_encountered` event; the host reads this off the
    *  matching catalog record and applies it to the save. */
   contents?: ChestContents;
+  /** Item category from items.json (`"key"`, `"quest_item"`,
+   *  `"weapon"`, …). The lock kernel reads this to recognise a
+   *  *usable* key: an inventory entry whose catalog `item_type` is
+   *  exactly `"key"` can open a locked door (consumed on use). Note
+   *  the "Keys of Shadow" (gold_key, silver_key, …) are authored as
+   *  `"quest_item"`, NOT `"key"`, so they're deliberately excluded —
+   *  they're plot tokens, not door openers. Optional; absent reads
+   *  as "no special behaviour." */
+  item_type?: string;
+  /** RESERVED for the future multi-lock system — inert today. When
+   *  set, names the lock category this key fits (matched against a
+   *  door's {@link SimCell.lock_type}). A key with no `opens` (like
+   *  the current `iron_key`) is a GENERIC key that fits any plain
+   *  lock. Nothing reads this yet; reserving it now means adding
+   *  keyed locks later needs no save/catalog migration. */
+  opens?: string;
 }
 
 /** Minimal monsters.json record the sim reads — just the fields the

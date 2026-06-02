@@ -72,6 +72,7 @@ function makeSim(opts?: {
     name?: string;
     icon?: string;
     is_chest?: boolean;
+    item_type?: string;
     contents?: {
       gold?: number;
       items?: ReadonlyArray<{ id: string; qty?: number }>;
@@ -399,6 +400,99 @@ describe("MapSimulation.stepInDirection — locked tiles", () => {
     const lock = events.find((e) => e.kind === "lock_encountered");
     if (lock?.kind !== "lock_encountered") throw new Error("type narrow");
     expect(lock.options.knockCaster).toBeNull();
+  });
+});
+
+describe("MapSimulation — unlock by key", () => {
+  /** A locked door directly to the party's right, plus an items
+   *  catalog declaring `iron_key` as an `item_type: "key"`. The party
+   *  carries one iron key in its stash. */
+  function keySim(over?: {
+    inventory?: SimParty["inventory"];
+    items?: Parameters<typeof makeSim>[0]["items"];
+  }) {
+    const grid = makeGrid();
+    grid[0][1] = cell({ walkable: false, locked: true });
+    const party = makeParty({
+      inventory: over?.inventory ?? [{ item: "iron_key" }],
+    });
+    return makeSim({
+      grid,
+      party,
+      items: over?.items ?? [
+        { id: "iron_key", name: "Iron Key", item_type: "key" },
+      ],
+    });
+  }
+
+  it("surfaces a usable key on the lock_encountered options when the party carries one", () => {
+    const sim = keySim();
+    const events = captureEvents(sim);
+    sim.stepInDirection("right");
+    const lock = events.find((e) => e.kind === "lock_encountered");
+    if (lock?.kind !== "lock_encountered") throw new Error("type narrow");
+    expect(lock.options.usableKey).toEqual({ id: "iron_key", name: "Iron Key" });
+  });
+
+  it("attemptUseKey unlocks the cell, consumes the key, and reports the consumed id", () => {
+    const sim = keySim();
+    const events = captureEvents(sim);
+    sim.stepInDirection("right"); // bump → lock_encountered
+    const result = sim.attemptUseKey();
+    expect(result).not.toBeNull();
+    expect(result?.success).toBe(true);
+    expect(result?.kind).toBe("key");
+    expect(result?.consumedItemId).toBe("iron_key");
+    // The cell is now in the unlocked set.
+    expect(sim.snapshot().unlockedCells.has("1,0")).toBe(true);
+    // The key was removed from the in-session stash.
+    expect(
+      sim.snapshot().party.inventory?.some((e) => e.item === "iron_key"),
+    ).toBe(false);
+    // A lock_resolved event with the "unlocked" outcome fired.
+    const resolved = events.find((e) => e.kind === "lock_resolved");
+    if (resolved?.kind !== "lock_resolved") throw new Error("type narrow");
+    expect(resolved.outcome).toBe("unlocked");
+    // The party can now walk through the (still-painted) locked tile.
+    sim.stepInDirection("right");
+    expect(sim.snapshot().pos).toEqual({ col: 1, row: 0 });
+  });
+
+  it("decrements a multi-charge key stack rather than removing the row", () => {
+    const sim = keySim({ inventory: [{ item: "iron_key", charges: 3 }] });
+    captureEvents(sim);
+    sim.stepInDirection("right");
+    sim.attemptUseKey();
+    const entry = sim
+      .snapshot()
+      .party.inventory?.find((e) => e.item === "iron_key");
+    expect(entry?.charges).toBe(2);
+  });
+
+  it("does NOT treat a quest_item 'key' as a usable door key", () => {
+    // The Keys of Shadow (gold_key, etc.) are item_type "quest_item".
+    // They must never open a door — only item_type "key" qualifies.
+    const sim = keySim({
+      inventory: [{ item: "gold_key" }],
+      items: [
+        { id: "gold_key", name: "Gold Key", item_type: "quest_item" },
+        { id: "iron_key", name: "Iron Key", item_type: "key" },
+      ],
+    });
+    const events = captureEvents(sim);
+    sim.stepInDirection("right");
+    const lock = events.find((e) => e.kind === "lock_encountered");
+    if (lock?.kind !== "lock_encountered") throw new Error("type narrow");
+    expect(lock.options.usableKey).toBeNull();
+    // And the attempt is a no-op (no key to spend).
+    expect(sim.attemptUseKey()).toBeNull();
+    expect(sim.snapshot().unlockedCells.has("1,0")).toBe(false);
+  });
+
+  it("attemptUseKey is a no-op when there is no pending lock", () => {
+    const sim = keySim();
+    // No bump yet → no pending lock.
+    expect(sim.attemptUseKey()).toBeNull();
   });
 });
 

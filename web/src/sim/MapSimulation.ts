@@ -308,6 +308,16 @@ export interface LockEncounterOptions {
   /** MP cost — `null` when no knock spell is loaded. The row says
    *  "insufficient MP" when the caster exists but is too poor. */
   knockMpCost: number | null;
+  /** A usable key in the party stash that fits this door, or null
+   *  when the party carries none. "Usable key" = the first inventory
+   *  entry whose catalog `item_type === "key"` (and, once the
+   *  multi-lock system lands, whose `opens` matches the door's
+   *  `lock_type` — generic for now). The key is CONSUMED when used:
+   *  unlike Pick Lock / Cast Knock there's no roll, success is
+   *  guaranteed, and one key is spent. Carries the id + display name
+   *  so the overlay can label the row ("Use Key — Iron Key") and the
+   *  host can remove the right entry from the persisted inventory. */
+  usableKey: { id: string; name: string } | null;
 }
 
 /** Snapshot of the encounter the party just triggered. Three flavours:
@@ -367,14 +377,23 @@ export interface SpawnEncounterOptions {
  *  overlay can show the dice math and the human-friendly outcome
  *  line before closing itself. */
 export interface LockAttemptResult {
-  kind: "pick" | "knock";
+  kind: "pick" | "knock" | "key";
   success: boolean;
   roll: number;
   mod: number;
   total: number;
   dc: number;
-  /** Caster name + roll math for the combat log / overlay banner. */
+  /** Caster name + roll math for the combat log / overlay banner.
+   *  For a key, this is the flat "the Iron Key turns in the lock"
+   *  line — keys have no roll, so `roll/mod/total/dc` are all 0. */
   message: string;
+  /** Set only on a successful `kind: "key"` result — the catalog id
+   *  of the key that was consumed. The host removes one of this id
+   *  from the persisted party inventory (the kernel already dropped
+   *  it from its in-session copy). Absent for pick / knock, which
+   *  consume non-persistent in-session resources (lockpick charges /
+   *  MP) the host doesn't mirror to the save. */
+  consumedItemId?: string;
 }
 
 /** Events the sim emits back to the host. Hosts decide what to show:
@@ -450,7 +469,7 @@ export type SimEvent =
   /** Fired after a successful unlock — the host re-renders the cell
    *  (sprite swap if the door art changes) and re-runs the lighting
    *  pass since `obstructs` may have flipped. */
-  | { kind: "lock_resolved"; pos: Position; outcome: "picked" | "knocked" | "left" }
+  | { kind: "lock_resolved"; pos: Position; outcome: "picked" | "knocked" | "unlocked" | "left" }
   /** Fired when the party stumbles into a spawn-driven fight — either
    *  by stepping onto a Monster Spawn lair (boss fight) or by being
    *  caught by a wandering roamer. Host opens the encounter overlay
@@ -761,6 +780,15 @@ export class MapSimulation {
    *  walk-to-pickup flow. Built once at construction so the per-step
    *  read is a single Set.has() call rather than a catalog scan. */
   private readonly chestItemIds: ReadonlySet<string>;
+  /** Catalog item ids whose `item_type === "key"` — the items that
+   *  can open a locked door (consumed on use). Built once at
+   *  construction; the lock dialog scans the party stash against
+   *  this. Quest-token "keys" (item_type `"quest_item"`) are NOT in
+   *  here, so they can't open doors. */
+  private readonly keyItemIds: ReadonlySet<string>;
+  /** Catalog id → display name, for labelling the "Use Key" row and
+   *  the unlock log line without re-scanning the items array. */
+  private readonly itemNameById: ReadonlyMap<string, string>;
   /** Cells whose authored `item` has been consumed during this or a
    *  prior session — `"col,row"` keys. Populated by:
    *
@@ -856,6 +884,18 @@ export class MapSimulation {
       (opts.catalog.items ?? [])
         .filter((it) => it.is_chest === true)
         .map((it) => it.id),
+    );
+    // Key catalog — ids whose item_type is exactly "key" can open a
+    // locked door. Built alongside chestItemIds so the lock dialog's
+    // stash scan is a Set.has() per inventory entry, not a catalog
+    // walk. Display names cached for the row label + log line.
+    this.keyItemIds = new Set(
+      (opts.catalog.items ?? [])
+        .filter((it) => it.item_type === "key")
+        .map((it) => it.id),
+    );
+    this.itemNameById = new Map(
+      (opts.catalog.items ?? []).map((it) => [it.id, it.name ?? it.id]),
     );
     this.acceptedQuests = new Set(opts.initialAcceptedQuests ?? []);
     this.groundTile = opts.catalog.groundTile;
@@ -2386,6 +2426,45 @@ export class MapSimulation {
     return { kind: "knock", success, roll, mod, total, dc, message };
   }
 
+  /**
+   * Use a key on the current pending lock. Unlike pick / knock there's
+   * no roll — a fitting key always opens the door — and one key is
+   * consumed. Returns null when the request can't proceed (no pending
+   * lock, or the party no longer carries a usable key). On success the
+   * cell unlocks, one key is removed from the in-session stash, and the
+   * result carries `consumedItemId` so the host can drop the same key
+   * from the persisted inventory.
+   */
+  attemptUseKey(): LockAttemptResult | null {
+    if (this.disposed || !this.pendingLock) return null;
+    const enc = this.pendingLock;
+    if (!enc.usableKey) return null;
+    // Re-validate against the live stash in case it changed since the
+    // encounter snapshot was built (defensive — the dialog mirrors
+    // the snapshot, but the kernel owns the source of truth).
+    const key = this.findUsableKey();
+    if (!key) return null;
+    this.consumeKey(key.id);
+    const message = `${key.name} turns in the lock — the door opens.`;
+    this.applyUnlock(enc.pos, "unlocked");
+    // Keys are single-shot and guaranteed, so the lock is fully
+    // resolved — clear the pending encounter (no retry state to keep,
+    // unlike pick / knock which stay pending on a failed roll).
+    this.pendingLock = null;
+    this.emit({ kind: "log", message });
+    this.emit({ kind: "state" });
+    return {
+      kind: "key",
+      success: true,
+      roll: 0,
+      mod: 0,
+      total: 0,
+      dc: 0,
+      message,
+      consumedItemId: key.id,
+    };
+  }
+
   // ── Spawn-encounter dialog ─────────────────────────────────────
   // The host opens the SpawnEncounterOverlay on `spawn_encountered`
   // and feeds the outcome back through `resolveSpawnEncounter`. The
@@ -2719,7 +2798,46 @@ export class MapSimulation {
       ? this.findKnockCaster(knockSpell)
       : null;
     const knockMpCost = knockSpell ? (knockSpell.mp_cost ?? 0) : null;
-    return { pos, picker, lockpickCharges, knockCaster, knockMpCost };
+    const usableKey = this.findUsableKey();
+    return { pos, picker, lockpickCharges, knockCaster, knockMpCost, usableKey };
+  }
+
+  /** Find the first party-stash entry that is a usable key for this
+   *  door. Today every locked door is a plain lock, so any item
+   *  whose catalog `item_type === "key"` qualifies (the iron_key).
+   *  When the multi-lock system lands this also checks the key's
+   *  `opens` against the door's `lock_type`; until then `lock_type`
+   *  is always unset so the generic match holds. Returns the id +
+   *  display name, or null when the party carries no fitting key. */
+  private findUsableKey(): { id: string; name: string } | null {
+    for (const entry of this.party.inventory ?? []) {
+      if (!this.keyItemIds.has(entry.item)) continue;
+      return {
+        id: entry.item,
+        name: this.itemNameById.get(entry.item) ?? entry.item,
+      };
+    }
+    return null;
+  }
+
+  /** Remove one unit of `itemId` from the in-session party stash.
+   *  Mirrors {@link consumeLockpick} — decrements `charges` and drops
+   *  the row at zero, or removes a charge-less row outright. The host
+   *  separately removes the key from the PERSISTED inventory on the
+   *  `consumedItemId` it gets back from {@link attemptUseKey}; this
+   *  keeps the kernel's own copy (used to rebuild `usableKey` on a
+   *  re-bump) consistent within the session. */
+  private consumeKey(itemId: string): void {
+    const inv = this.party.inventory;
+    if (!inv) return;
+    for (let i = 0; i < inv.length; i++) {
+      const entry = inv[i];
+      if (entry.item !== itemId) continue;
+      const charges = (entry.charges ?? 1) - 1;
+      if (charges <= 0) inv.splice(i, 1);
+      else inv[i] = { ...entry, charges };
+      return;
+    }
   }
 
   private findLockpicker(): SimCharacter | null {
@@ -2761,7 +2879,10 @@ export class MapSimulation {
     }
   }
 
-  private applyUnlock(pos: Position, outcome: "picked" | "knocked"): void {
+  private applyUnlock(
+    pos: Position,
+    outcome: "picked" | "knocked" | "unlocked",
+  ): void {
     this.unlockedCells.add(`${pos.col},${pos.row}`);
     // The sprite for a "Locked Door" tile_id stays the same in the
     // simulator — we don't have a per-id sprite swap in the sim

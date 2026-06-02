@@ -146606,7 +146606,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/grass1.png",
-            "tag": "terrain"
+            "tag": "terrain",
+            "npc": "smith_orin"
           },
           {
             "boat": false,
@@ -163510,7 +163511,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/floor_brown.png",
-            "tag": "walkable"
+            "tag": "walkable",
+            "quest": "rats"
           },
           {
             "boat": false,
@@ -163984,7 +163986,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/floor_brown.png",
-            "tag": "walkable"
+            "tag": "walkable",
+            "npc": "stranger_in_grey"
           },
           {
             "boat": false,
@@ -164223,7 +164226,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/floor_brown.png",
-            "tag": "walkable"
+            "tag": "walkable",
+            "npc": "skarn_the_crooked"
           },
           {
             "id": "wall_brown",
@@ -164516,7 +164520,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/floor_brown.png",
-            "tag": "walkable"
+            "tag": "walkable",
+            "npc": "innkeeper_brenna"
           },
           {
             "id": "wall_brown",

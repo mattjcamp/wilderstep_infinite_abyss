@@ -778,12 +778,19 @@
       "category": "general",
       "name": "Iron Key",
       "animation_id": null,
-      "description": "A heavy iron key etched with gnomish runes. One of the 8 Keys of Shadow.",
-      "icon": "key",
-      "item_type": "quest_item",
-      "quest_item": true,
+      "description": "A heavy iron key that can unlock one locked door.",
+      "icon": "key_bronze",
+      "item_type": "key",
+      "power": null,
+      "ranged": false,
+      "throwable": false,
+      "slots": null,
+      "durability": null,
       "party_can_equip": false,
-      "character_can_equip": false
+      "character_can_equip": false,
+      "buy": 10,
+      "sell": 6,
+      "quest_item": false
     },
     {
       "id": "lingering_venom",
@@ -1115,7 +1122,15 @@
       "buy": 0,
       "sell": 0,
       "is_chest": true,
-      "contents": { "gold": 50, "items": [{ "id": "potion_minor", "qty": 2 }] }
+      "contents": {
+        "gold": 50,
+        "items": [
+          {
+            "id": "potion_minor",
+            "qty": 2
+          }
+        ]
+      }
     }
   ]
 }
