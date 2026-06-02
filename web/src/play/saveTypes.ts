@@ -325,14 +325,30 @@ export interface WorldSave {
    *  from re-offering an already-accepted quest. Absent on legacy
    *  saves; the loader treats absence as an empty list. */
   acceptedQuests?: ReadonlyArray<string>;
-  /** Per-quest step progress. Value is the index of the next
-   *  incomplete step (0 = first step pending, N = all N steps done).
-   *  Each combat win against a kill-step's target monster on the
-   *  matching dungeon + level bumps the entry by 1. Absent quests
-   *  are treated as 0 (first step pending). Used by the quest
-   *  dialog and quest log to switch between offer / in-progress /
-   *  complete states. */
+  /** Per-quest step progress, LEGACY linear form. Value is the index
+   *  of the next incomplete step (0 = first step pending, N = all N
+   *  steps done). This only ever expressed *sequential* completion and
+   *  can't represent "step 3 done, 1-2 pending." It is retained for
+   *  back-compat (old saves, and a couple of read sites that only need
+   *  a coarse "how far along"), and is now DERIVED from
+   *  `questStepsDone` on every write as `count of leading completed
+   *  steps` — so a fully-in-order quest reads identically to before,
+   *  while out-of-order progress lives in `questStepsDone`.
+   *  Absent quests are treated as 0. */
   questStepProgress?: Record<string, number>;
+  /** Per-quest set of COMPLETED step ids — the authoritative,
+   *  order-independent record of which steps are done. Keyed by quest
+   *  id; the value is the list of `step.id`s the party has finished,
+   *  in completion order. This is what lets a player clear step 3 of
+   *  the rat quest before steps 1-2 and have it stick: each step is
+   *  tracked by its own stable id, not by position.
+   *
+   *  A quest is body-complete when every step id in its def appears
+   *  here. `questStepProgress` (above) is kept in sync as a derived
+   *  leading-run count for legacy readers. Absent on old saves — the
+   *  loader backfills it from `questStepProgress` (first N step ids)
+   *  so an in-flight sequential quest upgrades losslessly. */
+  questStepsDone?: Record<string, ReadonlyArray<string>>;
   /** Quest ids the party has already turned in and claimed rewards
    *  for. Distinct from `acceptedQuests` (which only tracks "yes I
    *  took this") and `questStepProgress` (which tracks step

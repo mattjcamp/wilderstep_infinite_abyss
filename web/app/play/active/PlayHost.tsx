@@ -409,12 +409,17 @@ function mapStateFromSnapshot(
   };
 }
 import { loadWorld, saveWorld } from "@/play/save";
-import { addToInventory } from "@/play/inventoryStacking";
+import { addToInventory, consumeOneFromInventory } from "@/play/inventoryStacking";
 import { counterStockKey } from "@/play/counterStock";
 import { applyCombatResultToSave } from "@/play/syncFromBattle";
 import { gameState } from "@/battle/state";
 import { awardQuestXpToSavedMembers } from "@/play/awardQuestXp";
 import { herbalismOnStep } from "@/play/herbalism";
+import {
+  completedStepIds,
+  isStepDone,
+  markStepDone,
+} from "@/play/questSteps";
 import {
   attemptPickpocket,
   canPickpocket,
@@ -1132,13 +1137,11 @@ export function PlayHost() {
     if (!map) return;
     const accepted = new Set(save.acceptedQuests ?? []);
     const turnedIn = new Set(save.turnedInQuests ?? []);
-    const progress = save.questStepProgress ?? {};
     for (const def of questDefsRef.current) {
       if (!accepted.has(def.id)) continue;
       if (turnedIn.has(def.id)) continue;
-      const completedIdx = progress[def.id] ?? 0;
       for (let i = 0; i < def.steps.length; i++) {
-        if (i < completedIdx) continue;
+        if (isStepDone(save, def, i)) continue;
         const step = def.steps[i];
         if (step.kind !== "retrieve") continue;
         if (step.mapId !== map.id) continue;
@@ -1212,6 +1215,7 @@ export function PlayHost() {
         quests: state.catalog.quests,
         acceptedQuests: liveSave.acceptedQuests ?? [],
         questStepProgress: liveSave.questStepProgress ?? {},
+        questStepsDone: liveSave.questStepsDone ?? {},
         turnedInQuests: liveSave.turnedInQuests ?? [],
       };
       screen.open(data);
@@ -2193,7 +2197,6 @@ export function PlayHost() {
           {
             const acceptedSet = new Set(save.acceptedQuests ?? []);
             const turnedInSet = new Set(save.turnedInQuests ?? []);
-            const progress = save.questStepProgress ?? {};
             const questDefsForPlacement = parseQuestsFile({
               quests: catalog.quests,
             });
@@ -2201,9 +2204,12 @@ export function PlayHost() {
             for (const def of questDefsForPlacement) {
               if (!acceptedSet.has(def.id)) continue;
               if (turnedInSet.has(def.id)) continue;
-              const completedIdx = progress[def.id] ?? 0;
+              // Place the retrieve item for any INCOMPLETE retrieve
+              // step on this map — checked per-step-id so an
+              // already-collected later step doesn't respawn its item
+              // and a still-pending earlier step still gets one.
               for (let i = 0; i < def.steps.length; i++) {
-                if (i < completedIdx) continue;
+                if (isStepDone(save, def, i)) continue;
                 const step = def.steps[i];
                 if (step.kind !== "retrieve") continue;
                 if (step.mapId !== catalog.map.id) continue;
@@ -2880,9 +2886,15 @@ export function PlayHost() {
             if (accepted.has(def.id) && qs.status === "available") {
               qs.status = "active";
             }
-            const nextStep = save.questStepProgress?.[def.id] ?? 0;
-            for (let i = 0; i < Math.min(nextStep, qs.stepProgress.length); i++) {
-              qs.stepProgress[i] = true;
+            // Restore per-step completion by stable step id (order-
+            // independent). `completedStepIds` reads the authoritative
+            // `questStepsDone` and falls back to deriving from the
+            // legacy linear `questStepProgress` integer for old saves
+            // that predate the per-step record — so an in-flight
+            // sequential quest upgrades losslessly.
+            const doneIds = completedStepIds(save, def);
+            for (let i = 0; i < def.steps.length; i++) {
+              if (doneIds.has(def.steps[i].id)) qs.stepProgress[i] = true;
             }
             if (
               qs.stepProgress.length > 0 &&
@@ -3270,16 +3282,14 @@ export function PlayHost() {
               if (!save || !map) return;
               const accepted = new Set(save.acceptedQuests ?? []);
               const turnedIn = new Set(save.turnedInQuests ?? []);
-              const progress = save.questStepProgress ?? {};
               let matchedQuestId: string | null = null;
               let matchedStepIdx = -1;
               for (const def of questDefsRef.current) {
                 if (matchedQuestId) break;
                 if (!accepted.has(def.id)) continue;
                 if (turnedIn.has(def.id)) continue;
-                const completedIdx = progress[def.id] ?? 0;
                 for (let i = 0; i < def.steps.length; i++) {
-                  if (i < completedIdx) continue;
+                  if (isStepDone(save, def, i)) continue;
                   const step = def.steps[i];
                   if (step.kind !== "retrieve") continue;
                   if (step.mapId !== map.id) continue;
@@ -3323,16 +3333,19 @@ export function PlayHost() {
                   matchedStepIdx,
                 );
                 if (credit) {
-                  const qs = questStatesRef.current.get(matchedQuestId);
-                  if (qs) {
-                    let nextIdx = qs.stepProgress.findIndex((p) => !p);
-                    if (nextIdx === -1) nextIdx = qs.stepProgress.length;
+                  // Record the retrieved step by its stable id in the
+                  // order-independent map; the helper keeps the legacy
+                  // linear integer derived.
+                  const creditDef = questDefsRef.current.find(
+                    (d) => d.id === matchedQuestId,
+                  );
+                  const creditStepId = creditDef?.steps[matchedStepIdx]?.id;
+                  if (creditDef && creditStepId) {
+                    const res = markStepDone(nextSave, creditDef, creditStepId);
                     nextSave = {
                       ...nextSave,
-                      questStepProgress: {
-                        ...(nextSave.questStepProgress ?? {}),
-                        [matchedQuestId]: nextIdx,
-                      },
+                      questStepProgress: res.questStepProgress,
+                      questStepsDone: res.questStepsDone,
                     };
                   }
                   // Apply the step's rewards immediately — items
@@ -3476,18 +3489,26 @@ export function PlayHost() {
               // split the credit from its rewards.
               let stepRewardsSummary = "";
               let nextSave: WorldSave | null = save;
-              if (qs && nextSave) {
-                let nextIdx = qs.stepProgress.findIndex((p) => !p);
-                if (nextIdx === -1) nextIdx = qs.stepProgress.length;
-                const prevProgress = nextSave.questStepProgress ?? {};
-                if (prevProgress[ev.questId] !== nextIdx) {
-                  nextSave = {
-                    ...nextSave,
-                    questStepProgress: {
-                      ...prevProgress,
-                      [ev.questId]: nextIdx,
-                    },
-                  };
+              // Mirror the kernel credit into the authoritative
+              // per-step-id record (order-independent) and let the
+              // helper keep the legacy linear `questStepProgress`
+              // integer derived from it. Only a step that actually
+              // FLIPPED to complete writes here — a partial multi-kill
+              // credit (killsSoFar < count) leaves the step undone.
+              if (qs && nextSave && ev.stepCompleted) {
+                const def = questDefsRef.current.find(
+                  (d) => d.id === ev.questId,
+                );
+                const stepId = def?.steps[ev.stepIdx]?.id;
+                if (def && stepId) {
+                  const res = markStepDone(nextSave, def, stepId);
+                  if (res.changed) {
+                    nextSave = {
+                      ...nextSave,
+                      questStepProgress: res.questStepProgress,
+                      questStepsDone: res.questStepsDone,
+                    };
+                  }
                 }
               }
               if (ev.stepCompleted && nextSave) {
@@ -4244,6 +4265,7 @@ export function PlayHost() {
           combatRef.current,
           dungeonStateRef.current,
           catalogRef.current?.quests ?? [],
+          catalogRef.current?.map?.id ?? null,
         );
       }
       saveCurrent();
@@ -4271,6 +4293,40 @@ export function PlayHost() {
     if (!sim) return null;
     return sim.attemptKnock();
   }, []);
+  const onUseKey = useCallback(() => {
+    const sim = simRef.current;
+    if (!sim) return null;
+    const result = sim.attemptUseKey();
+    // A key is a CONSUMABLE that must survive reload, so unlike
+    // lockpick charges / MP (in-session sim resources the save
+    // doesn't mirror) we remove the spent key from the persisted
+    // party inventory here, then checkpoint. The kernel already
+    // dropped it from its own copy + unlocked the cell.
+    if (result?.success && result.consumedItemId) {
+      const save = saveRef.current;
+      if (save) {
+        const idx = save.party.inventory.findIndex(
+          (e) => e.item === result.consumedItemId,
+        );
+        if (idx >= 0) {
+          const nextInventory = consumeOneFromInventory(
+            save.party.inventory,
+            idx,
+            catalogRef.current?.items ?? [],
+          );
+          saveRef.current = {
+            ...save,
+            party: { ...save.party, inventory: nextInventory },
+          };
+        }
+      }
+      // Persist the unlock + the spent key together (saveCurrent
+      // folds in the kernel's unlockedCells from the snapshot and
+      // writes the inventory we just updated on saveRef).
+      saveCurrent();
+    }
+    return result;
+  }, [saveCurrent]);
   const onLockClose = useCallback(() => {
     const sim = simRef.current;
     sim?.dismissLock();
@@ -4710,6 +4766,7 @@ export function PlayHost() {
           options={lockEncounter}
           onPickLock={onPickLock}
           onCastKnock={onCastKnock}
+          onUseKey={onUseKey}
           onClose={onLockClose}
         />
       ) : null}
@@ -5808,68 +5865,125 @@ function buildDungeonCatalog(
 }
 
 /**
- * Walk every accepted quest, find its active step, and increment
- * the per-quest progress counter when:
+ * Walk every accepted quest and credit EVERY incomplete kill step the
+ * just-resolved combat satisfies — regardless of the step's position
+ * in the list. This is the order-independent model: clearing step 3
+ * before steps 1-2 credits step 3 immediately and it sticks (tracked
+ * by the step's stable id in `save.questStepsDone`, with the legacy
+ * `questStepProgress` integer kept in sync as a leading-run count).
  *
- *   - the active step's `kind` is "kill"
- *   - the step's `params.monster_id` was one of the monsters in the
- *     just-resolved combat's roster
- *   - if the step pins `dungeon_id` / `dungeon_level`, we're in
- *     that dungeon on the matching floor
+ * A step is credited when ALL of:
+ *   - its `kind` is "kill" and it isn't already complete;
+ *   - the combat MATCHES it — either the step's authored `encounter_id`
+ *     equals the cleared encounter's id, OR (legacy) the step's
+ *     `monster_id` is one of the combat roster's monsters. Encounter
+ *     match is what the rat-style quests need (they author
+ *     `encounter_id`, no `monster_id`), and was the gap that made
+ *     out-of-order — and even in-order — credit silently fail;
+ *   - its LOCATION matches: a `dungeon_id` step needs the right dungeon
+ *     (+ floor when `dungeon_level` is set); a `map_id` step needs the
+ *     party to be on that map (critical here — two rat steps share the
+ *     `rat_nest` encounter but differ by map, so without the map check
+ *     clearing one would wrongly credit the other); a step with neither
+ *     credits anywhere.
  *
- * Returns a fresh WorldSave with `questStepProgress` updated. When
- * no quest credit applies, returns the input save unchanged.
- *
- * Step indexing convention: `questStepProgress[id]` is the index of
- * the NEXT incomplete step (0 = first step pending, N = all done).
+ * Returns a fresh WorldSave with `questStepsDone` + the derived
+ * `questStepProgress` updated, or the input save unchanged when no
+ * step matched.
  */
 function creditKillStep(
   save: WorldSave,
   combat: SpawnEncounterOptions | null,
   dungeon: DungeonState | null,
   quests: ReadonlyArray<SimQuestRef>,
+  currentMapId: string | null,
 ): WorldSave {
   if (!combat || combat.monsters.length === 0) return save;
   const accepted = save.acceptedQuests ?? [];
   if (accepted.length === 0) return save;
+  const turnedIn = new Set(save.turnedInQuests ?? []);
   const monsterIdsInCombat = new Set(combat.monsters);
+  const clearedEncounterId = combat.encounter?.id ?? null;
   const byId = new Map(quests.map((q) => [q.id, q]));
-  const progress: Record<string, number> = {
-    ...(save.questStepProgress ?? {}),
+
+  // Mutable working copies; we fold each credit in via the shared
+  // questSteps helper so the derived legacy integer stays correct.
+  let fields: {
+    questStepProgress?: Record<string, number>;
+    questStepsDone?: Record<string, ReadonlyArray<string>>;
+  } = {
+    questStepProgress: { ...(save.questStepProgress ?? {}) },
+    questStepsDone: { ...(save.questStepsDone ?? {}) },
   };
   let changed = false;
+
   for (const questId of accepted) {
+    if (turnedIn.has(questId)) continue;
     const quest = byId.get(questId);
     if (!quest) continue;
     const steps =
       (quest as unknown as {
         steps?: ReadonlyArray<{
+          id?: string;
           kind?: string;
+          encounter_id?: string;
           params?: { monster_id?: string; count?: number } | null;
+          map_id?: string;
           dungeon_id?: string;
           dungeon_level?: number;
         }>;
       }).steps ?? [];
-    const activeIdx = progress[questId] ?? 0;
-    const step = steps[activeIdx];
-    if (!step || step.kind !== "kill") continue;
-    const targetMonsterId = step.params?.monster_id;
-    if (!targetMonsterId) continue;
-    if (!monsterIdsInCombat.has(targetMonsterId)) continue;
-    // Dungeon-pinned steps only credit when we're in the right
-    // dungeon and floor. Steps without dungeon_id credit anywhere.
-    if (step.dungeon_id) {
-      if (!dungeon || dungeon.dungeonId !== step.dungeon_id) continue;
-      if (typeof step.dungeon_level === "number") {
-        const expectedFloorIdx = Math.max(0, step.dungeon_level - 1);
-        if (dungeon.floorIdx !== expectedFloorIdx) continue;
+    const def = {
+      id: questId,
+      steps: steps.map((s, i) => ({ id: s.id ?? `__idx_${i}` })),
+    };
+    const done = completedStepIds(fields, def);
+
+    for (let i = 0; i < steps.length; i++) {
+      const step = steps[i];
+      const stepId = step.id ?? `__idx_${i}`;
+      if (step.kind !== "kill") continue;
+      if (done.has(stepId)) continue;
+
+      // Combat match — encounter id (preferred) OR monster id (legacy).
+      const encounterMatch =
+        !!step.encounter_id &&
+        clearedEncounterId !== null &&
+        step.encounter_id === clearedEncounterId;
+      const monsterMatch =
+        !!step.params?.monster_id &&
+        monsterIdsInCombat.has(step.params.monster_id);
+      if (!encounterMatch && !monsterMatch) continue;
+
+      // Location match.
+      if (step.dungeon_id) {
+        if (!dungeon || dungeon.dungeonId !== step.dungeon_id) continue;
+        if (typeof step.dungeon_level === "number") {
+          const expectedFloorIdx = Math.max(0, step.dungeon_level - 1);
+          if (dungeon.floorIdx !== expectedFloorIdx) continue;
+        }
+      } else if (step.map_id) {
+        // Map-pinned: only credit when standing on that map (and NOT
+        // inside a dungeon, whose synthetic map id won't match).
+        if (dungeon) continue;
+        if (currentMapId !== step.map_id) continue;
       }
+
+      const res = markStepDone(fields, def, stepId);
+      fields = {
+        questStepProgress: res.questStepProgress,
+        questStepsDone: res.questStepsDone,
+      };
+      if (res.changed) changed = true;
     }
-    progress[questId] = activeIdx + 1;
-    changed = true;
   }
+
   if (!changed) return save;
-  return { ...save, questStepProgress: progress };
+  return {
+    ...save,
+    questStepProgress: fields.questStepProgress,
+    questStepsDone: fields.questStepsDone,
+  };
 }
 
 /**

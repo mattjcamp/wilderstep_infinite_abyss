@@ -88,6 +88,25 @@
         "body": "cloth"
       },
       "inventory": []
+    },
+    {
+      "id": "test",
+      "name": "test",
+      "class": "fighter",
+      "race": "human",
+      "gender": "Male",
+      "level": 1,
+      "exp": 0,
+      "hp": 14,
+      "mp": 0,
+      "strength": 18,
+      "dexterity": 13,
+      "constitution": 8,
+      "intelligence": 8,
+      "wisdom": 8,
+      "sprite": "person/FemaleDruid01.png",
+      "equipped": {},
+      "inventory": []
     }
   ]
 }

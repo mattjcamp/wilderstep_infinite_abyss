@@ -1,0 +1,72 @@
+{
+  "quests": [
+    {
+      "id": "rats",
+      "name": "The Giant Rats",
+      "description": "Get rid of those giant rats in their giant rat hiole",
+      "tags": [
+        "rats"
+      ],
+      "steps": [
+        {
+          "id": "rats_step_1",
+          "name": "Step 1 Kill the Cave Rats",
+          "kind": "kill",
+          "description": "Kill the Giant Rats in the cave under the shop",
+          "tags": [
+            "rats"
+          ],
+          "location_kind": "map",
+          "map_id": "shop_cavern",
+          "encounter_id": "rat_swarm",
+          "count": 4
+        },
+        {
+          "id": "rats_step_2",
+          "name": "Step 2: Kill the Basement Rats!!!",
+          "kind": "kill",
+          "encounter_id": "rat_nest",
+          "tags": [
+            "rats"
+          ],
+          "location_kind": "map",
+          "map_id": "show_basement",
+          "description": "Kill the rats inthe basement too!!!!!",
+          "count": 2
+        },
+        {
+          "id": "rats_step_3",
+          "name": "Step 3: Deal with the rats around Hallowmere",
+          "kind": "kill",
+          "encounter_id": "rat_nest",
+          "count": 2,
+          "location_kind": "map",
+          "map_id": "hollowmere_town"
+        },
+        {
+          "id": "rats_step_4",
+          "name": "Step 4: Find and Stop the Goblin Trouble Makers",
+          "kind": "kill",
+          "encounter_id": "goblin_squatters",
+          "location_kind": "map",
+          "map_id": "hollowmere_town_house_3"
+        }
+      ],
+      "quest_giver": {
+        "npc_name": "Jerald",
+        "npc_sprite": "person/hobbit2.png",
+        "start_dialog": "I'm the owner of the General Shop and my basement is infested with Giant Rats. Can you take care of this problem for me? I fear that the infestation is spreading and I blame those goblins that have been sneaking around.",
+        "end_dialog": "Thank you so much for getting rid of those rats and dealing with that cave system... Who knew?"
+      },
+      "rewards": {
+        "xp": 100,
+        "gold": 100,
+        "items": [
+          "camping_supplies",
+          "torch",
+          "torch"
+        ]
+      }
+    }
+  ]
+}

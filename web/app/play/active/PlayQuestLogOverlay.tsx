@@ -20,20 +20,44 @@ import { useEffect } from "react";
 import type { SimQuestRef } from "@/sim/types";
 
 interface QuestStep {
+  id?: string;
   name?: string;
   description?: string;
+}
+
+/** Completed step ids for a quest — authoritative `questStepsDone`
+ *  with a legacy `questStepProgress` (first N) fallback. Mirrors
+ *  `doneSetForQuest` in the painted log + `completedStepIds` in
+ *  `@/play/questSteps`; kept local so this overlay has no import
+ *  coupling. */
+function doneSet(
+  questId: string,
+  steps: QuestStep[],
+  questStepProgress: Readonly<Record<string, number>>,
+  questStepsDone: Readonly<Record<string, ReadonlyArray<string>>>,
+): Set<string> {
+  const explicit = questStepsDone[questId];
+  if (explicit) return new Set(explicit);
+  const n = questStepProgress[questId] ?? 0;
+  const out = new Set<string>();
+  for (let i = 0; i < Math.min(n, steps.length); i++) {
+    out.add(steps[i].id ?? `__idx_${i}`);
+  }
+  return out;
 }
 
 export function PlayQuestLogOverlay({
   quests,
   acceptedQuests,
   questStepProgress,
+  questStepsDone = {},
   turnedInQuests,
   onClose,
 }: {
   quests: ReadonlyArray<SimQuestRef>;
   acceptedQuests: ReadonlyArray<string>;
   questStepProgress: Readonly<Record<string, number>>;
+  questStepsDone?: Readonly<Record<string, ReadonlyArray<string>>>;
   turnedInQuests: ReadonlyArray<string>;
   onClose: () => void;
 }) {
@@ -82,8 +106,10 @@ export function PlayQuestLogOverlay({
       continue;
     }
     const steps = ((q as unknown as { steps?: QuestStep[] }).steps ?? []);
-    const stepIdx = questStepProgress[id] ?? 0;
-    const complete = steps.length > 0 && stepIdx >= steps.length;
+    const done = doneSet(id, steps, questStepProgress, questStepsDone);
+    const complete =
+      steps.length > 0 &&
+      steps.every((s, i) => done.has(s.id ?? `__idx_${i}`));
     if (complete) completeRewardsPending.push(q);
     else active.push(q);
   }
@@ -122,12 +148,14 @@ export function PlayQuestLogOverlay({
                 label="Active"
                 quests={active}
                 questStepProgress={questStepProgress}
+                questStepsDone={questStepsDone}
                 emptyHint="No quests in progress."
               />
               <QuestSection
                 label="Ready to Turn In"
                 quests={completeRewardsPending}
                 questStepProgress={questStepProgress}
+                questStepsDone={questStepsDone}
                 emptyHint=""
                 stateTag="rewards-pending"
               />
@@ -135,6 +163,7 @@ export function PlayQuestLogOverlay({
                 label="Completed"
                 quests={turnedIn}
                 questStepProgress={questStepProgress}
+                questStepsDone={questStepsDone}
                 emptyHint=""
                 stateTag="turned-in"
               />
@@ -150,12 +179,14 @@ function QuestSection({
   label,
   quests,
   questStepProgress,
+  questStepsDone,
   emptyHint,
   stateTag,
 }: {
   label: string;
   quests: ReadonlyArray<SimQuestRef>;
   questStepProgress: Readonly<Record<string, number>>;
+  questStepsDone: Readonly<Record<string, ReadonlyArray<string>>>;
   emptyHint: string;
   stateTag?: "rewards-pending" | "turned-in";
 }) {
@@ -172,10 +203,24 @@ function QuestSection({
           {quests.map((q) => {
             const steps =
               ((q as unknown as { steps?: QuestStep[] }).steps ?? []);
-            const stepIdx = questStepProgress[q.id] ?? 0;
             const stepCount = steps.length;
-            const complete = stepCount > 0 && stepIdx >= stepCount;
-            const active = !complete ? steps[stepIdx] : undefined;
+            const done = doneSet(
+              q.id,
+              steps,
+              questStepProgress,
+              questStepsDone,
+            );
+            const stepId = (i: number) => steps[i].id ?? `__idx_${i}`;
+            const doneCount = steps.reduce(
+              (n, _s, i) => (done.has(stepId(i)) ? n + 1 : n),
+              0,
+            );
+            const complete = stepCount > 0 && doneCount >= stepCount;
+            // First incomplete step = the one we surface as "current"
+            // (description hint), matching the painted log.
+            const firstIncompleteIdx = complete
+              ? -1
+              : steps.findIndex((_s, i) => !done.has(stepId(i)));
             const tagClass =
               stateTag === "rewards-pending"
                 ? "text-amber-300"
@@ -191,7 +236,9 @@ function QuestSection({
                   ? "Turned in"
                   : complete
                     ? "Complete"
-                    : `${stepIdx}/${stepCount} steps`;
+                    : `${doneCount}/${stepCount} steps`;
+            const allDone =
+              stateTag === "rewards-pending" || stateTag === "turned-in";
             return (
               <li
                 key={q.id}
@@ -212,15 +259,31 @@ function QuestSection({
                     {q.description}
                   </p>
                 ) : null}
-                {active?.name ? (
-                  <div className="mt-1 text-[11px] text-parchment/75">
-                    → {active.name}
-                  </div>
-                ) : null}
-                {active?.description ? (
-                  <div className="text-[11px] italic text-parchment/55">
-                    {active.description}
-                  </div>
+                {stepCount > 0 ? (
+                  <ul className="mt-1 space-y-0.5">
+                    {steps.map((s, i) => {
+                      const stepDone = allDone || done.has(stepId(i));
+                      const isCurrent = !stepDone && i === firstIncompleteIdx;
+                      const glyph = stepDone ? "✓" : isCurrent ? "→" : "·";
+                      const rowClass = stepDone
+                        ? "text-emerald-300"
+                        : isCurrent
+                          ? "text-amber-300"
+                          : "text-parchment/45";
+                      return (
+                        <li key={s.id ?? i} className="text-[11px]">
+                          <span className={`font-mono ${rowClass}`}>
+                            {glyph} {s.name ?? `Step ${i + 1}`}
+                          </span>
+                          {isCurrent && s.description ? (
+                            <div className="ml-3 text-[11px] italic text-parchment/55">
+                              {s.description}
+                            </div>
+                          ) : null}
+                        </li>
+                      );
+                    })}
+                  </ul>
                 ) : null}
               </li>
             );

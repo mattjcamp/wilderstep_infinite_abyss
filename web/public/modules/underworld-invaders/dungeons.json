@@ -70,13 +70,13 @@
           "id": "caves_l3",
           "name": "Level 3",
           "depth": 3,
-          "difficulty": "hard"
+          "difficulty": "normal"
         },
         {
           "id": "caves_l4",
           "name": "Level 4",
           "depth": 4,
-          "difficulty": "hard"
+          "difficulty": "normal"
         },
         {
           "id": "caves_l5",
@@ -124,8 +124,7 @@
         {
           "id": "grotto_l2",
           "name": "Level 2",
-          "depth": 2,
-          "difficulty": "hard"
+          "depth": 2
         }
       ]
     }

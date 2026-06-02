@@ -44,6 +44,11 @@ interface Props {
   options: LockEncounterOptions;
   onPickLock: () => LockAttemptResult | null;
   onCastKnock: () => LockAttemptResult | null;
+  /** Optional — use a carried key. Always succeeds and consumes one
+   *  key. Omitted by callers that don't support keys (e.g. the editor
+   *  sim mount); the row is suppressed when absent or when the party
+   *  carries no usable key. */
+  onUseKey?: () => LockAttemptResult | null;
   onClose: () => void;
 }
 
@@ -51,6 +56,7 @@ export function LockDialogOverlay({
   options,
   onPickLock,
   onCastKnock,
+  onUseKey,
   onClose,
 }: Props) {
   const [result, setResult] = useState<LockAttemptResult | null>(null);
@@ -129,6 +135,33 @@ export function LockDialogOverlay({
     };
   })();
 
+  // Use Key row — shown only when the host supports keys AND the
+  // party carries one that fits. No gating reason variant: if there's
+  // no usable key the row simply isn't rendered (keys are an
+  // inventory item, not a party capability like Thief/caster, so a
+  // disabled "you need a key" row would just be noise). A key always
+  // succeeds and is consumed, so there's no retry / budget mirror.
+  const keyRow = (() => {
+    if (!onUseKey) return null;
+    if (!liveOpts.usableKey) return null;
+    return {
+      label: `Use Key — ${liveOpts.usableKey.name}`,
+      disabled: false,
+    };
+  })();
+
+  const handleUseKey = () => {
+    if (!onUseKey) return;
+    const r = onUseKey();
+    if (!r) return;
+    setResult(r);
+    // Clear the local usableKey mirror so the row drops out
+    // immediately (the single key was consumed). The dialog
+    // auto-closes on success anyway, but this keeps the render
+    // consistent in the beat before it does.
+    setLiveOpts((prev) => ({ ...prev, usableKey: null }));
+  };
+
   const handlePick = () => {
     const r = onPickLock();
     if (!r) return;
@@ -176,18 +209,22 @@ export function LockDialogOverlay({
   // state so Enter can no-op on a disabled row, but arrow keys
   // still let the player navigate to it (the disabled body text
   // explains why — handy for "what do I need" debugging).
-  type ActionKind = "pick" | "knock" | "leave";
+  type ActionKind = "key" | "pick" | "knock" | "leave";
   interface Action {
     kind: ActionKind;
     disabled: boolean;
   }
   const actions = useMemo<Action[]>(() => {
     const list: Action[] = [];
+    // Use Key leads when available — it's the surest, cheapest option
+    // (guaranteed open, no class requirement), so it's the natural
+    // default the cursor lands on.
+    if (keyRow) list.push({ kind: "key", disabled: keyRow.disabled });
     list.push({ kind: "pick", disabled: pickRow.disabled });
     if (knockRow) list.push({ kind: "knock", disabled: knockRow.disabled });
     list.push({ kind: "leave", disabled: false });
     return list;
-  }, [pickRow.disabled, knockRow]);
+  }, [keyRow, pickRow.disabled, knockRow]);
 
   // Initial cursor lands on the first enabled action. A locked door
   // the party can pick (Pick Lock enabled) lands on Pick → Enter
@@ -257,7 +294,8 @@ export function LockDialogOverlay({
         if (lockedByResult) return;
         const a = actions[focusIdx];
         if (!a || a.disabled) return;
-        if (a.kind === "pick") handlePick();
+        if (a.kind === "key") handleUseKey();
+        else if (a.kind === "pick") handlePick();
         else if (a.kind === "knock") handleKnock();
         else if (a.kind === "leave") onClose();
         return;
@@ -287,6 +325,7 @@ export function LockDialogOverlay({
     onClose,
     handlePick,
     handleKnock,
+    handleUseKey,
   ]);
 
   return (
@@ -334,11 +373,32 @@ export function LockDialogOverlay({
             // when the module has no Knock spell, etc.).
             const focusRing =
               "outline outline-2 outline-amber-200 outline-offset-1";
+            const keyIdx = actions.findIndex((a) => a.kind === "key");
             const pickIdx = actions.findIndex((a) => a.kind === "pick");
             const knockIdx = actions.findIndex((a) => a.kind === "knock");
             const leaveIdx = actions.findIndex((a) => a.kind === "leave");
             return (
               <>
+                {keyRow ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFocusIdx(keyIdx);
+                      handleUseKey();
+                    }}
+                    disabled={keyRow.disabled || lockedByResult}
+                    className={[
+                      "rounded border border-parchment/25 bg-ink/60 px-3 py-2 text-left text-sm hover:bg-ink/80 disabled:cursor-not-allowed disabled:opacity-50",
+                      focusIdx === keyIdx ? focusRing : "",
+                    ].join(" ")}
+                  >
+                    <div className="font-medium">{keyRow.label}</div>
+                    <div className="text-[11px] text-parchment/55">
+                      Opens the door instantly; consumes the key.
+                    </div>
+                  </button>
+                ) : null}
+
                 <button
                   type="button"
                   onClick={() => {
