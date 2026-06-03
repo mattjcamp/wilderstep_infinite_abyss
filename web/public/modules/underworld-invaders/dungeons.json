@@ -170,41 +170,79 @@
       ]
     },
     {
-      "id": "custom_test",
-      "name": "A Custom Dungeon",
-      "description": "A dungeon that is custom for you",
+      "id": "dark_wood",
+      "name": "A Dark Wood",
+      "description": "An ancient forest, hiding secrets",
       "tags": [],
       "style": "custom",
       "difficulty": "normal",
       "size": {
-        "width": 32,
-        "height": 32
+        "width": 40,
+        "height": 40
       },
       "torch_density": 0,
       "locked_doors": 0,
       "levels": [
         {
-          "id": "custom_test_l1",
+          "id": "dark_wood_l1",
           "name": "Level 1",
           "depth": 1
         },
         {
-          "id": "custom_test_l2",
+          "id": "dark_wood_l2",
           "name": "Level 2",
-          "depth": 2,
-          "custom_floor": "sand"
+          "depth": 2
+        },
+        {
+          "id": "dark_wood_l3",
+          "name": "Level 3",
+          "depth": 3
+        },
+        {
+          "id": "dark_wood_l4",
+          "name": "Level 4",
+          "depth": 4,
+          "custom_floor": "grass2",
+          "custom_wall": "tree_jungle01"
+        },
+        {
+          "id": "dark_wood_l5",
+          "name": "Level 5",
+          "depth": 5,
+          "custom_floor": "path",
+          "custom_wall": "mountain_desert01",
+          "custom_stairs_down": "stairs_down"
+        },
+        {
+          "id": "dark_wood_l6",
+          "name": "Level 6",
+          "depth": 6,
+          "loot": {
+            "chest_frequency": 0.2
+          },
+          "custom_stairs_up": "stairs_up",
+          "custom_stairs_down": "stairs_down",
+          "custom_wall": "wall_gray",
+          "custom_floor": "grass_snowy",
+          "edge_transitions": false
         }
       ],
+      "doors": 0,
+      "edge_transitions": true,
       "custom_floor": "grass",
-      "custom_wall": "tree_1",
-      "loot": {
-        "chest_item": "treasure_chest",
-        "chest_frequency": 0.01
-      },
+      "custom_wall": "tree_pine02",
       "custom_stairs_up": "arch_gold",
       "custom_stairs_down": "arch_blue",
-      "doors": 0,
-      "edge_transitions": true
+      "loot": {
+        "chest_frequency": 0.1,
+        "chest_item": "treasure_chest"
+      },
+      "soundtrack": [
+        "/audio/lost_in_the_labyrinth.mp3",
+        "/audio/creep.mp3",
+        "/audio/winds_of_destiny.mp3",
+        "/audio/the_unforgiven.mp3"
+      ]
     }
   ]
 }

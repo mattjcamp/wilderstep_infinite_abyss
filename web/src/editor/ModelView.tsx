@@ -45,7 +45,12 @@ import {
   saveDraft,
 } from "@/data_model/draft";
 import { extractRecords, mergeModel } from "@/data_model/merge";
-import { MODELS, type ModelKey } from "@/data_model/models";
+import {
+  MODELS,
+  type ModelKey,
+  DIFFICULTY_TIERS,
+  encounterDifficultyTier,
+} from "@/data_model/models";
 import type { LibraryCatalogEntry } from "@/data_model/ModuleSource";
 import { publishItems } from "@/data_model/publishClient";
 import { RecordForm } from "./RecordForm";
@@ -126,6 +131,18 @@ export function ModelView({
   const [collapsedTags, setCollapsedTags] = useState<Set<string>>(
     () => new Set(),
   );
+  /** Free-text filter over the browse table (matches id, name, tags,
+   *  and any displayed column value). Empty = show everything. */
+  const [query, setQuery] = useState("");
+  /** Click-to-sort column state. `field` null = natural order (and, for
+   *  grouped models, the collapsible tag sections). Setting a field
+   *  flattens the table and sorts by that column. */
+  const [sortField, setSortField] = useState<string | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  /** Dropdown filters: difficulty tier (encounters only) + a single
+   *  tag. "" = no filter. Combined with the free-text query + sort. */
+  const [difficultyFilter, setDifficultyFilter] = useState<string>("");
+  const [tagFilter, setTagFilter] = useState<string>("");
 
   // Load layers + library catalog in parallel. `loadDraft` is async
   // (gzip), so the whole load runs inside an async IIFE rather than
@@ -433,6 +450,70 @@ export function ModelView({
   // in the resolved view (they live in the import catalog).
   const showProvenance = state.layers.parentId !== undefined;
 
+  // Union of every record's `tags` — feeds the RecordForm tag picker's
+  // autocomplete so authors reuse existing labels instead of spawning
+  // near-duplicates ("forest" vs "Forest") that would fragment the
+  // grouping. Cheap; recomputed per render off the resolved records.
+  const existingTags: string[] = (() => {
+    const s = new Set<string>();
+    for (const r of derived.records) {
+      const t = (r as Record<string, unknown>)["tags"];
+      if (Array.isArray(t)) {
+        for (const x of t) if (typeof x === "string" && x) s.add(x);
+      }
+    }
+    return [...s].sort();
+  })();
+
+  // The records actually shown in the table = resolved records, narrowed
+  // by the free-text filter and (when a sort column is active) reordered.
+  // Meta computations above (existingTags, sprite column, presentIds)
+  // intentionally keep using the FULL `derived.records` so filtering the
+  // view never changes autocomplete suggestions or library de-duping.
+  const isEncounters = modelKey === "encounters";
+  // Difficulty tiers actually present in the data (encounters only),
+  // kept in Easy→Deadly order so the dropdown reads naturally.
+  const availableDifficulties: string[] = isEncounters
+    ? DIFFICULTY_TIERS.filter((d) =>
+        derived.records.some((r) => encounterDifficultyTier(r["level"]) === d),
+      )
+    : [];
+  const visibleRecords: Record_[] = (() => {
+    let rows = derived.records;
+    const q = query.trim().toLowerCase();
+    if (q) {
+      rows = rows.filter((r) => recordMatchesQuery(r, def, q));
+    }
+    if (isEncounters && difficultyFilter) {
+      rows = rows.filter(
+        (r) => encounterDifficultyTier(r["level"]) === difficultyFilter,
+      );
+    }
+    if (tagFilter) {
+      rows = rows.filter((r) => recordHasTag(r, tagFilter));
+    }
+    if (sortField) {
+      const dir = sortDir === "asc" ? 1 : -1;
+      rows = [...rows].sort((a, b) => compareByField(a, b, sortField) * dir);
+    }
+    return rows;
+  })();
+  // Group into collapsible tag sections only in the natural (unsorted)
+  // order — sorting flattens the table so the sort is global, and an
+  // active tag filter already narrows to one tag so grouping by tag
+  // would be redundant.
+  const grouped = isGroupedModel(modelKey) && !sortField && !tagFilter;
+  const toggleSort = (field: string) => {
+    if (sortField !== field) {
+      setSortField(field);
+      setSortDir("asc");
+    } else if (sortDir === "asc") {
+      setSortDir("desc");
+    } else {
+      setSortField(null); // third click clears back to grouped/natural
+    }
+  };
+
   // Compute the available-from-libraries catalog: each library's
   // records, filtered to exclude ids already present in the resolved
   // view (inherited or own). Once a record is imported into own,
@@ -513,6 +594,7 @@ export function ModelView({
                 template={template}
                 submitLabel="Add"
                 modelKey={modelKey}
+                existingTags={existingTags}
                 onSave={(rec) => {
                   const newId = String(rec.id ?? "");
                   if (newId) upsertRecord(newId, rec);
@@ -524,42 +606,97 @@ export function ModelView({
             </div>
           ) : null}
 
-          {modelKey === "map_tiles" && derived.records.length > 0
-            ? (() => {
-                // Mirror the tag bucketing the table uses so the
-                // collapse-all toggle knows the full set of headers.
-                const UNTAGGED = "(untagged)";
-                const allTags = new Set<string>();
-                for (const r of derived.records) {
-                  const rawTag = r["tag"];
-                  const tag =
-                    typeof rawTag === "string" && rawTag.trim()
-                      ? rawTag
-                      : UNTAGGED;
-                  allTags.add(tag);
-                }
-                if (allTags.size <= 1) return null;
-                const allCollapsed = collapsedTags.size >= allTags.size;
-                return (
-                  <div className="mt-4 flex items-center justify-end">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setCollapsedTags(allCollapsed ? new Set() : allTags)
-                      }
-                      className="rounded border border-parchment/20 px-2 py-1 text-xs uppercase tracking-wide text-parchment/65 hover:bg-ink/40 hover:text-parchment/90"
-                      title={
-                        allCollapsed
-                          ? "Expand every tag section"
-                          : "Collapse every tag section"
-                      }
-                    >
-                      {allCollapsed ? "Expand all" : "Collapse all"}
-                    </button>
-                  </div>
-                );
-              })()
-            : null}
+          {def.collectionKey !== null && derived.records.length > 0 ? (
+            <div className="mt-4 flex items-center gap-3">
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={`Filter ${def.label.toLowerCase()}…`}
+                className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-sm text-parchment placeholder:text-parchment/30 focus:border-parchment/60 focus:outline-none"
+              />
+              {availableDifficulties.length > 0 ? (
+                <select
+                  value={difficultyFilter}
+                  onChange={(e) => setDifficultyFilter(e.target.value)}
+                  title="Filter by difficulty"
+                  className={`shrink-0 rounded border bg-ink/50 px-2 py-1 text-sm focus:outline-none ${
+                    difficultyFilter
+                      ? "border-ember/50 text-parchment"
+                      : "border-parchment/20 text-parchment/70"
+                  }`}
+                >
+                  <option value="">All difficulties</option>
+                  {availableDifficulties.map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                </select>
+              ) : null}
+              {existingTags.length > 0 ? (
+                <select
+                  value={tagFilter}
+                  onChange={(e) => setTagFilter(e.target.value)}
+                  title="Filter by tag"
+                  className={`shrink-0 rounded border bg-ink/50 px-2 py-1 text-sm focus:outline-none ${
+                    tagFilter
+                      ? "border-ember/50 text-parchment"
+                      : "border-parchment/20 text-parchment/70"
+                  }`}
+                >
+                  <option value="">All tags</option>
+                  {existingTags.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+              ) : null}
+              {query.trim() || difficultyFilter || tagFilter ? (
+                <span className="shrink-0 text-xs text-parchment/45">
+                  {visibleRecords.length} of {derived.records.length}
+                </span>
+              ) : null}
+              {sortField ? (
+                <button
+                  type="button"
+                  onClick={() => setSortField(null)}
+                  className="shrink-0 rounded border border-parchment/20 px-2 py-1 text-xs text-parchment/60 hover:bg-ink/40 hover:text-parchment/90"
+                  title="Clear sort and return to the grouped/natural order"
+                >
+                  Clear sort
+                </button>
+              ) : null}
+              {grouped
+                ? (() => {
+                    const UNTAGGED = "(untagged)";
+                    const allTags = new Set<string>();
+                    for (const r of visibleRecords) {
+                      allTags.add(groupTagOf(modelKey, r) ?? UNTAGGED);
+                    }
+                    if (allTags.size <= 1) return null;
+                    const allCollapsed = collapsedTags.size >= allTags.size;
+                    return (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setCollapsedTags(allCollapsed ? new Set() : allTags)
+                        }
+                        className="shrink-0 rounded border border-parchment/20 px-2 py-1 text-xs uppercase tracking-wide text-parchment/65 hover:bg-ink/40 hover:text-parchment/90"
+                        title={
+                          allCollapsed
+                            ? "Expand every tag section"
+                            : "Collapse every tag section"
+                        }
+                      >
+                        {allCollapsed ? "Expand all" : "Collapse all"}
+                      </button>
+                    );
+                  })()
+                : null}
+            </div>
+          ) : null}
 
           <div className="mt-4 overflow-auto rounded border border-parchment/10">
             <table className="w-full text-left text-sm">
@@ -569,11 +706,22 @@ export function ModelView({
                   {hasSpriteColumn ? (
                     <th className="w-12 px-2 py-1"></th>
                   ) : null}
-                  {def.columns.map((c) => (
-                    <th key={c.field} className="px-2 py-1 font-semibold">
-                      {c.label}
-                    </th>
-                  ))}
+                  {def.columns.map((c) => {
+                    const active = sortField === c.field;
+                    return (
+                      <th
+                        key={c.field}
+                        onClick={() => toggleSort(c.field)}
+                        className="cursor-pointer select-none px-2 py-1 font-semibold hover:text-parchment"
+                        title={`Sort by ${c.label}`}
+                      >
+                        {c.label}
+                        <span className="ml-1 text-parchment/40">
+                          {active ? (sortDir === "asc" ? "▲" : "▼") : "↕"}
+                        </span>
+                      </th>
+                    );
+                  })}
                   <th className="w-24 px-2 py-1"></th>
                 </tr>
               </thead>
@@ -619,6 +767,7 @@ export function ModelView({
                       }}
                       def={def}
                       template={template ?? r}
+                      existingTags={existingTags}
                     />
                   );
                 };
@@ -626,15 +775,11 @@ export function ModelView({
                 // mirrors the bucketing used by the MapEditor's tile
                 // palette side panel so authors see the same structure
                 // in both views.
-                if (modelKey === "map_tiles") {
+                if (grouped) {
                   const UNTAGGED = "(untagged)";
                   const groups = new Map<string, Array<{ rec: Record_; idx: number }>>();
-                  derived.records.forEach((r, i) => {
-                    const rawTag = r["tag"];
-                    const tag =
-                      typeof rawTag === "string" && rawTag.trim()
-                        ? rawTag
-                        : UNTAGGED;
+                  visibleRecords.forEach((r, i) => {
+                    const tag = groupTagOf(modelKey, r) ?? UNTAGGED;
                     if (!groups.has(tag)) groups.set(tag, []);
                     groups.get(tag)!.push({ rec: r, idx: i });
                   });
@@ -677,8 +822,8 @@ export function ModelView({
                                   {tag}
                                 </span>
                                 <span className="ml-2 normal-case tracking-normal text-parchment/45">
-                                  {rows.length} tile
-                                  {rows.length === 1 ? "" : "s"}
+                                  {rows.length}
+                                  {rows.length === 1 ? " entry" : " entries"}
                                 </span>
                               </td>
                             </tr>
@@ -695,7 +840,20 @@ export function ModelView({
                 }
                 return (
                   <tbody>
-                    {derived.records.map((r, i) => renderRow(r, i))}
+                    {visibleRecords.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={totalCols}
+                          className="px-2 py-3 text-center text-xs text-parchment/45"
+                        >
+                          {query.trim()
+                            ? `No matches for “${query}”.`
+                            : "No matches for the current filters."}
+                        </td>
+                      </tr>
+                    ) : (
+                      visibleRecords.map((r, i) => renderRow(r, i))
+                    )}
                   </tbody>
                 );
               })()}
@@ -1019,6 +1177,72 @@ function SingletonView({
   );
 }
 
+/** Substring match of `q` (already lower-cased) against a record's id,
+ *  every displayed column value (post-format), and its tags. Powers the
+ *  browse-table filter box. */
+function recordMatchesQuery(
+  r: Record_,
+  def: (typeof MODELS)[ModelKey],
+  q: string,
+): boolean {
+  const hay: string[] = [String(r.id ?? "")];
+  for (const c of def.columns) {
+    const v = r[c.field];
+    hay.push(c.format ? c.format(v) : v == null ? "" : String(v));
+  }
+  const tags = r["tags"];
+  if (Array.isArray(tags)) hay.push(tags.join(" "));
+  return hay.join("  ").toLowerCase().includes(q);
+}
+
+/** Comparator for click-to-sort. Numbers sort numerically, arrays
+ *  (e.g. tags) by their first entry, everything else lexically. Empty /
+ *  missing values sort last so untagged rows sink to the bottom. */
+function compareByField(a: Record_, b: Record_, field: string): number {
+  const av = a[field];
+  const bv = b[field];
+  const aEmpty = av == null || (Array.isArray(av) && av.length === 0);
+  const bEmpty = bv == null || (Array.isArray(bv) && bv.length === 0);
+  if (aEmpty && bEmpty) return 0;
+  if (aEmpty) return 1;
+  if (bEmpty) return -1;
+  if (typeof av === "number" && typeof bv === "number") return av - bv;
+  const as = (Array.isArray(av) ? String(av[0] ?? "") : String(av)).toLowerCase();
+  const bs = (Array.isArray(bv) ? String(bv[0] ?? "") : String(bv)).toLowerCase();
+  return as.localeCompare(bs);
+}
+
+/** Models whose table is split into collapsible tag sections. Tile
+ *  palette groups by its singular `tag`; encounters by the FIRST entry
+ *  of their `tags` array (the "primary" tag). */
+function isGroupedModel(modelKey: string | undefined): boolean {
+  return modelKey === "map_tiles" || modelKey === "encounters";
+}
+
+/** True when a record carries `tag` — checks the `tags` array (when
+ *  present) and the singular `tag` (tile palette). */
+function recordHasTag(r: Record_, tag: string): boolean {
+  const arr = r["tags"];
+  if (Array.isArray(arr) && arr.includes(tag)) return true;
+  return r["tag"] === tag;
+}
+
+/** The section key a record belongs under, or null → "(untagged)". */
+function groupTagOf(modelKey: string | undefined, r: Record_): string | null {
+  if (modelKey === "map_tiles") {
+    const t = r["tag"];
+    return typeof t === "string" && t.trim() ? t : null;
+  }
+  if (modelKey === "encounters") {
+    const t = r["tags"];
+    if (Array.isArray(t)) {
+      const first = t.find((x) => typeof x === "string" && x.trim());
+      return typeof first === "string" ? first : null;
+    }
+  }
+  return null;
+}
+
 function RowGroup({
   record,
   isOpen,
@@ -1034,6 +1258,7 @@ function RowGroup({
   onRevert,
   def,
   template,
+  existingTags = [],
 }: {
   record: Record_;
   isOpen: boolean;
@@ -1049,6 +1274,7 @@ function RowGroup({
   onRevert: () => void;
   def: (typeof MODELS)[ModelKey];
   template: Record_;
+  existingTags?: string[];
 }) {
   return (
     <>
@@ -1090,6 +1316,7 @@ function RowGroup({
                 record={record}
                 template={template}
                 modelKey={modelKey}
+                existingTags={existingTags}
                 onSave={onSaveEdit}
                 onCancel={onCancelEdit}
               />

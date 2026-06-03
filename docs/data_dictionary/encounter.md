@@ -37,6 +37,9 @@ v1 nested encounters under three top-level area keys (`dungeon`, `house_basement
 | `monster_party_tile` | string | yes | Sprite path shown for the lead monster on the overworld (e.g. `"monster/goblin.png"`). Empty string falls back to `monsters[0]`'s default sprite. | TBD |
 | `monsters` | string[] | yes | Roster handed to the combat scene. Each entry is a [Monster](monster.md) `id` (snake_case). Duplicates spawn multiple instances. | TBD |
 | `custom_map` | string \| null | no | Optional [Map](map.md) `id`. When set, the encounter's battle loads this authored map as the arena; `null` falls back to the default arena. The editor renders a Map picker for this field. | TBD |
+| `arena_id` | string | no | Optional arena-map id the battle launcher pre-selects when this encounter is picked (overridable in the launcher). Unknown ids are ignored. JSON key: `arena_id`. | TBD |
+| `darkness` | boolean | no | When true, the launcher's Darkness toggle is pre-checked so the fight starts in low-light. Pairs naturally with an `arena_id` whose map has `light_source` cells. | TBD |
+| `tags` | string[] | no | Free-form **editor-side** organizational labels (e.g. `"forest"`, `"act_1"`, `"boss"`). Gameplay ignores them — they exist only to group / filter the encounter list in the editor, which buckets encounters by their **first** tag (the "primary" tag), collapsibly. Mirrors `tags` on [Map](map.md) / [Dungeon](dungeon.md). | TBD |
 
 ## Polymorphic discriminator
 
@@ -66,6 +69,7 @@ v1 nested encounters under three top-level area keys (`dungeon`, `house_basement
 
 ## Notes and open questions
 
+- **`tags` is organizational only; `area` is functional.** A 2024 audit confirmed `area`, `level`, and `weight` are all live: `sampleEncounter` (called by the procedural dungeon generator) picks the bucket by `area`, filters by the `level` band, and rolls weighted by `weight`. Hand-placed encounters (painted cells, quest kill-steps, interior/town authored spawns) reference encounters by id and ignore `level`/`weight`. `tags` was added purely for editor grouping and is never read at runtime — don't repurpose it to drive spawning without wiring a real consumer. `arena_id` / `darkness` are real battle-launcher features that simply have no data yet.
 - **Dropped from v1 per the not-used rule:** `terrain` (every record set it but no v1 consumer queried; 88 of 91 records were `"land"` anyway). If sea/land filtering becomes a thing, wire it deliberately and re-introduce.
 - **House_basement is capped at levels 1–2.** Intentional per v1's narrative scope (only one tier of basements).
 - **Two v1 overworld records had empty `monster_party_tile`** (Lich with Minions, Mind Flayer). v2 carries them forward as-is; the runtime falls back to `monsters[0]` for display.

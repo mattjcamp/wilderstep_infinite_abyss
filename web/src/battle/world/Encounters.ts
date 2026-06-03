@@ -52,6 +52,12 @@ export interface EncounterTemplate {
    *  user can still flip it off. Pairs naturally with an `arenaId`
    *  that has authored `light_source` cells. JSON key: `darkness`. */
   darkness?: boolean;
+  /** Free-form editor-side organizational labels (e.g. "forest",
+   *  "act_1", "boss"). Gameplay does NOT read these — they exist purely
+   *  to group / filter the encounter list in the editor (the model view
+   *  buckets encounters by their first tag). Mirrors the `tags`
+   *  convention on Map / Dungeon. JSON key: `tags`. */
+  tags: string[];
 }
 
 export interface RawEncounter {
@@ -67,6 +73,8 @@ export interface RawEncounter {
   /** Encounter pre-flags itself as a darkness fight (see
    *  EncounterTemplate.darkness). */
   darkness?: boolean;
+  /** Editor-side organizational labels (see EncounterTemplate.tags). */
+  tags?: string[];
 }
 
 interface RawEncountersFile {
@@ -127,6 +135,11 @@ function fromRaw(raw: RawEncounter): EncounterTemplate | null {
     ...raw,
     monsters,
     monsterPartyTile: lead,
+    // Editor-only labels — normalised to a clean string[] (drops
+    // non-strings / blanks) so the grouping + picker can rely on it.
+    tags: Array.isArray(raw.tags)
+      ? raw.tags.filter((t): t is string => typeof t === "string" && t.length > 0)
+      : [],
     // Snake_case → camelCase aliases. Omitted when the JSON didn't
     // declare them so consumers can distinguish "no preference" from
     // "explicitly off / empty".

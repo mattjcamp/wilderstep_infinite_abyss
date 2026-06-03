@@ -29,6 +29,12 @@ import { CounterPicker } from "./CounterPicker";
 import { getCounterFieldConfig } from "./counterFields";
 import { MapPicker } from "./MapPicker";
 import { getMapFieldConfig } from "./mapFields";
+import { TagsPicker } from "./TagsPicker";
+
+/** Models whose records carry a free-form `tags: string[]` for editor
+ *  organization. The form injects the field (even when a record hasn't
+ *  set it yet) and renders the chip-style TagsPicker for it. */
+const TAGGED_MODELS = new Set(["encounters"]);
 
 type FieldKind =
   | "string"
@@ -103,6 +109,12 @@ function buildFieldList(
     if (seen.has(k) || k === "_comment") continue;
     fields.push({ key: k, kind: inferKind(k, record[k], undefined, modelKey) });
   }
+  // Tagged models always expose a `tags` field even when the record
+  // hasn't set one yet, so authors can start tagging without first
+  // editing the JSON. Stored + parsed as a JSON array (string[]).
+  if (modelKey && TAGGED_MODELS.has(modelKey) && !seen.has("tags")) {
+    fields.push({ key: "tags", kind: "json" });
+  }
   return fields;
 }
 
@@ -151,6 +163,7 @@ export function RecordForm({
   onCancel,
   submitLabel = "Save",
   modelKey,
+  existingTags = [],
 }: {
   record: Record<string, unknown>;
   /** A peer record used to fill in field types when `record` has nulls. */
@@ -162,6 +175,10 @@ export function RecordForm({
    *  config so per-model overrides (e.g., map_tiles.sprite → category
    *  "map" vs Character.sprite → category "person") apply correctly. */
   modelKey?: string;
+  /** Tag suggestions (union of sibling records' tags) for the tags
+   *  picker's autocomplete — keeps tag spelling consistent so the
+   *  grouping doesn't fragment. */
+  existingTags?: string[];
 }) {
   const fields = useMemo(
     () => buildFieldList(record, template ?? record, modelKey),
@@ -215,6 +232,7 @@ export function RecordForm({
             value={drafts[f.key] ?? ""}
             error={errors[f.key]}
             modelKey={modelKey}
+            existingTags={existingTags}
             onChange={(v) => update(f.key, v)}
           />
         ))}
@@ -250,16 +268,48 @@ function FieldRow({
   value,
   error,
   modelKey,
+  existingTags = [],
   onChange,
 }: {
   spec: FieldSpec;
   value: string;
   error?: string;
   modelKey?: string;
+  existingTags?: string[];
   onChange: (v: string) => void;
 }) {
   const labelClasses =
     "min-w-[10rem] shrink-0 pt-1 text-sm text-parchment/70 font-mono";
+
+  // A `tags` field renders the chip-style TagsPicker instead of a raw
+  // JSON textarea. The on-disk value stays a JSON string[] so the
+  // submit-time `inputToValue("json", …)` round-trips it unchanged.
+  if (spec.key === "tags") {
+    let tags: string[] = [];
+    try {
+      const parsed = JSON.parse(value || "[]");
+      if (Array.isArray(parsed)) {
+        tags = parsed.filter((t): t is string => typeof t === "string");
+      }
+    } catch {
+      tags = [];
+    }
+    return (
+      <div className="flex items-start gap-3">
+        <span className={labelClasses}>tags</span>
+        <div className="flex-1">
+          <TagsPicker
+            tags={tags}
+            existing={existingTags}
+            onChange={(next) => onChange(JSON.stringify(next))}
+          />
+          <p className="mt-1 text-[10px] text-parchment/40">
+            Editor-only labels for grouping. Gameplay ignores them.
+          </p>
+        </div>
+      </div>
+    );
+  }
   const inputBase =
     "flex-1 rounded border bg-ink/40 px-2 py-1 text-sm text-parchment placeholder:text-parchment/30 focus:outline-none";
   const inputColor = error
