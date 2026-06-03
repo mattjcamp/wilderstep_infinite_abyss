@@ -1,5 +1,5 @@
 {
-  "_comment": "Monster catalog (real data drives the schema). Each monster carries combat stats, visual identity (tile, color), movement rules, and arrays for `spells` (castable abilities), `on_hit_effects` (effects applied on a successful hit), and `passives` (always-on traits). v2 transforms: monster `passives[].type` and `on_hit_effects[].type` are renamed to `effect_id`, referencing entries in effects.json (drain, poisoned, slowed, consumed, regen, fire_resistance, poison_immunity). Per-monster overrides (chance, amount, duration, etc.) stay as flat keys alongside `effect_id`. Monster `spells[]` remain inline for now \u2014 many monster spell types don't have player-castable Spell records, so unifying with spells.json is deferred. Dropped per the not-used rule: monster `description` (parsed but never read), `spawn_weight` (TS uses encounters.json weights), the `ranged` sub-object (entire object parsed but unread), and the top-level `spawn_tables` (TS uses encounters.json).",
+  "_comment": "Monster catalog (real data drives the schema). Each monster carries combat stats, visual identity (tile, color), movement rules, and arrays for `spells` (castable abilities), `on_hit_effects` (effects applied on a successful hit), and `passives` (always-on traits). v2 transforms: monster `passives[].type` and `on_hit_effects[].type` are renamed to `effect_id`, referencing entries in effects.json (drain, poisoned, slowed, consumed, regen, fire_resistance, poison_immunity). Per-monster overrides (chance, amount, duration, etc.) stay as flat keys alongside `effect_id`. Monster `spells[]` remain inline for now — many monster spell types don't have player-castable Spell records, so unifying with spells.json is deferred. Dropped per the not-used rule: monster `description` (parsed but never read), `spawn_weight` (TS uses encounters.json weights), the `ranged` sub-object (entire object parsed but unread), and the top-level `spawn_tables` (TS uses encounters.json).",
   "monsters": [
     {
       "id": "giant_rat",
@@ -1602,6 +1602,31 @@
       "constitution": 18,
       "intelligence": 14,
       "wisdom": 14
+    },
+    {
+      "id": "pirate",
+      "name": "Pirate",
+      "undead": false,
+      "humanoid": true,
+      "hp": 20,
+      "ac": 14,
+      "attack_bonus": 2,
+      "damage_dice": 4,
+      "damage_sides": 4,
+      "damage_bonus": 0,
+      "xp_reward": 25,
+      "gold_min": 5,
+      "gold_max": 10,
+      "sprite": "monster/lark_f2.png",
+      "move_range": 6,
+      "post_attack_move": 2,
+      "battle_scale": 0,
+      "difficulty": "normal",
+      "strength": 14,
+      "dexterity": 18,
+      "constitution": 12,
+      "intelligence": 8,
+      "wisdom": 8
     }
   ]
 }
