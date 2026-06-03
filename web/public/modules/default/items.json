@@ -1123,7 +1123,7 @@
       "sell": 0,
       "is_chest": true,
       "contents": {
-        "gold": 50,
+        "gold": 10,
         "items": [
           {
             "id": "healing_herb",
@@ -1138,7 +1138,7 @@
       "name": "Relic Chest",
       "animation_id": null,
       "description": "A chest containing a relic",
-      "icon": null,
+      "icon": "relic_chest",
       "item_type": null,
       "power": 0,
       "ranged": false,

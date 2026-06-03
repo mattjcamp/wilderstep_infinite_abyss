@@ -116,10 +116,16 @@ export function generateDungeonFromRecord(
       // Door frequency — 1 (the default) keeps every room opening a
       // door, preserving historical layouts; lower values thin them.
       doorProbability: resolved.doorFrequency,
+      // Entrance/exit placement: edge of map vs interior rooms.
+      edgeTransitions: resolved.edgeTransitions,
       // Custom-style palette ids — recorded on the level for the
       // converter to resolve to sprites; ignored for other styles.
       customFloorId: resolved.style === "custom" ? resolved.customFloor : "",
       customWallId: resolved.style === "custom" ? resolved.customWall : "",
+      customStairsUpId:
+        resolved.style === "custom" ? resolved.customStairsUp : "",
+      customStairsDownId:
+        resolved.style === "custom" ? resolved.customStairsDown : "",
       // Encounters table + monster-difficulty lookup — when both
       // are present, the generator samples encounter rosters per
       // non-entrance room (the `encChance` roll inside
@@ -221,12 +227,25 @@ export function resolveLevelOptions(
   // Default 1 keeps existing dungeons' doors intact.
   const doorFrequency =
     level.doors ?? parent.doors ?? DUNGEON_DEFAULTS.doors;
+  // Entrance/exit placement. Authored values (level→parent) win; absent
+  // falls back to the STYLE default — edge for forest, interior rooms
+  // for everything else — so untouched dungeons keep their look.
+  const edgeTransitions =
+    level.edge_transitions ?? parent.edge_transitions ?? (style === "forest");
   // Custom palette ids — Level overrides parent. Only consulted when
   // the resolved style is "custom"; empty otherwise.
   const customFloor =
     level.custom_floor ?? parent.custom_floor ?? DUNGEON_DEFAULTS.custom_floor;
   const customWall =
     level.custom_wall ?? parent.custom_wall ?? DUNGEON_DEFAULTS.custom_wall;
+  const customStairsUp =
+    level.custom_stairs_up ??
+    parent.custom_stairs_up ??
+    DUNGEON_DEFAULTS.custom_stairs_up;
+  const customStairsDown =
+    level.custom_stairs_down ??
+    parent.custom_stairs_down ??
+    DUNGEON_DEFAULTS.custom_stairs_down;
   return {
     name: level.name,
     id: level.id,
@@ -240,8 +259,11 @@ export function resolveLevelOptions(
     chestItem,
     chestFrequency,
     doorFrequency,
+    edgeTransitions,
     customFloor,
     customWall,
+    customStairsUp,
+    customStairsDown,
   };
 }
 

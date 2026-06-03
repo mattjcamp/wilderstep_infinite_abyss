@@ -29,6 +29,7 @@ import {
   TILE_DWALL,
   TILE_STAIRS,
   TILE_STAIRS_DOWN,
+  TILE_TRAP,
 } from "@/battle/world/Dungeon";
 import {
   TILE_DFLOOR,
@@ -112,6 +113,14 @@ export function dungeonLevelToMap(
   const customWallSprite = isCustom
     ? opts.customTileSprites?.get(level.customWall ?? "")
     : undefined;
+  // Cosmetic transition sprites — empty / unresolved keeps the default
+  // stairs art (the converter just doesn't override below).
+  const customStairsUpSprite = isCustom
+    ? opts.customTileSprites?.get(level.customStairsUp ?? "")
+    : undefined;
+  const customStairsDownSprite = isCustom
+    ? opts.customTileSprites?.get(level.customStairsDown ?? "")
+    : undefined;
 
   // The generator's tile grid carries a few "buffer" rows past the
   // declared height (see Dungeon.ts: `const BUFFER = 3;`). We respect
@@ -148,7 +157,19 @@ export function dungeonLevelToMap(
       // those alone. Flags are forced regardless of the palette tile's
       // authored walkable/obstructs so the layout stays solvable.
       if (isCustom) {
-        if (lookupId === TILE_DFLOOR || lookupId === TILE_PATH) {
+        // Floor, chest-backdrop, AND concealed-trap cells all render on
+        // the custom floor sprite. A trap must look identical to the
+        // surrounding floor so it stays hidden until detected — the
+        // red-X reveal is drawn separately by WorldRenderer and keys off
+        // `trap` + detection state, which we preserve. This mirrors how
+        // `prototypeForTileId` paints a trap with the style's floor in
+        // caves/ruins/forest; for custom the "style floor" is the
+        // author's palette tile, which only the converter knows.
+        const isFloorBacked =
+          lookupId === TILE_DFLOOR ||
+          lookupId === TILE_PATH ||
+          lookupId === TILE_TRAP;
+        if (isFloorBacked) {
           if (customFloorSprite) base.sprite = customFloorSprite;
           base.walkable = true;
           base.obstructs = false;
@@ -156,6 +177,12 @@ export function dungeonLevelToMap(
           if (customWallSprite) base.sprite = customWallSprite;
           base.walkable = false;
           base.obstructs = true;
+        } else if (tileId === TILE_STAIRS && customStairsUpSprite) {
+          // Cosmetic only — `patchStairsLink` below still wires the
+          // up-link off `tileId`, and the cell stays walkable.
+          base.sprite = customStairsUpSprite;
+        } else if (tileId === TILE_STAIRS_DOWN && customStairsDownSprite) {
+          base.sprite = customStairsDownSprite;
         }
       }
       // A trap that's already been triggered in this dungeon session

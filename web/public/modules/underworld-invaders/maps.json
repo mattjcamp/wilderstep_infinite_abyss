@@ -122681,12 +122681,10 @@
             "tag": "walkable"
           },
           {
-            "boat": false,
-            "boat_passable": false,
-            "id": "tree_1",
-            "name": "Tree",
+            "id": "graveyard",
+            "name": "Grave Yard",
             "walkable": true,
-            "obstructs": true,
+            "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -122694,9 +122692,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/L2_TreeMaple01.png",
-            "tag": "outdoor",
-            "dungeon": "black_forest"
+            "sprite": "map/graveyard.png",
+            "tag": "outdoor"
           },
           {
             "boat": false,
@@ -135295,19 +135292,22 @@
           },
           {
             "boat": false,
-            "id": "path",
-            "name": "Path",
+            "boat_passable": false,
+            "id": "tree_1",
+            "name": "Tree",
             "walkable": true,
-            "obstructs": false,
+            "obstructs": true,
             "locked": false,
             "light_source": false,
             "light_range": 0,
-            "animation": "none",
+            "animation": null,
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "walkable"
+            "sprite": "map/L2_TreeMaple01.png",
+            "tag": "outdoor",
+            "dungeon": "custom_test",
+            "show_link_placard": true
           },
           {
             "boat": false,

@@ -5,10 +5,36 @@ import {
 } from "./generateFromRecord";
 import {
   torchProfileFromProbability,
+  TILE_STAIRS,
   TILE_STAIRS_DOWN,
   TILE_CHEST,
 } from "@/battle/world/Dungeon";
 import { TILE_FOREST_ARCHWAY_DOWN, TILE_DDOOR } from "@/battle/world/Tiles";
+
+/** First [col,row] of a tile id on a floor's grid, or null. */
+function findTile(
+  floor: { tiles: number[][] },
+  id: number,
+): [number, number] | null {
+  for (let r = 0; r < floor.tiles.length; r++) {
+    const row = floor.tiles[r];
+    for (let c = 0; c < row.length; c++) {
+      if (row[c] === id) return [c, r];
+    }
+  }
+  return null;
+}
+
+/** Min distance from a cell to any map border. 0/1 = on the perimeter
+ *  band the edge-placer uses; >=2 = interior. */
+function borderDistance(
+  col: number,
+  row: number,
+  width: number,
+  height: number,
+): number {
+  return Math.min(col, row, width - 1 - col, height - 1 - row);
+}
 import { DUNGEON_DEFAULTS, type DungeonRecord } from "./types";
 
 /** Count tiles of a given id on a floor's grid. */
@@ -110,6 +136,34 @@ describe("resolveLevelOptions", () => {
     expect(r.customWall).toBe("");
   });
 
+  it("edge_transitions defaults by style and honors overrides", () => {
+    // Forest defaults to edge placement; everything else to interior.
+    expect(
+      resolveLevelOptions(makeRecord({ style: "forest" }),
+        makeRecord({ style: "forest" }).levels[0], 0).edgeTransitions,
+    ).toBe(true);
+    expect(
+      resolveLevelOptions(makeRecord({ style: "ruins" }),
+        makeRecord({ style: "ruins" }).levels[0], 0).edgeTransitions,
+    ).toBe(false);
+    expect(
+      resolveLevelOptions(makeRecord({ style: "custom" }),
+        makeRecord({ style: "custom" }).levels[0], 0).edgeTransitions,
+    ).toBe(false);
+    // Parent override flips a non-forest style to edge…
+    const rec = makeRecord({ style: "ruins", edge_transitions: true });
+    expect(resolveLevelOptions(rec, rec.levels[0], 0).edgeTransitions).toBe(true);
+    // …and a Level override beats the parent (forest → interior here).
+    const rec2 = makeRecord({
+      style: "forest",
+      edge_transitions: true,
+      levels: [{ id: "l", name: "L", depth: 1, edge_transitions: false }],
+    });
+    expect(resolveLevelOptions(rec2, rec2.levels[0], 0).edgeTransitions).toBe(
+      false,
+    );
+  });
+
   it("inherits door frequency + custom tiles from the parent, level overrides win", () => {
     const record = makeRecord({
       doors: 0.3,
@@ -199,6 +253,46 @@ describe("generateDungeonFromRecord", () => {
     });
     const [dooredFloor] = generateDungeonFromRecord(doored, { seed: 5 });
     expect(countTile(dooredFloor, TILE_DDOOR)).toBeGreaterThan(0);
+  });
+
+  it("edge_transitions=true puts the transitions on the map perimeter", () => {
+    // A ruins dungeon would normally drop stairs in interior rooms;
+    // forcing edge placement moves the up + down transitions to the
+    // border band the edge-placer carves from.
+    const record = makeRecord({
+      style: "ruins",
+      size: { width: 40, height: 30 },
+      edge_transitions: true,
+      levels: [
+        { id: "a", name: "A", depth: 1 },
+        { id: "b", name: "B", depth: 2 },
+      ],
+    });
+    const [f0] = generateDungeonFromRecord(record, { seed: 9 });
+    const up = findTile(f0, TILE_STAIRS);
+    const down = findTile(f0, TILE_STAIRS_DOWN);
+    expect(up).not.toBeNull();
+    expect(down).not.toBeNull();
+    expect(borderDistance(up![0], up![1], f0.width, f0.height)).toBeLessThanOrEqual(1);
+    expect(
+      borderDistance(down![0], down![1], f0.width, f0.height),
+    ).toBeLessThanOrEqual(1);
+  });
+
+  it("edge_transitions=false (ruins default) keeps the entrance interior", () => {
+    const record = makeRecord({
+      style: "ruins",
+      size: { width: 40, height: 30 },
+      // no edge_transitions → style default false
+      levels: [{ id: "a", name: "A", depth: 1 }],
+    });
+    const [f0] = generateDungeonFromRecord(record, { seed: 9 });
+    const up = findTile(f0, TILE_STAIRS);
+    expect(up).not.toBeNull();
+    // Interior placement sits well inside the wall ring.
+    expect(
+      borderDistance(up![0], up![1], f0.width, f0.height),
+    ).toBeGreaterThanOrEqual(2);
   });
 
   it("uses the Level's authored name on the produced floor", () => {

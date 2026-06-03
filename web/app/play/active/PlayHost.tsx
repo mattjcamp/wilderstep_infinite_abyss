@@ -5885,10 +5885,20 @@ function buildDungeonCatalog(
   dungeon: DungeonState,
 ): LoadedCatalog {
   const lvl = dungeon.levels[dungeon.floorIdx];
+  // Custom-style floors paint their walkable floor + wall cells from
+  // two `map_tiles` palette ids carried on the level (`customFloor` /
+  // `customWall`). The converter needs id → sprite to resolve them, so
+  // build that lookup from the module palette the loader already
+  // materialized. Harmless for non-custom styles (they ignore it).
+  const customTileSprites = new Map<string, string>();
+  for (const tile of baseCatalog.palette) {
+    if (tile.id && tile.sprite) customTileSprites.set(tile.id, tile.sprite);
+  }
   const dungeonMap = dungeonLevelToMap(lvl, {
     dungeonId: dungeon.dungeonId,
     floorIdx: dungeon.floorIdx,
     totalFloors: dungeon.levels.length,
+    customTileSprites,
   });
   const spriteByMonsterId = new Map(
     baseCatalog.monsters.map((m) => [m.id, m.sprite]),

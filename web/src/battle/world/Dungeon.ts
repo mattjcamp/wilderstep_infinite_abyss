@@ -246,6 +246,11 @@ export interface DungeonLevel {
    *  non-custom floors. */
   customFloor?: string;
   customWall?: string;
+  /** For `style: "custom"` — palette ids whose sprites the converter
+   *  paints onto the up / down transition ("stairs") cells. Cosmetic;
+   *  the stair link is unchanged. Empty keeps the default stairs art. */
+  customStairsUp?: string;
+  customStairsDown?: string;
 }
 
 /**
@@ -887,6 +892,14 @@ export interface GenerateLevelOptions {
    *  no doors at all; in between rolls per opening. Matches v2's
    *  `dungeons.json` `doors` field. Optional — absent reads as `1`. */
   doorProbability?: number;
+  /** Place the entrance + exit transitions at the map EDGE (`true`,
+   *  carving a trail inward like the forest style) or in interior
+   *  rooms (`false`). Absent → the style default (edge only for
+   *  `"forest"`), preserving the historical per-style behaviour. The
+   *  edge tile is the forest archway for `"forest"` and a regular
+   *  stair tile for every other style (so the converter / custom
+   *  transition sprites still apply). */
+  edgeTransitions?: boolean;
   /** Probability (0..1) per eligible wall that a torch is placed.
    *  Drives the three internal knobs (spacing, count multiplier,
    *  whether to consider corridor walls). Matches v2's
@@ -909,6 +922,11 @@ export interface GenerateLevelOptions {
    *  tiles); ignored for non-custom styles. */
   customFloorId?: string;
   customWallId?: string;
+  /** For `style: "custom"` — `map_tiles` palette ids whose sprites the
+   *  converter paints onto the up / down transition ("stairs") cells.
+   *  Cosmetic only (the link is unchanged). Recorded on the level. */
+  customStairsUpId?: string;
+  customStairsDownId?: string;
   /** Encounter table (loaded from encounters.json). When omitted no
    *  monsters are placed. */
   encounters?: Record<string, EncounterTemplate[]>;
@@ -1048,16 +1066,29 @@ export function generateDungeonLevel(opts: GenerateLevelOptions): DungeonLevel {
     rooms.push(fallback);
   }
 
+  // ── Entrance + exit transition placement ──
+  // `edgeTransitions` decouples WHERE transitions go (map edge, carving
+  // a trail inward — the forest look — vs. dropped in interior rooms,
+  // the caves/ruins look) from the style. Absent → the style default
+  // (edge only for forest), so untouched dungeons are unchanged. The
+  // edge tile keeps the forest archways for forest, and uses a regular
+  // stair tile for every other style (so links + custom transition
+  // sprites resolve through `dungeonLevelToMap` as usual).
+  const edgeTransitions = opts.edgeTransitions ?? style === "forest";
+  const edgeUpTile = style === "forest" ? TILE_FOREST_ARCHWAY_UP : TILE_STAIRS;
+  const edgeDownTile =
+    style === "forest" ? TILE_FOREST_ARCHWAY_DOWN : TILE_STAIRS_DOWN;
+
   // ── Entrance stairs ──
   let stairsCol = 0;
   let stairsRow = 0;
   let entranceEdge: "north" | "south" | "east" | "west" | null = null;
-  if (style === "forest") {
+  if (edgeTransitions) {
     const edges: Array<"north" | "south" | "east" | "west"> = ["north", "east", "south", "west"];
     shuffleInPlace(rng, edges);
     for (const e of edges) {
       const placed = placeForestEdgeStairs(
-        grid, e, TILE_FOREST_ARCHWAY_UP, floorTile, wallTile, rng,
+        grid, e, edgeUpTile, floorTile, wallTile, rng,
         // Authored bottom row — keep a south-edge entrance inside the
         // visible map (BUFFER rows below are clipped from the floor).
         height - 1,
@@ -1070,13 +1101,9 @@ export function generateDungeonLevel(opts: GenerateLevelOptions): DungeonLevel {
       }
     }
   }
-  if (entranceEdge === null && style !== "forest") {
-    const [cc, cr] = rooms[0].center;
-    stairsCol = cc;
-    stairsRow = cr;
-    setTile(grid, stairsCol, stairsRow, TILE_STAIRS);
-  } else if (entranceEdge === null) {
-    // forest fallback when every edge sweep failed
+  if (entranceEdge === null) {
+    // Interior placement — the default for non-edge dungeons, and the
+    // fallback when every edge sweep failed.
     const [cc, cr] = rooms[0].center;
     stairsCol = cc;
     stairsRow = cr;
@@ -1256,16 +1283,18 @@ export function generateDungeonLevel(opts: GenerateLevelOptions): DungeonLevel {
     }
   }
 
-  // ── Stairs down in the last room ──
+  // ── Stairs down ──
+  // Edge placement when `edgeTransitions` is on (a different edge than
+  // the entrance, when possible); otherwise the last room's centre.
   if (opts.placeStairsDown && rooms.length >= 2) {
     let placed: { col: number; row: number } | null = null;
-    if (style === "forest") {
+    if (edgeTransitions) {
       const edges: Array<"north" | "south" | "east" | "west"> = ["north", "east", "south", "west"];
       const remaining = edges.filter((e) => e !== entranceEdge);
       shuffleInPlace(rng, remaining);
       for (const e of remaining) {
         placed = placeForestEdgeStairs(
-          grid, e, TILE_FOREST_ARCHWAY_DOWN, floorTile, wallTile, rng,
+          grid, e, edgeDownTile, floorTile, wallTile, rng,
           // Authored bottom row — exclude the BUFFER padding so a
           // south-edge archway stays inside the visible map.
           height - 1,
@@ -1333,6 +1362,8 @@ export function generateDungeonLevel(opts: GenerateLevelOptions): DungeonLevel {
     chestItem: chestItemId,
     customFloor: opts.customFloorId ?? "",
     customWall: opts.customWallId ?? "",
+    customStairsUp: opts.customStairsUpId ?? "",
+    customStairsDown: opts.customStairsDownId ?? "",
   };
 }
 

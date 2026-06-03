@@ -1,0 +1,69 @@
+{
+  "_comment": "Module-local tile palette additions for underworld-invaders. Merged BY ID over the inherited `default` palette (new ids append; matching ids override), so every default tile is still available — these just add extra options, chosen mainly to give the custom-dungeon floor / wall / transition pickers more to work with (e.g. the gold/blue arches as stairs alternatives). Behavioral flags here are for when a tile is painted on a normal map; in a custom dungeon the generator force-overrides floor/wall walkability and treats the transition tiles as cosmetic.",
+  "map_tiles": [
+    {
+      "boat": false,
+      "id": "arch_gold",
+      "name": "Gold Arch",
+      "walkable": true,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "map/arch_gold.png",
+      "tag": "transition"
+    },
+    {
+      "boat": false,
+      "id": "arch_blue",
+      "name": "Blue Arch",
+      "walkable": true,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "map/arch_blue.png",
+      "tag": "transition"
+    },
+    {
+      "boat": false,
+      "id": "stone_floor",
+      "name": "Stone Floor",
+      "walkable": true,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "map/stone_floor.png",
+      "tag": "indoor"
+    },
+    {
+      "boat": false,
+      "id": "town_wall",
+      "name": "Town Wall",
+      "walkable": false,
+      "obstructs": true,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "map/town_wall.png",
+      "tag": "wall"
+    }
+  ]
+}
