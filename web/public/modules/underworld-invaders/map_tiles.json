@@ -64,6 +64,40 @@
       "spawn": null,
       "sprite": "map/town_wall.png",
       "tag": "wall"
+    },
+    {
+      "boat": false,
+      "boat_passable": false,
+      "id": "mountains_snowy",
+      "name": "Snowy Mountains",
+      "walkable": false,
+      "obstructs": true,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": null,
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "map/mountains_snow.png",
+      "tag": "mountain"
+    },
+    {
+      "boat": false,
+      "boat_passable": false,
+      "id": "grass_snowy",
+      "name": "Grass, Snowy",
+      "walkable": true,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": null,
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "map/grass1_snowy.png",
+      "tag": "walkable"
     }
   ]
 }

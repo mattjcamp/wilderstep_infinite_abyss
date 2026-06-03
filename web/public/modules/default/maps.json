@@ -8880,10 +8880,10 @@
           },
           {
             "boat": false,
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
+            "id": "forest_pine01",
+            "name": "Forest Pine 01",
+            "walkable": false,
+            "obstructs": true,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -8891,15 +8891,15 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
+            "sprite": "map/forest_pine01.png",
+            "tag": "tree"
           },
           {
             "boat": false,
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
+            "id": "forest_maple04",
+            "name": "Forest Maple 04",
+            "walkable": false,
+            "obstructs": true,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -8907,15 +8907,15 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "walkable"
+            "sprite": "map/forest_maple04.png",
+            "tag": "tree"
           },
           {
             "boat": false,
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
+            "id": "forest_maple04",
+            "name": "Forest Maple 04",
+            "walkable": false,
+            "obstructs": true,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -8923,8 +8923,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
+            "sprite": "map/forest_maple04.png",
+            "tag": "tree"
           },
           {
             "boat": false,
@@ -9275,10 +9275,10 @@
           },
           {
             "boat": false,
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
+            "id": "forest_pine01",
+            "name": "Forest Pine 01",
+            "walkable": false,
+            "obstructs": true,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -9286,8 +9286,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "walkable"
+            "sprite": "map/forest_pine01.png",
+            "tag": "tree"
           },
           {
             "boat": false,
@@ -9699,19 +9699,19 @@
           },
           {
             "boat": false,
-            "id": "forest",
-            "name": "Forest",
-            "walkable": true,
+            "id": "forest_pine01",
+            "name": "Forest Pine 01",
+            "walkable": false,
             "obstructs": true,
             "locked": false,
             "light_source": false,
             "light_range": 0,
-            "animation": null,
+            "animation": "none",
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/forest2.png",
-            "tag": "outdoor"
+            "sprite": "map/forest_pine01.png",
+            "tag": "tree"
           },
           {
             "boat": false,
@@ -10093,19 +10093,19 @@
           },
           {
             "boat": false,
-            "id": "forest",
-            "name": "Forest",
-            "walkable": true,
+            "id": "forest_pine01",
+            "name": "Forest Pine 01",
+            "walkable": false,
             "obstructs": true,
             "locked": false,
             "light_source": false,
             "light_range": 0,
-            "animation": null,
+            "animation": "none",
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/forest2.png",
-            "tag": "outdoor"
+            "sprite": "map/forest_pine01.png",
+            "tag": "tree"
           },
           {
             "boat": false,

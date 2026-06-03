@@ -70,6 +70,32 @@ function asString(v: unknown): string {
   return String(v);
 }
 
+/** Difficulty tiers in ascending order — drives the encounter browse
+ *  column label and the difficulty dropdown filter. */
+export const DIFFICULTY_TIERS = ["Easy", "Normal", "Hard", "Deadly"] as const;
+
+/** Map an encounter's 1–8 `level` to its difficulty tier name, or "" when
+ *  the level isn't a finite number. Single source of truth shared by the
+ *  browse column and the dropdown filter so they never drift. */
+export function encounterDifficultyTier(v: unknown): string {
+  const n = typeof v === "number" ? v : Number(v);
+  if (!Number.isFinite(n)) return "";
+  if (n <= 2) return "Easy";
+  if (n <= 4) return "Normal";
+  if (n <= 6) return "Hard";
+  return "Deadly";
+}
+
+/** Friendly proxy for the raw level number in the browse table, e.g.
+ *  "Normal (3)". Sorting still keys off the underlying numeric `level`,
+ *  so the tiers order correctly (Easy → Deadly). */
+function levelToDifficulty(v: unknown): string {
+  const tier = encounterDifficultyTier(v);
+  if (!tier) return "";
+  const n = typeof v === "number" ? v : Number(v);
+  return `${tier} (${n})`;
+}
+
 function countItems(v: unknown): string {
   if (Array.isArray(v)) return `${v.length}`;
   if (v && typeof v === "object") return `${Object.keys(v).length}`;
@@ -227,11 +253,18 @@ const DEFS: Record<ModelKey, ModelDef> = {
     docKey: "encounter",
     blurb: "Random-encounter rosters",
     columns: [
-      { field: "id", label: "ID" },
-      { field: "area", label: "Area" },
+      // Sprite thumbnail renders as a separate leading column (the lead
+      // monster's monster_party_tile). Name leads the data columns; the
+      // raw id is still editable in the form + shown in the JSON view.
       { field: "name", label: "Name" },
-      { field: "level", label: "Lvl", format: asString },
-      { field: "weight", label: "Weight", format: asString },
+      // "Difficulty" is a friendly proxy for level (sortable by the raw
+      // numeric level underneath). Weight stays editable in the form.
+      { field: "level", label: "Difficulty", format: levelToDifficulty },
+      {
+        field: "tags",
+        label: "Tags",
+        format: (v) => (Array.isArray(v) ? v.join(", ") : ""),
+      },
     ],
   },
   character_classes: {

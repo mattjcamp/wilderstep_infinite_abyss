@@ -245,6 +245,9 @@ export interface SimEncounterRef {
    *  with the per-cell lighting tint at draw time so the colour
    *  reads natural at any ambient. */
   tint?: number;
+  /** Editor-side organizational labels. Gameplay ignores them; carried
+   *  through so the loader doesn't drop them on the round-trip. */
+  tags?: string[];
 }
 
 /** Row-major grid: grid[row][col]. */
