@@ -1126,11 +1126,29 @@
         "gold": 50,
         "items": [
           {
-            "id": "potion_minor",
+            "id": "healing_herb",
             "qty": 2
           }
         ]
       }
+    },
+    {
+      "id": "relic_chest",
+      "category": "general",
+      "name": "Relic Chest",
+      "animation_id": null,
+      "description": "A chest containing a relic",
+      "icon": null,
+      "item_type": null,
+      "power": 0,
+      "ranged": false,
+      "throwable": false,
+      "slots": [],
+      "durability": 0,
+      "party_can_equip": false,
+      "character_can_equip": false,
+      "buy": 0,
+      "sell": 0
     }
   ]
 }

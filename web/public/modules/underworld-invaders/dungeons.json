@@ -92,7 +92,7 @@
       "name": "Crypt of Dagorn",
       "description": "One of many ancient cities of the dead and goes deep into the ground",
       "tags": [],
-      "style": "caves",
+      "style": "ruins",
       "difficulty": "normal",
       "size": {
         "width": 32,
@@ -100,7 +100,48 @@
       },
       "torch_density": 0.15,
       "locked_doors": 0.25,
-      "levels": []
+      "levels": [
+        {
+          "id": "crypt_of_dagorn_l1",
+          "name": "Level 1",
+          "depth": 1,
+          "style": "caves",
+          "difficulty": "easy",
+          "torch_density": 0,
+          "locked_doors": 0
+        },
+        {
+          "id": "crypt_of_dagorn_l2",
+          "name": "Level 2",
+          "depth": 2
+        },
+        {
+          "id": "crypt_of_dagorn_l3",
+          "name": "Level 3",
+          "depth": 3
+        },
+        {
+          "id": "crypt_of_dagorn_l4",
+          "name": "Level 4",
+          "depth": 4
+        },
+        {
+          "id": "crypt_of_dagorn_l5",
+          "name": "Level 5",
+          "depth": 5
+        },
+        {
+          "id": "crypt_of_dagorn_l6",
+          "name": "Level 6",
+          "depth": 6,
+          "difficulty": "hard"
+        },
+        {
+          "id": "crypt_of_dagorn_l7",
+          "name": "Level 7",
+          "depth": 7
+        }
+      ]
     },
     {
       "id": "grotto",
@@ -127,6 +168,42 @@
           "depth": 2
         }
       ]
+    },
+    {
+      "id": "black_forest",
+      "name": "A Black Forest",
+      "description": "A dark, foreboding, wood",
+      "tags": [
+        "black_forest"
+      ],
+      "style": "forest",
+      "difficulty": "normal",
+      "size": {
+        "width": 12,
+        "height": 12
+      },
+      "torch_density": 0,
+      "locked_doors": 0,
+      "levels": [
+        {
+          "id": "black_forest_l1",
+          "name": "Level 1",
+          "depth": 1
+        },
+        {
+          "id": "black_forest_l2",
+          "name": "Level 2",
+          "depth": 2
+        },
+        {
+          "id": "black_forest_l3",
+          "name": "Level 3",
+          "depth": 3
+        }
+      ],
+      "loot": {
+        "chest_item": "treasure_chest"
+      }
     }
   ]
 }

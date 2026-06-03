@@ -276,15 +276,19 @@ const FOREST_PATH_PROTO = proto({
 const FOREST_ARCHWAY_UP_PROTO = proto({
   id: "stairs_up",
   name: "Forest Archway",
-  // Reuse the stairs-up sprite — v2's seed module doesn't ship a
-  // dedicated archway tile yet. Authors can swap the sprite later.
-  sprite: "map/stairs_up.png",
+  // A forest is a sprawling place, not a staircase — so the entrance /
+  // way-back transition is a glowing GOLD archway (warm = the familiar
+  // way out) rather than the stairs-up sprite. Mirrors v1's brightly-
+  // coloured forest arches.
+  sprite: "map/arch_gold.png",
 });
 
 const FOREST_ARCHWAY_DOWN_PROTO = proto({
   id: "stairs_down",
   name: "Forest Archway (Down)",
-  sprite: "map/stairs_down.png",
+  // Descent into the next forest area is a glowing BLUE archway
+  // (cool = deeper / unknown). Paired with the gold entrance arch.
+  sprite: "map/arch_blue.png",
 });
 
 /** Resolve a v1 numeric tile id to a v2 cell prototype. Returns null
@@ -393,6 +397,10 @@ export const DUNGEON_SPRITE_KEYS: readonly string[] = [
   "map/stone_wall.png",
   "map/stairs_up.png",
   "map/stairs_down.png",
+  // Forest transition arches (gold = entrance/up, blue = descent/down)
+  // — used in place of stairs for forest-style dungeons.
+  "map/arch_gold.png",
+  "map/arch_blue.png",
   "map/chest_tile.png",
   "map/wall_torch.png",
   "map/dungeon_door.png",

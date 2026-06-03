@@ -108,10 +108,18 @@ export function generateDungeonFromRecord(
       difficulty: resolved.difficulty,
       floorIdx,
       placeStairsDown: floorIdx < totalFloors - 1,
-      placeOverworldExit:
-        floorIdx === totalFloors - 1 && totalFloors > 1,
       lockProbability: resolved.locked_doors,
       torchProbability: resolved.torch_density,
+      // Loot — empty `chestItem` means no chests are placed (opt-in).
+      chestItemId: resolved.chestItem,
+      chestProbability: resolved.chestFrequency,
+      // Door frequency — 1 (the default) keeps every room opening a
+      // door, preserving historical layouts; lower values thin them.
+      doorProbability: resolved.doorFrequency,
+      // Custom-style palette ids — recorded on the level for the
+      // converter to resolve to sprites; ignored for other styles.
+      customFloorId: resolved.style === "custom" ? resolved.customFloor : "",
+      customWallId: resolved.style === "custom" ? resolved.customWall : "",
       // Encounters table + monster-difficulty lookup — when both
       // are present, the generator samples encounter rosters per
       // non-entrance room (the `encChance` roll inside
@@ -199,6 +207,26 @@ export function resolveLevelOptions(
     level.torch_density ?? parent.torch_density ?? DUNGEON_DEFAULTS.torch_density;
   const locked_doors =
     level.locked_doors ?? parent.locked_doors ?? DUNGEON_DEFAULTS.locked_doors;
+  // Loot merges field-by-field: a Level's partial `loot` overrides only
+  // the fields it sets, inheriting the rest from the parent. `chestItem`
+  // empty = no chests on this floor (chests are opt-in). When a chest
+  // IS configured but no frequency given, fall back to the default rate.
+  const chestItem =
+    level.loot?.chest_item ?? parent.loot?.chest_item ?? "";
+  const chestFrequency =
+    level.loot?.chest_frequency ??
+    parent.loot?.chest_frequency ??
+    DUNGEON_DEFAULTS.loot.chest_frequency;
+  // Door frequency inherits parent→default like the other 0–1 knobs.
+  // Default 1 keeps existing dungeons' doors intact.
+  const doorFrequency =
+    level.doors ?? parent.doors ?? DUNGEON_DEFAULTS.doors;
+  // Custom palette ids — Level overrides parent. Only consulted when
+  // the resolved style is "custom"; empty otherwise.
+  const customFloor =
+    level.custom_floor ?? parent.custom_floor ?? DUNGEON_DEFAULTS.custom_floor;
+  const customWall =
+    level.custom_wall ?? parent.custom_wall ?? DUNGEON_DEFAULTS.custom_wall;
   return {
     name: level.name,
     id: level.id,
@@ -209,6 +237,11 @@ export function resolveLevelOptions(
     size,
     torch_density,
     locked_doors,
+    chestItem,
+    chestFrequency,
+    doorFrequency,
+    customFloor,
+    customWall,
   };
 }
 

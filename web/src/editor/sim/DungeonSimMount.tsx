@@ -153,6 +153,9 @@ export function DungeonSimMount({
     monsters: SimMonsterRef[];
     classes: SimCharacterClass[];
     knockSpell: SimSpell | null;
+    /** `map_tiles` palette id → sprite path, used to render
+     *  custom-style floors/walls. Empty for non-custom dungeons. */
+    customTileSprites: ReadonlyMap<string, string>;
   } | null>(null);
 
   // Load the sim catalogs once. The dungeon tester doesn't need
@@ -170,6 +173,7 @@ export function DungeonSimMount({
         monsterLayers,
         classLayers,
         spellLayers,
+        tileLayers,
       ] = await Promise.all([
         src.loadModelLayers(moduleId, "party").catch(() => null),
         src.loadModelLayers(moduleId, "characters").catch(() => null),
@@ -179,6 +183,9 @@ export function DungeonSimMount({
         // Non-fatal — without them only the Pick Lock row appears.
         src.loadModelLayers(moduleId, "character_classes").catch(() => null),
         src.loadModelLayers(moduleId, "spells").catch(() => null),
+        // Tile palette — only custom-style dungeons read it, but it's
+        // cheap and lets the converter resolve floor/wall sprites.
+        src.loadModelLayers(moduleId, "map_tiles").catch(() => null),
       ]);
       if (cancelled) return;
       const party =
@@ -231,6 +238,17 @@ export function DungeonSimMount({
       // of the spells catalog isn't consulted here.
       const knockSpell =
         spellsMerged?.spells?.find((s) => s.id === "knock") ?? null;
+      const tilesMerged = tileLayers
+        ? (mergeModel(
+            "map_tiles",
+            tileLayers.inherited,
+            tileLayers.ownFile,
+          ) as { map_tiles?: Array<{ id: string; sprite?: string }> } | null)
+        : null;
+      const customTileSprites = new Map<string, string>();
+      for (const t of tilesMerged?.map_tiles ?? []) {
+        if (t.id && t.sprite) customTileSprites.set(t.id, t.sprite);
+      }
       setCatalog({
         party,
         characters: charactersMerged?.characters ?? [],
@@ -242,6 +260,7 @@ export function DungeonSimMount({
         })),
         classes: classesMerged?.character_classes ?? [],
         knockSpell,
+        customTileSprites,
       });
     })();
     return () => {
@@ -259,8 +278,9 @@ export function DungeonSimMount({
       dungeonId,
       floorIdx,
       totalFloors: levels.length,
+      customTileSprites: catalog?.customTileSprites,
     });
-  }, [levels, floorIdx, dungeonId]);
+  }, [levels, floorIdx, dungeonId, catalog?.customTileSprites]);
 
   // Encounter catalog for the active floor — each cell's `encounter`
   // id resolves to a synthetic SimEncounterRef built from the
@@ -576,6 +596,7 @@ export function DungeonSimMount({
                 unlockedCells: new Set(snap.unlockedCells),
                 defeatedEncounters: new Set(snap.defeatedEncounters),
                 destroyedLairs: new Set(snap.destroyedLairs),
+                pickedItemCells: new Set(snap.pickedItemCells),
               });
             }
           });

@@ -48,6 +48,13 @@ interface MapAttributes {
   /** Absent / "world_time" → follow the clock. The other three force
    *  the renderer into the matching lighting band on this map. */
   lighting?: MapLighting;
+  /** Whether fog-of-war applies on this map. Absent → `true` (the
+   *  default: most maps use fog). Stored as `false` only when the
+   *  author turns it off — e.g. a shop interior the player should see
+   *  in full the moment they enter. Lighting is independent; turning
+   *  fog off doesn't brighten a dark map, it just stops the
+   *  explored / unexplored (cloud) gating. */
+  fog_of_war?: boolean;
   /** Per-map background-music playlist override. Each entry is a
    *  file URL. Absent / empty array → fall back to the module
    *  manifest's default soundtrack (or silence if the module's is
@@ -75,6 +82,10 @@ export function MapAttributesDialog({
   const [lighting, setLighting] = useState<MapLighting>(
     initial.lighting ?? "world_time",
   );
+  // Default ON — only an explicit `false` in the record disables fog.
+  const [fogOfWar, setFogOfWar] = useState<boolean>(
+    initial.fog_of_war !== false,
+  );
   const [soundtrack, setSoundtrack] = useState<string[]>(
     initial.soundtrack ? [...initial.soundtrack] : [],
   );
@@ -98,7 +109,7 @@ export function MapAttributesDialog({
     // handleSave is defined inside the component but is stable enough
     // for this — the closure reads the latest state via React.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [name, description, tags, lighting, soundtrack]);
+  }, [name, description, tags, lighting, soundtrack, fogOfWar]);
 
   const handleSave = () => {
     const trimmedName = name.trim();
@@ -123,6 +134,10 @@ export function MapAttributesDialog({
       // the field cleanly. Non-empty passes the picker's ordered
       // list through verbatim.
       soundtrack: soundtrack.length > 0 ? [...soundtrack] : undefined,
+      // Fog-of-war defaults ON, so only persist the field when the
+      // author turned it OFF — keeps fogged maps shape-identical
+      // (no `"fog_of_war": true` churn). `false` is stored verbatim.
+      fog_of_war: fogOfWar ? undefined : false,
     });
   };
 
@@ -240,6 +255,31 @@ export function MapAttributesDialog({
               Override the world clock for this map. World-time follows
               day / twilight / darkness as the in-game hour advances; the
               three explicit values lock the lighting band.
+            </span>
+          </label>
+
+          {/* Fog of war ------------------------------------------ */}
+          {/* On by default. Turning it off reveals the whole map the
+              moment the party enters — handy for small "known" spaces
+              like shop interiors. Independent of lighting: a dark map
+              with fog off is still dark, it just isn't gated by
+              exploration / clouded where unseen. */}
+          <label className="flex items-start gap-2">
+            <input
+              type="checkbox"
+              checked={fogOfWar}
+              onChange={(e) => setFogOfWar(e.target.checked)}
+              className="mt-0.5"
+            />
+            <span className="flex flex-col">
+              <span className="text-xs text-parchment/70 font-mono">
+                fog of war
+              </span>
+              <span className="text-[11px] text-parchment/45">
+                When on (default), unexplored tiles stay hidden until the
+                party sees them. Turn off for maps that should be fully
+                visible on entry, like shops or small interiors.
+              </span>
             </span>
           </label>
         </div>

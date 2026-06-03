@@ -310,14 +310,35 @@ export function PartyFormation({ moduleId }: { moduleId: string }) {
   const { catalog } = state;
   return (
     <main className="mx-auto flex min-h-screen max-w-4xl flex-col gap-6 p-8">
-      <header>
-        <h1 className="font-display text-3xl text-parchment">Form the Party</h1>
-        <p className="mt-1 text-sm text-parchment/65">
-          Build a roster of up to {partyCap}{" "}
-          {partyCap === 1 ? "adventurer" : "adventurers"}. Create your own,
-          pick from the module's heroes, and drag to set marching order — the
-          first slot leads on the world map and acts first in combat.
-        </p>
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="font-display text-3xl text-parchment">Form the Party</h1>
+          <p className="mt-1 text-sm text-parchment/65">
+            Build a roster of up to {partyCap}{" "}
+            {partyCap === 1 ? "adventurer" : "adventurers"}. Create your own,
+            pick from the module's heroes, and drag to set marching order — the
+            first slot leads on the world map and acts first in combat.
+          </p>
+        </div>
+        {/* Begin lives up here (next to the create CTA below) so it's
+            obvious from the first screenful — players were missing it
+            when it only sat in the footer below a long roster list.
+            Same disabled rules + hint as before. */}
+        <div className="flex shrink-0 flex-col items-start gap-1 sm:items-end">
+          <button
+            type="button"
+            onClick={onBegin}
+            disabled={creating || slots.length === 0}
+            className="rounded-md border border-parchment/40 bg-ember/90 px-8 py-2 text-parchment shadow transition hover:bg-ember disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Begin →
+          </button>
+          {slots.length === 0 ? (
+            <span className="text-xs text-amber-200/85">
+              Add at least one character to begin.
+            </span>
+          ) : null}
+        </div>
       </header>
 
       {/* ── Prominent create CTA ────────────────────────────────────
@@ -514,21 +535,8 @@ export function PartyFormation({ moduleId }: { moduleId: string }) {
         >
           Back to module picker
         </Link>
-        <div className="flex items-center gap-3">
-          {slots.length === 0 ? (
-            <span className="text-xs text-amber-200/85">
-              Add at least one character to begin.
-            </span>
-          ) : null}
-          <button
-            type="button"
-            onClick={onBegin}
-            disabled={creating || slots.length === 0}
-            className="rounded-md border border-parchment/40 bg-ember/90 px-8 py-2 text-parchment shadow transition hover:bg-ember disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            Begin →
-          </button>
-        </div>
+        {/* Begin now lives in the header so it's visible without
+            scrolling; a second copy here would be redundant. */}
       </footer>
     </main>
   );

@@ -31,6 +31,7 @@ function fakeLevel(name: string): DungeonLevel {
     exploredTiles: new Set<string>(),
     overworldExits: new Set<string>(),
     questArtifacts: {},
+    chestItem: "",
   };
 }
 
@@ -221,5 +222,64 @@ describe("peekDungeonSession", () => {
       fakeLevel("F1"),
     ]);
     expect(peekDungeonSession("d")).toBe(session);
+  });
+});
+
+describe("instance-keyed mutations survive a floor re-mount (regression)", () => {
+  // Regression for "defeated dungeon monsters reappear after leaving
+  // and returning." Floor mutations are WRITTEN under the per-placement
+  // instance id, but the floor re-mount path read them back keyed by
+  // the bare dungeon RECORD id. Since the instance id folds in the
+  // entrance cell, the two never match in normal play, so the re-mount
+  // got a fresh empty session and lost the defeated-encounter set.
+  // This pins the invariant: the same instance id that wrote the
+  // mutation reads it back, and the bare record id does NOT.
+  it("re-fetches the same session + mutations via the instance id", () => {
+    const dungeonId = "grotto";
+    const instanceId = dungeonInstanceKey({
+      dungeonId,
+      mapId: "shop_cavern",
+      col: 5,
+      row: 8,
+    });
+    const seed = 42;
+
+    // First mount: create the session under the instance id, record a
+    // defeated encounter on floor 0.
+    const created = getOrCreateDungeonSession(
+      instanceId,
+      seed,
+      () => [fakeLevel("F1"), fakeLevel("F2")],
+      dungeonId,
+    );
+    writeFloorMutations(created, 0, {
+      unlockedCells: new Set<string>(),
+      defeatedEncounters: new Set(["12,7"]),
+      destroyedLairs: new Set<string>(),
+    });
+
+    // Re-mount via the INSTANCE id (the host's fixed path): same
+    // session object, defeated set intact.
+    const reMount = getOrCreateDungeonSession(
+      instanceId,
+      seed,
+      () => {
+        throw new Error("should not regenerate — session must be reused");
+      },
+      dungeonId,
+    );
+    expect(reMount).toBe(created);
+    expect(
+      [...getFloorMutations(reMount, 0).defeatedEncounters],
+    ).toEqual(["12,7"]);
+
+    // The bare record id is a DIFFERENT key — the old (buggy) lookup.
+    // It must create a separate, empty session, proving the two ids
+    // are not interchangeable.
+    const wrong = getOrCreateDungeonSession(dungeonId, seed, () => [
+      fakeLevel("X"),
+    ]);
+    expect(wrong).not.toBe(created);
+    expect(getFloorMutations(wrong, 0).defeatedEncounters.size).toBe(0);
   });
 });

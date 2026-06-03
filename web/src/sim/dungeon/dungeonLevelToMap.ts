@@ -26,10 +26,15 @@ import {
 } from "@/battle/world/Tiles";
 import {
   TILE_CHEST,
+  TILE_DWALL,
   TILE_STAIRS,
   TILE_STAIRS_DOWN,
 } from "@/battle/world/Dungeon";
-import { TILE_DFLOOR } from "@/battle/world/Tiles";
+import {
+  TILE_DFLOOR,
+  TILE_PATH,
+  TILE_MOUNTAIN,
+} from "@/battle/world/Tiles";
 import type { DungeonLevel, DungeonStyle } from "@/battle/world/Dungeon";
 import { prototypeForTileId, type DungeonTilePrototype } from "./tileMapping";
 
@@ -73,6 +78,14 @@ export interface DungeonLevelToMapOptions {
    *  stairs-down link to the next floor or to the overworld (bottom-
    *  floor exit). */
   totalFloors: number;
+  /** `map_tiles` palette id → sprite path. Only consulted for
+   *  `style: "custom"` floors, where the level's `customFloor` /
+   *  `customWall` palette ids resolve to the sprites painted on the
+   *  generic carved floor / wall cells. Absent (or a missing id) falls
+   *  back to the ruins floor/wall sprite, so a custom dungeon whose
+   *  palette ids don't resolve still renders as a playable stone
+   *  dungeon rather than blank. */
+  customTileSprites?: ReadonlyMap<string, string>;
 }
 
 /** Convert one floor. The output grid is `[row][col]` to match the
@@ -84,6 +97,21 @@ export function dungeonLevelToMap(
   const { dungeonId, floorIdx, totalFloors } = opts;
   const style: DungeonStyle = level.style;
   const grid: DungeonMapCell[][] = [];
+
+  // For custom-style floors, resolve the author's chosen palette ids to
+  // sprite paths once. The generator carved generic TILE_DFLOOR /
+  // TILE_DWALL, so every floor/wall cell below gets its sprite swapped
+  // to one of these and its walkability/sight flags FORCED (floor =
+  // walkable + transparent, wall = blocking + opaque) — that force is
+  // what guarantees a solvable, occlusion-correct layout regardless of
+  // the palette tile's own authored flags.
+  const isCustom = style === "custom";
+  const customFloorSprite = isCustom
+    ? opts.customTileSprites?.get(level.customFloor ?? "")
+    : undefined;
+  const customWallSprite = isCustom
+    ? opts.customTileSprites?.get(level.customWall ?? "")
+    : undefined;
 
   // The generator's tile grid carries a few "buffer" rows past the
   // declared height (see Dungeon.ts: `const BUFFER = 3;`). We respect
@@ -112,6 +140,24 @@ export function dungeonLevelToMap(
       const base: DungeonMapCell = proto
         ? cloneProto(proto)
         : cloneProto(prototypeForTileId(0, style) ?? FALLBACK_WALL);
+      // Custom-style palette swap. `lookupId` (not `tileId`) is used for
+      // the floor test so a chest cell — which renders on a floor base —
+      // also picks up the custom floor sprite under its chest overlay.
+      // Walls test `tileId` directly. Furniture (doors, stairs, chest
+      // overlay, traps) keeps its own sprite; the user opted to leave
+      // those alone. Flags are forced regardless of the palette tile's
+      // authored walkable/obstructs so the layout stays solvable.
+      if (isCustom) {
+        if (lookupId === TILE_DFLOOR || lookupId === TILE_PATH) {
+          if (customFloorSprite) base.sprite = customFloorSprite;
+          base.walkable = true;
+          base.obstructs = false;
+        } else if (tileId === TILE_DWALL || tileId === TILE_MOUNTAIN) {
+          if (customWallSprite) base.sprite = customWallSprite;
+          base.walkable = false;
+          base.obstructs = true;
+        }
+      }
       // A trap that's already been triggered in this dungeon session
       // is just floor now — disarm the cell so it doesn't re-fire on
       // re-mount. The TRAP_PROTO already paints the floor sprite, so
@@ -127,6 +173,14 @@ export function dungeonLevelToMap(
         base.id = "chest";
         base.name = "Chest";
         base.placedItemSprite = "map/chest_tile.png";
+        // Bind the cell to the configured chest ITEM so the kernel's
+        // bump pipeline fires `chest_encountered` (the item is
+        // authored `is_chest: true`) and the party gets its real
+        // `contents` on Open — the same flow painted-map chests use.
+        // `level.chestItem` is empty only on legacy levels generated
+        // before loot config; those fall back to a contents-less chest
+        // overlay exactly as before.
+        if (level.chestItem) base.item = level.chestItem;
       }
       patchStairsLink(base, tileId, dungeonId, floorIdx, totalFloors);
       patchTileProperties(base, level, c, r);

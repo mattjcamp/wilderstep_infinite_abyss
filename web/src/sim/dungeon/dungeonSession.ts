@@ -51,6 +51,12 @@ export interface FloorMutationState {
   unlockedCells: Set<string>;
   defeatedEncounters: Set<string>;
   destroyedLairs: Set<string>;
+  /** "col,row" of cells whose item the party has collected on this
+   *  floor — opened chests + any walk-onto pickups. Without this, a
+   *  dungeon chest re-derives from the level grid on floor re-entry
+   *  and re-appears (the same respawn class as the defeated-encounter
+   *  bug). Optional in older sessions; treated as empty when absent. */
+  pickedItemCells: Set<string>;
 }
 
 /** One dungeon's full session — the generated floor data + each
@@ -146,6 +152,7 @@ export function getFloorMutations(
     unlockedCells: new Set(),
     defeatedEncounters: new Set(),
     destroyedLairs: new Set(),
+    pickedItemCells: new Set(),
   };
   session.floors.set(floorIdx, fresh);
   return fresh;

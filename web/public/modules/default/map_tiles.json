@@ -879,6 +879,57 @@
       "spawn": null,
       "sprite": "map/tower_2.png",
       "tag": "building"
+    },
+    {
+      "boat": false,
+      "boat_passable": false,
+      "id": "tower_2",
+      "name": "Tower Two",
+      "walkable": true,
+      "obstructs": true,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": null,
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "map/L2_Tower.png",
+      "tag": "building"
+    },
+    {
+      "boat": false,
+      "boat_passable": false,
+      "id": "tree_1",
+      "name": "Tree",
+      "walkable": true,
+      "obstructs": true,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": null,
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "map/L2_TreeMaple01.png",
+      "tag": "outdoor"
+    },
+    {
+      "boat": false,
+      "boat_passable": false,
+      "id": "relic_chest",
+      "name": "Relic",
+      "walkable": false,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": null,
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "item/relic_chest.png",
+      "tag": "indoor"
     }
   ]
 }
