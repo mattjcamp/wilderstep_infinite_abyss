@@ -69,12 +69,24 @@ export interface DungeonLevelRecord {
    *  doors always — so existing dungeons are unchanged). `0` = an open
    *  layout with no doorframes. */
   doors?: number;
+  /** When `true`, the floor's entrance + exit transitions are placed at
+   *  the map EDGE (carving a short trail inward, like the forest style);
+   *  when `false` they're dropped in the interior rooms (like caves /
+   *  ruins). Absent inherits the parent, which itself defaults to
+   *  edge-placement only for the `"forest"` style — so existing
+   *  dungeons are unchanged. */
+  edge_transitions?: boolean;
   /** `map_tiles` palette id for the walkable floor sprite. Only read
    *  when the resolved `style` is `"custom"`. */
   custom_floor?: string;
   /** `map_tiles` palette id for the wall sprite (forced blocking +
    *  sight-obstructing). Only read when `style` is `"custom"`. */
   custom_wall?: string;
+  /** `map_tiles` palette id whose sprite renders the up / down floor
+   *  transitions ("stairs") in a `"custom"` dungeon — purely cosmetic,
+   *  the link + walkability are unchanged. Ignored for other styles. */
+  custom_stairs_up?: string;
+  custom_stairs_down?: string;
   /** Loot override — a Level inherits the parent's `loot` when this
    *  is absent. A partial object (e.g. only `chest_frequency`) merges
    *  field-by-field over the parent's. */
@@ -101,12 +113,22 @@ export interface DungeonRecord {
    *  `1` = doors always, preserving historical layouts). `0` = no
    *  doors. Applies to every style; Levels override per-floor. */
   doors?: number;
+  /** Place entrance + exit transitions at the map edge (`true`) or in
+   *  interior rooms (`false`). Applies to every style; Levels override
+   *  per-floor. Absent → the style default (edge only for `"forest"`),
+   *  so existing dungeons keep their current placement. */
+  edge_transitions?: boolean;
   /** `map_tiles` palette id for the floor sprite when `style` is
    *  `"custom"`. Ignored for other styles. */
   custom_floor?: string;
   /** `map_tiles` palette id for the wall sprite when `style` is
    *  `"custom"`. Ignored for other styles. */
   custom_wall?: string;
+  /** `map_tiles` palette ids for the up / down transition ("stairs")
+   *  sprites when `style` is `"custom"`. Cosmetic only. Levels override
+   *  per-floor. Ignored for other styles. */
+  custom_stairs_up?: string;
+  custom_stairs_down?: string;
   /** Default loot for every floor (Levels override per-floor). Absent
    *  → no procedural chests anywhere in the dungeon unless a Level
    *  sets its own `loot.chest_item`. */
@@ -149,12 +171,20 @@ export interface ResolvedLevelOptions {
   /** 0–1 probability each eligible room opening gets a door. Defaults
    *  to {@link DUNGEON_DEFAULTS.doors} (`1`). */
   doorFrequency: number;
+  /** Resolved entrance/exit placement: `true` = map edge, `false` =
+   *  interior rooms. The resolver fills the style-dependent default
+   *  (edge for `"forest"`, rooms otherwise). */
+  edgeTransitions: boolean;
   /** `map_tiles` palette id for the floor sprite — only meaningful
    *  when `style` is `"custom"`. Empty string otherwise. */
   customFloor: string;
   /** `map_tiles` palette id for the wall sprite — only meaningful when
    *  `style` is `"custom"`. Empty string otherwise. */
   customWall: string;
+  /** `map_tiles` palette ids for the up / down transition sprites —
+   *  only meaningful when `style` is `"custom"`. Empty otherwise. */
+  customStairsUp: string;
+  customStairsDown: string;
 }
 
 /** Editor-default fallbacks used when a required parent field is
@@ -172,9 +202,11 @@ export const DUNGEON_DEFAULTS = {
   doors: 1,
   /** Custom-style palette ids. Empty by default; the editor requires
    *  the author to pick real `map_tiles` ids when `style` is
-   *  `"custom"`. */
+   *  `"custom"`. Empty transition ids keep the default stairs sprites. */
   custom_floor: "",
   custom_wall: "",
+  custom_stairs_up: "",
+  custom_stairs_down: "",
   /** Loot defaults. `chest_item` is empty by design — chests are
    *  opt-in, so a brand-new dungeon places none until the author
    *  picks a chest item. `chest_frequency` is the fallback rate used
