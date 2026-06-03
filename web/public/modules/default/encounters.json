@@ -1197,6 +1197,21 @@
         "mind_flayer"
       ],
       "custom_map": null
+    },
+    {
+      "id": "spiders",
+      "area": "woods",
+      "name": "Spider Swarm",
+      "level": 2,
+      "weight": 2,
+      "monster_party_tile": "monster/spider_black.png",
+      "monsters": [
+        "spider",
+        "spider",
+        "spider",
+        "giant_rat"
+      ],
+      "custom_map": "outdoor_arena"
     }
   ]
 }
