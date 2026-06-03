@@ -157,6 +157,84 @@
         "xp": 250,
         "gold": 250
       }
+    },
+    {
+      "id": "explore_a_dark_forest",
+      "name": "Explore a Dark Forest",
+      "description": "",
+      "tags": [],
+      "steps": [
+        {
+          "id": "explore_a_dark_forest_step_1",
+          "name": "Explore the Dark Forest",
+          "kind": "reach",
+          "dungeon_id": "dark_wood"
+        }
+      ],
+      "quest_giver": {
+        "npc_name": "Barbarian",
+        "npc_sprite": "person/barbarian_mage.png",
+        "start_dialog": "I have heard that there is a forest just north of us with great treasure lurking in the shadows. Can you help map out the dark forest?",
+        "end_dialog": "This is amazing, I had no idea how far the forest reached. You will be rewarded."
+      },
+      "rewards": {
+        "xp": 250,
+        "gold": 250
+      }
+    },
+    {
+      "id": "pirates",
+      "name": "Pirates in Hollowmere",
+      "description": "",
+      "tags": [],
+      "steps": [
+        {
+          "id": "pirates_step_2",
+          "name": "Rescue the Tavern Goers",
+          "kind": "kill",
+          "location_kind": "map",
+          "encounter_id": "spiders",
+          "map_id": "hallomere_inn_main"
+        },
+        {
+          "id": "pirates_step_3",
+          "name": "Stop the Raiders in Hallowmere",
+          "kind": "kill",
+          "encounter_id": "pirates",
+          "location_kind": "map",
+          "map_id": "hollowmere_town",
+          "positions": [
+            {
+              "col": 13,
+              "row": 11
+            }
+          ]
+        },
+        {
+          "id": "pirates_step_3",
+          "name": "Destroy the Pirate Hideout",
+          "kind": "kill",
+          "encounter_id": "pirates",
+          "count": 2,
+          "positions": [
+            {
+              "col": 2,
+              "row": 14
+            }
+          ],
+          "location_kind": "map",
+          "map_id": "hallowmere_inn_basement"
+        }
+      ],
+      "quest_giver": {
+        "npc_name": "Jester Jim",
+        "npc_sprite": "person/townsperson13.png",
+        "start_dialog": "What's happening with these pirate raids? And in Hallowmere of all places. My entire troop was robbed by pirates right over there in that lake! I don't know where they are coming from, but I suspect it's that unsavory inn. ",
+        "end_dialog": "You are my true hero, I will somersault back to my place and get the rest my troop. The town owes you a debt, but that's not something I can pay out. bye bye!"
+      },
+      "rewards": {
+        "xp": 250
+      }
     }
   ]
 }

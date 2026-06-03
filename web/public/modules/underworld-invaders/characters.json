@@ -1,0 +1,111 @@
+{
+  "characters": [
+    {
+      "id": "aldric",
+      "name": "Aldric",
+      "class": "fighter",
+      "race": "dwarf",
+      "gender": "Male",
+      "level": 1,
+      "exp": 0,
+      "hp": 14,
+      "mp": 6,
+      "strength": 17,
+      "dexterity": 7,
+      "constitution": 14,
+      "intelligence": 8,
+      "wisdom": 13,
+      "sprite": "person/fighter14.png",
+      "equipped": {
+        "hands": "club",
+        "body": "cloth"
+      },
+      "inventory": []
+    },
+    {
+      "id": "legolas",
+      "name": "Legolas",
+      "class": "thief",
+      "race": "elf",
+      "gender": "Male",
+      "level": 1,
+      "exp": 0,
+      "hp": 10,
+      "mp": 4,
+      "strength": 7,
+      "dexterity": 17,
+      "constitution": 10,
+      "intelligence": 10,
+      "wisdom": 12,
+      "sprite": "person/ranger1.png",
+      "equipped": {
+        "hands": "club",
+        "body": "cloth"
+      },
+      "inventory": []
+    },
+    {
+      "id": "selina",
+      "name": "Selina",
+      "class": "cleric",
+      "race": "human",
+      "gender": "Female",
+      "level": 1,
+      "exp": 0,
+      "hp": 8,
+      "mp": 14,
+      "strength": 8,
+      "dexterity": 11,
+      "constitution": 10,
+      "intelligence": 8,
+      "wisdom": 18,
+      "sprite": "person/cleric1.png",
+      "equipped": {
+        "hands": "club",
+        "body": "cloth"
+      },
+      "inventory": []
+    },
+    {
+      "id": "elminster",
+      "name": "Elminster",
+      "class": "wizard",
+      "race": "gnome",
+      "gender": "Male",
+      "level": 1,
+      "exp": 0,
+      "hp": 6,
+      "mp": 20,
+      "strength": 7,
+      "dexterity": 10,
+      "constitution": 11,
+      "intelligence": 20,
+      "wisdom": 9,
+      "sprite": "person/wizard6.png",
+      "equipped": {
+        "hands": "club",
+        "body": "cloth"
+      },
+      "inventory": []
+    },
+    {
+      "id": "test",
+      "name": "test",
+      "class": "fighter",
+      "race": "human",
+      "gender": "Male",
+      "level": 1,
+      "exp": 0,
+      "hp": 14,
+      "mp": 0,
+      "strength": 18,
+      "dexterity": 13,
+      "constitution": 8,
+      "intelligence": 8,
+      "wisdom": 8,
+      "sprite": "person/FemaleDruid01.png",
+      "equipped": {},
+      "inventory": []
+    }
+  ]
+}

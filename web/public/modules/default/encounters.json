@@ -1212,6 +1212,23 @@
         "giant_rat"
       ],
       "custom_map": "outdoor_arena"
+    },
+    {
+      "id": "pirates",
+      "area": "outdoors",
+      "name": "Pirate Raiders",
+      "level": 3,
+      "weight": 20,
+      "monster_party_tile": "monster/lark_f2.png",
+      "monsters": [
+        "pirate",
+        "pirate",
+        "pirate",
+        "pirate",
+        "hydra"
+      ],
+      "custom_map": "default_battle_arena",
+      "tags": null
     }
   ]
 }
