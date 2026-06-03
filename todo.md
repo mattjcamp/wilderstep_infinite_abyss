@@ -1,13 +1,11 @@
 
 # Playthrough Polish
 
-- Dial in LOS, Fog of War, Tile Reveal
-- Move Begin button to top with the create new character
 
 ## Big Ideas
 
+- Relic system: some dungeons have a relic chest somewhere in their deepest level that grants the party one available relic. Relics are powerful one of a kind weapons, new spells otherwise unavailable in any other way (way to get high level spells after level 10) or bestowing magical abilities. Note we have a "relic chest defined already in items". These should be rare but appear enough to provide some progress for high level classes.
 - New Puzzle system (presure plates that open doors, etc)
-- Key system (certain keys open certain doors, party gets a keyring)
 - More Robust Trap System: Traps data model, explosive, poison, teleporting. Traps should now be placeable directly on the map
 - Better Save Game functionality
 - Make module publishing available

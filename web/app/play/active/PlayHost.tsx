@@ -489,6 +489,12 @@ interface PlayMapRecord {
    *  torches throw real light pools, "day" / "twilight" lock the
    *  ambient brightness. Surfaced via the Map Properties dialog. */
   lighting?: "day" | "twilight" | "darkness";
+  /** Whether fog-of-war applies on this map. Absent → true (default).
+   *  `false` (set via the Map Properties dialog) reveals the whole
+   *  map on entry — used for shops / small interiors. Independent of
+   *  `lighting`: turning fog off doesn't change ambient brightness,
+   *  only the explored / unexplored (cloud) gating. */
+  fog_of_war?: boolean;
   /** Optional per-map background-music playlist. Each entry is an
    *  audio file URL. When present + non-empty, this list overrides
    *  the module-level default while the party is on this map;
@@ -1373,6 +1379,10 @@ export function PlayHost() {
             unlockedCells: new Set(f.state.unlockedCells),
             defeatedEncounters: new Set(f.state.defeatedEncounters),
             destroyedLairs: new Set(f.state.destroyedLairs),
+            pickedItemCells: new Set(
+              (f.state as { pickedItemCells?: ReadonlyArray<string> })
+                .pickedItemCells ?? [],
+            ),
           });
         }
         dungeonStateRef.current = {
@@ -1995,6 +2005,12 @@ export function PlayHost() {
             // overworld and dungeon mounts (dungeon catalog inherits
             // this field via buildDungeonCatalog's spread).
             sightRadiusByMode: catalog.sightRadius,
+            // Per-map fog-of-war toggle. Default on; a map authored
+            // with `fog_of_war: false` (shops, small interiors) reveals
+            // fully on entry. Dungeons keep fog (the field is absent on
+            // the synthetic dungeon map, so this reads true). Lighting
+            // is unaffected — only the explored / cloud gating.
+            fogEnabled: catalog.map.fog_of_war !== false,
             // Tint + visibility for the PlayScene-managed overlays
             // (items, quest givers, NPCs). These are the "static"
             // layer above the cell sprites — distinct from the
@@ -2844,9 +2860,19 @@ export function PlayHost() {
           const dungeonMutations = dungeonNow
             ? getFloorMutations(
                 getOrCreateDungeonSession(
-                  dungeonNow.dungeonId,
+                  // Sessions are keyed by the per-placement INSTANCE id,
+                  // not the bare dungeon record id. Using `dungeonId`
+                  // here looked up (and created) a different, empty
+                  // session, so floor mutations written under the
+                  // instance id — defeated encounters, picked locks —
+                  // were lost on floor re-entry and monsters respawned.
+                  // Match the write-back path (peekDungeonSession uses
+                  // instanceId) and pass the record id through the
+                  // 4th param so a fresh session still tags correctly.
+                  dungeonNow.instanceId,
                   dungeonNow.seed,
                   () => dungeonNow.levels,
+                  dungeonNow.dungeonId,
                 ),
                 dungeonNow.floorIdx,
               )
@@ -2954,7 +2980,12 @@ export function PlayHost() {
               dungeonMutations?.destroyedLairs ?? initialDestroyedLairs,
             initialAcceptedQuests: new Set(save.acceptedQuests ?? []),
             initialBoatPositions,
-            initialPickedItemCells,
+            // In a dungeon, opened-chest / collected-item state lives
+            // on the floor mutation snapshot (keyed per instance+floor),
+            // not the overworld map's pickedItemCells — so prefer it so
+            // dungeon chests stay opened on floor re-entry.
+            initialPickedItemCells:
+              dungeonMutations?.pickedItemCells ?? initialPickedItemCells,
             initialOnBoat: save.party.onBoat,
             initialCurrentBoatSprite: save.party.currentBoatSprite,
             questDefs,
@@ -3641,6 +3672,9 @@ export function PlayHost() {
                     unlockedCells: new Set(snap.unlockedCells),
                     defeatedEncounters: new Set(snap.defeatedEncounters),
                     destroyedLairs: new Set(snap.destroyedLairs),
+                    // Opened chests + collected items — without this a
+                    // dungeon chest re-appears on floor re-entry.
+                    pickedItemCells: new Set(snap.pickedItemCells),
                   });
                   // Fog-of-war write-back — copy the renderer's live
                   // visited set into the floor's exploredTiles so
@@ -3769,13 +3803,36 @@ export function PlayHost() {
 
     /** Push a log line for each spelunking reach-step that just
      *  credited on a floor arrival. No-op when nothing credited. */
-    function logReachCredits(credited: string[]) {
+    function logReachCredits(credited: ReachCredit[]) {
       if (credited.length === 0) return;
+      // Log strip — survives the placard fade-out.
       setLogMessages((prev) => {
-        const lines = credited.map((name) => `Spelunking: ${name}.`);
+        const lines = credited.map((c) => `Spelunking: ${c.stepName}.`);
         const next = [...prev, ...lines];
         return next.length > MAX_LOG ? next.slice(next.length - MAX_LOG) : next;
       });
+      // Celebration placard(s) — the reach path was the only credit
+      // flow NOT firing these, so spelunking steps credited silently
+      // (the log + quest log updated, but no popup). Mirror the kill /
+      // retrieve behaviour: a `step` placard per credited reach step,
+      // or `step-final` (brighter halo + "Return to {giver}") when the
+      // arrival closed out the quest's last step.
+      for (const c of credited) {
+        const def = questDefsRef.current.find((d) => d.id === c.questId);
+        if (c.questCompleted) {
+          fireQuestCelebration({
+            kind: "step-final",
+            title: def?.name ?? c.questId,
+            subtitle: returnToGiverSubtitle(def?.questGiver?.npcName),
+          });
+        } else {
+          fireQuestCelebration({
+            kind: "step",
+            title: def?.name ?? c.questId,
+            subtitle: c.stepName,
+          });
+        }
+      }
     }
 
     /** Resolve a dungeon record's catalog id, generate its levels
@@ -5792,6 +5849,7 @@ function snapshotDungeonForSave(
         unlockedCells: Array.from(state.unlockedCells),
         defeatedEncounters: Array.from(state.defeatedEncounters),
         destroyedLairs: Array.from(state.destroyedLairs),
+        pickedItemCells: Array.from(state.pickedItemCells ?? []),
       },
     }),
   );
@@ -6003,11 +6061,24 @@ function creditKillStep(
  * Returns the (possibly unchanged) save plus the display names of any
  * steps that just credited, so the host can surface a log line.
  */
+/** One reach step that just credited — carries enough for both the
+ *  log strip and the celebration placard (which the kill / retrieve
+ *  paths already fire, and the reach path was missing). */
+interface ReachCredit {
+  questId: string;
+  /** Display name of the step (or a "Floor N" fallback). */
+  stepName: string;
+  /** True when crediting this step completed the quest's final step —
+   *  drives the `step-final` "Return to {giver}" placard variant, same
+   *  as kill / retrieve. */
+  questCompleted: boolean;
+}
+
 function creditReachStep(
   save: WorldSave,
   dungeon: { dungeonId: string; floorIdx: number } | null,
   quests: ReadonlyArray<SimQuestRef>,
-): { save: WorldSave; credited: string[] } {
+): { save: WorldSave; credited: ReachCredit[] } {
   if (!dungeon) return { save, credited: [] };
   const accepted = save.acceptedQuests ?? [];
   if (accepted.length === 0) return { save, credited: [] };
@@ -6015,7 +6086,7 @@ function creditReachStep(
   const progress: Record<string, number> = {
     ...(save.questStepProgress ?? {}),
   };
-  const credited: string[] = [];
+  const credited: ReachCredit[] = [];
   let changed = false;
   // Expanded reach steps carry a 1-based `dungeon_level`; floorIdx is
   // 0-based, so the arrived level is floorIdx + 1.
@@ -6042,8 +6113,15 @@ function creditReachStep(
     ) {
       continue;
     }
-    progress[questId] = activeIdx + 1;
-    credited.push(step.name || `Floor ${arrivedLevel}`);
+    const nextIdx = activeIdx + 1;
+    progress[questId] = nextIdx;
+    credited.push({
+      questId,
+      stepName: step.name || `Floor ${arrivedLevel}`,
+      // Reach steps advance the linear cursor; the quest is complete
+      // when that cursor reaches past the last step.
+      questCompleted: steps.length > 0 && nextIdx >= steps.length,
+    });
     changed = true;
   }
   if (!changed) return { save, credited: [] };

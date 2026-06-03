@@ -155,6 +155,15 @@ export interface WorldRendererConfig {
    *  so a torch always reveals at least its own pool regardless of
    *  the mode floor. */
   sightRadiusByMode?: Partial<Record<LightingMode, number>>;
+  /** Whether fog-of-war applies on this surface. Defaults to `true`.
+   *  When `false` the renderer never grows or paints the remembered /
+   *  unexplored bands (and the cloud-cover layer stays hidden) — the
+   *  whole map renders at its current lighting with no exploration
+   *  gating. Authors flip this off per-map (e.g. shop interiors)
+   *  via the Map Properties dialog so a small, already-"known" space
+   *  isn't needlessly clouded. Lighting (day/twilight/night, torches,
+   *  infravision) is unaffected — only the fog bands switch off. */
+  fogEnabled?: boolean;
   /** Hook fired after each relight pass — receives the shared
    *  LightingResult so callers can tint their own overlays in sync.
    *  Use `tintForCell(result, col, row)` (re-exported from this
@@ -285,6 +294,14 @@ export class WorldRenderer {
    *  this is a floor, not a cap. */
   sightRadiusByMode: Partial<Record<LightingMode, number>> = {};
 
+  /** Whether fog-of-war applies on this surface (default true). When
+   *  false the relight pass passes `rememberedCells: null` to the
+   *  lighting helper, so no cell is ever flagged remembered or
+   *  unexplored, the visited set never grows, and the cloud-cover
+   *  layer stays hidden. Per-map authored via the Map Properties
+   *  dialog — e.g. a shop interior turns it off. */
+  fogEnabled = true;
+
   /** Fog-of-war "visited cells" memory — every `"col,row"` the party
    *  has ever seen on this surface. Hosts seed it from persisted save
    *  state and call `setVisitedCells` whenever the set replaces
@@ -317,6 +334,7 @@ export class WorldRenderer {
     this.partyInfravisionActive = !!cfg.initialInfravisionActive;
     this.lightingMode = cfg.initialLightingMode ?? "night";
     this.sightRadiusByMode = cfg.sightRadiusByMode ?? {};
+    this.fogEnabled = cfg.fogEnabled ?? true;
     this.onRelightHook = cfg.onRelight;
   }
 
@@ -723,6 +741,17 @@ export class WorldRenderer {
     this.relight();
   }
 
+  /** Toggle fog-of-war for the current surface + relight. Hosts
+   *  normally set this once via the config at construction (from the
+   *  map's `fog_of_war` flag); this setter exists for parity with
+   *  `setLightingMode` and for any live toggle (e.g. an editor preview
+   *  switch). No-ops when unchanged. */
+  setFogEnabled(enabled: boolean): void {
+    if (this.fogEnabled === enabled) return;
+    this.fogEnabled = enabled;
+    this.relight();
+  }
+
   /** Replace the fog-of-war visited set wholesale. Hosts call this on
    *  map swap / dungeon-floor change to seed the renderer with the
    *  persisted set for the new surface. Triggers a relight so the
@@ -773,10 +802,14 @@ export class WorldRenderer {
       mode: this.lightingMode,
       // Fog-of-war remembrance — only meaningful with a party on the
       // surface (paint-mode previews don't have a party to "have
-      // seen" anything). Skipping the set when `hasParty` is false
-      // keeps the editor's idle painting view rendering exactly as
-      // before this change.
-      rememberedCells: this.hasParty ? this.visitedCells : null,
+      // seen" anything) AND when fog is enabled for this map. A map
+      // with `fogEnabled === false` (e.g. a shop) passes null so the
+      // helper never flags remembered / unexplored cells — the whole
+      // map renders at its lighting with no exploration gating and no
+      // cloud cover. Skipping the set when `hasParty` is false keeps
+      // the editor's idle painting view rendering as before.
+      rememberedCells:
+        this.hasParty && this.fogEnabled ? this.visitedCells : null,
       // Exploration reveal radius for the fog-of-war memory. Take the
       // larger of the module-configured (or default) per-mode radius
       // and the party's emitted light range, so a torch / Magic Light

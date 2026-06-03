@@ -31,21 +31,28 @@ The "Used?" column reflects the v2 TypeScript implementation under `web/`. The c
 | `name` | string | yes | Display name shown when the party enters | TBD |
 | `description` | string | no | Flavor text shown on entry or in a quest log | TBD |
 | `tags` | string[] | no | Editor-side organizational labels (e.g. `["main_story", "act_1"]`). Same convention as [Map](map.md) `tags`; gameplay doesn't read them. | TBD |
-| `style` | string | yes | Visual / thematic family the generator uses to pick a tile palette and decor. Closed enum: `"caves"`, `"ruins"`, `"forest"`. | TBD |
+| `style` | string | yes | Visual / thematic family the generator uses to pick a tile palette and decor. Closed enum: `"caves"`, `"ruins"`, `"forest"`, `"custom"`. `"custom"` carves an ordinary rooms-and-corridors dungeon but paints the floor and walls with two author-chosen [Map Tile](map_tile.md) palette entries (see `custom_floor` / `custom_wall`). | TBD |
 | `difficulty` | string | yes | Difficulty tier. Same enum as [Monster](monster.md) `difficulty`: `"easy"`, `"normal"`, `"hard"`, `"deadly"`, `"boss"`. Drives the encounter pool the generator samples from. | TBD |
 | `size` | `{ width: int, height: int }` | yes | Tile dimensions for each generated floor (default; per-level overrides allowed). | TBD |
 | `torch_density` | number (0–1) | yes | Probability that an eligible wall tile carries a torch. `0` = pitch dark, `1` = every wall lit. Drives ambient brightness. | TBD |
-| `locked_doors` | number (0–1) | yes | Probability that an interior door is locked. Pairs with the Thief / Ranger Pick Locks ability and the Knock spell. | TBD |
+| `locked_doors` | number (0–1) | yes | Probability that an interior door is locked. Pairs with the Thief / Ranger Pick Locks ability and the Knock spell. Only doors that `doors` actually placed can be locked, so a low `doors` value caps how many locks can appear. | TBD |
+| `doors` | number (0–1) | no | Probability that each eligible room opening gets a door. Defaults to `1` (doors always — the historical behaviour, so existing dungeons are unchanged). `0` leaves an open layout with no doorframes (e.g. a doorless forest); in-between rolls per opening. Applies to every style. | TBD |
+| `custom_floor` | string | no | When `style` is `"custom"`, the [Map Tile](map_tile.md) palette id whose sprite paints every walkable floor cell. The floor is **forced** walkable + non-sight-blocking regardless of the tile's own flags. Ignored for other styles. An unresolved id falls back to the stone-dungeon floor sprite. | TBD |
+| `custom_wall` | string | no | When `style` is `"custom"`, the [Map Tile](map_tile.md) palette id whose sprite paints every wall cell. The wall is **forced** non-walkable + sight-blocking (guaranteeing a solvable, occlusion-correct layout) regardless of the tile's own flags. Ignored for other styles. Unresolved ids fall back to the stone-dungeon wall sprite. | TBD |
+| `loot` | `{ chest_item?: string, chest_frequency?: number }` | no | Procedural loot chests. `chest_item` is the id of an item authored with `is_chest: true` (its `contents` are what the party finds on open); `chest_frequency` (0–1) is the per-room chance a chest is placed. **Chests are opt-in** — with no `loot.chest_item`, no chests generate. When an item is set but `chest_frequency` is omitted it defaults to `0.5`. | TBD |
 | `levels` | object[] | yes | Ordered list of inline [Dungeon Level](dungeon_level.md) records; index 0 is the entrance floor, deeper floors follow. Each Level may override any of the parent's parameters for floor-by-floor variation. | TBD |
 
 ## Inheritance into Levels
 
-Every Level inherits its parent Dungeon's parameter values by default. A Level may set any subset of `style`, `difficulty`, `size`, `torch_density`, `locked_doors` to override per floor. Examples of why you'd override:
+Every Level inherits its parent Dungeon's parameter values by default. A Level may set any subset of `style`, `difficulty`, `size`, `torch_density`, `locked_doors`, `doors`, `custom_floor`, `custom_wall`, `loot` to override per floor. `loot` merges field-by-field — a Level that sets only `loot.chest_frequency` keeps the parent's `chest_item`. A Level can opt out of chests on one floor with `loot: { chest_item: "" }`. Examples of why you'd override:
 
 - The final floor is a `"boss"` difficulty floor inside an otherwise `"hard"` dungeon.
 - A side wing changes `style` from `"caves"` to `"ruins"` for one floor.
 - The bottom floor has `torch_density: 0` for the climactic dark encounter.
 - The treasury floor sets `locked_doors: 1` so every door is locked.
+- A surface "forest" floor sets `doors: 0` so its archways aren't blocked by doorframes, while deeper floors keep the default.
+- A `"custom"` dungeon overrides `custom_wall` on one floor to swap a hedge wall for a stone wall mid-descent.
+- The deepest floor sets a richer `loot.chest_item` (or a higher `chest_frequency`) than the upper floors.
 
 An undefined / missing field on a Level means "use the Dungeon's value" — there's no separate `inherited: true` marker.
 
@@ -98,7 +105,7 @@ In this example, L1 inherits everything from the parent; L2 overrides size + loc
 
 - **Procedural, not authored.** Earlier drafts framed Dungeons as hand-painted multi-floor maps. The model pivoted to procedural generation; the previous [Dungeon Config](dungeon_config.md) model is now superseded by this one.
 - **Levels are inline, not a separate catalog.** No other record references a Dungeon Level by global id, so the children live as inline objects under their parent.
-- **`style` is a closed enum today.** Values are `"caves"`, `"ruins"`, `"forest"`. Add new values here (and in `DungeonsBrowse`'s dropdown) when the generator gains support for additional themes.
+- **`style` is a closed enum today.** Values are `"caves"`, `"ruins"`, `"forest"`, `"custom"`. Add new values here (and in `DungeonsBrowse`'s dropdown) when the generator gains support for additional themes. `"custom"` is the author-driven escape hatch: rather than a fixed palette, it renders the floor/wall from the two `map_tiles` ids in `custom_floor` / `custom_wall` (doors, stairs and chests keep their default art). Floor/wall walkability and sight-blocking are forced by the generator, so a custom dungeon is always solvable regardless of the chosen tiles' own flags.
 - **`size` is fixed per generation.** No min/max range yet — every level either uses the inherited size or sets its own. Adding `{ min_width, max_width, ... }` for "random within a range" is a natural future extension.
 - **`difficulty: "boss"` is the boss-floor convention.** Matches Monster's note that `"boss"` is intentionally outside the random-encounter pool. A Level overriding to `"boss"` flags it as the final floor for generator/UI purposes.
 - **Schema is a stub.** Likely future additions: per-dungeon encounter table overrides, loot multiplier, scripted-event hooks for specific levels, seed/RNG knob.

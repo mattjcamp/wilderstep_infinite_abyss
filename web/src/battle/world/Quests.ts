@@ -30,6 +30,19 @@
  *               {@link expandSpelunkingQuests} fans it out into one
  *               reach step per floor of that dungeon.
  *
+ *               **Instance scope (intentional):** a reach step targets
+ *               the dungeon *record* (`dungeon_id`), NOT a specific
+ *               placement. When a dungeon record is planted at two map
+ *               entrances (two independent instances — own seed, layout,
+ *               and explored state, keyed by entrance cell via
+ *               `dungeonInstanceKey`), entering EITHER one credits the
+ *               step. This matches the step's purpose ("get the party
+ *               into a Grotto"), so it's by design rather than a gap.
+ *               The schema has no per-instance reach target; if a quest
+ *               ever needs "reach THIS Grotto specifically," that's a
+ *               future schema addition (optional entrance map+cell on
+ *               the step), not a behaviour the current model expresses.
+ *
  * **Location matching.** Use {@link matchesLocation} — it consumes a
  * {@link CombatLocation} (`{ kind, mapId | dungeonId, dungeonLevel? }`)
  * and a step's structured fields. The legacy string matcher was

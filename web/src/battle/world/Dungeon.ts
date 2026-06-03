@@ -75,7 +75,7 @@ const WALL_TILES: ReadonlySet<number> = new Set([
 // climactic floor inside an otherwise-deadly dungeon, set via a
 // Dungeon Level override.
 
-export type DungeonStyle = "caves" | "ruins" | "forest";
+export type DungeonStyle = "caves" | "ruins" | "forest" | "custom";
 export type Difficulty = "easy" | "normal" | "hard" | "deadly" | "boss";
 export type LevelSize = "small" | "medium" | "large";
 export type TorchDensity = "none" | "sparse" | "moderate" | "abundant";
@@ -229,6 +229,23 @@ export interface DungeonLevel {
    *  picks it up. Cleared per artifact on pickup so re-entry
    *  doesn't respawn the item. */
   questArtifacts: Record<string, { questName: string; stepIdx: number; itemName: string }>;
+  /** Item id (an `is_chest: true` item) that every TILE_CHEST cell on
+   *  this floor represents. Empty when the floor was generated with no
+   *  loot configured (no chests placed). The dungeon→map converter
+   *  stamps this onto each chest cell's `item` so the existing
+   *  chest-open / contents pipeline resolves real loot. */
+  chestItem: string;
+  /** For `style: "custom"` only — the `map_tiles` palette id whose
+   *  sprite renders every walkable floor cell (`customWall` for walls).
+   *  The generator still carves with the generic numeric
+   *  `TILE_DFLOOR`/`TILE_DWALL` (so doors, decorations and connectivity
+   *  logic are unchanged); the dungeon→map converter swaps in the
+   *  chosen palette sprite and *forces* floor = walkable/non-obstructing
+   *  and wall = blocking/sight-obstructing, guaranteeing a solvable
+   *  layout regardless of the palette tile's own flags. Empty string on
+   *  non-custom floors. */
+  customFloor?: string;
+  customWall?: string;
 }
 
 /**
@@ -376,13 +393,39 @@ const PASSABLE_FOR_DOORS: ReadonlySet<number> = new Set([
   TILE_FOREST_ARCHWAY_UP, TILE_FOREST_ARCHWAY_DOWN,
 ]);
 
+/** Tiles `placeDoors` may treat as a corridor opening (so a door can
+ *  form *next to* them) but must NEVER overwrite with a door. Stairs
+ *  and forest archways are placed BEFORE doors; a forest entrance /
+ *  descent archway carves a 1-wide trail from the map edge inward,
+ *  which looks exactly like a corridor mouth to `placeDoors` and was
+ *  getting clobbered with a door — silently destroying the only way
+ *  down on small forest maps. Keeping them in `PASSABLE_FOR_DOORS`
+ *  preserves connectivity; this set just protects the tile itself. */
+const STAIR_TILES_NO_DOOR: ReadonlySet<number> = new Set([
+  TILE_STAIRS,
+  TILE_STAIRS_DOWN,
+  TILE_FOREST_ARCHWAY_UP,
+  TILE_FOREST_ARCHWAY_DOWN,
+]);
+
 /**
  * Place doors flush against walls where corridors enter rooms. A
  * wall-ring tile becomes a door if it has been carved to floor, has a
  * cardinal neighbour inside the room, and is a 1-wide opening (walls
  * on both perpendicular sides).
+ *
+ * `doorProbability` (0..1) gates whether each eligible opening actually
+ * becomes a door — `1` places every door (the historical "doors are
+ * architectural" behaviour, the default), `0` places none (an open
+ * forest / cave with no doorframes at all), in between rolls per
+ * opening. Locked doors are a strict subset: `placeLockedDoors` runs
+ * after this and can only upgrade doors that were placed here, so a
+ * low door frequency naturally caps how many can be locked.
  */
-function placeDoors(g: Grid, rooms: Room[]): void {
+function placeDoors(g: Grid, rooms: Room[], doorProbability: number, rng: RNG): void {
+  // Fast exits: no doors at all, or every eligible opening (the common
+  // case) — skip the per-opening roll.
+  if (doorProbability <= 0) return;
   const allRoomTiles = new Set<string>();
   const roomTileSets: Set<string>[] = [];
   for (const room of rooms) {
@@ -411,6 +454,11 @@ function placeDoors(g: Grid, rooms: Room[]): void {
     for (const [wc, wr] of ring) {
       const t = getTile(g, wc, wr);
       if (!PASSABLE_FOR_DOORS.has(t)) continue;
+      // Never convert a stairs / archway cell into a door — doing so
+      // destroys the level transition (the bug that left small forest
+      // maps with no way down). The cell can still gate a door on a
+      // NEIGHBOURING opening; we just protect this one tile.
+      if (STAIR_TILES_NO_DOOR.has(t)) continue;
       if (allRoomTiles.has(`${wc},${wr}`)) continue;
       let connects = false;
       for (const [dc, dr] of [[0, -1], [0, 1], [-1, 0], [1, 0]] as const) {
@@ -419,7 +467,12 @@ function placeDoors(g: Grid, rooms: Room[]): void {
       if (!connects) continue;
       const hWalls = WALL_TILES.has(getTile(g, wc - 1, wr)) && WALL_TILES.has(getTile(g, wc + 1, wr));
       const vWalls = WALL_TILES.has(getTile(g, wc, wr - 1)) && WALL_TILES.has(getTile(g, wc, wr + 1));
-      if (hWalls || vWalls) setTile(g, wc, wr, TILE_DDOOR);
+      if (!(hWalls || vWalls)) continue;
+      // Per-opening frequency roll. `>= 1` short-circuits to always-on
+      // so the default path doesn't perturb the RNG stream (keeping
+      // existing seeds' layouts identical).
+      if (doorProbability < 1 && rng() >= doorProbability) continue;
+      setTile(g, wc, wr, TILE_DDOOR);
     }
   }
 }
@@ -685,11 +738,19 @@ function placeForestEdgeStairs(
   floor: number,
   wallTile: number,
   rng: RNG,
+  /** Bottom row the "south" edge anchors to. The generator works on a
+   *  grid padded with BUFFER throwaway rows below the authored map;
+   *  those rows are clipped out of the final floor. Anchoring the
+   *  south archway to `g.height - 2` would drop it INTO that clipped
+   *  zone — invisible + unreachable (the bug that left small forest
+   *  maps with no way down). Callers pass the authored bottom row so
+   *  the archway lands inside the visible map. */
+  bottomRow: number = g.height - 2,
 ): { col: number; row: number } | null {
   const horizontal = edge === "north" || edge === "south";
   let fixedIdx: number;
   let step: number;
-  if (edge === "south") { fixedIdx = g.height - 2; step = -1; }
+  if (edge === "south") { fixedIdx = bottomRow; step = -1; }
   else if (edge === "north") { fixedIdx = 1; step = 1; }
   else if (edge === "east") { fixedIdx = g.width - 2; step = -1; }
   else { fixedIdx = 1; step = 1; }
@@ -799,40 +860,6 @@ function applyForestTerrain(g: Grid, rooms: Room[], rng: RNG): void {
   }
 }
 
-/**
- * Place a stairs-up tile in the middle of the run that exits straight
- * back to the overworld (used on the bottom floor of multi-level
- * non-forest dungeons). Returns the position or null on failure.
- */
-function placeOverworldExit(
-  g: Grid,
-  rooms: Room[],
-  floor: number,
-  rng: RNG,
-): { col: number; row: number } | null {
-  if (rooms.length < 2) return null;
-  const candidates: Room[] = rooms.length >= 3
-    ? rooms.slice(1, -1)
-    : [rooms[1]];
-  shuffleInPlace(rng, candidates);
-  for (const room of candidates) {
-    for (let i = 0; i < 20; i++) {
-      const cx = randInt(rng, room.x + 1, room.x + room.w - 2);
-      const cy = randInt(rng, room.y + 1, room.y + room.h - 2);
-      if (getTile(g, cx, cy) === floor) {
-        setTile(g, cx, cy, TILE_STAIRS);
-        return { col: cx, row: cy };
-      }
-    }
-    const [cc, cr] = room.center;
-    if (getTile(g, cc, cr) === floor) {
-      setTile(g, cc, cr, TILE_STAIRS);
-      return { col: cc, row: cr };
-    }
-  }
-  return null;
-}
-
 // ── Public API ───────────────────────────────────────────────────
 
 export interface GenerateLevelOptions {
@@ -845,23 +872,43 @@ export interface GenerateLevelOptions {
   floorIdx: number;
   /** When true, place stairs-down in the last room. */
   placeStairsDown: boolean;
-  /** When true, the bottom floor of a multi-level dungeon also gets
-   *  a stairs-up that exits straight to the overworld. */
-  placeOverworldExit: boolean;
   /** Probability (0..1) that a single-entrance room's lone door is
-   *  locked. Doors themselves are always placed where corridors
-   *  meet rooms — they're an architectural feature of the dungeon.
-   *  At `0` no doors are locked; at `1` every eligible door is
-   *  locked; in between the lock state is rolled per room. The
-   *  connectivity-fix pass still runs to make sure a critical
-   *  locked door never strands a region. Matches v2's
+   *  locked. Locking only applies to doors that `doorProbability`
+   *  actually placed — at low door frequency there are simply fewer
+   *  doors to lock. At `0` no doors are locked; at `1` every eligible
+   *  placed door is locked; in between the lock state is rolled per
+   *  room. The connectivity-fix pass still runs to make sure a
+   *  critical locked door never strands a region. Matches v2's
    *  `dungeons.json` `locked_doors` field. */
   lockProbability: number;
+  /** Probability (0..1) that each eligible room opening gets a door.
+   *  `1` (the default the wrapper passes) reproduces the historical
+   *  "doors are architectural, always placed" behaviour; `0` places
+   *  no doors at all; in between rolls per opening. Matches v2's
+   *  `dungeons.json` `doors` field. Optional — absent reads as `1`. */
+  doorProbability?: number;
   /** Probability (0..1) per eligible wall that a torch is placed.
    *  Drives the three internal knobs (spacing, count multiplier,
    *  whether to consider corridor walls). Matches v2's
    *  `dungeons.json` `torch_density` field. */
   torchProbability: number;
+  /** Item id (an `is_chest: true` item) to place chests of, or "" /
+   *  undefined for NO chests. Chests are opt-in: when this is empty
+   *  the chest pass is skipped entirely regardless of
+   *  `chestProbability`. The id is stamped onto the level's
+   *  `chestItem` so the dungeon→map converter binds each chest cell to
+   *  this item (and thus its authored `contents`). */
+  chestItemId?: string;
+  /** Probability (0..1) a chest is placed in each eligible room (rooms
+   *  past the entrance). Only consulted when `chestItemId` is set.
+   *  Matches v2's `dungeons.json` `loot.chest_frequency` field. */
+  chestProbability?: number;
+  /** For `style: "custom"` — `map_tiles` palette ids whose sprites the
+   *  converter uses for floor / wall cells. The generator only records
+   *  them on the produced level (it still carves with generic numeric
+   *  tiles); ignored for non-custom styles. */
+  customFloorId?: string;
+  customWallId?: string;
   /** Encounter table (loaded from encounters.json). When omitted no
    *  monsters are placed. */
   encounters?: Record<string, EncounterTemplate[]>;
@@ -911,8 +958,10 @@ export function generateDungeonLevel(opts: GenerateLevelOptions): DungeonLevel {
     wallTile = TILE_FOREST;
     floorTile = TILE_GRASS;
   } else {
-    // "ruins" — stone-block dungeon. Also the fallback for any
-    // future style we haven't taught the generator to render yet.
+    // "ruins" — stone-block dungeon. Also the carve tiles for "custom"
+    // (the converter later swaps these generic numerics for the
+    // author's chosen palette sprites) and the fallback for any future
+    // style we haven't taught the generator to render yet.
     wallTile = TILE_DWALL;
     floorTile = TILE_DFLOOR;
   }
@@ -1007,7 +1056,12 @@ export function generateDungeonLevel(opts: GenerateLevelOptions): DungeonLevel {
     const edges: Array<"north" | "south" | "east" | "west"> = ["north", "east", "south", "west"];
     shuffleInPlace(rng, edges);
     for (const e of edges) {
-      const placed = placeForestEdgeStairs(grid, e, TILE_FOREST_ARCHWAY_UP, floorTile, wallTile, rng);
+      const placed = placeForestEdgeStairs(
+        grid, e, TILE_FOREST_ARCHWAY_UP, floorTile, wallTile, rng,
+        // Authored bottom row — keep a south-edge entrance inside the
+        // visible map (BUFFER rows below are clipped from the floor).
+        height - 1,
+      );
       if (placed) {
         stairsCol = placed.col;
         stairsRow = placed.row;
@@ -1030,12 +1084,22 @@ export function generateDungeonLevel(opts: GenerateLevelOptions): DungeonLevel {
   }
 
   // ── Chests in the later rooms ──
-  for (let i = 2; i < rooms.length; i++) {
-    if (rng() < 0.6) {
-      const room = rooms[i];
-      const cx = room.x + randomChoice(rng, [1, room.w - 2]);
-      const cy = room.y + randomChoice(rng, [1, room.h - 2]);
-      if (getTile(grid, cx, cy) === floorTile) setTile(grid, cx, cy, TILE_CHEST);
+  // Opt-in loot: only place chests when the author configured a chest
+  // item. Each eligible room (index 2+, i.e. not the entrance / first
+  // connector) rolls `chestProbability` for a chest. The placed
+  // TILE_CHEST cells all represent `chestItemId`; the dungeon→map
+  // converter stamps that id onto each chest cell so the existing
+  // chest-open / contents pipeline delivers real loot.
+  const chestItemId = opts.chestItemId ?? "";
+  if (chestItemId) {
+    const chestProb = opts.chestProbability ?? 0;
+    for (let i = 2; i < rooms.length; i++) {
+      if (rng() < chestProb) {
+        const room = rooms[i];
+        const cx = room.x + randomChoice(rng, [1, room.w - 2]);
+        const cy = room.y + randomChoice(rng, [1, room.h - 2]);
+        if (getTile(grid, cx, cy) === floorTile) setTile(grid, cx, cy, TILE_CHEST);
+      }
     }
   }
 
@@ -1200,7 +1264,12 @@ export function generateDungeonLevel(opts: GenerateLevelOptions): DungeonLevel {
       const remaining = edges.filter((e) => e !== entranceEdge);
       shuffleInPlace(rng, remaining);
       for (const e of remaining) {
-        placed = placeForestEdgeStairs(grid, e, TILE_FOREST_ARCHWAY_DOWN, floorTile, wallTile, rng);
+        placed = placeForestEdgeStairs(
+          grid, e, TILE_FOREST_ARCHWAY_DOWN, floorTile, wallTile, rng,
+          // Authored bottom row — exclude the BUFFER padding so a
+          // south-edge archway stays inside the visible map.
+          height - 1,
+        );
         if (placed) break;
       }
     }
@@ -1211,26 +1280,35 @@ export function generateDungeonLevel(opts: GenerateLevelOptions): DungeonLevel {
   }
 
   // ── Doors + locked doors + connectivity check ──
-  // Doors are architectural — every dungeon places them at room
-  // entries. `lockProbability` decides what fraction of single-
-  // entrance rooms get their door upgraded to locked. p=0 → no
-  // locks (matching the v2 `locked_doors: 0` author intent: "doors
-  // exist, none locked"); p=1 → every eligible door locks (the
-  // connectivity pass below still demotes locks that would strand
-  // a region).
-  placeDoors(grid, rooms);
+  // `doorProbability` decides what fraction of room entries actually
+  // get a door (default 1 → "doors are architectural, always placed",
+  // preserving historical layouts; 0 → an open forest/cave with none).
+  // `lockProbability` then upgrades a fraction of the *placed* doors to
+  // locked: p=0 → no locks (matching the v2 `locked_doors: 0` author
+  // intent "doors exist, none locked"); p=1 → every eligible door
+  // locks (the connectivity pass below still demotes locks that would
+  // strand a region).
+  placeDoors(grid, rooms, opts.doorProbability ?? 1, rng);
   placeLockedDoors(grid, rooms, opts.lockProbability, rng);
   fixDisconnectedLockedDoors(grid, rooms, stairsCol, stairsRow);
 
   // ── Decorations (overlay layer) ──
   placeDecorations(grid, rooms, opts.torchProbability, floorTile, rng);
 
-  // ── Optional overworld-exit stair for non-forest multi-level dungeons ──
+  // ── Overworld exit ──
+  // We used to drop an extra stairs-UP tile mid-floor on the bottom
+  // level as a supposed "overworld exit." But a stairs-up on any
+  // floor below the top links UPWARD one level (see
+  // dungeonLevelToMap.patchStairsLink — TILE_STAIRS at floorIdx > 0
+  // → previous floor, only floor 0's links to the overworld). So on
+  // the bottom floor it was just a SECOND stairs-up to the same place
+  // as the entrance stairs — redundant and confusing, never an actual
+  // overworld shortcut. Removed: the party leaves a multi-level
+  // dungeon by ascending the entrance stairs floor by floor, exactly
+  // as the single remaining stairs-up on each floor already does.
+  // `overworldExits` stays in the level shape (it round-trips through
+  // the save serialiser) but is always empty now.
   const overworldExits = new Set<string>();
-  if (opts.placeOverworldExit && style !== "forest" && rooms.length >= 2) {
-    const exit = placeOverworldExit(grid, rooms, floorTile, rng);
-    if (exit) overworldExits.add(`${exit.col},${exit.row}`);
-  }
 
   // ── Forest post-process ──
   if (style === "forest") applyForestTerrain(grid, rooms, rng);
@@ -1252,6 +1330,9 @@ export function generateDungeonLevel(opts: GenerateLevelOptions): DungeonLevel {
     exploredTiles: new Set<string>(),
     overworldExits,
     questArtifacts: {},
+    chestItem: chestItemId,
+    customFloor: opts.customFloorId ?? "",
+    customWall: opts.customWallId ?? "",
   };
 }
 
@@ -1278,10 +1359,10 @@ export interface GenerateDungeonOptions {
 
 /**
  * Generate every floor of a multi-level dungeon. Stairs-up on floor 0
- * is the entrance; stairs-down on floors 0..N-2 connect to the next
- * level; the bottom floor (N-1) of a non-forest multi-level dungeon
- * also gets an overworld-exit stair so the party can leave without
- * climbing all the way back up.
+ * is the entrance (links to the overworld); every deeper floor's
+ * stairs-up links one level up. Stairs-down on floors 0..N-2 descend
+ * to the next level. The party leaves by ascending the stairs-up
+ * back to floor 0 and out — there's no separate bottom-floor exit.
  *
  * NB: the v2-native `generateDungeonFromRecord` wrapper in
  * `sim/dungeon/` is the preferred entry point — it reads the
@@ -1303,7 +1384,6 @@ export function generateDungeon(opts: GenerateDungeonOptions): DungeonLevel[] {
       difficulty: opts.difficulty,
       floorIdx: li,
       placeStairsDown: li < numLevels - 1,
-      placeOverworldExit: li === numLevels - 1 && numLevels > 1,
       lockProbability: opts.lockProbability,
       torchProbability: opts.torchProbability,
       encounters: opts.encounters,

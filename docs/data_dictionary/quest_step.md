@@ -113,6 +113,8 @@ The number of steps always matches the dungeon's floor count, so regenerating th
 
 If you instead pin a concrete `dungeon_level` on a `reach` step, it stays a single explicit "reach floor N" objective and is **not** expanded — useful for a one-off "get to the bottom" beat inside a larger quest.
 
+> **Instance scope.** A `reach` step targets the dungeon *record* (`dungeon_id`), not a specific placement on the map. The same dungeon record can be planted at multiple map entrances — each becomes an independent instance with its own layout and explored/cleared state — and **entering any one of them credits the step**. This is intentional: the objective is "get the party into a Grotto," not "into this particular Grotto." There is currently no way to require a specific instance; if you need that, it would be a future schema addition (an optional entrance map + cell on the step).
+
 ```json
 {
   "id": "spelunk_grotto",

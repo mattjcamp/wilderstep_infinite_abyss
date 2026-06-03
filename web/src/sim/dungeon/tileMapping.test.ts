@@ -1,6 +1,10 @@
 import { describe, it, expect } from "vitest";
 import { prototypeForTileId } from "./tileMapping";
 import { TILE_TRAP } from "@/battle/world/Dungeon";
+import {
+  TILE_FOREST_ARCHWAY_UP,
+  TILE_FOREST_ARCHWAY_DOWN,
+} from "@/battle/world/Tiles";
 
 /**
  * Trap cells render as the surrounding style's floor so the party
@@ -49,5 +53,30 @@ describe("prototypeForTileId — TILE_TRAP", () => {
       expect(trap!.name).toBe("Trap");
       expect(trap!.walkable).toBe(true);
     }
+  });
+});
+
+describe("prototypeForTileId — forest transition arches", () => {
+  // A forest is a sprawling place, not a staircase, so its level
+  // transitions render as brightly-coloured arches (gold = up/entrance,
+  // blue = down/descent) rather than the stairs sprites. Guard against
+  // a regression that points them back at stairs_*.png.
+  it("maps the UP archway to the gold arch sprite, walkable", () => {
+    const up = prototypeForTileId(TILE_FOREST_ARCHWAY_UP, "forest");
+    expect(up!.sprite).toBe("map/arch_gold.png");
+    expect(up!.walkable).toBe(true);
+  });
+
+  it("maps the DOWN archway to the blue arch sprite, walkable", () => {
+    const down = prototypeForTileId(TILE_FOREST_ARCHWAY_DOWN, "forest");
+    expect(down!.sprite).toBe("map/arch_blue.png");
+    expect(down!.walkable).toBe(true);
+  });
+
+  it("archway sprites are arches, not stairs", () => {
+    const up = prototypeForTileId(TILE_FOREST_ARCHWAY_UP, "forest");
+    const down = prototypeForTileId(TILE_FOREST_ARCHWAY_DOWN, "forest");
+    expect(up!.sprite).not.toContain("stairs");
+    expect(down!.sprite).not.toContain("stairs");
   });
 });

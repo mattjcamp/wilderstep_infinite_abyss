@@ -271,6 +271,11 @@ export interface SavedFloorState {
   unlockedCells: ReadonlyArray<string>;
   defeatedEncounters: ReadonlyArray<string>;
   destroyedLairs: ReadonlyArray<string>;
+  /** Opened chests + collected items on this floor. Absent on dungeon
+   *  saves written before loot chests shipped — the loader treats
+   *  absence as empty, so a pre-existing dungeon's chests start
+   *  un-opened (acceptable one-time bleed). */
+  pickedItemCells?: ReadonlyArray<string>;
 }
 
 /** One full dungeon session. The generated `levels` array is a deep

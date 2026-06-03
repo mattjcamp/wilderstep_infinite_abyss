@@ -627,6 +627,12 @@ export function MapEditor({
   useEffect(() => {
     lightingModeRef.current = lightingMode;
   }, [lightingMode]);
+  /** Mirror of the map's `fog_of_war` flag (default on). Held in a ref
+   *  so the sim relight closure — built once at scene-create time —
+   *  reads the live value. Synced from the loaded map record below.
+   *  When false the editor's sim-mode preview reveals the whole map,
+   *  matching how the play scene renders a fog-off map. */
+  const fogEnabledRef = useRef<boolean>(true);
   /** Which palette-tag sections are currently collapsed in the side
    *  panel. Tags are expanded by default; entries here are the
    *  exceptions. */
@@ -1215,6 +1221,17 @@ export function MapEditor({
     sceneApiRef.current?.setOverrideMarkers(modified);
   }, [state]);
 
+  // Sync the fog-of-war ref from the map record (default on; only an
+  // explicit `false` disables it) so the sim-mode preview matches how
+  // the play scene renders this map. Relight so a fog toggle saved via
+  // the Map Properties dialog reflects immediately.
+  useEffect(() => {
+    if (state.kind !== "ok") return;
+    fogEnabledRef.current =
+      (state.mapRecord as Record<string, unknown>).fog_of_war !== false;
+    sceneApiRef.current?.relight(lightingModeRef.current);
+  }, [state]);
+
   // ── Mount Phaser ────────────────────────────────────────────────
   useEffect(() => {
     if (state.kind !== "ok") return;
@@ -1726,19 +1743,21 @@ export function MapEditor({
                   partyInfravisionActiveRef.current,
                 mode,
                 // Fog-of-war — only when sim mode is on (party is
-                // on the map). Painting view passes `null` so every
-                // cell renders at its native band and the author
-                // can see what they painted at any ambient. The
-                // visited set itself grows below from
+                // on the map) AND fog is enabled for this map. Painting
+                // view (no party) or a fog-off map passes `null` so
+                // every cell renders at its native band with no
+                // exploration gating. The visited set grows below from
                 // `result.currentlyVisible`.
-                rememberedCells: party ? visitedCellsRef.current : null,
+                rememberedCells:
+                  party && fogEnabledRef.current
+                    ? visitedCellsRef.current
+                    : null,
               });
               // Grow the in-memory visited set on every relight.
-              // Skipped in painting view so an author who toggles
-              // through twilight/night with sim off doesn't
-              // accidentally "remember" the whole grid — sim mode
-              // is the only legitimate way to map a cell.
-              if (party) {
+              // Skipped in painting view (sim mode is the only
+              // legitimate way to map a cell) and when fog is off
+              // (nothing to remember).
+              if (party && fogEnabledRef.current) {
                 for (const key of result.currentlyVisible) {
                   visitedCellsRef.current.add(key);
                 }
@@ -3535,6 +3554,7 @@ export function MapEditor({
     tags?: string[];
     lighting?: "day" | "twilight" | "darkness" | "world_time";
     soundtrack?: string[];
+    fog_of_war?: boolean;
   }) => {
     if (state.kind !== "ok") return;
     const updatedMap: MapRecord = {
@@ -3566,6 +3586,15 @@ export function MapEditor({
       (updatedMap as Record<string, unknown>).soundtrack = next.soundtrack;
     } else {
       delete (updatedMap as Record<string, unknown>).soundtrack;
+    }
+    // Fog-of-war: default is ON, so only persist the field when it's
+    // explicitly OFF. The dialog folds the default (true) → undefined
+    // before calling us; defend against a stray `true` here too so
+    // fogged maps never carry a redundant `"fog_of_war": true`.
+    if (next.fog_of_war === false) {
+      (updatedMap as Record<string, unknown>).fog_of_war = false;
+    } else {
+      delete (updatedMap as Record<string, unknown>).fog_of_war;
     }
 
     const baseFile: Record<string, unknown> = state.ownFile
@@ -4302,6 +4331,9 @@ export function MapEditor({
                     );
                     return list.length > 0 ? list : undefined;
                   })(),
+                  // Default on — only an explicit `false` disables it.
+                  fog_of_war:
+                    (mapRecord as Record<string, unknown>).fog_of_war !== false,
                 }}
                 existingTags={existingTags}
                 onSave={onSaveMapAttrs}

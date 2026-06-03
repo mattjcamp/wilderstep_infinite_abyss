@@ -67,6 +67,96 @@
           "torch"
         ]
       }
+    },
+    {
+      "id": "chase_out_the_goblins",
+      "name": "Chase the Goblins Away",
+      "description": "The town has learned that the Giant Rat infestation started with the goblins in their grotto just north of town. We suspect they have been burrowing into town, probably near the general shop. Go and chase them out!",
+      "tags": [
+        "hallowmere_goblins"
+      ],
+      "steps": [
+        {
+          "id": "chase_out_the_goblins_step_1",
+          "name": "Remove the Goblin Squatters from the Grotto",
+          "kind": "kill",
+          "tags": [
+            "hallowmere_goblins"
+          ],
+          "location_kind": "map",
+          "map_id": "grotto_1_l1",
+          "encounter_id": "goblin_squatters",
+          "count": 3
+        },
+        {
+          "id": "chase_out_the_goblins_step_2",
+          "name": "Destroy the Goblin Raiding Party",
+          "kind": "kill",
+          "encounter_id": "goblin_raiders",
+          "tags": [
+            "hallowmere_goblins"
+          ],
+          "location_kind": "map",
+          "map_id": "grotto_1_l2"
+        },
+        {
+          "id": "chase_out_the_goblins_step_3",
+          "name": "Return the Chest",
+          "kind": "retrieve",
+          "item_id": "shadow_crystal",
+          "tags": [
+            "hallowmere_goblins"
+          ],
+          "description": "The goblins have  taken the town treasury! Find it and return it to the mayor.",
+          "location_kind": "map",
+          "map_id": "grotto_1_l2",
+          "col": 28,
+          "row": 27
+        }
+      ],
+      "quest_giver": {
+        "npc_name": "Cranky Mayor",
+        "npc_sprite": "person/druid1.png",
+        "start_dialog": "The town has learned that the Giant Rat infestation started with the goblins in their grotto just north of town. We suspect they have been burrowing into town, probably near the general shop. Go and chase them out!",
+        "end_dialog": "Thank you brave traveler. I assumed you would have returned, dead and floating by town but you have prevailed! You have the town's thanks!."
+      },
+      "rewards": {
+        "xp": 200,
+        "gold": 250,
+        "items": [
+          "torch"
+        ]
+      }
+    },
+    {
+      "id": "explore_the_grotto",
+      "name": "Explore the Grotto",
+      "description": "There is another grotto just north of the goblins, explore that and make sure it does not pose a menace to Hallowmere",
+      "tags": [
+        "explore_the_grotto"
+      ],
+      "steps": [
+        {
+          "id": "explore_the_grotto_step_1",
+          "name": "Explore the Grotto",
+          "kind": "reach",
+          "description": "Explore the nearby grotto",
+          "tags": [
+            "explore_the_grotto"
+          ],
+          "dungeon_id": "grotto"
+        }
+      ],
+      "quest_giver": {
+        "npc_name": "Old Warrior",
+        "npc_sprite": "person/fighter16.png",
+        "start_dialog": "There is another grotto just north of the goblins, explore that and make sure it does not pose a menace to Hallowmere",
+        "end_dialog": "Looks like my suspicion was correct, please accept the thanks of the people of Hallowmere"
+      },
+      "rewards": {
+        "xp": 250,
+        "gold": 250
+      }
     }
   ]
 }

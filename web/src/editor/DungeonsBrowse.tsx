@@ -44,7 +44,7 @@ const UNTAGGED = "(untagged)";
 
 /** Closed style enum — the procedural generator's supported themes.
  *  Add new values here when the generator grows. */
-const STYLES = ["caves", "ruins", "forest"] as const;
+const STYLES = ["caves", "ruins", "forest", "custom"] as const;
 type Style = (typeof STYLES)[number];
 
 /** Same difficulty enum the Monster model uses. */
@@ -54,6 +54,14 @@ type Difficulty = (typeof DIFFICULTIES)[number];
 interface DungeonSize {
   width: number;
   height: number;
+}
+
+/** Loot config — mirrors `@/sim/dungeon/types` `DungeonLoot`.
+ *  `chest_item` is an `is_chest: true` item id; empty / absent → no
+ *  chests. `chest_frequency` is the 0–1 per-room placement chance. */
+interface DungeonLoot {
+  chest_item?: string;
+  chest_frequency?: number;
 }
 
 interface DungeonLevel {
@@ -67,6 +75,12 @@ interface DungeonLevel {
   size?: DungeonSize;
   torch_density?: number;
   locked_doors?: number;
+  /** 0–1 chance each room opening gets a door (inherits → default 1). */
+  doors?: number;
+  /** `map_tiles` palette ids — only meaningful when style is "custom". */
+  custom_floor?: string;
+  custom_wall?: string;
+  loot?: DungeonLoot;
 }
 
 interface DungeonRecord {
@@ -80,6 +94,14 @@ interface DungeonRecord {
   size: DungeonSize;
   torch_density: number;
   locked_doors: number;
+  /** 0–1 chance each room opening gets a door. Default 1 (doors
+   *  always); lower for open layouts. Levels override per-floor. */
+  doors?: number;
+  /** `map_tiles` palette ids for floor / wall sprites when style is
+   *  "custom". Ignored for other styles. */
+  custom_floor?: string;
+  custom_wall?: string;
+  loot?: DungeonLoot;
   levels: DungeonLevel[];
   /** Per-dungeon background-music playlist override. Each entry is
    *  an audio file URL. When the party enters this dungeon, the
@@ -100,6 +122,12 @@ type LoadState =
        *  explicit import, mirroring MapsBrowse + the generic
        *  ModelView. */
       catalog: LibraryCatalogEntry[];
+      /** Items flagged `is_chest: true` in the resolved items model —
+       *  the choices for the loot chest picker. */
+      chestItems: Array<{ id: string; name: string }>;
+      /** Every `map_tiles` palette entry — choices for the custom-style
+       *  floor / wall tile pickers. */
+      paletteTiles: Array<{ id: string; name: string; walkable: boolean }>;
       ownFile: Record<string, unknown> | null;
       isDraft: boolean;
     }
@@ -126,11 +154,16 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
   const refresh = async () => {
     try {
       const src = new StaticModuleSource();
-      const [layers, catalog] = await Promise.all([
+      const [layers, catalog, itemLayers, tileLayers] = await Promise.all([
         src.loadModelLayers(moduleId, "dungeons"),
         // Dungeons offered by `uses` libraries. Not part of the
         // resolved view — the import section below copies them in.
         src.listLibraryRecords(moduleId, "dungeons"),
+        // Items model — resolved so the loot picker can offer every
+        // chest item visible to this module (inherited + own).
+        src.loadModelLayers(moduleId, "items"),
+        // Tile palette — backs the custom-style floor / wall pickers.
+        src.loadModelLayers(moduleId, "map_tiles"),
       ]);
       const draft = await loadDraft<Record<string, unknown>>(moduleId, MODEL_KEY);
       const ownEffective =
@@ -141,10 +174,38 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
         ownEffective,
       ) as { dungeons?: DungeonRecord[] } | null;
       const dungeons = merged?.dungeons ?? [];
+      // Resolve the items model and pull the chest-flagged entries.
+      const itemsMerged = mergeModel(
+        "items",
+        itemLayers.inherited,
+        itemLayers.ownFile as Record<string, unknown> | null,
+      ) as { items?: Array<Record<string, unknown>> } | null;
+      const chestItems = (itemsMerged?.items ?? [])
+        .filter((it) => it.is_chest === true)
+        .map((it) => ({
+          id: String(it.id ?? ""),
+          name: String(it.name ?? it.id ?? ""),
+        }))
+        .filter((it) => it.id !== "");
+      // Resolve the tile palette for the custom-style pickers.
+      const tilesMerged = mergeModel(
+        "map_tiles",
+        tileLayers.inherited,
+        tileLayers.ownFile as Record<string, unknown> | null,
+      ) as { map_tiles?: Array<Record<string, unknown>> } | null;
+      const paletteTiles = (tilesMerged?.map_tiles ?? [])
+        .map((t) => ({
+          id: String(t.id ?? ""),
+          name: String(t.name ?? t.id ?? ""),
+          walkable: t.walkable === true,
+        }))
+        .filter((t) => t.id !== "");
       setState({
         kind: "ok",
         dungeons,
         catalog,
+        chestItems,
+        paletteTiles,
         ownFile: ownEffective ?? null,
         isDraft: hasDraft(moduleId, MODEL_KEY),
       });
@@ -531,6 +592,8 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
                     <DungeonEditor
                       dungeon={d}
                       existingTags={allTags}
+                      chestItems={state.chestItems}
+                      paletteTiles={state.paletteTiles}
                       onUpdate={(patch) => onUpdateDungeon(d.id, patch)}
                       onAddLevel={() => onAddLevel(d.id)}
                       onUpdateLevel={(idx, patch) =>
@@ -647,6 +710,8 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
 function DungeonEditor({
   dungeon,
   existingTags,
+  chestItems,
+  paletteTiles,
   onUpdate,
   onAddLevel,
   onUpdateLevel,
@@ -654,6 +719,8 @@ function DungeonEditor({
 }: {
   dungeon: DungeonRecord;
   existingTags: string[];
+  chestItems: Array<{ id: string; name: string }>;
+  paletteTiles: Array<{ id: string; name: string; walkable: boolean }>;
   onUpdate: (patch: Partial<DungeonRecord>) => void;
   onAddLevel: () => void;
   onUpdateLevel: (idx: number, patch: Partial<DungeonLevel>) => void;
@@ -736,11 +803,27 @@ function DungeonEditor({
         size={dungeon.size}
         torchDensity={dungeon.torch_density}
         lockedDoors={dungeon.locked_doors}
+        doors={dungeon.doors}
+        customFloor={dungeon.custom_floor}
+        customWall={dungeon.custom_wall}
+        paletteTiles={paletteTiles}
+        chestItems={chestItems}
+        chestItem={dungeon.loot?.chest_item}
+        chestFrequency={dungeon.loot?.chest_frequency}
         onStyle={(v) => onUpdate({ style: v })}
         onDifficulty={(v) => onUpdate({ difficulty: v })}
         onSize={(v) => onUpdate({ size: v })}
         onTorchDensity={(v) => onUpdate({ torch_density: v })}
         onLockedDoors={(v) => onUpdate({ locked_doors: v })}
+        onDoors={(v) => onUpdate({ doors: v })}
+        onCustomFloor={(v) => onUpdate({ custom_floor: v })}
+        onCustomWall={(v) => onUpdate({ custom_wall: v })}
+        onChestItem={(v) =>
+          onUpdate({ loot: mergeLoot(dungeon.loot, { chest_item: v }) })
+        }
+        onChestFrequency={(v) =>
+          onUpdate({ loot: mergeLoot(dungeon.loot, { chest_frequency: v }) })
+        }
         // Dungeon side is required — no clear/inherit affordance.
         allowInherit={false}
       />
@@ -761,6 +844,8 @@ function DungeonEditor({
               level={lvl}
               parent={dungeon}
               existingTags={existingTags}
+              chestItems={chestItems}
+              paletteTiles={paletteTiles}
               onUpdate={(patch) => onUpdateLevel(i, patch)}
               onDelete={() => onDeleteLevel(i)}
             />
@@ -786,12 +871,16 @@ function LevelRow({
   level,
   parent,
   existingTags,
+  chestItems,
+  paletteTiles,
   onUpdate,
   onDelete,
 }: {
   level: DungeonLevel;
   parent: DungeonRecord;
   existingTags: string[];
+  chestItems: Array<{ id: string; name: string }>;
+  paletteTiles: Array<{ id: string; name: string; walkable: boolean }>;
   onUpdate: (patch: Partial<DungeonLevel>) => void;
   onDelete: () => void;
 }) {
@@ -857,16 +946,37 @@ function LevelRow({
           size={level.size}
           torchDensity={level.torch_density}
           lockedDoors={level.locked_doors}
+          doors={level.doors}
+          customFloor={level.custom_floor}
+          customWall={level.custom_wall}
+          paletteTiles={paletteTiles}
+          chestItems={chestItems}
+          chestItem={level.loot?.chest_item}
+          chestFrequency={level.loot?.chest_frequency}
           parentStyle={parent.style}
           parentDifficulty={parent.difficulty}
           parentSize={parent.size}
           parentTorchDensity={parent.torch_density}
           parentLockedDoors={parent.locked_doors}
+          parentDoors={parent.doors}
+          parentCustomFloor={parent.custom_floor}
+          parentCustomWall={parent.custom_wall}
+          parentChestItem={parent.loot?.chest_item}
+          parentChestFrequency={parent.loot?.chest_frequency}
           onStyle={(v) => onUpdate({ style: v })}
           onDifficulty={(v) => onUpdate({ difficulty: v })}
           onSize={(v) => onUpdate({ size: v })}
           onTorchDensity={(v) => onUpdate({ torch_density: v })}
           onLockedDoors={(v) => onUpdate({ locked_doors: v })}
+          onDoors={(v) => onUpdate({ doors: v })}
+          onCustomFloor={(v) => onUpdate({ custom_floor: v })}
+          onCustomWall={(v) => onUpdate({ custom_wall: v })}
+          onChestItem={(v) =>
+            onUpdate({ loot: mergeLoot(level.loot, { chest_item: v }) })
+          }
+          onChestFrequency={(v) =>
+            onUpdate({ loot: mergeLoot(level.loot, { chest_frequency: v }) })
+          }
           allowInherit={true}
         />
       </div>
@@ -892,16 +1002,33 @@ function GeneratorFields({
   size,
   torchDensity,
   lockedDoors,
+  doors,
+  customFloor,
+  customWall,
+  paletteTiles,
+  chestItems,
+  chestItem,
+  chestFrequency,
   parentStyle,
   parentDifficulty,
   parentSize,
   parentTorchDensity,
   parentLockedDoors,
+  parentDoors,
+  parentCustomFloor,
+  parentCustomWall,
+  parentChestItem,
+  parentChestFrequency,
   onStyle,
   onDifficulty,
   onSize,
   onTorchDensity,
   onLockedDoors,
+  onDoors,
+  onCustomFloor,
+  onCustomWall,
+  onChestItem,
+  onChestFrequency,
   allowInherit,
 }: {
   // Effective (own) value; may be undefined on Level rows.
@@ -910,22 +1037,47 @@ function GeneratorFields({
   size: DungeonSize | undefined;
   torchDensity: number | undefined;
   lockedDoors: number | undefined;
+  doors: number | undefined;
+  /** Custom-style floor / wall palette ids (effective / own value). */
+  customFloor: string | undefined;
+  customWall: string | undefined;
+  /** Tile palette choices for the custom floor / wall pickers. */
+  paletteTiles: Array<{ id: string; name: string; walkable: boolean }>;
+  /** Chest-item choices (items flagged is_chest) for the loot picker. */
+  chestItems: Array<{ id: string; name: string }>;
+  chestItem: string | undefined;
+  chestFrequency: number | undefined;
   // Parent values for placeholder fallback (only on Level rows).
   parentStyle?: string;
   parentDifficulty?: string;
   parentSize?: DungeonSize;
   parentTorchDensity?: number;
   parentLockedDoors?: number;
+  parentDoors?: number;
+  parentCustomFloor?: string;
+  parentCustomWall?: string;
+  parentChestItem?: string;
+  parentChestFrequency?: number;
   // Callbacks — receiving `undefined` clears the override (Level only).
   onStyle: (v: string | undefined) => void;
   onDifficulty: (v: string | undefined) => void;
   onSize: (v: DungeonSize | undefined) => void;
   onTorchDensity: (v: number | undefined) => void;
   onLockedDoors: (v: number | undefined) => void;
+  onDoors: (v: number | undefined) => void;
+  onCustomFloor: (v: string | undefined) => void;
+  onCustomWall: (v: string | undefined) => void;
+  onChestItem: (v: string | undefined) => void;
+  onChestFrequency: (v: number | undefined) => void;
   /** Whether the editor exposes an "inherit / clear override" affordance
    *  per field. True on Levels, false on the parent Dungeon. */
   allowInherit: boolean;
 }) {
+  // The effective style after inheritance — Levels with no style
+  // override fall back to the parent's. Drives whether the custom
+  // floor/wall pickers show.
+  const effectiveStyle = style ?? parentStyle;
+  const isCustom = effectiveStyle === "custom";
   return (
     <div className="mt-2 grid gap-2 sm:grid-cols-4">
       {/* Style */}
@@ -1101,8 +1253,224 @@ function GeneratorFields({
           ) : null}
         </div>
       </label>
+
+      {/* Doors — 0–1 chance each room opening gets a door. Default 1
+          (doors always); lower for open layouts (e.g. a doorless
+          forest). Applies to every style. */}
+      <label className="block">
+        <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+          Doors (0–1)
+        </span>
+        <div className="mt-0.5 flex items-center gap-1">
+          <input
+            type="number"
+            step={0.05}
+            min={0}
+            max={1}
+            value={doors ?? ""}
+            placeholder={parentDoors != null ? String(parentDoors) : "1"}
+            onChange={(e) => {
+              const v = e.target.value === "" ? NaN : Number(e.target.value);
+              onDoors(Number.isFinite(v) ? v : undefined);
+            }}
+            className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+          />
+          {allowInherit && doors !== undefined ? (
+            <InheritButton onClick={() => onDoors(undefined)} />
+          ) : null}
+        </div>
+      </label>
+
+      {/* Custom-style floor / wall tile pickers — shown only when the
+          effective style is "custom". The chosen palette tiles' sprites
+          render the floor / wall; the generator forces floor walkable
+          and wall blocking regardless of the tile's own flags. */}
+      {isCustom ? (
+        <>
+          <label className="block sm:col-span-2">
+            <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+              Custom floor tile
+            </span>
+            <div className="mt-0.5 flex items-center gap-1">
+              <select
+                value={customFloor ?? ""}
+                onChange={(e) =>
+                  onCustomFloor(
+                    e.target.value === "" ? undefined : e.target.value,
+                  )
+                }
+                className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+              >
+                <option value="">
+                  {allowInherit
+                    ? parentCustomFloor
+                      ? `(inherit — ${tileLabel(paletteTiles, parentCustomFloor)})`
+                      : "(inherit — none)"
+                    : "(none — falls back to stone)"}
+                </option>
+                {paletteTiles.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                    {t.walkable ? "" : " ⚠ not walkable"}
+                  </option>
+                ))}
+                {customFloor &&
+                !paletteTiles.some((t) => t.id === customFloor) ? (
+                  <option value={customFloor}>{customFloor} (missing)</option>
+                ) : null}
+              </select>
+              {allowInherit && customFloor !== undefined ? (
+                <InheritButton onClick={() => onCustomFloor(undefined)} />
+              ) : null}
+            </div>
+          </label>
+
+          <label className="block sm:col-span-2">
+            <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+              Custom wall tile
+            </span>
+            <div className="mt-0.5 flex items-center gap-1">
+              <select
+                value={customWall ?? ""}
+                onChange={(e) =>
+                  onCustomWall(
+                    e.target.value === "" ? undefined : e.target.value,
+                  )
+                }
+                className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+              >
+                <option value="">
+                  {allowInherit
+                    ? parentCustomWall
+                      ? `(inherit — ${tileLabel(paletteTiles, parentCustomWall)})`
+                      : "(inherit — none)"
+                    : "(none — falls back to stone)"}
+                </option>
+                {paletteTiles.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+                {customWall &&
+                !paletteTiles.some((t) => t.id === customWall) ? (
+                  <option value={customWall}>{customWall} (missing)</option>
+                ) : null}
+              </select>
+              {allowInherit && customWall !== undefined ? (
+                <InheritButton onClick={() => onCustomWall(undefined)} />
+              ) : null}
+            </div>
+          </label>
+        </>
+      ) : null}
+
+      {/* Loot — chest item + frequency. Chests are opt-in: with no
+          chest item chosen, the generator places none. Spans 2 cols
+          so the item picker has room for full item names. */}
+      <label className="block sm:col-span-2">
+        <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+          Loot chest item
+        </span>
+        <div className="mt-0.5 flex items-center gap-1">
+          <select
+            value={chestItem ?? ""}
+            onChange={(e) =>
+              onChestItem(e.target.value === "" ? undefined : e.target.value)
+            }
+            className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+          >
+            <option value="">
+              {allowInherit
+                ? parentChestItem
+                  ? `(inherit — ${chestLabel(chestItems, parentChestItem)})`
+                  : "(inherit — none)"
+                : "(none — no chests)"}
+            </option>
+            {chestItems.map((it) => (
+              <option key={it.id} value={it.id}>
+                {it.name}
+              </option>
+            ))}
+            {/* An authored id that no longer resolves to a chest item
+                still shows so the author can see + fix it. */}
+            {chestItem && !chestItems.some((it) => it.id === chestItem) ? (
+              <option value={chestItem}>{chestItem} (missing)</option>
+            ) : null}
+          </select>
+          {allowInherit && chestItem !== undefined ? (
+            <InheritButton onClick={() => onChestItem(undefined)} />
+          ) : null}
+        </div>
+      </label>
+
+      {/* Chest frequency — only meaningful when a chest item is set. */}
+      <label className="block sm:col-span-2">
+        <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+          Chest frequency (0–1, per room)
+        </span>
+        <div className="mt-0.5 flex items-center gap-1">
+          <input
+            type="number"
+            step={0.05}
+            min={0}
+            max={1}
+            value={chestFrequency ?? ""}
+            placeholder={
+              parentChestFrequency != null
+                ? String(parentChestFrequency)
+                : "0.5"
+            }
+            onChange={(e) => {
+              const v =
+                e.target.value === "" ? NaN : Number(e.target.value);
+              onChestFrequency(Number.isFinite(v) ? v : undefined);
+            }}
+            className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+          />
+          {allowInherit && chestFrequency !== undefined ? (
+            <InheritButton onClick={() => onChestFrequency(undefined)} />
+          ) : null}
+        </div>
+      </label>
     </div>
   );
+}
+
+/** Resolve a chest item id to its display name for the inherit hint. */
+function chestLabel(
+  chestItems: Array<{ id: string; name: string }>,
+  id: string,
+): string {
+  return chestItems.find((it) => it.id === id)?.name ?? id;
+}
+
+/** Resolve a palette tile id to its display name for the inherit hint. */
+function tileLabel(
+  paletteTiles: Array<{ id: string; name: string }>,
+  id: string,
+): string {
+  return paletteTiles.find((t) => t.id === id)?.name ?? id;
+}
+
+/** Merge a partial loot patch over the existing loot, then drop empty
+ *  fields so the persisted JSON stays clean. Returns `undefined` when
+ *  nothing meaningful remains (no chest item AND no frequency), so the
+ *  caller clears the `loot` key entirely. `chest_item: ""` is treated
+ *  as "cleared." */
+function mergeLoot(
+  prev: DungeonLoot | undefined,
+  patch: DungeonLoot,
+): DungeonLoot | undefined {
+  const next: DungeonLoot = { ...(prev ?? {}), ...patch };
+  if (next.chest_item === "" || next.chest_item == null) {
+    delete next.chest_item;
+  }
+  if (next.chest_frequency == null || Number.isNaN(next.chest_frequency)) {
+    delete next.chest_frequency;
+  }
+  return next.chest_item == null && next.chest_frequency == null
+    ? undefined
+    : next;
 }
 
 function InheritButton({ onClick }: { onClick: () => void }) {

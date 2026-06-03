@@ -20,6 +20,7 @@
       "key_silver.png",
       "mace.png",
       "potion.png",
+      "relic_chest.png",
       "rock.png",
       "rope.png",
       "scroll.png",
@@ -29,8 +30,12 @@
       "torch.png"
     ],
     "map": [
+      "L2_Tower.png",
+      "L2_TreeMaple01.png",
       "abandoned_building.png",
       "altar.png",
+      "arch_blue.png",
+      "arch_gold.png",
       "artifact.png",
       "brick_wall_brown.png",
       "brick_wall_red.png",

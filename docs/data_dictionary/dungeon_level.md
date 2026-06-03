@@ -26,11 +26,14 @@ Each entry in a parent Dungeon's `levels[]` is an object with the fields below.
 | `name` | string | yes | Display name shown to the player when entering this floor (e.g. `"Crypt of Dagorn — Tomb Hall"`) | TBD |
 | `tags` | string[] | no | Editor-side organizational labels. Optional; gameplay doesn't read them. | TBD |
 | `depth` | int | yes | 1-indexed floor number; level 1 is the entrance, larger numbers go deeper. | TBD |
-| `style` | string | no | Override the parent Dungeon's `style`. Same closed enum: `"caves"`, `"ruins"`, `"forest"`. Omit to inherit. | TBD |
+| `style` | string | no | Override the parent Dungeon's `style`. Same closed enum: `"caves"`, `"ruins"`, `"forest"`, `"custom"`. Omit to inherit. | TBD |
 | `difficulty` | string | no | Override the parent Dungeon's `difficulty`. Same enum as [Monster](monster.md): `"easy"`, `"normal"`, `"hard"`, `"deadly"`, `"boss"`. Omit to inherit. | TBD |
 | `size` | `{ width: int, height: int }` | no | Override the parent Dungeon's `size` for this floor's generated dimensions. Omit to inherit. | TBD |
 | `torch_density` | number (0–1) | no | Override the parent Dungeon's `torch_density`. Useful for going pitch-dark on a climactic floor (`0`) or extra-lit on a temple floor. Omit to inherit. | TBD |
 | `locked_doors` | number (0–1) | no | Override the parent Dungeon's `locked_doors`. Crank toward 1 for a "treasury" floor full of locked doors. Omit to inherit. | TBD |
+| `doors` | number (0–1) | no | Override the parent Dungeon's `doors` (per-opening door placement chance; parent defaults to `1`). Set `0` for an open floor with no doorframes. Omit to inherit. | TBD |
+| `custom_floor` | string | no | Override the parent's `custom_floor` palette id (only meaningful when the effective `style` is `"custom"`). Omit to inherit. | TBD |
+| `custom_wall` | string | no | Override the parent's `custom_wall` palette id (only meaningful when the effective `style` is `"custom"`). Omit to inherit. | TBD |
 
 ## Inheritance semantics
 

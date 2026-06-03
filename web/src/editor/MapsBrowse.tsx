@@ -325,12 +325,15 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
       // monsters when the child has no encounters.json of its own.
       let encountersError: string | null = null;
       const src = new StaticModuleSource();
-      const [encountersLayers, monstersLayers] = await Promise.all([
+      const [encountersLayers, monstersLayers, tileLayers] = await Promise.all([
         src.loadModelLayers(moduleId, "encounters").catch((e) => {
           encountersError = e instanceof Error ? e.message : String(e);
           return null;
         }),
         src.loadModelLayers(moduleId, "monsters").catch(() => null),
+        // Tile palette — lets a baked custom-style dungeon resolve its
+        // floor/wall sprites. Non-fatal; non-custom bakes ignore it.
+        src.loadModelLayers(moduleId, "map_tiles").catch(() => null),
       ]);
       // Hydrate encounters: merge inherited+own, drop null entries,
       // group by area for sampleEncounter's expected shape.
@@ -369,11 +372,24 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
         return (id: string) => byId.get(id);
       })();
       const dungeonEncounterCount = encounters.dungeon?.length ?? 0;
+      // Build the palette id → sprite map for custom-style bakes.
+      const customTileSprites = new Map<string, string>();
+      if (tileLayers) {
+        const merged = mergeModel(
+          "map_tiles",
+          tileLayers.inherited,
+          tileLayers.ownFile,
+        ) as { map_tiles?: Array<{ id?: string; sprite?: string }> } | null;
+        for (const t of merged?.map_tiles ?? []) {
+          if (t.id && t.sprite) customTileSprites.set(t.id, t.sprite);
+        }
+      }
       const result = bakeDungeon(record, {
         seed,
         existingMaps: state.maps,
         encounters,
         monsterDifficulty,
+        customTileSprites,
       });
       if (result.maps.length === 0) {
         window.alert(
