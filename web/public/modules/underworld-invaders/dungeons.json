@@ -243,6 +243,36 @@
         "/audio/winds_of_destiny.mp3",
         "/audio/the_unforgiven.mp3"
       ]
+    },
+    {
+      "id": "frost_delve",
+      "name": "The Frost Delve",
+      "description": "An old prospectors' digging south of Varnfell, abandoned when the veins ran dry. Lately the entrance breathes warm air, and the snow around it never settles. Whatever opened far below has found its way up.",
+      "tags": [
+        "varnfell"
+      ],
+      "style": "caves",
+      "difficulty": "normal",
+      "size": {
+        "width": 24,
+        "height": 24
+      },
+      "torch_density": 0,
+      "locked_doors": 0,
+      "levels": [
+        {
+          "id": "frost_delve_l1",
+          "name": "The Upper Diggings",
+          "depth": 1,
+          "difficulty": "easy"
+        },
+        {
+          "id": "frost_delve_l2",
+          "name": "The Warm Dark",
+          "depth": 2,
+          "difficulty": "normal"
+        }
+      ]
     }
   ]
 }

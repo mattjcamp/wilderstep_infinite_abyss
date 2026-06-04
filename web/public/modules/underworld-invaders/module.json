@@ -4,7 +4,7 @@
   "title": "The Underworld Invaders",
   "description": "A crack has appeared in a far away land, not far away enough",
   "author": "hyperbolic",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "extends": "default",
   "uses": [
     "maps-mix-in"

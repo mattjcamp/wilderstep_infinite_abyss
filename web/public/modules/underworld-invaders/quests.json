@@ -5,7 +5,7 @@
       "name": "The Giant Rats",
       "description": "Get rid of those giant rats in their giant rat hiole",
       "tags": [
-        "rats"
+        "hallowmere"
       ],
       "steps": [
         {
@@ -45,9 +45,10 @@
         },
         {
           "id": "rats_step_4",
-          "name": "Step 4: Find and Stop the Goblin Trouble Makers",
+          "name": "Step 4: Clear the goblins hiding in a town house",
           "kind": "kill",
           "encounter_id": "goblin_squatters",
+          "description": "Goblins have been seen slipping into one of Hollowmere's houses after dark. Search the town houses and drive them out.",
           "location_kind": "map",
           "map_id": "hollowmere_town_house_3"
         }
@@ -73,7 +74,7 @@
       "name": "Chase the Goblins Away",
       "description": "The town has learned that the Giant Rat infestation started with the goblins in their grotto just north of town. We suspect they have been burrowing into town, probably near the general shop. Go and chase them out!",
       "tags": [
-        "hallowmere_goblins"
+        "hallowmere"
       ],
       "steps": [
         {
@@ -133,7 +134,7 @@
       "name": "Explore the Grotto",
       "description": "There is another grotto just north of the goblins, explore that and make sure it does not pose a menace to Hallowmere",
       "tags": [
-        "explore_the_grotto"
+        "hallowmere"
       ],
       "steps": [
         {
@@ -162,7 +163,9 @@
       "id": "explore_a_dark_forest",
       "name": "Explore a Dark Forest",
       "description": "",
-      "tags": [],
+      "tags": [
+        "hallowmere"
+      ],
       "steps": [
         {
           "id": "explore_a_dark_forest_step_1",
@@ -186,7 +189,9 @@
       "id": "pirates",
       "name": "Pirates in Hollowmere",
       "description": "",
-      "tags": [],
+      "tags": [
+        "hallowmere"
+      ],
       "steps": [
         {
           "id": "pirates_step_2",
@@ -211,7 +216,7 @@
           ]
         },
         {
-          "id": "pirates_step_3",
+          "id": "pirates_step_4",
           "name": "Destroy the Pirate Hideout",
           "kind": "kill",
           "encounter_id": "pirates",
@@ -234,6 +239,118 @@
       },
       "rewards": {
         "xp": 250
+      }
+    },
+    {
+      "id": "wolves_on_the_tradeway",
+      "name": "Wolves on the Tradeway",
+      "description": "The packs squatting on the road south of Varnfell aren't hunting deer — they're holding the road. Break them so the sledges can run again.",
+      "tags": [
+        "varnfell",
+        "side"
+      ],
+      "steps": [
+        {
+          "id": "wolves_on_the_tradeway_step_1",
+          "name": "Drive the wolf packs off the tradeway",
+          "kind": "kill",
+          "description": "Hunt down the wolf packs lairing in the snowfields around Varnfell.",
+          "tags": [
+            "varnfell"
+          ],
+          "location_kind": "map",
+          "map_id": "the_main_map",
+          "encounter_id": "wolf_pack_overworld",
+          "count": 2
+        }
+      ],
+      "quest_giver": {
+        "npc_name": "Ibsen Cole",
+        "npc_sprite": "person/ranger2.png",
+        "start_dialog": "Twenty years trapping this country and I've never seen wolves hold a road like soldiers. Two packs, dug in on the tradeway, and every sledge in Varnfell stuck behind them. Clear them out and Sela can move her ledgers from red ink back to black.",
+        "end_dialog": "Both packs broken — and you walked back out, which is better than the last three who tried. The tradeway's open. First sledge south carries word that Varnfell's still in business, and that's your doing."
+      },
+      "rewards": {
+        "xp": 120,
+        "gold": 80,
+        "items": [
+          "healing_potion",
+          "torch",
+          "torch"
+        ]
+      }
+    },
+    {
+      "id": "the_drowned_cargo",
+      "name": "The Drowned Cargo",
+      "description": "A trade-sealed crate has washed up on the sand south of Varnfell. Sela Varn wants it back before the sea — or whatever paces the shore at night — takes it first.",
+      "tags": [
+        "varnfell",
+        "side"
+      ],
+      "steps": [
+        {
+          "id": "the_drowned_cargo_step_1",
+          "name": "Recover the crate from the southern shore",
+          "kind": "retrieve",
+          "description": "Find the trade-sealed crate Maro spotted on the sand south of town and bring it back. Something has been pacing that stretch of shore at night.",
+          "tags": [
+            "varnfell"
+          ],
+          "location_kind": "map",
+          "map_id": "the_main_map",
+          "item_id": "treasure_chest",
+          "col": 4,
+          "row": 15
+        }
+      ],
+      "quest_giver": {
+        "npc_name": "Sela Varn",
+        "npc_sprite": "person/townsperson14.png",
+        "start_dialog": "Maro logged a crate on the south sand — trade-sealed, which means it was bound for this post, which means it's mine. I'd send someone, but everyone I'd send is either behind this counter or buried. Bring it back whole and Varn and Daughters will remember you in the ledger, the good column.",
+        "end_dialog": "The seal's my grandmother's mark — this crate left here forty years ago and the sea's only now giving it back. I don't know whether to thank you or apologize to you. Take this and we'll call it both."
+      },
+      "rewards": {
+        "xp": 150,
+        "gold": 120,
+        "items": [
+          "camping_supplies"
+        ]
+      }
+    },
+    {
+      "id": "into_the_frost_delve",
+      "name": "Into the Frost Delve",
+      "description": "The abandoned digging south of Varnfell has started breathing warm air. Henna Stone wants to know what's moved in below before it decides to move up.",
+      "tags": [
+        "varnfell",
+        "main"
+      ],
+      "steps": [
+        {
+          "id": "into_the_frost_delve_step_1",
+          "name": "Explore the Frost Delve",
+          "kind": "reach",
+          "description": "Descend the old workings and find the source of the warm air.",
+          "tags": [
+            "varnfell"
+          ],
+          "dungeon_id": "frost_delve"
+        }
+      ],
+      "quest_giver": {
+        "npc_name": "Henna Stone",
+        "npc_sprite": "person/townsperson20.png",
+        "start_dialog": "That delve was dead cold for nine years while I worked it, and dead quiet for twenty after. Now it breathes warm and the snow won't settle on the ridge. Go down, both levels, all the way to the warm dark — and come back and tell an old miner what's woken up under her town.",
+        "end_dialog": "So the cracks do keep going down. I knew it — knew it when the company packed up, knew it every warm night since. You've bought Varnfell something nobody's had up here in a long while: warning. The town owes you, and so do I."
+      },
+      "rewards": {
+        "xp": 250,
+        "gold": 200,
+        "items": [
+          "healing_potion",
+          "healing_potion"
+        ]
       }
     }
   ]
