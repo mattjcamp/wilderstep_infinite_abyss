@@ -1,0 +1,466 @@
+{
+  "_comment": "Lore and NPCs library. A roster that gathers the world's existing lore into people who can speak it, and extends it along five canon threads. (1) THE ELDEST: powers older than names — the Wandering Wood that keeps people, the Deep Warmth under the Frost Delve, the Tide-Taker that returns cargo but keeps crews, the Nameless beneath Mournfield's deep crypt, and the Fire Below the volcanic range. (2) THE AURIC LEGACY: the Auric kings were binders, not just dragon-chainers — the Fire Shrine, Water Shrine, and deep seals are containments of the same craft as the seven-throat chain, and they are all aging at once; the seven throats were the royal house itself, which is why the line 'ended' — and why the Stranger in Grey waits. (3) THE GLOAMING COURT: dark elves of the deep roads beneath the ranges, displaced upward by whatever is closing the underworld from below. (4) THE ASHEN CLANS: barbarian fire-keepers of the volcanic north who hold that Aurigax stole the first flame. (5) THE SMALL PEOPLES: gnome artificers chasing brimite resonance, halfling wayhouses stitching the roads together, half-ogre clans holding the passes. Sprites use the expanded person catalog (resources/processed_sprites/character, now indexed under sprites/person). Schema matches default/npcs.json.",
+  "npcs": [
+    {
+      "id": "regent_alberic",
+      "name": "Regent Alberic Stane",
+      "sprite": "person/human_fighter21.png",
+      "counter": "",
+      "personal_history": "Alberic holds the Auric throne the way a careful man holds someone else's glass — firmly, and visibly not drinking from it. His family has provided regents for eleven centuries, ever since the royal line 'ended' in the same generation the wyrm was chained, and every Stane learns the truth at investiture: the line didn't end. Seven Aurics gave their names to the chain, and the regency exists to keep the chair warm in case any of them is ever released from the duty. Alberic had expected, like every regent before him, to die without that mattering. Then the fires started on the Brimspire, and the question of who broke the chain — and whether a throat still lives to mend it — became the only state secret worth keeping.",
+      "dialogs": [
+        {
+          "id": "audience",
+          "title": "Granted an audience",
+          "text": "You stand before the Auric throne. Not mine — I only answer for it. Eleven hundred years of Stanes have kept this chair empty and this realm quiet, and in one spring I have a dragon awake, roads closing, and reports from the north that read like bad scripture. Speak plainly and I'll deal plainly. It's the only economy left to me."
+        },
+        {
+          "id": "the_succession",
+          "title": "Asked why the throne is empty",
+          "text": "The histories say the Auric line ended. The histories were written by people who wanted to stop being asked. I will tell you what a regent may tell: the kings did not die. They were spent — on a working that has held for eleven centuries and is now coming undone. If you ever meet a quiet man in grey who pays in old coin, be courteous. You may be speaking to my employer."
+        }
+      ]
+    },
+    {
+      "id": "archivist_issoria",
+      "name": "Chancellor-Archivist Issoria Veil",
+      "sprite": "person/female_mage01.png",
+      "counter": "",
+      "personal_history": "Issoria runs the Auric Archive — three floors above ground for tax rolls and treaties, and one floor below for the folios nobody requests twice. She rose by being the only person who ever reshelved correctly, and she discovered the realm's great crisis the same way: a folio out of place. The binding-craft volumes had been cut — pages razored out clean, the work of someone with archive access and years of patience. Her shortlist of suspects has three names. The first is dead. The second is her own predecessor. The third is Caulwen, the brilliant third archivist she trained, defended, and ultimately voted to exile — who now keeps a black tower in the eastern pines and has never once denied anything.",
+      "dialogs": [
+        {
+          "id": "introduction",
+          "title": "Among the folios",
+          "text": "Gloves on, please — the oils in your hands are the slowest fire there is. You want the lower floor, I assume. Everyone does lately. Ask your question and I'll tell you which truths are missing, because someone with a razor and a long memory got to the answers before you."
+        },
+        {
+          "id": "the_cut_pages",
+          "title": "Asked about the missing pages",
+          "text": "Whoever cut them took every diagram of the seven-throat working and left the indexes — they wanted us to know exactly what we'd lost. That is not theft, that is authorship. Three people could have done it. I trained one of them, and if you're riding east toward the pines, I'll pay you to ask her a question I can't ask through official channels: not 'did you do it' — she'd only smile — but 'can it be redone'."
+        }
+      ]
+    },
+    {
+      "id": "knight_marshal_brona",
+      "name": "Knight-Marshal Brona Hale",
+      "sprite": "person/female_paladin01.png",
+      "counter": "",
+      "personal_history": "Brona inherited a knighthood that had spent eleven hundred quiet years becoming a parade. She has spent nine loud ones turning it back into an army: stripped the ceremonial plate, sold the tournament grounds, and requalified every knight past forty with a training yard and no exceptions. Her dispatch box tells the realm's whole story — Halvor Stiel begging troops for Hollowmere, Eastmarch reporting wolves that hold roads like soldiers, Varnfell's reeve describing a harbor of crewless ships. She answers each one honestly: the order can reinforce exactly one disaster at a time, and she is taking written arguments as to which.",
+      "dialogs": [
+        {
+          "id": "introduction",
+          "title": "At the muster yard",
+          "text": "If you're here to enlist, the yardmaster takes names at dawn. If you're here with a letter that begins 'urgent', it can join the other forty. And if you're a free blade looking for honest work — then you are, at present, the most useful kind of soldier in this realm, because nobody has to garrison you."
+        },
+        {
+          "id": "the_arithmetic",
+          "title": "Asked about the realm's defenses",
+          "text": "A dragon in the west, wolves placed like pieces on the north road, and something under the world pushing its tenants up into ours. I have knights enough for one of those. The crown pays bounty rates for the other two, and I will not pretend that's strategy — it's triage with a treasury."
+        }
+      ]
+    },
+    {
+      "id": "lord_edmund_marche",
+      "name": "Lord Edmund Marche",
+      "sprite": "person/human_fighter22.png",
+      "counter": "",
+      "personal_history": "The Marches have held Castle Eastmarch for nine generations on a simple doctrine: the capital is far, the walls are near, and the harvest doesn't care who's regent. Edmund extends the doctrine to monsters. He pays bounties promptly, asks adventurers fewer questions than the law suggests, and keeps his thin garrison for the walls alone. His private ledger of worries runs longer than his public one: the Umbral Spire lit up again two winters ago, his foresters won't work the southern wood without iron, and his daughter keeps riding patrol roads he can't make safe.",
+      "dialogs": [
+        {
+          "id": "introduction",
+          "title": "In the great hall",
+          "text": "Eastmarch welcomes the useful. We're nine days' ride from the capital, which means by the time the crown answers a letter, the problem in it has either eaten someone or moved. So I keep my own bounty board and my own counsel. The board's by the gate. The counsel you can have over supper, if your news is good."
+        },
+        {
+          "id": "about_the_spire",
+          "title": "Asked about the Umbral Spire",
+          "text": "Two winters ago the upper windows lit — a color I have no name for and no wish to learn one. I sent a polite rider. The rider came back polite, unharmed, and unable to recall the conversation. So we have an understanding, the tower and I: it pays no taxes and I ask no questions. If you mean to knock on that door, do it as a free agent. Eastmarch never heard of you."
+        }
+      ]
+    },
+    {
+      "id": "lady_rowan_marche",
+      "name": "Lady Rowan Marche",
+      "sprite": "person/female_fighter02.png",
+      "counter": "",
+      "personal_history": "Rowan is the Marche heir and the reason the Greymantle roads still feel held. She rides a circuit her father never ordered and can't forbid — Thornbury, the wayhouses, the ferry landing, the graveyard gate — trading news with tinkers and trappers who'd never talk to a herald. She knows Posy Underbough's common room better than her own hall and has standing arrangements with two ferrymen and one druid. Her father thinks the patrols are youthful restlessness. Rowan has seen what's moving along the tree lines after dusk, and restlessness has nothing to do with it.",
+      "dialogs": [
+        {
+          "id": "introduction",
+          "title": "On the road",
+          "text": "Easy — I'm patrol, not toll. Lady Rowan, Eastmarch. You're the party Posy mentioned, or you're about to be, because she mentions everyone. Which way are you riding? I'll tell you what the road's been doing lately, and the road and I are very current with each other."
+        },
+        {
+          "id": "the_tree_lines",
+          "title": "Asked what she's seen",
+          "text": "Wolves that watch and don't hunt — same as the north, now here. Lights in Mournfield that aren't the sexton's. And twice, at dusk, riders on the old delve roads in livery I didn't know, moving like they had somewhere underground to be. My father maps threats by walls. I'm telling you the threats have stopped caring about walls."
+        }
+      ]
+    },
+    {
+      "id": "magister_caulwen",
+      "name": "Magister Caulwen",
+      "sprite": "person/elf_dark_mage4.png",
+      "counter": "",
+      "personal_history": "Caulwen was the Archive's third archivist and its best in a century — too good, in the end, at reading things meant to stay shelved. Exiled on suspicion she never bothered denying, she walked east until she found the Umbral Spire empty, fed its door a drop of blood, and moved in. The tower's library reads its readers; Caulwen is the first tenant it has approved of. She keeps the cut pages from the Auric folios pressed under glass on the top floor — she did take them, that much is true — but she took them to keep them from the person on Issoria's list who is actually guilty. The chain-breaking required three things: the diagrams, archive access, and a living Auric to aim at. She knows who had all three. Proving it, from exile, in a tower that eats visitors' memories, is the work she's chosen over clearing her name.",
+      "dialogs": [
+        {
+          "id": "the_door",
+          "title": "At the Spire door",
+          "text": "The tower says you haven't come to burn anything, which puts you ahead of the last four visitors. Come up. Mind the third landing — the books there are recently fed. You want to ask about the pages. Everyone with sense does, eventually. I'll trade: my answers for your errand. The Spire keeps the contract."
+        },
+        {
+          "id": "the_accusation",
+          "title": "Asked if she broke the chain",
+          "text": "I cut the pages — write that down, I'm tired of being half-accused. I cut them the night I understood someone was reading them in sequence. Breaking the chain needed the diagrams, the Archive, and a target: a living Auric throat. I had two of the three and the sense not to want the third. Ask Issoria who else withdrew the folios that year. Ask her under the lower-floor lamps, where the ledger can't be amended."
+        },
+        {
+          "id": "the_rebinding",
+          "title": "Asked if the chain can be remade",
+          "text": "Remade? No. Seven willing royal throats was the price the first time, and there is one Auric left, sitting in a tavern back room being patient at history. But a binding isn't the only shape the craft makes. The shrines hold their Eldest with treaty, not chain. Slower. Costlier. Survivable. If anyone tells you the only way to put the wyrm down is the old way, ask them whose throat they're volunteering."
+        }
+      ]
+    },
+    {
+      "id": "tick_the_bound",
+      "name": "Tick",
+      "sprite": "person/gnome_mage5.png",
+      "counter": "",
+      "personal_history": "Tick signed an apprenticeship contract with the Umbral Spire — not with Caulwen, with the tower — before learning the difference, which is exactly the kind of clause-blindness the tower's contracts select for. He is bound for seven years, paid in lessons he'd have committed crimes for anyway, and held to a service schedule enforced by the building itself: doors that won't open until chores are done, stairs that add flights when he's behind on his reading. He keeps the braziers fed, catalogs what the library catches, and maintains a meticulous secret countdown to his release date that the tower pretends not to have noticed adjusting.",
+      "dialogs": [
+        {
+          "id": "introduction",
+          "title": "On the stairs",
+          "text": "Visitors! Excellent. Touch nothing, agree to nothing, and if a book opens itself near you, do not make eye contact with the text. I'm Tick — apprentice, under contract. Four years, eight months, eleven days remaining, not that the tower lets the number stay still. Through here. Magister's expecting you, which is its own conversation."
+        },
+        {
+          "id": "about_the_contract",
+          "title": "Asked about his apprenticeship",
+          "text": "Standard apprentice articles, except the counterparty is the architecture. I missed that detail. My advice to you, freely given: in this tower, read everything twice and sign nothing once. The Magister's fair, in her way. The building is also fair. The building's idea of fair has more clauses."
+        }
+      ]
+    },
+    {
+      "id": "ashka_emberkeeper",
+      "name": "Ashka Flintbrow",
+      "sprite": "person/barbarian_priest.png",
+      "counter": "",
+      "personal_history": "Ashka is the last sworn keeper of the Fire Shrine and the last of the Cinderkin, the order the Auric kings installed there eleven centuries ago. Her predecessors taught it as worship; the order's oldest rites read more like the maintenance schedule of a lock. For all her years the shrine slept — braziers cold, the Hall of Embers dark. Then, on a night she can name to the hour, every brazier in the antechamber lit at once, unattended. She has since cross-checked the hour against every traveler's account she can gather, and she no longer doubts: the braziers lit the night the wyrm's chain broke. The Fire Below noticed. The treaty that holds it was written by the same hands as the chain, and the Fire is now reading its own contract very carefully.",
+      "dialogs": [
+        {
+          "id": "introduction",
+          "title": "In the antechamber",
+          "text": "Stay between the braziers and speak softly — not for reverence, for caution. This is not a temple, whatever the carvings suggest. It is an agreement with the thing below, and agreements have moods. The Cinderkin kept this one for eleven hundred years. I am the last of us, and lately the agreement has begun keeping itself."
+        },
+        {
+          "id": "the_night_of_fire",
+          "title": "Asked about the braziers",
+          "text": "Cold my whole life, and my teacher's life, and hers. Then one night — every brazier, lit, in the same breath. I've matched the hour. It was the night the chain broke on the Brimspire. Do you understand what that means? The seals don't just hold the Eldest down. They hold them separately. One binding fails, and all of them feel the slack."
+        }
+      ]
+    },
+    {
+      "id": "warchief_ottar",
+      "name": "Ottar Greyflame",
+      "sprite": "person/barbarian_fighter2.png",
+      "counter": "",
+      "personal_history": "Ottar leads the Ashen Clans, who have herded and raided along the volcanic range since before the Auric kings drew their first map of it. Clan memory runs deeper than the realm's: the songs say the first fire belonged to the clans, carried down from the mountain in a horn of stone, and that the wyrm Aurigax swallowed it whole in envy — which is why dragon-fire is the only fire that hates. When the lowlanders chained the wyrm, the clans approved of the outcome and despised the method; chains are a slave's answer. Now the wyrm flies again, and Ottar finds himself in the unfamiliar position of agreeing with lowlanders about a problem and disagreeing with everyone, including his own singers, about the solution: he means to take the fire back the old way, with a spear and a witnessed challenge.",
+      "dialogs": [
+        {
+          "id": "introduction",
+          "title": "At the clan fires",
+          "text": "Lowlanders at my fire. Sit — guest-right holds, even for you. You smell of roads and coin, which means you're here about the wyrm. Everyone is here about the wyrm. The difference between us: your people want it bound, and binding is what broke. The clans want what it stole. Those are different wars at the same mountain."
+        },
+        {
+          "id": "the_first_fire",
+          "title": "Asked about the clan songs",
+          "text": "Your scholars will tell you the songs are myth. Your scholars also told you the chain would hold. The first fire came down the mountain in a stone horn, and the wyrm took it, and that theft is why its flame eats what it shouldn't — memory, names, the warmth of a hall. Kill it with a chain and the fire stays stolen. Beat it in challenge, witnessed, and the fire comes home. My singers say I'll die trying. I've heard worse plans sung about."
+        }
+      ]
+    },
+    {
+      "id": "hierophant_ondine",
+      "name": "Hierophant Ondine Mar",
+      "sprite": "person/female_priest01.png",
+      "counter": "healing",
+      "personal_history": "Ondine keeps the Shrine of the Water Elementals, the gentlest of the old Auric containments — gentle because the water-folk signed willingly, trading the deep currents' freedom for the shrine's protection from things below that eat their kind. For centuries the arrangement ran so smoothly that even its keepers forgot it was an arrangement; Ondine herself trained believing she was clergy. The elementals corrected her. Since the spring the wyrm woke, they rise to the pool's surface out of turn, agitated, repeating one pulse of meaning her order has spent months translating. The closest rendering: 'the doors are being counted.' Something below is taking inventory of every seal the Aurics ever made, and the water-folk — willing signatories, with nothing to gain from a jailbreak — are afraid.",
+      "dialogs": [
+        {
+          "id": "introduction",
+          "title": "By the shrine pool",
+          "text": "Welcome, traveler. Drink, rest — the water here heals, that part of the old stories is true. The rest of the stories are due for revision. I was taught I tended a holy place. I have since learned I administer a treaty, and that my counterparty has started sending messages marked urgent."
+        },
+        {
+          "id": "the_counting",
+          "title": "Asked what the elementals say",
+          "text": "They speak in current and pressure — months, we spent, on one repeated phrase. 'The doors are being counted.' The Auric kings made many seals: the chain, my pool, the fire-treaty in the mountains, deeper ones I'm not permitted to name. Something beneath all of it is checking each lock in turn, patiently, like a steward with a ring of keys. The water-folk chose their door. They like it locked. Whatever is counting does not."
+        }
+      ]
+    },
+    {
+      "id": "sexton_marrow",
+      "name": "Sexton Hollis Marrow",
+      "sprite": "person/human_druid03.png",
+      "counter": "",
+      "personal_history": "Hollis Marrow learned grave-keeping under Aldous Grayle and inherited Mournfield when Aldous died — along with a sealed letter of instructions that begins 'Read all of this before you open the deep crypt, and then do not open the deep crypt.' Hollis has kept both halves of that instruction. He maintains the upper vaults, keeps the rows neat the way Aldous liked, and once a month descends exactly as far as the first crypt level to leave candles at the stair head for the level below. The letter explains the deep altar in language Hollis can recite but not comfortably repeat: it was old when the town was fields, it is owed 'observance, never worship,' and the candles are not offerings — they are how the dark down there knows somebody still remembers the terms.",
+      "dialogs": [
+        {
+          "id": "introduction",
+          "title": "Among the rows",
+          "text": "Mind where you step — the rows are straight and I keep them that way, out of respect and because Aldous Grayle would climb out of his own plot to correct me otherwise. You'll want the crypt, I expect. Armed folk always do. First level I can unlock. The second level I will tell you about, once, slowly, and then you'll sign my book so the record shows you were warned."
+        },
+        {
+          "id": "the_observance",
+          "title": "Asked about the candles",
+          "text": "Once a month, twelve candles, stair head of the deep level. Not worship — the letter is strict on the word. Observance. The thing about the altar down there, the way Aldous wrote it: it doesn't want praise, it wants to be remembered accurately. The candles say 'we know you're there, we recall the agreement, nobody up here has forgotten what you are.' The month Aldous missed, back in his day — the ground opened in four places. Memory, it turns out, is load-bearing."
+        }
+      ]
+    },
+    {
+      "id": "bone_counter",
+      "name": "The Bone-Counter",
+      "sprite": "person/elf_dark_priest.png",
+      "counter": "",
+      "personal_history": "It attends burials. Nobody invites it; nobody has successfully uninvited it. A grey-robed dark elf of indeterminate age that appears at gravesides across the Reaches, makes a small notation in a ledger of black cloth, and leaves without refreshment. Grave-folk from Mournfield to Varnfell have compared notes: it is unfailingly courteous, it never counts a burial twice, and it has been doing this for longer than the oldest sexton's oldest predecessor could remember. The Gloaming Court, asked directly, disavows it with a speed suggesting they know precisely who it is. The Bone-Counter, asked directly, says the count is 'nearly done,' and that everyone will be very relieved when the totals reconcile.",
+      "dialogs": [
+        {
+          "id": "graveside",
+          "title": "At the graveside",
+          "text": "Your pardon. Don't mind me — the family has precedence; I'll make my notation from here. One interment, attended, recorded. My condolences, offered in a professional capacity, which I find people rarely want and always remember."
+        },
+        {
+          "id": "the_count",
+          "title": "Asked what it is counting",
+          "text": "The dead, of course. Not for any dark purpose — quite the opposite. Somewhere below, a very old ledger and a very new one have stopped agreeing, and when ledgers of the dead disagree, the difference has to be walking around somewhere, doesn't it? I am finding the difference. The count is nearly done. I'd say within the decade. When it reconciles, you'll all sleep easier — well. Most of you."
+        }
+      ]
+    },
+    {
+      "id": "ferryman_ostle",
+      "name": "Ostle Quill",
+      "sprite": "person/human_fighter6.png",
+      "counter": "",
+      "personal_history": "Ostle is a Quill of the Bent Lantern Quills — Brenna's cousin, raised on the same rule that an honest house keeps its lamp lit. His lamp is the ferry lantern on the Gull Island crossing, and for twenty years he's run the strait in all weather, two trips a day, coin or barter. He still runs it — but never after dusk, not since the wrecks began drifting in with cargo lashed tight and not a soul aboard. He's seen the long wake that follows the empty hulls in, patient as a dog bringing back a stick. The sea returns things, Ostle says, when it wants you to come closer and take them. He has stopped taking them.",
+      "dialogs": [
+        {
+          "id": "introduction",
+          "title": "At the ferry landing",
+          "text": "Crossing's two coppers, gear rides free, and we go now or we go tomorrow — I don't split the difference with dusk anymore. You'll hear why from anyone on either shore. The strait's still mine in daylight. After dark it belongs to whatever's been doing the harbor's returns, and I don't contest the lease."
+        },
+        {
+          "id": "the_long_wake",
+          "title": "Asked about the empty ships",
+          "text": "Twice now I've seen a hull come in with no hand on the tiller, riding neat as you please — and behind it, a wake. Long. Patient. Nothing breaking the surface, just water moving like something underneath was walking the boat home. My cousin Brenna keeps a lantern lit for travelers. I keep mine lit for the opposite reason: so the thing out there knows exactly where I am, and exactly where I'm not going."
+        }
+      ]
+    },
+    {
+      "id": "mother_nerei",
+      "name": "Mother Nerei",
+      "sprite": "person/female_druid01.png",
+      "counter": "",
+      "personal_history": "Nerei has lived on Gull Island longer than the fishermen's grandmothers can account for, in a hut above the tide line that the storms go around. She tends the barnacled altar in the sea cave — tends, she stresses, not serves — and she is the only living person who will say plainly what the coast folk only gesture at: the Tide-Taker is real, it is one of the Eldest, and it is not malicious. It is a collector. It keeps crews because it is lonely in a way that has no bottom, and it returns the cargo because objects mean nothing to it. The Auric kings never bound it; they assessed the deep treaty it would demand and chose, in the only recorded instance of Auric restraint, to leave the sea alone. Nerei thinks that was wisdom. She also thinks the thing counting the doors below has noticed the sea was never given one.",
+      "dialogs": [
+        {
+          "id": "introduction",
+          "title": "Above the tide line",
+          "text": "Come up, come up — the path minds its manners if you do. You've crossed with Ostle, then; he's a good boy, and right to fear the dusk water. Sit. I'll tell you what the coast knows and won't say: the sea here isn't haunted. It's inhabited. There's a difference, and your lives may someday turn on respecting it."
+        },
+        {
+          "id": "the_tide_taker",
+          "title": "Asked about the Tide-Taker",
+          "text": "It keeps the crews and sends back the cargo. People hear that and imagine cruelty. Think instead of a child who keeps the fireflies and returns the jar. It is old as the Wood and lonelier — the Wood at least has its trees for company. The Aurics never chained it; bless them for once, they did the sums and walked away. But understand: every other Elder has a door and a lock. The sea has neither. If the locks below all fail at once, the sea will be the only calm thing on this coast, and you should be standing near it."
+        }
+      ]
+    },
+    {
+      "id": "korrigan_mosswane",
+      "name": "Korrigan Mosswane",
+      "sprite": "person/human_druid31.png",
+      "counter": "",
+      "personal_history": "Korrigan speaks for the Greymantle Circle, the scatter of druids who maintain humanity's only working diplomacy with the Eldest. The Circle's doctrine is short because everyone who lengthened it is dead: iron carried, salt shared, no fire kindled, no promises made. He has walked into the Wandering Wood eleven times and out eleven times, which makes him the Circle's senior negotiator by survival. It was Korrigan who first compiled the pattern the shrines and keepers were each seeing alone — the braziers, the restless pool, the warm delve, the counted doors — into the Circle's one-sentence assessment, now repeated from Varnfell to the capital: the Eldest are not waking up; something is waking them.",
+      "dialogs": [
+        {
+          "id": "introduction",
+          "title": "At the wood's edge",
+          "text": "Stop there. Iron's fine — keep it sheathed and visible. Salt, if you carry any, you'll share with me now; it's how the Wood prefers introductions made. I'm Korrigan, of the Circle. If you're going in, I won't stop you, but you'll listen first, because the doctrine is three rules long and the graves of its editors are all around us."
+        },
+        {
+          "id": "the_assessment",
+          "title": "Asked about the Eldest",
+          "text": "Five that we treat with: the Wood, the Fire Below, the water-folk, the Nameless under Mournfield, and the Tide-Taker — though the sea takes no appointments. For eleven centuries they slept because the Auric seals held them apart, and apart, they dream. Now the chain is broken, and every keeper I correspond with reports the same thing in different words: their charge is listening. Not waking — listening. The Eldest don't wake on their own, traveler. Something beneath all five of them is going door to door."
+        }
+      ]
+    },
+    {
+      "id": "envoy_sszira",
+      "name": "Envoy Sszira Vel",
+      "sprite": "person/elf_dark_mage10.png",
+      "counter": "",
+      "personal_history": "Sszira Vel carries the seal of the Gloaming Court, the dark-elf realm threaded through the deep roads beneath the ranges — a polity older than the Auric kingdom that has spent eleven centuries pretending the surface doesn't exist. The pretense ended for Sszira the year the lowest roads began closing: not collapsing, closing, sealed from below with workmanship no Gloaming mason recognizes. The Court's southern holds have gone silent in order, deepest first, like lamps being put out down a corridor. She came up through the Frost Delve — it was the nearest open door, and she notes the surface dwellers had marked its warmth but not its meaning: warm air rises from below when something large is holding the deep doors open for traffic. The Court sent her to negotiate passage rights, resettlement terms, anything. She has discovered the surface doesn't know there's a war below it, and has had to begin, humiliatingly, with introductions.",
+      "dialogs": [
+        {
+          "id": "introduction",
+          "title": "Under a parley flag",
+          "text": "I am Sszira Vel, envoy of the Gloaming Court, and I will save us the ceremony my office requires: my realm is losing a war you have not heard of, against an enemy I cannot name, and I have been sent up into the sun — which is every bit as unpleasant as our poets claim — to ask what the surface will take in trade for room. You will want to fetch whoever negotiates. I'll wait. We are very good at waiting; it's most of what we have left."
+        },
+        {
+          "id": "the_closing_roads",
+          "title": "Asked about the war below",
+          "text": "The deep roads are being closed from beneath — sealed, neatly, by hands that leave no rubble and no bodies. Our southern holds went silent in sequence, deepest first. Whatever does this doesn't fight; it confines. Your scholars chained a dragon and called it the great working of the age. Envoy to host, in candor: we have watched something below us spend a century doing the same work, hold by hold, to my entire civilization. And lately its attention is pointed up."
+        }
+      ]
+    },
+    {
+      "id": "kethrin_gloaming_blade",
+      "name": "Kethrin of the Gloaming",
+      "sprite": "person/elf_dark_fighter3.png",
+      "counter": "",
+      "personal_history": "Kethrin is the envoy's blade-sworn — bodyguard, witness, and if the mission fails, the one appointed to carry word home. The Court chose Kethrin for the surface posting on the strength of an evaluation that read, in full, 'speaks little, misses nothing, can be trusted around sunlight.' Kethrin was at the silent hold of Vess Murat with the last relief column and walked its sealed corridors for two days: every door shut, every lamp filled, every table laid — and no Gloaming dead, anywhere. A civilization's worth of absence, kept tidy. Kethrin does not discuss Vess Murat. Kethrin's sword arm discusses it, in training yards, against practice posts that do not survive the conversation.",
+      "dialogs": [
+        {
+          "id": "introduction",
+          "title": "At the envoy's shoulder",
+          "text": "Kethrin. Blade-sworn to the envoy. State your business at a distance the envoy finds comfortable, and we'll have no difficulties. You're curious about the deep war — everyone is, eventually. The envoy has the words for it. I just have the memory, and you don't want my version. Mine has no words in it at all."
+        },
+        {
+          "id": "vess_murat",
+          "title": "Asked about the silent hold",
+          "text": "Two days inside. Doors shut. Lamps filled. Tables laid for a meal nobody ate. Forty thousand of my people gone without one overturned chair. You want to know what we're afraid of? Not death. The Gloaming have sung death's measures for ten thousand years. We're afraid of whatever thinks that — all of that — is what 'finished' looks like."
+        }
+      ]
+    },
+    {
+      "id": "posy_underbough",
+      "name": "Posy Underbough",
+      "sprite": "person/halfling_priest.png",
+      "counter": "general",
+      "personal_history": "Posy runs the Wayfarer's Rest, the halfling wayhouse at the junction where the Greymantle spine road meets the tradeway north — which makes her common room the realm's true parliament. Tinkers, ferrymen, patrol riders, caravan masters, the occasional polite dark elf: everyone stops at Posy's, everyone eats better than they planned to, and everyone talks more than they intended. The Underboughs have kept wayhouses for as long as the roads have had mud, on the family creed that a fed traveler is a talking traveler and a talking traveler is the only newspaper worth the price. Posy can tell you the state of every road in the Reaches to within three days, and her pantry-door map of rumor — pins, string, and butcher's paper — has lately been requisitioned, discreetly and separately, by both Lady Rowan and the Knight-Marshal's riders.",
+      "dialogs": [
+        {
+          "id": "introduction",
+          "title": "In the common room",
+          "text": "Sit, sit — corner table's free and the stew thinks it's mutton, which is close enough at these prices. You've the look of folk heading somewhere unreasonable, which means you'll want the road news. I do road news the way the capital does taxes: thoroughly, and everyone contributes. Eat first. Then we'll trade."
+        },
+        {
+          "id": "road_news",
+          "title": "Asked for the news",
+          "text": "North tradeway: open as of Tuesday, thanks to some hired blades, bless their pointy lifestyle. The ferry: daylight only, Ostle's firm on it. Mournfield gate: locked nights, sexton's orders. The pine road past the black tower: technically open, spiritually closed. And three different drovers this week swear they saw grey-cloaked elves on the old delve roads at dusk. That last one's free. The look on your faces just paid for it."
+        }
+      ]
+    },
+    {
+      "id": "glimm_cogspindle",
+      "name": "Artificer Glimm Cogspindle",
+      "sprite": "person/gnome_mage16.png",
+      "counter": "",
+      "personal_history": "Glimm is a gnome artificer of the Brasswick workshops, on extended field sabbatical that his guildmaster calls exile and Glimm calls funded curiosity. His obsession is brimite — the ore Henna Stone's crews once pulled from the Frost Delve — which hums at a pitch most ears miss and most instruments mistake for their own error. Glimm built an instrument that doesn't. His resonance surveys say brimite isn't ore at all in the ordinary sense: it's residue, the crystallized leavings of large workings of binding-craft, and it hums because it's still doing a faint echo of its old job. The veins under the Frost Delve, the machines in the Umbral Spire, the foundation courses of both shrines — same hum, same pitch, same age. The Auric kings didn't mine brimite, Glimm will tell anyone who stands still: they manufactured it, everywhere they built a lock.",
+      "dialogs": [
+        {
+          "id": "introduction",
+          "title": "Over the instruments",
+          "text": "Careful of the wires — that one's load-bearing and that one's theoretical. Glimm Cogspindle, artificer, currently between guild approvals. Hold this. Don't shake it. You hear that hum? No? Exactly! Nobody hears it, that's the entire point, sit down, this concerns every person on this continent and I have charts."
+        },
+        {
+          "id": "the_brimite_thesis",
+          "title": "Asked about brimite",
+          "text": "Ore forms in veins. Brimite forms in rings — I've surveyed three: one around the Frost Delve's deep cracks, one under the fire shrine, one in the bones of that unpleasant tower in the pines. Rings, friend. Ore doesn't circle things, fences do. The Aurics built locks all over this land and the brimite is what their craft sweats. Which raises the question my guild expelled me for asking too loudly: when somebody mines a ring out — say, nine years of honest pickwork at a place like the Frost Delve — what exactly did they unlock?"
+        }
+      ]
+    },
+    {
+      "id": "grom_brundle",
+      "name": "Grom Brundle",
+      "sprite": "person/half_ogre_fighter.png",
+      "counter": "",
+      "personal_history": "Grom keeps the high bridge on the spine road, collecting tolls under a charter from Lord Marche that Grom negotiated personally, in writing, to the visible astonishment of everyone involved. He is half-ogre, of the pass clans who have held the mountain crossings since before either of their neighbor peoples thought to charge for them. The clans spent generations as everyone's hired muscle and nobody's countrymen — caught between Murgath's warbands recruiting from below and lowland lords hiring from above. Grom's charter is the first paper any pass clan has ever held that makes them landlords instead of labor, and he maintains the bridge, the toll book, and the principle with a thoroughness that has made the spine road the safest stretch in the Reaches. Bandits avoid it. The toll is two coppers. Grom's predecessor-by-blood broke kneecaps for half a loaf; Grom issues receipts.",
+      "dialogs": [
+        {
+          "id": "introduction",
+          "title": "At the high bridge",
+          "text": "Toll's two coppers a head, animals free, receipt on request. Charter's posted on the board — Marche seal, bottom corner, you're welcome to inspect it; everyone does, like maybe the words changed since the last traveler read them. They haven't. Bridge is safe, road's watched, and both of those facts are my rent. Pleasant crossing."
+        },
+        {
+          "id": "the_pass_clans",
+          "title": "Asked about his people",
+          "text": "Pass clans held these crossings before anyone taxed them, then spent six hundred years as muscle — Murgath's recruiters working the low caves, your lords' coin working the high ones, and a clan's worth of futures spent on other people's wars either way. This charter is one bridge. One. But it's got my mark on it as the landlord, not the hired fist, and my sister's boys are learning their letters so they can read it. That's the whole story of why nobody robs my bridge. I've finally got something I'd be unreasonable about."
+        }
+      ]
+    },
+    {
+      "id": "unok_two_voices",
+      "name": "Unok Two-Voices",
+      "sprite": "person/half_ogre_priest.png",
+      "counter": "",
+      "personal_history": "Unok is the pass clans' shaman, named for the way answers come out of him: his own rumbling voice, and then sometimes — after a silence with weight in it — a second voice, flatter and slower, that the clans say is the mountain taking its turn. Skeptics note the second voice has never once been wrong about weather, rockfall, or which tunnels to brick up, and the skeptics have grown quiet. Unok walked to Murgath's gate once under truce and the two are said to have spoken all night; what passed between them Unok won't repeat, except one line that has since traveled the whole range: the old warlord keeps to the deep galleries not from strength, but because the mountain's roots are the last place the counting hasn't reached. Unok burns sweetgrass for the miners Henna lost, keeps the pass rites, and waits, lately, with the air of a man whose second voice has stopped volunteering.",
+      "dialogs": [
+        {
+          "id": "introduction",
+          "title": "At the cairn line",
+          "text": "Sit, traveler. The wind does the introductions up here if you let it. I'm Unok. Sometimes only Unok — sometimes the mountain has opinions, and I lend it the throat. Ask what you came to ask. If the answer comes slow and flat, you'll know which of us is talking, and you'd do well to write that one down."
+        },
+        {
+          "id": "the_second_voice",
+          "title": "Asked about the mountain's counsel",
+          "text": "You want to know what the mountain says about the troubles. So do I. It used to speak unasked — storms, slides, which black tunnel to wall off. Since the spring the wyrm woke, it answers questions but offers nothing, like a man in a tavern who's seen the press-gang come in the door. The last thing it said freely, I'll give you word for word: 'The roots are still mine. Stay above the roots.' Then it stopped volunteering. Make of that what you will. I've made a habit of staying above the roots."
+        }
+      ]
+    },
+    {
+      "id": "loremaster_fenwick",
+      "name": "Loremaster Fenwick Drowle",
+      "sprite": "person/human_mage12.png",
+      "counter": "",
+      "personal_history": "Fenwick resigned a comfortable university chair to write 'The Greymantle Chronicle,' a complete history of the Reaches that has so far consumed nineteen years, four mules, and any prospect of comfortable old age. He has interviewed everyone who would sit still: Marisol on the Wood, Old Greaves on his grandmother's binding-stone, Henna on the delve, the Cinderkin records at the fire shrine, two regents, and one extremely patient evening with the Stranger in Grey, of which his notes record only 'he corrected my dates.' The Chronicle's draft conclusion is the most dangerous paragraph in the realm, and Fenwick knows it: every Auric seal references a 'first working' beneath all the others — a keystone binding, older and deeper, on which the chain, the shrines, and the deep seals all structurally depend. The Aurics didn't invent the craft. They inherited it, from whoever locked the first door — and the counting that every keeper now reports sounds, to Fenwick, less like a jailbreak than an audit of the estate.",
+      "dialogs": [
+        {
+          "id": "introduction",
+          "title": "At the writing table",
+          "text": "Mind the manuscripts — chronological order, mostly, except where the chronology is itself in dispute, which is chapters four through eleven. Fenwick Drowle, Loremaster, formerly of the university, currently of wherever the Chronicle needs me. Sit. Talk. Everything you tell me will be checked against three sources and remembered forever, so do be accurate."
+        },
+        {
+          "id": "the_keystone",
+          "title": "Asked about the first working",
+          "text": "Every Auric seal I've examined carries the same structural citation — a dependency on something older, deeper, that the binding texts call only 'the first working.' The chain referenced it. The shrines reference it. Do you see? The Aurics were not architects, they were tenants doing renovations. Somewhere beneath every lock in this realm is the lock, made by hands we have no name for, holding something we have no record of. And everything now stirring — the counting, the closed roads, the audit of the doors — is happening at exactly the depth my sources go silent. I have one chapter left to write and I confess I am in no hurry to research it."
+        }
+      ]
+    },
+    {
+      "id": "maddi_greaves",
+      "name": "Maddi Greaves",
+      "sprite": "person/female_thief01.png",
+      "counter": "",
+      "personal_history": "Maddi is Old Greaves' granddaughter, and the only member of the family who ever bought him the third ale on purpose. She grew up on his war stories, sorted the lies from the ledger-truths by watching his hands — the lies came with gestures, the truths came with his palms flat on the table — and started writing the flat-palm stories down. The result is a song-cycle she performs in wayhouse common rooms under the title 'The Chain-Carver's Daughter,' which is doing for the realm's secret history what no chronicle could: making it singable. Fenwick Drowle cites her verses, with footnoted reluctance, as primary sources. The capital has twice sent polite men to ask where her grandmother's family found the binding-stone in the Auric ruins. Maddi answered both times with a verse that doesn't rhyme until you realize it's directions to somewhere that doesn't exist.",
+      "dialogs": [
+        {
+          "id": "introduction",
+          "title": "Between sets",
+          "text": "Requests after the next set, and no, I don't do 'The Wyrm's Lament' — every word of it's wrong and the tune's stolen besides. You want the true cycle, stay past midnight when the room thins out. The early crowd gets the songs that rhyme. The late crowd gets the ones with their palms flat on the table, if you take my family's meaning."
+        },
+        {
+          "id": "the_true_cycle",
+          "title": "Asked about the Chain-Carver songs",
+          "text": "Grandda talked with his hands when he lied, and kept them flat when he didn't, and the flat-hand stories all agreed: his gran saw the binding carved, names spoken into stone, seven of them, and the carvers wept while they worked. That's in the third song. The fourth song is about who visited the ruins the season before the chain broke — and I sing that one carefully, friend, because two of the people in it are still alive, and one of them has very good hearing."
+        }
+      ]
+    },
+    {
+      "id": "the_pale_lord",
+      "name": "The Pale Lord",
+      "sprite": "person/elf_dark_paladin.png",
+      "counter": "",
+      "personal_history": "The creature Sir Roderic Vane has hunted across three duchies was old before the duchies were drawn. It keeps a court because it has always kept a court — it was a lord in life, of a people and a banner no record survives to name, and the habit outlived the kingdom, the kingdom's language, and the kingdom's graves. It speaks of the Auric kings the way the living speak of promising children, and it is one of perhaps three beings above ground who can describe the binding craft from observation rather than texts: it watched the chain carved. It declined, with what it considers exquisite manners, the Aurics' invitation to be bound along with everything else old in the world — an exchange it recalls fondly as the last interesting conversation. What it remembers best, and mentions least, is what the seven carvers told it they were all standing on: the first working, far below, already ancient, already holding. The Pale Lord has spent eleven centuries being careful not to stand directly above anything. It talks before it kills. It is always, genuinely, hoping the talk will be worth more.",
+      "dialogs": [
+        {
+          "id": "the_audience",
+          "title": "Granted an audience",
+          "text": "Guests. Sit — the chairs are older than your bloodlines and considerably better behaved. You've come to kill me, of course; the knight's notes will have led you here, give him my compliments on the cartography. We'll come to all that. But first you'll talk with me a while. Everything in this world I once found interesting has died of old age, and I have learned to make conversation last."
+        },
+        {
+          "id": "the_old_world",
+          "title": "Asked about the Auric kings",
+          "text": "Charming, brief, doomed — like all the best dynasties. They came to me, you know, when the carving began. Very courteous. Offered me a place in their grand arrangement — a door of my own, a lock of my own, eternity with a docent. I declined over a genuinely excellent dinner. But I remember what their carvers whispered when the wine had been at them: that they built on something older. The first working. They didn't make the deep lock, little guests — they found it, and leaned their whole bright kingdom against it. And lately — you feel it too, I think, or you wouldn't be this far from daylight — something has begun checking what the lean disturbed."
+        }
+      ]
+    }
+  ]
+}

@@ -26,6 +26,7 @@ import {
   saveDraft,
 } from "@/data_model/draft";
 import { mergeModel } from "@/data_model/merge";
+import type { LibraryCatalogEntry } from "@/data_model/ModuleSource";
 import { publishItems } from "@/data_model/publishClient";
 import { StaticModuleSource } from "@/data_model/StaticModuleSource";
 import { EncounterPicker } from "./EncounterPicker";
@@ -190,6 +191,10 @@ type LoadState =
   | {
       kind: "ok";
       quests: QuestRecord[];
+      /** Quests available to import from `uses` libraries (e.g.
+       *  "Side Quests"). Not auto-merged — surfaced for explicit
+       *  import, mirroring MapsBrowse / DungeonsBrowse. */
+      catalog: LibraryCatalogEntry[];
       items: ItemSummary[];
       maps: MapSummary[];
       dungeons: DungeonSummary[];
@@ -208,9 +213,12 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
   const refresh = async () => {
     try {
       const src = new StaticModuleSource();
-      const [questsLayers, itemsLayers, mapsLayers, dungeonsLayers] =
+      const [questsLayers, catalog, itemsLayers, mapsLayers, dungeonsLayers] =
         await Promise.all([
           src.loadModelLayers(moduleId, "quests"),
+          // Quests offered by `uses` libraries. Not part of the
+          // resolved view — the import section below copies them in.
+          src.listLibraryRecords(moduleId, "quests"),
           src.loadModelLayers(moduleId, "items"),
           src.loadModelLayers(moduleId, "maps"),
           src.loadModelLayers(moduleId, "dungeons"),
@@ -261,6 +269,7 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
       setState({
         kind: "ok",
         quests,
+        catalog,
         items,
         maps,
         dungeons,
@@ -330,6 +339,40 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
     persist([...state.quests, rec]);
     setCreating(false);
     setExpanded((prev) => new Set(prev).add(rec.id));
+  };
+
+  /**
+   * Import one or more quests from a `uses` library into THIS
+   * module's own quests file. Deep-clones each record so the copy
+   * decouples from the library — afterwards the author edits it like
+   * any quest they wrote themselves.
+   *
+   * IDs are preserved, NOT renamed, mirroring DungeonsBrowse: a quest
+   * id is a referenceable key (trigger tiles can carry
+   * `quest: "<quest_id>"`, and saves track progress by quest id), so
+   * renaming on import would break references. The import catalog
+   * already filters out ids present in the resolved view; collisions
+   * across two libraries exposing the same id are skipped, not
+   * renamed.
+   *
+   * Library quests may reference encounters / items / maps / dungeons
+   * the importing module doesn't have — that's deliberate (location
+   * fields are often left blank in libraries for the host author to
+   * fill in). The quest editor's pickers surface unresolved ids so
+   * they're easy to spot after import.
+   */
+  const onImportQuests = (records: QuestRecord[]) => {
+    if (state.kind !== "ok") return;
+    const existing = new Set(state.quests.map((q) => q.id));
+    const toAdd: QuestRecord[] = [];
+    for (const rec of records) {
+      if (!rec.id || existing.has(rec.id)) continue;
+      const clone: QuestRecord = JSON.parse(JSON.stringify(rec));
+      toAdd.push(clone);
+      existing.add(clone.id);
+    }
+    if (toAdd.length === 0) return;
+    persist([...state.quests, ...toAdd]);
   };
 
   const onDeleteQuest = (id: string) => {
@@ -458,6 +501,18 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
 
   const existingIds = new Set(state.quests.map((q) => q.id));
   const canExport = state.ownFile !== null;
+
+  // Library quests available to import, with ids already present in
+  // the resolved view filtered out (an imported quest no longer needs
+  // an import button). Empty libraries drop out.
+  const availableCatalog = state.catalog
+    .map((entry) => ({
+      libraryId: entry.libraryId,
+      records: (entry.records as unknown as QuestRecord[]).filter(
+        (r) => r.id && !existingIds.has(r.id),
+      ),
+    }))
+    .filter((entry) => entry.records.length > 0);
 
   const toggleExpanded = (id: string) =>
     setExpanded((prev) => {
@@ -610,6 +665,105 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
           </p>
         ) : null}
       </div>
+
+      {/* Available from libraries (uses) — explicit import, not
+          auto-merged. Each quest is a self-contained record (steps are
+          inline), so the granularity is per-quest, with a per-library
+          "Import all" for convenience. Ids are preserved so trigger
+          tiles / saves that reference a quest by id keep resolving. */}
+      {availableCatalog.length > 0 ? (
+        <section className="mt-8">
+          <h2 className="mb-1 text-xs uppercase tracking-wide text-parchment/45">
+            Available from libraries
+            <span className="ml-2 normal-case tracking-normal text-parchment/35">
+              ({availableCatalog.reduce((n, e) => n + e.records.length, 0)}{" "}
+              quest
+              {availableCatalog.reduce((n, e) => n + e.records.length, 0) === 1
+                ? ""
+                : "s"}{" "}
+              ready to import)
+            </span>
+          </h2>
+          <p className="mb-3 text-xs text-parchment/45">
+            Quests from libraries this module uses. Importing copies a
+            quest into this module&apos;s own file (id preserved) — edit
+            it freely afterward without affecting the library. Library
+            quests often leave location fields (map, dungeon, positions)
+            blank for you to fill in after import.
+          </p>
+          <div className="space-y-4">
+            {availableCatalog.map((entry) => (
+              <div
+                key={entry.libraryId}
+                className="rounded border border-parchment/10 bg-ink/20"
+              >
+                <div className="flex items-center justify-between gap-3 border-b border-parchment/10 bg-ink/40 px-3 py-1.5">
+                  <span className="text-xs text-parchment/70">
+                    <span className="text-parchment/85">{entry.libraryId}</span>
+                    <span className="ml-2 text-parchment/40">
+                      ({entry.records.length} available)
+                    </span>
+                  </span>
+                  {entry.records.length > 1 ? (
+                    <button
+                      type="button"
+                      onClick={() => onImportQuests(entry.records)}
+                      className="shrink-0 rounded border border-ember/60 bg-ember/30 px-2 py-0.5 text-xs text-parchment hover:bg-ember/50"
+                      title={`Import all ${entry.records.length} quests from ${entry.libraryId}.`}
+                    >
+                      + Import all ({entry.records.length})
+                    </button>
+                  ) : null}
+                </div>
+                <ul className="divide-y divide-parchment/5">
+                  {entry.records.map((q) => (
+                    <li
+                      key={`${entry.libraryId}::${q.id}`}
+                      className="flex items-center justify-between gap-3 px-3 py-2"
+                    >
+                      <div className="min-w-0 flex-1 text-sm text-parchment/85">
+                        <div className="truncate">
+                          <span className="font-display">{q.name}</span>
+                          <span className="ml-2 font-mono text-xs text-parchment/45">
+                            {q.id}
+                          </span>
+                          <span className="ml-2 text-xs text-parchment/40">
+                            {q.steps?.length ?? 0} step
+                            {(q.steps?.length ?? 0) === 1 ? "" : "s"}
+                          </span>
+                          {q.quest_giver?.npc_name ? (
+                            <span className="ml-2 text-xs text-parchment/40">
+                              · giver: {q.quest_giver.npc_name}
+                            </span>
+                          ) : null}
+                          {Array.isArray(q.tags) && q.tags.length > 0 ? (
+                            <span className="ml-2 text-xs text-parchment/40">
+                              · {q.tags.join(", ")}
+                            </span>
+                          ) : null}
+                        </div>
+                        {q.description ? (
+                          <p className="mt-0.5 truncate text-xs text-parchment/50">
+                            {q.description}
+                          </p>
+                        ) : null}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => onImportQuests([q])}
+                        className="shrink-0 rounded border border-ember/50 bg-ember/20 px-2 py-0.5 text-xs text-parchment hover:bg-ember/40"
+                        title={`Import just this quest from ${entry.libraryId}.`}
+                      >
+                        + Import
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }
