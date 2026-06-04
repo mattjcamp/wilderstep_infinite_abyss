@@ -2,17 +2,17 @@
   "quests": [
     {
       "id": "rats",
-      "name": "The Giant Rats",
-      "description": "Get rid of those giant rats in their giant rat hiole",
+      "name": "Rats in the Walls",
+      "description": "The general shop's cellar is crawling with giant rats, and the infestation runs deeper than any cellar should — down into a cave system nobody knew was there.",
       "tags": [
-        "hallowmere"
+        "hollowmere"
       ],
       "steps": [
         {
           "id": "rats_step_1",
-          "name": "Step 1 Kill the Cave Rats",
+          "name": "Clear the cave under the shop",
           "kind": "kill",
-          "description": "Kill the Giant Rats in the cave under the shop",
+          "description": "Put down the giant rats swarming the cave beneath the general shop.",
           "tags": [
             "rats"
           ],
@@ -23,7 +23,7 @@
         },
         {
           "id": "rats_step_2",
-          "name": "Kill the Basement Rats!!!",
+          "name": "Clear out the basement nests",
           "kind": "kill",
           "encounter_id": "rat_nest",
           "tags": [
@@ -31,12 +31,12 @@
           ],
           "location_kind": "map",
           "map_id": "show_basement",
-          "description": "Kill the rats inthe basement too!!!!!",
+          "description": "The basement nests feed the cave below. Destroy them or the cellar refills within a season.",
           "count": 2
         },
         {
           "id": "rats_step_3",
-          "name": "Deal with the rats around Hallowmere",
+          "name": "Hunt down the strays around Hollowmere",
           "kind": "kill",
           "encounter_id": "rat_nest",
           "count": 2,
@@ -45,19 +45,19 @@
         },
         {
           "id": "rats_step_4",
-          "name": "Clear the goblins hiding in a town house",
+          "name": "Evict the goblin squatters",
           "kind": "kill",
           "encounter_id": "goblin_squatters",
-          "description": "Goblins have been seen slipping into one of Hollowmere's houses after dark. Search the town houses and drive them out.",
+          "description": "Goblins have been slipping into one of Hollowmere's houses after dark — and where goblins nest, rats follow. Drive them out.",
           "location_kind": "map",
           "map_id": "hollowmere_town_house_3"
         }
       ],
       "quest_giver": {
-        "npc_name": "Jerald",
-        "npc_sprite": "person/hobbit2.png",
-        "start_dialog": "I'm the owner of the General Shop and my basement is infested with Giant Rats. Can you take care of this problem for me? I fear that the infestation is spreading and I blame those goblins that have been sneaking around.",
-        "end_dialog": "Thank you so much for getting rid of those rats and dealing with that cave system... Who knew?"
+        "npc_name": "Mira Hask",
+        "npc_sprite": "person/townsperson13.png",
+        "start_dialog": "Twelve years I've kept this shop and I have never once been beaten on a price — but I am being beaten by rats. Big ones, coming up through the basement faster than I can trap them, and I'd stake my black book it started with those goblins sneaking around after dark. Clear them out, top to bottom, and Mira Hask pays her debts.",
+        "end_dialog": "A whole cave system. Under my shop. Twelve years standing on top of that, and not one supplier thought to mention it. The cellar's mine again, and your name goes in my book — the good column, which I'll have you know is the shorter one."
       },
       "rewards": {
         "xp": 100,
@@ -71,15 +71,15 @@
     },
     {
       "id": "chase_out_the_goblins",
-      "name": "Chase the Goblins Away",
-      "description": "The town has learned that the Giant Rat infestation started with the goblins in their grotto just north of town. We suspect they have been burrowing into town, probably near the general shop. Go and chase them out!",
+      "name": "The Grotto Below",
+      "description": "The rat infestation traces back to a goblin grotto north of town — and the goblins have been tunneling toward Hollowmere. Break the warren before the town wakes up with a basement it didn't dig.",
       "tags": [
-        "hallowmere"
+        "hollowmere"
       ],
       "steps": [
         {
           "id": "chase_out_the_goblins_step_1",
-          "name": "Remove the Goblin Squatters from the Grotto",
+          "name": "Clear the squatters from the upper grotto",
           "kind": "kill",
           "tags": [
             "hallowmere_goblins"
@@ -91,7 +91,7 @@
         },
         {
           "id": "chase_out_the_goblins_step_2",
-          "name": "Destroy the Goblin Raiding Party",
+          "name": "Destroy the raiding party below",
           "kind": "kill",
           "encounter_id": "goblin_raiders",
           "tags": [
@@ -102,13 +102,13 @@
         },
         {
           "id": "chase_out_the_goblins_step_3",
-          "name": "Return the Chest",
+          "name": "Recover what the goblins stole",
           "kind": "retrieve",
           "item_id": "shadow_crystal",
           "tags": [
             "hallowmere_goblins"
           ],
-          "description": "The goblins have  taken the town treasury! Find it and return it to the mayor.",
+          "description": "The goblins took something from the town vault — the mayor is oddly vague about what. Find it in the lower grotto and bring it back unopened.",
           "location_kind": "map",
           "map_id": "grotto_1_l2",
           "col": 28,
@@ -116,10 +116,10 @@
         }
       ],
       "quest_giver": {
-        "npc_name": "Cranky Mayor",
+        "npc_name": "Mayor Ottley Pruce",
         "npc_sprite": "person/druid1.png",
-        "start_dialog": "The town has learned that the Giant Rat infestation started with the goblins in their grotto just north of town. We suspect they have been burrowing into town, probably near the general shop. Go and chase them out!",
-        "end_dialog": "Thank you brave traveler. I assumed you would have returned, dead and floating by town but you have prevailed! You have the town's thanks!."
+        "start_dialog": "Goblins. In the grotto. Tunneling toward MY town, under MY shop district, on MY year as mayor. The Hask woman's rats were the warning and nobody listened, well, I'M listening, and I'm hiring. Break the warren, get back what they took from the vault, and try not to read anything you find down there. Town business stays town business.",
+        "end_dialog": "You came back. Walking, even. I'll be honest, the town pool had you floating past the mill by Thursday — I lost three silver on you, and I have never been happier to lose money. The item goes back in the vault, the goblins go in the town record as 'resolved,' and you go on the list of people Hollowmere owes. It's a short list. We pay it."
       },
       "rewards": {
         "xp": 200,
@@ -131,17 +131,17 @@
     },
     {
       "id": "explore_the_grotto",
-      "name": "Explore the Grotto",
-      "description": "There is another grotto just north of the goblins, explore that and make sure it does not pose a menace to Hallowmere",
+      "name": "The Second Hole",
+      "description": "There's another grotto north of the goblin warren, and nobody in Hollowmere can say what's in it — which, lately, is reason enough to find out.",
       "tags": [
-        "hallowmere"
+        "hollowmere"
       ],
       "steps": [
         {
           "id": "explore_the_grotto_step_1",
-          "name": "Explore the Grotto",
+          "name": "Sound the grotto, top to bottom",
           "kind": "reach",
-          "description": "Explore the nearby grotto",
+          "description": "Walk every level of the second grotto and find out whether the holes connect.",
           "tags": [
             "explore_the_grotto"
           ],
@@ -149,10 +149,10 @@
         }
       ],
       "quest_giver": {
-        "npc_name": "Old Warrior",
+        "npc_name": "Harl, Old Campaigner",
         "npc_sprite": "person/fighter16.png",
-        "start_dialog": "There is another grotto just north of the goblins, explore that and make sure it does not pose a menace to Hallowmere",
-        "end_dialog": "Looks like my suspicion was correct, please accept the thanks of the people of Hallowmere"
+        "start_dialog": "Forty years of soldiering teaches you one thing worth keeping: it's never the hole you know about. There's a second grotto north of the goblin warren, and every soul in town walks past it like it isn't there. Go down it. All the way down. I'd go myself, but my knees signed a separate peace years ago.",
+        "end_dialog": "So it's deep, and it's ugly, and now we know — which puts Hollowmere ahead of every town that found out the other way. You've done old Harl a kindness and the town a service. The town doesn't know it yet. They never do until the hole's full of something."
       },
       "rewards": {
         "xp": 250,
@@ -161,24 +161,25 @@
     },
     {
       "id": "explore_a_dark_forest",
-      "name": "Explore a Dark Forest",
-      "description": "",
+      "name": "Into the Dark Wood",
+      "description": "The old forest north of Hollowmere goes in further than it goes across, and the deeper paths stop being forest at all. Nobody has walked it end to end and said so afterward.",
       "tags": [
-        "hallowmere"
+        "hollowmere"
       ],
       "steps": [
         {
           "id": "explore_a_dark_forest_step_1",
-          "name": "Explore the Dark Forest",
+          "name": "Walk the Dark Wood to its end",
           "kind": "reach",
+          "description": "Map the wood level by level — through the deep boughs, the strangle-green, and whatever the paths become after that.",
           "dungeon_id": "dark_wood"
         }
       ],
       "quest_giver": {
-        "npc_name": "Barbarian",
+        "npc_name": "Skara of the Ashen Clans",
         "npc_sprite": "person/barbarian_mage.png",
-        "start_dialog": "I have heard that there is a forest just north of us with great treasure lurking in the shadows. Can you help map out the dark forest?",
-        "end_dialog": "This is amazing, I had no idea how far the forest reached. You will be rewarded."
+        "start_dialog": "I came down from the fire mountains chasing a story: a wood that goes in further than it goes across, with old treasure where the paths stop behaving. My clan's singers say never walk a wrong wood alone, and I am — observe — alone. Walk it with me to the end. Whatever we find, we split. Whatever finds us, we share that too.",
+        "end_dialog": "A winter clearing at the bottom of a summer wood. The singers will call me a liar, and I'll be rich enough not to care. You've earned your half — and a verse in the song, if I survive the singing of it."
       },
       "rewards": {
         "xp": 250,
@@ -188,14 +189,14 @@
     {
       "id": "pirates",
       "name": "Pirates in Hollowmere",
-      "description": "",
+      "description": "Pirates — actual pirates, this far from any honest sea — have been raiding Hollowmere, and the trail runs through the town's least savory inn.",
       "tags": [
-        "hallowmere"
+        "hollowmere"
       ],
       "steps": [
         {
           "id": "pirates_step_2",
-          "name": "Rescue the Tavern Goers",
+          "name": "Rescue the tavern-goers",
           "kind": "kill",
           "location_kind": "map",
           "encounter_id": "spiders",
@@ -203,7 +204,7 @@
         },
         {
           "id": "pirates_step_3",
-          "name": "Stop the Raiders in Hallowmere",
+          "name": "Stop the raiders in the streets",
           "kind": "kill",
           "encounter_id": "pirates",
           "location_kind": "map",
@@ -217,7 +218,7 @@
         },
         {
           "id": "pirates_step_4",
-          "name": "Destroy the Pirate Hideout",
+          "name": "Burn out the hideout under the inn",
           "kind": "kill",
           "encounter_id": "pirates",
           "count": 2,
@@ -234,8 +235,8 @@
       "quest_giver": {
         "npc_name": "Jester Jim",
         "npc_sprite": "person/townsperson13.png",
-        "start_dialog": "What's happening with these pirate raids? And in Hallowmere of all places. My entire troop was robbed by pirates right over there in that lake! I don't know where they are coming from, but I suspect it's that unsavory inn. ",
-        "end_dialog": "You are my true hero, I will somersault back to my place and get the rest my troop. The town owes you a debt, but that's not something I can pay out. bye bye!"
+        "start_dialog": "Pirates! In Hollowmere! We are NOWHERE NEAR THE SEA, friend, I checked — twice — and yet my entire troupe was robbed at cutlass-point not thirty paces from that lake. A jester knows misdirection when he's mugged by it: nobody sails to a lake. They're coming from somewhere, and my coin — what's left of it — says it's that unsavory inn.",
+        "end_dialog": "My hero! My champion! My single remaining solvent acquaintance! The troupe returns tomorrow and the show goes on — juggling, tumbling, and a brand-new comic ballad entitled 'The Day the Pirates Picked the Wrong Lake.' You feature heavily. I'd pay you, but the town owes you and I AM the town's entertainment, so in a sense, you're already collecting. Bye bye!"
       },
       "rewards": {
         "xp": 250

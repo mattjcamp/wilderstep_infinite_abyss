@@ -2,8 +2,8 @@
   "dungeons": [
     {
       "id": "old_ruins",
-      "name": "Old Ruins",
-      "description": "An ancient city, fallen into the myst of time",
+      "name": "The Auric Ruins",
+      "description": "The bones of an Auric city, fallen off every map but not out of memory. Old Greaves swears his grandmother saw a binding carved into the floor of the deepest hall — and that whoever broke it wasn't a stranger.",
       "tags": [],
       "style": "ruins",
       "difficulty": "normal",
@@ -16,7 +16,7 @@
       "levels": [
         {
           "id": "old_ruins_l1",
-          "name": "Level 1",
+          "name": "The Fallen Gate",
           "depth": 1,
           "style": "caves",
           "difficulty": "easy",
@@ -25,25 +25,25 @@
         },
         {
           "id": "old_ruins_l2",
-          "name": "Level 2",
+          "name": "The Sunken Streets",
           "depth": 2
         },
         {
           "id": "old_ruins_l3",
-          "name": "Level 3",
+          "name": "The Archive Vaults",
           "depth": 3
         },
         {
           "id": "old_ruins_l4",
-          "name": "Level 4",
+          "name": "The Hall of the Chain",
           "depth": 4
         }
       ]
     },
     {
       "id": "caves",
-      "name": "Caves",
-      "description": "Caves",
+      "name": "The Howling Caves",
+      "description": "The wind comes out of these caves in voices. The trappers say it's the shape of the galleries. The trappers also stopped wintering anywhere near them.",
       "tags": [],
       "style": "ruins",
       "difficulty": "easy",
@@ -56,31 +56,31 @@
       "levels": [
         {
           "id": "caves_l1",
-          "name": "Level 1",
+          "name": "The Mouth",
           "depth": 1,
           "difficulty": "normal"
         },
         {
           "id": "caves_l2",
-          "name": "Level 2",
+          "name": "The Galleries",
           "depth": 2,
           "difficulty": "normal"
         },
         {
           "id": "caves_l3",
-          "name": "Level 3",
+          "name": "The Black Lake",
           "depth": 3,
           "difficulty": "normal"
         },
         {
           "id": "caves_l4",
-          "name": "Level 4",
+          "name": "The Narrows",
           "depth": 4,
           "difficulty": "normal"
         },
         {
           "id": "caves_l5",
-          "name": "Level 5",
+          "name": "The Sunless Deep",
           "depth": 5,
           "difficulty": "hard",
           "torch_density": 0
@@ -89,8 +89,8 @@
     },
     {
       "id": "crypt_of_dagorn",
-      "name": "Crypt of Dagorn",
-      "description": "One of many ancient cities of the dead and goes deep into the ground",
+      "name": "The Crypt of Dagorn",
+      "description": "A city of the dead, built downward the way other cities build out. Seven levels of the honored departed, arranged by age — and the oldest residents were buried with their doors facing down, as if whatever they honored lay deeper still.",
       "tags": [],
       "style": "ruins",
       "difficulty": "normal",
@@ -103,7 +103,7 @@
       "levels": [
         {
           "id": "crypt_of_dagorn_l1",
-          "name": "Level 1",
+          "name": "The Procession Stair",
           "depth": 1,
           "style": "caves",
           "difficulty": "easy",
@@ -112,41 +112,41 @@
         },
         {
           "id": "crypt_of_dagorn_l2",
-          "name": "Level 2",
+          "name": "Halls of the Lesser Dead",
           "depth": 2
         },
         {
           "id": "crypt_of_dagorn_l3",
-          "name": "Level 3",
+          "name": "The Ossuary",
           "depth": 3
         },
         {
           "id": "crypt_of_dagorn_l4",
-          "name": "Level 4",
+          "name": "The Flooded Tombs",
           "depth": 4
         },
         {
           "id": "crypt_of_dagorn_l5",
-          "name": "Level 5",
+          "name": "The Nameless Rows",
           "depth": 5
         },
         {
           "id": "crypt_of_dagorn_l6",
-          "name": "Level 6",
+          "name": "The King's Silence",
           "depth": 6,
           "difficulty": "hard"
         },
         {
           "id": "crypt_of_dagorn_l7",
-          "name": "Level 7",
+          "name": "Dagorn's Rest",
           "depth": 7
         }
       ]
     },
     {
       "id": "grotto",
-      "name": "Grott0",
-      "description": "Barely even a cave, more of hole in the ground where ugly things hide",
+      "name": "The Grotto",
+      "description": "Barely even a cave — more a hole in the ground where ugly things hide. The trouble with holes is that they connect to other holes.",
       "tags": [],
       "style": "caves",
       "difficulty": "normal",
@@ -159,20 +159,20 @@
       "levels": [
         {
           "id": "grotto_l1",
-          "name": "Level 1",
+          "name": "The Hole",
           "depth": 1
         },
         {
           "id": "grotto_l2",
-          "name": "Level 2",
+          "name": "The Bottom of the Hole",
           "depth": 2
         }
       ]
     },
     {
       "id": "dark_wood",
-      "name": "A Dark Wood",
-      "description": "An ancient forest, hiding secrets",
+      "name": "The Dark Wood",
+      "description": "An old forest north of Hollowmere that goes in further than it goes across. The deeper paths stop being forest, and keep going anyway — green strangle, bare stone, and at the last, a clearing where it is always winter.",
       "tags": [],
       "style": "custom",
       "difficulty": "normal",
@@ -185,29 +185,29 @@
       "levels": [
         {
           "id": "dark_wood_l1",
-          "name": "Level 1",
+          "name": "The Eaves",
           "depth": 1
         },
         {
           "id": "dark_wood_l2",
-          "name": "Level 2",
+          "name": "The Deep Boughs",
           "depth": 2
         },
         {
           "id": "dark_wood_l3",
-          "name": "Level 3",
+          "name": "The Crooked Paths",
           "depth": 3
         },
         {
           "id": "dark_wood_l4",
-          "name": "Level 4",
+          "name": "The Strangle-Green",
           "depth": 4,
           "custom_floor": "grass2",
           "custom_wall": "tree_jungle01"
         },
         {
           "id": "dark_wood_l5",
-          "name": "Level 5",
+          "name": "The Stone Margin",
           "depth": 5,
           "custom_floor": "path",
           "custom_wall": "mountain_desert01",
@@ -215,7 +215,7 @@
         },
         {
           "id": "dark_wood_l6",
-          "name": "Level 6",
+          "name": "The Winter Clearing",
           "depth": 6,
           "loot": {
             "chest_frequency": 0.2

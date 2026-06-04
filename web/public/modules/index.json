@@ -18,12 +18,17 @@
     },
     {
       "id": "underworld-invaders",
-      "title": "The Underworld Invaders",
+      "title": "The Warm Dark",
       "role": "playable"
     },
     {
       "id": "side-quests",
       "title": "Side Quests",
+      "role": "library"
+    },
+    {
+      "id": "npcs",
+      "title": "Lore and NPCs",
       "role": "library"
     }
   ]

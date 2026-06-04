@@ -20135,7 +20135,7 @@
     },
     {
       "id": "the_main_map",
-      "name": "The World Map",
+      "name": "The North Reach",
       "tags": [
         "overview"
       ],
@@ -39029,7 +39029,8 @@
             "spawn": null,
             "sprite": "map/dungeon_entrance.png",
             "tag": "building",
-            "dungeon": "frost_delve"
+            "dungeon": "frost_delve",
+            "show_link_placard": true
           },
           {
             "boat": false,
@@ -146248,7 +146249,8 @@
             "tag": "water"
           }
         ]
-      ]
+      ],
+      "description": "The cold country between Hollowmere's dark woods and Varnfell's empty harbor \u2014 one road, two towns, and a great deal of ground that has recently stopped being quiet underneath."
     },
     {
       "id": "hollowmere_town",
