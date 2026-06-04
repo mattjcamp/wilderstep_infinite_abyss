@@ -23,7 +23,7 @@
         },
         {
           "id": "rats_step_2",
-          "name": "Step 2: Kill the Basement Rats!!!",
+          "name": "Kill the Basement Rats!!!",
           "kind": "kill",
           "encounter_id": "rat_nest",
           "tags": [
@@ -36,7 +36,7 @@
         },
         {
           "id": "rats_step_3",
-          "name": "Step 3: Deal with the rats around Hallowmere",
+          "name": "Deal with the rats around Hallowmere",
           "kind": "kill",
           "encounter_id": "rat_nest",
           "count": 2,
@@ -45,7 +45,7 @@
         },
         {
           "id": "rats_step_4",
-          "name": "Step 4: Clear the goblins hiding in a town house",
+          "name": "Clear the goblins hiding in a town house",
           "kind": "kill",
           "encounter_id": "goblin_squatters",
           "description": "Goblins have been seen slipping into one of Hollowmere's houses after dark. Search the town houses and drive them out.",
@@ -261,7 +261,13 @@
           "location_kind": "map",
           "map_id": "the_main_map",
           "encounter_id": "wolf_pack_overworld",
-          "count": 2
+          "count": 1,
+          "positions": [
+            {
+              "col": 13,
+              "row": 21
+            }
+          ]
         }
       ],
       "quest_giver": {
@@ -299,9 +305,9 @@
           ],
           "location_kind": "map",
           "map_id": "the_main_map",
-          "item_id": "treasure_chest",
+          "item_id": "retrievable_chest",
           "col": 4,
-          "row": 15
+          "row": 16
         }
       ],
       "quest_giver": {

@@ -38,6 +38,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { xpProgressInLevel as levelingXpProgress } from "@/battle/world/Leveling";
 import {
   initialCharSheetNavState,
   reduceCharSheetNav,
@@ -199,29 +200,17 @@ function collectEquippedPassives(
   return [...seen];
 }
 
-/** XP progress *within the current level* — `member.exp` is
- *  cumulative across every level the character has ever reached
- *  (see Leveling.ts `awardXp`), so the bar / readout must subtract
- *  the previous level's threshold to read as "progress toward the
- *  next level" rather than "progress through the entire XP curve".
- *  `into` is 0 the instant a member levels up; equals `needed` the
- *  instant they're about to level again. Race-specific overrides
- *  apply (Humans level faster at 1125, others 1500). */
+/** XP progress *within the current level* — thin adapter over
+ *  Leveling.ts's `xpProgressInLevel` (single source of truth for
+ *  the XP curve, including the rising-increment math) that handles
+ *  this sheet's optional fields and race override defaulting
+ *  (Humans level faster at 1125, others 1500). */
 function xpProgressInLevel(
   member: PartyCharacterRef,
   race?: PartyRaceRef,
 ): { into: number; needed: number } {
   const base = race?.exp_per_level ?? 1500;
-  const level = member.level ?? 1;
-  const exp = member.exp ?? 0;
-  const prevThreshold = Math.max(0, level - 1) * base;
-  const nextThreshold = level * base;
-  return {
-    into: Math.max(0, exp - prevThreshold),
-    // Floor at 1 to keep the bar's fill math safe if a future race
-    // ever ships with exp_per_level = 0.
-    needed: Math.max(1, nextThreshold - prevThreshold),
-  };
+  return levelingXpProgress(member.level ?? 1, member.exp ?? 0, base);
 }
 
 // ── Component ──────────────────────────────────────────────────────

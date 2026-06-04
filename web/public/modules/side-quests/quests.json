@@ -1,0 +1,687 @@
+{
+  "_comment": "Side Quests library. These quests are town-agnostic drop-ins for any campaign: location fields (location_kind, map_id, dungeon_id, col/row, positions) are intentionally omitted or left blank for the host campaign's author to fill in when placing the quest. Encounter and item ids reference the default module's catalogs (this module extends `default`). Quest givers correspond to NPC records in this module's npcs.json. Every quest carries exactly one difficulty tag — easy, normal, hard, or deadly — alongside its theme tags, so campaigns can browse by tier.",
+  "quests": [
+    {
+      "id": "wolves_in_the_fold",
+      "name": "Wolves in the Fold",
+      "description": "Pell Harrow's flock is being killed — not eaten, killed — and his dogs won't go past the cairn anymore. Find the wolves responsible and break the pack.",
+      "tags": [
+        "side",
+        "hunt",
+        "easy"
+      ],
+      "steps": [
+        {
+          "id": "wolves_in_the_fold_step_1",
+          "name": "Drive off the strays harrying the flock",
+          "kind": "kill",
+          "description": "Deal with the stray wolves prowling the pastures around Pell's grazing land.",
+          "tags": [
+            "wolves_in_the_fold"
+          ],
+          "encounter_id": "stray_wolves",
+          "count": 2
+        },
+        {
+          "id": "wolves_in_the_fold_step_2",
+          "name": "Destroy the pack at its den",
+          "kind": "kill",
+          "description": "Track the killings back to the den past the cairn and put down the pack that's been leaving Pell's lambs as offerings.",
+          "tags": [
+            "wolves_in_the_fold"
+          ],
+          "encounter_id": "wolf_pack",
+          "count": 1
+        }
+      ],
+      "quest_giver": {
+        "npc_name": "Pell Harrow",
+        "npc_sprite": "person/townsperson7.png",
+        "start_dialog": "Three lambs this month, laid out neat and not a bite taken. A wolf that doesn't eat isn't hunting, it's claiming. My dogs won't go past the cairn and I can't work the flock and the crook both. Thin the strays off my pastures, then find the den and finish it.",
+        "end_dialog": "The dogs went past the cairn this morning, easy as you please. That's how I knew before you said a word. There's not much money in sheep, but what there is, you've earned — and lambing season will say your name kindly for years."
+      },
+      "rewards": {
+        "xp": 120,
+        "gold": 80,
+        "items": [
+          "healing_potion",
+          "torch"
+        ]
+      }
+    },
+    {
+      "id": "the_missing_shipment",
+      "name": "The Missing Shipment",
+      "description": "Odessa Brim's seasonal crate of herbs never arrived, and her winter stock is sitting in the weather somewhere between her forager's camp and her counter. Find the crate and bring it back whole.",
+      "tags": [
+        "side",
+        "delivery",
+        "easy"
+      ],
+      "steps": [
+        {
+          "id": "the_missing_shipment_step_1",
+          "name": "Recover the apothecary's crate",
+          "kind": "retrieve",
+          "description": "Search along the forager's route for the missing crate — oilcloth, straw, and a winter's worth of remedies — and bring it back before the rot gets it.",
+          "tags": [
+            "the_missing_shipment"
+          ],
+          "item_id": "retrievable_chest"
+        }
+      ],
+      "quest_giver": {
+        "npc_name": "Odessa Brim",
+        "npc_sprite": "person/druid3.png",
+        "start_dialog": "My forager packs the same crate the same way every season, and every season it arrives. This one didn't. Somewhere out there my winter stock is sitting in the wet, and every day it sits is a salve I can't sell and a fever I can't break. Walk the route. Find my crate. I pay on delivery — I always pay on delivery.",
+        "end_dialog": "Oilcloth's torn but the straw held — most of this is dry, which means most of the village stays healthy this winter. That's worth more than I'm about to pay you, but it's exactly what I'm about to pay you, because I am fair, not sentimental."
+      },
+      "rewards": {
+        "xp": 100,
+        "gold": 100,
+        "items": [
+          "healing_herb",
+          "antidote"
+        ]
+      }
+    },
+    {
+      "id": "a_remedy_for_the_fever",
+      "name": "A Remedy for the Fever",
+      "description": "Sister Wren has nine patients and nine days before a fever takes the weakest of them. The brew that breaks it needs fresh moonpetal and glowcap mushrooms from somewhere dark and damp.",
+      "tags": [
+        "side",
+        "gathering",
+        "normal"
+      ],
+      "steps": [
+        {
+          "id": "a_remedy_for_the_fever_step_1",
+          "name": "Gather fresh moonpetal",
+          "kind": "retrieve",
+          "description": "Moonpetal blooms in the open at night. Wren needs three fresh blossoms — wilted ones brew bitter and useless.",
+          "tags": [
+            "a_remedy_for_the_fever"
+          ],
+          "item_id": "moonpetal",
+          "count": 3
+        },
+        {
+          "id": "a_remedy_for_the_fever_step_2",
+          "name": "Gather glowcap mushrooms",
+          "kind": "retrieve",
+          "description": "Glowcap grows where the sun doesn't reach — caves, cellars, the deep under-places. Bring back two good caps.",
+          "tags": [
+            "a_remedy_for_the_fever"
+          ],
+          "item_id": "glowcap_mushroom",
+          "count": 2
+        }
+      ],
+      "quest_giver": {
+        "npc_name": "Sister Wren",
+        "npc_sprite": "person/cleric4.png",
+        "start_dialog": "The fever burns out in nine days, and half these beds won't last nine days without the brew. Moonpetal, fresh, three blossoms. Glowcap, two caps, from somewhere dark and damp. I'd go myself, but a healer who leaves nine patients to save nine patients is no healer at all. Go. Quickly is part of the prayer.",
+        "end_dialog": "Fresh — all of it fresh. The brew goes on the fire tonight and the fever breaks by week's end, you have my word and the saints have my gratitude. I can't pay what this is worth. I can pay what I have, and I can promise you'll never be turned away from any sickbed I tend."
+      },
+      "rewards": {
+        "xp": 150,
+        "gold": 60,
+        "items": [
+          "healing_potion",
+          "healing_potion",
+          "holy_water"
+        ]
+      }
+    },
+    {
+      "id": "the_blank_on_the_map",
+      "name": "The Blank on the Map",
+      "description": "Garrod Vey surveyed for the crown for thirty years and retired with one blank space he never managed to fill. He wants it walked — every level, all the way down — so his ledger can die honest.",
+      "tags": [
+        "side",
+        "exploration",
+        "normal"
+      ],
+      "steps": [
+        {
+          "id": "the_blank_on_the_map_step_1",
+          "name": "Walk the unmapped depths",
+          "kind": "reach",
+          "description": "Descend the unsurveyed delve and explore every level, all the way to the bottom, so Garrod can finish his map.",
+          "tags": [
+            "the_blank_on_the_map"
+          ],
+          "dungeon_id": ""
+        }
+      ],
+      "quest_giver": {
+        "npc_name": "Garrod Vey",
+        "npc_sprite": "person/townsperson18.png",
+        "start_dialog": "Thirty years of measuring the world and one blank space in the middle of my map — a lie of omission I've told since before you were born. My knees are gone and my eyes are going, but yours work fine. Walk it for me. Every level, top to bottom. Come back and describe the dark, and I'll draw the rest.",
+        "end_dialog": "Slowly — again, the part about the lower galleries — yes. Yes, that fits the strata, that's exactly... Do you know what you've done? Thirty years that blank space laughed at me, and tonight I ink it shut. The ledger dies honest. Take this, and know an old surveyor's map will carry your footsteps on it forever."
+      },
+      "rewards": {
+        "xp": 250,
+        "gold": 150,
+        "items": [
+          "rope",
+          "torch",
+          "torch",
+          "camping_supplies"
+        ]
+      }
+    },
+    {
+      "id": "the_toll_road",
+      "name": "The Toll Road",
+      "description": "Wick Tumbrel lost his first cargo in twenty-two years to robbers who knew his schedule, knew the bend in the road, and laughed while they worked. Find their camp, break it, and bring back the strongbox.",
+      "tags": [
+        "side",
+        "bandits",
+        "normal"
+      ],
+      "steps": [
+        {
+          "id": "the_toll_road_step_1",
+          "name": "Break the robbers' camp",
+          "kind": "kill",
+          "description": "Track the robbers back to their camp and put an end to their toll-taking.",
+          "tags": [
+            "the_toll_road"
+          ],
+          "encounter_id": "pirates",
+          "count": 2
+        },
+        {
+          "id": "the_toll_road_step_2",
+          "name": "Recover the strongbox",
+          "kind": "retrieve",
+          "description": "Find the iron-banded strongbox among the camp's plunder and haul it back to Wick.",
+          "tags": [
+            "the_toll_road"
+          ],
+          "item_id": "retrievable_chest"
+        }
+      ],
+      "quest_giver": {
+        "npc_name": "Wick Tumbrel",
+        "npc_sprite": "person/townsperson9.png",
+        "start_dialog": "They knew the schedule, knew the bend, cut the team loose first — that's planning, and planning means a camp. In that camp is an iron-banded strongbox with another man's savings inside and my name on the contract. Break the camp. Bring the box. The grudge pays well and I'm good for it.",
+        "end_dialog": "Seal's unbroken — twenty-two years and my record stands, thanks to you. The owner gets his savings, I get my name back, and you get the finder's share, which I negotiated up on your behalf because a grudge well-settled makes me generous."
+      },
+      "rewards": {
+        "xp": 200,
+        "gold": 250,
+        "items": [
+          "lockpick"
+        ]
+      }
+    },
+    {
+      "id": "the_unquiet_yard",
+      "name": "The Unquiet Yard",
+      "description": "The old graveyard Maud Grayle's husband kept for forty years has started opening from underneath. Put the dead back down, and find Aldous's silver ring if the digging shook it loose.",
+      "tags": [
+        "side",
+        "undead",
+        "normal"
+      ],
+      "steps": [
+        {
+          "id": "the_unquiet_yard_step_1",
+          "name": "Put down the shambling dead",
+          "kind": "kill",
+          "description": "Clear the risen dead wandering among the stones of the old yard.",
+          "tags": [
+            "the_unquiet_yard"
+          ],
+          "encounter_id": "shambling_dead",
+          "count": 2
+        },
+        {
+          "id": "the_unquiet_yard_step_2",
+          "name": "Destroy the bone patrol",
+          "kind": "kill",
+          "description": "Something is marshalling the dead into ranks. Break the skeleton patrol walking the yard's perimeter.",
+          "tags": [
+            "the_unquiet_yard"
+          ],
+          "encounter_id": "skeleton_patrol",
+          "count": 1
+        },
+        {
+          "id": "the_unquiet_yard_step_3",
+          "name": "Recover Aldous's ring",
+          "kind": "retrieve",
+          "description": "Search the opened graves for the silver ring Maud buried with her husband, and bring it home.",
+          "tags": [
+            "the_unquiet_yard"
+          ],
+          "item_id": "family_heirloom"
+        }
+      ],
+      "quest_giver": {
+        "npc_name": "Maud Grayle",
+        "npc_sprite": "person/townsperson19.png",
+        "start_dialog": "Forty years my Aldous kept that yard and nothing in it ever got up before its time. Now the mounds are opening from underneath and there are shapes among the stones past midnight. Put them back down — straight sides, six feet, the way he'd have wanted. And if his silver ring has been shaken loose, bring it home. The dead are allowed to keep one thing.",
+        "end_dialog": "That's his ring. I'd know it in the dark with my hands tied. You've given an old woman back her husband's one thing, and given my Aldous a quiet yard again — there's no coin that covers that, but take this anyway, because he'd have insisted, and I never once won an argument with him."
+      },
+      "rewards": {
+        "xp": 220,
+        "gold": 120,
+        "items": [
+          "holy_water",
+          "elixir_of_warding"
+        ]
+      }
+    },
+    {
+      "id": "rats_in_the_root_cellar",
+      "name": "Rats in the Root Cellar",
+      "description": "The rats under the Drowsy Ox have stopped being a nuisance and started being a population. Tilly Crocket wants her cellar back before the winter stores go.",
+      "tags": [
+        "side",
+        "vermin",
+        "easy"
+      ],
+      "steps": [
+        {
+          "id": "rats_in_the_root_cellar_step_1",
+          "name": "Clear the cellar rats",
+          "kind": "kill",
+          "description": "Deal with the rats that have overrun the inn's root cellar.",
+          "tags": [
+            "rats_in_the_root_cellar"
+          ],
+          "encounter_id": "cellar_rats",
+          "count": 2
+        },
+        {
+          "id": "rats_in_the_root_cellar_step_2",
+          "name": "Destroy the nest",
+          "kind": "kill",
+          "description": "Find where they're breeding and put an end to it, or they'll be back by spring.",
+          "tags": [
+            "rats_in_the_root_cellar"
+          ],
+          "encounter_id": "rat_nest",
+          "count": 1
+        }
+      ],
+      "quest_giver": {
+        "npc_name": "Tilly Crocket",
+        "npc_sprite": "person/townsperson16.png",
+        "start_dialog": "I've kept this inn through two fires, one flood, and a bard who stayed eleven weeks, but the rats are winning. They're into the turnips, they're eyeing the cheese, and last night one of them looked at me in a way I did not care for. Clear the cellar, find the nest, and supper's on the house for a year.",
+        "end_dialog": "Quiet as a chapel down there now — I went and stood in it just to listen. The turnips are saved, the cheese is saved, and you've got a table by the fire whenever you want it. Here's your pay, and the first supper starts tonight."
+      },
+      "rewards": {
+        "xp": 80,
+        "gold": 50,
+        "items": [
+          "torch",
+          "healing_herb"
+        ]
+      }
+    },
+    {
+      "id": "the_goblin_tithe",
+      "name": "The Goblin Tithe",
+      "description": "Goblins have been collecting a 'tithe' from outlying farms — a chicken here, a sack of grain there, and lately a threat where the chicken used to be. Hob Millet has decided he's done paying.",
+      "tags": [
+        "side",
+        "goblins",
+        "easy"
+      ],
+      "steps": [
+        {
+          "id": "the_goblin_tithe_step_1",
+          "name": "Run off the goblin scouts",
+          "kind": "kill",
+          "description": "Catch the scouts who case the farms by dusk and make the route cost more than the chickens.",
+          "tags": [
+            "the_goblin_tithe"
+          ],
+          "encounter_id": "goblin_scouts",
+          "count": 2
+        },
+        {
+          "id": "the_goblin_tithe_step_2",
+          "name": "Deal with the tithe-collector",
+          "kind": "kill",
+          "description": "The one with the tally-stick does the collecting. Find him and close the account.",
+          "tags": [
+            "the_goblin_tithe"
+          ],
+          "encounter_id": "stray_goblin",
+          "count": 1
+        }
+      ],
+      "quest_giver": {
+        "npc_name": "Hob Millet",
+        "npc_sprite": "person/townsperson1.png",
+        "start_dialog": "Started with a chicken. Then a sack of barley. Now there's a goblin with a tally-stick standing in my yard every new moon like he's owed. My granddad didn't clear this land so I could pay rent to something knee-high with teeth. Run off his scouts and break his stick, and I'll pay you what I'm done paying him.",
+        "end_dialog": "New moon came and went and my yard stayed empty — first time in a year I slept through it. The hens are laying again, which I take as their professional opinion of your work. Here's the tithe, every copper of it, going somewhere it's deserved for once."
+      },
+      "rewards": {
+        "xp": 100,
+        "gold": 60,
+        "items": [
+          "camping_supplies"
+        ]
+      }
+    },
+    {
+      "id": "clear_the_tinkers_circuit",
+      "name": "Clear the Tinker's Circuit",
+      "description": "Jasque's seasonal circuit has grown teeth: a goblin ambush at the ford and mixed packs running the hills above it. No circuit means no mended pots, no news, and no Jasque, and three villages mind about at least one of those.",
+      "tags": [
+        "side",
+        "roads",
+        "normal"
+      ],
+      "steps": [
+        {
+          "id": "clear_the_tinkers_circuit_step_1",
+          "name": "Spring the ambush at the ford",
+          "kind": "kill",
+          "description": "Goblins have set up over the ford crossing. Walk into their ambush on purpose and walk out the only ones standing.",
+          "tags": [
+            "clear_the_tinkers_circuit"
+          ],
+          "encounter_id": "goblin_ambush",
+          "count": 1
+        },
+        {
+          "id": "clear_the_tinkers_circuit_step_2",
+          "name": "Break the packs in the hills",
+          "kind": "kill",
+          "description": "Wolves and goblins are running together in the hills above the road, which is two problems pretending to be one.",
+          "tags": [
+            "clear_the_tinkers_circuit"
+          ],
+          "encounter_id": "wolves_and_goblins",
+          "count": 1
+        }
+      ],
+      "quest_giver": {
+        "npc_name": "Jasque the Tinker",
+        "npc_sprite": "person/townsperson15.png",
+        "start_dialog": "Twenty years I've walked this circuit and the worst I've met is weather and one very rude goose. Now there's goblins sitting on the ford and something running the hills that howls in two voices. Three villages go without news and kettles if I can't walk it. Clear my road and I'll carry your legend on the circuit for free — embellished, naturally.",
+        "end_dialog": "Walked the whole circuit yesterday, ford and all, and the only thing that menaced me was the goose. Three villages got their kettles back and everyone's heard about you already — I may have improved the parts where you were briefly losing. That's the trade: coin from me, glory from the circuit."
+      },
+      "rewards": {
+        "xp": 180,
+        "gold": 150,
+        "items": [
+          "smoke_bomb",
+          "healing_potion"
+        ]
+      }
+    },
+    {
+      "id": "the_shamans_drums",
+      "name": "The Shaman's Drums",
+      "description": "Drums in the hills, three nights running, and goblin raiders mustering under a shaman's banner. Reeve Calder wants it ended while it's still a muster and not a march.",
+      "tags": [
+        "side",
+        "goblins",
+        "normal"
+      ],
+      "steps": [
+        {
+          "id": "the_shamans_drums_step_1",
+          "name": "Scatter the raiding muster",
+          "kind": "kill",
+          "description": "Break up the goblin raiders gathering to the drums before they finish gathering.",
+          "tags": [
+            "the_shamans_drums"
+          ],
+          "encounter_id": "goblin_raiders",
+          "count": 1
+        },
+        {
+          "id": "the_shamans_drums_step_2",
+          "name": "Silence the shaman",
+          "kind": "kill",
+          "description": "Cut through the shaman's guard and stop the drums at their source.",
+          "tags": [
+            "the_shamans_drums"
+          ],
+          "encounter_id": "shaman_s_guard",
+          "count": 1
+        }
+      ],
+      "quest_giver": {
+        "npc_name": "Reeve Calder",
+        "npc_sprite": "person/townsperson11.png",
+        "start_dialog": "Three nights of drums and every dog in the district howling back. I've read the old reports — drums mean a shaman, a shaman means a banner, and a banner means that by harvest we're not talking about missing chickens anymore. I can raise a militia of farmers with hay forks, or I can pay professionals now. I'd rather pay.",
+        "end_dialog": "The drums stopped mid-beat two nights ago — the whole district heard the silence. I've written it up for the record: muster broken, banner taken, no militia required. The district's purse is lighter and its people are breathing easier, and both of those are the job done right."
+      },
+      "rewards": {
+        "xp": 220,
+        "gold": 160,
+        "items": [
+          "mana_potion",
+          "healing_potion"
+        ]
+      }
+    },
+    {
+      "id": "an_old_score",
+      "name": "An Old Score",
+      "description": "The troll that ended Brask's sword career forty years ago has denned up within a day's walk of his gate, as if the world is daring him. He can't climb the ridge anymore. You can.",
+      "tags": [
+        "side",
+        "trolls",
+        "hard"
+      ],
+      "steps": [
+        {
+          "id": "an_old_score_step_1",
+          "name": "Clear the troll's hunting ground",
+          "kind": "kill",
+          "description": "The troll runs wolves ahead of it like hounds. Clear the hunting ground below the ridge first, or fight everything at once.",
+          "tags": [
+            "an_old_score"
+          ],
+          "encounter_id": "troll_and_wolves",
+          "count": 1
+        },
+        {
+          "id": "an_old_score_step_2",
+          "name": "Finish the troll in its den",
+          "kind": "kill",
+          "description": "Take the den itself. Put it down and keep it down — fire helps.",
+          "tags": [
+            "an_old_score"
+          ],
+          "encounter_id": "troll_den",
+          "count": 1
+        }
+      ],
+      "quest_giver": {
+        "npc_name": "Brask the Lame",
+        "npc_sprite": "person/fighter12.png",
+        "start_dialog": "I know that smell on the wind. Same troll — don't ask me how I know, a man knows the thing that broke him. It's denned on the ridge, running wolves ahead of it like hounds, and my leg won't make the climb. Take rope, take fire, take this — it's forty years of a sellsword's savings, and it was always going to be spent on this. Clear the ground below first. Then the den. Keep it down.",
+        "end_dialog": "You kept it down. Forty years I've sat by this gate doing the arithmetic of that night — what I'd have done different, what I'd give to do it at all. Turns out the answer was: send better. The savings are yours, the limp stays mine, and tonight, for the first time in forty years, the ridge is just a ridge."
+      },
+      "rewards": {
+        "xp": 400,
+        "gold": 300,
+        "items": [
+          "fire_oil",
+          "fire_oil",
+          "elixir_of_strength"
+        ]
+      }
+    },
+    {
+      "id": "trouble_at_the_quarry",
+      "name": "Trouble at the Quarry",
+      "description": "Ogres have moved into the quarry and started treating the stone-cutting crews as a delivery service. Dagna Flint has payroll to meet and a contract that doesn't have an ogre clause.",
+      "tags": [
+        "side",
+        "ogres",
+        "hard"
+      ],
+      "steps": [
+        {
+          "id": "trouble_at_the_quarry_step_1",
+          "name": "Drive the brutes off the cut floor",
+          "kind": "kill",
+          "description": "Ogre brutes have claimed the lower cut. Clear them out so the crews can reach their own tools.",
+          "tags": [
+            "trouble_at_the_quarry"
+          ],
+          "encounter_id": "ogre_brutes",
+          "count": 1
+        },
+        {
+          "id": "trouble_at_the_quarry_step_2",
+          "name": "Break the warband in the deep pit",
+          "kind": "kill",
+          "description": "The rest of the warband holds the deep pit. Until it's broken, the brutes will just keep coming back.",
+          "tags": [
+            "trouble_at_the_quarry"
+          ],
+          "encounter_id": "ogre_warband",
+          "count": 1
+        }
+      ],
+      "quest_giver": {
+        "npc_name": "Dagna Flint",
+        "npc_sprite": "person/townsperson21.png",
+        "start_dialog": "I quarried through a cave-in, a strike, and one inspector with opinions, but I cannot quarry through ogres. They've taken the lower cut and the deep pit, they eat a week's provisions a night, and my crews won't go past the winch — which, credit where due, is the first sensible decision they've made as a group. Clear the cut, break the warband, and I'll pay stone-contract rates. That's good money. Ask anyone I owe it to.",
+        "end_dialog": "Crews went past the winch this morning without being asked — whole quarry's ringing with hammer-song again. You broke the warband so thoroughly my foreman's telling it as his own story already. Stone-contract rates, as promised, plus a bonus for the deep pit, because I saw what was living in it and I'm still sleeping badly."
+      },
+      "rewards": {
+        "xp": 450,
+        "gold": 350,
+        "items": [
+          "elixir_of_strength",
+          "healing_potion",
+          "healing_potion"
+        ]
+      }
+    },
+    {
+      "id": "the_wailing_manor",
+      "name": "The Wailing Manor",
+      "description": "Corvin Ashe inherited a manor nobody has entered in sixty years, along with the wailing that comes off it at night. Somewhere inside is the family reliquary — and whatever has been keeping it.",
+      "tags": [
+        "side",
+        "undead",
+        "deadly"
+      ],
+      "steps": [
+        {
+          "id": "the_wailing_manor_step_1",
+          "name": "Breach the cursed halls",
+          "kind": "kill",
+          "description": "The manor's halls defend themselves. Fight through whatever the curse has made of the household.",
+          "tags": [
+            "the_wailing_manor"
+          ],
+          "encounter_id": "cursed_manor",
+          "count": 1
+        },
+        {
+          "id": "the_wailing_manor_step_2",
+          "name": "Silence the choir",
+          "kind": "kill",
+          "description": "The wailing is a choir of banshees in the great hall. Silence it, or it will be the last sound you hear clearly.",
+          "tags": [
+            "the_wailing_manor"
+          ],
+          "encounter_id": "banshee_choir",
+          "count": 1
+        },
+        {
+          "id": "the_wailing_manor_step_3",
+          "name": "Destroy the master of the house",
+          "kind": "kill",
+          "description": "Something old holds the deepest room and conducts the choir. End it.",
+          "tags": [
+            "the_wailing_manor"
+          ],
+          "encounter_id": "lich_and_banshee",
+          "count": 1
+        },
+        {
+          "id": "the_wailing_manor_step_4",
+          "name": "Recover the Ashe reliquary",
+          "kind": "retrieve",
+          "description": "Find the family reliquary and bring it out into the daylight for the first time in sixty years.",
+          "tags": [
+            "the_wailing_manor"
+          ],
+          "item_id": "relic_chest"
+        }
+      ],
+      "quest_giver": {
+        "npc_name": "Corvin Ashe",
+        "npc_sprite": "person/townsperson8.png",
+        "start_dialog": "I inherited a title, a manor, and a sound. The title is worthless, the manor is sealed, and the sound starts at dusk and stops when it notices you listening. The family reliquary is still inside — sixty years of Ashes too afraid to fetch it, and I'd like to be the generation that ends differently. I'll be honest, because my family never was: people who go in do not, as a rule, come out. Your rule may differ. The reliquary and my gratitude say it does.",
+        "end_dialog": "The wailing stopped. Do you understand what that means to someone who grew up tuning it out? Sixty years of my family's shame, carried out in a box you could lift with two hands. I opened it. I won't tell you what's inside — some things should stay family — but I will tell you the Ashes pay their debts from this generation on, starting with the largest one we've ever owed."
+      },
+      "rewards": {
+        "xp": 700,
+        "gold": 500,
+        "items": [
+          "holy_water",
+          "holy_water",
+          "elixir_of_warding"
+        ]
+      }
+    },
+    {
+      "id": "the_pale_court",
+      "name": "The Pale Court",
+      "description": "Sir Roderic Vane has hunted the vampire he calls the Pale Lord across thirty years and three duchies, and the trail has finally gone to ground close by. Roderic's hands shake now. Yours don't.",
+      "tags": [
+        "side",
+        "vampires",
+        "deadly"
+      ],
+      "steps": [
+        {
+          "id": "the_pale_court_step_1",
+          "name": "Destroy the Pale Lord's court",
+          "kind": "kill",
+          "description": "The lord keeps a court of lesser vampires between himself and the door. Go through them.",
+          "tags": [
+            "the_pale_court"
+          ],
+          "encounter_id": "vampire_s_court",
+          "count": 1
+        },
+        {
+          "id": "the_pale_court_step_2",
+          "name": "End the Pale Lord",
+          "kind": "kill",
+          "description": "Face the Pale Lord himself. Roderic's advice: don't listen when it talks, and it will talk.",
+          "tags": [
+            "the_pale_court"
+          ],
+          "encounter_id": "vampire_lord",
+          "count": 1
+        }
+      ],
+      "quest_giver": {
+        "npc_name": "Sir Roderic Vane",
+        "npc_sprite": "person/human_paladin.png",
+        "start_dialog": "Thirty years. Three duchies. Every grave it left behind, I dug the proper way afterward, and I am very tired. It's gone to ground near here — courted, fed, comfortable. I trained my whole life for the door at the bottom of that darkness, and now my hands won't hold the blade steady past sundown. So the hunt passes to you, as these things do. Take my notes. Take the sword's blessing. And when it talks — it will talk — you put it down mid-sentence.",
+        "end_dialog": "Mid-sentence. Good. Thirty years, and it ends with me sitting by a fire hearing it secondhand — I expected that to hurt, and instead there's only the quiet. The notes are ash now, I burned them this morning; nobody needs to learn what I had to. The sword goes with you. It was never mine, you understand. It belongs to whoever finishes the hunt, and that was always going to be the part I wasn't there for."
+      },
+      "rewards": {
+        "xp": 800,
+        "gold": 600,
+        "items": [
+          "sun_sword",
+          "holy_water"
+        ]
+      }
+    }
+  ]
+}

@@ -192,30 +192,69 @@ export function fullStr(c: GameClock): string {
   return `${dateStr(c)} ${timeStr(c)}`;
 }
 
-// ── Time-of-day classification (matches game_time.py) ──────────────
+// ── Time-of-day classification ──────────────────────────────────────
+//
+// Phase windows (per 24h day). Originally a straight port of
+// game_time.py (day 7AM–7PM, dusk 7–8PM, night 8PM–5AM, dawn 5–7AM),
+// which put full night at 37.5% of all steps walked — punishing,
+// given night renders as a full-black overlay with only the party's
+// light pool. Re-tuned so darkness reads as an event rather than the
+// norm, and so twilight is a gradual two-hour shoulder on BOTH ends
+// of the night instead of a one-hour dusk snap:
+//
+//   day      6 AM – 8 PM   14h   58.3% of steps
+//   dusk     8 PM – 10 PM   2h   ┐
+//   dawn     4 AM – 6 AM    2h   ┘ twilight, 16.7%
+//   night   10 PM – 4 AM    6h   25%
+//
+// Keep the four predicates mutually exclusive and jointly covering
+// all 24 hours — `lightingModeFromClock` (PlayHost) falls through
+// day → twilight → night, so a gap would silently render as night.
 
-/** True between 8 PM (20:00) and 5 AM. */
+/** True between 10 PM (22:00) and 4 AM. */
 export function isNight(c: GameClock): boolean {
   const h = hour(c);
-  return h >= 20 || h < 5;
+  return h >= 22 || h < 4;
 }
 
-/** True between 5 AM and 7 AM. */
+/** True between 4 AM and 6 AM. */
 export function isDawn(c: GameClock): boolean {
   const h = hour(c);
-  return h >= 5 && h < 7;
+  return h >= 4 && h < 6;
 }
 
-/** True between 7 PM (19:00) and 8 PM. */
+/** True between 8 PM (20:00) and 10 PM. */
 export function isDusk(c: GameClock): boolean {
   const h = hour(c);
-  return h >= 19 && h < 20;
+  return h >= 20 && h < 22;
 }
 
-/** True between 7 AM and 7 PM. */
+/** True between 6 AM and 8 PM. */
 export function isDay(c: GameClock): boolean {
   const h = hour(c);
-  return h >= 7 && h < 19;
+  return h >= 6 && h < 20;
+}
+
+/** Hour the party wakes when camping through the night — 6:00 AM,
+ *  the first full-daylight hour under the phase windows above. */
+export const MORNING_HOUR = 6;
+
+/**
+ * Total-minutes value of the NEXT 6:00 AM, for the camp-through-the-
+ * night flow: when `c` falls in the night or dawn windows, using
+ * Camping Supplies should wake the party at first light rather than
+ * leave them standing in the dark. Returns `null` during day / dusk
+ * — camping in daylight rests the party without skipping time (dusk
+ * deliberately included so a player can't fast-forward FROM 8 PM and
+ * skip the night they haven't met yet; the skip only rescues a party
+ * already inside it).
+ */
+export function nextMorningMinutes(c: GameClock): number | null {
+  if (!isNight(c) && !isDawn(c)) return null;
+  const minutesOfDay = hour(c) * 60 + minute(c);
+  const target = MORNING_HOUR * 60;
+  const delta = (target - minutesOfDay + MINUTES_PER_DAY) % MINUTES_PER_DAY;
+  return c.totalMinutes + delta;
 }
 
 // ── Lunar phase ────────────────────────────────────────────────────

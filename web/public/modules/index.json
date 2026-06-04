@@ -20,6 +20,11 @@
       "id": "underworld-invaders",
       "title": "The Underworld Invaders",
       "role": "playable"
+    },
+    {
+      "id": "side-quests",
+      "title": "Side Quests",
+      "role": "library"
     }
   ]
 }

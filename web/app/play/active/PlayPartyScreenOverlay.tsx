@@ -61,7 +61,7 @@ import {
   recipeShortages,
   type RecipeRef,
 } from "@/play/potionCrafting";
-import { dayIndex } from "@/battle/world/GameTime";
+import { dayIndex, nextMorningMinutes } from "@/battle/world/GameTime";
 
 /** Minimal counter shape — `id` to find the general store entry,
  *  `items` for the stock list the Tinker picker presents. Loaded
@@ -888,6 +888,9 @@ export function PlayPartyScreenOverlay({
 
       let torchSteps = cur.party.torch_steps;
       let nextMembers: ReadonlyArray<SavedCharacterState> = cur.party.members;
+      // Camping through the night skips the clock to first light
+      // (6 AM); every other use leaves time untouched.
+      let nextClockMinutes = cur.clockMinutes;
       // Local copy of party_effects we may extend. Lighting a Torch
       // adds "torch" so the Effects panel reflects the active light
       // source (same shape the Magic Light spell uses).
@@ -928,9 +931,23 @@ export function PlayPartyScreenOverlay({
           return;
         }
         nextMembers = rest.nextMembers;
-        setCastMessage(
-          "The party makes camp. Wounds close and magic returns.",
-        );
+        // Camping inside the night (or pre-dawn) window also sleeps
+        // the party through to 6 AM — the dark is opt-out-able. The
+        // host's onMutateSave sees the clockMinutes jump and
+        // re-derives the lighting band.
+        const morning = nextMorningMinutes({
+          totalMinutes: cur.clockMinutes ?? 0,
+        });
+        if (morning !== null) {
+          nextClockMinutes = morning;
+          setCastMessage(
+            "The party camps until first light. Wounds close and magic returns.",
+          );
+        } else {
+          setCastMessage(
+            "The party makes camp. Wounds close and magic returns.",
+          );
+        }
         usedItemId = "camping_supplies";
       } else {
         // Unknown / not-yet-wired usable. Bail without mutating —
@@ -944,6 +961,7 @@ export function PlayPartyScreenOverlay({
 
       const next: WorldSave = {
         ...cur,
+        clockMinutes: nextClockMinutes,
         party: {
           ...cur.party,
           inventory: nextInv,
@@ -1032,6 +1050,9 @@ export function PlayPartyScreenOverlay({
       // roster (with the using member's inventory decremented below);
       // the Camping Supplies branch swaps in healed members.
       let restedMembers: ReadonlyArray<SavedCharacterState> | null = null;
+      // Camping through the night skips the clock to first light
+      // (6 AM); every other use leaves time untouched.
+      let nextClockMinutes = cur.clockMinutes;
       let usedItemId: string | null = null;
 
       if (entry.item === "Torch" || entry.item === "torch") {
@@ -1056,9 +1077,21 @@ export function PlayPartyScreenOverlay({
           return;
         }
         restedMembers = rest.nextMembers;
-        setCastMessage(
-          "The party makes camp. Wounds close and magic returns.",
-        );
+        // Camping inside the night (or pre-dawn) window also sleeps
+        // the party through to 6 AM — same flow as the stash path.
+        const morning = nextMorningMinutes({
+          totalMinutes: cur.clockMinutes ?? 0,
+        });
+        if (morning !== null) {
+          nextClockMinutes = morning;
+          setCastMessage(
+            "The party camps until first light. Wounds close and magic returns.",
+          );
+        } else {
+          setCastMessage(
+            "The party makes camp. Wounds close and magic returns.",
+          );
+        }
         usedItemId = "camping_supplies";
       } else {
         // Unknown / not-yet-wired usable. Bail without mutating —
@@ -1082,6 +1115,7 @@ export function PlayPartyScreenOverlay({
       setActiveEffectIds([...nextPartyEffects]);
       commit({
         ...cur,
+        clockMinutes: nextClockMinutes,
         party: {
           ...cur.party,
           torch_steps: torchSteps,
