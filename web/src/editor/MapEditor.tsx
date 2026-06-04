@@ -63,6 +63,7 @@ import type { SimQuestRef } from "@/sim/types";
 import { CounterShopOverlay } from "./CounterShopOverlay";
 import { LinkPlacard } from "@/play/LinkPlacard";
 import { SpritePicker } from "./SpritePicker";
+import { groupByTags } from "./mapTags";
 import { LockDialogOverlay } from "./LockDialogOverlay";
 import { MapAttributesDialog } from "./MapAttributesDialog";
 import { SpawnEncounterOverlay } from "./SpawnEncounterOverlay";
@@ -308,7 +309,7 @@ type LoadState =
        *  can dropdown to a target map rather than typing the id by
        *  hand. Just `{id, name}` pairs — the full record isn't
        *  needed here. */
-      availableMaps: Array<{ id: string; name: string }>;
+      availableMaps: Array<{ id: string; name: string; tags?: string[] }>;
       /** Every dungeon and quest in the module — feeds the cell
        *  inspector's Dungeon / Quest dropdowns so authors pick from
        *  the catalog instead of typing ids by hand. Quests carry the
@@ -1073,11 +1074,11 @@ export function MapEditor({
           }));
 
         // Build the picker list once at load. The full record set is
-        // resolved by mergeModel above (allMaps); we strip to id+name
-        // since the inspector doesn't need anything else and the list
-        // is rendered as a flat <select>.
+        // resolved by mergeModel above (allMaps); we strip to
+        // id+name+tags — tags so the Link editor can group its picker
+        // by tag the same way the maps browse tree does.
         const availableMaps = allMaps
-          .map((m) => ({ id: m.id, name: m.name ?? m.id }))
+          .map((m) => ({ id: m.id, name: m.name ?? m.id, tags: m.tags }))
           .sort((a, b) => a.name.localeCompare(b.name));
 
         // Same shape for the dungeons / quests pickers in the cell
@@ -4519,8 +4520,9 @@ function Inspector({
   spawns: RefRecord[];
   items: ItemRecord[];
   npcs: NpcRecord[];
-  /** Every map in the module — fed to the Link editor's map_id picker. */
-  availableMaps: Array<{ id: string; name: string }>;
+  /** Every map in the module — fed to the Link editor's map_id picker
+   *  (tags drive that picker's optgroup grouping). */
+  availableMaps: Array<{ id: string; name: string; tags?: string[] }>;
   /** Every dungeon and quest in the module — fed to the cell-inspector's
    *  Dungeon and Quest dropdowns. Quests carry the full record (used
    *  by the on-map quest-giver sprite + glow logic). */
@@ -5286,8 +5288,9 @@ function LinkEditor({
   paletteValue: { map_id: string; x: number; y: number } | null;
   isModified: boolean;
   canReset: boolean;
-  /** All maps in the module — feeds the map_id dropdown. */
-  availableMaps: Array<{ id: string; name: string }>;
+  /** All maps in the module — feeds the map_id dropdown, grouped by
+   *  tag (same pinned ordering as the maps browse tree). */
+  availableMaps: Array<{ id: string; name: string; tags?: string[] }>;
   onChange: (
     v: { map_id: string; x: number; y: number } | null,
   ) => void;
@@ -5353,10 +5356,20 @@ function LinkEditor({
                 {!value.map_id ? (
                   <option value="">— choose a map —</option>
                 ) : null}
-                {availableMaps.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.name} ({m.id})
-                  </option>
+                {/* Grouped by tag (pinned order: overview, town,
+                    buildings, outside, then alphabetical, untagged
+                    last) — same shape as the maps browse tree. A map
+                    with several tags appears under each, so it's
+                    findable under whichever tag the author thinks of
+                    first; picking any copy writes the same id. */}
+                {groupByTags(availableMaps).map(([tag, maps]) => (
+                  <optgroup key={tag} label={tag}>
+                    {maps.map((m) => (
+                      <option key={`${tag}::${m.id}`} value={m.id}>
+                        {m.name} ({m.id})
+                      </option>
+                    ))}
+                  </optgroup>
                 ))}
               </select>
             )}

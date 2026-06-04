@@ -40,12 +40,14 @@ import {
 import type { DungeonRecord } from "@/sim/dungeon/types";
 import { bakeDungeon } from "./dungeonBake";
 import { GenerateDungeonDialog } from "./GenerateDungeonDialog";
+import { compareTags, UNTAGGED } from "./mapTags";
 import { ID_PATTERN, TagsPicker } from "./TagsPicker";
 import { usePublishServer } from "./usePublishServer";
 
 const MODEL_KEY = "maps";
 const FILE_NAME = "maps.json";
-const UNTAGGED = "(untagged)";
+// Tag ordering + the "(untagged)" bucket live in mapTags.ts so the
+// browse tree and the Map Editor's link picker stay consistent.
 
 interface TileType {
   id: string;
@@ -105,11 +107,7 @@ function groupRecordsByTag(records: MapRecord[]): [string, MapRecord[]][] {
       groups.get(tag)!.push(m);
     }
   }
-  const keys = [...groups.keys()].sort((a, b) => {
-    if (a === UNTAGGED) return 1;
-    if (b === UNTAGGED) return -1;
-    return a.localeCompare(b);
-  });
+  const keys = [...groups.keys()].sort(compareTags);
   return keys.map((k) => [k, groups.get(k)!]);
 }
 
@@ -120,6 +118,17 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
   const [creating, setCreating] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [generatingDungeon, setGeneratingDungeon] = useState(false);
+  // Tag groups the author has expanded. Starts empty — every group
+  // renders collapsed so the screen opens as a compact tag index.
+  const [openTags, setOpenTags] = useState<Set<string>>(() => new Set());
+
+  const toggleTag = (tag: string) =>
+    setOpenTags((prev) => {
+      const next = new Set(prev);
+      if (next.has(tag)) next.delete(tag);
+      else next.add(tag);
+      return next;
+    });
 
   // ── Load palette + maps (draft-aware) ──────────────────────────
   const refresh = async () => {
@@ -192,13 +201,10 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
         groups.get(tag)!.push(m);
       }
     }
-    // Stable sort: untagged last, otherwise alphabetical.
+    // Stable sort: pinned tags first (overview, town, buildings,
+    // outside), then alphabetical, untagged last.
     const sorted = new Map<string, MapRecord[]>();
-    const keys = [...groups.keys()].sort((a, b) => {
-      if (a === UNTAGGED) return 1;
-      if (b === UNTAGGED) return -1;
-      return a.localeCompare(b);
-    });
+    const keys = [...groups.keys()].sort(compareTags);
     for (const k of keys) sorted.set(k, groups.get(k)!);
     return sorted;
   }, [state]);
@@ -716,17 +722,30 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
         </div>
       ) : null}
 
-      {/* Tree-by-tag */}
-      <div className="mt-6 space-y-5">
+      {/* Tree-by-tag. Groups are collapsible and start collapsed, so
+          the screen opens as a compact index of tags; expand the ones
+          you're working in. */}
+      <div className="mt-6 space-y-3">
         {[...groupedByTag.entries()].map(([tag, maps]) => (
           <section key={tag}>
-            <h2 className="mb-2 text-xs uppercase tracking-wide text-parchment/45">
-              {tag}
-              <span className="ml-2 text-parchment/35 normal-case tracking-normal">
-                ({maps.length})
-              </span>
+            <h2 className="text-xs uppercase tracking-wide text-parchment/45">
+              <button
+                type="button"
+                onClick={() => toggleTag(tag)}
+                className="flex w-full items-center gap-2 rounded px-1 py-1 text-left uppercase tracking-wide hover:bg-ink/30 hover:text-parchment/70"
+                title={openTags.has(tag) ? "Collapse this tag group." : "Expand this tag group."}
+              >
+                <span className="text-parchment/55">
+                  {openTags.has(tag) ? "▾" : "▸"}
+                </span>
+                {tag}
+                <span className="text-parchment/35 normal-case tracking-normal">
+                  ({maps.length})
+                </span>
+              </button>
             </h2>
-            <ul className="divide-y divide-parchment/5 rounded border border-parchment/10 bg-ink/20">
+            {openTags.has(tag) ? (
+            <ul className="mt-1 divide-y divide-parchment/5 rounded border border-parchment/10 bg-ink/20">
               {maps.map((m) => (
                 <li key={`${tag}::${m.id}`}>
                   <div className="flex items-center justify-between gap-3 px-3 py-2">
@@ -775,6 +794,7 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
                 </li>
               ))}
             </ul>
+            ) : null}
           </section>
         ))}
         {state.maps.length === 0 ? (
