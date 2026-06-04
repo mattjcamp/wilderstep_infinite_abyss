@@ -421,6 +421,11 @@ import {
   markStepDone,
 } from "@/play/questSteps";
 import {
+  creditKillSteps,
+  isKernelQuestKill,
+  type KillStepCredit,
+} from "@/play/creditKillStep";
+import {
   attemptPickpocket,
   canPickpocket,
 } from "@/play/raceAbilities";
@@ -2922,6 +2927,20 @@ export function PlayHost() {
             for (let i = 0; i < def.steps.length; i++) {
               if (doneIds.has(def.steps[i].id)) qs.stepProgress[i] = true;
             }
+            // Seed the kernel's in-session kill counters from the
+            // persisted per-step record so partial multi-kill
+            // progress survives a remount: activeKillStepsAt then
+            // spawns only the REMAINING copies, and the completion
+            // placard fires on the true Nth kill instead of never.
+            const savedKills = save.questStepKills?.[def.id];
+            if (savedKills) {
+              for (let i = 0; i < def.steps.length; i++) {
+                const k = savedKills[def.steps[i].id];
+                if (typeof k === "number" && k > 0) {
+                  qs.stepKills[i] = Math.max(qs.stepKills[i] ?? 0, k);
+                }
+              }
+            }
             if (
               qs.stepProgress.length > 0 &&
               qs.stepProgress.every((p) => p) &&
@@ -3520,19 +3539,48 @@ export function PlayHost() {
               // split the credit from its rewards.
               let stepRewardsSummary = "";
               let nextSave: WorldSave | null = save;
+              // Persist the kernel's per-step kill counter on EVERY
+              // credit (partial included) so multi-kill progress
+              // survives a map change / reload — the sim-mount
+              // bootstrap seeds the kernel's `stepKills` from this
+              // record. `max` so a kernel whose in-session counter
+              // restarted (legacy save, manual edit) can't regress
+              // a higher persisted total.
+              const creditDef = questDefsRef.current.find(
+                (d) => d.id === ev.questId,
+              );
+              const creditStepId = creditDef?.steps[ev.stepIdx]?.id;
+              if (nextSave && creditStepId) {
+                const prevKills =
+                  nextSave.questStepKills?.[ev.questId]?.[creditStepId] ?? 0;
+                if (ev.killsSoFar > prevKills) {
+                  nextSave = {
+                    ...nextSave,
+                    questStepKills: {
+                      ...(nextSave.questStepKills ?? {}),
+                      [ev.questId]: {
+                        ...(nextSave.questStepKills?.[ev.questId] ?? {}),
+                        [creditStepId]: ev.killsSoFar,
+                      },
+                    },
+                  };
+                }
+              }
               // Mirror the kernel credit into the authoritative
               // per-step-id record (order-independent) and let the
               // helper keep the legacy linear `questStepProgress`
               // integer derived from it. Only a step that actually
               // FLIPPED to complete writes here — a partial multi-kill
               // credit (killsSoFar < count) leaves the step undone.
+              // `stepNewlyDone` gates the placard below: when the
+              // host-side authored-encounter path already completed
+              // (and celebrated) this step, the kernel's own count
+              // reaching N later shouldn't re-fire the celebration.
+              let stepNewlyDone = false;
               if (qs && nextSave && ev.stepCompleted) {
-                const def = questDefsRef.current.find(
-                  (d) => d.id === ev.questId,
-                );
-                const stepId = def?.steps[ev.stepIdx]?.id;
-                if (def && stepId) {
-                  const res = markStepDone(nextSave, def, stepId);
+                if (creditDef && creditStepId) {
+                  const res = markStepDone(nextSave, creditDef, creditStepId);
+                  stepNewlyDone = res.changed;
                   if (res.changed) {
                     nextSave = {
                       ...nextSave,
@@ -3594,8 +3642,11 @@ export function PlayHost() {
               // immediate, in-game signal that the handoff is
               // waiting. The bigger "Quest Complete" placard still
               // fires at actual turn-in (see onQuestDecline's
-              // complete branch).
-              if (ev.stepCompleted) {
+              // complete branch). Gated on `stepNewlyDone` so a step
+              // the authored-encounter path already completed (and
+              // celebrated) doesn't re-fire when the kernel's own
+              // counter catches up.
+              if (ev.stepCompleted && stepNewlyDone) {
                 const def = questDefsRef.current.find(
                   (d) => d.id === ev.questId,
                 );
@@ -4317,13 +4368,48 @@ export function PlayHost() {
         // narrow dep list, so its closure may have been built
         // before the catalog loaded or before this combat fired;
         // the refs always carry the live values.
-        saveRef.current = creditKillStep(
+        const killCredit = creditKillStep(
           saveRef.current,
           combatRef.current,
           dungeonStateRef.current,
           catalogRef.current?.quests ?? [],
           catalogRef.current?.map?.id ?? null,
         );
+        saveRef.current = killCredit.save;
+        // Surface every credit the same way the kernel path does —
+        // partial credits get a log line, completions get the
+        // celebration placard (step-final when the quest's last
+        // step just closed, so the "return to giver" prompt fires
+        // regardless of which path counted the final kill).
+        for (const c of killCredit.credited) {
+          setLogMessages((prev) => {
+            const line = c.stepCompleted
+              ? `Step complete: ${c.stepName}.`
+              : `${c.stepName} (${c.killsSoFar}/${c.count}).`;
+            const next = [...prev, line];
+            return next.length > MAX_LOG
+              ? next.slice(next.length - MAX_LOG)
+              : next;
+          });
+          if (c.stepCompleted) {
+            const def = questDefsRef.current.find(
+              (d) => d.id === c.questId,
+            );
+            if (c.questCompleted) {
+              fireQuestCelebration({
+                kind: "step-final",
+                title: def?.name ?? c.questName,
+                subtitle: returnToGiverSubtitle(def?.questGiver?.npcName),
+              });
+            } else {
+              fireQuestCelebration({
+                kind: "step",
+                title: def?.name ?? c.questName,
+                subtitle: c.stepName,
+              });
+            }
+          }
+        }
       }
       saveCurrent();
       setCombat(null);
@@ -4335,7 +4421,7 @@ export function PlayHost() {
     sim.resolveSpawnEncounter("fled");
     setCombat(null);
     router.push("/play/end");
-  }, [router, saveCurrent]);
+  }, [router, saveCurrent, fireQuestCelebration]);
 
   // Lock-dialog wiring — Pick Lock / Cast Knock both call back into
   // the kernel, which mutates the cell + emits a state event the
@@ -5955,9 +6041,15 @@ function buildDungeonCatalog(
  *     clearing one would wrongly credit the other); a step with neither
  *     credits anywhere.
  *
- * Returns a fresh WorldSave with `questStepsDone` + the derived
- * `questStepProgress` updated, or the input save unchanged when no
- * step matched.
+ * Thin host adapter over {@link creditKillSteps} (src/play/
+ * creditKillStep.ts), which owns the matching + per-step kill
+ * COUNTING (`save.questStepKills`) — the inline predecessor ignored
+ * `count`, which let a single kill silently complete multi-kill steps
+ * in the save while the kernel was still at 1/N, killing the
+ * completion placard. Returns the updated save plus the list of
+ * credits so the caller can fire the same placard / log feedback the
+ * kernel's `quest_kill_credited` path produces. Skips entirely when
+ * the resolved fight was a kernel-owned quest spawn.
  */
 function creditKillStep(
   save: WorldSave,
@@ -5965,92 +6057,54 @@ function creditKillStep(
   dungeon: DungeonState | null,
   quests: ReadonlyArray<SimQuestRef>,
   currentMapId: string | null,
-): WorldSave {
-  if (!combat || combat.monsters.length === 0) return save;
-  const accepted = save.acceptedQuests ?? [];
-  if (accepted.length === 0) return save;
-  const turnedIn = new Set(save.turnedInQuests ?? []);
-  const monsterIdsInCombat = new Set(combat.monsters);
-  const clearedEncounterId = combat.encounter?.id ?? null;
-  const byId = new Map(quests.map((q) => [q.id, q]));
-
-  // Mutable working copies; we fold each credit in via the shared
-  // questSteps helper so the derived legacy integer stays correct.
-  let fields: {
-    questStepProgress?: Record<string, number>;
-    questStepsDone?: Record<string, ReadonlyArray<string>>;
-  } = {
-    questStepProgress: { ...(save.questStepProgress ?? {}) },
-    questStepsDone: { ...(save.questStepsDone ?? {}) },
-  };
-  let changed = false;
-
-  for (const questId of accepted) {
-    if (turnedIn.has(questId)) continue;
-    const quest = byId.get(questId);
-    if (!quest) continue;
-    const steps =
-      (quest as unknown as {
-        steps?: ReadonlyArray<{
-          id?: string;
-          kind?: string;
-          encounter_id?: string;
-          params?: { monster_id?: string; count?: number } | null;
-          map_id?: string;
-          dungeon_id?: string;
-          dungeon_level?: number;
-        }>;
-      }).steps ?? [];
-    const def = {
-      id: questId,
-      steps: steps.map((s, i) => ({ id: s.id ?? `__idx_${i}` })),
-    };
-    const done = completedStepIds(fields, def);
-
-    for (let i = 0; i < steps.length; i++) {
-      const step = steps[i];
-      const stepId = step.id ?? `__idx_${i}`;
-      if (step.kind !== "kill") continue;
-      if (done.has(stepId)) continue;
-
-      // Combat match — encounter id (preferred) OR monster id (legacy).
-      const encounterMatch =
-        !!step.encounter_id &&
-        clearedEncounterId !== null &&
-        step.encounter_id === clearedEncounterId;
-      const monsterMatch =
-        !!step.params?.monster_id &&
-        monsterIdsInCombat.has(step.params.monster_id);
-      if (!encounterMatch && !monsterMatch) continue;
-
-      // Location match.
-      if (step.dungeon_id) {
-        if (!dungeon || dungeon.dungeonId !== step.dungeon_id) continue;
-        if (typeof step.dungeon_level === "number") {
-          const expectedFloorIdx = Math.max(0, step.dungeon_level - 1);
-          if (dungeon.floorIdx !== expectedFloorIdx) continue;
-        }
-      } else if (step.map_id) {
-        // Map-pinned: only credit when standing on that map (and NOT
-        // inside a dungeon, whose synthetic map id won't match).
-        if (dungeon) continue;
-        if (currentMapId !== step.map_id) continue;
-      }
-
-      const res = markStepDone(fields, def, stepId);
-      fields = {
-        questStepProgress: res.questStepProgress,
-        questStepsDone: res.questStepsDone,
-      };
-      if (res.changed) changed = true;
-    }
+): { save: WorldSave; credited: KillStepCredit[] } {
+  // Kernel-owned fight (quest-spawned `q-<quest>-<step>-<n>` entity):
+  // the sim already counted it and emitted `quest_kill_credited`.
+  // Crediting it here too would double-count the kill.
+  if (isKernelQuestKill(combat?.placedEncounterId)) {
+    return { save, credited: [] };
   }
-
-  if (!changed) return save;
+  const res = creditKillSteps(
+    save,
+    combat
+      ? {
+          encounterId: combat.encounter?.id ?? null,
+          monsters: combat.monsters,
+        }
+      : null,
+    dungeon
+      ? { dungeonId: dungeon.dungeonId, floorIdx: dungeon.floorIdx }
+      : null,
+    quests as unknown as ReadonlyArray<{
+      id: string;
+      name?: string;
+      steps?: ReadonlyArray<{
+        id?: string;
+        name?: string;
+        kind?: string;
+        encounter_id?: string;
+        count?: number | string;
+        params?: {
+          encounter_id?: string;
+          monster_id?: string;
+          count?: number | string;
+        } | null;
+        map_id?: string;
+        dungeon_id?: string;
+        dungeon_level?: number;
+      }>;
+    }>,
+    currentMapId,
+  );
+  if (!res.changed) return { save, credited: [] };
   return {
-    ...save,
-    questStepProgress: fields.questStepProgress,
-    questStepsDone: fields.questStepsDone,
+    save: {
+      ...save,
+      questStepProgress: res.questStepProgress,
+      questStepsDone: res.questStepsDone,
+      questStepKills: res.questStepKills,
+    },
+    credited: res.credited,
   };
 }
 

@@ -11,7 +11,7 @@
         {
           "id": "introduction",
           "title": "Behind the bar",
-          "text": "Welcome to the Lantern. Bed's three coppers, stew's two, and whatever rumor you came in chasing — sit down first and let me look at you before I decide if I've heard of it."
+          "text": "Welcome to the Lantern. Bed's three coppers, stew's two, and whatever rumor you came in chasing \u2014 sit down first and let me look at you before I decide if I've heard of it."
         },
         {
           "id": "about_the_dragon",
@@ -21,7 +21,7 @@
         {
           "id": "about_the_stranger",
           "title": "When asked about the Stranger in Grey",
-          "text": "He pays. He doesn't drink. He doesn't make trouble. Whoever he's waiting on, I hope they come soon — for his sake and mine."
+          "text": "He pays. He doesn't drink. He doesn't make trouble. Whoever he's waiting on, I hope they come soon \u2014 for his sake and mine."
         }
       ]
     },
@@ -30,12 +30,12 @@
       "name": "Mira Hask",
       "sprite": "person/townsperson13.png",
       "counter": "general",
-      "personal_history": "Mira came up the dragon road from the southern coast twelve years back, set up a stall, and outlasted three rivals by being honest, sharp-elbowed, and impossible to outwait. She buys torches in bulk, weighs healing herbs to the half-leaf, and is the only merchant in Hollowmere still willing to extend credit — which she records in a small black book she will absolutely come looking for.",
+      "personal_history": "Mira came up the dragon road from the southern coast twelve years back, set up a stall, and outlasted three rivals by being honest, sharp-elbowed, and impossible to outwait. She buys torches in bulk, weighs healing herbs to the half-leaf, and is the only merchant in Hollowmere still willing to extend credit \u2014 which she records in a small black book she will absolutely come looking for.",
       "dialogs": [
         {
           "id": "shop_greeting",
           "title": "At the counter",
-          "text": "Torches, picks, herbs, the usual. Caravan didn't come in this month so prices are up — don't argue with me, argue with the dragon."
+          "text": "Torches, picks, herbs, the usual. Caravan didn't come in this month so prices are up \u2014 don't argue with me, argue with the dragon."
         },
         {
           "id": "credit",
@@ -73,7 +73,7 @@
         {
           "id": "introduction",
           "title": "At the chapel door",
-          "text": "Elder Marisol is in the inner sanctuary. I can take a message, if you'd like — or you can wait. She doesn't mind being interrupted, only being lied to."
+          "text": "Elder Marisol is in the inner sanctuary. I can take a message, if you'd like \u2014 or you can wait. She doesn't mind being interrupted, only being lied to."
         },
         {
           "id": "shuttered_chapel",
@@ -92,7 +92,7 @@
         {
           "id": "introduction",
           "title": "At the western gate",
-          "text": "Are you going into the wood? My da went in to find Tally — that's our dog — and he hasn't come back. He's tall, and he has a burn on his left arm from the kiln. If you see him, will you tell him Calla is waiting?"
+          "text": "Are you going into the wood? My da went in to find Tally \u2014 that's our dog \u2014 and he hasn't come back. He's tall, and he has a burn on his left arm from the kiln. If you see him, will you tell him Calla is waiting?"
         },
         {
           "id": "quest_reward",
@@ -106,7 +106,7 @@
       "name": "Old Greaves",
       "sprite": "person/fighter13.png",
       "counter": "",
-      "personal_history": "Nobody in Hollowmere remembers Greaves's given name, including Greaves. He fought in the eastern campaign alongside Orin, came home with one ear and a permanent thirst, and has held down the corner stool at the Bent Lantern for as long as anyone can prove. He talks too loudly, lies pleasantly about his old battles, and — when he's three ales deep and somebody actually listens — tells the truth about the binding ritual he says his grandmother saw scratched into a stone in the Auric ruins.",
+      "personal_history": "Nobody in Hollowmere remembers Greaves's given name, including Greaves. He fought in the eastern campaign alongside Orin, came home with one ear and a permanent thirst, and has held down the corner stool at the Bent Lantern for as long as anyone can prove. He talks too loudly, lies pleasantly about his old battles, and \u2014 when he's three ales deep and somebody actually listens \u2014 tells the truth about the binding ritual he says his grandmother saw scratched into a stone in the Auric ruins.",
       "dialogs": [
         {
           "id": "first_round",
@@ -116,7 +116,7 @@
         {
           "id": "third_round",
           "title": "Third ale",
-          "text": "The Auric kings didn't kill the wyrm. They couldn't. They chained it — the chain's carved in the floor of the deepest hall in the old ruins. Whoever broke it broke us all, and I'd bet my last copper it wasn't a stranger."
+          "text": "The Auric kings didn't kill the wyrm. They couldn't. They chained it \u2014 the chain's carved in the floor of the deepest hall in the old ruins. Whoever broke it broke us all, and I'd bet my last copper it wasn't a stranger."
         }
       ]
     },
@@ -163,12 +163,12 @@
       "name": "Edda of the Iron Pendant",
       "sprite": "person/cleric3.png",
       "counter": "",
-      "personal_history": "Marisol's younger sister. Vanished into the Wandering Wood nineteen years ago and is still nineteen years old. Whatever the wood gave back in exchange for keeping her is no longer entirely Edda, but the iron pendant at her throat is the same one Marisol wears beneath her vestments, and she remembers — when pressed — the name of the village she was born in. She is a discovered NPC, found only in the deeper levels of the wood, and she may be brought home, freed, or left where the wood placed her.",
+      "personal_history": "Marisol's younger sister. Vanished into the Wandering Wood nineteen years ago and is still nineteen years old. Whatever the wood gave back in exchange for keeping her is no longer entirely Edda, but the iron pendant at her throat is the same one Marisol wears beneath her vestments, and she remembers \u2014 when pressed \u2014 the name of the village she was born in. She is a discovered NPC, found only in the deeper levels of the wood, and she may be brought home, freed, or left where the wood placed her.",
       "dialogs": [
         {
           "id": "first_sight",
           "title": "When first encountered",
-          "text": "I know you. No — I know the road you came up. Are the chapel candles still lit? Is my sister still angry with me?"
+          "text": "I know you. No \u2014 I know the road you came up. Are the chapel candles still lit? Is my sister still angry with me?"
         },
         {
           "id": "the_truth",
@@ -201,7 +201,7 @@
       "name": "Warlord Murgath",
       "sprite": "monster/orc2.png",
       "counter": "",
-      "personal_history": "Murgath holds the Iron Mines with two hundred orcs and the bones of the last human foreman nailed above the gate. He is older than orcs are usually allowed to get, which means he is cleverer than orcs are usually allowed to be. He picked the deep galleries because the dragon's roar doesn't reach them, and he will fight any creature — wyrm, party, or rival warlord — that tries to take the mountain from him before he's ready to leave it.",
+      "personal_history": "Murgath holds the Iron Mines with two hundred orcs and the bones of the last human foreman nailed above the gate. He is older than orcs are usually allowed to get, which means he is cleverer than orcs are usually allowed to be. He picked the deep galleries because the dragon's roar doesn't reach them, and he will fight any creature \u2014 wyrm, party, or rival warlord \u2014 that tries to take the mountain from him before he's ready to leave it.",
       "dialogs": [
         {
           "id": "challenge",
@@ -220,7 +220,7 @@
       "name": "Vael the Hollow-Eyed",
       "sprite": "monster/skeleton1.png",
       "counter": "",
-      "personal_history": "Last knight of the Auric Throne, sworn to the binding of the dragon, dead these eleven centuries and still walking the lowest hall of the old ruins. Vael was one of the seven who carved the chain into the stone of the deep floor; the breaking of that chain unmade him in the same instant it freed the wyrm. He is no longer angry, only bound to the duty he failed, and he will help any party that means to put the wyrm back into the dark — provided they understand what binding costs.",
+      "personal_history": "Last knight of the Auric Throne, sworn to the binding of the dragon, dead these eleven centuries and still walking the lowest hall of the old ruins. Vael was one of the seven who carved the chain into the stone of the deep floor; the breaking of that chain unmade him in the same instant it freed the wyrm. He is no longer angry, only bound to the duty he failed, and he will help any party that means to put the wyrm back into the dark \u2014 provided they understand what binding costs.",
       "dialogs": [
         {
           "id": "first_encounter",
@@ -239,7 +239,7 @@
       "name": "Aurigax, the Brimspire Wyrm",
       "sprite": "monster/dragon1.png",
       "counter": "",
-      "personal_history": "Aurigax slept under the Brimspire for eleven hundred years, bound by the seven-throat chain of the Auric Throne, and woke last spring when the chain was broken. He is gold-and-rust scaled, polite in the way very old things sometimes are, and he does not particularly want the vale — he wants the sky, and the vale is in the way. He will speak with the party before he kills them. He has been told it is courteous. He is not above being lied to and he is not above being chained again, but the second binding will cost more than the first.",
+      "personal_history": "Aurigax slept under the Brimspire for eleven hundred years, bound by the seven-throat chain of the Auric Throne, and woke last spring when the chain was broken. He is gold-and-rust scaled, polite in the way very old things sometimes are, and he does not particularly want the vale \u2014 he wants the sky, and the vale is in the way. He will speak with the party before he kills them. He has been told it is courteous. He is not above being lied to and he is not above being chained again, but the second binding will cost more than the first.",
       "dialogs": [
         {
           "id": "the_audience",
@@ -250,6 +250,111 @@
           "id": "the_offer",
           "title": "Asked to leave the vale",
           "text": "I left the vale alone for an age and an age. The vale did not return the courtesy. Bring me the throat that broke my chain and I will consider going back to sleep. Bring me anything less and I will consider you breakfast."
+        }
+      ]
+    },
+    {
+      "id": "sela_varn",
+      "name": "Sela Varn",
+      "sprite": "person/townsperson14.png",
+      "counter": "general",
+      "personal_history": "Sela is the third Varn to keep the post's ledgers and the first to keep them alone. Her grandmother founded Varnfell on a handshake with a ship captain who never missed a season; her father drowned bringing a late cargo around the point; her brother Edric took the last shipment south down the tradeway two months ago and sent back one note: 'wolves.' She still opens the shutters every morning at first light, because a trading post that looks closed is a trading post that is closed.",
+      "dialogs": [
+        {
+          "id": "shop_greeting",
+          "title": "At the counter",
+          "text": "Varn and Daughters, est. before you were born. Torches, rope, herbs, ore if you're buying, furs if you're mad. Prices are fair because there's nobody left to undercut me."
+        },
+        {
+          "id": "about_the_ships",
+          "title": "Asked about the empty harbor",
+          "text": "Two seasons, no sails. First we blamed the weather. Then the wrecks started washing up \u2014 cargo lashed tight, crews gone. Maro can show you. I don't go down to the sand anymore."
+        },
+        {
+          "id": "about_edric",
+          "title": "Asked about her brother",
+          "text": "Edric took six sledges down the tradeway in the autumn and made it as far as the second ridge. The wolves down there don't behave like wolves. He swears something in the old delve is feeding them, and my brother does not scare easy."
+        }
+      ]
+    },
+    {
+      "id": "doran_pike",
+      "name": "Doran Pike",
+      "sprite": "person/townsperson10.png",
+      "counter": "",
+      "personal_history": "Doran was bosun on the Levant Star when she broke her back on the Varnfell sand forty years ago. He waded ashore, looked at the wreck, looked at the snow, and decided he'd been going the wrong direction his whole life. He built the Driftwood Hearth out of her timbers and has kept the fire lit every night since \u2014 partly for the cold, mostly as a signal to any ship still out there that somebody on this coast is home.",
+      "dialogs": [
+        {
+          "id": "introduction",
+          "title": "By the fire",
+          "text": "Sit. Stew's hot, beds are dry, and the fire's older than most of the people in this town. You've got the look of somebody who came north on purpose, which makes you the most interesting thing to walk in here all winter."
+        },
+        {
+          "id": "about_the_fire",
+          "title": "Asked about the hearth",
+          "text": "Forty years, never let it die. When the ships ran, they'd steer by the glow. Ships are gone now, but I figure \u2014 the night I let it go out is the night the north decides we've given up. Not on my watch."
+        },
+        {
+          "id": "about_the_delve",
+          "title": "Asked about the Frost Delve",
+          "text": "Prospectors dug it before my time, gave it up when the ore quit. Henna's the one to ask \u2014 she's been up at the entrance every week, muttering about warm air. Warm air, in this country. That's not a draft, friend. That's a door open somewhere it shouldn't be."
+        }
+      ]
+    },
+    {
+      "id": "ibsen_cole",
+      "name": "Ibsen Cole",
+      "sprite": "person/ranger2.png",
+      "counter": "",
+      "personal_history": "Ibsen has run traplines out of Varnfell for twenty years and knows every wolf within three days' walk by its gait. That's how he knows the packs on the tradeway are wrong: they're too big, too patient, and they ignore the deer. Wolves that don't eat are wolves that answer to something. He's lost two traplines and one good dog finding that out, and he has personally stopped going south without iron in hand.",
+      "dialogs": [
+        {
+          "id": "introduction",
+          "title": "Near the south gate",
+          "text": "You'll be wanting the tradeway south. So does every fur and ounce of ore in this town. Problem is the wolves got there first, and these aren't wolves you wave a torch at."
+        },
+        {
+          "id": "about_the_wolves",
+          "title": "Asked about the packs",
+          "text": "Twenty years I've trapped this country. Wolves keep to the deer runs and mind their own hunger. These sit on the road. They watch. A pack that doesn't eat is a pack that's been put there, you understand me? Put there."
+        }
+      ]
+    },
+    {
+      "id": "maro_tides",
+      "name": "Maro Tides",
+      "sprite": "person/townsperson17.png",
+      "counter": "",
+      "personal_history": "Maro was born in Varnfell, which makes him rare, and never wanted to leave, which makes him unique. He fished the point until the fish went strange and now walks the sand every dawn, logging what the sea sends back: ship timbers, lashed crates, a wheel with no ship attached. He keeps the log in pencil in a sailcloth notebook, because somebody should be writing this down, and nobody else volunteered.",
+      "dialogs": [
+        {
+          "id": "introduction",
+          "title": "On the sand",
+          "text": "Mind the tideline \u2014 that's where I do my reading. The sea's been sending us mail with no return address. Crates, spars, a binnacle still polished. Everything but the sailors."
+        },
+        {
+          "id": "about_the_cargo",
+          "title": "Asked about the wrecks",
+          "text": "Week back, a crate came in south of here, past the rocks. Trade-sealed, heavy, sitting on the sand pretty as you please. I'd have hauled it up myself, but something's been pacing the shore down there at night, and I read better than I fight."
+        }
+      ]
+    },
+    {
+      "id": "henna_stone",
+      "name": "Henna Stone",
+      "sprite": "person/townsperson20.png",
+      "counter": "",
+      "personal_history": "Henna swung a pick in the Frost Delve for nine years before the brimite veins ran dry and the company pulled out. She stayed \u2014 partly for the quiet, partly because she never believed the delve was empty, only finished with them. Lately she's been proven right in the worst way: the entrance breathes warm air, the snow won't settle on the ridge, and the sounds from below aren't echoes, because echoes answer you back in your own voice.",
+      "dialogs": [
+        {
+          "id": "introduction",
+          "title": "Watching the ridge",
+          "text": "Nine years I worked that delve. Cold as a debt collector's heart, every level of it. Now it sighs warm air like something's sleeping at the bottom. I'm too old to go down and check. You're not."
+        },
+        {
+          "id": "about_the_depths",
+          "title": "Asked what's below",
+          "text": "We stopped at two levels because the ore stopped. But the survey crew always said the cracks kept going \u2014 down past where the lamps made sense. If something's come up from that far under, I want to know what it is before it wants to know about us."
         }
       ]
     }

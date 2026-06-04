@@ -354,6 +354,16 @@ export interface WorldSave {
    *  loader backfills it from `questStepProgress` (first N step ids)
    *  so an in-flight sequential quest upgrades losslessly. */
   questStepsDone?: Record<string, ReadonlyArray<string>>;
+  /** Persisted kill counters for multi-kill steps: quest id → step
+   *  id → kills credited so far. Written by both kill-credit paths
+   *  (the kernel's `quest_kill_credited` listener for quest-spawned
+   *  fights, the host's `creditKillSteps` for authored-encounter
+   *  fights) and seeded back into the kernel's in-session
+   *  `stepKills` at sim mount, so partial progress on a
+   *  count-3-wolf-packs style step survives map changes and
+   *  reloads. Absent in legacy saves — counters start at zero,
+   *  matching the old round-down behaviour. */
+  questStepKills?: Record<string, Record<string, number>>;
   /** Quest ids the party has already turned in and claimed rewards
    *  for. Distinct from `acceptedQuests` (which only tracks "yes I
    *  took this") and `questStepProgress` (which tracks step

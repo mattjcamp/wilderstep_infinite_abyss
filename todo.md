@@ -1,6 +1,8 @@
 
 # Playthrough Polish
 
+- When the cleric healed a party member in the party screen, the bars moved the total hit points did not appear to replenise 
+- Make a note in the rats quest to hint that some rats or goblins may be in the houses
 
 ## Big Ideas
 
