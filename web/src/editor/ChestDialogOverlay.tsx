@@ -135,7 +135,7 @@ export function ChestDialogOverlay({
       <div className="w-[440px] rounded-lg border border-parchment/25 bg-ink/95 p-4 text-parchment shadow-xl">
         <header className="mb-3 flex items-baseline justify-between">
           <h2 className="font-display text-xl">{chestName}</h2>
-          <span className="font-mono text-[11px] text-parchment/45">
+          <span className="font-mono text-xs text-parchment/65">
             Treasure
           </span>
         </header>
@@ -156,17 +156,17 @@ export function ChestDialogOverlay({
                 }}
               />
             ) : (
-              <span className="font-mono text-[10px] text-parchment/55">
+              <span className="font-mono text-xs text-parchment/75">
                 CHEST
               </span>
             )}
           </div>
           <div className="flex-1">
-            <p className="text-[11px] uppercase tracking-wide text-parchment/45">
+            <p className="text-xs uppercase tracking-wide text-parchment/65">
               Contents
             </p>
             {isEmpty ? (
-              <p className="mt-1 text-sm italic text-parchment/55">
+              <p className="mt-1 text-sm italic text-parchment/75">
                 (Empty — but the chest itself looks like a curiosity.)
               </p>
             ) : (
@@ -174,7 +174,7 @@ export function ChestDialogOverlay({
                 {gold > 0 ? (
                   <li className="flex items-baseline justify-between gap-2">
                     <span className="text-amber-300">Gold</span>
-                    <span className="font-mono text-xs text-parchment/85">
+                    <span className="font-mono text-[13px] text-parchment/85">
                       {gold}g
                     </span>
                   </li>
@@ -214,7 +214,7 @@ export function ChestDialogOverlay({
                         <span className="text-parchment/90">{label}</span>
                       </span>
                       {qty > 1 ? (
-                        <span className="font-mono text-xs text-parchment/65">
+                        <span className="font-mono text-[13px] text-parchment/80">
                           ×{qty}
                         </span>
                       ) : null}
@@ -250,7 +250,7 @@ export function ChestDialogOverlay({
                   ].join(" ")}
                 >
                   <div className="font-medium">Open</div>
-                  <div className="text-[11px] text-parchment/55">
+                  <div className="text-xs text-parchment/75">
                     {isEmpty
                       ? "Take a look anyway — the chest itself goes back into the world's noise."
                       : "Take everything in the chest. The chest stays empty on the map."}
@@ -268,7 +268,7 @@ export function ChestDialogOverlay({
                   ].join(" ")}
                 >
                   <div className="font-medium">Leave</div>
-                  <div className="text-[11px] text-parchment/55">
+                  <div className="text-xs text-parchment/75">
                     Step back. The chest waits where you found it.
                   </div>
                 </button>

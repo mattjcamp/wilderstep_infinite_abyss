@@ -108,7 +108,7 @@ export function LibrariesPanel({ moduleId }: { moduleId: string }) {
 
   if (state.kind === "loading") {
     return (
-      <p className="text-sm text-parchment/55">Loading libraries…</p>
+      <p className="text-sm text-parchment/75">Loading libraries…</p>
     );
   }
   if (state.kind === "error") {
@@ -196,10 +196,10 @@ export function LibrariesPanel({ moduleId }: { moduleId: string }) {
     <section className="mb-8">
       <header className="mb-2 flex flex-wrap items-baseline justify-between gap-3">
         <div>
-          <h2 className="text-xs uppercase tracking-wide text-parchment/45">
+          <h2 className="text-[13px] uppercase tracking-wide text-parchment/65">
             Libraries
           </h2>
-          <p className="mt-1 text-sm text-parchment/55">
+          <p className="mt-1 text-sm text-parchment/75">
             Make library content available for import in this module&apos;s
             per-model catalogs. Adding a library doesn&apos;t pull anything
             in automatically — open a model view and click Import on the
@@ -208,7 +208,7 @@ export function LibrariesPanel({ moduleId }: { moduleId: string }) {
         </div>
         <div className="flex items-center gap-2">
           {state.isDraft ? (
-            <span className="rounded bg-ember/30 px-2 py-0.5 text-xs text-parchment/90">
+            <span className="rounded bg-ember/30 px-2 py-0.5 text-[13px] text-parchment/90">
               manifest draft
             </span>
           ) : null}
@@ -216,7 +216,7 @@ export function LibrariesPanel({ moduleId }: { moduleId: string }) {
             <button
               type="button"
               onClick={onDiscardDraft}
-              className="rounded border border-parchment/20 px-2 py-0.5 text-xs text-parchment/70 hover:bg-ink/40"
+              className="rounded border border-parchment/20 px-2 py-0.5 text-[13px] text-parchment/85 hover:bg-ink/40"
             >
               Discard
             </button>
@@ -224,7 +224,7 @@ export function LibrariesPanel({ moduleId }: { moduleId: string }) {
           <button
             type="button"
             onClick={onExport}
-            className="rounded border border-parchment/30 px-2 py-0.5 text-xs text-parchment/90 hover:bg-ink/40"
+            className="rounded border border-parchment/30 px-2 py-0.5 text-[13px] text-parchment/90 hover:bg-ink/40"
             title="Download the current module.json — drop it into the repo to commit."
           >
             ⬇ Export module.json
@@ -234,7 +234,7 @@ export function LibrariesPanel({ moduleId }: { moduleId: string }) {
               type="button"
               onClick={onPublish}
               disabled={publishing}
-              className="rounded border border-ember/60 bg-ember/30 px-2 py-0.5 text-xs text-parchment hover:bg-ember/50 disabled:cursor-not-allowed disabled:opacity-40"
+              className="rounded border border-ember/60 bg-ember/30 px-2 py-0.5 text-[13px] text-parchment hover:bg-ember/50 disabled:cursor-not-allowed disabled:opacity-40"
               title="Write the manifest directly to disk via the local publish-server."
             >
               {publishing ? "Publishing…" : "Publish"}
@@ -245,7 +245,7 @@ export function LibrariesPanel({ moduleId }: { moduleId: string }) {
 
       <div className="rounded border border-parchment/10 bg-ink/20 p-3">
         {ownUses.length === 0 ? (
-          <p className="text-sm text-parchment/55">
+          <p className="text-sm text-parchment/75">
             No libraries in <code className="text-parchment/75">uses</code>{" "}
             yet. Pick one below to make its content browsable in the
             per-model catalogs.
@@ -263,9 +263,9 @@ export function LibrariesPanel({ moduleId }: { moduleId: string }) {
                     <span className="font-display">
                       {meta?.title ?? libId}
                     </span>
-                    <span className="ml-2 text-parchment/45">{libId}</span>
+                    <span className="ml-2 text-parchment/65">{libId}</span>
                     {meta?.role && meta.role !== "library" ? (
-                      <span className="ml-2 rounded bg-ember/20 px-1.5 py-0.5 text-[10px] uppercase text-parchment/80">
+                      <span className="ml-2 rounded bg-ember/20 px-1.5 py-0.5 text-xs uppercase text-parchment/80">
                         {meta.role}
                       </span>
                     ) : null}
@@ -273,7 +273,7 @@ export function LibrariesPanel({ moduleId }: { moduleId: string }) {
                   <button
                     type="button"
                     onClick={() => onRemove(libId)}
-                    className="rounded border border-parchment/20 px-2 py-0.5 text-xs text-parchment/70 hover:bg-ink/40"
+                    className="rounded border border-parchment/20 px-2 py-0.5 text-[13px] text-parchment/85 hover:bg-ink/40"
                     title="Remove from uses. Records you already imported into this module stay — they're yours."
                   >
                     Remove
@@ -288,7 +288,7 @@ export function LibrariesPanel({ moduleId }: { moduleId: string }) {
           <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-parchment/10 pt-3">
             <label
               htmlFor="library-picker"
-              className="text-xs uppercase tracking-wide text-parchment/45"
+              className="text-[13px] uppercase tracking-wide text-parchment/65"
             >
               Add library
             </label>
@@ -315,7 +315,7 @@ export function LibrariesPanel({ moduleId }: { moduleId: string }) {
             </button>
           </div>
         ) : ownUses.length > 0 ? (
-          <p className="mt-3 border-t border-parchment/10 pt-3 text-xs text-parchment/45">
+          <p className="mt-3 border-t border-parchment/10 pt-3 text-[13px] text-parchment/65">
             No more libraries available — every role:library module is
             already in this module&apos;s <code>uses</code>.
           </p>

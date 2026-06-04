@@ -338,7 +338,7 @@ export function LockDialogOverlay({
       <div className="w-[420px] rounded-lg border border-parchment/25 bg-ink/95 p-4 text-parchment shadow-xl">
         <header className="mb-3 flex items-baseline justify-between">
           <h2 className="font-display text-xl">Locked Door</h2>
-          <span className="font-mono text-[11px] text-parchment/45">
+          <span className="font-mono text-xs text-parchment/65">
             ({liveOpts.pos.col}, {liveOpts.pos.row})
           </span>
         </header>
@@ -358,7 +358,7 @@ export function LockDialogOverlay({
           >
             <div>{result.message}</div>
             {!result.success ? (
-              <div className="mt-1 text-[11px] text-parchment/65">
+              <div className="mt-1 text-xs text-parchment/80">
                 Try again, switch tactics, or leave the door for later.
               </div>
             ) : null}
@@ -393,7 +393,7 @@ export function LockDialogOverlay({
                     ].join(" ")}
                   >
                     <div className="font-medium">{keyRow.label}</div>
-                    <div className="text-[11px] text-parchment/55">
+                    <div className="text-xs text-parchment/75">
                       Opens the door instantly; consumes the key.
                     </div>
                   </button>
@@ -418,11 +418,11 @@ export function LockDialogOverlay({
                       : pickRow.label}
                   </div>
                   {pickRow.reason ? (
-                    <div className="text-[11px] text-parchment/55">
+                    <div className="text-xs text-parchment/75">
                       {pickRow.reason}
                     </div>
                   ) : (
-                    <div className="text-[11px] text-parchment/55">
+                    <div className="text-xs text-parchment/75">
                       d20 + DEX vs DC 12 (consumes one Lockpick).
                     </div>
                   )}
@@ -448,11 +448,11 @@ export function LockDialogOverlay({
                         : knockRow.label}
                     </div>
                     {knockRow.reason ? (
-                      <div className="text-[11px] text-parchment/55">
+                      <div className="text-xs text-parchment/75">
                         {knockRow.reason}
                       </div>
                     ) : (
-                      <div className="text-[11px] text-parchment/55">
+                      <div className="text-xs text-parchment/75">
                         d20 + INT vs DC 12 (MP deducted on attempt).
                       </div>
                     )}
@@ -472,7 +472,7 @@ export function LockDialogOverlay({
                   ].join(" ")}
                 >
                   <div className="font-medium">Leave</div>
-                  <div className="text-[11px] text-parchment/55">
+                  <div className="text-xs text-parchment/75">
                     Step back; the door stays locked.
                   </div>
                 </button>

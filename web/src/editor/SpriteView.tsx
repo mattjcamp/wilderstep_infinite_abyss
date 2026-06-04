@@ -91,13 +91,13 @@ export function SpriteView() {
   }, [moduleId]);
 
   if (state.kind === "loading") {
-    return <p className="p-4 text-parchment/60">Loading sprites…</p>;
+    return <p className="p-4 text-parchment/80">Loading sprites…</p>;
   }
   if (state.kind === "error") {
     return (
       <div className="p-4">
         <p className="text-ember">Failed to load sprites.</p>
-        <p className="mt-2 font-mono text-sm text-parchment/60">
+        <p className="mt-2 font-mono text-sm text-parchment/80">
           {state.message}
         </p>
       </div>
@@ -113,7 +113,7 @@ export function SpriteView() {
       <header className="flex items-baseline justify-between gap-4">
         <div>
           <h1 className="font-display text-3xl text-parchment">Sprites</h1>
-          <p className="mt-1 text-sm text-parchment/60">
+          <p className="mt-1 text-sm text-parchment/80">
             {total} files across {Object.keys(categories).length} categories
             · served from <code className="text-parchment/80">/sprites/</code>
             {draftedPaths.size > 0 ? (
@@ -129,7 +129,7 @@ export function SpriteView() {
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             placeholder="filter by name…"
-            className="rounded border border-parchment/20 bg-ink/40 px-2 py-1 text-sm text-parchment placeholder:text-parchment/40 focus:border-parchment/60 focus:outline-none"
+            className="rounded border border-parchment/20 bg-ink/40 px-2 py-1 text-sm text-parchment placeholder:text-parchment/60 focus:border-parchment/60 focus:outline-none"
           />
           <NewSpriteButton
             categories={Object.keys(categories)}
@@ -203,7 +203,7 @@ export function SpriteView() {
           if (filtered.length === 0) return null;
           return (
             <section key={cat}>
-              <h2 className="mb-2 text-xs uppercase tracking-wide text-parchment/40">
+              <h2 className="mb-2 text-[13px] uppercase tracking-wide text-parchment/60">
                 {cat} · {filtered.length}
                 {filtered.length !== files.length ? ` of ${files.length}` : ""}
               </h2>
@@ -232,7 +232,7 @@ export function SpriteView() {
                           version={thumbVersion}
                           alt={label}
                         />
-                        <span className="w-full truncate text-center text-xs text-parchment/70">
+                        <span className="w-full truncate text-center text-[13px] text-parchment/85">
                           {label}
                         </span>
                       </button>
@@ -313,7 +313,7 @@ function SidePanel({
           <button
             type="button"
             onClick={onClose}
-            className="rounded border border-parchment/20 px-3 py-1 text-xs text-parchment/80 hover:bg-ink/40"
+            className="rounded border border-parchment/20 px-3 py-1 text-[13px] text-parchment/80 hover:bg-ink/40"
           >
             Close
           </button>
@@ -339,16 +339,16 @@ function SidePanel({
         alt={mode.path}
       />
       <div className="flex-1">
-        <div className="text-sm text-parchment/60">Path</div>
+        <div className="text-sm text-parchment/80">Path</div>
         <code className="break-all font-mono text-sm text-parchment">
           /sprites/{mode.path}
         </code>
         {drafted ? (
-          <div className="mt-1 text-xs text-amber-300/90">
+          <div className="mt-1 text-[13px] text-amber-300/90">
             Drafted — localStorage copy is shadowing the on-disk PNG.
           </div>
         ) : null}
-        <div className="mt-2 text-xs text-parchment/50">
+        <div className="mt-2 text-[13px] text-parchment/70">
           Use this path in data records (e.g. <code>Monster.sprite</code>,{" "}
           <code>Character.sprite</code>). Apply basePath at fetch time.
         </div>

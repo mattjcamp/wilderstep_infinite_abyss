@@ -390,13 +390,13 @@ export function ModulePicker() {
   };
 
   if (state.kind === "loading") {
-    return <p className="text-parchment/60">Loading modules…</p>;
+    return <p className="text-parchment/80">Loading modules…</p>;
   }
   if (state.kind === "error") {
     return (
       <div>
         <p className="text-ember">Failed to list modules.</p>
-        <p className="mt-2 font-mono text-sm text-parchment/60">
+        <p className="mt-2 font-mono text-sm text-parchment/80">
           {state.message}
         </p>
       </div>
@@ -408,10 +408,10 @@ export function ModulePicker() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm text-parchment/60">
+        <p className="text-sm text-parchment/80">
           {modules.length} module{modules.length === 1 ? "" : "s"} known.
           {state.draftCount > 0 ? (
-            <span className="ml-2 text-parchment/45">
+            <span className="ml-2 text-parchment/65">
               · {state.draftCount} pending draft
               {state.draftCount === 1 ? "" : "s"}
             </span>
@@ -420,20 +420,20 @@ export function ModulePicker() {
         <div className="flex items-center gap-2">
           {state.indexDraftActive ? (
             <>
-              <span className="rounded bg-ember/30 px-2 py-0.5 text-xs text-parchment/90">
+              <span className="rounded bg-ember/30 px-2 py-0.5 text-[13px] text-parchment/90">
                 index draft
               </span>
               <button
                 type="button"
                 onClick={onDiscardIndex}
-                className="rounded border border-parchment/20 px-2 py-0.5 text-xs text-parchment/70 hover:bg-ink/40"
+                className="rounded border border-parchment/20 px-2 py-0.5 text-[13px] text-parchment/85 hover:bg-ink/40"
               >
                 Discard index
               </button>
               <button
                 type="button"
                 onClick={onExportIndex}
-                className="rounded border border-parchment/30 px-2 py-0.5 text-xs text-parchment/90 hover:bg-ink/40"
+                className="rounded border border-parchment/30 px-2 py-0.5 text-[13px] text-parchment/90 hover:bg-ink/40"
                 title="Download the updated modules index — drop into web/public/modules/index.json to commit."
               >
                 ⬇ Export index.json
@@ -455,7 +455,7 @@ export function ModulePicker() {
             <button
               type="button"
               onClick={onDiscardAll}
-              className="rounded border border-parchment/20 px-3 py-1 text-sm text-parchment/70 hover:bg-ink/40"
+              className="rounded border border-parchment/20 px-3 py-1 text-sm text-parchment/85 hover:bg-ink/40"
               title="Wipe every pending draft in your browser. Cannot be undone."
             >
               Discard all drafts
@@ -485,7 +485,7 @@ export function ModulePicker() {
       ) : null}
 
       {modules.length === 0 ? (
-        <p className="text-parchment/60">No modules found.</p>
+        <p className="text-parchment/80">No modules found.</p>
       ) : (
         <ul className="grid gap-3 sm:grid-cols-2">
           {modules.map((m) => {
@@ -503,10 +503,10 @@ export function ModulePicker() {
                   <h2 className="font-display text-xl text-parchment">
                     {m.title}
                   </h2>
-                  <p className="mt-1 text-sm text-parchment/70">
+                  <p className="mt-1 text-sm text-parchment/85">
                     {m.description}
                   </p>
-                  <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-parchment/50">
+                  <div className="mt-3 flex flex-wrap items-center gap-2 text-[13px] text-parchment/70">
                     <span>id: {m.id}</span>
                     {m.author ? <span>by {m.author}</span> : null}
                     {m.role ? (
@@ -519,7 +519,7 @@ export function ModulePicker() {
                         manifest draft
                       </span>
                     ) : null}
-                    <span className="ml-auto uppercase tracking-wide text-parchment/40">
+                    <span className="ml-auto uppercase tracking-wide text-parchment/60">
                       v{m.version}
                     </span>
                   </div>
@@ -532,7 +532,7 @@ export function ModulePicker() {
                       e.stopPropagation();
                       setEditingModule(m);
                     }}
-                    className="rounded border border-parchment/20 bg-ink/60 px-2 py-0.5 text-xs text-parchment/60 hover:border-parchment/50 hover:bg-ink/80 hover:text-parchment"
+                    className="rounded border border-parchment/20 bg-ink/60 px-2 py-0.5 text-[13px] text-parchment/80 hover:border-parchment/50 hover:bg-ink/80 hover:text-parchment"
                     title="Edit this module's metadata (title, description, author, version, role)."
                   >
                     Properties
@@ -545,7 +545,7 @@ export function ModulePicker() {
                         e.stopPropagation();
                         onDeleteModule(m);
                       }}
-                      className="rounded border border-parchment/20 bg-ink/60 px-2 py-0.5 text-xs text-parchment/60 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
+                      className="rounded border border-parchment/20 bg-ink/60 px-2 py-0.5 text-[13px] text-parchment/80 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
                       title="Remove this module from the index and discard its in-browser drafts. The on-disk folder must be deleted manually."
                     >
                       Delete

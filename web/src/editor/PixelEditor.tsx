@@ -580,7 +580,7 @@ export function PixelEditor({
   // ── Render ────────────────────────────────────────────────────────
   if (loadStatus === "loading") {
     return (
-      <p className="p-4 text-parchment/60">Loading {path}…</p>
+      <p className="p-4 text-parchment/80">Loading {path}…</p>
     );
   }
   if (loadStatus === "error") {
@@ -588,7 +588,7 @@ export function PixelEditor({
       <div className="p-4">
         <p className="text-ember">Couldn’t open the sprite.</p>
         {statusMessage ? (
-          <p className="mt-1 text-sm text-parchment/60">{statusMessage}</p>
+          <p className="mt-1 text-sm text-parchment/80">{statusMessage}</p>
         ) : null}
       </div>
     );
@@ -613,9 +613,9 @@ export function PixelEditor({
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-baseline justify-between">
-        <div className="font-mono text-xs text-parchment/60">
+        <div className="font-mono text-[13px] text-parchment/80">
           {path}{" "}
-          <span className="ml-2 text-parchment/40">
+          <span className="ml-2 text-parchment/60">
             {canvas.w}×{canvas.h}
           </span>
         </div>
@@ -718,10 +718,10 @@ export function PixelEditor({
               type="button"
               onClick={() => setTool("pencil")}
               className={[
-                "rounded border px-2 py-1 text-xs",
+                "rounded border px-2 py-1 text-[13px]",
                 tool === "pencil"
                   ? "border-amber-300 bg-amber-700/30 text-parchment"
-                  : "border-parchment/20 bg-ink/40 text-parchment/70 hover:bg-ink/60",
+                  : "border-parchment/20 bg-ink/40 text-parchment/85 hover:bg-ink/60",
               ].join(" ")}
             >
               Pencil
@@ -730,10 +730,10 @@ export function PixelEditor({
               type="button"
               onClick={() => setTool("eraser")}
               className={[
-                "rounded border px-2 py-1 text-xs",
+                "rounded border px-2 py-1 text-[13px]",
                 tool === "eraser"
                   ? "border-amber-300 bg-amber-700/30 text-parchment"
-                  : "border-parchment/20 bg-ink/40 text-parchment/70 hover:bg-ink/60",
+                  : "border-parchment/20 bg-ink/40 text-parchment/85 hover:bg-ink/60",
               ].join(" ")}
             >
               Eraser
@@ -743,10 +743,10 @@ export function PixelEditor({
               onClick={() => setTool("fill")}
               title="Flood-fill connected pixels of the same colour"
               className={[
-                "rounded border px-2 py-1 text-xs",
+                "rounded border px-2 py-1 text-[13px]",
                 tool === "fill"
                   ? "border-amber-300 bg-amber-700/30 text-parchment"
-                  : "border-parchment/20 bg-ink/40 text-parchment/70 hover:bg-ink/60",
+                  : "border-parchment/20 bg-ink/40 text-parchment/85 hover:bg-ink/60",
               ].join(" ")}
             >
               Fill
@@ -756,10 +756,10 @@ export function PixelEditor({
               onClick={() => setTool("eyedropper")}
               title="Sample a pixel's colour and copy it to the current colour"
               className={[
-                "rounded border px-2 py-1 text-xs",
+                "rounded border px-2 py-1 text-[13px]",
                 tool === "eyedropper"
                   ? "border-amber-300 bg-amber-700/30 text-parchment"
-                  : "border-parchment/20 bg-ink/40 text-parchment/70 hover:bg-ink/60",
+                  : "border-parchment/20 bg-ink/40 text-parchment/85 hover:bg-ink/60",
               ].join(" ")}
             >
               Eyedropper
@@ -776,7 +776,7 @@ export function PixelEditor({
                   : { background: pixelToCss(currentPixel) }
               }
             />
-            <span className="font-mono text-xs text-parchment/70">
+            <span className="font-mono text-[13px] text-parchment/85">
               {colorIsTransparent ? "transparent" : color}
             </span>
           </div>
@@ -786,7 +786,7 @@ export function PixelEditor({
               tool, but reachable without flipping tools while colour-
               picking). The rest are the preset hex swatches. */}
           <div>
-            <p className="mb-1 text-[10px] uppercase tracking-wide text-parchment/40">
+            <p className="mb-1 text-xs uppercase tracking-wide text-parchment/60">
               Palette
             </p>
             <div className="grid grid-cols-8 gap-1">
@@ -823,7 +823,7 @@ export function PixelEditor({
 
           {/* Custom hex */}
           <div>
-            <p className="mb-1 text-[10px] uppercase tracking-wide text-parchment/40">
+            <p className="mb-1 text-xs uppercase tracking-wide text-parchment/60">
               Custom hex
             </p>
             <div className="flex items-center gap-1">
@@ -831,12 +831,12 @@ export function PixelEditor({
                 type="text"
                 value={customHex}
                 onChange={(e) => setCustomHex(e.target.value)}
-                className="w-24 rounded border border-parchment/20 bg-ink/40 px-2 py-1 font-mono text-xs text-parchment focus:border-parchment/60 focus:outline-none"
+                className="w-24 rounded border border-parchment/20 bg-ink/40 px-2 py-1 font-mono text-[13px] text-parchment focus:border-parchment/60 focus:outline-none"
               />
               <button
                 type="button"
                 onClick={() => setColor(customHex)}
-                className="rounded border border-parchment/20 bg-ink/40 px-2 py-1 text-xs text-parchment/80 hover:bg-ink/60"
+                className="rounded border border-parchment/20 bg-ink/40 px-2 py-1 text-[13px] text-parchment/80 hover:bg-ink/60"
               >
                 Use
               </button>
@@ -845,7 +845,7 @@ export function PixelEditor({
 
           {/* Preview at native size */}
           <div>
-            <p className="mb-1 text-[10px] uppercase tracking-wide text-parchment/40">
+            <p className="mb-1 text-xs uppercase tracking-wide text-parchment/60">
               Preview
             </p>
             <NativePreview canvas={canvas} />
@@ -854,7 +854,7 @@ export function PixelEditor({
       </div>
 
       {statusMessage ? (
-        <p className="text-xs text-parchment/60">{statusMessage}</p>
+        <p className="text-[13px] text-parchment/80">{statusMessage}</p>
       ) : null}
     </div>
   );

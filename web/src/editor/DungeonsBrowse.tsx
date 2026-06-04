@@ -456,13 +456,13 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
 
   // ── Render ─────────────────────────────────────────────────────
   if (state.kind === "loading") {
-    return <p className="p-4 text-parchment/60">Loading dungeons…</p>;
+    return <p className="p-4 text-parchment/80">Loading dungeons…</p>;
   }
   if (state.kind === "error") {
     return (
       <div className="p-4">
         <p className="text-ember">Failed to load dungeons.</p>
-        <p className="mt-2 font-mono text-sm text-parchment/60">
+        <p className="mt-2 font-mono text-sm text-parchment/80">
           {state.message}
         </p>
       </div>
@@ -496,15 +496,15 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
       <header className="flex flex-wrap items-baseline justify-between gap-3">
         <div>
           <h1 className="font-display text-3xl text-parchment">Dungeons</h1>
-          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-parchment/60">
+          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-parchment/80">
             <span>
               {state.dungeons.length} dungeon
               {state.dungeons.length === 1 ? "" : "s"}
             </span>
-            <span className="text-parchment/40">·</span>
+            <span className="text-parchment/60">·</span>
             <span>{FILE_NAME}</span>
             {state.isDraft ? (
-              <span className="rounded bg-ember/30 px-2 py-0.5 text-xs text-parchment/90">
+              <span className="rounded bg-ember/30 px-2 py-0.5 text-[13px] text-parchment/90">
                 draft active
               </span>
             ) : null}
@@ -524,7 +524,7 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
             <button
               type="button"
               onClick={onDiscardDraft}
-              className="rounded border border-parchment/20 px-3 py-1 text-sm text-parchment/70 hover:bg-ink/40"
+              className="rounded border border-parchment/20 px-3 py-1 text-sm text-parchment/85 hover:bg-ink/40"
             >
               Discard
             </button>
@@ -564,9 +564,9 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
       <div className="mt-6 space-y-5">
         {[...groupedByTag.entries()].map(([tag, dungeons]) => (
           <section key={tag}>
-            <h2 className="mb-2 text-xs uppercase tracking-wide text-parchment/45">
+            <h2 className="mb-2 text-[13px] uppercase tracking-wide text-parchment/65">
               {tag}
-              <span className="ml-2 text-parchment/35 normal-case tracking-normal">
+              <span className="ml-2 text-parchment/55 normal-case tracking-normal">
                 ({dungeons.length})
               </span>
             </h2>
@@ -582,22 +582,22 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
                       onClick={() => toggleExpanded(d.id)}
                       className="flex min-w-0 flex-1 items-center gap-2 text-left text-sm text-parchment hover:text-parchment/100"
                     >
-                      <span className="text-parchment/55">
+                      <span className="text-parchment/75">
                         {expanded.has(d.id) ? "▾" : "▸"}
                       </span>
                       <span className="font-display">{d.name}</span>
-                      <span className="font-mono text-xs text-parchment/45">
+                      <span className="font-mono text-[13px] text-parchment/65">
                         {d.id}
                       </span>
-                      <span className="text-xs text-parchment/45">
+                      <span className="text-[13px] text-parchment/65">
                         · {d.levels?.length ?? 0} level
                         {(d.levels?.length ?? 0) === 1 ? "" : "s"}
                       </span>
-                      <span className="text-xs text-parchment/45">
+                      <span className="text-[13px] text-parchment/65">
                         · {d.style} · {d.difficulty}
                       </span>
                       {Array.isArray(d.tags) && d.tags.length > 1 ? (
-                        <span className="text-xs text-parchment/40">
+                        <span className="text-[13px] text-parchment/60">
                           · also: {d.tags.filter((t) => t !== tag).join(", ")}
                         </span>
                       ) : null}
@@ -605,7 +605,7 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
                     <button
                       type="button"
                       onClick={() => onDeleteDungeon(d.id)}
-                      className="rounded border border-parchment/20 px-2 py-0.5 text-xs text-parchment/60 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
+                      className="rounded border border-parchment/20 px-2 py-0.5 text-[13px] text-parchment/80 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
                       title="Delete this dungeon."
                     >
                       Delete
@@ -631,7 +631,7 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
           </section>
         ))}
         {state.dungeons.length === 0 ? (
-          <p className="text-sm text-parchment/55">
+          <p className="text-sm text-parchment/75">
             No dungeons yet. Click <strong>+ New Dungeon</strong> to create one.
           </p>
         ) : null}
@@ -644,9 +644,9 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
           that reference a dungeon by id keep resolving. */}
       {availableCatalog.length > 0 ? (
         <section className="mt-8">
-          <h2 className="mb-1 text-xs uppercase tracking-wide text-parchment/45">
+          <h2 className="mb-1 text-[13px] uppercase tracking-wide text-parchment/65">
             Available from libraries
-            <span className="ml-2 normal-case tracking-normal text-parchment/35">
+            <span className="ml-2 normal-case tracking-normal text-parchment/55">
               (
               {availableCatalog.reduce((n, e) => n + e.records.length, 0)}{" "}
               dungeon
@@ -656,7 +656,7 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
               ready to import)
             </span>
           </h2>
-          <p className="mb-3 text-xs text-parchment/45">
+          <p className="mb-3 text-[13px] text-parchment/65">
             Dungeons from libraries this module uses. Importing copies a
             dungeon into this module&apos;s own file (ids preserved, so a
             spelunking quest or a map&apos;s dungeon entrance that points
@@ -670,9 +670,9 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
                 className="rounded border border-parchment/10 bg-ink/20"
               >
                 <div className="flex items-center justify-between gap-3 border-b border-parchment/10 bg-ink/40 px-3 py-1.5">
-                  <span className="text-xs text-parchment/70">
+                  <span className="text-[13px] text-parchment/85">
                     <span className="text-parchment/85">{entry.libraryId}</span>
-                    <span className="ml-2 text-parchment/40">
+                    <span className="ml-2 text-parchment/60">
                       ({entry.records.length} available)
                     </span>
                   </span>
@@ -680,7 +680,7 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
                     <button
                       type="button"
                       onClick={() => onImportDungeons(entry.records)}
-                      className="shrink-0 rounded border border-ember/60 bg-ember/30 px-2 py-0.5 text-xs text-parchment hover:bg-ember/50"
+                      className="shrink-0 rounded border border-ember/60 bg-ember/30 px-2 py-0.5 text-[13px] text-parchment hover:bg-ember/50"
                       title={`Import all ${entry.records.length} dungeons from ${entry.libraryId}.`}
                     >
                       + Import all ({entry.records.length})
@@ -695,15 +695,15 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
                     >
                       <div className="min-w-0 flex-1 truncate text-sm text-parchment/85">
                         <span className="font-display">{d.name}</span>
-                        <span className="ml-2 font-mono text-xs text-parchment/45">
+                        <span className="ml-2 font-mono text-[13px] text-parchment/65">
                           {d.id}
                         </span>
-                        <span className="ml-2 text-xs text-parchment/40">
+                        <span className="ml-2 text-[13px] text-parchment/60">
                           {d.levels?.length ?? 0} level
                           {(d.levels?.length ?? 0) === 1 ? "" : "s"}
                         </span>
                         {d.style || d.difficulty ? (
-                          <span className="ml-2 text-xs text-parchment/40">
+                          <span className="ml-2 text-[13px] text-parchment/60">
                             {[d.style, d.difficulty].filter(Boolean).join(" · ")}
                           </span>
                         ) : null}
@@ -711,7 +711,7 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
                       <button
                         type="button"
                         onClick={() => onImportDungeons([d])}
-                        className="shrink-0 rounded border border-ember/50 bg-ember/20 px-2 py-0.5 text-xs text-parchment hover:bg-ember/40"
+                        className="shrink-0 rounded border border-ember/50 bg-ember/20 px-2 py-0.5 text-[13px] text-parchment hover:bg-ember/40"
                         title={`Import just this dungeon from ${entry.libraryId}.`}
                       >
                         + Import
@@ -754,7 +754,7 @@ function DungeonEditor({
       {/* Identity + tags */}
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="block">
-          <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+          <span className="text-xs uppercase tracking-wide text-parchment/65">
             Name
           </span>
           <input
@@ -765,7 +765,7 @@ function DungeonEditor({
           />
         </label>
         <label className="block">
-          <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+          <span className="text-xs uppercase tracking-wide text-parchment/65">
             Description
           </span>
           <input
@@ -777,7 +777,7 @@ function DungeonEditor({
         </label>
       </div>
       <div className="mt-3">
-        <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+        <span className="text-xs uppercase tracking-wide text-parchment/65">
           Tags
         </span>
         <TagsPicker
@@ -791,7 +791,7 @@ function DungeonEditor({
           with preview + reorder. Empty inherits the module-level
           default playlist. */}
       <div className="mt-3">
-        <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+        <span className="text-xs uppercase tracking-wide text-parchment/65">
           Soundtrack
         </span>
         <div className="mt-1">
@@ -805,17 +805,17 @@ function DungeonEditor({
             emptyHint="Inherits the module-level playlist."
           />
         </div>
-        <span className="mt-1 block text-[11px] text-parchment/45">
+        <span className="mt-1 block text-xs text-parchment/65">
           Per-dungeon playlist override. Empty inherits the module
           default.
         </span>
       </div>
 
       {/* Generator defaults — required on Dungeon, inherited by Levels */}
-      <h3 className="mt-4 text-xs uppercase tracking-wide text-parchment/55">
+      <h3 className="mt-4 text-[13px] uppercase tracking-wide text-parchment/75">
         Generator defaults
       </h3>
-      <p className="text-[11px] text-parchment/45">
+      <p className="text-xs text-parchment/65">
         These values drive procedural floor generation. Each Dungeon Level
         below can override any of them; an empty override on a Level means
         "inherit from this Dungeon."
@@ -858,11 +858,11 @@ function DungeonEditor({
       />
 
       {/* Levels list */}
-      <h3 className="mt-4 text-xs uppercase tracking-wide text-parchment/55">
+      <h3 className="mt-4 text-[13px] uppercase tracking-wide text-parchment/75">
         Levels ({dungeon.levels?.length ?? 0})
       </h3>
       {(dungeon.levels ?? []).length === 0 ? (
-        <p className="mt-1 text-xs text-parchment/45">
+        <p className="mt-1 text-[13px] text-parchment/65">
           No levels yet. Click <strong>+ Add Level</strong> below.
         </p>
       ) : (
@@ -885,7 +885,7 @@ function DungeonEditor({
         <button
           type="button"
           onClick={onAddLevel}
-          className="rounded border border-ember/50 bg-ember/20 px-2 py-1 text-xs text-parchment hover:bg-ember/40"
+          className="rounded border border-ember/50 bg-ember/20 px-2 py-1 text-[13px] text-parchment hover:bg-ember/40"
         >
           + Add Level
         </button>
@@ -917,29 +917,29 @@ function LevelRow({
     <li className="rounded border border-parchment/10 bg-ink/30 p-2">
       <div className="grid gap-2 sm:grid-cols-4">
         <label className="block">
-          <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+          <span className="text-xs uppercase tracking-wide text-parchment/65">
             ID
           </span>
           <input
             type="text"
             value={level.id}
             onChange={(e) => onUpdate({ id: e.target.value })}
-            className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-xs text-parchment/90"
+            className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-[13px] text-parchment/90"
           />
         </label>
         <label className="block sm:col-span-2">
-          <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+          <span className="text-xs uppercase tracking-wide text-parchment/65">
             Name
           </span>
           <input
             type="text"
             value={level.name}
             onChange={(e) => onUpdate({ name: e.target.value })}
-            className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+            className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
           />
         </label>
         <label className="block">
-          <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+          <span className="text-xs uppercase tracking-wide text-parchment/65">
             Depth
           </span>
           <input
@@ -948,13 +948,13 @@ function LevelRow({
             onChange={(e) =>
               onUpdate({ depth: Number(e.target.value) || 0 })
             }
-            className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+            className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
           />
         </label>
       </div>
 
       <div className="mt-2">
-        <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+        <span className="text-xs uppercase tracking-wide text-parchment/65">
           Tags
         </span>
         <TagsPicker
@@ -965,7 +965,7 @@ function LevelRow({
       </div>
 
       <div className="mt-3">
-        <p className="text-[11px] text-parchment/45">
+        <p className="text-xs text-parchment/65">
           Generator overrides — leave any field empty (or click ↩ Inherit)
           to fall back to the parent Dungeon's value (shown in light text).
         </p>
@@ -1023,7 +1023,7 @@ function LevelRow({
         <button
           type="button"
           onClick={onDelete}
-          className="rounded border border-parchment/20 px-2 py-0.5 text-xs text-parchment/60 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
+          className="rounded border border-parchment/20 px-2 py-0.5 text-[13px] text-parchment/80 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
         >
           Delete level
         </button>
@@ -1145,7 +1145,7 @@ function GeneratorFields({
     <div className="mt-2 grid gap-2 sm:grid-cols-4">
       {/* Style */}
       <label className="block">
-        <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+        <span className="text-xs uppercase tracking-wide text-parchment/65">
           Style
         </span>
         <div className="mt-0.5 flex items-center gap-1">
@@ -1154,7 +1154,7 @@ function GeneratorFields({
             onChange={(e) =>
               onStyle(e.target.value === "" ? undefined : e.target.value)
             }
-            className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+            className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
           >
             {allowInherit ? (
               <option value="">
@@ -1175,7 +1175,7 @@ function GeneratorFields({
 
       {/* Difficulty */}
       <label className="block">
-        <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+        <span className="text-xs uppercase tracking-wide text-parchment/65">
           Difficulty
         </span>
         <div className="mt-0.5 flex items-center gap-1">
@@ -1186,7 +1186,7 @@ function GeneratorFields({
                 e.target.value === "" ? undefined : e.target.value,
               )
             }
-            className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+            className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
           >
             {allowInherit ? (
               <option value="">
@@ -1208,7 +1208,7 @@ function GeneratorFields({
 
       {/* Size — width × height */}
       <div className="block sm:col-span-2">
-        <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+        <span className="text-xs uppercase tracking-wide text-parchment/65">
           Size (w × h)
         </span>
         <div className="mt-0.5 flex items-center gap-1">
@@ -1233,9 +1233,9 @@ function GeneratorFields({
                 onSize(undefined);
               }
             }}
-            className="w-20 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+            className="w-20 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
           />
-          <span className="text-parchment/40">×</span>
+          <span className="text-parchment/60">×</span>
           <input
             type="number"
             value={size?.height ?? ""}
@@ -1253,7 +1253,7 @@ function GeneratorFields({
                 onSize(undefined);
               }
             }}
-            className="w-20 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+            className="w-20 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
           />
           {allowInherit && size !== undefined ? (
             <InheritButton onClick={() => onSize(undefined)} />
@@ -1263,7 +1263,7 @@ function GeneratorFields({
 
       {/* Torch density */}
       <label className="block">
-        <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+        <span className="text-xs uppercase tracking-wide text-parchment/65">
           Torch density (0–1)
         </span>
         <div className="mt-0.5 flex items-center gap-1">
@@ -1281,7 +1281,7 @@ function GeneratorFields({
                 e.target.value === "" ? NaN : Number(e.target.value);
               onTorchDensity(Number.isFinite(v) ? v : undefined);
             }}
-            className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+            className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
           />
           {allowInherit && torchDensity !== undefined ? (
             <InheritButton onClick={() => onTorchDensity(undefined)} />
@@ -1291,7 +1291,7 @@ function GeneratorFields({
 
       {/* Locked doors */}
       <label className="block">
-        <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+        <span className="text-xs uppercase tracking-wide text-parchment/65">
           Locked doors (0–1)
         </span>
         <div className="mt-0.5 flex items-center gap-1">
@@ -1309,7 +1309,7 @@ function GeneratorFields({
                 e.target.value === "" ? NaN : Number(e.target.value);
               onLockedDoors(Number.isFinite(v) ? v : undefined);
             }}
-            className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+            className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
           />
           {allowInherit && lockedDoors !== undefined ? (
             <InheritButton onClick={() => onLockedDoors(undefined)} />
@@ -1321,7 +1321,7 @@ function GeneratorFields({
           (doors always); lower for open layouts (e.g. a doorless
           forest). Applies to every style. */}
       <label className="block">
-        <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+        <span className="text-xs uppercase tracking-wide text-parchment/65">
           Doors (0–1)
         </span>
         <div className="mt-0.5 flex items-center gap-1">
@@ -1336,7 +1336,7 @@ function GeneratorFields({
               const v = e.target.value === "" ? NaN : Number(e.target.value);
               onDoors(Number.isFinite(v) ? v : undefined);
             }}
-            className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+            className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
           />
           {allowInherit && doors !== undefined ? (
             <InheritButton onClick={() => onDoors(undefined)} />
@@ -1348,7 +1348,7 @@ function GeneratorFields({
           dropped in interior rooms (caves/ruins-style). Applies to every
           style; absent inherits the style default. */}
       <label className="block sm:col-span-2">
-        <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+        <span className="text-xs uppercase tracking-wide text-parchment/65">
           Entrance / exit placement
         </span>
         <div className="mt-0.5 flex items-center gap-1">
@@ -1367,7 +1367,7 @@ function GeneratorFields({
                   : e.target.value === "edge",
               )
             }
-            className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+            className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
           >
             {/* Blank = "use the default". On a Level it inherits the
                 parent; on the parent Dungeon it follows the style
@@ -1432,7 +1432,7 @@ function GeneratorFields({
           chest item chosen, the generator places none. Spans 2 cols
           so the item picker has room for full item names. */}
       <label className="block sm:col-span-2">
-        <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+        <span className="text-xs uppercase tracking-wide text-parchment/65">
           Loot chest item
         </span>
         <div className="mt-0.5 flex items-center gap-1">
@@ -1441,7 +1441,7 @@ function GeneratorFields({
             onChange={(e) =>
               onChestItem(e.target.value === "" ? undefined : e.target.value)
             }
-            className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+            className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
           >
             <option value="">
               {allowInherit
@@ -1469,7 +1469,7 @@ function GeneratorFields({
 
       {/* Chest frequency — only meaningful when a chest item is set. */}
       <label className="block sm:col-span-2">
-        <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+        <span className="text-xs uppercase tracking-wide text-parchment/65">
           Chest frequency (0–1, per room)
         </span>
         <div className="mt-0.5 flex items-center gap-1">
@@ -1489,7 +1489,7 @@ function GeneratorFields({
                 e.target.value === "" ? NaN : Number(e.target.value);
               onChestFrequency(Number.isFinite(v) ? v : undefined);
             }}
-            className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+            className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
           />
           {allowInherit && chestFrequency !== undefined ? (
             <InheritButton onClick={() => onChestFrequency(undefined)} />
@@ -1590,12 +1590,12 @@ function TilePalettePicker({
 
   return (
     <div className="block sm:col-span-2">
-      <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+      <span className="text-xs uppercase tracking-wide text-parchment/65">
         {label}
       </span>
       <div className="mt-0.5 flex items-center gap-2">
         <TileThumb sprite={selected?.sprite ?? inheritedSprite} />
-        <span className="min-w-0 flex-1 truncate text-xs text-parchment/85">
+        <span className="min-w-0 flex-1 truncate text-[13px] text-parchment/85">
           {selected ? (
             <>
               {selected.name}
@@ -1607,17 +1607,17 @@ function TilePalettePicker({
             // An authored id that no longer resolves to a palette tile.
             <span className="text-ember/80">{value} (missing)</span>
           ) : inheritedName ? (
-            <span className="text-parchment/45">inherits — {inheritedName}</span>
+            <span className="text-parchment/65">inherits — {inheritedName}</span>
           ) : allowInherit ? (
-            <span className="text-parchment/40">inherits — none</span>
+            <span className="text-parchment/60">inherits — none</span>
           ) : (
-            <span className="text-parchment/40">none — falls back to stone</span>
+            <span className="text-parchment/60">none — falls back to stone</span>
           )}
         </span>
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
-          className="rounded border border-parchment/30 px-2 py-1 text-xs text-parchment/85 hover:bg-ink/40"
+          className="rounded border border-parchment/30 px-2 py-1 text-[13px] text-parchment/85 hover:bg-ink/40"
         >
           {open ? "Done" : "Pick…"}
         </button>
@@ -1629,7 +1629,7 @@ function TilePalettePicker({
       {open ? (
         <div className="mt-2 rounded border border-parchment/15 bg-ink/40 p-2">
           {paletteTiles.length === 0 ? (
-            <p className="text-xs text-parchment/55">
+            <p className="text-[13px] text-parchment/75">
               No tiles in this module's palette.
             </p>
           ) : (
@@ -1652,7 +1652,7 @@ function TilePalettePicker({
                       }`}
                     >
                       <TileThumb sprite={t.sprite} size={40} />
-                      <span className="w-full truncate text-center text-[10px] text-parchment/65">
+                      <span className="w-full truncate text-center text-xs text-parchment/80">
                         {t.name}
                       </span>
                       {warnNonWalkable && !t.walkable ? (
@@ -1699,7 +1699,7 @@ function InheritButton({ onClick }: { onClick: () => void }) {
       type="button"
       onClick={onClick}
       title="Clear this override and inherit the parent Dungeon's value."
-      className="rounded border border-parchment/20 px-1.5 text-xs text-parchment/55 hover:border-parchment/40 hover:text-parchment/90"
+      className="rounded border border-parchment/20 px-1.5 text-[13px] text-parchment/75 hover:border-parchment/40 hover:text-parchment/90"
     >
       ↩
     </button>
@@ -1762,7 +1762,7 @@ function NewDungeonForm({
       className="rounded-md border border-parchment/15 bg-ink/30 p-4"
     >
       <h2 className="font-display text-lg text-parchment">New Dungeon</h2>
-      <p className="mt-1 text-sm text-parchment/55">
+      <p className="mt-1 text-sm text-parchment/75">
         Procedural dungeon. Style values are <code>caves</code>,{" "}
         <code>ruins</code>, or <code>forest</code> — the defaults (style:{" "}
         <code>{DEFAULTS.style}</code>,
@@ -1776,7 +1776,7 @@ function NewDungeonForm({
       </p>
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <label className="block">
-          <span className="text-xs uppercase tracking-wide text-parchment/45">
+          <span className="text-[13px] uppercase tracking-wide text-parchment/65">
             ID
           </span>
           <input
@@ -1787,15 +1787,15 @@ function NewDungeonForm({
             className="mt-1 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-sm text-parchment/90"
           />
           {idError ? (
-            <p className="mt-1 text-xs text-ember/80">{idError}</p>
+            <p className="mt-1 text-[13px] text-ember/80">{idError}</p>
           ) : (
-            <p className="mt-1 text-xs text-parchment/45">
+            <p className="mt-1 text-[13px] text-parchment/65">
               Key in <code>dungeons.json</code>.
             </p>
           )}
         </label>
         <label className="block">
-          <span className="text-xs uppercase tracking-wide text-parchment/45">
+          <span className="text-[13px] uppercase tracking-wide text-parchment/65">
             Name
           </span>
           <input
@@ -1807,7 +1807,7 @@ function NewDungeonForm({
           />
         </label>
         <label className="block sm:col-span-2">
-          <span className="text-xs uppercase tracking-wide text-parchment/45">
+          <span className="text-[13px] uppercase tracking-wide text-parchment/65">
             Description
           </span>
           <input
@@ -1819,7 +1819,7 @@ function NewDungeonForm({
           />
         </label>
         <div className="block sm:col-span-2">
-          <span className="text-xs uppercase tracking-wide text-parchment/45">
+          <span className="text-[13px] uppercase tracking-wide text-parchment/65">
             Tags
           </span>
           <TagsPicker
@@ -1840,7 +1840,7 @@ function NewDungeonForm({
         <button
           type="button"
           onClick={onCancel}
-          className="rounded border border-parchment/20 px-3 py-1 text-sm text-parchment/70 hover:bg-ink/40"
+          className="rounded border border-parchment/20 px-3 py-1 text-sm text-parchment/85 hover:bg-ink/40"
         >
           Cancel
         </button>

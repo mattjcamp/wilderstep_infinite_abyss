@@ -128,7 +128,7 @@ export function NewModuleForm({
       <h2 className="font-display text-lg text-parchment">
         New module
       </h2>
-      <p className="mt-1 text-sm text-parchment/55">
+      <p className="mt-1 text-sm text-parchment/75">
         Scaffolds a new module. The new module appears in the picker
         immediately; export the manifest + updated index to commit to
         disk.
@@ -136,7 +136,7 @@ export function NewModuleForm({
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <label className="block">
-          <span className="text-xs uppercase tracking-wide text-parchment/45">
+          <span className="text-[13px] uppercase tracking-wide text-parchment/65">
             ID
           </span>
           <input
@@ -147,16 +147,16 @@ export function NewModuleForm({
             className="mt-1 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-sm text-parchment/90"
           />
           {idError ? (
-            <p className="mt-1 text-xs text-ember/80">{idError}</p>
+            <p className="mt-1 text-[13px] text-ember/80">{idError}</p>
           ) : (
-            <p className="mt-1 text-xs text-parchment/45">
+            <p className="mt-1 text-[13px] text-parchment/65">
               Folder name under <code>web/public/modules/</code>.
             </p>
           )}
         </label>
 
         <label className="block">
-          <span className="text-xs uppercase tracking-wide text-parchment/45">
+          <span className="text-[13px] uppercase tracking-wide text-parchment/65">
             Title
           </span>
           <input
@@ -169,7 +169,7 @@ export function NewModuleForm({
         </label>
 
         <label className="block sm:col-span-2">
-          <span className="text-xs uppercase tracking-wide text-parchment/45">
+          <span className="text-[13px] uppercase tracking-wide text-parchment/65">
             Description
           </span>
           <input
@@ -182,7 +182,7 @@ export function NewModuleForm({
         </label>
 
         <label className="block">
-          <span className="text-xs uppercase tracking-wide text-parchment/45">
+          <span className="text-[13px] uppercase tracking-wide text-parchment/65">
             Author
           </span>
           <input
@@ -194,7 +194,7 @@ export function NewModuleForm({
         </label>
 
         <label className="block">
-          <span className="text-xs uppercase tracking-wide text-parchment/45">
+          <span className="text-[13px] uppercase tracking-wide text-parchment/65">
             Extends
           </span>
           <select
@@ -212,7 +212,7 @@ export function NewModuleForm({
         </label>
 
         <fieldset className="sm:col-span-2">
-          <legend className="text-xs uppercase tracking-wide text-parchment/45">
+          <legend className="text-[13px] uppercase tracking-wide text-parchment/65">
             Role
           </legend>
           <div className="mt-1 flex gap-4">
@@ -225,7 +225,7 @@ export function NewModuleForm({
                 onChange={() => setRole("playable")}
               />
               Playable
-              <span className="text-xs text-parchment/45">
+              <span className="text-[13px] text-parchment/65">
                 — a runnable adventure, shown in the play picker
               </span>
             </label>
@@ -238,7 +238,7 @@ export function NewModuleForm({
                 onChange={() => setRole("library")}
               />
               Library
-              <span className="text-xs text-parchment/45">
+              <span className="text-[13px] text-parchment/65">
                 — content available for import in other modules
               </span>
             </label>
@@ -257,7 +257,7 @@ export function NewModuleForm({
         <button
           type="button"
           onClick={onCancel}
-          className="rounded border border-parchment/20 px-3 py-1 text-sm text-parchment/70 hover:bg-ink/40"
+          className="rounded border border-parchment/20 px-3 py-1 text-sm text-parchment/85 hover:bg-ink/40"
         >
           Cancel
         </button>

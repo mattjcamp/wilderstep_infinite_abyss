@@ -614,13 +614,13 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
 
   // ── Render ─────────────────────────────────────────────────────
   if (state.kind === "loading") {
-    return <p className="p-4 text-parchment/60">Loading maps…</p>;
+    return <p className="p-4 text-parchment/80">Loading maps…</p>;
   }
   if (state.kind === "error") {
     return (
       <div className="p-4">
         <p className="text-ember">Failed to load maps.</p>
-        <p className="mt-2 font-mono text-sm text-parchment/60">
+        <p className="mt-2 font-mono text-sm text-parchment/80">
           {state.message}
         </p>
       </div>
@@ -648,14 +648,14 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
       <header className="flex flex-wrap items-baseline justify-between gap-3">
         <div>
           <h1 className="font-display text-3xl text-parchment">Maps</h1>
-          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-parchment/60">
+          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-parchment/80">
             <span>
               {state.maps.length} map{state.maps.length === 1 ? "" : "s"}
             </span>
-            <span className="text-parchment/40">·</span>
+            <span className="text-parchment/60">·</span>
             <span>{FILE_NAME}</span>
             {state.isDraft ? (
-              <span className="rounded bg-ember/30 px-2 py-0.5 text-xs text-parchment/90">
+              <span className="rounded bg-ember/30 px-2 py-0.5 text-[13px] text-parchment/90">
                 draft active
               </span>
             ) : null}
@@ -683,7 +683,7 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
             <button
               type="button"
               onClick={onDiscardDraft}
-              className="rounded border border-parchment/20 px-3 py-1 text-sm text-parchment/70 hover:bg-ink/40"
+              className="rounded border border-parchment/20 px-3 py-1 text-sm text-parchment/85 hover:bg-ink/40"
             >
               Discard
             </button>
@@ -728,18 +728,18 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
       <div className="mt-6 space-y-3">
         {[...groupedByTag.entries()].map(([tag, maps]) => (
           <section key={tag}>
-            <h2 className="text-xs uppercase tracking-wide text-parchment/45">
+            <h2 className="text-[13px] uppercase tracking-wide text-parchment/65">
               <button
                 type="button"
                 onClick={() => toggleTag(tag)}
-                className="flex w-full items-center gap-2 rounded px-1 py-1 text-left uppercase tracking-wide hover:bg-ink/30 hover:text-parchment/70"
+                className="flex w-full items-center gap-2 rounded px-1 py-1 text-left uppercase tracking-wide hover:bg-ink/30 hover:text-parchment/85"
                 title={openTags.has(tag) ? "Collapse this tag group." : "Expand this tag group."}
               >
-                <span className="text-parchment/55">
+                <span className="text-parchment/75">
                   {openTags.has(tag) ? "▾" : "▸"}
                 </span>
                 {tag}
-                <span className="text-parchment/35 normal-case tracking-normal">
+                <span className="text-parchment/55 normal-case tracking-normal">
                   ({maps.length})
                 </span>
               </button>
@@ -754,14 +754,14 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
                       className="min-w-0 flex-1 truncate text-sm text-parchment hover:text-parchment/100"
                     >
                       <span className="font-display">{m.name}</span>
-                      <span className="ml-2 font-mono text-xs text-parchment/45">
+                      <span className="ml-2 font-mono text-[13px] text-parchment/65">
                         {m.id}
                       </span>
-                      <span className="ml-2 text-xs text-parchment/40">
+                      <span className="ml-2 text-[13px] text-parchment/60">
                         {m.width}×{m.height}
                       </span>
                       {Array.isArray(m.tags) && m.tags.length > 1 ? (
-                        <span className="ml-2 text-xs text-parchment/40">
+                        <span className="ml-2 text-[13px] text-parchment/60">
                           also: {m.tags.filter((t) => t !== tag).join(", ")}
                         </span>
                       ) : null}
@@ -773,7 +773,7 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
                         e.stopPropagation();
                         onDuplicate(m);
                       }}
-                      className="rounded border border-parchment/20 px-2 py-0.5 text-xs text-parchment/60 hover:border-parchment/50 hover:bg-ink/50 hover:text-parchment"
+                      className="rounded border border-parchment/20 px-2 py-0.5 text-[13px] text-parchment/80 hover:border-parchment/50 hover:bg-ink/50 hover:text-parchment"
                       title="Duplicate this map into a new copy and open it in the editor."
                     >
                       Copy
@@ -785,7 +785,7 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
                         e.stopPropagation();
                         onDelete(m.id);
                       }}
-                      className="rounded border border-parchment/20 px-2 py-0.5 text-xs text-parchment/60 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
+                      className="rounded border border-parchment/20 px-2 py-0.5 text-[13px] text-parchment/80 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
                       title="Delete this map from the module's maps file."
                     >
                       Delete
@@ -798,7 +798,7 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
           </section>
         ))}
         {state.maps.length === 0 ? (
-          <p className="text-sm text-parchment/55">
+          <p className="text-sm text-parchment/75">
             No maps yet. Click <strong>+ New Map</strong> to create one.
           </p>
         ) : null}
@@ -812,9 +812,9 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
           the links resolve immediately. */}
       {availableCatalog.length > 0 ? (
         <section className="mt-8">
-          <h2 className="mb-1 text-xs uppercase tracking-wide text-parchment/45">
+          <h2 className="mb-1 text-[13px] uppercase tracking-wide text-parchment/65">
             Available from libraries
-            <span className="ml-2 normal-case tracking-normal text-parchment/35">
+            <span className="ml-2 normal-case tracking-normal text-parchment/55">
               (
               {availableCatalog.reduce((n, e) => n + e.records.length, 0)} map
               {availableCatalog.reduce((n, e) => n + e.records.length, 0) === 1
@@ -823,7 +823,7 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
               ready to import)
             </span>
           </h2>
-          <p className="mb-3 text-xs text-parchment/45">
+          <p className="mb-3 text-[13px] text-parchment/65">
             Maps from libraries this module uses, grouped by tag. A tagged
             group is usually one building or area whose maps link to each
             other — use <strong>Import all</strong> to pull the whole set
@@ -837,9 +837,9 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
                 key={entry.libraryId}
                 className="rounded border border-parchment/10 bg-ink/20"
               >
-                <div className="border-b border-parchment/10 bg-ink/40 px-3 py-1 text-xs text-parchment/70">
+                <div className="border-b border-parchment/10 bg-ink/40 px-3 py-1 text-[13px] text-parchment/85">
                   <span className="text-parchment/85">{entry.libraryId}</span>
-                  <span className="ml-2 text-parchment/40">
+                  <span className="ml-2 text-parchment/60">
                     ({entry.records.length} available)
                   </span>
                 </div>
@@ -847,9 +847,9 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
                   {groupRecordsByTag(entry.records).map(([tag, maps]) => (
                     <div key={`${entry.libraryId}::tag::${tag}`}>
                       <div className="flex items-center justify-between gap-3 bg-ink/30 px-3 py-1.5">
-                        <h3 className="text-xs uppercase tracking-wide text-parchment/55">
+                        <h3 className="text-[13px] uppercase tracking-wide text-parchment/75">
                           {tag}
-                          <span className="ml-2 normal-case tracking-normal text-parchment/35">
+                          <span className="ml-2 normal-case tracking-normal text-parchment/55">
                             ({maps.length})
                           </span>
                         </h3>
@@ -857,7 +857,7 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
                           <button
                             type="button"
                             onClick={() => onImportMaps(maps)}
-                            className="shrink-0 rounded border border-ember/60 bg-ember/30 px-2 py-0.5 text-xs text-parchment hover:bg-ember/50"
+                            className="shrink-0 rounded border border-ember/60 bg-ember/30 px-2 py-0.5 text-[13px] text-parchment hover:bg-ember/50"
                             title={`Import all ${maps.length} maps tagged "${tag}" — the whole building/area, links preserved.`}
                           >
                             + Import all ({maps.length})
@@ -872,17 +872,17 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
                           >
                             <div className="min-w-0 flex-1 truncate text-sm text-parchment/85">
                               <span className="font-display">{m.name}</span>
-                              <span className="ml-2 font-mono text-xs text-parchment/45">
+                              <span className="ml-2 font-mono text-[13px] text-parchment/65">
                                 {m.id}
                               </span>
                               {typeof m.width === "number" &&
                               typeof m.height === "number" ? (
-                                <span className="ml-2 text-xs text-parchment/40">
+                                <span className="ml-2 text-[13px] text-parchment/60">
                                   {m.width}×{m.height}
                                 </span>
                               ) : null}
                               {Array.isArray(m.tags) && m.tags.length > 1 ? (
-                                <span className="ml-2 text-xs text-parchment/40">
+                                <span className="ml-2 text-[13px] text-parchment/60">
                                   also: {m.tags.filter((t) => t !== tag).join(", ")}
                                 </span>
                               ) : null}
@@ -890,7 +890,7 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
                             <button
                               type="button"
                               onClick={() => onImportMaps([m])}
-                              className="shrink-0 rounded border border-ember/50 bg-ember/20 px-2 py-0.5 text-xs text-parchment hover:bg-ember/40"
+                              className="shrink-0 rounded border border-ember/50 bg-ember/20 px-2 py-0.5 text-[13px] text-parchment hover:bg-ember/40"
                               title={`Import just this map from ${entry.libraryId}.`}
                             >
                               + Import
@@ -997,7 +997,7 @@ function NewMapForm({
       className="rounded-md border border-parchment/15 bg-ink/30 p-4"
     >
       <h2 className="font-display text-lg text-parchment">New Map</h2>
-      <p className="mt-1 text-sm text-parchment/55">
+      <p className="mt-1 text-sm text-parchment/75">
         The grid auto-generates from width × height filled with the first
         Tile Palette tile
         {palette[0] ? (
@@ -1011,7 +1011,7 @@ function NewMapForm({
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <label className="block">
-          <span className="text-xs uppercase tracking-wide text-parchment/45">
+          <span className="text-[13px] uppercase tracking-wide text-parchment/65">
             ID
           </span>
           <input
@@ -1022,16 +1022,16 @@ function NewMapForm({
             className="mt-1 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-sm text-parchment/90"
           />
           {idError ? (
-            <p className="mt-1 text-xs text-ember/80">{idError}</p>
+            <p className="mt-1 text-[13px] text-ember/80">{idError}</p>
           ) : (
-            <p className="mt-1 text-xs text-parchment/45">
+            <p className="mt-1 text-[13px] text-parchment/65">
               Key in <code>maps.json</code>.
             </p>
           )}
         </label>
 
         <label className="block">
-          <span className="text-xs uppercase tracking-wide text-parchment/45">
+          <span className="text-[13px] uppercase tracking-wide text-parchment/65">
             Name
           </span>
           <input
@@ -1044,7 +1044,7 @@ function NewMapForm({
         </label>
 
         <label className="block sm:col-span-2">
-          <span className="text-xs uppercase tracking-wide text-parchment/45">
+          <span className="text-[13px] uppercase tracking-wide text-parchment/65">
             Description
           </span>
           <input
@@ -1057,7 +1057,7 @@ function NewMapForm({
         </label>
 
         <div className="block sm:col-span-2">
-          <span className="text-xs uppercase tracking-wide text-parchment/45">
+          <span className="text-[13px] uppercase tracking-wide text-parchment/65">
             Tags
           </span>
           <TagsPicker
@@ -1068,7 +1068,7 @@ function NewMapForm({
         </div>
 
         <label className="block">
-          <span className="text-xs uppercase tracking-wide text-parchment/45">
+          <span className="text-[13px] uppercase tracking-wide text-parchment/65">
             Width (cols)
           </span>
           <input
@@ -1082,7 +1082,7 @@ function NewMapForm({
         </label>
 
         <label className="block">
-          <span className="text-xs uppercase tracking-wide text-parchment/45">
+          <span className="text-[13px] uppercase tracking-wide text-parchment/65">
             Height (rows)
           </span>
           <input
@@ -1107,7 +1107,7 @@ function NewMapForm({
         <button
           type="button"
           onClick={onCancel}
-          className="rounded border border-parchment/20 px-3 py-1 text-sm text-parchment/70 hover:bg-ink/40"
+          className="rounded border border-parchment/20 px-3 py-1 text-sm text-parchment/85 hover:bg-ink/40"
         >
           Cancel
         </button>

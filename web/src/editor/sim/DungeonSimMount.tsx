@@ -657,7 +657,7 @@ export function DungeonSimMount({
     return (
       <div className="rounded border border-parchment/25 bg-ink/60 p-4 text-sm text-parchment">
         <p className="mb-2 font-display text-base">You leave the dungeon.</p>
-        <p className="text-parchment/65">
+        <p className="text-parchment/80">
           Pick another dungeon or hit{" "}
           <em>Regenerate</em> above to roll a fresh run.
         </p>
@@ -667,13 +667,13 @@ export function DungeonSimMount({
 
   if (!floorRecord) {
     return (
-      <p className="text-sm text-parchment/55">No dungeon level to render.</p>
+      <p className="text-sm text-parchment/75">No dungeon level to render.</p>
     );
   }
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="text-xs text-parchment/55">
+      <div className="text-[13px] text-parchment/75">
         Floor <span className="text-parchment/90">{floorIdx + 1}</span>
         {" / "}
         {levels.length} · grid{" "}

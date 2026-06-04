@@ -41,13 +41,13 @@ export function TagsPicker({
         {tags.map((t) => (
           <span
             key={t}
-            className="inline-flex items-center gap-1 rounded bg-ember/25 px-2 py-0.5 text-xs text-parchment/95"
+            className="inline-flex items-center gap-1 rounded bg-ember/25 px-2 py-0.5 text-[13px] text-parchment/95"
           >
             <span className="font-mono">{t}</span>
             <button
               type="button"
               onClick={() => remove(t)}
-              className="text-parchment/60 hover:text-parchment"
+              className="text-parchment/80 hover:text-parchment"
               title={`Remove tag "${t}"`}
             >
               ×
@@ -55,7 +55,7 @@ export function TagsPicker({
           </span>
         ))}
         {tags.length === 0 ? (
-          <span className="text-xs text-parchment/45">(no tags)</span>
+          <span className="text-[13px] text-parchment/65">(no tags)</span>
         ) : null}
       </div>
       <div className="mt-2 flex items-center gap-2">
@@ -65,7 +65,7 @@ export function TagsPicker({
             onChange={(e) => {
               if (e.target.value) add(e.target.value);
             }}
-            className="rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/85"
+            className="rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/85"
           >
             <option value="">— pick existing tag —</option>
             {remainingSuggestions.map((t) => (
@@ -89,7 +89,7 @@ export function TagsPicker({
             }
           }}
           placeholder="new tag…"
-          className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+          className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
         />
         <button
           type="button"
@@ -100,7 +100,7 @@ export function TagsPicker({
             }
           }}
           disabled={!canAddNew}
-          className="rounded border border-ember/50 bg-ember/20 px-2 py-1 text-xs text-parchment hover:bg-ember/40 disabled:cursor-not-allowed disabled:opacity-40"
+          className="rounded border border-ember/50 bg-ember/20 px-2 py-1 text-[13px] text-parchment hover:bg-ember/40 disabled:cursor-not-allowed disabled:opacity-40"
         >
           + Add
         </button>

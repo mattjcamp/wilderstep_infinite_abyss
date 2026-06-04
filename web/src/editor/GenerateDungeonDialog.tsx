@@ -125,7 +125,7 @@ export function GenerateDungeonDialog({
         <h2 className="font-display text-xl text-parchment">
           Generate Dungeon Maps
         </h2>
-        <p className="mt-1 text-sm text-parchment/55">
+        <p className="mt-1 text-sm text-parchment/75">
           Runs the dungeon's generator and saves the result as plain
           editable maps in this module. Each bake adds a fresh set
           under a new suffix — the procedural runtime entry on the
@@ -135,7 +135,7 @@ export function GenerateDungeonDialog({
         <div className="mt-4 space-y-3">
           {/* Dungeon picker */}
           <label className="block">
-            <span className="text-xs uppercase tracking-wide text-parchment/45">
+            <span className="text-[13px] uppercase tracking-wide text-parchment/65">
               Dungeon
             </span>
             {loadError ? (
@@ -143,11 +143,11 @@ export function GenerateDungeonDialog({
                 Failed to load dungeons: {loadError}
               </p>
             ) : dungeons === null ? (
-              <p className="mt-1 text-sm text-parchment/55">
+              <p className="mt-1 text-sm text-parchment/75">
                 Loading dungeons…
               </p>
             ) : dungeons.length === 0 ? (
-              <p className="mt-1 text-sm text-parchment/55">
+              <p className="mt-1 text-sm text-parchment/75">
                 No dungeons defined in this module. Add one under the
                 Dungeons editor first.
               </p>
@@ -169,7 +169,7 @@ export function GenerateDungeonDialog({
 
           {/* Seed override */}
           <label className="block">
-            <span className="text-xs uppercase tracking-wide text-parchment/45">
+            <span className="text-[13px] uppercase tracking-wide text-parchment/65">
               Seed (optional)
             </span>
             <input
@@ -179,7 +179,7 @@ export function GenerateDungeonDialog({
               placeholder="leave blank for default"
               className="mt-1 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-sm text-parchment/90"
             />
-            <p className="mt-1 text-xs text-parchment/45">
+            <p className="mt-1 text-[13px] text-parchment/65">
               Numeric seed pinned across floors. Leave blank to use
               the dungeon's stable default; supply a value to
               reproduce or reroll a specific layout.
@@ -189,24 +189,24 @@ export function GenerateDungeonDialog({
           {/* Preview */}
           {preview ? (
             <div className="rounded border border-parchment/15 bg-ink/30 p-3">
-              <p className="text-xs uppercase tracking-wide text-parchment/45">
+              <p className="text-[13px] uppercase tracking-wide text-parchment/65">
                 Will create
               </p>
               <p className="mt-1 text-sm text-parchment">
                 <span className="font-mono">{preview.floorCount}</span>{" "}
                 map{preview.floorCount === 1 ? "" : "s"}, tagged{" "}
-                <span className="rounded bg-parchment/10 px-1 font-mono text-xs">
+                <span className="rounded bg-parchment/10 px-1 font-mono text-[13px]">
                   {preview.groupTag}
                 </span>
               </p>
               {preview.ids.length > 0 ? (
-                <ul className="mt-2 space-y-0.5 font-mono text-xs text-parchment/70">
+                <ul className="mt-2 space-y-0.5 font-mono text-[13px] text-parchment/85">
                   {preview.ids.map((id) => (
                     <li key={id}>· {id}</li>
                   ))}
                 </ul>
               ) : (
-                <p className="mt-2 text-xs text-parchment/55">
+                <p className="mt-2 text-[13px] text-parchment/75">
                   This dungeon has no levels defined yet — add levels
                   to the dungeon record first.
                 </p>
@@ -219,7 +219,7 @@ export function GenerateDungeonDialog({
           <button
             type="button"
             onClick={onCancel}
-            className="rounded border border-parchment/20 px-3 py-1 text-sm text-parchment/70 hover:bg-ink/40"
+            className="rounded border border-parchment/20 px-3 py-1 text-sm text-parchment/85 hover:bg-ink/40"
           >
             Cancel
           </button>

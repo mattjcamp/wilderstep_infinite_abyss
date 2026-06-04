@@ -245,7 +245,7 @@ export function BattleSimLauncher({ moduleId }: { moduleId: string }) {
         <h1 className="font-display text-3xl text-parchment">
           Battle Simulator
         </h1>
-        <p className="mt-1 text-sm text-parchment/55">
+        <p className="mt-1 text-sm text-parchment/75">
           Visual test of v1&apos;s ported CombatScene driving the v2
           data model end-to-end. Party comes from{" "}
           <span className="font-mono">modules/{moduleId}/party.json</span>;
@@ -255,7 +255,7 @@ export function BattleSimLauncher({ moduleId }: { moduleId: string }) {
 
       <section className="mb-4 flex flex-wrap items-start gap-3">
         <div className="flex flex-col gap-1">
-          <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+          <span className="text-xs uppercase tracking-wide text-parchment/65">
             Encounter
           </span>
           <EncounterPicker
@@ -275,7 +275,7 @@ export function BattleSimLauncher({ moduleId }: { moduleId: string }) {
         </div>
 
         <div className="flex flex-col gap-1">
-          <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+          <span className="text-xs uppercase tracking-wide text-parchment/65">
             Arena Map
           </span>
           <select
@@ -341,7 +341,7 @@ export function BattleSimLauncher({ moduleId }: { moduleId: string }) {
 
         {selected && (
           <div className="mt-[18px] flex items-center gap-3">
-            <p className="text-xs text-parchment/55">
+            <p className="text-[13px] text-parchment/75">
               {selected.area} · lvl {selected.level} ·{" "}
               {selected.monsters.length} monster
               {selected.monsters.length === 1 ? "" : "s"}
@@ -355,7 +355,7 @@ export function BattleSimLauncher({ moduleId }: { moduleId: string }) {
       </section>
 
       {loadError && (
-        <p className="mb-3 text-xs text-rust">
+        <p className="mb-3 text-[13px] text-rust">
           Couldn&apos;t load encounters.json: {loadError}
         </p>
       )}
@@ -374,7 +374,7 @@ export function BattleSimLauncher({ moduleId }: { moduleId: string }) {
           partyInfravisionActive={partyInfravisionActive}
         />
       ) : (
-        <p className="text-sm text-parchment/45">
+        <p className="text-sm text-parchment/65">
           Press <em>Start Battle</em> to mount the v1 combat scene with
           the picked encounter.
         </p>
@@ -472,7 +472,7 @@ function EncounterPicker({
           ) : null}
         </div>
         <span className="flex-1 truncate">{selectedLabel}</span>
-        <span className="text-xs text-parchment/45" aria-hidden>
+        <span className="text-[13px] text-parchment/65" aria-hidden>
           ▾
         </span>
       </button>
@@ -484,7 +484,7 @@ function EncounterPicker({
         >
           {grouped.map((g) => (
             <section key={g.area} className="mb-2 last:mb-0">
-              <h3 className="mb-1 px-1 text-[10px] uppercase tracking-wide text-parchment/45">
+              <h3 className="mb-1 px-1 text-xs uppercase tracking-wide text-parchment/65">
                 {g.area} · {g.encounters.length}
               </h3>
               <ul className="space-y-0.5">
@@ -499,7 +499,7 @@ function EncounterPicker({
                           onPick(e.id);
                           setOpen(false);
                         }}
-                        className={`flex w-full items-center gap-2 rounded border px-2 py-1 text-left text-xs transition ${
+                        className={`flex w-full items-center gap-2 rounded border px-2 py-1 text-left text-[13px] transition ${
                           isCurrent
                             ? "border-ember/60 bg-ember/20 text-parchment"
                             : "border-transparent text-parchment/85 hover:border-parchment/30 hover:bg-ink/60"
@@ -524,7 +524,7 @@ function EncounterPicker({
                         <span className="min-w-0 flex-1 truncate">
                           {e.name}
                         </span>
-                        <span className="shrink-0 text-[10px] text-parchment/55">
+                        <span className="shrink-0 text-xs text-parchment/75">
                           lvl {e.level} · {e.monsters.length}
                         </span>
                       </button>
@@ -584,7 +584,7 @@ function MonsterRoster({
                 }}
               />
             ) : (
-              <span className="block truncate px-1 text-[9px] text-parchment/55">
+              <span className="block truncate px-1 text-[9px] text-parchment/75">
                 {id}
               </span>
             )}

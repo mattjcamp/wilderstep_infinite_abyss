@@ -227,7 +227,7 @@ export function SoundtrackPicker({
     <div className="flex flex-col gap-2">
       {/* Selected playlist */}
       {value.length === 0 ? (
-        <p className="rounded border border-dashed border-parchment/20 bg-ink/30 px-2 py-1.5 text-[11px] text-parchment/55">
+        <p className="rounded border border-dashed border-parchment/20 bg-ink/30 px-2 py-1.5 text-xs text-parchment/75">
           No tracks selected.
           {emptyHint ? <span className="ml-1">{emptyHint}</span> : null}
         </p>
@@ -240,7 +240,7 @@ export function SoundtrackPicker({
                 key={`${path}-${i}`}
                 className="flex items-center gap-2 rounded border border-parchment/15 bg-ink/40 px-2 py-1"
               >
-                <span className="w-5 shrink-0 text-right font-mono text-[10px] text-parchment/45">
+                <span className="w-5 shrink-0 text-right font-mono text-xs text-parchment/65">
                   {i + 1}
                 </span>
                 <span className="flex-1 truncate" title={path}>
@@ -249,7 +249,7 @@ export function SoundtrackPicker({
                 <button
                   type="button"
                   onClick={() => togglePreview(path)}
-                  className="rounded border border-parchment/20 bg-ink/40 px-1.5 py-0.5 text-[11px] text-parchment/80 hover:bg-ink/60"
+                  className="rounded border border-parchment/20 bg-ink/40 px-1.5 py-0.5 text-xs text-parchment/80 hover:bg-ink/60"
                   title={isPlaying ? "Stop preview" : "Preview"}
                   aria-label={isPlaying ? "Stop preview" : "Preview"}
                 >
@@ -259,7 +259,7 @@ export function SoundtrackPicker({
                   type="button"
                   onClick={() => moveUp(i)}
                   disabled={i === 0}
-                  className="rounded border border-parchment/20 bg-ink/40 px-1.5 py-0.5 text-[11px] text-parchment/80 hover:bg-ink/60 disabled:opacity-30"
+                  className="rounded border border-parchment/20 bg-ink/40 px-1.5 py-0.5 text-xs text-parchment/80 hover:bg-ink/60 disabled:opacity-30"
                   title="Move up"
                   aria-label="Move up"
                 >
@@ -269,7 +269,7 @@ export function SoundtrackPicker({
                   type="button"
                   onClick={() => moveDown(i)}
                   disabled={i === value.length - 1}
-                  className="rounded border border-parchment/20 bg-ink/40 px-1.5 py-0.5 text-[11px] text-parchment/80 hover:bg-ink/60 disabled:opacity-30"
+                  className="rounded border border-parchment/20 bg-ink/40 px-1.5 py-0.5 text-xs text-parchment/80 hover:bg-ink/60 disabled:opacity-30"
                   title="Move down"
                   aria-label="Move down"
                 >
@@ -288,7 +288,7 @@ export function SoundtrackPicker({
                     }
                     removeAt(i);
                   }}
-                  className="rounded border border-parchment/20 bg-ink/40 px-1.5 py-0.5 text-[11px] text-parchment/80 hover:bg-ink/60"
+                  className="rounded border border-parchment/20 bg-ink/40 px-1.5 py-0.5 text-xs text-parchment/80 hover:bg-ink/60"
                   title="Remove"
                   aria-label="Remove"
                 >
@@ -304,7 +304,7 @@ export function SoundtrackPicker({
       <button
         type="button"
         onClick={() => setAddOpen((o) => !o)}
-        className="self-start rounded border border-parchment/20 bg-ink/40 px-2 py-1 text-xs text-parchment/85 hover:bg-ink/60"
+        className="self-start rounded border border-parchment/20 bg-ink/40 px-2 py-1 text-[13px] text-parchment/85 hover:bg-ink/60"
         aria-expanded={addOpen}
       >
         {addOpen ? "▾ Hide tracks" : "▸ + Add a track"}
@@ -312,10 +312,10 @@ export function SoundtrackPicker({
       {addOpen ? (
         <div className="rounded border border-parchment/15 bg-ink/30 p-2">
           {state.kind === "loading" ? (
-            <p className="text-xs text-parchment/50">Loading tracks…</p>
+            <p className="text-[13px] text-parchment/70">Loading tracks…</p>
           ) : null}
           {state.kind === "error" ? (
-            <p className="text-xs text-ember">
+            <p className="text-[13px] text-ember">
               Couldn&apos;t load /audio/index.json: {state.message}
             </p>
           ) : null}
@@ -326,10 +326,10 @@ export function SoundtrackPicker({
                 value={filter}
                 onChange={(e) => setFilter(e.target.value)}
                 placeholder="Filter…"
-                className="mb-1 w-full rounded border border-parchment/20 bg-ink/40 px-2 py-0.5 text-xs text-parchment placeholder:text-parchment/40 focus:border-parchment/45 focus:outline-none"
+                className="mb-1 w-full rounded border border-parchment/20 bg-ink/40 px-2 py-0.5 text-[13px] text-parchment placeholder:text-parchment/60 focus:border-parchment/45 focus:outline-none"
               />
               {available.length === 0 ? (
-                <p className="text-[11px] text-parchment/50">
+                <p className="text-xs text-parchment/70">
                   {state.tracks.length === 0
                     ? "No tracks in /audio/index.json yet — drop files in /public/audio/ and list them there."
                     : needle
@@ -351,7 +351,7 @@ export function SoundtrackPicker({
                         <button
                           type="button"
                           onClick={() => togglePreview(t.path)}
-                          className="rounded border border-parchment/20 bg-ink/40 px-1.5 py-0.5 text-[11px] text-parchment/80 hover:bg-ink/60"
+                          className="rounded border border-parchment/20 bg-ink/40 px-1.5 py-0.5 text-xs text-parchment/80 hover:bg-ink/60"
                           title={isPlaying ? "Stop preview" : "Preview"}
                           aria-label={isPlaying ? "Stop preview" : "Preview"}
                         >
@@ -360,7 +360,7 @@ export function SoundtrackPicker({
                         <button
                           type="button"
                           onClick={() => addTrack(t.path)}
-                          className="rounded border border-ember/50 bg-ember/20 px-1.5 py-0.5 text-[11px] text-parchment hover:bg-ember/40"
+                          className="rounded border border-ember/50 bg-ember/20 px-1.5 py-0.5 text-xs text-parchment hover:bg-ember/40"
                           title="Add to playlist"
                           aria-label="Add to playlist"
                         >

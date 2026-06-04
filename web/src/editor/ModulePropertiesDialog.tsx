@@ -217,7 +217,7 @@ export function ModulePropertiesDialog({
       >
         <header className="mb-3 flex items-baseline justify-between">
           <h2 className="font-display text-xl">Module Properties</h2>
-          <span className="font-mono text-[11px] text-parchment/45">
+          <span className="font-mono text-xs text-parchment/65">
             id: {initial.id}
           </span>
         </header>
@@ -225,7 +225,7 @@ export function ModulePropertiesDialog({
         <div className="flex flex-col gap-3">
           {/* Title ----------------------------------------------- */}
           <label className="flex flex-col gap-1">
-            <span className="text-xs text-parchment/70 font-mono">title</span>
+            <span className="text-[13px] text-parchment/85 font-mono">title</span>
             <input
               type="text"
               value={title}
@@ -241,13 +241,13 @@ export function ModulePropertiesDialog({
               }`}
             />
             {titleError ? (
-              <span className="text-[11px] text-ember">{titleError}</span>
+              <span className="text-xs text-ember">{titleError}</span>
             ) : null}
           </label>
 
           {/* Description ----------------------------------------- */}
           <label className="flex flex-col gap-1">
-            <span className="text-xs text-parchment/70 font-mono">
+            <span className="text-[13px] text-parchment/85 font-mono">
               description
             </span>
             <textarea
@@ -262,7 +262,7 @@ export function ModulePropertiesDialog({
           {/* Author + Version ----------------------------------- */}
           <div className="flex gap-3">
             <label className="flex flex-1 flex-col gap-1">
-              <span className="text-xs text-parchment/70 font-mono">
+              <span className="text-[13px] text-parchment/85 font-mono">
                 author
               </span>
               <input
@@ -274,7 +274,7 @@ export function ModulePropertiesDialog({
               />
             </label>
             <label className="flex w-32 flex-col gap-1">
-              <span className="text-xs text-parchment/70 font-mono">
+              <span className="text-[13px] text-parchment/85 font-mono">
                 version
               </span>
               <input
@@ -293,7 +293,7 @@ export function ModulePropertiesDialog({
               and supports preview + reorder. Per-map and per-dungeon
               overrides live on the respective Map / Dungeon records. */}
           <div className="flex flex-col gap-1">
-            <span className="text-xs text-parchment/70 font-mono">
+            <span className="text-[13px] text-parchment/85 font-mono">
               soundtrack
             </span>
             <SoundtrackPicker
@@ -301,7 +301,7 @@ export function ModulePropertiesDialog({
               onChange={setSoundtrack}
               emptyHint="The play host stays silent unless a map or dungeon authors its own playlist."
             />
-            <span className="text-[11px] text-parchment/45">
+            <span className="text-xs text-parchment/65">
               The play host picks a random track and rotates through
               the list as tracks end. Maps and dungeons can override
               this list from their own properties.
@@ -316,7 +316,7 @@ export function ModulePropertiesDialog({
               top of these, so a dark dungeon is governed by the
               torch, not by `night`. */}
           <fieldset className="flex flex-col gap-1">
-            <legend className="text-xs text-parchment/70 font-mono">
+            <legend className="text-[13px] text-parchment/85 font-mono">
               fog of war — sight radius (tiles)
             </legend>
             <div className="flex gap-3">
@@ -328,7 +328,7 @@ export function ModulePropertiesDialog({
                 ] as const
               ).map(([mode, value, setValue]) => (
                 <label key={mode} className="flex flex-1 flex-col gap-1">
-                  <span className="text-[11px] text-parchment/60 font-mono">
+                  <span className="text-xs text-parchment/80 font-mono">
                     {mode}
                   </span>
                   <input
@@ -343,7 +343,7 @@ export function ModulePropertiesDialog({
                 </label>
               ))}
             </div>
-            <span className="text-[11px] text-parchment/45">
+            <span className="text-xs text-parchment/65">
               How far the party uncovers + remembers the map each step,
               by time of day. Leave blank to use the defaults (day{" "}
               {SIGHT_RADIUS_DEFAULTS.day}, twilight{" "}
@@ -356,7 +356,7 @@ export function ModulePropertiesDialog({
 
           {/* Role ------------------------------------------------ */}
           <fieldset className="flex flex-col gap-1">
-            <legend className="text-xs text-parchment/70 font-mono">
+            <legend className="text-[13px] text-parchment/85 font-mono">
               role
             </legend>
             <div className="flex flex-col gap-1">
@@ -375,7 +375,7 @@ export function ModulePropertiesDialog({
                   />
                   <span className="flex-1">
                     <span className="font-medium">{opt.label}</span>
-                    <span className="ml-2 text-[11px] text-parchment/55">
+                    <span className="ml-2 text-xs text-parchment/75">
                       {opt.hint}
                     </span>
                   </span>
@@ -387,22 +387,22 @@ export function ModulePropertiesDialog({
           {/* Read-only context ----------------------------------- */}
           {(initial.extends ||
             (initial.uses && initial.uses.length > 0)) ? (
-            <div className="mt-1 rounded border border-parchment/15 bg-ink/30 px-2 py-1.5 text-[11px] text-parchment/55">
+            <div className="mt-1 rounded border border-parchment/15 bg-ink/30 px-2 py-1.5 text-xs text-parchment/75">
               {initial.extends ? (
                 <div>
-                  <span className="font-mono text-parchment/45">extends:</span>{" "}
+                  <span className="font-mono text-parchment/65">extends:</span>{" "}
                   <span className="text-parchment/75">{initial.extends}</span>
                 </div>
               ) : null}
               {initial.uses && initial.uses.length > 0 ? (
                 <div>
-                  <span className="font-mono text-parchment/45">uses:</span>{" "}
+                  <span className="font-mono text-parchment/65">uses:</span>{" "}
                   <span className="text-parchment/75">
                     {initial.uses.join(", ")}
                   </span>
                 </div>
               ) : null}
-              <div className="mt-1 text-parchment/40">
+              <div className="mt-1 text-parchment/60">
                 Edit inheritance + library imports from inside the module
                 editor.
               </div>
@@ -414,14 +414,14 @@ export function ModulePropertiesDialog({
           <button
             type="button"
             onClick={onClose}
-            className="rounded border border-parchment/20 bg-ink/40 px-3 py-1 text-xs text-parchment/70 hover:bg-ink/60"
+            className="rounded border border-parchment/20 bg-ink/40 px-3 py-1 text-[13px] text-parchment/85 hover:bg-ink/60"
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={handleSave}
-            className="rounded border border-ember/60 bg-ember/30 px-3 py-1 text-xs text-parchment hover:bg-ember/50"
+            className="rounded border border-ember/60 bg-ember/30 px-3 py-1 text-[13px] text-parchment hover:bg-ember/50"
             title="Save (⌘/Ctrl + Enter)"
           >
             Save

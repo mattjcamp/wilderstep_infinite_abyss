@@ -109,13 +109,13 @@ export function SoundtrackView() {
   }, []);
 
   if (state.kind === "loading") {
-    return <p className="p-4 text-parchment/60">Loading soundtrack…</p>;
+    return <p className="p-4 text-parchment/80">Loading soundtrack…</p>;
   }
   if (state.kind === "error") {
     return (
       <div className="p-4">
         <p className="text-ember">Failed to load soundtrack.</p>
-        <p className="mt-2 font-mono text-sm text-parchment/60">
+        <p className="mt-2 font-mono text-sm text-parchment/80">
           {state.message}
         </p>
       </div>
@@ -199,7 +199,7 @@ export function SoundtrackView() {
           <h1 className="font-display text-3xl text-parchment">
             Soundtrack
           </h1>
-          <p className="mt-1 text-sm text-parchment/60">
+          <p className="mt-1 text-sm text-parchment/80">
             {tracks.length}
             {needle ? ` of ${allTracks.length}` : ""} track
             {allTracks.length === 1 ? "" : "s"} · served from{" "}
@@ -211,7 +211,7 @@ export function SoundtrackView() {
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
           placeholder="filter by name…"
-          className="rounded border border-parchment/20 bg-ink/40 px-2 py-1 text-sm text-parchment placeholder:text-parchment/40 focus:border-parchment/60 focus:outline-none"
+          className="rounded border border-parchment/20 bg-ink/40 px-2 py-1 text-sm text-parchment placeholder:text-parchment/60 focus:border-parchment/60 focus:outline-none"
         />
       </header>
 
@@ -231,7 +231,7 @@ export function SoundtrackView() {
       )}
 
       {allTracks.length === 0 ? (
-        <p className="mt-6 text-sm text-parchment/50">
+        <p className="mt-6 text-sm text-parchment/70">
           No tracks in <code className="text-parchment/80">/audio/index.json</code> yet
           — drop files in <code className="text-parchment/80">web/public/audio/</code>{" "}
           and run <code className="text-parchment/80">npm run reindex-audio</code>.
@@ -260,14 +260,14 @@ export function SoundtrackView() {
                     title="Select to see the path you can paste into a data record."
                   >
                     <span className="font-display">{label}</span>
-                    <span className="ml-2 text-xs text-parchment/40">
+                    <span className="ml-2 text-[13px] text-parchment/60">
                       {basename(path)}
                     </span>
                   </button>
 
                   <div className="mt-2 flex items-center gap-2">
                     <span
-                      className="text-xs text-parchment/40"
+                      className="text-[13px] text-parchment/60"
                       title="Track volume: attenuates this track relative to the rest of the soundtrack. Applied in-game and to the preview below."
                     >
                       vol
@@ -283,10 +283,10 @@ export function SoundtrackView() {
                       aria-label={`${label} volume`}
                     />
                     <span
-                      className={`w-10 text-right font-mono text-xs ${
+                      className={`w-10 text-right font-mono text-[13px] ${
                         gain !== (savedGains[path] ?? 1)
                           ? "text-ember"
-                          : "text-parchment/50"
+                          : "text-parchment/70"
                       }`}
                     >
                       {pct}%
@@ -339,16 +339,16 @@ function SaveBar({
 
   return (
     <div className="mt-4 flex flex-wrap items-center gap-3 rounded border border-parchment/10 bg-ink/30 px-3 py-2 text-sm">
-      <span className="text-parchment/60">
+      <span className="text-parchment/80">
         Drag a track&apos;s <span className="text-parchment/80">vol</span> slider
         to level it against the rest of the soundtrack.
       </span>
       <div className="ml-auto flex items-center gap-2">
         {saveState.kind === "saved" && !dirty && (
-          <span className="text-xs text-parchment/50">Saved.</span>
+          <span className="text-[13px] text-parchment/70">Saved.</span>
         )}
         {saveState.kind === "error" && (
-          <span className="text-xs text-ember">
+          <span className="text-[13px] text-ember">
             Save failed: {saveState.message}
           </span>
         )}
@@ -356,7 +356,7 @@ function SaveBar({
           <button
             type="button"
             onClick={onReset}
-            className="rounded border border-parchment/20 px-3 py-1 text-xs text-parchment/80 hover:bg-ink/40"
+            className="rounded border border-parchment/20 px-3 py-1 text-[13px] text-parchment/80 hover:bg-ink/40"
           >
             Reset
           </button>
@@ -366,12 +366,12 @@ function SaveBar({
             type="button"
             onClick={onSave}
             disabled={!dirty || saveState.kind === "saving"}
-            className="rounded border border-ember/50 bg-ember/10 px-3 py-1 text-xs text-parchment hover:bg-ember/20 disabled:cursor-not-allowed disabled:opacity-40"
+            className="rounded border border-ember/50 bg-ember/10 px-3 py-1 text-[13px] text-parchment hover:bg-ember/20 disabled:cursor-not-allowed disabled:opacity-40"
           >
             {saveState.kind === "saving" ? "Saving…" : "Save volumes"}
           </button>
         ) : (
-          <span className="text-xs text-parchment/40">
+          <span className="text-[13px] text-parchment/60">
             Start the publish server (<code>npm run dev:all</code>) to save.
           </span>
         )}
@@ -389,18 +389,18 @@ function SelectedPreview({
 }) {
   return (
     <div className="mt-4 rounded border border-parchment/20 bg-ink/60 p-4">
-      <div className="text-sm text-parchment/60">Path</div>
+      <div className="text-sm text-parchment/80">Path</div>
       <code className="break-all font-mono text-sm text-parchment">
         {path}
       </code>
-      <div className="mt-3 text-xs text-parchment/50">
+      <div className="mt-3 text-[13px] text-parchment/70">
         Use this path in data records that reference audio. Apply
         basePath at fetch time.
       </div>
       <button
         type="button"
         onClick={onClose}
-        className="mt-3 rounded border border-parchment/20 px-3 py-1 text-xs text-parchment/80 hover:bg-ink/40"
+        className="mt-3 rounded border border-parchment/20 px-3 py-1 text-[13px] text-parchment/80 hover:bg-ink/40"
       >
         Close
       </button>

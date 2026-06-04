@@ -158,7 +158,7 @@ export function MapAttributesDialog({
       >
         <header className="mb-3 flex items-baseline justify-between">
           <h2 className="font-display text-xl">Map Properties</h2>
-          <span className="font-mono text-[11px] text-parchment/45">
+          <span className="font-mono text-xs text-parchment/65">
             id: {mapId}
           </span>
         </header>
@@ -166,7 +166,7 @@ export function MapAttributesDialog({
         <div className="flex flex-col gap-3">
           {/* Name ------------------------------------------------ */}
           <label className="flex flex-col gap-1">
-            <span className="text-xs text-parchment/70 font-mono">name</span>
+            <span className="text-[13px] text-parchment/85 font-mono">name</span>
             <input
               type="text"
               value={name}
@@ -182,13 +182,13 @@ export function MapAttributesDialog({
               }`}
             />
             {nameError ? (
-              <span className="text-[11px] text-ember">{nameError}</span>
+              <span className="text-xs text-ember">{nameError}</span>
             ) : null}
           </label>
 
           {/* Description ----------------------------------------- */}
           <label className="flex flex-col gap-1">
-            <span className="text-xs text-parchment/70 font-mono">
+            <span className="text-[13px] text-parchment/85 font-mono">
               description
             </span>
             <textarea
@@ -202,13 +202,13 @@ export function MapAttributesDialog({
 
           {/* Tags ------------------------------------------------ */}
           <div className="flex flex-col gap-1">
-            <span className="text-xs text-parchment/70 font-mono">tags</span>
+            <span className="text-[13px] text-parchment/85 font-mono">tags</span>
             <TagsPicker
               tags={tags}
               existing={existingTags}
               onChange={setTags}
             />
-            <span className="text-[11px] text-parchment/45">
+            <span className="text-xs text-parchment/65">
               Editor-only labels for organizing maps in the browser. Not
               visible in-game.
             </span>
@@ -219,7 +219,7 @@ export function MapAttributesDialog({
               default while the party is on this map. Leave empty
               to inherit the module default. */}
           <div className="flex flex-col gap-1">
-            <span className="text-xs text-parchment/70 font-mono">
+            <span className="text-[13px] text-parchment/85 font-mono">
               soundtrack
             </span>
             <SoundtrackPicker
@@ -227,7 +227,7 @@ export function MapAttributesDialog({
               onChange={setSoundtrack}
               emptyHint="Inherits the module-level playlist."
             />
-            <span className="text-[11px] text-parchment/45">
+            <span className="text-xs text-parchment/65">
               Overrides the module-level soundtrack while the party is
               on this map. Empty inherits the module default.
             </span>
@@ -240,7 +240,7 @@ export function MapAttributesDialog({
               the matching band regardless of the clock; useful for
               perpetual-night interiors, always-dawn shrines, etc. */}
           <label className="flex flex-col gap-1">
-            <span className="text-xs text-parchment/70 font-mono">lighting</span>
+            <span className="text-[13px] text-parchment/85 font-mono">lighting</span>
             <select
               value={lighting}
               onChange={(e) => setLighting(e.target.value as MapLighting)}
@@ -251,7 +251,7 @@ export function MapAttributesDialog({
               <option value="twilight">Twilight</option>
               <option value="darkness">Darkness</option>
             </select>
-            <span className="text-[11px] text-parchment/45">
+            <span className="text-xs text-parchment/65">
               Override the world clock for this map. World-time follows
               day / twilight / darkness as the in-game hour advances; the
               three explicit values lock the lighting band.
@@ -272,10 +272,10 @@ export function MapAttributesDialog({
               className="mt-0.5"
             />
             <span className="flex flex-col">
-              <span className="text-xs text-parchment/70 font-mono">
+              <span className="text-[13px] text-parchment/85 font-mono">
                 fog of war
               </span>
-              <span className="text-[11px] text-parchment/45">
+              <span className="text-xs text-parchment/65">
                 When on (default), unexplored tiles stay hidden until the
                 party sees them. Turn off for maps that should be fully
                 visible on entry, like shops or small interiors.
@@ -288,14 +288,14 @@ export function MapAttributesDialog({
           <button
             type="button"
             onClick={onClose}
-            className="rounded border border-parchment/20 bg-ink/40 px-3 py-1 text-xs text-parchment/70 hover:bg-ink/60"
+            className="rounded border border-parchment/20 bg-ink/40 px-3 py-1 text-[13px] text-parchment/85 hover:bg-ink/60"
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={handleSave}
-            className="rounded border border-ember/60 bg-ember/30 px-3 py-1 text-xs text-parchment hover:bg-ember/50"
+            className="rounded border border-ember/60 bg-ember/30 px-3 py-1 text-[13px] text-parchment hover:bg-ember/50"
             title="Save (⌘/Ctrl + Enter)"
           >
             Save

@@ -404,13 +404,13 @@ export function ModelView({
 
   // ── render ────────────────────────────────────────────────────────
   if (state.kind === "loading")
-    return <p className="p-4 text-parchment/60">Loading {def.label}…</p>;
+    return <p className="p-4 text-parchment/80">Loading {def.label}…</p>;
 
   if (state.kind === "error") {
     return (
       <div className="p-4">
         <p className="text-ember">Failed to load {def.label}.</p>
-        <p className="mt-2 font-mono text-sm text-parchment/60">
+        <p className="mt-2 font-mono text-sm text-parchment/80">
           {state.message}
         </p>
       </div>
@@ -588,7 +588,7 @@ export function ModelView({
         <>
           {creating ? (
             <div className="mt-4">
-              <p className="mb-2 text-sm text-parchment/70">New record</p>
+              <p className="mb-2 text-sm text-parchment/85">New record</p>
               <RecordForm
                 record={blankFromTemplate(template)}
                 template={template}
@@ -613,7 +613,7 @@ export function ModelView({
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder={`Filter ${def.label.toLowerCase()}…`}
-                className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-sm text-parchment placeholder:text-parchment/30 focus:border-parchment/60 focus:outline-none"
+                className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-sm text-parchment placeholder:text-parchment/50 focus:border-parchment/60 focus:outline-none"
               />
               {availableDifficulties.length > 0 ? (
                 <select
@@ -623,7 +623,7 @@ export function ModelView({
                   className={`shrink-0 rounded border bg-ink/50 px-2 py-1 text-sm focus:outline-none ${
                     difficultyFilter
                       ? "border-ember/50 text-parchment"
-                      : "border-parchment/20 text-parchment/70"
+                      : "border-parchment/20 text-parchment/85"
                   }`}
                 >
                   <option value="">All difficulties</option>
@@ -642,7 +642,7 @@ export function ModelView({
                   className={`shrink-0 rounded border bg-ink/50 px-2 py-1 text-sm focus:outline-none ${
                     tagFilter
                       ? "border-ember/50 text-parchment"
-                      : "border-parchment/20 text-parchment/70"
+                      : "border-parchment/20 text-parchment/85"
                   }`}
                 >
                   <option value="">All tags</option>
@@ -654,7 +654,7 @@ export function ModelView({
                 </select>
               ) : null}
               {query.trim() || difficultyFilter || tagFilter ? (
-                <span className="shrink-0 text-xs text-parchment/45">
+                <span className="shrink-0 text-[13px] text-parchment/65">
                   {visibleRecords.length} of {derived.records.length}
                 </span>
               ) : null}
@@ -662,7 +662,7 @@ export function ModelView({
                 <button
                   type="button"
                   onClick={() => setSortField(null)}
-                  className="shrink-0 rounded border border-parchment/20 px-2 py-1 text-xs text-parchment/60 hover:bg-ink/40 hover:text-parchment/90"
+                  className="shrink-0 rounded border border-parchment/20 px-2 py-1 text-[13px] text-parchment/80 hover:bg-ink/40 hover:text-parchment/90"
                   title="Clear sort and return to the grouped/natural order"
                 >
                   Clear sort
@@ -683,7 +683,7 @@ export function ModelView({
                         onClick={() =>
                           setCollapsedTags(allCollapsed ? new Set() : allTags)
                         }
-                        className="shrink-0 rounded border border-parchment/20 px-2 py-1 text-xs uppercase tracking-wide text-parchment/65 hover:bg-ink/40 hover:text-parchment/90"
+                        className="shrink-0 rounded border border-parchment/20 px-2 py-1 text-[13px] uppercase tracking-wide text-parchment/80 hover:bg-ink/40 hover:text-parchment/90"
                         title={
                           allCollapsed
                             ? "Expand every tag section"
@@ -700,7 +700,7 @@ export function ModelView({
 
           <div className="mt-4 overflow-auto rounded border border-parchment/10">
             <table className="w-full text-left text-sm">
-              <thead className="bg-ink/60 text-parchment/70">
+              <thead className="bg-ink/60 text-parchment/85">
                 <tr>
                   <th className="w-6 px-2 py-1"></th>
                   {hasSpriteColumn ? (
@@ -716,7 +716,7 @@ export function ModelView({
                         title={`Sort by ${c.label}`}
                       >
                         {c.label}
-                        <span className="ml-1 text-parchment/40">
+                        <span className="ml-1 text-parchment/60">
                           {active ? (sortDir === "asc" ? "▲" : "▼") : "↕"}
                         </span>
                       </th>
@@ -813,15 +813,15 @@ export function ModelView({
                             >
                               <td
                                 colSpan={totalCols}
-                                className="px-2 py-1 text-xs uppercase tracking-wide text-parchment/70"
+                                className="px-2 py-1 text-[13px] uppercase tracking-wide text-parchment/85"
                               >
-                                <span className="mr-2 text-parchment/55">
+                                <span className="mr-2 text-parchment/75">
                                   {isCollapsed ? "▸" : "▾"}
                                 </span>
                                 <span className="text-parchment/85">
                                   {tag}
                                 </span>
-                                <span className="ml-2 normal-case tracking-normal text-parchment/45">
+                                <span className="ml-2 normal-case tracking-normal text-parchment/65">
                                   {rows.length}
                                   {rows.length === 1 ? " entry" : " entries"}
                                 </span>
@@ -844,7 +844,7 @@ export function ModelView({
                       <tr>
                         <td
                           colSpan={totalCols}
-                          className="px-2 py-3 text-center text-xs text-parchment/45"
+                          className="px-2 py-3 text-center text-[13px] text-parchment/65"
                         >
                           {query.trim()
                             ? `No matches for “${query}”.`
@@ -948,7 +948,7 @@ function ProvenanceBadge({ kind }: { kind: RowProvenance }) {
     return (
       <span
         title="This record exists only in this module — not in any ancestor."
-        className="rounded bg-ember/40 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-parchment/95"
+        className="rounded bg-ember/40 px-1.5 py-0.5 text-xs uppercase tracking-wide text-parchment/95"
       >
         new
       </span>
@@ -958,7 +958,7 @@ function ProvenanceBadge({ kind }: { kind: RowProvenance }) {
     return (
       <span
         title="This module overrides an inherited record with the same id."
-        className="rounded bg-ember/25 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-parchment/90"
+        className="rounded bg-ember/25 px-1.5 py-0.5 text-xs uppercase tracking-wide text-parchment/90"
       >
         override
       </span>
@@ -967,7 +967,7 @@ function ProvenanceBadge({ kind }: { kind: RowProvenance }) {
   return (
     <span
       title="Inherited from an ancestor module — this module hasn't modified it."
-      className="rounded bg-parchment/10 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-parchment/55"
+      className="rounded bg-parchment/10 px-1.5 py-0.5 text-xs uppercase tracking-wide text-parchment/75"
     >
       inherited
     </span>
@@ -1009,13 +1009,13 @@ function Header({
     <header className="flex flex-wrap items-baseline justify-between gap-3">
       <div>
         <h1 className="font-display text-3xl text-parchment">{def.label}</h1>
-        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-parchment/60">
+        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-parchment/80">
           {!isSingleton ? (
             <span>
               {counts.total} records
               {showProvenance &&
               counts.inherited + counts.overridden + counts.own > 0 ? (
-                <span className="ml-1 text-parchment/45">
+                <span className="ml-1 text-parchment/65">
                   ({counts.inherited} inherited
                   {counts.overridden ? `, ${counts.overridden} overridden` : ""}
                   {counts.own ? `, ${counts.own} new` : ""})
@@ -1026,7 +1026,7 @@ function Header({
           {parentId ? (
             <>
               {!isSingleton ? (
-                <span className="text-parchment/40">·</span>
+                <span className="text-parchment/60">·</span>
               ) : null}
               <span>
                 inherits from{" "}
@@ -1036,7 +1036,7 @@ function Header({
           ) : null}
           {usedLibraryIds.length > 0 ? (
             <>
-              <span className="text-parchment/40">·</span>
+              <span className="text-parchment/60">·</span>
               <span>
                 library:{" "}
                 {usedLibraryIds.map((id, i) => (
@@ -1048,10 +1048,10 @@ function Header({
               </span>
             </>
           ) : null}
-          <span className="text-parchment/40">·</span>
+          <span className="text-parchment/60">·</span>
           <span>{def.fileName}</span>
           {isDraft ? (
-            <span className="rounded bg-ember/30 px-2 py-0.5 text-xs text-parchment/90">
+            <span className="rounded bg-ember/30 px-2 py-0.5 text-[13px] text-parchment/90">
               draft active
             </span>
           ) : null}
@@ -1071,7 +1071,7 @@ function Header({
           <button
             type="button"
             onClick={onDiscardDraft}
-            className="rounded border border-parchment/20 px-3 py-1 text-sm text-parchment/70 hover:bg-ink/40"
+            className="rounded border border-parchment/20 px-3 py-1 text-sm text-parchment/85 hover:bg-ink/40"
           >
             Discard draft
           </button>
@@ -1134,7 +1134,7 @@ function SingletonView({
         <div className="mb-2 flex items-center gap-2">
           <ProvenanceBadge kind={provenance} />
           {provenance === "inherited" ? (
-            <span className="text-xs text-parchment/55">
+            <span className="text-[13px] text-parchment/75">
               Editing will create an override in this module.
             </span>
           ) : null}
@@ -1149,7 +1149,7 @@ function SingletonView({
         />
       ) : (
         <>
-          <pre className="overflow-auto rounded bg-ink/60 p-4 text-xs text-parchment/90">
+          <pre className="overflow-auto rounded bg-ink/60 p-4 text-[13px] text-parchment/90">
             {JSON.stringify(displayed, null, 2)}
           </pre>
           <div className="mt-3 flex items-center gap-2">
@@ -1284,7 +1284,7 @@ function RowGroup({
         }`}
         onClick={onToggle}
       >
-        <td className="px-2 py-1 text-parchment/50">{isOpen ? "▾" : "▸"}</td>
+        <td className="px-2 py-1 text-parchment/70">{isOpen ? "▾" : "▸"}</td>
         {hasSpriteColumn ? (
           <td className="px-2 py-1">
             <RecordSpriteThumb record={record} modelKey={modelKey} />
@@ -1322,7 +1322,7 @@ function RowGroup({
               />
             ) : (
               <div>
-                <pre className="overflow-auto rounded bg-ink/60 p-3 text-xs text-parchment/85">
+                <pre className="overflow-auto rounded bg-ink/60 p-3 text-[13px] text-parchment/85">
                   {JSON.stringify(record, null, 2)}
                 </pre>
                 <div className="mt-2 flex items-center gap-2">
@@ -1408,9 +1408,9 @@ function LibraryCatalog({
   );
   return (
     <section className="mt-6">
-      <h2 className="mb-2 text-xs uppercase tracking-wide text-parchment/45">
+      <h2 className="mb-2 text-[13px] uppercase tracking-wide text-parchment/65">
         Available from libraries
-        <span className="ml-2 text-parchment/35 normal-case tracking-normal">
+        <span className="ml-2 text-parchment/55 normal-case tracking-normal">
           ({total} record{total === 1 ? "" : "s"} ready to import)
         </span>
       </h2>
@@ -1420,14 +1420,14 @@ function LibraryCatalog({
             key={entry.libraryId}
             className="overflow-auto rounded border border-parchment/10 bg-ink/20"
           >
-            <div className="border-b border-parchment/10 bg-ink/40 px-3 py-1 text-xs text-parchment/70">
+            <div className="border-b border-parchment/10 bg-ink/40 px-3 py-1 text-[13px] text-parchment/85">
               <span className="text-parchment/85">{entry.libraryId}</span>
-              <span className="ml-2 text-parchment/40">
+              <span className="ml-2 text-parchment/60">
                 ({entry.records.length} available)
               </span>
             </div>
             <table className="w-full text-left text-sm">
-              <thead className="text-parchment/55">
+              <thead className="text-parchment/75">
                 <tr>
                   {hasSpriteColumn ? (
                     <th className="w-12 px-2 py-1"></th>
@@ -1470,7 +1470,7 @@ function LibraryCatalog({
                         <button
                           type="button"
                           onClick={() => onImport(r)}
-                          className="rounded border border-ember/50 bg-ember/20 px-2 py-0.5 text-xs text-parchment hover:bg-ember/40"
+                          className="rounded border border-ember/50 bg-ember/20 px-2 py-0.5 text-[13px] text-parchment hover:bg-ember/40"
                           title={`Copy this record from ${entry.libraryId} into this module as a new record.`}
                         >
                           + Import

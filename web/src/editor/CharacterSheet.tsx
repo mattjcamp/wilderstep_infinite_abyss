@@ -126,13 +126,13 @@ export function CharacterSheet({
     <div className="space-y-4">
       {/* Identity ───────────────────────────────────────────── */}
       <section className="rounded border border-parchment/15 bg-ink/40 p-3">
-        <h3 className="mb-2 text-xs uppercase tracking-wide text-parchment/55">
+        <h3 className="mb-2 text-[13px] uppercase tracking-wide text-parchment/75">
           Identity
         </h3>
         <div className="grid gap-3 sm:grid-cols-[auto_1fr]">
           {/* Sprite */}
           <div className="block">
-            <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+            <span className="text-xs uppercase tracking-wide text-parchment/65">
               Sprite
             </span>
             <div className="mt-0.5">
@@ -146,7 +146,7 @@ export function CharacterSheet({
           {/* Name + ID + Gender stacked */}
           <div className="grid content-start gap-2">
             <label className="block">
-              <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+              <span className="text-xs uppercase tracking-wide text-parchment/65">
                 Name
               </span>
               <input
@@ -158,7 +158,7 @@ export function CharacterSheet({
               />
             </label>
             <label className="block">
-              <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+              <span className="text-xs uppercase tracking-wide text-parchment/65">
                 ID {lockId ? "(locked)" : ""}
               </span>
               <input
@@ -167,19 +167,19 @@ export function CharacterSheet({
                 readOnly={lockId}
                 onChange={(e) => patch({ id: e.target.value })}
                 placeholder="aldric"
-                className={`mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-xs text-parchment/90 ${
+                className={`mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-[13px] text-parchment/90 ${
                   lockId ? "cursor-not-allowed opacity-60" : ""
                 }`}
               />
             </label>
             <label className="block">
-              <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+              <span className="text-xs uppercase tracking-wide text-parchment/65">
                 Gender
               </span>
               <select
                 value={character.gender}
                 onChange={(e) => patch({ gender: e.target.value })}
-                className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+                className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
               >
                 {GENDERS.map((g) => (
                   <option key={g} value={g}>
@@ -203,18 +203,18 @@ export function CharacterSheet({
 
       {/* Lineage + Progression ────────────────────────────────── */}
       <section className="rounded border border-parchment/15 bg-ink/40 p-3">
-        <h3 className="mb-2 text-xs uppercase tracking-wide text-parchment/55">
+        <h3 className="mb-2 text-[13px] uppercase tracking-wide text-parchment/75">
           Lineage &amp; Progression
         </h3>
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="block">
-            <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+            <span className="text-xs uppercase tracking-wide text-parchment/65">
               Race
             </span>
             <select
               value={character.race}
               onChange={(e) => patch({ race: e.target.value })}
-              className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+              className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
             >
               {/* Allow legacy / unknown value to round-trip. */}
               {character.race &&
@@ -234,13 +234,13 @@ export function CharacterSheet({
             </select>
           </label>
           <label className="block">
-            <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+            <span className="text-xs uppercase tracking-wide text-parchment/65">
               Class
             </span>
             <select
               value={character.class}
               onChange={(e) => patch({ class: e.target.value })}
-              className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+              className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
             >
               {character.class &&
               !classes.some((c) => c.id === character.class) ? (
@@ -259,7 +259,7 @@ export function CharacterSheet({
             </select>
           </label>
           <label className="block">
-            <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+            <span className="text-xs uppercase tracking-wide text-parchment/65">
               Level
             </span>
             <input
@@ -269,11 +269,11 @@ export function CharacterSheet({
               onChange={(e) =>
                 patch({ level: Number(e.target.value) || 0 })
               }
-              className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+              className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
             />
           </label>
           <label className="block">
-            <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+            <span className="text-xs uppercase tracking-wide text-parchment/65">
               XP
             </span>
             <input
@@ -281,7 +281,7 @@ export function CharacterSheet({
               min={0}
               value={character.exp}
               onChange={(e) => patch({ exp: Number(e.target.value) || 0 })}
-              className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+              className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
             />
           </label>
         </div>
@@ -289,30 +289,30 @@ export function CharacterSheet({
 
       {/* Vitals + Ability stats ──────────────────────────────── */}
       <section className="rounded border border-parchment/15 bg-ink/40 p-3">
-        <h3 className="mb-2 text-xs uppercase tracking-wide text-parchment/55">
+        <h3 className="mb-2 text-[13px] uppercase tracking-wide text-parchment/75">
           Stats
         </h3>
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="block">
-            <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+            <span className="text-xs uppercase tracking-wide text-parchment/65">
               HP
             </span>
             <input
               type="number"
               value={character.hp}
               onChange={(e) => patch({ hp: Number(e.target.value) || 0 })}
-              className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+              className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
             />
           </label>
           <label className="block">
-            <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+            <span className="text-xs uppercase tracking-wide text-parchment/65">
               MP
             </span>
             <input
               type="number"
               value={character.mp}
               onChange={(e) => patch({ mp: Number(e.target.value) || 0 })}
-              className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+              className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
             />
           </label>
         </div>
@@ -330,7 +330,7 @@ export function CharacterSheet({
 
       {/* Equipped ───────────────────────────────────────────── */}
       <section className="rounded border border-parchment/15 bg-ink/40 p-3">
-        <h3 className="mb-2 text-xs uppercase tracking-wide text-parchment/55">
+        <h3 className="mb-2 text-[13px] uppercase tracking-wide text-parchment/75">
           Equipped
         </h3>
         <div className="grid gap-2 sm:grid-cols-2">
@@ -345,14 +345,14 @@ export function CharacterSheet({
           ))}
         </div>
         {items.length === 0 ? (
-          <p className="mt-2 text-[10px] text-parchment/40">
+          <p className="mt-2 text-xs text-parchment/60">
             (Item catalog unavailable — pickers fall back to the raw id.)
           </p>
         ) : null}
       </section>
 
       {/* Personal inventory note ──────────────────────────────── */}
-      <p className="text-[11px] text-parchment/45">
+      <p className="text-xs text-parchment/65">
         Personal inventory rounds through unchanged for now. The Hands +
         Body slots above edit <span className="font-mono">equipped</span>;
         the rest of the equipment ribbon (helmets, etc.) joins this sheet
@@ -395,14 +395,14 @@ function EquipSlotPicker({
 
   return (
     <label className="block">
-      <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+      <span className="text-xs uppercase tracking-wide text-parchment/65">
         {SLOT_LABELS[slot]}
       </span>
       <div className="mt-0.5 flex items-start gap-2">
         <select
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90 focus:border-parchment/60 focus:outline-none"
+          className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90 focus:border-parchment/60 focus:outline-none"
         >
           <option value="">(none)</option>
           {missing ? (
@@ -456,7 +456,7 @@ function StatField({
 }) {
   return (
     <label className="block">
-      <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+      <span className="text-xs uppercase tracking-wide text-parchment/65">
         {label}
       </span>
       <input
