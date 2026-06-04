@@ -4,7 +4,6 @@
   "title": "The Dragon's Lair",
   "description": "An ancient wyrm has woken in the mountains beyond Hallowmere. Forge the steel, gather the courage, and lay the dragon low — before its fire consumes the realm.",
   "author": "hyperbolic",
-  "version": "0.1.0",
-  "role": "playable",
+  "version": "0.2.0",
   "extends": "default"
 }
