@@ -25,7 +25,7 @@ export function Sidebar({ moduleId }: { moduleId: string }) {
           className={`block rounded px-2 py-1 text-sm transition ${
             active
               ? "bg-ember/30 text-parchment"
-              : "text-parchment/70 hover:bg-ink/40 hover:text-parchment"
+              : "text-parchment/85 hover:bg-ink/40 hover:text-parchment"
           }`}
         >
           {def.label}
@@ -38,7 +38,7 @@ export function Sidebar({ moduleId }: { moduleId: string }) {
     <aside className="w-56 shrink-0 overflow-y-auto border-r border-parchment/10 bg-ink/30 p-3">
       <Link
         href="/editor"
-        className="mb-1 block text-xs uppercase tracking-wide text-parchment/55 hover:text-parchment/85"
+        className="mb-1 block text-[13px] uppercase tracking-wide text-parchment/75 hover:text-parchment/85"
       >
         ← All modules
       </Link>
@@ -49,12 +49,12 @@ export function Sidebar({ moduleId }: { moduleId: string }) {
         {moduleId}
       </Link>
 
-      <p className="mb-1 mt-2 text-xs uppercase tracking-wide text-parchment/40">
+      <p className="mb-1 mt-2 text-[13px] uppercase tracking-wide text-parchment/60">
         Module data
       </p>
       <ul className="mb-4 space-y-0.5">{ALL_MODEL_KEYS.map(renderLink)}</ul>
 
-      <p className="mb-1 mt-2 text-xs uppercase tracking-wide text-parchment/40">
+      <p className="mb-1 mt-2 text-[13px] uppercase tracking-wide text-parchment/60">
         Assets
       </p>
       <ul className="space-y-0.5">
@@ -64,7 +64,7 @@ export function Sidebar({ moduleId }: { moduleId: string }) {
             className={`block rounded px-2 py-1 text-sm transition ${
               pathname === `/editor/${moduleId}/sprites`
                 ? "bg-ember/30 text-parchment"
-                : "text-parchment/70 hover:bg-ink/40 hover:text-parchment"
+                : "text-parchment/85 hover:bg-ink/40 hover:text-parchment"
             }`}
           >
             Sprites
@@ -76,7 +76,7 @@ export function Sidebar({ moduleId }: { moduleId: string }) {
             className={`block rounded px-2 py-1 text-sm transition ${
               pathname === `/editor/${moduleId}/soundtrack`
                 ? "bg-ember/30 text-parchment"
-                : "text-parchment/70 hover:bg-ink/40 hover:text-parchment"
+                : "text-parchment/85 hover:bg-ink/40 hover:text-parchment"
             }`}
           >
             Soundtrack
@@ -88,7 +88,7 @@ export function Sidebar({ moduleId }: { moduleId: string }) {
           sub-item launches a self-contained Phaser sim that exercises
           one slice of the runtime (battle screen, future
           encounter-balance / movement / lighting tests, etc.). */}
-      <p className="mb-1 mt-4 text-xs uppercase tracking-wide text-parchment/40">
+      <p className="mb-1 mt-4 text-[13px] uppercase tracking-wide text-parchment/60">
         Simulations
       </p>
       <ul className="space-y-0.5">
@@ -98,7 +98,7 @@ export function Sidebar({ moduleId }: { moduleId: string }) {
             className={`block rounded px-2 py-1 text-sm transition ${
               pathname === `/editor/${moduleId}/sim/battle`
                 ? "bg-ember/30 text-parchment"
-                : "text-parchment/70 hover:bg-ink/40 hover:text-parchment"
+                : "text-parchment/85 hover:bg-ink/40 hover:text-parchment"
             }`}
           >
             Battle

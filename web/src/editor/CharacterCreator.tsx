@@ -359,7 +359,7 @@ export function CharacterCreator({
         <button
           type="button"
           onClick={onCancel}
-          className="text-sm text-parchment/55 hover:text-parchment/90"
+          className="text-sm text-parchment/75 hover:text-parchment/90"
         >
           ← Cancel
         </button>
@@ -502,7 +502,7 @@ function Step1Name({
 }) {
   return (
     <section>
-      <h3 className="mb-2 text-xs uppercase tracking-wide text-parchment/55">
+      <h3 className="mb-2 text-[13px] uppercase tracking-wide text-parchment/75">
         Name
       </h3>
       <input
@@ -511,9 +511,9 @@ function Step1Name({
         onChange={(e) => onNameChange(e.target.value)}
         placeholder="Aldric"
         autoFocus
-        className="w-full rounded border border-parchment/20 bg-ink/50 px-3 py-2 text-lg text-parchment/95 placeholder:text-parchment/40 focus:border-parchment/60 focus:outline-none"
+        className="w-full rounded border border-parchment/20 bg-ink/50 px-3 py-2 text-lg text-parchment/95 placeholder:text-parchment/60 focus:border-parchment/60 focus:outline-none"
       />
-      <p className="mt-2 text-xs text-parchment/45">
+      <p className="mt-2 text-[13px] text-parchment/65">
         The id is derived from the name (snake_case, e.g. "Aldric Bren" →{" "}
         <code>aldric_bren</code>). You can rename later in the
         character sheet.
@@ -543,7 +543,7 @@ function Step2RaceGender({
   return (
     <section className="space-y-5">
       <div>
-        <h3 className="mb-2 text-xs uppercase tracking-wide text-parchment/55">
+        <h3 className="mb-2 text-[13px] uppercase tracking-wide text-parchment/75">
           Race
         </h3>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
@@ -567,16 +567,16 @@ function Step2RaceGender({
           {races.map((r) => (
             <div
               key={`${r.id}-mods`}
-              className={`rounded border px-2 py-1 text-center text-[10px] ${
+              className={`rounded border px-2 py-1 text-center text-xs ${
                 r.id === raceId
                   ? "border-parchment/15 bg-ink/40 text-parchment/75"
-                  : "border-parchment/10 bg-ink/30 text-parchment/40"
+                  : "border-parchment/10 bg-ink/30 text-parchment/60"
               }`}
             >
               <div className="font-mono text-sm leading-tight">
                 {fmtModsLine(r.stat_modifiers)}
               </div>
-              <div className="mt-0.5 uppercase tracking-wide text-parchment/40">
+              <div className="mt-0.5 uppercase tracking-wide text-parchment/60">
                 STR · DEX · CON · INT · WIS
               </div>
             </div>
@@ -589,7 +589,7 @@ function Step2RaceGender({
       ) : null}
 
       <div>
-        <h3 className="mb-2 text-xs uppercase tracking-wide text-parchment/55">
+        <h3 className="mb-2 text-[13px] uppercase tracking-wide text-parchment/75">
           Gender
         </h3>
         <div className="flex gap-2">
@@ -628,11 +628,11 @@ function RaceLoreCard({
         {race.name ?? race.id}
       </h4>
       {race.description ? (
-        <p className="mt-1 italic text-parchment/70">{race.description}</p>
+        <p className="mt-1 italic text-parchment/85">{race.description}</p>
       ) : null}
       {ability ? (
         <div className="mt-3">
-          <p className="text-[10px] uppercase tracking-wide text-parchment/45">
+          <p className="text-xs uppercase tracking-wide text-parchment/65">
             Innate Ability
           </p>
           <p className="mt-1 text-sm text-parchment/85">
@@ -673,7 +673,7 @@ function Step3Class({
   return (
     <section className="space-y-5">
       <div>
-        <h3 className="mb-2 text-xs uppercase tracking-wide text-parchment/55">
+        <h3 className="mb-2 text-[13px] uppercase tracking-wide text-parchment/75">
           Class
         </h3>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -694,7 +694,7 @@ function Step3Class({
                   c.id === classId
                     ? "border-ember/60 bg-ember/20 text-parchment"
                     : !allowed
-                      ? "cursor-not-allowed border-parchment/10 bg-ink/30 text-parchment/30"
+                      ? "cursor-not-allowed border-parchment/10 bg-ink/30 text-parchment/50"
                       : "border-parchment/20 bg-ink/40 text-parchment/85 hover:border-parchment/40 hover:bg-ink/60"
                 }`}
               >
@@ -724,11 +724,11 @@ function ClassLoreCard({
         {klass.name ?? klass.id}
       </h4>
       {klass.description ? (
-        <p className="mt-1 italic text-parchment/70">{klass.description}</p>
+        <p className="mt-1 italic text-parchment/85">{klass.description}</p>
       ) : null}
       {(klass.abilities ?? []).length > 0 ? (
         <div className="mt-3">
-          <p className="text-[10px] uppercase tracking-wide text-parchment/45">
+          <p className="text-xs uppercase tracking-wide text-parchment/65">
             Class Abilities
           </p>
           <ul className="mt-1 space-y-1">
@@ -740,7 +740,7 @@ function ClassLoreCard({
                     {ab?.name ?? link.ability_id}
                   </span>
                   {link.min_level && link.min_level > 1 ? (
-                    <span className="ml-1 text-xs text-parchment/55">
+                    <span className="ml-1 text-[13px] text-parchment/75">
                       (Level {link.min_level}+)
                     </span>
                   ) : null}
@@ -756,7 +756,7 @@ function ClassLoreCard({
           </ul>
         </div>
       ) : (
-        <p className="mt-3 text-[11px] text-parchment/45">
+        <p className="mt-3 text-xs text-parchment/65">
           No class abilities — this class earns its keep through stats
           and equipment alone.
         </p>
@@ -804,7 +804,7 @@ function Step4Sprite({
 
   return (
     <section>
-      <h3 className="mb-2 text-xs uppercase tracking-wide text-parchment/55">
+      <h3 className="mb-2 text-[13px] uppercase tracking-wide text-parchment/75">
         Sprite
       </h3>
       {error ? (
@@ -812,7 +812,7 @@ function Step4Sprite({
           Failed to load sprite index: {error}
         </p>
       ) : !index ? (
-        <p className="text-sm text-parchment/55">Loading sprites…</p>
+        <p className="text-sm text-parchment/75">Loading sprites…</p>
       ) : (
         <div className="max-h-96 overflow-auto rounded border border-parchment/15 bg-ink/30 p-3">
           <ul className="grid grid-cols-[repeat(auto-fill,minmax(64px,1fr))] gap-2">
@@ -839,7 +839,7 @@ function Step4Sprite({
                       style={{ imageRendering: "pixelated" }}
                       className="h-12 w-12 object-contain"
                     />
-                    <span className="w-full truncate text-[10px] text-parchment/65">
+                    <span className="w-full truncate text-xs text-parchment/80">
                       {s.stem}
                     </span>
                   </button>
@@ -850,11 +850,11 @@ function Step4Sprite({
         </div>
       )}
       {sprite ? (
-        <p className="mt-2 text-xs text-parchment/55">
+        <p className="mt-2 text-[13px] text-parchment/75">
           Selected: <code className="font-mono">{sprite}</code>
         </p>
       ) : (
-        <p className="mt-2 text-xs text-parchment/45">
+        <p className="mt-2 text-[13px] text-parchment/65">
           Pick a sprite for your character (you can change it later).
         </p>
       )}
@@ -877,7 +877,7 @@ function Step5Stats({
 }) {
   return (
     <section>
-      <h3 className="mb-2 text-xs uppercase tracking-wide text-parchment/55">
+      <h3 className="mb-2 text-[13px] uppercase tracking-wide text-parchment/75">
         Distribute Stats
       </h3>
       <p className="mb-3 text-sm text-parchment/75">
@@ -899,7 +899,7 @@ function Step5Stats({
         >
           {pointsLeft}
         </span>
-        <span className="ml-2 text-parchment/50">of {BONUS_POINTS}</span>
+        <span className="ml-2 text-parchment/70">of {BONUS_POINTS}</span>
       </p>
       <ul className="space-y-2">
         {STAT_KEYS.map((k) => {
@@ -913,7 +913,7 @@ function Step5Stats({
               key={k}
               className="grid grid-cols-[80px_auto_60px_auto_120px] items-center gap-3 rounded border border-parchment/10 bg-ink/30 p-2"
             >
-              <span className="text-sm font-mono uppercase text-parchment/65">
+              <span className="text-sm font-mono uppercase text-parchment/80">
                 {STAT_LABELS[k]}
               </span>
               <button
@@ -935,21 +935,21 @@ function Step5Stats({
               >
                 +
               </button>
-              <span className="text-right text-xs text-parchment/55">
+              <span className="text-right text-[13px] text-parchment/75">
                 {mod !== 0 ? (
                   <>
                     + race {fmtMod(mod)} ={" "}
                     <span className="text-parchment/90">{total}</span>
                   </>
                 ) : (
-                  <span className="text-parchment/40">no racial mod</span>
+                  <span className="text-parchment/60">no racial mod</span>
                 )}
               </span>
             </li>
           );
         })}
       </ul>
-      <p className="mt-3 text-[11px] text-parchment/45">
+      <p className="mt-3 text-xs text-parchment/65">
         Tip: maxing one stat costs 10 points, leaving 5 to scatter. A
         flat spread of +3 per stat is the alternative — pick a real
         primary or a generalist, but not both.
@@ -988,7 +988,7 @@ function Step6Confirm({
   const mods = (race?.stat_modifiers ?? {}) as Partial<Record<StatKey, number>>;
   return (
     <section className="space-y-4">
-      <h3 className="mb-2 text-xs uppercase tracking-wide text-parchment/55">
+      <h3 className="mb-2 text-[13px] uppercase tracking-wide text-parchment/75">
         Confirm
       </h3>
       <div className="flex gap-4 rounded border border-parchment/15 bg-ink/40 p-4">
@@ -1012,19 +1012,19 @@ function Step6Confirm({
           <p className="text-sm text-parchment/75">
             Level 1 {klass?.name ?? classId} · {race?.name ?? raceId} · {gender}
           </p>
-          <p className="mt-1 font-mono text-xs text-parchment/55">
+          <p className="mt-1 font-mono text-[13px] text-parchment/75">
             id: <span className="text-parchment/80">{slugify(name)}</span>
           </p>
           <p className="mt-2 text-sm text-parchment/85">
-            <span className="text-parchment/60">HP</span>{" "}
+            <span className="text-parchment/80">HP</span>{" "}
             <span className="font-mono">{startingHp}</span>
-            <span className="ml-3 text-parchment/60">MP</span>{" "}
+            <span className="ml-3 text-parchment/80">MP</span>{" "}
             <span className="font-mono">{startingMp}</span>
           </p>
         </div>
       </div>
       <div className="rounded border border-parchment/15 bg-ink/40 p-4">
-        <p className="mb-2 text-[10px] uppercase tracking-wide text-parchment/45">
+        <p className="mb-2 text-xs uppercase tracking-wide text-parchment/65">
           Final stats (base + racial mod)
         </p>
         <ul className="grid grid-cols-5 gap-2">
@@ -1037,11 +1037,11 @@ function Step6Confirm({
                 key={k}
                 className="rounded border border-parchment/10 bg-ink/50 px-2 py-1 text-center"
               >
-                <p className="text-[10px] uppercase tracking-wide text-parchment/55">
+                <p className="text-xs uppercase tracking-wide text-parchment/75">
                   {STAT_LABELS[k]}
                 </p>
                 <p className="font-mono text-2xl text-parchment">{total}</p>
-                <p className="text-[10px] text-parchment/45">
+                <p className="text-xs text-parchment/65">
                   {base}
                   {mod !== 0 ? ` ${fmtMod(mod)}` : ""}
                 </p>

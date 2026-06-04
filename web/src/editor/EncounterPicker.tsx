@@ -133,7 +133,7 @@ export function EncounterPicker({
           className="flex flex-1 items-center gap-2 rounded border border-parchment/20 bg-ink/40 px-2 py-1 text-left text-sm text-parchment hover:bg-ink/60"
           aria-expanded={open}
         >
-          <span className="text-parchment/40">{open ? "▾" : "▸"}</span>
+          <span className="text-parchment/60">{open ? "▾" : "▸"}</span>
           {current?.monster_party_tile ? (
             <SpriteThumb
               path={current.monster_party_tile}
@@ -146,7 +146,7 @@ export function EncounterPicker({
           <button
             type="button"
             onClick={() => onChange("")}
-            className="rounded border border-parchment/20 px-2 py-1 text-xs text-parchment/70 hover:bg-ink/40"
+            className="rounded border border-parchment/20 px-2 py-1 text-[13px] text-parchment/85 hover:bg-ink/40"
             title="Clear the encounter selection."
           >
             ✕
@@ -157,10 +157,10 @@ export function EncounterPicker({
       {open ? (
         <div className="mt-1 max-h-64 overflow-auto rounded border border-parchment/15 bg-ink/60 p-2">
           {state.kind === "loading" ? (
-            <p className="text-xs text-parchment/50">Loading encounters…</p>
+            <p className="text-[13px] text-parchment/70">Loading encounters…</p>
           ) : null}
           {state.kind === "error" ? (
-            <p className="text-xs text-ember">
+            <p className="text-[13px] text-ember">
               Couldn&apos;t load encounters.json: {state.message}
             </p>
           ) : null}
@@ -180,7 +180,7 @@ export function EncounterPicker({
                   }`}
                 >
                   <span className="inline-block h-6 w-6 shrink-0" />
-                  <span className="font-mono text-parchment/50">(none)</span>
+                  <span className="font-mono text-parchment/70">(none)</span>
                 </button>
               </li>
               {state.encounters.map((e) => {
@@ -213,17 +213,17 @@ export function EncounterPicker({
                           <span className="font-medium">
                             {e.name ?? e.id}
                           </span>
-                          <span className="font-mono text-[10px] text-parchment/45">
+                          <span className="font-mono text-xs text-parchment/65">
                             {e.id}
                           </span>
                         </span>
                         {tail ? (
-                          <span className="block text-[11px] text-parchment/55">
+                          <span className="block text-xs text-parchment/75">
                             {tail}
                           </span>
                         ) : null}
                         {e.monsters && e.monsters.length > 0 ? (
-                          <span className="block font-mono text-[10px] text-parchment/45">
+                          <span className="block font-mono text-xs text-parchment/65">
                             {e.monsters.join(", ")}
                           </span>
                         ) : null}

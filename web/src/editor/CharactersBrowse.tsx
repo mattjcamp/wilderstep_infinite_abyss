@@ -286,13 +286,13 @@ export function CharactersBrowse({ moduleId }: { moduleId: string }) {
 
   // ── Render ─────────────────────────────────────────────────────
   if (state.kind === "loading") {
-    return <p className="p-4 text-parchment/60">Loading characters…</p>;
+    return <p className="p-4 text-parchment/80">Loading characters…</p>;
   }
   if (state.kind === "error") {
     return (
       <div className="p-4">
         <p className="text-ember">Failed to load characters.</p>
-        <p className="mt-2 font-mono text-sm text-parchment/60">
+        <p className="mt-2 font-mono text-sm text-parchment/80">
           {state.message}
         </p>
       </div>
@@ -315,15 +315,15 @@ export function CharactersBrowse({ moduleId }: { moduleId: string }) {
       <header className="flex flex-wrap items-baseline justify-between gap-3">
         <div>
           <h1 className="font-display text-3xl text-parchment">Characters</h1>
-          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-parchment/60">
+          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-parchment/80">
             <span>
               {state.characters.length} character
               {state.characters.length === 1 ? "" : "s"}
             </span>
-            <span className="text-parchment/40">·</span>
+            <span className="text-parchment/60">·</span>
             <span>{FILE_NAME}</span>
             {state.isDraft ? (
-              <span className="rounded bg-ember/30 px-2 py-0.5 text-xs text-parchment/90">
+              <span className="rounded bg-ember/30 px-2 py-0.5 text-[13px] text-parchment/90">
                 draft active
               </span>
             ) : null}
@@ -343,7 +343,7 @@ export function CharactersBrowse({ moduleId }: { moduleId: string }) {
             <button
               type="button"
               onClick={onDiscardDraft}
-              className="rounded border border-parchment/20 px-3 py-1 text-sm text-parchment/70 hover:bg-ink/40"
+              className="rounded border border-parchment/20 px-3 py-1 text-sm text-parchment/85 hover:bg-ink/40"
             >
               Discard
             </button>
@@ -401,7 +401,7 @@ export function CharactersBrowse({ moduleId }: { moduleId: string }) {
                   onClick={() => toggleExpanded(c.id)}
                   className="flex min-w-0 flex-1 items-center gap-2 text-left text-sm text-parchment hover:text-parchment/100"
                 >
-                  <span className="text-parchment/55">
+                  <span className="text-parchment/75">
                     {isOpen ? "▾" : "▸"}
                   </span>
                   {thumb ? (
@@ -418,21 +418,21 @@ export function CharactersBrowse({ moduleId }: { moduleId: string }) {
                     <span className="h-6 w-6 shrink-0 rounded border border-parchment/20 bg-ink/80" />
                   )}
                   <span className="font-display">{c.name || c.id}</span>
-                  <span className="font-mono text-xs text-parchment/45">
+                  <span className="font-mono text-[13px] text-parchment/65">
                     {c.id}
                   </span>
-                  <span className="text-xs text-parchment/45">
+                  <span className="text-[13px] text-parchment/65">
                     · L{c.level} {klassLabel} · {raceLabel}{" "}
                     {c.gender ? `· ${c.gender}` : ""}
                   </span>
-                  <span className="ml-2 text-xs text-parchment/40">
+                  <span className="ml-2 text-[13px] text-parchment/60">
                     HP {c.hp} · MP {c.mp}
                   </span>
                 </button>
                 <button
                   type="button"
                   onClick={() => onDelete(c.id)}
-                  className="rounded border border-parchment/20 px-2 py-0.5 text-xs text-parchment/60 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
+                  className="rounded border border-parchment/20 px-2 py-0.5 text-[13px] text-parchment/80 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
                   title="Delete this character."
                 >
                   Delete
@@ -450,7 +450,7 @@ export function CharactersBrowse({ moduleId }: { moduleId: string }) {
                   <div>
                     <h3 className="mb-1 px-1 font-display text-sm text-parchment/80">
                       In-Game Character Sheet{" "}
-                      <span className="text-xs text-parchment/45">
+                      <span className="text-[13px] text-parchment/65">
                         (preview — same view the Party screen drills into)
                       </span>
                     </h3>
@@ -470,7 +470,7 @@ export function CharactersBrowse({ moduleId }: { moduleId: string }) {
         })}
       </ul>
       {state.characters.length === 0 ? (
-        <p className="mt-6 text-sm text-parchment/55">
+        <p className="mt-6 text-sm text-parchment/75">
           No characters yet. Click <strong>+ New Character</strong> to create
           one.
         </p>

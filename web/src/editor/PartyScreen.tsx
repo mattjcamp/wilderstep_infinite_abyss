@@ -1066,7 +1066,7 @@ export function PartyScreen({
     // Enter "didn't toggle the effect" — the actual cause was that
     // focus had drifted to the stash without a clear visual cue).
     return [
-      "text-xs uppercase tracking-wide pl-2 -ml-2",
+      "text-[13px] uppercase tracking-wide pl-2 -ml-2",
       focused
         ? "border-l-2 border-amber-200 text-amber-200"
         : "border-l-2 border-transparent text-amber-300/70",
@@ -1122,7 +1122,7 @@ export function PartyScreen({
             </h3>
             <ul className="mt-1 space-y-0.5">
               {effectRows.length === 0 ? (
-                <li className="text-xs text-parchment/50">
+                <li className="text-[13px] text-parchment/70">
                   (no party effects available — roster doesn&apos;t
                   unlock any)
                 </li>
@@ -1159,11 +1159,11 @@ export function PartyScreen({
                       {row.active ? (
                         <span className="text-amber-300">●</span>
                       ) : (
-                        <span className="text-parchment/40">○</span>
+                        <span className="text-parchment/60">○</span>
                       )}
                       <span>{row.ability.name ?? row.ability.id}</span>
                       {row.durationSteps !== undefined ? (
-                        <span className="ml-auto font-mono text-[11px] text-parchment/55">
+                        <span className="ml-auto font-mono text-xs text-parchment/75">
                           {row.durationSteps}{" "}
                           {row.durationSteps === 1 ? "step" : "steps"}
                         </span>
@@ -1185,7 +1185,7 @@ export function PartyScreen({
           <section>
             <h3 className={sectionHeaderClass("stash")}>
               {focusZone === "stash" ? "▸ " : ""}Shared Stash{" "}
-              <span className="text-parchment/45">
+              <span className="text-parchment/65">
                 ({stashEntries.length} items)
               </span>
             </h3>
@@ -1196,7 +1196,7 @@ export function PartyScreen({
               aria-label="Shared stash"
             >
               {stashEntries.length === 0 ? (
-                <li className="text-xs text-parchment/45">(empty)</li>
+                <li className="text-[13px] text-parchment/65">(empty)</li>
               ) : null}
               {stashEntries.map((entry, i) => {
                 const label =
@@ -1258,7 +1258,7 @@ export function PartyScreen({
                       }
                     >
                       <span className="truncate">{label}</span>
-                      <span className="ml-auto flex shrink-0 items-center gap-2 text-xs text-parchment/55">
+                      <span className="ml-auto flex shrink-0 items-center gap-2 text-[13px] text-parchment/75">
                         {showDur ? (
                           <DurabilityBar current={durCur} max={durMax} />
                         ) : null}
@@ -1276,7 +1276,7 @@ export function PartyScreen({
               stash is empty so we don't render an empty action panel. */}
           {selectedStashEntry && selectedStashName ? (
             <section className="rounded border border-parchment/15 bg-ink/30 p-2">
-              <h3 className="text-xs uppercase tracking-wide text-amber-300">
+              <h3 className="text-[13px] uppercase tracking-wide text-amber-300">
                 Stash Item
               </h3>
               <div className="mt-1 space-y-1 text-sm">
@@ -1285,19 +1285,19 @@ export function PartyScreen({
                     {selectedStashName}
                   </span>
                   {selectedStashEntry.charges != null ? (
-                    <span className="text-[11px] text-parchment/55">
+                    <span className="text-xs text-parchment/75">
                       ×{selectedStashEntry.charges}
                     </span>
                   ) : null}
                 </div>
                 {stashMode === "examine" ? (
-                  <p className="text-xs text-parchment/75">
+                  <p className="text-[13px] text-parchment/75">
                     {selectedStashCatalog?.description ??
                       "(no description in items.json)"}
                   </p>
                 ) : null}
                 {stashMode === "send" ? (
-                  <p className="text-xs text-amber-300">
+                  <p className="text-[13px] text-amber-300">
                     Send to which character? ↑↓ to pick + Enter, or
                     press 1–{members.length}, or click a roster card.
                     Esc cancels.
@@ -1360,7 +1360,7 @@ export function PartyScreen({
                     <button
                       type="button"
                       onClick={() => setStashMode("none")}
-                      className="rounded border border-parchment/30 bg-ink/40 px-2 py-0.5 text-xs text-parchment/75 hover:bg-ink/60"
+                      className="rounded border border-parchment/30 bg-ink/40 px-2 py-0.5 text-[13px] text-parchment/75 hover:bg-ink/60"
                     >
                       Cancel
                     </button>
@@ -1380,7 +1380,7 @@ export function PartyScreen({
             </h3>
             <ul className="mt-1 space-y-1">
               {members.length === 0 ? (
-                <li className="text-xs text-parchment/50">
+                <li className="text-[13px] text-parchment/70">
                   (no roster — check party.json)
                 </li>
               ) : null}
@@ -1458,7 +1458,7 @@ export function PartyScreen({
 
           {/* AVAILABLE EFFECT — detail of the selected row */}
           <section className="rounded border border-parchment/15 bg-ink/30 p-2">
-            <h3 className="text-xs uppercase tracking-wide text-amber-300">
+            <h3 className="text-[13px] uppercase tracking-wide text-amber-300">
               Available Effect
             </h3>
             {selectedRow ? (
@@ -1466,13 +1466,13 @@ export function PartyScreen({
                 <div className="font-display text-parchment">
                   {selectedRow.ability.name ?? selectedRow.ability.id}
                 </div>
-                <p className="text-xs text-parchment/75">
+                <p className="text-[13px] text-parchment/75">
                   {selectedRow.ability.description ?? "(no description)"}
                 </p>
-                <div className="text-[11px] text-parchment/55">
+                <div className="text-xs text-parchment/75">
                   Duration: {fmtDuration(selectedRow.ability.duration)}
                 </div>
-                <div className="text-[11px] text-parchment/55">
+                <div className="text-xs text-parchment/75">
                   Requires:{" "}
                   {requirementsFor(
                     selectedRow.ability.id,
@@ -1483,7 +1483,7 @@ export function PartyScreen({
                 <button
                   type="button"
                   onClick={() => toggleActive(selectedRow.ability.id, true)}
-                  className="mt-1 rounded border border-ember/60 bg-ember/30 px-2 py-0.5 text-xs text-parchment hover:bg-ember/50"
+                  className="mt-1 rounded border border-ember/60 bg-ember/30 px-2 py-0.5 text-[13px] text-parchment hover:bg-ember/50"
                 >
                   {selectedRow.active
                     ? "Remove from active"
@@ -1491,7 +1491,7 @@ export function PartyScreen({
                 </button>
               </div>
             ) : (
-              <p className="mt-1 text-xs text-parchment/45">
+              <p className="mt-1 text-[13px] text-parchment/65">
                 Select an effect on the left to see its details.
               </p>
             )}
@@ -1500,7 +1500,7 @@ export function PartyScreen({
           {/* Gold + stash totals */}
           <section className="flex items-center justify-between rounded border border-parchment/15 bg-ink/30 px-2 py-1 text-sm">
             <span className="text-amber-300">GOLD: {party.gold ?? 0}</span>
-            <span className="text-parchment/55">
+            <span className="text-parchment/75">
               STASH: {party.inventory?.length ?? 0}
             </span>
           </section>
@@ -1509,7 +1509,7 @@ export function PartyScreen({
 
       {/* Bottom hint bar. Reflects whichever mode is active so the
           player isn't hunting for which keys do what. */}
-      <div className="border-t border-parchment/15 pt-1 text-center font-mono text-[10px] uppercase tracking-wider text-parchment/45">
+      <div className="border-t border-parchment/15 pt-1 text-center font-mono text-xs uppercase tracking-wider text-parchment/65">
         {stashMode === "send"
           ? `Press 1-${members.length} or click a roster card · ESC to cancel`
           : stashMode === "examine"
@@ -1557,10 +1557,10 @@ function ActionButton({
       disabled={!enabled}
       title={hint}
       className={[
-        "rounded border px-2 py-0.5 text-xs",
+        "rounded border px-2 py-0.5 text-[13px]",
         enabled
           ? "border-ember/60 bg-ember/30 text-parchment hover:bg-ember/50"
-          : "cursor-not-allowed border-parchment/15 bg-ink/40 text-parchment/35",
+          : "cursor-not-allowed border-parchment/15 bg-ink/40 text-parchment/55",
         focused
           ? "ring-1 ring-amber-200 ring-offset-1 ring-offset-ink/60"
           : "",
@@ -1727,11 +1727,11 @@ function RosterCard({
           <span className="text-amber-300">{slotNumber}</span>
           <span className="font-display text-parchment">{member.name}</span>
         </div>
-        <div className="text-[11px] text-parchment/70">
+        <div className="text-xs text-parchment/85">
           {className_} · {raceName}
           {member.gender ? ` · ${member.gender}` : ""}
         </div>
-        <div className="mt-1 grid grid-cols-3 gap-1 font-mono text-[10px] text-parchment/65">
+        <div className="mt-1 grid grid-cols-3 gap-1 font-mono text-xs text-parchment/80">
           <Bar
             label="HP"
             value={hp}
@@ -1752,7 +1752,7 @@ function RosterCard({
             color="bg-amber-400/60"
           />
         </div>
-        <div className="mt-0.5 font-mono text-[10px] text-parchment/50">
+        <div className="mt-0.5 font-mono text-xs text-parchment/70">
           LVL {member.level} · HP {hp}/{maxHp} · MP {mp}/{maxMp} · XP {xpInto}/
           {xpNeeded}
         </div>
@@ -1805,7 +1805,7 @@ function Bar({
   const pct = empty ? 0 : Math.max(0, Math.min(100, (value / max) * 100));
   return (
     <div className="flex flex-col">
-      <span className="text-parchment/45">{label}</span>
+      <span className="text-parchment/65">{label}</span>
       <span className="h-1.5 w-full overflow-hidden rounded bg-ink/70">
         <span
           className={`block h-full ${color}`}

@@ -218,14 +218,14 @@ export function MapPartyScreenOverlay({
         <div className="flex items-center justify-between border-b border-parchment/15 px-3 py-1.5">
           <h2 className="font-display text-base text-parchment">
             Party Screen{" "}
-            <span className="text-xs text-parchment/45">
+            <span className="text-[13px] text-parchment/65">
               (sim preview)
             </span>
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="rounded border border-parchment/20 px-2 py-0.5 text-xs text-parchment/70 hover:bg-ink/40"
+            className="rounded border border-parchment/20 px-2 py-0.5 text-[13px] text-parchment/85 hover:bg-ink/40"
             title="Close (P or ESC)"
           >
             Close
@@ -233,7 +233,7 @@ export function MapPartyScreenOverlay({
         </div>
         <div className="p-3">
           {state.kind === "loading" ? (
-            <p className="text-sm text-parchment/55">Loading party…</p>
+            <p className="text-sm text-parchment/75">Loading party…</p>
           ) : state.kind === "error" ? (
             <p className="text-sm text-ember">{state.message}</p>
           ) : (

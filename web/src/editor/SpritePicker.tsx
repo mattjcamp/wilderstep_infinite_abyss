@@ -103,12 +103,12 @@ export function SpritePicker({
               ? `e.g., ${config.category}/<stem>`
               : `${config.category}/<file>.png`
           }
-          className="flex-1 rounded border border-parchment/20 bg-ink/40 px-2 py-1 text-sm text-parchment placeholder:text-parchment/30 focus:border-parchment/60 focus:outline-none"
+          className="flex-1 rounded border border-parchment/20 bg-ink/40 px-2 py-1 text-sm text-parchment placeholder:text-parchment/50 focus:border-parchment/60 focus:outline-none"
         />
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
-          className="rounded border border-parchment/30 px-2 py-1 text-xs text-parchment/85 hover:bg-ink/40"
+          className="rounded border border-parchment/30 px-2 py-1 text-[13px] text-parchment/85 hover:bg-ink/40"
         >
           {open ? "Done" : "Pick…"}
         </button>
@@ -116,7 +116,7 @@ export function SpritePicker({
           <button
             type="button"
             onClick={() => onChange("")}
-            className="rounded border border-parchment/20 px-2 py-1 text-xs text-parchment/60 hover:bg-ink/40"
+            className="rounded border border-parchment/20 px-2 py-1 text-[13px] text-parchment/80 hover:bg-ink/40"
             title="Clear this sprite reference"
           >
             ✕
@@ -132,17 +132,17 @@ export function SpritePicker({
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
               placeholder="filter by name…"
-              className="flex-1 rounded border border-parchment/20 bg-ink/60 px-2 py-1 text-xs text-parchment placeholder:text-parchment/30 focus:border-parchment/60 focus:outline-none"
+              className="flex-1 rounded border border-parchment/20 bg-ink/60 px-2 py-1 text-[13px] text-parchment placeholder:text-parchment/50 focus:border-parchment/60 focus:outline-none"
             />
-            <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+            <span className="text-xs uppercase tracking-wide text-parchment/65">
               default: {config.category}
             </span>
           </div>
 
           {indexState.kind === "loading" ? (
-            <p className="text-xs text-parchment/55">Loading sprites…</p>
+            <p className="text-[13px] text-parchment/75">Loading sprites…</p>
           ) : indexState.kind === "error" ? (
-            <p className="text-xs text-ember/80">
+            <p className="text-[13px] text-ember/80">
               Failed to load sprite index: {indexState.message}
             </p>
           ) : indexState.kind === "ok" ? (
@@ -191,7 +191,7 @@ function SpriteGrid({
           if (filtered.length === 0) return null;
           return (
             <section key={cat}>
-              <h3 className="mb-1 text-[10px] uppercase tracking-wide text-parchment/45">
+              <h3 className="mb-1 text-xs uppercase tracking-wide text-parchment/65">
                 {cat} · {filtered.length}
                 {filtered.length !== files.length ? ` of ${files.length}` : ""}
               </h3>
@@ -226,7 +226,7 @@ function SpriteGrid({
                           style={{ imageRendering: "pixelated" }}
                           className="h-10 w-10 object-contain"
                         />
-                        <span className="w-full truncate text-[10px] text-parchment/65">
+                        <span className="w-full truncate text-xs text-parchment/80">
                           {stem}
                         </span>
                       </button>

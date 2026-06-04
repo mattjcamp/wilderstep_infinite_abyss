@@ -138,14 +138,14 @@ export function CounterPicker({
           className="flex-1 rounded border border-parchment/20 bg-ink/40 px-2 py-1 text-left text-sm text-parchment hover:bg-ink/60"
           aria-expanded={open}
         >
-          <span className="text-parchment/40 mr-1">{open ? "▾" : "▸"}</span>
+          <span className="text-parchment/60 mr-1">{open ? "▾" : "▸"}</span>
           {summary}
         </button>
         {value ? (
           <button
             type="button"
             onClick={() => onChange("")}
-            className="rounded border border-parchment/20 px-2 py-1 text-xs text-parchment/70 hover:bg-ink/40"
+            className="rounded border border-parchment/20 px-2 py-1 text-[13px] text-parchment/85 hover:bg-ink/40"
             title="Clear the counter reference."
           >
             ✕
@@ -156,10 +156,10 @@ export function CounterPicker({
       {open ? (
         <div className="mt-1 max-h-64 overflow-auto rounded border border-parchment/15 bg-ink/60 p-2">
           {state.kind === "loading" ? (
-            <p className="text-xs text-parchment/50">Loading counters…</p>
+            <p className="text-[13px] text-parchment/70">Loading counters…</p>
           ) : null}
           {state.kind === "error" ? (
-            <p className="text-xs text-ember">
+            <p className="text-[13px] text-ember">
               Couldn&apos;t load counters.json: {state.message}
             </p>
           ) : null}
@@ -178,8 +178,8 @@ export function CounterPicker({
                       : "text-parchment/75 hover:bg-ink/40"
                   }`}
                 >
-                  <span className="font-mono text-parchment/50">(none)</span>{" "}
-                  <span className="text-parchment/45">
+                  <span className="font-mono text-parchment/70">(none)</span>{" "}
+                  <span className="text-parchment/65">
                     — NPC has nothing to sell
                   </span>
                 </button>
@@ -205,17 +205,17 @@ export function CounterPicker({
                         <span className="font-medium">
                           {c.name ?? c.id}
                         </span>
-                        <span className="font-mono text-[10px] text-parchment/45">
+                        <span className="font-mono text-xs text-parchment/65">
                           {c.id}
                         </span>
                       </div>
                       {tail ? (
-                        <div className="text-[11px] text-parchment/50">
+                        <div className="text-xs text-parchment/70">
                           {tail}
                         </div>
                       ) : null}
                       {c.description ? (
-                        <div className="text-[11px] text-parchment/45">
+                        <div className="text-xs text-parchment/65">
                           {c.description}
                         </div>
                       ) : null}

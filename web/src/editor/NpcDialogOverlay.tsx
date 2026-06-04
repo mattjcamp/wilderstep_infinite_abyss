@@ -128,12 +128,12 @@ export function NpcDialogOverlay({
             <h2 className="font-display text-xl text-parchment">
               {npc.name || npc.id}
             </h2>
-            <p className="font-mono text-[10px] text-parchment/40">{npc.id}</p>
+            <p className="font-mono text-xs text-parchment/60">{npc.id}</p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded border border-parchment/20 px-2 py-1 text-xs text-parchment/70 hover:bg-ink/40"
+            className="rounded border border-parchment/20 px-2 py-1 text-[13px] text-parchment/85 hover:bg-ink/40"
             title="Leave (Esc)"
           >
             ✕
@@ -148,13 +148,13 @@ export function NpcDialogOverlay({
                 “{randomDialog.text}”
               </p>
             ) : (
-              <p className="text-sm italic text-parchment/55">
+              <p className="text-sm italic text-parchment/75">
                 {npc.name} nods silently.
               </p>
             )
           ) : hasBackstory ? (
             <div className="flex flex-col gap-2">
-              <p className="text-[11px] uppercase tracking-wide text-parchment/45">
+              <p className="text-xs uppercase tracking-wide text-parchment/65">
                 Backstory
               </p>
               <p className="whitespace-pre-line text-sm leading-relaxed text-parchment/80">
@@ -162,7 +162,7 @@ export function NpcDialogOverlay({
               </p>
             </div>
           ) : (
-            <p className="text-sm italic text-parchment/55">
+            <p className="text-sm italic text-parchment/75">
               No recorded history for {npc.name}.
             </p>
           )}

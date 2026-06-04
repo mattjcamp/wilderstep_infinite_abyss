@@ -1,3 +1,71 @@
 {
-  "encounters": []
+  "encounters": [
+    {
+      "id": "imp_skirmishers",
+      "area": "overworld",
+      "name": "Imp Skirmishers",
+      "level": 4,
+      "weight": 1,
+      "monster_party_tile": "monster/imp.png",
+      "monsters": [
+        "imp",
+        "imp"
+      ],
+      "custom_map": null,
+      "tags": [
+        "lastlight"
+      ]
+    },
+    {
+      "id": "imp_pack",
+      "area": "dungeon",
+      "name": "Imp Pack",
+      "level": 5,
+      "weight": 1,
+      "monster_party_tile": "monster/imp.png",
+      "monsters": [
+        "imp",
+        "imp",
+        "imp"
+      ],
+      "custom_map": null,
+      "tags": [
+        "lastlight"
+      ]
+    },
+    {
+      "id": "breach_herald",
+      "area": "dungeon",
+      "name": "Herald of the Breach",
+      "level": 6,
+      "weight": 1,
+      "monster_party_tile": "monster/zombie.png",
+      "monsters": [
+        "super_zombie",
+        "imp",
+        "imp"
+      ],
+      "custom_map": null,
+      "tags": [
+        "lastlight"
+      ]
+    },
+    {
+      "id": "grave_court",
+      "area": "dungeon",
+      "name": "The Grave Court",
+      "level": 7,
+      "weight": 1,
+      "monster_party_tile": "monster/lich.png",
+      "monsters": [
+        "lich",
+        "banshee",
+        "cursed_mummy"
+      ],
+      "custom_map": null,
+      "tags": [
+        "lastlight"
+      ]
+    }
+  ]
 }

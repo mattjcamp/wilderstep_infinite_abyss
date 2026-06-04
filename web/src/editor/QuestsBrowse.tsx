@@ -486,13 +486,13 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
   };
 
   if (state.kind === "loading") {
-    return <p className="p-4 text-parchment/60">Loading quests…</p>;
+    return <p className="p-4 text-parchment/80">Loading quests…</p>;
   }
   if (state.kind === "error") {
     return (
       <div className="p-4">
         <p className="text-ember">Failed to load quests.</p>
-        <p className="mt-2 font-mono text-sm text-parchment/60">
+        <p className="mt-2 font-mono text-sm text-parchment/80">
           {state.message}
         </p>
       </div>
@@ -527,15 +527,15 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
       <header className="flex flex-wrap items-baseline justify-between gap-3">
         <div>
           <h1 className="font-display text-3xl text-parchment">Quests</h1>
-          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-parchment/60">
+          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-parchment/80">
             <span>
               {state.quests.length} quest
               {state.quests.length === 1 ? "" : "s"}
             </span>
-            <span className="text-parchment/40">·</span>
+            <span className="text-parchment/60">·</span>
             <span>{FILE_NAME}</span>
             {state.isDraft ? (
-              <span className="rounded bg-ember/30 px-2 py-0.5 text-xs text-parchment/90">
+              <span className="rounded bg-ember/30 px-2 py-0.5 text-[13px] text-parchment/90">
                 draft active
               </span>
             ) : null}
@@ -555,7 +555,7 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
             <button
               type="button"
               onClick={onDiscardDraft}
-              className="rounded border border-parchment/20 px-3 py-1 text-sm text-parchment/70 hover:bg-ink/40"
+              className="rounded border border-parchment/20 px-3 py-1 text-sm text-parchment/85 hover:bg-ink/40"
             >
               Discard
             </button>
@@ -595,9 +595,9 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
       <div className="mt-6 space-y-5">
         {[...groupedByTag.entries()].map(([tag, quests]) => (
           <section key={tag}>
-            <h2 className="mb-2 text-xs uppercase tracking-wide text-parchment/45">
+            <h2 className="mb-2 text-[13px] uppercase tracking-wide text-parchment/65">
               {tag}
-              <span className="ml-2 text-parchment/35 normal-case tracking-normal">
+              <span className="ml-2 text-parchment/55 normal-case tracking-normal">
                 ({quests.length})
               </span>
             </h2>
@@ -613,19 +613,19 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
                       onClick={() => toggleExpanded(q.id)}
                       className="flex min-w-0 flex-1 items-center gap-2 text-left text-sm text-parchment hover:text-parchment/100"
                     >
-                      <span className="text-parchment/55">
+                      <span className="text-parchment/75">
                         {expanded.has(q.id) ? "▾" : "▸"}
                       </span>
                       <span className="font-display">{q.name}</span>
-                      <span className="font-mono text-xs text-parchment/45">
+                      <span className="font-mono text-[13px] text-parchment/65">
                         {q.id}
                       </span>
-                      <span className="text-xs text-parchment/45">
+                      <span className="text-[13px] text-parchment/65">
                         · {q.steps?.length ?? 0} step
                         {(q.steps?.length ?? 0) === 1 ? "" : "s"}
                       </span>
                       {Array.isArray(q.tags) && q.tags.length > 1 ? (
-                        <span className="text-xs text-parchment/40">
+                        <span className="text-[13px] text-parchment/60">
                           · also: {q.tags.filter((t) => t !== tag).join(", ")}
                         </span>
                       ) : null}
@@ -633,7 +633,7 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
                     <button
                       type="button"
                       onClick={() => onDeleteQuest(q.id)}
-                      className="rounded border border-parchment/20 px-2 py-0.5 text-xs text-parchment/60 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
+                      className="rounded border border-parchment/20 px-2 py-0.5 text-[13px] text-parchment/80 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
                       title="Delete this quest."
                     >
                       Delete
@@ -660,7 +660,7 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
           </section>
         ))}
         {state.quests.length === 0 ? (
-          <p className="text-sm text-parchment/55">
+          <p className="text-sm text-parchment/75">
             No quests yet. Click <strong>+ New Quest</strong> to create one.
           </p>
         ) : null}
@@ -673,9 +673,9 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
           tiles / saves that reference a quest by id keep resolving. */}
       {availableCatalog.length > 0 ? (
         <section className="mt-8">
-          <h2 className="mb-1 text-xs uppercase tracking-wide text-parchment/45">
+          <h2 className="mb-1 text-[13px] uppercase tracking-wide text-parchment/65">
             Available from libraries
-            <span className="ml-2 normal-case tracking-normal text-parchment/35">
+            <span className="ml-2 normal-case tracking-normal text-parchment/55">
               ({availableCatalog.reduce((n, e) => n + e.records.length, 0)}{" "}
               quest
               {availableCatalog.reduce((n, e) => n + e.records.length, 0) === 1
@@ -684,7 +684,7 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
               ready to import)
             </span>
           </h2>
-          <p className="mb-3 text-xs text-parchment/45">
+          <p className="mb-3 text-[13px] text-parchment/65">
             Quests from libraries this module uses. Importing copies a
             quest into this module&apos;s own file (id preserved) — edit
             it freely afterward without affecting the library. Library
@@ -698,9 +698,9 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
                 className="rounded border border-parchment/10 bg-ink/20"
               >
                 <div className="flex items-center justify-between gap-3 border-b border-parchment/10 bg-ink/40 px-3 py-1.5">
-                  <span className="text-xs text-parchment/70">
+                  <span className="text-[13px] text-parchment/85">
                     <span className="text-parchment/85">{entry.libraryId}</span>
-                    <span className="ml-2 text-parchment/40">
+                    <span className="ml-2 text-parchment/60">
                       ({entry.records.length} available)
                     </span>
                   </span>
@@ -708,7 +708,7 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
                     <button
                       type="button"
                       onClick={() => onImportQuests(entry.records)}
-                      className="shrink-0 rounded border border-ember/60 bg-ember/30 px-2 py-0.5 text-xs text-parchment hover:bg-ember/50"
+                      className="shrink-0 rounded border border-ember/60 bg-ember/30 px-2 py-0.5 text-[13px] text-parchment hover:bg-ember/50"
                       title={`Import all ${entry.records.length} quests from ${entry.libraryId}.`}
                     >
                       + Import all ({entry.records.length})
@@ -724,26 +724,26 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
                       <div className="min-w-0 flex-1 text-sm text-parchment/85">
                         <div className="truncate">
                           <span className="font-display">{q.name}</span>
-                          <span className="ml-2 font-mono text-xs text-parchment/45">
+                          <span className="ml-2 font-mono text-[13px] text-parchment/65">
                             {q.id}
                           </span>
-                          <span className="ml-2 text-xs text-parchment/40">
+                          <span className="ml-2 text-[13px] text-parchment/60">
                             {q.steps?.length ?? 0} step
                             {(q.steps?.length ?? 0) === 1 ? "" : "s"}
                           </span>
                           {q.quest_giver?.npc_name ? (
-                            <span className="ml-2 text-xs text-parchment/40">
+                            <span className="ml-2 text-[13px] text-parchment/60">
                               · giver: {q.quest_giver.npc_name}
                             </span>
                           ) : null}
                           {Array.isArray(q.tags) && q.tags.length > 0 ? (
-                            <span className="ml-2 text-xs text-parchment/40">
+                            <span className="ml-2 text-[13px] text-parchment/60">
                               · {q.tags.join(", ")}
                             </span>
                           ) : null}
                         </div>
                         {q.description ? (
-                          <p className="mt-0.5 truncate text-xs text-parchment/50">
+                          <p className="mt-0.5 truncate text-[13px] text-parchment/70">
                             {q.description}
                           </p>
                         ) : null}
@@ -751,7 +751,7 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
                       <button
                         type="button"
                         onClick={() => onImportQuests([q])}
-                        className="shrink-0 rounded border border-ember/50 bg-ember/20 px-2 py-0.5 text-xs text-parchment hover:bg-ember/40"
+                        className="shrink-0 rounded border border-ember/50 bg-ember/20 px-2 py-0.5 text-[13px] text-parchment hover:bg-ember/40"
                         title={`Import just this quest from ${entry.libraryId}.`}
                       >
                         + Import
@@ -795,7 +795,7 @@ function QuestEditor({
     <div className="border-t border-parchment/10 bg-ink/10 px-3 py-3">
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="block">
-          <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+          <span className="text-xs uppercase tracking-wide text-parchment/65">
             Name
           </span>
           <input
@@ -806,7 +806,7 @@ function QuestEditor({
           />
         </label>
         <label className="block">
-          <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+          <span className="text-xs uppercase tracking-wide text-parchment/65">
             Description
           </span>
           <input
@@ -818,7 +818,7 @@ function QuestEditor({
         </label>
       </div>
       <div className="mt-3">
-        <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+        <span className="text-xs uppercase tracking-wide text-parchment/65">
           Tags
         </span>
         <TagsPicker
@@ -840,11 +840,11 @@ function QuestEditor({
         onUpdate={(rewards) => onUpdate({ rewards })}
       />
 
-      <h3 className="mt-4 text-xs uppercase tracking-wide text-parchment/55">
+      <h3 className="mt-4 text-[13px] uppercase tracking-wide text-parchment/75">
         Steps ({quest.steps?.length ?? 0})
       </h3>
       {(quest.steps ?? []).length === 0 ? (
-        <p className="mt-1 text-xs text-parchment/45">
+        <p className="mt-1 text-[13px] text-parchment/65">
           No steps yet. Click <strong>+ Add Step</strong> below.
         </p>
       ) : (
@@ -868,7 +868,7 @@ function QuestEditor({
         <button
           type="button"
           onClick={onAddStep}
-          className="rounded border border-ember/50 bg-ember/20 px-2 py-1 text-xs text-parchment hover:bg-ember/40"
+          className="rounded border border-ember/50 bg-ember/20 px-2 py-1 text-[13px] text-parchment hover:bg-ember/40"
         >
           + Add Step
         </button>
@@ -898,14 +898,14 @@ function QuestGiverEditor({
   return (
     <section className="mt-4 rounded border border-parchment/10 bg-ink/30 p-2">
       <div className="flex items-center justify-between">
-        <h3 className="text-xs uppercase tracking-wide text-parchment/55">
+        <h3 className="text-[13px] uppercase tracking-wide text-parchment/75">
           Quest Giver
         </h3>
         {has ? (
           <button
             type="button"
             onClick={() => onUpdate(undefined)}
-            className="rounded border border-parchment/20 px-2 py-0.5 text-[10px] text-parchment/60 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
+            className="rounded border border-parchment/20 px-2 py-0.5 text-xs text-parchment/80 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
             title="Remove the quest_giver block from this quest."
           >
             Remove
@@ -914,7 +914,7 @@ function QuestGiverEditor({
           <button
             type="button"
             onClick={() => onUpdate({ ...EMPTY_GIVER })}
-            className="rounded border border-ember/50 bg-ember/20 px-2 py-0.5 text-[10px] text-parchment hover:bg-ember/40"
+            className="rounded border border-ember/50 bg-ember/20 px-2 py-0.5 text-xs text-parchment hover:bg-ember/40"
           >
             + Add
           </button>
@@ -923,7 +923,7 @@ function QuestGiverEditor({
       {has ? (
         <div className="mt-2 grid gap-2 sm:grid-cols-2">
           <label className="block">
-            <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+            <span className="text-xs uppercase tracking-wide text-parchment/65">
               NPC name
             </span>
             <input
@@ -933,11 +933,11 @@ function QuestGiverEditor({
                 onUpdate({ ...g, npc_name: e.target.value })
               }
               placeholder="Old Hermit"
-              className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+              className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
             />
           </label>
           <div className="block">
-            <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+            <span className="text-xs uppercase tracking-wide text-parchment/65">
               NPC sprite
             </span>
             <div className="mt-0.5">
@@ -949,7 +949,7 @@ function QuestGiverEditor({
             </div>
           </div>
           <label className="block sm:col-span-2">
-            <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+            <span className="text-xs uppercase tracking-wide text-parchment/65">
               Start dialog
             </span>
             <textarea
@@ -959,11 +959,11 @@ function QuestGiverEditor({
               }
               rows={2}
               placeholder="Greetings, traveler…"
-              className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+              className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
             />
           </label>
           <label className="block sm:col-span-2">
-            <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+            <span className="text-xs uppercase tracking-wide text-parchment/65">
               End dialog
             </span>
             <textarea
@@ -973,12 +973,12 @@ function QuestGiverEditor({
               }
               rows={2}
               placeholder="You did it! Take this for your trouble."
-              className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+              className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
             />
           </label>
         </div>
       ) : (
-        <p className="mt-1 text-[11px] text-parchment/45">
+        <p className="mt-1 text-xs text-parchment/65">
           No quest giver. Click <strong>+ Add</strong> to specify the NPC
           who offers and accepts this quest.
         </p>
@@ -1023,14 +1023,14 @@ function RewardsEditor({
   return (
     <section className="mt-3 rounded border border-parchment/10 bg-ink/30 p-2">
       <div className="flex items-center justify-between">
-        <h3 className="text-xs uppercase tracking-wide text-parchment/55">
+        <h3 className="text-[13px] uppercase tracking-wide text-parchment/75">
           Rewards
         </h3>
         {has ? (
           <button
             type="button"
             onClick={() => onUpdate(undefined)}
-            className="rounded border border-parchment/20 px-2 py-0.5 text-[10px] text-parchment/60 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
+            className="rounded border border-parchment/20 px-2 py-0.5 text-xs text-parchment/80 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
             title="Remove the rewards block from this quest."
           >
             Remove
@@ -1039,7 +1039,7 @@ function RewardsEditor({
           <button
             type="button"
             onClick={() => onUpdate({})}
-            className="rounded border border-ember/50 bg-ember/20 px-2 py-0.5 text-[10px] text-parchment hover:bg-ember/40"
+            className="rounded border border-ember/50 bg-ember/20 px-2 py-0.5 text-xs text-parchment hover:bg-ember/40"
           >
             + Add
           </button>
@@ -1050,7 +1050,7 @@ function RewardsEditor({
           {/* XP + Gold */}
           <div className="grid gap-2 sm:grid-cols-2">
             <label className="block">
-              <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+              <span className="text-xs uppercase tracking-wide text-parchment/65">
                 XP
               </span>
               <input
@@ -1065,11 +1065,11 @@ function RewardsEditor({
                         : Number(e.target.value) || 0,
                   })
                 }
-                className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+                className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
               />
             </label>
             <label className="block">
-              <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+              <span className="text-xs uppercase tracking-wide text-parchment/65">
                 Gold
               </span>
               <input
@@ -1084,7 +1084,7 @@ function RewardsEditor({
                         : Number(e.target.value) || 0,
                   })
                 }
-                className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+                className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
               />
             </label>
           </div>
@@ -1108,7 +1108,7 @@ function RewardsEditor({
           />
         </div>
       ) : (
-        <p className="mt-1 text-[11px] text-parchment/45">
+        <p className="mt-1 text-xs text-parchment/65">
           No rewards. Click <strong>+ Add</strong> to specify XP, gold,
           items, or tile changes applied on completion.
         </p>
@@ -1158,11 +1158,11 @@ function StepRewardsEditor({
 
   return (
     <fieldset className="sm:col-span-4 rounded border border-parchment/15 bg-ink/20 p-2">
-      <legend className="px-1 text-[10px] uppercase tracking-wide text-parchment/55">
+      <legend className="px-1 text-xs uppercase tracking-wide text-parchment/75">
         Step Rewards
       </legend>
       <div className="flex items-center justify-between">
-        <p className="text-[11px] text-parchment/55">
+        <p className="text-xs text-parchment/75">
           Items and tile changes applied <strong>immediately</strong>{" "}
           when this step completes — use to gate the next step on a
           map change (build a bridge, open a passage) or seed inventory
@@ -1172,7 +1172,7 @@ function StepRewardsEditor({
           <button
             type="button"
             onClick={() => onUpdate(undefined)}
-            className="ml-2 shrink-0 rounded border border-parchment/20 px-2 py-0.5 text-[10px] text-parchment/60 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
+            className="ml-2 shrink-0 rounded border border-parchment/20 px-2 py-0.5 text-xs text-parchment/80 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
             title="Remove the rewards block from this step."
           >
             Remove
@@ -1181,7 +1181,7 @@ function StepRewardsEditor({
           <button
             type="button"
             onClick={() => onUpdate({})}
-            className="ml-2 shrink-0 rounded border border-ember/50 bg-ember/20 px-2 py-0.5 text-[10px] text-parchment hover:bg-ember/40"
+            className="ml-2 shrink-0 rounded border border-ember/50 bg-ember/20 px-2 py-0.5 text-xs text-parchment hover:bg-ember/40"
           >
             + Add
           </button>
@@ -1267,19 +1267,19 @@ function PositionsList({
   return (
     <div className="mt-2">
       <div className="flex items-center justify-between">
-        <span className="text-[10px] uppercase tracking-wide text-parchment/55">
+        <span className="text-xs uppercase tracking-wide text-parchment/75">
           Encounter positions ({positions.length})
         </span>
         <button
           type="button"
           onClick={add}
-          className="rounded border border-ember/50 bg-ember/20 px-2 py-0.5 text-[10px] text-parchment hover:bg-ember/40"
+          className="rounded border border-ember/50 bg-ember/20 px-2 py-0.5 text-xs text-parchment hover:bg-ember/40"
         >
           + Add position
         </button>
       </div>
       {positions.length === 0 ? (
-        <p className="mt-1 text-[11px] text-parchment/45">
+        <p className="mt-1 text-xs text-parchment/65">
           No positions authored. Encounter copies spawn on random
           walkable cells (historical behaviour).
         </p>
@@ -1290,11 +1290,11 @@ function PositionsList({
               key={i}
               className="grid items-center gap-1 sm:grid-cols-[auto_5rem_5rem_1fr_auto]"
             >
-              <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+              <span className="text-xs uppercase tracking-wide text-parchment/65">
                 #{i + 1}
               </span>
               <label className="block">
-                <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+                <span className="text-xs uppercase tracking-wide text-parchment/65">
                   Col
                 </span>
                 <input
@@ -1306,11 +1306,11 @@ function PositionsList({
                       col: Math.max(0, Number(e.target.value) || 0),
                     })
                   }
-                  className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-xs text-parchment/90"
+                  className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-[13px] text-parchment/90"
                 />
               </label>
               <label className="block">
-                <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+                <span className="text-xs uppercase tracking-wide text-parchment/65">
                   Row
                 </span>
                 <input
@@ -1322,14 +1322,14 @@ function PositionsList({
                       row: Math.max(0, Number(e.target.value) || 0),
                     })
                   }
-                  className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-xs text-parchment/90"
+                  className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-[13px] text-parchment/90"
                 />
               </label>
               <span aria-hidden />
               <button
                 type="button"
                 onClick={() => removeAt(i)}
-                className="self-end rounded border border-parchment/20 px-2 py-0.5 text-[10px] text-parchment/60 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
+                className="self-end rounded border border-parchment/20 px-2 py-0.5 text-xs text-parchment/80 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
               >
                 Remove
               </button>
@@ -1338,7 +1338,7 @@ function PositionsList({
         </ul>
       )}
       {drift ? (
-        <p className="mt-1 text-[11px] text-amber-200/85">{drift}</p>
+        <p className="mt-1 text-xs text-amber-200/85">{drift}</p>
       ) : null}
     </div>
   );
@@ -1371,19 +1371,19 @@ function ItemsList({
   return (
     <div>
       <div className="flex items-center justify-between">
-        <span className="text-[10px] uppercase tracking-wide text-parchment/55">
+        <span className="text-xs uppercase tracking-wide text-parchment/75">
           Items ({items.length})
         </span>
         <button
           type="button"
           onClick={add}
-          className="rounded border border-ember/50 bg-ember/20 px-2 py-0.5 text-[10px] text-parchment hover:bg-ember/40"
+          className="rounded border border-ember/50 bg-ember/20 px-2 py-0.5 text-xs text-parchment hover:bg-ember/40"
         >
           + Add item
         </button>
       </div>
       {items.length === 0 ? (
-        <p className="mt-1 text-[11px] text-parchment/45">
+        <p className="mt-1 text-xs text-parchment/65">
           (no item rewards)
         </p>
       ) : (
@@ -1395,7 +1395,7 @@ function ItemsList({
                 <select
                   value={id}
                   onChange={(e) => updateAt(i, e.target.value)}
-                  className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-xs text-parchment/90"
+                  className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-[13px] text-parchment/90"
                 >
                   {!known && id ? (
                     <option value={id}>(missing) {id}</option>
@@ -1412,7 +1412,7 @@ function ItemsList({
                 <button
                   type="button"
                   onClick={() => removeAt(i)}
-                  className="rounded border border-parchment/20 px-2 py-0.5 text-[10px] text-parchment/60 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
+                  className="rounded border border-parchment/20 px-2 py-0.5 text-xs text-parchment/80 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
                 >
                   Remove
                 </button>
@@ -1464,19 +1464,19 @@ function TileOpsList({
   return (
     <div>
       <div className="flex items-center justify-between">
-        <span className="text-[10px] uppercase tracking-wide text-parchment/55">
+        <span className="text-xs uppercase tracking-wide text-parchment/75">
           {label} ({ops.length})
         </span>
         <button
           type="button"
           onClick={add}
-          className="rounded border border-ember/50 bg-ember/20 px-2 py-0.5 text-[10px] text-parchment hover:bg-ember/40"
+          className="rounded border border-ember/50 bg-ember/20 px-2 py-0.5 text-xs text-parchment hover:bg-ember/40"
         >
           + Add
         </button>
       </div>
       {ops.length === 0 ? (
-        <p className="mt-1 text-[11px] text-parchment/45">(none)</p>
+        <p className="mt-1 text-xs text-parchment/65">(none)</p>
       ) : (
         <ul className="mt-1 space-y-1">
           {ops.map((op, i) => {
@@ -1494,7 +1494,7 @@ function TileOpsList({
                 <select
                   value={op.map}
                   onChange={(e) => updateAt(i, { map: e.target.value })}
-                  className="rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-xs text-parchment/90"
+                  className="rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-[13px] text-parchment/90"
                 >
                   {!mapKnown && op.map ? (
                     <option value={op.map}>(missing) {op.map}</option>
@@ -1515,7 +1515,7 @@ function TileOpsList({
                     updateAt(i, { col: Number(e.target.value) || 0 })
                   }
                   placeholder="col"
-                  className="w-16 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+                  className="w-16 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
                   title="col"
                 />
                 <input
@@ -1525,7 +1525,7 @@ function TileOpsList({
                     updateAt(i, { row: Number(e.target.value) || 0 })
                   }
                   placeholder="row"
-                  className="w-16 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+                  className="w-16 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
                   title="row"
                 />
                 {withTileId ? (
@@ -1536,14 +1536,14 @@ function TileOpsList({
                       updateAt(i, { tile_id: e.target.value })
                     }
                     placeholder="tile_id"
-                    className="min-w-0 rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-xs text-parchment/90"
+                    className="min-w-0 rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-[13px] text-parchment/90"
                     title="The Map Tile id placed at this cell."
                   />
                 ) : null}
                 <button
                   type="button"
                   onClick={() => removeAt(i)}
-                  className="rounded border border-parchment/20 px-2 py-0.5 text-[10px] text-parchment/60 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
+                  className="rounded border border-parchment/20 px-2 py-0.5 text-xs text-parchment/80 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
                 >
                   Remove
                 </button>
@@ -1581,35 +1581,35 @@ function StepRow({
     <li className="rounded border border-parchment/10 bg-ink/30 p-2">
       <div className="grid gap-2 sm:grid-cols-4">
         <label className="block">
-          <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+          <span className="text-xs uppercase tracking-wide text-parchment/65">
             #{indexLabel} · ID
           </span>
           <input
             type="text"
             value={step.id}
             onChange={(e) => onUpdate({ id: e.target.value })}
-            className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-xs text-parchment/90"
+            className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-[13px] text-parchment/90"
           />
         </label>
         <label className="block sm:col-span-2">
-          <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+          <span className="text-xs uppercase tracking-wide text-parchment/65">
             Name
           </span>
           <input
             type="text"
             value={step.name}
             onChange={(e) => onUpdate({ name: e.target.value })}
-            className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+            className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
           />
         </label>
         <label className="block">
-          <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+          <span className="text-xs uppercase tracking-wide text-parchment/65">
             Kind
           </span>
           <select
             value={step.kind}
             onChange={(e) => onUpdate({ kind: e.target.value })}
-            className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-xs text-parchment/90"
+            className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-[13px] text-parchment/90"
           >
             {KNOWN_KINDS.map((k) => (
               <option key={k} value={k}>
@@ -1631,18 +1631,18 @@ function StepRow({
           </select>
         </label>
         <label className="block sm:col-span-4">
-          <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+          <span className="text-xs uppercase tracking-wide text-parchment/65">
             Description
           </span>
           <input
             type="text"
             value={step.description ?? ""}
             onChange={(e) => onUpdate({ description: e.target.value })}
-            className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+            className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
           />
         </label>
         <div className="block sm:col-span-2">
-          <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+          <span className="text-xs uppercase tracking-wide text-parchment/65">
             Tags
           </span>
           <TagsPicker
@@ -1658,12 +1658,12 @@ function StepRow({
           // in favour of first-class per-step attributes. Future step
           // kinds will get their own dedicated fields the same way.
           <fieldset className="sm:col-span-2 rounded border border-parchment/15 bg-ink/20 p-2">
-            <legend className="px-1 text-[10px] uppercase tracking-wide text-parchment/55">
+            <legend className="px-1 text-xs uppercase tracking-wide text-parchment/75">
               Kill target
             </legend>
             <div className="grid gap-2 sm:grid-cols-[1fr_6rem]">
               <div>
-                <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+                <span className="text-xs uppercase tracking-wide text-parchment/65">
                   Encounter
                 </span>
                 <EncounterPicker
@@ -1674,7 +1674,7 @@ function StepRow({
                 />
               </div>
               <label className="block">
-                <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+                <span className="text-xs uppercase tracking-wide text-parchment/65">
                   Count
                 </span>
                 <input
@@ -1687,11 +1687,11 @@ function StepRow({
                     const n = Math.max(1, Number(e.target.value) || 1);
                     onUpdate({ count: n });
                   }}
-                  className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-xs text-parchment/90"
+                  className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-[13px] text-parchment/90"
                 />
               </label>
             </div>
-            <p className="mt-1 text-[11px] text-parchment/45">
+            <p className="mt-1 text-xs text-parchment/65">
               The party clears the kill step by defeating this encounter
               the listed number of times. Pick a roster from the
               encounter catalog — each row shows the lead monster's
@@ -1723,12 +1723,12 @@ function StepRow({
           // block above to pick the map; this fieldset handles only
           // the item + cell coords.
           <fieldset className="sm:col-span-2 rounded border border-parchment/15 bg-ink/20 p-2">
-            <legend className="px-1 text-[10px] uppercase tracking-wide text-parchment/55">
+            <legend className="px-1 text-xs uppercase tracking-wide text-parchment/75">
               Retrieve target
             </legend>
             <div className="grid gap-2 sm:grid-cols-[1fr_5rem_5rem]">
               <label className="block">
-                <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+                <span className="text-xs uppercase tracking-wide text-parchment/65">
                   Item
                 </span>
                 <select
@@ -1736,7 +1736,7 @@ function StepRow({
                   onChange={(e) =>
                     onUpdate({ item_id: e.target.value || undefined })
                   }
-                  className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-xs text-parchment/90"
+                  className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-[13px] text-parchment/90"
                 >
                   <option value="">(pick one…)</option>
                   {!items.some((it) => it.id === step.item_id) &&
@@ -1753,7 +1753,7 @@ function StepRow({
                 </select>
               </label>
               <label className="block">
-                <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+                <span className="text-xs uppercase tracking-wide text-parchment/65">
                   Col
                 </span>
                 <input
@@ -1763,11 +1763,11 @@ function StepRow({
                   onChange={(e) =>
                     onUpdate({ col: Math.max(0, Number(e.target.value) || 0) })
                   }
-                  className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-xs text-parchment/90"
+                  className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-[13px] text-parchment/90"
                 />
               </label>
               <label className="block">
-                <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+                <span className="text-xs uppercase tracking-wide text-parchment/65">
                   Row
                 </span>
                 <input
@@ -1777,11 +1777,11 @@ function StepRow({
                   onChange={(e) =>
                     onUpdate({ row: Math.max(0, Number(e.target.value) || 0) })
                   }
-                  className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-xs text-parchment/90"
+                  className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-[13px] text-parchment/90"
                 />
               </label>
             </div>
-            <p className="mt-1 text-[11px] text-parchment/45">
+            <p className="mt-1 text-xs text-parchment/65">
               When the quest is accepted, this item is placed at
               (col, row) on the step's <strong>Map</strong> (set in
               the Location block below) and glows with the
@@ -1798,11 +1798,11 @@ function StepRow({
           // encounter, no item, no cell — the descent is the
           // objective.
           <fieldset className="sm:col-span-2 rounded border border-parchment/15 bg-ink/20 p-2">
-            <legend className="px-1 text-[10px] uppercase tracking-wide text-parchment/55">
+            <legend className="px-1 text-xs uppercase tracking-wide text-parchment/75">
               Spelunking dungeon
             </legend>
             <label className="block">
-              <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+              <span className="text-xs uppercase tracking-wide text-parchment/65">
                 Dungeon
               </span>
               <select
@@ -1810,7 +1810,7 @@ function StepRow({
                 onChange={(e) =>
                   onUpdate({ dungeon_id: e.target.value || undefined })
                 }
-                className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-xs text-parchment/90"
+                className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-[13px] text-parchment/90"
               >
                 <option value="">(pick one…)</option>
                 {!dungeons.some((d) => d.id === step.dungeon_id) &&
@@ -1829,7 +1829,7 @@ function StepRow({
                 ))}
               </select>
             </label>
-            <p className="mt-1 text-[11px] text-parchment/45">
+            <p className="mt-1 text-xs text-parchment/65">
               This one step expands at play time into a step for each
               floor of the chosen dungeon — the party credits each by
               reaching it. Leave the rest of the step (and the Location
@@ -1844,7 +1844,7 @@ function StepRow({
           // as disabled and there's no editor surface for these — the
           // author needs to switch the kind to a supported value to
           // make the step actionable.
-          <p className="sm:col-span-2 rounded border border-amber-400/30 bg-amber-400/5 p-2 text-[11px] text-amber-200/85">
+          <p className="sm:col-span-2 rounded border border-amber-400/30 bg-amber-400/5 p-2 text-xs text-amber-200/85">
             This step's <code>kind</code> is no longer supported by the
             editor. Set <strong>Kind</strong> to <code>kill</code> or{" "}
             <code>retrieve</code> (above) to author this step against
@@ -1857,12 +1857,12 @@ function StepRow({
             clears `map_id` so the JSON doesn't carry a dead reference
             the runtime would have to ignore. */}
         <fieldset className="sm:col-span-4 rounded border border-parchment/15 bg-ink/20 p-2">
-          <legend className="px-1 text-[10px] uppercase tracking-wide text-parchment/55">
+          <legend className="px-1 text-xs uppercase tracking-wide text-parchment/75">
             Location
           </legend>
           <div className="grid gap-2 sm:grid-cols-4">
             <label className="block">
-              <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+              <span className="text-xs uppercase tracking-wide text-parchment/65">
                 Kind
               </span>
               <select
@@ -1878,7 +1878,7 @@ function StepRow({
                     onUpdate({ location_kind: "map" });
                   }
                 }}
-                className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90"
+                className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
               >
                 <option value="">(none)</option>
                 <option value="map">Map</option>
@@ -1887,7 +1887,7 @@ function StepRow({
 
             {step.location_kind === "map" ? (
               <label className="block sm:col-span-3">
-                <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+                <span className="text-xs uppercase tracking-wide text-parchment/65">
                   Map
                 </span>
                 <select
@@ -1895,7 +1895,7 @@ function StepRow({
                   onChange={(e) =>
                     onUpdate({ map_id: e.target.value || undefined })
                   }
-                  className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-xs text-parchment/90"
+                  className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-[13px] text-parchment/90"
                 >
                   <option value="">(pick one…)</option>
                   {maps.map((m) => (
@@ -1906,7 +1906,7 @@ function StepRow({
                 </select>
                 {step.map_id &&
                 !maps.some((m) => m.id === step.map_id) ? (
-                  <p className="mt-1 text-xs text-ember/80">
+                  <p className="mt-1 text-[13px] text-ember/80">
                     Unknown map id — not present in maps.json.
                   </p>
                 ) : null}
@@ -1931,7 +1931,7 @@ function StepRow({
         <button
           type="button"
           onClick={onDelete}
-          className="rounded border border-parchment/20 px-2 py-0.5 text-xs text-parchment/60 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
+          className="rounded border border-parchment/20 px-2 py-0.5 text-[13px] text-parchment/80 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
         >
           Delete step
         </button>
@@ -1991,12 +1991,12 @@ function NewQuestForm({
       className="rounded-md border border-parchment/15 bg-ink/30 p-4"
     >
       <h2 className="font-display text-lg text-parchment">New Quest</h2>
-      <p className="mt-1 text-sm text-parchment/55">
+      <p className="mt-1 text-sm text-parchment/75">
         Create the quest record first. Add steps inline after it opens.
       </p>
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <label className="block">
-          <span className="text-xs uppercase tracking-wide text-parchment/45">
+          <span className="text-[13px] uppercase tracking-wide text-parchment/65">
             ID
           </span>
           <input
@@ -2007,15 +2007,15 @@ function NewQuestForm({
             className="mt-1 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-sm text-parchment/90"
           />
           {idError ? (
-            <p className="mt-1 text-xs text-ember/80">{idError}</p>
+            <p className="mt-1 text-[13px] text-ember/80">{idError}</p>
           ) : (
-            <p className="mt-1 text-xs text-parchment/45">
+            <p className="mt-1 text-[13px] text-parchment/65">
               Key in <code>quests.json</code>.
             </p>
           )}
         </label>
         <label className="block">
-          <span className="text-xs uppercase tracking-wide text-parchment/45">
+          <span className="text-[13px] uppercase tracking-wide text-parchment/65">
             Name
           </span>
           <input
@@ -2027,7 +2027,7 @@ function NewQuestForm({
           />
         </label>
         <label className="block sm:col-span-2">
-          <span className="text-xs uppercase tracking-wide text-parchment/45">
+          <span className="text-[13px] uppercase tracking-wide text-parchment/65">
             Description
           </span>
           <input
@@ -2039,7 +2039,7 @@ function NewQuestForm({
           />
         </label>
         <div className="block sm:col-span-2">
-          <span className="text-xs uppercase tracking-wide text-parchment/45">
+          <span className="text-[13px] uppercase tracking-wide text-parchment/65">
             Tags
           </span>
           <TagsPicker
@@ -2060,7 +2060,7 @@ function NewQuestForm({
         <button
           type="button"
           onClick={onCancel}
-          className="rounded border border-parchment/20 px-3 py-1 text-sm text-parchment/70 hover:bg-ink/40"
+          className="rounded border border-parchment/20 px-3 py-1 text-sm text-parchment/85 hover:bg-ink/40"
         >
           Cancel
         </button>

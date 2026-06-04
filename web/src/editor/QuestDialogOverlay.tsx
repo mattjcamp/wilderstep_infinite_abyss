@@ -160,7 +160,7 @@ export function QuestDialogOverlay({
       <div className="w-[480px] rounded-lg border border-parchment/25 bg-ink/95 p-4 text-parchment shadow-xl">
         <header className="mb-3 flex items-baseline justify-between">
           <h2 className="font-display text-xl">{quest.name}</h2>
-          <span className="font-mono text-[11px] text-parchment/45">
+          <span className="font-mono text-xs text-parchment/65">
             {complete
               ? "Quest complete"
               : alreadyAccepted
@@ -185,13 +185,13 @@ export function QuestDialogOverlay({
                 }}
               />
             ) : (
-              <span className="px-1 text-[9px] text-parchment/55">
+              <span className="px-1 text-[9px] text-parchment/75">
                 {giverName.slice(0, 3)}
               </span>
             )}
           </div>
           <div className="flex-1">
-            <p className="text-[11px] uppercase tracking-wide text-parchment/45">
+            <p className="text-xs uppercase tracking-wide text-parchment/65">
               {giverName}
             </p>
             <p className="mt-1 text-sm leading-snug text-parchment/85">
@@ -201,19 +201,19 @@ export function QuestDialogOverlay({
         </div>
 
         {quest.description && quest.description !== dialog ? (
-          <p className="mb-3 rounded border border-parchment/10 bg-ink/60 p-2 text-xs italic text-parchment/65">
+          <p className="mb-3 rounded border border-parchment/10 bg-ink/60 p-2 text-[13px] italic text-parchment/80">
             {quest.description}
           </p>
         ) : null}
 
         {alreadyAccepted && !complete && activeStepName ? (
           <div className="mb-3 rounded border border-parchment/15 bg-ink/60 p-2">
-            <p className="text-[10px] uppercase tracking-wide text-parchment/45">
+            <p className="text-xs uppercase tracking-wide text-parchment/65">
               Active objective ({stepIdx + 1}/{stepCount})
             </p>
             <p className="text-sm text-parchment/85">→ {activeStepName}</p>
             {activeStepDescription ? (
-              <p className="mt-1 text-[11px] italic text-parchment/55">
+              <p className="mt-1 text-xs italic text-parchment/75">
                 {activeStepDescription}
               </p>
             ) : null}
@@ -248,7 +248,7 @@ export function QuestDialogOverlay({
                     ].join(" ")}
                   >
                     <div className="font-medium">Close</div>
-                    <div className="text-[11px] text-emerald-100/75">
+                    <div className="text-xs text-emerald-100/75">
                       Every objective is finished. Rewards arrive when
                       the completion flow lands; for now, well done.
                     </div>
@@ -266,7 +266,7 @@ export function QuestDialogOverlay({
                     ].join(" ")}
                   >
                     <div className="font-medium">Close</div>
-                    <div className="text-[11px] text-parchment/55">
+                    <div className="text-xs text-parchment/75">
                       The quest is already in your log. Return when
                       the objective is complete.
                     </div>
@@ -285,7 +285,7 @@ export function QuestDialogOverlay({
                       ].join(" ")}
                     >
                       <div className="font-medium">Accept the quest</div>
-                      <div className="text-[11px] text-parchment/55">
+                      <div className="text-xs text-parchment/75">
                         Add it to your quest log. You can talk to the
                         quest giver again any time.
                       </div>
@@ -303,7 +303,7 @@ export function QuestDialogOverlay({
                       ].join(" ")}
                     >
                       <div className="font-medium">Decline for now</div>
-                      <div className="text-[11px] text-parchment/55">
+                      <div className="text-xs text-parchment/75">
                         Close the dialog. Step adjacent and bump the
                         quest giver to re-open this offer.
                       </div>

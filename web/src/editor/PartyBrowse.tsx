@@ -188,7 +188,7 @@ export function PartyBrowse({ moduleId }: { moduleId: string }) {
         <header className="mb-2 flex items-center justify-between gap-3 px-1">
           <h2 className="font-display text-lg text-parchment">
             In-Game Party Screen{" "}
-            <span className="text-xs text-parchment/50">
+            <span className="text-[13px] text-parchment/70">
               (same component the map simulator pops up with{" "}
               <kbd className="rounded border border-parchment/30 px-1">
                 P
@@ -212,7 +212,7 @@ export function PartyBrowse({ moduleId }: { moduleId: string }) {
           </button>
         </header>
         {state.kind === "loading" ? (
-          <p className="px-1 text-sm text-parchment/55">Loading party…</p>
+          <p className="px-1 text-sm text-parchment/75">Loading party…</p>
         ) : state.kind === "error" ? (
           <p className="px-1 text-sm text-ember">
             Failed to load party preview: {state.message}

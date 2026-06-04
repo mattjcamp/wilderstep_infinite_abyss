@@ -167,19 +167,19 @@ export function CounterShopOverlay({
             <h2 className="font-display text-xl text-parchment">
               {counter.name ?? counter.id}
             </h2>
-            <p className="font-mono text-[10px] text-parchment/40">
+            <p className="font-mono text-xs text-parchment/60">
               {counter.id} · {kindLabel}
             </p>
           </div>
           <div className="flex items-center gap-3">
             <span className="rounded border border-parchment/20 bg-ink/60 px-2 py-1 text-sm text-parchment">
-              <span className="text-parchment/55">Gold:</span>{" "}
+              <span className="text-parchment/75">Gold:</span>{" "}
               <span className="font-medium">{gold}g</span>
             </span>
             <button
               type="button"
               onClick={onClose}
-              className="rounded border border-parchment/20 px-2 py-1 text-xs text-parchment/70 hover:bg-ink/40"
+              className="rounded border border-parchment/20 px-2 py-1 text-[13px] text-parchment/85 hover:bg-ink/40"
               title="Leave (Esc)"
             >
               ✕
@@ -191,11 +191,11 @@ export function CounterShopOverlay({
         <div className="grid min-h-0 flex-1 grid-cols-2 gap-0 overflow-hidden">
           {/* Stock — BUY */}
           <section className="min-h-0 overflow-auto border-r border-parchment/10 px-3 py-3">
-            <h3 className="mb-2 text-[11px] uppercase tracking-wide text-parchment/45">
+            <h3 className="mb-2 text-xs uppercase tracking-wide text-parchment/65">
               Stock ({stock.length})
             </h3>
             {stock.length === 0 ? (
-              <p className="text-sm italic text-parchment/50">
+              <p className="text-sm italic text-parchment/70">
                 Nothing on the shelves right now.
               </p>
             ) : (
@@ -213,7 +213,7 @@ export function CounterShopOverlay({
                         className={`flex w-full items-center justify-between gap-2 rounded border px-3 py-2 text-left text-sm transition ${
                           affordable
                             ? "border-parchment/15 bg-ink/40 text-parchment/85 hover:border-ember/50 hover:bg-ink/60"
-                            : "cursor-not-allowed border-parchment/10 bg-ink/30 text-parchment/45"
+                            : "cursor-not-allowed border-parchment/10 bg-ink/30 text-parchment/65"
                         }`}
                         title={
                           purchasable
@@ -224,7 +224,7 @@ export function CounterShopOverlay({
                         }
                       >
                         <span>{itemLabel(id)}</span>
-                        <span className="font-mono text-xs">
+                        <span className="font-mono text-[13px]">
                           {purchasable ? `${price}g` : "—"}
                         </span>
                       </button>
@@ -237,11 +237,11 @@ export function CounterShopOverlay({
 
           {/* Party inventory — SELL */}
           <section className="min-h-0 overflow-auto px-3 py-3">
-            <h3 className="mb-2 text-[11px] uppercase tracking-wide text-parchment/45">
+            <h3 className="mb-2 text-xs uppercase tracking-wide text-parchment/65">
               Party stash ({inventory.length})
             </h3>
             {inventory.length === 0 ? (
-              <p className="text-sm italic text-parchment/50">
+              <p className="text-sm italic text-parchment/70">
                 The party carries nothing to sell.
               </p>
             ) : (
@@ -258,7 +258,7 @@ export function CounterShopOverlay({
                         className={`flex w-full items-center justify-between gap-2 rounded border px-3 py-2 text-left text-sm transition ${
                           sellable
                             ? "border-parchment/15 bg-ink/40 text-parchment/85 hover:border-ember/50 hover:bg-ink/60"
-                            : "cursor-not-allowed border-parchment/10 bg-ink/30 text-parchment/45"
+                            : "cursor-not-allowed border-parchment/10 bg-ink/30 text-parchment/65"
                         }`}
                         title={
                           sellable
@@ -269,12 +269,12 @@ export function CounterShopOverlay({
                         <span className="flex items-baseline gap-2">
                           <span>{itemLabel(entry.item)}</span>
                           {typeof entry.charges === "number" ? (
-                            <span className="text-[11px] text-parchment/45">
+                            <span className="text-xs text-parchment/65">
                               × {entry.charges}
                             </span>
                           ) : null}
                         </span>
-                        <span className="font-mono text-xs">
+                        <span className="font-mono text-[13px]">
                           {sellable ? `${price}g` : "—"}
                         </span>
                       </button>
@@ -287,7 +287,7 @@ export function CounterShopOverlay({
         </div>
 
         {/* Footer */}
-        <footer className="border-t border-parchment/15 px-4 py-2 text-[11px] text-parchment/40">
+        <footer className="border-t border-parchment/15 px-4 py-2 text-xs text-parchment/60">
           Transactions are live for this simulation session and reset
           when the editor reloads.
         </footer>

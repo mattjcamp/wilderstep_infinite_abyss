@@ -83,7 +83,7 @@ export function SpawnEncounterOverlay({
       <div className="w-[460px] rounded-lg border border-parchment/25 bg-ink/95 p-4 text-parchment shadow-xl">
         <header className="mb-3 flex items-baseline justify-between">
           <h2 className="font-display text-xl">{title}</h2>
-          <span className="font-mono text-[11px] text-parchment/45">
+          <span className="font-mono text-xs text-parchment/65">
             ({options.sourcePos.col}, {options.sourcePos.row})
           </span>
         </header>
@@ -91,7 +91,7 @@ export function SpawnEncounterOverlay({
         <p className="mb-3 text-sm text-parchment/75">{subtitle}</p>
 
         <div className="mb-3">
-          <p className="mb-1 text-[10px] uppercase tracking-wide text-parchment/45">
+          <p className="mb-1 text-xs uppercase tracking-wide text-parchment/65">
             {options.kind === "boss"
               ? "Boss Roster"
               : options.kind === "placed"
@@ -125,7 +125,7 @@ export function SpawnEncounterOverlay({
                       }}
                     />
                   ) : (
-                    <span className="px-1 text-[9px] text-parchment/55">
+                    <span className="px-1 text-[9px] text-parchment/75">
                       {id}
                     </span>
                   )}
@@ -136,7 +136,7 @@ export function SpawnEncounterOverlay({
         </div>
 
         {reward ? (
-          <p className="mb-3 text-xs text-parchment/55">
+          <p className="mb-3 text-[13px] text-parchment/75">
             Victory reward: <span className="text-parchment/85">{reward}</span>
           </p>
         ) : null}
@@ -165,7 +165,7 @@ export function SpawnEncounterOverlay({
                   ? "Engage the encounter"
                   : "Fight the roamer"}
             </div>
-            <div className="text-[11px] text-parchment/55">
+            <div className="text-xs text-parchment/75">
               {options.kind === "boss"
                 ? "Defeat the boss roster and destroy the lair."
                 : options.kind === "placed"
@@ -181,7 +181,7 @@ export function SpawnEncounterOverlay({
             className="rounded border border-parchment/20 bg-ink/40 px-3 py-2 text-left text-sm hover:bg-ink/60 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <div className="font-medium">Retreat</div>
-            <div className="text-[11px] text-parchment/55">
+            <div className="text-xs text-parchment/75">
               Close the dialog.{" "}
               {options.kind === "boss"
                 ? "The lair stays active."

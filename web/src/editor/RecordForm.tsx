@@ -248,12 +248,12 @@ export function RecordForm({
         <button
           type="button"
           onClick={onCancel}
-          className="rounded border border-parchment/20 px-3 py-1 text-sm text-parchment/70 hover:bg-ink/40"
+          className="rounded border border-parchment/20 px-3 py-1 text-sm text-parchment/85 hover:bg-ink/40"
         >
           Cancel
         </button>
         {Object.keys(errors).length > 0 ? (
-          <span className="ml-2 text-xs text-ember">
+          <span className="ml-2 text-[13px] text-ember">
             Fix {Object.keys(errors).length} field
             {Object.keys(errors).length === 1 ? "" : "s"} above
           </span>
@@ -279,7 +279,7 @@ function FieldRow({
   onChange: (v: string) => void;
 }) {
   const labelClasses =
-    "min-w-[10rem] shrink-0 pt-1 text-sm text-parchment/70 font-mono";
+    "min-w-[10rem] shrink-0 pt-1 text-sm text-parchment/85 font-mono";
 
   // A `tags` field renders the chip-style TagsPicker instead of a raw
   // JSON textarea. The on-disk value stays a JSON string[] so the
@@ -303,7 +303,7 @@ function FieldRow({
             existing={existingTags}
             onChange={(next) => onChange(JSON.stringify(next))}
           />
-          <p className="mt-1 text-[10px] text-parchment/40">
+          <p className="mt-1 text-xs text-parchment/60">
             Editor-only labels for grouping. Gameplay ignores them.
           </p>
         </div>
@@ -311,7 +311,7 @@ function FieldRow({
     );
   }
   const inputBase =
-    "flex-1 rounded border bg-ink/40 px-2 py-1 text-sm text-parchment placeholder:text-parchment/30 focus:outline-none";
+    "flex-1 rounded border bg-ink/40 px-2 py-1 text-sm text-parchment placeholder:text-parchment/50 focus:outline-none";
   const inputColor = error
     ? "border-ember focus:border-ember"
     : "border-parchment/20 focus:border-parchment/60";
@@ -331,7 +331,7 @@ function FieldRow({
               onChange={(e) => onChange(String(e.target.checked))}
               className="h-4 w-4"
             />
-            <span className="text-parchment/60">{value}</span>
+            <span className="text-parchment/80">{value}</span>
           </label>
         </div>
       </div>
@@ -344,7 +344,7 @@ function FieldRow({
         <label htmlFor={spec.key} className={labelClasses}>
           {spec.key}
           {spec.kind === "json" ? (
-            <span className="block text-[10px] text-parchment/40">JSON</span>
+            <span className="block text-xs text-parchment/60">JSON</span>
           ) : null}
         </label>
         <div className="flex-1">
@@ -356,7 +356,7 @@ function FieldRow({
             className={`${inputBase} ${inputColor} font-mono`}
           />
           {error ? (
-            <p className="mt-1 text-xs text-ember">{error}</p>
+            <p className="mt-1 text-[13px] text-ember">{error}</p>
           ) : null}
         </div>
       </div>
@@ -374,7 +374,7 @@ function FieldRow({
       <div className="flex items-start gap-3">
         <label htmlFor={spec.key} className={labelClasses}>
           {spec.key}
-          <span className="block text-[10px] text-parchment/40">sprite</span>
+          <span className="block text-xs text-parchment/60">sprite</span>
         </label>
         <div className="flex-1">
           <SpritePicker
@@ -382,7 +382,7 @@ function FieldRow({
             config={spriteConfig}
             onChange={onChange}
           />
-          {error ? <p className="mt-1 text-xs text-ember">{error}</p> : null}
+          {error ? <p className="mt-1 text-[13px] text-ember">{error}</p> : null}
         </div>
       </div>
     );
@@ -400,13 +400,13 @@ function FieldRow({
       <div className="flex items-start gap-3">
         <label htmlFor={spec.key} className={labelClasses}>
           {spec.key}
-          <span className="block text-[10px] text-parchment/40">
+          <span className="block text-xs text-parchment/60">
             animation
           </span>
         </label>
         <div className="flex-1">
           <AnimationPicker value={value} onChange={onChange} />
-          {error ? <p className="mt-1 text-xs text-ember">{error}</p> : null}
+          {error ? <p className="mt-1 text-[13px] text-ember">{error}</p> : null}
         </div>
       </div>
     );
@@ -423,11 +423,11 @@ function FieldRow({
       <div className="flex items-start gap-3">
         <label htmlFor={spec.key} className={labelClasses}>
           {spec.key}
-          <span className="block text-[10px] text-parchment/40">counter</span>
+          <span className="block text-xs text-parchment/60">counter</span>
         </label>
         <div className="flex-1">
           <CounterPicker value={value} onChange={onChange} />
-          {error ? <p className="mt-1 text-xs text-ember">{error}</p> : null}
+          {error ? <p className="mt-1 text-[13px] text-ember">{error}</p> : null}
         </div>
       </div>
     );
@@ -442,7 +442,7 @@ function FieldRow({
       <div className="flex items-start gap-3">
         <label htmlFor={spec.key} className={labelClasses}>
           {spec.key}
-          <span className="block text-[10px] text-parchment/40">map</span>
+          <span className="block text-xs text-parchment/60">map</span>
         </label>
         <div className="flex-1">
           <MapPicker
@@ -450,7 +450,7 @@ function FieldRow({
             onChange={onChange}
             requiredTag={mapConfig.requiredTag}
           />
-          {error ? <p className="mt-1 text-xs text-ember">{error}</p> : null}
+          {error ? <p className="mt-1 text-[13px] text-ember">{error}</p> : null}
         </div>
       </div>
     );
@@ -469,7 +469,7 @@ function FieldRow({
           onChange={(e) => onChange(e.target.value)}
           className={`${inputBase} ${inputColor}`}
         />
-        {error ? <p className="mt-1 text-xs text-ember">{error}</p> : null}
+        {error ? <p className="mt-1 text-[13px] text-ember">{error}</p> : null}
       </div>
     </div>
   );

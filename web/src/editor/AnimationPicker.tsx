@@ -295,7 +295,7 @@ export function AnimationPicker({
           className="flex-1 rounded border border-parchment/20 bg-ink/40 px-2 py-1 text-left text-sm text-parchment hover:bg-ink/60"
           aria-expanded={open}
         >
-          <span className="text-parchment/40 mr-1">{open ? "▾" : "▸"}</span>
+          <span className="text-parchment/60 mr-1">{open ? "▾" : "▸"}</span>
           {summary}
         </button>
         {current ? (
@@ -308,7 +308,7 @@ export function AnimationPicker({
               if (!hasOpened) setOpen(true);
               requestPlay(current);
             }}
-            className="rounded border border-parchment/20 px-2 py-1 text-xs text-parchment/70 hover:bg-ink/40"
+            className="rounded border border-parchment/20 px-2 py-1 text-[13px] text-parchment/85 hover:bg-ink/40"
             title={`Preview "${current.name}".`}
           >
             ▶
@@ -318,7 +318,7 @@ export function AnimationPicker({
           <button
             type="button"
             onClick={() => onChange("")}
-            className="rounded border border-parchment/20 px-2 py-1 text-xs text-parchment/70 hover:bg-ink/40"
+            className="rounded border border-parchment/20 px-2 py-1 text-[13px] text-parchment/85 hover:bg-ink/40"
             title="Clear the animation reference."
           >
             ✕
@@ -333,9 +333,9 @@ export function AnimationPicker({
       <div className={open ? "block" : "hidden"}>
         {hasOpened ? (
           <div className="mt-1 rounded border border-parchment/15 bg-ink/60 p-2">
-            <div className="mb-1 flex items-baseline justify-between gap-2 text-[11px]">
-              <span className="text-parchment/55">Preview</span>
-              <span className="font-mono text-parchment/40">
+            <div className="mb-1 flex items-baseline justify-between gap-2 text-xs">
+              <span className="text-parchment/75">Preview</span>
+              <span className="font-mono text-parchment/60">
                 {previewState === "loading"
                   ? "loading Phaser…"
                   : previewState === "error"
@@ -357,10 +357,10 @@ export function AnimationPicker({
       {open ? (
         <div className="mt-1 max-h-64 overflow-auto rounded border border-parchment/15 bg-ink/60 p-2">
           {state.kind === "loading" ? (
-            <p className="text-xs text-parchment/50">Loading animations…</p>
+            <p className="text-[13px] text-parchment/70">Loading animations…</p>
           ) : null}
           {state.kind === "error" ? (
-            <p className="text-xs text-ember">
+            <p className="text-[13px] text-ember">
               Couldn&apos;t load animations.json: {state.message}
             </p>
           ) : null}
@@ -379,8 +379,8 @@ export function AnimationPicker({
                       : "text-parchment/75 hover:bg-ink/40"
                   }`}
                 >
-                  <span className="font-mono text-parchment/50">(none)</span>{" "}
-                  <span className="text-parchment/45">
+                  <span className="font-mono text-parchment/70">(none)</span>{" "}
+                  <span className="text-parchment/65">
                     — no animation assigned
                   </span>
                 </button>
@@ -410,17 +410,17 @@ export function AnimationPicker({
                     >
                       <div className="flex items-baseline justify-between gap-2">
                         <span className="font-medium">{a.name}</span>
-                        <span className="font-mono text-[10px] text-parchment/45">
+                        <span className="font-mono text-xs text-parchment/65">
                           {a.id}
                         </span>
                       </div>
                       {tail.length > 0 ? (
-                        <div className="text-[11px] text-parchment/50">
+                        <div className="text-xs text-parchment/70">
                           {tail.join(" · ")}
                         </div>
                       ) : null}
                       {a.description ? (
-                        <div className="text-[11px] text-parchment/45">
+                        <div className="text-xs text-parchment/65">
                           {a.description}
                         </div>
                       ) : null}
@@ -431,10 +431,10 @@ export function AnimationPicker({
                         e.stopPropagation();
                         requestPlay(a);
                       }}
-                      className={`shrink-0 rounded border px-2 text-xs transition ${
+                      className={`shrink-0 rounded border px-2 text-[13px] transition ${
                         isPreviewing
                           ? "border-ember/60 bg-ember/30 text-parchment"
-                          : "border-parchment/20 text-parchment/70 hover:bg-ink/40"
+                          : "border-parchment/20 text-parchment/85 hover:bg-ink/40"
                       }`}
                       title={`Preview "${a.name}".`}
                     >

@@ -190,7 +190,7 @@ export function DungeonSimLauncher({ moduleId }: { moduleId: string }) {
         <h1 className="font-display text-3xl text-parchment">
           Dungeon Simulator
         </h1>
-        <p className="mt-1 text-sm text-parchment/55">
+        <p className="mt-1 text-sm text-parchment/75">
           Procedural dungeon walker. Pick a dungeon from{" "}
           <span className="font-mono">modules/{moduleId}/dungeons.json</span>
           ; the v1 generator runs against its parameters and the
@@ -200,7 +200,7 @@ export function DungeonSimLauncher({ moduleId }: { moduleId: string }) {
 
       <section className="mb-4 flex flex-wrap items-end gap-3">
         <div className="flex flex-col gap-1">
-          <label className="text-[10px] uppercase tracking-wide text-parchment/45">
+          <label className="text-xs uppercase tracking-wide text-parchment/65">
             Dungeon
           </label>
           <select
@@ -229,7 +229,7 @@ export function DungeonSimLauncher({ moduleId }: { moduleId: string }) {
         </div>
 
         <div className="flex flex-col gap-1">
-          <label className="text-[10px] uppercase tracking-wide text-parchment/45">
+          <label className="text-xs uppercase tracking-wide text-parchment/65">
             Seed (optional)
           </label>
           <input
@@ -245,7 +245,7 @@ export function DungeonSimLauncher({ moduleId }: { moduleId: string }) {
         </div>
 
         <div className="flex flex-col gap-1">
-          <label className="text-[10px] uppercase tracking-wide text-parchment/45">
+          <label className="text-xs uppercase tracking-wide text-parchment/65">
             Floor
           </label>
           <select
@@ -313,7 +313,7 @@ export function DungeonSimLauncher({ moduleId }: { moduleId: string }) {
       </section>
 
       {loadError ? (
-        <p className="mb-3 text-xs text-rust">
+        <p className="mb-3 text-[13px] text-rust">
           Couldn&apos;t load dungeons.json: {loadError}
         </p>
       ) : null}
@@ -338,7 +338,7 @@ export function DungeonSimLauncher({ moduleId }: { moduleId: string }) {
           infravisionActive={infravisionActive}
         />
       ) : (
-        <p className="text-sm text-parchment/45">
+        <p className="text-sm text-parchment/65">
           Press <em>Generate &amp; Walk</em> to roll a floor and drop the
           party in.
         </p>
@@ -362,20 +362,20 @@ export function DungeonSimLauncher({ moduleId }: { moduleId: string }) {
 function FloorsPreview({ record }: { record: DungeonRecord }) {
   if (!record.levels || record.levels.length === 0) {
     return (
-      <p className="mb-3 text-xs text-rust/80">
+      <p className="mb-3 text-[13px] text-rust/80">
         This dungeon has no Levels — add at least one in the Dungeons
         editor to generate floors.
       </p>
     );
   }
   return (
-    <div className="mb-3 max-w-3xl rounded border border-parchment/15 bg-ink/40 p-3 text-xs text-parchment/65">
+    <div className="mb-3 max-w-3xl rounded border border-parchment/15 bg-ink/40 p-3 text-[13px] text-parchment/80">
       {record.description ? (
         <p className="mb-2 italic text-parchment/75">{record.description}</p>
       ) : null}
       <table className="w-full">
         <thead>
-          <tr className="text-[10px] uppercase tracking-wide text-parchment/40">
+          <tr className="text-xs uppercase tracking-wide text-parchment/60">
             <th className="text-left font-normal">Floor</th>
             <th className="text-left font-normal">Style</th>
             <th className="text-left font-normal">Difficulty</th>
@@ -402,7 +402,7 @@ function FloorsPreview({ record }: { record: DungeonRecord }) {
               <tr key={lvl.id} className="border-t border-parchment/10">
                 <td className="py-1 pr-3 text-parchment/85">
                   {lvl.name}{" "}
-                  <span className="text-parchment/40">
+                  <span className="text-parchment/60">
                     (d{lvl.depth})
                   </span>
                 </td>
@@ -424,7 +424,7 @@ function FloorsPreview({ record }: { record: DungeonRecord }) {
           })}
         </tbody>
       </table>
-      <p className="mt-2 text-[10px] text-parchment/40">
+      <p className="mt-2 text-xs text-parchment/60">
         Ember cells are per-Level overrides; parchment cells inherit
         from the parent Dungeon.
       </p>

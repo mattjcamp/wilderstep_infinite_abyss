@@ -733,15 +733,15 @@ export function CharacterSheetSim({
       {/* Title bar — character name + class • race • level */}
       <div className="flex items-center justify-between gap-2 border-b border-parchment/15 pb-1">
         <div className="flex-1 text-center font-display text-base uppercase tracking-[0.25em] text-amber-300">
-          {character.name} <span className="text-parchment/40">—</span>{" "}
+          {character.name} <span className="text-parchment/60">—</span>{" "}
           {className}
-          <span className="text-parchment/40"> • </span>
+          <span className="text-parchment/60"> • </span>
           {raceName}
-          <span className="text-parchment/40"> • </span>
+          <span className="text-parchment/60"> • </span>
           Lvl {level}
           {fallen ? (
             <span
-              className="ml-2 rounded border border-ember/60 bg-ember/25 px-1.5 py-px font-mono text-[10px] tracking-wider text-ember"
+              className="ml-2 rounded border border-ember/60 bg-ember/25 px-1.5 py-px font-mono text-xs tracking-wider text-ember"
               title="Fallen — needs Raise Dead at a temple."
             >
               FALLEN
@@ -752,7 +752,7 @@ export function CharacterSheetSim({
           <button
             type="button"
             onClick={onBack}
-            className="rounded border border-parchment/20 px-2 py-0.5 text-xs text-parchment/70 hover:bg-ink/40"
+            className="rounded border border-parchment/20 px-2 py-0.5 text-[13px] text-parchment/85 hover:bg-ink/40"
             title="Back to Party screen"
           >
             ← Back
@@ -783,19 +783,19 @@ export function CharacterSheetSim({
               <div className="font-display text-lg text-parchment">
                 {character.name}
               </div>
-              <div className="text-xs text-parchment/65">
-                {className} <span className="text-parchment/40">•</span>{" "}
+              <div className="text-[13px] text-parchment/80">
+                {className} <span className="text-parchment/60">•</span>{" "}
                 {raceName}
                 {character.gender ? (
                   <>
                     {" "}
-                    <span className="text-parchment/40">•</span>{" "}
+                    <span className="text-parchment/60">•</span>{" "}
                     {character.gender}
                   </>
                 ) : null}
               </div>
-              <div className="mt-0.5 font-mono text-[11px] text-parchment/55">
-                Level {level} <span className="text-parchment/35">•</span> EXP{" "}
+              <div className="mt-0.5 font-mono text-xs text-parchment/75">
+                Level {level} <span className="text-parchment/55">•</span> EXP{" "}
                 {xpInto} / {xpNeeded}
               </div>
             </div>
@@ -823,22 +823,22 @@ export function CharacterSheetSim({
               by way of the play overlay; absent in editor preview. */}
           {characterEffects.length > 0 ? (
             <section>
-              <h3 className="text-xs uppercase tracking-wide text-amber-300">
+              <h3 className="text-[13px] uppercase tracking-wide text-amber-300">
                 Conditions
               </h3>
               <ul className="mt-1 flex flex-wrap gap-1">
                 {characterEffects.map((e) => (
                   <li
                     key={e.id}
-                    className="rounded border border-parchment/25 bg-ink/50 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-parchment/85"
+                    className="rounded border border-parchment/25 bg-ink/50 px-1.5 py-0.5 font-mono text-xs uppercase tracking-wider text-parchment/85"
                   >
                     {e.id.replace(/_/g, " ")}
                     {typeof e.duration === "number" ? (
-                      <span className="ml-1 text-parchment/55">
+                      <span className="ml-1 text-parchment/75">
                         {e.duration}
                       </span>
                     ) : e.duration === "permanent" ? (
-                      <span className="ml-1 text-parchment/55">∞</span>
+                      <span className="ml-1 text-parchment/75">∞</span>
                     ) : null}
                   </li>
                 ))}
@@ -848,17 +848,17 @@ export function CharacterSheetSim({
 
           {/* Combat block */}
           <section>
-            <h3 className="text-xs uppercase tracking-wide text-amber-300">
+            <h3 className="text-[13px] uppercase tracking-wide text-amber-300">
               Combat
             </h3>
-            <table className="mt-1 w-full font-mono text-xs">
+            <table className="mt-1 w-full font-mono text-[13px]">
               <tbody>
                 <tr>
-                  <td className="py-0.5 pr-3 text-parchment/65">AC</td>
+                  <td className="py-0.5 pr-3 text-parchment/80">AC</td>
                   <td className="py-0.5 text-parchment/95">{ac}</td>
                 </tr>
                 <tr>
-                  <td className="py-0.5 pr-3 text-parchment/65">Damage</td>
+                  <td className="py-0.5 pr-3 text-parchment/80">Damage</td>
                   <td className="py-0.5 text-parchment/95">{damageStr}</td>
                 </tr>
               </tbody>
@@ -867,10 +867,10 @@ export function CharacterSheetSim({
 
           {/* Attributes block — STR/DEX/CON/INT/WIS with mod coloring */}
           <section>
-            <h3 className="text-xs uppercase tracking-wide text-amber-300">
+            <h3 className="text-[13px] uppercase tracking-wide text-amber-300">
               Attributes
             </h3>
-            <table className="mt-1 w-full font-mono text-xs">
+            <table className="mt-1 w-full font-mono text-[13px]">
               <tbody>
                 {STAT_KEYS.map((k) => {
                   const v = (character[k] as number | undefined) ?? 10;
@@ -880,7 +880,7 @@ export function CharacterSheetSim({
                       ? "text-emerald-400"
                       : m < 0
                         ? "text-red-400"
-                        : "text-parchment/45";
+                        : "text-parchment/65";
                   return (
                     <tr key={k}>
                       <td className="py-0.5 pr-3 text-parchment/75">
@@ -899,7 +899,7 @@ export function CharacterSheetSim({
         {/* Right pane: equipped + personal items */}
         <div className="space-y-3">
           <section>
-            <h3 className="text-xs uppercase tracking-wide text-amber-300">
+            <h3 className="text-[13px] uppercase tracking-wide text-amber-300">
               Equipped
             </h3>
             <ul className="mt-1 space-y-0.5 text-sm">
@@ -965,13 +965,13 @@ export function CharacterSheetSim({
                 grants a passive. */}
             {equippedPassives.length > 0 ? (
               <div className="mt-2 flex flex-wrap items-center gap-1">
-                <span className="font-mono text-[10px] uppercase tracking-wider text-parchment/45">
+                <span className="font-mono text-xs uppercase tracking-wider text-parchment/65">
                   Grants
                 </span>
                 {equippedPassives.map((p) => (
                   <span
                     key={p}
-                    className="rounded border border-amber-300/40 bg-amber-300/10 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-amber-200/90"
+                    className="rounded border border-amber-300/40 bg-amber-300/10 px-1.5 py-0.5 font-mono text-xs uppercase tracking-wider text-amber-200/90"
                     title={`Passive granted by your equipped gear: ${prettifyPassiveId(p)}.`}
                   >
                     {prettifyPassiveId(p)}
@@ -990,7 +990,7 @@ export function CharacterSheetSim({
                 equippedSelectedSlot === "hands" ? handsId : bodyId;
               if (!slotId) return null;
               return (
-                <div className="mt-2 flex gap-2 text-xs">
+                <div className="mt-2 flex gap-2 text-[13px]">
                   <button
                     type="button"
                     onClick={() =>
@@ -1007,11 +1007,11 @@ export function CharacterSheetSim({
           </section>
 
           <section>
-            <h3 className="text-xs uppercase tracking-wide text-amber-300">
+            <h3 className="text-[13px] uppercase tracking-wide text-amber-300">
               Personal Items
             </h3>
             {personalItems.length === 0 ? (
-              <p className="mt-1 text-sm text-parchment/45">(none)</p>
+              <p className="mt-1 text-sm text-parchment/65">(none)</p>
             ) : (
               <ul
                 className="mt-1 space-y-0.5 text-sm"
@@ -1095,7 +1095,7 @@ export function CharacterSheetSim({
                         title={def?.description ?? "Click to select"}
                       >
                         <span className="truncate">{label}</span>
-                        <span className="ml-auto flex shrink-0 items-center gap-2 text-xs text-parchment/55">
+                        <span className="ml-auto flex shrink-0 items-center gap-2 text-[13px] text-parchment/75">
                           {showDur ? (
                             <DurabilityBar current={durCur} max={durMax} />
                           ) : null}
@@ -1126,7 +1126,7 @@ export function CharacterSheetSim({
                 !!onEquipPersonalItem && equipTarget !== null;
               if (!canUse && !canReturn && !canEquip) return null;
               return (
-                <div className="mt-2 flex gap-2 text-xs">
+                <div className="mt-2 flex gap-2 text-[13px]">
                   {canUse ? (
                     <button
                       type="button"
@@ -1178,7 +1178,7 @@ export function CharacterSheetSim({
           </section>
 
           {!onUsePersonalItem && !onReturnPersonalItem ? (
-            <p className="text-[11px] text-parchment/45">
+            <p className="text-xs text-parchment/65">
               Read-only preview. The play-time sheet lets the player
               Use or Return-to-stash personal items.
             </p>
@@ -1238,7 +1238,7 @@ export function CharacterSheetSim({
       <section>
         <h3
           className={[
-            "text-xs uppercase tracking-wide pl-2 -ml-2 border-l-2",
+            "text-[13px] uppercase tracking-wide pl-2 -ml-2 border-l-2",
             navState.zone === "spells"
               ? "border-amber-200 text-amber-200"
               : "border-transparent text-amber-300/80",
@@ -1247,7 +1247,7 @@ export function CharacterSheetSim({
           {navState.zone === "spells" ? "▸ " : ""}Spells
         </h3>
         {knownSpells.length === 0 ? (
-          <p className="mt-1 text-sm text-parchment/45">
+          <p className="mt-1 text-sm text-parchment/65">
             {klass?.casting_type && klass.casting_type.includes("none")
               ? "Not a spellcaster."
               : `No spells known at level ${level}.`}
@@ -1296,13 +1296,13 @@ export function CharacterSheetSim({
       {/* Transient action feedback line. Empty by default; populates
           on Use / Cast clicks. */}
       {lastAction ? (
-        <p className="rounded border border-amber-300/30 bg-amber-300/5 px-2 py-1 text-xs text-amber-200/90">
+        <p className="rounded border border-amber-300/30 bg-amber-300/5 px-2 py-1 text-[13px] text-amber-200/90">
           {lastAction}
         </p>
       ) : null}
 
       {/* Bottom hint bar (cosmetic — keys aren't bound in this pass) */}
-      <div className="border-t border-parchment/15 pt-1 text-center font-mono text-[10px] uppercase tracking-wider text-parchment/45">
+      <div className="border-t border-parchment/15 pt-1 text-center font-mono text-xs uppercase tracking-wider text-parchment/65">
         [↑↓] select · [Enter] equip / unequip · [R] return to stash · [1-4]
         switch character · [ESC] back · [P] close
       </div>
@@ -1367,7 +1367,7 @@ function EquipRow({
   ].join(" ");
   const content = (
     <>
-      <span className="text-parchment/70">{slot}</span>
+      <span className="text-parchment/85">{slot}</span>
       <span className="truncate text-parchment/95">{label}</span>
       <span className="justify-self-end">
         {showDur ? <DurabilityBar current={durCur} max={durMax} /> : null}
@@ -1412,7 +1412,7 @@ function StatBar({
     <div className="flex items-baseline gap-2">
       <span
         className={`w-8 font-display text-sm ${
-          dimWhenZero && isZero ? "text-parchment/35" : "text-amber-300"
+          dimWhenZero && isZero ? "text-parchment/55" : "text-amber-300"
         }`}
       >
         {label}
@@ -1424,8 +1424,8 @@ function StatBar({
         />
       </span>
       <span
-        className={`font-mono text-xs ${
-          dimWhenZero && isZero ? "text-parchment/35" : "text-parchment/80"
+        className={`font-mono text-[13px] ${
+          dimWhenZero && isZero ? "text-parchment/55" : "text-parchment/80"
         }`}
       >
         {value} / {max <= 1 && value === 0 ? 0 : max}
@@ -1473,7 +1473,7 @@ function AbilitySection({
     <section>
       <h3
         className={[
-          "text-xs uppercase tracking-wide pl-2 -ml-2 border-l-2",
+          "text-[13px] uppercase tracking-wide pl-2 -ml-2 border-l-2",
           sectionFocused
             ? "border-amber-200 text-amber-200"
             : "border-transparent text-amber-300/80",
@@ -1482,7 +1482,7 @@ function AbilitySection({
         {sectionFocused ? "▸ " : ""}{title}
       </h3>
       {rows.length === 0 ? (
-        <p className="mt-1 text-sm text-parchment/45">{emptyHint}</p>
+        <p className="mt-1 text-sm text-parchment/65">{emptyHint}</p>
       ) : (
         <ul className="mt-1 space-y-1">
           {rows.map((a, i) => {
@@ -1517,7 +1517,7 @@ function AbilitySection({
                         type="button"
                         disabled
                         title={cooldownLabel}
-                        className="rounded border border-parchment/15 bg-ink/20 px-2 py-0.5 text-[11px] text-parchment/45 cursor-not-allowed"
+                        className="rounded border border-parchment/15 bg-ink/20 px-2 py-0.5 text-xs text-parchment/65 cursor-not-allowed"
                       >
                         {cooldownLabel}
                       </button>
@@ -1525,13 +1525,13 @@ function AbilitySection({
                       <button
                         type="button"
                         onClick={() => onUse(a)}
-                        className="rounded border border-ember/60 bg-ember/30 px-2 py-0.5 text-[11px] text-parchment hover:bg-ember/50"
+                        className="rounded border border-ember/60 bg-ember/30 px-2 py-0.5 text-xs text-parchment hover:bg-ember/50"
                       >
                         Use
                       </button>
                     )
                   ) : (
-                    <span className="text-[10px] uppercase tracking-wider text-parchment/35">
+                    <span className="text-xs uppercase tracking-wider text-parchment/55">
                       {(a.usable_in ?? []).includes("battle")
                         ? "Combat"
                         : "Passive"}
@@ -1539,7 +1539,7 @@ function AbilitySection({
                   )}
                 </div>
                 {a.description ? (
-                  <p className="mt-0.5 text-[11px] text-parchment/65">
+                  <p className="mt-0.5 text-xs text-parchment/80">
                     {a.description}
                   </p>
                 ) : null}
@@ -1583,7 +1583,7 @@ function SpellRow({
       <div className="flex items-center justify-between gap-2">
         <span className="text-sm text-parchment/95">
           {spell.name ?? spell.id}
-          <span className="ml-2 font-mono text-[10px] text-parchment/45">
+          <span className="ml-2 font-mono text-xs text-parchment/65">
             MP {spell.mp_cost ?? 0}
             {spell.casting_type ? ` · ${spell.casting_type}` : ""}
             {spell.min_level ? ` · L${spell.min_level}+` : ""}
@@ -1593,12 +1593,12 @@ function SpellRow({
           <button
             type="button"
             onClick={onCast}
-            className="rounded border border-ember/60 bg-ember/30 px-2 py-0.5 text-[11px] text-parchment hover:bg-ember/50"
+            className="rounded border border-ember/60 bg-ember/30 px-2 py-0.5 text-xs text-parchment hover:bg-ember/50"
           >
             Cast
           </button>
         ) : (
-          <span className="text-[10px] uppercase tracking-wider text-parchment/35">
+          <span className="text-xs uppercase tracking-wider text-parchment/55">
             {(spell.usable_in ?? []).includes("battle")
               ? "Combat"
               : "—"}
@@ -1606,7 +1606,7 @@ function SpellRow({
         )}
       </div>
       {spell.description ? (
-        <p className="mt-0.5 text-[11px] text-parchment/65">
+        <p className="mt-0.5 text-xs text-parchment/80">
           {spell.description}
         </p>
       ) : null}

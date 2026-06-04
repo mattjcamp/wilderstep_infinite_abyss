@@ -3697,13 +3697,13 @@ export function MapEditor({
 
   // ── Render ──────────────────────────────────────────────────────
   if (state.kind === "loading") {
-    return <p className="p-4 text-parchment/60">Loading map…</p>;
+    return <p className="p-4 text-parchment/80">Loading map…</p>;
   }
   if (state.kind === "error") {
     return (
       <div className="p-4">
         <p className="text-ember">Failed to load map editor.</p>
-        <p className="mt-2 font-mono text-sm text-parchment/60">
+        <p className="mt-2 font-mono text-sm text-parchment/80">
           {state.message}
         </p>
       </div>
@@ -3732,23 +3732,23 @@ export function MapEditor({
         >
           {mapRecord.name}
         </button>
-        <span className="text-parchment/50">
+        <span className="text-parchment/70">
           {mapRecord.width}×{mapRecord.height}
         </span>
         {Array.isArray(mapRecord.tags) && mapRecord.tags.length > 0 ? (
-          <span className="text-parchment/45">
+          <span className="text-parchment/65">
             tags: {mapRecord.tags.join(", ")}
           </span>
         ) : null}
         <button
           type="button"
           onClick={() => setEditingMapAttrs(true)}
-          className="rounded border border-parchment/20 px-2 py-0.5 text-xs text-parchment/70 hover:bg-ink/40"
+          className="rounded border border-parchment/20 px-2 py-0.5 text-[13px] text-parchment/85 hover:bg-ink/40"
           title="Edit map properties (name, description, tags)."
         >
           Properties
         </button>
-        <span className="text-parchment/40">·</span>
+        <span className="text-parchment/60">·</span>
         <div
           role="group"
           aria-label="Tool"
@@ -3757,10 +3757,10 @@ export function MapEditor({
           <button
             type="button"
             onClick={() => setTool("paint")}
-            className={`px-2 py-0.5 text-xs transition ${
+            className={`px-2 py-0.5 text-[13px] transition ${
               tool === "paint"
                 ? "bg-ember/30 text-parchment"
-                : "bg-ink/40 text-parchment/65 hover:bg-ink/60"
+                : "bg-ink/40 text-parchment/80 hover:bg-ink/60"
             }`}
             title="Click/drag paints with the active brush + selects the cell."
           >
@@ -3769,10 +3769,10 @@ export function MapEditor({
           <button
             type="button"
             onClick={() => setTool("inspect")}
-            className={`border-l border-parchment/15 px-2 py-0.5 text-xs transition ${
+            className={`border-l border-parchment/15 px-2 py-0.5 text-[13px] transition ${
               tool === "inspect"
                 ? "bg-ember/30 text-parchment"
-                : "bg-ink/40 text-parchment/65 hover:bg-ink/60"
+                : "bg-ink/40 text-parchment/80 hover:bg-ink/60"
             }`}
             title="Click/drag only selects — no painting. Read attributes without changing the map."
           >
@@ -3781,10 +3781,10 @@ export function MapEditor({
           <button
             type="button"
             onClick={() => setTool("fill")}
-            className={`border-l border-parchment/15 px-2 py-0.5 text-xs transition ${
+            className={`border-l border-parchment/15 px-2 py-0.5 text-[13px] transition ${
               tool === "fill"
                 ? "bg-ember/30 text-parchment"
-                : "bg-ink/40 text-parchment/65 hover:bg-ink/60"
+                : "bg-ink/40 text-parchment/80 hover:bg-ink/60"
             }`}
             title="Click and drag to fill a rectangle with the active brush."
           >
@@ -3793,10 +3793,10 @@ export function MapEditor({
           <button
             type="button"
             onClick={() => setTool("pan")}
-            className={`border-l border-parchment/15 px-2 py-0.5 text-xs transition ${
+            className={`border-l border-parchment/15 px-2 py-0.5 text-[13px] transition ${
               tool === "pan"
                 ? "bg-ember/30 text-parchment"
-                : "bg-ink/40 text-parchment/65 hover:bg-ink/60"
+                : "bg-ink/40 text-parchment/80 hover:bg-ink/60"
             }`}
             title="Click/drag scrolls the map. No mouse needed — great on a trackpad."
           >
@@ -3811,10 +3811,10 @@ export function MapEditor({
           <button
             type="button"
             onClick={() => setLightingMode("day")}
-            className={`px-2 py-0.5 text-xs transition ${
+            className={`px-2 py-0.5 text-[13px] transition ${
               lightingMode === "day"
                 ? "bg-ember/30 text-parchment"
-                : "bg-ink/40 text-parchment/65 hover:bg-ink/60"
+                : "bg-ink/40 text-parchment/80 hover:bg-ink/60"
             }`}
             title="Full daylight — no darkness overlay."
           >
@@ -3823,10 +3823,10 @@ export function MapEditor({
           <button
             type="button"
             onClick={() => setLightingMode("twilight")}
-            className={`border-l border-parchment/15 px-2 py-0.5 text-xs transition ${
+            className={`border-l border-parchment/15 px-2 py-0.5 text-[13px] transition ${
               lightingMode === "twilight"
                 ? "bg-ember/30 text-parchment"
-                : "bg-ink/40 text-parchment/65 hover:bg-ink/60"
+                : "bg-ink/40 text-parchment/80 hover:bg-ink/60"
             }`}
             title="Dim ambient light — light_source tiles brighten cells within their light_range."
           >
@@ -3835,10 +3835,10 @@ export function MapEditor({
           <button
             type="button"
             onClick={() => setLightingMode("night")}
-            className={`border-l border-parchment/15 px-2 py-0.5 text-xs transition ${
+            className={`border-l border-parchment/15 px-2 py-0.5 text-[13px] transition ${
               lightingMode === "night"
                 ? "bg-ember/30 text-parchment"
-                : "bg-ink/40 text-parchment/65 hover:bg-ink/60"
+                : "bg-ink/40 text-parchment/80 hover:bg-ink/60"
             }`}
             title="Near-darkness — only light sources illuminate."
           >
@@ -3859,12 +3859,12 @@ export function MapEditor({
           onClick={() =>
             setSimMode((v) => (v === "off" ? "placing" : "off"))
           }
-          className={`rounded border px-2 py-0.5 text-xs transition ${
+          className={`rounded border px-2 py-0.5 text-[13px] transition ${
             simMode === "active"
               ? "border-ember/60 bg-ember/30 text-parchment"
               : simMode === "placing"
                 ? "border-ember/60 bg-ember/15 text-parchment animate-pulse"
-                : "border-parchment/20 bg-ink/40 text-parchment/70 hover:bg-ink/60"
+                : "border-parchment/20 bg-ink/40 text-parchment/85 hover:bg-ink/60"
           }`}
           title={
             simMode === "off"
@@ -3884,19 +3884,19 @@ export function MapEditor({
           className="flex items-center gap-1"
           title="Zoom — also pinch on trackpad or Ctrl/⌘ + wheel. Pan: two-finger scroll, Space + drag, or middle-mouse drag."
         >
-          <span className="text-xs text-parchment/45">Zoom</span>
+          <span className="text-[13px] text-parchment/65">Zoom</span>
           <button
             type="button"
             disabled={zoomIdx <= 0}
             onClick={() => setZoomIdx((i) => Math.max(0, i - 1))}
-            className="rounded border border-parchment/20 px-2 py-0.5 text-xs text-parchment/70 hover:bg-ink/40 disabled:opacity-40 disabled:hover:bg-transparent"
+            className="rounded border border-parchment/20 px-2 py-0.5 text-[13px] text-parchment/85 hover:bg-ink/40 disabled:opacity-40 disabled:hover:bg-transparent"
           >
             −
           </button>
           <button
             type="button"
             onClick={() => setZoomIdx(DEFAULT_ZOOM_IDX)}
-            className="min-w-[3.25rem] rounded border border-parchment/20 px-2 py-0.5 text-center font-mono text-xs text-parchment/75 hover:bg-ink/40"
+            className="min-w-[3.25rem] rounded border border-parchment/20 px-2 py-0.5 text-center font-mono text-[13px] text-parchment/75 hover:bg-ink/40"
             title="Reset to 100%"
           >
             {Math.round(zoom * 100)}%
@@ -3907,28 +3907,28 @@ export function MapEditor({
             onClick={() =>
               setZoomIdx((i) => Math.min(ZOOM_STEPS.length - 1, i + 1))
             }
-            className="rounded border border-parchment/20 px-2 py-0.5 text-xs text-parchment/70 hover:bg-ink/40 disabled:opacity-40 disabled:hover:bg-transparent"
+            className="rounded border border-parchment/20 px-2 py-0.5 text-[13px] text-parchment/85 hover:bg-ink/40 disabled:opacity-40 disabled:hover:bg-transparent"
           >
             +
           </button>
         </div>
         <span className="ml-auto flex items-center gap-2">
           {activeBrushTile ? (
-            <span className="text-xs text-parchment/55">
+            <span className="text-[13px] text-parchment/75">
               brush:{" "}
               <span className="text-parchment/90">{activeBrushTile.name}</span>
             </span>
           ) : (
-            <span className="text-xs text-ember/80">no brush</span>
+            <span className="text-[13px] text-ember/80">no brush</span>
           )}
           {isDraft ? (
-            <span className="rounded bg-ember/30 px-2 py-0.5 text-xs text-parchment/90">
+            <span className="rounded bg-ember/30 px-2 py-0.5 text-[13px] text-parchment/90">
               draft
             </span>
           ) : null}
           {draftQuotaExceeded ? (
             <span
-              className="rounded border border-ember/60 bg-ember/20 px-2 py-0.5 text-xs text-ember"
+              className="rounded border border-ember/60 bg-ember/20 px-2 py-0.5 text-[13px] text-ember"
               title="This module's maps.json is too large to keep in browser local storage. Your latest edits live in memory only — click Publish to write them straight to disk."
             >
               draft full — Publish to save
@@ -3938,7 +3938,7 @@ export function MapEditor({
             <button
               type="button"
               onClick={onDiscardDraft}
-              className="rounded border border-parchment/20 px-2 py-0.5 text-xs text-parchment/70 hover:bg-ink/40"
+              className="rounded border border-parchment/20 px-2 py-0.5 text-[13px] text-parchment/85 hover:bg-ink/40"
             >
               Discard
             </button>
@@ -3948,7 +3948,7 @@ export function MapEditor({
               type="button"
               onClick={onPublish}
               disabled={publishing}
-              className="rounded border border-ember/60 bg-ember/30 px-2 py-0.5 text-xs text-parchment hover:bg-ember/50 disabled:cursor-not-allowed disabled:opacity-40"
+              className="rounded border border-ember/60 bg-ember/30 px-2 py-0.5 text-[13px] text-parchment hover:bg-ember/50 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {publishing ? "Publishing…" : "Publish"}
             </button>
@@ -3956,7 +3956,7 @@ export function MapEditor({
           <button
             type="button"
             onClick={onDeleteMap}
-            className="rounded border border-parchment/20 px-2 py-0.5 text-xs text-parchment/65 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
+            className="rounded border border-parchment/20 px-2 py-0.5 text-[13px] text-parchment/80 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
             title="Delete this map from the module's maps file."
           >
             Delete map
@@ -3983,7 +3983,7 @@ export function MapEditor({
               allTags.size > 0 && collapsedTags.size >= allTags.size;
             return (
               <div className="mb-2 flex items-center justify-between gap-2">
-                <p className="text-xs uppercase tracking-wide text-parchment/45">
+                <p className="text-[13px] uppercase tracking-wide text-parchment/65">
                   Tile Palette
                 </p>
                 {allTags.size > 1 ? (
@@ -3992,7 +3992,7 @@ export function MapEditor({
                     onClick={() =>
                       setCollapsedTags(allCollapsed ? new Set() : allTags)
                     }
-                    className="rounded border border-parchment/15 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-parchment/65 hover:bg-ink/50 hover:text-parchment/90"
+                    className="rounded border border-parchment/15 px-1.5 py-0.5 text-xs uppercase tracking-wide text-parchment/80 hover:bg-ink/50 hover:text-parchment/90"
                     title={
                       allCollapsed
                         ? "Expand all tag sections"
@@ -4006,7 +4006,7 @@ export function MapEditor({
             );
           })()}
           {palette.length === 0 ? (
-            <p className="text-xs text-parchment/55">
+            <p className="text-[13px] text-parchment/75">
               No tile types yet — add some in the Tile Palette editor.
             </p>
           ) : (
@@ -4358,18 +4358,18 @@ function SimPlacingPanel({ onCancel }: { onCancel: () => void }) {
         <button
           type="button"
           onClick={onCancel}
-          className="rounded border border-parchment/20 px-2 py-0.5 text-xs text-parchment/70 hover:bg-ink/40"
+          className="rounded border border-parchment/20 px-2 py-0.5 text-[13px] text-parchment/85 hover:bg-ink/40"
           title="Cancel and return to the Inspector."
         >
           Cancel
         </button>
       </header>
-      <p className="text-xs text-parchment/70">
+      <p className="text-[13px] text-parchment/85">
         Click a <span className="text-parchment">walkable</span> tile on
         the map to drop the party there. Clicks on walls, water, or
         other impassable tiles are ignored.
       </p>
-      <p className="text-xs text-parchment/55">
+      <p className="text-[13px] text-parchment/75">
         Once placed, use <span className="font-mono">WASD</span> or the
         arrow keys to move. Stepping on a tile with a link traverses to
         the target map.
@@ -4438,15 +4438,15 @@ function PaletteByTag({
             <button
               type="button"
               onClick={() => onToggleTag(tag)}
-              className="flex w-full items-center justify-between gap-2 px-2 py-1 text-left text-xs uppercase tracking-wide text-parchment/65 hover:bg-ink/50"
+              className="flex w-full items-center justify-between gap-2 px-2 py-1 text-left text-[13px] uppercase tracking-wide text-parchment/80 hover:bg-ink/50"
             >
               <span className="flex items-center gap-1">
-                <span className="text-parchment/55">
+                <span className="text-parchment/75">
                   {isCollapsed ? "▸" : "▾"}
                 </span>
                 {tag}
               </span>
-              <span className="text-parchment/45 normal-case tracking-normal">
+              <span className="text-parchment/65 normal-case tracking-normal">
                 {tiles.length}
               </span>
             </button>
@@ -4534,22 +4534,22 @@ function Inspector({
     !!instance && !!base && !cellMatchesPalette(instance, palette);
   return (
     <aside className="w-72 shrink-0 overflow-auto border-l border-parchment/10 bg-ink/20 p-3">
-      <p className="mb-2 text-xs uppercase tracking-wide text-parchment/45">
+      <p className="mb-2 text-[13px] uppercase tracking-wide text-parchment/65">
         Cell Inspector
         {modified ? (
-          <span className="ml-2 rounded bg-ember/30 px-1.5 py-0.5 text-[10px] normal-case tracking-normal text-parchment/90">
+          <span className="ml-2 rounded bg-ember/30 px-1.5 py-0.5 text-xs normal-case tracking-normal text-parchment/90">
             modified
           </span>
         ) : null}
       </p>
       {!selectedCell || !instance ? (
-        <p className="text-xs text-parchment/55">
+        <p className="text-[13px] text-parchment/75">
           Click any cell on the map to inspect or customize its attributes.
         </p>
       ) : (
         <div className="space-y-3">
           <div>
-            <p className="text-[10px] uppercase tracking-wide text-parchment/40">
+            <p className="text-xs uppercase tracking-wide text-parchment/60">
               Position
             </p>
             <p className="font-mono text-sm text-parchment/90">
@@ -4570,7 +4570,7 @@ function Inspector({
               <p className="font-display text-base text-parchment">
                 {instance.name}
               </p>
-              <p className="truncate font-mono text-xs text-parchment/55">
+              <p className="truncate font-mono text-[13px] text-parchment/75">
                 {instance.id}
               </p>
             </div>
@@ -4592,7 +4592,7 @@ function Inspector({
                 onUpdate({ background_sprite: v ? v : undefined })
               }
             />
-            <p className="mt-1 text-[10px] leading-snug text-parchment/45">
+            <p className="mt-1 text-xs leading-snug text-parchment/65">
               Optional terrain drawn behind this tile; the tile&apos;s
               transparent pixels reveal it. Blank = the dark canvas
               (the default).
@@ -4965,14 +4965,14 @@ function Inspector({
           />
 
           {!base ? (
-            <p className="rounded border border-ember/40 bg-ember/15 p-2 text-[11px] text-parchment/75">
+            <p className="rounded border border-ember/40 bg-ember/15 p-2 text-xs text-parchment/75">
               No Tile Palette entry with id <code>{instance.id}</code> —
               this cell is an orphan. Reset is disabled until a matching
               palette entry exists.
             </p>
           ) : null}
 
-          <p className="border-t border-parchment/10 pt-2 text-[11px] text-parchment/45">
+          <p className="border-t border-parchment/10 pt-2 text-xs text-parchment/65">
             Each cell is its own data — edits modify the cell directly.
             Painting a cell over copies the brush palette entry fresh.
             Reset restores a single field from the palette entry that
@@ -5000,7 +5000,7 @@ function InspectorRow({
   return (
     <div>
       <div className="flex items-center justify-between">
-        <p className="text-[10px] uppercase tracking-wide text-parchment/40">
+        <p className="text-xs uppercase tracking-wide text-parchment/60">
           {label}
           {isModified ? (
             <span className="ml-1.5 rounded bg-ember/25 px-1 py-0.5 text-[9px] text-parchment/85">
@@ -5012,7 +5012,7 @@ function InspectorRow({
           <button
             type="button"
             onClick={onReset}
-            className="text-[10px] text-parchment/55 hover:text-parchment/85"
+            className="text-xs text-parchment/75 hover:text-parchment/85"
             title="Restore this field from the Tile Palette entry that shares this cell's id."
           >
             reset
@@ -5090,12 +5090,12 @@ function NumberEditor({
           }}
           className="w-20 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-sm text-parchment/90 focus:border-parchment/60 focus:outline-none"
         />
-        <span className="text-[10px] text-parchment/40">
+        <span className="text-xs text-parchment/60">
           palette: {paletteValue}
         </span>
       </div>
       {help ? (
-        <p className="mt-1 text-[10px] text-parchment/45">{help}</p>
+        <p className="mt-1 text-xs text-parchment/65">{help}</p>
       ) : null}
     </InspectorRow>
   );
@@ -5138,15 +5138,15 @@ function StringEditor({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-xs text-parchment/90 placeholder:text-parchment/30 focus:border-parchment/60 focus:outline-none"
+        className="w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-[13px] text-parchment/90 placeholder:text-parchment/50 focus:border-parchment/60 focus:outline-none"
       />
       {paletteValue ? (
-        <p className="mt-0.5 text-[10px] text-parchment/40">
+        <p className="mt-0.5 text-xs text-parchment/60">
           palette: <span className="font-mono">{paletteValue}</span>
         </p>
       ) : null}
       {help ? (
-        <p className="mt-1 text-[10px] text-parchment/45">{help}</p>
+        <p className="mt-1 text-xs text-parchment/65">{help}</p>
       ) : null}
     </InspectorRow>
   );
@@ -5214,11 +5214,11 @@ function SelectEditor({
           />
         ) : null}
       </div>
-      <p className="mt-0.5 text-[10px] text-parchment/40">
+      <p className="mt-0.5 text-xs text-parchment/60">
         palette: {options.find((o) => o.value === paletteValue)?.label ?? paletteValue}
       </p>
       {help ? (
-        <p className="mt-1 text-[10px] text-parchment/45">{help}</p>
+        <p className="mt-1 text-xs text-parchment/65">{help}</p>
       ) : null}
     </InspectorRow>
   );
@@ -5264,12 +5264,12 @@ function BoolEditor({
           className="h-4 w-4"
         />
         <span>{value ? "yes" : "no"}</span>
-        <span className="text-[10px] text-parchment/40">
+        <span className="text-xs text-parchment/60">
           palette: {paletteValue ? "yes" : "no"}
         </span>
       </label>
       {help ? (
-        <p className="mt-1 text-[10px] text-parchment/45">{help}</p>
+        <p className="mt-1 text-xs text-parchment/65">{help}</p>
       ) : null}
     </InspectorRow>
   );
@@ -5321,11 +5321,11 @@ function LinkEditor({
         <div className="space-y-1">
           <label className="block">
             <span className="flex items-center justify-between">
-              <span className="text-[10px] text-parchment/45">map_id</span>
+              <span className="text-xs text-parchment/65">map_id</span>
               <button
                 type="button"
                 onClick={() => setCustomMode((c) => !c)}
-                className="text-[10px] uppercase tracking-wide text-parchment/45 hover:text-parchment/80"
+                className="text-xs uppercase tracking-wide text-parchment/65 hover:text-parchment/80"
                 title={
                   useCustom
                     ? "Switch back to picking from the maps list."
@@ -5343,7 +5343,7 @@ function LinkEditor({
                   onChange({ ...value, map_id: e.target.value })
                 }
                 placeholder="target-map"
-                className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-xs text-parchment/90 focus:border-parchment/60 focus:outline-none"
+                className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-[13px] text-parchment/90 focus:border-parchment/60 focus:outline-none"
               />
             ) : (
               <select
@@ -5351,7 +5351,7 @@ function LinkEditor({
                 onChange={(e) =>
                   onChange({ ...value, map_id: e.target.value })
                 }
-                className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-xs text-parchment/90 focus:border-parchment/60 focus:outline-none"
+                className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-[13px] text-parchment/90 focus:border-parchment/60 focus:outline-none"
               >
                 {!value.map_id ? (
                   <option value="">— choose a map —</option>
@@ -5374,7 +5374,7 @@ function LinkEditor({
               </select>
             )}
             {valueIsOrphan ? (
-              <span className="mt-0.5 block text-[10px] text-ember/80">
+              <span className="mt-0.5 block text-xs text-ember/80">
                 Map id <code>{value.map_id}</code> isn&apos;t in this
                 module yet — value preserved so the link still
                 round-trips.
@@ -5383,32 +5383,32 @@ function LinkEditor({
           </label>
           <div className="flex gap-2">
             <label className="flex-1">
-              <span className="text-[10px] text-parchment/45">x (col)</span>
+              <span className="text-xs text-parchment/65">x (col)</span>
               <input
                 type="number"
                 value={value.x}
                 onChange={(e) =>
                   onChange({ ...value, x: Number(e.target.value) || 0 })
                 }
-                className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90 focus:border-parchment/60 focus:outline-none"
+                className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90 focus:border-parchment/60 focus:outline-none"
               />
             </label>
             <label className="flex-1">
-              <span className="text-[10px] text-parchment/45">y (row)</span>
+              <span className="text-xs text-parchment/65">y (row)</span>
               <input
                 type="number"
                 value={value.y}
                 onChange={(e) =>
                   onChange({ ...value, y: Number(e.target.value) || 0 })
                 }
-                className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-xs text-parchment/90 focus:border-parchment/60 focus:outline-none"
+                className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90 focus:border-parchment/60 focus:outline-none"
               />
             </label>
           </div>
           <button
             type="button"
             onClick={() => onChange(null)}
-            className="rounded border border-parchment/20 px-2 py-0.5 text-[10px] text-parchment/65 hover:bg-ink/40"
+            className="rounded border border-parchment/20 px-2 py-0.5 text-xs text-parchment/80 hover:bg-ink/40"
             title="Remove the link from this cell (still an override — the palette tile keeps its link, but this cell explicitly has none)."
           >
             Remove link
@@ -5416,7 +5416,7 @@ function LinkEditor({
         </div>
       ) : (
         <div className="flex items-center gap-2">
-          <span className="text-parchment/40">—</span>
+          <span className="text-parchment/60">—</span>
           <button
             type="button"
             onClick={() =>
@@ -5426,12 +5426,12 @@ function LinkEditor({
                 y: paletteValue?.y ?? 0,
               })
             }
-            className="rounded border border-parchment/30 px-2 py-0.5 text-[10px] text-parchment/85 hover:bg-ink/40"
+            className="rounded border border-parchment/30 px-2 py-0.5 text-xs text-parchment/85 hover:bg-ink/40"
           >
             + Add link
           </button>
           {paletteValue ? (
-            <span className="text-[10px] text-parchment/40">
+            <span className="text-xs text-parchment/60">
               (palette: {paletteValue.map_id})
             </span>
           ) : null}
