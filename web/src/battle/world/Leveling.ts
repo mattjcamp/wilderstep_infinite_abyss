@@ -1,11 +1,19 @@
 /**
  * XP awards & level-up logic.
  *
- * Mirrors the Python game's `Fighter.check_level_up`:
- *
- *   - Required XP for the *next* level = current_level × exp_per_level.
- *     `exp_per_level` comes from the class template (default 1000), with
- *     a possible race override (Humans = 750).
+ *   - The XP curve uses a **rising increment**: the cost of the *next*
+ *     level is `current_level × exp_per_level`, paid on top of all XP
+ *     spent so far. Level 1→2 costs 1×exp_per_level, 2→3 costs
+ *     2×exp_per_level, and so on — total XP to reach level N is the
+ *     triangular sum `exp_per_level × N(N-1)/2`. This keeps pacing
+ *     roughly flat in fights-per-level: monster XP awards grow with
+ *     difficulty tier, and the per-level cost grows to match. (The
+ *     older flat curve — a constant exp_per_level per level — made
+ *     leveling accelerate sharply once the party reached high-XP
+ *     encounters.)
+ *   - `exp_per_level` comes from the class template (default 1500),
+ *     with a possible race override (Humans = 1125 via Fast Learner —
+ *     a proportional ~25% discount at every level).
  *   - Each level-up adds `hp_per_level + CON mod` HP (minimum +1).
  *     Constitution drives toughness for every class — Fighters with
  *     high CON see bigger HP swings than wizards on the same roll.
@@ -73,14 +81,53 @@ function castingMod(member: PartyMember, tpl: ClassTemplate): number {
   return 0;
 }
 
-/** XP threshold to reach `member.level + 1`. */
+/**
+ * Total (cumulative) XP required to *be* `level`, under the rising-
+ * increment curve: each level L→L+1 costs `L × xpPer`, so the total
+ * is the triangular sum `xpPer × level(level-1)/2`. Level 1 costs 0.
+ */
+export function xpTotalForLevel(level: number, xpPer: number): number {
+  return (xpPer * level * (level - 1)) / 2;
+}
+
+/**
+ * XP progress *within the current level* — the numbers driving the
+ * party screen / character sheet XP bars. `exp` is cumulative across
+ * the member's whole life (awardXp never resets it), so the bar must
+ * subtract the current level's cumulative threshold to read as
+ * "progress toward the next level".
+ *
+ *  - `into` — XP earned since reaching the current level. 0 the
+ *    instant a member levels up; equals `needed` the instant they're
+ *    about to level again.
+ *  - `needed` — XP to earn during this level to cross into the next:
+ *    `level × xpPer` under the rising-increment curve. Floored at 1
+ *    so a 0-xpPer edge case can't divide-by-zero in bar fill math.
+ *
+ * Single source of truth — UI components should call this rather
+ * than re-deriving thresholds, so curve changes land everywhere.
+ */
+export function xpProgressInLevel(
+  level: number,
+  exp: number,
+  xpPer: number,
+): { into: number; needed: number } {
+  const prev = xpTotalForLevel(level, xpPer);
+  const next = xpTotalForLevel(level + 1, xpPer);
+  return {
+    into: Math.max(0, exp - prev),
+    needed: Math.max(1, next - prev),
+  };
+}
+
+/** Cumulative XP threshold at which the member reaches `member.level + 1`. */
 export function xpForNextLevel(
   member: PartyMember,
   tpl: ClassTemplate,
   race: RaceInfo | null,
 ): number {
   const xpPer = race?.exp_per_level ?? tpl.exp_per_level;
-  return member.level * xpPer;
+  return xpTotalForLevel(member.level + 1, xpPer);
 }
 
 /**
@@ -150,7 +197,7 @@ export function awardXp(
   member.exp += xp;
   const events: LevelUpEvent[] = [];
   const xpPer = race?.exp_per_level ?? tpl.exp_per_level;
-  while (member.exp >= member.level * xpPer) {
+  while (member.exp >= xpTotalForLevel(member.level + 1, xpPer)) {
     member.level += 1;
 
     const hpGain = Math.max(1, tpl.hp_per_level + abilityMod(member.constitution));

@@ -5113,6 +5113,34 @@ export function PlayHost() {
             if (prevDetect !== nextDetect) {
               refreshDetectedTraps();
             }
+            // Clock jump — camping through the night advances
+            // `clockMinutes` to first light. Sync the host's clock
+            // ref + HUD state, and re-derive the lighting band the
+            // same way the per-step handler does (map-level
+            // overrides and dungeon ambiance still win — sleeping
+            // inside a dark dungeon doesn't make the walls glow).
+            if (
+              prev &&
+              typeof next.clockMinutes === "number" &&
+              next.clockMinutes !== prev.clockMinutes
+            ) {
+              const beforeMode = lightingModeFromClock(
+                prev.clockMinutes ?? 0,
+              );
+              clockRef.current = next.clockMinutes;
+              setClockMinutes(next.clockMinutes);
+              const afterMode = lightingModeFromClock(next.clockMinutes);
+              const mapOverride = mapForcedLightingMode(
+                catalogRef.current?.map,
+              );
+              if (
+                afterMode !== beforeMode &&
+                !dungeonStateRef.current &&
+                !mapOverride
+              ) {
+                rendererRef.current?.setLightingMode(afterMode);
+              }
+            }
           }}
           onSpellCast={(spellId) => {
             // Paint the spell's animation + play its SFX on the

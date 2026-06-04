@@ -1,0 +1,271 @@
+{
+  "_comment": "Side Quests library NPCs. This is a `library` module meant to be mixed into campaigns, so these NPCs are deliberately town-agnostic — no map placements are assumed. Schema matches default/npcs.json: { id, name, sprite, counter, personal_history, dialogs: [{ id, title, text }] }. Dialog ids are unique within an NPC and stable for quest / script references. Authors place these NPCs wherever the host campaign needs them.",
+  "npcs": [
+    {
+      "id": "shepherd_pell",
+      "name": "Pell Harrow",
+      "sprite": "person/townsperson7.png",
+      "counter": "",
+      "personal_history": "Pell has grazed the same hillsides his father and grandfather did, and he can tell you the name, temper, and lambing history of every ewe in his flock. He is slow to ask for help and slower to forget it. This season the wolves stopped behaving like wolves — they take a sheep and leave it, as if the killing is the point — and Pell has begun carrying his grandfather's iron-shod crook even in daylight.",
+      "dialogs": [
+        {
+          "id": "introduction",
+          "title": "On the hillside",
+          "text": "Mind the dogs, they're nervous lately. Everything out here is nervous lately. You look like the kind of trouble that points outward, which is the only kind I have any use for."
+        },
+        {
+          "id": "about_the_wolves",
+          "title": "Asked about the wolves",
+          "text": "A wolf takes a lamb because it's hungry. These take and don't eat. Three this month, laid out neat as offerings. My dogs won't go past the cairn anymore, and dogs know things we've forgotten."
+        }
+      ]
+    },
+    {
+      "id": "apothecary_odessa",
+      "name": "Odessa Brim",
+      "sprite": "person/druid3.png",
+      "counter": "general",
+      "personal_history": "Odessa keeps the only apothecary shelf for a week's ride in any direction, and she keeps it stocked through a private web of foragers, peddlers, and one extremely reliable mule. She measures everything twice, pays on delivery, and has buried two husbands and one business partner, all of natural causes, as she will tell you with a look that dares you to ask. Lately her shipments have stopped arriving, and Odessa does not believe in coincidence.",
+      "dialogs": [
+        {
+          "id": "shop_greeting",
+          "title": "At the counter",
+          "text": "Salves, tinctures, teas that work and teas that only taste like they do. If you're sick, sit down. If you're selling, show me. If you're browsing, browse faster."
+        },
+        {
+          "id": "about_the_shipment",
+          "title": "Asked about the missing shipment",
+          "text": "My forager packs the crate the same way every season — oilcloth, then straw, then the herbs that matter. The crate left. The crate never arrived. Somewhere between there and here, my winter stock is sitting in the weather, and somebody is going to fetch it before the rot does."
+        }
+      ]
+    },
+    {
+      "id": "sister_wren",
+      "name": "Sister Wren",
+      "sprite": "person/cleric4.png",
+      "counter": "healing",
+      "personal_history": "Wren took her vows young, lost her order to a fever she survived, and has spent the years since walking from village to village with a satchel of remedies and a temper she prays about. She doesn't preach. She splints, stitches, brews, and moves on. The sickness she's tending now is one she's seen only once before, and the cure needs ingredients that don't grow anywhere convenient — they never do.",
+      "dialogs": [
+        {
+          "id": "introduction",
+          "title": "At the sickbed",
+          "text": "Keep your voice down and your hands clean, and you're welcome here. I've got nine patients, two hands, and one prayer left over, so if you're offering help, I'm past the polite stage of refusing it."
+        },
+        {
+          "id": "about_the_remedy",
+          "title": "Asked about the cure",
+          "text": "Moonpetal, fresh, and glowcap from somewhere dark and damp. The fever burns itself out in nine days, but half of them won't last nine days without the brew. I'd go myself. I can't. That arithmetic is the whole of it."
+        }
+      ]
+    },
+    {
+      "id": "surveyor_garrod",
+      "name": "Garrod Vey",
+      "sprite": "person/townsperson18.png",
+      "counter": "",
+      "personal_history": "Garrod spent thirty years surveying for the crown — roads, mines, borders, and once, memorably, a lake that turned out to be somewhere else entirely. He retired with a strongbox of meticulous maps and one blank space he never managed to fill, and the blank space is winning. His eyes are going. His knees went years ago. His ledgers are perfect, and he would trade every page of them for one honest account of what's down there.",
+      "dialogs": [
+        {
+          "id": "introduction",
+          "title": "Among the maps",
+          "text": "Careful where you step — that pile is sorted, whatever it looks like. Thirty years of measuring the world, and do you know what I remember? The one stretch of it I never got to walk. Sit. I have a proposition and very good tea."
+        },
+        {
+          "id": "about_the_depths",
+          "title": "Asked about the unmapped delve",
+          "text": "Every map I ever drew has its edges, and edges are honest — they say 'I stopped here.' But a blank in the middle of a map is a lie of omission, and I've told it for thirty years. Walk it for me. Every level, all the way down. Come back and tell me what the dark looks like, and my ledger dies honest."
+        }
+      ]
+    },
+    {
+      "id": "wagoner_wick",
+      "name": "Wick Tumbrel",
+      "sprite": "person/townsperson9.png",
+      "counter": "",
+      "personal_history": "Wick has hauled freight over every pass worth naming and several that aren't, and in all those years he lost exactly one cargo — until last week. He talks to his oxen, names his wagons, and keeps his contracts in his head because paper burns and Wick doesn't. The strongbox they took off him wasn't his to lose, and the men who took it laughed while they did it, which Wick has decided was their second mistake.",
+      "dialogs": [
+        {
+          "id": "introduction",
+          "title": "By the empty wagon",
+          "text": "Twenty-two years on the roads and I never lost so much as a barrel hoop. Now look at this wagon. Empty as a tax collector's heart. You want work? Because I have a grudge that pays."
+        },
+        {
+          "id": "about_the_strongbox",
+          "title": "Asked about the stolen strongbox",
+          "text": "Iron-banded box, about so big, with another man's savings inside and my name on the contract. They knew the schedule, knew the bend in the road, knew to cut the team loose first. That's not banditry, that's planning. Planning means a camp. Find the camp, find the box."
+        }
+      ]
+    },
+    {
+      "id": "widow_maud",
+      "name": "Maud Grayle",
+      "sprite": "person/townsperson19.png",
+      "counter": "",
+      "personal_history": "Maud's husband Aldous dug graves for forty years and was proud of the work: straight sides, six feet, names spelled right. She buried him herself last autumn, the way he'd have wanted. Now something has been disturbing the old yard — mounds opened from below, and shapes among the stones past midnight — and Maud is less afraid than she is offended. Aldous's silver ring went into the ground with him. She intends for it to stay there, or failing that, to come home.",
+      "dialogs": [
+        {
+          "id": "introduction",
+          "title": "At the gate of the old yard",
+          "text": "Forty years my Aldous kept this yard, and nothing in it ever got up before its time. Now the ground's opening from underneath and I'm expected to sit home with the shutters drawn. I will not. But I'm also not fool enough to go in there alone, which is where you come in."
+        },
+        {
+          "id": "about_the_ring",
+          "title": "Asked about the ring",
+          "text": "His silver ring — I put it on his hand myself before they closed the lid. If those things have shaken it loose, I want it back. Not for the silver. Because it's his, and the dead are allowed to keep exactly one thing, and that was the thing."
+        }
+      ]
+    },
+    {
+      "id": "tinker_jasque",
+      "name": "Jasque the Tinker",
+      "sprite": "person/townsperson15.png",
+      "counter": "",
+      "personal_history": "Jasque mends pots, sharpens shears, and carries more news in his cart than most couriers carry in their satchels. He works a slow circuit between towns and prides himself on arriving with gossip nobody's heard yet. He is friendly, unhurried, and far more observant than he lets on — a man who fixes everyone's kettles ends up knowing everyone's business, and Jasque has never once been asked the right question.",
+      "dialogs": [
+        {
+          "id": "introduction",
+          "title": "At the cart",
+          "text": "Pots mended, blades honed, rumors free with any purchase. I do the circuit every season, which means I've seen the road you just came up and the one you're headed down. Ask me anything. The first answer's free."
+        },
+        {
+          "id": "rumors",
+          "title": "Asked for news",
+          "text": "Let's see. Wolves acting strange on the high pastures. A wagon robbed at the bend by men who knew the schedule. Lights in the old graveyard, and Sister Wren buying up clean linen three villages running. Busy season for somebody. Maybe for you."
+        }
+      ]
+    },
+    {
+      "id": "old_brask",
+      "name": "Brask the Lame",
+      "sprite": "person/fighter12.png",
+      "counter": "",
+      "personal_history": "Brask was a sellsword until a troll's backswing ended the career and very nearly the man. He settled wherever the road dropped him, took up whittling, and discovered he doesn't miss the work — only the company. He sits where he can watch the gate, sizes up everyone who walks through it, and offers unsolicited tactical advice that is, irritatingly, almost always correct.",
+      "dialogs": [
+        {
+          "id": "introduction",
+          "title": "By the gate",
+          "text": "New blades in town. Don't look so surprised — I've been reading walks for forty years, and yours says trouble, the paid kind. Sit a minute. Old men are free to talk to, and I'm a better map than anything they'll sell you in there."
+        },
+        {
+          "id": "advice",
+          "title": "Asked for advice",
+          "text": "Whatever it is, take rope, take a second torch, and count your party going in so you can count them coming out. And if it's trolls — and the way my leg aches, it's trolls — you put it down and you keep it down. Fire helps. Running helps more."
+        }
+      ]
+    },
+    {
+      "id": "innkeeper_tilly",
+      "name": "Tilly Crocket",
+      "sprite": "person/townsperson16.png",
+      "counter": "",
+      "personal_history": "Tilly has run the Drowsy Ox since her aunt left it to her along with three recipes, two debts, and one standing feud with the miller that nobody remembers the start of. She's kept the inn through two fires, one flood, and a bard who stayed eleven weeks. She knows every guest's business by the second night and keeps all of it to herself, which is why the Ox is where people actually talk. Her current war is with the rats in the root cellar, and Tilly does not lose wars.",
+      "dialogs": [
+        {
+          "id": "introduction",
+          "title": "In the common room",
+          "text": "Welcome to the Ox. Beds are clean, stew's honest, and whatever you heard about the bard, it was eleven weeks and we don't discuss it. Sit anywhere that isn't near the cellar door."
+        },
+        {
+          "id": "about_the_cellar",
+          "title": "Asked about the cellar",
+          "text": "Rats. Not a few rats — a civilization. They're into the turnips, they're organizing near the cheese, and last night one looked at me like it was measuring the room. I've fought fires and floods for this inn. I am not above hiring an army."
+        }
+      ]
+    },
+    {
+      "id": "farmer_hob",
+      "name": "Hob Millet",
+      "sprite": "person/townsperson1.png",
+      "counter": "",
+      "personal_history": "Hob farms the land his grandfather cleared, grows the best barley in the district, and has opinions about everyone who's never pulled a plow. He's stubborn in the way of men who argue with weather for a living and usually feel they're winning. When the goblins started collecting their 'tithe' from the outlying farms, his neighbors paid and kept their heads down. Hob paid too — while counting, every single time, exactly what it cost him.",
+      "dialogs": [
+        {
+          "id": "introduction",
+          "title": "At the farm gate",
+          "text": "If you're selling something, I've got it already. If you're buying barley, you've come to the right gate. And if you're the sort that solves problems for coin — stay right there, because I have been saving up a problem."
+        },
+        {
+          "id": "about_the_tithe",
+          "title": "Asked about the goblin tithe",
+          "text": "Every new moon, regular as rent — a goblin in my yard with a tally-stick, counting off what we 'owe.' Started with a chicken. My granddad fought the land itself for this farm. I'm not handing it over one hen at a time to something that giggles."
+        }
+      ]
+    },
+    {
+      "id": "reeve_calder",
+      "name": "Reeve Calder",
+      "sprite": "person/townsperson11.png",
+      "counter": "",
+      "personal_history": "Calder has been district reeve for eleven years: taxes collected, disputes settled, roads maintained, all of it written down twice. He is dull by conviction — excitement, in his experience, is what happens when prevention fails. He reads the old reports from before his tenure the way other men read war stories, and the old reports are clear about what drums in the hills turn into if you let a muster finish mustering. Calder does not intend to be a chapter in the next reeve's reading.",
+      "dialogs": [
+        {
+          "id": "introduction",
+          "title": "At the reeve's table",
+          "text": "District reeve. Taxes, disputes, roads — and lately, defense, which isn't supposed to be my desk but the desk it belongs to is empty. State your business and I'll tell you if it's mine."
+        },
+        {
+          "id": "about_the_drums",
+          "title": "Asked about the drums",
+          "text": "Three nights running, up in the hills, and getting more confident about it. The old reports are unambiguous: drums, then a banner, then a march, then a page in the records with a number of farms burned on it. I prefer my records boring. Help me keep them that way."
+        }
+      ]
+    },
+    {
+      "id": "quarry_master_dagna",
+      "name": "Dagna Flint",
+      "sprite": "person/townsperson21.png",
+      "counter": "",
+      "personal_history": "Dagna inherited the quarry contract from her father and runs it harder and fairer than he ever did: full payroll on time, shored galleries, and a standing rule that nobody cuts alone. She's quarried through a cave-in, a strike, and one memorable visit from an inspector with opinions. Ogres are new. They've taken the lower cut and the deep pit, they eat like a famine, and every week they squat there is a week of payroll going out against no stone coming in.",
+      "dialogs": [
+        {
+          "id": "introduction",
+          "title": "At the quarry office",
+          "text": "Dagna Flint, quarry master, and before you ask — yes, the rumors are true, and no, I can't pay crews to cut stone for ogres to throw at them. You have the look of expensive help. Good. Cheap help wouldn't last past the winch."
+        },
+        {
+          "id": "about_the_ogres",
+          "title": "Asked about the ogres",
+          "text": "Brutes on the lower cut, a whole warband in the deep pit, and the difference matters: clear the cut and they come back; break the pit and they don't. They eat a week's provisions a night and they've started using my crane as a back-scratcher. Stone-contract rates to whoever ends this. That's good money. Ask anyone I owe it to."
+        }
+      ]
+    },
+    {
+      "id": "heir_corvin",
+      "name": "Corvin Ashe",
+      "sprite": "person/townsperson8.png",
+      "counter": "",
+      "personal_history": "Corvin is the last of the Ashes, a family that was wealthy once, infamous briefly, and quiet ever since the night sixty years ago when the manor sealed itself and started wailing. He grew up in town in the manor's long shadow, raised on instructions: never answer the wailing, never walk the drive after dusk, never ask what great-grandmother did in the deep room. He has inherited the title, the grounds, and the sound. He has decided to be the generation that ends differently.",
+      "dialogs": [
+        {
+          "id": "introduction",
+          "title": "Within sight of the manor",
+          "text": "Don't stand with your back to it. Everyone does, the first time — it feels rude to stare. That's my house, technically. My family's, for six generations, sealed for the last sixty years. I'm Corvin Ashe, and if you can hear that sound and still stand here, we should talk terms."
+        },
+        {
+          "id": "about_the_family",
+          "title": "Asked about the Ashe family",
+          "text": "Wealthy, then infamous, then very, very quiet. Great-grandmother did something in the deep room — the family version is 'a tragedy,' the town version is worse, and the truthful version is sealed in there with the reliquary. I've stopped wanting to know which version is right. I just want the wailing to stop."
+        }
+      ]
+    },
+    {
+      "id": "sir_roderic",
+      "name": "Sir Roderic Vane",
+      "sprite": "person/human_paladin.png",
+      "counter": "",
+      "personal_history": "Roderic took his vows at nineteen, took up the hunt at twenty-two, and has spent the thirty years since following one creature — the thing he calls the Pale Lord — across three duchies. He has buried friends, outlived two orders, and dug more proper graves after improper ones than any man should count. The trail has finally gone to ground close by, and so has Roderic: his eyes are as sharp as ever, but his hands shake past sundown, and a hunter who cannot hold the blade steady at night has, by his own hard arithmetic, finished his part of the hunt.",
+      "dialogs": [
+        {
+          "id": "introduction",
+          "title": "At the wayside shrine",
+          "text": "You can put the weapons away — if I were what I hunt, the daylight would be doing you the introductions. Sir Roderic Vane. I've followed one creature for thirty years, and it's near, and I find myself in the humiliating position of needing steadier hands than mine."
+        },
+        {
+          "id": "about_the_hunt",
+          "title": "Asked about the Pale Lord",
+          "text": "It keeps a court — lesser things, made things, between itself and every door. It talks, and the talking is the most dangerous part: thirty years of graves started as conversations. My notes will tell you where. My vows say I should go myself. My hands, past sundown, say otherwise, and I've learned to listen to the honest party in any argument."
+        }
+      ]
+    }
+  ]
+}

@@ -41,6 +41,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { xpProgressInLevel as levelingXpProgress } from "@/battle/world/Leveling";
 import {
   initialPartyNavState,
   reducePartyNav,
@@ -231,39 +232,17 @@ const SPRITE_CONFIG = { category: "person", format: "path" } as const;
 // ── Helpers ─────────────────────────────────────────────────────────
 
 /** XP progress *within the current level* — the numbers driving the
- *  roster card's XP bar. `member.exp` is cumulative across every
- *  level the character has ever reached (Leveling.ts increments
- *  `level` on a threshold cross but leaves `exp` untouched), so the
- *  bar must subtract the previous level's threshold to read as
- *  "progress toward the next level" rather than "progress through
- *  the entire XP curve".
- *
- *  - `into` — XP earned since the start of this level. 0 the instant
- *    a member levels up; equals `needed` the instant they're about
- *    to level again.
- *  - `needed` — XP the character has to earn during this level to
- *    cross into the next. In practice this is just `race.exp_per_level`
- *    (or the 1500 default) since the curve is linear; expressed as
- *    `next - prev` so a future non-linear curve doesn't silently
- *    break the math.
- *
- *  Falls back to the canonical 1500-per-level curve when the race's
- *  `exp_per_level` override is absent. Mirrors v1's per-race semantics. */
+ *  roster card's XP bar. Thin adapter over Leveling.ts's
+ *  `xpProgressInLevel` (the single source of truth for the XP curve,
+ *  including the rising-increment math) that handles this screen's
+ *  optional fields and race override defaulting (1500 when the
+ *  race's `exp_per_level` is absent). */
 function xpProgressInLevel(
   member: PartyCharacterRef,
   race?: PartyRaceRef,
 ): { into: number; needed: number } {
   const base = race?.exp_per_level ?? 1500;
-  const level = member.level ?? 1;
-  const exp = member.exp ?? 0;
-  const prevThreshold = Math.max(0, level - 1) * base;
-  const nextThreshold = level * base;
-  return {
-    into: Math.max(0, exp - prevThreshold),
-    // Floor at 1 so a 0-XP-per-level race (theoretical) doesn't
-    // divide-by-zero in the Bar component's fill math.
-    needed: Math.max(1, nextThreshold - prevThreshold),
-  };
+  return levelingXpProgress(member.level ?? 1, member.exp ?? 0, base);
 }
 
 /** Resolve the set of ability ids unlocked by `members`. An ability is

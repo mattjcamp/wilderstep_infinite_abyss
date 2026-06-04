@@ -14,8 +14,9 @@
  * back into the kernel the next time combat starts — `seedBattleCaches`
  * overlays the save's `exp` / `level` onto the raw character before
  * `memberFromRaw`, so the in-combat `awardXp` pass sees the banked
- * XP. Its `while (member.exp >= member.level * xpPer)` loop then
- * catches up every pending threshold in one go — i.e. the first
+ * XP. Its threshold loop (cumulative exp vs. the rising-increment
+ * curve — see Leveling.ts `xpTotalForLevel`) then catches up every
+ * pending threshold in one go — i.e. the first
  * combat after a streak of XP-only quests fires all the deferred
  * level-up events at once.
  *
