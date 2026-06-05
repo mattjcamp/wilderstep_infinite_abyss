@@ -19,8 +19,15 @@ export function abilityMod(stat: number): number {
 
 export interface DerivedCombatStats {
   ac: number;
+  /** Melee (bump-attack) to-hit — always STR-based; ranged weapons
+   *  melee as improvised clubs. Mirrors CombatBridge. */
   attackBonus: number;
+  /** Melee (bump-attack) damage profile. */
   damage: { dice: number; sides: number; bonus: number };
+  /** Projectile profile when a ranged weapon is equipped, else null.
+   *  Mirrors CombatActions.resolveThrow: 1d6 + weapon power, with a
+   *  DEX-based to-hit. */
+  ranged: { toHit: number; dice: number; sides: number; bonus: number } | null;
   weaponName: string | null;
 }
 
@@ -53,10 +60,18 @@ export function combatStatsFor(
   }
   const ac = 10 + dexMod + armorBonus + acBonus;
   const isRanged = !!weapon?.ranged;
-  const stat = isRanged ? m.dexterity ?? 10 : m.strength ?? 10;
-  const statMod = abilityMod(stat);
-  const damage = damageForWeapon(weapon, statMod);
-  return { ac, attackBonus: statMod, damage, weaponName: weapon?.name ?? null };
+  const strMod = abilityMod(m.strength ?? 10);
+  // Melee profile — STR-based. A ranged weapon swung up close is an
+  // improvised power-1 club (1d4 − 1 + STR), matching the engine's
+  // damageForWeapon in CombatBridge.
+  const damage = isRanged
+    ? { dice: 1, sides: 4, bonus: strMod - 1 }
+    : damageForWeapon(weapon, strMod);
+  // Projectile profile — matches resolveThrow: 1d6 + power, DEX to-hit.
+  const ranged = isRanged
+    ? { toHit: dexMod, dice: 1, sides: 6, bonus: weapon?.power ?? 1 }
+    : null;
+  return { ac, attackBonus: strMod, damage, ranged, weaponName: weapon?.name ?? null };
 }
 
 export function damageForWeapon(

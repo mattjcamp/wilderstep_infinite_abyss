@@ -857,10 +857,34 @@ export function CharacterSheetSim({
                   <td className="py-0.5 pr-3 text-parchment/80">AC</td>
                   <td className="py-0.5 text-parchment/95">{ac}</td>
                 </tr>
-                <tr>
-                  <td className="py-0.5 pr-3 text-parchment/80">Damage</td>
-                  <td className="py-0.5 text-parchment/95">{damageStr}</td>
-                </tr>
+                {/* With a ranged weapon equipped the two attack modes
+                    have different profiles: shooting uses the weapon's
+                    real punch (1d6 + power, DEX to-hit), while swinging
+                    it at an adjacent enemy is an improvised club
+                    (1d4 − 1 + STR). Show both so the player can see
+                    why they want a backup blade. */}
+                {stats.ranged ? (
+                  <>
+                    <tr>
+                      <td className="py-0.5 pr-3 text-parchment/80">Ranged</td>
+                      <td className="py-0.5 text-parchment/95">
+                        {fmtDamage(stats.ranged, weapon?.name ?? null)}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="py-0.5 pr-3 text-parchment/80">Melee</td>
+                      <td className="py-0.5 text-parchment/95">
+                        {damageStr}
+                        <span className="ml-1 text-parchment/55">(improvised)</span>
+                      </td>
+                    </tr>
+                  </>
+                ) : (
+                  <tr>
+                    <td className="py-0.5 pr-3 text-parchment/80">Damage</td>
+                    <td className="py-0.5 text-parchment/95">{damageStr}</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </section>

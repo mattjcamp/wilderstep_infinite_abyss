@@ -4,7 +4,7 @@
       "id": "aldric",
       "name": "Aldric",
       "class": "fighter",
-      "race": "dwarf",
+      "race": "human",
       "gender": "Male",
       "level": 1,
       "exp": 0,
@@ -15,7 +15,7 @@
       "constitution": 14,
       "intelligence": 8,
       "wisdom": 13,
-      "sprite": "person/fighter14.png",
+      "sprite": "person/barbarian_fighter3.png",
       "equipped": {
         "hands": "club",
         "body": "cloth"
@@ -25,7 +25,7 @@
     {
       "id": "legolas",
       "name": "Sylvar",
-      "class": "thief",
+      "class": "ranger",
       "race": "elf",
       "gender": "Male",
       "level": 1,
@@ -37,7 +37,7 @@
       "constitution": 10,
       "intelligence": 10,
       "wisdom": 12,
-      "sprite": "person/ranger1.png",
+      "sprite": "person/race11_fighter5.png",
       "equipped": {
         "hands": "club",
         "body": "cloth"
@@ -59,7 +59,7 @@
       "constitution": 10,
       "intelligence": 8,
       "wisdom": 18,
-      "sprite": "person/cleric1.png",
+      "sprite": "person/barbarian_priest.png",
       "equipped": {
         "hands": "club",
         "body": "cloth"
@@ -69,23 +69,42 @@
     {
       "id": "elminster",
       "name": "Nimbic",
-      "class": "wizard",
-      "race": "gnome",
-      "gender": "Male",
+      "class": "alchemist",
+      "race": "human",
+      "gender": "Female",
       "level": 1,
       "exp": 0,
       "hp": 6,
-      "mp": 20,
+      "mp": 10,
       "strength": 7,
       "dexterity": 10,
       "constitution": 11,
       "intelligence": 20,
       "wisdom": 9,
-      "sprite": "person/wizard6.png",
+      "sprite": "person/human_mage31.png",
       "equipped": {
         "hands": "club",
         "body": "cloth"
       },
+      "inventory": []
+    },
+    {
+      "id": "test",
+      "name": "test",
+      "class": "fighter",
+      "race": "human",
+      "gender": "Male",
+      "level": 1,
+      "exp": 0,
+      "hp": 14,
+      "mp": 0,
+      "strength": 18,
+      "dexterity": 13,
+      "constitution": 8,
+      "intelligence": 8,
+      "wisdom": 8,
+      "sprite": "person/FemaleDruid01.png",
+      "equipped": {},
       "inventory": []
     }
   ]

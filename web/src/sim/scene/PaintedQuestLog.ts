@@ -166,7 +166,22 @@ export class PaintedQuestLog {
         deltaY: number,
       ) => void)
     | null = null;
+  /** DOM-level wheel listener (window, capture, non-passive). The
+   *  PRIMARY wheel path: Phaser's `scene.input` wheel only fires when
+   *  the pointer sits over the game canvas, and even then the page
+   *  can scroll behind the modal. Listening on the window guarantees
+   *  the log scrolls wherever the cursor is, and preventDefault stops
+   *  the page from moving underneath. Its `stopPropagation` (capture
+   *  phase) also keeps the Phaser listener from double-handling the
+   *  same event when the pointer IS over the canvas. */
+  private domWheelListener: ((ev: WheelEvent) => void) | null = null;
   private keyListener: ((ev: KeyboardEvent) => void) | null = null;
+  /** Scrollbar thumb — painted only when the content overflows the
+   *  viewport, repositioned by `scrollBy`. Gives the player a visible
+   *  cue that the log scrolls (and how far through it they are). */
+  private scrollThumb: Phaser.GameObjects.Rectangle | null = null;
+  private scrollThumbTravel = 0;
+  private scrollThumbY = 0;
 
   constructor(cfg: PaintedQuestLogConfig) {
     this.scene = cfg.scene;
@@ -348,8 +363,48 @@ export class PaintedQuestLog {
     );
     content.setMask(maskGraphics.createGeometryMask());
 
-    // Wheel listener — Phaser's input plugin emits `wheel` events
-    // with a Y delta. We translate the content directly.
+    // Scroll affordances — only when the content actually overflows.
+    // A thin track + thumb on the panel's right edge shows that the
+    // log scrolls and how far through it the player is; the footer
+    // hint names the inputs. Without these the clipped entries were
+    // invisible-by-design and the scroll feature was undiscoverable.
+    if (this.contentHeight > this.viewportHeight) {
+      const trackX = panelX + PANEL_WIDTH - 8;
+      const track = this.scene.add
+        .rectangle(trackX, this.viewportY, 3, this.viewportHeight, COLOR_PANEL_BORDER, 1)
+        .setOrigin(0, 0)
+        .setScrollFactor(0);
+      root.add(track);
+      const thumbH = Math.max(
+        24,
+        Math.floor(this.viewportHeight * (this.viewportHeight / this.contentHeight)),
+      );
+      this.scrollThumbTravel = this.viewportHeight - thumbH;
+      this.scrollThumbY = this.viewportY;
+      const thumb = this.scene.add
+        .rectangle(trackX, this.viewportY, 3, thumbH, 0xe8c97a, 1)
+        .setOrigin(0, 0)
+        .setScrollFactor(0);
+      root.add(thumb);
+      this.scrollThumb = thumb;
+      const scrollHint = this.scene.add
+        .text(
+          panelX + PANEL_WIDTH - PANEL_PADDING,
+          panelY + PANEL_HEIGHT - 16,
+          "[wheel / ↑↓ / PgUp PgDn to scroll]",
+          {
+            fontFamily: FONT,
+            fontSize: "11px",
+            color: COLOR_DIM_TEXT,
+          },
+        )
+        .setOrigin(1, 0)
+        .setScrollFactor(0);
+      root.add(scrollHint);
+    }
+
+    // Wheel + key listeners — the DOM wheel path is primary (works
+    // wherever the cursor is); the Phaser listener is a fallback.
     this.installInputListeners(panel);
   }
 
@@ -497,9 +552,9 @@ export class PaintedQuestLog {
     // Turned-in + rewards-pending quests use `complete=true` which
     // flips every row to "done" regardless of stepIdx (those quests
     // have no remaining current step). Within the painted log we
-    // also indent the steps slightly and show the current row's
-    // description verbatim — past steps' descriptions are dropped
-    // to keep the long-quest view scannable.
+    // also indent the steps slightly; every step's description is
+    // painted beneath its row (current = body color, others dim) so
+    // scrolling the log reads as a full per-step briefing.
     // The "current" step (for the description hint + arrow glyph) is
     // the FIRST not-yet-done step. With out-of-order completion there
     // isn't a single linear cursor, so "first incomplete" is the most
@@ -544,16 +599,18 @@ export class PaintedQuestLog {
           .setScrollFactor(0);
         stepTexts.push(row);
         rowY += row.height + 2;
-        // Surface the description right below ONLY for the current
-        // step (the one the player is actively working on). Done
-        // steps' descriptions are noise; pending steps' descriptions
-        // would spoil future objectives.
-        if (stepStatus === "current" && step?.description) {
+        // Every step surfaces its description so the player can
+        // scroll the log and read full details on each objective —
+        // done, current, and still-ahead alike. The current step's
+        // detail renders in body color so the active objective still
+        // pops; the rest stay dim so the checklist scans at a glance.
+        if (step?.description) {
           const sub = this.scene.add
             .text(stepIndent + 14, rowY, step.description, {
               fontFamily: FONT,
               fontSize: "11px",
-              color: COLOR_DIM_TEXT,
+              color:
+                stepStatus === "current" ? COLOR_BODY_TEXT : COLOR_DIM_TEXT,
               fontStyle: "italic",
               wordWrap: { width: stepInnerWidth - 14 },
             })
@@ -605,6 +662,14 @@ export class PaintedQuestLog {
       this.content.x,
       this.viewportY + this.scrollOffset,
     );
+    // Slide the scrollbar thumb proportionally to the scroll progress.
+    if (this.scrollThumb && maxOffset > 0) {
+      const progress = -this.scrollOffset / maxOffset;
+      this.scrollThumb.setPosition(
+        this.scrollThumb.x,
+        this.scrollThumbY + Math.round(progress * this.scrollThumbTravel),
+      );
+    }
   }
 
   private installInputListeners(panel: Phaser.GameObjects.Rectangle): void {
@@ -629,6 +694,26 @@ export class PaintedQuestLog {
     this.wheelListener = wheelListener;
     void panel; // panel is reserved for future hit-test scoping
 
+    // PRIMARY wheel path: window-level, capture, non-passive. Phaser's
+    // input plugin only sees wheel events when the pointer is over the
+    // game canvas; players opening the log with Q often have the
+    // cursor elsewhere (or over the DOM header strip), where wheeling
+    // scrolled the PAGE behind the modal instead of the log. The
+    // capture-phase stopPropagation also keeps the Phaser fallback
+    // above from double-scrolling when the pointer IS over the canvas.
+    if (typeof window !== "undefined") {
+      const domWheelListener = (ev: WheelEvent) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        this.scrollBy(ev.deltaY * (SCROLL_STEP_WHEEL / 100));
+      };
+      window.addEventListener("wheel", domWheelListener, {
+        capture: true,
+        passive: false,
+      });
+      this.domWheelListener = domWheelListener;
+    }
+
     const keyListener = (ev: KeyboardEvent) => {
       if (ev.key === "Escape" || ev.key === "q" || ev.key === "Q") {
         ev.stopPropagation();
@@ -650,6 +735,14 @@ export class PaintedQuestLog {
         ev.stopPropagation();
         ev.preventDefault();
         this.scrollBy(this.viewportHeight);
+      } else if (ev.key === "Home") {
+        ev.stopPropagation();
+        ev.preventDefault();
+        this.scrollBy(-this.contentHeight);
+      } else if (ev.key === "End") {
+        ev.stopPropagation();
+        ev.preventDefault();
+        this.scrollBy(this.contentHeight);
       } else if (
         ev.key === "ArrowLeft" ||
         ev.key === "ArrowRight" ||
@@ -678,6 +771,12 @@ export class PaintedQuestLog {
     if (this.wheelListener) {
       this.scene.input?.off?.("wheel", this.wheelListener);
       this.wheelListener = null;
+    }
+    if (this.domWheelListener && typeof window !== "undefined") {
+      window.removeEventListener("wheel", this.domWheelListener, {
+        capture: true,
+      });
+      this.domWheelListener = null;
     }
     if (this.keyListener && typeof window !== "undefined") {
       window.removeEventListener("keydown", this.keyListener, {

@@ -212,12 +212,21 @@ function damageForWeapon(member: PartyMember, weapon: Item | null): DamageRoll {
     // Bare fists / no weapon — flat 1 damage, matches Python's `power 0` path.
     return { dice: 0, sides: 0, bonus: 1 };
   }
-  // Python keys off only `ranged` (a bow / sling / crossbow) — a
-  // throwable melee weapon (Dagger) defaults to STR until the player
-  // explicitly throws it. Matches `Member.get_damage_dice` at
+  // This is the MELEE (bump-attack) profile. A ranged weapon swung
+  // at an adjacent enemy is an improvised club: power-1 dice
+  // (1d4 − 1) and STR, regardless of the weapon's authored power.
+  // The weapon's real dice + DEX only apply when it's actually
+  // fired — the Range/Throw flows in CombatActions resolve their
+  // own dice (1d6 + power) with a DEX-based to-hit. This makes
+  // carrying a backup melee weapon an actual decision instead of
+  // bows doubling as free DEX-swords.
+  if (weapon.ranged) {
+    return { dice: 1, sides: 4, bonus: mod(member.strength) - 1 };
+  }
+  // Throwable melee weapons (Dagger) stay STR until the player
+  // explicitly throws them — matches `Member.get_damage_dice` at
   // `src/party.py:973`.
-  const isRanged = !!weapon.ranged;
-  const statMod = isRanged ? mod(member.dexterity) : mod(member.strength);
+  const statMod = mod(member.strength);
   const wp = weapon.power;
   if (wp <= 0)   return { dice: 0, sides: 0, bonus: 1 };
   if (wp === 1)  return { dice: 1, sides: 4, bonus: statMod - 1 };
@@ -238,8 +247,9 @@ function damageForWeapon(member: PartyMember, weapon: Item | null): DamageRoll {
  * items catalog.
  *
  *   AC          = 10 + DEX_mod + (armor_evasion - 50)/2 + Σ acBonus
- *   atk bonus   = STR_mod (melee) or DEX_mod (ranged/thrown)
- *   damage      = power-tier dice + STR_mod (or DEX_mod for ranged)
+ *   atk bonus   = STR_mod (melee profile; shots use dexMod instead)
+ *   damage      = power-tier dice + STR_mod (ranged weapons melee as
+ *                 improvised power-1 clubs: 1d4 − 1 + STR_mod)
  *
  * The /2 divisor (vs the legacy /5) turns the evasion field into a
  * meaningful per-armor differentiator — Chain now gives +4 AC and
@@ -286,8 +296,12 @@ export function combatStatsFor(
   // when equipped.
   const armorBonus = Math.floor((evasion - 50) / 2);
   const ac = 10 + dexMod + armorBonus + totalAcBonus(member.equipped, items);
-  const isRanged = !!(weapon && weapon.ranged);
-  const attackBonus = isRanged ? dexMod : mod(member.strength);
+  // attackBonus + damage are the MELEE (bump-attack) profile, so
+  // they're always STR-based — a ranged weapon swung up close is an
+  // improvised club (see damageForWeapon). Projectile attacks use
+  // `dexMod` instead: resolveThrow reads it off the Combatant for
+  // both the Throw and Range flows.
+  const attackBonus = mod(member.strength);
   const damage = damageForWeapon(member, weapon);
   return {
     ac,
@@ -445,8 +459,9 @@ export function refreshCombatantGear(
   // when equipped.
   const armorBonus = Math.floor((evasion - 50) / 2);
   c.ac = 10 + dexMod + armorBonus + totalAcBonus(member.equipped, items);
-  const isRanged = !!(weapon && weapon.ranged);
-  c.attackBonus = isRanged ? dexMod : mod(member.strength);
+  // Melee profile is STR-based even for ranged weapons (improvised
+  // club rule — see damageForWeapon); shots use dexMod instead.
+  c.attackBonus = mod(member.strength);
   c.dexMod = dexMod;
   c.damage = damageForWeapon(member, weapon);
   // Keep weaponName in sync so the Backstab gate sees the new weapon

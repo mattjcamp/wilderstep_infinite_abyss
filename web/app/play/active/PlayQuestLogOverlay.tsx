@@ -275,8 +275,21 @@ function QuestSection({
                           <span className={`font-mono ${rowClass}`}>
                             {glyph} {s.name ?? `Step ${i + 1}`}
                           </span>
-                          {isCurrent && s.description ? (
-                            <div className="ml-3 text-[11px] italic text-parchment/55">
+                          {/* Every step shows its description so the
+                              player can scroll the log and read the
+                              full plan — what's been done, what's in
+                              hand, what's still ahead. The current
+                              step stays the brightest; done/pending
+                              details render dimmer so the list still
+                              scans at a glance. */}
+                          {s.description ? (
+                            <div
+                              className={`ml-3 text-[11px] italic ${
+                                isCurrent
+                                  ? "text-parchment/75"
+                                  : "text-parchment/45"
+                              }`}
+                            >
                               {s.description}
                             </div>
                           ) : null}

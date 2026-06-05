@@ -46,9 +46,11 @@ function resolveSummonSpriteUrl(sprite: unknown): string {
 /**
  * Throwable / ranged attack — used by the Throw action and by ranged
  * weapons like bows. Damage scales off `item.power` (from the item
- * catalog). Treats the attacker's `attackBonus` as a +to-hit bonus
- * and the target's `ac` for the saving throw, exactly like the
- * melee bump-attack — that keeps the dice math identical.
+ * catalog). The to-hit bonus is the attacker's DEX mod: the
+ * Combatant's `attackBonus` is the MELEE (bump) profile — STR-based,
+ * with ranged weapons treated as improvised clubs — so projectiles
+ * read `dexMod` directly. This also fixes thrown items for melee
+ * wielders, which previously rode the STR-based melee bonus.
  */
 export function resolveThrow(
   attacker: Combatant,
@@ -63,7 +65,7 @@ export function resolveThrow(
       damage: 0, killed: false, item: item.name,
     };
   }
-  const roll = rollAttack(attacker.attackBonus, target.ac, rng);
+  const roll = rollAttack(attacker.dexMod, target.ac, rng);
   let damage = 0;
   // Use item.power as the dice bonus on a single d6 — mirrors the
   // Python combat_engine's throw resolution where a thrown item
