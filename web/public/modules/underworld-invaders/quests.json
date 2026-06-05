@@ -3,7 +3,7 @@
     {
       "id": "rats",
       "name": "Rats in the Walls",
-      "description": "The general shop's cellar is crawling with giant rats, and the infestation runs deeper than any cellar should \u2014 down into a cave system nobody knew was there.",
+      "description": "Mira's provisions' cellar is crawling with giant rats, and the infestation runs deeper than any cellar should — down into a cave system nobody knew was there.",
       "tags": [
         "hollowmere"
       ],
@@ -12,14 +12,14 @@
           "id": "rats_step_1",
           "name": "Clear the cave under the shop",
           "kind": "kill",
-          "description": "Put down the giant rats swarming the cave beneath the general shop.",
+          "description": "Put down the giant rats swarming the cave beneath Mira's provisions.",
           "tags": [
             "rats"
           ],
           "location_kind": "map",
           "map_id": "shop_cavern",
           "encounter_id": "rat_swarm",
-          "count": 4
+          "count": 1
         },
         {
           "id": "rats_step_2",
@@ -32,7 +32,7 @@
           "location_kind": "map",
           "map_id": "show_basement",
           "description": "The basement nests feed the cave below. Destroy them or the cellar refills within a season.",
-          "count": 2
+          "count": 1
         },
         {
           "id": "rats_step_3",
@@ -41,14 +41,22 @@
           "encounter_id": "rat_nest",
           "count": 2,
           "location_kind": "map",
-          "map_id": "hollowmere_town"
+          "map_id": "hollowmere_town",
+          "description": "Giant rats are running all over town, please kills those buggers! If you do this and prove your worth, I'll gift you this Iron Key that you will surely need soon.",
+          "rewards": {
+            "items": [
+              "iron_key",
+              "torch",
+              "camping_supplies"
+            ]
+          }
         },
         {
           "id": "rats_step_4",
           "name": "Evict the goblin squatters",
           "kind": "kill",
           "encounter_id": "goblin_squatters",
-          "description": "Goblins have been slipping into one of Hollowmere's houses after dark \u2014 and where goblins nest, rats follow. Drive them out.",
+          "description": "Goblins have been slipping into one of Hollowmere's houses after dark — and where goblins nest, rats follow. Drive them out.",
           "location_kind": "map",
           "map_id": "hollowmere_town_house_3"
         }
@@ -56,8 +64,8 @@
       "quest_giver": {
         "npc_name": "Mira Hask",
         "npc_sprite": "person/townsperson13.png",
-        "start_dialog": "Twelve years I've kept this shop and I have never once been beaten on a price \u2014 but I am being beaten by rats. Big ones, coming up through the basement faster than I can trap them, and I'd stake my black book it started with those goblins sneaking around after dark. Clear them out, top to bottom, and Mira Hask pays her debts.",
-        "end_dialog": "A whole cave system. Under my shop. Twelve years standing on top of that, and not one supplier thought to mention it. The cellar's mine again, and your name goes in my book \u2014 the good column, which I'll have you know is the shorter one."
+        "start_dialog": "Twelve years I've kept this the legacy of Mira's shop and I have never once been beaten on a price — but I am being beaten by rats. Big ones, coming up through the basement faster than I can trap them, and I'd stake my black book it started with those goblins sneaking around after dark. Clear them out, top to bottom, and Mira Hask pays her debts.",
+        "end_dialog": "A whole cave system. Under my shop. Twelve years standing on top of that, and not one supplier thought to mention it. The cellar's mine again, and your name goes in my book — the good column, which I'll have you know is the shorter one."
       },
       "rewards": {
         "xp": 100,
@@ -65,14 +73,15 @@
         "items": [
           "camping_supplies",
           "torch",
-          "torch"
+          "torch",
+          "camping_supplies"
         ]
       }
     },
     {
       "id": "chase_out_the_goblins",
       "name": "The Grotto Below",
-      "description": "The rat infestation traces back to a goblin grotto north of town \u2014 and the goblins have been tunneling toward Hollowmere. Break the warren before the town wakes up with a basement it didn't dig.",
+      "description": "The rat infestation traces back to a goblin grotto north of town — and the goblins have been tunneling toward Hollowmere. Break the warren before the town wakes up with a basement it didn't dig.",
       "tags": [
         "hollowmere"
       ],
@@ -108,7 +117,7 @@
           "tags": [
             "hallowmere_goblins"
           ],
-          "description": "The goblins took something from the town vault \u2014 the mayor is oddly vague about what. Find it in the lower grotto and bring it back unopened.",
+          "description": "The goblins took something from the town vault — the mayor is oddly vague about what. Find it in the lower grotto and bring it back unopened.",
           "location_kind": "map",
           "map_id": "grotto_1_l2",
           "col": 28,
@@ -119,7 +128,7 @@
         "npc_name": "Mayor Ottley Pruce",
         "npc_sprite": "person/druid1.png",
         "start_dialog": "Goblins. In the grotto. Tunneling toward MY town, under MY shop district, on MY year as mayor. The Hask woman's rats were the warning and nobody listened, well, I'M listening, and I'm hiring. Break the warren, get back what they took from the vault, and try not to read anything you find down there. Town business stays town business.",
-        "end_dialog": "You came back. Walking, even. I'll be honest, the town pool had you floating past the mill by Thursday \u2014 I lost three silver on you, and I have never been happier to lose money. The item goes back in the vault, the goblins go in the town record as 'resolved,' and you go on the list of people Hollowmere owes. It's a short list. We pay it."
+        "end_dialog": "You came back. Walking, even. I'll be honest, the town pool had you floating past the mill by Thursday — I lost three silver on you, and I have never been happier to lose money. The item goes back in the vault, the goblins go in the town record as 'resolved,' and you go on the list of people Hollowmere owes. It's a short list. We pay it."
       },
       "rewards": {
         "xp": 200,
@@ -132,7 +141,7 @@
     {
       "id": "explore_the_grotto",
       "name": "The Second Hole",
-      "description": "There's another grotto north of the goblin warren, and nobody in Hollowmere can say what's in it \u2014 which, lately, is reason enough to find out.",
+      "description": "There's another grotto north of the goblin warren, and nobody in Hollowmere can say what's in it — which, lately, is reason enough to find out.",
       "tags": [
         "hollowmere"
       ],
@@ -152,7 +161,7 @@
         "npc_name": "Harl, Old Campaigner",
         "npc_sprite": "person/fighter16.png",
         "start_dialog": "Forty years of soldiering teaches you one thing worth keeping: it's never the hole you know about. There's a second grotto north of the goblin warren, and every soul in town walks past it like it isn't there. Go down it. All the way down. I'd go myself, but my knees signed a separate peace years ago.",
-        "end_dialog": "So it's deep, and it's ugly, and now we know \u2014 which puts Hollowmere ahead of every town that found out the other way. You've done old Harl a kindness and the town a service. The town doesn't know it yet. They never do until the hole's full of something."
+        "end_dialog": "So it's deep, and it's ugly, and now we know — which puts Hollowmere ahead of every town that found out the other way. You've done old Harl a kindness and the town a service. The town doesn't know it yet. They never do until the hole's full of something."
       },
       "rewards": {
         "xp": 250,
@@ -171,15 +180,15 @@
           "id": "explore_a_dark_forest_step_1",
           "name": "Walk the Dark Wood to its end",
           "kind": "reach",
-          "description": "Map the wood level by level \u2014 through the deep boughs, the strangle-green, and whatever the paths become after that.",
+          "description": "Map the wood level by level — through the deep boughs, the strangle-green, and whatever the paths become after that.",
           "dungeon_id": "dark_wood"
         }
       ],
       "quest_giver": {
         "npc_name": "Skara of the Ashen Clans",
         "npc_sprite": "person/barbarian_mage.png",
-        "start_dialog": "I came down from the fire mountains chasing a story: a wood that goes in further than it goes across, with old treasure where the paths stop behaving. My clan's singers say never walk a wrong wood alone, and I am \u2014 observe \u2014 alone. Walk it with me to the end. Whatever we find, we split. Whatever finds us, we share that too.",
-        "end_dialog": "A winter clearing at the bottom of a summer wood. The singers will call me a liar, and I'll be rich enough not to care. You've earned your half \u2014 and a verse in the song, if I survive the singing of it."
+        "start_dialog": "I came down from the fire mountains chasing a story: a wood that goes in further than it goes across, with old treasure where the paths stop behaving. My clan's singers say never walk a wrong wood alone, and I am — observe — alone. Walk it with me to the end. Whatever we find, we split. Whatever finds us, we share that too.",
+        "end_dialog": "A winter clearing at the bottom of a summer wood. The singers will call me a liar, and I'll be rich enough not to care. You've earned your half — and a verse in the song, if I survive the singing of it."
       },
       "rewards": {
         "xp": 250,
@@ -189,7 +198,7 @@
     {
       "id": "pirates",
       "name": "Pirates in Hollowmere",
-      "description": "Pirates \u2014 actual pirates, this far from any honest sea \u2014 have been raiding Hollowmere, and the trail runs through the town's least savory inn.",
+      "description": "Pirates — actual pirates, this far from any honest sea — have been raiding Hollowmere, and the trail runs through the town's least savory inn.",
       "tags": [
         "hollowmere"
       ],
@@ -235,8 +244,8 @@
       "quest_giver": {
         "npc_name": "Jester Jim",
         "npc_sprite": "person/townsperson13.png",
-        "start_dialog": "Pirates! In Hollowmere! We are NOWHERE NEAR THE SEA, friend, I checked \u2014 twice \u2014 and yet my entire troupe was robbed at cutlass-point not thirty paces from that lake. A jester knows misdirection when he's mugged by it: nobody sails to a lake. They're coming from somewhere, and my coin \u2014 what's left of it \u2014 says it's that unsavory inn.",
-        "end_dialog": "My hero! My champion! My single remaining solvent acquaintance! The troupe returns tomorrow and the show goes on \u2014 juggling, tumbling, and a brand-new comic ballad entitled 'The Day the Pirates Picked the Wrong Lake.' You feature heavily. I'd pay you, but the town owes you and I AM the town's entertainment, so in a sense, you're already collecting. Bye bye!"
+        "start_dialog": "Pirates! In Hollowmere! We are NOWHERE NEAR THE SEA, friend, I checked — twice — and yet my entire troupe was robbed at cutlass-point not thirty paces from that lake. A jester knows misdirection when he's mugged by it: nobody sails to a lake. They're coming from somewhere, and my coin — what's left of it — says it's that unsavory inn.",
+        "end_dialog": "My hero! My champion! My single remaining solvent acquaintance! The troupe returns tomorrow and the show goes on — juggling, tumbling, and a brand-new comic ballad entitled 'The Day the Pirates Picked the Wrong Lake.' You feature heavily. I'd pay you, but the town owes you and I AM the town's entertainment, so in a sense, you're already collecting. Bye bye!"
       },
       "rewards": {
         "xp": 250
@@ -245,7 +254,7 @@
     {
       "id": "wolves_on_the_tradeway",
       "name": "Wolves on the Tradeway",
-      "description": "The packs squatting on the road south of Varnfell aren't hunting deer \u2014 they're holding the road. Break them so the sledges can run again.",
+      "description": "The packs squatting on the road south of Varnfell aren't hunting deer — they're holding the road. Break them so the sledges can run again.",
       "tags": [
         "varnfell",
         "side"
@@ -275,7 +284,7 @@
         "npc_name": "Ibsen Cole",
         "npc_sprite": "person/ranger2.png",
         "start_dialog": "Twenty years trapping this country and I've never seen wolves hold a road like soldiers. Two packs, dug in on the tradeway, and every sledge in Varnfell stuck behind them. Clear them out and Sela can move her ledgers from red ink back to black.",
-        "end_dialog": "Both packs broken \u2014 and you walked back out, which is better than the last three who tried. The tradeway's open. First sledge south carries word that Varnfell's still in business, and that's your doing."
+        "end_dialog": "Both packs broken — and you walked back out, which is better than the last three who tried. The tradeway's open. First sledge south carries word that Varnfell's still in business, and that's your doing."
       },
       "rewards": {
         "xp": 120,
@@ -290,7 +299,7 @@
     {
       "id": "the_drowned_cargo",
       "name": "The Drowned Cargo",
-      "description": "A trade-sealed crate has washed up on the sand south of Varnfell. Sela Varn wants it back before the sea \u2014 or whatever paces the shore at night \u2014 takes it first.",
+      "description": "A trade-sealed crate has washed up on the sand south of Varnfell. Sela Varn wants it back before the sea — or whatever paces the shore at night — takes it first.",
       "tags": [
         "varnfell",
         "side"
@@ -314,8 +323,8 @@
       "quest_giver": {
         "npc_name": "Sela Varn",
         "npc_sprite": "person/townsperson14.png",
-        "start_dialog": "Maro logged a crate on the south sand \u2014 trade-sealed, which means it was bound for this post, which means it's mine. I'd send someone, but everyone I'd send is either behind this counter or buried. Bring it back whole and Varn and Daughters will remember you in the ledger, the good column.",
-        "end_dialog": "The seal's my grandmother's mark \u2014 this crate left here forty years ago and the sea's only now giving it back. I don't know whether to thank you or apologize to you. Take this and we'll call it both."
+        "start_dialog": "Maro logged a crate on the south sand — trade-sealed, which means it was bound for this post, which means it's mine. I'd send someone, but everyone I'd send is either behind this counter or buried. Bring it back whole and Varn and Daughters will remember you in the ledger, the good column.",
+        "end_dialog": "The seal's my grandmother's mark — this crate left here forty years ago and the sea's only now giving it back. I don't know whether to thank you or apologize to you. Take this and we'll call it both."
       },
       "rewards": {
         "xp": 150,
@@ -348,8 +357,8 @@
       "quest_giver": {
         "npc_name": "Henna Stone",
         "npc_sprite": "person/townsperson20.png",
-        "start_dialog": "That delve was dead cold for nine years while I worked it, and dead quiet for twenty after. Now it breathes warm and the snow won't settle on the ridge. Go down, both levels, all the way to the warm dark \u2014 and come back and tell an old miner what's woken up under her town.",
-        "end_dialog": "So the cracks do keep going down. I knew it \u2014 knew it when the company packed up, knew it every warm night since. You've bought Varnfell something nobody's had up here in a long while: warning. The town owes you, and so do I."
+        "start_dialog": "That delve was dead cold for nine years while I worked it, and dead quiet for twenty after. Now it breathes warm and the snow won't settle on the ridge. Go down, both levels, all the way to the warm dark — and come back and tell an old miner what's woken up under her town.",
+        "end_dialog": "So the cracks do keep going down. I knew it — knew it when the company packed up, knew it every warm night since. You've bought Varnfell something nobody's had up here in a long while: warning. The town owes you, and so do I."
       },
       "rewards": {
         "xp": 250,
@@ -394,7 +403,7 @@
     {
       "id": "the_withering",
       "name": "The Withering",
-      "description": "Web spun wrong in the warden-trees and blight-root black in the sweetest soil of the Reach \u2014 the Heartwood Grove is sick with its keeper's worry, and Tansy Mosswane wants surgical help.",
+      "description": "Web spun wrong in the warden-trees and blight-root black in the sweetest soil of the Reach — the Heartwood Grove is sick with its keeper's worry, and Tansy Mosswane wants surgical help.",
       "tags": [
         "elderbough",
         "side",
@@ -418,7 +427,7 @@
           "id": "the_withering_step_2",
           "name": "Dig out the blight-root",
           "kind": "retrieve",
-          "description": "Find the blight-root under the grove's soured soil and bring it to Tansy whole \u2014 cut, not torn, so the grove heals clean.",
+          "description": "Find the blight-root under the grove's soured soil and bring it to Tansy whole — cut, not torn, so the grove heals clean.",
           "tags": [
             "elderbough"
           ],
@@ -432,8 +441,8 @@
       "quest_giver": {
         "npc_name": "Tansy Mosswane",
         "npc_sprite": "person/female_druid02.png",
-        "start_dialog": "The grove is sick the way a healer's house gets sick \u2014 from the keeper's own worry. Web in the warden-trees spun too regular, blight-root black where the soil was sweetest. Cut the spinners out and dig me that root whole. Iron's permitted in the ring for this; the treaty calls it surgery, and so do I.",
-        "end_dialog": "Cut, not torn \u2014 you listened, which puts you ahead of every strong-armed helper I've ever hired. The root goes in the fire OUTSIDE the ring, the trees breathe easier already, and you'll take this salve kit because arguing with a Mosswane about payment has never once worked."
+        "start_dialog": "The grove is sick the way a healer's house gets sick — from the keeper's own worry. Web in the warden-trees spun too regular, blight-root black where the soil was sweetest. Cut the spinners out and dig me that root whole. Iron's permitted in the ring for this; the treaty calls it surgery, and so do I.",
+        "end_dialog": "Cut, not torn — you listened, which puts you ahead of every strong-armed helper I've ever hired. The root goes in the fire OUTSIDE the ring, the trees breathe easier already, and you'll take this salve kit because arguing with a Mosswane about payment has never once worked."
       },
       "rewards": {
         "xp": 120,
@@ -511,8 +520,8 @@
       "quest_giver": {
         "npc_name": "Elder Bryn Oakhallow",
         "npc_sprite": "person/human_druid32.png",
-        "start_dialog": "Four hundred nights the lady's been awake, and a grove frays with its keeper. The old rite asks three things: water from her own spring, offered back \u2014 quiet in the barrow her roots wrap \u2014 and the trail south swept of whatever's pacing her fence-line at dusk. I can do the first. My knees and my sixty years cannot do the rest. Keep the rite's order, and strike no flame inside the ring.",
-        "end_dialog": "She slept. Two hours, just past dawn \u2014 first time in four hundred nights, and the whole grove went still with her, every leaf, like a held breath finally let go. She woke calmer. She asked your names. Travelers \u2014 old things asking names is no small thing. Carry hers kindly, and take the circle's thanks in better coin."
+        "start_dialog": "Four hundred nights the lady's been awake, and a grove frays with its keeper. The old rite asks three things: water from her own spring, offered back — quiet in the barrow her roots wrap — and the trail south swept of whatever's pacing her fence-line at dusk. I can do the first. My knees and my sixty years cannot do the rest. Keep the rite's order, and strike no flame inside the ring.",
+        "end_dialog": "She slept. Two hours, just past dawn — first time in four hundred nights, and the whole grove went still with her, every leaf, like a held breath finally let go. She woke calmer. She asked your names. Travelers — old things asking names is no small thing. Carry hers kindly, and take the circle's thanks in better coin."
       },
       "rewards": {
         "xp": 240,
@@ -537,7 +546,7 @@
           "id": "when_the_forest_walks_step_1",
           "name": "Drive off the sentry packs",
           "kind": "kill",
-          "description": "Break the packs holding the forest road \u2014 the ones that sit, and watch, and do not eat.",
+          "description": "Break the packs holding the forest road — the ones that sit, and watch, and do not eat.",
           "tags": [
             "elderbough"
           ],
@@ -598,8 +607,8 @@
       "quest_giver": {
         "npc_name": "Garrick Thornholt",
         "npc_sprite": "person/ranger4.png",
-        "start_dialog": "Skell's nine trees lit a fuse, and what's burning down it isn't natural anger \u2014 packs posted like sentries, a den fouling the sister-spring, and a troll walking escorted under the boughs. Escorted. Something is organizing the forest's grudge, and Elderbough sits in the middle of it. Three jobs, south to north, and I'll walk every trail with you: packs, den, troll. In that order, or the survivors of each regroup with the next.",
-        "end_dialog": "Packs broken, den cleared, and the troll down \u2014 I checked the track-lines this morning and the forest's moving like a forest again: feeding, hiding, minding its own seasons. The lady says the grudge is spent, and Skell wept at the tree-ring when Bryn told him, which I wasn't supposed to see and am telling everyone. The moot votes you its thanks. I just say it plainer: you gave me back a forest I can read."
+        "start_dialog": "Skell's nine trees lit a fuse, and what's burning down it isn't natural anger — packs posted like sentries, a den fouling the sister-spring, and a troll walking escorted under the boughs. Escorted. Something is organizing the forest's grudge, and Elderbough sits in the middle of it. Three jobs, south to north, and I'll walk every trail with you: packs, den, troll. In that order, or the survivors of each regroup with the next.",
+        "end_dialog": "Packs broken, den cleared, and the troll down — I checked the track-lines this morning and the forest's moving like a forest again: feeding, hiding, minding its own seasons. The lady says the grudge is spent, and Skell wept at the tree-ring when Bryn told him, which I wasn't supposed to see and am telling everyone. The moot votes you its thanks. I just say it plainer: you gave me back a forest I can read."
       },
       "rewards": {
         "xp": 450,
@@ -662,7 +671,7 @@
           "id": "lamps_against_the_dark_step_3",
           "name": "Recover the watch's oil cache",
           "kind": "retrieve",
-          "description": "The last supply run dropped the oil cache when the archers hit them. Lastlight's lamps are three nights from rationing \u2014 bring it home.",
+          "description": "The last supply run dropped the oil cache when the archers hit them. Lastlight's lamps are three nights from rationing — bring it home.",
           "tags": [
             "lastlight"
           ],
@@ -676,8 +685,8 @@
       "quest_giver": {
         "npc_name": "Captain Hesta Morn",
         "npc_sprite": "person/female_paladin02.png",
-        "start_dialog": "Here's the shape of my week: a warband of the walking dead circling my south road, bone-archers squatting in the crack-field shooting at my stone crews, and the oil cache for half the town's lamps lying out there where the supply run dropped it. The watch can hold the wall or fix all that \u2014 not both. You're the 'all that.' Warband first, archers second, oil last, and bring my people's arrows back out of yourselves if you can manage it.",
-        "end_dialog": "Warband broken, field cleared, and the oil's already up the ladders \u2014 Tobb cried, which he'll deny. I've commanded this wall three years and tonight is the first night I've watched every lamp in Lastlight burning at full wick with nothing moving outside the ring. The watch pays its debts, and the watch says you're owed. That's not sentiment. It's arithmetic, and mine finally adds up."
+        "start_dialog": "Here's the shape of my week: a warband of the walking dead circling my south road, bone-archers squatting in the crack-field shooting at my stone crews, and the oil cache for half the town's lamps lying out there where the supply run dropped it. The watch can hold the wall or fix all that — not both. You're the 'all that.' Warband first, archers second, oil last, and bring my people's arrows back out of yourselves if you can manage it.",
+        "end_dialog": "Warband broken, field cleared, and the oil's already up the ladders — Tobb cried, which he'll deny. I've commanded this wall three years and tonight is the first night I've watched every lamp in Lastlight burning at full wick with nothing moving outside the ring. The watch pays its debts, and the watch says you're owed. That's not sentiment. It's arithmetic, and mine finally adds up."
       },
       "rewards": {
         "xp": 450,
@@ -692,7 +701,7 @@
     {
       "id": "the_things_in_the_smoke",
       "name": "The Things in the Smoke",
-      "description": "Imps are slipping out of the Near Crack in threes \u2014 not raiding, surveying. Magister Corven needs them stopped mid-errand, both for the town's safety and for the chapter of his monograph he is increasingly afraid to finish.",
+      "description": "Imps are slipping out of the Near Crack in threes — not raiding, surveying. Magister Corven needs them stopped mid-errand, both for the town's safety and for the chapter of his monograph he is increasingly afraid to finish.",
       "tags": [
         "lastlight",
         "hard"
@@ -725,7 +734,7 @@
           "id": "the_things_in_the_smoke_step_2",
           "name": "Destroy the pack at the warding line",
           "kind": "kill",
-          "description": "A full pack has gathered at the watch's warding stones \u2014 looking, always looking. Make sure what it learned never gets back down the crack.",
+          "description": "A full pack has gathered at the watch's warding stones — looking, always looking. Make sure what it learned never gets back down the crack.",
           "tags": [
             "lastlight"
           ],
@@ -744,8 +753,8 @@
       "quest_giver": {
         "npc_name": "Magister Ilex Corven",
         "npc_sprite": "person/human_mage15.png",
-        "start_dialog": "A research commission, plainly stated: the imps are surveying us \u2014 the wall, the lamps, the warding line \u2014 and everything they see walks back down that crack to whatever keeps their ledger. I require interrupted specimens. Stop the road-pairs mid-errand, destroy the pack at the warding stones, and observe as you work: what were they LOOKING at? Your sword settles the town's problem. Your eyes settle my chapter.",
-        "end_dialog": "The warding stones \u2014 they were at the stones, of course, the locks of the line itself... and you say the road-pairs were studying the lamp-posts. The spacing. They were measuring the DARK between the lamps. Forgive me, I need to write this before my hands remember to shake. Your fee is on the table, doubled. The monograph will say the town was saved by capable field assistants, which is the highest compliment my discipline knows how to print."
+        "start_dialog": "A research commission, plainly stated: the imps are surveying us — the wall, the lamps, the warding line — and everything they see walks back down that crack to whatever keeps their ledger. I require interrupted specimens. Stop the road-pairs mid-errand, destroy the pack at the warding stones, and observe as you work: what were they LOOKING at? Your sword settles the town's problem. Your eyes settle my chapter.",
+        "end_dialog": "The warding stones — they were at the stones, of course, the locks of the line itself... and you say the road-pairs were studying the lamp-posts. The spacing. They were measuring the DARK between the lamps. Forgive me, I need to write this before my hands remember to shake. Your fee is on the table, doubled. The monograph will say the town was saved by capable field assistants, which is the highest compliment my discipline knows how to print."
       },
       "rewards": {
         "xp": 500,
@@ -760,7 +769,7 @@
     {
       "id": "the_vigil_unbroken",
       "name": "The Vigil Unbroken",
-      "description": "Something below has opened the graves of the first watch and seated a court among them \u2014 a lich, a banshee, and a thing in burial wrappings, holding session at the foot of the warding line while a herald of the breach stands attendance. Mother Halvane means the Vigil to hold, and the Vigil needs swords tonight.",
+      "description": "Something below has opened the graves of the first watch and seated a court among them — a lich, a banshee, and a thing in burial wrappings, holding session at the foot of the warding line while a herald of the breach stands attendance. Mother Halvane means the Vigil to hold, and the Vigil needs swords tonight.",
       "tags": [
         "lastlight",
         "deadly"
@@ -770,7 +779,7 @@
           "id": "the_vigil_unbroken_step_1",
           "name": "Disperse the Grave Court",
           "kind": "kill",
-          "description": "Break the court holding session among the graves of the first watch \u2014 the lich reads from a ledger that is not Mother Halvane's.",
+          "description": "Break the court holding session among the graves of the first watch — the lich reads from a ledger that is not Mother Halvane's.",
           "tags": [
             "lastlight"
           ],
@@ -808,7 +817,7 @@
           "id": "the_vigil_unbroken_step_3",
           "name": "Recover the Warden's key",
           "kind": "retrieve",
-          "description": "The first watch's commander carried a key of black stone, lost when the watch fell. The court was holding session over the spot where it lies. Bring it to the chapel \u2014 not the captain, the chapel.",
+          "description": "The first watch's commander carried a key of black stone, lost when the watch fell. The court was holding session over the spot where it lies. Bring it to the chapel — not the captain, the chapel.",
           "tags": [
             "lastlight"
           ],
@@ -822,8 +831,8 @@
       "quest_giver": {
         "npc_name": "Mother Halvane",
         "npc_sprite": "person/female_priest02.png",
-        "start_dialog": "Listen to me, and weigh it before you accept, because I will not pretend this is wolf-work. The graves of the first watch stand open and a court sits among them \u2014 a lich with a ledger, a wailing thing, a horror in wrappings \u2014 and at the crack's mouth a herald attends them. They are holding session over my dead, reading names out of a book that is not mine. Break the court. Cast down the herald. And bring me the black key the first Warden carried, because I have begun to suspect what it fits, and I would rather be wrong in private.",
-        "end_dialog": "The court is dispersed, the herald is down, and the names in the watch-yard answered tonight's reading like children answering roll \u2014 all of them, settled, for the first time since spring. As for the key... it is exactly what I feared, and exactly why I asked for swords I could trust. The first Warden didn't carry a key to the crack, traveler. He carried a key FROM it. Given, not taken. Which means once, long ago, what is below wanted this door kept \u2014 and the Vigil and I must now sit with what has changed its mind. Go and rest. You have bought the town time, and bought me the truth, and only one of those came cheap."
+        "start_dialog": "Listen to me, and weigh it before you accept, because I will not pretend this is wolf-work. The graves of the first watch stand open and a court sits among them — a lich with a ledger, a wailing thing, a horror in wrappings — and at the crack's mouth a herald attends them. They are holding session over my dead, reading names out of a book that is not mine. Break the court. Cast down the herald. And bring me the black key the first Warden carried, because I have begun to suspect what it fits, and I would rather be wrong in private.",
+        "end_dialog": "The court is dispersed, the herald is down, and the names in the watch-yard answered tonight's reading like children answering roll — all of them, settled, for the first time since spring. As for the key... it is exactly what I feared, and exactly why I asked for swords I could trust. The first Warden didn't carry a key to the crack, traveler. He carried a key FROM it. Given, not taken. Which means once, long ago, what is below wanted this door kept — and the Vigil and I must now sit with what has changed its mind. Go and rest. You have bought the town time, and bought me the truth, and only one of those came cheap."
       },
       "rewards": {
         "xp": 750,

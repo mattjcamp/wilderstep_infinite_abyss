@@ -172,12 +172,15 @@ function makeFakeScene(): FakeScene {
         created.push(obj);
         return obj;
       },
-      text: () => {
+      text: (_x, _y, str) => {
         const obj = fakeObject();
         // Pretend a single line of text is ~14px tall — close enough
         // for the painter's "row stacking" math without invoking the
         // real Phaser text measurement pipeline.
         obj.height = 14;
+        // Record the painted string so content assertions ("does the
+        // log paint every step description?") can grep the texts.
+        (obj as FakeObject & { str?: string }).str = str;
         created.push(obj);
         return obj;
       },
@@ -328,6 +331,47 @@ describe("PaintedQuestLog — lifecycle", () => {
     // (+ optional description, step name, step description) is well
     // over 10 painted objects.
     expect(scene.created.length).toBeGreaterThan(10);
+  });
+
+  it("paints a description for EVERY step — done, current, and pending", () => {
+    const scene = makeFakeScene();
+    const screen = makeScreen(scene, () => {});
+    // rescue-cat at progress 1: step 0 done, step 1 current. Both
+    // carry descriptions, and both must paint so the player can
+    // scroll the log and read details on each step.
+    screen.open(
+      dataOf({ accepted: ["rescue-cat"], progress: { "rescue-cat": 1 } }),
+    );
+    const painted = scene.created
+      .map((o) => (o as FakeObject & { str?: string }).str)
+      .filter((s): s is string => typeof s === "string");
+    expect(painted.some((s) => s.includes("Somewhere in the orchard."))).toBe(
+      true,
+    ); // done step's detail
+    expect(painted.some((s) => s.includes("Climbing skill check."))).toBe(
+      true,
+    ); // current step's detail
+  });
+
+  it("paints pending-step descriptions too (not just the current one)", () => {
+    const scene = makeFakeScene();
+    const screen = makeScreen(scene, () => {});
+    // slay-orc at progress 0: step 0 current, step 1 pending. The
+    // pending step has no description (nothing to paint), but the
+    // cat quest at progress 0 has a pending step 1 WITH one.
+    screen.open(
+      dataOf({ accepted: ["rescue-cat"], progress: { "rescue-cat": 0 } }),
+    );
+    const painted = scene.created
+      .map((o) => (o as FakeObject & { str?: string }).str)
+      .filter((s): s is string => typeof s === "string");
+    // Step 0 is current, step 1 is pending — both details visible.
+    expect(painted.some((s) => s.includes("Somewhere in the orchard."))).toBe(
+      true,
+    );
+    expect(painted.some((s) => s.includes("Climbing skill check."))).toBe(
+      true,
+    );
   });
 
   it("renders the empty-state when nothing is accepted", () => {

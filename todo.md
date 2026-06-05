@@ -1,7 +1,9 @@
 
 # Playthrough Polish
 
-- When the cleric healed a party member in the party screen, the bars moved the total hit points did not appear to replenise 
+- Let the player scroll through the Quest Log to get details on each step.
+
+- When the cleric healed a party member in the party screen, the bars moved the total hit points did not appear to replenish 
 
 ## Big Ideas
 
