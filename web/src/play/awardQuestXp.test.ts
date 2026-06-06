@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { awardQuestXpToSavedMembers } from "./awardQuestXp";
+import {
+  awardQuestXpToSavedMembers,
+  awardQuestXpWithLevelUps,
+  type QuestXpCharacterRef,
+} from "./awardQuestXp";
+import type { RawClass } from "@/battle/world/Classes";
 import type { SavedCharacterState } from "./saveTypes";
 
 /** Minimal SavedCharacterState fixture — every required field plus a
@@ -131,5 +136,180 @@ describe("awardQuestXpToSavedMembers", () => {
     // Input untouched — caller still sees its baseline.
     expect(original.exp).toBe(100);
     expect(members[0]).toBe(original);
+  });
+});
+
+// ── Level-up path ───────────────────────────────────────────────────
+// Curve facts the tests lean on (defaults seeded by classFromRaw,
+// since v2 class records don't carry the leveling fields):
+//   exp_per_level = 1500 → level 2 at 1500 total, level 3 at 4500.
+//   hp_per_level: fighter 8, cleric 6. mp_per_level: fighter 0,
+//   cleric 6 (wisdom-driven). Human race overrides the curve to its
+//   races.json exp_per_level.
+
+const RAW_CLASSES: RawClass[] = [
+  { id: "fighter", name: "Fighter" },
+  { id: "cleric", name: "Cleric" },
+];
+const RACES = [
+  { id: "human", name: "Human", exp_per_level: 1125 },
+  { id: "elf", name: "Elf", exp_per_level: null },
+];
+
+function makeCharacter(
+  over: Partial<QuestXpCharacterRef> = {},
+): QuestXpCharacterRef {
+  return {
+    id: "hero",
+    name: "Hero",
+    class: "fighter",
+    race: "elf",
+    hp: 10,
+    mp: 0,
+    constitution: 14, // +2 mod → fighter hpGain 8+2 = 10
+    wisdom: 16, // +3 mod → cleric mpGain 6+3 = 9
+    ...over,
+  };
+}
+
+describe("awardQuestXpWithLevelUps", () => {
+  it("levels a member when the banked XP crosses the threshold", () => {
+    const members = [makeMember({ level: 1, exp: 0, max_hp: 10, hp: 6 })];
+    const { nextMembers, changed, levelUps } = awardQuestXpWithLevelUps(
+      members,
+      1500,
+      [makeCharacter()],
+      RAW_CLASSES,
+      RACES,
+    );
+    expect(changed).toBe(true);
+    expect(levelUps).toHaveLength(1);
+    expect(levelUps[0]).toMatchObject({
+      memberId: "hero",
+      name: "Hero",
+      newLevel: 2,
+      hpGain: 10, // 8 + CON mod 2
+      mpGain: 0,
+    });
+    const out = nextMembers[0];
+    expect(out.level).toBe(2);
+    expect(out.exp).toBe(1500);
+    expect(out.max_hp).toBe(20);
+    // Wounded member partially heals by the gain (combat parity).
+    expect(out.hp).toBe(16);
+  });
+
+  it("banks without leveling when the total stays below the threshold", () => {
+    const members = [makeMember({ level: 1, exp: 0, max_hp: 10 })];
+    const { nextMembers, levelUps } = awardQuestXpWithLevelUps(
+      members,
+      1499,
+      [makeCharacter()],
+      RAW_CLASSES,
+      RACES,
+    );
+    expect(levelUps).toHaveLength(0);
+    expect(nextMembers[0].level).toBe(1);
+    expect(nextMembers[0].exp).toBe(1499);
+    expect(nextMembers[0].max_hp).toBe(10);
+  });
+
+  it("processes multiple thresholds in one award", () => {
+    // 4500 = level 3 total on the default curve (1500 + 3000).
+    const members = [makeMember({ level: 1, exp: 0, max_hp: 10, hp: 10 })];
+    const { nextMembers, levelUps } = awardQuestXpWithLevelUps(
+      members,
+      4500,
+      [makeCharacter()],
+      RAW_CLASSES,
+      RACES,
+    );
+    expect(levelUps.map((e) => e.newLevel)).toEqual([2, 3]);
+    expect(nextMembers[0].level).toBe(3);
+    expect(nextMembers[0].max_hp).toBe(30); // +10 per level
+  });
+
+  it("grants casters MP on level-up (mp_per_level + casting-stat mod)", () => {
+    const members = [
+      makeMember({ level: 1, exp: 0, max_hp: 10, mp: 4, max_mp: 12 }),
+    ];
+    const { nextMembers, levelUps } = awardQuestXpWithLevelUps(
+      members,
+      1500,
+      [makeCharacter({ class: "cleric" })],
+      RAW_CLASSES,
+      RACES,
+    );
+    expect(levelUps[0].mpGain).toBe(9); // 6 + WIS mod 3
+    expect(nextMembers[0].max_mp).toBe(21);
+    expect(nextMembers[0].mp).toBe(13);
+  });
+
+  it("honours the race exp_per_level override (Humans level faster)", () => {
+    const members = [makeMember({ level: 1, exp: 0, max_hp: 10 })];
+    const { levelUps } = awardQuestXpWithLevelUps(
+      members,
+      1125,
+      [makeCharacter({ race: "human" })],
+      RAW_CLASSES,
+      RACES,
+    );
+    expect(levelUps).toHaveLength(1);
+    expect(levelUps[0].newLevel).toBe(2);
+  });
+
+  it("falls back to bank-only when the member has no resolvable class", () => {
+    // Catalog miss + no custom blob → exp accrues, level untouched
+    // (the legacy deferral behaviour rather than guessing a curve).
+    const members = [makeMember({ level: 1, exp: 0 })];
+    const { nextMembers, levelUps } = awardQuestXpWithLevelUps(
+      members,
+      5000,
+      [], // no catalog entry for "hero"
+      RAW_CLASSES,
+      RACES,
+    );
+    expect(levelUps).toHaveLength(0);
+    expect(nextMembers[0].exp).toBe(5000);
+    expect(nextMembers[0].level).toBe(1);
+  });
+
+  it("resolves custom (player-rolled) members via their saved custom blob", () => {
+    const members = [
+      makeMember({
+        id: "__custom_1",
+        level: 1,
+        exp: 0,
+        max_hp: 10,
+        custom: makeCharacter({ id: "__custom_1", name: "Rolled" }),
+      }),
+    ];
+    const { nextMembers, levelUps } = awardQuestXpWithLevelUps(
+      members,
+      1500,
+      [], // not in the module catalog — custom members never are
+      RAW_CLASSES,
+      RACES,
+    );
+    expect(levelUps).toHaveLength(1);
+    expect(levelUps[0].name).toBe("Rolled");
+    expect(nextMembers[0].level).toBe(2);
+  });
+
+  it("skips fallen members and does not mutate inputs", () => {
+    const down = makeMember({ id: "down", hp: 0, exp: 0, level: 1 });
+    const original = makeMember({ level: 1, exp: 0, max_hp: 10 });
+    const { nextMembers } = awardQuestXpWithLevelUps(
+      [down, original],
+      1500,
+      [makeCharacter(), makeCharacter({ id: "down" })],
+      RAW_CLASSES,
+      RACES,
+    );
+    expect(nextMembers[0].exp).toBe(0);
+    expect(nextMembers[0].level).toBe(1);
+    // Inputs untouched.
+    expect(original.exp).toBe(0);
+    expect(original.level).toBe(1);
   });
 });

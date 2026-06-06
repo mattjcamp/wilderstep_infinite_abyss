@@ -413,7 +413,13 @@ import { addToInventory, consumeOneFromInventory } from "@/play/inventoryStackin
 import { counterStockKey } from "@/play/counterStock";
 import { applyCombatResultToSave } from "@/play/syncFromBattle";
 import { gameState } from "@/battle/state";
-import { awardQuestXpToSavedMembers } from "@/play/awardQuestXp";
+import {
+  awardQuestXpWithLevelUps,
+  type QuestLevelUpEvent,
+  type QuestXpCharacterRef,
+  type QuestXpRaceRef,
+} from "@/play/awardQuestXp";
+import type { RawClass } from "@/battle/world/Classes";
 import { herbalismOnStep } from "@/play/herbalism";
 import {
   completedStepIds,
@@ -4560,15 +4566,13 @@ export function PlayHost() {
    *     `addToStash` is a follow-up that needs the full item
    *     catalog, which PlayHost doesn't load today)
    *   - **xp** is banked into every alive member's
-   *     `SavedCharacterState.exp` via `awardQuestXpToSavedMembers`.
-   *     Fallen members (hp <= 0) don't get a share — same
-   *     "alive only" gate combat uses. The level-up math itself
-   *     defers to the next combat: `seedBattleCaches` overlays
-   *     the banked exp onto the PartyMember the kernel sees, and
-   *     `awardXp`'s `while (member.exp >= member.level * xpPer)`
-   *     loop catches up any pending thresholds in one pass. See
-   *     `awardQuestXp.ts` for the rationale on why we don't run
-   *     awardXp eagerly here.
+   *     `SavedCharacterState.exp` via `awardQuestXpWithLevelUps`,
+   *     which ALSO applies any level-ups the new total crosses
+   *     (same curve + HP/MP gains as combat's awardXp, run
+   *     against the saved members directly). Fallen members
+   *     (hp <= 0) don't get a share — same "alive only" gate
+   *     combat uses. Level gains surface as log-strip lines
+   *     behind the reward summary.
    *
    *  Persistence: a single `saveWorld(nextSave)` commits gold +
    *  inventory + the resulting `questStepProgress` (already
@@ -4586,6 +4590,10 @@ export function PlayHost() {
           current.questId,
         );
         if (claim) {
+          // Level-ups triggered by the quest's XP — captured out
+          // here so the log-strip writer below (outside the save
+          // block) can surface one line per level gained.
+          let questLevelUps: ReadonlyArray<QuestLevelUpEvent> = [];
           const save = saveRef.current;
           if (save) {
             // Quest reward items merge into existing stacks where
@@ -4681,17 +4689,28 @@ export function PlayHost() {
               }
             }
             // Bank the quest's XP into every alive member's saved
-            // `exp` field. Full XP per member (matching the combat
-            // reward semantics — no split). The level-up itself
-            // fires when combat next runs awardXp on a non-zero
-            // reward; see awardQuestXp.ts for the deferment
-            // rationale. `changed` lets us avoid an unnecessary
-            // members[] replacement when no one qualified (XP=0
-            // or party wipe).
-            const xpResult = awardQuestXpToSavedMembers(
+            // `exp` field AND apply any level-ups the new total
+            // crosses — same curve + HP/MP gains combat's awardXp
+            // uses, run against the saved members directly so a
+            // quest reward that clears a threshold levels the
+            // member at turn-in time instead of deferring to the
+            // next fight. Full XP per member (matching the combat
+            // reward semantics — no split). `changed` lets us
+            // avoid an unnecessary members[] replacement when no
+            // one qualified (XP=0 or party wipe). The catalogs
+            // are the raw records the load pass stashed on
+            // catalogRef — classFromRaw inside the helper seeds
+            // the hp/mp/exp-per-level defaults v2's class records
+            // don't carry.
+            const xpResult = awardQuestXpWithLevelUps(
               save.party.members,
               claim.xp,
+              (catalogRef.current?.characters ??
+                []) as ReadonlyArray<QuestXpCharacterRef>,
+              (catalogRef.current?.classes ?? []) as ReadonlyArray<RawClass>,
+              (catalogRef.current?.races ?? []) as ReadonlyArray<QuestXpRaceRef>,
             );
+            questLevelUps = xpResult.levelUps;
             const nextMembers = xpResult.changed
               ? xpResult.nextMembers
               : save.party.members;
@@ -4735,7 +4754,15 @@ export function PlayHost() {
               ? `Quest complete — ${claim.questName}. Rewards: ${parts.join(", ")}.`
               : `Quest complete — ${claim.questName}.`;
           setLogMessages((prev) => {
-            const next = [...prev, summary];
+            // One line per level gained rides behind the reward
+            // summary ("Aldric reached Level 3! HP+7 MP+8") so
+            // quest-driven level-ups get the same log visibility
+            // combat level-ups have.
+            const next = [
+              ...prev,
+              summary,
+              ...questLevelUps.map((ev) => ev.message),
+            ];
             return next.length > MAX_LOG
               ? next.slice(next.length - MAX_LOG)
               : next;

@@ -55,13 +55,13 @@
           "id": "heal_all_hp",
           "name": "Heal All HP",
           "description": "Restore every living member to full hit points.",
-          "cost": 100
+          "cost": 10
         },
         {
           "id": "restore_all_mp",
           "name": "Restore All MP",
           "description": "Refill every living member's magic points.",
-          "cost": 75
+          "cost": 10
         },
         {
           "id": "cure_all_poisons",

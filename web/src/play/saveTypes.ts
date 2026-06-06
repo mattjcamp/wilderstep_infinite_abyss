@@ -65,11 +65,10 @@ export interface SavedCharacterState {
    *       PartyMember's exp/level, and `applyCombatResultToSave`
    *       reads those deltas back here.
    *    2. Quest turn-in — `PlayHost.onQuestDecline` banks the quest's
-   *       `xp` reward into every alive member's `exp`. Level-ups
-   *       triggered by banked XP don't fire at turn-in time; they
-   *       catch up the next time the kernel calls `awardXp` (i.e.
-   *       the next combat that awards any XP at all — the while
-   *       loop processes every pending threshold in one pass).
+   *       `xp` reward into every alive member's `exp` AND applies
+   *       any level-ups the new total crosses (via
+   *       `awardQuestXpWithLevelUps`, which runs the same curve +
+   *       HP/MP gain math as combat's `awardXp`).
    *
    *  Both fields are read by `PlayPartyScreenOverlay` to display the
    *  current level + XP bar on the Party screen and Character sheet,

@@ -19,6 +19,18 @@
       "charges": 10
     },
     {
+      "item": "arrows",
+      "charges": 100
+    },
+    {
+      "item": "stones",
+      "charges": 100
+    },
+    {
+      "item": "bolts",
+      "charges": 100
+    },
+    {
       "item": "rock",
       "charges": 20
     },

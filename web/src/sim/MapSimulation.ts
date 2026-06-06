@@ -33,6 +33,8 @@ import {
   findLairs,
   findPlacedEncounters,
   findQuestPlacedEncounters,
+  IDLE_WANDER_CHANCE,
+  randomRoamStep,
   roamStep,
   roamerCollidesWithParty,
   trySpawnRoamer,
@@ -1855,11 +1857,19 @@ export class MapSimulation {
     for (const placed of this.placedEncounters) {
       const fromKey = `${placed.col},${placed.row}`;
       occupied.delete(fromKey);
-      // Pursuit gate: stays put unless the party is within
-      // PURSUIT_RADIUS Chebyshev tiles AND has a clear line of sight.
-      // The collision check below still fires against the (possibly
-      // unchanged) position so an entity already adjacent to the
-      // party still triggers the encounter.
+      // Pursuit gate: when the party is within PURSUIT_RADIUS
+      // Chebyshev tiles AND has a clear line of sight, the entity
+      // steps toward them. Otherwise it can't see the party — but
+      // rather than freezing in place it takes an occasional idle
+      // wander step (IDLE_WANDER_CHANCE) so the world stays alive.
+      // The collision check below still fires against the resulting
+      // position, so an entity that drifts into the party (or was
+      // already adjacent) still triggers the encounter.
+      const isWalkable = (c: number, r: number) => {
+        const cell = cellAt(this.grid, c, r);
+        return cell !== null && cell.walkable;
+      };
+      const isBlocked = (c: number, r: number) => occupied.has(`${c},${r}`);
       const next = canPursue(
         { col: placed.col, row: placed.row },
         this.pos,
@@ -1870,13 +1880,16 @@ export class MapSimulation {
         ? roamStep(
             { col: placed.col, row: placed.row },
             this.pos,
-            (c, r) => {
-              const cell = cellAt(this.grid, c, r);
-              return cell !== null && cell.walkable;
-            },
-            (c, r) => occupied.has(`${c},${r}`),
+            isWalkable,
+            isBlocked,
           )
-        : { col: placed.col, row: placed.row };
+        : Math.random() < IDLE_WANDER_CHANCE
+          ? randomRoamStep(
+              { col: placed.col, row: placed.row },
+              isWalkable,
+              isBlocked,
+            )
+          : { col: placed.col, row: placed.row };
       placed.col = next.col;
       placed.row = next.row;
       occupied.add(`${next.col},${next.row}`);
@@ -2043,11 +2056,19 @@ export class MapSimulation {
     for (const roamer of this.roamers) {
       const fromKey = `${roamer.col},${roamer.row}`;
       occupied.delete(fromKey);
-      // Pursuit gate: stays put unless the party is within
-      // PURSUIT_RADIUS Chebyshev tiles AND has a clear line of sight.
-      // The collision check below still fires against the (possibly
-      // unchanged) position so a roamer already adjacent to the party
-      // still triggers the encounter.
+      // Pursuit gate: when the party is within PURSUIT_RADIUS
+      // Chebyshev tiles AND has a clear line of sight, the roamer
+      // steps toward them. Otherwise it can't see the party — but
+      // rather than freezing in place it takes an occasional idle
+      // wander step (IDLE_WANDER_CHANCE) so the world stays alive.
+      // The collision check below still fires against the resulting
+      // position, so a roamer that drifts into the party (or was
+      // already adjacent) still triggers the encounter.
+      const isWalkable = (c: number, r: number) => {
+        const cell = cellAt(this.grid, c, r);
+        return cell !== null && cell.walkable;
+      };
+      const isBlocked = (c: number, r: number) => occupied.has(`${c},${r}`);
       const next = canPursue(
         { col: roamer.col, row: roamer.row },
         this.pos,
@@ -2058,13 +2079,16 @@ export class MapSimulation {
         ? roamStep(
             { col: roamer.col, row: roamer.row },
             this.pos,
-            (c, r) => {
-              const cell = cellAt(this.grid, c, r);
-              return cell !== null && cell.walkable;
-            },
-            (c, r) => occupied.has(`${c},${r}`),
+            isWalkable,
+            isBlocked,
           )
-        : { col: roamer.col, row: roamer.row };
+        : Math.random() < IDLE_WANDER_CHANCE
+          ? randomRoamStep(
+              { col: roamer.col, row: roamer.row },
+              isWalkable,
+              isBlocked,
+            )
+          : { col: roamer.col, row: roamer.row };
       roamer.col = next.col;
       roamer.row = next.row;
       occupied.add(`${next.col},${next.row}`);

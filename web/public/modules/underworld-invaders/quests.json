@@ -209,7 +209,15 @@
           "kind": "kill",
           "location_kind": "map",
           "encounter_id": "spiders",
-          "map_id": "hallomere_inn_main"
+          "map_id": "hallomere_inn_main",
+          "description": "The pirates have unleashed some nssty spidars in the Inn. Chase those bugger out first and I will give you some items that will surely help you on finish these pirates.",
+          "rewards": {
+            "items": [
+              "iron_key",
+              "iron_key",
+              "fire_oil"
+            ]
+          }
         },
         {
           "id": "pirates_step_3",

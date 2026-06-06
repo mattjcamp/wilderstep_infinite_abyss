@@ -18,15 +18,15 @@
       "wisdom": 13,
       "sprite": "person/fighter14.png",
       "equipped": {
-        "hands": "club",
-        "body": "cloth"
+        "hands": "stormbolt_crossbow",
+        "body": "stoneguard_plate"
       },
       "inventory": []
     },
     {
       "id": "legolas",
       "name": "Legolas",
-      "class": "ranger",
+      "class": "thief",
       "race": "elf",
       "gender": "Male",
       "level": 1,
@@ -40,7 +40,7 @@
       "wisdom": 12,
       "sprite": "person/ranger1.png",
       "equipped": {
-        "hands": "club",
+        "hands": "galewind_bow",
         "body": "cloth"
       },
       "inventory": []
@@ -62,7 +62,7 @@
       "wisdom": 18,
       "sprite": "person/cleric1.png",
       "equipped": {
-        "hands": "club",
+        "hands": "meteorfall_mace",
         "body": "cloth"
       },
       "inventory": []
@@ -84,7 +84,7 @@
       "wisdom": 9,
       "sprite": "person/wizard6.png",
       "equipped": {
-        "hands": "club",
+        "hands": "starcaller_wand",
         "body": "cloth"
       },
       "inventory": []
