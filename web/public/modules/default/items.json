@@ -103,26 +103,6 @@
       "character_can_equip": true
     },
     {
-      "id": "gloves",
-      "category": "weapons",
-      "name": "Gloves",
-      "animation_id": null,
-      "description": "Sturdy leather gloves. A slight edge over bare fists.",
-      "icon": "tool",
-      "item_type": "gloves",
-      "power": 1,
-      "ranged": false,
-      "throwable": false,
-      "slots": [
-        "hands"
-      ],
-      "durability": 50,
-      "party_can_equip": false,
-      "character_can_equip": true,
-      "buy": 0,
-      "sell": 0
-    },
-    {
       "id": "halberd",
       "category": "weapons",
       "name": "Halberd",
@@ -204,23 +184,6 @@
       "character_can_equip": true,
       "buy": 40,
       "sell": 20
-    },
-    {
-      "id": "mystic_sword",
-      "category": "weapons",
-      "name": "Mystic Sword",
-      "animation_id": null,
-      "description": "An ancient blade pulsing with arcane power.",
-      "icon": "sword",
-      "item_type": "sword",
-      "power": 10,
-      "ranged": false,
-      "slots": [
-        "hands"
-      ],
-      "durability": 0,
-      "party_can_equip": false,
-      "character_can_equip": true
     },
     {
       "id": "rock",
@@ -568,38 +531,6 @@
       "sell": 30
     },
     {
-      "id": "chain_plus_2",
-      "category": "armors",
-      "name": "+2 Chain",
-      "animation_id": null,
-      "description": "Enchanted chainmail. Magically reinforced links.",
-      "icon": "armor_heavy",
-      "item_type": "chain",
-      "slots": [
-        "body"
-      ],
-      "evasion": 62,
-      "durability": 0,
-      "party_can_equip": false,
-      "character_can_equip": true
-    },
-    {
-      "id": "plate_plus_2",
-      "category": "armors",
-      "name": "+2 Plate",
-      "animation_id": null,
-      "description": "Enchanted plate armor. Nearly impenetrable.",
-      "icon": "armor_heavy",
-      "item_type": "plate",
-      "slots": [
-        "body"
-      ],
-      "evasion": 64,
-      "durability": 0,
-      "party_can_equip": false,
-      "character_can_equip": true
-    },
-    {
       "id": "chain",
       "category": "armors",
       "name": "Chain",
@@ -634,22 +565,6 @@
       "character_can_equip": true,
       "buy": 20,
       "sell": 10
-    },
-    {
-      "id": "exotic",
-      "category": "armors",
-      "name": "Exotic",
-      "animation_id": null,
-      "description": "Mysterious armor of unknown origin. Supreme defense.",
-      "icon": "armor_heavy",
-      "item_type": "exotic",
-      "slots": [
-        "body"
-      ],
-      "evasion": 67,
-      "durability": 0,
-      "party_can_equip": false,
-      "character_can_equip": true
     },
     {
       "id": "leather",
@@ -772,30 +687,6 @@
       "effect": "rest",
       "stackable": true,
       "charges": 3
-    },
-    {
-      "id": "crystal_key",
-      "category": "general",
-      "name": "Crystal Key",
-      "animation_id": null,
-      "description": "A translucent key carved from a single crystal, humming with magical energy. One of the 8 Keys of Shadow.",
-      "icon": "key",
-      "item_type": "quest_item",
-      "quest_item": true,
-      "party_can_equip": false,
-      "character_can_equip": false
-    },
-    {
-      "id": "diamond_key",
-      "category": "general",
-      "name": "Diamond Key",
-      "animation_id": null,
-      "description": "A flawless diamond key that refracts light into rainbows. The final Key of Shadow.",
-      "icon": "key",
-      "item_type": "quest_item",
-      "quest_item": true,
-      "party_can_equip": false,
-      "character_can_equip": false
     },
     {
       "id": "dragonheart",
@@ -1027,18 +918,6 @@
       "sell": 5
     },
     {
-      "id": "obsidian_key",
-      "category": "general",
-      "name": "Obsidian Key",
-      "animation_id": null,
-      "description": "A key of polished volcanic glass, cold to the touch. One of the 8 Keys of Shadow.",
-      "icon": "key",
-      "item_type": "quest_item",
-      "quest_item": true,
-      "party_can_equip": false,
-      "character_can_equip": false
-    },
-    {
       "id": "paralytic_poison",
       "category": "general",
       "name": "Paralytic Poison",
@@ -1073,17 +952,6 @@
       "buy": 50,
       "sell": 25,
       "range": 4
-    },
-    {
-      "id": "rope",
-      "category": "general",
-      "name": "Rope",
-      "animation_id": null,
-      "description": "A sturdy hemp rope. Useful for climbing.",
-      "icon": "rope",
-      "item_type": "rope",
-      "party_can_equip": false,
-      "character_can_equip": false
     },
     {
       "id": "scroll_of_fire",
@@ -1141,17 +1009,6 @@
       "buy": null,
       "sell": null,
       "quest_item": true
-    },
-    {
-      "id": "smoke_bomb",
-      "category": "general",
-      "name": "Smoke Bomb",
-      "animation_id": null,
-      "description": "A small bomb that creates a blinding cloud.",
-      "icon": "bomb",
-      "item_type": "bomb",
-      "party_can_equip": false,
-      "character_can_equip": false
     },
     {
       "id": "spring_water",

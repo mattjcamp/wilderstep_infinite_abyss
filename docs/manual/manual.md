@@ -152,7 +152,7 @@ A closer look at each class — how it plays, and what it brings to the party. _
 
 A support specialist who turns the wild into an arsenal. Alchemists forage reagents (Herbalism) and Brew Potions from level 1, keeping the party stocked with healing and buffs. They cast from the sorcerer catalog but fight poorly — only a dagger, sling, and cloth — so they shine in the back ranks as a crafter and caster.
 
-`Move 4` · `Sorcerer` · `3 weapon types · up to cloth armor` · `Brew Potion (L1), Herbalism (L1)`
+`Move 4` · `Sorcerer` · `4 weapon types · up to cloth armor` · `Brew Potion (L1), Herbalism (L1)`
 
 </td>
 </tr></table>
@@ -164,7 +164,7 @@ A support specialist who turns the wild into an arsenal. Alchemists forage reage
 
 The party's divine anchor. Clerics draw on the priest catalog to heal and protect, wade in wearing chain with a mace or sling, and from level 2 can Turn Undead to wither the unliving. Slow on their feet at two tiles a turn, they reward patient, central positioning over aggression.
 
-`Move 2` · `Priest` · `4 weapon types · up to chain armor` · `Turn Undead (L2)`
+`Move 2` · `Priest` · `5 weapon types · up to chain armor` · `Turn Undead (L2)`
 
 </td>
 <td width="170"><img src="assets/portrait_cleric.png" width="150" alt="Cleric"></td>
@@ -178,7 +178,7 @@ The party's divine anchor. Clerics draw on the priest catalog to heal and protec
 
 The only class that wields both arcane and divine magic, thanks to Dual Casting from level 1. Druids forage for reagents as they travel (Herbalism) and fight in leather with simple weapons. Versatile but slow at two tiles a turn and squishier than a true warrior — a flexible spellcaster for players who like options.
 
-`Move 2` · `Sorcerer + Priest` · `5 weapon types · up to leather armor` · `Dual Casting (L1), Herbalism (L1)`
+`Move 2` · `Sorcerer + Priest` · `6 weapon types · up to leather armor` · `Dual Casting (L1), Herbalism (L1)`
 
 </td>
 </tr></table>
@@ -204,7 +204,7 @@ The workhorse of any party. Fighters command the widest armory in the game — e
 
 A holy warrior who fights on the front line and channels divine power. Paladins move four tiles a turn, wear chain and wield swords and spears, Smite Undead for double damage from level 1, and gain Turn Undead at level 5. They trade the Cleric's spell depth for martial muscle — the party's anti-undead vanguard.
 
-`Move 4` · `Priest` · `11 weapon types · up to chain armor` · `Smite Undead (L1), Turn Undead (L5)`
+`Move 4` · `Priest` · `12 weapon types · up to chain armor` · `Smite Undead (L1), Turn Undead (L5)`
 
 </td>
 </tr></table>
@@ -242,7 +242,7 @@ The fastest, sneakiest member of any party, covering six tiles a turn. Thieves p
 
 A glass cannon of raw arcane power. Wizards cast from the sorcerer catalog but are the frailest class — limited to cloth and a dagger or club, and only two tiles of movement. Keep them well behind the front line: their spells can decide a fight, but a single solid hit can end them.
 
-`Move 2` · `Sorcerer` · `3 weapon types · up to cloth armor` · `—`
+`Move 2` · `Sorcerer` · `4 weapon types · up to cloth armor` · `—`
 
 </td>
 <td width="170"><img src="assets/portrait_wizard.png" width="150" alt="Wizard"></td>
@@ -583,6 +583,59 @@ Sorted by `difficulty` then HP. `Damage` is the weapon dice; `Move` is the move 
 | **Vampire Lord** | deadly | 60 | 16 | +7 | 1d10 | 4 | 160 | 50–150 | undead, humanoid, hit-and-run 1 |
 | **Hydra** | deadly | 110 | 15 | +6 | 3d8+2 | 2 | 190 | 40–120 |  |
 | **Stone Golem** | deadly | 110 | 18 | +6 | 2d12 | 1 | 205 | 30–80 |  |
+
+---
+
+## Frequently Asked Questions
+
+This section is hand-maintained — edit it freely. It lives outside every
+generated block, so the data-driven builders (the Class Gallery refresher
+and the PDF renderer) never touch it.
+
+### How do I attack an enemy?
+
+Walk into an adjacent enemy to make a melee attack, or pick **Attack** from
+the action menu to strike the first adjacent foe. For ranged weapons choose
+**Range** and pick a target or a direction; for thrown items use **Throw**.
+
+### Why is the Range option greyed out?
+
+A ranged weapon needs matching ammunition in the shared party stash —
+arrows for bows, bolts for crossbows, stones for slings. Ammo carried in a
+single character's personal bag does not count; move it to the party stash.
+Weapons that are their own projectile (a Rock, or a wand) need no ammo.
+
+### Do magic weapons lose durability?
+
+Relic weapons have a durability of 0, which means they are indestructible —
+they never wear out or break, no matter how often you use them.
+
+### How do I restore HP and MP between fights?
+
+Rest with Camping Supplies from the Party screen, or visit a temple in town.
+A Cleric or other healer can also cast healing spells on the party screen
+outside of combat.
+
+### Where do potion reagents come from?
+
+A Druid or Alchemist in the party gathers reagents automatically while you
+travel across foraging terrain (grass, forest, and similar tiles). An
+Alchemist can then brew them into potions from the Party screen.
+
+<!--
+  OPTIONAL: data-driven FAQ entries.
+
+  If you ever want part of this FAQ generated from game data (the way the
+  Class Gallery is), wrap just that portion in a marker pair and add a small
+  builder script that rewrites only the text between the markers — exactly
+  the pattern in docs/manual/build_class_gallery.py. The markers look like:
+
+    [BEGIN GENERATED: faq]   ...generated entries...   [END GENERATED: faq]
+
+  (use real HTML-comment markers, not these square brackets). Everything
+  outside the markers — including all of the hand-written Q&A above — stays
+  untouched on every run.
+-->
 
 ---
 
