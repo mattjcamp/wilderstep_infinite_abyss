@@ -433,36 +433,68 @@ Items are grouped by category — every weapon in one table, all armor in anothe
 
 <!-- END GENERATED: items -->
 
+<!-- BEGIN GENERATED: monsters — run `python3 docs/manual/build_monsters.py` to refresh -->
+
 ## Monsters
 
-Sorted by `difficulty` then HP. `Damage` is the weapon dice; `Move` is the move budget per turn. `Undead` matters for Smite Undead / Turn Undead.
+Every monster in the game, sorted by difficulty (easy → normal → hard → deadly → boss), then by HP. **Damage** is the attack dice; **Move** is the tile budget per turn. The **Tags** column notes type (undead / humanoid — undead matters for Smite Undead and Turn Undead) and hit-and-run behaviour.
 
-| Monster | Diff | HP | AC | Atk | Damage | Move | XP | Gold | Tags |
-|---|---|---:|---:|---:|---|---:|---:|---|---|
-| **Goblin** | easy | 6 | 11 | +2 | 1d4 | 6 | 10 | 1–6 | humanoid |
-| **Giant Rat** | easy | 8 | 12 | +2 | 1d4 | 10 | 15 | 2–8 |  |
-| **Wolf** | easy | 12 | 13 | +4 | 1d6+1 | 4 | 30 | 0–5 |  |
-| **Wild Boar** | easy | 15 | 14 | +1 | 1d4 | 4 | 20 | 3–10 |  |
-| **Lich** | hard | 30 | 15 | +3 | 3d4 | 2 | 135 | 10–40 | undead |
-| **Banshee** | hard | 35 | 13 | +5 | 1d8 | 3 | 90 | 8–25 | undead, hit-and-run 1 |
-| **Super Zombie** | hard | 40 | 11 | +4 | 1d8+2 | 2 | 70 | 6–22 | undead |
-| **Ogre** | hard | 40 | 13 | +5 | 2d6+3 | 2 | 80 | 15–40 | humanoid |
-| **Man Eater** | hard | 50 | 16 | +3 | 3d4 | 3 | 125 | 10–30 |  |
-| **Wyvern** | hard | 60 | 14 | +4 | 2d4 | 4 | 120 | 3–25 | hit-and-run 1 |
-| **Dragon** | boss | 125 | 18 | +6 | 4d8 | 8 | 335 | 20–50 | hit-and-run 2 |
-| **Skeleton Archer** | normal | 12 | 12 | +3 | 1d4 | 2 | 20 | 5–18 | undead |
-| **Dark Mage** | normal | 14 | 12 | +4 | 2d4+1 | 2 | 50 | 10–25 | humanoid |
-| **Orc Shaman** | normal | 16 | 11 | +3 | 1d4 | 2 | 25 | 5–18 | humanoid |
-| **Skeleton** | normal | 16 | 13 | +3 | 1d6+1 | 3 | 30 | 5–15 | undead |
-| **Zombie** | normal | 20 | 10 | +2 | 1d6+1 | 3 | 30 | 3–12 | undead |
-| **Orc** | normal | 22 | 13 | +5 | 1d8+2 | 4 | 50 | 5–15 | humanoid |
-| **Troll** | normal | 30 | 14 | +6 | 2d6+2 | 1 | 70 | 10–25 | humanoid |
-| **Mind Flayer** | deadly | 50 | 15 | +6 | 1d6 | 3 | 140 | 25–90 |  |
-| **Vampire Lord** | deadly | 60 | 16 | +7 | 1d10 | 4 | 160 | 50–150 | undead, humanoid, hit-and-run 1 |
-| **Hydra** | deadly | 110 | 15 | +6 | 3d8+2 | 2 | 190 | 40–120 |  |
-| **Stone Golem** | deadly | 110 | 18 | +6 | 2d12 | 1 | 205 | 30–80 |  |
+| Sprite | Monster | Diff | HP | AC | Atk | Damage | Move | XP | Gold | Tags |
+|:---:|---|---|---:|---:|---:|---|---:|---:|---:|---|
+| <img src="../../web/public/sprites/monster/goblin.png" width="36" alt="Goblin"> | **Goblin** | easy | 6 | 11 | +2 | 1d4 | 6 | 10 | 1–6 | humanoid |
+| <img src="../../web/public/sprites/monster/bat_grey.png" width="36" alt="Cave Bat"> | **Cave Bat** | easy | 8 | 12 | +2 | 1d4 | 12 | 20 | 2–8 |  |
+| <img src="../../web/public/sprites/monster/rat_grey.png" width="36" alt="Giant Rat"> | **Giant Rat** | easy | 8 | 12 | +2 | 1d4 | 10 | 15 | 2–8 |  |
+| <img src="../../web/public/sprites/monster/centipede_red.png" width="36" alt="Giant Centipede"> | **Giant Centipede** | easy | 10 | 12 | +2 | 1d4 | 8 | 20 | 2–8 |  |
+| <img src="../../web/public/sprites/monster/eagle.png" width="36" alt="Wild Eagle"> | **Wild Eagle** | easy | 10 | 12 | +2 | 1d4 | 12 | 20 | 2–8 |  |
+| <img src="../../web/public/sprites/monster/beetle_red.png" width="36" alt="Fire Beetle"> | **Fire Beetle** | easy | 12 | 14 | +2 | 1d4 | 8 | 20 | 2–8 |  |
+| <img src="../../web/public/sprites/monster/wolf.png" width="36" alt="Wolf"> | **Wolf** | easy | 12 | 13 | +4 | 1d6+1 | 4 | 30 | 0–5 |  |
+| <img src="../../web/public/sprites/monster/spider_black.png" width="36" alt="Spider"> | **Spider** | easy | 15 | 12 | +10 |  | 4 | 25 | 1–5 | hit-and-run 2 |
+| <img src="../../web/public/sprites/monster/bull.png" width="36" alt="Wild Boar"> | **Wild Boar** | easy | 15 | 14 | +1 | 1d4 | 4 | 20 | 3–10 |  |
+| <img src="../../web/public/sprites/monster/skeleton2.png" width="36" alt="Skeleton Archer"> | **Skeleton Archer** | normal | 12 | 12 | +3 | 1d4 | 2 | 20 | 5–18 | undead |
+| <img src="../../web/public/sprites/monster/dark_mage.png" width="36" alt="Dark Mage"> | **Dark Mage** | normal | 14 | 12 | +4 | 2d4+1 | 2 | 50 | 10–25 | humanoid |
+| <img src="../../web/public/sprites/monster/orc2.png" width="36" alt="Orc Shaman"> | **Orc Shaman** | normal | 16 | 11 | +3 | 1d4 | 2 | 25 | 5–18 | humanoid |
+| <img src="../../web/public/sprites/monster/lark_f2.png" width="36" alt="Pirate"> | **Pirate** | normal | 16 | 13 | +2 | 1d4 | 6 | 25 | 5–10 | humanoid, hit-and-run 2 |
+| <img src="../../web/public/sprites/monster/skeleton2.png" width="36" alt="Skeleton"> | **Skeleton** | normal | 16 | 13 | +3 | 1d6+1 | 3 | 30 | 5–15 | undead |
+| <img src="../../web/public/sprites/monster/zombie.png" width="36" alt="Zombie"> | **Zombie** | normal | 20 | 10 | +2 | 1d6+1 | 3 | 30 | 3–12 | undead |
+| <img src="../../web/public/sprites/monster/ooze_blue.png" width="36" alt="Blue Ooze"> | **Blue Ooze** | normal | 22 | 10 | +3 | 1d8+1 | 4 | 45 | 5–18 |  |
+| <img src="../../web/public/sprites/monster/snake_blue.png" width="36" alt="Coil Serpent"> | **Coil Serpent** | normal | 22 | 13 | +3 | 1d8+1 | 7 | 45 | 5–18 |  |
+| <img src="../../web/public/sprites/monster/spider_red.png" width="36" alt="Crimson Spider"> | **Crimson Spider** | normal | 22 | 13 | +3 | 1d8+1 | 7 | 45 | 5–18 |  |
+| <img src="../../web/public/sprites/monster/imp.png" width="36" alt="Imp"> | **Imp** | normal | 22 | 13 | +3 | 1d8+1 | 9 | 45 | 5–18 | humanoid |
+| <img src="../../web/public/sprites/monster/kobold_mage.png" width="36" alt="Kobold Shaman"> | **Kobold Shaman** | normal | 22 | 13 | +3 | 1d8+1 | 7 | 45 | 5–18 | humanoid |
+| <img src="../../web/public/sprites/monster/orc1.png" width="36" alt="Orc"> | **Orc** | normal | 22 | 13 | +5 | 1d8+2 | 4 | 50 | 5–15 | humanoid |
+| <img src="../../web/public/sprites/monster/ghost_red.png" width="36" alt="Restless Spirit"> | **Restless Spirit** | normal | 22 | 14 | +3 | 1d8+1 | 8 | 45 | 5–18 | undead |
+| <img src="../../web/public/sprites/monster/skeleton.png" width="36" alt="Skeleton Warrior"> | **Skeleton Warrior** | normal | 22 | 14 | +3 | 1d8+1 | 7 | 45 | 5–18 | undead, humanoid |
+| <img src="../../web/public/sprites/monster/lizard_red.png" width="36" alt="Fire Lizard"> | **Fire Lizard** | normal | 26 | 13 | +3 | 1d8+1 | 7 | 45 | 5–18 |  |
+| <img src="../../web/public/sprites/monster/orc.png" width="36" alt="Orc Raider"> | **Orc Raider** | normal | 26 | 13 | +3 | 1d8+1 | 7 | 45 | 5–18 | humanoid |
+| <img src="../../web/public/sprites/monster/troll.png" width="36" alt="Troll"> | **Troll** | normal | 30 | 14 | +6 | 2d6+2 | 1 | 70 | 10–25 | humanoid |
+| <img src="../../web/public/sprites/monster/lich.png" width="36" alt="Lich"> | **Lich** | hard | 30 | 15 | +3 | 3d4 | 2 | 135 | 10–40 | undead |
+| <img src="../../web/public/sprites/monster/wraith_red.png" width="36" alt="Banshee"> | **Banshee** | hard | 35 | 13 | +5 | 1d8 | 3 | 90 | 8–25 | undead, hit-and-run 1 |
+| <img src="../../web/public/sprites/person/fighter14.png" width="36" alt="Ogre"> | **Ogre** | hard | 40 | 13 | +5 | 2d6+3 | 2 | 80 | 15–40 | humanoid |
+| <img src="../../web/public/sprites/monster/zombie.png" width="36" alt="Super Zombie"> | **Super Zombie** | hard | 40 | 11 | +4 | 1d8+2 | 2 | 70 | 6–22 | undead |
+| <img src="../../web/public/sprites/monster/mummy_red.png" width="36" alt="Cursed Mummy"> | **Cursed Mummy** | hard | 45 | 15 | +4 | 2d6+2 | 5 | 100 | 15–45 | undead, humanoid |
+| <img src="../../web/public/sprites/monster/gargoyle_red.png" width="36" alt="Gargoyle"> | **Gargoyle** | hard | 45 | 16 | +4 | 2d6+2 | 8 | 100 | 15–45 |  |
+| <img src="../../web/public/sprites/monster/golem_blue.png" width="36" alt="Ice Golem"> | **Ice Golem** | hard | 45 | 16 | +4 | 2d6+2 | 5 | 100 | 15–45 |  |
+| <img src="../../web/public/sprites/monster/medusa.png" width="36" alt="Medusa"> | **Medusa** | hard | 45 | 15 | +4 | 2d6+2 | 6 | 100 | 15–45 | humanoid |
+| <img src="../../web/public/sprites/monster/dinosaur_beast_red.png" width="36" alt="Raptor Beast"> | **Raptor Beast** | hard | 45 | 15 | +4 | 2d6+2 | 8 | 100 | 15–45 |  |
+| <img src="../../web/public/sprites/monster/yeti_blue.png" width="36" alt="Frost Yeti"> | **Frost Yeti** | hard | 50 | 15 | +4 | 2d6+2 | 6 | 100 | 15–45 |  |
+| <img src="../../web/public/sprites/monster/man_thing1.png" width="36" alt="Man Eater"> | **Man Eater** | hard | 50 | 16 | +3 | 3d4 | 3 | 125 | 10–30 |  |
+| <img src="../../web/public/sprites/monster/troll_dark.png" width="36" alt="Dark Troll"> | **Dark Troll** | hard | 55 | 15 | +4 | 2d6+2 | 6 | 100 | 15–45 | humanoid |
+| <img src="../../web/public/sprites/monster/ogre_lord.png" width="36" alt="Ogre Lord"> | **Ogre Lord** | hard | 55 | 15 | +4 | 2d6+2 | 6 | 100 | 15–45 | humanoid |
+| <img src="../../web/public/sprites/monster/vampire2.png" width="36" alt="Vampire"> | **Vampire** | hard | 55 | 16 | +4 | 2d6+2 | 6 | 100 | 15–45 | undead, humanoid |
+| <img src="../../web/public/sprites/monster/dragon1.png" width="36" alt="Wyvern"> | **Wyvern** | hard | 60 | 14 | +4 | 2d4 | 4 | 120 | 3–25 | hit-and-run 1 |
+| <img src="../../web/public/sprites/monster/daemon1.png" width="36" alt="Mind Flayer"> | **Mind Flayer** | deadly | 50 | 15 | +6 | 1d6 | 3 | 140 | 25–90 |  |
+| <img src="../../web/public/sprites/person/wizard5.png" width="36" alt="Vampire Lord"> | **Vampire Lord** | deadly | 60 | 16 | +7 | 1d10 | 4 | 160 | 50–150 | undead, humanoid, hit-and-run 1 |
+| <img src="../../web/public/sprites/monster/drake_spirit.png" width="36" alt="Spirit Drake"> | **Spirit Drake** | deadly | 70 | 17 | +6 | 3d8 | 7 | 175 | 40–110 |  |
+| <img src="../../web/public/sprites/monster/angel_red.png" width="36" alt="Fallen Seraph"> | **Fallen Seraph** | deadly | 80 | 18 | +6 | 3d8 | 9 | 175 | 40–110 | humanoid |
+| <img src="../../web/public/sprites/monster/dragon_spirit.png" width="36" alt="Spirit Dragon"> | **Spirit Dragon** | deadly | 80 | 17 | +6 | 3d12 | 7 | 175 | 40–110 |  |
+| <img src="../../web/public/sprites/monster/giant_fire.png" width="36" alt="Fire Giant"> | **Fire Giant** | deadly | 95 | 17 | +6 | 3d8 | 7 | 175 | 40–110 | humanoid |
+| <img src="../../web/public/sprites/monster/hydra3_head_red.png" width="36" alt="Crimson Hydra"> | **Crimson Hydra** | deadly | 100 | 17 | +6 | 3d6 | 7 | 175 | 40–110 |  |
+| <img src="../../web/public/sprites/monster/giant_octopus.png" width="36" alt="Hydra"> | **Hydra** | deadly | 110 | 15 | +6 | 3d8+2 | 2 | 190 | 40–120 |  |
+| <img src="../../web/public/sprites/person/townsperson21.png" width="36" alt="Stone Golem"> | **Stone Golem** | deadly | 110 | 18 | +6 | 2d12 | 1 | 205 | 30–80 |  |
+| <img src="../../web/public/sprites/monster/demon_major_lord.png" width="36" alt="Demon Lord"> | **Demon Lord** | boss | 125 | 18 | +6 | 4d8 | 6 | 335 | 120–300 | humanoid |
+| <img src="../../web/public/sprites/monster/dragon2.png" width="36" alt="Dragon"> | **Dragon** | boss | 125 | 18 | +6 | 4d8 | 8 | 335 | 20–50 | hit-and-run 2 |
 
----
+<!-- END GENERATED: monsters -->
 
 ## Frequently Asked Questions
 

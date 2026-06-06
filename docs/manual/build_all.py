@@ -1,0 +1,42 @@
+#!/usr/bin/env python3
+"""Rebuild the entire player's manual in one command.
+
+Runs every generator in order:
+
+  1. build_class_gallery.py — refreshes the Class Gallery block
+  2. build_items.py         — refreshes the Items section
+  3. build_monsters.py      — refreshes the Monsters section
+     (1–3 each rewrite only their own marked block in manual.md)
+  4. build_manual.py        — renders manual.md → manual.pdf
+
+Run:  python3 docs/manual/build_all.py
+
+Each step is its own script (still runnable on its own); this just chains
+them so a full refresh is a single command. Stops on the first failure.
+"""
+
+from __future__ import annotations
+
+import subprocess
+import sys
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+
+STEPS = [
+    "build_class_gallery.py",
+    "build_items.py",
+    "build_monsters.py",
+    "build_manual.py",
+]
+
+
+def main() -> None:
+    for script in STEPS:
+        print(f"\n── {script} " + "─" * (40 - len(script)))
+        subprocess.run([sys.executable, str(HERE / script)], check=True)
+    print("\nmanual: full rebuild complete (manual.md + manual.pdf).")
+
+
+if __name__ == "__main__":
+    main()
