@@ -2,7 +2,9 @@ import { describe, it, expect } from "vitest";
 import {
   canPursue,
   hasLineOfSight,
+  IDLE_WANDER_CHANCE,
   PURSUIT_RADIUS,
+  randomRoamStep,
   trySpawnRoamer,
   roamStep,
   findLairs,
@@ -161,6 +163,67 @@ describe("roamStep", () => {
       (c, r) => !(c === 1 && r === 0),
     );
     expect(out).toEqual({ col: 0, row: 0 });
+  });
+});
+
+describe("randomRoamStep", () => {
+  it("stays put when no cardinal neighbour is eligible (boxed in)", () => {
+    const out = randomRoamStep(
+      { col: 2, row: 2 },
+      () => false, // nothing walkable
+      undefined,
+      () => 0,
+    );
+    expect(out).toEqual({ col: 2, row: 2 });
+  });
+
+  it("only ever picks a walkable, non-blocked cardinal neighbour", () => {
+    // Open field; sweep the RNG across the whole [0,1) selection range
+    // and confirm every result is a cardinal neighbour of the origin.
+    const origin = { col: 5, row: 5 };
+    const cardinals = new Set([
+      "5,4",
+      "5,6",
+      "4,5",
+      "6,5",
+    ]);
+    for (let i = 0; i < 12; i++) {
+      const out = randomRoamStep(
+        origin,
+        () => true,
+        undefined,
+        () => i / 12,
+      );
+      expect(cardinals.has(`${out.col},${out.row}`)).toBe(true);
+    }
+  });
+
+  it("respects the blocked predicate", () => {
+    // Only (5,4) is walkable-and-unblocked; block everything else.
+    const out = randomRoamStep(
+      { col: 5, row: 5 },
+      () => true,
+      (c, r) => !(c === 5 && r === 4),
+      () => 0,
+    );
+    expect(out).toEqual({ col: 5, row: 4 });
+  });
+
+  it("respects the isWalkable predicate", () => {
+    // Only the cell above is walkable.
+    const out = randomRoamStep(
+      { col: 5, row: 5 },
+      (c, r) => c === 5 && r === 4,
+      undefined,
+      () => 0.999,
+    );
+    expect(out).toEqual({ col: 5, row: 4 });
+  });
+
+  it("exposes a sane idle-wander rate (< the NPC rate)", () => {
+    // Documents intent: monsters drift more lazily than townsfolk.
+    expect(IDLE_WANDER_CHANCE).toBeGreaterThan(0);
+    expect(IDLE_WANDER_CHANCE).toBeLessThan(0.5);
   });
 });
 

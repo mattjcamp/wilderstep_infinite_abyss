@@ -82,7 +82,8 @@
         "sling",
         "cloth",
         "leather",
-        "chain"
+        "chain",
+        "wand"
       ],
       "abilities": [
         {
@@ -103,7 +104,8 @@
         "fists",
         "dagger",
         "club",
-        "cloth"
+        "cloth",
+        "wand"
       ]
     },
     {
@@ -122,7 +124,8 @@
         "mace",
         "sling",
         "cloth",
-        "leather"
+        "leather",
+        "wand"
       ],
       "abilities": [
         {
@@ -157,7 +160,8 @@
         "rock",
         "cloth",
         "leather",
-        "chain"
+        "chain",
+        "wand"
       ],
       "abilities": [
         {
@@ -217,7 +221,8 @@
         "fists",
         "dagger",
         "sling",
-        "cloth"
+        "cloth",
+        "wand"
       ],
       "abilities": [
         {

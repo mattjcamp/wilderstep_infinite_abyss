@@ -1400,11 +1400,17 @@ export function PlayPartyScreenOverlay({
 
       // Build the new members array — caster loses MP, target gains
       // HP. Same identity walk handleSendStashItem uses so both
-      // mutations land in one commit.
+      // mutations land in one commit. NOTE: the two updates must NOT
+      // be exclusive branches — when the caster heals THEMSELVES
+      // (casterId === targetId) both deltas land on the same member,
+      // and an early-return on the MP branch would silently drop the
+      // HP restore (the original self-heal bug).
       const nextMembers = cur.party.members.map((m) => {
-        if (m.id === casterId) return { ...m, mp: casterMp - cost };
-        if (m.id === targetId) return { ...m, hp: newHp };
-        return m;
+        if (m.id !== casterId && m.id !== targetId) return m;
+        let out = m;
+        if (m.id === casterId) out = { ...out, mp: casterMp - cost };
+        if (m.id === targetId) out = { ...out, hp: newHp };
+        return out;
       });
 
       const targetName =

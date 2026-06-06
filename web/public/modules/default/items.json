@@ -360,6 +360,193 @@
       "sell": 0
     },
     {
+      "id": "rimefang_dagger",
+      "category": "weapons",
+      "name": "Rimefang Dagger",
+      "animation_id": null,
+      "description": "A relic blade of everfrost glass that never dulls. Each strike sheathes the wound in biting cold.",
+      "icon": "dagger",
+      "item_type": "dagger",
+      "power": 18,
+      "ranged": false,
+      "throwable": true,
+      "slots": [
+        "hands"
+      ],
+      "ac_bonus": 0,
+      "bonus_damage": "1d6",
+      "damage_type": "ice",
+      "durability": 0,
+      "party_can_equip": false,
+      "character_can_equip": true,
+      "combat_aura": {
+        "color": 9430015
+      },
+      "buy": 0,
+      "sell": 0
+    },
+    {
+      "id": "stormbolt_crossbow",
+      "category": "weapons",
+      "name": "Stormbolt Crossbow",
+      "animation_id": null,
+      "description": "A relic crossbow strung with a filament of captured lightning. Its bolts crackle and arc into whatever they strike.",
+      "icon": "bow",
+      "item_type": "crossbow",
+      "power": 18,
+      "ranged": true,
+      "throwable": false,
+      "ammo": "bolts",
+      "targeting": "target",
+      "range": 8,
+      "slots": [
+        "hands"
+      ],
+      "ac_bonus": 0,
+      "bonus_damage": "1d6",
+      "damage_type": "lightning",
+      "durability": 0,
+      "party_can_equip": false,
+      "character_can_equip": true,
+      "combat_aura": {
+        "color": 6742271
+      },
+      "buy": 0,
+      "sell": 0
+    },
+    {
+      "id": "meteorfall_mace",
+      "category": "weapons",
+      "name": "Meteorfall Mace",
+      "animation_id": null,
+      "description": "A relic maul forged from a fallen star. It lands with the weight of the heavens, scorching stone where it strikes.",
+      "icon": "mace",
+      "item_type": "mace",
+      "power": 20,
+      "ranged": false,
+      "throwable": false,
+      "slots": [
+        "hands"
+      ],
+      "ac_bonus": 0,
+      "bonus_damage": "1d8",
+      "damage_type": "meteor",
+      "durability": 0,
+      "party_can_equip": false,
+      "character_can_equip": true,
+      "combat_aura": {
+        "color": 16739133
+      },
+      "buy": 0,
+      "sell": 0
+    },
+    {
+      "id": "galewind_bow",
+      "category": "weapons",
+      "name": "Galewind Bow",
+      "animation_id": null,
+      "description": "A silver relic bow light enough for any short-bow hand to draw. Its arrows ride a screaming gale that drives them deep.",
+      "icon": "bow",
+      "item_type": "short_bow",
+      "power": 16,
+      "ranged": true,
+      "throwable": false,
+      "ammo": "arrows",
+      "targeting": "directional",
+      "range": 8,
+      "slots": [
+        "hands"
+      ],
+      "ac_bonus": 0,
+      "bonus_damage": "1d6",
+      "damage_type": "wind",
+      "durability": 0,
+      "party_can_equip": false,
+      "character_can_equip": true,
+      "combat_aura": {
+        "color": 10479816
+      },
+      "buy": 0,
+      "sell": 0
+    },
+    {
+      "id": "viperscale_sling",
+      "category": "weapons",
+      "name": "Viperscale Sling",
+      "animation_id": null,
+      "description": "A relic sling braided from the scales of an ancient serpent. The stones it hurls drip with virulent venom.",
+      "icon": "bow",
+      "item_type": "sling",
+      "power": 16,
+      "ranged": true,
+      "throwable": false,
+      "ammo": "stones",
+      "targeting": "directional",
+      "range": 6,
+      "slots": [
+        "hands"
+      ],
+      "ac_bonus": 0,
+      "bonus_damage": "1d6",
+      "damage_type": "poison",
+      "durability": 0,
+      "party_can_equip": false,
+      "character_can_equip": true,
+      "combat_aura": {
+        "color": 8969557
+      },
+      "buy": 0,
+      "sell": 0
+    },
+    {
+      "id": "stoneguard_plate",
+      "category": "armors",
+      "name": "Stoneguard Plate",
+      "animation_id": null,
+      "description": "Relic plate hewn from living mountain stone. It never cracks and turns blows aside as if the wearer were carved from the earth itself.",
+      "icon": "armor_heavy",
+      "item_type": "plate",
+      "evasion": 66,
+      "slots": [
+        "body"
+      ],
+      "ac_bonus": 0,
+      "damage_type": "earth",
+      "durability": 0,
+      "party_can_equip": false,
+      "character_can_equip": true,
+      "buy": 0,
+      "sell": 0
+    },
+    {
+      "id": "starcaller_wand",
+      "category": "weapons",
+      "name": "Starcaller Wand",
+      "animation_id": null,
+      "description": "A relic wand that needs no ammunition — it looses raw arcane force at a distance. Indestructible and humming with starlight.",
+      "icon": "tool",
+      "item_type": "wand",
+      "power": 16,
+      "ranged": true,
+      "throwable": false,
+      "targeting": "target",
+      "range": 8,
+      "slots": [
+        "hands"
+      ],
+      "ac_bonus": 0,
+      "bonus_damage": "1d8",
+      "damage_type": "arcane",
+      "durability": 0,
+      "party_can_equip": false,
+      "character_can_equip": true,
+      "combat_aura": {
+        "color": 13073919
+      },
+      "buy": 0,
+      "sell": 0
+    },
+    {
       "id": "sword",
       "category": "weapons",
       "name": "Sword",

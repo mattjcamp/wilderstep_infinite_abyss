@@ -29,6 +29,18 @@
     {
       "item": "camping_supplies",
       "charges": 3
+    },
+    {
+      "item": "arrows",
+      "charges": 40
+    },
+    {
+      "item": "bolts",
+      "charges": 40
+    },
+    {
+      "item": "stones",
+      "charges": 40
     }
   ],
   "torch_steps": 0,

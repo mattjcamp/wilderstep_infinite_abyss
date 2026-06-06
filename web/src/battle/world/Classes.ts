@@ -116,7 +116,7 @@ interface RawClassAbility {
   min_level?: number;
 }
 
-interface RawClass {
+export interface RawClass {
   id?: string;
   name?: string;
   description?: string;
@@ -145,8 +145,14 @@ let _racesCache: Map<string, RaceInfo> | null = null;
  * principle — adding a field shouldn't need a loader edit).
  * Overrides re-stamp `casting_type` and `abilities` for the shape +
  * filtering they require, and validated identity fields.
+ *
+ * Exported (in addition to feeding the module's own catalog cache)
+ * so non-combat consumers of the level-up math — the quest-XP
+ * banking path in `play/awardQuestXp.ts` — can hydrate the same
+ * template from the raw catalog records PlayHost already holds,
+ * without going through the fetch-backed cache here.
  */
-function classFromRaw(raw: RawClass): ClassTemplate | null {
+export function classFromRaw(raw: RawClass): ClassTemplate | null {
   if (!raw.id || !raw.name) return null;
   const idLower = raw.id.toLowerCase();
   return {

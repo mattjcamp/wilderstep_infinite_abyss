@@ -1,9 +1,7 @@
 
 # Playthrough Polish
 
-- Let the player scroll through the Quest Log to get details on each step.
-
-- When the cleric healed a party member in the party screen, the bars moved the total hit points did not appear to replenish 
+- In the Map Editor, allow editors to Command-Click to select multiple tiles so that attributes can be changed all at one time.
 
 ## Big Ideas
 
@@ -22,3 +20,21 @@ Target size: 16 cols × 14 rows. That fills the playable interior perfectly. Map
 
 Don't bother painting walls at the outer edges — the engine's perimeter wall covers those.
 The combat formation bands sit at rows 1-4 (enemies) and rows 11-14 (party). Leave those bands as walkable floor so combatants spawn cleanly. The middle bands (rows 5-10) are where pillars, pits, and obstacles read best.
+
+## Herbalism
+
+It's data-driven from the `herbalism` ability record, not hard-coded per tile. The chain:
+
+1. **On each step**, PlayHost (~line 3075) reads the tile id of the cell the party just stepped onto: `cat.map.grid[row][col]` (either the string id or the cell's `.id`), and passes it to `herbalismOnStep`.
+
+2. **The tile whitelist** comes from `params.terrain` on the `herbalism` ability in `abilities.json` (default module):
+
+```json
+"terrain": ["grass", "grass2", "forest", "palm_tree"]
+```
+
+`herbalismTerrain()` in `web/src/play/herbalism.ts` reads that list; if the tile id isn't in it, no roll happens. If the catalog lacks the param entirely, the code falls back to the same four ids (`DEFAULT_TERRAIN`).
+
+3. **If the tile qualifies**, it then needs an alive Druid or Alchemist in the party, and rolls `find_chance` (0.02, doubled to 0.04 for an Alchemist — both knobs also in `params`). On a hit, the reagent is a uniform pick from every item in `items.json` with `item_type: "reagent"` or `"herb"`.
+
+So to make a new tile forageable, add its tile id to the `terrain` array in `abilities.json` — no code change. Note it matches the map-tile palette id exactly, so visual variants (like `grass2`) each need their own entry.

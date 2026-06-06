@@ -277,6 +277,57 @@ export function roamStep(
   return best;
 }
 
+/** Probability that a monster which CAN'T currently pursue the party
+ *  (out of range, or line of sight blocked) takes an idle wander step
+ *  on a given turn. Keeps stationary monsters from looking frozen —
+ *  "every once in a while" they shuffle one tile. Lower than
+ *  NPC_WANDER_CHANCE (0.5) because monsters that aren't hunting should
+ *  drift more lazily than townsfolk. Exported so tests can assert the
+ *  rate without re-deriving it. */
+export const IDLE_WANDER_CHANCE = 0.25;
+
+/**
+ * Idle wander step for a monster that isn't pursuing. Picks one of the
+ * four cardinal neighbours uniformly at random from the walkable,
+ * non-blocked set; returns the same position when no neighbour is
+ * eligible (boxed in) — never throws, never moves diagonally.
+ *
+ * Distinct from {@link roamStep}: that one is goal-directed (close the
+ * gap to the party). This one is undirected drift, used only when
+ * {@link canPursue} is false, so a monster the player has slipped out
+ * of sight of still mills about instead of standing perfectly still.
+ *
+ * `blocked` mirrors roamStep's veto hook so the caller can keep two
+ * entities off the same tile within a single step. Consumes exactly
+ * one `rng()` draw to pick the destination (only when at least one
+ * neighbour is eligible), matching the selection convention in
+ * `trySpawnRoamer` / `runNpcWander` — `Math.floor(rng() * n)`.
+ */
+export function randomRoamStep(
+  roamer: { col: number; row: number },
+  isWalkable: (col: number, row: number) => boolean,
+  blocked?: (col: number, row: number) => boolean,
+  rng: () => number = Math.random,
+): Position {
+  const here: Position = { col: roamer.col, row: roamer.row };
+  const dirs: Array<[number, number]> = [
+    [0, -1],
+    [0, 1],
+    [-1, 0],
+    [1, 0],
+  ];
+  const eligible: Position[] = [];
+  for (const [dc, dr] of dirs) {
+    const nc = here.col + dc;
+    const nr = here.row + dr;
+    if (!isWalkable(nc, nr)) continue;
+    if (blocked && blocked(nc, nr)) continue;
+    eligible.push({ col: nc, row: nr });
+  }
+  if (eligible.length === 0) return here;
+  return eligible[Math.floor(rng() * eligible.length)];
+}
+
 /** Bresenham line-of-sight check between two grid cells. Returns true
  *  when no cell along the straight line between source and destination
  *  has `obstructs: true`. The source and destination cells themselves
