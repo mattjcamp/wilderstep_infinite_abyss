@@ -15,6 +15,8 @@
  * extend it and override by record id. See StaticModuleSource.load().
  */
 
+import { baseDamageLabel, baseAcLabel, type ItemStatLike } from "./itemStats";
+
 export type ModelKey =
   | "abilities"
   | "effects"
@@ -38,12 +40,20 @@ export type ModelKey =
 
 export interface ColumnDef {
   /** Object path on the record. Supports a single key for now; nested
-   *  paths would need a getter. */
+   *  paths would need a getter. Still used for sorting even when a
+   *  `compute` accessor drives the displayed text (so a Base Damage
+   *  column can sort by the underlying numeric `power`). */
   field: string;
   /** Display label for the column header. */
   label: string;
   /** Optional formatter — receives the raw value, returns a display string. */
   format?: (value: unknown) => string;
+  /** Optional row-level accessor — receives the WHOLE record and
+   *  returns the display string. Use when the cell needs more than
+   *  one field (e.g. Base Damage reads both `power` and `ranged`).
+   *  Takes precedence over `format` for display + search; `field`
+   *  still governs sort order. */
+  compute?: (record: Record<string, unknown>) => string;
 }
 
 export interface ModelDef {
@@ -174,8 +184,20 @@ const DEFS: Record<ModelKey, ModelDef> = {
       { field: "category", label: "Cat" },
       { field: "name", label: "Name" },
       { field: "item_type", label: "Type" },
-      { field: "power", label: "Power", format: asString },
-      { field: "evasion", label: "Evasion", format: asString },
+      // Base Damage / Base AC — derived, player-meaningful stats shown
+      // in place of the raw `power` / `evasion` authoring fields (which
+      // aren't intuitive). `field` is kept so the column still sorts by
+      // the underlying number; `compute` drives the displayed text.
+      {
+        field: "power",
+        label: "Base Damage",
+        compute: (r) => baseDamageLabel(r as ItemStatLike),
+      },
+      {
+        field: "evasion",
+        label: "Base AC",
+        compute: (r) => baseAcLabel(r as ItemStatLike),
+      },
     ],
   },
   counters: {

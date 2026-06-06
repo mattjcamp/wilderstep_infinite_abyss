@@ -1188,7 +1188,15 @@ function recordMatchesQuery(
   const hay: string[] = [String(r.id ?? "")];
   for (const c of def.columns) {
     const v = r[c.field];
-    hay.push(c.format ? c.format(v) : v == null ? "" : String(v));
+    hay.push(
+      c.compute
+        ? c.compute(r)
+        : c.format
+          ? c.format(v)
+          : v == null
+            ? ""
+            : String(v),
+    );
   }
   const tags = r["tags"];
   if (Array.isArray(tags)) hay.push(tags.join(" "));
@@ -1292,7 +1300,13 @@ function RowGroup({
         ) : null}
         {def.columns.map((c) => {
           const v = record[c.field];
-          const display = c.format ? c.format(v) : v == null ? "" : String(v);
+          const display = c.compute
+            ? c.compute(record)
+            : c.format
+              ? c.format(v)
+              : v == null
+                ? ""
+                : String(v);
           return (
             <td
               key={c.field}
@@ -1452,11 +1466,13 @@ function LibraryCatalog({
                       ) : null}
                       {def.columns.map((c) => {
                         const v = r[c.field];
-                        const display = c.format
-                          ? c.format(v)
-                          : v == null
-                            ? ""
-                            : String(v);
+                        const display = c.compute
+                          ? c.compute(r)
+                          : c.format
+                            ? c.format(v)
+                            : v == null
+                              ? ""
+                              : String(v);
                         return (
                           <td
                             key={c.field}
