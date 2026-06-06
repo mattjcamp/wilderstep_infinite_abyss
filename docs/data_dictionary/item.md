@@ -35,7 +35,7 @@ Each record minimally has `id`, `name`, `category`. The rest of the fields are p
 |---|---|---|---|---|
 | `id` | string | yes | Stable identifier in snake_case (e.g. `"sun_sword"`, `"healing_potion"`) | TBD |
 | `name` | string | yes | Display label (e.g. `"Sun Sword"`, `"Healing Potion"`). Currently also used by cross-references that key off item *names* rather than ids (Recipe reagents, weapon `ammo`). | TBD |
-| `category` | string | yes | One of `"weapons"`, `"armors"`, `"general"`. | TBD |
+| `category` | string | yes | Top-level grouping. `"weapons"` and `"armors"` are the combat-gear buckets; the rest organize everything else and are an open, evolving set — current values include `"ammo"`, `"potion"`, `"reagent"`, `"quest"`, `"scroll"`, and `"general"` (catch-all). The manual's Items generator renders one table per category, so adding a new category surfaces automatically. | TBD |
 | `description` | string | no | Tooltip / UI text. | TBD |
 | `icon` | string | no | Render glyph hint (e.g. `"sword"`, `"potion"`, `"herb"`, `"key"`). | TBD |
 | `item_type` | string | no | Finer-grained sub-discriminator. See *item_type values* below. | TBD |

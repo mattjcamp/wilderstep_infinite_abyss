@@ -607,11 +607,12 @@ def _class_page(blocks, name, portrait_path):
 # ── Main render loop ────────────────────────────────────────────────
 
 def _data_table(rows, caption=None, title=None, col_widths=None):
-    # The item / monster tables carry a leading "Icon" column of sprite
-    # <img> tags for the markdown manual. The PDF doesn't embed sprites
-    # yet, so drop that column entirely here rather than leaving an empty
-    # gap. Detected by the header cell so other tables are untouched.
-    if rows and rows[0] and rows[0][0].strip().lower() == "icon":
+    # The item / monster tables carry a leading sprite column of <img>
+    # tags for the markdown manual (headed "Icon" for items, "Sprite"
+    # for monsters). The PDF doesn't embed sprites yet, so drop that
+    # column entirely here rather than leaving an empty gap. Detected by
+    # the header cell so other tables are untouched.
+    if rows and rows[0] and rows[0][0].strip().lower() in ("icon", "sprite"):
         rows = [row[1:] for row in rows]
         if col_widths is not None:
             col_widths = col_widths[1:]

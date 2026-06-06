@@ -4,7 +4,7 @@
   <img src="docs/manual/assets/cover_art_transparent.png" alt="A party of adventurers — wizard, dwarf, ranger, and young archer — on the shore beneath a distant keep" width="720">
 </p>
 
-An Ultima III  and D&D inspired top-down, turn-based RPG built with TypeScript and Phaser. Lead a party of four adventurers through an open world of overworld exploration, town visits, dungeon delving, and tactical grid combat.
+An Ultima III  and D&D inspired top-down, turn-based RPG built with TypeScript and Phaser. Lead a party of four adventurers through an open world of overworld exploration, town visits, dungeon delving, and turn-based tactical combat.
 
 <table>
 <tr>
@@ -17,7 +17,7 @@ An Ultima III  and D&D inspired top-down, turn-based RPG built with TypeScript a
 </tr>
 </table>
 
-[Play Wilderstep Now!](https://mattjcamp.github.io/wilderstep_infinite_abyss/play/) You can play right in your web browser, no installation required.
+[Play Wilderstep Now!](https://mattjcamp.github.io/wilderstep_infinite_abyss/play/) You can play right in your web browser, no installation required. Plus, you can read the [Wilderstep Player's Manual](docs/manual/manual.md) to learn more about how to play the game.
 
 ## Features
 
@@ -29,6 +29,7 @@ An Ultima III  and D&D inspired top-down, turn-based RPG built with TypeScript a
 - 8 Character classes and 5 races with unique ablities to suit your playstyle
 - Rich sorcerer and priest spells
 - Quests and random encounters
+- Crafting system
 - Monsters with unique abilities
 
 ---

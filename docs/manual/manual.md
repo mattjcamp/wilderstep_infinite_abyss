@@ -68,7 +68,7 @@ A few other things you'll find out in the world: step onto a boat to sail across
 
 ### Turn-Based Combat
 
-When the party meets a hostile creature, the game switches to a dedicated **battle screen**: a turn-based arena where your party lines up on one side and the enemies on the other. Turns proceed in order, and your party acts in the order you arranged on the formation screen — your lead goes first.
+When the party meets a hostile creature, the game switches to a dedicated **battle screen**: a turn-based arena where your party lines up on one side and the enemies on the other. Turns proceed in order, and your party acts in the order you arranged on the formation screen.
 
 On a character's turn you can move up to that class's movement budget (the `Range` value in the [Character Classes](#character-classes) table — a nimble Thief covers far more ground than a Wizard) and then take one action:
 
@@ -110,6 +110,10 @@ Press `Q` at any time to open the **Quest Log**, which shows your active quests 
 Dungeons are the deep, dangerous heart of the game. Step onto a dungeon entrance on the world map to descend; you'll move through it tile by tile just like the overworld, but dungeons run **multiple floors deep** and are far darker, so a Torch, the Light spell, or a Dwarf's Infravision becomes essential to see what's around you.
 
 Down here you'll find monster **lairs** and waiting **encounters**. Engaging one drops you into the combat arena; importantly, a lair you clear and a placed encounter you defeat are **gone for good** — neither respawns — so every fight you win makes the dungeon a little safer to backtrack through. Watch for traps, pick or unlock the doors barring your way, and gather the treasure the depths are hiding. When you've had your fill (or found what you came for), make your way back to the entrance to return to the surface.
+
+### What Should You Do First?
+
+On your very first playthrough, your party will start off weak with only a few sticks and stones as weapons. If you are lucky, you will have some camping supplies and a handful of gold coins to use for supplies. The world map is full of hostile creatures and dangerous locations, so your best bet is to find the nearest town. Once you in that town, talk to the townspeople and you will find people with interesting things to say about the world you found yourself in. Some people will have quests that you can go on to gain gold and experience and some people will try to sell you their wares.
 
 ### Game Saves
 
@@ -368,7 +372,7 @@ Spells are MP-cost actions castable by classes that have a matching `casting_typ
 
 ## Items
 
-Items are grouped by category — every weapon in one table, all armor in another, and everything else under General. The **Type** column names the item kind. **Weapons** list their **Base Damage** — the dice the weapon rolls before the wielder's Strength/Dexterity modifier and any magical Damage Bonus — with all melee weapons first, then all ranged weapons, each ordered weakest to strongest. **Armor** lists **Base AC**, the Armor Class a typical adventurer has while wearing it, ordered least to most protective.
+Items are grouped by category, one table each. **Weapons** list **Base Damage** — the dice the weapon rolls before the wielder's Strength/Dexterity modifier and any magical Damage Bonus — with all melee weapons first, then all ranged, each ordered weakest to strongest. **Armor** lists **Base AC**, the Armor Class a typical adventurer has while wearing it, ordered least to most protective. The remaining tables cover consumables, ammunition, reagents, quest items, and the like; their **Type** column names the exact kind.
 
 
 ### Weapons
@@ -410,18 +414,6 @@ Items are grouped by category — every weapon in one table, all armor in anothe
 | <img src="../../web/public/sprites/item/armor_heavy.png" width="28" alt="Stoneguard Plate"> | **Stoneguard Plate** | Plate | 18 | 0 | 0 | 0 |
 
 
-### General Items
-
-| Icon | Item | Type | Power | Effect | Charges | Stackable | Buy | Description |
-|:---:|---|---|---:|---|---:|:---:|---:|---|
-| <img src="../../web/public/sprites/item/rock.png" width="28" alt="Camping Supplies"> | **Camping Supplies** | Camping Supplies | 0 | rest | 3 | ✓ | 25 | A bedroll, flint, and dried rations. Lets the party rest safely in the wilderness. |
-| <img src="../../web/public/sprites/item/herb.png" width="28" alt="Healing Herb"> | **Healing Herb** | Herb | 15 | heal_hp | 1 | ✓ | 15 | A fragrant herb that restores a small amount of HP. |
-| <img src="../../web/public/sprites/item/key_bronze.png" width="28" alt="Iron Key"> | **Iron Key** | Key |  |  |  |  | 10 | A heavy iron key that can unlock one locked door. |
-| <img src="../../web/public/sprites/item/tool.png" width="28" alt="Lockpick"> | **Lockpick** | Lockpick |  |  | 5 | ✓ | 8 | A set of fine lockpicking tools. Consumed on each attempt. |
-| <img src="../../web/public/sprites/item/key_silver.png" width="28" alt="Silver Key"> | **Silver Key** | Quest Item |  |  |  |  |  | A gleaming silver key inscribed with arcane formulae. One of the 8 Keys of Shadow. |
-| <img src="../../web/public/sprites/item/torch.png" width="28" alt="Torch"> | **Torch** | Torch | 3 |  | 1 | ✓ | 5 | A wooden torch. Lights the way in dark places. |
-
-
 ### Ammo
 
 | Icon | Item | Type | Power | Effect | Charges | Stackable | Buy | Description |
@@ -433,7 +425,7 @@ Items are grouped by category — every weapon in one table, all armor in anothe
 | <img src="../../web/public/sprites/item/ammo.png" width="28" alt="Stones"> | **Stones** | Ammo |  |  | 20 | ✓ | 3 | A pouch of smooth stones for slings. |
 
 
-### Potion
+### Potions
 
 | Icon | Item | Type | Power | Effect | Charges | Stackable | Buy | Description |
 |:---:|---|---|---:|---|---:|:---:|---:|---|
@@ -449,7 +441,25 @@ Items are grouped by category — every weapon in one table, all armor in anothe
 | <img src="../../web/public/sprites/item/potion.png" width="28" alt="Fire Oil"> | **Fire Oil** | Throwable | 20 |  |  |  | 35 | A volatile oil that bursts into a small 3x3 gout of flame where it lands. Throw at an enemy or tile. |
 
 
-### Quest
+### Scrolls
+
+| Icon | Item | Type | Power | Effect | Charges | Stackable | Buy | Description |
+|:---:|---|---|---:|---|---:|:---:|---:|---|
+| <img src="../../web/public/sprites/item/scroll.png" width="28" alt="Scroll of Fire"> | **Scroll of Fire** | Scroll |  |  |  |  |  | A single-use scroll containing a fire spell. |
+
+
+### Reagents
+
+| Icon | Item | Type | Power | Effect | Charges | Stackable | Buy | Description |
+|:---:|---|---|---:|---|---:|:---:|---:|---|
+| <img src="../../web/public/sprites/item/rock.png" width="28" alt="Brimite Ore"> | **Brimite Ore** | Reagent |  |  | 1 | ✓ | 15 | A volatile mineral that smolders with inner heat. |
+| <img src="../../web/public/sprites/item/herb.png" width="28" alt="Glowcap Mushroom"> | **Glowcap Mushroom** | Reagent |  |  | 1 | ✓ | 10 | A blue-capped fungus that pulses with arcane energy. |
+| <img src="../../web/public/sprites/item/herb.png" width="28" alt="Moonpetal"> | **Moonpetal** | Reagent |  |  | 1 | ✓ | 12 | A luminous flower petal that glows faintly in the dark. Prized by alchemists. |
+| <img src="../../web/public/sprites/item/herb.png" width="28" alt="Serpent Root"> | **Serpent Root** | Reagent |  |  | 1 | ✓ | 8 | A twisted root with potent cleansing properties. |
+| <img src="../../web/public/sprites/item/potion.png" width="28" alt="Spring Water"> | **Spring Water** | Reagent |  |  | 1 | ✓ | 3 | Pure water from a mountain spring. Essential for brewing. |
+
+
+### Quest Items
 
 | Icon | Item | Type | Power | Effect | Charges | Stackable | Buy | Description |
 |:---:|---|---|---:|---|---:|:---:|---:|---|
@@ -461,22 +471,16 @@ Items are grouped by category — every weapon in one table, all armor in anothe
 | <img src="../../web/public/sprites/item/artifact.png" width="28" alt="Shadow Crystal"> | **Shadow Crystal** | Quest Item |  |  |  |  |  | A pulsing dark crystal radiating ancient power. The innkeeper seeks this. |
 
 
-### Reagent
+### General Items
 
 | Icon | Item | Type | Power | Effect | Charges | Stackable | Buy | Description |
 |:---:|---|---|---:|---|---:|:---:|---:|---|
-| <img src="../../web/public/sprites/item/rock.png" width="28" alt="Brimite Ore"> | **Brimite Ore** | Reagent |  |  | 1 | ✓ | 15 | A volatile mineral that smolders with inner heat. |
-| <img src="../../web/public/sprites/item/herb.png" width="28" alt="Glowcap Mushroom"> | **Glowcap Mushroom** | Reagent |  |  | 1 | ✓ | 10 | A blue-capped fungus that pulses with arcane energy. |
-| <img src="../../web/public/sprites/item/herb.png" width="28" alt="Moonpetal"> | **Moonpetal** | Reagent |  |  | 1 | ✓ | 12 | A luminous flower petal that glows faintly in the dark. Prized by alchemists. |
-| <img src="../../web/public/sprites/item/herb.png" width="28" alt="Serpent Root"> | **Serpent Root** | Reagent |  |  | 1 | ✓ | 8 | A twisted root with potent cleansing properties. |
-| <img src="../../web/public/sprites/item/potion.png" width="28" alt="Spring Water"> | **Spring Water** | Reagent |  |  | 1 | ✓ | 3 | Pure water from a mountain spring. Essential for brewing. |
-
-
-### Scroll
-
-| Icon | Item | Type | Power | Effect | Charges | Stackable | Buy | Description |
-|:---:|---|---|---:|---|---:|:---:|---:|---|
-| <img src="../../web/public/sprites/item/scroll.png" width="28" alt="Scroll of Fire"> | **Scroll of Fire** | Scroll |  |  |  |  |  | A single-use scroll containing a fire spell. |
+| <img src="../../web/public/sprites/item/rock.png" width="28" alt="Camping Supplies"> | **Camping Supplies** | Camping Supplies | 0 | rest | 3 | ✓ | 25 | A bedroll, flint, and dried rations. Lets the party rest safely in the wilderness. |
+| <img src="../../web/public/sprites/item/herb.png" width="28" alt="Healing Herb"> | **Healing Herb** | Herb | 15 | heal_hp | 1 | ✓ | 15 | A fragrant herb that restores a small amount of HP. |
+| <img src="../../web/public/sprites/item/key_bronze.png" width="28" alt="Iron Key"> | **Iron Key** | Key |  |  |  |  | 10 | A heavy iron key that can unlock one locked door. |
+| <img src="../../web/public/sprites/item/tool.png" width="28" alt="Lockpick"> | **Lockpick** | Lockpick |  |  | 5 | ✓ | 8 | A set of fine lockpicking tools. Consumed on each attempt. |
+| <img src="../../web/public/sprites/item/key_silver.png" width="28" alt="Silver Key"> | **Silver Key** | Quest Item |  |  |  |  |  | A gleaming silver key inscribed with arcane formulae. One of the 8 Keys of Shadow. |
+| <img src="../../web/public/sprites/item/torch.png" width="28" alt="Torch"> | **Torch** | Torch | 3 |  | 1 | ✓ | 5 | A wooden torch. Lights the way in dark places. |
 
 <!-- END GENERATED: items -->
 
@@ -544,6 +548,14 @@ Every monster in the game, sorted by difficulty (easy → normal → hard → de
 <!-- END GENERATED: monsters -->
 
 ## Frequently Asked Questions
+
+### What Should I Do First?
+
+On your very first playthrough, your party will start off weak with only a few sticks and stones as weapons. If you are lucky, you will have some camping supplies and a handful of gold coins to use for supplies. The world map is full of hostile creatures and dangerous locations, so your best bet is to find the nearest town.
+
+Once you in town, talk to the townspeople and you will find people with interesting things to say about the world you found yourself in. Some people will have quests that you can go on to gain gold and experience and some people will try to sell you their wares.
+
+Get used to the controls, press the "P" key to see the state of your party, manage your inventory and view individual characters. Make sure each is ready for the next adventure. Once you have explored town and completed a few quests, it is time to venture out into the far more dangerous world.
 
 ### How do I restore HP and MP between fights?
 

@@ -206,52 +206,70 @@ def general_table(items: list[dict]) -> str:
     return "\n".join(rows)
 
 
-TABLE_FOR = {"weapons": weapon_table, "armors": armor_table, "general": general_table}
+# One table per item `category`. Weapons use the Base-Damage layout,
+# armor the Base-AC layout, and everything else the general
+# consumable/utility layout. Display labels + the order sections appear
+# in; categories not listed here still render (after these, alphabetically)
+# with a title-cased heading, so adding a new category to items.json shows
+# up automatically.
+CATEGORY_LABELS = {
+    "weapons": "Weapons",
+    "armors": "Armor",
+    "ammo": "Ammo",
+    "potion": "Potions",
+    "scroll": "Scrolls",
+    "reagent": "Reagents",
+    "quest": "Quest Items",
+    "general": "General Items",
+}
+CATEGORY_ORDER = ["weapons", "armors", "ammo", "potion", "scroll",
+                  "reagent", "quest", "general"]
+
+
+def table_for(category: str) -> callable:
+    if category == "weapons":
+        return weapon_table
+    if category == "armors":
+        return armor_table
+    return general_table
 
 
 # ── Assemble the section ─────────────────────────────────────────────
 
 def build_section(items: list[dict]) -> str:
-    # One table per category — all weapons together, all armor together,
-    # everything else under General. The per-row `Type` column preserves
-    # the item-kind detail the old per-item_type tables carried.
+    # One table per `category` — the categorization lives in the data, so
+    # this stays in lockstep as items are recategorised or new categories
+    # added. The per-row `Type` column preserves the finer item_type.
     buckets: dict[str, list[dict]] = {}
     for it in items:
-        # Normalise case so a stray "General" buckets with "general".
         cat = (it.get("category") or "general").lower()
         buckets.setdefault(cat, []).append(it)
 
     intro = (
-        "Items are grouped by category — every weapon in one table, all "
-        "armor in another, and everything else under General. The **Type** "
-        "column names the item kind. **Weapons** list their **Base Damage** — "
-        "the dice the weapon rolls before the wielder's Strength/Dexterity "
-        "modifier and any magical Damage Bonus — with all melee weapons "
-        "first, then all ranged weapons, each ordered weakest to strongest. "
-        "**Armor** lists **Base AC**, the Armor Class a typical adventurer "
-        "has while wearing it, ordered least to most protective."
+        "Items are grouped by category, one table each. **Weapons** list "
+        "**Base Damage** — the dice the weapon rolls before the wielder's "
+        "Strength/Dexterity modifier and any magical Damage Bonus — with all "
+        "melee weapons first, then all ranged, each ordered weakest to "
+        "strongest. **Armor** lists **Base AC**, the Armor Class a typical "
+        "adventurer has while wearing it, ordered least to most protective. "
+        "The remaining tables cover consumables, ammunition, reagents, quest "
+        "items, and the like; their **Type** column names the exact kind."
     )
 
     out = [f"## Items\n\n{intro}\n"]
-    # Fixed, readable order: weapons, then armor, then general. Any
-    # unexpected category falls in after these.
-    headings = [("weapons", "Weapons"), ("armors", "Armor"),
-                ("general", "General Items")]
-    seen = {c for c, _ in headings}
-    for cat, label in headings:
+
+    # Declared order first, then any unlisted categories alphabetically.
+    ordered = [c for c in CATEGORY_ORDER if c in buckets]
+    ordered += sorted(c for c in buckets if c not in CATEGORY_ORDER)
+    for cat in ordered:
         group = buckets.get(cat)
         if not group:
             continue
-        builder = TABLE_FOR.get(cat, general_table)
+        label = CATEGORY_LABELS.get(cat, cat.replace("_", " ").title())
         out.append(f"\n### {label}\n")
-        out.append(builder(group))
+        out.append(table_for(cat)(group))
         out.append("")
-    for cat in sorted(buckets):
-        if cat in seen:
-            continue
-        out.append(f"\n### {cat.title()}\n")
-        out.append(general_table(buckets[cat]))
-        out.append("")
+
     return "\n".join(out).rstrip() + "\n"
 
 
