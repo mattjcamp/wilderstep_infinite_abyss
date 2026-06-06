@@ -70,6 +70,12 @@ A few other things you'll find out in the world: step onto a boat to sail across
 
 When the party meets a hostile creature, the game switches to a dedicated **battle screen**: a turn-based arena where your party lines up on one side and the enemies on the other. Turns proceed in order, and your party acts in the order you arranged on the formation screen.
 
+<p align="center">
+  <img src="assets/battle_arena_daylight.png" alt="A map with fog of war and a party of adventurers" width="720">
+</p>
+
+In the battle arena decipted above, you can see the party facing off a goblic. It is the ranger's turn and you an see how many moves he has. The party status is shown on the right and the current character's options are display below that. The ranger can cast spells, use a ranged weapon, throw a torch, and do a few other things.
+
 On a character's turn you can move up to that class's movement budget (the `Range` value in the [Character Classes](#character-classes) table — a nimble Thief covers far more ground than a Wizard) and then take one action:
 
 | Action | What it does |
@@ -97,7 +103,27 @@ Controls in the arena:
 
 Your character can only target monsters that he can see, so when fighting in the dark it helps to throw a torch or to cast a light spell.
 
+<p align="center">
+  <img src="assets/battle_arena_night.png" alt="A map with fog of war and a party of adventurers" width="720">
+</p>
+
+A battle that takes place in darkess is harder because you can't see your enemies at first. Here you can only see one of the orcs that happens to be standing near a torch. The party has already thrown a torch to try and reveal the other orcs. A light spell would work great here.
+
 There is no fleeing — once battle is joined, you fight to win or fall. The fight ends when one side is wiped out; win, and you return to the map with any spoils.
+
+### The Party and Character Sheets
+
+You can view your party and get access to party effects like Detect Traps, Infravision, and more by pressing "P" to get to your party screen. This is where you manage your inventory as well.
+
+<p align="center">
+  <img src="assets/party_screen.png" alt="The party screen" width="720">
+</p>
+
+In order to character abilities like crafting potions or arrows, you can select a character to open their character sheet. This will show you the status of your character, gives you a chance to equip items and to use special abilities.
+
+<p align="center">
+  <img src="assets/character_sheet.png" alt="The party screen" width="720">
+</p>
 
 ### Completing Quests
 
@@ -567,7 +593,7 @@ outside of combat.
 
 A Druid or Alchemist in the party gathers reagents automatically while you
 travel across foraging terrain (grass, forest, and similar tiles). An
-Alchemist can then brew them into potions from the Party screen.
+Alchemist can then brew them into potions from the Party screen. The party can also purchase reagents from certain townspeople and counters.
 
 <!--
   OPTIONAL: data-driven FAQ entries.

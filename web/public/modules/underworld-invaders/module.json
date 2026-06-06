@@ -1,7 +1,7 @@
 {
   "_comment": "Draft module created in the editor. Export this file and drop it into web/public/modules/underworld-invaders/module.json.",
   "id": "underworld-invaders",
-  "title": "The Warm Dark",
+  "title": "Emberscar",
   "description": "Varnfell's harbor stands empty, wolves hold the tradeway like soldiers, and the abandoned Frost Delve has started breathing warm air. The miners stopped digging nine years ago. Whatever they stopped short of didn't.",
   "author": "hyperbolic",
   "version": "0.3.0",
