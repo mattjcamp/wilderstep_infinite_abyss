@@ -387,14 +387,47 @@
       "steps": [
         {
           "id": "the_royal_armory_step_1",
-          "name": "Destroy the occupiers",
+          "name": "Destroy the Wyverns sent to block the royal armory",
           "kind": "kill",
           "tags": [
             "main_story"
           ],
           "encounter_id": "drake_and_keeper",
           "location_kind": "map",
-          "map_id": "shrine_depths_3"
+          "map_id": "shrine_depths_3",
+          "positions": [
+            {
+              "col": 10,
+              "row": 7
+            }
+          ],
+          "description": "A smaller dragon like creature was sent by that ancient dragon to block anyone from the armory, you must push through them to get to the armory."
+        },
+        {
+          "id": "the_royal_armory_step_2",
+          "name": "Clear out any remaining dragon born",
+          "kind": "kill",
+          "description": "There are more wyvern in the depths of the water shrine that must be destoryed",
+          "encounter_id": "drake_pack",
+          "location_kind": "map",
+          "map_id": "shrine_depths_3",
+          "positions": [
+            {
+              "col": 4,
+              "row": 5
+            }
+          ]
+        },
+        {
+          "id": "the_royal_armory_step_3",
+          "name": "Retrieve the Royal Scrolls and Relics",
+          "kind": "retrieve",
+          "description": "In the armory, you will find my royal families charter and our family weapons. Retrieve our charter and arm yourselfs with whatever you need to defeat that Great Worm",
+          "item_id": "retrievable_chest",
+          "location_kind": "map",
+          "map_id": "royal_armory",
+          "col": 1,
+          "row": 6
         }
       ],
       "quest_giver": {
@@ -405,7 +438,15 @@
       },
       "rewards": {
         "xp": 500,
-        "gold": 500
+        "gold": 500,
+        "tile_add": [
+          {
+            "map": "default_battle_arena",
+            "col": 0,
+            "row": 0,
+            "tile_id": ""
+          }
+        ]
       }
     },
     {

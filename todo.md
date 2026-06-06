@@ -1,6 +1,10 @@
+# Content
+- make Demon invasion quest (devils pouring in over the plains coming from The Crack)
+- make find the outpost quest where we find a fort past The Crack (this may require a new quest type of "find location")
 
 # Playthrough Polish
 
+- Add the ability for each Quest Step to have multiple encounters each with their own positions
 - In the Map Editor, allow editors to Command-Click to select multiple tiles so that attributes can be changed all at one time.
 - Improve the Encounter Picker in the Map Editor and Quest Editor to show Theme>Difficulty hierarchy
 
@@ -10,6 +14,8 @@
 - New Puzzle system (presure plates that open doors, etc)
 - More Robust Trap System: Traps data model, explosive, poison, teleporting. Traps should now be placeable directly on the map
 - Better Save Game functionality
+- Add the ability to reset quest givers so they can offer multiple
+- Add the ability to remove an NPC including quest giver after a quest step
 - Make module publishing available
 - More higher level content
 

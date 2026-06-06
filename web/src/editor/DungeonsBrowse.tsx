@@ -38,10 +38,21 @@ import { withBasePath } from "@/util/basePath";
 import { SoundtrackPicker } from "./SoundtrackPicker";
 import { ID_PATTERN, TagsPicker } from "./TagsPicker";
 import { usePublishServer } from "./usePublishServer";
+import { groupItemsByCategory } from "./itemTags";
 
 const MODEL_KEY = "dungeons";
 const FILE_NAME = "dungeons.json";
 const UNTAGGED = "(untagged)";
+
+/** Chest-eligible item as surfaced to the chest pickers — id + name
+ *  plus the organizational tags that drive "Category › Type"
+ *  optgroups. */
+type ChestItem = {
+  id: string;
+  name: string;
+  category?: string;
+  item_type?: string;
+};
 
 /** Closed style enum — the procedural generator's supported themes.
  *  Add new values here when the generator grows. */
@@ -146,7 +157,7 @@ type LoadState =
       catalog: LibraryCatalogEntry[];
       /** Items flagged `is_chest: true` in the resolved items model —
        *  the choices for the loot chest picker. */
-      chestItems: Array<{ id: string; name: string }>;
+      chestItems: Array<ChestItem>;
       /** Every `map_tiles` palette entry — choices for the custom-style
        *  floor / wall tile pickers. */
       paletteTiles: PaletteTile[];
@@ -207,6 +218,8 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
         .map((it) => ({
           id: String(it.id ?? ""),
           name: String(it.name ?? it.id ?? ""),
+          category: it.category != null ? String(it.category) : undefined,
+          item_type: it.item_type != null ? String(it.item_type) : undefined,
         }))
         .filter((it) => it.id !== "");
       // Resolve the tile palette for the custom-style pickers.
@@ -742,7 +755,7 @@ function DungeonEditor({
 }: {
   dungeon: DungeonRecord;
   existingTags: string[];
-  chestItems: Array<{ id: string; name: string }>;
+  chestItems: Array<ChestItem>;
   paletteTiles: PaletteTile[];
   onUpdate: (patch: Partial<DungeonRecord>) => void;
   onAddLevel: () => void;
@@ -908,7 +921,7 @@ function LevelRow({
   level: DungeonLevel;
   parent: DungeonRecord;
   existingTags: string[];
-  chestItems: Array<{ id: string; name: string }>;
+  chestItems: Array<ChestItem>;
   paletteTiles: PaletteTile[];
   onUpdate: (patch: Partial<DungeonLevel>) => void;
   onDelete: () => void;
@@ -1097,7 +1110,7 @@ function GeneratorFields({
   /** Tile palette choices for the custom floor / wall pickers. */
   paletteTiles: PaletteTile[];
   /** Chest-item choices (items flagged is_chest) for the loot picker. */
-  chestItems: Array<{ id: string; name: string }>;
+  chestItems: Array<ChestItem>;
   chestItem: string | undefined;
   chestFrequency: number | undefined;
   // Parent values for placeholder fallback (only on Level rows).
@@ -1450,10 +1463,14 @@ function GeneratorFields({
                   : "(inherit — none)"
                 : "(none — no chests)"}
             </option>
-            {chestItems.map((it) => (
-              <option key={it.id} value={it.id}>
-                {it.name}
-              </option>
+            {groupItemsByCategory(chestItems).map((g) => (
+              <optgroup key={g.label} label={g.label}>
+                {g.items.map((it) => (
+                  <option key={it.id} value={it.id}>
+                    {it.name}
+                  </option>
+                ))}
+              </optgroup>
             ))}
             {/* An authored id that no longer resolves to a chest item
                 still shows so the author can see + fix it. */}
@@ -1502,7 +1519,7 @@ function GeneratorFields({
 
 /** Resolve a chest item id to its display name for the inherit hint. */
 function chestLabel(
-  chestItems: Array<{ id: string; name: string }>,
+  chestItems: Array<ChestItem>,
   id: string,
 ): string {
   return chestItems.find((it) => it.id === id)?.name ?? id;
@@ -1510,7 +1527,7 @@ function chestLabel(
 
 /** Resolve a palette tile id to its display name for the inherit hint. */
 function tileLabel(
-  paletteTiles: Array<{ id: string; name: string }>,
+  paletteTiles: Array<ChestItem>,
   id: string,
 ): string {
   return paletteTiles.find((t) => t.id === id)?.name ?? id;

@@ -64,6 +64,7 @@ import { CounterShopOverlay } from "./CounterShopOverlay";
 import { LinkPlacard } from "@/play/LinkPlacard";
 import { SpritePicker } from "./SpritePicker";
 import { groupByTags } from "./mapTags";
+import { groupItemsByCategory } from "./itemTags";
 import { LockDialogOverlay } from "./LockDialogOverlay";
 import { MapAttributesDialog } from "./MapAttributesDialog";
 import { SpawnEncounterOverlay } from "./SpawnEncounterOverlay";
@@ -182,6 +183,7 @@ interface EncounterRecord extends RefRecord {
 interface ItemRecord extends RefRecord {
   icon?: string;
   category?: string;
+  item_type?: string;
 }
 /** NPC record from npcs.json — only the fields the map editor needs.
  *  `sprite` follows the standard person/<file>.png path so we can
@@ -673,6 +675,11 @@ export function MapEditor({
     refreshEncounterOverlays: () => void;
     /** Sync per-cell item-sprite overlays from each cell's item field. */
     refreshItemOverlays: () => void;
+    /** Play the "collected!" pickup effect at (col, row): the item's
+     *  overlay sprite floats up + fades while a golden glow + sparkles
+     *  bloom, paired with a chime. Called from the sim's `item_picked`
+     *  event. No-op if the cell has no overlay sprite. */
+    playItemPickup: (col: number, row: number) => void;
     /** Sync per-cell NPC-sprite overlays from each cell's npc field. */
     refreshNpcOverlays: () => void;
     /** Sync the quest-giver sprite overlay (cells with `quest` set
@@ -1242,7 +1249,17 @@ export function MapEditor({
     let cancelled = false;
 
     (async () => {
-      const Phaser = await import("phaser");
+      // Phaser, the pickup VFX helper, and the SFX module are all
+      // browser-only (Phaser touches `navigator`, Sfx touches Web
+      // Audio), so they load here inside the client-only effect rather
+      // than at module top level — Next.js prerenders this page's
+      // shell on the server and a load-time `navigator` access crashes
+      // the build.
+      const [Phaser, { itemPickup }, { Sfx }] = await Promise.all([
+        import("phaser"),
+        import("@/vfx/Vfx"),
+        import("@/battle/audio/Sfx"),
+      ]);
       if (cancelled || !containerRef.current) return;
 
       const {
@@ -1679,6 +1696,10 @@ export function MapEditor({
               // matches the type until create() finishes wiring it.
             },
             refreshItemOverlays: () => {
+              // Assigned for real below — placeholder so the API object
+              // matches the type until create() finishes wiring it.
+            },
+            playItemPickup: () => {
               // Assigned for real below — placeholder so the API object
               // matches the type until create() finishes wiring it.
             },
@@ -2420,6 +2441,41 @@ export function MapEditor({
                   sceneSelf.itemOverlayIds.set(key, itemId);
                 }
               }
+            };
+            sceneApiRef.current.playItemPickup = (col, row) => {
+              const key = `${col},${row}`;
+              const cx = col * TILE_SIZE + TILE_SIZE / 2;
+              const cy = row * TILE_SIZE + TILE_SIZE / 2;
+              // Golden glow + sparkles, lifted above the party sprite
+              // (depth 300) so the cue reads on top of the party that's
+              // standing on the cell.
+              itemPickup(sceneSelf, { x: cx, y: cy }, { depth: 305 });
+              // Float the actual item sprite up + fade. Detach it from
+              // the overlay maps first so the next refresh pass treats
+              // the cell as empty and doesn't double-destroy the sprite
+              // mid-tween; the tween owns it from here.
+              const sprite = sceneSelf.itemOverlays.get(key);
+              if (sprite) {
+                sceneSelf.itemOverlays.delete(key);
+                sceneSelf.itemOverlayIds.delete(key);
+                // Clear any ambient lighting tint so the collected item
+                // brightens to full colour as it lifts, and raise it
+                // above the party sprite.
+                sprite.clearTint();
+                sprite.setDepth(310);
+                sceneSelf.tweens.add({
+                  targets: sprite,
+                  y: cy - TILE_SIZE * 0.9,
+                  alpha: 0,
+                  scaleX: sprite.scaleX * 1.35,
+                  scaleY: sprite.scaleY * 1.35,
+                  duration: 520,
+                  ease: "Quad.Out",
+                  onComplete: () => sprite.destroy(),
+                });
+              }
+              // Bright "obtained" chime.
+              Sfx.play("buy");
             };
             sceneApiRef.current.refreshNpcOverlays = () => {
               // Same diff'd-overlay pattern as items/encounters: walk
@@ -3211,6 +3267,13 @@ export function MapEditor({
           onBoat: ev.onBoat,
           boatSprite: ev.boatSprite,
         });
+      }
+      if (ev.kind === "item_picked") {
+        // Party walked onto a cell carrying an item. The kernel has
+        // already cleared the cell + recorded the pickup; we just play
+        // the "collected!" effect (item floats up + golden glow +
+        // sparkles + chime) at the tile it was on.
+        sceneApiRef.current?.playItemPickup(ev.pos.col, ev.pos.row);
       }
       if (ev.kind === "place_encountered") {
         // Flagged link / dungeon tile — pop the confirm placard so the
@@ -4822,13 +4885,14 @@ function Inspector({
             help="Item from items.json placed on this tile. The item's icon layers over the floor, and gameplay drops it when the party steps on the cell. Empty for none."
             value={instance.item ?? ""}
             paletteValue={base?.item ?? instance.item ?? ""}
-            options={[
-              { value: "", label: "(none)" },
-              ...items.map((i) => ({
+            options={[{ value: "", label: "(none)" }]}
+            optionGroups={groupItemsByCategory(items).map((g) => ({
+              label: g.label,
+              options: g.items.map((i) => ({
                 value: i.id,
                 label: i.name ? `${i.name} — ${i.id}` : i.id,
               })),
-            ]}
+            }))}
             previewSrc={(() => {
               const id = instance.item ?? "";
               if (!id) return null;
@@ -5161,6 +5225,7 @@ function SelectEditor({
   value,
   paletteValue,
   options,
+  optionGroups,
   previewSrc,
   isModified,
   canReset,
@@ -5171,7 +5236,15 @@ function SelectEditor({
   help?: string;
   value: string;
   paletteValue: string;
+  /** Top-level (ungrouped) options — e.g. the leading "(none)". */
   options: Array<{ value: string; label: string }>;
+  /** Optional "Category › Type" optgroups, rendered after `options`.
+   *  When present, the grouped options also feed the palette-label
+   *  lookup below. */
+  optionGroups?: Array<{
+    label: string;
+    options: Array<{ value: string; label: string }>;
+  }>;
   /** Optional sprite path to show as a thumbnail next to the select.
    *  Used by Encounter to surface the encounter's monster_party_tile. */
   previewSrc?: string | null;
@@ -5180,6 +5253,12 @@ function SelectEditor({
   onChange: (v: string) => void;
   onReset: () => void;
 }) {
+  // Flattened view of every option (ungrouped + grouped) so the
+  // palette-default label resolves regardless of where the option lives.
+  const allOptions = [
+    ...options,
+    ...(optionGroups?.flatMap((g) => g.options) ?? []),
+  ];
   return (
     <InspectorRow
       label={label}
@@ -5198,6 +5277,15 @@ function SelectEditor({
               {o.label}
             </option>
           ))}
+          {optionGroups?.map((g) => (
+            <optgroup key={g.label} label={g.label}>
+              {g.options.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </optgroup>
+          ))}
         </select>
         {previewSrc ? (
           <img
@@ -5215,7 +5303,7 @@ function SelectEditor({
         ) : null}
       </div>
       <p className="mt-0.5 text-xs text-parchment/60">
-        palette: {options.find((o) => o.value === paletteValue)?.label ?? paletteValue}
+        palette: {allOptions.find((o) => o.value === paletteValue)?.label ?? paletteValue}
       </p>
       {help ? (
         <p className="mt-1 text-xs text-parchment/65">{help}</p>

@@ -26,6 +26,7 @@
 
 import { SpritePicker } from "./SpritePicker";
 import { withBasePath } from "@/util/basePath";
+import { groupItemsByCategory } from "./itemTags";
 
 /** Slim Item view the sheet needs — id, display name, icon
  *  (resolved against /sprites/item/<icon>.png), and the slots the
@@ -36,6 +37,10 @@ export interface SheetItemOption {
   name?: string;
   icon?: string;
   slots?: string[];
+  /** Organizational tags from items.json — drive the picker's
+   *  "Category › Type" optgroups. */
+  category?: string;
+  item_type?: string;
 }
 
 /** The two equip slots the v2 character schema models. `head` is
@@ -383,6 +388,7 @@ function EquipSlotPicker({
   // Slot-matched options. Items missing a `slots` array don't qualify
   // even for hands — the catalog flags equippable gear explicitly.
   const candidates = items.filter((i) => (i.slots ?? []).includes(slot));
+  const candidateGroups = groupItemsByCategory(candidates);
   const current = items.find((i) => i.id === value) ?? null;
   // If the saved value points at an item the catalog doesn't recognise
   // (renamed / library reference / stale draft), keep it round-tripping
@@ -408,10 +414,14 @@ function EquipSlotPicker({
           {missing ? (
             <option value={missing}>(missing) {missing}</option>
           ) : null}
-          {candidates.map((i) => (
-            <option key={i.id} value={i.id}>
-              {i.name ? `${i.name} — ${i.id}` : i.id}
-            </option>
+          {candidateGroups.map((g) => (
+            <optgroup key={g.label} label={g.label}>
+              {g.items.map((i) => (
+                <option key={i.id} value={i.id}>
+                  {i.name ? `${i.name} — ${i.id}` : i.id}
+                </option>
+              ))}
+            </optgroup>
           ))}
         </select>
         {previewSrc ? (

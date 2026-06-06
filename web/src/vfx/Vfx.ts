@@ -682,6 +682,78 @@ export function campfireRest(
 }
 
 /**
+ * Item-pickup sparkle — fired when the party walks onto a map cell
+ * carrying an item and collects it. A warm golden "collected!" cue
+ * composited from three layers, sized to a single tile so it reads
+ * as picking something up off the ground:
+ *
+ *   1. A soft filled glow pool that blooms briefly and fades.
+ *   2. An expanding golden ring (the "pop").
+ *   3. A handful of gold/ember/white sparkles rising and fading.
+ *
+ * Coordinates are screen pixels (caller resolves grid → centre px).
+ * `depth` lets the caller lift the effect above whatever sits on the
+ * tile — on the overworld the party sprite rides high (depth ~300),
+ * so the host passes a depth above that; the combat default (60)
+ * suits the arena's lower depth band. Non-blocking: the helper owns
+ * and cleans up its own objects.
+ */
+export function itemPickup(
+  scene: Phaser.Scene,
+  at: Pt,
+  opts: { color?: number; depth?: number } = {},
+): void {
+  const color = opts.color ?? COLOURS.buff;
+  const depth = opts.depth ?? 60;
+
+  // 1. Soft glow pool — blooms outward from the tile centre.
+  const glow = scene.add
+    .circle(at.x, at.y, TILE * 0.28, color, 0.5)
+    .setDepth(depth - 1);
+  scene.tweens.add({
+    targets: glow,
+    radius: TILE * 0.6,
+    alpha: 0,
+    duration: 420,
+    ease: "Quad.Out",
+    onComplete: () => glow.destroy(),
+  });
+
+  // 2. Expanding ring — the "pop".
+  const ring = scene.add.circle(at.x, at.y, 6, color, 0).setDepth(depth);
+  ring.setStrokeStyle(2, color, 0.9);
+  scene.tweens.add({
+    targets: ring,
+    radius: TILE * 0.9,
+    alpha: 0,
+    duration: 480,
+    ease: "Quad.Out",
+    onComplete: () => ring.destroy(),
+  });
+
+  // 3. Rising sparkles — gold / ember / white motes drifting up.
+  const colors = [COLOURS.buff, COLOURS.ember, COLOURS.white];
+  const SPARKS = 8;
+  for (let i = 0; i < SPARKS; i++) {
+    const ox = (Math.random() - 0.5) * TILE * 0.8;
+    const sx = at.x + ox;
+    const sy = at.y + (Math.random() - 0.5) * TILE * 0.3;
+    const dot = scene.add
+      .circle(sx, sy, 1.6 + Math.random() * 1.4, colors[i % colors.length], 1)
+      .setDepth(depth + 1);
+    scene.tweens.add({
+      targets: dot,
+      x: sx + (Math.random() - 0.5) * TILE * 0.3,
+      y: sy - TILE * 0.9 - Math.random() * 10,
+      alpha: 0,
+      duration: 600 + Math.random() * 260,
+      delay: Math.random() * 120,
+      onComplete: () => dot.destroy(),
+    });
+  }
+}
+
+/**
  * Buff aura — slow expanding ring around an ally. Used for Bless,
  * Shield, Long Shanks, Invisibility (slightly different colours per
  * source; caller picks).

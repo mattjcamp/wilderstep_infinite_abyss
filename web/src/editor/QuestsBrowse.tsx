@@ -33,6 +33,7 @@ import { EncounterPicker } from "./EncounterPicker";
 import { SpritePicker } from "./SpritePicker";
 import { ID_PATTERN, TagsPicker } from "./TagsPicker";
 import { usePublishServer } from "./usePublishServer";
+import { groupItemsByCategory } from "./itemTags";
 
 const NPC_SPRITE_CONFIG = { category: "person", format: "path" } as const;
 
@@ -171,6 +172,10 @@ interface QuestRecord {
 interface ItemSummary {
   id: string;
   name?: string;
+  /** Organizational tags from items.json — drive the picker's
+   *  "Category › Type" optgroups. */
+  category?: string;
+  item_type?: string;
 }
 
 interface MapSummary {
@@ -241,6 +246,8 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
       const items = (itemsMerged?.items ?? []).map((i) => ({
         id: i.id,
         name: i.name,
+        category: i.category,
+        item_type: i.item_type,
       }));
 
       const mapsMerged = mergeModel(
@@ -1403,10 +1410,14 @@ function ItemsList({
                   {!id ? (
                     <option value="">— choose an item —</option>
                   ) : null}
-                  {catalog.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name ?? c.id} ({c.id})
-                    </option>
+                  {groupItemsByCategory(catalog).map((g) => (
+                    <optgroup key={g.label} label={g.label}>
+                      {g.items.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name ?? c.id} ({c.id})
+                        </option>
+                      ))}
+                    </optgroup>
                   ))}
                 </select>
                 <button
@@ -1745,10 +1756,14 @@ function StepRow({
                       (missing) {step.item_id}
                     </option>
                   ) : null}
-                  {items.map((it) => (
-                    <option key={it.id} value={it.id}>
-                      {it.name ?? it.id} ({it.id})
-                    </option>
+                  {groupItemsByCategory(items).map((g) => (
+                    <optgroup key={g.label} label={g.label}>
+                      {g.items.map((it) => (
+                        <option key={it.id} value={it.id}>
+                          {it.name ?? it.id} ({it.id})
+                        </option>
+                      ))}
+                    </optgroup>
                   ))}
                 </select>
               </label>

@@ -74,7 +74,7 @@ When the party meets a hostile creature, the game switches to a dedicated **batt
   <img src="assets/battle_arena_daylight.png" alt="A map with fog of war and a party of adventurers" width="720">
 </p>
 
-In the battle arena decipted above, you can see the party facing off a goblic. It is the ranger's turn and you an see how many moves he has. The party status is shown on the right and the current character's options are display below that. The ranger can cast spells, use a ranged weapon, throw a torch, and do a few other things.
+In the battle arena decipted above, you can see the party facing off a goblin. It is the ranger's turn and you can see how many moves he has left. The party status is shown on the right and the current character's options are display below that. The ranger can cast spells, use a ranged weapon, throw a torch, and do a few other things.
 
 On a character's turn you can move up to that class's movement budget (the `Range` value in the [Character Classes](#character-classes) table — a nimble Thief covers far more ground than a Wizard) and then take one action:
 
