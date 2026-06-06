@@ -317,243 +317,121 @@ Spells are MP-cost actions castable by classes that have a matching `casting_typ
 | **Animate Dead** | 20 | 6 | 99 | select_tile | battle | Raises a powerful skeleton warrior from the earth to fight for the caster. |
 | **Fireball** | 30 | 7 | 99 | select_tile | battle | Hurls a massive ball of flame that detonates in a 3-tile radius, scorching everything — friend or foe — caught in the blast. |
 
+<!-- BEGIN GENERATED: items — run `python3 docs/manual/build_items.py` to refresh -->
+
 ## Items
 
-Items are grouped by `item_type` and sorted by `power` (descending) within each group so the strongest option in each category is at the top. Where `power` doesn't apply (reagents, quest items), items are sorted alphabetically.
+Items are grouped by category — every weapon in one table, all armor in another, and everything else under General. The **Type** column names the item kind. **Weapons** list their **Base Damage** — the dice the weapon rolls before the wielder's Strength/Dexterity modifier and any magical Damage Bonus — with all melee weapons first, then all ranged weapons, each ordered weakest to strongest. **Armor** lists **Base AC**, the Armor Class a typical adventurer has while wearing it, ordered least to most protective.
+
+
+### Weapons
+
+| Icon | Item | Type | Base Damage | Durability | Damage Bonus | Damage Type | Special | Buy |
+|:---:|---|---|---:|---:|---|---|---|---:|
+| <img src="../../web/public/sprites/item/gloves.png" width="28" alt="Fists"> | **Fists** | Fists | 1 | 0 |  |  |  |  |
+| <img src="../../web/public/sprites/item/rock.png" width="28" alt="Club"> | **Club** | Club | 1d4-1 | 12 |  |  |  | 20 |
+| <img src="../../web/public/sprites/item/dagger.png" width="28" alt="Dagger"> | **Dagger** | Dagger | 1d4-1 | 20 |  |  | throwable | 20 |
+| <img src="../../web/public/sprites/item/mace.png" width="28" alt="Mace"> | **Mace** | Mace | 1d4 | 20 |  |  |  | 40 |
+| <img src="../../web/public/sprites/item/sword.png" width="28" alt="Sword"> | **Sword** | Sword | 1d6 | 20 |  |  |  | 40 |
+| <img src="../../web/public/sprites/item/spear.png" width="28" alt="Spear"> | **Spear** | Spear | 1d8 | 20 |  |  |  | 50 |
+| <img src="../../web/public/sprites/item/tool.png" width="28" alt="Broad Axe"> | **Broad Axe** | Axe | 1d8 | 20 |  |  |  | 0 |
+| <img src="../../web/public/sprites/item/sword.png" width="28" alt="Iron Sword"> | **Iron Sword** | Sword | 1d8 | 50 |  |  |  | 0 |
+| <img src="../../web/public/sprites/item/halberd.png" width="28" alt="Halberd"> | **Halberd** | Halberd | 1d10 | 20 |  |  |  | 0 |
+| <img src="../../web/public/sprites/item/dagger.png" width="28" alt="Rimefang Dagger"> | **Rimefang Dagger** | Dagger | 2d6 | 0 | 1d6 | ice | throwable | 0 |
+| <img src="../../web/public/sprites/item/mace.png" width="28" alt="Meteorfall Mace"> | **Meteorfall Mace** | Mace | 2d8 | 0 | 1d8 | meteor |  | 0 |
+| <img src="../../web/public/sprites/item/sword.png" width="28" alt="Sun Sword"> | **Sun Sword** | Sword | 2d8 | 0 | 1d6 | fire |  | 0 |
+| <img src="../../web/public/sprites/item/rock.png" width="28" alt="Rock"> | **Rock** | Rock | 1d6+1 | 0 |  |  | ranged, throwable | 0 |
+| <img src="../../web/public/sprites/item/bow.png" width="28" alt="Sling"> | **Sling** | Sling | 1d6+2 | 20 |  |  | ranged, uses stones | 60 |
+| <img src="../../web/public/sprites/item/bow.png" width="28" alt="Short Bow"> | **Short Bow** | Short Bow | 1d6+4 | 30 |  |  | ranged, uses arrows | 60 |
+| <img src="../../web/public/sprites/item/bow.png" width="28" alt="Long Bow"> | **Long Bow** | Long Bow | 1d6+7 | 20 |  |  | ranged, uses arrows | 150 |
+| <img src="../../web/public/sprites/item/bow.png" width="28" alt="Crossbow"> | **Crossbow** | Crossbow | 1d6+9 | 20 |  |  | ranged, uses bolts | 250 |
+| <img src="../../web/public/sprites/item/bow.png" width="28" alt="Silver Bow"> | **Silver Bow** | Long Bow | 1d6+9 | 0 |  |  | ranged, uses arrows |  |
+| <img src="../../web/public/sprites/item/bow.png" width="28" alt="Dawnlight Bow"> | **Dawnlight Bow** | Short Bow | 1d6+16 | 0 | 1d6 | light | ranged, uses arrows | 0 |
+| <img src="../../web/public/sprites/item/tool.png" width="28" alt="Starcaller Wand"> | **Starcaller Wand** | Wand | 1d6+16 | 0 | 1d8 | arcane | ranged | 0 |
+| <img src="../../web/public/sprites/item/bow.png" width="28" alt="Starfall Sling"> | **Starfall Sling** | Sling | 1d6+16 | 0 | 1d6 | meteor | ranged, uses stones | 0 |
+| <img src="../../web/public/sprites/item/bow.png" width="28" alt="Stormbolt Crossbow"> | **Stormbolt Crossbow** | Crossbow | 1d6+18 | 0 | 1d6 | lightning | ranged, uses bolts | 0 |
+
+
+### Armor
+
+| Icon | Item | Type | Base AC | Durability | Buy | Sell |
+|:---:|---|---|---:|---:|---:|---:|
+| <img src="../../web/public/sprites/item/armor_light.png" width="28" alt="Cloth"> | **Cloth** | Cloth | 11 | 0 | 20 | 10 |
+| <img src="../../web/public/sprites/item/armor_light.png" width="28" alt="Leather"> | **Leather** | Leather | 13 | 20 | 50 | 25 |
+| <img src="../../web/public/sprites/item/armor_heavy.png" width="28" alt="Chain"> | **Chain** | Chain | 14 | 50 | 120 | 60 |
+| <img src="../../web/public/sprites/item/armor_heavy.png" width="28" alt="Plate"> | **Plate** | Plate | 15 | 20 | 200 | 150 |
+| <img src="../../web/public/sprites/item/armor_heavy.png" width="28" alt="Stoneguard Plate"> | **Stoneguard Plate** | Plate | 18 | 0 | 0 | 0 |
+
+
+### General Items
+
+| Icon | Item | Type | Power | Effect | Charges | Stackable | Buy | Description |
+|:---:|---|---|---:|---|---:|:---:|---:|---|
+| <img src="../../web/public/sprites/item/rock.png" width="28" alt="Camping Supplies"> | **Camping Supplies** | Camping Supplies | 0 | rest | 3 | ✓ | 25 | A bedroll, flint, and dried rations. Lets the party rest safely in the wilderness. |
+| <img src="../../web/public/sprites/item/herb.png" width="28" alt="Healing Herb"> | **Healing Herb** | Herb | 15 | heal_hp | 1 | ✓ | 15 | A fragrant herb that restores a small amount of HP. |
+| <img src="../../web/public/sprites/item/key_bronze.png" width="28" alt="Iron Key"> | **Iron Key** | Key |  |  |  |  | 10 | A heavy iron key that can unlock one locked door. |
+| <img src="../../web/public/sprites/item/tool.png" width="28" alt="Lockpick"> | **Lockpick** | Lockpick |  |  | 5 | ✓ | 8 | A set of fine lockpicking tools. Consumed on each attempt. |
+| <img src="../../web/public/sprites/item/key_silver.png" width="28" alt="Silver Key"> | **Silver Key** | Quest Item |  |  |  |  |  | A gleaming silver key inscribed with arcane formulae. One of the 8 Keys of Shadow. |
+| <img src="../../web/public/sprites/item/torch.png" width="28" alt="Torch"> | **Torch** | Torch | 3 |  | 1 | ✓ | 5 | A wooden torch. Lights the way in dark places. |
 
 
 ### Ammo
 
-| Item | Power | Durability | Damage Bonus | Damage Type | Special | Buy |
-|---|---:|---:|---|---|---|---:|
-| **Fire Arrows** | 3 | 0 |  |  | ignites (light 3) | 25 |
-| **Arrows** |  |  |  |  |  | 5 |
-| **Bolts** |  |  |  |  |  | 8 |
-| **Stones** |  |  |  |  |  | 3 |
+| Icon | Item | Type | Power | Effect | Charges | Stackable | Buy | Description |
+|:---:|---|---|---:|---|---:|:---:|---:|---|
+| <img src="../../web/public/sprites/item/ammo.png" width="28" alt="Arrows"> | **Arrows** | Ammo |  |  | 20 | ✓ | 5 | A bundle of arrows for bows. |
+| <img src="../../web/public/sprites/item/ammo.png" width="28" alt="Bolts"> | **Bolts** | Ammo |  |  | 20 | ✓ | 8 | Heavy crossbow bolts with iron tips. |
+| <img src="../../web/public/sprites/item/ammo.png" width="28" alt="Fire Arrows"> | **Fire Arrows** | Ammo | 3 |  | 20 | ✓ | 25 | A bundle of fire arrows. Fire arrows explode on impact and produce the same effect as a thrown torch — they light the tile they land on and damage anyone standing in it. |
+| <img src="../../web/public/sprites/item/ammo.png" width="28" alt="Fire Bolts"> | **Fire Bolts** | Ammo | 3 |  | 20 | ✓ | 30 | A bundle of fire bolts for crossbows. Tipped with the same alchemical compound as fire arrows — they explode on impact, lighting the tile they land on and damaging anyone standing in it. |
+| <img src="../../web/public/sprites/item/ammo.png" width="28" alt="Stones"> | **Stones** | Ammo |  |  | 20 | ✓ | 3 | A pouch of smooth stones for slings. |
 
-### Axe
-
-| Item | Power | Durability | Damage Bonus | Damage Type | Special | Buy |
-|---|---:|---:|---|---|---|---:|
-| **Broad Axe** | 7 | 20 |  |  |  | 0 |
-
-### Club
-
-| Item | Power | Durability | Damage Bonus | Damage Type | Special | Buy |
-|---|---:|---:|---|---|---|---:|
-| **Club** | 1 | 12 |  |  |  | 20 |
-
-### Crossbow
-
-| Item | Power | Durability | Damage Bonus | Damage Type | Special | Buy |
-|---|---:|---:|---|---|---|---:|
-| **Crossbow** | 9 | 20 |  |  | ranged, uses bolts | 250 |
-
-### Dagger
-
-| Item | Power | Durability | Damage Bonus | Damage Type | Special | Buy |
-|---|---:|---:|---|---|---|---:|
-| **Dagger** | 1 | 20 |  |  | throwable | 20 |
-
-### Fists
-
-| Item | Power | Durability | Damage Bonus | Damage Type | Special | Buy |
-|---|---:|---:|---|---|---|---:|
-| **Fists** | 0 | 0 |  |  |  |  |
-
-### Gloves
-
-| Item | Power | Durability | Damage Bonus | Damage Type | Special | Buy |
-|---|---:|---:|---|---|---|---:|
-| **Gloves** | 1 | 50 |  |  |  | 0 |
-
-### Halberd
-
-| Item | Power | Durability | Damage Bonus | Damage Type | Special | Buy |
-|---|---:|---:|---|---|---|---:|
-| **Halberd** | 9 | 20 |  |  |  | 0 |
-
-### Long Bow
-
-| Item | Power | Durability | Damage Bonus | Damage Type | Special | Buy |
-|---|---:|---:|---|---|---|---:|
-| **Silver Bow** | 9 | 0 |  |  | ranged, uses arrows |  |
-| **Long Bow** | 7 | 20 |  |  | ranged, uses arrows | 150 |
-
-### Mace
-
-| Item | Power | Durability | Damage Bonus | Damage Type | Special | Buy |
-|---|---:|---:|---|---|---|---:|
-| **Mace** | 2 | 20 |  |  |  | 40 |
-
-### Rock
-
-| Item | Power | Durability | Damage Bonus | Damage Type | Special | Buy |
-|---|---:|---:|---|---|---|---:|
-| **Rock** | 1 | 0 |  |  | ranged, throwable | 0 |
-
-### Short Bow
-
-| Item | Power | Durability | Damage Bonus | Damage Type | Special | Buy |
-|---|---:|---:|---|---|---|---:|
-| **Short Bow** | 4 | 30 |  |  | ranged, uses arrows | 60 |
-
-### Sling
-
-| Item | Power | Durability | Damage Bonus | Damage Type | Special | Buy |
-|---|---:|---:|---|---|---|---:|
-| **Sling** | 2 | 20 |  |  | ranged, uses stones | 60 |
-
-### Spear
-
-| Item | Power | Durability | Damage Bonus | Damage Type | Special | Buy |
-|---|---:|---:|---|---|---|---:|
-| **Spear** | 6 | 20 |  |  |  | 50 |
-
-### Sword
-
-| Item | Power | Durability | Damage Bonus | Damage Type | Special | Buy |
-|---|---:|---:|---|---|---|---:|
-| **Sun Sword** | 20 | 0 | 1d6 | fire |  | 0 |
-| **Mystic Sword** | 10 | 0 |  |  |  |  |
-| **Iron Sword** | 8 | 50 |  |  |  | 0 |
-| **Sword** | 5 | 20 |  |  |  | 40 |
-
-### Chain
-
-| Item | Evasion (AC) | Durability | Buy | Sell |
-|---|---:|---:|---:|---:|
-| **+2 Chain** | 62 | 0 |  |  |
-| **Chain** | 58 | 50 | 120 | 60 |
-
-### Cloth
-
-| Item | Evasion (AC) | Durability | Buy | Sell |
-|---|---:|---:|---:|---:|
-| **Cloth** | 50 | 0 | 20 | 10 |
-
-### Exotic
-
-| Item | Evasion (AC) | Durability | Buy | Sell |
-|---|---:|---:|---:|---:|
-| **Exotic** | 67 | 0 |  |  |
-
-### Leather
-
-| Item | Evasion (AC) | Durability | Buy | Sell |
-|---|---:|---:|---:|---:|
-| **Leather** | 56 | 20 | 50 | 25 |
-
-### Plate
-
-| Item | Evasion (AC) | Durability | Buy | Sell |
-|---|---:|---:|---:|---:|
-| **+2 Plate** | 64 | 0 |  |  |
-| **Plate** | 60 | 20 | 200 | 150 |
-
-### Antidote
-
-| Item | Power | Effect | Charges | Stackable | Buy | Description |
-|---|---:|---|---:|:---:|---:|---|
-| **Antidote** |  | cure_poison | 1 | ✓ | 10 | A bitter tincture that cures poison. |
-
-### Bomb
-
-| Item | Power | Effect | Charges | Stackable | Buy | Description |
-|---|---:|---|---:|:---:|---:|---|
-| **Smoke Bomb** |  |  |  |  |  | A small bomb that creates a blinding cloud. |
-
-### Camping Supplies
-
-| Item | Power | Effect | Charges | Stackable | Buy | Description |
-|---|---:|---|---:|:---:|---:|---|
-| **Camping Supplies** | 0 | rest | 3 | ✓ | 25 | A bedroll, flint, and dried rations. Lets the party rest safely in the wilderness. |
-
-### Herb
-
-| Item | Power | Effect | Charges | Stackable | Buy | Description |
-|---|---:|---|---:|:---:|---:|---|
-| **Healing Herb** | 15 | heal_hp | 1 | ✓ | 15 | A fragrant herb that restores a small amount of HP. |
-
-### Holy Water
-
-| Item | Power | Effect | Charges | Stackable | Buy | Description |
-|---|---:|---|---:|:---:|---:|---|
-| **Holy Water** |  |  | 1 | ✓ |  | Blessed water from a sacred spring. Burns the undead. |
-
-### Lockpick
-
-| Item | Power | Effect | Charges | Stackable | Buy | Description |
-|---|---:|---|---:|:---:|---:|---|
-| **Lockpick** |  |  | 5 | ✓ | 8 | A set of fine lockpicking tools. Consumed on each attempt. |
-
-### Poison Potion
-
-| Item | Power | Effect | Charges | Stackable | Buy | Description |
-|---|---:|---|---:|:---:|---:|---|
-| **Lingering Venom** | 2 | combat_only |  |  | 70 | A potent toxin that persists far longer than ordinary poisons. |
-| **Paralytic Poison** | 2 | combat_only |  |  | 75 | A nerve toxin that drains magical energy. Apply to a weapon or throw at enemies. |
-| **Poison Vial** | 2 | combat_only |  |  | 50 | A vial of toxic liquid. Apply to a weapon or throw at enemies to inflict poison damage. |
-| **Weakening Poison** | 2 | combat_only |  |  | 60 | A venom that saps fighting prowess. Apply to a weapon or throw at enemies. |
 
 ### Potion
 
-| Item | Power | Effect | Charges | Stackable | Buy | Description |
-|---|---:|---|---:|:---:|---:|---|
-| **Healing Potion** | 30 | heal_hp | 1 | ✓ | 40 | A ruby-red elixir that mends wounds. Restores a large amount of HP. |
-| **Mana Potion** | 10 | heal_mp | 1 | ✓ |  | A shimmering blue liquid that restores magic points. |
-| **Elixir of Strength** | 2 | buff_strength | 1 | ✓ | 60 | A thick crimson brew. Grants +2 STR for the next combat. |
-| **Elixir of Warding** | 2 | buff_ac | 1 | ✓ | 60 | A silver-tinged potion. Grants +2 AC for the next combat. |
+| Icon | Item | Type | Power | Effect | Charges | Stackable | Buy | Description |
+|:---:|---|---|---:|---|---:|:---:|---:|---|
+| <img src="../../web/public/sprites/item/potion.png" width="28" alt="Antidote"> | **Antidote** | Antidote |  | cure_poison | 1 | ✓ | 10 | A bitter tincture that cures poison. |
+| <img src="../../web/public/sprites/item/potion.png" width="28" alt="Lingering Venom"> | **Lingering Venom** | Poison Potion | 2 | combat_only |  |  | 70 | A potent toxin that persists far longer than ordinary poisons. |
+| <img src="../../web/public/sprites/item/potion.png" width="28" alt="Paralytic Poison"> | **Paralytic Poison** | Poison Potion | 2 | combat_only |  |  | 75 | A nerve toxin that drains magical energy. Apply to a weapon or throw at enemies. |
+| <img src="../../web/public/sprites/item/potion.png" width="28" alt="Poison Vial"> | **Poison Vial** | Poison Potion | 2 | combat_only |  |  | 50 | A vial of toxic liquid. Apply to a weapon or throw at enemies to inflict poison damage. |
+| <img src="../../web/public/sprites/item/potion.png" width="28" alt="Weakening Poison"> | **Weakening Poison** | Poison Potion | 2 | combat_only |  |  | 60 | A venom that saps fighting prowess. Apply to a weapon or throw at enemies. |
+| <img src="../../web/public/sprites/item/potion.png" width="28" alt="Elixir of Strength"> | **Elixir of Strength** | Potion | 2 | buff_strength | 1 | ✓ | 60 | A thick crimson brew. Grants +2 STR for the next combat. |
+| <img src="../../web/public/sprites/item/potion.png" width="28" alt="Elixir of Warding"> | **Elixir of Warding** | Potion | 2 | buff_ac | 1 | ✓ | 60 | A silver-tinged potion. Grants +2 AC for the next combat. |
+| <img src="../../web/public/sprites/item/potion.png" width="28" alt="Healing Potion"> | **Healing Potion** | Potion | 30 | heal_hp | 1 | ✓ | 40 | A ruby-red elixir that mends wounds. Restores a large amount of HP. |
+| <img src="../../web/public/sprites/item/potion.png" width="28" alt="Mana Potion"> | **Mana Potion** | Potion | 10 | heal_mp | 1 | ✓ | 40 | A shimmering blue liquid that restores magic points. |
+| <img src="../../web/public/sprites/item/potion.png" width="28" alt="Fire Oil"> | **Fire Oil** | Throwable | 20 |  |  |  | 35 | A volatile oil that bursts into a small 3x3 gout of flame where it lands. Throw at an enemy or tile. |
 
-### Quest Item
 
-| Item | Power | Effect | Charges | Stackable | Buy | Description |
-|---|---:|---|---:|:---:|---:|---|
-| **Bronze Key** |  |  |  |  |  | A tarnished bronze key with intricate gnomish gearwork. One of the 8 Keys of Shadow. |
-| **Crystal Key** |  |  |  |  |  | A translucent key carved from a single crystal, humming with magical energy. One of the 8 Keys of Shadow. |
-| **Diamond Key** |  |  |  |  |  | A flawless diamond key that refracts light into rainbows. The final Key of Shadow. |
-| **Dragonheart** |  |  |  |  |  | The smoldering heart of an ancient wyrm. It beats once every few minutes, slow as the tide, and the air around it shimmers with heat. |
-| **Family Heirloom** |  |  |  |  |  | A delicate silver locket engraved with a family crest. It belongs to Elara. |
-| **Gold Key** |  |  |  |  |  | A solid gold key shaped like a miniature war hammer. One of the 8 Keys of Shadow. |
-| **Iron Key** |  |  |  |  |  | A heavy iron key etched with gnomish runes. One of the 8 Keys of Shadow. |
-| **Obsidian Key** |  |  |  |  |  | A key of polished volcanic glass, cold to the touch. One of the 8 Keys of Shadow. |
-| **Ruby Key** |  |  |  |  |  | A blood-red key that pulses with warmth. One of the 8 Keys of Shadow. |
-| **Shadow Crystal** |  |  |  |  |  | A pulsing dark crystal radiating ancient power. The innkeeper seeks this. |
-| **Silver Key** |  |  |  |  |  | A gleaming silver key inscribed with arcane formulae. One of the 8 Keys of Shadow. |
+### Quest
+
+| Icon | Item | Type | Power | Effect | Charges | Stackable | Buy | Description |
+|:---:|---|---|---:|---|---:|:---:|---:|---|
+| <img src="../../web/public/sprites/item/chest.png" width="28" alt="Chest"> | **Chest** | Chest | 0 |  |  |  | 0 | A lost chest |
+| <img src="../../web/public/sprites/item/relic_chest.png" width="28" alt="Relic Chest"> | **Relic Chest** | Chest | 0 |  |  |  | 0 | A chest containing a relic |
+| <img src="../../web/public/sprites/item/chest.png" width="28" alt="Treasure Chest"> | **Treasure Chest** | Chest | 0 |  |  |  | 0 | What treasure lies inside? |
+| <img src="../../web/public/sprites/item/artifact.png" width="28" alt="Dragonheart"> | **Dragonheart** | Quest Item |  |  |  |  |  | The smoldering heart of an ancient wyrm. It beats once every few minutes, slow as the tide, and the air around it shimmers with heat. |
+| <img src="../../web/public/sprites/item/artifact.png" width="28" alt="Family Heirloom"> | **Family Heirloom** | Quest Item |  |  |  |  |  | A delicate silver locket engraved with a family crest. It belongs to Elara. |
+| <img src="../../web/public/sprites/item/artifact.png" width="28" alt="Shadow Crystal"> | **Shadow Crystal** | Quest Item |  |  |  |  |  | A pulsing dark crystal radiating ancient power. The innkeeper seeks this. |
+
 
 ### Reagent
 
-| Item | Power | Effect | Charges | Stackable | Buy | Description |
-|---|---:|---|---:|:---:|---:|---|
-| **Brimite Ore** |  |  | 1 | ✓ | 15 | A volatile mineral that smolders with inner heat. |
-| **Glowcap Mushroom** |  |  | 1 | ✓ | 10 | A blue-capped fungus that pulses with arcane energy. |
-| **Moonpetal** |  |  | 1 | ✓ | 12 | A luminous flower petal that glows faintly in the dark. Prized by alchemists. |
-| **Serpent Root** |  |  | 1 | ✓ | 8 | A twisted root with potent cleansing properties. |
-| **Spring Water** |  |  | 1 | ✓ | 3 | Pure water from a mountain spring. Essential for brewing. |
+| Icon | Item | Type | Power | Effect | Charges | Stackable | Buy | Description |
+|:---:|---|---|---:|---|---:|:---:|---:|---|
+| <img src="../../web/public/sprites/item/rock.png" width="28" alt="Brimite Ore"> | **Brimite Ore** | Reagent |  |  | 1 | ✓ | 15 | A volatile mineral that smolders with inner heat. |
+| <img src="../../web/public/sprites/item/herb.png" width="28" alt="Glowcap Mushroom"> | **Glowcap Mushroom** | Reagent |  |  | 1 | ✓ | 10 | A blue-capped fungus that pulses with arcane energy. |
+| <img src="../../web/public/sprites/item/herb.png" width="28" alt="Moonpetal"> | **Moonpetal** | Reagent |  |  | 1 | ✓ | 12 | A luminous flower petal that glows faintly in the dark. Prized by alchemists. |
+| <img src="../../web/public/sprites/item/herb.png" width="28" alt="Serpent Root"> | **Serpent Root** | Reagent |  |  | 1 | ✓ | 8 | A twisted root with potent cleansing properties. |
+| <img src="../../web/public/sprites/item/potion.png" width="28" alt="Spring Water"> | **Spring Water** | Reagent |  |  | 1 | ✓ | 3 | Pure water from a mountain spring. Essential for brewing. |
 
-### Rope
-
-| Item | Power | Effect | Charges | Stackable | Buy | Description |
-|---|---:|---|---:|:---:|---:|---|
-| **Rope** |  |  |  |  |  | A sturdy hemp rope. Useful for climbing. |
 
 ### Scroll
 
-| Item | Power | Effect | Charges | Stackable | Buy | Description |
-|---|---:|---|---:|:---:|---:|---|
-| **Scroll of Fire** |  |  |  |  |  | A single-use scroll containing a fire spell. |
+| Icon | Item | Type | Power | Effect | Charges | Stackable | Buy | Description |
+|:---:|---|---|---:|---|---:|:---:|---:|---|
+| <img src="../../web/public/sprites/item/scroll.png" width="28" alt="Scroll of Fire"> | **Scroll of Fire** | Scroll |  |  |  |  |  | A single-use scroll containing a fire spell. |
 
-### Throwable
-
-| Item | Power | Effect | Charges | Stackable | Buy | Description |
-|---|---:|---|---:|:---:|---:|---|
-| **Fire Oil** | 20 |  |  |  | 35 | A volatile oil that bursts into a small 3x3 gout of flame where it lands. Throw at an enemy or tile. |
-
-### Torch
-
-| Item | Power | Effect | Charges | Stackable | Buy | Description |
-|---|---:|---|---:|:---:|---:|---|
-| **Torch** | 3 |  | 1 | ✓ | 5 | A wooden torch. Lights the way in dark places. |
+<!-- END GENERATED: items -->
 
 ## Monsters
 

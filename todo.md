@@ -11,7 +11,13 @@
 - Remove or adjust xp / Lvl column for races
 - Add theme attribute for monsters: undead, devil, elemental, humanoid, cryptid, magical
 
+## Questions
+
+- Are "Power" and "Evasion" neccessary for the game mechanics or is this a legacy layer from previous builds?
+
 ## Big Ideas
+
+
 
 - Clear dungeon bonus/relic: when a party clears all monsters from certain procedural dungeons they will have a special reward and a portal to the surface. This could also be a way to learn new spells or abilities. This could be instead of the relic system below. Relic bestown new abilities after a certain level. This would require thoughtful design work.
 
