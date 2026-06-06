@@ -62,7 +62,7 @@
       "wisdom": 18,
       "sprite": "person/cleric1.png",
       "equipped": {
-        "hands": "meteorfall_mace",
+        "hands": "viperscale_sling",
         "body": "cloth"
       },
       "inventory": []

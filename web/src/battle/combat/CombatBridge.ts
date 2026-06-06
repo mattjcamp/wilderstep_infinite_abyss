@@ -407,6 +407,7 @@ export function combatantFromMember(
     weaponName: stats.weaponName,
     weaponBonusDamage: equippedWeapon?.bonus_damage,
     weaponDamageType: equippedWeapon?.damage_type,
+    weaponRanged: equippedWeapon?.ranged === true,
     passives: wielderPassives,
     wieldAuraColor,
   };
@@ -473,6 +474,9 @@ export function refreshCombatantGear(
   // swings (and dropping back to a Sword should stop it).
   c.weaponBonusDamage = weapon?.bonus_damage;
   c.weaponDamageType = weapon?.damage_type;
+  // Ranged weapons' bonus damage fires on the Range shot, not a
+  // melee bump — keep the flag in sync on weapon swaps.
+  c.weaponRanged = weapon?.ranged === true;
   // Refresh magic-item passives + aura — sheathing the Sun Sword
   // drops fire_resistance on the next round, drawing it again
   // restores it. The CombatScene watches `wieldAuraColor` to add

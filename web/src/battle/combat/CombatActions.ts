@@ -18,7 +18,7 @@ import { isCombatUsable } from "../world/Items";
 import { classCanCast, type Spell } from "../world/Spells";
 import type { ClassTemplate } from "../world/Classes";
 import type { PartyMember } from "../world/Party";
-import { rollAttack, rollDamage } from "./engine";
+import { rollAttack, rollBonusDamage, rollDamage } from "./engine";
 import type { RNG } from "../rng";
 import { assetUrl, withBase } from "../world/Module";
 import type { Buff } from "./Buffs";
@@ -67,12 +67,23 @@ export function resolveThrow(
   }
   const roll = rollAttack(attacker.dexMod, target.ac, rng);
   let damage = 0;
+  let bonusDamage = 0;
   // Use item.power as the dice bonus on a single d6 — mirrors the
   // Python combat_engine's throw resolution where a thrown item
   // does ~ 1d6 + power damage. Bows / crossbows have higher power.
   const power = item.power ?? 1;
   if (roll.hit) {
     damage = rollDamage(1, 6, power, roll.critical, rng);
+    // Magic-weapon bonus damage on the RANGED/thrown path — Stormbolt
+    // Crossbow's lightning 1d6, a thrown Rimefang Dagger's ice, etc.
+    // The melee bump path (Combat.attack) applies this for melee
+    // weapons; ranged weapons' elemental payload lands HERE so it
+    // fires on the shot, not on a club-with-the-stock bump. Same
+    // dice spec + crit-doubling as the melee bonus.
+    if (item.bonus_damage != null) {
+      bonusDamage = rollBonusDamage(item.bonus_damage, roll.critical, rng);
+      damage += bonusDamage;
+    }
     target.hp = Math.max(0, target.hp - damage);
   }
   return {
@@ -83,6 +94,8 @@ export function resolveThrow(
     total: roll.total,
     critical: roll.critical,
     damage,
+    bonusDamage,
+    damageType: item.damage_type,
     killed: target.hp === 0 && roll.hit,
     item: item.name,
   };

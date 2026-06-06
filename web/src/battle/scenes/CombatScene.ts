@@ -428,6 +428,32 @@ type PendingAction =
    *  range branch. */
   | { kind: "range-direction"; weapon: Item; ammoId?: string };
 
+/** Map a weapon's `damage_type` to a themed ranged-shot visual:
+ *  the projectile-effect key, the impact-burst tint, and the impact
+ *  SFX. Keyed off `damage_type` (not `animation_id`) because the item
+ *  editor preserves `damage_type` across a save while it strips
+ *  `animation_id` — so an elemental relic stays themed even after the
+ *  user re-saves items.json from the editor. Damage types with no
+ *  entry fall through to the plain arrow streak. */
+function elementalShotFx(
+  damageType: string,
+): { visual: string; color: number; sfx: string } | null {
+  switch (damageType) {
+    case "lightning":
+      return { visual: "lightning_bolt", color: VFX_COLOURS.lightning, sfx: "explosion" };
+    case "fire":
+    case "meteor":
+      return { visual: "fire_projectile", color: VFX_COLOURS.fire, sfx: "explosion" };
+    case "arcane":
+      return { visual: "magic_dart", color: VFX_COLOURS.arcane, sfx: "chirp" };
+    case "ice":
+    case "frost":
+      return { visual: "magic_arrow", color: VFX_COLOURS.lightning, sfx: "chirp" };
+    default:
+      return null;
+  }
+}
+
 export class CombatScene extends Phaser.Scene {
   private combat!: Combat;
   private fromWorld = false;
@@ -3662,23 +3688,73 @@ export class CombatScene extends Phaser.Scene {
         const ignites = !!ammoDef?.ignite;
         const result = resolveThrow(me, target, action.weapon, defaultRng);
         const ammoLabel = ammoDef?.name ?? action.weapon.name;
+        // Damage-type + bonus breakdown, mirroring the melee log line
+        // so an elemental ranged weapon (Stormbolt Crossbow's
+        // lightning, etc.) reads its magic damage at a glance.
+        const rType = result.damageType;
+        const rTypeSuffix = rType && rType !== "physical" ? ` (${rType})` : "";
+        const rBonus = result.bonusDamage ?? 0;
+        const rBreakdown =
+          rBonus > 0
+            ? ` — ${result.damage} dmg${rTypeSuffix} [${result.damage - rBonus}+${rBonus} bonus]`
+            : ` — ${result.damage} dmg${rTypeSuffix}`;
         this.combat.log.push(
           result.hit
-            ? `${me.name} fires ${ammoLabel} at ${target.name} (d20:${result.roll}=${result.total} vs AC${target.ac}) — ${result.damage} dmg${result.killed ? ", defeated!" : "."}`
+            ? `${me.name} fires ${ammoLabel} at ${target.name} (d20:${result.roll}=${result.total} vs AC${target.ac})${rBreakdown}${result.killed ? ", defeated!" : "."}`
             : `${me.name} fires ${ammoLabel} at ${target.name} — miss.`
         );
-        // Bow / crossbow / sling whistle and projectile streak. Fire
-        // arrows get an orange/red trail (VFX_COLOURS.ember) — same
-        // palette the existing thrown-torch path uses, so the two
-        // feedback families read as cousins.
+        // Elemental projectile visual for a relic ranged weapon.
+        // Resolution priority:
+        //   1. An explicit `animation_id` on the weapon (authored
+        //      override) — its `visual` key wins when present.
+        //   2. The weapon's `damage_type`, mapped to a themed visual.
+        //      This is the DURABLE path: the item editor doesn't carry
+        //      `animation_id` (it round-trips to null on save), but it
+        //      DOES preserve `damage_type`, so a lightning crossbow
+        //      stays lightning-themed even after a re-save.
+        // Fire-arrow shots keep their ember trail + ignite path so the
+        // two visuals don't fight over the projectile.
+        await loadAnimations();
+        const weaponAnim = getAnimationById(action.weapon.animation_id);
+        const animVisual = (weaponAnim?.visual ?? "").trim();
+        const elemental = elementalShotFx(
+          (action.weapon.damage_type ?? "").toLowerCase(),
+        );
+        const shotVisual =
+          animVisual !== "" && animVisual !== "none"
+            ? animVisual
+            : elemental?.visual ?? "";
+        const hasShotVisual = !ignites && shotVisual !== "";
+        const impactColor = elemental?.color ?? VFX_COLOURS.lightning;
+        const impactSfx = weaponAnim?.hit_sfx ?? elemental?.sfx ?? "";
         Sfx.play("arrow");
         await this.animateBump(me, me.position, target.position);
-        await this.flyProjectile(
-          me,
-          target,
-          ignites ? VFX_COLOURS.ember : VFX_COLOURS.white,
-        );
+        if (hasShotVisual) {
+          const fx = resolveProjectileEffect({ effect_type: shotVisual });
+          await fx(this, this.bodyXY(me), this.bodyXY(target));
+        } else {
+          await this.flyProjectile(
+            me,
+            target,
+            ignites ? VFX_COLOURS.ember : VFX_COLOURS.white,
+          );
+        }
         await this.animateHit(target, result);
+        // Themed impact: elemental crackle SFX + a tinted burst on the
+        // target so the magic shot lands with a visible punch.
+        if (hasShotVisual && result.hit) {
+          if (impactSfx) Sfx.play(impactSfx);
+          const tb = this.bodies.get(target.id);
+          if (tb) {
+            radialBurst(
+              this,
+              { x: tb.x, y: tb.y },
+              impactColor,
+              VFX_COLOURS.white,
+              36,
+            ).catch(() => undefined);
+          }
+        }
         this.refreshHp(target);
         // Fire arrows ALWAYS ignite the target's tile — even on a
         // miss the burning shaft strikes the ground there and
