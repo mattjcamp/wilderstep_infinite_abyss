@@ -158,6 +158,84 @@ export function lightningZigzag(
 }
 
 /**
+ * Meteor Strike: a blazing mote that falls from high above and to one
+ * side of the target, accelerating downward into a fiery impact burst.
+ * Unlike the other projectiles it IGNORES the `from` (caster) point —
+ * the meteor comes "from the sky," so the descent always starts above
+ * the target regardless of where the slinger stands. Pairs with a
+ * fiery trail + a radial ember burst on landing.
+ *
+ * Used for `damage_type: "meteor"` ranged weapons (the Starfall Sling).
+ */
+export function meteorStrike(
+  scene: Phaser.Scene,
+  _from: Pt,
+  to: Pt,
+  color = COLOURS.fire,
+  durationMs = 360,
+): Promise<void> {
+  return new Promise((resolve) => {
+    // Begin high above + offset to the side so the arc reads as a
+    // falling star, not a flat shot. The offset stays on-screen for
+    // the standard arena viewport.
+    const start: Pt = { x: to.x + 84, y: to.y - 220 };
+    const head = scene.add.circle(start.x, start.y, 6, COLOURS.white, 1).setDepth(71);
+    const glow = scene.add.circle(start.x, start.y, 13, color, 0.5).setDepth(70);
+
+    // Fiery tail: ember motes dropped along the descent, each fading
+    // in place so the meteor leaves a streak behind it.
+    const trailCount = 10;
+    const interval = durationMs / trailCount;
+    for (let i = 0; i < trailCount; i++) {
+      scene.time.delayedCall(i * interval, () => {
+        const t = (i + 0.5) / trailCount;
+        const sx = lerp(start.x, to.x, t);
+        const sy = lerp(start.y, to.y, t);
+        const spark = scene.add
+          .circle(sx, sy, 3 + Math.random() * 2, i % 2 ? COLOURS.ember : color, 0.85)
+          .setDepth(69);
+        scene.tweens.add({
+          targets: spark,
+          alpha: 0,
+          radius: 0.5,
+          duration: 300,
+          onComplete: () => spark.destroy(),
+        });
+      });
+    }
+
+    scene.tweens.add({
+      targets: [head, glow],
+      x: to.x,
+      y: to.y,
+      duration: durationMs,
+      ease: "Quad.In", // accelerate as it plummets
+      onComplete: () => {
+        head.destroy();
+        glow.destroy();
+        // Fiery impact: white flash + expanding ring + ember scatter.
+        const flash = scene.add.circle(to.x, to.y, 6, COLOURS.white, 1).setDepth(73);
+        const ring = scene.add
+          .circle(to.x, to.y, 8, color, 0)
+          .setDepth(72)
+          .setStrokeStyle(3, color, 0.9);
+        scene.tweens.add({
+          targets: flash, radius: 20, alpha: 0,
+          duration: 240,
+          onComplete: () => flash.destroy(),
+        });
+        scene.tweens.add({
+          targets: ring, radius: 34, alpha: 0,
+          duration: 320,
+          onComplete: () => { ring.destroy(); resolve(); },
+        });
+        void radialBurst(scene, to, color, COLOURS.ember, 42);
+      },
+    });
+  });
+}
+
+/**
  * Magic Dart: a fast arcane orb streaking straight from caster to
  * target with a trail of fading sparkles behind it and a small white
  * impact flash at the endpoint. Distinct from the gentle bowed

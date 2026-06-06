@@ -443,9 +443,9 @@
     {
       "id": "galewind_bow",
       "category": "weapons",
-      "name": "Galewind Bow",
+      "name": "Dawnlight Bow",
       "animation_id": null,
-      "description": "A silver relic bow light enough for any short-bow hand to draw. Its arrows ride a screaming gale that drives them deep.",
+      "description": "A silver relic bow light enough for any short-bow hand to draw. Each arrow blazes with captured daylight, and wherever it strikes a pool of radiance blooms — lighting even the deepest dark.",
       "icon": "bow",
       "item_type": "short_bow",
       "power": 16,
@@ -459,12 +459,13 @@
       ],
       "ac_bonus": 0,
       "bonus_damage": "1d6",
-      "damage_type": "wind",
+      "damage_type": "light",
+      "light_range": 5,
       "durability": 0,
       "party_can_equip": false,
       "character_can_equip": true,
       "combat_aura": {
-        "color": 10479816
+        "color": 16770186
       },
       "buy": 0,
       "sell": 0
@@ -472,9 +473,9 @@
     {
       "id": "viperscale_sling",
       "category": "weapons",
-      "name": "Viperscale Sling",
-      "animation_id": null,
-      "description": "A relic sling braided from the scales of an ancient serpent. The stones it hurls drip with virulent venom.",
+      "name": "Starfall Sling",
+      "animation_id": "meteor_strike",
+      "description": "A relic sling whose every stone blazes into a falling star. What it looses streaks down from the heavens to strike with cosmic fire.",
       "icon": "bow",
       "item_type": "sling",
       "power": 16,
@@ -488,12 +489,12 @@
       ],
       "ac_bonus": 0,
       "bonus_damage": "1d6",
-      "damage_type": "poison",
+      "damage_type": "meteor",
       "durability": 0,
       "party_can_equip": false,
       "character_can_equip": true,
       "combat_aura": {
-        "color": 8969557
+        "color": 16739133
       },
       "buy": 0,
       "sell": 0

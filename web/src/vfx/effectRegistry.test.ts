@@ -26,6 +26,7 @@ describe("effectRegistry", () => {
     // in effectRegistry.ts at the same time.
     const expected = [
       "lightning_bolt",
+      "meteor_strike",
       "magic_dart",
       "magic_arrow",
       "projectile_line",

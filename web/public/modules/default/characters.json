@@ -18,8 +18,8 @@
       "wisdom": 13,
       "sprite": "person/fighter14.png",
       "equipped": {
-        "hands": "stormbolt_crossbow",
-        "body": "stoneguard_plate"
+        "hands": "rimefang_dagger",
+        "body": "plate_plus_2"
       },
       "inventory": []
     },
@@ -40,7 +40,7 @@
       "wisdom": 12,
       "sprite": "person/ranger1.png",
       "equipped": {
-        "hands": "galewind_bow",
+        "hands": "rimefang_dagger",
         "body": "cloth"
       },
       "inventory": []
@@ -62,7 +62,7 @@
       "wisdom": 18,
       "sprite": "person/cleric1.png",
       "equipped": {
-        "hands": "viperscale_sling",
+        "hands": "meteorfall_mace",
         "body": "cloth"
       },
       "inventory": []
