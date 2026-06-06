@@ -72,6 +72,11 @@ export interface Item {
   item_type?: string;
   /** Render-glyph hint from items.json (e.g. "torch", "potion"). */
   icon?: string;
+  /** Optional animation id (matches an `animations.json` record) used
+   *  to theme the weapon's effect — e.g. the Stormbolt Crossbow's
+   *  "lightning_strike" drives the jagged-bolt projectile + crackle
+   *  SFX on a Range shot. Null / absent = the default arrow streak. */
+  animation_id?: string | null;
   /** Buy / sell prices at shops. */
   buy?: number;
   sell?: number;

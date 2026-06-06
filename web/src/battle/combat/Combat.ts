@@ -709,7 +709,14 @@ export class Combat {
       // separately so the dice spec can be either flat ("3") or
       // "NdM" ("1d6"). Crits double the dice the same way base
       // damage does. Mirrors the Python game's `_roll_bonus_damage`.
-      if (attacker.weaponBonusDamage != null) {
+      //
+      // RANGED weapons are excluded here: a crossbow / bow / sling's
+      // elemental payload (Stormbolt Crossbow's lightning, etc.) is a
+      // ranged effect and fires on the Range shot via `resolveThrow`,
+      // not when the wielder bumps an adjacent enemy with the stock.
+      // Melee weapons (weaponRanged falsy) keep landing their bonus
+      // on every swing.
+      if (attacker.weaponBonusDamage != null && !attacker.weaponRanged) {
         bonusDamage = rollBonusDamage(attacker.weaponBonusDamage, critical, this.rng);
         damage += bonusDamage;
       }

@@ -1,7 +1,27 @@
 
 # Playthrough Polish
 
+Crossbow
+Sling
+Wand
+Bow
+
+Sun Sword
+Dagger
+Mace
+Plate
+
+
 - In the Map Editor, allow editors to Command-Click to select multiple tiles so that attributes can be changed all at one time.
+
+## Manual/Content
+
+- add information about how MP is acquired
+- Replace "power" with "damage". Let's see if we can add the damage and AC directly to the tables
+- Look at grouping items better
+- Remove or adjust xp / Lvl column for races
+- Will the Player's Manual script write over manual changes I make in places like the FAQ? If so, is there a better way to integrate that in
+
 
 ## Big Ideas
 

@@ -52,6 +52,15 @@ export interface Combatant {
    *  Surfaced in the combat log so the player sees the magical flavor.
    *  Treated as "physical" when absent. */
   weaponDamageType?: string;
+  /** True when the equipped weapon is a ranged weapon (`ranged: true`
+   *  in items.json — bows, crossbows, slings, wands). The melee
+   *  `attack()` path reads this to SKIP the weapon's `bonus_damage`
+   *  on a bump attack: a crossbow's lightning (etc.) is a ranged
+   *  payload and should only fire on a Range shot (see
+   *  `resolveThrow`), not when the wielder clubs someone with the
+   *  stock. Absent / false for melee weapons, so their bonus still
+   *  lands on every swing. */
+  weaponRanged?: boolean;
   /** Packed RGB for the relic-tier "this weapon is powerful" aura
    *  the CombatScene draws beneath the wielder's body. Stamped on
    *  by the CombatBridge from the equipped weapon's `combat_aura`
@@ -220,6 +229,16 @@ export interface AttackResult {
   smiteUndead?: boolean;
   /** Damage dealt; 0 on miss. */
   damage: number;
+  /** Portion of `damage` that came from the weapon's magic
+   *  `bonus_damage` roll (Sun Sword's fire, Stormbolt Crossbow's
+   *  lightning, …). 0 / absent when the weapon has no bonus or the
+   *  attack missed. Surfaced so ranged/throw log lines can show the
+   *  "[base+bonus]" breakdown the melee path already prints. */
+  bonusDamage?: number;
+  /** Damage school of the weapon's bonus damage ("fire", "lightning",
+   *  …) — drives the "(lightning)" tag in the log. Absent for plain
+   *  physical attacks. */
+  damageType?: string;
   /** Was the target reduced to 0 HP by this attack? */
   killed: boolean;
 }

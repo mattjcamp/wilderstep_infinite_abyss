@@ -428,6 +428,44 @@ type PendingAction =
    *  range branch. */
   | { kind: "range-direction"; weapon: Item; ammoId?: string };
 
+/** Map a weapon's `damage_type` to a themed ranged-shot visual:
+ *  the projectile-effect key, the impact-burst tint, and the impact
+ *  SFX. Keyed off `damage_type` (not `animation_id`) because the item
+ *  editor preserves `damage_type` across a save while it strips
+ *  `animation_id` — so an elemental relic stays themed even after the
+ *  user re-saves items.json from the editor. Damage types with no
+ *  entry fall through to the plain arrow streak. */
+function elementalShotFx(
+  damageType: string,
+): { visual: string; color: number; sfx: string } | null {
+  switch (damageType) {
+    case "lightning":
+      return { visual: "lightning_bolt", color: VFX_COLOURS.lightning, sfx: "explosion" };
+    case "meteor":
+      return { visual: "meteor_strike", color: VFX_COLOURS.fire, sfx: "explosion" };
+    case "fire":
+      return { visual: "fire_projectile", color: VFX_COLOURS.fire, sfx: "explosion" };
+    case "arcane":
+      return { visual: "magic_dart", color: VFX_COLOURS.arcane, sfx: "chirp" };
+    case "ice":
+    case "frost":
+      return { visual: "magic_arrow", color: VFX_COLOURS.lightning, sfx: "chirp" };
+    case "light":
+      return { visual: "magic_arrow", color: VFX_COLOURS.buff, sfx: "chirp" };
+    default:
+      return null;
+  }
+}
+
+/** Radius (tiles) of the Magic-Light pool a light-themed bow casts
+ *  where its arrow lands. Reads the weapon's optional `light_range`
+ *  (same field fire arrows use), defaulting to 5 — the Cleric's
+ *  combat Light-spell radius — so the relic lights a generous pool. */
+function lightArrowRange(weapon: Item): number {
+  const lr = (weapon as { light_range?: number }).light_range;
+  return typeof lr === "number" && lr > 0 ? lr : 5;
+}
+
 export class CombatScene extends Phaser.Scene {
   private combat!: Combat;
   private fromWorld = false;
@@ -1508,6 +1546,105 @@ export class CombatScene extends Phaser.Scene {
     this.applyFireDamageOnEntry(col, row);
     // Light pool needs to re-pool now that this source exists.
     this.refreshDarkness();
+  }
+
+  /**
+   * Drop a persistent, damage-free light pool on a cell — the
+   * "magical light" counterpart to {@link igniteCell}. Pushes a
+   * LightSource, mounts a fairy particle emitter on the tile, and
+   * re-pools the darkness overlay so the cell (and its radius) light
+   * up. Unlike fire there's no `fireCells` entry, no damage tick, and
+   * no per-turn bookkeeping — magical light hurts nothing.
+   *
+   * Used by the Cleric's combat Light spell AND by light-themed
+   * ranged weapons (Dawnlight Bow) that cast Light wherever the arrow
+   * lands. `tag` disambiguates the emitter key so two lights on the
+   * same cell (or a light on a cell with an authored animation) don't
+   * clobber each other — refreshDarkness only reads the first two
+   * comma-separated tokens, so the trailing tag is free-form.
+   */
+  private lightCell(
+    col: number,
+    row: number,
+    lightRange: number,
+    tag = "light",
+  ): void {
+    this.staticLights.push({ col, row, radius: lightRange });
+    if (!this.textures.exists("__particle")) {
+      const g = this.add.graphics();
+      g.fillStyle(0xffffff, 1);
+      g.fillCircle(8, 8, 8);
+      g.generateTexture("__particle", 16, 16);
+      g.destroy();
+    }
+    const ex = ARENA_X + col * TILE + TILE / 2;
+    const ey = ARENA_Y + row * TILE + TILE / 2;
+    const cfg = ANIMATION_CONFIGS.fairy;
+    const emitter = this.add.particles(
+      ex,
+      ey,
+      "__particle",
+      cfg as unknown as Phaser.Types.GameObjects.Particles.ParticleEmitterConfig,
+    );
+    emitter.setDepth(160);
+    this.arenaEmitters.set(
+      `${col},${row},${tag}_${this.staticLights.length}`,
+      emitter,
+    );
+    this.refreshDarkness();
+  }
+
+  /**
+   * Themed on-hit burst for a MELEE relic weapon, keyed off the
+   * attacker's `weaponDamageType` (Sun Sword → fire, Rimefang Dagger →
+   * ice, Meteorfall Mace → meteor). Ranged weapons don't route here —
+   * their elemental payload plays on the shot (see resolveTarget /
+   * fireDirectionalRange), so the caller gates on `!weaponRanged`.
+   * Physical / untyped weapons get no extra burst (the normal hit
+   * flash from `animateHit` still plays). Best-effort visual only;
+   * never throws into the turn flow.
+   */
+  private playMeleeWeaponBurst(
+    damageType: string,
+    pos: { col: number; row: number },
+  ): void {
+    const dt = (damageType ?? "").toLowerCase();
+    // Anchor to the TILE centre, not the target's body sprite — a
+    // killing blow removes the sprite as part of the hit/death
+    // animation, so reading `bodies.get(id)` here would either miss
+    // or paint on a ghost. The cell stays put.
+    const at = { x: this.tileX(pos.col), y: this.tileY(pos.row) };
+    switch (dt) {
+      case "fire":
+        void radialBurst(this, at, VFX_COLOURS.fire, VFX_COLOURS.ember, 44);
+        Sfx.play("explosion");
+        break;
+      case "ice":
+      case "frost":
+        // Icy shards — cool blue scatter with a white core.
+        void radialBurst(this, at, VFX_COLOURS.lightning, VFX_COLOURS.white, 40);
+        Sfx.play("chirp");
+        break;
+      case "meteor": {
+        // Call a small meteor down onto the struck tile — reuses the
+        // Starfall Sling's falling-star visual so the mace's "fallen
+        // star" flavour reads at the point of impact.
+        const fx = resolveProjectileEffect({ effect_type: "meteor_strike" });
+        void fx(this, at, at);
+        Sfx.play("explosion");
+        break;
+      }
+      case "lightning":
+        void radialBurst(this, at, VFX_COLOURS.lightning, VFX_COLOURS.white, 40);
+        Sfx.play("explosion");
+        break;
+      case "arcane":
+        void radialBurst(this, at, VFX_COLOURS.arcane, VFX_COLOURS.white, 40);
+        Sfx.play("chirp");
+        break;
+      default:
+        break;
+    }
   }
 
   /**
@@ -3662,23 +3799,73 @@ export class CombatScene extends Phaser.Scene {
         const ignites = !!ammoDef?.ignite;
         const result = resolveThrow(me, target, action.weapon, defaultRng);
         const ammoLabel = ammoDef?.name ?? action.weapon.name;
+        // Damage-type + bonus breakdown, mirroring the melee log line
+        // so an elemental ranged weapon (Stormbolt Crossbow's
+        // lightning, etc.) reads its magic damage at a glance.
+        const rType = result.damageType;
+        const rTypeSuffix = rType && rType !== "physical" ? ` (${rType})` : "";
+        const rBonus = result.bonusDamage ?? 0;
+        const rBreakdown =
+          rBonus > 0
+            ? ` — ${result.damage} dmg${rTypeSuffix} [${result.damage - rBonus}+${rBonus} bonus]`
+            : ` — ${result.damage} dmg${rTypeSuffix}`;
         this.combat.log.push(
           result.hit
-            ? `${me.name} fires ${ammoLabel} at ${target.name} (d20:${result.roll}=${result.total} vs AC${target.ac}) — ${result.damage} dmg${result.killed ? ", defeated!" : "."}`
+            ? `${me.name} fires ${ammoLabel} at ${target.name} (d20:${result.roll}=${result.total} vs AC${target.ac})${rBreakdown}${result.killed ? ", defeated!" : "."}`
             : `${me.name} fires ${ammoLabel} at ${target.name} — miss.`
         );
-        // Bow / crossbow / sling whistle and projectile streak. Fire
-        // arrows get an orange/red trail (VFX_COLOURS.ember) — same
-        // palette the existing thrown-torch path uses, so the two
-        // feedback families read as cousins.
+        // Elemental projectile visual for a relic ranged weapon.
+        // Resolution priority:
+        //   1. An explicit `animation_id` on the weapon (authored
+        //      override) — its `visual` key wins when present.
+        //   2. The weapon's `damage_type`, mapped to a themed visual.
+        //      This is the DURABLE path: the item editor doesn't carry
+        //      `animation_id` (it round-trips to null on save), but it
+        //      DOES preserve `damage_type`, so a lightning crossbow
+        //      stays lightning-themed even after a re-save.
+        // Fire-arrow shots keep their ember trail + ignite path so the
+        // two visuals don't fight over the projectile.
+        await loadAnimations();
+        const weaponAnim = getAnimationById(action.weapon.animation_id);
+        const animVisual = (weaponAnim?.visual ?? "").trim();
+        const elemental = elementalShotFx(
+          (action.weapon.damage_type ?? "").toLowerCase(),
+        );
+        const shotVisual =
+          animVisual !== "" && animVisual !== "none"
+            ? animVisual
+            : elemental?.visual ?? "";
+        const hasShotVisual = !ignites && shotVisual !== "";
+        const impactColor = elemental?.color ?? VFX_COLOURS.lightning;
+        const impactSfx = weaponAnim?.hit_sfx ?? elemental?.sfx ?? "";
         Sfx.play("arrow");
         await this.animateBump(me, me.position, target.position);
-        await this.flyProjectile(
-          me,
-          target,
-          ignites ? VFX_COLOURS.ember : VFX_COLOURS.white,
-        );
+        if (hasShotVisual) {
+          const fx = resolveProjectileEffect({ effect_type: shotVisual });
+          await fx(this, this.bodyXY(me), this.bodyXY(target));
+        } else {
+          await this.flyProjectile(
+            me,
+            target,
+            ignites ? VFX_COLOURS.ember : VFX_COLOURS.white,
+          );
+        }
         await this.animateHit(target, result);
+        // Themed impact: elemental crackle SFX + a tinted burst on the
+        // target so the magic shot lands with a visible punch.
+        if (hasShotVisual && result.hit) {
+          if (impactSfx) Sfx.play(impactSfx);
+          const tb = this.bodies.get(target.id);
+          if (tb) {
+            radialBurst(
+              this,
+              { x: tb.x, y: tb.y },
+              impactColor,
+              VFX_COLOURS.white,
+              36,
+            ).catch(() => undefined);
+          }
+        }
         this.refreshHp(target);
         // Fire arrows ALWAYS ignite the target's tile — even on a
         // miss the burning shaft strikes the ground there and
@@ -3719,6 +3906,26 @@ export class CombatScene extends Phaser.Scene {
             result.hit
               ? `${ammoLabel} ignites ${target.name}'s tile — fire spreads!`
               : `${ammoLabel} thuds into the ground near ${target.name} and the tile bursts into flame.`,
+          );
+        }
+        // Light-arrow utility (precision shot): a light-themed bow
+        // casts a Magic-Light pool on the struck cell — hit or miss,
+        // wherever the shaft lands. Mirrors the directional branch.
+        if ((action.weapon.damage_type ?? "") === "light") {
+          this.lightCell(
+            target.position.col,
+            target.position.row,
+            lightArrowRange(action.weapon),
+            `light_arrow_${me.id}`,
+          );
+          const tb = this.bodies.get(target.id);
+          if (tb) {
+            glowAura(this, { x: tb.x, y: tb.y }, VFX_COLOURS.buff).catch(
+              () => undefined,
+            );
+          }
+          this.combat.log.push(
+            `${action.weapon.name}'s light blooms over (${target.position.col}, ${target.position.row}).`,
           );
         }
         if (result.hit) {
@@ -4439,17 +4646,35 @@ export class CombatScene extends Phaser.Scene {
         x: this.tileX(trace.endCol),
         y: this.tileY(trace.endRow),
       };
-      // Bow / crossbow / sling whistle and projectile streak — same
-      // VFX as the target-range path so the two firing modes feel
-      // like cousins, not strangers. Fire arrows get the ember
-      // palette so the trail reads as a burning shaft.
-      await projectileLine(
-        this,
-        start,
-        endPx,
-        ignites ? VFX_COLOURS.ember : VFX_COLOURS.white,
-        220,
+      // Elemental relic visual on the directional shot — same
+      // resolution as the precision branch: a weapon's `animation_id`
+      // override wins, else its `damage_type` maps to a themed visual
+      // (Starfall Sling's "meteor" → falling-star meteor strike). Fire
+      // arrows keep their ember streak + ignite path. Plain weapons
+      // fall back to the white projectile streak.
+      await loadAnimations();
+      const dirWeaponAnim = getAnimationById(weapon.animation_id);
+      const dirAnimVisual = (dirWeaponAnim?.visual ?? "").trim();
+      const dirElemental = elementalShotFx(
+        (weapon.damage_type ?? "").toLowerCase(),
       );
+      const dirShotVisual =
+        dirAnimVisual !== "" && dirAnimVisual !== "none"
+          ? dirAnimVisual
+          : dirElemental?.visual ?? "";
+      const dirHasShotVisual = !ignites && dirShotVisual !== "";
+      if (dirHasShotVisual) {
+        const fx = resolveProjectileEffect({ effect_type: dirShotVisual });
+        await fx(this, start, endPx);
+      } else {
+        await projectileLine(
+          this,
+          start,
+          endPx,
+          ignites ? VFX_COLOURS.ember : VFX_COLOURS.white,
+          220,
+        );
+      }
 
       if (trace.hitId) {
         const target = this.combat.byId(trace.hitId);
@@ -4457,12 +4682,35 @@ export class CombatScene extends Phaser.Scene {
         const friendly = target.side === me.side;
         const tag = friendly ? " — FRIENDLY FIRE!" : "";
         const ammoLabel = ammoDef?.name ?? weapon.name;
+        // Damage-type + bonus breakdown, matching the precision branch.
+        const rType = result.damageType;
+        const rTypeSuffix = rType && rType !== "physical" ? ` (${rType})` : "";
+        const rBonus = result.bonusDamage ?? 0;
+        const rBreakdown =
+          rBonus > 0
+            ? `${result.damage} dmg${rTypeSuffix} [${result.damage - rBonus}+${rBonus} bonus]`
+            : `${result.damage} dmg${rTypeSuffix}`;
         this.combat.log.push(
           result.hit
-            ? `${me.name} looses ${ammoLabel} → ${target.name} (${dir.toUpperCase()})${tag} — ${result.damage} dmg${result.killed ? ", defeated!" : "."}`
+            ? `${me.name} looses ${ammoLabel} → ${target.name} (${dir.toUpperCase()})${tag} — ${rBreakdown}${result.killed ? ", defeated!" : "."}`
             : `${me.name} looses ${ammoLabel} → ${target.name} (${dir.toUpperCase()}) — miss.`,
         );
         await this.animateHit(target, result);
+        // Elemental impact: themed crackle/boom SFX + tinted burst.
+        if (dirHasShotVisual && result.hit) {
+          const impactSfx = dirWeaponAnim?.hit_sfx ?? dirElemental?.sfx ?? "";
+          if (impactSfx) Sfx.play(impactSfx);
+          const tb = this.bodies.get(target.id);
+          if (tb) {
+            radialBurst(
+              this,
+              { x: tb.x, y: tb.y },
+              dirElemental?.color ?? VFX_COLOURS.fire,
+              VFX_COLOURS.white,
+              36,
+            ).catch(() => undefined);
+          }
+        }
         this.refreshHp(target);
         // Fire arrows ignite the target's cell regardless of the
         // d20 outcome — see the precision branch above for the
@@ -4527,6 +4775,24 @@ export class CombatScene extends Phaser.Scene {
             `${me.name}'s ${weapon.name} flies ${dir.toUpperCase()} — nothing in line.`,
           );
         }
+      }
+      // Light-arrow utility: a light-themed bow (Dawnlight Bow) casts
+      // a Magic-Light pool wherever the shaft lands — the cell at the
+      // end of its flight (the struck creature's tile on a hit, or the
+      // max-range / obstruction cell on a miss). Hit OR miss the tile
+      // lights up, so a player can fire one down a dark corridor to
+      // see what's there. Mirrors the fire-arrow ignite pattern, but
+      // light instead of flame (no damage).
+      if ((weapon.damage_type ?? "") === "light") {
+        this.lightCell(trace.endCol, trace.endRow, lightArrowRange(weapon), `light_arrow_${me.id}`);
+        glowAura(
+          this,
+          { x: this.tileX(trace.endCol), y: this.tileY(trace.endRow) },
+          VFX_COLOURS.buff,
+        ).catch(() => undefined);
+        this.combat.log.push(
+          `${weapon.name}'s light blooms over (${trace.endCol}, ${trace.endRow}).`,
+        );
       }
       // Same end-of-turn behaviour as throw/cast/target-range: the
       // shot consumes the rest of the turn.
@@ -4624,39 +4890,7 @@ export class CombatScene extends Phaser.Scene {
             ? ev.radius
             : 5;
         const { col, row } = this.tileCursorPos;
-        this.staticLights.push({ col, row, radius: lightRange });
-        // Lazy __particle source — same idempotent guard the other
-        // emitter-spawning paths (igniteCell, drawArena) use.
-        if (!this.textures.exists("__particle")) {
-          const g = this.add.graphics();
-          g.fillStyle(0xffffff, 1);
-          g.fillCircle(8, 8, 8);
-          g.generateTexture("__particle", 16, 16);
-          g.destroy();
-        }
-        const ex = ARENA_X + col * TILE + TILE / 2;
-        const ey = ARENA_Y + row * TILE + TILE / 2;
-        const cfg = ANIMATION_CONFIGS.fairy;
-        const emitter = this.add.particles(
-          ex,
-          ey,
-          "__particle",
-          cfg as unknown as Phaser.Types.GameObjects.Particles.ParticleEmitterConfig,
-        );
-        emitter.setDepth(160);
-        // Unique key so a Light dropped on a cell that already
-        // carries an authored animation (rare but possible — e.g.
-        // an arena painted with a torch) doesn't overwrite the
-        // existing arenaEmitters entry. refreshDarkness's
-        // visibility-gating pass reads the FIRST TWO comma-
-        // separated tokens via `key.split(",")` + destructure;
-        // `Number()` only consumes those two, so the third token
-        // is a free-form disambiguator.
-        this.arenaEmitters.set(
-          `${col},${row},magic_light_${me.id}_${this.staticLights.length}`,
-          emitter,
-        );
-        this.refreshDarkness();
+        this.lightCell(col, row, lightRange, `magic_light_${me.id}`);
         this.combat.log.push(
           `${me.name} casts ${spell.name} on (${col}, ${row}) — a divine glow illuminates the area (${lightRange}-tile light).`,
         );
@@ -5068,7 +5302,19 @@ export class CombatScene extends Phaser.Scene {
         this.applyFireDamageOnEntry(result.to.col, result.to.row);
       } else if (result.kind === "attacked") {
         const target = this.combat.byId(result.result.targetId);
+        const struckCell = { ...target.position };
         await this.animateBump(actor, before, target.position);
+        // Themed melee relic burst fires AT the impact moment — right
+        // after the lunge, concurrently with the hit/death animation —
+        // so the fire / ice / meteor detonation reads on contact rather
+        // than after the corpse has faded. Anchored to the struck cell
+        // (not the body sprite), so it still plays on a killing blow.
+        // Ranged weapons swung as a melee bump don't show it (their
+        // elemental effect belongs to the shot), matching the bonus-
+        // damage gate.
+        if (result.result.hit && !actor.weaponRanged) {
+          this.playMeleeWeaponBurst(actor.weaponDamageType ?? "", struckCell);
+        }
         await this.animateHit(target, result.result);
         this.refreshHp(target);
         if (result.result.hit) {

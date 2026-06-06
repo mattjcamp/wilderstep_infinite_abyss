@@ -27,6 +27,7 @@
 import type Phaser from "phaser";
 import {
   lightningZigzag,
+  meteorStrike,
   magicDart,
   magicArrow,
   projectileLine,
@@ -136,6 +137,18 @@ function seedDefaults(): void {
   // bolt v1 already had — same visual, now data-driven.
   registerProjectileEffect("lightning_bolt", (scene, from, to, cfg) =>
     lightningZigzag(scene, from, to, cfg?.segments ?? 6),
+  );
+
+  // Falling star — descends from above the target into a fiery burst.
+  // Used by `damage_type: "meteor"` ranged weapons (Starfall Sling).
+  registerProjectileEffect("meteor_strike", (scene, from, to, cfg) =>
+    meteorStrike(
+      scene,
+      from,
+      to,
+      cfg?.color ?? VFX_COLOURS.fire,
+      cfg?.durationMs ?? 360,
+    ),
   );
 
   // Fast arcane orb with sparkle trail + bright impact pop. Pre-rename

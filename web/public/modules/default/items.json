@@ -389,7 +389,7 @@
       "id": "stormbolt_crossbow",
       "category": "weapons",
       "name": "Stormbolt Crossbow",
-      "animation_id": null,
+      "animation_id": "lightning_strike",
       "description": "A relic crossbow strung with a filament of captured lightning. Its bolts crackle and arc into whatever they strike.",
       "icon": "bow",
       "item_type": "crossbow",
@@ -443,9 +443,9 @@
     {
       "id": "galewind_bow",
       "category": "weapons",
-      "name": "Galewind Bow",
+      "name": "Dawnlight Bow",
       "animation_id": null,
-      "description": "A silver relic bow light enough for any short-bow hand to draw. Its arrows ride a screaming gale that drives them deep.",
+      "description": "A silver relic bow light enough for any short-bow hand to draw. Each arrow blazes with captured daylight, and wherever it strikes a pool of radiance blooms — lighting even the deepest dark.",
       "icon": "bow",
       "item_type": "short_bow",
       "power": 16,
@@ -459,12 +459,13 @@
       ],
       "ac_bonus": 0,
       "bonus_damage": "1d6",
-      "damage_type": "wind",
+      "damage_type": "light",
+      "light_range": 5,
       "durability": 0,
       "party_can_equip": false,
       "character_can_equip": true,
       "combat_aura": {
-        "color": 10479816
+        "color": 16770186
       },
       "buy": 0,
       "sell": 0
@@ -472,9 +473,9 @@
     {
       "id": "viperscale_sling",
       "category": "weapons",
-      "name": "Viperscale Sling",
-      "animation_id": null,
-      "description": "A relic sling braided from the scales of an ancient serpent. The stones it hurls drip with virulent venom.",
+      "name": "Starfall Sling",
+      "animation_id": "meteor_strike",
+      "description": "A relic sling whose every stone blazes into a falling star. What it looses streaks down from the heavens to strike with cosmic fire.",
       "icon": "bow",
       "item_type": "sling",
       "power": 16,
@@ -488,12 +489,12 @@
       ],
       "ac_bonus": 0,
       "bonus_damage": "1d6",
-      "damage_type": "poison",
+      "damage_type": "meteor",
       "durability": 0,
       "party_can_equip": false,
       "character_can_equip": true,
       "combat_aura": {
-        "color": 8969557
+        "color": 16739133
       },
       "buy": 0,
       "sell": 0
@@ -749,18 +750,6 @@
       "sell": 7
     },
     {
-      "id": "bronze_key",
-      "category": "general",
-      "name": "Bronze Key",
-      "animation_id": null,
-      "description": "A tarnished bronze key with intricate gnomish gearwork. One of the 8 Keys of Shadow.",
-      "icon": "key",
-      "item_type": "quest_item",
-      "quest_item": true,
-      "party_can_equip": false,
-      "character_can_equip": false
-    },
-    {
       "id": "camping_supplies",
       "category": "general",
       "name": "Camping Supplies",
@@ -900,18 +889,6 @@
       "sell": 4
     },
     {
-      "id": "gold_key",
-      "category": "general",
-      "name": "Gold Key",
-      "animation_id": null,
-      "description": "A solid gold key shaped like a miniature war hammer. One of the 8 Keys of Shadow.",
-      "icon": "key",
-      "item_type": "quest_item",
-      "quest_item": true,
-      "party_can_equip": false,
-      "character_can_equip": false
-    },
-    {
       "id": "healing_herb",
       "category": "general",
       "name": "Healing Herb",
@@ -1021,12 +998,18 @@
       "icon": "potion",
       "item_type": "potion",
       "power": 10,
+      "ranged": false,
+      "throwable": false,
+      "slots": null,
+      "durability": null,
+      "party_can_equip": false,
+      "character_can_equip": false,
+      "buy": 40,
+      "sell": 20,
       "usable": true,
       "effect": "heal_mp",
       "stackable": true,
-      "charges": 1,
-      "party_can_equip": false,
-      "character_can_equip": false
+      "charges": 1
     },
     {
       "id": "moonpetal",
@@ -1103,18 +1086,6 @@
       "character_can_equip": false
     },
     {
-      "id": "ruby_key",
-      "category": "general",
-      "name": "Ruby Key",
-      "animation_id": null,
-      "description": "A blood-red key that pulses with warmth. One of the 8 Keys of Shadow.",
-      "icon": "key",
-      "item_type": "quest_item",
-      "quest_item": true,
-      "party_can_equip": false,
-      "character_can_equip": false
-    },
-    {
       "id": "scroll_of_fire",
       "category": "general",
       "name": "Scroll of Fire",
@@ -1158,11 +1129,18 @@
       "name": "Silver Key",
       "animation_id": null,
       "description": "A gleaming silver key inscribed with arcane formulae. One of the 8 Keys of Shadow.",
-      "icon": "key",
+      "icon": "key_silver",
       "item_type": "quest_item",
-      "quest_item": true,
+      "power": null,
+      "ranged": false,
+      "throwable": false,
+      "slots": null,
+      "durability": null,
       "party_can_equip": false,
-      "character_can_equip": false
+      "character_can_equip": false,
+      "buy": null,
+      "sell": null,
+      "quest_item": true
     },
     {
       "id": "smoke_bomb",
