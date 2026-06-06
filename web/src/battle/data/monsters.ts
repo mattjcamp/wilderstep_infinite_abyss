@@ -39,6 +39,10 @@ export interface MonsterSpec {
   move_range: number;
   undead?: boolean;
   humanoid?: boolean;
+  /** Organizational tag for assembling themed maps — one of
+   *  undead / devil / elemental / humanoid / cryptid / magical.
+   *  Purely for authoring/filtering; the combat engine ignores it. */
+  theme?: string;
   xp_reward?: number;
   gold_min?: number;
   gold_max?: number;
@@ -168,6 +172,7 @@ interface RawMonster {
   move_range?: number;
   undead?: boolean;
   humanoid?: boolean;
+  theme?: string;
   xp_reward?: number;
   gold_min?: number;
   gold_max?: number;

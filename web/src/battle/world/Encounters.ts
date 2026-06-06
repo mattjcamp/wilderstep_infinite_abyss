@@ -32,6 +32,10 @@ export interface EncounterTemplate {
   id: string;
   /** Area bucket — "dungeon" / "overworld" / "house_basement". */
   area: string;
+  /** Organizational theme (undead/devil/elemental/humanoid/cryptid/
+   *  magical), derived from the encounter's monsters. Authoring aid for
+   *  building themed maps; gameplay ignores it. JSON key: `theme`. */
+  theme?: string;
   name: string;
   /** 1..8, used by area / difficulty filters. */
   level: number;
@@ -63,6 +67,7 @@ export interface EncounterTemplate {
 export interface RawEncounter {
   id?: string;
   area?: string;
+  theme?: string;
   name?: string;
   level?: number;
   weight?: number;

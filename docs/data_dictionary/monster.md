@@ -31,6 +31,7 @@ The "Used?" column reflects the v2 TypeScript implementation under `web/`. The c
 | `name` | string | yes | Display name; the cross-reference key used by [Encounter](encounter.md) and [Spawn](spawn.md) rosters | TBD |
 | `undead` | bool | yes | Marks creature as undead; consumed by Turn Undead | TBD |
 | `humanoid` | bool | yes | Marks creature as humanoid (forwarded to Combatant; gates Charm in design intent) | TBD |
+| `theme` | string | no | Organizational tag for assembling themed maps — one of `"undead"`, `"devil"`, `"elemental"`, `"humanoid"`, `"cryptid"`, `"magical"`. A single primary theme per monster (a Vampire is `undead` even though it's also humanoid). Authoring / filtering aid only; the combat engine ignores it. [Encounter](encounter.md) records derive their own `theme` from the dominant theme of their monsters. | TBD |
 | `hp` | int | yes | Max hit points at spawn | TBD |
 | `ac` | int | yes | Armor class (attack roll target) | TBD |
 | `attack_bonus` | int | yes | Bonus added to melee attack rolls | TBD |

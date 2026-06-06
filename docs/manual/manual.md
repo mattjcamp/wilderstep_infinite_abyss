@@ -4,9 +4,7 @@
   <img src="assets/cover_art_transparent.png" alt="A party of adventurers — wizard, dwarf, ranger, and young archer — on the shore beneath a distant keep" width="720">
 </p>
 
-_Generated 2026-05-24 from the default module's data._
-
-This manual is a quick reference for everything you can pick, equip, learn, brew, or fight. The first section, **Getting Started**, walks you through how to play; the sections after it are reference tables that let you compare options at a glance — items are grouped by type and sorted by power so the strongest one in each category is at the top.
+Wilderstep Infinite Abyss is a turn-based RPG. You assemble a party of adventurers, explore an open world one tile at a time, talk to its people, take on quests, and descend into dungeons full of danger and treasure. This player's manual covers the basic mechanics of the game: races, classes, spells, items, and monsters. The manual is not meant to be comprehensive; Wilderstep is an evolving RPG platform and players will soon be able to craft adventures of their own.
 
 ---
 
@@ -29,9 +27,7 @@ This manual is a quick reference for everything you can pick, equip, learn, brew
 
 ## Getting Started
 
-Wilderstep Infinite Abyss is a turn-based RPG. You assemble a party of adventurers, explore an open world one tile at a time, talk to its people, take on quests, and descend into dungeons full of danger and treasure. This section covers the basics; the reference tables later in the manual fill in the details on every race, class, spell, item, and monster you'll meet.
-
-Your progress is saved automatically as you play, so you can step away and pick up where you left off.
+Wilderstep has three main components: party creation, world exploration, and turn-based combat. 
 
 ### Choosing Your Party
 
@@ -45,7 +41,15 @@ When your party is ready, choose **Begin** to enter the world. A good first part
 
 ### Navigating the Map
 
-You explore the world on a grid, moving **one tile per step**.
+Once you begin the game, you will see an icon appear that represents your adventuring party. This icon will be placed on a map that looks something like this:
+
+<p align="center">
+  <img src="assets/overview_map.png" alt="A map with fog of war and a party of adventurers" width="720">
+</p>
+
+You will see trees, mountains and points of interest like towns depicted on the map. The white "cloud cover" hides areas of the map that you have not explored. At the bottom of the screen you will see a readout that displays the day and time and the moon phase. The map will get dark at night.
+
+You explore the world on a grid, moving **one tile per step** using the controls below.
 
 | Key | Action |
 |---|---|
@@ -58,13 +62,11 @@ You explore the world on a grid, moving **one tile per step**.
 
 Almost everything in the world is reached by **walking into it**. Step into a townsperson to talk, into a shop counter to browse its wares, into a locked door to try the lock, and into a quest giver to hear what they need. The same step-to-interact rule covers it all.
 
-The world keeps moving even when you don't: townsfolk wander a little each turn. If someone drifts into a doorway and blocks your only way out, you have two ways past them. Press `Space` to **wait** — a turn passes without you moving, and they'll usually amble off on their own. Or walk into them to start a conversation and choose **Ask to Move**, and they'll politely step aside so you can pass.
+Light matters once you leave open daylight. The party carries a light radius that brightens nearby tiles; a lit **Torch** or the **Light** spell extends it, and a Dwarf's Infravision lets that character see in pure darkness without one but only in shades of red. Effects that last for a number of steps — light included — tick down as you move, so keep an eye on the Effects panel of the Party screen (`P`). If a party member can **Detect Traps** (any Thief, or a Ranger from level 3), hidden traps within your light radius show up as red marks before you blunder onto them.
 
-Light matters once you leave open daylight. The party carries a light radius that brightens nearby tiles; a lit **Torch** or the **Light** spell extends it, and a Dwarf's Infravision lets that character see in pure darkness without one. Effects that last for a number of steps — light included — tick down as you move, so keep an eye on the Effects panel of the Party screen (`P`). If a party member can **Detect Traps** (any Thief, or a Ranger from level 3), hidden traps within your light radius show up as red marks before you blunder onto them.
+A few other things you'll find out in the world: step onto a boat to sail across water, and onto land to disembark — and unattended shop counters and temples let you trade or buy healing without an NPC to broker it.
 
-A few other things you'll find out in the world: boats stay where you leave them — step onto one to sail across water, and onto land to disembark — and unattended shop counters and temples let you trade or buy healing without an NPC to broker it.
-
-### The Combat Arena
+### Turn-Based Combat
 
 When the party meets a hostile creature, the game switches to a dedicated **battle screen**: a turn-based arena where your party lines up on one side and the enemies on the other. Turns proceed in order, and your party acts in the order you arranged on the formation screen — your lead goes first.
 
@@ -91,7 +93,7 @@ Controls in the arena:
 | `Space` | End your turn |
 | `Esc` | Cancel the current sub-mode (e.g. back out of the target picker) |
 
-#### Darkness in Combat
+### Darkness in Combat
 
 Your character can only target monsters that he can see, so when fighting in the dark it helps to throw a torch or to cast a light spell.
 
@@ -109,19 +111,25 @@ Dungeons are the deep, dangerous heart of the game. Step onto a dungeon entrance
 
 Down here you'll find monster **lairs** and waiting **encounters**. Engaging one drops you into the combat arena; importantly, a lair you clear and a placed encounter you defeat are **gone for good** — neither respawns — so every fight you win makes the dungeon a little safer to backtrack through. Watch for traps, pick or unlock the doors barring your way, and gather the treasure the depths are hiding. When you've had your fill (or found what you came for), make your way back to the entrance to return to the surface.
 
+### Game Saves
+
+Your progress is saved automatically as you play, so you can step away and pick up where you left off. Save games depend on your browser's local storage, which means that saved games will be lost if you reset your browser.
+
 ---
 
 ## Races
 
-Each race grants a set of innate abilities and applies stat modifiers when a character of that race is rolled. Lower `Exp / Lvl` means the race levels up faster; higher means slower.
+Each race grants a set of innate abilities and applies stat modifiers when a character of that race is rolled.
 
-| Race | Description | STR | DEX | CON | INT | WIS | Exp / Lvl | Abilities |
-|---|---|---:|---:|---:|---:|---:|---:|---|
-| **Dwarf** | Stout and hardy, dwarves are natural miners and warriors with keen underground senses. | +2 | -1 | +2 | 0 | +1 |  | Infravision |
-| **Elf** | Graceful and keen-minded, elves have a natural affinity for magic and sharp senses. | -1 | +1 | -1 | +2 | 0 |  | Nimble |
-| **Gnome** | Clever and curious, gnomes combine a knack for tinkering with innate magical talent. | -1 | 0 | 0 | +2 | +1 |  | Tinker |
-| **Halfling** | Small and nimble, halflings are surprisingly resilient and hard to hit. | -2 | +2 | 0 | 0 | +1 |  | Pickpocket |
-| **Human** | Versatile and adaptable, humans excel in no single area but have no weaknesses. They learn quickly and level up faster than other races. | 0 | 0 | 0 | 0 | 0 | 1125 | Fast Learner |
+Most races level up at the same rate. The exception is the **Fast Learner** ability (Humans): a character with it levels up about **25% faster** than everyone else. See [Experience & Leveling](#experience--leveling) under Character Classes for how leveling works.
+
+| Race | Description | STR | DEX | CON | INT | WIS | Abilities |
+|---|---|---:|---:|---:|---:|---:|---|
+| **Dwarf** | Stout and hardy, dwarves are natural miners and warriors with keen underground senses. | +2 | -1 | +2 | 0 | +1 | Infravision |
+| **Elf** | Graceful and keen-minded, elves have a natural affinity for magic and sharp senses. | -1 | +1 | -1 | +2 | 0 | Nimble |
+| **Gnome** | Clever and curious, gnomes combine a knack for tinkering with innate magical talent. | -1 | 0 | 0 | +2 | +1 | Tinker |
+| **Halfling** | Small and nimble, halflings are surprisingly resilient and hard to hit. | -2 | +2 | 0 | 0 | +1 | Pickpocket |
+| **Human** | Versatile and adaptable, humans excel in no single area but have no weaknesses. They learn quickly and level up faster than other races. | 0 | 0 | 0 | 0 | 0 | Fast Learner |
 
 ## Character Classes
 
@@ -137,6 +145,45 @@ Class determines combat role, movement range per turn, which weapons and armor t
 | **Ranger** | 4 | priest | fists, dagger, club, sword, sling, short_bow, long_bow, crossbow, cloth, leather | Pick Locks (L5)<br/>Craft Arrows (L2)<br/>Craft Fire Arrows (L5) |
 | **Thief** | 6 | none | fists, dagger, club, sling, short_bow, cloth, leather | Pick Locks (L1)<br/>Detect Traps (L1)<br/>Backstab (L3)<br/>Shadow Step (L7) |
 | **Wizard** | 2 | sorcerer | fists, dagger, club, cloth | — |
+
+### Experience & Leveling
+
+Characters earn **experience (XP)** by defeating monsters and by completing quests. Every party member who is still standing shares in the reward — each one receives the *full* amount, not a split — and a member who has fallen earns nothing until revived. XP from quests now counts toward leveling immediately, the same as XP from battle.
+
+**Each level costs more than the last.** The cost of advancing from one level to the next is a base of **1,500 experience** multiplied by your *current* level:
+
+- Level 1 → 2 costs 1,500
+- Level 2 → 3 costs 3,000
+- Level 3 → 4 costs 4,500, and so on.
+
+So the total XP to reach level *N* is `1,500 × N × (N − 1) ÷ 2`. A character with the **Fast Learner** ability (Humans) levels up about **25% faster** — their base is 1,125 instead of 1,500, making every one of those steps cheaper across a whole campaign.
+
+**Leveling up makes a character stronger.** Every new level adds:
+
+- **Hit points** = the class's HP-per-level **plus the character's Constitution modifier** (a high-CON hero gains a little more; the total is never less than +1).
+- **Magic points** (spellcasters only) = the class's MP-per-level **plus the character's casting-stat modifier**. Priest casters use Wisdom, sorcerer casters use Intelligence, and the Druid uses the average of the two. Non-casters gain no MP.
+
+These ability modifiers are not a one-time bonus — they apply on **every** level-up, so a high casting stat compounds. A Cleric with Wisdom 16 (a +3 modifier) gains 6 + 3 = **9** MP each level, while one with Wisdom 10 (+0) gains only the base **6**; the same Constitution math rewards a tough fighter with extra HP at every level. This is the payoff for rolling a high primary attribute.
+
+A wounded character is partially healed by the HP and MP a level-up grants.
+
+The per-level amounts are set by class — durable martial classes gain the most HP, while dedicated casters gain the most MP. The numbers below are added *before* the ability-score modifier described above:
+
+<!-- BEGIN GENERATED: leveling-table — run `python3 docs/manual/build_class_gallery.py` to refresh -->
+
+| Class | HP / level (base) | MP / level (base) | Casting stat |
+|---|---:|---:|---|
+| **Alchemist** | 4 | 4 | Intelligence |
+| **Cleric** | 6 | 6 | Wisdom |
+| **Druid** | 6 | 6 | Int & Wis (avg) |
+| **Fighter** | 8 | — | — |
+| **Paladin** | 8 | 4 | Wisdom |
+| **Ranger** | 6 | 2 | Wisdom |
+| **Thief** | 6 | — | — |
+| **Wizard** | 4 | 8 | Intelligence |
+<!-- END GENERATED: leveling-table -->
+
+So MP growth is **not** the same for every caster: a **Wizard** gains the most (8 per level), a **Cleric** and a **Druid** gain 6, a **Paladin** or **Alchemist** gain 4, and a **Ranger** gains 2. A Druid therefore gains less MP per level than a Wizard, but the same as a Cleric. Fighters and Thieves are non-casters and gain no MP at all.
 
 <!-- BEGIN GENERATED: class-gallery — run `python3 docs/manual/build_class_gallery.py` to refresh -->
 
@@ -497,28 +544,6 @@ Every monster in the game, sorted by difficulty (easy → normal → hard → de
 <!-- END GENERATED: monsters -->
 
 ## Frequently Asked Questions
-
-This section is hand-maintained — edit it freely. It lives outside every
-generated block, so the data-driven builders (the Class Gallery refresher
-and the PDF renderer) never touch it.
-
-### How do I attack an enemy?
-
-Walk into an adjacent enemy to make a melee attack, or pick **Attack** from
-the action menu to strike the first adjacent foe. For ranged weapons choose
-**Range** and pick a target or a direction; for thrown items use **Throw**.
-
-### Why is the Range option greyed out?
-
-A ranged weapon needs matching ammunition in the shared party stash —
-arrows for bows, bolts for crossbows, stones for slings. Ammo carried in a
-single character's personal bag does not count; move it to the party stash.
-Weapons that are their own projectile (a Rock, or a wand) need no ammo.
-
-### Do magic weapons lose durability?
-
-Relic weapons have a durability of 0, which means they are indestructible —
-they never wear out or break, no matter how often you use them.
 
 ### How do I restore HP and MP between fights?
 
