@@ -41,6 +41,17 @@ BEGIN = (
 )
 END = "<!-- END GENERATED: class-gallery -->"
 
+# Second generated block: the HP/MP-per-level table in the
+# "Experience & Leveling" subsection. Driven by each class's
+# `hp_per_level` / `mp_per_level` fields (now authoritative in
+# character_classes.json) so the manual stays in lockstep with the
+# leveling math.
+LEVEL_BEGIN = (
+    "<!-- BEGIN GENERATED: leveling-table — "
+    "run `python3 docs/manual/build_class_gallery.py` to refresh -->"
+)
+LEVEL_END = "<!-- END GENERATED: leveling-table -->"
+
 # Armor item_types in ascending protection order (per the data dictionary).
 ARMOR_TIERS = ["cloth", "leather", "chain", "plate", "exotic"]
 ARMOR_SET = set(ARMOR_TIERS)
@@ -132,6 +143,56 @@ def build_gallery(classes: list[dict], names: dict[str, str]) -> str:
     return "\n".join(out).rstrip() + "\n"
 
 
+def is_caster(casting_type: list[str]) -> bool:
+    return any(c and c != "none" for c in (casting_type or []))
+
+
+def casting_stat_label(casting_type: list[str]) -> str:
+    """The ability score a caster's MP gain keys off — derived from the
+    casting catalog(s) the class draws on. Mirrors the mp_source defaults
+    in battle/world/Classes.ts (priest → Wisdom, sorcerer → Intelligence,
+    both → the average of the two)."""
+    cats = [c for c in (casting_type or []) if c and c != "none"]
+    has_priest = "priest" in cats
+    has_sorc = "sorcerer" in cats
+    if has_priest and has_sorc:
+        return "Int & Wis (avg)"
+    if has_sorc:
+        return "Intelligence"
+    if has_priest:
+        return "Wisdom"
+    return "—"
+
+
+def leveling_table(classes: list[dict]) -> str:
+    """The per-class HP/MP-per-level table. Values come straight from the
+    class data; non-casters show '—' for MP and casting stat."""
+    rows = [
+        "| Class | HP / level (base) | MP / level (base) | Casting stat |",
+        "|---|---:|---:|---|",
+    ]
+    for c in sorted(classes, key=lambda c: c.get("name", c.get("id", ""))):
+        hp = c.get("hp_per_level")
+        mp = c.get("mp_per_level")
+        caster = is_caster(c.get("casting_type"))
+        hp_cell = "" if hp is None else str(hp)
+        mp_cell = (str(mp) if mp is not None else "") if caster else "—"
+        stat = casting_stat_label(c.get("casting_type"))
+        rows.append(
+            f"| **{c.get('name', c['id'])}** | {hp_cell} | {mp_cell} | {stat} |"
+        )
+    return "\n".join(rows)
+
+
+def _replace_block(md: str, begin: str, end: str, content: str) -> str | None:
+    """Swap the text between `begin`/`end` markers for `content`. Returns
+    the new markdown, or None when the markers aren't both present."""
+    if begin in md and end in md:
+        block = f"{begin}\n\n{content}\n{end}"
+        return md[: md.index(begin)] + block + md[md.index(end) + len(end):]
+    return None
+
+
 def main() -> None:
     classes = json.loads(CLASSES_PATH.read_text())["character_classes"]
     names = {
@@ -141,23 +202,35 @@ def main() -> None:
     gallery = build_gallery(classes, names)
 
     md = MANUAL_PATH.read_text()
-    block = f"{BEGIN}\n\n{gallery}\n{END}"
+    new = md
 
-    if BEGIN in md and END in md:
-        pre = md[: md.index(BEGIN)]
-        post = md[md.index(END) + len(END):]
-        new = f"{pre}{block}{post}"
+    # ── Class gallery block ──────────────────────────────────────────
+    replaced = _replace_block(new, BEGIN, END, gallery)
+    if replaced is not None:
+        new = replaced
     else:
         # First run / markers missing: splice the block in just before the
         # "## Abilities" section, which follows the gallery in the manual.
         anchor = "\n## Abilities"
-        if anchor not in md:
+        if anchor not in new:
             raise SystemExit(
                 "Could not find gallery markers or the '## Abilities' anchor "
                 "in manual.md — add the markers manually once."
             )
-        idx = md.index(anchor)
-        new = f"{md[:idx]}\n{block}\n{md[idx + 1:]}"
+        idx = new.index(anchor)
+        block = f"{BEGIN}\n\n{gallery}\n{END}"
+        new = f"{new[:idx]}\n{block}\n{new[idx + 1:]}"
+
+    # ── Leveling (HP/MP per level) table block ───────────────────────
+    replaced = _replace_block(new, LEVEL_BEGIN, LEVEL_END, leveling_table(classes))
+    if replaced is not None:
+        new = replaced
+    else:
+        print(
+            "build-class-gallery: NOTE — leveling-table markers not found; "
+            "skipped that block. Add them once in the Experience & Leveling "
+            "section to enable it."
+        )
 
     if new != md:
         MANUAL_PATH.write_text(new)

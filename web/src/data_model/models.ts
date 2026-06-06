@@ -227,6 +227,9 @@ const DEFS: Record<ModelKey, ModelDef> = {
       { field: "hp", label: "HP", format: asString },
       { field: "ac", label: "AC", format: asString },
       { field: "difficulty", label: "Difficulty" },
+      // Organizational tag (undead/devil/elemental/humanoid/cryptid/
+      // magical) for assembling themed maps. Searchable + sortable.
+      { field: "theme", label: "Theme" },
     ],
   },
   characters: {
@@ -282,6 +285,9 @@ const DEFS: Record<ModelKey, ModelDef> = {
       // "Difficulty" is a friendly proxy for level (sortable by the raw
       // numeric level underneath). Weight stays editable in the form.
       { field: "level", label: "Difficulty", format: levelToDifficulty },
+      // Theme, derived from the encounter's monsters — helps pick
+      // rosters that fit a themed map at a glance.
+      { field: "theme", label: "Theme" },
       {
         field: "tags",
         label: "Tags",
