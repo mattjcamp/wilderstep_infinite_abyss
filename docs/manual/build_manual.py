@@ -1,4 +1,4 @@
-"""Regenerate docs/manuals/players_guide.pdf from players_guide.md.
+"""Regenerate docs/manual/manual.pdf from manual.md.
 
 This is a hand-tailored Markdown → PDF renderer that reproduces the
 1980's-style fantasy-manual aesthetic used in the existing PDF:
@@ -17,7 +17,7 @@ Assets (cover art, class portraits) live in docs/manuals/assets/ and are
 reused from the previous PDF build so future regenerations have access
 to them without re-extracting.
 
-Run:  python3 docs/manuals/build_manual.py
+Run:  python3 docs/manual/build_manual.py
 """
 
 from __future__ import annotations
@@ -52,8 +52,8 @@ from reportlab.platypus import (
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent.parent
-MD_PATH = HERE / "players_guide.md"
-OUT_PATH = HERE / "players_guide.pdf"
+MD_PATH = HERE / "manual.md"
+OUT_PATH = HERE / "manual.pdf"
 ASSETS = HERE / "assets"
 
 
@@ -344,10 +344,21 @@ def _html_escape(s):
              .replace(">", "&gt;"))
 
 
+def _link_sub(m):
+    """Render a markdown link. Internal table-of-contents anchors
+    (`[Races](#races)`) have no destination in the PDF — reportlab
+    raises on an unresolved `#`-target — so they degrade to plain
+    accent-coloured text. External (http/https) links stay clickable."""
+    text, href = m.group(1), m.group(2)
+    if href.startswith("#"):
+        return f'<font color="#6B2A1A">{text}</font>'
+    return f'<link href="{href}" color="#6B2A1A">{text}</link>'
+
+
 def _inline(text):
     """Convert markdown inline markup to reportlab paragraph mini-HTML."""
     s = _html_escape(text)
-    s = INLINE_RE_LINK.sub(r'<link href="\2" color="#6B2A1A">\1</link>', s)
+    s = INLINE_RE_LINK.sub(_link_sub, s)
     s = INLINE_RE_BOLD.sub(r"<b>\1</b>", s)
     s = INLINE_RE_ITAL.sub(r"<i>\1</i>", s)
     s = INLINE_RE_CODE.sub(r'<font face="Courier-Bold">\1</font>', s)
@@ -851,7 +862,7 @@ def build():
         title="Realm of Shadow — Player's Handbook",
         author="Matt Campbell",
         subject="Player's Handbook",
-        creator="docs/manuals/build_manual.py",
+        creator="docs/manual/build_manual.py",
     )
     frame = Frame(TEXT_LEFT, TEXT_BOTTOM,
                   TEXT_WIDTH, TEXT_HEIGHT,
