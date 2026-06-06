@@ -336,6 +336,7 @@ INLINE_RE_BOLD = re.compile(r"\*\*(.+?)\*\*")
 INLINE_RE_ITAL = re.compile(r"\*([^*]+?)\*")
 INLINE_RE_CODE = re.compile(r"`([^`]+?)`")
 INLINE_RE_LINK = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
+INLINE_RE_IMG = re.compile(r"<img[^>]*>", re.IGNORECASE)
 
 
 def _html_escape(s):
@@ -357,6 +358,11 @@ def _link_sub(m):
 
 def _inline(text):
     """Convert markdown inline markup to reportlab paragraph mini-HTML."""
+    # Drop raw <img> sprite tags — the markdown manual shows item/monster
+    # sprites, but the PDF doesn't embed them yet (the leading "Icon"
+    # column is dropped wholesale in _data_table). Stripping here keeps
+    # any stray inline image from rendering as literal escaped text.
+    text = INLINE_RE_IMG.sub("", text)
     s = _html_escape(text)
     s = INLINE_RE_LINK.sub(_link_sub, s)
     s = INLINE_RE_BOLD.sub(r"<b>\1</b>", s)
@@ -601,6 +607,14 @@ def _class_page(blocks, name, portrait_path):
 # ── Main render loop ────────────────────────────────────────────────
 
 def _data_table(rows, caption=None, title=None, col_widths=None):
+    # The item / monster tables carry a leading "Icon" column of sprite
+    # <img> tags for the markdown manual. The PDF doesn't embed sprites
+    # yet, so drop that column entirely here rather than leaving an empty
+    # gap. Detected by the header cell so other tables are untouched.
+    if rows and rows[0] and rows[0][0].strip().lower() == "icon":
+        rows = [row[1:] for row in rows]
+        if col_widths is not None:
+            col_widths = col_widths[1:]
     header = [Paragraph(_inline(c), TABLE_HEAD) for c in rows[0]]
     body_cells = []
     for row in rows[1:]:
