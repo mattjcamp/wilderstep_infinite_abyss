@@ -378,7 +378,7 @@
     },
     {
       "id": "the_royal_armory",
-      "name": "The Royal Armory",
+      "name": "The Royal Armory & The Worm",
       "description": "Our family's most powerful weapons have been hidden in a temporary royal armory in the Water Shrine. Sadly, the location of the armory has been discovered and seized by our enemies. You will need these weapons for the trials ahead. Go to the Shrine, secure the armory and outfit your band with whatever weapons you see fit.",
       "tags": [
         "main_story"
@@ -427,6 +427,20 @@
           "map_id": "royal_armory",
           "col": 1,
           "row": 6
+        },
+        {
+          "id": "the_royal_armory_step_4",
+          "name": "Descend into the Dragon's Cave and Destroy the Worm",
+          "kind": "kill",
+          "encounter_id": "ancient_dragon",
+          "positions": [
+            {
+              "col": 34,
+              "row": 15
+            }
+          ],
+          "location_kind": "map",
+          "map_id": "caves_1_l3"
         }
       ],
       "quest_giver": {

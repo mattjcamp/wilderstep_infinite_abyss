@@ -146300,7 +146300,17 @@
           }
         ]
       ],
-      "description": "The cold country between Hollowmere's dark woods and Varnfell's empty harbor — one road, two towns, and a great deal of ground that has recently stopped being quiet underneath."
+      "description": "The cold country between Hollowmere's dark woods and Varnfell's empty harbor — one road, two towns, and a great deal of ground that has recently stopped being quiet underneath.",
+      "soundtrack": [
+        "/audio/Aurelian Overture.mp3",
+        "/audio/Chronicle of the Crystal Thrones.mp3",
+        "/audio/Crimson Skies.mp3",
+        "/audio/Dungeons of Desolation.mp3",
+        "/audio/The Phoenix's Flight.mp3",
+        "/audio/The Red Moon.mp3",
+        "/audio/aurelian_overture.mp3",
+        "/audio/winds_of_destiny.mp3"
+      ]
     },
     {
       "id": "hollowmere_town",
@@ -260887,7 +260897,8 @@
       "name": "Dragon's Cave— Level 1",
       "description": "Smoke pours out of the ground at the entrance of this dragon's cave",
       "tags": [
-        "building"
+        "building",
+        "dragon's cave"
       ],
       "width": 40,
       "height": 40,
@@ -297771,7 +297782,7 @@
       "name": "Dragon's Caves — Level 2",
       "description": "Floor 2 of Caves. Generated from the dungeon spec.",
       "tags": [
-        "building"
+        "dragon's cave"
       ],
       "width": 40,
       "height": 40,
@@ -333630,7 +333641,7 @@
       "name": "Dragon's Caves — Level 3",
       "description": "Floor 3 of Caves. Generated from the dungeon spec.",
       "tags": [
-        "building"
+        "dragon's cave"
       ],
       "width": 40,
       "height": 40,
@@ -372420,43 +372431,10 @@
             "tag": "walkable"
           },
           {
-            "boat": false,
-            "id": "grass2",
-            "name": "Grass",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": null,
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/grass2.png",
-            "tag": "walkable"
-          },
-          {
-            "boat": false,
-            "id": "grass2",
-            "name": "Grass",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": null,
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/grass2.png",
-            "tag": "walkable"
-          },
-          {
-            "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
-            "obstructs": false,
+            "id": "wall_planks_light",
+            "name": "Plank Wall, Light",
+            "walkable": false,
+            "obstructs": true,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -372464,8 +372442,38 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass1.png",
-            "tag": "walkable"
+            "sprite": "map/wall_planks_light.png",
+            "tag": "wall"
+          },
+          {
+            "id": "wall_planks_light",
+            "name": "Plank Wall, Light",
+            "walkable": false,
+            "obstructs": true,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/wall_planks_light.png",
+            "tag": "wall"
+          },
+          {
+            "id": "wall_planks_light",
+            "name": "Plank Wall, Light",
+            "walkable": false,
+            "obstructs": true,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/wall_planks_light.png",
+            "tag": "wall"
           },
           {
             "boat": false,
@@ -372742,43 +372750,10 @@
             "tag": "walkable"
           },
           {
-            "boat": false,
-            "id": "grass2",
-            "name": "Grass",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": null,
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/grass2.png",
-            "tag": "walkable"
-          },
-          {
-            "boat": false,
-            "id": "grass2",
-            "name": "Grass",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": null,
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/grass2.png",
-            "tag": "walkable"
-          },
-          {
-            "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
-            "obstructs": false,
+            "id": "wall_planks_light",
+            "name": "Plank Wall, Light",
+            "walkable": false,
+            "obstructs": true,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -372786,8 +372761,39 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass1.png",
-            "tag": "walkable"
+            "sprite": "map/wall_planks_light.png",
+            "tag": "wall"
+          },
+          {
+            "boat": false,
+            "id": "building_inn",
+            "name": "Inn (Tankard Sign)",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": null,
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/building_inn.png",
+            "tag": "building: timber"
+          },
+          {
+            "id": "wall_planks_light",
+            "name": "Plank Wall, Light",
+            "walkable": false,
+            "obstructs": true,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/wall_planks_light.png",
+            "tag": "wall"
           },
           {
             "boat": false,
@@ -374662,7 +374668,14 @@
           }
         ]
       ],
-      "fog_of_war": false
+      "fog_of_war": false,
+      "soundtrack": [
+        "/audio/Chiquitita.mp3",
+        "/audio/Gimme Gimme Gimme.mp3",
+        "/audio/Mamma Mia.mp3",
+        "/audio/Money, Money, Money.mp3",
+        "/audio/Dancing Queen.mp3"
+      ]
     },
     {
       "id": "elderbough_moot_hall",

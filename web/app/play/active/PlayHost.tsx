@@ -1433,11 +1433,15 @@ export function PlayHost() {
   // Soundtrack — switch the active playlist whenever the catalog
   // changes (new map / module) or a dungeon transition fires
   // (reloadKey bumps on every dungeon enter / exit + cross-map link).
-  // Resolution order: dungeon override → map override → module
-  // default. An empty effective list silences the player rather than
-  // continuing the prior track, so a map that explicitly clears the
-  // playlist gets actual quiet rather than music bleeding in from
-  // wherever the party just came from.
+  //
+  // Continuity model: a location's OWN soundtrack (the dungeon's
+  // override when inside one, otherwise the map's) takes over when it
+  // exists. A location with NO soundtrack of its own does NOT reset to
+  // the module default — it INHERITS whatever is already playing, so a
+  // long town theme keeps going as the party ducks into shops and back
+  // alleys (setting the area's tone). The module default is only seeded
+  // when nothing is playing yet (the first scored location of the
+  // session), or used as the "current" music a later override replaces.
   //
   // We DON'T call Soundtrack.play() here when the browser hasn't
   // seen a user gesture yet — that play() rejects under autoplay
@@ -1454,15 +1458,18 @@ export function PlayHost() {
     const dungeonRecord = dungeon
       ? catalog.dungeons.find((d) => d.id === dungeon.dungeonId) ?? null
       : null;
-    const fromDungeon = dungeonRecord?.soundtrack;
-    const fromMap = catalog.map.soundtrack;
-    const playlist =
-      fromDungeon && fromDungeon.length > 0
-        ? fromDungeon
-        : fromMap && fromMap.length > 0
-          ? fromMap
-          : catalog.moduleSoundtrack;
-    Soundtrack.setPlaylist(playlist ?? []);
+    // The location's own soundtrack: a dungeon override while inside a
+    // dungeon, otherwise the map's override.
+    const own = dungeon ? dungeonRecord?.soundtrack : catalog.map.soundtrack;
+    if (own && own.length > 0) {
+      // This place sets its own tone — switch to it.
+      Soundtrack.setPlaylist(own);
+    } else if (!Soundtrack.hasPlaylist()) {
+      // No soundtrack here and nothing playing yet → start the module
+      // default so the session isn't silent. Once something is playing,
+      // unscored locations inherit it (no call → no reset).
+      Soundtrack.setPlaylist(catalog.moduleSoundtrack ?? []);
+    }
   }, [state, reloadKey]);
 
   // No unmount cleanup for the soundtrack: in React strict mode dev

@@ -3,7 +3,8 @@
   "tracks": [
     {
       "path": "/audio/All Of My Love.mp3",
-      "name": "All Of My Love"
+      "name": "All Of My Love",
+      "gain": 0.059
     },
     {
       "path": "/audio/Aurelian Overture.mp3",
@@ -11,124 +12,158 @@
     },
     {
       "path": "/audio/Chiquitita.mp3",
-      "name": "Chiquitita"
+      "name": "Chiquitita",
+      "gain": 0.186
     },
     {
       "path": "/audio/Chronicle of the Crystal Thrones.mp3",
-      "name": "Chronicle Of The Crystal Thrones"
+      "name": "Chronicle Of The Crystal Thrones",
+      "gain": 0.741
     },
     {
       "path": "/audio/Crimson Skies.mp3",
-      "name": "Crimson Skies"
+      "name": "Crimson Skies",
+      "gain": 0.881
     },
     {
       "path": "/audio/Dancing Queen.mp3",
-      "name": "Dancing Queen"
+      "name": "Dancing Queen",
+      "gain": 0.292
     },
     {
       "path": "/audio/Dungeons of Desolation.mp3",
-      "name": "Dungeons Of Desolation"
+      "name": "Dungeons Of Desolation",
+      "gain": 0.661
     },
     {
       "path": "/audio/Gimme Gimme Gimme.mp3",
-      "name": "Gimme Gimme Gimme"
+      "name": "Gimme Gimme Gimme",
+      "gain": 0.172
     },
     {
       "path": "/audio/HALLELUJAH.mp3",
-      "name": "HALLELUJAH"
+      "name": "HALLELUJAH",
+      "gain": 0.135
     },
     {
       "path": "/audio/Haddaway - What Is Love (Medieval Style ｜ Bardcore).mp3",
-      "name": "Haddaway What Is Love (Medieval Style ｜ Bardcore)"
+      "name": "Haddaway What Is Love (Medieval Style ｜ Bardcore)",
+      "gain": 0.188
     },
     {
       "path": "/audio/Lay All Your Love On Me.mp3",
-      "name": "Lay All Your Love On Me"
+      "name": "Lay All Your Love On Me",
+      "gain": 0.153
     },
     {
       "path": "/audio/Lost in the Labyrinth.mp3",
-      "name": "Lost In The Labyrinth"
+      "name": "Lost In The Labyrinth",
+      "gain": 0.759
     },
     {
       "path": "/audio/Mamma Mia.mp3",
-      "name": "Mamma Mia"
+      "name": "Mamma Mia",
+      "gain": 0.245
     },
     {
       "path": "/audio/Money, Money, Money.mp3",
-      "name": "Money, Money, Money"
+      "name": "Money, Money, Money",
+      "gain": 0.092
     },
     {
       "path": "/audio/Mysteries of the Moonstone Citadel.mp3",
-      "name": "Mysteries Of The Moonstone Citadel"
+      "name": "Mysteries Of The Moonstone Citadel",
+      "gain": 0.646
     },
     {
       "path": "/audio/No Quarter.mp3",
-      "name": "No Quarter"
+      "name": "No Quarter",
+      "gain": 0.243
     },
     {
       "path": "/audio/Rammstein.mp3",
-      "name": "Rammstein"
+      "name": "Rammstein",
+      "gain": 0.079
     },
     {
       "path": "/audio/September.mp3",
-      "name": "September"
+      "name": "September",
+      "gain": 0.078
+    },
+    {
+      "path": "/audio/Sound of Silence.mp3",
+      "name": "Sound Of Silence",
+      "gain": 0.08
     },
     {
       "path": "/audio/Stairway To Heaven.mp3",
-      "name": "Stairway To Heaven"
+      "name": "Stairway To Heaven",
+      "gain": 0.168
     },
     {
       "path": "/audio/Stayin' Alive.mp3",
-      "name": "Stayin' Alive"
+      "name": "Stayin' Alive",
+      "gain": 0.226
     },
     {
       "path": "/audio/Super Trouper.mp3",
-      "name": "Super Trouper"
+      "name": "Super Trouper",
+      "gain": 0.155
     },
     {
       "path": "/audio/Sweet Child O' Mine.mp3",
-      "name": "Sweet Child O' Mine"
+      "name": "Sweet Child O' Mine",
+      "gain": 0.062
     },
     {
       "path": "/audio/Taketh A Chance On Me.mp3",
-      "name": "Taketh A Chance On Me"
+      "name": "Taketh A Chance On Me",
+      "gain": 0.09
     },
     {
       "path": "/audio/Taketh On Me.mp3",
-      "name": "Taketh On Me"
+      "name": "Taketh On Me",
+      "gain": 0.091
     },
     {
       "path": "/audio/The Phoenix's Flight.mp3",
-      "name": "The Phoenix's Flight"
+      "name": "The Phoenix's Flight",
+      "gain": 0.692
     },
     {
       "path": "/audio/The Red Moon.mp3",
-      "name": "The Red Moon"
+      "name": "The Red Moon",
+      "gain": 0.692
     },
     {
       "path": "/audio/Thunderstruck.mp3",
-      "name": "Thunderstruck"
+      "name": "Thunderstruck",
+      "gain": 0.158
     },
     {
       "path": "/audio/Twin Peaks Theme.mp3",
-      "name": "Twin Peaks Theme"
+      "name": "Twin Peaks Theme",
+      "gain": 0.097
     },
     {
       "path": "/audio/Whirlwind Waltz.mp3",
-      "name": "Whirlwind Waltz"
+      "name": "Whirlwind Waltz",
+      "gain": 0.733
     },
     {
       "path": "/audio/Winds of Destiny.mp3",
-      "name": "Winds Of Destiny"
+      "name": "Winds Of Destiny",
+      "gain": 0.638
     },
     {
       "path": "/audio/Wish You Were Here.mp3",
-      "name": "Wish You Were Here"
+      "name": "Wish You Were Here",
+      "gain": 0.119
     },
     {
       "path": "/audio/africa.mp3",
       "name": "Africa",
-      "gain": 0.05
+      "gain": 0.058
     },
     {
       "path": "/audio/aurelian_overture.mp3",
@@ -140,27 +175,28 @@
     },
     {
       "path": "/audio/chromatics_shadow.mp3",
-      "name": "Chromatics Shadow"
+      "name": "Chromatics Shadow",
+      "gain": 0.066
     },
     {
       "path": "/audio/creep.mp3",
       "name": "Creep",
-      "gain": 0.05
+      "gain": 0.057
     },
     {
       "path": "/audio/dont_fear_the_reaper.mp3",
       "name": "Don't Fear the Reaper",
-      "gain": 0.04
+      "gain": 0.049
     },
     {
       "path": "/audio/fear_of_the_dark.mp3",
       "name": "Fear of the Dark",
-      "gain": 0.07
+      "gain": 0.075
     },
     {
       "path": "/audio/hallowed_be_thy_name.mp3",
       "name": "Hallowed Be Thy Name",
-      "gain": 0.04
+      "gain": 0.039
     },
     {
       "path": "/audio/lost_in_the_labyrinth.mp3",
@@ -169,27 +205,27 @@
     {
       "path": "/audio/one.mp3",
       "name": "One",
-      "gain": 0.07
+      "gain": 0.08
     },
     {
       "path": "/audio/scepter_of_the_celestial_guardian.mp3",
       "name": "Scepter of the Celestial Guardian",
-      "gain": 0.73
+      "gain": 0.767
     },
     {
       "path": "/audio/the_trooper.mp3",
       "name": "The Trooper",
-      "gain": 0.05
+      "gain": 0.053
     },
     {
       "path": "/audio/the_unforgiven.mp3",
       "name": "The Unforgiven",
-      "gain": 0.06
+      "gain": 0.064
     },
     {
       "path": "/audio/winds_of_destiny.mp3",
       "name": "Winds of Destiny",
-      "gain": 0.88
+      "gain": 0.871
     }
   ]
 }

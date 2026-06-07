@@ -69,10 +69,16 @@ const PROTECTED_MODULE_IDS = new Set(["default"]);
 const SPRITE_INDEX_COMMENT =
   "Sprite catalog (generated). Each top-level key is a category folder under web/public/sprites/; each value is the list of PNG filenames in that folder. Resolve a sprite path as `/sprites/<category>/<filename>` (apply basePath at runtime).";
 // Audio track paths the editor sends back must look like
-// `/audio/<filename>.<ext>` — no directories, no traversal, a known
-// audio extension. The on-disk write target is derived from the
-// basename only, then re-checked against AUDIO_ROOT.
-const AUDIO_PATH_RE = /^\/audio\/[A-Za-z0-9][A-Za-z0-9_.-]*\.(mp3|ogg|wav|m4a)$/i;
+// `/audio/<filename>.<ext>` — a single segment under /audio/ with a
+// known audio extension. The filename may contain spaces and
+// punctuation (real tracks are named "Money, Money, Money.mp3",
+// "Sweet Child O' Mine.mp3", etc. — reindex-audio derives the path
+// straight from the on-disk name), so we allow any character EXCEPT a
+// path separator or control char, and forbid a leading "." (no
+// directory traversal, no dotfiles). The on-disk write target is
+// derived from the basename only, then re-checked against AUDIO_ROOT.
+const AUDIO_PATH_RE =
+  /^\/audio\/[^/.\x00-\x1f][^/\x00-\x1f]*\.(mp3|ogg|wav|m4a)$/i;
 const AUDIO_INDEX_COMMENT =
   "Listing of every audio file under /public/audio/. Hand-maintained for now — Next.js static export can't directory-list at runtime, so the editor's SoundtrackPicker reads this file to know what tracks are available. Run `npm run reindex-audio` after dropping a file in this folder to regenerate it. Each `path` is what gets stored on a module / map / dungeon's soundtrack list and is what the SoundtrackPlayer hands to <audio>.src; `name` is the display label in the picker; optional `gain` (0-1) attenuates a track that's too loud relative to the rest of the soundtrack.";
 

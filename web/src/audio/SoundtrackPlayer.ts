@@ -455,6 +455,14 @@ export function getVolume(): number {
   return _volume;
 }
 
+/** True when the player currently holds a non-empty playlist. The host
+ *  uses this to decide whether a location with no soundtrack of its own
+ *  should inherit (continue) the current music or — when nothing is
+ *  playing yet — seed the module default. */
+export function hasPlaylist(): boolean {
+  return _playlist.length > 0;
+}
+
 /** Bundled-export shape so callers can keep one import and write
  *  `Soundtrack.play()` / `Soundtrack.setPlaylist(...)`. */
 export const Soundtrack = {
@@ -466,4 +474,5 @@ export const Soundtrack = {
   isMuted,
   setVolume,
   getVolume,
+  hasPlaylist,
 };

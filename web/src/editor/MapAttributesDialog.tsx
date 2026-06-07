@@ -153,17 +153,25 @@ export function MapAttributesDialog({
       }}
     >
       <div
-        className="w-[520px] max-w-[90vw] rounded-lg border border-parchment/25 bg-ink/95 p-4 text-parchment shadow-xl"
+        // Cap the panel at the viewport height and lay it out as a
+        // column: the header and footer (with Save) stay pinned while
+        // the field list in the middle scrolls. Without this the panel
+        // grew with its content and pushed Save below the fold once the
+        // soundtrack list was expanded.
+        className="flex max-h-[90vh] w-[520px] max-w-[90vw] flex-col rounded-lg border border-parchment/25 bg-ink/95 p-4 text-parchment shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <header className="mb-3 flex items-baseline justify-between">
+        <header className="mb-3 flex shrink-0 items-baseline justify-between">
           <h2 className="font-display text-xl">Map Properties</h2>
           <span className="font-mono text-xs text-parchment/65">
             id: {mapId}
           </span>
         </header>
 
-        <div className="flex flex-col gap-3">
+        {/* Scrollable field list — `min-h-0` lets it shrink inside the
+            flex column so `overflow-y-auto` actually engages; `-mr-1
+            pr-1` insets the scrollbar so it doesn't crowd the inputs. */}
+        <div className="-mr-1 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-1">
           {/* Name ------------------------------------------------ */}
           <label className="flex flex-col gap-1">
             <span className="text-[13px] text-parchment/85 font-mono">name</span>
@@ -284,7 +292,7 @@ export function MapAttributesDialog({
           </label>
         </div>
 
-        <footer className="mt-4 flex items-center justify-end gap-2">
+        <footer className="mt-4 flex shrink-0 items-center justify-end gap-2">
           <button
             type="button"
             onClick={onClose}
