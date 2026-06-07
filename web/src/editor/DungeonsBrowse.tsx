@@ -78,12 +78,15 @@ interface DungeonLoot {
 
 /** A `map_tiles` palette entry, reduced to what the custom floor/wall
  *  pickers need: the id (what we persist), a display name, the sprite
- *  path (for the thumbnail), and walkability (to flag odd choices). */
+ *  path (for the thumbnail), walkability (to flag odd choices), and the
+ *  tag (so the picker groups tiles the same way the map editor's
+ *  palette does — e.g. the "dungeon" group of lava / portal tiles). */
 interface PaletteTile {
   id: string;
   name: string;
   sprite: string;
   walkable: boolean;
+  tag?: string;
 }
 
 interface DungeonLevel {
@@ -234,6 +237,7 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
           name: String(t.name ?? t.id ?? ""),
           sprite: String(t.sprite ?? ""),
           walkable: t.walkable === true,
+          tag: t.tag != null && String(t.tag).trim() ? String(t.tag) : undefined,
         }))
         .filter((t) => t.id !== "");
       setState({
@@ -1571,6 +1575,29 @@ function TileThumb({ sprite, size = 28 }: { sprite: string; size?: number }) {
  * each choice as a thumbnail + name so the author can see the tile.
  * Collapsed it shows the current selection; "Pick…" expands a grid.
  */
+const UNTAGGED_TILES = "(untagged)";
+
+/** Group palette tiles by their single `tag`, mirroring the map
+ *  editor's tag palette: tags alphabetical, untagged last; tile order
+ *  within a group preserved from the palette. Returns a display label
+ *  per group (uppercased by the header style, so kept as-is here). */
+function groupTilesByTag(
+  tiles: ReadonlyArray<PaletteTile>,
+): Array<{ tag: string; label: string; tiles: PaletteTile[] }> {
+  const groups = new Map<string, PaletteTile[]>();
+  for (const t of tiles) {
+    const tag = t.tag && t.tag.trim() ? t.tag : UNTAGGED_TILES;
+    if (!groups.has(tag)) groups.set(tag, []);
+    groups.get(tag)!.push(t);
+  }
+  const ordered = [...groups.keys()].sort((a, b) => {
+    if (a === UNTAGGED_TILES) return 1;
+    if (b === UNTAGGED_TILES) return -1;
+    return a.localeCompare(b);
+  });
+  return ordered.map((tag) => ({ tag, label: tag, tiles: groups.get(tag)! }));
+}
+
 function TilePalettePicker({
   label,
   value,
@@ -1592,6 +1619,10 @@ function TilePalettePicker({
   warnNonWalkable?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  // Per-tag collapse state for the grouped grid. Empty by default so
+  // every group starts expanded (no tile is hidden until the author
+  // chooses to collapse a section).
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const selected = value
     ? paletteTiles.find((t) => t.id === value)
     : undefined;
@@ -1650,38 +1681,71 @@ function TilePalettePicker({
               No tiles in this module's palette.
             </p>
           ) : (
-            <ul className="grid grid-cols-[repeat(auto-fill,minmax(72px,1fr))] gap-1.5">
-              {paletteTiles.map((t) => {
-                const isCurrent = value === t.id;
+            <div className="space-y-2">
+              {groupTilesByTag(paletteTiles).map(({ tag, label, tiles }) => {
+                const isCollapsed = collapsed.has(tag);
                 return (
-                  <li key={t.id}>
+                  <section key={tag}>
                     <button
                       type="button"
-                      onClick={() => {
-                        onChange(t.id);
-                        setOpen(false);
-                      }}
-                      title={`${t.name} (${t.id})`}
-                      className={`flex w-full flex-col items-center gap-0.5 rounded border p-1 transition ${
-                        isCurrent
-                          ? "border-ember/60 bg-ember/15"
-                          : "border-parchment/10 bg-ink/40 hover:border-parchment/40 hover:bg-ink/60"
-                      }`}
+                      onClick={() =>
+                        setCollapsed((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(tag)) next.delete(tag);
+                          else next.add(tag);
+                          return next;
+                        })
+                      }
+                      className="flex w-full items-center justify-between gap-2 px-1 py-0.5 text-left text-[13px] uppercase tracking-wide text-parchment/80 hover:text-parchment"
                     >
-                      <TileThumb sprite={t.sprite} size={40} />
-                      <span className="w-full truncate text-center text-xs text-parchment/80">
-                        {t.name}
-                      </span>
-                      {warnNonWalkable && !t.walkable ? (
-                        <span className="text-[9px] text-ember/70">
-                          not walkable
+                      <span className="flex items-center gap-1">
+                        <span className="text-parchment/75">
+                          {isCollapsed ? "▸" : "▾"}
                         </span>
-                      ) : null}
+                        {label}
+                      </span>
+                      <span className="normal-case tracking-normal text-parchment/55">
+                        {tiles.length}
+                      </span>
                     </button>
-                  </li>
+                    {!isCollapsed ? (
+                      <ul className="mt-1 grid grid-cols-[repeat(auto-fill,minmax(72px,1fr))] gap-1.5">
+                        {tiles.map((t) => {
+                          const isCurrent = value === t.id;
+                          return (
+                            <li key={t.id}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  onChange(t.id);
+                                  setOpen(false);
+                                }}
+                                title={`${t.name} (${t.id})`}
+                                className={`flex w-full flex-col items-center gap-0.5 rounded border p-1 transition ${
+                                  isCurrent
+                                    ? "border-ember/60 bg-ember/15"
+                                    : "border-parchment/10 bg-ink/40 hover:border-parchment/40 hover:bg-ink/60"
+                                }`}
+                              >
+                                <TileThumb sprite={t.sprite} size={40} />
+                                <span className="w-full truncate text-center text-xs text-parchment/80">
+                                  {t.name}
+                                </span>
+                                {warnNonWalkable && !t.walkable ? (
+                                  <span className="text-[9px] text-ember/70">
+                                    not walkable
+                                  </span>
+                                ) : null}
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    ) : null}
+                  </section>
                 );
               })}
-            </ul>
+            </div>
           )}
         </div>
       ) : null}

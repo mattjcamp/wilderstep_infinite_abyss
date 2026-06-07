@@ -4,6 +4,8 @@
 
 # Playthrough Polish
 
+- Procedure dungeons appear to be already explored even though the party was never in them. The gray tiles appear
+
 - Add the ability for each Quest Step to have multiple encounters each with their own positions
 - In the Map Editor, allow editors to Command-Click to select multiple tiles so that attributes can be changed all at one time.
 - Improve the Encounter Picker in the Map Editor and Quest Editor to show Theme>Difficulty hierarchy

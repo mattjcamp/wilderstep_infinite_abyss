@@ -28,6 +28,9 @@ interface EncounterRecord {
   area?: string;
   level?: number;
   weight?: number;
+  /** Organizational tag matching the monster themes (devil, undead,
+   *  elemental, …). Drives the picker's grouped headers. */
+  theme?: string;
   /** Sprite path for the lead monster (`monster/goblin.png` etc.).
    *  Empty / missing renders as a placeholder square. */
   monster_party_tile?: string;
@@ -80,6 +83,53 @@ function describeEncounter(e: EncounterRecord): string {
   if (typeof e.level === "number") bits.push(`Lv ${e.level}`);
   if (typeof e.weight === "number") bits.push(`w ${e.weight}`);
   return bits.join(" · ");
+}
+
+const UNTHEMED = "(other)";
+
+/** "devil" → "Devil", "house_basement" → "House Basement". */
+function titleCase(s: string): string {
+  return s
+    .split(/[_\s]+/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
+/**
+ * Group encounters by `theme` for the picker's headers. Groups come
+ * back ordered alphabetically by theme (untheme'd last); members
+ * within a group sort by level (ascending, unleveled last) then by
+ * display name — so a quest author scanning a theme sees the easiest
+ * fights first.
+ */
+function groupByTheme(
+  encounters: ReadonlyArray<EncounterRecord>,
+): Array<{ theme: string; label: string; items: EncounterRecord[] }> {
+  const groups = new Map<string, EncounterRecord[]>();
+  for (const e of encounters) {
+    const theme = e.theme && e.theme.trim() ? e.theme.trim() : "";
+    if (!groups.has(theme)) groups.set(theme, []);
+    groups.get(theme)!.push(e);
+  }
+  const keys = [...groups.keys()].sort((a, b) => {
+    if (a === "") return 1;
+    if (b === "") return -1;
+    return a.localeCompare(b);
+  });
+  return keys.map((theme) => ({
+    theme,
+    label: theme ? titleCase(theme) : UNTHEMED,
+    items: groups
+      .get(theme)!
+      .slice()
+      .sort((a, b) => {
+        const la = typeof a.level === "number" ? a.level : Infinity;
+        const lb = typeof b.level === "number" ? b.level : Infinity;
+        if (la !== lb) return la - lb;
+        return (a.name ?? a.id).localeCompare(b.name ?? b.id);
+      }),
+  }));
 }
 
 export function EncounterPicker({
@@ -183,55 +233,66 @@ export function EncounterPicker({
                   <span className="font-mono text-parchment/70">(none)</span>
                 </button>
               </li>
-              {state.encounters.map((e) => {
-                const isActive = e.id === value;
-                const tail = describeEncounter(e);
-                return (
-                  <li key={e.id}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onChange(e.id);
-                        setOpen(false);
-                      }}
-                      className={`flex w-full items-start gap-2 rounded px-2 py-1 text-left text-sm transition ${
-                        isActive
-                          ? "bg-ember/30 text-parchment"
-                          : "text-parchment/85 hover:bg-ink/40"
-                      }`}
-                    >
-                      {e.monster_party_tile ? (
-                        <SpriteThumb
-                          path={e.monster_party_tile}
-                          alt={e.name ?? e.id}
-                        />
-                      ) : (
-                        <span className="inline-block h-6 w-6 shrink-0 rounded border border-parchment/15 bg-ink/40" />
-                      )}
-                      <span className="flex-1">
-                        <span className="flex items-baseline justify-between gap-2">
-                          <span className="font-medium">
-                            {e.name ?? e.id}
-                          </span>
-                          <span className="font-mono text-xs text-parchment/65">
-                            {e.id}
-                          </span>
-                        </span>
-                        {tail ? (
-                          <span className="block text-xs text-parchment/75">
-                            {tail}
-                          </span>
-                        ) : null}
-                        {e.monsters && e.monsters.length > 0 ? (
-                          <span className="block font-mono text-xs text-parchment/65">
-                            {e.monsters.join(", ")}
-                          </span>
-                        ) : null}
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
+              {groupByTheme(state.encounters).map((group) => (
+                <li key={`theme:${group.theme}`}>
+                  {/* Theme header — sticks to the top of the scroll so
+                      the author always knows which bucket they're in. */}
+                  <div className="sticky top-0 z-10 -mx-2 mb-1 mt-1 bg-ink/80 px-2 py-0.5 text-xs uppercase tracking-wide text-parchment/55 backdrop-blur first:mt-0">
+                    {group.label} ({group.items.length})
+                  </div>
+                  <ul className="space-y-1">
+                    {group.items.map((e) => {
+                      const isActive = e.id === value;
+                      const tail = describeEncounter(e);
+                      return (
+                        <li key={e.id}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onChange(e.id);
+                              setOpen(false);
+                            }}
+                            className={`flex w-full items-start gap-2 rounded px-2 py-1 text-left text-sm transition ${
+                              isActive
+                                ? "bg-ember/30 text-parchment"
+                                : "text-parchment/85 hover:bg-ink/40"
+                            }`}
+                          >
+                            {e.monster_party_tile ? (
+                              <SpriteThumb
+                                path={e.monster_party_tile}
+                                alt={e.name ?? e.id}
+                              />
+                            ) : (
+                              <span className="inline-block h-6 w-6 shrink-0 rounded border border-parchment/15 bg-ink/40" />
+                            )}
+                            <span className="flex-1">
+                              <span className="flex items-baseline justify-between gap-2">
+                                <span className="font-medium">
+                                  {e.name ?? e.id}
+                                </span>
+                                <span className="font-mono text-xs text-parchment/65">
+                                  {e.id}
+                                </span>
+                              </span>
+                              {tail ? (
+                                <span className="block text-xs text-parchment/75">
+                                  {tail}
+                                </span>
+                              ) : null}
+                              {e.monsters && e.monsters.length > 0 ? (
+                                <span className="block font-mono text-xs text-parchment/65">
+                                  {e.monsters.join(", ")}
+                                </span>
+                              ) : null}
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </li>
+              ))}
             </ul>
           ) : null}
         </div>

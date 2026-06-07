@@ -273,6 +273,49 @@
           "difficulty": "normal"
         }
       ]
+    },
+    {
+      "id": "a_crack",
+      "name": "A Crack in the World",
+      "description": "The world has opened up to show hints of a much more hotter world below the surface",
+      "tags": [],
+      "style": "custom",
+      "difficulty": "hard",
+      "size": {
+        "width": 32,
+        "height": 32
+      },
+      "torch_density": 0.15,
+      "locked_doors": 0.25,
+      "levels": [
+        {
+          "id": "a_crack_l1",
+          "name": "Level 1",
+          "depth": 1,
+          "loot": {
+            "chest_item": "treasure_chest"
+          }
+        },
+        {
+          "id": "a_crack_l2",
+          "name": "Level 2",
+          "depth": 2,
+          "custom_wall": "wall_fieldstone_dark",
+          "custom_floor": "floor"
+        },
+        {
+          "id": "a_crack_l3",
+          "name": "Level 3",
+          "depth": 3,
+          "custom_wall": "lava2",
+          "custom_floor": "path"
+        }
+      ],
+      "custom_wall": "mountain",
+      "custom_floor": "sand_dense",
+      "loot": {
+        "chest_item": "treasure_chest"
+      }
     }
   ]
 }

@@ -1,8 +1,8 @@
 {
   "start_position": {
     "map_id": "the_main_map",
-    "col": 8,
-    "row": 71
+    "col": 66,
+    "row": 20
   },
   "avatar": "person/fighter18.png",
   "gold": 50,
@@ -17,6 +17,33 @@
     {
       "item": "torch",
       "charges": 10
+    },
+    {
+      "item": "iron_key"
+    },
+    {
+      "item": "iron_key"
+    },
+    {
+      "item": "iron_key"
+    },
+    {
+      "item": "iron_key"
+    },
+    {
+      "item": "iron_key"
+    },
+    {
+      "item": "iron_key"
+    },
+    {
+      "item": "iron_key"
+    },
+    {
+      "item": "iron_key"
+    },
+    {
+      "item": "iron_key"
     },
     {
       "item": "rock",

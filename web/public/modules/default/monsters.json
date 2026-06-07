@@ -1679,6 +1679,202 @@
       "constitution": 12,
       "intelligence": 8,
       "wisdom": 8
+    },
+    {
+      "id": "daemon",
+      "name": "Daemon",
+      "undead": false,
+      "humanoid": true,
+      "theme": "devil",
+      "hp": 48,
+      "ac": 15,
+      "attack_bonus": 5,
+      "damage_dice": 2,
+      "damage_sides": 6,
+      "damage_bonus": 1,
+      "xp_reward": 110,
+      "gold_min": 25,
+      "gold_max": 70,
+      "sprite": "monster/daemon2.png",
+      "move_range": 8,
+      "post_attack_move": 1,
+      "battle_scale": 1,
+      "difficulty": "hard",
+      "spells": [
+        {
+          "type": "breath_fire",
+          "name": "Cinder Breath",
+          "range": 4,
+          "cast_chance": 35,
+          "damage_dice": 3,
+          "damage_sides": 6,
+          "damage_bonus": 0,
+          "save_dc": 13
+        }
+      ],
+      "on_hit_effects": [
+        {
+          "effect_id": "poisoned",
+          "chance": 30,
+          "damage_per_turn": 4,
+          "duration": 3
+        }
+      ],
+      "passives": [
+        {
+          "effect_id": "fire_resistance"
+        }
+      ],
+      "strength": 16,
+      "dexterity": 14,
+      "constitution": 15,
+      "intelligence": 12,
+      "wisdom": 11
+    },
+    {
+      "id": "balor",
+      "name": "Balor",
+      "undead": false,
+      "humanoid": true,
+      "theme": "devil",
+      "hp": 110,
+      "ac": 18,
+      "attack_bonus": 7,
+      "damage_dice": 3,
+      "damage_sides": 8,
+      "damage_bonus": 2,
+      "xp_reward": 210,
+      "gold_min": 60,
+      "gold_max": 150,
+      "sprite": "monster/balron_demon1.png",
+      "move_range": 7,
+      "post_attack_move": 1,
+      "battle_scale": 1,
+      "difficulty": "deadly",
+      "spells": [
+        {
+          "type": "breath_fire",
+          "name": "Hellfire Breath",
+          "range": 5,
+          "cast_chance": 40,
+          "damage_dice": 4,
+          "damage_sides": 6,
+          "damage_bonus": 0,
+          "save_dc": 15
+        },
+        {
+          "type": "fireball",
+          "name": "Fireball",
+          "range": 6,
+          "cast_chance": 20,
+          "damage_dice": 3,
+          "damage_sides": 6,
+          "damage_bonus": 0,
+          "save_dc": 14
+        }
+      ],
+      "on_hit_effects": [
+        {
+          "effect_id": "drain",
+          "chance": 30,
+          "amount": 5
+        }
+      ],
+      "passives": [
+        {
+          "effect_id": "fire_resistance"
+        },
+        {
+          "effect_id": "regen",
+          "amount": 3
+        }
+      ],
+      "strength": 20,
+      "dexterity": 13,
+      "constitution": 18,
+      "intelligence": 13,
+      "wisdom": 13
+    },
+    {
+      "id": "pit_fiend",
+      "name": "Pit Fiend",
+      "undead": false,
+      "humanoid": true,
+      "theme": "devil",
+      "hp": 145,
+      "ac": 19,
+      "attack_bonus": 7,
+      "damage_dice": 4,
+      "damage_sides": 8,
+      "damage_bonus": 1,
+      "xp_reward": 360,
+      "gold_min": 140,
+      "gold_max": 320,
+      "sprite": "monster/balron_demon2.png",
+      "move_range": 6,
+      "post_attack_move": 0,
+      "battle_scale": 2,
+      "difficulty": "boss",
+      "spells": [
+        {
+          "type": "fireball",
+          "name": "Infernal Fireball",
+          "range": 7,
+          "cast_chance": 25,
+          "damage_dice": 4,
+          "damage_sides": 6,
+          "damage_bonus": 0,
+          "save_dc": 16
+        },
+        {
+          "type": "lightning_bolt",
+          "name": "Lightning Bolt",
+          "range": 7,
+          "cast_chance": 18,
+          "damage_dice": 3,
+          "damage_sides": 6,
+          "damage_bonus": 0
+        },
+        {
+          "type": "curse",
+          "name": "Damnation Hex",
+          "range": 8,
+          "cast_chance": 30,
+          "duration": 5,
+          "ac_penalty": 3,
+          "attack_penalty": 3
+        }
+      ],
+      "on_hit_effects": [
+        {
+          "effect_id": "drain",
+          "chance": 35,
+          "amount": 6
+        },
+        {
+          "effect_id": "poisoned",
+          "chance": 25,
+          "damage_per_turn": 6,
+          "duration": 4
+        }
+      ],
+      "passives": [
+        {
+          "effect_id": "fire_resistance"
+        },
+        {
+          "effect_id": "poison_immunity"
+        },
+        {
+          "effect_id": "regen",
+          "amount": 4
+        }
+      ],
+      "strength": 21,
+      "dexterity": 13,
+      "constitution": 19,
+      "intelligence": 16,
+      "wisdom": 15
     }
   ]
 }

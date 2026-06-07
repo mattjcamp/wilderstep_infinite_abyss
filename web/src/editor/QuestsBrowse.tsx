@@ -34,6 +34,7 @@ import { SpritePicker } from "./SpritePicker";
 import { ID_PATTERN, TagsPicker } from "./TagsPicker";
 import { usePublishServer } from "./usePublishServer";
 import { groupItemsByCategory } from "./itemTags";
+import { groupByTags } from "./mapTags";
 
 const NPC_SPRITE_CONFIG = { category: "person", format: "path" } as const;
 
@@ -181,6 +182,9 @@ interface ItemSummary {
 interface MapSummary {
   id: string;
   name?: string;
+  /** Organizational tags from maps.json — drive the picker's
+   *  tag-grouped optgroups (same ordering as the maps browse tree). */
+  tags?: string[];
 }
 
 interface DungeonSummary {
@@ -258,6 +262,7 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
       const maps = (mapsMerged?.maps ?? []).map((m) => ({
         id: m.id,
         name: m.name,
+        tags: m.tags,
       }));
 
       const dungeonsMerged = mergeModel(
@@ -1513,10 +1518,18 @@ function TileOpsList({
                   {!op.map ? (
                     <option value="">— choose a map —</option>
                   ) : null}
-                  {maps.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name ?? m.id} ({m.id})
-                    </option>
+                  {/* Grouped by tag (pinned order: overview, town,
+                      buildings, outside, then alphabetical, untagged
+                      last) — same shape as the maps browse tree and the
+                      Map Editor's Link picker. */}
+                  {groupByTags(maps).map(([tag, ms]) => (
+                    <optgroup key={tag} label={tag}>
+                      {ms.map((m) => (
+                        <option key={`${tag}::${m.id}`} value={m.id}>
+                          {m.name ?? m.id} ({m.id})
+                        </option>
+                      ))}
+                    </optgroup>
                   ))}
                 </select>
                 <input
@@ -1913,10 +1926,16 @@ function StepRow({
                   className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-[13px] text-parchment/90"
                 >
                   <option value="">(pick one…)</option>
-                  {maps.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name ?? m.id}
-                    </option>
+                  {/* Grouped by tag — same ordering as the maps browse
+                      tree and the Map Editor's Link picker. */}
+                  {groupByTags(maps).map(([tag, ms]) => (
+                    <optgroup key={tag} label={tag}>
+                      {ms.map((m) => (
+                        <option key={`${tag}::${m.id}`} value={m.id}>
+                          {m.name ?? m.id}
+                        </option>
+                      ))}
+                    </optgroup>
                   ))}
                 </select>
                 {step.map_id &&

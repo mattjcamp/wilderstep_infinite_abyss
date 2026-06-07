@@ -347,8 +347,7 @@
       "name": "Into the Frost Delve",
       "description": "The abandoned digging south of Varnfell has started breathing warm air. Henna Stone wants to know what's moved in below before it decides to move up.",
       "tags": [
-        "varnfell",
-        "main"
+        "varnfell"
       ],
       "steps": [
         {
@@ -455,8 +454,7 @@
       "description": "Web spun wrong in the warden-trees and blight-root black in the sweetest soil of the Reach — the Heartwood Grove is sick with its keeper's worry, and Tansy Mosswane wants surgical help.",
       "tags": [
         "elderbough",
-        "side",
-        "easy"
+        "side"
       ],
       "steps": [
         {
@@ -509,8 +507,7 @@
       "description": "The Bough-Wife has not slept in four hundred nights, and the grove frays with her. Elder Bryn would settle her the old way: spring-water offered, the barrow quieted, and the haunted trail south swept clean.",
       "tags": [
         "elderbough",
-        "side",
-        "normal"
+        "side"
       ],
       "steps": [
         {
@@ -587,8 +584,7 @@
       "description": "Nine felled warden-trees bought the Reach an angry forest: packs sitting the trails like sentries, a den fouling the sister-spring, and a troll moving under the boughs with a wolf escort. Warden Thornholt wants it ended before the moot has to learn the word 'siege.'",
       "tags": [
         "elderbough",
-        "side",
-        "hard"
+        "side"
       ],
       "steps": [
         {
@@ -674,8 +670,7 @@
       "name": "Lamps Against the Dark",
       "description": "The dead are pressing Lastlight's wall by night and the watch is stretched past its last reserve. Captain Morn wants the warband broken, the bone-archers cleared from the crack-field, and the lost oil cache recovered before the lamps start choosing which streets go dark.",
       "tags": [
-        "lastlight",
-        "hard"
+        "lastlight"
       ],
       "steps": [
         {
@@ -752,8 +747,7 @@
       "name": "The Things in the Smoke",
       "description": "Imps are slipping out of the Near Crack in threes — not raiding, surveying. Magister Corven needs them stopped mid-errand, both for the town's safety and for the chapter of his monograph he is increasingly afraid to finish.",
       "tags": [
-        "lastlight",
-        "hard"
+        "lastlight"
       ],
       "steps": [
         {
@@ -820,8 +814,7 @@
       "name": "The Vigil Unbroken",
       "description": "Something below has opened the graves of the first watch and seated a court among them — a lich, a banshee, and a thing in burial wrappings, holding session at the foot of the warding line while a herald of the breach stands attendance. Mother Halvane means the Vigil to hold, and the Vigil needs swords tonight.",
       "tags": [
-        "lastlight",
-        "deadly"
+        "lastlight"
       ],
       "steps": [
         {
@@ -891,6 +884,93 @@
           "holy_water",
           "elixir_of_warding"
         ]
+      }
+    },
+    {
+      "id": "the_horde_approaches",
+      "name": "The Horde Approaches",
+      "description": "All manor of devils and demons are rushing toward the city from the great crack!",
+      "tags": [
+        "main_story"
+      ],
+      "steps": [
+        {
+          "id": "the_horde_approaches_step_1",
+          "name": "Destroy the Mind Flayers",
+          "kind": "kill",
+          "encounter_id": "mind_flayer_conclave",
+          "location_kind": "map",
+          "map_id": "the_main_map",
+          "positions": [
+            {
+              "col": 56,
+              "row": 19
+            },
+            {
+              "col": 56,
+              "row": 21
+            }
+          ],
+          "count": 2
+        },
+        {
+          "id": "the_horde_approaches_step_2",
+          "name": "Destroy the Demons",
+          "kind": "kill",
+          "encounter_id": "daemon_pack",
+          "location_kind": "map",
+          "map_id": "the_main_map",
+          "positions": [
+            {
+              "col": 61,
+              "row": 19
+            }
+          ]
+        },
+        {
+          "id": "the_horde_approaches_step_3",
+          "name": "Destroy the Balor",
+          "kind": "kill",
+          "encounter_id": "balors_wrath",
+          "positions": [
+            {
+              "col": 64,
+              "row": 13
+            }
+          ]
+        },
+        {
+          "id": "the_horde_approaches_step_4",
+          "name": "Imp Army",
+          "kind": "kill",
+          "description": "The devils are pushing the imps toward the city!",
+          "encounter_id": "imp_ambush",
+          "count": 3,
+          "positions": [
+            {
+              "col": 56,
+              "row": 24
+            },
+            {
+              "col": 56,
+              "row": 25
+            },
+            {
+              "col": 57,
+              "row": 26
+            }
+          ]
+        }
+      ],
+      "quest_giver": {
+        "npc_name": "Man At Arms",
+        "npc_sprite": "person/fighter6.png",
+        "start_dialog": "All manor of devils and demons are rushing toward the city from the great crack!",
+        "end_dialog": "Thank you, brave adventures. But, alas the work is not yet done. We need to deal with the underworld threat directly or there shall be no peace."
+      },
+      "rewards": {
+        "xp": 500,
+        "gold": 500
       }
     }
   ]
