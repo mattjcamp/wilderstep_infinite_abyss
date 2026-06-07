@@ -7,10 +7,10 @@
   "avatar": "person/fighter18.png",
   "gold": 50,
   "roster": [
-    "aldric",
-    "legolas",
-    "selina",
-    "elminster"
+    "caramon_majere",
+    "goldmoon",
+    "tanis_half_elven",
+    "raistlin_majere"
   ],
   "party_effects": [],
   "inventory": [
@@ -19,16 +19,16 @@
       "charges": 10
     },
     {
-      "item": "camping_supplies",
-      "charges": 3
-    },
-    {
       "item": "rock",
-      "charges": 10
+      "charges": 20
     },
     {
       "item": "lockpick",
-      "charges": 10
+      "charges": 2
+    },
+    {
+      "item": "camping_supplies",
+      "charges": 3
     }
   ],
   "torch_steps": 0,

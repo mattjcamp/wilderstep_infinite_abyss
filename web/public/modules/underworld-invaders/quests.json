@@ -378,8 +378,8 @@
     },
     {
       "id": "the_royal_armory",
-      "name": "The Royal Armory & The Worm",
-      "description": "Our family's most powerful weapons have been hidden in a temporary royal armory in the Water Shrine. Sadly, the location of the armory has been discovered and seized by our enemies. You will need these weapons for the trials ahead. Go to the Shrine, secure the armory and outfit your band with whatever weapons you see fit.",
+      "name": "The Royal Armory & The Ancient Dragon",
+      "description": "Our family's most powerful weapons have been hidden from the Dragon in a temporary royal armory in the Water Shrine far to the East. Sadly, the location of the armory has been discovered and seized by our enemies. You will need these weapons for the trials ahead. Go to the Shrine, secure the armory.  outfit your band and use my family's relics to destroy the Great Worm",
       "tags": [
         "main_story"
       ],
@@ -400,7 +400,7 @@
               "row": 7
             }
           ],
-          "description": "A smaller dragon like creature was sent by that ancient dragon to block anyone from the armory, you must push through them to get to the armory."
+          "description": "The Elemental Water Shrine is located in the far east on an island. You will need to secure a boat. Rumor has it that one is hidden in the town of Hallowmere. Smaller dragon like creatures have been  sent by the ancient dragon to block anyone from the armory, you must push through them to get to the armory once you locate the shrine."
         },
         {
           "id": "the_royal_armory_step_2",
@@ -440,13 +440,14 @@
             }
           ],
           "location_kind": "map",
-          "map_id": "caves_1_l3"
+          "map_id": "caves_1_l3",
+          "description": "Descend into the cave on the island east of the capital and destroy the Ancient Dragon that has been tormenting the countryside."
         }
       ],
       "quest_giver": {
         "npc_name": "Lord Wellerman",
         "npc_sprite": "person/king1.png",
-        "start_dialog": "Our family's most powerful weapons have been hidden in a temporary royal armory in the Water Shrine. Sadly, the location of the armory has been discovered and seized by our enemies. You will need these weapons for the trials ahead. Go to the Shrine, secure the armory and outfit your band with whatever weapons you see fit.",
+        "start_dialog": "Our family's most powerful weapons have been hidden from the Dragon in a temporary royal armory in the Water Shrine far to the East. Sadly, the location of the armory has been discovered and seized by our enemies. You will need these weapons for the trials ahead. Go to the Shrine, secure the armory.  outfit your band and use my family's relics to destroy the Great Worm",
         "end_dialog": "Good work lads and ladies, now go forth and destroy the Dragon before we get down to pushing back the infernal horde."
       },
       "rewards": {

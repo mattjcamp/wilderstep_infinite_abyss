@@ -4,13 +4,13 @@
     "col": 37,
     "row": 23
   },
-  "avatar": "person/fighter18.png",
+   "avatar": "person/fighter18.png",
   "gold": 50,
   "roster": [
-    "aldric",
-    "legolas",
-    "selina",
-    "elminster"
+    "caramon_majere",
+    "goldmoon",
+    "tanis_half_elven",
+    "raistlin_majere"
   ],
   "party_effects": [],
   "inventory": [
@@ -19,55 +19,16 @@
       "charges": 10
     },
     {
-      "item": "iron_key"
-    },
-    {
-      "item": "iron_key"
-    },
-    {
-      "item": "iron_key"
-    },
-    {
-      "item": "iron_key"
-    },
-    {
-      "item": "iron_key"
-    },
-    {
-      "item": "iron_key"
-    },
-    {
-      "item": "iron_key"
-    },
-    {
-      "item": "iron_key"
-    },
-    {
-      "item": "iron_key"
-    },
-    {
       "item": "rock",
       "charges": 20
     },
     {
       "item": "lockpick",
-      "charges": 10
+      "charges": 2
     },
     {
       "item": "camping_supplies",
       "charges": 3
-    },
-    {
-      "item": "arrows",
-      "charges": 40
-    },
-    {
-      "item": "bolts",
-      "charges": 40
-    },
-    {
-      "item": "stones",
-      "charges": 40
     }
   ],
   "torch_steps": 0,

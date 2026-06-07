@@ -53964,19 +53964,20 @@
             "tag": "walkable"
           },
           {
-            "id": "water",
-            "name": "Water",
-            "walkable": false,
+            "id": "ship_frigate",
+            "name": "Frigate",
+            "walkable": true,
             "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
-            "animation": "none",
+            "animation": null,
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/water.png",
-            "tag": "water"
+            "sprite": "map/ship_frigate.png",
+            "tag": "outdoor",
+            "boat": true
           },
           {
             "id": "water",
@@ -174749,7 +174750,8 @@
             "tag": "terrain"
           }
         ]
-      ]
+      ],
+      "fog_of_war": false
     },
     {
       "id": "water_shrine_2",
@@ -294774,7 +294776,12 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/stairs_down.png",
-            "tag": "indoor"
+            "tag": "indoor",
+            "link": {
+              "map_id": "caves_1_l2",
+              "x": 31,
+              "y": 29
+            }
           },
           {
             "boat": false,
@@ -308453,8 +308460,8 @@
             "trap": false,
             "link": {
               "map_id": "caves_1_l3",
-              "x": 0,
-              "y": 0
+              "x": 30,
+              "y": 7
             }
           },
           {
@@ -324678,8 +324685,8 @@
             "trap": false,
             "link": {
               "map_id": "caves_1_l1",
-              "x": 0,
-              "y": 0
+              "x": 29,
+              "y": 36
             }
           },
           {
@@ -340745,8 +340752,8 @@
             "trap": false,
             "link": {
               "map_id": "caves_1_l2",
-              "x": 0,
-              "y": 0
+              "x": 26,
+              "y": 11
             }
           },
           {

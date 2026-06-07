@@ -195,26 +195,25 @@ export function fullStr(c: GameClock): string {
 // ── Time-of-day classification ──────────────────────────────────────
 //
 // Phase windows (per 24h day). Originally a straight port of
-// game_time.py (day 7AM–7PM, dusk 7–8PM, night 8PM–5AM, dawn 5–7AM),
-// which put full night at 37.5% of all steps walked — punishing,
-// given night renders as a full-black overlay with only the party's
-// light pool. Re-tuned so darkness reads as an event rather than the
-// norm, and so twilight is a gradual two-hour shoulder on BOTH ends
-// of the night instead of a one-hour dusk snap:
+// game_time.py (day 7AM–7PM, dusk 7–8PM, night 8PM–5AM, dawn 5–7AM).
+// Re-tuned repeatedly so darkness reads as a brief late-night event
+// rather than the norm: daylight now runs almost to midnight, twilight
+// is a one-hour evening shoulder (11 PM) plus a gentler two-hour dawn,
+// and full darkness is a short 4-hour small-hours window:
 //
-//   day      6 AM – 8 PM   14h   58.3% of steps
-//   dusk     8 PM – 10 PM   2h   ┐
-//   dawn     4 AM – 6 AM    2h   ┘ twilight, 16.7%
-//   night   10 PM – 4 AM    6h   25%
+//   day      6 AM – 11 PM   17h   70.8% of steps
+//   dusk    11 PM – 12 AM    1h   ┐
+//   dawn     4 AM – 6 AM     2h   ┘ twilight, 12.5%
+//   night   12 AM – 4 AM     4h   16.7%
 //
 // Keep the four predicates mutually exclusive and jointly covering
 // all 24 hours — `lightingModeFromClock` (PlayHost) falls through
 // day → twilight → night, so a gap would silently render as night.
 
-/** True between 10 PM (22:00) and 4 AM. */
+/** True between 12 AM (00:00) and 4 AM — full darkness. */
 export function isNight(c: GameClock): boolean {
   const h = hour(c);
-  return h >= 22 || h < 4;
+  return h < 4;
 }
 
 /** True between 4 AM and 6 AM. */
@@ -223,16 +222,16 @@ export function isDawn(c: GameClock): boolean {
   return h >= 4 && h < 6;
 }
 
-/** True between 8 PM (20:00) and 10 PM. */
+/** True between 11 PM (23:00) and 12 AM — the evening twilight shoulder. */
 export function isDusk(c: GameClock): boolean {
   const h = hour(c);
-  return h >= 20 && h < 22;
+  return h >= 23;
 }
 
-/** True between 6 AM and 8 PM. */
+/** True between 6 AM and 11 PM (23:00). */
 export function isDay(c: GameClock): boolean {
   const h = hour(c);
-  return h >= 6 && h < 20;
+  return h >= 6 && h < 23;
 }
 
 /** Hour the party wakes when camping through the night — 6:00 AM,

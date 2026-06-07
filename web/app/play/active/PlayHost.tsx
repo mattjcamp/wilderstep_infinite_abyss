@@ -110,6 +110,7 @@ import {
   campfireRest,
   glowAura,
   healingSparkles,
+  itemPickup,
   radialBurst,
   screenShake,
   VFX_COLOURS,
@@ -2058,6 +2059,15 @@ export function PlayHost() {
          *  `update()` skip the setText call on frames where the
          *  minute hasn't changed. */
         lastClockShown = 0;
+        /** Camera-pan ("look around") state. Hold ⌘ (Cmd) / Ctrl and
+         *  drag to scroll the camera around the map (clamped to its
+         *  edges); releasing the drag eases the view back to the party.
+         *  We use the modifier rather than Space because Space already
+         *  waits a turn in place (see MapSimulation.handleKey). */
+        panModifierHeld = false; // ⌘/Ctrl currently down (cursor hint)
+        panDragging = false; // a modifier-drag is in progress
+        panLastX = 0;
+        panLastY = 0;
         constructor() {
           super("PlayScene");
         }
@@ -2553,6 +2563,67 @@ export function PlayHost() {
           this.cameras.main.setRoundPixels(true);
           this.recenterCamera(true);
 
+          // ── Camera pan ("look around") ──────────────────────────
+          // Hold ⌘ (Cmd) / Ctrl and drag the mouse to scroll the camera
+          // around the map, clamped to its edges (an axis the map fits
+          // within doesn't pan). We use the modifier — NOT Space —
+          // because Space already waits a turn in place
+          // (MapSimulation.handleKey). Releasing the drag lets update()'s
+          // follow ease the view back to the party. ⌘/Ctrl keydown only
+          // swaps the cursor to a grab hand as an affordance; the actual
+          // pan is driven by a modifier-held pointer drag. Phaser
+          // auto-removes these listeners on scene shutdown.
+          const isPanModifier = (e: MouseEvent | null | undefined) =>
+            !!(e && (e.metaKey || e.ctrlKey));
+          const setPanCursor = () => {
+            const canvas = this.game.canvas;
+            if (!canvas) return;
+            canvas.style.cursor = this.panDragging
+              ? "grabbing"
+              : this.panModifierHeld
+                ? "grab"
+                : "";
+          };
+          this.input.keyboard?.on("keydown", (e: KeyboardEvent) => {
+            if (e.key === "Meta" || e.key === "Control") {
+              this.panModifierHeld = true;
+              setPanCursor();
+            }
+          });
+          this.input.keyboard?.on("keyup", (e: KeyboardEvent) => {
+            if (e.key === "Meta" || e.key === "Control") {
+              this.panModifierHeld = false;
+              setPanCursor();
+            }
+          });
+          this.input.on("pointerdown", (p: Phaser.Input.Pointer) => {
+            if (!isPanModifier(p.event as MouseEvent)) return;
+            this.panDragging = true;
+            this.panLastX = p.x;
+            this.panLastY = p.y;
+            (p.event as Event | undefined)?.preventDefault?.();
+            setPanCursor();
+          });
+          this.input.on("pointermove", (p: Phaser.Input.Pointer) => {
+            if (!this.panDragging) return;
+            const cam = this.cameras.main;
+            // Grab/hand pan: dragging the world right scrolls the view
+            // left so the map tracks the cursor.
+            const next = this.clampPan(
+              cam.scrollX - (p.x - this.panLastX),
+              cam.scrollY - (p.y - this.panLastY),
+            );
+            cam.setScroll(Math.round(next.x), Math.round(next.y));
+            this.panLastX = p.x;
+            this.panLastY = p.y;
+          });
+          const endPanDrag = () => {
+            this.panDragging = false;
+            setPanCursor();
+          };
+          this.input.on("pointerup", endPanDrag);
+          this.input.on("pointerupoutside", endPanDrag);
+
           // Frame the map when it fits the play area on BOTH axes, so a
           // small centered scene reads as intentional rather than
           // floating in the void: a faint panel just outside the map's
@@ -2661,8 +2732,10 @@ export function PlayHost() {
          *  Phaser, and the loop runs at ~60fps. */
         override update(): void {
           // Ease the camera toward its per-axis target every frame so
-          // following (on overflow axes) stays smooth.
-          this.recenterCamera(false);
+          // following (on overflow axes) stays smooth — unless the
+          // player is mid pan-drag (⌘/Ctrl + drag), in which case the
+          // camera stays wherever they've dragged it.
+          if (!this.panDragging) this.recenterCamera(false);
           if (!this.logText) return;
           if (clockRef.current !== this.lastClockShown) {
             this.lastClockShown = clockRef.current;
@@ -2711,6 +2784,27 @@ export function PlayHost() {
           const nx = Math.abs(tx - cam.scrollX) <= 1 ? tx : cam.scrollX + (tx - cam.scrollX) * 0.2;
           const ny = Math.abs(ty - cam.scrollY) <= 1 ? ty : cam.scrollY + (ty - cam.scrollY) * 0.2;
           cam.setScroll(Math.round(nx), Math.round(ny));
+        }
+
+        /** Clamp a desired camera scroll to the map's pannable range,
+         *  reusing recenterCamera's per-axis rules: an axis the map
+         *  FITS within stays locked to its centered value (no pan);
+         *  an axis the map OVERFLOWS clamps to the map edges (leaving
+         *  the log strip's headroom on the vertical axis). Used by the
+         *  Space+drag look-around so the player can't scroll into the
+         *  void beyond the map. */
+        clampPan(x: number, y: number): { x: number; y: number } {
+          const viewW = PLAY_CANVAS_WIDTH;
+          const usableH = PLAY_CANVAS_HEIGHT - PLAY_LOG_HEIGHT;
+          const cx =
+            mapPixelWidth <= viewW
+              ? (mapPixelWidth - viewW) / 2
+              : Math.min(Math.max(x, 0), mapPixelWidth - viewW);
+          const cy =
+            mapPixelHeight <= usableH
+              ? (mapPixelHeight - usableH) / 2
+              : Math.min(Math.max(y, 0), mapPixelHeight - usableH);
+          return { x: cx, y: cy };
         }
 
         mountSim() {
@@ -3708,6 +3802,22 @@ export function PlayHost() {
               // cleared cell.item but the Phaser Image is still
               // sitting on the cell until we destroy it.
               itemOverlayBridgeRef.current?.removeItem(ev.pos.col, ev.pos.row);
+              // Pickup feedback for a PLAIN (non-quest) item: a quick
+              // golden sparkle at the cell + a light chime so the
+              // player notices the grab. Quest pickups already fire
+              // their own celebration (placard + fanfare) above, so we
+              // skip the extra cue there to avoid stacking sounds.
+              if (!matchedQuestId) {
+                const r = rendererRef.current;
+                if (r?.scene) {
+                  const x = ev.pos.col * TILE_SIZE + TILE_SIZE / 2;
+                  const y = ev.pos.row * TILE_SIZE + TILE_SIZE / 2;
+                  // Lifted above the party sprite (depth ~300) so the
+                  // sparkle reads on top of the party on the cell.
+                  itemPickup(r.scene, { x, y }, { depth: 305 });
+                }
+                Sfx.play("chirp");
+              }
               // Refresh quest glow — the just-picked cell no longer
               // needs a halo, and any newly-active step might.
               refreshQuestGlow();

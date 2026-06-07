@@ -1,6 +1,6 @@
 /**
  * Phase-window + camp-to-dawn coverage for the re-tuned day/night
- * cycle (day 6AM–8PM, dusk 8–10PM, night 10PM–4AM, dawn 4–6AM).
+ * cycle (day 6AM–11PM, dusk 11PM–12AM, night 12AM–4AM, dawn 4–6AM).
  */
 import { describe, expect, it } from "vitest";
 import {
@@ -31,31 +31,32 @@ describe("time-of-day phase windows", () => {
 
   it("uses the re-tuned boundaries", () => {
     expect(isDay(at(6))).toBe(true); // day starts 6 AM
-    expect(isDay(at(19, 59))).toBe(true); // ...through 7:59 PM
-    expect(isDusk(at(20))).toBe(true); // dusk 8 PM
-    expect(isDusk(at(21, 59))).toBe(true); // ...through 9:59 PM
-    expect(isNight(at(22))).toBe(true); // night 10 PM
+    expect(isDay(at(22, 59))).toBe(true); // ...through 10:59 PM
+    expect(isDusk(at(23))).toBe(true); // dusk (twilight) 11 PM
+    expect(isDusk(at(23, 59))).toBe(true); // ...through 11:59 PM
+    expect(isNight(at(0))).toBe(true); // night (darkness) 12 AM
     expect(isNight(at(3, 59))).toBe(true); // ...through 3:59 AM
+    expect(isNight(at(22))).toBe(false); // 10 PM is still day now
     expect(isDawn(at(4))).toBe(true); // dawn 4 AM
     expect(isDawn(at(5, 59))).toBe(true); // ...through 5:59 AM
   });
 
-  it("keeps night to 6 of 24 hours (25%)", () => {
+  it("keeps night to 4 of 24 hours (16.7%)", () => {
     let nightHours = 0;
     for (let h = 0; h < 24; h++) if (isNight(at(h))) nightHours += 1;
-    expect(nightHours).toBe(6);
+    expect(nightHours).toBe(4);
   });
 });
 
 describe("nextMorningMinutes (camp through the night)", () => {
   it("skips to the next 6:00 AM from inside the night window", () => {
-    const c = at(23, 30); // 11:30 PM
+    const c = at(0, 30); // 12:30 AM, night
     const morning = nextMorningMinutes(c);
     expect(morning).not.toBeNull();
     const woke = { totalMinutes: morning! };
     expect(hour(woke)).toBe(6);
-    // 11:30 PM → 6:00 AM is 6.5 hours.
-    expect(morning! - c.totalMinutes).toBe(6.5 * 60);
+    // 12:30 AM → 6:00 AM is 5.5 hours.
+    expect(morning! - c.totalMinutes).toBe(5.5 * 60);
   });
 
   it("skips forward (same day) from the small hours and from dawn", () => {
@@ -67,7 +68,7 @@ describe("nextMorningMinutes (camp through the night)", () => {
 
   it("returns null during day and dusk (no daytime fast-forward)", () => {
     expect(nextMorningMinutes(at(12))).toBeNull(); // noon
-    expect(nextMorningMinutes(at(19))).toBeNull(); // 7 PM, still day
-    expect(nextMorningMinutes(at(20, 30))).toBeNull(); // dusk
+    expect(nextMorningMinutes(at(22))).toBeNull(); // 10 PM, still day
+    expect(nextMorningMinutes(at(23, 30))).toBeNull(); // dusk (11:30 PM)
   });
 });
