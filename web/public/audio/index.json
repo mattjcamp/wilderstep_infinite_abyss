@@ -2,6 +2,130 @@
   "_comment": "Listing of every audio file under /public/audio/. Hand-maintained for now — Next.js static export can't directory-list at runtime, so the editor's SoundtrackPicker reads this file to know what tracks are available. Run `npm run reindex-audio` after dropping a file in this folder to regenerate it. Each `path` is what gets stored on a module / map / dungeon's soundtrack list and is what the SoundtrackPlayer hands to <audio>.src; `name` is the display label in the picker; optional `gain` (0-1) attenuates a track that's too loud relative to the rest of the soundtrack.",
   "tracks": [
     {
+      "path": "/audio/All Of My Love.mp3",
+      "name": "All Of My Love"
+    },
+    {
+      "path": "/audio/Aurelian Overture.mp3",
+      "name": "Aurelian Overture"
+    },
+    {
+      "path": "/audio/Chiquitita.mp3",
+      "name": "Chiquitita"
+    },
+    {
+      "path": "/audio/Chronicle of the Crystal Thrones.mp3",
+      "name": "Chronicle Of The Crystal Thrones"
+    },
+    {
+      "path": "/audio/Crimson Skies.mp3",
+      "name": "Crimson Skies"
+    },
+    {
+      "path": "/audio/Dancing Queen.mp3",
+      "name": "Dancing Queen"
+    },
+    {
+      "path": "/audio/Dungeons of Desolation.mp3",
+      "name": "Dungeons Of Desolation"
+    },
+    {
+      "path": "/audio/Gimme Gimme Gimme.mp3",
+      "name": "Gimme Gimme Gimme"
+    },
+    {
+      "path": "/audio/HALLELUJAH.mp3",
+      "name": "HALLELUJAH"
+    },
+    {
+      "path": "/audio/Haddaway - What Is Love (Medieval Style ｜ Bardcore).mp3",
+      "name": "Haddaway What Is Love (Medieval Style ｜ Bardcore)"
+    },
+    {
+      "path": "/audio/Lay All Your Love On Me.mp3",
+      "name": "Lay All Your Love On Me"
+    },
+    {
+      "path": "/audio/Lost in the Labyrinth.mp3",
+      "name": "Lost In The Labyrinth"
+    },
+    {
+      "path": "/audio/Mamma Mia.mp3",
+      "name": "Mamma Mia"
+    },
+    {
+      "path": "/audio/Money, Money, Money.mp3",
+      "name": "Money, Money, Money"
+    },
+    {
+      "path": "/audio/Mysteries of the Moonstone Citadel.mp3",
+      "name": "Mysteries Of The Moonstone Citadel"
+    },
+    {
+      "path": "/audio/No Quarter.mp3",
+      "name": "No Quarter"
+    },
+    {
+      "path": "/audio/Rammstein.mp3",
+      "name": "Rammstein"
+    },
+    {
+      "path": "/audio/September.mp3",
+      "name": "September"
+    },
+    {
+      "path": "/audio/Stairway To Heaven.mp3",
+      "name": "Stairway To Heaven"
+    },
+    {
+      "path": "/audio/Stayin' Alive.mp3",
+      "name": "Stayin' Alive"
+    },
+    {
+      "path": "/audio/Super Trouper.mp3",
+      "name": "Super Trouper"
+    },
+    {
+      "path": "/audio/Sweet Child O' Mine.mp3",
+      "name": "Sweet Child O' Mine"
+    },
+    {
+      "path": "/audio/Taketh A Chance On Me.mp3",
+      "name": "Taketh A Chance On Me"
+    },
+    {
+      "path": "/audio/Taketh On Me.mp3",
+      "name": "Taketh On Me"
+    },
+    {
+      "path": "/audio/The Phoenix's Flight.mp3",
+      "name": "The Phoenix's Flight"
+    },
+    {
+      "path": "/audio/The Red Moon.mp3",
+      "name": "The Red Moon"
+    },
+    {
+      "path": "/audio/Thunderstruck.mp3",
+      "name": "Thunderstruck"
+    },
+    {
+      "path": "/audio/Twin Peaks Theme.mp3",
+      "name": "Twin Peaks Theme"
+    },
+    {
+      "path": "/audio/Whirlwind Waltz.mp3",
+      "name": "Whirlwind Waltz"
+    },
+    {
+      "path": "/audio/Winds of Destiny.mp3",
+      "name": "Winds Of Destiny"
+    },
+    {
+      "path": "/audio/Wish You Were Here.mp3",
+      "name": "Wish You Were Here"
+    },
+    {
       "path": "/audio/africa.mp3",
       "name": "Africa",
       "gain": 0.05

@@ -88,6 +88,7 @@ import {
 } from "@/sim/MapSimulation";
 import {
   claimQuestRewards,
+  creditQuestDiscover,
   creditQuestRetrieve,
   ensureQuestStates,
   expandSpelunkingQuests,
@@ -1169,6 +1170,137 @@ export function PlayHost() {
     // Refresh the glow so newly-placed items light up immediately.
     refreshQuestGlow();
   }, [refreshQuestGlow]);
+
+  /** Grant a completed quest's rewards in place and mark it turned in.
+   *  Shared by the giver turn-in (onQuestDecline) and the "discover"
+   *  step's auto-turn-in — a discover objective finishes the quest
+   *  where the party stands, no walk back to the giver. `claimQuestRewards`
+   *  is the idempotency gate: it returns null unless the quest is in
+   *  "completed" state, so repeat calls are safe no-ops. Mirrors the
+   *  reward application the giver-dialog turn-in has always done (gold,
+   *  stack-merged items, XP + level-ups, tile_add ops), then fires the
+   *  big "quest complete" celebration. */
+  const grantQuestRewardsInPlace = useCallback(
+    (questId: string) => {
+      const claim = claimQuestRewards(
+        questDefsRef.current,
+        questStatesRef.current,
+        questId,
+      );
+      if (!claim) return;
+      let questLevelUps: ReadonlyArray<QuestLevelUpEvent> = [];
+      const save = saveRef.current;
+      if (save) {
+        const catalogItems = catalogRef.current?.items ?? [];
+        let nextInventory = save.party.inventory.map((e) => ({ ...e }));
+        for (const id of claim.items) {
+          nextInventory = addToInventory(nextInventory, id, catalogItems, 1);
+        }
+        const turnedIn = new Set(save.turnedInQuests ?? []);
+        turnedIn.add(claim.questId);
+        const nextMaps: typeof save.maps = { ...save.maps };
+        const liveMap = catalogRef.current?.map;
+        const palette = catalogRef.current?.palette ?? [];
+        const r = rendererRef.current;
+        for (const op of claim.tileAdds) {
+          const mapId = op.map;
+          const { col, row, tile_id: tileId } = op;
+          if (!tileId) continue;
+          const prev = nextMaps[mapId] ?? {
+            unlockedCells: [],
+            defeatedEncounters: [],
+            destroyedLairs: [],
+          };
+          const nextOverrides = [
+            ...(prev.tileOverrides ?? []),
+            { col, row, tileId },
+          ];
+          nextMaps[mapId] = { ...prev, tileOverrides: nextOverrides };
+          if (liveMap && mapId === liveMap.id) {
+            if (
+              row >= 0 &&
+              row < liveMap.height &&
+              col >= 0 &&
+              col < liveMap.width
+            ) {
+              const source = palette.find((t) => t.id === tileId);
+              if (source) {
+                liveMap.grid[row][col] = {
+                  ...source,
+                } as typeof liveMap.grid[number][number];
+                if (r && source.sprite) {
+                  r.setCellSprite(col, row, source.sprite);
+                }
+                if (
+                  (source as { boat?: boolean }).boat === true &&
+                  simRef.current &&
+                  source.sprite
+                ) {
+                  simRef.current.addBoatAt(col, row, source.sprite);
+                }
+              }
+            }
+          }
+        }
+        const xpResult = awardQuestXpWithLevelUps(
+          save.party.members,
+          claim.xp,
+          (catalogRef.current?.characters ??
+            []) as ReadonlyArray<QuestXpCharacterRef>,
+          (catalogRef.current?.classes ?? []) as ReadonlyArray<RawClass>,
+          (catalogRef.current?.races ?? []) as ReadonlyArray<QuestXpRaceRef>,
+        );
+        questLevelUps = xpResult.levelUps;
+        const nextMembers = xpResult.changed
+          ? xpResult.nextMembers
+          : save.party.members;
+        const nextSave: WorldSave = {
+          ...save,
+          party: {
+            ...save.party,
+            gold: save.party.gold + claim.gold,
+            inventory: nextInventory,
+            members: nextMembers,
+          },
+          turnedInQuests: [...turnedIn],
+          maps: nextMaps,
+        };
+        if (r && claim.tileAdds.length > 0) {
+          r.relight();
+        }
+        saveWorld(nextSave);
+        saveRef.current = nextSave;
+        refreshQuestGlow();
+      }
+      const parts: string[] = [];
+      if (claim.gold > 0) parts.push(`+${claim.gold} gold`);
+      if (claim.xp > 0) parts.push(`+${claim.xp} XP`);
+      if (claim.items.length > 0) {
+        parts.push(`items: ${claim.items.join(", ")}`);
+      }
+      const summary =
+        parts.length > 0
+          ? `Quest complete — ${claim.questName}. Rewards: ${parts.join(", ")}.`
+          : `Quest complete — ${claim.questName}.`;
+      setLogMessages((prev) => {
+        const next = [
+          ...prev,
+          summary,
+          ...questLevelUps.map((ev) => ev.message),
+        ];
+        return next.length > MAX_LOG
+          ? next.slice(next.length - MAX_LOG)
+          : next;
+      });
+      fireQuestCelebration({
+        kind: "quest",
+        title: claim.questName,
+        subtitle:
+          parts.length > 0 ? `Rewards: ${parts.join(", ")}` : "Rewards claimed",
+      });
+    },
+    [fireQuestCelebration, refreshQuestGlow],
+  );
 
   useEffect(() => {
     // Lock dialog, quest offer, active combat, the Party screen, and
@@ -3142,6 +3274,98 @@ export function PlayHost() {
                 // Herbalism is a flavour passive — never let an
                 // error in the find path crash the step handler.
               }
+              // ── Discover-quest detection ─────────────────────────
+              // A "discover" step credits when the party stands on its
+              // (map_id, col, row). Unlike retrieve there's no item on
+              // the tile — the destination itself is the objective —
+              // and finishing the quest auto-turns-in IN PLACE (rewards
+              // granted, no walk back to the giver). Dungeons are
+              // excluded: discover targets a map_id.
+              if (!dungeonStateRef.current) {
+                const dSave = saveRef.current;
+                const dMap = catalogRef.current?.map;
+                if (dSave && dMap) {
+                  const accepted = new Set(dSave.acceptedQuests ?? []);
+                  const turnedIn = new Set(dSave.turnedInQuests ?? []);
+                  let qId: string | null = null;
+                  let sIdx = -1;
+                  for (const def of questDefsRef.current) {
+                    if (qId) break;
+                    if (!accepted.has(def.id)) continue;
+                    if (turnedIn.has(def.id)) continue;
+                    for (let i = 0; i < def.steps.length; i++) {
+                      if (isStepDone(dSave, def, i)) continue;
+                      const step = def.steps[i];
+                      if (step.kind !== "discover") continue;
+                      if (!step.mapId || step.mapId !== dMap.id) continue;
+                      if (step.col !== ev.to.col) continue;
+                      if (step.row !== ev.to.row) continue;
+                      qId = def.id;
+                      sIdx = i;
+                      break;
+                    }
+                  }
+                  if (qId && sIdx >= 0) {
+                    const credit = creditQuestDiscover(
+                      questDefsRef.current,
+                      questStatesRef.current,
+                      qId,
+                      sIdx,
+                    );
+                    if (credit) {
+                      let nextSave = saveRef.current ?? dSave;
+                      const creditDef = questDefsRef.current.find(
+                        (d) => d.id === qId,
+                      );
+                      const creditStepId = creditDef?.steps[sIdx]?.id;
+                      if (creditDef && creditStepId) {
+                        const res = markStepDone(
+                          nextSave,
+                          creditDef,
+                          creditStepId,
+                        );
+                        nextSave = {
+                          ...nextSave,
+                          questStepProgress: res.questStepProgress,
+                          questStepsDone: res.questStepsDone,
+                        };
+                      }
+                      // Apply any step-scoped rewards (items / tile_add).
+                      const applied = applyStepRewardsToSave(
+                        nextSave,
+                        credit.stepRewards,
+                        {
+                          catalog: catalogRef.current,
+                          renderer: rendererRef.current,
+                          sim: simRef.current,
+                        },
+                      );
+                      nextSave = applied.nextSave;
+                      saveWorld(nextSave);
+                      saveRef.current = nextSave;
+                      if (applied.hadTileAdds) refreshQuestGlow();
+                      if (credit.questCompleted) {
+                        // Auto-turn-in in place — grants quest rewards
+                        // and fires the "quest complete" celebration,
+                        // no return to the giver. Reads the save we
+                        // just committed.
+                        grantQuestRewardsInPlace(qId);
+                      } else {
+                        // Mid-quest discover step — routine step placard.
+                        const subtitle =
+                          applied.summary && credit.step.name
+                            ? `${credit.step.name} — ${applied.summary}`
+                            : applied.summary || credit.step.name;
+                        fireQuestCelebration({
+                          kind: "step",
+                          title: creditDef?.name ?? qId,
+                          subtitle,
+                        });
+                      }
+                    }
+                  }
+                }
+              }
               // Persist every step. Without this the save only
               // committed on link crossings + combat resolution +
               // Save & Quit — so closing the tab mid-walk reverted
@@ -4583,208 +4807,16 @@ export function PlayHost() {
    *  sim-construction effect. */
   const onQuestDecline = useCallback(() => {
     setQuestOffer((current) => {
+      // In the "complete" view, closing the dialog IS the turn-in:
+      // grant the quest's rewards in place (the giver cell is where
+      // the party is standing). Shares the exact reward path the
+      // "discover" auto-turn-in uses.
       if (current?.complete) {
-        const claim = claimQuestRewards(
-          questDefsRef.current,
-          questStatesRef.current,
-          current.questId,
-        );
-        if (claim) {
-          // Level-ups triggered by the quest's XP — captured out
-          // here so the log-strip writer below (outside the save
-          // block) can surface one line per level gained.
-          let questLevelUps: ReadonlyArray<QuestLevelUpEvent> = [];
-          const save = saveRef.current;
-          if (save) {
-            // Quest reward items merge into existing stacks where
-            // possible — picking up two more Lockpicks bumps an
-            // existing Lockpicks row from 3 to 5 instead of creating
-            // a second row. Falls back to a fresh row for non-
-            // stackable items (unique magic items, etc.).
-            const catalogItems = catalogRef.current?.items ?? [];
-            let nextInventory = save.party.inventory.map((e) => ({ ...e }));
-            for (const id of claim.items) {
-              nextInventory = addToInventory(
-                nextInventory,
-                id,
-                catalogItems,
-                1,
-              );
-            }
-            // Persist the turned-in flag so a reload doesn't let the
-            // player re-bump the giver and re-claim. De-dupe via the
-            // Set indirection in case (defensively) the save already
-            // carried the id from a prior race.
-            const turnedIn = new Set(save.turnedInQuests ?? []);
-            turnedIn.add(claim.questId);
-            // ── Tile-mutation rewards ────────────────────────────
-            // Each tile_add op paints the named palette tile at
-            // (map, col, row). It's the only tile-mutation reward —
-            // "removal" is just a paint with the desired replacement
-            // tile, fully specified. The op gets recorded into the
-            // target map's `tileOverrides` so the mutation survives
-            // reload + re-entry. If the player is currently ON the
-            // affected map we ALSO mutate the live grid + repaint
-            // the cell sprite immediately so the change reads in the
-            // same frame as the turn-in dialog closes. Cells on
-            // other maps just get the override stamped on the save;
-            // the apply pass at map-mount picks them up next time
-            // the player visits.
-            const nextMaps: typeof save.maps = { ...save.maps };
-            const liveMap = catalogRef.current?.map;
-            const palette = catalogRef.current?.palette ?? [];
-            const r = rendererRef.current;
-            for (const op of claim.tileAdds) {
-              const mapId = op.map;
-              const { col, row, tile_id: tileId } = op;
-              if (!tileId) continue;
-              // Update the save's per-map override list (append; the
-              // mount-time apply pass picks them up in order so the
-              // latest write wins for repeat-paints of the same cell).
-              const prev = nextMaps[mapId] ?? {
-                unlockedCells: [],
-                defeatedEncounters: [],
-                destroyedLairs: [],
-              };
-              const nextOverrides = [
-                ...(prev.tileOverrides ?? []),
-                { col, row, tileId },
-              ];
-              nextMaps[mapId] = { ...prev, tileOverrides: nextOverrides };
-              // Live-update if on the same map: mutate the grid +
-              // setCellSprite. Out-of-bounds entries skip silently.
-              if (liveMap && mapId === liveMap.id) {
-                if (
-                  row >= 0 &&
-                  row < liveMap.height &&
-                  col >= 0 &&
-                  col < liveMap.width
-                ) {
-                  const source = palette.find((t) => t.id === tileId);
-                  if (source) {
-                    liveMap.grid[row][col] = {
-                      ...source,
-                    } as typeof liveMap.grid[number][number];
-                    if (r && source.sprite) {
-                      r.setCellSprite(col, row, source.sprite);
-                    }
-                    // If the new tile is flagged as a boat, register
-                    // it with the kernel's boatPositions map — the
-                    // seed-time grid scan only sees authored boats,
-                    // so a runtime boat addition needs an explicit
-                    // call here for the boarding logic to recognise
-                    // the cell on the next step. Cells stamped at
-                    // mount time (via the create() override pass)
-                    // don't need this path; the kernel's seed loop
-                    // picks them up before stepInDirection ever runs.
-                    if (
-                      (source as { boat?: boolean }).boat === true &&
-                      simRef.current &&
-                      source.sprite
-                    ) {
-                      simRef.current.addBoatAt(col, row, source.sprite);
-                    }
-                  }
-                }
-              }
-            }
-            // Bank the quest's XP into every alive member's saved
-            // `exp` field AND apply any level-ups the new total
-            // crosses — same curve + HP/MP gains combat's awardXp
-            // uses, run against the saved members directly so a
-            // quest reward that clears a threshold levels the
-            // member at turn-in time instead of deferring to the
-            // next fight. Full XP per member (matching the combat
-            // reward semantics — no split). `changed` lets us
-            // avoid an unnecessary members[] replacement when no
-            // one qualified (XP=0 or party wipe). The catalogs
-            // are the raw records the load pass stashed on
-            // catalogRef — classFromRaw inside the helper seeds
-            // the hp/mp/exp-per-level defaults v2's class records
-            // don't carry.
-            const xpResult = awardQuestXpWithLevelUps(
-              save.party.members,
-              claim.xp,
-              (catalogRef.current?.characters ??
-                []) as ReadonlyArray<QuestXpCharacterRef>,
-              (catalogRef.current?.classes ?? []) as ReadonlyArray<RawClass>,
-              (catalogRef.current?.races ?? []) as ReadonlyArray<QuestXpRaceRef>,
-            );
-            questLevelUps = xpResult.levelUps;
-            const nextMembers = xpResult.changed
-              ? xpResult.nextMembers
-              : save.party.members;
-            const nextSave: WorldSave = {
-              ...save,
-              party: {
-                ...save.party,
-                gold: save.party.gold + claim.gold,
-                inventory: nextInventory,
-                members: nextMembers,
-              },
-              turnedInQuests: [...turnedIn],
-              maps: nextMaps,
-            };
-            // Tile mutations may have changed walkability / light
-            // sources; trigger a relight so torches in newly-passable
-            // corridors light up immediately.
-            if (r && claim.tileAdds.length > 0) {
-              r.relight();
-            }
-            saveWorld(nextSave);
-            saveRef.current = nextSave;
-            // The just-turned-in quest's giver cell should stop
-            // glowing — the breadcrumb has done its job. Has to fire
-            // AFTER saveRef.current is committed so the glow pass
-            // sees the new turnedInQuests entry.
-            refreshQuestGlow();
-          }
-          // Player-facing summary in the log strip. Format mirrors
-          // the way combat reports loot: numbers prefixed with `+`,
-          // items spelled out, all in one line so the log doesn't
-          // flood.
-          const parts: string[] = [];
-          if (claim.gold > 0) parts.push(`+${claim.gold} gold`);
-          if (claim.xp > 0) parts.push(`+${claim.xp} XP`);
-          if (claim.items.length > 0) {
-            parts.push(`items: ${claim.items.join(", ")}`);
-          }
-          const summary =
-            parts.length > 0
-              ? `Quest complete — ${claim.questName}. Rewards: ${parts.join(", ")}.`
-              : `Quest complete — ${claim.questName}.`;
-          setLogMessages((prev) => {
-            // One line per level gained rides behind the reward
-            // summary ("Aldric reached Level 3! HP+7 MP+8") so
-            // quest-driven level-ups get the same log visibility
-            // combat level-ups have.
-            const next = [
-              ...prev,
-              summary,
-              ...questLevelUps.map((ev) => ev.message),
-            ];
-            return next.length > MAX_LOG
-              ? next.slice(next.length - MAX_LOG)
-              : next;
-          });
-          // Big celebration — bigger placard, victory fanfare, wider
-          // gold burst at the party. Fires AFTER state has been
-          // committed so the queue's render sees the post-claim
-          // state. Subtitle is the reward summary so the player sees
-          // what they got without flipping to the log strip.
-          fireQuestCelebration({
-            kind: "quest",
-            title: claim.questName,
-            subtitle:
-              parts.length > 0
-                ? `Rewards: ${parts.join(", ")}`
-                : "Rewards claimed",
-          });
-        }
+        grantQuestRewardsInPlace(current.questId);
       }
       return null;
     });
-  }, [fireQuestCelebration, refreshQuestGlow]);
+  }, [grantQuestRewardsInPlace]);
 
   // Render shells.
   if (state.kind === "loading") {

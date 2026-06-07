@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   activeKillStepsAt,
   claimQuestRewards,
+  creditQuestDiscover,
   creditQuestKill,
   creditQuestRetrieve,
   ensureQuestStates,
@@ -682,6 +683,66 @@ describe("step-level rewards", () => {
     expect(credit!.stepRewards.tileAdds).toEqual([
       { map: "forest", col: 5, row: 5, tile_id: "bridge" },
     ]);
+  });
+
+  it("creditQuestDiscover completes the quest and can be claimed in place", () => {
+    const defs = parseQuestsFile({
+      quests: [
+        {
+          id: "find_outpost",
+          name: "Find the Outpost",
+          steps: [
+            {
+              id: "s1",
+              name: "Reach the outpost",
+              kind: "discover",
+              location_kind: "map",
+              map_id: "the_crack",
+              col: 7,
+              row: 9,
+            },
+          ],
+          rewards: { xp: 250, gold: 50, items: ["torch"] },
+        },
+      ],
+    });
+    expect(defs[0].steps[0].kind).toBe("discover");
+    const states = new Map<string, QuestState>();
+    ensureQuestStates(defs, states);
+    states.get("find_outpost")!.status = "active";
+
+    const credit = creditQuestDiscover(defs, states, "find_outpost", 0);
+    expect(credit).not.toBeNull();
+    expect(credit!.stepCompleted).toBe(true);
+    expect(credit!.questCompleted).toBe(true);
+    // Completing the only step flips the quest to "completed" so the
+    // host can claim rewards in place (no return-to-giver gate).
+    expect(states.get("find_outpost")!.status).toBe("completed");
+    const claim = claimQuestRewards(defs, states, "find_outpost");
+    expect(claim).not.toBeNull();
+    expect(claim!.xp).toBe(250);
+    expect(claim!.gold).toBe(50);
+    expect(claim!.items).toEqual(["torch"]);
+    expect(states.get("find_outpost")!.status).toBe("turned_in");
+  });
+
+  it("creditQuestDiscover rejects the wrong kind / inactive quest", () => {
+    const defs = parseQuestsFile({
+      quests: [
+        {
+          id: "kill_rats",
+          name: "Kill Rats",
+          steps: [
+            { id: "s1", name: "kill", kind: "kill", encounter_id: "rat", count: 1 },
+          ],
+        },
+      ],
+    });
+    const states = new Map<string, QuestState>();
+    ensureQuestStates(defs, states);
+    states.get("kill_rats")!.status = "active";
+    // Step 0 is a kill step, not discover → null.
+    expect(creditQuestDiscover(defs, states, "kill_rats", 0)).toBeNull();
   });
 
   it("parses authored positions on a kill step", () => {

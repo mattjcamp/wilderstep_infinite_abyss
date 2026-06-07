@@ -23,6 +23,14 @@
  *   - `"collect"` — legacy alias of retrieve kept on the enum so older
  *               quests.json that still uses `"collect"` hydrates; new
  *               authoring writes `"retrieve"`.
+ *   - `"discover"` — credited by the party standing on the cell
+ *               `(col, row)` on the step's `map_id` — like `retrieve`
+ *               but with no item on the tile. Its defining trait is the
+ *               turn-in model: when a discover step completes a quest,
+ *               the host grants the quest rewards in place and marks it
+ *               `turned_in` immediately, so the party never has to walk
+ *               back to the giver. Used for "find / reach X" narrative
+ *               beats where the destination is hard to return from.
  *   - `"reach"` — credited simply by arriving on a dungeon floor that
  *               matches the step's `dungeon_id` + `dungeon_level`. The
  *               basis of "spelunking" quests: author ONE reach step
@@ -53,7 +61,12 @@ import { modulePath } from "./Module";
 import { sampleEncounter, type EncounterTemplate } from "./Encounters";
 
 export type QuestStatus = "available" | "active" | "completed" | "turned_in";
-export type QuestStepKind = "kill" | "collect" | "retrieve" | "reach";
+export type QuestStepKind =
+  | "kill"
+  | "collect"
+  | "retrieve"
+  | "reach"
+  | "discover";
 
 /** Where a step plays out in the v2 structured form. Empty means
  *  "any location credits the step." */
@@ -961,6 +974,66 @@ export function creditQuestRetrieve(
   const step = def.steps[stepIdx];
   if (!step) return null;
   if (step.kind !== "retrieve") return null;
+  if (state.stepProgress[stepIdx]) return null;
+  state.stepProgress[stepIdx] = true;
+  let questCompleted = false;
+  if (state.stepProgress.length > 0 && state.stepProgress.every((p) => p)) {
+    state.status = "completed";
+    questCompleted = true;
+  }
+  return {
+    questId,
+    stepIdx,
+    step,
+    stepCompleted: true,
+    questCompleted,
+    stepRewards: snapshotStepRewards(step.rewards),
+  };
+}
+
+// ── Discover credit ────────────────────────────────────────────
+
+/** Result of {@link creditQuestDiscover}. Identical shape to
+ *  {@link QuestRetrieveCredit} — discover is also single-shot (one
+ *  step-on credits it in full) — so the host can reuse the same
+ *  celebration / step-reward code path. */
+export interface QuestDiscoverCredit {
+  questId: string;
+  stepIdx: number;
+  step: QuestStep;
+  stepCompleted: true;
+  /** True when this credit was the LAST step's completion — quest
+   *  status flipped from "active" to "completed". The host then
+   *  auto-turns-in (grants rewards in place, no return to giver). */
+  questCompleted: boolean;
+  stepRewards: QuestStepRewards;
+}
+
+/**
+ * Credit the party for discovering a quest location. Returns null when
+ * the quest doesn't exist / isn't active / the step doesn't exist / the
+ * step isn't a `discover` kind / the step is already complete.
+ *
+ * On a successful credit, flips `stepProgress[stepIdx]` to true and
+ * bumps `state.status` to "completed" when that was the last
+ * outstanding step. Mirrors {@link creditQuestRetrieve}; the
+ * turn-in-without-giver behaviour lives on the host (it calls
+ * {@link claimQuestRewards} immediately on `questCompleted`).
+ */
+export function creditQuestDiscover(
+  defs: ReadonlyArray<QuestDef>,
+  states: ReadonlyMap<string, QuestState>,
+  questId: string,
+  stepIdx: number,
+): QuestDiscoverCredit | null {
+  const def = defs.find((d) => d.id === questId);
+  if (!def) return null;
+  const state = states.get(questId);
+  if (!state) return null;
+  if (state.status !== "active") return null;
+  const step = def.steps[stepIdx];
+  if (!step) return null;
+  if (step.kind !== "discover") return null;
   if (state.stepProgress[stepIdx]) return null;
   state.stepProgress[stepIdx] = true;
   let questCompleted = false;

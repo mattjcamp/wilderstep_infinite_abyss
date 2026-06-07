@@ -56,7 +56,10 @@ const UNTAGGED = "(untagged)";
 // leaves the level blank; at load time the runtime fans the single
 // step out into one reach step per floor of that dungeon, each
 // credited simply by arriving on the matching floor.
-const KNOWN_KINDS = ["kill", "retrieve", "reach"] as const;
+// `discover` is the "find a place" kind: the party stands on a cell
+// (col, row) on the step's Map and the quest completes in place —
+// rewards granted immediately, no return to the giver.
+const KNOWN_KINDS = ["kill", "retrieve", "reach", "discover"] as const;
 type StepKind = (typeof KNOWN_KINDS)[number] | string;
 
 interface QuestStep {
@@ -1863,6 +1866,54 @@ function StepRow({
               reaching it. Leave the rest of the step (and the Location
               block) untouched; the dungeon picker is all this kind
               needs.
+            </p>
+          </fieldset>
+        ) : step.kind === "discover" ? (
+          // Discover: the party stands on (col, row) of the step's Map
+          // and the quest completes in place — rewards granted on the
+          // spot, no return to the giver. No item, no encounter; the
+          // destination itself is the objective.
+          <fieldset className="sm:col-span-2 rounded border border-parchment/15 bg-ink/20 p-2">
+            <legend className="px-1 text-xs uppercase tracking-wide text-parchment/75">
+              Discover target
+            </legend>
+            <div className="grid gap-2 sm:grid-cols-[5rem_5rem]">
+              <label className="block">
+                <span className="text-xs uppercase tracking-wide text-parchment/65">
+                  Col
+                </span>
+                <input
+                  type="number"
+                  min={0}
+                  value={typeof step.col === "number" ? step.col : 0}
+                  onChange={(e) =>
+                    onUpdate({ col: Math.max(0, Number(e.target.value) || 0) })
+                  }
+                  className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-[13px] text-parchment/90"
+                />
+              </label>
+              <label className="block">
+                <span className="text-xs uppercase tracking-wide text-parchment/65">
+                  Row
+                </span>
+                <input
+                  type="number"
+                  min={0}
+                  value={typeof step.row === "number" ? step.row : 0}
+                  onChange={(e) =>
+                    onUpdate({ row: Math.max(0, Number(e.target.value) || 0) })
+                  }
+                  className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-[13px] text-parchment/90"
+                />
+              </label>
+            </div>
+            <p className="mt-1 text-xs text-parchment/65">
+              The step credits when the party walks onto this cell on
+              the step's <strong>Map</strong> (set in the Location block
+              below). When this completes the quest, rewards are granted
+              on the spot — no need to return to the quest giver. The
+              tile shows no marker, so the party discovers it by
+              exploring.
             </p>
           </fieldset>
         ) : (

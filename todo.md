@@ -1,6 +1,14 @@
+# Quote
+
+"when we die, we stand in the court of our former selves. I worndr how I will be judged... Will they wonder why I spent so much much time in life looking for middle ages versions of ABBA songs"
+
+
 # Content
-- make Demon invasion quest (devils pouring in over the plains coming from The Crack)
+
+- while in a tavern, the party gains hp and mp while listening to bardcore music for free
 - make find the outpost quest where we find a fort past The Crack (this may require a new quest type of "find location")
+- Add ABBA barcdore soundtrack to the northern trading outpost town. We will need a tavern.
+- Work out how soundtracks are inherited: can I do a soundtrack for an entire town that would play continously while in that that town or until overriden by a map?
 
 # Playthrough Polish
 

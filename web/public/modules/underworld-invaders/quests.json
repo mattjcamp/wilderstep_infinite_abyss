@@ -972,6 +972,36 @@
         "xp": 500,
         "gold": 500
       }
+    },
+    {
+      "id": "find_the_lost_citadel",
+      "name": "Find the Lost Citadel",
+      "description": "",
+      "tags": [
+        "main_story"
+      ],
+      "steps": [
+        {
+          "id": "find_the_lost_citadel_step_1",
+          "name": "Find a way through The Crack",
+          "kind": "discover",
+          "description": "Find a way to the other side of the crack, it must be hidden in one of the many dungeons in the mountains",
+          "location_kind": "map",
+          "map_id": "the_main_map",
+          "col": 82,
+          "row": 36
+        }
+      ],
+      "quest_giver": {
+        "npc_name": "",
+        "npc_sprite": "person/human_fighter.png",
+        "start_dialog": "We have a fortress hidden on the other side of the crack, but it is so secret that we do not know it's location. Go and find this fortress and help our brave warriors defeat this threat",
+        "end_dialog": ""
+      },
+      "rewards": {
+        "xp": 500,
+        "gold": 500
+      }
     }
   ]
 }
