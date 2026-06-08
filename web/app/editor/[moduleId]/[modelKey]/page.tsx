@@ -4,6 +4,7 @@
  * and shows a table (collections) or a single-record dump (singletons).
  */
 
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { CharactersBrowse } from "@/editor/CharactersBrowse";
@@ -48,7 +49,15 @@ export default function ModelBrowsePage({
         </span>
       </nav>
       {params.modelKey === "maps" ? (
-        <MapsBrowse moduleId={params.moduleId} />
+        // MapsBrowse calls useSearchParams() (for the `?tag=` deep-link
+        // from a map's tag chips), which bails static prerendering
+        // unless wrapped in a Suspense boundary — same pattern the map
+        // editor page uses.
+        <Suspense
+          fallback={<p className="p-4 text-parchment/60">Loading maps…</p>}
+        >
+          <MapsBrowse moduleId={params.moduleId} />
+        </Suspense>
       ) : params.modelKey === "dungeons" ? (
         <DungeonsBrowse moduleId={params.moduleId} />
       ) : params.modelKey === "quests" ? (

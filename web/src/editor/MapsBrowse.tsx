@@ -18,8 +18,8 @@
  */
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   discardDraft,
   downloadJson,
@@ -118,9 +118,21 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
   const [creating, setCreating] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [generatingDungeon, setGeneratingDungeon] = useState(false);
+  // A `?tag=` deep-link (from a map editor's tag chip) names a tag
+  // group to reveal on arrival.
+  const searchParams = useSearchParams();
+  const focusTag = searchParams.get("tag");
   // Tag groups the author has expanded. Starts empty — every group
-  // renders collapsed so the screen opens as a compact tag index.
-  const [openTags, setOpenTags] = useState<Set<string>>(() => new Set());
+  // renders collapsed so the screen opens as a compact tag index —
+  // EXCEPT a deep-linked tag, which starts open so the related maps
+  // are visible the moment the page loads.
+  const [openTags, setOpenTags] = useState<Set<string>>(() =>
+    focusTag ? new Set([focusTag]) : new Set(),
+  );
+  // Scroll the deep-linked group into view once the maps have loaded
+  // (the group's <section> only exists after the list renders). One-
+  // shot via the ref so later expands/collapses don't yank the page.
+  const didScrollToTagRef = useRef(false);
 
   const toggleTag = (tag: string) =>
     setOpenTags((prev) => {
@@ -208,6 +220,18 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
     for (const k of keys) sorted.set(k, groups.get(k)!);
     return sorted;
   }, [state]);
+
+  // Deep-link scroll: when arriving via `?tag=`, bring that group's
+  // section into view once the maps have loaded and rendered.
+  useEffect(() => {
+    if (!focusTag || didScrollToTagRef.current) return;
+    if (state.kind !== "ok") return;
+    const el = document.getElementById(`maptag-${encodeURIComponent(focusTag)}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      didScrollToTagRef.current = true;
+    }
+  }, [focusTag, state]);
 
   // ── Mutators (persist via the draft system) ────────────────────
   /**
@@ -727,7 +751,11 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
           you're working in. */}
       <div className="mt-6 space-y-3">
         {[...groupedByTag.entries()].map(([tag, maps]) => (
-          <section key={tag}>
+          <section
+            key={tag}
+            id={`maptag-${encodeURIComponent(tag)}`}
+            className="scroll-mt-4"
+          >
             <h2 className="text-[13px] uppercase tracking-wide text-parchment/65">
               <button
                 type="button"

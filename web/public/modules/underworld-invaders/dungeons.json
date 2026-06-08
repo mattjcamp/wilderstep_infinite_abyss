@@ -236,13 +236,7 @@
       "loot": {
         "chest_frequency": 0.1,
         "chest_item": "treasure_chest"
-      },
-      "soundtrack": [
-        "/audio/lost_in_the_labyrinth.mp3",
-        "/audio/creep.mp3",
-        "/audio/winds_of_destiny.mp3",
-        "/audio/the_unforgiven.mp3"
-      ]
+      }
     },
     {
       "id": "frost_delve",

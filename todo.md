@@ -2,19 +2,14 @@
 
 "when we die, we stand in the court of our former selves. I worndr how I will be judged... Will they wonder why I spent so much much time in life looking for middle ages versions of ABBA songs"
 
+# Bugs
 
-# Content
-
-- while in a tavern, the party gains hp and mp while listening to bardcore music for free
-- make find the outpost quest where we find a fort past The Crack (this may require a new quest type of "find location")
-- Add ABBA barcdore soundtrack to the northern trading outpost town. We will need a tavern.
-- Work out how soundtracks are inherited: can I do a soundtrack for an entire town that would play continously while in that that town or until overriden by a map?
+- In the party screen, we show the "light" toggle as if it is one even after it has run out
 
 # Playthrough Polish
 
 - Procedure dungeons appear to be already explored even though the party was never in them. The gray tiles appear
 
-- Add the ability for each Quest Step to have multiple encounters each with their own positions
 - In the Map Editor, allow editors to Command-Click to select multiple tiles so that attributes can be changed all at one time.
 - Improve the Encounter Picker in the Map Editor and Quest Editor to show Theme>Difficulty hierarchy
 

@@ -575,6 +575,12 @@ export type SimEvent =
       npcId?: string;
       questId?: string;
     }
+  /** Fired when the party passes a turn in place via {@link MapSimulation.waitTurn}
+   *  (Space). A move emits `moved`; a wait emits this so the host can run
+   *  per-turn effects (e.g. passive HP/MP regen on restful maps) for both
+   *  stepping AND skipping a turn. Carries no payload — the party didn't
+   *  move, so the host reads its current position / map as needed. */
+  | { kind: "waited" }
   /** Emitted whenever the *visible* simulation state changes — host
    *  uses this to re-render its panel (HP bars, torch countdown, …). */
   | { kind: "state" };
@@ -1650,6 +1656,9 @@ export class MapSimulation {
     this.bridge.relight();
     this.emit({ kind: "log", message: "The party waits." });
     this.runWorldAmbiencePass();
+    // Signal a turn passed without a move so the host can run per-turn
+    // effects (passive regen, …) for waits as well as steps.
+    this.emit({ kind: "waited" });
     this.emit({ kind: "state" });
   }
 

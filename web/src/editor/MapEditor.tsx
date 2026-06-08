@@ -28,6 +28,7 @@
  * rectangle), zoom/pan, walkable overlay, undo/redo.
  */
 
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { StaticModuleSource } from "@/data_model/StaticModuleSource";
@@ -3619,6 +3620,7 @@ export function MapEditor({
     lighting?: "day" | "twilight" | "darkness" | "world_time";
     soundtrack?: string[];
     fog_of_war?: boolean;
+    passive_regen?: { hp: number; mp: number };
   }) => {
     if (state.kind !== "ok") return;
     const updatedMap: MapRecord = {
@@ -3659,6 +3661,17 @@ export function MapEditor({
       (updatedMap as Record<string, unknown>).fog_of_war = false;
     } else {
       delete (updatedMap as Record<string, unknown>).fog_of_war;
+    }
+    // Passive regen: persist only when it actually heals, so non-restful
+    // maps stay shape-clean (no `passive_regen` key at all).
+    if (
+      next.passive_regen &&
+      (next.passive_regen.hp > 0 || next.passive_regen.mp > 0)
+    ) {
+      (updatedMap as Record<string, unknown>).passive_regen =
+        next.passive_regen;
+    } else {
+      delete (updatedMap as Record<string, unknown>).passive_regen;
     }
 
     const baseFile: Record<string, unknown> = state.ownFile
@@ -3798,9 +3811,22 @@ export function MapEditor({
         <span className="text-parchment/70">
           {mapRecord.width}×{mapRecord.height}
         </span>
+        {/* Tags as clickable chips — each jumps to the Maps browser
+            with that tag group expanded + scrolled into view, so the
+            author can hop straight to related maps. */}
         {Array.isArray(mapRecord.tags) && mapRecord.tags.length > 0 ? (
-          <span className="text-parchment/65">
-            tags: {mapRecord.tags.join(", ")}
+          <span className="flex flex-wrap items-center gap-1 text-parchment/65">
+            <span>tags:</span>
+            {mapRecord.tags.map((t) => (
+              <Link
+                key={t}
+                href={`/editor/${moduleId}/maps?tag=${encodeURIComponent(t)}`}
+                title={`Browse maps tagged "${t}".`}
+                className="rounded border border-parchment/20 bg-ink/40 px-1.5 py-0.5 text-[12px] text-parchment/80 hover:border-parchment/50 hover:bg-ink/60 hover:text-parchment"
+              >
+                {t}
+              </Link>
+            ))}
           </span>
         ) : null}
         <button
@@ -4398,6 +4424,16 @@ export function MapEditor({
                   // Default on — only an explicit `false` disables it.
                   fog_of_war:
                     (mapRecord as Record<string, unknown>).fog_of_war !== false,
+                  passive_regen: ((): { hp: number; mp: number } | undefined => {
+                    const v = (mapRecord as Record<string, unknown>)
+                      .passive_regen as
+                      | { hp?: unknown; mp?: unknown }
+                      | undefined;
+                    if (!v || typeof v !== "object") return undefined;
+                    const hp = typeof v.hp === "number" ? v.hp : 0;
+                    const mp = typeof v.mp === "number" ? v.mp : 0;
+                    return hp > 0 || mp > 0 ? { hp, mp } : undefined;
+                  })(),
                 }}
                 existingTags={existingTags}
                 onSave={onSaveMapAttrs}

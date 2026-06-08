@@ -423,6 +423,7 @@ import {
 } from "@/play/awardQuestXp";
 import type { RawClass } from "@/battle/world/Classes";
 import { herbalismOnStep } from "@/play/herbalism";
+import { applyPassiveRegen, regenHasEffect } from "@/play/passiveRegen";
 import {
   completedStepIds,
   isStepDone,
@@ -513,6 +514,12 @@ interface PlayMapRecord {
    *  the module-level default while the party is on this map;
    *  absent / empty falls back to the module's playlist. */
   soundtrack?: string[];
+  /** Optional "restful" passive regen. When present, every turn the
+   *  party spends on this map (a step OR a wait) trickles `hp` HP and
+   *  `mp` MP back into each living member, capped at their peak. Used
+   *  for towns / taverns / safe havens; absent → no passive healing.
+   *  Never applied in dungeons (the host gates that). */
+  passive_regen?: { hp: number; mp: number };
 }
 
 /** Minimal item shape PlayHost uses to render overlays. The full
@@ -1303,6 +1310,31 @@ export function PlayHost() {
     [fireQuestCelebration, refreshQuestGlow],
   );
 
+  /** One turn of passive HP/MP regen for "restful" maps (towns /
+   *  taverns). No-op in dungeons, off-map, or when the current map
+   *  carries no healing rate. Heals living members capped at their
+   *  peak, then persists in place — the same lightweight mutate-the-
+   *  ref pattern herbalism uses (no setState, so the Phaser scene
+   *  isn't torn down mid-step). Called from both the `moved` and
+   *  `waited` handlers so stepping AND skipping a turn both heal. */
+  const tickPassiveRegen = useCallback(() => {
+    if (dungeonStateRef.current) return; // never heal in dungeons
+    const save = saveRef.current;
+    const rate = catalogRef.current?.map?.passive_regen;
+    if (!save || !regenHasEffect(rate)) return;
+    const { nextMembers, changed } = applyPassiveRegen(
+      save.party.members,
+      rate!,
+    );
+    if (!changed) return;
+    const nextSave: WorldSave = {
+      ...save,
+      party: { ...save.party, members: nextMembers },
+    };
+    saveWorld(nextSave);
+    saveRef.current = nextSave;
+  }, []);
+
   useEffect(() => {
     // Lock dialog, quest offer, active combat, the Party screen, and
     // each of the three inspector overlays (Q quest log, H help, L
@@ -1471,6 +1503,26 @@ export function PlayHost() {
       // unscored locations inherit it (no call → no reset).
       Soundtrack.setPlaylist(catalog.moduleSoundtrack ?? []);
     }
+  }, [state, reloadKey]);
+
+  // Restful-map entry message. When the party arrives on a map that
+  // heals (and isn't in a dungeon), drop one flavour line so the player
+  // knows recovery is happening — the per-turn heals themselves are
+  // silent (a log line every step would flood). Deduped by map id so it
+  // fires once per arrival, not on every state re-render.
+  const lastRestMapIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    const map = state.kind === "ok" ? state.catalog?.map : null;
+    const id = map?.id ?? null;
+    if (id === lastRestMapIdRef.current) return; // same map — don't repeat
+    lastRestMapIdRef.current = id;
+    if (!map || dungeonStateRef.current) return;
+    if (!regenHasEffect(map.passive_regen)) return;
+    setLogMessages((prev) => {
+      const line = "You feel at ease here — the party slowly recovers.";
+      const next = [...prev, line];
+      return next.length > MAX_LOG ? next.slice(next.length - MAX_LOG) : next;
+    });
   }, [state, reloadKey]);
 
   // No unmount cleanup for the soundtrack: in React strict mode dev
@@ -2605,6 +2657,15 @@ export function PlayHost() {
             setPanCursor();
           });
           this.input.on("pointermove", (p: Phaser.Input.Pointer) => {
+            // Re-sync the modifier flag from the live pointer event so a
+            // missed keyup (e.g. ⌘+Tab away and back) can't strand the
+            // camera in "held" mode — moving the mouse corrects it and
+            // resumes the follow.
+            const held = isPanModifier(p.event as MouseEvent);
+            if (held !== this.panModifierHeld) {
+              this.panModifierHeld = held;
+              setPanCursor();
+            }
             if (!this.panDragging) return;
             const cam = this.cameras.main;
             // Grab/hand pan: dragging the world right scrolls the view
@@ -2732,10 +2793,14 @@ export function PlayHost() {
          *  Phaser, and the loop runs at ~60fps. */
         override update(): void {
           // Ease the camera toward its per-axis target every frame so
-          // following (on overflow axes) stays smooth — unless the
-          // player is mid pan-drag (⌘/Ctrl + drag), in which case the
-          // camera stays wherever they've dragged it.
-          if (!this.panDragging) this.recenterCamera(false);
+          // following (on overflow axes) stays smooth — UNLESS the
+          // player is looking around: hold ⌘/Ctrl and the camera stays
+          // put (so you can release the mouse mid-look without it
+          // snapping back), and a drag in progress always holds too.
+          // Releasing the modifier resumes the follow.
+          if (!this.panModifierHeld && !this.panDragging) {
+            this.recenterCamera(false);
+          }
           if (!this.logText) return;
           if (clockRef.current !== this.lastClockShown) {
             this.lastClockShown = clockRef.current;
@@ -3375,6 +3440,11 @@ export function PlayHost() {
                 // Herbalism is a flavour passive — never let an
                 // error in the find path crash the step handler.
               }
+              // Passive regen — restful maps (towns / taverns) trickle
+              // HP/MP back into living members each step. No-op off
+              // restful maps and in dungeons. (Waits heal too, via the
+              // `waited` handler below.)
+              tickPassiveRegen();
               // ── Discover-quest detection ─────────────────────────
               // A "discover" step credits when the party stands on its
               // (map_id, col, row). Unlike retrieve there's no item on
@@ -3484,6 +3554,15 @@ export function PlayHost() {
               // immediately when Detect Traps isn't active, so the
               // call is cheap on every step.
               refreshDetectedTraps();
+              return;
+            }
+            if (ev.kind === "waited") {
+              // A turn passed in place (Space). Restful maps heal on a
+              // wait exactly like a step, so the party can recover by
+              // loitering in town. tickPassiveRegen persists the change;
+              // no clock advance here (waiting doesn't move the world's
+              // hour today — same as before this feature).
+              tickPassiveRegen();
               return;
             }
             if (ev.kind === "log") {

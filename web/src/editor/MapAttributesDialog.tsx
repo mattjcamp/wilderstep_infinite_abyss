@@ -61,6 +61,12 @@ interface MapAttributes {
    *  also empty). The play host re-points the SoundtrackPlayer at
    *  this list on map entry. */
   soundtrack?: string[];
+  /** Optional "restful" passive regen. When present, the party
+   *  recovers `hp` HP and `mp` MP per turn (step or wait) while on
+   *  this map, capped at each member's peak — for towns / taverns /
+   *  safe havens. Absent → no passive healing. Never applies in
+   *  dungeons. */
+  passive_regen?: { hp: number; mp: number };
 }
 
 export function MapAttributesDialog({
@@ -89,6 +95,19 @@ export function MapAttributesDialog({
   const [soundtrack, setSoundtrack] = useState<string[]>(
     initial.soundtrack ? [...initial.soundtrack] : [],
   );
+  // Passive regen ("restful" maps). Enabled when the record carries a
+  // rate that actually heals; the per-stat rates default to 1/turn.
+  const [regenEnabled, setRegenEnabled] = useState<boolean>(
+    !!initial.passive_regen &&
+      ((initial.passive_regen.hp ?? 0) > 0 ||
+        (initial.passive_regen.mp ?? 0) > 0),
+  );
+  const [regenHp, setRegenHp] = useState<number>(
+    initial.passive_regen?.hp ?? 1,
+  );
+  const [regenMp, setRegenMp] = useState<number>(
+    initial.passive_regen?.mp ?? 1,
+  );
   const [nameError, setNameError] = useState<string | null>(null);
 
   // Close on Escape, save on Cmd/Ctrl+Enter — mirrors common
@@ -109,7 +128,17 @@ export function MapAttributesDialog({
     // handleSave is defined inside the component but is stable enough
     // for this — the closure reads the latest state via React.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [name, description, tags, lighting, soundtrack, fogOfWar]);
+  }, [
+    name,
+    description,
+    tags,
+    lighting,
+    soundtrack,
+    fogOfWar,
+    regenEnabled,
+    regenHp,
+    regenMp,
+  ]);
 
   const handleSave = () => {
     const trimmedName = name.trim();
@@ -138,6 +167,16 @@ export function MapAttributesDialog({
       // author turned it OFF — keeps fogged maps shape-identical
       // (no `"fog_of_war": true` churn). `false` is stored verbatim.
       fog_of_war: fogOfWar ? undefined : false,
+      // Passive regen: persist only when enabled AND at least one rate
+      // heals, so non-restful maps stay shape-clean (no field at all).
+      // Rates are clamped to non-negative integers.
+      passive_regen:
+        regenEnabled && (regenHp > 0 || regenMp > 0)
+          ? {
+              hp: Math.max(0, Math.floor(regenHp) || 0),
+              mp: Math.max(0, Math.floor(regenMp) || 0),
+            }
+          : undefined,
     });
   };
 
@@ -290,6 +329,64 @@ export function MapAttributesDialog({
               </span>
             </span>
           </label>
+
+          {/* Passive regen --------------------------------------- */}
+          {/* "Restful" maps slowly heal the party each turn (step or
+              wait). Off by default; meant for towns / taverns / safe
+              havens. Never applies in dungeons. */}
+          <div className="flex flex-col gap-1">
+            <label className="flex items-start gap-2">
+              <input
+                type="checkbox"
+                checked={regenEnabled}
+                onChange={(e) => setRegenEnabled(e.target.checked)}
+                className="mt-0.5"
+              />
+              <span className="flex flex-col">
+                <span className="text-[13px] text-parchment/85 font-mono">
+                  passive regen (restful)
+                </span>
+                <span className="text-xs text-parchment/65">
+                  Living members slowly recover HP / MP each turn while on
+                  this map — for towns, taverns, and safe havens. Capped
+                  at each member&apos;s max; never revives the downed and
+                  never applies in dungeons.
+                </span>
+              </span>
+            </label>
+            {regenEnabled ? (
+              <div className="ml-6 grid grid-cols-[6rem_6rem] gap-2">
+                <label className="flex flex-col gap-1">
+                  <span className="text-xs uppercase tracking-wide text-parchment/65">
+                    HP / turn
+                  </span>
+                  <input
+                    type="number"
+                    min={0}
+                    value={regenHp}
+                    onChange={(e) =>
+                      setRegenHp(Math.max(0, Number(e.target.value) || 0))
+                    }
+                    className="rounded border border-parchment/20 bg-ink/40 px-2 py-1 text-sm text-parchment focus:border-parchment/45"
+                  />
+                </label>
+                <label className="flex flex-col gap-1">
+                  <span className="text-xs uppercase tracking-wide text-parchment/65">
+                    MP / turn
+                  </span>
+                  <input
+                    type="number"
+                    min={0}
+                    value={regenMp}
+                    onChange={(e) =>
+                      setRegenMp(Math.max(0, Number(e.target.value) || 0))
+                    }
+                    className="rounded border border-parchment/20 bg-ink/40 px-2 py-1 text-sm text-parchment focus:border-parchment/45"
+                  />
+                </label>
+              </div>
+            ) : null}
+          </div>
         </div>
 
         <footer className="mt-4 flex shrink-0 items-center justify-end gap-2">
