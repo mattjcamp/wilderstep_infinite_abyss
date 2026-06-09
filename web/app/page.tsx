@@ -1,13 +1,17 @@
 /**
- * Landing page — the first thing a visitor sees. Two buttons:
+ * Landing page — the first thing a visitor sees. Three buttons:
  *
- *   • Play   → /play   (the game)
- *   • Editor → /editor (the module editor)
+ *   • Play            → /play        (the game)
+ *   • Editor          → /editor      (the module editor)
+ *   • Player's Manual → /manual.pdf  (the PDF, opened in a new tab)
  *
- * Stub only. No save detection, no module picker, no content. Those
- * arrive in later passes per docs/dev_guides/game_architecture_plan.md.
+ * The manual is a static asset shipped from web/public/manual.pdf
+ * (kept in sync by docs/manual/build_manual.py). Opening it in a new
+ * tab hands the browser's native PDF viewer the file directly — a
+ * full-page, chrome-free read, unlike the cluttered GitHub blob view.
  */
 import Link from "next/link";
+import { withBasePath } from "@/util/basePath";
 
 export default function HomePage() {
   return (
@@ -17,7 +21,7 @@ export default function HomePage() {
           Wilderstep: Infinite Abyss
         </h1>
         <p className="mt-3 text-parchment/70">
-          
+
         </p>
       </header>
       <nav className="flex flex-col gap-4 sm:flex-row">
@@ -33,6 +37,17 @@ export default function HomePage() {
         >
           Editor
         </Link>
+        {/* Static PDF — not a Next route, so basePath isn't auto-applied
+            (it is for <Link>); prepend it by hand and open in a new tab
+            so the browser renders the PDF full-page on its own. */}
+        <a
+          href={withBasePath("/manual.pdf")}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="rounded-md border border-parchment/40 bg-ink/60 px-8 py-3 text-lg text-parchment shadow transition hover:bg-ink/40"
+        >
+          Player&apos;s Manual
+        </a>
       </nav>
     </main>
   );

@@ -166104,7 +166104,11 @@
       "soundtrack": [
         "/audio/the_trooper.mp3",
         "/audio/fear_of_the_dark.mp3",
-        "/audio/hallowed_be_thy_name.mp3"
+        "/audio/hallowed_be_thy_name.mp3",
+        "/audio/All Of My Love.mp3",
+        "/audio/dont_fear_the_reaper.mp3",
+        "/audio/one.mp3",
+        "/audio/the_unforgiven.mp3"
       ],
       "lighting": "twilight",
       "fog_of_war": false,

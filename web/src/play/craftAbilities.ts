@@ -23,34 +23,13 @@
 import type { WorldSave } from "./saveTypes";
 import {
   addToInventory,
+  bundleSizeFor,
   type StackableItemRef,
 } from "./inventoryStacking";
 import type {
   RaceAbilityCharacterRef,
   RaceAbilityResult,
 } from "./raceAbilities";
-
-/** How many physical items one craft pull adds to the inventory.
- *  Matches the shop's bundle rule (`PlayCounterShopOverlay.bundleSize`):
- *  stackable items pay out the catalog's `charges` count (Arrows
- *  bundle of 20, Lockpicks bundle of 5, Fire Arrows bundle of 20,
- *  …); non-stackable items always add 1 because the catalog's
- *  `charges` field on those is per-instance durability, not a
- *  bundle quantity.
- *
- *  Spelled out here rather than imported from the shop so the
- *  craft helpers stay independent of the play-time UI module. The
- *  rule is short enough that the duplication is cheaper than the
- *  cross-module dependency. */
-function craftBundleSize(
-  itemId: string,
-  items: ReadonlyArray<StackableItemRef>,
-): number {
-  const def = items.find((i) => i.id === itemId);
-  if (!def?.stackable) return 1;
-  const c = def.charges;
-  return typeof c === "number" && c > 0 ? c : 1;
-}
 
 /** Per-ability stock list — the items the picker is allowed to
  *  offer. Kept as a single source of truth so the eligibility
@@ -162,7 +141,7 @@ export function attemptCraft(
       message: `${itemId} isn't something this ability can craft.`,
     };
   }
-  const count = craftBundleSize(itemId, items);
+  const count = bundleSizeFor(itemId, items);
   const nextInventory = addToInventory(
     save.party.inventory.map((e) => ({ ...e })),
     itemId,

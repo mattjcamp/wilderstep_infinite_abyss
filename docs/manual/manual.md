@@ -153,28 +153,30 @@ Each race grants a set of innate abilities and applies stat modifiers when a cha
 
 Most races level up at the same rate. The exception is the **Fast Learner** ability (Humans): a character with it levels up about **25% faster** than everyone else. See [Experience & Leveling](#experience--leveling) under Character Classes for how leveling works.
 
-| Race | Description | STR | DEX | CON | INT | WIS | Abilities |
-|---|---|---:|---:|---:|---:|---:|---|
-| **Dwarf** | Stout and hardy, dwarves are natural miners and warriors with keen underground senses. | +2 | -1 | +2 | 0 | +1 | Infravision |
-| **Elf** | Graceful and keen-minded, elves have a natural affinity for magic and sharp senses. | -1 | +1 | -1 | +2 | 0 | Nimble |
-| **Gnome** | Clever and curious, gnomes combine a knack for tinkering with innate magical talent. | -1 | 0 | 0 | +2 | +1 | Tinker |
-| **Halfling** | Small and nimble, halflings are surprisingly resilient and hard to hit. | -2 | +2 | 0 | 0 | +1 | Pickpocket |
-| **Human** | Versatile and adaptable, humans excel in no single area but have no weaknesses. They learn quickly and level up faster than other races. | 0 | 0 | 0 | 0 | 0 | Fast Learner |
+| Race | STR | DEX | CON | INT | WIS | Abilities |
+|---|---:|---:|---:|---:|---:|---|
+| **Dwarf** | +2 | -1 | +2 | 0 | +1 | Infravision |
+| **Elf** | -1 | +1 | -1 | +2 | 0 | Nimble |
+| **Gnome** | -1 | 0 | 0 | +2 | +1 | Tinker |
+| **Halfling** | -2 | +2 | 0 | 0 | +1 | Pickpocket |
+| **Human** | 0 | 0 | 0 | 0 | 0 | Fast Learner |
 
 ## Character Classes
 
 Class determines combat role, movement range per turn, which weapons and armor the character can equip, and which spell catalog (if any) they cast from. `Range` is the per-turn movement budget on the battle grid.
 
-| Class | Range | Casting | Allowed Items | Abilities (min level) |
-|---|---:|---|---|---|
-| **Alchemist** | 4 | sorcerer | fists, dagger, sling, cloth | Herbalism (L1)<br/>Brew Potion (L1) |
-| **Cleric** | 2 | priest | fists, club, mace, sling, cloth, leather, chain | Turn Undead (L2) |
-| **Druid** | 2 | sorcerer, priest | fists, dagger, club, mace, sling, cloth, leather | Dual Casting (L1)<br/>Herbalism (L1) |
-| **Fighter** | 4 | none | fists, dagger, club, mace, sword, axe, halberd, spear, gloves, sling, short_bow, long_bow, crossbow, rock, cloth, leather, chain, plate, exotic | — |
-| **Paladin** | 4 | priest | fists, dagger, club, mace, sword, spear, gloves, sling, short_bow, long_bow, rock, cloth, leather, chain | Turn Undead (L5)<br/>Smite Undead (L1) |
-| **Ranger** | 4 | priest | fists, dagger, club, sword, sling, short_bow, long_bow, crossbow, cloth, leather | Pick Locks (L5)<br/>Craft Arrows (L2)<br/>Craft Fire Arrows (L5) |
-| **Thief** | 6 | none | fists, dagger, club, sling, short_bow, cloth, leather | Pick Locks (L1)<br/>Detect Traps (L1)<br/>Backstab (L3)<br/>Shadow Step (L7) |
-| **Wizard** | 2 | sorcerer | fists, dagger, club, cloth | — |
+A class's full weapon and armor list appears in its entry in the Class Gallery below.
+
+| Class | Range | Casting | Abilities (min level) |
+|---|---:|---|---|
+| **Alchemist** | 4 | sorcerer | Herbalism (L1)<br/>Brew Potion (L1) |
+| **Cleric** | 4 | priest | Turn Undead (L2) |
+| **Druid** | 2 | sorcerer, priest | Dual Casting (L1)<br/>Herbalism (L1) |
+| **Fighter** | 4 | none | — |
+| **Paladin** | 4 | priest | Turn Undead (L5)<br/>Smite Undead (L1) |
+| **Ranger** | 4 | priest | Pick Locks (L5)<br/>Craft Arrows (L2)<br/>Craft Fire Arrows (L5) |
+| **Thief** | 6 | none | Pick Locks (L1)<br/>Detect Traps (L1)<br/>Backstab (L3)<br/>Shadow Step (L7) |
+| **Wizard** | 2 | sorcerer | — |
 
 ### Experience & Leveling
 
@@ -229,10 +231,12 @@ A closer look at each class — how it plays, and what it brings to the party. _
 
 A support specialist who turns the wild into an arsenal. Alchemists forage reagents (Herbalism) and Brew Potions from level 1, keeping the party stocked with healing and buffs. They cast from the sorcerer catalog but fight poorly — only a dagger, sling, and cloth — so they shine in the back ranks as a crafter and caster.
 
-`Move 4` · `Sorcerer` · `4 weapon types · up to cloth armor` · `Brew Potion (L1), Herbalism (L1)`
-
 </td>
 </tr></table>
+
+| Move | Casting | Weapons & Armor | Abilities |
+|:--:|:--|:--|:--|
+| 4 | Sorcerer | 4 weapon types · up to cloth armor | Brew Potion (L1), Herbalism (L1) |
 
 #### Cleric
 
@@ -241,11 +245,13 @@ A support specialist who turns the wild into an arsenal. Alchemists forage reage
 
 The party's divine anchor. Clerics draw on the priest catalog to heal and protect, wade in wearing chain with a mace or sling, and from level 2 can Turn Undead to wither the unliving. Slow on their feet at two tiles a turn, they reward patient, central positioning over aggression.
 
-`Move 2` · `Priest` · `5 weapon types · up to chain armor` · `Turn Undead (L2)`
-
 </td>
 <td width="170"><img src="assets/portrait_cleric.png" width="150" alt="Cleric"></td>
 </tr></table>
+
+| Move | Casting | Weapons & Armor | Abilities |
+|:--:|:--|:--|:--|
+| 4 | Priest | 5 weapon types · up to chain armor | Turn Undead (L2) |
 
 #### Druid
 
@@ -255,10 +261,12 @@ The party's divine anchor. Clerics draw on the priest catalog to heal and protec
 
 The only class that wields both arcane and divine magic, thanks to Dual Casting from level 1. Druids forage for reagents as they travel (Herbalism) and fight in leather with simple weapons. Versatile but slow at two tiles a turn and squishier than a true warrior — a flexible spellcaster for players who like options.
 
-`Move 2` · `Sorcerer + Priest` · `6 weapon types · up to leather armor` · `Dual Casting (L1), Herbalism (L1)`
-
 </td>
 </tr></table>
+
+| Move | Casting | Weapons & Armor | Abilities |
+|:--:|:--|:--|:--|
+| 2 | Sorcerer + Priest | 6 weapon types · up to leather armor | Dual Casting (L1), Herbalism (L1) |
 
 #### Fighter
 
@@ -267,11 +275,13 @@ The only class that wields both arcane and divine magic, thanks to Dual Casting 
 
 The workhorse of any party. Fighters command the widest armory in the game — every weapon family from fists to halberds and every armor from cloth to plate — and cover a brisk four tiles a turn. They cast no spells and have no special tricks; their strength is sheer durability and reliability, which makes them ideal in the lead slot soaking the first blows.
 
-`Move 4` · `No spells` · `All weapons & armor` · `—`
-
 </td>
 <td width="170"><img src="assets/portrait_fighter.png" width="150" alt="Fighter"></td>
 </tr></table>
+
+| Move | Casting | Weapons & Armor | Abilities |
+|:--:|:--|:--|:--|
+| 4 | No spells | All weapons & armor | — |
 
 #### Paladin
 
@@ -281,10 +291,12 @@ The workhorse of any party. Fighters command the widest armory in the game — e
 
 A holy warrior who fights on the front line and channels divine power. Paladins move four tiles a turn, wear chain and wield swords and spears, Smite Undead for double damage from level 1, and gain Turn Undead at level 5. They trade the Cleric's spell depth for martial muscle — the party's anti-undead vanguard.
 
-`Move 4` · `Priest` · `12 weapon types · up to chain armor` · `Smite Undead (L1), Turn Undead (L5)`
-
 </td>
 </tr></table>
+
+| Move | Casting | Weapons & Armor | Abilities |
+|:--:|:--|:--|:--|
+| 4 | Priest | 12 weapon types · up to chain armor | Smite Undead (L1), Turn Undead (L5) |
 
 #### Ranger
 
@@ -293,11 +305,13 @@ A holy warrior who fights on the front line and channels divine power. Paladins 
 
 A wilderness hunter built around ranged combat. Rangers favor bows — the crossbow included — and craft their own Arrows (level 2) and Fire Arrows (level 5) so they never run dry. They draw on a small priest catalog, pick locks from level 5, and move a nimble four tiles a turn: a self-sufficient skirmisher.
 
-`Move 4` · `Priest` · `8 weapon types · up to leather armor` · `Craft Arrows (L2), Craft Fire Arrows (L5), Pick Locks (L5)`
-
 </td>
 <td width="170"><img src="assets/portrait_ranger.png" width="150" alt="Ranger"></td>
 </tr></table>
+
+| Move | Casting | Weapons & Armor | Abilities |
+|:--:|:--|:--|:--|
+| 4 | Priest | 8 weapon types · up to leather armor | Craft Arrows (L2), Craft Fire Arrows (L5), Pick Locks (L5) |
 
 #### Thief
 
@@ -307,10 +321,12 @@ A wilderness hunter built around ranged combat. Rangers favor bows — the cross
 
 The fastest, sneakiest member of any party, covering six tiles a turn. Thieves pick locks and spot traps from level 1, land devastating Backstab criticals with daggers from level 3, and at level 7 can Shadow Step to move again after striking. Lightly armored and non-magical, they win through speed, utility, and hit-and-run positioning.
 
-`Move 6` · `No spells` · `5 weapon types · up to leather armor` · `Detect Traps (L1), Pick Locks (L1), Backstab (L3), Shadow Step (L7)`
-
 </td>
 </tr></table>
+
+| Move | Casting | Weapons & Armor | Abilities |
+|:--:|:--|:--|:--|
+| 6 | No spells | 5 weapon types · up to leather armor | Detect Traps (L1), Pick Locks (L1), Backstab (L3), Shadow Step (L7) |
 
 #### Wizard
 
@@ -319,11 +335,13 @@ The fastest, sneakiest member of any party, covering six tiles a turn. Thieves p
 
 A glass cannon of raw arcane power. Wizards cast from the sorcerer catalog but are the frailest class — limited to cloth and a dagger or club, and only two tiles of movement. Keep them well behind the front line: their spells can decide a fight, but a single solid hit can end them.
 
-`Move 2` · `Sorcerer` · `4 weapon types · up to cloth armor` · `—`
-
 </td>
 <td width="170"><img src="assets/portrait_wizard.png" width="150" alt="Wizard"></td>
 </tr></table>
+
+| Move | Casting | Weapons & Armor | Abilities |
+|:--:|:--|:--|:--|
+| 2 | Sorcerer | 4 weapon types · up to cloth armor | — |
 
 <!-- END GENERATED: class-gallery -->
 
@@ -553,6 +571,7 @@ Every monster in the game, sorted by difficulty (easy → normal → hard → de
 | <img src="../../web/public/sprites/monster/golem_blue.png" width="36" alt="Ice Golem"> | **Ice Golem** | hard | 45 | 16 | +4 | 2d6+2 | 5 | 100 | 15–45 |  |
 | <img src="../../web/public/sprites/monster/medusa.png" width="36" alt="Medusa"> | **Medusa** | hard | 45 | 15 | +4 | 2d6+2 | 6 | 100 | 15–45 | humanoid |
 | <img src="../../web/public/sprites/monster/dinosaur_beast_red.png" width="36" alt="Raptor Beast"> | **Raptor Beast** | hard | 45 | 15 | +4 | 2d6+2 | 8 | 100 | 15–45 |  |
+| <img src="../../web/public/sprites/monster/daemon2.png" width="36" alt="Daemon"> | **Daemon** | hard | 48 | 15 | +5 | 2d6+1 | 8 | 110 | 25–70 | humanoid, hit-and-run 1 |
 | <img src="../../web/public/sprites/monster/yeti_blue.png" width="36" alt="Frost Yeti"> | **Frost Yeti** | hard | 50 | 15 | +4 | 2d6+2 | 6 | 100 | 15–45 |  |
 | <img src="../../web/public/sprites/monster/man_thing1.png" width="36" alt="Man Eater"> | **Man Eater** | hard | 50 | 16 | +3 | 3d4 | 3 | 125 | 10–30 |  |
 | <img src="../../web/public/sprites/monster/troll_dark.png" width="36" alt="Dark Troll"> | **Dark Troll** | hard | 55 | 15 | +4 | 2d6+2 | 6 | 100 | 15–45 | humanoid |
@@ -566,10 +585,12 @@ Every monster in the game, sorted by difficulty (easy → normal → hard → de
 | <img src="../../web/public/sprites/monster/dragon_spirit.png" width="36" alt="Spirit Dragon"> | **Spirit Dragon** | deadly | 80 | 17 | +6 | 3d12 | 7 | 175 | 40–110 |  |
 | <img src="../../web/public/sprites/monster/giant_fire.png" width="36" alt="Fire Giant"> | **Fire Giant** | deadly | 95 | 17 | +6 | 3d8 | 7 | 175 | 40–110 | humanoid |
 | <img src="../../web/public/sprites/monster/hydra3_head_red.png" width="36" alt="Crimson Hydra"> | **Crimson Hydra** | deadly | 100 | 17 | +6 | 3d6 | 7 | 175 | 40–110 |  |
+| <img src="../../web/public/sprites/monster/balron_demon1.png" width="36" alt="Balor"> | **Balor** | deadly | 110 | 18 | +7 | 3d8+2 | 7 | 210 | 60–150 | humanoid, hit-and-run 1 |
 | <img src="../../web/public/sprites/monster/giant_octopus.png" width="36" alt="Hydra"> | **Hydra** | deadly | 110 | 15 | +6 | 3d8+2 | 2 | 190 | 40–120 |  |
 | <img src="../../web/public/sprites/person/townsperson21.png" width="36" alt="Stone Golem"> | **Stone Golem** | deadly | 110 | 18 | +6 | 2d12 | 1 | 205 | 30–80 |  |
 | <img src="../../web/public/sprites/monster/demon_major_lord.png" width="36" alt="Demon Lord"> | **Demon Lord** | boss | 125 | 18 | +6 | 4d8 | 6 | 335 | 120–300 | humanoid |
 | <img src="../../web/public/sprites/monster/dragon2.png" width="36" alt="Dragon"> | **Dragon** | boss | 125 | 18 | +6 | 4d8 | 8 | 335 | 20–50 | hit-and-run 2 |
+| <img src="../../web/public/sprites/monster/balron_demon2.png" width="36" alt="Pit Fiend"> | **Pit Fiend** | boss | 145 | 19 | +7 | 4d8+1 | 6 | 360 | 140–320 | humanoid |
 
 <!-- END GENERATED: monsters -->
 

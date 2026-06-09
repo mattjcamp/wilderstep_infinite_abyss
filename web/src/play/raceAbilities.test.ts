@@ -83,16 +83,19 @@ const GNOME_HERO: RaceAbilityCharacterRef = {
  *  branch. The PICKPOCKET_LOOT items the play side declares are
  *  the union of these ids. */
 function makeItems(): StackableItemRef[] {
+  // `charges` mirrors the shipped items.json bundle quantities so the
+  // bundle-payout rule (stackable → catalog charges) is exercised:
+  // ammo crafts in 20s, lockpicks in 5s, consumables / torch in 1s.
   return [
-    { id: "torch", stackable: true },
-    { id: "arrows", stackable: true },
-    { id: "healing_herb", stackable: true },
-    { id: "antidote", stackable: true },
-    { id: "lockpick", stackable: true },
-    { id: "mana_potion", stackable: true },
-    { id: "stones", stackable: true },
-    { id: "smoke_bomb", stackable: true },
-    { id: "holy_water", stackable: true },
+    { id: "torch", stackable: true, charges: 1 },
+    { id: "arrows", stackable: true, charges: 20 },
+    { id: "healing_herb", stackable: true, charges: 1 },
+    { id: "antidote", stackable: true, charges: 1 },
+    { id: "lockpick", stackable: true, charges: 5 },
+    { id: "mana_potion", stackable: true, charges: 1 },
+    { id: "stones", stackable: true, charges: 20 },
+    { id: "smoke_bomb", stackable: true, charges: 1 },
+    { id: "holy_water", stackable: true, charges: 1 },
     // Dagger is non-stackable in the shipped items.json.
     { id: "dagger", stackable: false },
   ];
@@ -412,5 +415,42 @@ describe("attemptTinker", () => {
     );
     expect(r.ok).toBe(true);
     expect(r.nextSave!.party.last_tinker_day).toBe(5);
+  });
+
+  it("crafts ammo as a bundle of the catalog charges (20 arrows)", () => {
+    const save = makeSave({}, [savedMember({ id: "p1" })]);
+    const r = attemptTinker(
+      save,
+      [GNOME_HERO],
+      makeCounters(),
+      makeItems(),
+      "arrows",
+      5,
+    );
+    expect(r.ok).toBe(true);
+    expect(r.nextSave!.party.inventory).toEqual([
+      { item: "arrows", charges: 20 },
+    ]);
+    // Player-facing line reflects the bundle quantity.
+    expect(r.message).toMatch(/bundle of 20 arrows/i);
+  });
+
+  it("merges a crafted ammo bundle onto an existing stash row", () => {
+    const save = makeSave(
+      { inventory: [{ item: "arrows", charges: 8 }] },
+      [savedMember({ id: "p1" })],
+    );
+    const r = attemptTinker(
+      save,
+      [GNOME_HERO],
+      makeCounters(),
+      makeItems(),
+      "arrows",
+      5,
+    );
+    expect(r.ok).toBe(true);
+    expect(r.nextSave!.party.inventory).toEqual([
+      { item: "arrows", charges: 28 },
+    ]);
   });
 });

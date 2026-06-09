@@ -22,7 +22,11 @@
  */
 
 import type { WorldSave } from "./saveTypes";
-import { addToInventory, type StackableItemRef } from "./inventoryStacking";
+import {
+  addToInventory,
+  bundleSizeFor,
+  type StackableItemRef,
+} from "./inventoryStacking";
 
 /** Minimal catalog character shape — `id` to find the saved member
  *  by, `race` (lowercased) to gate eligibility, `name` for the
@@ -282,11 +286,16 @@ export function attemptTinker(
       message: `${itemId} isn't something a Gnome can tinker up.`,
     };
   }
+  // Stackable items (arrows, bolts, stones, lockpicks, …) craft as a
+  // full bundle — the catalog's `charges` count — so Tinker matches
+  // the General Store's purchase payout and the Ranger arrow craft.
+  // Non-stackable items add a single copy.
+  const count = bundleSizeFor(itemId, items);
   const nextInventory = addToInventory(
     save.party.inventory.map((e) => ({ ...e })),
     itemId,
     items,
-    1,
+    count,
   );
   const nextSave: WorldSave = {
     ...save,
@@ -303,9 +312,13 @@ export function attemptTinker(
     ] as const),
   );
   const itemName = itemNameById.get(itemId) ?? itemId;
+  const message =
+    count > 1
+      ? `${gnome.name} tinkers up a bundle of ${count} ${itemName}.`
+      : `${gnome.name} tinkers up a ${itemName}.`;
   return {
     ok: true,
-    message: `${gnome.name} tinkers up a ${itemName}.`,
+    message,
     nextSave,
   };
 }

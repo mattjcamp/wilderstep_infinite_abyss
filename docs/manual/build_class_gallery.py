@@ -103,14 +103,25 @@ def abilities_label(abilities: list[dict], names: dict[str, str]) -> str:
     return ", ".join(parts)
 
 
-def stat_line(cls: dict, names: dict[str, str]) -> str:
-    chips = [
-        f"Move {cls.get('range', '?')}",
-        casting_label(cls.get("casting_type", [])),
-        gear_label(cls.get("allowable_item_types", [])),
-        abilities_label(cls.get("abilities", []), names),
-    ]
-    return " · ".join(f"`{c}`" if c != "—" else "`—`" for c in chips)
+def _esc_cell(s: str) -> str:
+    """Escape a value for a Markdown table cell (pipes only — these
+    blurbs/labels never contain newlines)."""
+    return s.replace("|", r"\|")
+
+
+def stat_table(cls: dict, names: dict[str, str]) -> str:
+    """A tidy one-row Markdown table of the class's at-a-glance stats —
+    replaces the old `·`-separated backtick line so it renders as a real
+    table in both the Markdown and the PDF."""
+    move = str(cls.get("range", "?"))
+    casting = casting_label(cls.get("casting_type", []))
+    gear = gear_label(cls.get("allowable_item_types", []))
+    abil = abilities_label(cls.get("abilities", []), names)
+    return (
+        "| Move | Casting | Weapons & Armor | Abilities |\n"
+        "|:--:|:--|:--|:--|\n"
+        f"| {move} | {_esc_cell(casting)} | {_esc_cell(gear)} | {_esc_cell(abil)} |"
+    )
 
 
 def class_block(cls: dict, names: dict[str, str], image_left: bool) -> str:
@@ -121,9 +132,14 @@ def class_block(cls: dict, names: dict[str, str], image_left: bool) -> str:
         f'<td width="{CELL_W}">'
         f'<img src="assets/portrait_{cid}.png" width="{PORTRAIT_W}" alt="{name}"></td>'
     )
-    text = "<td>\n\n" f"{desc}\n\n" f"{stat_line(cls, names)}\n\n" "</td>"
+    # Portrait + blurb live in a two-cell HTML row so they sit side by
+    # side (alternating which side the portrait is on). The at-a-glance
+    # stats follow as a tidy Markdown table BELOW the row — kept out of
+    # the HTML cell so it parses as a real table everywhere.
+    text = "<td>\n\n" f"{desc}\n\n" "</td>"
     cells = f"{img}\n{text}" if image_left else f"{text}\n{img}"
-    return f"#### {name}\n\n<table><tr>\n{cells}\n</tr></table>"
+    table = f"<table><tr>\n{cells}\n</tr></table>"
+    return f"#### {name}\n\n{table}\n\n{stat_table(cls, names)}"
 
 
 def build_gallery(classes: list[dict], names: dict[str, str]) -> str:

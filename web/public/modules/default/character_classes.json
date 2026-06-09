@@ -75,7 +75,7 @@
       "id": "cleric",
       "name": "Cleric",
       "description": "The party's divine anchor. Clerics draw on the priest catalog to heal and protect, wade in wearing chain with a mace or sling, and from level 2 can Turn Undead to wither the unliving. Slow on their feet at two tiles a turn, they reward patient, central positioning over aggression.",
-      "range": 2,
+      "range": 4,
       "hp_per_level": 6,
       "mp_per_level": 6,
       "casting_type": [

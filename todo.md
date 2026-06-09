@@ -1,15 +1,17 @@
 # Playthrough
 
-- Dial in the last Balrog encounter, test this in the simulator to make sure it's possible to beat this encounter
 - Add a custom boss map to Balrog encounter
 
 # Bugs
 
+- Double check that the Gnome tinkers the full set of 20 arrows
 - In the party screen, we show the "light" toggle as if it is one even after it has run out
 
 # Polish
 
-- In the Map Editor, allow editors to Command-Click to select multiple tiles so that attributes can be changed all at one time.
+- Add a third button that opens up the Player's Manual PDF
+- Build a simple tutorial world
+- Let's see how well LLM does in making a tutorial video of the gameplay
 
 ## Big Ideas
 

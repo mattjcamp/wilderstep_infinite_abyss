@@ -31,6 +31,7 @@ from reportlab.lib.colors import HexColor, Color
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import inch
+from reportlab.lib.utils import ImageReader
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfgen import canvas as canvaslib
 from reportlab.platypus import (
@@ -337,6 +338,144 @@ INLINE_RE_ITAL = re.compile(r"\*([^*]+?)\*")
 INLINE_RE_CODE = re.compile(r"`([^`]+?)`")
 INLINE_RE_LINK = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
 INLINE_RE_IMG = re.compile(r"<img[^>]*>", re.IGNORECASE)
+# Pull the src out of a single <img …> tag. Used to embed graphics that
+# actually exist on disk; the rest of the tag (alt text, width) is
+# deliberately ignored so nothing but the picture itself reaches the PDF.
+IMG_SRC_RE = re.compile(
+    r'<img[^>]*\bsrc=["\']([^"\']+)["\'][^>]*>', re.IGNORECASE
+)
+# Optional pixel width on an <img> tag — used to size embedded graphics
+# relative to the text column (720px ≈ full width, 150px ≈ a portrait).
+IMG_WIDTH_RE = re.compile(r'\bwidth=["\']?(\d+)', re.IGNORECASE)
+# Structural HTML the manual uses only for layout (centering screenshots,
+# the two-column class-gallery cells). We strip these wrapper tags before
+# tokenizing so the prose + images inside them render natively instead of
+# leaking as escaped angle-bracket text. <img> is intentionally NOT here.
+HTML_STRUCT_RE = re.compile(
+    r"</?(?:table|thead|tbody|tr|td|th|p|div|center|span)\b[^>]*>",
+    re.IGNORECASE,
+)
+
+
+def _strip_structural_html(md):
+    """Remove layout-only HTML wrapper tags (``<p>``, ``<table>``,
+    ``<td>``, …) line-by-line, keeping their inner content. Leaves
+    ``<img>`` and Markdown untouched so screenshots / portraits still
+    get embedded and tables still parse."""
+    return "\n".join(HTML_STRUCT_RE.sub("", line) for line in md.splitlines())
+
+
+# ── Class-gallery two-column rows ───────────────────────────────────
+# The gallery emits one `<table><tr> <td><img portrait></td> <td>blurb
+# </td> </tr></table>` per class (the portrait alternates sides). We
+# collapse each into a single sentinel line BEFORE the generic structural
+# strip so the renderer can lay the portrait + blurb out side by side
+# (a reportlab two-column table) instead of stacking them. The unit-
+# separator (\x1f) can't occur in the prose, so it's a safe delimiter.
+CLASSROW_SEP = "\x1f"
+CLASSROW_PREFIX = "@@CLASSROW@@"
+GALLERY_TABLE_RE = re.compile(
+    r"<table>\s*<tr>(?P<body>.*?)</tr>\s*</table>",
+    re.IGNORECASE | re.DOTALL,
+)
+TD_CELL_RE = re.compile(r"<td[^>]*>(?P<inner>.*?)</td>", re.IGNORECASE | re.DOTALL)
+
+
+def _extract_class_rows(md):
+    """Replace each two-cell portrait/blurb gallery table with a one-line
+    ``@@CLASSROW@@side\x1fsrc\x1fprose`` sentinel the renderer expands
+    into a side-by-side layout. Tables that aren't a 2-cell portrait row
+    are left untouched for the generic HTML strip to handle."""
+
+    def repl(m):
+        cells = TD_CELL_RE.findall(m.group("body"))
+        if len(cells) != 2:
+            return m.group(0)
+        img_idx = 0 if "<img" in cells[0].lower() else 1
+        sm = IMG_SRC_RE.search(cells[img_idx])
+        if not sm:
+            return m.group(0)
+        side = "left" if img_idx == 0 else "right"
+        # Strip any HTML from the prose cell but keep its Markdown so
+        # bold/italic still render; collapse whitespace to one line.
+        prose = re.sub(r"<[^>]+>", "", cells[1 - img_idx])
+        prose = re.sub(r"\s+", " ", prose).strip()
+        return (
+            f"\n\n{CLASSROW_PREFIX}{side}{CLASSROW_SEP}"
+            f"{sm.group(1)}{CLASSROW_SEP}{prose}\n\n"
+        )
+
+    return GALLERY_TABLE_RE.sub(repl, md)
+
+
+def _resolve_img_src(src):
+    """Resolve a manual ``<img src>`` to an on-disk Path, or ``None``.
+
+    Paths in manual.md are written relative to the manual directory
+    (e.g. ``assets/overview_map.png`` or
+    ``../../web/public/sprites/item/sword.png``). We resolve against
+    HERE and return the Path **only when the file actually exists**.
+    Remote (http/https) and missing-file references return ``None`` so
+    callers can omit the graphic entirely — the raw filepath/URL never
+    gets rendered as text. This is the rule behind "put in the graphics
+    if available; if not, don't print the path."
+    """
+    if not src:
+        return None
+    if src.startswith(("http://", "https://", "data:")):
+        return None
+    try:
+        p = (HERE / src).resolve()
+    except (OSError, ValueError):
+        return None
+    return p if p.is_file() else None
+
+
+def _fit_image(path, max_w, max_h=None):
+    """Build a reportlab ``Image`` scaled to fit ``max_w`` (and optional
+    ``max_h``) while preserving the source aspect ratio. Returns ``None``
+    if the image can't be read."""
+    try:
+        iw, ih = ImageReader(str(path)).getSize()
+    except Exception:
+        return None
+    if not iw or not ih or iw <= 0 or ih <= 0:
+        return None
+    w = max_w
+    h = w * ih / iw
+    if max_h is not None and h > max_h:
+        h = max_h
+        w = h * iw / ih
+    img = Image(str(path), width=w, height=h)
+    img.hAlign = "CENTER"
+    return img
+
+
+def _images_from_markup(text):
+    """Return centered Image flowables for every ``<img>`` in ``text``
+    whose source file exists on disk. Missing / remote sources are
+    skipped silently (no path text). Used for the full-width screenshot
+    blocks embedded in the prose."""
+    out = []
+    for m in IMG_SRC_RE.finditer(text):
+        path = _resolve_img_src(m.group(1))
+        if not path:
+            continue
+        # Size relative to the column from the tag's pixel width: the
+        # manual marks screenshots width="720" (full column) and class
+        # portraits width="150" (~1.3 in). Map 720px → full text width;
+        # fall back to full width when no width is given. Height is
+        # capped so a tall capture can't overflow the page frame.
+        wm = IMG_WIDTH_RE.search(m.group(0))
+        target_w = (
+            min(TEXT_WIDTH, int(wm.group(1)) * (TEXT_WIDTH / 720.0))
+            if wm
+            else TEXT_WIDTH
+        )
+        fl = _fit_image(path, max_w=target_w, max_h=TEXT_HEIGHT * 0.72)
+        if fl is not None:
+            out.append(fl)
+    return out
 
 
 def _html_escape(s):
@@ -364,6 +503,10 @@ def _inline(text):
     # any stray inline image from rendering as literal escaped text.
     text = INLINE_RE_IMG.sub("", text)
     s = _html_escape(text)
+    # Restore explicit line breaks: `<br>` / `<br/>` survive escaping as
+    # `&lt;br&gt;`; reportlab Paragraphs honour a real <br/>. Used in the
+    # overview table's stacked ability lists.
+    s = re.sub(r"&lt;br\s*/?&gt;", "<br/>", s, flags=re.IGNORECASE)
     s = INLINE_RE_LINK.sub(_link_sub, s)
     s = INLINE_RE_BOLD.sub(r"<b>\1</b>", s)
     s = INLINE_RE_ITAL.sub(r"<i>\1</i>", s)
@@ -609,21 +752,58 @@ def _class_page(blocks, name, portrait_path):
 def _data_table(rows, caption=None, title=None, col_widths=None):
     # The item / monster tables carry a leading sprite column of <img>
     # tags for the markdown manual (headed "Icon" for items, "Sprite"
-    # for monsters). The PDF doesn't embed sprites yet, so drop that
-    # column entirely here rather than leaving an empty gap. Detected by
-    # the header cell so other tables are untouched.
-    if rows and rows[0] and rows[0][0].strip().lower() in ("icon", "sprite"):
-        rows = [row[1:] for row in rows]
-        if col_widths is not None:
-            col_widths = col_widths[1:]
-    header = [Paragraph(_inline(c), TABLE_HEAD) for c in rows[0]]
-    body_cells = []
-    for row in rows[1:]:
-        body_cells.append([Paragraph(_inline(c), TABLE_CELL) for c in row])
-    data = [header] + body_cells
-    if col_widths is None:
+    # for monsters). Embed each sprite that resolves on disk as a small
+    # icon; cells whose sprite is missing render blank (never the raw
+    # path). If NOT ONE sprite in the column resolves, drop the column
+    # entirely rather than leave an empty gutter. Detected by the header
+    # cell so other tables are untouched.
+    icon_col = bool(
+        rows and rows[0] and rows[0][0].strip().lower() in ("icon", "sprite")
+    )
+    icon_w = 0.40 * inch
+    if icon_col:
+        # Pre-resolve each row's sprite so we can both build the icons
+        # and decide whether the column is worth keeping.
+        resolved = []
+        for row in rows[1:]:
+            cell = row[0] if row else ""
+            m = IMG_SRC_RE.search(cell)
+            resolved.append(_resolve_img_src(m.group(1)) if m else None)
+        if not any(resolved):
+            # Nothing to show — fall back to the historical drop.
+            rows = [row[1:] for row in rows]
+            if col_widths is not None:
+                col_widths = col_widths[1:]
+            icon_col = False
+
+    if icon_col:
+        # Header: blank the "Icon"/"Sprite" label — the pictures speak
+        # for themselves and it keeps the narrow column tidy.
+        header = [Paragraph("", TABLE_HEAD)] + [
+            Paragraph(_inline(c), TABLE_HEAD) for c in rows[0][1:]
+        ]
+        body_cells = []
+        for row, path in zip(rows[1:], resolved):
+            first = (
+                _fit_image(path, max_w=icon_w - 5, max_h=0.34 * inch)
+                if path
+                else ""
+            ) or ""
+            rest = [Paragraph(_inline(c), TABLE_CELL) for c in row[1:]]
+            body_cells.append([first] + rest)
+        data = [header] + body_cells
         n = len(rows[0])
-        col_widths = [TEXT_WIDTH / n] * n
+        if col_widths is None:
+            col_widths = [icon_w] + [(TEXT_WIDTH - icon_w) / (n - 1)] * (n - 1)
+    else:
+        header = [Paragraph(_inline(c), TABLE_HEAD) for c in rows[0]]
+        body_cells = []
+        for row in rows[1:]:
+            body_cells.append([Paragraph(_inline(c), TABLE_CELL) for c in row])
+        data = [header] + body_cells
+        if col_widths is None:
+            n = len(rows[0])
+            col_widths = [TEXT_WIDTH / n] * n
     tbl = Table(data, colWidths=col_widths, hAlign="CENTER", repeatRows=1)
     style = [
         ("FONT",      (0, 0), (-1, 0),  BOLD_FONT, 10.5),
@@ -730,6 +910,53 @@ def _render_blocks(story, blocks):
             continue
         if typ == "p":
             text = payload[0]
+            # Class-gallery row — portrait + blurb side by side, with the
+            # portrait on the authored side (alternating down the page).
+            if text.startswith(CLASSROW_PREFIX):
+                parts = text[len(CLASSROW_PREFIX):].split(CLASSROW_SEP)
+                side = parts[0] if parts else "left"
+                src = parts[1] if len(parts) > 1 else ""
+                prose = CLASSROW_SEP.join(parts[2:]) if len(parts) > 2 else ""
+                path = _resolve_img_src(src)
+                img_w = 1.5 * inch
+                img_fl = (
+                    _fit_image(path, max_w=img_w, max_h=2.2 * inch)
+                    if path
+                    else ""
+                ) or ""
+                prose_fl = Paragraph(_inline(prose), BODY_NOINDENT)
+                text_w = TEXT_WIDTH - img_w - 0.25 * inch
+                if side == "left":
+                    cells = [[img_fl, prose_fl]]
+                    widths = [img_w + 0.25 * inch, text_w]
+                else:
+                    cells = [[prose_fl, img_fl]]
+                    widths = [text_w, img_w + 0.25 * inch]
+                row = Table(cells, colWidths=widths)
+                row.setStyle(TableStyle([
+                    ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                    ("LEFTPADDING", (0, 0), (-1, -1), 0),
+                    ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+                    ("TOPPADDING", (0, 0), (-1, -1), 0),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+                ]))
+                story.append(Spacer(0, 2))
+                story.append(KeepTogether(row))
+                story.append(Spacer(0, 4))
+                i += 1
+                continue
+            # Image paragraphs — the prose embeds full-width screenshots
+            # as `<p align="center"><img src="assets/…"></p>`. Render the
+            # picture(s) that exist on disk and drop the wrapper markup
+            # entirely; a missing file yields nothing (never a raw path).
+            if "<img" in text.lower():
+                imgs = _images_from_markup(text)
+                for fl in imgs:
+                    story.append(Spacer(0, 6))
+                    story.append(KeepTogether(fl))
+                    story.append(Spacer(0, 6))
+                i += 1
+                continue
             # Standalone emphasis-only paragraphs → italic flavor text
             if text.startswith("*") and text.endswith("*") and "**" not in text:
                 story.append(Paragraph(_inline(text), FLAVOR))
@@ -867,6 +1094,17 @@ def _title_page(story):
 
 def build():
     md = MD_PATH.read_text(encoding="utf-8")
+    # Strip HTML comments first — the generators bracket their blocks
+    # with `<!-- BEGIN GENERATED: … -->` markers that are editor-only
+    # bookkeeping and must not surface in the reader-facing PDF.
+    md = re.sub(r"<!--.*?-->", "", md, flags=re.DOTALL)
+    # Collapse the gallery's portrait/blurb tables into sentinels BEFORE
+    # the generic strip, so the renderer can lay each out side by side.
+    md = _extract_class_rows(md)
+    # Drop layout-only wrapper tags so the screenshots + class-gallery
+    # portraits inside them embed as real images rather than leaking as
+    # escaped HTML text.
+    md = _strip_structural_html(md)
     blocks = _tokenize(md)
 
     doc = BaseDocTemplate(
@@ -894,6 +1132,18 @@ def build():
     doc.build(story)
     print(f"Wrote {OUT_PATH} ({OUT_PATH.stat().st_size // 1024} KB, "
           f"{len(blocks)} blocks)")
+
+    # Ship a copy into the web app's static folder so the landing page's
+    # "Player's Manual" button can serve it inline at /manual.pdf. The
+    # docs PDF is the source of truth; this keeps the in-game copy from
+    # going stale on every rebuild. Skipped silently if the web tree
+    # isn't present (e.g. a docs-only checkout).
+    public_copy = REPO / "web" / "public" / "manual.pdf"
+    if public_copy.parent.is_dir():
+        import shutil
+        shutil.copyfile(OUT_PATH, public_copy)
+        print(f"Synced {public_copy} "
+              f"({public_copy.stat().st_size // 1024} KB)")
 
 
 if __name__ == "__main__":

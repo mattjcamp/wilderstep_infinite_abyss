@@ -82,6 +82,36 @@ export function quantityOf(
   return q > 0 ? q : 0;
 }
 
+/** How many physical units one "bundle" grant of `itemId` adds to an
+ *  inventory. Stackable items pay out the catalog's `charges` count
+ *  (Arrows / Bolts / Stones bundle of 20, Lockpicks bundle of 5, …);
+ *  non-stackable items always add 1, because the catalog `charges`
+ *  field on those is per-instance durability, not a bundle quantity.
+ *  Unknown ids and non-positive / absent charge counts fall back to 1.
+ *
+ *  Single source of truth for the bundle rule the General Store
+ *  purchase flow, the Gnome Tinker craft, and the Ranger arrow/bolt
+ *  craft all share — so a "20 Arrows" payout looks identical no matter
+ *  which surface produced it. */
+export function bundleSizeFor(
+  itemId: string,
+  items:
+    | ReadonlyArray<StackableItemRef>
+    | ReadonlyMap<string, StackableItemRef>,
+): number {
+  if (!isStackable(itemId, items)) return 1;
+  let def: StackableItemRef | undefined;
+  if (items instanceof Map) {
+    def = items.get(itemId);
+  } else {
+    def = (items as ReadonlyArray<StackableItemRef>).find(
+      (i) => i.id === itemId,
+    );
+  }
+  const c = def?.charges;
+  return typeof c === "number" && c > 0 ? c : 1;
+}
+
 /** Append `count` of `itemId` to an inventory. For stackable items,
  *  merges into the first existing entry with the same id. For
  *  non-stackable, appends a fresh entry (one row per copy — old
