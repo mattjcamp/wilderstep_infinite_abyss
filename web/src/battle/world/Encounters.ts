@@ -225,6 +225,15 @@ export interface SampleOptions {
    * filter no-ops to avoid silently dropping every encounter.
    */
   monsterDifficulty?: (id: string) => string | undefined;
+  /**
+   * Optional encounter `theme` filter (e.g. "undead", "devil"). When
+   * set and non-empty, only encounters whose `theme` matches are
+   * eligible — a themed dungeon draws exclusively from its theme.
+   * Fallback: if NO encounter of that theme exists in the level band,
+   * the filter is skipped (the full eligible pool is used) rather than
+   * leaving rooms empty. Empty / unset → no theme restriction.
+   */
+  theme?: string;
 }
 
 /**
@@ -242,6 +251,16 @@ export function sampleEncounter(
   const maxLv = opts.maxLevel ?? 8;
   const rng = opts.rng ?? defaultRng;
   let eligible = list.filter((e) => e.level >= minLv && e.level <= maxLv);
+
+  // Theme filter — a themed dungeon only draws from matching-theme
+  // encounters. Falls back to the unfiltered pool when the theme has
+  // no encounters in this band, so a themed dungeon never generates
+  // emptier than an unthemed one.
+  const theme = opts.theme?.trim();
+  if (theme) {
+    const themed = eligible.filter((e) => e.theme === theme);
+    if (themed.length > 0) eligible = themed;
+  }
 
   const allow = opts.allowedDifficulties;
   const lookup = opts.monsterDifficulty;

@@ -133,6 +133,9 @@ export function generateDungeonFromRecord(
       // the room loop is skipped and the floor has no monsters.
       encounters: opts.encounters,
       encounterArea: "dungeon",
+      // Theme constraint (parent ⊕ level): a themed dungeon spawns only
+      // matching-theme encounters. Empty string → no restriction.
+      encounterTheme: resolved.theme,
       monsterDifficulty: opts.monsterDifficulty,
       requiredMonsterIds: opts.requiredMonstersByFloor?.get(floorIdx),
       seed,
@@ -208,6 +211,9 @@ export function resolveLevelOptions(
   const style = level.style ?? parent.style ?? DUNGEON_DEFAULTS.style;
   const difficulty =
     level.difficulty ?? parent.difficulty ?? DUNGEON_DEFAULTS.difficulty;
+  // Encounter theme: level override wins, else the parent's, else "" (no
+  // restriction). Trimmed so a stray whitespace value reads as "any".
+  const theme = (level.theme ?? parent.theme ?? DUNGEON_DEFAULTS.theme).trim();
   const size = level.size ?? parent.size ?? DUNGEON_DEFAULTS.size;
   const torch_density =
     level.torch_density ?? parent.torch_density ?? DUNGEON_DEFAULTS.torch_density;
@@ -253,6 +259,7 @@ export function resolveLevelOptions(
     floorIdx,
     style,
     difficulty,
+    theme,
     size,
     torch_density,
     locked_doors,

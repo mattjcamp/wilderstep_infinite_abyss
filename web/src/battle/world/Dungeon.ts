@@ -932,6 +932,12 @@ export interface GenerateLevelOptions {
   encounters?: Record<string, EncounterTemplate[]>;
   /** Encounter area key. Defaults to "dungeon". */
   encounterArea?: string;
+  /** Optional encounter theme. When set, the random-encounter spawner
+   *  only draws encounters whose `theme` matches (e.g. an "undead"
+   *  dungeon spawns only undead encounters), falling back to the full
+   *  pool if the theme has none in the level band. Empty / unset → no
+   *  theme restriction. */
+  encounterTheme?: string;
   /**
    * Lookup: monster catalog name → difficulty tag from monsters.json.
    * When supplied, the random-encounter spawner prunes each rolled
@@ -1162,6 +1168,7 @@ export function generateDungeonLevel(opts: GenerateLevelOptions): DungeonLevel {
         rng,
         allowedDifficulties,
         monsterDifficulty: opts.monsterDifficulty,
+        theme: opts.encounterTheme,
       });
       if (!enc) continue;
       monsters.push({

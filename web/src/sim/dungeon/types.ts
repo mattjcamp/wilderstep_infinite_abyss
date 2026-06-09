@@ -59,6 +59,10 @@ export interface DungeonLevelRecord {
   /** Per-Level overrides — omit any to inherit from the parent. */
   style?: DungeonStyle;
   difficulty?: DungeonDifficulty;
+  /** Encounter theme override for this floor (e.g. "undead"). When
+   *  set, the generator only spawns encounters of this theme here.
+   *  Inherits the parent dungeon's theme when absent. */
+  theme?: string;
   size?: DungeonSize;
   /** 0–1 probability per eligible wall tile. */
   torch_density?: number;
@@ -106,6 +110,12 @@ export interface DungeonRecord {
   tags?: string[];
   style?: DungeonStyle;
   difficulty?: DungeonDifficulty;
+  /** Encounter theme (e.g. "undead", "devil"). When set, the
+   *  procedural generator populates the dungeon ONLY with encounters
+   *  whose `theme` matches — falling back to the full pool if a level
+   *  band has none of that theme. Absent / empty → any theme. Levels
+   *  override per-floor. */
+  theme?: string;
   size?: DungeonSize;
   torch_density?: number;
   locked_doors?: number;
@@ -155,6 +165,10 @@ export interface ResolvedLevelOptions {
   floorIdx: number;
   style: DungeonStyle;
   difficulty: DungeonDifficulty;
+  /** Resolved encounter theme (parent ⊕ level). Empty string = no
+   *  theme restriction; otherwise the generator only spawns encounters
+   *  whose `theme` matches. */
+  theme: string;
   size: DungeonSize;
   /** 0–1 — passed through losslessly today; the v1 generator's
    *  banded TorchDensity is computed inside the wrapper. */
@@ -193,6 +207,8 @@ export interface ResolvedLevelOptions {
 export const DUNGEON_DEFAULTS = {
   style: "caves" as DungeonStyle,
   difficulty: "normal" as DungeonDifficulty,
+  /** Encounter theme. Empty = any theme (no restriction). */
+  theme: "",
   size: { width: 32, height: 32 } as DungeonSize,
   torch_density: 0.15,
   locked_doors: 0.25,

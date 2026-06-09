@@ -1146,6 +1146,60 @@
           "elixir_of_warding"
         ]
       }
+    },
+    {
+      "id": "seal_the_crack",
+      "name": "Seal the Crack",
+      "description": "Go into the great crack of the world and seal it shut",
+      "tags": [
+        "main_story"
+      ],
+      "steps": [
+        {
+          "id": "seal_the_crack_step_1",
+          "name": "Find the remaining Royal armory items",
+          "kind": "discover",
+          "description": "Rumor has it that orcs have stolen the royal weapons and hidden them in the Fire Shrine to the East",
+          "location_kind": "map",
+          "map_id": "the_main_map",
+          "col": 98,
+          "row": 30
+        },
+        {
+          "id": "seal_the_crack_step_2",
+          "name": "Destroy the hydra",
+          "kind": "kill",
+          "encounter_id": "the_apocalypse",
+          "location_kind": "map",
+          "map_id": "mm_fire_shrine_3",
+          "description": "A hydra has been summoned and bound to proect the Royal stash. Destroy the hydra before it destroys you."
+        },
+        {
+          "id": "seal_the_crack_step_3",
+          "name": "End the Pit Fiend",
+          "kind": "kill",
+          "description": "The Pit Fied",
+          "encounter_id": "pit_fiends_court",
+          "location_kind": "map",
+          "map_id": "the_crack_1_l4",
+          "positions": [
+            {
+              "col": 46,
+              "row": 26
+            }
+          ]
+        }
+      ],
+      "quest_giver": {
+        "npc_name": "",
+        "npc_sprite": "person/king2.png",
+        "start_dialog": "The time has come to finish this, go into the great crack of the world and seal it shut. The journey will be long and there are still many steps and help you will need along the way.",
+        "end_dialog": "Nice! Saved the world. Cool."
+      },
+      "rewards": {
+        "xp": 1000,
+        "gold": 1000
+      }
     }
   ]
 }

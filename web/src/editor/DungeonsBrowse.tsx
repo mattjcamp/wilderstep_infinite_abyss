@@ -63,6 +63,19 @@ type Style = (typeof STYLES)[number];
 const DIFFICULTIES = ["easy", "normal", "hard", "deadly", "boss"] as const;
 type Difficulty = (typeof DIFFICULTIES)[number];
 
+/** Encounter themes (matching the `theme` field on monsters /
+ *  encounters). When a dungeon picks one, the procedural generator
+ *  only spawns encounters of that theme. Authors can also type a
+ *  custom theme on the record; the picker preserves unknown values. */
+const THEMES = [
+  "devil",
+  "undead",
+  "elemental",
+  "humanoid",
+  "cryptid",
+  "magical",
+] as const;
+
 interface DungeonSize {
   width: number;
   height: number;
@@ -97,6 +110,9 @@ interface DungeonLevel {
   // Overrides — undefined means "inherit from parent Dungeon".
   style?: Style | string;
   difficulty?: Difficulty | string;
+  /** Encounter theme override for this floor; inherits the parent's
+   *  when undefined. */
+  theme?: string;
   size?: DungeonSize;
   torch_density?: number;
   locked_doors?: number;
@@ -121,6 +137,9 @@ interface DungeonRecord {
   // Generator defaults — required on Dungeon.
   style: Style | string;
   difficulty: Difficulty | string;
+  /** Encounter theme. When set, the generator only spawns encounters
+   *  of this theme (empty / absent → any). */
+  theme?: string;
   size: DungeonSize;
   torch_density: number;
   locked_doors: number;
@@ -174,6 +193,8 @@ type LoadState =
 const DEFAULTS = {
   style: "caves" as Style,
   difficulty: "normal" as Difficulty,
+  /** Empty = any theme (no encounter-theme restriction). */
+  theme: "",
   size: { width: 32, height: 32 },
   torch_density: 0.15,
   locked_doors: 0.25,
@@ -840,6 +861,7 @@ function DungeonEditor({
       <GeneratorFields
         style={dungeon.style}
         difficulty={dungeon.difficulty}
+        theme={dungeon.theme}
         size={dungeon.size}
         torchDensity={dungeon.torch_density}
         lockedDoors={dungeon.locked_doors}
@@ -855,6 +877,7 @@ function DungeonEditor({
         chestFrequency={dungeon.loot?.chest_frequency}
         onStyle={(v) => onUpdate({ style: v })}
         onDifficulty={(v) => onUpdate({ difficulty: v })}
+        onTheme={(v) => onUpdate({ theme: v })}
         onSize={(v) => onUpdate({ size: v })}
         onTorchDensity={(v) => onUpdate({ torch_density: v })}
         onLockedDoors={(v) => onUpdate({ locked_doors: v })}
@@ -989,6 +1012,7 @@ function LevelRow({
         <GeneratorFields
           style={level.style}
           difficulty={level.difficulty}
+          theme={level.theme}
           size={level.size}
           torchDensity={level.torch_density}
           lockedDoors={level.locked_doors}
@@ -1004,6 +1028,7 @@ function LevelRow({
           chestFrequency={level.loot?.chest_frequency}
           parentStyle={parent.style}
           parentDifficulty={parent.difficulty}
+          parentTheme={parent.theme}
           parentSize={parent.size}
           parentTorchDensity={parent.torch_density}
           parentLockedDoors={parent.locked_doors}
@@ -1017,6 +1042,7 @@ function LevelRow({
           parentChestFrequency={parent.loot?.chest_frequency}
           onStyle={(v) => onUpdate({ style: v })}
           onDifficulty={(v) => onUpdate({ difficulty: v })}
+          onTheme={(v) => onUpdate({ theme: v })}
           onSize={(v) => onUpdate({ size: v })}
           onTorchDensity={(v) => onUpdate({ torch_density: v })}
           onLockedDoors={(v) => onUpdate({ locked_doors: v })}
@@ -1054,6 +1080,7 @@ function LevelRow({
 function GeneratorFields({
   style,
   difficulty,
+  theme,
   size,
   torchDensity,
   lockedDoors,
@@ -1069,6 +1096,7 @@ function GeneratorFields({
   chestFrequency,
   parentStyle,
   parentDifficulty,
+  parentTheme,
   parentSize,
   parentTorchDensity,
   parentLockedDoors,
@@ -1082,6 +1110,7 @@ function GeneratorFields({
   parentChestFrequency,
   onStyle,
   onDifficulty,
+  onTheme,
   onSize,
   onTorchDensity,
   onLockedDoors,
@@ -1098,6 +1127,7 @@ function GeneratorFields({
   // Effective (own) value; may be undefined on Level rows.
   style: string | undefined;
   difficulty: string | undefined;
+  theme: string | undefined;
   size: DungeonSize | undefined;
   torchDensity: number | undefined;
   lockedDoors: number | undefined;
@@ -1120,6 +1150,7 @@ function GeneratorFields({
   // Parent values for placeholder fallback (only on Level rows).
   parentStyle?: string;
   parentDifficulty?: string;
+  parentTheme?: string;
   parentSize?: DungeonSize;
   parentTorchDensity?: number;
   parentLockedDoors?: number;
@@ -1134,6 +1165,7 @@ function GeneratorFields({
   // Callbacks — receiving `undefined` clears the override (Level only).
   onStyle: (v: string | undefined) => void;
   onDifficulty: (v: string | undefined) => void;
+  onTheme: (v: string | undefined) => void;
   onSize: (v: DungeonSize | undefined) => void;
   onTorchDensity: (v: number | undefined) => void;
   onLockedDoors: (v: number | undefined) => void;
@@ -1218,6 +1250,38 @@ function GeneratorFields({
             {difficulty &&
             !DIFFICULTIES.includes(difficulty as Difficulty) ? (
               <option value={difficulty}>{difficulty} (custom)</option>
+            ) : null}
+          </select>
+        </div>
+      </label>
+
+      {/* Theme — constrains which encounters the generator spawns.
+          Blank = any (on the parent) / inherit (on a level). */}
+      <label className="block">
+        <span className="text-xs uppercase tracking-wide text-parchment/65">
+          Theme
+        </span>
+        <div className="mt-0.5 flex items-center gap-1">
+          <select
+            value={theme ?? ""}
+            onChange={(e) =>
+              onTheme(e.target.value === "" ? undefined : e.target.value)
+            }
+            className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
+            title="Restrict procedurally-placed encounters to this theme. Blank = any theme."
+          >
+            <option value="">
+              {allowInherit
+                ? `(inherit${parentTheme ? ` — ${parentTheme}` : " — any"})`
+                : "(any)"}
+            </option>
+            {THEMES.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+            {theme && !THEMES.includes(theme as (typeof THEMES)[number]) ? (
+              <option value={theme}>{theme} (custom)</option>
             ) : null}
           </select>
         </div>

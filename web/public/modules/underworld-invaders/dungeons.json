@@ -310,6 +310,57 @@
       "loot": {
         "chest_item": "treasure_chest"
       }
+    },
+    {
+      "id": "the_crack",
+      "name": "The Crack",
+      "description": "A massive split in the world, with molten rock pouring out",
+      "tags": [],
+      "style": "custom",
+      "difficulty": "deadly",
+      "size": {
+        "width": 32,
+        "height": 32
+      },
+      "torch_density": 0,
+      "locked_doors": 0.25,
+      "levels": [
+        {
+          "id": "the_crack_l1",
+          "name": "Entrance to the Crack",
+          "depth": 1,
+          "style": "caves",
+          "difficulty": "hard"
+        },
+        {
+          "id": "the_crack_l2",
+          "name": "Level 2",
+          "depth": 2
+        },
+        {
+          "id": "the_crack_l3",
+          "name": "Level 3",
+          "depth": 3
+        },
+        {
+          "id": "the_crack_l4",
+          "name": "Level 4",
+          "depth": 4,
+          "custom_wall": "lava2",
+          "size": {
+            "width": 50,
+            "height": 32
+          }
+        }
+      ],
+      "theme": "devil",
+      "custom_floor": "path",
+      "custom_stairs_up": "stairs_up",
+      "custom_stairs_down": "stairs_down",
+      "custom_wall": "lava1",
+      "loot": {
+        "chest_item": "treasure_chest"
+      }
     }
   ]
 }

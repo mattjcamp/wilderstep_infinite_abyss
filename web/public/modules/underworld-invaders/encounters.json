@@ -84,6 +84,25 @@
       ],
       "custom_map": null,
       "tags": null
+    },
+    {
+      "id": "pit_fiends_court",
+      "area": "dungeon",
+      "theme": "devil",
+      "name": "Pit Fiend's Court",
+      "level": 8,
+      "weight": 5,
+      "monster_party_tile": "monster/balron_demon2.png",
+      "monsters": [
+        "pit_fiend",
+        "daemon",
+        "daemon",
+        "dragon",
+        "imp",
+        "imp"
+      ],
+      "custom_map": null,
+      "tags": null
     }
   ]
 }
