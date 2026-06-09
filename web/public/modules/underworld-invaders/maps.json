@@ -21360,6 +21360,8 @@
             "tag": "water"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -21375,6 +21377,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -21390,6 +21394,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -21405,6 +21411,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -22879,6 +22887,8 @@
             "tag": "water"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -22894,6 +22904,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -24399,6 +24411,8 @@
             "tag": "water"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -24414,6 +24428,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -25938,6 +25954,8 @@
             "tag": "water"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -27487,6 +27505,8 @@
             "tag": "water"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -27502,6 +27522,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -29053,6 +29075,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -29068,6 +29092,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -30653,6 +30679,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -32247,6 +32275,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -32294,6 +32324,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -32309,6 +32341,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -32943,7 +32977,7 @@
             "locked": false,
             "light_source": false,
             "light_range": 0,
-            "animation": null,
+            "animation": "none",
             "counter": null,
             "encounter": null,
             "spawn": null,
@@ -32960,7 +32994,7 @@
             "locked": false,
             "light_source": false,
             "light_range": 0,
-            "animation": null,
+            "animation": "none",
             "counter": null,
             "encounter": null,
             "spawn": null,
@@ -32977,7 +33011,7 @@
             "locked": false,
             "light_source": false,
             "light_range": 0,
-            "animation": null,
+            "animation": "none",
             "counter": null,
             "encounter": null,
             "spawn": null,
@@ -33848,6 +33882,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -33863,6 +33899,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -33878,6 +33916,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -33893,6 +33933,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -33908,6 +33950,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -34551,7 +34595,7 @@
             "locked": false,
             "light_source": false,
             "light_range": 0,
-            "animation": null,
+            "animation": "none",
             "counter": null,
             "encounter": "",
             "spawn": null,
@@ -34568,7 +34612,7 @@
             "locked": false,
             "light_source": false,
             "light_range": 0,
-            "animation": null,
+            "animation": "none",
             "counter": null,
             "encounter": null,
             "spawn": null,
@@ -34585,7 +34629,7 @@
             "locked": false,
             "light_source": false,
             "light_range": 0,
-            "animation": null,
+            "animation": "none",
             "counter": null,
             "encounter": null,
             "spawn": null,
@@ -35439,6 +35483,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -35454,6 +35500,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -35469,6 +35517,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -35484,6 +35534,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -35499,6 +35551,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -35514,6 +35568,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -36153,7 +36209,7 @@
             "locked": false,
             "light_source": false,
             "light_range": 0,
-            "animation": null,
+            "animation": "none",
             "counter": null,
             "encounter": null,
             "spawn": null,
@@ -36170,7 +36226,7 @@
             "locked": false,
             "light_source": false,
             "light_range": 0,
-            "animation": null,
+            "animation": "none",
             "counter": null,
             "encounter": null,
             "spawn": null,
@@ -36187,7 +36243,7 @@
             "locked": false,
             "light_source": false,
             "light_range": 0,
-            "animation": null,
+            "animation": "none",
             "counter": null,
             "encounter": null,
             "spawn": null,
@@ -37055,6 +37111,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -37070,6 +37128,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -37085,6 +37145,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -37100,6 +37162,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -37115,6 +37179,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -38659,6 +38725,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -38674,6 +38742,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -38689,6 +38759,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -38704,6 +38776,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -38719,6 +38793,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -40263,6 +40339,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -40278,6 +40356,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -40293,6 +40373,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -40308,6 +40390,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -40323,6 +40407,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -41857,6 +41943,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -41872,6 +41960,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -41887,6 +41977,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -41902,6 +41994,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -41917,6 +42011,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -41932,6 +42028,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -43432,6 +43530,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -43447,6 +43547,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -43462,6 +43564,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -43477,6 +43581,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -43492,6 +43598,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -43507,6 +43615,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -43522,6 +43632,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -43537,6 +43649,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -44991,6 +45105,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -45006,6 +45122,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -45021,6 +45139,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -45036,6 +45156,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -45051,6 +45173,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -45066,6 +45190,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -45081,6 +45207,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -45096,6 +45224,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -45111,6 +45241,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -45126,6 +45258,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -46561,6 +46695,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -46576,6 +46712,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -46591,6 +46729,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -46606,6 +46746,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -46621,6 +46763,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -46636,6 +46780,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -46651,6 +46797,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -46666,6 +46814,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -46681,6 +46831,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -46696,6 +46848,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -46711,6 +46865,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -48155,6 +48311,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -48170,6 +48328,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -48185,6 +48345,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -48200,6 +48362,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -48215,6 +48379,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -48230,6 +48396,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -48245,6 +48413,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -48260,6 +48430,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -48275,6 +48447,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -48290,6 +48464,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -49811,6 +49987,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -49826,6 +50004,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -49841,6 +50021,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -49856,6 +50038,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -49871,6 +50055,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -51429,6 +51615,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -51444,6 +51632,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -51459,6 +51649,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -53011,6 +53203,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -53026,6 +53220,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -53041,6 +53237,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -53056,6 +53254,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -53071,6 +53271,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -53086,6 +53288,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -54592,6 +54796,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -54607,6 +54813,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -54622,6 +54830,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -54637,6 +54847,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -54652,6 +54864,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -54667,6 +54881,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -56191,6 +56407,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -56206,6 +56424,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -56221,6 +56441,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -56236,6 +56458,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -56251,6 +56475,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -56474,6 +56700,8 @@
             "tag": "wall"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -56489,6 +56717,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -57768,6 +57998,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -57783,6 +58015,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -57798,6 +58032,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -57813,6 +58049,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -57828,6 +58066,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -57843,6 +58083,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -58067,6 +58309,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -58082,6 +58326,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -58097,6 +58343,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -59362,6 +59610,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -59377,6 +59627,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -59392,6 +59644,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -59407,6 +59661,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -59422,6 +59678,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -59661,6 +59919,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -59676,6 +59936,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -60948,6 +61210,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -60963,6 +61227,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -60978,6 +61244,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -60993,6 +61261,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -61248,6 +61518,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -61263,6 +61535,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -62532,6 +62806,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -62547,6 +62823,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -62562,6 +62840,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -64129,6 +64409,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -64144,6 +64426,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -64159,6 +64443,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -65712,6 +65998,8 @@
             "tag": "wall"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -65727,6 +66015,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -65742,6 +66032,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -67293,6 +67585,8 @@
             "tag": "wall"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -67308,6 +67602,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -67323,6 +67619,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -68902,6 +69200,8 @@
             }
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -70351,6 +70651,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -70366,6 +70668,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -70381,6 +70685,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -70460,6 +70766,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -70475,6 +70783,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -70490,6 +70800,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -71914,6 +72226,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -71929,6 +72243,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -71944,6 +72260,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -71959,6 +72277,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -72038,6 +72358,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -72053,6 +72375,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -73498,6 +73822,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -73513,6 +73839,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -73528,6 +73856,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -73543,6 +73873,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -73622,6 +73954,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -73637,6 +73971,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -75127,6 +75463,8 @@
             "tag": "wall"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -75206,6 +75544,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -75221,6 +75561,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -76778,6 +77120,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -76793,6 +77137,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -78369,6 +78715,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -78384,6 +78732,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -79965,6 +80315,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -79980,6 +80332,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -81554,6 +81908,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -81569,6 +81925,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -83140,6 +83498,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -83155,6 +83515,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -84743,6 +85105,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -84758,6 +85122,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -86331,6 +86697,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -86346,6 +86714,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -87918,6 +88288,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -87933,6 +88305,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -88028,6 +88402,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -89506,6 +89882,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -89521,6 +89899,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -89536,6 +89916,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -89551,6 +89933,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -89566,6 +89950,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -89581,6 +89967,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -89596,6 +89984,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -89611,6 +90001,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -89626,6 +90018,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -91089,6 +91483,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -91104,6 +91500,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -91119,6 +91517,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -91198,6 +91598,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -91213,6 +91615,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -91228,6 +91632,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -92691,6 +93097,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -92706,6 +93114,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -92824,6 +93234,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava1",
             "name": "Yellow Lava",
             "walkable": false,
@@ -94305,6 +94717,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -94320,6 +94734,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -94335,6 +94751,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -94350,6 +94768,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -94365,6 +94785,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -94380,6 +94802,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -94613,6 +95037,8 @@
             "tag": "water"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -95941,6 +96367,8 @@
             "tag": "wall"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -95972,6 +96400,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -95987,6 +96417,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -96178,6 +96610,8 @@
             "tag": "water"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -96193,6 +96627,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -96208,6 +96644,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -97581,6 +98019,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -97596,6 +98036,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -97737,6 +98179,8 @@
             "tag": "water"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -97752,6 +98196,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -97767,6 +98213,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -97782,6 +98230,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -97797,6 +98247,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -99202,6 +99654,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -99217,6 +99671,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -99232,6 +99688,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -99247,6 +99705,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -99262,6 +99722,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -99277,6 +99739,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -99292,6 +99756,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -99307,6 +99773,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -99322,6 +99790,8 @@
             "tag": "dungeon"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -99382,6 +99852,8 @@
             "tag": "water"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -100882,6 +101354,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "lava2",
             "name": "Red Lava",
             "walkable": false,
@@ -102405,6 +102879,8 @@
             "tag": "walkable"
           },
           {
+            "boat": false,
+            "boat_passable": false,
             "id": "portal1",
             "name": "Portal Entrance",
             "walkable": true,
