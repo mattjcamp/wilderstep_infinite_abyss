@@ -1,10 +1,10 @@
-# Wilderstep Infinite Abyss — Player's Manual
+# Wilderstep: Infinite Abyss — Player's Manual
 
 <p align="center">
   <img src="assets/cover_art_transparent.png" alt="A party of adventurers — wizard, dwarf, ranger, and young archer — on the shore beneath a distant keep" width="720">
 </p>
 
-Wilderstep Infinite Abyss is a turn-based RPG. You assemble a party of adventurers, explore an open world one tile at a time, talk to its people, take on quests, and descend into dungeons full of danger and treasure. This player's manual covers the basic mechanics of the game: races, classes, spells, items, and monsters. The manual is not meant to be comprehensive; Wilderstep is an evolving RPG platform and players will soon be able to craft adventures of their own.
+Wilderstep: Infinite Abyss is a turn-based RPG. You assemble a party of adventurers, explore an open world one tile at a time, talk to its people, take on quests, and descend into dungeons full of danger and treasure. This player's manual covers the basic mechanics of the game: races, classes, spells, items, and monsters. The manual is not meant to be comprehensive; Wilderstep is an evolving RPG platform and players will soon be able to craft adventures of their own.
 
 ---
 

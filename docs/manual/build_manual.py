@@ -7,7 +7,7 @@ This is a hand-tailored Markdown → PDF renderer that reproduces the
   * Burgundy ink (#6B2A1A) for accents, headings and the page frame
   * Ornate double-line border with L-shaped corner brackets and diamond
     accents at the midpoints of each edge
-  * Running header "REALM OF SHADOW" in small caps, italic page number
+  * Running header "WILDERSTEP" in small caps, italic page number
   * Section headers: centred, all-caps, with a decorative line-diamond-
     line divider beneath them
   * Title page with hero artwork recovered from the previous PDF
@@ -233,7 +233,7 @@ def _draw_page_frame(c, doc, show_header=True, page_num=None):
         c.setFont(BASE_FONT, 8.5)
         c.setFillColor(ACCENT_SOFT)
         c.drawCentredString(PAGE_W / 2, PAGE_H - MARGIN + 6,
-                            "R E A L M   O F   S H A D O W")
+                            "W I L D E R S T E P")
         c.restoreState()
 
     # Page number
@@ -458,7 +458,12 @@ def _images_from_markup(text):
     blocks embedded in the prose."""
     out = []
     for m in IMG_SRC_RE.finditer(text):
-        path = _resolve_img_src(m.group(1))
+        src = m.group(1)
+        # The cover art is rendered by the title page; skip it in the
+        # body so the front matter doesn't show it a second time.
+        if "cover_art" in src:
+            continue
+        path = _resolve_img_src(src)
         if not path:
             continue
         # Size relative to the column from the tag's pixel width: the
@@ -834,21 +839,16 @@ def _render_blocks(story, blocks):
     in_professions = False
     skip_until_next_h3_or_h2 = False
 
-    # ── Skip the document's front matter (H1 title + H2 "PLAYER'S
-    # HANDBOOK" + two italic subtitle paragraphs).  The title page
-    # renders these via _title_page() with custom layout, so echoing
-    # them in the body would duplicate content.
+    # ── Front matter ────────────────────────────────────────────────
+    # The title page (_title_page) renders the document's H1 title, the
+    # cover art, and the "PLAYER'S HANDBOOK" subtitle, so the loop below
+    # skips those (the H1 by block type, the cover image by its src, the
+    # subtitle h2 by name). Everything else at the top of the file — the
+    # introduction paragraph and the Contents / table of contents — IS
+    # kept and leads the body. Start it on a fresh page so it doesn't
+    # crowd the title page.
     i = 0
-    while i < len(blocks):
-        t, *p = blocks[i]
-        if t == "h2" and p[0].strip() != "PLAYER'S HANDBOOK":
-            break
-        i += 1
-
-    # Also skip any leading HR / blank blocks that came just before
-    # the first real section header so we don't double-rule.
-    while i < len(blocks) and blocks[i][0] in ("hr", "blank"):
-        i += 1
+    story.append(PageBreak())
 
     while i < len(blocks):
         typ, *payload = blocks[i]
@@ -1054,7 +1054,7 @@ def _render_blocks(story, blocks):
 
 def _title_page(story):
     story.append(Spacer(0, 50))
-    story.append(Paragraph("REALM OF SHADOW", H1))
+    story.append(Paragraph("WILDERSTEP: INFINITE ABYSS", H1))
     story.append(Spacer(0, 2))
     story.append(OrnateRule(TEXT_WIDTH * 0.7, color=ACCENT, size=3, gap=6,
                             thickness=1.0))
@@ -1079,12 +1079,12 @@ def _title_page(story):
                                        textColor=ACCENT, alignment=1,
                                        spaceAfter=10)))
     story.append(Spacer(0, 4))
-    story.append(Paragraph("<i>A Player's Guide to the Lands of Shadow</i>",
+    story.append(Paragraph("<i>A Player's Guide to the World of Wilderstep</i>",
                            _para_style("TitleMeta", fontName=ITAL_FONT,
                                        fontSize=12, leading=16,
                                        textColor=ACCENT_SOFT, alignment=1,
                                        spaceAfter=2)))
-    story.append(Paragraph("<i>An Ultima III-Inspired Tactical Fantasy RPG</i>",
+    story.append(Paragraph("<i>A Turn-Based Tactical Fantasy RPG</i>",
                            _para_style("TitleMeta2", fontName=ITAL_FONT,
                                        fontSize=12, leading=16,
                                        textColor=ACCENT_SOFT, alignment=1)))
@@ -1112,7 +1112,7 @@ def build():
         pagesize=letter,
         leftMargin=TEXT_LEFT, rightMargin=PAGE_W - TEXT_RIGHT,
         topMargin=PAGE_H - TEXT_TOP, bottomMargin=TEXT_BOTTOM,
-        title="Realm of Shadow — Player's Handbook",
+        title="Wilderstep: Infinite Abyss — Player's Handbook",
         author="Matt Campbell",
         subject="Player's Handbook",
         creator="docs/manual/build_manual.py",

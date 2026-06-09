@@ -9,9 +9,8 @@
 
 # Polish
 
-- Add a third button that opens up the Player's Manual PDF
+- Clean up the manual, it still has the old game's name and the first page doesn't appear to be in sync with the markdown. Have LLM audit that the various tables are in sync with the game data model.
 - Build a simple tutorial world
-- Let's see how well LLM does in making a tutorial video of the gameplay
 
 ## Big Ideas
 

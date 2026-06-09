@@ -532,12 +532,12 @@ export function PlayPartyScreenOverlay({
         liveSave,
         state.characters as ReadonlyArray<RaceAbilityCharacterRef>,
         state.counters,
-        state.items.map((i) => ({
-          id: i.id,
-          stackable: (i as { stackable?: boolean }).stackable,
-          // The cast keeps the structural overlap typed sanely
-          // while still letting addToInventory read item.stackable.
-        })),
+        // Pass the catalog straight through. PartyItemRef already
+        // carries `stackable` + `charges`, so the bundle helper reads
+        // the right values and there's no hand-picked subset that can
+        // silently drop a field (the original bug that degraded every
+        // tinker to a single item).
+        state.items,
         itemId,
         currentDay,
       );
@@ -578,15 +578,11 @@ export function PlayPartyScreenOverlay({
         state.characters as ReadonlyArray<
           RaceAbilityCharacterRef & { class?: string }
         >,
-        // IMPORTANT: forward `charges` too — `attemptCraft` reads it
-        // to size each craft pull (Arrows/Bolts/Fire Arrows pay out
-        // a bundle of 20, matching the shop). Stripping it here
-        // silently degraded every craft to a single item.
-        state.items.map((i) => ({
-          id: i.id,
-          stackable: (i as { stackable?: boolean }).stackable,
-          charges: (i as { charges?: number }).charges,
-        })),
+        // Pass the catalog straight through (PartyItemRef carries
+        // `stackable` + `charges`) so `attemptCraft` sizes each pull
+        // correctly — Arrows/Bolts/Fire Arrows pay out a bundle of 20,
+        // matching the shop. No hand-picked subset to drop a field.
+        state.items,
         "ranger",
         pendingCraft.abilityId,
         itemId,
@@ -650,15 +646,11 @@ export function PlayPartyScreenOverlay({
         state.characters as ReadonlyArray<
           RaceAbilityCharacterRef & { class?: string }
         >,
-        // Forward stackable + charges so the consume / merge math
-        // reads the catalog correctly — same fix the craft handler
-        // made (without `charges` a future bundle-output recipe
-        // would silently degrade).
-        state.items.map((i) => ({
-          id: i.id,
-          stackable: (i as { stackable?: boolean }).stackable,
-          charges: (i as { charges?: number }).charges,
-        })),
+        // Pass the catalog straight through (PartyItemRef carries
+        // `stackable` + `charges`) so the consume / merge math reads it
+        // correctly — no hand-picked subset that can drop a field if a
+        // future bundle-output recipe is added.
+        state.items,
         state.recipes,
         recipeId,
       );

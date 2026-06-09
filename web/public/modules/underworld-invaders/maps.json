@@ -82466,7 +82466,7 @@
             "locked": false,
             "light_source": false,
             "light_range": 0,
-            "animation": "none",
+            "animation": "smoke",
             "counter": null,
             "encounter": null,
             "spawn": "monster_spawn",
