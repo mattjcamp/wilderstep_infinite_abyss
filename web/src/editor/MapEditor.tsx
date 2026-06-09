@@ -65,6 +65,7 @@ import { CounterShopOverlay } from "./CounterShopOverlay";
 import { LinkPlacard } from "@/play/LinkPlacard";
 import { SpritePicker } from "./SpritePicker";
 import { EncounterPicker } from "./EncounterPicker";
+import { anchorCell, nextCellSelection } from "./cellSelection";
 import { groupByTags } from "./mapTags";
 import { groupItemsByCategory } from "./itemTags";
 import { LockDialogOverlay } from "./LockDialogOverlay";
@@ -609,9 +610,21 @@ export function MapEditor({
    *  the per-cell painting flow is unaffected. */
   const [editingMapAttrs, setEditingMapAttrs] = useState(false);
 
-  const [selectedCell, setSelectedCell] = useState<
-    { col: number; row: number } | null
-  >(null);
+  /** Ordered list of currently-selected cells. A plain click replaces
+   *  it with a single cell; Cmd/Ctrl-click (in Inspect mode) toggles a
+   *  cell in or out. The LAST entry is the "anchor" — the cell whose
+   *  attribute values the inspector displays. Editing a field applies
+   *  the change to EVERY cell in this list at once. */
+  const [selection, setSelection] = useState<
+    Array<{ col: number; row: number }>
+  >([]);
+  /** The anchor cell — last in the selection, or null when nothing is
+   *  selected. Drives the inspector's displayed values + the existing
+   *  single-cell-derived memos. */
+  const selectedCell = useMemo<{ col: number; row: number } | null>(
+    () => anchorCell(selection),
+    [selection],
+  );
   /** "paint" → click/drag paints the active brush and selects the cell.
    *  "fill"  → click/drag draws a rectangle preview; on release every
    *            cell inside the rect is painted with the active brush
@@ -667,13 +680,28 @@ export function MapEditor({
   const paletteRef = useRef<TileType[]>([]);
   const persistRef = useRef<() => void>(() => {});
   /** Scene calls this on every cell the pointer touches so the React
-   *  inspector tracks the latest interaction. */
-  const onCellTouchedRef = useRef<(col: number, row: number) => void>(
-    () => {},
-  );
+   *  inspector tracks the latest interaction. `opts.additive` (set when
+   *  the user Cmd/Ctrl-clicks in Inspect mode) extends the selection
+   *  instead of replacing it; `opts.drag` distinguishes a press from a
+   *  drag-over so additive drags only ADD cells (no flicker) while an
+   *  additive single click toggles. */
+  const onCellTouchedRef = useRef<
+    (
+      col: number,
+      row: number,
+      opts?: { additive?: boolean; drag?: boolean },
+    ) => void
+  >(() => {});
   const sceneApiRef = useRef<{
     setGridLinesVisible: (on: boolean) => void;
     setSelected: (cell: { col: number; row: number } | null) => void;
+    /** Highlight every cell in a multi-selection. The LAST entry is the
+     *  anchor and is stroked solid; the rest get a lighter outline +
+     *  translucent fill so the active cell still reads. Empty array
+     *  clears the highlight. */
+    setSelectionCells: (
+      cells: ReadonlyArray<{ col: number; row: number }>,
+    ) => void;
     setOverrideMarkers: (cells: Array<{ col: number; row: number }>) => void;
     /** Update a single cell's rendered texture from its sprite path. */
     refreshCell: (col: number, row: number, spriteKey: string) => void;
@@ -793,10 +821,12 @@ export function MapEditor({
    *  writes back to the save layer. */
   const visitedCellsRef = useRef<Set<string>>(new Set());
 
-  // Selection follows the cursor.
+  // Selection follows the cursor. A plain interaction replaces the
+  // selection with the single touched cell; an additive interaction
+  // (Cmd/Ctrl-click in Inspect mode) extends it.
   useEffect(() => {
-    onCellTouchedRef.current = (col, row) => {
-      setSelectedCell({ col, row });
+    onCellTouchedRef.current = (col, row, opts) => {
+      setSelection((prev) => nextCellSelection(prev, { col, row }, opts));
     };
   }, []);
 
@@ -1608,7 +1638,7 @@ export function MapEditor({
               if (toolRef.current === "fill") {
                 this.fillStart(p);
               } else {
-                this.paintAt(p);
+                this.paintAt(p, true);
               }
             },
           );
@@ -1617,7 +1647,7 @@ export function MapEditor({
             if (toolRef.current === "fill") {
               this.fillDrag(p);
             } else {
-              this.paintAt(p);
+              this.paintAt(p, false);
             }
           });
           // Pointer-up commits a Fill drag. Use both pointerup (release
@@ -1675,6 +1705,42 @@ export function MapEditor({
               this.selectionGraphics.strokeRect(
                 cell.col * TILE_SIZE,
                 cell.row * TILE_SIZE,
+                TILE_SIZE,
+                TILE_SIZE,
+              );
+            },
+            setSelectionCells: (cells) => {
+              if (!this.selectionGraphics) return;
+              this.selectionGraphics.clear();
+              if (cells.length === 0) return;
+              const anchorIdx = cells.length - 1;
+              // Non-anchor cells: translucent fill + thin outline.
+              if (cells.length > 1) {
+                this.selectionGraphics.fillStyle(0xffb84d, 0.18);
+                this.selectionGraphics.lineStyle(1, 0xffb84d, 0.75);
+                for (let i = 0; i < cells.length; i++) {
+                  if (i === anchorIdx) continue;
+                  const { col, row } = cells[i];
+                  this.selectionGraphics.fillRect(
+                    col * TILE_SIZE,
+                    row * TILE_SIZE,
+                    TILE_SIZE,
+                    TILE_SIZE,
+                  );
+                  this.selectionGraphics.strokeRect(
+                    col * TILE_SIZE,
+                    row * TILE_SIZE,
+                    TILE_SIZE,
+                    TILE_SIZE,
+                  );
+                }
+              }
+              // Anchor: solid 2px outline (same as the single-select look).
+              const anchor = cells[anchorIdx];
+              this.selectionGraphics.lineStyle(2, 0xffb84d, 1);
+              this.selectionGraphics.strokeRect(
+                anchor.col * TILE_SIZE,
+                anchor.row * TILE_SIZE,
                 TILE_SIZE,
                 TILE_SIZE,
               );
@@ -2698,7 +2764,7 @@ export function MapEditor({
           sceneApiRef.current.refreshQuestOverlays();
         }
 
-        paintAt(p: Phaser.Input.Pointer) {
+        paintAt(p: Phaser.Input.Pointer, fromDown: boolean) {
           const c = Math.floor(p.x / TILE_SIZE);
           const r = Math.floor(p.y / TILE_SIZE);
           if (
@@ -2717,8 +2783,19 @@ export function MapEditor({
             return;
           }
           if (simModeRef.current === "active") return;
+          // Cmd (macOS) / Ctrl (Windows/Linux) extends the selection,
+          // but only in Inspect mode — additive selection is for bulk
+          // attribute edits, not painting. The native modifier lives on
+          // the pointer's source DOM event.
+          const ev = p.event as
+            | { metaKey?: boolean; ctrlKey?: boolean }
+            | undefined;
+          const additive =
+            toolRef.current === "inspect" &&
+            !!ev &&
+            (ev.metaKey === true || ev.ctrlKey === true);
           // Selection always follows the cursor — both tools update it.
-          onCellTouchedRef.current(c, r);
+          onCellTouchedRef.current(c, r, { additive, drag: !fromDown });
           // Inspect + Pan + Fill never paint via this path; just
           // selecting is the whole job here. Pan-mode drags are
           // normally swallowed by the React-layer capture handler
@@ -3437,10 +3514,11 @@ export function MapEditor({
     sceneApiRef.current?.setGridLinesVisible(gridLinesOn);
   }, [gridLinesOn]);
 
-  // Propagate selection highlight to the running scene.
+  // Propagate selection highlight to the running scene — every cell in
+  // the multi-selection, with the anchor emphasized.
   useEffect(() => {
-    sceneApiRef.current?.setSelected(selectedCell);
-  }, [selectedCell]);
+    sceneApiRef.current?.setSelectionCells(selection);
+  }, [selection]);
 
   // Recompute lighting whenever the mode changes or the grid does.
   // The relight pass is cheap (one pass over cells × light sources)
@@ -3530,6 +3608,74 @@ export function MapEditor({
     setState({ ...state, mapRecord: nextMap });
     if (spriteChanged && next.sprite) {
       sceneApiRef.current?.refreshCell(col, row, next.sprite);
+    }
+    queueMicrotask(() => persistRef.current());
+  };
+
+  /** Batch version of {@link setCellFields}: apply the same patch to
+   *  every cell in `cells` in one pass — a single grid rebuild, one
+   *  setState, one persist. Each cell resolves `undefined` (Reset)
+   *  against ITS OWN palette-of-origin, so a bulk Reset restores each
+   *  tile to its respective base. Used by the inspector when more than
+   *  one cell is selected. */
+  const setCellsFields = (
+    cells: ReadonlyArray<{ col: number; row: number }>,
+    patch: Partial<TileType>,
+  ) => {
+    if (state.kind !== "ok") return;
+    if (cells.length <= 1) {
+      const only = cells[0];
+      if (only) setCellFields(only.col, only.row, patch);
+      return;
+    }
+    const paletteById = new Map(state.palette.map((t) => [t.id, t]));
+    // Dedup by "col,row" so a malformed selection can't double-apply.
+    const seen = new Set<string>();
+    const targets = cells.filter((c) => {
+      const k = `${c.col},${c.row}`;
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+    // Build next cells keyed by position so the grid rebuild is O(1) per cell.
+    const replacements = new Map<string, TileType>();
+    const spriteRefreshes: Array<{ col: number; row: number; sprite: string }> =
+      [];
+    for (const { col, row } of targets) {
+      const current = state.mapRecord.grid[row]?.[col];
+      if (!current) continue;
+      const base = paletteById.get(current.id) ?? null;
+      const next: TileType = { ...current };
+      const nextAsAny = next as unknown as Record<string, unknown>;
+      const baseAsAny = base as unknown as Record<string, unknown> | null;
+      let spriteChanged = false;
+      for (const k of Object.keys(patch) as Array<keyof TileType>) {
+        const v = patch[k];
+        if (v === undefined) {
+          if (baseAsAny && k in baseAsAny) {
+            nextAsAny[k] = baseAsAny[k];
+          } else {
+            delete nextAsAny[k];
+          }
+        } else {
+          nextAsAny[k] = v;
+        }
+        if (k === "sprite") spriteChanged = true;
+      }
+      replacements.set(`${col},${row}`, next);
+      if (spriteChanged && next.sprite) {
+        spriteRefreshes.push({ col, row, sprite: next.sprite });
+      }
+    }
+    if (replacements.size === 0) return;
+    const nextGrid = state.mapRecord.grid.map((rowCells, ri) =>
+      rowCells.map((c, ci) => replacements.get(`${ci},${ri}`) ?? c),
+    );
+    gridRef.current = nextGrid;
+    const nextMap: MapRecord = { ...state.mapRecord, grid: nextGrid };
+    setState({ ...state, mapRecord: nextMap });
+    for (const { col, row, sprite } of spriteRefreshes) {
+      sceneApiRef.current?.refreshCell(col, row, sprite);
     }
     queueMicrotask(() => persistRef.current());
   };
@@ -4226,6 +4372,7 @@ export function MapEditor({
           <Inspector
             moduleId={moduleId}
             selectedCell={selectedCell}
+            selectionCount={selection.length}
             instance={selectedInstance}
             base={selectedBase}
             palette={state.palette}
@@ -4238,8 +4385,11 @@ export function MapEditor({
             availableDungeons={state.availableDungeons}
             availableQuests={state.availableQuests}
             onUpdate={(patch) => {
-              if (!selectedCell) return;
-              setCellFields(selectedCell.col, selectedCell.row, patch);
+              if (selection.length === 0) return;
+              // Apply the field change to EVERY selected cell. With a
+              // single cell this is identical to the old single-cell
+              // path; with many it bulk-edits in one persist.
+              setCellsFields(selection, patch);
             }}
           />
         )}
@@ -4600,6 +4750,7 @@ function PaletteByTag({
 function Inspector({
   moduleId,
   selectedCell,
+  selectionCount,
   instance,
   base,
   palette,
@@ -4615,6 +4766,9 @@ function Inspector({
 }: {
   moduleId: string;
   selectedCell: { col: number; row: number } | null;
+  /** How many cells are currently selected. >1 means edits apply to
+   *  the whole set; the inspector shows the anchor cell's values. */
+  selectionCount: number;
   /** The tile data living at the selected cell. The cell IS this data. */
   instance: TileType | null;
   /** The Tile Palette entry that shares this cell's id — used to
@@ -4644,6 +4798,11 @@ function Inspector({
     <aside className="w-72 shrink-0 overflow-auto border-l border-parchment/10 bg-ink/20 p-3">
       <p className="mb-2 text-[13px] uppercase tracking-wide text-parchment/65">
         Cell Inspector
+        {selectionCount > 1 ? (
+          <span className="ml-2 rounded bg-parchment/15 px-1.5 py-0.5 text-xs normal-case tracking-normal text-parchment/90">
+            {selectionCount} cells
+          </span>
+        ) : null}
         {modified ? (
           <span className="ml-2 rounded bg-ember/30 px-1.5 py-0.5 text-xs normal-case tracking-normal text-parchment/90">
             modified
@@ -4653,12 +4812,21 @@ function Inspector({
       {!selectedCell || !instance ? (
         <p className="text-[13px] text-parchment/75">
           Click any cell on the map to inspect or customize its attributes.
+          ⌘-click (Ctrl on Windows) in Inspect mode to select several cells
+          and edit their attributes together.
         </p>
       ) : (
         <div className="space-y-3">
+          {selectionCount > 1 ? (
+            <div className="rounded border border-parchment/20 bg-parchment/5 px-2 py-1.5 text-xs leading-snug text-parchment/80">
+              Editing <span className="text-parchment">{selectionCount} cells</span>{" "}
+              at once. Fields show the last-clicked cell; changing one applies
+              it to every selected cell.
+            </div>
+          ) : null}
           <div>
             <p className="text-xs uppercase tracking-wide text-parchment/60">
-              Position
+              {selectionCount > 1 ? "Anchor cell" : "Position"}
             </p>
             <p className="font-mono text-sm text-parchment/90">
               col {selectedCell.col}, row {selectedCell.row}

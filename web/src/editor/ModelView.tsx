@@ -1227,7 +1227,10 @@ function isGroupedModel(modelKey: string | undefined): boolean {
   return (
     modelKey === "map_tiles" ||
     modelKey === "encounters" ||
-    modelKey === "monsters"
+    modelKey === "monsters" ||
+    modelKey === "items" ||
+    modelKey === "abilities" ||
+    modelKey === "spells"
   );
 }
 
@@ -1250,6 +1253,27 @@ function groupTagOf(modelKey: string | undefined, r: Record_): string | null {
     // animal, …), not tags.
     const t = r["theme"];
     return typeof t === "string" && t.trim() ? t : null;
+  }
+  if (modelKey === "items") {
+    // Items group by `category` (weapons, armors, general, …).
+    const c = r["category"];
+    return typeof c === "string" && c.trim() ? c : null;
+  }
+  if (modelKey === "abilities") {
+    // Abilities group by `type` (class, race, …).
+    const t = r["type"];
+    return typeof t === "string" && t.trim() ? t : null;
+  }
+  if (modelKey === "spells") {
+    // Spells group by `casting_type` catalog (sorcerer, priest, …).
+    // Tolerate either a plain string or an array (first entry).
+    const c = r["casting_type"];
+    if (typeof c === "string" && c.trim()) return c;
+    if (Array.isArray(c)) {
+      const first = c.find((x) => typeof x === "string" && x.trim());
+      return typeof first === "string" ? first : null;
+    }
+    return null;
   }
   return null;
 }

@@ -242,9 +242,7 @@
       "id": "frost_delve",
       "name": "The Frost Delve",
       "description": "An old prospectors' digging south of Varnfell, abandoned when the veins ran dry. Lately the entrance breathes warm air, and the snow around it never settles. Whatever opened far below has found its way up.",
-      "tags": [
-        "varnfell"
-      ],
+      "tags": [],
       "style": "caves",
       "difficulty": "normal",
       "size": {

@@ -264,8 +264,7 @@
       "name": "Wolves on the Tradeway",
       "description": "The packs squatting on the road south of Varnfell aren't hunting deer — they're holding the road. Break them so the sledges can run again.",
       "tags": [
-        "varnfell",
-        "side"
+        "varnfell"
       ],
       "steps": [
         {
@@ -309,8 +308,7 @@
       "name": "The Drowned Cargo",
       "description": "A trade-sealed crate has washed up on the sand south of Varnfell. Sela Varn wants it back before the sea — or whatever paces the shore at night — takes it first.",
       "tags": [
-        "varnfell",
-        "side"
+        "varnfell"
       ],
       "steps": [
         {
@@ -468,8 +466,7 @@
       "name": "The Withering",
       "description": "Web spun wrong in the warden-trees and blight-root black in the sweetest soil of the Reach — the Heartwood Grove is sick with its keeper's worry, and Tansy Mosswane wants surgical help.",
       "tags": [
-        "elderbough",
-        "side"
+        "elderbough"
       ],
       "steps": [
         {
@@ -521,8 +518,7 @@
       "name": "The Sleepless Bough",
       "description": "The Bough-Wife has not slept in four hundred nights, and the grove frays with her. Elder Bryn would settle her the old way: spring-water offered, the barrow quieted, and the haunted trail south swept clean.",
       "tags": [
-        "elderbough",
-        "side"
+        "elderbough"
       ],
       "steps": [
         {
@@ -598,8 +594,7 @@
       "name": "When the Forest Walks",
       "description": "Nine felled warden-trees bought the Reach an angry forest: packs sitting the trails like sentries, a den fouling the sister-spring, and a troll moving under the boughs with a wolf escort. Warden Thornholt wants it ended before the moot has to learn the word 'siege.'",
       "tags": [
-        "elderbough",
-        "side"
+        "elderbough"
       ],
       "steps": [
         {
@@ -1027,9 +1022,7 @@
       "name": "The Pale Court",
       "description": "Sir Roderic Vane has hunted the vampire he calls the Pale Lord across thirty years and three duchies, and the trail has finally gone to ground close by. Roderic's hands shake now. Yours don't.",
       "tags": [
-        "side",
-        "vampires",
-        "deadly"
+        "eastmarch"
       ],
       "steps": [
         {
@@ -1078,9 +1071,7 @@
       "name": "The Wailing Manor",
       "description": "Corvin Ashe inherited a manor nobody has entered in sixty years, along with the wailing that comes off it at night. Somewhere inside is the family reliquary — and whatever has been keeping it.",
       "tags": [
-        "side",
-        "undead",
-        "deadly"
+        "eastmarch"
       ],
       "steps": [
         {
@@ -1154,7 +1145,8 @@
       "name": "Seal the Crack",
       "description": "Go into the great crack of the world and seal it shut",
       "tags": [
-        "main_story"
+        "main_story",
+        "eastmarch"
       ],
       "steps": [
         {

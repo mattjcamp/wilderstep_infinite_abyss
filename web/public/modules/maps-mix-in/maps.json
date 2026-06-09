@@ -199839,10 +199839,7 @@
       "id": "mm_continent",
       "name": "The Greymantle Reaches",
       "description": "A weathered stretch of mainland \u2014 fishing coast to the west, the old volcanic range to the north, and too many places the roads no longer go.",
-      "tags": [
-        "maps_mix_in",
-        "mm_continent"
-      ],
+      "tags": ["continent"],
       "width": 36,
       "height": 28,
       "grid": [
@@ -215941,9 +215938,7 @@
       "id": "mm_thornbury_town",
       "name": "Thornbury",
       "description": "A small market town on the Greymantle road \u2014 one inn, one shop, and everybody knowing everybody's business.",
-      "tags": [
-        "maps_mix_in",
-        "mm_thornbury"
+      "tags": ["thornbury"
       ],
       "width": 20,
       "height": 16,
@@ -221126,9 +221121,7 @@
       "id": "mm_thornbury_inn",
       "name": "The Gilded Goose",
       "description": "Thornbury's only inn \u2014 warm hearth, long memory.",
-      "tags": [
-        "maps_mix_in",
-        "mm_thornbury"
+      "tags": ["thornbury"
       ],
       "width": 14,
       "height": 10,
@@ -223366,9 +223359,7 @@
       "id": "mm_thornbury_shop",
       "name": "Thornbury General Goods",
       "description": "Sundries, tools, and gossip at fair prices.",
-      "tags": [
-        "maps_mix_in",
-        "mm_thornbury"
+      "tags": ["thornbury"
       ],
       "width": 12,
       "height": 8,
@@ -224901,9 +224892,7 @@
       "id": "mm_thornbury_house",
       "name": "Thornbury Cottage",
       "description": "A modest cottage off the market square.",
-      "tags": [
-        "maps_mix_in",
-        "mm_thornbury"
+      "tags": ["thornbury"
       ],
       "width": 8,
       "height": 6,
@@ -225679,9 +225668,7 @@
       "id": "mm_castle_courtyard",
       "name": "Castle Eastmarch",
       "description": "The walled seat of the Eastmarch \u2014 four towers, one gate, and a garrison stretched thin.",
-      "tags": [
-        "maps_mix_in",
-        "mm_eastmarch"
+      "tags": ["eastmarch"
       ],
       "width": 22,
       "height": 16,
@@ -231287,9 +231274,7 @@
       "id": "mm_castle_hall",
       "name": "Eastmarch Great Hall",
       "description": "Banner-hung hall of the Eastmarch lords, colder than it looks.",
-      "tags": [
-        "maps_mix_in",
-        "mm_eastmarch"
+      "tags": ["eastmarch"
       ],
       "width": 16,
       "height": 12,
@@ -234351,9 +234336,7 @@
       "id": "mm_castle_keep",
       "name": "Eastmarch Keep, Upper Floor",
       "description": "The lord's solar and the castle's strongbox \u2014 guests are rarely invited this far.",
-      "tags": [
-        "maps_mix_in",
-        "mm_eastmarch"
+      "tags": ["eastmarch"
       ],
       "width": 12,
       "height": 10,
@@ -236272,9 +236255,7 @@
       "id": "mm_gull_island",
       "name": "Gull Island",
       "description": "A green speck off the Greymantle coast \u2014 palms, gulls, and a cave the fishermen won't anchor near.",
-      "tags": [
-        "maps_mix_in",
-        "mm_gull_island"
+      "tags": ["gull_island"
       ],
       "width": 25,
       "height": 25,
@@ -246012,9 +245993,7 @@
       "id": "mm_sea_cave_1",
       "name": "Gull Island Sea Cave",
       "description": "Salt-slick stone and the sound of water moving where no water should be.",
-      "tags": [
-        "maps_mix_in",
-        "mm_gull_island"
+      "tags": ["gull_island"
       ],
       "width": 14,
       "height": 10,
@@ -248245,9 +248224,7 @@
       "id": "mm_sea_cave_2",
       "name": "Sea Cave Depths",
       "description": "The deep chamber \u2014 wreckers' plunder, an old altar, and a pool that never stills.",
-      "tags": [
-        "maps_mix_in",
-        "mm_gull_island"
+      "tags": ["gull_island"
       ],
       "width": 14,
       "height": 10,
@@ -250467,9 +250444,7 @@
       "id": "mm_dark_tower_1",
       "name": "The Umbral Spire, Ground Floor",
       "description": "A black-brick tower alone in the pines. The lights in the upper windows do not match any honest fire.",
-      "tags": [
-        "maps_mix_in",
-        "mm_dark_tower"
+      "tags": ["dark_tower"
       ],
       "width": 16,
       "height": 16,
@@ -254570,9 +254545,7 @@
       "id": "mm_dark_tower_2",
       "name": "The Umbral Spire, Library Floor",
       "description": "Shelves of things that read back. The dust here settles in patterns.",
-      "tags": [
-        "maps_mix_in",
-        "mm_dark_tower"
+      "tags": ["dark_tower"
       ],
       "width": 12,
       "height": 12,
@@ -256882,9 +256855,7 @@
       "id": "mm_dark_tower_3",
       "name": "The Umbral Spire, Sanctum",
       "description": "The mage's working room. The circle on the floor is cold \u2014 for now.",
-      "tags": [
-        "maps_mix_in",
-        "mm_dark_tower"
+      "tags": ["dark_tower"
       ],
       "width": 8,
       "height": 8,
@@ -257911,10 +257882,7 @@
       "id": "mm_fire_shrine_1",
       "name": "Fire Shrine \u2014 Ashen Antechamber",
       "description": "A shrine cut into the volcanic range. The braziers were burning when the first explorers arrived; nobody lit them.",
-      "tags": [
-        "maps_mix_in",
-        "mm_fire_shrine"
-      ],
+      "tags": ["fire_shrine"],
       "width": 16,
       "height": 12,
       "lighting": "twilight",
@@ -260976,9 +260944,7 @@
       "id": "mm_fire_shrine_2",
       "name": "Fire Shrine \u2014 Hall of Embers",
       "description": "A molten channel crosses the hall, spanned by one scorched bridge. The heat has opinions.",
-      "tags": [
-        "maps_mix_in",
-        "mm_fire_shrine"
+      "tags": ["fire_shrine"
       ],
       "width": 16,
       "height": 12,
@@ -264021,9 +263987,7 @@
       "id": "mm_fire_shrine_3",
       "name": "Fire Shrine \u2014 Magma Vault",
       "description": "The deepest chamber, where the shrine keeps what the fire was built to honour \u2014 or contain.",
-      "tags": [
-        "maps_mix_in",
-        "mm_fire_shrine"
+      "tags": ["fire_shrine"
       ],
       "width": 12,
       "height": 10,
@@ -265926,9 +265890,7 @@
       "id": "mm_graveyard",
       "name": "Mournfield",
       "description": "The old burial ground at the swamp's edge. The rows are neat, the gate is iron, and the ground has started keeping its own hours.",
-      "tags": [
-        "maps_mix_in",
-        "mm_graveyard"
+      "tags": ["graveyard"
       ],
       "width": 16,
       "height": 14,
@@ -269488,9 +269450,7 @@
       "id": "mm_crypt_1",
       "name": "Mournfield Crypt",
       "description": "Family vaults stacked four deep. Several lids are no longer where the masons left them.",
-      "tags": [
-        "maps_mix_in",
-        "mm_graveyard"
+      "tags": ["graveyard"
       ],
       "width": 14,
       "height": 10,
@@ -271731,9 +271691,7 @@
       "id": "mm_crypt_2",
       "name": "Mournfield Deep Crypt",
       "description": "The oldest level, pre-dating the town above it. The altar here was not built for any god the chapel recognises.",
-      "tags": [
-        "maps_mix_in",
-        "mm_graveyard"
+      "tags": ["graveyard"
       ],
       "width": 14,
       "height": 10,

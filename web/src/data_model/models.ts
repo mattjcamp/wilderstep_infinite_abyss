@@ -121,9 +121,9 @@ const DEFS: Record<ModelKey, ModelDef> = {
     docKey: "ability",
     blurb: "Named character capabilities — race / class / other (the catalog half of v1's effects)",
     columns: [
-      { field: "id", label: "ID" },
+      // Grouped (collapsible) by `type` (class / race / …), so Type
+      // isn't its own column. Name leads.
       { field: "name", label: "Name" },
-      { field: "type", label: "Type" },
       { field: "duration", label: "Duration", format: asString },
       { field: "description", label: "Description" },
     ],
@@ -135,9 +135,7 @@ const DEFS: Record<ModelKey, ModelDef> = {
     collectionKey: "effects",
     docKey: "effect",
     blurb: "Status effects, abilities, passives, on-hit triggers",
-    columns: [
-      { field: "id", label: "ID" },
-      { field: "name", label: "Name" },
+    columns: [      { field: "name", label: "Name" },
       { field: "duration", label: "Duration", format: asString },
       { field: "description", label: "Description" },
     ],
@@ -150,10 +148,10 @@ const DEFS: Record<ModelKey, ModelDef> = {
     docKey: "spell",
     blurb: "Castable spell-actions",
     columns: [
-      { field: "id", label: "ID" },
+      // Grouped (collapsible) by `casting_type` catalog (sorcerer /
+      // priest / …), so Catalog isn't its own column. Name leads.
       { field: "name", label: "Name" },
       { field: "action", label: "Action" },
-      { field: "casting_type", label: "Catalog", format: asString },
       { field: "mp_cost", label: "MP", format: asString },
       { field: "min_level", label: "Min Lvl", format: asString },
     ],
@@ -165,9 +163,7 @@ const DEFS: Record<ModelKey, ModelDef> = {
     collectionKey: "recipes",
     docKey: "recipe",
     blurb: "Crafting / brew options",
-    columns: [
-      { field: "id", label: "ID" },
-      { field: "name", label: "Name" },
+    columns: [      { field: "name", label: "Name" },
       { field: "result_item", label: "Produces" },
       { field: "reagents", label: "Reagents", format: (v) => (v && typeof v === "object" ? Object.entries(v).map(([k, n]) => `${k}×${n}`).join(", ") : "") },
     ],
@@ -180,8 +176,9 @@ const DEFS: Record<ModelKey, ModelDef> = {
     docKey: "item",
     blurb: "Weapons, armor, consumables, reagents, keys",
     columns: [
-      { field: "id", label: "ID" },
-      { field: "category", label: "Cat" },
+      // Name leads next to the sprite; the table is grouped by
+      // `category` (collapsible) so Cat isn't a column, and the raw id
+      // stays in the form + JSON view. Mirrors Monsters / Encounters.
       { field: "name", label: "Name" },
       { field: "item_type", label: "Type" },
       // Base Damage / Base AC — derived, player-meaningful stats shown
@@ -207,9 +204,7 @@ const DEFS: Record<ModelKey, ModelDef> = {
     collectionKey: "counters",
     docKey: "counter",
     blurb: "Shops and service counters",
-    columns: [
-      { field: "id", label: "ID" },
-      { field: "name", label: "Name" },
+    columns: [      { field: "name", label: "Name" },
       { field: "kind", label: "Kind", format: (v) => (v ? asString(v) : "shop") },
       { field: "items", label: "Stock", format: countItems },
     ],
@@ -239,9 +234,7 @@ const DEFS: Record<ModelKey, ModelDef> = {
     collectionKey: "characters",
     docKey: "character",
     blurb: "Recruitable / starting characters",
-    columns: [
-      { field: "id", label: "ID" },
-      { field: "name", label: "Name" },
+    columns: [      { field: "name", label: "Name" },
       { field: "class", label: "Class" },
       { field: "race", label: "Race" },
       { field: "level", label: "Lvl", format: asString },
@@ -263,9 +256,7 @@ const DEFS: Record<ModelKey, ModelDef> = {
     collectionKey: "spawns",
     docKey: "spawn",
     blurb: "Monster-lair behavior (triggered by map cells via tile.spawn)",
-    columns: [
-      { field: "id", label: "ID" },
-      { field: "name", label: "Name" },
+    columns: [      { field: "name", label: "Name" },
       { field: "spawn_chance", label: "Chance %", format: asString },
       { field: "max_spawned", label: "Max", format: asString },
     ],
@@ -302,9 +293,7 @@ const DEFS: Record<ModelKey, ModelDef> = {
     collectionKey: "character_classes",
     docKey: "character_class",
     blurb: "The eight playable classes",
-    columns: [
-      { field: "id", label: "ID" },
-      { field: "name", label: "Name" },
+    columns: [      { field: "name", label: "Name" },
       { field: "range", label: "Range", format: asString },
       {
         field: "casting_type",
@@ -321,9 +310,7 @@ const DEFS: Record<ModelKey, ModelDef> = {
     collectionKey: "races",
     docKey: "race",
     blurb: "Playable races",
-    columns: [
-      { field: "id", label: "ID" },
-      { field: "name", label: "Name" },
+    columns: [      { field: "name", label: "Name" },
       { field: "exp_per_level", label: "XP/Lvl", format: asString },
       { field: "effects", label: "Effects", format: (v) => (Array.isArray(v) ? v.join(", ") : "") },
     ],
@@ -335,9 +322,7 @@ const DEFS: Record<ModelKey, ModelDef> = {
     collectionKey: "map_tiles",
     docKey: "map_tile",
     blurb: "Reusable tile types used to paint maps",
-    columns: [
-      { field: "id", label: "ID" },
-      { field: "name", label: "Name" },
+    columns: [      { field: "name", label: "Name" },
       { field: "walkable", label: "Walk", format: asString },
     ],
   },
@@ -348,9 +333,7 @@ const DEFS: Record<ModelKey, ModelDef> = {
     collectionKey: "maps",
     docKey: "map",
     blurb: "Painted world geometry — tile grids with links and items",
-    columns: [
-      { field: "id", label: "ID" },
-      { field: "name", label: "Name" },
+    columns: [      { field: "name", label: "Name" },
       {
         field: "tags",
         label: "Tags",
@@ -365,9 +348,7 @@ const DEFS: Record<ModelKey, ModelDef> = {
     collectionKey: "dungeons",
     docKey: "dungeon",
     blurb: "Authored multi-level dungeons (ordered list of dungeon_levels)",
-    columns: [
-      { field: "id", label: "ID" },
-      { field: "name", label: "Name" },
+    columns: [      { field: "name", label: "Name" },
       {
         field: "tags",
         label: "Tags",
@@ -387,9 +368,7 @@ const DEFS: Record<ModelKey, ModelDef> = {
     collectionKey: "quests",
     docKey: "quest",
     blurb: "Authored adventure threads (ordered list of quest_steps)",
-    columns: [
-      { field: "id", label: "ID" },
-      { field: "name", label: "Name" },
+    columns: [      { field: "name", label: "Name" },
       {
         field: "tags",
         label: "Tags",
@@ -409,9 +388,7 @@ const DEFS: Record<ModelKey, ModelDef> = {
     collectionKey: "animations",
     docKey: "animation",
     blurb: "Visual + audio bundles that spells / abilities / items / effects reference by id",
-    columns: [
-      { field: "id", label: "ID" },
-      { field: "name", label: "Name" },
+    columns: [      { field: "name", label: "Name" },
       { field: "visual", label: "Visual" },
       { field: "cast_sfx", label: "Cast SFX" },
       { field: "hit_sfx", label: "Hit SFX" },
@@ -424,9 +401,7 @@ const DEFS: Record<ModelKey, ModelDef> = {
     collectionKey: "npcs",
     docKey: "npc",
     blurb: "Non-player characters — name, sprite, backstory, and a list of dialogs",
-    columns: [
-      { field: "id", label: "ID" },
-      { field: "name", label: "Name" },
+    columns: [      { field: "name", label: "Name" },
       { field: "sprite", label: "Sprite" },
       { field: "dialogs", label: "Dialogs", format: countItems },
     ],

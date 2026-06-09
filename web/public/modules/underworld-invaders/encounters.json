@@ -78,7 +78,7 @@
       "name": "Fallen Seraph",
       "level": 0,
       "weight": 0,
-      "monster_party_tile": null,
+      "monster_party_tile": "monster/angel_red.png",
       "monsters": [
         "fallen_seraph"
       ],
@@ -95,9 +95,9 @@
       "monster_party_tile": "monster/balron_demon2.png",
       "monsters": [
         "pit_fiend",
-        "daemon",
-        "daemon",
-        "dragon",
+        "imp",
+        "imp",
+        "imp",
         "imp",
         "imp"
       ],

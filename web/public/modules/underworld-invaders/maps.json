@@ -248349,7 +248349,7 @@
       "name": "Thornbury",
       "description": "A small market town on the Greymantle road — one inn, one shop, and everybody knowing everybody's business.",
       "tags": [
-        "mm_thornbury",
+        "thornbury",
         "town"
       ],
       "width": 20,
@@ -253534,7 +253534,7 @@
       "name": "The Gilded Goose",
       "description": "Thornbury's only inn — warm hearth, long memory.",
       "tags": [
-        "mm_thornbury"
+        "thornbury"
       ],
       "width": 14,
       "height": 10,
@@ -255773,7 +255773,7 @@
       "name": "Thornbury General Goods",
       "description": "Sundries, tools, and gossip at fair prices.",
       "tags": [
-        "mm_thornbury"
+        "thornbury"
       ],
       "width": 12,
       "height": 8,
@@ -257308,7 +257308,7 @@
       "name": "Thornbury Cottage",
       "description": "A modest cottage off the market square.",
       "tags": [
-        "mm_thornbury"
+        "thornbury"
       ],
       "width": 8,
       "height": 6,
@@ -475733,7 +475733,7 @@
       "name": "Castle Eastmarch",
       "description": "The walled seat of the Eastmarch — four towers, one gate, and a garrison stretched thin.",
       "tags": [
-        "mm_eastmarch",
+        "eastmarch",
         "town"
       ],
       "width": 22,
@@ -481344,7 +481344,7 @@
       "name": "Eastmarch Great Hall",
       "description": "Banner-hung hall of the Eastmarch lords, colder than it looks.",
       "tags": [
-        "mm_eastmarch",
+        "eastmarch",
         "town"
       ],
       "width": 16,
@@ -484410,7 +484410,7 @@
       "name": "Eastmarch Keep, Upper Floor",
       "description": "The lord's solar and the castle's strongbox — guests are rarely invited this far.",
       "tags": [
-        "mm_eastmarch",
+        "eastmarch",
         "town"
       ],
       "width": 12,
@@ -486332,7 +486332,7 @@
       "name": "Mournfield",
       "description": "The old burial ground at the swamp's edge. The rows are neat, the gate is iron, and the ground has started keeping its own hours.",
       "tags": [
-        "mm_graveyard",
+        "graveyard",
         "building"
       ],
       "width": 16,
@@ -489894,7 +489894,7 @@
       "name": "Mournfield Crypt",
       "description": "Family vaults stacked four deep. Several lids are no longer where the masons left them.",
       "tags": [
-        "mm_graveyard"
+        "graveyard"
       ],
       "width": 14,
       "height": 10,
@@ -492137,7 +492137,7 @@
       "name": "Mournfield Deep Crypt",
       "description": "The oldest level, pre-dating the town above it. The altar here was not built for any god the chapel recognises.",
       "tags": [
-        "mm_graveyard"
+        "graveyard"
       ],
       "width": 14,
       "height": 10,
@@ -494373,7 +494373,7 @@
       "name": "The Umbral Spire, Ground Floor",
       "description": "A black-brick tower alone in the pines. The lights in the upper windows do not match any honest fire.",
       "tags": [
-        "mm_dark_tower",
+        "dark_tower",
         "building"
       ],
       "width": 16,
@@ -498476,7 +498476,7 @@
       "name": "The Umbral Spire, Library Floor",
       "description": "Shelves of things that read back. The dust here settles in patterns.",
       "tags": [
-        "mm_dark_tower"
+        "dark_tower"
       ],
       "width": 12,
       "height": 12,
@@ -500788,7 +500788,7 @@
       "name": "The Umbral Spire, Sanctum",
       "description": "The mage's working room. The circle on the floor is cold — for now.",
       "tags": [
-        "mm_dark_tower"
+        "dark_tower"
       ],
       "width": 8,
       "height": 8,
@@ -501817,7 +501817,7 @@
       "name": "Fire Shrine — Ashen Antechamber",
       "description": "A shrine cut into the volcanic range. The braziers were burning when the first explorers arrived; nobody lit them.",
       "tags": [
-        "mm_fire_shrine"
+        "fire_shrine"
       ],
       "width": 16,
       "height": 12,
@@ -504882,7 +504882,7 @@
       "name": "Fire Shrine — Hall of Embers",
       "description": "A molten channel crosses the hall, spanned by one scorched bridge. The heat has opinions.",
       "tags": [
-        "mm_fire_shrine"
+        "fire_shrine"
       ],
       "width": 16,
       "height": 12,
@@ -507927,7 +507927,7 @@
       "name": "Fire Shrine — Magma Vault",
       "description": "The deepest chamber, where the shrine keeps what the fire was built to honour — or contain.",
       "tags": [
-        "mm_fire_shrine"
+        "fire_shrine"
       ],
       "width": 12,
       "height": 10,
