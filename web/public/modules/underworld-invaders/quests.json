@@ -42,7 +42,7 @@
           "count": 2,
           "location_kind": "map",
           "map_id": "hollowmere_town",
-          "description": "Giant rats are running all over town, please kills those buggers! If you do this and prove your worth, I'll gift you this Iron Key that you will surely need soon.",
+          "description": "Giant rats are running all over town — please kill those buggers! Do this and prove your worth, and I'll gift you this Iron Key, which you'll surely need soon.",
           "rewards": {
             "items": [
               "iron_key",
@@ -210,7 +210,7 @@
           "location_kind": "map",
           "encounter_id": "spiders",
           "map_id": "hallomere_inn_main",
-          "description": "The pirates have unleashed some nssty spidars in the Inn. Chase those bugger out first and I will give you some items that will surely help you on finish these pirates.",
+          "description": "The pirates have loosed some nasty spiders in the inn. Chase those buggers out first, and I'll hand you some items that will surely help you finish the pirates off.",
           "rewards": {
             "items": [
               "iron_key",
@@ -379,7 +379,7 @@
     {
       "id": "the_royal_armory",
       "name": "The Royal Armory & The Ancient Dragon",
-      "description": "Our family's most powerful weapons have been hidden from the Dragon in a temporary royal armory in the Water Shrine far to the East. Sadly, the location of the armory has been discovered and seized by our enemies. You will need these weapons for the trials ahead. Go to the Shrine, secure the armory.  outfit your band and use my family's relics to destroy the Great Worm",
+      "description": "House Wellerman's relics were hidden from the dragon in a makeshift armory inside the Water Shrine, on an island far to the east. The cache has been found and seized. Take it back, arm your band, and put the Great Worm down for good.",
       "tags": [
         "main_story"
       ],
@@ -400,13 +400,13 @@
               "row": 7
             }
           ],
-          "description": "The Elemental Water Shrine is located in the far east on an island. You will need to secure a boat. Rumor has it that one is hidden in the town of Hallowmere. Smaller dragon like creatures have been  sent by the ancient dragon to block anyone from the armory, you must push through them to get to the armory once you locate the shrine."
+          "description": "The Water Shrine sits on an island far to the west; you'll need a boat, and rumor puts one hidden in Hollowmere. The dragon has loosed smaller wyrm-kin to guard the way — cut through them to reach the shrine."
         },
         {
           "id": "the_royal_armory_step_2",
           "name": "Clear out any remaining dragon born",
           "kind": "kill",
-          "description": "There are more wyvern in the depths of the water shrine that must be destoryed",
+          "description": "More wyverns lair in the depths of the Water Shrine. Destroy them.",
           "encounter_id": "drake_pack",
           "location_kind": "map",
           "map_id": "shrine_depths_3",
@@ -421,7 +421,7 @@
           "id": "the_royal_armory_step_3",
           "name": "Retrieve the Royal Scrolls and Relics",
           "kind": "retrieve",
-          "description": "In the armory, you will find my royal families charter and our family weapons. Retrieve our charter and arm yourselfs with whatever you need to defeat that Great Worm",
+          "description": "Inside the armory, recover House Wellerman's charter and arm yourselves with whatever relics you need to face the Great Worm.",
           "item_id": "retrievable_chest",
           "location_kind": "map",
           "map_id": "royal_armory",
@@ -447,8 +447,8 @@
       "quest_giver": {
         "npc_name": "Lord Wellerman",
         "npc_sprite": "person/king1.png",
-        "start_dialog": "Our family's most powerful weapons have been hidden from the Dragon in a temporary royal armory in the Water Shrine far to the East. Sadly, the location of the armory has been discovered and seized by our enemies. You will need these weapons for the trials ahead. Go to the Shrine, secure the armory.  outfit your band and use my family's relics to destroy the Great Worm",
-        "end_dialog": "Good work lads and ladies, now go forth and destroy the Dragon before we get down to pushing back the infernal horde."
+        "start_dialog": "My family's strongest weapons lie hidden from the dragon in a makeshift armory — the Water Shrine, on an island far to the east. The hiding place has been found and taken. You'll want those relics before the trials ahead: go east, secure the armory, arm your band, and then end the Great Worm.",
+        "end_dialog": "Well fought. Now go forth and put the dragon down — before we turn to the harder task of driving the infernal horde back into its crack."
       },
       "rewards": {
         "xp": 500,
@@ -904,7 +904,7 @@
     {
       "id": "the_horde_approaches",
       "name": "The Horde Approaches",
-      "description": "All manor of devils and demons are rushing toward the city from the great crack!",
+      "description": "Devils and demons are pouring out of the great crack and driving on the city, herding the imps ahead of them like a tide.",
       "tags": [
         "main_story"
       ],
@@ -960,7 +960,7 @@
           "id": "the_horde_approaches_step_4",
           "name": "Imp Army",
           "kind": "kill",
-          "description": "The devils are pushing the imps toward the city!",
+          "description": "The devils are driving the imps toward the city walls. Break the charge.",
           "encounter_id": "imp_ambush",
           "count": 3,
           "positions": [
@@ -984,8 +984,8 @@
       "quest_giver": {
         "npc_name": "Man At Arms",
         "npc_sprite": "person/fighter6.png",
-        "start_dialog": "All manor of devils and demons are rushing toward the city from the great crack!",
-        "end_dialog": "Thank you, brave adventures. But, alas the work is not yet done. We need to deal with the underworld threat directly or there shall be no peace."
+        "start_dialog": "All manner of devils and demons are rushing the city from the great crack — and they're driving the imps ahead of them like a tide! Hold the line with us!",
+        "end_dialog": "Thank you, brave adventurers. But the work isn't done — the crack itself still breathes. Until we face the underworld at its source, there will be no peace."
       },
       "rewards": {
         "xp": 500,
@@ -995,7 +995,7 @@
     {
       "id": "find_the_lost_citadel",
       "name": "Find the Lost Citadel",
-      "description": "",
+      "description": "Somewhere beyond the crack stands a hidden fortress and the warriors who hold it — so secret that even the crown has lost its location. Find it.",
       "tags": [
         "main_story"
       ],
@@ -1004,18 +1004,18 @@
           "id": "find_the_lost_citadel_step_1",
           "name": "Find a way through The Crack",
           "kind": "discover",
-          "description": "Find a way to the other side of the crack, it must be hidden in one of the many dungeons in the mountains",
+          "description": "Find a way to the far side of the crack — the path must lie hidden in one of the many dungeons in the mountains.",
           "location_kind": "map",
-          "map_id": "the_main_map",
-          "col": 82,
-          "row": 36
+          "map_id": "mm_castle_courtyard",
+          "col": 11,
+          "row": 14
         }
       ],
       "quest_giver": {
         "npc_name": "",
         "npc_sprite": "person/human_fighter.png",
-        "start_dialog": "We have a fortress hidden on the other side of the crack, but it is so secret that we do not know it's location. Go and find this fortress and help our brave warriors defeat this threat",
-        "end_dialog": ""
+        "start_dialog": "We hold a fortress on the far side of the crack — so secret that even we no longer know where it stands. Find a way across, find the citadel, and stand with the brave warriors holding the line there.",
+        "end_dialog": "You found it, and they still stand. Word of the citadel changes everything — the war below the world has a foothold now, and a name."
       },
       "rewards": {
         "xp": 500,
@@ -1130,7 +1130,9 @@
           ],
           "item_id": "relic_chest",
           "location_kind": "map",
-          "map_id": "mm_crypt_2"
+          "map_id": "mm_crypt_2",
+          "col": 2,
+          "row": 2
         }
       ],
       "quest_giver": {
@@ -1159,11 +1161,11 @@
           "id": "seal_the_crack_step_1",
           "name": "Find the remaining Royal armory items",
           "kind": "discover",
-          "description": "Rumor has it that orcs have stolen the royal weapons and hidden them in the Fire Shrine to the East",
+          "description": "Rumor holds that orcs stole the royal weapons and hid them in the Fire Shrine to the east. Take them back.",
           "location_kind": "map",
-          "map_id": "the_main_map",
-          "col": 98,
-          "row": 30
+          "map_id": "mm_fire_shrine_1",
+          "col": 8,
+          "row": 10
         },
         {
           "id": "seal_the_crack_step_2",
@@ -1172,13 +1174,13 @@
           "encounter_id": "the_apocalypse",
           "location_kind": "map",
           "map_id": "mm_fire_shrine_3",
-          "description": "A hydra has been summoned and bound to proect the Royal stash. Destroy the hydra before it destroys you."
+          "description": "A hydra has been summoned and bound to protect the royal stash. Destroy it before it destroys you."
         },
         {
           "id": "seal_the_crack_step_3",
           "name": "End the Pit Fiend",
           "kind": "kill",
-          "description": "The Pit Fied",
+          "description": "At the crack's mouth waits the Pit Fiend that commands the breach. Cast it down and seal the world shut behind it.",
           "encounter_id": "pit_fiends_court",
           "location_kind": "map",
           "map_id": "the_crack_1_l4",
@@ -1193,8 +1195,8 @@
       "quest_giver": {
         "npc_name": "",
         "npc_sprite": "person/king2.png",
-        "start_dialog": "The time has come to finish this, go into the great crack of the world and seal it shut. The journey will be long and there are still many steps and help you will need along the way.",
-        "end_dialog": "Nice! Saved the world. Cool."
+        "start_dialog": "The time has come to finish this: descend into the great crack of the world and seal it shut. The road is long, and you will need every weapon and every ally you can gather along the way.",
+        "end_dialog": "It is done. The crack is sealed, the warm dark below it gone quiet, and for the first time since spring the ground keeps its own counsel. The realm won't remember your names correctly — they never do — but it will go on. That was the whole of the work."
       },
       "rewards": {
         "xp": 1000,

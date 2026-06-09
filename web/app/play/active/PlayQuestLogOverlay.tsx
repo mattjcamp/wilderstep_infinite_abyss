@@ -124,13 +124,13 @@ export function PlayQuestLogOverlay({
         className="max-h-[90vh] w-full max-w-2xl overflow-auto rounded-lg border border-parchment/20 bg-ink/95 shadow-2xl"
       >
         <div className="flex items-center justify-between border-b border-parchment/15 px-3 py-1.5">
-          <h2 className="font-display text-base text-parchment">
+          <h2 className="font-display text-3xl text-parchment">
             Quest Log
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="rounded border border-parchment/20 px-2 py-0.5 text-xs text-parchment/70 hover:bg-ink/40"
+            className="rounded border border-parchment/20 px-3 py-1 text-base text-parchment/70 hover:bg-ink/40"
             title="Close (Q or ESC)"
           >
             Close
@@ -138,7 +138,7 @@ export function PlayQuestLogOverlay({
         </div>
         <div className="p-3">
           {acceptedQuests.length === 0 ? (
-            <p className="text-sm text-parchment/55">
+            <p className="text-lg text-parchment/60">
               You haven&apos;t accepted any quests yet. Look for quest
               givers in towns and dungeons.
             </p>
@@ -193,11 +193,11 @@ function QuestSection({
   if (quests.length === 0 && !emptyHint) return null;
   return (
     <section>
-      <h3 className="text-[11px] uppercase tracking-wide text-amber-300">
+      <h3 className="text-base uppercase tracking-wide text-amber-300">
         {label}
       </h3>
       {quests.length === 0 ? (
-        <p className="mt-1 text-xs text-parchment/45">{emptyHint}</p>
+        <p className="mt-1 text-base text-parchment/45">{emptyHint}</p>
       ) : (
         <ul className="mt-1 space-y-2">
           {quests.map((q) => {
@@ -245,17 +245,17 @@ function QuestSection({
                 className="rounded border border-parchment/15 bg-ink/40 p-2"
               >
                 <div className="flex items-baseline justify-between gap-2">
-                  <span className="font-display text-sm text-parchment">
+                  <span className="font-display text-xl text-parchment">
                     {q.name}
                   </span>
                   <span
-                    className={`font-mono text-[10px] ${tagClass}`}
+                    className={`font-mono text-sm ${tagClass}`}
                   >
                     {tagText}
                   </span>
                 </div>
                 {q.description ? (
-                  <p className="mt-1 text-[11px] text-parchment/55">
+                  <p className="mt-1 text-base text-parchment/60">
                     {q.description}
                   </p>
                 ) : null}
@@ -271,7 +271,7 @@ function QuestSection({
                           ? "text-amber-300"
                           : "text-parchment/45";
                       return (
-                        <li key={s.id ?? i} className="text-[11px]">
+                        <li key={s.id ?? i} className="text-base">
                           <span className={`font-mono ${rowClass}`}>
                             {glyph} {s.name ?? `Step ${i + 1}`}
                           </span>
@@ -284,7 +284,7 @@ function QuestSection({
                               scans at a glance. */}
                           {s.description ? (
                             <div
-                              className={`ml-3 text-[11px] italic ${
+                              className={`ml-3 text-base italic ${
                                 isCurrent
                                   ? "text-parchment/75"
                                   : "text-parchment/45"

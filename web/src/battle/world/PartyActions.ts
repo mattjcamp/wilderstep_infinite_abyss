@@ -16,6 +16,7 @@ import { canEquip } from "./Effects";
 import type { Spell } from "./Spells";
 import { castersFor } from "./Spells";
 import type { Item } from "./Items";
+import { classAllowsItemType } from "./Classes";
 import { addToStash } from "./TownActions";
 
 // ── Slot handling ──────────────────────────────────────────────────
@@ -601,6 +602,11 @@ export function equipItemFromInventory(
   member: PartyMember,
   itemIndex: number,
   items: Map<string, Item>,
+  /** The member's class `allowable_item_types`. When provided, an item
+   *  whose `item_type` isn't on the list is refused — a cleric can't
+   *  wield a crossbow. Omit / pass null/empty for no class restriction
+   *  (back-compat for callers without a class catalog, and tests). */
+  allowableItemTypes?: ReadonlyArray<string> | null,
 ): ActionResult {
   if (itemIndex < 0 || itemIndex >= member.inventory.length) {
     return { ok: false, message: "Item not found in personal inventory." };
@@ -609,6 +615,13 @@ export function equipItemFromInventory(
   const def = items.get(inv.item);
   if (!def) {
     return { ok: false, message: `Don't know how to equip ${inv.item}.` };
+  }
+  // Class equipment restriction — a cleric can't equip a crossbow, etc.
+  if (!classAllowsItemType(allowableItemTypes, def.item_type)) {
+    return {
+      ok: false,
+      message: `${member.name} can't equip ${def.name ?? inv.item} — their class isn't trained for it.`,
+    };
   }
   // Only consider slots the player UI currently surfaces — head/etc.
   // are filtered out so a head-only item refuses cleanly until the

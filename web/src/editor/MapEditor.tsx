@@ -64,6 +64,7 @@ import type { SimQuestRef } from "@/sim/types";
 import { CounterShopOverlay } from "./CounterShopOverlay";
 import { LinkPlacard } from "@/play/LinkPlacard";
 import { SpritePicker } from "./SpritePicker";
+import { EncounterPicker } from "./EncounterPicker";
 import { groupByTags } from "./mapTags";
 import { groupItemsByCategory } from "./itemTags";
 import { LockDialogOverlay } from "./LockDialogOverlay";
@@ -178,6 +179,14 @@ interface EncounterRecord extends RefRecord {
    *  detector so a cell whose encounter contains a quest-relevant
    *  monster gets the same halo as a directly-referenced encounter. */
   monsters?: string[];
+  /** Surfaced in the shared EncounterPicker — theme drives the grouped
+   *  headers, level the difficulty ordering. Declared explicitly (vs.
+   *  the RefRecord index signature) so the record is assignable to the
+   *  picker's typed entry. */
+  theme?: string;
+  area?: string;
+  level?: number;
+  weight?: number;
 }
 /** Item record from items.json — `icon` is a bare sprite name that
  *  resolves to `item/${icon}.png` for overlay rendering. */
@@ -4866,35 +4875,37 @@ function Inspector({
             onReset={() => onUpdate({ counter: undefined })}
           />
 
-          <SelectEditor
+          {/* Shared, graphical encounter picker (sprite + theme-grouped,
+              difficulty-ordered) — the same component the Quest editor's
+              kill step uses. Wrapped in InspectorRow so the per-cell
+              palette-override + reset affordance is preserved. */}
+          <InspectorRow
             label="Encounter"
-            help="Random encounter from encounters.json. Empty for none. The encounter's sprite renders on the cell."
-            value={instance.encounter ?? ""}
-            paletteValue={base?.encounter ?? instance.encounter ?? ""}
-            options={[
-              { value: "", label: "(none)" },
-              ...encounters.map((e) => ({
-                value: e.id,
-                label: e.name ? `${e.name} — ${e.id}` : e.id,
-              })),
-            ]}
-            previewSrc={(() => {
-              const id = instance.encounter ?? "";
-              if (!id) return null;
-              const found = encounters.find((e) => e.id === id);
-              const tile = found?.monster_party_tile;
-              if (!tile) return null;
-              return tile.includes("/")
-                ? withBasePath(`/sprites/${tile}`)
-                : null;
-            })()}
             isModified={
               !!base && fieldDiffersFromPalette(instance, palette, "encounter")
             }
             canReset={!!base}
-            onChange={(v) => onUpdate({ encounter: v })}
             onReset={() => onUpdate({ encounter: undefined })}
-          />
+          >
+            <EncounterPicker
+              value={instance.encounter ?? ""}
+              encounters={encounters}
+              onChange={(v) => onUpdate({ encounter: v })}
+            />
+            <p className="mt-0.5 text-xs text-parchment/60">
+              palette:{" "}
+              {(() => {
+                const pid = base?.encounter ?? "";
+                if (!pid) return "(none)";
+                const found = encounters.find((e) => e.id === pid);
+                return found?.name ? `${found.name} — ${pid}` : pid;
+              })()}
+            </p>
+            <p className="mt-1 text-xs text-parchment/65">
+              Random encounter from encounters.json. Empty for none. The
+              encounter&apos;s sprite renders on the cell.
+            </p>
+          </InspectorRow>
 
           <SelectEditor
             label="Spawn"

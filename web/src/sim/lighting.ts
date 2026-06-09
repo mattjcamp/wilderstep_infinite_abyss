@@ -486,7 +486,21 @@ export function computeLighting(inputs: LightingInputs): LightingResult {
         continue;
       }
 
-      const visibleNow = level >= VISIBILITY_THRESHOLD && withinSight(c, r);
+      // Fog-of-war memory grows for any cell the party can actually
+      // SEE this frame. Two ways a cell qualifies:
+      //   1. It's lit by a real source — the party's own light pool OR
+      //      a torch the party has LOS to. Such a cell is drawn lit on
+      //      screen, so it's remembered no matter how far it sits from
+      //      the party. (Without this, a torch lighting a corridor
+      //      ahead read as bright but never entered memory, so it
+      //      snapped back to black instead of grey once the party moved
+      //      on — the "never stays revealed" bug. Mirrors the
+      //      infravision branch above, which also remembers every cell
+      //      it lights regardless of the ambient sight radius.)
+      //   2. It falls inside the ambient sight radius for the mode with
+      //      LOS — the daylight / twilight reveal circle.
+      const visibleNow =
+        level >= VISIBILITY_THRESHOLD && (litByRealSource || withinSight(c, r));
       if (visibleNow) currentlyVisible.add(key);
       cells.set(key, {
         tint:

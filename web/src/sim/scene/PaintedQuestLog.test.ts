@@ -578,9 +578,9 @@ describe("PaintedQuestLog — scrolling", () => {
     const offset = screen.getScrollOffset();
     const contentHeight = screen.getContentHeight();
     // We can't read viewportHeight directly, but with PANEL_HEIGHT=600,
-    // HEADER_HEIGHT=44, PANEL_PADDING/2=10 the viewport is 546. Offset
-    // is clamped to -(content - 546).
-    const expectedMin = -(contentHeight - 546);
+    // HEADER_HEIGHT=56, PANEL_PADDING/2=10 the viewport is 534. Offset
+    // is clamped to -(content - 534).
+    const expectedMin = -(contentHeight - 534);
     // Be lenient on the exact value (height computations from fake
     // text objects aren't pixel-perfect); just assert the offset is
     // within ~10px of the expected clamp.

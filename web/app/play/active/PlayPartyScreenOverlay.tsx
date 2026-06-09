@@ -39,6 +39,7 @@ import {
   type PartySpellRef,
 } from "@/editor/PartyScreen";
 import type { WorldSave, SavedCharacterState } from "@/play/saveTypes";
+import { classAllowsItemType } from "@/battle/world/Classes";
 import { applyCampRest } from "@/play/campRest";
 import {
   addToInventory,
@@ -1208,6 +1209,26 @@ export function PlayPartyScreenOverlay({
       const currentlyEquipped =
         (charDef?.equipped ?? {}) as Record<string, string>;
       const displaced = currentlyEquipped[slot];
+
+      // Class equipment restriction — a cleric can't equip a crossbow,
+      // etc. The class's `allowable_item_types` is the gate; an empty /
+      // missing list means no restriction.
+      const charClassId = (charDef as { class?: string } | undefined)?.class;
+      const classRef = charClassId
+        ? state.classes.find((c) => c.id === charClassId)
+        : undefined;
+      const allowable = (
+        classRef as { allowable_item_types?: string[] } | undefined
+      )?.allowable_item_types;
+      const itemType = (def as { item_type?: string } | undefined)?.item_type;
+      if (!classAllowsItemType(allowable, itemType)) {
+        const who = (charDef as { name?: string } | undefined)?.name ?? "This character";
+        const what = (def as { name?: string } | undefined)?.name ?? entry.item;
+        setCastMessage(
+          `${who} can't equip ${what} — their class isn't trained for it.`,
+        );
+        return;
+      }
 
       // Per-slot durability for whatever was previously equipped —
       // when we bounce the displaced item back into inventory we want

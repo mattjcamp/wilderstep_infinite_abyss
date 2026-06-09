@@ -1,14 +1,13 @@
-# Quote
+# Playthrough
 
-"when we die, we stand in the court of our former selves. I worndr how I will be judged... Will they wonder why I spent so much much time in life looking for middle ages versions of ABBA songs"
+- Dial in the last Balrog encounter, test this in the simulator to make sure it's possible to beat this encounter
+- Add a custom boss map to Balrog encounter
 
 # Bugs
 
 - In the party screen, we show the "light" toggle as if it is one even after it has run out
 
-# Playthrough Polish
-
-- Procedure dungeons appear to be already explored even though the party was never in them. The gray tiles appear
+# Polish
 
 - In the Map Editor, allow editors to Command-Click to select multiple tiles so that attributes can be changed all at one time.
 - Improve the Encounter Picker in the Map Editor and Quest Editor to show Theme>Difficulty hierarchy
@@ -50,3 +49,7 @@ It's data-driven from the `herbalism` ability record, not hard-coded per tile. T
 3. **If the tile qualifies**, it then needs an alive Druid or Alchemist in the party, and rolls `find_chance` (0.02, doubled to 0.04 for an Alchemist — both knobs also in `params`). On a hit, the reagent is a uniform pick from every item in `items.json` with `item_type: "reagent"` or `"herb"`.
 
 So to make a new tile forageable, add its tile id to the `terrain` array in `abilities.json` — no code change. Note it matches the map-tile palette id exactly, so visual variants (like `grass2`) each need their own entry.
+
+# Quote
+
+"when we die, we stand in the court of our former selves. I worndr how I will be judged... Will they wonder why I spent so much much time in life looking for middle ages versions of ABBA songs"

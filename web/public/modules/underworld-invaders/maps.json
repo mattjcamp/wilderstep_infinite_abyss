@@ -12,6 +12,7 @@
       "grid": [
         [
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -27,6 +28,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -42,6 +44,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -57,6 +60,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -72,6 +76,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -87,6 +92,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -102,6 +108,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -117,6 +124,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -132,6 +140,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -147,6 +156,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -162,6 +172,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -177,6 +188,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -192,6 +204,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -207,6 +220,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -222,6 +236,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -237,6 +252,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -254,6 +270,7 @@
         ],
         [
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -269,6 +286,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -284,6 +302,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -299,6 +318,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -314,6 +334,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -329,6 +350,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -344,6 +366,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -359,6 +382,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -374,6 +398,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -389,6 +414,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -404,6 +430,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -419,6 +446,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -434,6 +462,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -449,6 +478,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -464,6 +494,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -479,6 +510,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -496,6 +528,7 @@
         ],
         [
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -511,6 +544,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -526,6 +560,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -541,6 +576,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -556,6 +592,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -571,6 +608,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -586,6 +624,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -601,6 +640,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -616,6 +656,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -631,6 +672,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -646,6 +688,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -661,6 +704,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -676,6 +720,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -691,6 +736,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -706,6 +752,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -721,248 +768,7 @@
             "tag": "terrain"
           },
           {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          }
-        ],
-        [
-          {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          },
-          {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -980,6 +786,7 @@
         ],
         [
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -995,6 +802,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -1010,6 +818,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -1025,6 +834,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -1040,6 +850,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -1055,6 +866,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -1070,6 +882,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -1085,6 +898,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -1100,6 +914,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -1115,6 +930,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -1130,6 +946,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -1145,6 +962,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -1160,6 +978,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -1175,6 +994,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -1190,6 +1010,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -1205,6 +1026,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -1222,6 +1044,7 @@
         ],
         [
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -1237,6 +1060,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -1252,6 +1076,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -1267,6 +1092,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -1282,6 +1108,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -1297,6 +1124,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -1312,6 +1140,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -1327,6 +1156,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -1342,6 +1172,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -1357,6 +1188,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -1372,6 +1204,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -1387,6 +1220,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -1402,6 +1236,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -1417,6 +1252,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -1432,6 +1268,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -1447,6 +1284,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -1464,6 +1302,7 @@
         ],
         [
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -1479,6 +1318,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -1494,6 +1334,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -1509,6 +1350,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -1524,6 +1366,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -1539,6 +1382,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -1554,6 +1398,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -1569,6 +1414,265 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain"
+          }
+        ],
+        [
+          {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": false,
@@ -1584,6 +1688,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": false,
@@ -1599,6 +1704,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -1614,6 +1720,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -1629,6 +1736,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -1644,6 +1752,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -1659,6 +1768,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -1674,6 +1784,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -1689,248 +1800,7 @@
             "tag": "terrain"
           },
           {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          }
-        ],
-        [
-          {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          },
-          {
-            "id": "path",
-            "name": "Path",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/path.png",
-            "tag": "terrain"
-          },
-          {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -1948,6 +1818,7 @@
         ],
         [
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -1963,6 +1834,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -1978,6 +1850,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -1993,6 +1866,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2008,6 +1882,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2023,6 +1898,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2038,6 +1914,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2053,6 +1930,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2068,6 +1946,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2083,6 +1962,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2098,6 +1978,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2113,6 +1994,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2128,6 +2010,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2143,6 +2026,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2158,6 +2042,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2173,6 +2058,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2190,6 +2076,7 @@
         ],
         [
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2205,6 +2092,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2220,6 +2108,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2235,6 +2124,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2250,6 +2140,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2265,6 +2156,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2280,6 +2172,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2295,6 +2188,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2310,6 +2204,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2325,6 +2220,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2340,6 +2236,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2355,6 +2252,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2370,6 +2268,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2385,6 +2284,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2400,6 +2300,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2415,6 +2316,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2432,6 +2334,7 @@
         ],
         [
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2447,6 +2350,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2462,6 +2366,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2477,6 +2382,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2492,6 +2398,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2507,6 +2414,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2522,6 +2430,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2537,6 +2446,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2552,6 +2462,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2567,6 +2478,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2582,6 +2494,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2597,6 +2510,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2612,6 +2526,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2627,6 +2542,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2642,6 +2558,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2657,6 +2574,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2674,6 +2592,7 @@
         ],
         [
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2689,6 +2608,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2704,6 +2624,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2719,6 +2640,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2734,6 +2656,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2749,6 +2672,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2764,6 +2688,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2779,6 +2704,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2794,6 +2720,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2809,6 +2736,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2824,6 +2752,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2839,6 +2768,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2854,6 +2784,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2869,6 +2800,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2884,6 +2816,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2899,6 +2832,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2916,6 +2850,7 @@
         ],
         [
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2931,6 +2866,265 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain"
+          }
+        ],
+        [
+          {
+            "boat": false,
+            "id": "path",
+            "name": "Path",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/path.png",
+            "tag": "terrain"
+          },
+          {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -2946,6 +3140,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2961,6 +3156,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2976,6 +3172,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -2991,6 +3188,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -3006,6 +3204,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -3021,6 +3220,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -3036,6 +3236,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -3051,6 +3252,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -3066,6 +3268,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -3081,6 +3284,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -3096,6 +3300,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -3111,6 +3316,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -3126,6 +3332,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "mountain",
             "name": "Mountain",
             "walkable": false,
@@ -3141,6 +3348,7 @@
             "tag": "outdoor"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -3158,6 +3366,7 @@
         ],
         [
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -3173,6 +3382,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -3188,6 +3398,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -3203,6 +3414,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -3218,6 +3430,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -3233,6 +3446,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -3248,6 +3462,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -3263,6 +3478,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -3278,6 +3494,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -3293,6 +3510,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -3308,6 +3526,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -3323,6 +3542,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -3338,6 +3558,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -3353,6 +3574,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -3368,6 +3590,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -3383,6 +3606,7 @@
             "tag": "terrain"
           },
           {
+            "boat": false,
             "id": "path",
             "name": "Path",
             "walkable": true,
@@ -3398,7 +3622,9 @@
             "tag": "terrain"
           }
         ]
-      ]
+      ],
+      "lighting": "day",
+      "fog_of_war": false
     },
     {
       "id": "arena_graveyard",
@@ -37013,7 +37239,12 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/dungeon_entrance.png",
-            "tag": "building"
+            "tag": "building",
+            "link": {
+              "map_id": "the_crack_1_l1",
+              "x": 16,
+              "y": 4
+            }
           },
           {
             "boat": false,
@@ -94245,19 +94476,20 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
+            "id": "village",
+            "name": "Village",
             "walkable": true,
             "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
-            "animation": "none",
+            "animation": null,
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass1.png",
-            "tag": "walkable"
+            "sprite": "map/village.png",
+            "tag": "building",
+            "text": "The Wailing Manor"
           },
           {
             "boat": false,
@@ -95834,20 +96066,24 @@
             "tag": "walkable"
           },
           {
-            "boat": false,
-            "id": "grass",
-            "name": "Grass",
+            "id": "graveyard",
+            "name": "Grave Yard",
             "walkable": true,
             "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
-            "animation": "none",
+            "animation": null,
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass1.png",
-            "tag": "walkable"
+            "sprite": "map/graveyard.png",
+            "tag": "outdoor",
+            "link": {
+              "map_id": "mm_graveyard",
+              "x": 8,
+              "y": 13
+            }
           },
           {
             "boat": false,
@@ -102169,20 +102405,24 @@
             "tag": "walkable"
           },
           {
-            "boat": false,
-            "id": "grass",
-            "name": "Grass",
+            "id": "portal1",
+            "name": "Portal Entrance",
             "walkable": true,
             "obstructs": false,
             "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
+            "light_source": true,
+            "light_range": 3,
+            "animation": "fairy",
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass1.png",
-            "tag": "walkable"
+            "sprite": "map/portal.png",
+            "tag": "dungeon",
+            "link": {
+              "map_id": "the_main_map",
+              "x": 88,
+              "y": 47
+            }
           },
           {
             "boat": false,
@@ -106910,19 +107150,20 @@
             "tag": "walkable"
           },
           {
-            "id": "graveyard",
-            "name": "Grave Yard",
+            "boat": false,
+            "id": "grass",
+            "name": "Grass",
             "walkable": true,
             "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
-            "animation": null,
+            "animation": "none",
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/graveyard.png",
-            "tag": "outdoor"
+            "sprite": "map/grass1.png",
+            "tag": "walkable"
           },
           {
             "boat": false,
@@ -108485,55 +108726,52 @@
             "tag": "walkable"
           },
           {
-            "id": "graveyard",
-            "name": "Grave Yard",
+            "boat": false,
+            "id": "grass",
+            "name": "Grass",
             "walkable": true,
             "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
-            "animation": null,
+            "animation": "none",
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/graveyard.png",
-            "tag": "outdoor"
+            "sprite": "map/grass1.png",
+            "tag": "walkable"
           },
           {
-            "id": "graveyard",
-            "name": "Grave Yard",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": true,
-            "light_range": 1,
-            "animation": null,
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/graveyard.png",
-            "tag": "outdoor",
-            "show_link_placard": true,
-            "link": {
-              "map_id": "mm_graveyard",
-              "x": 8,
-              "y": 13
-            }
-          },
-          {
-            "id": "graveyard",
-            "name": "Grave Yard",
+            "boat": false,
+            "id": "grass",
+            "name": "Grass",
             "walkable": true,
             "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
-            "animation": null,
+            "animation": "none",
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/graveyard.png",
-            "tag": "outdoor"
+            "sprite": "map/grass1.png",
+            "tag": "walkable"
+          },
+          {
+            "boat": false,
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/grass1.png",
+            "tag": "walkable"
           },
           {
             "boat": false,
@@ -110103,19 +110341,20 @@
             "tag": "walkable"
           },
           {
-            "id": "graveyard",
-            "name": "Grave Yard",
+            "boat": false,
+            "id": "grass",
+            "name": "Grass",
             "walkable": true,
             "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
-            "animation": null,
+            "animation": "none",
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/graveyard.png",
-            "tag": "outdoor"
+            "sprite": "map/grass1.png",
+            "tag": "walkable"
           },
           {
             "boat": false,
@@ -164026,7 +164265,7 @@
     },
     {
       "id": "hallomere_inn_main",
-      "name": "Hallomere Inn",
+      "name": "Hollowmere Inn",
       "description": "A place for drinks and the beginning of an adventure",
       "tags": [
         "hollowmere"
@@ -260931,7 +261170,7 @@
     },
     {
       "id": "caves_1_l1",
-      "name": "Dragon's Cave— Level 1",
+      "name": "Dragon's Cave — Level 1",
       "description": "Smoke pours out of the ground at the entrance of this dragon's cave",
       "tags": [
         "building",
@@ -297821,7 +298060,7 @@
     },
     {
       "id": "caves_1_l2",
-      "name": "Dragon's Caves — Level 2",
+      "name": "Dragon's Cave — Level 2",
       "description": "Floor 2 of Caves. Generated from the dungeon spec.",
       "tags": [
         "dragon's cave"
@@ -333680,7 +333919,7 @@
     },
     {
       "id": "caves_1_l3",
-      "name": "Dragon's Caves — Level 3",
+      "name": "Dragon's Cave — Level 3",
       "description": "Floor 3 of Caves. Generated from the dungeon spec.",
       "tags": [
         "dragon's cave"
@@ -475485,7 +475724,9 @@
             "tag": "dungeon"
           }
         ]
-      ]
+      ],
+      "lighting": "darkness",
+      "fog_of_war": false
     },
     {
       "id": "mm_castle_courtyard",
@@ -480942,7 +481183,7 @@
               "x": 82,
               "y": 36
             },
-            "show_link_placard": true
+            "show_link_placard": false
           },
           {
             "id": "wall_stone",
@@ -481095,7 +481336,8 @@
             "tag": "wall"
           }
         ]
-      ]
+      ],
+      "fog_of_war": false
     },
     {
       "id": "mm_castle_hall",
@@ -484160,7 +484402,8 @@
             "tag": "wall"
           }
         ]
-      ]
+      ],
+      "fog_of_war": false
     },
     {
       "id": "mm_castle_keep",
@@ -484172,7 +484415,6 @@
       ],
       "width": 12,
       "height": 10,
-      "lighting": "twilight",
       "grid": [
         [
           {
@@ -485737,7 +485979,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/floor_gray.png",
-            "tag": "walkable"
+            "tag": "walkable",
+            "quest": "seal_the_crack"
           },
           {
             "boat": false,
@@ -486081,7 +486324,8 @@
             "tag": "wall"
           }
         ]
-      ]
+      ],
+      "fog_of_war": false
     },
     {
       "id": "mm_graveyard",
@@ -489531,8 +489775,8 @@
             "tag": "indoor",
             "link": {
               "map_id": "the_main_map",
-              "x": 87,
-              "y": 55
+              "x": 90,
+              "y": 47
             },
             "show_link_placard": true
           },
@@ -512937,7 +513181,11 @@
             "dungeon": "",
             "npc": "",
             "trap": false,
-            "link": null
+            "link": {
+              "map_id": "the_main_map",
+              "x": 80,
+              "y": 10
+            }
           },
           {
             "boat": false,
@@ -533220,7 +533468,7 @@
           }
         ]
       ],
-      "lighting": "twilight",
+      "lighting": "darkness",
       "fog_of_war": false
     },
     {

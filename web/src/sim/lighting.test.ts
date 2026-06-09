@@ -64,6 +64,33 @@ describe("computeLighting — day mode", () => {
   });
 });
 
+describe("computeLighting — fog memory grows for what's lit", () => {
+  it("remembers a torch-lit cell beyond the sight radius (night)", () => {
+    // Open corridor. Party at col 0; a torch at col 3 (range 3) the
+    // party can see lights cells well past the night sight radius (1).
+    const grid = makeGrid(8, 1, {
+      "3,0": { light_source: true, light_range: 3 },
+    });
+    const r = computeLighting({
+      grid,
+      party: { col: 0, row: 0 },
+      partyLight: null, // baseline range 1 only
+      partyInfravisionActive: false,
+      mode: "night",
+      rememberedCells: new Set<string>(),
+      // night default sight radius is 1 — far cells only get remembered
+      // if they're lit by a real source (the fix under test).
+    });
+    // (5,0): 2 tiles from the torch → lit; 5 tiles from the party →
+    // outside the radius. It must still be remembered because the party
+    // can see it lit.
+    expect(r.currentlyVisible.has("5,0")).toBe(true);
+    // (7,0): beyond the torch's range → unlit ambient → not seen, so
+    // the radius gate still keeps it out of memory (no false reveal).
+    expect(r.currentlyVisible.has("7,0")).toBe(false);
+  });
+});
+
 describe("computeLighting — night mode, no party", () => {
   it("dims every cell to ambient and gates source visibility safely", () => {
     // Painting view of the editor: no party on the map. Helper

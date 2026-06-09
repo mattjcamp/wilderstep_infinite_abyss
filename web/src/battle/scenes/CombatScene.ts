@@ -3070,7 +3070,12 @@ export class CombatScene extends Phaser.Scene {
       this.cancelSubMode();
       return;
     }
-    const r = equipItemFromInventory(member, opt.index, this.items);
+    const r = equipItemFromInventory(
+      member,
+      opt.index,
+      this.items,
+      this.classTemplates.get(member.class)?.allowable_item_types,
+    );
     if (!r.ok) {
       // Refusal — log and bounce back to the action menu without
       // ending the turn.

@@ -27,6 +27,7 @@
 import { SpritePicker } from "./SpritePicker";
 import { withBasePath } from "@/util/basePath";
 import { groupItemsByCategory } from "./itemTags";
+import { classAllowsItemType } from "@/battle/world/Classes";
 
 /** Slim Item view the sheet needs — id, display name, icon
  *  (resolved against /sprites/item/<icon>.png), and the slots the
@@ -105,7 +106,14 @@ export function CharacterSheet({
 }: {
   character: CharacterRecord;
   races: Array<{ id: string; name?: string }>;
-  classes: Array<{ id: string; name?: string }>;
+  classes: Array<{
+    id: string;
+    name?: string;
+    /** Item-type allowlist used to gate the equip pickers below — a
+     *  cleric's Hands picker won't list a crossbow. Absent → no
+     *  restriction. */
+    allowable_item_types?: string[];
+  }>;
   /** Item catalog for the equipped-slot pickers. When omitted the
    *  equipped section degrades to read-only text — the host hasn't
    *  loaded items.json yet, but the rest of the sheet still works. */
@@ -345,6 +353,10 @@ export function CharacterSheet({
               slot={slot}
               value={character.equipped?.[slot] ?? ""}
               items={items}
+              allowableItemTypes={
+                classes.find((c) => c.id === character.class)
+                  ?.allowable_item_types
+              }
               onChange={(itemId) => patchEquipped(slot, itemId)}
             />
           ))}
@@ -378,16 +390,27 @@ function EquipSlotPicker({
   slot,
   value,
   items,
+  allowableItemTypes,
   onChange,
 }: {
   slot: EquipSlot;
   value: string;
   items: ReadonlyArray<SheetItemOption>;
+  /** The character's class `allowable_item_types`. Items whose
+   *  `item_type` isn't on the list are dropped from the picker so the
+   *  class can't equip them. Absent → no restriction. */
+  allowableItemTypes?: ReadonlyArray<string>;
   onChange: (itemId: string) => void;
 }) {
-  // Slot-matched options. Items missing a `slots` array don't qualify
-  // even for hands — the catalog flags equippable gear explicitly.
-  const candidates = items.filter((i) => (i.slots ?? []).includes(slot));
+  // Slot-matched options, gated by the class allowlist — a cleric's
+  // Hands picker won't list a crossbow. The currently-equipped item is
+  // always kept (even if disallowed by stale data) so the author can
+  // still see + clear it.
+  const candidates = items.filter(
+    (i) =>
+      (i.slots ?? []).includes(slot) &&
+      (i.id === value || classAllowsItemType(allowableItemTypes, i.item_type)),
+  );
   const candidateGroups = groupItemsByCategory(candidates);
   const current = items.find((i) => i.id === value) ?? null;
   // If the saved value points at an item the catalog doesn't recognise

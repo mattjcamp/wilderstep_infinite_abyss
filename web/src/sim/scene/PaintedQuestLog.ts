@@ -118,8 +118,8 @@ const FONT = "monospace";
 const PANEL_WIDTH = 720;
 const PANEL_HEIGHT = 600;
 const PANEL_PADDING = 20;
-const HEADER_HEIGHT = 44;
-const SECTION_HEADER_HEIGHT = 22;
+const HEADER_HEIGHT = 56;
+const SECTION_HEADER_HEIGHT = 30;
 const ENTRY_INNER_PADDING = 8;
 const ENTRY_SPACING = 6;
 const SECTION_SPACING = 12;
@@ -242,7 +242,7 @@ export class PaintedQuestLog {
     const headerText = this.scene.add
       .text(panelX + PANEL_PADDING, panelY + 12, "QUEST LOG", {
         fontFamily: FONT,
-        fontSize: "14px",
+        fontSize: "22px",
         color: COLOR_HEADER_TEXT,
         fontStyle: "bold",
       })
@@ -255,7 +255,7 @@ export class PaintedQuestLog {
         "[Q / Esc to close]",
         {
           fontFamily: FONT,
-          fontSize: "11px",
+          fontSize: "15px",
           color: COLOR_DIM_TEXT,
         },
       )
@@ -265,7 +265,7 @@ export class PaintedQuestLog {
     const headerRule = this.scene.add
       .rectangle(
         panelX + PANEL_PADDING,
-        panelY + 32,
+        panelY + 44,
         PANEL_WIDTH - PANEL_PADDING * 2,
         1,
         COLOR_PANEL_BORDER,
@@ -313,7 +313,7 @@ export class PaintedQuestLog {
           "You haven't accepted any quests yet.\nLook for quest givers in towns and dungeons.",
           {
             fontFamily: FONT,
-            fontSize: "12px",
+            fontSize: "18px",
             color: COLOR_DIM_TEXT,
             wordWrap: { width: PANEL_WIDTH - PANEL_PADDING * 2 },
           },
@@ -390,11 +390,11 @@ export class PaintedQuestLog {
       const scrollHint = this.scene.add
         .text(
           panelX + PANEL_WIDTH - PANEL_PADDING,
-          panelY + PANEL_HEIGHT - 16,
+          panelY + PANEL_HEIGHT - 22,
           "[wheel / ↑↓ / PgUp PgDn to scroll]",
           {
             fontFamily: FONT,
-            fontSize: "11px",
+            fontSize: "14px",
             color: COLOR_DIM_TEXT,
           },
         )
@@ -457,7 +457,7 @@ export class PaintedQuestLog {
     const header = this.scene.add
       .text(0, startY, title, {
         fontFamily: FONT,
-        fontSize: "12px",
+        fontSize: "18px",
         color: COLOR_HEADER_TEXT,
         fontStyle: "bold",
       })
@@ -509,7 +509,7 @@ export class PaintedQuestLog {
     const name = this.scene.add
       .text(entryX, rowY, quest.name, {
         fontFamily: FONT,
-        fontSize: "13px",
+        fontSize: "20px",
         color: COLOR_BODY_TEXT,
         fontStyle: "bold",
       })
@@ -517,7 +517,7 @@ export class PaintedQuestLog {
     const tag = this.scene.add
       .text(PANEL_WIDTH - PANEL_PADDING * 2 - ENTRY_INNER_PADDING, rowY, statusLabel, {
         fontFamily: FONT,
-        fontSize: "11px",
+        fontSize: "15px",
         color: statusColor,
       })
       .setOrigin(1, 0)
@@ -530,7 +530,7 @@ export class PaintedQuestLog {
       desc = this.scene.add
         .text(entryX, rowY, quest.description, {
           fontFamily: FONT,
-          fontSize: "11px",
+          fontSize: "16px",
           color: COLOR_DIM_TEXT,
           wordWrap: { width: innerWidth },
         })
@@ -592,7 +592,7 @@ export class PaintedQuestLog {
         const row = this.scene.add
           .text(stepIndent, rowY, `${glyph} ${stepName}`, {
             fontFamily: FONT,
-            fontSize: "11px",
+            fontSize: "16px",
             color,
             wordWrap: { width: stepInnerWidth },
           })
@@ -608,7 +608,7 @@ export class PaintedQuestLog {
           const sub = this.scene.add
             .text(stepIndent + 14, rowY, step.description, {
               fontFamily: FONT,
-              fontSize: "11px",
+              fontSize: "16px",
               color:
                 stepStatus === "current" ? COLOR_BODY_TEXT : COLOR_DIM_TEXT,
               fontStyle: "italic",

@@ -62,6 +62,31 @@ export interface ClassTemplate {
   mp_source?: MpSource;
 }
 
+/**
+ * True when a class may equip an item of the given `item_type`
+ * (e.g. "crossbow", "mace", "leather"). The single source of truth for
+ * class equipment gating — used by the editor's equip picker and every
+ * runtime equip path so a cleric can't wield a crossbow anywhere.
+ *
+ * Rules:
+ *   - An empty / missing allowlist means "no restriction" — classes (or
+ *     modules) that don't declare `allowable_item_types` keep equipping
+ *     anything, so this is a safe no-op until a class opts in.
+ *   - An item with no `item_type` can't be gated, so it's allowed (the
+ *     catalog's `character_can_equip` flag still applies elsewhere).
+ *   - Comparison is case-insensitive + trimmed, matching the loose
+ *     authoring in character_classes.json.
+ */
+export function classAllowsItemType(
+  allowable: ReadonlyArray<string> | null | undefined,
+  itemType: string | null | undefined,
+): boolean {
+  if (!allowable || allowable.length === 0) return true;
+  if (!itemType || !itemType.trim()) return true;
+  const want = itemType.trim().toLowerCase();
+  return allowable.some((t) => t.trim().toLowerCase() === want);
+}
+
 export interface RaceInfo {
   id: string;
   name: string;

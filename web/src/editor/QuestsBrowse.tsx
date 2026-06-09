@@ -29,7 +29,7 @@ import { mergeModel } from "@/data_model/merge";
 import type { LibraryCatalogEntry } from "@/data_model/ModuleSource";
 import { publishItems } from "@/data_model/publishClient";
 import { StaticModuleSource } from "@/data_model/StaticModuleSource";
-import { EncounterPicker } from "./EncounterPicker";
+import { EncounterPicker, type EncounterPickerEntry } from "./EncounterPicker";
 import { SpritePicker } from "./SpritePicker";
 import { ID_PATTERN, TagsPicker } from "./TagsPicker";
 import { usePublishServer } from "./usePublishServer";
@@ -210,6 +210,7 @@ type LoadState =
       items: ItemSummary[];
       maps: MapSummary[];
       dungeons: DungeonSummary[];
+      encounters: EncounterPickerEntry[];
       ownFile: Record<string, unknown> | null;
       isDraft: boolean;
     }
@@ -225,8 +226,14 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
   const refresh = async () => {
     try {
       const src = new StaticModuleSource();
-      const [questsLayers, catalog, itemsLayers, mapsLayers, dungeonsLayers] =
-        await Promise.all([
+      const [
+        questsLayers,
+        catalog,
+        itemsLayers,
+        mapsLayers,
+        dungeonsLayers,
+        encountersLayers,
+      ] = await Promise.all([
           src.loadModelLayers(moduleId, "quests"),
           // Quests offered by `uses` libraries. Not part of the
           // resolved view — the import section below copies them in.
@@ -234,6 +241,7 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
           src.loadModelLayers(moduleId, "items"),
           src.loadModelLayers(moduleId, "maps"),
           src.loadModelLayers(moduleId, "dungeons"),
+          src.loadModelLayers(moduleId, "encounters"),
         ]);
       const draft = await loadDraft<Record<string, unknown>>(moduleId, MODEL_KEY);
       const ownEffective =
@@ -281,6 +289,22 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
         floors: Array.isArray(d.levels) ? d.levels.length : undefined,
       }));
 
+      const encountersMerged = mergeModel(
+        "encounters",
+        encountersLayers.inherited,
+        encountersLayers.ownFile,
+      ) as { encounters?: EncounterPickerEntry[] } | null;
+      const encounters = (encountersMerged?.encounters ?? []).map((e) => ({
+        id: e.id,
+        name: e.name,
+        area: e.area,
+        level: e.level,
+        weight: e.weight,
+        theme: e.theme,
+        monster_party_tile: e.monster_party_tile,
+        monsters: e.monsters,
+      }));
+
       setState({
         kind: "ok",
         quests,
@@ -288,6 +312,7 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
         items,
         maps,
         dungeons,
+        encounters,
         ownFile: ownEffective ?? null,
         isDraft: hasDraft(moduleId, MODEL_KEY),
       });
@@ -660,6 +685,7 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
                       items={state.items}
                       maps={state.maps}
                       dungeons={state.dungeons}
+                      encounters={state.encounters}
                       existingTags={allTags}
                       onUpdate={(patch) => onUpdateQuest(q.id, patch)}
                       onAddStep={() => onAddStep(q.id)}
@@ -790,6 +816,7 @@ function QuestEditor({
   items,
   maps,
   dungeons,
+  encounters,
   existingTags,
   onUpdate,
   onAddStep,
@@ -800,6 +827,7 @@ function QuestEditor({
   items: ItemSummary[];
   maps: MapSummary[];
   dungeons: DungeonSummary[];
+  encounters: EncounterPickerEntry[];
   existingTags: string[];
   onUpdate: (patch: Partial<QuestRecord>) => void;
   onAddStep: () => void;
@@ -873,6 +901,7 @@ function QuestEditor({
               maps={maps}
               items={items}
               dungeons={dungeons}
+              encounters={encounters}
               onUpdate={(patch) => onUpdateStep(i, patch)}
               onDelete={() => onDeleteStep(i)}
             />
@@ -1592,6 +1621,7 @@ function StepRow({
   maps,
   items,
   dungeons,
+  encounters,
   onUpdate,
   onDelete,
 }: {
@@ -1601,6 +1631,7 @@ function StepRow({
   maps: MapSummary[];
   items: ItemSummary[];
   dungeons: DungeonSummary[];
+  encounters: EncounterPickerEntry[];
   onUpdate: (patch: Partial<QuestStep>) => void;
   onDelete: () => void;
 }) {
@@ -1695,6 +1726,7 @@ function StepRow({
                 </span>
                 <EncounterPicker
                   value={step.encounter_id ?? ""}
+                  encounters={encounters}
                   onChange={(id) =>
                     onUpdate({ encounter_id: id || undefined })
                   }
