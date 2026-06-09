@@ -3,6 +3,7 @@
   "map_tiles": [
     {
       "boat": false,
+      "boat_passable": false,
       "id": "arch_gold",
       "name": "Gold Arch",
       "walkable": true,
@@ -15,10 +16,11 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/arch_gold.png",
-      "tag": "transition"
+      "tag": "indoor"
     },
     {
       "boat": false,
+      "boat_passable": false,
       "id": "arch_blue",
       "name": "Blue Arch",
       "walkable": true,
@@ -31,10 +33,11 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/arch_blue.png",
-      "tag": "transition"
+      "tag": "indoor"
     },
     {
       "boat": false,
+      "boat_passable": false,
       "id": "stone_floor",
       "name": "Stone Floor",
       "walkable": true,
@@ -47,7 +50,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/stone_floor.png",
-      "tag": "indoor"
+      "tag": "walkable"
     },
     {
       "boat": false,

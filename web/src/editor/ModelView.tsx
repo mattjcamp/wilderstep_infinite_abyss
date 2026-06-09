@@ -1220,11 +1220,15 @@ function compareByField(a: Record_, b: Record_, field: string): number {
   return as.localeCompare(bs);
 }
 
-/** Models whose table is split into collapsible tag sections. Tile
- *  palette groups by its singular `tag`; encounters by the FIRST entry
- *  of their `tags` array (the "primary" tag). */
+/** Models whose table is split into collapsible sections. Tile
+ *  palette groups by its singular `tag`; encounters AND monsters group
+ *  by their `theme` (devil, undead, animal, …) rather than tags. */
 function isGroupedModel(modelKey: string | undefined): boolean {
-  return modelKey === "map_tiles" || modelKey === "encounters";
+  return (
+    modelKey === "map_tiles" ||
+    modelKey === "encounters" ||
+    modelKey === "monsters"
+  );
 }
 
 /** True when a record carries `tag` — checks the `tags` array (when
@@ -1241,12 +1245,11 @@ function groupTagOf(modelKey: string | undefined, r: Record_): string | null {
     const t = r["tag"];
     return typeof t === "string" && t.trim() ? t : null;
   }
-  if (modelKey === "encounters") {
-    const t = r["tags"];
-    if (Array.isArray(t)) {
-      const first = t.find((x) => typeof x === "string" && x.trim());
-      return typeof first === "string" ? first : null;
-    }
+  if (modelKey === "encounters" || modelKey === "monsters") {
+    // Encounters and monsters group by `theme` (devil, undead,
+    // animal, …), not tags.
+    const t = r["theme"];
+    return typeof t === "string" && t.trim() ? t : null;
   }
   return null;
 }

@@ -222,14 +222,14 @@ const DEFS: Record<ModelKey, ModelDef> = {
     docKey: "monster",
     blurb: "Monster catalog",
     columns: [
-      { field: "id", label: "ID" },
+      // Name leads next to the sprite thumbnail (the leading column);
+      // the raw id stays editable in the form + visible in the JSON
+      // view. Theme isn't a column because the table is grouped by
+      // theme already — mirrors the Encounters list.
       { field: "name", label: "Name" },
       { field: "hp", label: "HP", format: asString },
       { field: "ac", label: "AC", format: asString },
       { field: "difficulty", label: "Difficulty" },
-      // Organizational tag (undead/devil/elemental/humanoid/cryptid/
-      // magical) for assembling themed maps. Searchable + sortable.
-      { field: "theme", label: "Theme" },
     ],
   },
   characters: {

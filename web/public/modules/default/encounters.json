@@ -4,7 +4,7 @@
     {
       "id": "cellar_rats",
       "area": "dungeon",
-      "theme": "cryptid",
+      "theme": "animal",
       "name": "Cellar Rats",
       "level": 1,
       "weight": 30,
@@ -17,7 +17,7 @@
     {
       "id": "rat_nest",
       "area": "dungeon",
-      "theme": "cryptid",
+      "theme": "animal",
       "name": "Rat Nest",
       "level": 1,
       "weight": 30,
@@ -31,7 +31,7 @@
     {
       "id": "stray_goblin",
       "area": "dungeon",
-      "theme": "humanoid",
+      "theme": "goblinoid",
       "name": "Stray Goblin",
       "level": 1,
       "weight": 25,
@@ -44,7 +44,7 @@
     {
       "id": "goblin_squatters",
       "area": "dungeon",
-      "theme": "humanoid",
+      "theme": "goblinoid",
       "name": "Goblin Squatters",
       "level": 1,
       "weight": 15,
@@ -58,7 +58,7 @@
     {
       "id": "goblin_ambush",
       "area": "dungeon",
-      "theme": "humanoid",
+      "theme": "goblinoid",
       "name": "Goblin Ambush",
       "level": 2,
       "weight": 30,
@@ -73,7 +73,7 @@
     {
       "id": "wolf_pack",
       "area": "dungeon",
-      "theme": "cryptid",
+      "theme": "animal",
       "name": "Wolf Pack",
       "level": 2,
       "weight": 25,
@@ -87,7 +87,7 @@
     {
       "id": "goblin_raiders",
       "area": "dungeon",
-      "theme": "humanoid",
+      "theme": "goblinoid",
       "name": "Goblin Raiders",
       "level": 2,
       "weight": 25,
@@ -102,7 +102,7 @@
     {
       "id": "rat_swarm",
       "area": "dungeon",
-      "theme": "cryptid",
+      "theme": "animal",
       "name": "Rat Swarm",
       "level": 2,
       "weight": 20,
@@ -160,23 +160,24 @@
     {
       "id": "wolves_and_goblins",
       "area": "dungeon",
-      "theme": "cryptid",
+      "theme": "goblinoid",
       "name": "Wolves and Goblins",
       "level": 3,
       "weight": 20,
-      "monster_party_tile": "monster/wolf.png",
+      "monster_party_tile": "monster/goblin.png",
       "monsters": [
         "wolf",
         "wolf",
         "goblin",
         "goblin"
       ],
-      "custom_map": null
+      "custom_map": null,
+      "tags": null
     },
     {
       "id": "shaman_s_guard",
       "area": "dungeon",
-      "theme": "humanoid",
+      "theme": "goblinoid",
       "name": "Shaman's Guard",
       "level": 3,
       "weight": 15,
@@ -221,7 +222,7 @@
     {
       "id": "orc_scouts",
       "area": "dungeon",
-      "theme": "humanoid",
+      "theme": "goblinoid",
       "name": "Orc Scouts",
       "level": 4,
       "weight": 25,
@@ -235,7 +236,7 @@
     {
       "id": "mixed_patrol",
       "area": "dungeon",
-      "theme": "humanoid",
+      "theme": "goblinoid",
       "name": "Mixed Patrol",
       "level": 4,
       "weight": 20,
@@ -250,7 +251,7 @@
     {
       "id": "wild_pack",
       "area": "dungeon",
-      "theme": "cryptid",
+      "theme": "animal",
       "name": "Wild Pack",
       "level": 4,
       "weight": 15,
@@ -265,7 +266,7 @@
     {
       "id": "orc_warband",
       "area": "dungeon",
-      "theme": "humanoid",
+      "theme": "goblinoid",
       "name": "Orc Warband",
       "level": 5,
       "weight": 25,
@@ -280,7 +281,7 @@
     {
       "id": "orc_raiding_party",
       "area": "dungeon",
-      "theme": "humanoid",
+      "theme": "goblinoid",
       "name": "Orc Raiding Party",
       "level": 5,
       "weight": 20,
@@ -325,7 +326,7 @@
     {
       "id": "troll_den",
       "area": "dungeon",
-      "theme": "humanoid",
+      "theme": "goblinoid",
       "name": "Troll Den",
       "level": 5,
       "weight": 10,
@@ -338,7 +339,7 @@
     {
       "id": "orc_with_wolves",
       "area": "dungeon",
-      "theme": "humanoid",
+      "theme": "goblinoid",
       "name": "Orc with Wolves",
       "level": 6,
       "weight": 20,
@@ -352,24 +353,9 @@
       "custom_map": "outdoor_arena"
     },
     {
-      "id": "troll_and_minions",
-      "area": "dungeon",
-      "theme": "humanoid",
-      "name": "Troll and Minions",
-      "level": 6,
-      "weight": 20,
-      "monster_party_tile": "monster/troll.png",
-      "monsters": [
-        "troll",
-        "goblin",
-        "goblin"
-      ],
-      "custom_map": null
-    },
-    {
       "id": "dark_patrol",
       "area": "dungeon",
-      "theme": "humanoid",
+      "theme": "goblinoid",
       "name": "Dark Patrol",
       "level": 6,
       "weight": 20,
@@ -401,58 +387,12 @@
     {
       "id": "orc_siege",
       "area": "dungeon",
-      "theme": "humanoid",
+      "theme": "goblinoid",
       "name": "Orc Siege",
       "level": 6,
       "weight": 15,
       "monster_party_tile": "monster/orc1.png",
       "monsters": [
-        "orc",
-        "orc",
-        "orc",
-        "orc_shaman"
-      ],
-      "custom_map": "outdoor_arena"
-    },
-    {
-      "id": "troll_warband",
-      "area": "dungeon",
-      "theme": "humanoid",
-      "name": "Troll Warband",
-      "level": 7,
-      "weight": 20,
-      "monster_party_tile": "monster/troll.png",
-      "monsters": [
-        "troll",
-        "troll"
-      ],
-      "custom_map": null
-    },
-    {
-      "id": "dark_conclave",
-      "area": "dungeon",
-      "theme": "humanoid",
-      "name": "Dark Conclave",
-      "level": 7,
-      "weight": 20,
-      "monster_party_tile": "monster/dark_mage.png",
-      "monsters": [
-        "dark_mage",
-        "dark_mage",
-        "orc_shaman"
-      ],
-      "custom_map": null
-    },
-    {
-      "id": "orc_legion",
-      "area": "dungeon",
-      "theme": "humanoid",
-      "name": "Orc Legion",
-      "level": 7,
-      "weight": 20,
-      "monster_party_tile": "monster/orc1.png",
-      "monsters": [
-        "orc",
         "orc",
         "orc",
         "orc",
@@ -478,73 +418,9 @@
       "custom_map": null
     },
     {
-      "id": "troll_ambush",
-      "area": "dungeon",
-      "theme": "humanoid",
-      "name": "Troll Ambush",
-      "level": 7,
-      "weight": 15,
-      "monster_party_tile": "monster/troll.png",
-      "monsters": [
-        "troll",
-        "orc",
-        "orc"
-      ],
-      "custom_map": null
-    },
-    {
-      "id": "troll_horde",
-      "area": "dungeon",
-      "theme": "humanoid",
-      "name": "Troll Horde",
-      "level": 8,
-      "weight": 20,
-      "monster_party_tile": "monster/troll.png",
-      "monsters": [
-        "troll",
-        "troll",
-        "troll"
-      ],
-      "custom_map": null
-    },
-    {
-      "id": "shadow_army",
-      "area": "dungeon",
-      "theme": "humanoid",
-      "name": "Shadow Army",
-      "level": 8,
-      "weight": 20,
-      "monster_party_tile": "monster/dark_mage.png",
-      "monsters": [
-        "dark_mage",
-        "dark_mage",
-        "troll",
-        "orc_shaman"
-      ],
-      "custom_map": null
-    },
-    {
-      "id": "undead_apocalypse",
-      "area": "dungeon",
-      "theme": "undead",
-      "name": "Undead Apocalypse",
-      "level": 8,
-      "weight": 15,
-      "monster_party_tile": "monster/skeleton2.png",
-      "monsters": [
-        "skeleton",
-        "skeleton",
-        "skeleton_archer",
-        "skeleton_archer",
-        "zombie",
-        "zombie"
-      ],
-      "custom_map": null
-    },
-    {
       "id": "orc_warchief_s_guard",
       "area": "dungeon",
-      "theme": "humanoid",
+      "theme": "goblinoid",
       "name": "Orc Warchief's Guard",
       "level": 8,
       "weight": 15,
@@ -558,22 +434,6 @@
         "orc_shaman"
       ],
       "custom_map": "outdoor_arena"
-    },
-    {
-      "id": "troll_kings",
-      "area": "dungeon",
-      "theme": "humanoid",
-      "name": "Troll Kings",
-      "level": 8,
-      "weight": 10,
-      "monster_party_tile": "monster/troll.png",
-      "monsters": [
-        "troll",
-        "troll",
-        "orc_shaman",
-        "dark_mage"
-      ],
-      "custom_map": null
     },
     {
       "id": "ancient_dragon",
@@ -591,7 +451,7 @@
     {
       "id": "dragon_cultists",
       "area": "dungeon",
-      "theme": "humanoid",
+      "theme": "undead",
       "name": "Dragon Cultists",
       "level": 4,
       "weight": 10,
@@ -632,21 +492,6 @@
       "custom_map": null
     },
     {
-      "id": "wyrm_blooded_cultists",
-      "area": "dungeon",
-      "theme": "humanoid",
-      "name": "Wyrm-blooded Cultists",
-      "level": 6,
-      "weight": 10,
-      "monster_party_tile": "monster/dark_mage.png",
-      "monsters": [
-        "dark_mage",
-        "dark_mage",
-        "troll"
-      ],
-      "custom_map": null
-    },
-    {
       "id": "bone_pit_horde",
       "area": "dungeon",
       "theme": "undead",
@@ -666,7 +511,7 @@
     {
       "id": "lone_ogre",
       "area": "dungeon",
-      "theme": "humanoid",
+      "theme": "goblinoid",
       "name": "Lone Ogre",
       "level": 5,
       "weight": 18,
@@ -679,7 +524,7 @@
     {
       "id": "ogre_and_drake",
       "area": "dungeon",
-      "theme": "humanoid",
+      "theme": "goblinoid",
       "name": "Ogre and Drake",
       "level": 6,
       "weight": 12,
@@ -693,7 +538,7 @@
     {
       "id": "ogre_brutes",
       "area": "dungeon",
-      "theme": "humanoid",
+      "theme": "goblinoid",
       "name": "Ogre Brutes",
       "level": 7,
       "weight": 12,
@@ -707,7 +552,7 @@
     {
       "id": "ogre_warband",
       "area": "dungeon",
-      "theme": "humanoid",
+      "theme": "goblinoid",
       "name": "Ogre Warband",
       "level": 8,
       "weight": 10,
@@ -716,19 +561,6 @@
         "ogre",
         "ogre",
         "ogre"
-      ],
-      "custom_map": null
-    },
-    {
-      "id": "wailing_spirit",
-      "area": "dungeon",
-      "theme": "undead",
-      "name": "Wailing Spirit",
-      "level": 5,
-      "weight": 15,
-      "monster_party_tile": "monster/lark_f2.png",
-      "monsters": [
-        "banshee"
       ],
       "custom_map": null
     },
@@ -957,63 +789,9 @@
       "custom_map": null
     },
     {
-      "id": "cellar_rats_house_basement",
-      "area": "house_basement",
-      "theme": "cryptid",
-      "name": "Cellar Rats",
-      "level": 1,
-      "weight": 40,
-      "monster_party_tile": "monster/giant_rat.png",
-      "monsters": [
-        "giant_rat"
-      ],
-      "custom_map": null
-    },
-    {
-      "id": "rat_infestation",
-      "area": "house_basement",
-      "theme": "cryptid",
-      "name": "Rat Infestation",
-      "level": 1,
-      "weight": 30,
-      "monster_party_tile": "monster/giant_rat.png",
-      "monsters": [
-        "giant_rat",
-        "giant_rat"
-      ],
-      "custom_map": null
-    },
-    {
-      "id": "stray_goblin_house_basement",
-      "area": "house_basement",
-      "theme": "humanoid",
-      "name": "Stray Goblin",
-      "level": 1,
-      "weight": 20,
-      "monster_party_tile": "monster/goblin.png",
-      "monsters": [
-        "goblin"
-      ],
-      "custom_map": null
-    },
-    {
-      "id": "goblin_squatters_house_basement",
-      "area": "house_basement",
-      "theme": "humanoid",
-      "name": "Goblin Squatters",
-      "level": 2,
-      "weight": 10,
-      "monster_party_tile": "monster/goblin.png",
-      "monsters": [
-        "goblin",
-        "giant_rat"
-      ],
-      "custom_map": null
-    },
-    {
       "id": "stray_wolves",
       "area": "overworld",
-      "theme": "cryptid",
+      "theme": "animal",
       "name": "Stray Wolves",
       "level": 1,
       "weight": 30,
@@ -1026,7 +804,7 @@
     {
       "id": "goblin_scouts",
       "area": "overworld",
-      "theme": "humanoid",
+      "theme": "goblinoid",
       "name": "Goblin Scouts",
       "level": 1,
       "weight": 30,
@@ -1038,23 +816,9 @@
       "custom_map": null
     },
     {
-      "id": "field_rats",
-      "area": "overworld",
-      "theme": "cryptid",
-      "name": "Field Rats",
-      "level": 1,
-      "weight": 25,
-      "monster_party_tile": "monster/giant_rat.png",
-      "monsters": [
-        "giant_rat",
-        "giant_rat"
-      ],
-      "custom_map": null
-    },
-    {
       "id": "wolf_pack_overworld",
       "area": "overworld",
-      "theme": "cryptid",
+      "theme": "animal",
       "name": "Wolf Pack",
       "level": 2,
       "weight": 30,
@@ -1066,111 +830,9 @@
       "custom_map": null
     },
     {
-      "id": "goblin_raiding_party",
-      "area": "overworld",
-      "theme": "humanoid",
-      "name": "Goblin Raiding Party",
-      "level": 2,
-      "weight": 30,
-      "monster_party_tile": "monster/goblin.png",
-      "monsters": [
-        "goblin",
-        "goblin",
-        "goblin"
-      ],
-      "custom_map": null
-    },
-    {
-      "id": "orc_scouts_overworld",
-      "area": "overworld",
-      "theme": "humanoid",
-      "name": "Orc Scouts",
-      "level": 3,
-      "weight": 30,
-      "monster_party_tile": "monster/orc1.png",
-      "monsters": [
-        "orc",
-        "orc"
-      ],
-      "custom_map": null
-    },
-    {
-      "id": "wolves_and_goblins_overworld",
-      "area": "overworld",
-      "theme": "cryptid",
-      "name": "Wolves and Goblins",
-      "level": 3,
-      "weight": 25,
-      "monster_party_tile": "monster/wolf.png",
-      "monsters": [
-        "wolf",
-        "wolf",
-        "goblin"
-      ],
-      "custom_map": null
-    },
-    {
-      "id": "orc_warband_overworld",
-      "area": "overworld",
-      "theme": "humanoid",
-      "name": "Orc Warband",
-      "level": 4,
-      "weight": 30,
-      "monster_party_tile": "monster/orc1.png",
-      "monsters": [
-        "orc",
-        "orc",
-        "orc"
-      ],
-      "custom_map": null
-    },
-    {
-      "id": "orc_with_wolves_overworld",
-      "area": "overworld",
-      "theme": "cryptid",
-      "name": "Orc with Wolves",
-      "level": 4,
-      "weight": 25,
-      "monster_party_tile": "monster/orc1.png",
-      "monsters": [
-        "orc",
-        "wolf",
-        "wolf"
-      ],
-      "custom_map": null
-    },
-    {
-      "id": "orc_raiders",
-      "area": "overworld",
-      "theme": "humanoid",
-      "name": "Orc Raiders",
-      "level": 5,
-      "weight": 25,
-      "monster_party_tile": "monster/orc1.png",
-      "monsters": [
-        "orc",
-        "orc",
-        "orc_shaman"
-      ],
-      "custom_map": null
-    },
-    {
-      "id": "lone_troll",
-      "area": "overworld",
-      "theme": "humanoid",
-      "name": "Lone Troll",
-      "level": 5,
-      "weight": 15,
-      "monster_party_tile": "monster/troll.png",
-      "monsters": [
-        "troll"
-      ],
-      "custom_map": null
-    },
-    {
       "id": "troll_and_wolves",
       "area": "overworld",
-      "theme": "cryptid",
+      "theme": "goblinoid",
       "name": "Troll and Wolves",
       "level": 6,
       "weight": 20,
@@ -1183,113 +845,9 @@
       "custom_map": null
     },
     {
-      "id": "dark_riders",
-      "area": "overworld",
-      "theme": "humanoid",
-      "name": "Dark Riders",
-      "level": 6,
-      "weight": 20,
-      "monster_party_tile": "monster/dark_mage.png",
-      "monsters": [
-        "dark_mage",
-        "orc",
-        "orc"
-      ],
-      "custom_map": null
-    },
-    {
-      "id": "troll_warband_overworld",
-      "area": "overworld",
-      "theme": "humanoid",
-      "name": "Troll Warband",
-      "level": 7,
-      "weight": 20,
-      "monster_party_tile": "monster/troll.png",
-      "monsters": [
-        "troll",
-        "troll"
-      ],
-      "custom_map": null
-    },
-    {
-      "id": "orc_war_host",
-      "area": "overworld",
-      "theme": "humanoid",
-      "name": "Orc War Host",
-      "level": 7,
-      "weight": 20,
-      "monster_party_tile": "monster/orc1.png",
-      "monsters": [
-        "orc",
-        "orc",
-        "orc",
-        "orc_shaman"
-      ],
-      "custom_map": null
-    },
-    {
-      "id": "shadow_vanguard",
-      "area": "overworld",
-      "theme": "humanoid",
-      "name": "Shadow Vanguard",
-      "level": 8,
-      "weight": 15,
-      "monster_party_tile": "monster/dark_mage.png",
-      "monsters": [
-        "dark_mage",
-        "troll",
-        "orc",
-        "orc"
-      ],
-      "custom_map": null
-    },
-    {
-      "id": "troll_horde_overworld",
-      "area": "overworld",
-      "theme": "humanoid",
-      "name": "Troll Horde",
-      "level": 8,
-      "weight": 15,
-      "monster_party_tile": "monster/troll.png",
-      "monsters": [
-        "troll",
-        "troll",
-        "troll"
-      ],
-      "custom_map": null
-    },
-    {
-      "id": "lich_with_minions",
-      "area": "overworld",
-      "theme": "undead",
-      "name": "Lich with Minions",
-      "level": 4,
-      "weight": 10,
-      "monster_party_tile": "monster/lich.png",
-      "monsters": [
-        "lich",
-        "skeleton",
-        "skeleton"
-      ],
-      "custom_map": null
-    },
-    {
-      "id": "mind_flayer_overworld",
-      "area": "overworld",
-      "theme": "magical",
-      "name": "Mind Flayer",
-      "level": 5,
-      "weight": 10,
-      "monster_party_tile": "monster/daemon1.png",
-      "monsters": [
-        "mind_flayer"
-      ],
-      "custom_map": null
-    },
-    {
       "id": "spiders",
       "area": "woods",
-      "theme": "cryptid",
+      "theme": "animal",
       "name": "Spider Swarm",
       "level": 2,
       "weight": 2,
@@ -1345,21 +903,6 @@
       "monsters": [
         "balor",
         "daemon"
-      ],
-      "custom_map": null
-    },
-    {
-      "id": "pit_fiends_court",
-      "area": "dungeon",
-      "theme": "devil",
-      "name": "Pit Fiend's Court",
-      "level": 8,
-      "weight": 5,
-      "monster_party_tile": "monster/balron_demon2.png",
-      "monsters": [
-        "pit_fiend",
-        "imp",
-        "imp"
       ],
       "custom_map": null
     },
