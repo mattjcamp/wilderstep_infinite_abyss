@@ -30,6 +30,7 @@ The "Used?" column reflects the v2 TypeScript implementation under `web/`. The c
 | `id` | string | yes | Stable identifier in snake_case (e.g. `"goblin"`, `"vampire_lord"`) | TBD |
 | `name` | string | yes | Display name; the cross-reference key used by [Encounter](encounter.md) and [Spawn](spawn.md) rosters | TBD |
 | `undead` | bool | yes | Marks creature as undead; consumed by Turn Undead | TBD |
+| `turn_resistance` | int | no | Elite undead's bonus on Turn Undead saving throws (vampire +4, lich/vampire lord +6, banshee/mummy +2). Any value > 0 also exempts the creature from outright destruction: a failed save sears it for the usual 50% and **turns** it — it flees/cowers for 1d4 of its own turns instead of dying. Omit for lesser undead (skeletons, zombies), which remain destroyable. | TBD |
 | `humanoid` | bool | yes | Marks creature as humanoid (forwarded to Combatant; gates Charm in design intent) | TBD |
 | `theme` | string | no | Organizational tag for assembling themed maps — one of `"undead"`, `"devil"`, `"elemental"`, `"humanoid"`, `"cryptid"`, `"magical"`. A single primary theme per monster (a Vampire is `undead` even though it's also humanoid). Authoring / filtering aid only; the combat engine ignores it. [Encounter](encounter.md) records derive their own `theme` from the dominant theme of their monsters. | TBD |
 | `hp` | int | yes | Max hit points at spawn | TBD |

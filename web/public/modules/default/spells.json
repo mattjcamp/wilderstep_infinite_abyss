@@ -427,7 +427,7 @@
       "id": "restore",
       "name": "Restore",
       "animation_id": "heal_sparkles",
-      "description": "A radiant pillar of divine power engulfs the party, fully restoring health and mana to all allies and purging all poisons from their bodies.",
+      "description": "A radiant pillar of divine power engulfs the party, fully restoring health to all allies and mana to everyone but the caster, purging all poisons from their bodies.",
       "casting_type": "priest",
       "min_level": 7,
       "mp_cost": 35,

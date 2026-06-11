@@ -45,6 +45,7 @@ A single inline object describing the NPC. The same NPC handles both the offer (
 | `npc_sprite` | string | yes | Sprite path under `web/public/sprites/` (e.g. `"person/hobbit2.png"`). Same convention as Character `sprite`. |
 | `start_dialog` | string | yes | The dialog shown when the player first talks to the NPC, offering the quest. |
 | `end_dialog` | string | yes | The dialog shown when the player returns after completing the final step, accepting the completion. |
+| `post_dialog` | string | no | Chatter shown when the player bumps the giver AFTER the quest is turned in — the giver behaves like a normal NPC from then on (standard NPC dialog, no quest overlay). Falls back to a generic "thanks again" line when absent. |
 
 ## `rewards` shape
 

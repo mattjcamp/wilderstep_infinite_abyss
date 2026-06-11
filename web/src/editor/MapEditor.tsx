@@ -63,6 +63,10 @@ import { QuestDialogOverlay } from "./QuestDialogOverlay";
 import type { SimQuestRef } from "@/sim/types";
 import { CounterShopOverlay } from "./CounterShopOverlay";
 import { LinkPlacard } from "@/play/LinkPlacard";
+import {
+  questsTargetingPlace,
+  type QuestPlacardTarget,
+} from "@/play/questPlacardTargets";
 import { SpritePicker } from "./SpritePicker";
 import { EncounterPicker } from "./EncounterPicker";
 import { anchorCell, nextCellSelection } from "./cellSelection";
@@ -455,6 +459,9 @@ export function MapEditor({
     name: string;
     description?: string;
     explored: boolean;
+    /** Active quests with an incomplete step at the destination —
+     *  lets authors test the placard's gold quest treatment in sim. */
+    questTargets?: QuestPlacardTarget[];
   } | null>(null);
   const pendingPlaceActionRef = useRef<(() => void) | null>(null);
   /** Mirrors npcEncounterId/shopCounterId in a ref so the sim's
@@ -473,6 +480,16 @@ export function MapEditor({
    *  acceptance survives a Simulate → off → Simulate cycle. Reset on
    *  map change because the editor remounts entirely there. */
   const questStatesRef = useRef<Map<string, QuestState>>(new Map());
+  /** Post-quest giver chatter — set when the party bumps a quest
+   *  giver whose quest is already turned in. The giver behaves like
+   *  a normal NPC: name + sprite + one line (`post_dialog`, else a
+   *  generic thank-you). Mirrors the play host's behaviour so
+   *  authors can test it in sim. */
+  const [giverChatter, setGiverChatter] = useState<{
+    name: string;
+    sprite?: string;
+    text: string;
+  } | null>(null);
   useEffect(() => {
     overlaysOpenRef.current =
       !!npcEncounterId ||
@@ -481,6 +498,7 @@ export function MapEditor({
       !!lockEncounter ||
       !!spawnEncounter ||
       !!questEncounter ||
+      !!giverChatter ||
       !!placard;
   }, [
     npcEncounterId,
@@ -489,6 +507,7 @@ export function MapEditor({
     lockEncounter,
     spawnEncounter,
     questEncounter,
+    giverChatter,
     placard,
   ]);
   /** Callback the Phaser scene invokes when the user clicks a tile
@@ -588,8 +607,9 @@ export function MapEditor({
       if (shopCounterId) setShopCounterId(null);
       if (lockEncounter) setLockEncounter(null);
       if (questEncounter) setQuestEncounter(null);
+      if (giverChatter) setGiverChatter(null);
     }
-  }, [simMode, npcEncounterId, shopCounterId, lockEncounter, questEncounter]);
+  }, [simMode, npcEncounterId, shopCounterId, lockEncounter, questEncounter, giverChatter]);
   useEffect(() => {
     if (simMode !== "active" && partyScreenOpen) {
       setPartyScreenOpen(false);
@@ -3377,7 +3397,21 @@ export function MapEditor({
               : undefined) ?? link.map_id;
           pendingPlaceActionRef.current = () =>
             onLinkTraversed(link, { onBoat: false, boatSprite: null });
-          setPlacard({ placeKind: "link", name, explored: false });
+          setPlacard({
+            placeKind: "link",
+            name,
+            explored: false,
+            // Quest treatment in sim too, so authors can verify the
+            // gold badge / context lines against their quest data.
+            questTargets:
+              state.kind === "ok"
+                ? questsTargetingPlace(
+                    parseQuestsFile({ quests: state.availableQuests }),
+                    questStatesRef.current,
+                    { placeKind: "link", mapId: link.map_id },
+                  )
+                : [],
+          });
         } else {
           const dungeonId = ev.dungeonId;
           const returnPos = ev.returnPos;
@@ -3396,7 +3430,19 @@ export function MapEditor({
               `/editor/${moduleId}/sim/dungeon?${params.toString()}`,
             );
           };
-          setPlacard({ placeKind: "dungeon", name, explored: false });
+          setPlacard({
+            placeKind: "dungeon",
+            name,
+            explored: false,
+            questTargets:
+              state.kind === "ok"
+                ? questsTargetingPlace(
+                    parseQuestsFile({ quests: state.availableQuests }),
+                    questStatesRef.current,
+                    { placeKind: "dungeon", dungeonId },
+                  )
+                : [],
+          });
         }
       }
       if (ev.kind === "npc_encountered") {
@@ -3434,10 +3480,21 @@ export function MapEditor({
         // pick the dialog mode here based on current state.
         const qstate = questStatesRef.current.get(ev.questId);
         // "turned_in" → quest is done and rewards have been handed
-        // off. Suppress entirely (re-bumping the giver shouldn't
-        // re-open anything until a future "talk again" feature
-        // lands).
-        if (qstate?.status === "turned_in") return;
+        // off. The giver becomes a normal NPC — open the standard
+        // NPC dialog with their `post_dialog` (or a generic
+        // thank-you) instead of the quest overlay. Mirrors the
+        // play host so authors can test the behaviour in sim.
+        if (qstate?.status === "turned_in") {
+          const giver = ev.quest.quest_giver;
+          setGiverChatter({
+            name: giver?.npc_name ?? "Quest Giver",
+            sprite: giver?.npc_sprite,
+            text:
+              giver?.post_dialog ??
+              "Good to see you again, friend. I won't forget what you did for me.",
+          });
+          return;
+        }
         const def = questDefsForSim.find((d) => d.id === ev.questId);
         const stepCount = def?.steps.length ?? 0;
         const progress = qstate?.stepProgress ?? [];
@@ -4419,6 +4476,26 @@ export function MapEditor({
             );
           })()
         : null}
+      {/* Post-quest giver chatter — the giver of a turned-in quest
+          behaves like a normal NPC: standard dialog overlay with a
+          synthetic record (no shop, no backstory), one line of
+          gratitude. */}
+      {giverChatter
+        ? (
+            <NpcDialogOverlay
+              npc={{
+                id: "quest_giver_chatter",
+                name: giverChatter.name,
+                sprite: giverChatter.sprite,
+                dialogs: [
+                  { id: "post_quest", text: giverChatter.text },
+                ],
+              }}
+              onOpenShop={() => undefined}
+              onClose={() => setGiverChatter(null)}
+            />
+          )
+        : null}
       {/* Lock dialog overlay — opens when the party bumps a locked
           cell during simulation. Three actions: Pick Lock, Cast Knock,
           Leave. Rolls + grid mutation happen in the sim; we just close
@@ -4523,6 +4600,7 @@ export function MapEditor({
           name={placard.name}
           description={placard.description}
           explored={placard.explored}
+          questTargets={placard.questTargets}
           onConfirm={() => {
             const act = pendingPlaceActionRef.current;
             pendingPlaceActionRef.current = null;

@@ -219,6 +219,10 @@ export interface SimQuestRef {
     npc_sprite?: string;
     start_dialog?: string;
     end_dialog?: string;
+    /** Optional chatter for AFTER the quest is turned in — the giver
+     *  becomes a normal NPC and this is their line. Falls back to a
+     *  generic "thanks again" when absent. */
+    post_dialog?: string;
   };
 }
 

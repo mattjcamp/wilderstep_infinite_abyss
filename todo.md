@@ -1,27 +1,15 @@
-# Playthrough
-
-- Add a custom boss map to Balrog encounter
 
 # Bugs
 
-- In the party screen, we show the "light" toggle as if it is one even after it has run out
-
 # Polish
-
-- Make the Ancient Dragon encounter more difficult by adding two wyvern
-- Build a simple tutorial world
-
 
 ## Big Ideas
 
-- Clear dungeon bonus/relic: when a party clears all monsters from certain procedural dungeons they will have a special reward and a portal to the surface. This could also be a way to learn new spells or abilities. This could be instead of the relic system below. Relic bestown new abilities after a certain level. This would require thoughtful design work.
-- New Puzzle system (presure plates that open doors, etc)
+- Relic Quest: add a relic quest that provides an unlock for high level spells and abilities. After level 10, characters must complete Relic Quests to get a new spell. Relic quests will have level and class pre-reqs. Relic Quests could be initiated via the Character Sheet.
+- Add feature that uses pressure plates that open/close doors when the party walks over them
 - More Robust Trap System: Traps data model, explosive, poison, teleporting. Traps should now be placeable directly on the map
 - Better Save Game functionality
-- Add the ability to reset quest givers so they can offer multiple
-- Add the ability to remove an NPC including quest giver after a quest step
-- Make module publishing available
-- More higher level content
+- Implement module publishing for players
 
 # Notes
 

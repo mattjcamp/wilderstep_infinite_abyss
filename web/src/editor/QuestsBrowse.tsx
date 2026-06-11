@@ -144,6 +144,10 @@ interface QuestGiver {
   npc_sprite: string;
   start_dialog: string;
   end_dialog: string;
+  /** Optional chatter shown after the quest is turned in — the giver
+   *  becomes a normal NPC and this is their line. The runtime falls
+   *  back to a generic thank-you when empty. */
+  post_dialog?: string;
 }
 
 interface TileOp {
@@ -1017,6 +1021,20 @@ function QuestGiverEditor({
               }
               rows={2}
               placeholder="You did it! Take this for your trouble."
+              className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
+            />
+          </label>
+          <label className="block sm:col-span-2">
+            <span className="text-xs uppercase tracking-wide text-parchment/65">
+              Post-quest dialog (optional)
+            </span>
+            <textarea
+              value={g.post_dialog ?? ""}
+              onChange={(e) =>
+                onUpdate({ ...g, post_dialog: e.target.value })
+              }
+              rows={2}
+              placeholder="Good to see you again, friend. (Shown after turn-in — the giver becomes a normal NPC.)"
               className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
             />
           </label>

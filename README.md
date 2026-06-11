@@ -23,8 +23,6 @@ An Ultima III  and D&D inspired top-down, turn-based RPG built with TypeScript a
 </tr>
 </table>
 
-[Play Wilderstep Now!](https://mattjcamp.github.io/wilderstep_infinite_abyss/play/) You can play right in your web browser, no installation required. Plus, you can read the [Wilderstep Player's Manual](docs/manual/manual.md) to learn more about how to play the game.
-
 ## Features
 
 - Tactical D&D inspired turn-based combat system

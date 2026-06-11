@@ -11,7 +11,7 @@
         {
           "id": "introduction",
           "title": "Behind the bar",
-          "text": "Welcome to the Lantern. Bed's three coppers, stew's two, and whatever rumor you came in chasing \u2014 sit down first and let me look at you before I decide if I've heard of it."
+          "text": "Welcome to the Lantern. Bed's three coppers, stew's two, and whatever rumor you came in chasing — sit down first and let me look at you before I decide if I've heard of it."
         },
         {
           "id": "about_the_dragon",
@@ -21,7 +21,7 @@
         {
           "id": "about_the_stranger",
           "title": "When asked about the Stranger in Grey",
-          "text": "He pays. He doesn't drink. He doesn't make trouble. Whoever he's waiting on, I hope they come soon \u2014 for his sake and mine."
+          "text": "He pays. He doesn't drink. He doesn't make trouble. Whoever he's waiting on, I hope they come soon — for his sake and mine."
         }
       ]
     },
@@ -30,12 +30,12 @@
       "name": "Mira Hask",
       "sprite": "person/townsperson13.png",
       "counter": "general",
-      "personal_history": "Mira came up the dragon road from the southern coast twelve years back, set up a stall, and outlasted three rivals by being honest, sharp-elbowed, and impossible to outwait. She buys torches in bulk, weighs healing herbs to the half-leaf, and is the only merchant in Hollowmere still willing to extend credit \u2014 which she records in a small black book she will absolutely come looking for.",
+      "personal_history": "Mira came up the dragon road from the southern coast twelve years back, set up a stall, and outlasted three rivals by being honest, sharp-elbowed, and impossible to outwait. She buys torches in bulk, weighs healing herbs to the half-leaf, and is the only merchant in Hollowmere still willing to extend credit — which she records in a small black book she will absolutely come looking for.",
       "dialogs": [
         {
           "id": "shop_greeting",
           "title": "At the counter",
-          "text": "Torches, picks, herbs, the usual. Caravan didn't come in this month so prices are up \u2014 don't argue with me, argue with the dragon."
+          "text": "Torches, picks, herbs, the usual. Caravan didn't come in this month so prices are up — don't argue with me, argue with the dragon."
         },
         {
           "id": "credit",
@@ -73,7 +73,7 @@
         {
           "id": "introduction",
           "title": "At the chapel door",
-          "text": "Elder Marisol is in the inner sanctuary. I can take a message, if you'd like \u2014 or you can wait. She doesn't mind being interrupted, only being lied to."
+          "text": "Elder Marisol is in the inner sanctuary. I can take a message, if you'd like — or you can wait. She doesn't mind being interrupted, only being lied to."
         },
         {
           "id": "shuttered_chapel",
@@ -92,7 +92,7 @@
         {
           "id": "introduction",
           "title": "At the western gate",
-          "text": "Are you going into the wood? My da went in to find Tally \u2014 that's our dog \u2014 and he hasn't come back. He's tall, and he has a burn on his left arm from the kiln. If you see him, will you tell him Calla is waiting?"
+          "text": "Are you going into the wood? My da went in to find Tally — that's our dog — and he hasn't come back. He's tall, and he has a burn on his left arm from the kiln. If you see him, will you tell him Calla is waiting?"
         },
         {
           "id": "quest_reward",
@@ -106,7 +106,7 @@
       "name": "Old Greaves",
       "sprite": "person/fighter13.png",
       "counter": "",
-      "personal_history": "Nobody in Hollowmere remembers Greaves's given name, including Greaves. He fought in the eastern campaign alongside Orin, came home with one ear and a permanent thirst, and has held down the corner stool at the Bent Lantern for as long as anyone can prove. He talks too loudly, lies pleasantly about his old battles, and \u2014 when he's three ales deep and somebody actually listens \u2014 tells the truth about the binding ritual he says his grandmother saw scratched into a stone in the Auric ruins.",
+      "personal_history": "Nobody in Hollowmere remembers Greaves's given name, including Greaves. He fought in the eastern campaign alongside Orin, came home with one ear and a permanent thirst, and has held down the corner stool at the Bent Lantern for as long as anyone can prove. He talks too loudly, lies pleasantly about his old battles, and — when he's three ales deep and somebody actually listens — tells the truth about the binding ritual he says his grandmother saw scratched into a stone in the Auric ruins.",
       "dialogs": [
         {
           "id": "first_round",
@@ -116,7 +116,7 @@
         {
           "id": "third_round",
           "title": "Third ale",
-          "text": "The Auric kings didn't kill the wyrm. They couldn't. They chained it \u2014 the chain's carved in the floor of the deepest hall in the old ruins. Whoever broke it broke us all, and I'd bet my last copper it wasn't a stranger."
+          "text": "The Auric kings didn't kill the wyrm. They couldn't. They chained it — the chain's carved in the floor of the deepest hall in the old ruins. Whoever broke it broke us all, and I'd bet my last copper it wasn't a stranger."
         }
       ]
     },
@@ -163,12 +163,12 @@
       "name": "Edda of the Iron Pendant",
       "sprite": "person/cleric3.png",
       "counter": "",
-      "personal_history": "Marisol's younger sister. Vanished into the Wandering Wood nineteen years ago and is still nineteen years old. Whatever the wood gave back in exchange for keeping her is no longer entirely Edda, but the iron pendant at her throat is the same one Marisol wears beneath her vestments, and she remembers \u2014 when pressed \u2014 the name of the village she was born in. She is a discovered NPC, found only in the deeper levels of the wood, and she may be brought home, freed, or left where the wood placed her.",
+      "personal_history": "Marisol's younger sister. Vanished into the Wandering Wood nineteen years ago and is still nineteen years old. Whatever the wood gave back in exchange for keeping her is no longer entirely Edda, but the iron pendant at her throat is the same one Marisol wears beneath her vestments, and she remembers — when pressed — the name of the village she was born in. She is a discovered NPC, found only in the deeper levels of the wood, and she may be brought home, freed, or left where the wood placed her.",
       "dialogs": [
         {
           "id": "first_sight",
           "title": "When first encountered",
-          "text": "I know you. No \u2014 I know the road you came up. Are the chapel candles still lit? Is my sister still angry with me?"
+          "text": "I know you. No — I know the road you came up. Are the chapel candles still lit? Is my sister still angry with me?"
         },
         {
           "id": "the_truth",
@@ -201,7 +201,7 @@
       "name": "Warlord Murgath",
       "sprite": "monster/orc2.png",
       "counter": "",
-      "personal_history": "Murgath holds the Iron Mines with two hundred orcs and the bones of the last human foreman nailed above the gate. He is older than orcs are usually allowed to get, which means he is cleverer than orcs are usually allowed to be. He picked the deep galleries because the dragon's roar doesn't reach them, and he will fight any creature \u2014 wyrm, party, or rival warlord \u2014 that tries to take the mountain from him before he's ready to leave it.",
+      "personal_history": "Murgath holds the Iron Mines with two hundred orcs and the bones of the last human foreman nailed above the gate. He is older than orcs are usually allowed to get, which means he is cleverer than orcs are usually allowed to be. He picked the deep galleries because the dragon's roar doesn't reach them, and he will fight any creature — wyrm, party, or rival warlord — that tries to take the mountain from him before he's ready to leave it.",
       "dialogs": [
         {
           "id": "challenge",
@@ -220,7 +220,7 @@
       "name": "Vael the Hollow-Eyed",
       "sprite": "monster/skeleton1.png",
       "counter": "",
-      "personal_history": "Last knight of the Auric Throne, sworn to the binding of the dragon, dead these eleven centuries and still walking the lowest hall of the old ruins. Vael was one of the seven who carved the chain into the stone of the deep floor; the breaking of that chain unmade him in the same instant it freed the wyrm. He is no longer angry, only bound to the duty he failed, and he will help any party that means to put the wyrm back into the dark \u2014 provided they understand what binding costs.",
+      "personal_history": "Last knight of the Auric Throne, sworn to the binding of the dragon, dead these eleven centuries and still walking the lowest hall of the old ruins. Vael was one of the seven who carved the chain into the stone of the deep floor; the breaking of that chain unmade him in the same instant it freed the wyrm. He is no longer angry, only bound to the duty he failed, and he will help any party that means to put the wyrm back into the dark — provided they understand what binding costs.",
       "dialogs": [
         {
           "id": "first_encounter",
@@ -239,7 +239,7 @@
       "name": "Aurigax, the Brimspire Wyrm",
       "sprite": "monster/dragon1.png",
       "counter": "",
-      "personal_history": "Aurigax slept under the Brimspire for eleven hundred years, bound by the seven-throat chain of the Auric Throne, and woke last spring when the chain was broken. He is gold-and-rust scaled, polite in the way very old things sometimes are, and he does not particularly want the vale \u2014 he wants the sky, and the vale is in the way. He will speak with the party before he kills them. He has been told it is courteous. He is not above being lied to and he is not above being chained again, but the second binding will cost more than the first.",
+      "personal_history": "Aurigax slept under the Brimspire for eleven hundred years, bound by the seven-throat chain of the Auric Throne, and woke last spring when the chain was broken. He is gold-and-rust scaled, polite in the way very old things sometimes are, and he does not particularly want the vale — he wants the sky, and the vale is in the way. He will speak with the party before he kills them. He has been told it is courteous. He is not above being lied to and he is not above being chained again, but the second binding will cost more than the first.",
       "dialogs": [
         {
           "id": "the_audience",
@@ -268,7 +268,7 @@
         {
           "id": "about_the_ships",
           "title": "Asked about the empty harbor",
-          "text": "Two seasons, no sails. First we blamed the weather. Then the wrecks started washing up \u2014 cargo lashed tight, crews gone. Maro can show you. I don't go down to the sand anymore."
+          "text": "Two seasons, no sails. First we blamed the weather. Then the wrecks started washing up — cargo lashed tight, crews gone. Maro can show you. I don't go down to the sand anymore."
         },
         {
           "id": "about_edric",
@@ -282,7 +282,7 @@
       "name": "Doran Pike",
       "sprite": "person/townsperson10.png",
       "counter": "",
-      "personal_history": "Doran was bosun on the Levant Star when she broke her back on the Varnfell sand forty years ago. He waded ashore, looked at the wreck, looked at the snow, and decided he'd been going the wrong direction his whole life. He built the Driftwood Hearth out of her timbers and has kept the fire lit every night since \u2014 partly for the cold, mostly as a signal to any ship still out there that somebody on this coast is home.",
+      "personal_history": "Doran was bosun on the Levant Star when she broke her back on the Varnfell sand forty years ago. He waded ashore, looked at the wreck, looked at the snow, and decided he'd been going the wrong direction his whole life. He built the Driftwood Hearth out of her timbers and has kept the fire lit every night since — partly for the cold, mostly as a signal to any ship still out there that somebody on this coast is home.",
       "dialogs": [
         {
           "id": "introduction",
@@ -292,12 +292,12 @@
         {
           "id": "about_the_fire",
           "title": "Asked about the hearth",
-          "text": "Forty years, never let it die. When the ships ran, they'd steer by the glow. Ships are gone now, but I figure \u2014 the night I let it go out is the night the north decides we've given up. Not on my watch."
+          "text": "Forty years, never let it die. When the ships ran, they'd steer by the glow. Ships are gone now, but I figure — the night I let it go out is the night the north decides we've given up. Not on my watch."
         },
         {
           "id": "about_the_delve",
           "title": "Asked about the Frost Delve",
-          "text": "Prospectors dug it before my time, gave it up when the ore quit. Henna's the one to ask \u2014 she's been up at the entrance every week, muttering about warm air. Warm air, in this country. That's not a draft, friend. That's a door open somewhere it shouldn't be."
+          "text": "Prospectors dug it before my time, gave it up when the ore quit. Henna's the one to ask — she's been up at the entrance every week, muttering about warm air. Warm air, in this country. That's not a draft, friend. That's a door open somewhere it shouldn't be."
         }
       ]
     },
@@ -330,7 +330,7 @@
         {
           "id": "introduction",
           "title": "On the sand",
-          "text": "Mind the tideline \u2014 that's where I do my reading. The sea's been sending us mail with no return address. Crates, spars, a binnacle still polished. Everything but the sailors."
+          "text": "Mind the tideline — that's where I do my reading. The sea's been sending us mail with no return address. Crates, spars, a binnacle still polished. Everything but the sailors."
         },
         {
           "id": "about_the_cargo",
@@ -344,7 +344,7 @@
       "name": "Henna Stone",
       "sprite": "person/townsperson20.png",
       "counter": "",
-      "personal_history": "Henna swung a pick in the Frost Delve for nine years before the brimite veins ran dry and the company pulled out. She stayed \u2014 partly for the quiet, partly because she never believed the delve was empty, only finished with them. Lately she's been proven right in the worst way: the entrance breathes warm air, the snow won't settle on the ridge, and the sounds from below aren't echoes, because echoes answer you back in your own voice.",
+      "personal_history": "Henna swung a pick in the Frost Delve for nine years before the brimite veins ran dry and the company pulled out. She stayed — partly for the quiet, partly because she never believed the delve was empty, only finished with them. Lately she's been proven right in the worst way: the entrance breathes warm air, the snow won't settle on the ridge, and the sounds from below aren't echoes, because echoes answer you back in your own voice.",
       "dialogs": [
         {
           "id": "introduction",
@@ -354,7 +354,7 @@
         {
           "id": "about_the_depths",
           "title": "Asked what's below",
-          "text": "We stopped at two levels because the ore stopped. But the survey crew always said the cracks kept going \u2014 down past where the lamps made sense. If something's come up from that far under, I want to know what it is before it wants to know about us."
+          "text": "We stopped at two levels because the ore stopped. But the survey crew always said the cracks kept going — down past where the lamps made sense. If something's come up from that far under, I want to know what it is before it wants to know about us."
         }
       ]
     },
@@ -363,22 +363,22 @@
       "name": "Elder Bryn Oakhallow",
       "sprite": "person/human_druid32.png",
       "counter": "",
-      "personal_history": "Bryn is the eleventh grove-keeper of Elderbough, sworn to the treaty his ancestors cut with the Greymantle Circle: the town takes deadfall only, shares salt at the tree-ring, strikes no flame inside it \u2014 and in return the Bough-Wife keeps the forest's patience on Elderbough's side. For sixty years the keeping was ceremony. Since the spring the wyrm woke, it has become work. The heart-tree drops leaves out of season, the spring runs cold then warm then cold, and the Bough-Wife \u2014 who slept a season at a time when Bryn was young \u2014 has not slept at all. She says something below the roots is counting, and that the count has nearly reached the Wood she was cut from.",
+      "personal_history": "Bryn is the eleventh grove-keeper of Elderbough, sworn to the treaty his ancestors cut with the Greymantle Circle: the town takes deadfall only, shares salt at the tree-ring, strikes no flame inside it — and in return the Bough-Wife keeps the forest's patience on Elderbough's side. For sixty years the keeping was ceremony. Since the spring the wyrm woke, it has become work. The heart-tree drops leaves out of season, the spring runs cold then warm then cold, and the Bough-Wife — who slept a season at a time when Bryn was young — has not slept at all. She says something below the roots is counting, and that the count has nearly reached the Wood she was cut from.",
       "dialogs": [
         {
           "id": "introduction",
           "title": "At the tree-ring",
-          "text": "Welcome to Elderbough, travelers. Sheathe the iron, share the salt \u2014 there's the bowl, it's good manners and binding law in the same gesture. You've come at a strange season. All the seasons are strange now, and the lady of our grove has stopped sleeping through any of them."
+          "text": "Welcome to Elderbough, travelers. Sheathe the iron, share the salt — there's the bowl, it's good manners and binding law in the same gesture. You've come at a strange season. All the seasons are strange now, and the lady of our grove has stopped sleeping through any of them."
         },
         {
           "id": "the_treaty",
           "title": "Asked about the treaty",
-          "text": "Eleven generations ago the Circle planted a cutting of the Wandering Wood here \u2014 a piece of the old Wood that agreed, for reasons no record explains, to live among people. We keep her terms: deadfall only, salt shared, no flame in the ring. She keeps the forest from remembering that towns are made of dead trees. It is a better arrangement than most realms have with their old powers, and I intend to die having kept it."
+          "text": "Eleven generations ago the Circle planted a cutting of the Wandering Wood here — a piece of the old Wood that agreed, for reasons no record explains, to live among people. We keep her terms: deadfall only, salt shared, no flame in the ring. She keeps the forest from remembering that towns are made of dead trees. It is a better arrangement than most realms have with their old powers, and I intend to die having kept it."
         },
         {
           "id": "the_counting",
           "title": "Asked why the spirit doesn't sleep",
-          "text": "She says it plainly, when she says anything: something far below is going door to door among the old powers, checking each lock in turn. The Wood she was cut from has a door. She does not \u2014 she's a cutting, planted free, never bound. So she lies awake wondering which is worse: to be counted, or to be the one thing the counter finds unaccounted for."
+          "text": "She says it plainly, when she says anything: something far below is going door to door among the old powers, checking each lock in turn. The Wood she was cut from has a door. She does not — she's a cutting, planted free, never bound. So she lies awake wondering which is worse: to be counted, or to be the one thing the counter finds unaccounted for."
         }
       ]
     },
@@ -387,22 +387,22 @@
       "name": "The Bough-Wife",
       "sprite": "person/FemaleDruid01.png",
       "counter": "",
-      "personal_history": "The Bough-Wife is the spirit of Elderbough's heart-tree \u2014 a living cutting of the Wandering Wood, planted by the Greymantle Circle eleven generations ago and grown into something the old doctrine has no category for: an Elder's child raised among people. She wears a shape like a woman when she wants conversation and no shape at all when she doesn't. She is not bound, not sealed, and not listed in any Auric ledger, which made her a curiosity in quiet times. The times are not quiet. The counting moving beneath the old seals has passed under her roots twice now, slow and methodical, and both times it paused \u2014 the way a steward pauses at a door that has no number. She has begun teaching Bryn things grove-keepers were never taught, in the manner of someone setting affairs in order.",
+      "personal_history": "The Bough-Wife is the spirit of Elderbough's heart-tree — a living cutting of the Wandering Wood, planted by the Greymantle Circle eleven generations ago and grown into something the old doctrine has no category for: an Elder's child raised among people. She wears a shape like a woman when she wants conversation and no shape at all when she doesn't. She is not bound, not sealed, and not listed in any Auric ledger, which made her a curiosity in quiet times. The times are not quiet. The counting moving beneath the old seals has passed under her roots twice now, slow and methodical, and both times it paused — the way a steward pauses at a door that has no number. She has begun teaching Bryn things grove-keepers were never taught, in the manner of someone setting affairs in order.",
       "dialogs": [
         {
           "id": "first_words",
           "title": "Beneath the heart-tree",
-          "text": "You smell of roads, iron, and other people's quarrels. Sit anyway. The Wood I was cut from would have kept you; I only keep apples. Ask what you came to ask \u2014 I have been awake for four hundred nights and conversation is the one good use I've found for them."
+          "text": "You smell of roads, iron, and other people's quarrels. Sit anyway. The Wood I was cut from would have kept you; I only keep apples. Ask what you came to ask — I have been awake for four hundred nights and conversation is the one good use I've found for them."
         },
         {
           "id": "the_count_below",
           "title": "Asked about the counting",
-          "text": "Twice it has passed under me. Not footsteps \u2014 accounting. Every old thing in this land has a door and a lock and a number, and something is walking the ledger, checking each one. It paused at me, little ones. I have no door. I was planted free, a cutting given to people as a wedding-gift between the Wood and the world. Do you know what a careful steward does with an entry that fits no column? Neither do I. That is why I don't sleep."
+          "text": "Twice it has passed under me. Not footsteps — accounting. Every old thing in this land has a door and a lock and a number, and something is walking the ledger, checking each one. It paused at me, little ones. I have no door. I was planted free, a cutting given to people as a wedding-gift between the Wood and the world. Do you know what a careful steward does with an entry that fits no column? Neither do I. That is why I don't sleep."
         },
         {
           "id": "the_offer",
           "title": "Asked how to help",
-          "text": "Keep my grove clean and my treaty kept, and I am stronger \u2014 old things are mostly made of being remembered correctly, and I am remembered by one small town. Beyond that: when you go down into the warm dark \u2014 and you will, you have the look \u2014 notice things for me. What the counter touches. What it skips. Whether the skipped things looked relieved. Bring me that, and I will owe you a season of good apples and one honest answer."
+          "text": "Keep my grove clean and my treaty kept, and I am stronger — old things are mostly made of being remembered correctly, and I am remembered by one small town. Beyond that: when you go down into the warm dark — and you will, you have the look — notice things for me. What the counter touches. What it skips. Whether the skipped things looked relieved. Bring me that, and I will owe you a season of good apples and one honest answer."
         }
       ]
     },
@@ -411,17 +411,17 @@
       "name": "Tansy Mosswane",
       "sprite": "person/female_druid02.png",
       "counter": "healing",
-      "personal_history": "Tansy keeps Elderbough's stillroom, third of her name to do it, and is cousin to Korrigan Mosswane who speaks for the Greymantle Circle \u2014 a family connection she describes as 'useful at solstice, insufferable at supper.' She physics the town, provisions the wardens, and reads the forest's health the way Maro Tides reads the tideline: by what turns up. What's turning up is wrong. Web in the warden-trees with no honest spider's pattern to it, roots gone black and bitter where the soil was sweetest, and her simples losing strength as if the green itself were distracted. Her cousin's circle calls it sympathy-sickness: when an old power frets, everything that grew in its shade frets with it.",
+      "personal_history": "Tansy keeps Elderbough's stillroom, third of her name to do it, and is cousin to Korrigan Mosswane who speaks for the Greymantle Circle — a family connection she describes as 'useful at solstice, insufferable at supper.' She physics the town, provisions the wardens, and reads the forest's health the way Maro Tides reads the tideline: by what turns up. What's turning up is wrong. Web in the warden-trees with no honest spider's pattern to it, roots gone black and bitter where the soil was sweetest, and her simples losing strength as if the green itself were distracted. Her cousin's circle calls it sympathy-sickness: when an old power frets, everything that grew in its shade frets with it.",
       "dialogs": [
         {
           "id": "shop_greeting",
           "title": "In the stillroom",
-          "text": "Mind the racks \u2014 everything hanging is either medicine or dinner and I'd rather not relabel. Salves, tinctures, a tea for road-feet that actually works. And if you're the capable-looking sort, stay a moment, because the grove is sick in a way my pots can't reach and my pride just finished arguing about asking for help."
+          "text": "Mind the racks — everything hanging is either medicine or dinner and I'd rather not relabel. Salves, tinctures, a tea for road-feet that actually works. And if you're the capable-looking sort, stay a moment, because the grove is sick in a way my pots can't reach and my pride just finished arguing about asking for help."
         },
         {
           "id": "the_blight",
           "title": "Asked about the blight",
-          "text": "Web in the warden-trees, spun wrong \u2014 too regular, like script. Blight-root underneath, black and bitter, in soil my grandmother called the sweetest in the Reach. It isn't disease, it's distraction: the lady's awake and frightened, and the green frets with her. Cut the spinners out, dig the root, and the grove can put its strength back where it belongs. Iron's allowed for this \u2014 the treaty makes exceptions for surgery."
+          "text": "Web in the warden-trees, spun wrong — too regular, like script. Blight-root underneath, black and bitter, in soil my grandmother called the sweetest in the Reach. It isn't disease, it's distraction: the lady's awake and frightened, and the green frets with her. Cut the spinners out, dig the root, and the grove can put its strength back where it belongs. Iron's allowed for this — the treaty makes exceptions for surgery."
         }
       ]
     },
@@ -430,17 +430,17 @@
       "name": "Garrick Thornholt",
       "sprite": "person/ranger4.png",
       "counter": "",
-      "personal_history": "Garrick wardens the forest bounds of Elderbough \u2014 the town's voice on the trails and the forest's voice at the moot, a job that mostly means walking, counting game, and knowing which silences are normal. The silences stopped being normal in the spring. The packs his father taught him to read have gone wrong the way Varnfell's wolves went wrong: sitting where nothing feeds, watching what nothing watches. Something big has denned at the sister-spring two days south, fouling water the grove shares roots with, and last new moon Garrick cut a troll's track moving under the boughs with wolves walking escort \u2014 wolves escorting a troll, which his father's woodcraft has no page for. He has stopped patrolling alone, and Garrick Thornholt has never in his life patrolled with company.",
+      "personal_history": "Garrick wardens the forest bounds of Elderbough — the town's voice on the trails and the forest's voice at the moot, a job that mostly means walking, counting game, and knowing which silences are normal. The silences stopped being normal in the spring. The packs his father taught him to read have gone wrong the way Varnfell's wolves went wrong: sitting where nothing feeds, watching what nothing watches. Something big has denned at the sister-spring two days south, fouling water the grove shares roots with, and last new moon Garrick cut a troll's track moving under the boughs with wolves walking escort — wolves escorting a troll, which his father's woodcraft has no page for. He has stopped patrolling alone, and Garrick Thornholt has never in his life patrolled with company.",
       "dialogs": [
         {
           "id": "introduction",
           "title": "By the south gate",
-          "text": "You came up the forest road and nothing followed you \u2014 I know, I watched it not happen, which these days is the strangest thing I've seen all week. Garrick Thornholt, warden. If you can use those blades in tree-cover, the moot will pay you, the lady will thank you, and I will personally stop being the only person in this town who knows how bad it's gotten."
+          "text": "You came up the forest road and nothing followed you — I know, I watched it not happen, which these days is the strangest thing I've seen all week. Garrick Thornholt, warden. If you can use those blades in tree-cover, the moot will pay you, the lady will thank you, and I will personally stop being the only person in this town who knows how bad it's gotten."
         },
         {
           "id": "the_signs",
           "title": "Asked what's in the forest",
-          "text": "Packs that sit the trails like sentries and don't eat. A den at the sister-spring with kills around it nothing's fed on. And one track I'll say quietly: troll, moving with wolves at heel \u2014 escorted, like it had somewhere to be and rank enough to be walked there. My father's craft says trolls den alone and wolves serve nothing. The forest's rewriting the book, and I'd like armed friends while I read it."
+          "text": "Packs that sit the trails like sentries and don't eat. A den at the sister-spring with kills around it nothing's fed on. And one track I'll say quietly: troll, moving with wolves at heel — escorted, like it had somewhere to be and rank enough to be walked there. My father's craft says trolls den alone and wolves serve nothing. The forest's rewriting the book, and I'd like armed friends while I read it."
         }
       ]
     },
@@ -449,17 +449,17 @@
       "name": "Petra Alderwood",
       "sprite": "person/townsperson2.png",
       "counter": "general",
-      "personal_history": "Petra keeps the Moot Hall \u2014 inn, courthouse, and council chamber in one timbered room, which makes her innkeep, bailiff, and clerk of Elderbough depending on the hour. Her family raised the hall from a single storm-felled oak eleven generations back, with the Bough-Wife's blessing carved over the door in script nobody living can read. Petra pours fair measures, keeps the moot's minutes in a hand like bird-tracks, and enforces the hall's one absolute rule \u2014 grievances stay at the table, never follow anyone out the door \u2014 with a stare that has ended feuds the courts of the capital couldn't touch.",
+      "personal_history": "Petra keeps the Moot Hall — inn, courthouse, and council chamber in one timbered room, which makes her innkeep, bailiff, and clerk of Elderbough depending on the hour. Her family raised the hall from a single storm-felled oak eleven generations back, with the Bough-Wife's blessing carved over the door in script nobody living can read. Petra pours fair measures, keeps the moot's minutes in a hand like bird-tracks, and enforces the hall's one absolute rule — grievances stay at the table, never follow anyone out the door — with a stare that has ended feuds the courts of the capital couldn't touch.",
       "dialogs": [
         {
           "id": "introduction",
           "title": "Behind the long counter",
-          "text": "Welcome to the Moot Hall \u2014 inn this side of the counter, courtroom that side, and the kitchen outranks both. Beds are two coppers, the stew is whatever the forest allowed this week, and if you're here on a moot night you'll get supper and self-government at no extra charge."
+          "text": "Welcome to the Moot Hall — inn this side of the counter, courtroom that side, and the kitchen outranks both. Beds are two coppers, the stew is whatever the forest allowed this week, and if you're here on a moot night you'll get supper and self-government at no extra charge."
         },
         {
           "id": "the_carving",
           "title": "Asked about the script over the door",
-          "text": "The lady's blessing, carved when the hall was raised from one storm-felled oak \u2014 her gift, since the treaty doesn't let us cut. Nobody reads the script anymore, but Bryn says it's not words exactly. It's a name held in wood. The hall's never burned, never leaked, never settled an inch in eleven generations, so whatever it says, I dust it weekly and keep my theories respectful."
+          "text": "The lady's blessing, carved when the hall was raised from one storm-felled oak — her gift, since the treaty doesn't let us cut. Nobody reads the script anymore, but Bryn says it's not words exactly. It's a name held in wood. The hall's never burned, never leaked, never settled an inch in eleven generations, so whatever it says, I dust it weekly and keep my theories respectful."
         }
       ]
     },
@@ -468,17 +468,17 @@
       "name": "Foreman Dann Skell",
       "sprite": "person/human_fighter33.png",
       "counter": "",
-      "personal_history": "Skell came north with a timber contract, six axemen, and the firm opinion that trees are lumber that hasn't been invoiced yet. He set a camp two days south of Elderbough \u2014 outside the town's bounds, he'll note, entirely legal \u2014 and dropped nine old-growth warden-trees before the forest answered. What answered didn't leave tracks his men would stay to describe: the camp emptied in a night, the contract is void, and Skell alone refused to run, out of some sediment of stubbornness he's since had time to examine. He sits at Elderbough's edge now, tolerated rather than welcomed, paying his debt the only way the moot would accept: naming every tree he felled at the tree-ring on salt-days, and telling every southbound logger exactly why the Reach's timber isn't worth the wages.",
+      "personal_history": "Skell came north with a timber contract, six axemen, and the firm opinion that trees are lumber that hasn't been invoiced yet. He set a camp two days south of Elderbough — outside the town's bounds, he'll note, entirely legal — and dropped nine old-growth warden-trees before the forest answered. What answered didn't leave tracks his men would stay to describe: the camp emptied in a night, the contract is void, and Skell alone refused to run, out of some sediment of stubbornness he's since had time to examine. He sits at Elderbough's edge now, tolerated rather than welcomed, paying his debt the only way the moot would accept: naming every tree he felled at the tree-ring on salt-days, and telling every southbound logger exactly why the Reach's timber isn't worth the wages.",
       "dialogs": [
         {
           "id": "introduction",
           "title": "At the town's edge",
-          "text": "Go ahead, the look's free \u2014 I'm the idiot who brought axes to the Reach. Nine warden-trees, contract-legal, every cut outside the town bounds. And then the forest sent something to explain the difference between legal and permitted, and my crew found religion and the southern road in the same hour. I stayed. Somebody had to answer for it, and the axes were mine."
+          "text": "Go ahead, the look's free — I'm the idiot who brought axes to the Reach. Nine warden-trees, contract-legal, every cut outside the town bounds. And then the forest sent something to explain the difference between legal and permitted, and my crew found religion and the southern road in the same hour. I stayed. Somebody had to answer for it, and the axes were mine."
         },
         {
           "id": "the_debt",
           "title": "Asked about his debt",
-          "text": "The moot wouldn't take coin \u2014 the lady doesn't spend it. So every salt-day I stand at the tree-ring and name them. Nine trees, oldest first; Bryn taught me their names and I don't get to write them down. Eleven salt-days done. The lady hasn't spoken to me once. But last time, an apple dropped at my boot \u2014 sour, mind you. Bryn says that's how forgiveness starts: unripe."
+          "text": "The moot wouldn't take coin — the lady doesn't spend it. So every salt-day I stand at the tree-ring and name them. Nine trees, oldest first; Bryn taught me their names and I don't get to write them down. Eleven salt-days done. The lady hasn't spoken to me once. But last time, an apple dropped at my boot — sour, mind you. Bryn says that's how forgiveness starts: unripe."
         }
       ]
     },
@@ -487,12 +487,12 @@
       "name": "Captain Hesta Morn",
       "sprite": "person/female_paladin02.png",
       "counter": "",
-      "personal_history": "Hesta commands the Lastlight watch, third captain since the crack opened and the first to last more than two years. Her predecessors died of the two classic captain's errors \u2014 going down the crack to settle it, and pretending it could be ignored \u2014 and she has built her whole command on refusing both. Her doctrine fits on the gate plaque: the wall stands, the lamps burn, the warding line gets new stones before the old ones crack, and nobody is a hero on her shift. Since the spring the wyrm woke, the arithmetic has turned against her: the dead in the watch-yard stir more often, the imps come up in threes where they came up alone, and her requisitions to the Knight-Marshal come back marked 'noted.'",
+      "personal_history": "Hesta commands the Lastlight watch, third captain since the crack opened and the first to last more than two years. Her predecessors died of the two classic captain's errors — going down the crack to settle it, and pretending it could be ignored — and she has built her whole command on refusing both. Her doctrine fits on the gate plaque: the wall stands, the lamps burn, the warding line gets new stones before the old ones crack, and nobody is a hero on her shift. Since the spring the wyrm woke, the arithmetic has turned against her: the dead in the watch-yard stir more often, the imps come up in threes where they came up alone, and her requisitions to the Knight-Marshal come back marked 'noted.'",
       "dialogs": [
         {
           "id": "introduction",
           "title": "At the south gate",
-          "text": "Lastlight. Yes, the lamps are on at noon \u2014 read the plaque. I'm Morn, captain of this wall, and if you're the sellsword kind I have three jobs and no patience for negotiating, because everything that comes out of that crack negotiates better than you do."
+          "text": "Lastlight. Yes, the lamps are on at noon — read the plaque. I'm Morn, captain of this wall, and if you're the sellsword kind I have three jobs and no patience for negotiating, because everything that comes out of that crack negotiates better than you do."
         },
         {
           "id": "the_doctrine",
@@ -506,17 +506,17 @@
       "name": "Mother Halvane",
       "sprite": "person/female_priest02.png",
       "counter": "healing",
-      "personal_history": "Halvane keeps the Chapel of the Vigil and its one unbroken rite: every name in the watch-yard read aloud nightly, oldest first, no nights off. The Vigil's doctrine descends from the same root as Mournfield's observance \u2014 the dead stay down while they are remembered correctly \u2014 but Lastlight's version has teeth, because here the doctrine is tested. The month a fever took her voice, the watch-yard opened twice; a novice finished the readings and the ground went quiet. Halvane has read every night since, through frost and siege-nights, and keeps the chapel's name-ledger with the care of a woman who knows exactly what each forgotten line costs. Lately the readings take longer. Not because the list grows \u2014 because something below has started listening, and she refuses to rush for it.",
+      "personal_history": "Halvane keeps the Chapel of the Vigil and its one unbroken rite: every name in the watch-yard read aloud nightly, oldest first, no nights off. The Vigil's doctrine descends from the same root as Mournfield's observance — the dead stay down while they are remembered correctly — but Lastlight's version has teeth, because here the doctrine is tested. The month a fever took her voice, the watch-yard opened twice; a novice finished the readings and the ground went quiet. Halvane has read every night since, through frost and siege-nights, and keeps the chapel's name-ledger with the care of a woman who knows exactly what each forgotten line costs. Lately the readings take longer. Not because the list grows — because something below has started listening, and she refuses to rush for it.",
       "dialogs": [
         {
           "id": "introduction",
           "title": "In the chapel",
-          "text": "Softly, traveler \u2014 the names from last night are still settling. This is the Vigil: every soul in the watch-yard, read aloud, every night, oldest first. You may think it's mourning. It is masonry. The wall keeps out what climbs. The reading keeps down what remembers."
+          "text": "Softly, traveler — the names from last night are still settling. This is the Vigil: every soul in the watch-yard, read aloud, every night, oldest first. You may think it's mourning. It is masonry. The wall keeps out what climbs. The reading keeps down what remembers."
         },
         {
           "id": "the_listening",
           "title": "Asked about the rite",
-          "text": "Mournfield keeps candles; we keep names \u2014 same treaty, older terms. But something has changed since the spring. I read, and the quiet under the floor has the shape of attention now. It is checking my list against its own, do you understand? Somewhere below there is a ledger of our dead, and the night the two disagree, I want it to be because mine is more complete."
+          "text": "Mournfield keeps candles; we keep names — same treaty, older terms. But something has changed since the spring. I read, and the quiet under the floor has the shape of attention now. It is checking my list against its own, do you understand? Somewhere below there is a ledger of our dead, and the night the two disagree, I want it to be because mine is more complete."
         }
       ]
     },
@@ -525,12 +525,12 @@
       "name": "Odo Marsh",
       "sprite": "person/human_fighter31.png",
       "counter": "general",
-      "personal_history": "Odo held a wall-post for eleven years before an imp's claw took the tendons of his shield arm, and the watch pension bought him the inn. He renamed it The Last Lamp, hung his old shield behind the bar, and runs the place as an extension of the wall: watch members drink at cost, rooms face inward, and the lamp over the door draws from the same oil ration as the gate-lights \u2014 Odo argued it into the town charter himself. He hears everything worth hearing in Lastlight by the second tankard, and has an old soldier's exact sense of which rumors go to the captain, which to the chapel, and which die at his bar.",
+      "personal_history": "Odo held a wall-post for eleven years before an imp's claw took the tendons of his shield arm, and the watch pension bought him the inn. He renamed it The Last Lamp, hung his old shield behind the bar, and runs the place as an extension of the wall: watch members drink at cost, rooms face inward, and the lamp over the door draws from the same oil ration as the gate-lights — Odo argued it into the town charter himself. He hears everything worth hearing in Lastlight by the second tankard, and has an old soldier's exact sense of which rumors go to the captain, which to the chapel, and which die at his bar.",
       "dialogs": [
         {
           "id": "introduction",
           "title": "Behind the bar",
-          "text": "The Last Lamp \u2014 beds inward, stew's hot, and the lamp out front burns on the town's oil because I shamed the charter committee into it. Eleven years on that wall before an imp redecorated my arm, so if you're here to work the captain's jobs, your first round's mine. Tradition."
+          "text": "The Last Lamp — beds inward, stew's hot, and the lamp out front burns on the town's oil because I shamed the charter committee into it. Eleven years on that wall before an imp redecorated my arm, so if you're here to work the captain's jobs, your first round's mine. Tradition."
         },
         {
           "id": "the_rumors",
@@ -544,17 +544,17 @@
       "name": "Magister Ilex Corven",
       "sprite": "person/human_mage15.png",
       "counter": "",
-      "personal_history": "Ilex held the university's chair of infernal taxonomy for nineteen years without ever meeting his subject, then resigned the week the survey reports from the cracks crossed his desk. He has lodged at The Last Lamp for forty nights, paying in coin and warnings, and his monograph-in-progress \u2014 'On the Lesser Emanations' \u2014 is the only systematic study of the imps anywhere in the realm. His findings unsettle the watch more than the imps do: the things are not invading, they are surveying. They take nothing, eat nothing, and die without complaint \u2014 but every one that gets past the wall is found near the chapel, the watch-yard, or the warding line. They are, Ilex insists, checking the locks from the outside. He needs specimens stopped mid-errand to prove it, and he is too old to catch them himself.",
+      "personal_history": "Ilex held the university's chair of infernal taxonomy for nineteen years without ever meeting his subject, then resigned the week the survey reports from the cracks crossed his desk. He has lodged at The Last Lamp for forty nights, paying in coin and warnings, and his monograph-in-progress — 'On the Lesser Emanations' — is the only systematic study of the imps anywhere in the realm. His findings unsettle the watch more than the imps do: the things are not invading, they are surveying. They take nothing, eat nothing, and die without complaint — but every one that gets past the wall is found near the chapel, the watch-yard, or the warding line. They are, Ilex insists, checking the locks from the outside. He needs specimens stopped mid-errand to prove it, and he is too old to catch them himself.",
       "dialogs": [
         {
           "id": "introduction",
           "title": "At the corner table",
-          "text": "Sit, sit \u2014 mind the papers, they're in taxonomic order. Ilex Corven, formerly of the university, presently of the only town in the realm where my discipline has fieldwork. You've seen the little horrors on the road, I expect. Tell me everything: gait, grouping, what they were looking at. Especially what they were looking at."
+          "text": "Sit, sit — mind the papers, they're in taxonomic order. Ilex Corven, formerly of the university, presently of the only town in the realm where my discipline has fieldwork. You've seen the little horrors on the road, I expect. Tell me everything: gait, grouping, what they were looking at. Especially what they were looking at."
         },
         {
           "id": "the_thesis",
           "title": "Asked about the imps",
-          "text": "Nineteen years I taught that imps were vermin \u2014 the gnats of the pit. Then I came here and watched one ignore a full grain-store to stand for an hour in front of the chapel, looking. They don't raid, traveler. They inspect. Something below is using its smallest servants to walk our defenses, and the conclusion I keep not writing down is this: you only survey a wall you intend, eventually, to come through."
+          "text": "Nineteen years I taught that imps were vermin — the gnats of the pit. Then I came here and watched one ignore a full grain-store to stand for an hour in front of the chapel, looking. They don't raid, traveler. They inspect. Something below is using its smallest servants to walk our defenses, and the conclusion I keep not writing down is this: you only survey a wall you intend, eventually, to come through."
         }
       ]
     },
@@ -563,17 +563,17 @@
       "name": "Brike",
       "sprite": "person/female_thief02.png",
       "counter": "",
-      "personal_history": "Brike went down the Near Crack on a dare at sixteen and came back up three days later with a sack of grave-goods, a streak of white hair, and a permanent unwillingness to discuss days two and three. She has made her living off the crack's edges since \u2014 salvaging what the first watch dropped when it fell, selling trinkets and map-scraps to anyone with coin and no sense \u2014 and she knows the upper dark better than anyone living, precisely because she has never once gone past the second turning again. Lately her trade has dried up by her own choice: the upper dark has gotten crowded, the imps have stopped ignoring her, and on her last trip she found one of her own old chalk-marks rubbed out and redrawn. Facing the other way.",
+      "personal_history": "Brike went down the Near Crack on a dare at sixteen and came back up three days later with a sack of grave-goods, a streak of white hair, and a permanent unwillingness to discuss days two and three. She has made her living off the crack's edges since — salvaging what the first watch dropped when it fell, selling trinkets and map-scraps to anyone with coin and no sense — and she knows the upper dark better than anyone living, precisely because she has never once gone past the second turning again. Lately her trade has dried up by her own choice: the upper dark has gotten crowded, the imps have stopped ignoring her, and on her last trip she found one of her own old chalk-marks rubbed out and redrawn. Facing the other way.",
       "dialogs": [
         {
           "id": "introduction",
           "title": "Near the sealed house",
-          "text": "You've got crack-curiosity all over you. Fine \u2014 Brike, salvage and intelligence, semi-retired as of recently. I know the upper dark to the second turning better than the captain's maps do, and my rates are fair because the information is genuinely worth dying for. That's not a figure of speech. It's the price history."
+          "text": "You've got crack-curiosity all over you. Fine — Brike, salvage and intelligence, semi-retired as of recently. I know the upper dark to the second turning better than the captain's maps do, and my rates are fair because the information is genuinely worth dying for. That's not a figure of speech. It's the price history."
         },
         {
           "id": "the_chalk_mark",
           "title": "Asked why she stopped",
-          "text": "Sixteen years I've marked my routes in the upper dark \u2014 my chalk, my code, my hand. Last trip, my mark at the second turning was gone. Rubbed out. And next to it, fresh, my own sign \u2014 drawn backward, pointing in. Something down there learned to read me, friend, and then it wrote back. A person can retire on that. I have."
+          "text": "Sixteen years I've marked my routes in the upper dark — my chalk, my code, my hand. Last trip, my mark at the second turning was gone. Rubbed out. And next to it, fresh, my own sign — drawn backward, pointing in. Something down there learned to read me, friend, and then it wrote back. A person can retire on that. I have."
         }
       ]
     },
@@ -582,18 +582,28 @@
       "name": "Tobb the Wick",
       "sprite": "person/halfling_fighter2.png",
       "counter": "",
-      "personal_history": "Tobb is Lastlight's lamplighter \u2014 a halfling with a striker-pole twice his height, a ring of oil-keys, and the only civilian post in town the watch salutes. The charter lists thirty-one lamps; Tobb maintains thirty-three, having quietly added two of his own over the watch-yard, paid out of his wage. He walks the full circuit twice nightly, knows every lamp's temper \u2014 which ones gutter in a north wind, which burn blue when the crack exhales \u2014 and reads the town's danger off the flames the way Ibsen Cole reads wolf-sign. The watch logs say 'all lamps lit' in Tobb's careful hand every night for nine years, with one exception he reported himself: the night of the spring equinox, when every flame in town leaned north for the space of ten breaths, toward the crack, as if something had inhaled.",
+      "personal_history": "Tobb is Lastlight's lamplighter — a halfling with a striker-pole twice his height, a ring of oil-keys, and the only civilian post in town the watch salutes. The charter lists thirty-one lamps; Tobb maintains thirty-three, having quietly added two of his own over the watch-yard, paid out of his wage. He walks the full circuit twice nightly, knows every lamp's temper — which ones gutter in a north wind, which burn blue when the crack exhales — and reads the town's danger off the flames the way Ibsen Cole reads wolf-sign. The watch logs say 'all lamps lit' in Tobb's careful hand every night for nine years, with one exception he reported himself: the night of the spring equinox, when every flame in town leaned north for the space of ten breaths, toward the crack, as if something had inhaled.",
       "dialogs": [
         {
           "id": "introduction",
           "title": "On the lamp round",
-          "text": "Mind the pole \u2014 oil's dear and you're wearing boots I'd hate to ruin. Tobb, lamplighter, thirty-three lamps and every one of them my personal acquaintance. You want to know how the town's doing on any given night, don't ask the watch. Ask the flames. The watch only knows what's happened. The lamps know what's coming."
+          "text": "Mind the pole — oil's dear and you're wearing boots I'd hate to ruin. Tobb, lamplighter, thirty-three lamps and every one of them my personal acquaintance. You want to know how the town's doing on any given night, don't ask the watch. Ask the flames. The watch only knows what's happened. The lamps know what's coming."
         },
         {
           "id": "the_night_they_leaned",
           "title": "Asked about the equinox",
-          "text": "Nine years, one irregularity, and I logged it myself: spring equinox, the night the chain broke out west \u2014 though we didn't know that yet. Every lamp in Lastlight leaned north. Ten breaths. Then they stood back up and burned like nothing happened. Flames lean toward air, traveler. Something below the crack took a breath that night, and it hasn't let it out yet. I count my lamps. I'd appreciate you keeping anything from adding them to a different ledger."
+          "text": "Nine years, one irregularity, and I logged it myself: spring equinox, the night the chain broke out west — though we didn't know that yet. Every lamp in Lastlight leaned north. Ten breaths. Then they stood back up and burned like nothing happened. Flames lean toward air, traveler. Something below the crack took a breath that night, and it hasn't let it out yet. I count my lamps. I'd appreciate you keeping anything from adding them to a different ledger."
         }
+      ]
+    },
+    {
+      "id": "kings_messenger",
+      "name": "King's Messenger",
+      "sprite": "monster/eagle.png",
+      "counter": null,
+      "personal_history": null,
+      "dialogs": [
+        "The king wants you to get stronger and when you are ready, seek him out in the Capital to the East"
       ]
     }
   ]

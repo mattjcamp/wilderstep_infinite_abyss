@@ -1776,15 +1776,41 @@ export class MapSimulation {
    * (the host repositions the sprite) + `state`.
    */
   requestNpcMove(npcId: string): boolean {
+    return this.requestCellActorMove(
+      (cell) => cell.npc === npcId,
+    );
+  }
+
+  /**
+   * Same polite step-aside as {@link requestNpcMove}, but for a quest
+   * GIVER — located by the cell's `quest` tag instead of `npc`. Used
+   * by the post-quest chatter dialog (a turned-in giver behaves like
+   * a normal NPC, Ask-to-Move included). Any co-located `npc` tag
+   * moves along with the quest tag, mirroring the npc-first variant.
+   */
+  requestQuestGiverMove(questId: string): boolean {
+    return this.requestCellActorMove(
+      (cell) => (cell as SimCell & { quest?: string }).quest === questId,
+    );
+  }
+
+  /** Shared body for {@link requestNpcMove} / {@link requestQuestGiverMove}:
+   *  find the first cell `matches` accepts, pick the walkable
+   *  unoccupied cardinal neighbour farthest from the party, and move
+   *  the cell's actor tags (`npc` + `quest`) there. */
+  private requestCellActorMove(
+    matches: (cell: SimCell) => boolean,
+  ): boolean {
     if (this.disposed) return false;
-    // Locate the NPC's current cell by scanning for its tag — robust
+    // Locate the actor's current cell by scanning for its tag — robust
     // even if it wandered since the dialog opened.
     let from: Position | null = null;
     for (let r = 0; r < this.grid.length && !from; r++) {
       const row = this.grid[r];
       if (!row) continue;
       for (let c = 0; c < row.length; c++) {
-        if (row[c]?.npc === npcId) {
+        const cell = row[c];
+        if (cell && matches(cell)) {
           from = { col: c, row: r };
           break;
         }
@@ -1829,9 +1855,15 @@ export class MapSimulation {
 
     const toCell = this.grid[pick.row]?.[pick.col];
     if (!toCell) return false;
+    // Carry BOTH actor tags — whichever one located the cell, any
+    // co-located other tag moves with it so the pair stays glued
+    // (an NPC who is also a quest giver, or vice versa).
+    const npcId = fromCell.npc ?? "";
     const questId = (fromCell as SimCell & { quest?: string }).quest;
-    toCell.npc = npcId;
-    fromCell.npc = "";
+    if (npcId) {
+      toCell.npc = npcId;
+      fromCell.npc = "";
+    }
     if (questId) {
       (toCell as SimCell & { quest?: string }).quest = questId;
       (fromCell as SimCell & { quest?: string }).quest = "";

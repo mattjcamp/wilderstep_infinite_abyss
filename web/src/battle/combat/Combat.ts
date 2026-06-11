@@ -815,6 +815,41 @@ export class Combat {
     const targets = this.alive(enemySide).filter((c) => !c.consumed);
     if (targets.length === 0) return { kind: "wait" };
 
+    // Turned undead (Turn Undead vs a resistant elite) — the holy
+    // light overrides every other instinct. The creature never
+    // attacks or casts; it runs AWAY from the nearest foe, and when
+    // no step increases the distance (cornered), it cowers in place.
+    // `turnedTurns` ticks down in endTurn after each of its turns.
+    if ((actor.turnedTurns ?? 0) > 0) {
+      const nearestFoe = [...targets].sort(
+        (a, b) =>
+          chebyshev(actor.position, a.position) -
+          chebyshev(actor.position, b.position),
+      )[0];
+      let fleeBest = 0; // only accept moves that INCREASE distance
+      const fleeDirs: Direction[] = [];
+      for (const dir of ALL_DIRECTIONS) {
+        const [dc, dr] = DIR_DELTAS[dir];
+        const nc = actor.position.col + dc;
+        const nr = actor.position.row + dr;
+        if (!inBounds(nc, nr) || this.isBlocked(nc, nr)) continue;
+        if (this.combatantAt(nc, nr)) continue; // never bump-attacks
+        const delta =
+          chebyshev({ col: nc, row: nr }, nearestFoe.position) -
+          chebyshev(actor.position, nearestFoe.position);
+        if (delta > fleeBest) {
+          fleeBest = delta;
+          fleeDirs.length = 0;
+          fleeDirs.push(dir);
+        } else if (delta === fleeBest && delta > 0) {
+          fleeDirs.push(dir);
+        }
+      }
+      if (fleeDirs.length === 0) return { kind: "wait" }; // cowers
+      const fleeIdx = Math.floor(this.rng() * fleeDirs.length);
+      return { kind: "move", dir: fleeDirs[fleeIdx] };
+    }
+
     // Spell-casting AI — Dragons breathe fire, Liches throw bolts,
     // Trolls heal themselves. Roll each spell's `cast_chance`; the
     // first one that passes AND has a valid target wins. Mirrors the
@@ -876,6 +911,18 @@ export class Combat {
   /** Move the turn cursor to the next alive combatant and refill points. */
   endTurn(): void {
     if (this.isOver) return;
+    // Tick the turned-undead counter for the actor whose turn just
+    // ended — "turned for 1d4 turns" counts the creature's OWN
+    // turns, so the decrement lives here rather than in the round-
+    // end buff tick. Recovery gets a log line so the player knows
+    // the vampire is about to rejoin the fight.
+    const ending = this.current;
+    if ((ending.turnedTurns ?? 0) > 0 && ending.hp > 0) {
+      ending.turnedTurns = (ending.turnedTurns ?? 0) - 1;
+      if (ending.turnedTurns === 0) {
+        this.log.push(`${ending.name} shakes off the holy light!`);
+      }
+    }
     for (let i = 0; i < this.combatants.length; i++) {
       this.cursor = (this.cursor + 1) % this.initiativeOrder.length;
       this.turnsAdvanced += 1;
@@ -889,6 +936,11 @@ export class Combat {
       if (this.byId(this.initiativeOrder[this.cursor].combatantId).hp > 0) {
         this.refillMovePoints();
         this.log.push(`-- ${this.current.name}'s turn --`);
+        if ((this.current.turnedTurns ?? 0) > 0) {
+          this.log.push(
+            `${this.current.name} is turned — it recoils from the holy light!`,
+          );
+        }
         return;
       }
     }

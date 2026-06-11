@@ -19,12 +19,14 @@
  */
 
 import { useEffect } from "react";
+import type { QuestPlacardTarget } from "./questPlacardTargets";
 
 export function LinkPlacard({
   placeKind,
   name,
   description,
   explored,
+  questTargets,
   onConfirm,
   onCancel,
 }: {
@@ -35,6 +37,13 @@ export function LinkPlacard({
    *  the badge so the player can tell a fresh discovery from a return
    *  trip. */
   explored: boolean;
+  /** Active quests with an incomplete step at this destination —
+   *  computed by `questsTargetingPlace`. Non-empty switches the
+   *  placard into its quest treatment: gold frame, a ⚜ Quest chip in
+   *  the header, and one "quest — step" context line per entry under
+   *  the description. Optional so callers without quest state (or
+   *  destinations with no quest relevance) render the plain placard. */
+  questTargets?: ReadonlyArray<QuestPlacardTarget>;
   onConfirm: () => void;
   onCancel: () => void;
 }) {
@@ -85,6 +94,9 @@ export function LinkPlacard({
     placeKind === "dungeon"
       ? "Descend into this dungeon?"
       : "Travel to this place?";
+  // Quest treatment — the frame and header pick up gold accents when
+  // any active quest has an incomplete step at this destination.
+  const questRelevant = (questTargets?.length ?? 0) > 0;
 
   return (
     <div
@@ -93,25 +105,40 @@ export function LinkPlacard({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="flex w-full max-w-md flex-col rounded-lg border border-parchment/25 bg-ink/95 shadow-2xl"
+        className={[
+          "flex w-full max-w-md flex-col rounded-lg border bg-ink/95 shadow-2xl",
+          questRelevant
+            ? "border-amber-300/60 shadow-amber-300/20"
+            : "border-parchment/25",
+        ].join(" ")}
       >
         <header className="flex items-center justify-between gap-3 border-b border-parchment/15 px-4 py-2.5">
           <h2 className="font-display text-lg text-parchment">{name}</h2>
-          <span
-            className={[
-              "shrink-0 rounded border px-2 py-0.5 text-[10px] uppercase tracking-wide",
-              explored
-                ? "border-parchment/25 text-parchment/55"
-                : "border-amber-300/50 bg-amber-300/10 text-amber-200",
-            ].join(" ")}
-            title={
-              explored
-                ? "Your party has been here before."
-                : "Your party has not explored this place yet."
-            }
-          >
-            {explored ? "Explored" : "Unexplored"}
-          </span>
+          <div className="flex shrink-0 items-center gap-1.5">
+            {questRelevant ? (
+              <span
+                className="rounded border border-amber-300/60 bg-amber-300/15 px-2 py-0.5 text-[10px] uppercase tracking-wide text-amber-200"
+                title="An active quest has an objective here."
+              >
+                ⚜ Quest
+              </span>
+            ) : null}
+            <span
+              className={[
+                "rounded border px-2 py-0.5 text-[10px] uppercase tracking-wide",
+                explored
+                  ? "border-parchment/25 text-parchment/55"
+                  : "border-amber-300/50 bg-amber-300/10 text-amber-200",
+              ].join(" ")}
+              title={
+                explored
+                  ? "Your party has been here before."
+                  : "Your party has not explored this place yet."
+              }
+            >
+              {explored ? "Explored" : "Unexplored"}
+            </span>
+          </div>
         </header>
 
         <div className="px-4 py-3">
@@ -124,6 +151,21 @@ export function LinkPlacard({
               The way leads onward into the unknown.
             </p>
           )}
+          {questRelevant ? (
+            <div className="mt-3 rounded border border-amber-300/30 bg-amber-300/5 px-3 py-2">
+              {questTargets!.map((t) => (
+                <p
+                  key={`${t.questId}:${t.stepId}`}
+                  className="text-xs leading-snug text-amber-100/90"
+                >
+                  <span className="font-semibold text-amber-200">
+                    ⚜ {t.questName}
+                  </span>
+                  <span className="text-amber-100/70"> — {t.stepName}</span>
+                </p>
+              ))}
+            </div>
+          ) : null}
         </div>
 
         <footer className="flex items-center justify-between gap-2 border-t border-parchment/15 px-4 py-2.5">

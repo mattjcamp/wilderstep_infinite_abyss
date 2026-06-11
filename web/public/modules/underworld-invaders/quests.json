@@ -1020,7 +1020,7 @@
     {
       "id": "the_pale_court",
       "name": "The Pale Court",
-      "description": "Sir Roderic Vane has hunted the vampire he calls the Pale Lord across thirty years and three duchies, and the trail has finally gone to ground close by. Roderic's hands shake now. Yours don't.",
+      "description": "Sir Roderic Vane has hunted the vampire he calls the Pale Lord across thirty years and three duchies, and the trail has finally gone to ground close by in the Umbral Spire. Roderic's hands shake now. Yours don't.",
       "tags": [
         "eastmarch"
       ],
@@ -1029,7 +1029,7 @@
           "id": "the_pale_court_step_1",
           "name": "Destroy the Pale Lord's court",
           "kind": "kill",
-          "description": "The lord keeps a court of lesser vampires between himself and the door. Go through them.",
+          "description": "In the Umbral Spire, the lord keeps a court of lesser vampires between himself and the door. Go through them.",
           "tags": [
             "the_pale_court"
           ],
@@ -1055,7 +1055,7 @@
       "quest_giver": {
         "npc_name": "Sir Roderic Vane",
         "npc_sprite": "person/human_paladin.png",
-        "start_dialog": "Thirty years. Three duchies. Every grave it left behind, I dug the proper way afterward, and I am very tired. It's gone to ground near here — courted, fed, comfortable. I trained my whole life for the door at the bottom of that darkness, and now my hands won't hold the blade steady past sundown. So the hunt passes to you, as these things do. Take my notes. Take the sword's blessing. And when it talks — it will talk — you put it down mid-sentence.",
+        "start_dialog": "Thirty years. Three duchies. Every grave it left behind, I dug the proper way afterward, and I am very tired. It's gone to ground near here in the Umbral Spire — courted, fed, comfortable. I trained my whole life for the door at the bottom of that darkness, and now my hands won't hold the blade steady past sundown. So the hunt passes to you, as these things do. Take my notes. Take the sword's blessing. And when it talks — it will talk — you put it down mid-sentence.",
         "end_dialog": "Mid-sentence. Good. Thirty years, and it ends with me sitting by a fire hearing it secondhand — I expected that to hurt, and instead there's only the quiet. The notes are ash now, I burned them this morning; nobody needs to learn what I had to. The sword goes with you. It was never mine, you understand. It belongs to whoever finishes the hunt, and that was always going to be the part I wasn't there for."
       },
       "rewards": {
@@ -1069,7 +1069,7 @@
     {
       "id": "the_wailing_manor",
       "name": "The Wailing Manor",
-      "description": "Corvin Ashe inherited a manor nobody has entered in sixty years, along with the wailing that comes off it at night. Somewhere inside is the family reliquary — and whatever has been keeping it.",
+      "description": "Corvin Ashe inherited the Wailing  Manor, which nobody has entered in sixty years, along with the wailing that comes off it at night. Somewhere inside is the family reliquary — and whatever has been keeping it.",
       "tags": [
         "eastmarch"
       ],
@@ -1078,7 +1078,7 @@
           "id": "the_wailing_manor_step_1",
           "name": "Breach the cursed halls",
           "kind": "kill",
-          "description": "The manor's halls defend themselves. Fight through whatever the curse has made of the household.",
+          "description": "The Wailing Manor's halls defend themselves. Fight through whatever the curse has made of the household.",
           "tags": [
             "the_wailing_manor"
           ],
@@ -1109,7 +1109,9 @@
             "the_wailing_manor"
           ],
           "encounter_id": "lich_and_banshee",
-          "count": 1
+          "count": 1,
+          "location_kind": "map",
+          "map_id": "mm_crypt_2"
         },
         {
           "id": "the_wailing_manor_step_4",
@@ -1129,7 +1131,7 @@
       "quest_giver": {
         "npc_name": "Corvin Ashe",
         "npc_sprite": "person/townsperson8.png",
-        "start_dialog": "I inherited a title, a manor, and a sound. The title is worthless, the manor is sealed, and the sound starts at dusk and stops when it notices you listening. The family reliquary is still inside — sixty years of Ashes too afraid to fetch it, and I'd like to be the generation that ends differently. I'll be honest, because my family never was: people who go in do not, as a rule, come out. Your rule may differ. The reliquary and my gratitude say it does.",
+        "start_dialog": "I inherited a title, a The Wailing Manor, and a sound. The title is worthless, the manor is sealed, and the sound starts at dusk and stops when it notices you listening. The family reliquary is still inside — sixty years of Ashes too afraid to fetch it, and I'd like to be the generation that ends differently. I'll be honest, because my family never was: people who go in do not, as a rule, come out. Your rule may differ. The reliquary and my gratitude say it does.",
         "end_dialog": "The wailing stopped. Do you understand what that means to someone who grew up tuning it out? Sixty years of my family's shame, carried out in a box you could lift with two hands. I opened it. I won't tell you what's inside — some things should stay family — but I will tell you the Ashes pay their debts from this generation on, starting with the largest one we've ever owed."
       },
       "rewards": {
@@ -1172,7 +1174,7 @@
           "id": "seal_the_crack_step_3",
           "name": "End the Pit Fiend",
           "kind": "kill",
-          "description": "At the crack's mouth waits the Pit Fiend that commands the breach. Cast it down and seal the world shut behind it.",
+          "description": "Past the locked cavern, at the crack's mouth waits the Pit Fiend that commands the breach. Cast it down and seal the world shut behind it.",
           "encounter_id": "pit_fiends_court",
           "location_kind": "map",
           "map_id": "the_crack_1_l4",
@@ -1193,6 +1195,35 @@
       "rewards": {
         "xp": 1000,
         "gold": 1000
+      }
+    },
+    {
+      "id": "the_kings_message",
+      "name": "The King's Message",
+      "description": "King Wellerman has declared that you must grow strong, and when you are ready you must see him for a quest to save the world from a foul dragon and an even worse threat from below the ground.",
+      "tags": [
+        "main_story"
+      ],
+      "steps": [
+        {
+          "id": "the_kings_message_step_1",
+          "name": "Seek out Hallowmere",
+          "kind": "discover",
+          "description": "Seak out the citizens of Hallowmere, they need your help and you must grow strong before seeing your King in the Capital to the East.",
+          "tags": [
+            "hollowmere"
+          ],
+          "col": 10,
+          "row": 1,
+          "location_kind": "map",
+          "map_id": "hollowmere_town"
+        }
+      ],
+      "quest_giver": {
+        "npc_name": "The King's Messager",
+        "npc_sprite": "monster/eagle.png",
+        "start_dialog": "King Wellerman has declared that you must grow strong, and when you are ready you must see him for a quest to save the world from a foul dragon and an even worse threat from below the ground. Start by visiting Hallowmere to your South. The citizens there need your help and there you can start to grow strong. Once you are ready, seek out King Wellerman in the Capital toward the East.",
+        "end_dialog": ""
       }
     }
   ]

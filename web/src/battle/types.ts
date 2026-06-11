@@ -113,6 +113,22 @@ export interface Combatant {
    * spell only affects creatures it's supposed to.
    */
   undead?: boolean;
+  /**
+   * Elite undead's bonus on Turn Undead saving throws (vampires,
+   * liches, …). Mirrors `turn_resistance` in monsters.json. Any
+   * value > 0 also marks the creature as too powerful to destroy
+   * outright: a failed save TURNS it (flees/cowers for 1d4 turns)
+   * instead of setting HP to 0. Lesser undead omit the field.
+   */
+  turnResistance?: number;
+  /**
+   * Runtime counter — turns remaining of the "turned" state applied
+   * by Turn Undead on a resistant elite. While > 0 the AI flees from
+   * the party (or cowers when cornered) instead of acting; ticked
+   * down at the end of each of the creature's own turns in
+   * `Combat.endTurn`. Never persisted; combat-local only.
+   */
+  turnedTurns?: number;
   /** XP awarded to each surviving party member when this enemy dies.
    *  Summed across all defeated enemies on victory and shared with
    *  every alive party member (matches the Python game). */

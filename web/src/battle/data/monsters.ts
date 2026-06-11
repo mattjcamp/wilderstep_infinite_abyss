@@ -38,6 +38,11 @@ export interface MonsterSpec {
   sprite: string;
   move_range: number;
   undead?: boolean;
+  /** Elite undead's bonus on Turn Undead saves (vampire +4, lich +6).
+   *  Any value > 0 also exempts the creature from outright
+   *  destruction — a failed save turns it (flee/cower 1d4 turns)
+   *  instead. Omit for lesser undead (skeletons, zombies). */
+  turn_resistance?: number;
   humanoid?: boolean;
   /** Organizational tag for assembling themed maps — one of
    *  undead / devil / elemental / humanoid / cryptid / magical.
@@ -171,6 +176,7 @@ interface RawMonster {
   sprite?: string;
   move_range?: number;
   undead?: boolean;
+  turn_resistance?: number;
   humanoid?: boolean;
   theme?: string;
   xp_reward?: number;
@@ -391,6 +397,7 @@ export function makeMonsterByName(id: string, idSuffix = ""): Combatant {
     baseMoveRange: spec.move_range,
     position: { col: 0, row: 0 }, // overwritten by Combat
     undead: spec.undead,
+    turnResistance: spec.turn_resistance,
     xpReward: spec.xp_reward,
     goldReward,
     battleScale: spec.battle_scale,

@@ -1615,6 +1615,56 @@ describe("MapSimulation.requestNpcMove — Ask to Move", () => {
   });
 });
 
+describe("MapSimulation.requestQuestGiverMove — post-quest Ask to Move", () => {
+  it("relocates a quest-giver cell (quest tag carried, npc_moved emitted)", () => {
+    const grid = makeGrid();
+    grid[2][2] = cell({ quest: "rats" } as Parameters<typeof cell>[0]);
+    const sim = makeSim({
+      grid,
+      party: makeParty({ start_position: { col: 1, row: 2 } }),
+      startAt: { col: 1, row: 2 }, // party west of the giver
+    });
+    const events = captureEvents(sim);
+
+    const moved = sim.requestQuestGiverMove("rats");
+
+    expect(moved).toBe(true);
+    // Quest tag vacated the old cell and stepped east, away from
+    // the party.
+    expect((grid[2][2] as { quest?: string }).quest ?? "").toBe("");
+    expect((grid[2][3] as { quest?: string }).quest).toBe("rats");
+    const movedEv = events.find((e) => e.kind === "npc_moved");
+    expect(movedEv).toMatchObject({
+      questId: "rats",
+      from: { col: 2, row: 2 },
+      to: { col: 3, row: 2 },
+    });
+  });
+
+  it("carries a co-located npc tag along with the quest tag", () => {
+    const grid = makeGrid();
+    grid[2][2] = cell({
+      npc: "hermit",
+      quest: "rats",
+    } as Parameters<typeof cell>[0]);
+    const sim = makeSim({
+      grid,
+      party: makeParty({ start_position: { col: 1, row: 2 } }),
+      startAt: { col: 1, row: 2 },
+    });
+
+    expect(sim.requestQuestGiverMove("rats")).toBe(true);
+    expect(grid[2][3].npc).toBe("hermit");
+    expect((grid[2][3] as { quest?: string }).quest).toBe("rats");
+    expect(grid[2][2].npc ?? "").toBe("");
+  });
+
+  it("returns false for an unknown quest id", () => {
+    const sim = makeSim();
+    expect(sim.requestQuestGiverMove("no_such_quest")).toBe(false);
+  });
+});
+
 describe("MapSimulation — show_link_placard confirm", () => {
   it("a flagged link tile emits `place_encountered` and does NOT traverse", () => {
     const grid = makeGrid();

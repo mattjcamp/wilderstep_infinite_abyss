@@ -2133,6 +2133,12 @@ export class CombatScene extends Phaser.Scene {
     for (let i = 1; i <= 9; i++) {
       k.on(`keydown-${["ONE","TWO","THREE","FOUR","FIVE","SIX","SEVEN","EIGHT","NINE"][i-1]}`, () => this.onDigit(i));
     }
+    // [T] — while picking a target for a precision shot with
+    // ignitable ammo (Silver Bow + Fire Arrows, crossbow + Fire
+    // Bolts), switch to the free tile picker so the burning shaft
+    // can flare an empty / dark cell instead of a creature. No-op
+    // in every other mode.
+    k.on("keydown-T", () => this.onTileAimKey());
     // Debug cheat: Shift+K instantly defeats every alive enemy and
     // routes through the standard victory path (so quest credit,
     // dungeon-monster cleanup, XP/loot drops all run normally). Hidden
@@ -2302,6 +2308,23 @@ export class CombatScene extends Phaser.Scene {
     if (key === "DOWN")  return this.moveActionCursor(1);
     if (key === "LEFT" || key === "RIGHT") return;
     void this.tryPlayerStep(dir);
+  }
+
+  /** [T] inside the enemy target picker — only when the staged
+   *  action is a precision range shot with ignitable ammo — swaps
+   *  to the free tile picker (`startRangeTilePicking`). Lets the
+   *  player choose between "shoot the monster" (default, crossbow-
+   *  style picker) and "flare that dark corner" without backing
+   *  out to the action menu. */
+  private onTileAimKey(): void {
+    if (!this.canTakePlayerInput()) return;
+    if (this.mode !== "pick-target") return;
+    const pending = this.pendingAction;
+    if (pending?.kind !== "range" || !pending.ammoId) return;
+    const ammoDef = this.items.get(pending.ammoId);
+    if (!ammoDef?.ignite) return;
+    this.clearTargetBadges();
+    this.startRangeTilePicking(pending.weapon, pending.ammoId);
   }
 
   /** Walk the target-picker cursor through `currentTargetList()`
@@ -2532,15 +2555,16 @@ export class CombatScene extends Phaser.Scene {
    *  of `startRangeAttack` so the ammo picker's commit can reuse
    *  the directional-vs-precision branch without duplicating it.
    *
-   *  Three sub-paths today:
+   *  Two sub-paths today:
    *    1. Directional weapon (short bow, long bow, sling) → pick a
    *       direction; the arrow flies in a line.
-   *    2. Precision weapon + ignitable ammo (Silver Bow + Fire
-   *       Arrows, etc.) → pick ANY tile in range, including empty
-   *       / dark cells, so the player can use the burning shaft
-   *       as a flare to light up the arena.
-   *    3. Precision weapon + regular ammo → enemy target picker
-   *       (the legacy precision-bow flow). */
+   *    2. Precision weapon (crossbow, Silver Bow) → enemy target
+   *       picker (number keys / arrows + Enter) regardless of ammo.
+   *       Ignitable ammo (Fire Arrows / Fire Bolts) resolves the
+   *       same attack and then sets the target's tile on fire;
+   *       pressing [T] inside the picker switches to the free tile
+   *       picker so the burning shaft can flare an empty / dark
+   *       cell instead. */
   private proceedRangeWithAmmo(weapon: Item, ammoId?: string): void {
     if (weapon.targeting === "directional") {
       this.pendingAction = { kind: "range-direction", weapon, ammoId };
@@ -2555,16 +2579,22 @@ export class CombatScene extends Phaser.Scene {
       this.drawActionHints();
       return;
     }
-    // Precision branch — fork on whether the chosen ammo ignites.
-    // Fire-arrow shots open the tile picker (any cell, even empty /
-    // dark) so the player can use the burning shaft to scout dark
-    // arenas. Regular-ammo shots stay on the legacy enemy picker.
+    // Precision branch — ALL ammo (regular and ignitable) uses the
+    // standard enemy target picker: number keys / arrow keys + Enter,
+    // exactly like the crossbow. The range resolution already handles
+    // ignitable ammo (full d20 attack, then the target's tile catches
+    // fire hit-or-miss), so fire arrows don't need a separate flow to
+    // hurt monsters. What they DO keep is the free tile picker as an
+    // opt-in: pressing [T] inside the target picker switches to it so
+    // the player can still flare an empty / dark cell.
     const ammoDef = ammoId ? this.items.get(ammoId) : undefined;
-    if (ammoId && ammoDef?.ignite) {
-      this.startRangeTilePicking(weapon, ammoId);
-      return;
-    }
     this.startTargetingFor({ kind: "range", weapon, ammoId }, "enemies");
+    if (ammoId && ammoDef?.ignite) {
+      this.combat.log.push(
+        `Pick a target for ${ammoDef.name ?? ammoId} — or press [T] to aim at a tile instead.`,
+      );
+      this.refreshLog();
+    }
   }
 
   /** Begin tile selection for a precision-bow fire-arrow shot —
@@ -2603,7 +2633,7 @@ export class CombatScene extends Phaser.Scene {
       `Firing: ${ammoName}`,
       `Bow: ${weapon.name} (range ${range})`,
       "[↑↓←→] move reticle",
-      "[Enter] ignite",
+      "[Enter] fire (attacks creature on tile)",
       "[ESC]   cancel",
     ];
     const w = HUD_W - 12, h = lines.length * 18 + 28;
@@ -2614,7 +2644,7 @@ export class CombatScene extends Phaser.Scene {
         .setStrokeStyle(2, C.accent)
     );
     this.pickerObjects.push(
-      this.add.text(x + 10, y + 8, "PICK A TILE TO LIGHT", FONT_HEAD(C.accent))
+      this.add.text(x + 10, y + 8, "PICK A TILE OR TARGET", FONT_HEAD(C.accent))
     );
     lines.forEach((line, i) => {
       this.pickerObjects.push(
@@ -2626,10 +2656,11 @@ export class CombatScene extends Phaser.Scene {
   /** Resolve a confirmed range-tile fire-arrow shot. Mirrors
    *  `resolveThrowTile` but consumes ammo from the party stash
    *  (instead of decrementing a thrown-item stack) and uses the
-   *  weapon's projectile SFX. The picked cell is unconditionally
-   *  ignited — there's no d20 roll because there's no creature
-   *  to dodge; the arrow lands where the player aimed. Anyone
-   *  already standing on the cell takes the first fire tick via
+   *  weapon's projectile SFX. If a creature occupies the picked
+   *  cell, the shot resolves as a full d20 attack against it (same
+   *  as the enemy-picker range branch — friendly fire included).
+   *  The cell is then unconditionally ignited, hit or miss; anyone
+   *  standing there also takes the first fire tick via
    *  `igniteCell → applyFireDamageOnEntry`. */
   private async resolveRangeTile(): Promise<void> {
     const action = this.pendingAction;
@@ -2638,6 +2669,25 @@ export class CombatScene extends Phaser.Scene {
     const weapon = action.weapon;
     const ammoId = action.ammoId;
     const target = { ...this.tileCursorPos };
+    // If a living enemy stands on the picked tile, resolve the shot
+    // as a proper ranged attack (d20 roll + bow damage) instead of
+    // just lighting the ground — the `range` branch of resolveTarget
+    // already handles fire-arrow ignition on hit OR miss, so the
+    // burning-tile behaviour is preserved. Without this check the
+    // Silver Bow couldn't shoot AT monsters with Fire Arrows nocked
+    // (the reported bug): the tile picker only ever ran the ignite
+    // path. Ammo is NOT consumed here — resolveTarget's range branch
+    // does its own stash deduction; consuming in both spots would
+    // double-charge the shot.
+    const occupant = this.combat.combatantAt(target.col, target.row);
+    if (occupant && occupant.side !== me.side && occupant.hp > 0) {
+      this.mode = "default";
+      this.clearTileCursor();
+      this.clearPicker();
+      this.pendingAction = { kind: "range", weapon, ammoId };
+      await this.resolveTarget(occupant);
+      return;
+    }
     // Consume ammo first — if the stash is empty (race condition
     // between the picker entry + this commit) fizzle cleanly.
     const partyData = gameState.partyData;
@@ -2669,9 +2719,41 @@ export class CombatScene extends Phaser.Scene {
       };
       await projectileLine(this, start, endPx, VFX_COLOURS.ember, 240);
       const ammoName = ammoDef?.name ?? ammoId;
-      this.combat.log.push(
-        `${me.name} fires ${ammoName} from ${weapon.name} at (${target.col}, ${target.row}).`,
-      );
+      // If a creature occupies the picked tile, the shot is a real
+      // attack: full d20 roll vs AC (same resolution as the enemy-
+      // picker range branch), THEN the tile ignites regardless of
+      // the outcome. This lets a precision bow target monsters with
+      // fire arrows — previously the tile picker only lit the
+      // ground, so the arrow sailed harmlessly through anything
+      // standing there.
+      const occupant = this.combat.combatantAt(target.col, target.row);
+      if (occupant) {
+        const result = resolveThrow(me, occupant, weapon, defaultRng);
+        const friendly = occupant.side === me.side;
+        const ffTag = friendly ? " — FRIENDLY FIRE!" : "";
+        const rType = result.damageType;
+        const rTypeSuffix = rType && rType !== "physical" ? ` (${rType})` : "";
+        const rBonus = result.bonusDamage ?? 0;
+        const rBreakdown =
+          rBonus > 0
+            ? `${result.damage} dmg${rTypeSuffix} [${result.damage - rBonus}+${rBonus} bonus]`
+            : `${result.damage} dmg${rTypeSuffix}`;
+        this.combat.log.push(
+          result.hit
+            ? `${me.name} fires ${ammoName} at ${occupant.name} (d20:${result.roll}=${result.total} vs AC${occupant.ac})${ffTag} — ${rBreakdown}${result.killed ? ", defeated!" : "."}`
+            : `${me.name} fires ${ammoName} at ${occupant.name} — miss.`,
+        );
+        await this.animateHit(occupant, result);
+        this.refreshHp(occupant);
+        if (result.hit) {
+          this.applyWeaponDurability(me.id);
+          this.applyArmorDurability(occupant.id);
+        }
+      } else {
+        this.combat.log.push(
+          `${me.name} fires ${ammoName} from ${weapon.name} at (${target.col}, ${target.row}).`,
+        );
+      }
       // Ignite the cell. Same engine path the throw-torch + creature-
       // shot branches use.
       this.igniteCell(
@@ -2690,7 +2772,9 @@ export class CombatScene extends Phaser.Scene {
         44,
       ).catch(() => undefined);
       this.combat.log.push(
-        `The ${ammoName} catches the ground at (${target.col}, ${target.row}) on fire.`,
+        occupant
+          ? `${ammoName} ignites ${occupant.name}'s tile — fire spreads!`
+          : `The ${ammoName} catches the ground at (${target.col}, ${target.row}) on fire.`,
       );
       this.combat.movePoints = 0;
       this.refreshAll();
@@ -3264,12 +3348,20 @@ export class CombatScene extends Phaser.Scene {
           }
           // MP top-up — has to go through the PartyMember row since
           // MP lives there (combatants don't carry mp themselves).
+          // The CASTER is excluded from the MP refill: Restore
+          // refunding its own casting cost would make the spell free
+          // (cast, refill to 100%, repeat forever). She still gets
+          // the HP heal above — only the mana comes from others'
+          // gratitude, not her own.
           const allyMember = this.memberByCombatantId(ally.id);
           if (allyMember && allyMember.max_mp > 0) {
-            const mpGain = Math.min(
-              allyMember.max_mp - allyMember.mp,
-              Math.max(0, Math.floor(allyMember.max_mp * mpPct)),
-            );
+            const isCaster = ally.id === me.id;
+            const mpGain = isCaster
+              ? 0
+              : Math.min(
+                  allyMember.max_mp - allyMember.mp,
+                  Math.max(0, Math.floor(allyMember.max_mp * mpPct)),
+                );
             if (mpGain > 0) {
               allyMember.mp += mpGain;
               totalMp += mpGain;
@@ -3551,10 +3643,13 @@ export class CombatScene extends Phaser.Scene {
     let i = 0;
     for (const o of result.outcomes) {
       const target = this.combat.byId(o.targetId);
+      const dice = `${o.saveRoll}+${o.saveBonus}=${o.saveTotal} vs DC ${o.saveDc}`;
       this.combat.log.push(
         o.saved
-          ? `${target.name} resists (${o.saveRoll}+${Math.max(0, target.attackBonus - 2)}=${o.saveTotal} vs DC ${o.saveDc}) — seared for ${o.damage} damage!`
-          : `${target.name} fails its save (${o.saveRoll}+${Math.max(0, target.attackBonus - 2)}=${o.saveTotal} vs DC ${o.saveDc}) — DESTROYED!`,
+          ? `${target.name} resists (${dice}) — seared for ${o.damage} damage!`
+          : o.turned
+            ? `${target.name} fails its save (${dice}) — seared for ${o.damage} damage and TURNED! It recoils from the light for ${o.turnedTurns} ${o.turnedTurns === 1 ? "turn" : "turns"}.`
+            : `${target.name} fails its save (${dice}) — DESTROYED!`,
       );
       const body = this.bodies.get(target.id);
       if (body) {
@@ -3659,10 +3754,17 @@ export class CombatScene extends Phaser.Scene {
     }
     if (action.kind === "range") {
       const max = maxRangeFor(action.weapon);
+      // Ignitable ammo can always fall back to the free tile picker
+      // — remind the player the shot isn't wasted just because no
+      // creature is in reach.
+      const igniteHint =
+        action.ammoId && this.items.get(action.ammoId)?.ignite
+          ? " Press [T] to fire at a tile instead."
+          : "";
       if (!sideHasAnyone) {
-        return `${this.combat.current.name}: no enemies left to fire at.`;
+        return `${this.combat.current.name}: no enemies left to fire at.${igniteHint}`;
       }
-      return `${this.combat.current.name}: no enemies within ${max} tiles — ${action.weapon.name} can't reach. Move closer first.`;
+      return `${this.combat.current.name}: no enemies within ${max} tiles — ${action.weapon.name} can't reach. Move closer first.${igniteHint}`;
     }
     if (action.kind === "throw") {
       const max = maxRangeFor(action.item);

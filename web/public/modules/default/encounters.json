@@ -444,9 +444,14 @@
       "weight": 10,
       "monster_party_tile": "monster/dragon2.png",
       "monsters": [
-        "dragon"
+        "dragon",
+        "wyvern",
+        "wyvern",
+        "imp",
+        "imp"
       ],
-      "custom_map": null
+      "custom_map": null,
+      "tags": null
     },
     {
       "id": "dragon_cultists",

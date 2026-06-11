@@ -519,10 +519,20 @@ export interface TurnUndeadOutcome {
   saveTotal: number;
   /** Computed difficulty class for this cast. */
   saveDc: number;
-  /** False → destroyed completely; true → seared for hp_percent. */
+  /** False → failed the save; true → seared for hp_percent. */
   saved: boolean;
+  /** Save bonus the target rolled with (WIS mod or legacy heuristic,
+   *  plus turn_resistance). Carried so the scene's log line shows
+   *  the real math instead of re-deriving it. */
+  saveBonus: number;
   damage: number;
   killed: boolean;
+  /** True when a failed save TURNED the creature instead of
+   *  destroying it (elite undead with turn_resistance > 0). The
+   *  creature flees/cowers for `turnedTurns` of its own turns. */
+  turned: boolean;
+  /** Number of turns the turned state lasts (1d4); 0 when not turned. */
+  turnedTurns: number;
 }
 
 export interface TurnUndeadResult {
@@ -660,11 +670,17 @@ export function makeSummonedSkeleton(
  * the v2 Abilities dispatcher (CombatScene's `Abilities` picker
  * routes ability id `turn_undead` here).
  *
- * Mirrors src/states/combat.py::_cast_turn_undead:
+ * Mirrors src/states/combat.py::_cast_turn_undead, with the elite-
+ * undead extension:
  *   - Filters monsters to those flagged `undead: true` in the data.
- *   - Each undead rolls d20 + max(0, attackBonus-2) vs save_dc
- *     (`save_dc_base + caster wisdom modifier`, default Wisdom).
- *   - Failure → HP set to 0 (destroyed completely).
+ *   - Each undead rolls d20 + WIS mod (or the legacy
+ *     max(0, attackBonus-2) heuristic) + `turn_resistance` vs
+ *     save_dc (`save_dc_base + caster wisdom modifier`).
+ *   - Failure, lesser undead (no turn_resistance) → HP set to 0
+ *     (destroyed completely).
+ *   - Failure, elite undead (turn_resistance > 0) → TURNED: takes
+ *     hp_percent damage and flees/cowers for 1d4 of its own turns
+ *     (`turnedTurns` on the combatant; the AI + endTurn handle it).
  *   - Success → max(1, floor(maxHp * hp_percent)) damage.
  *
  * `params` is the ability's raw config bag (`abilities.json`
@@ -699,27 +715,49 @@ export function resolveTurnUndead(
     const saveRoll = Math.floor(rng() * 20) + 1;
     // Real WIS-mod when the monster has the new attribute block;
     // legacy "max(0, attackBonus - 2)" heuristic when it doesn't,
-    // so v1-data monsters still resolve cleanly.
+    // so v1-data monsters still resolve cleanly. Elite undead add
+    // their `turn_resistance` on top (vampire +4, lich +6, …) so
+    // high-tier undead usually shrug the holy blast off.
     const wisScore =
       dcStat === "intelligence" ? t.intelligence : t.wisdom;
+    const resistance = Math.max(0, t.turnResistance ?? 0);
     const saveBonus =
-      typeof wisScore === "number"
+      (typeof wisScore === "number"
         ? abilityMod(wisScore)
-        : Math.max(0, t.attackBonus - 2);
+        : Math.max(0, t.attackBonus - 2)) + resistance;
     const saveTotal = saveRoll + saveBonus;
     if (saveTotal < saveDc) {
-      const damage = t.hp;
-      t.hp = 0;
-      outcomes.push({
-        targetId: t.id, saveRoll, saveTotal, saveDc,
-        saved: false, damage, killed: true,
-      });
+      if (resistance > 0) {
+        // Elite undead are too powerful to destroy outright. A
+        // failed save TURNS them instead: they take the same
+        // hp_percent searing a successful save would, and flee /
+        // cower for 1d4 of their own turns (Combat's AI reads
+        // `turnedTurns`; endTurn ticks it down).
+        const damage = Math.max(1, Math.floor(t.maxHp * hpPct));
+        t.hp = Math.max(0, t.hp - damage);
+        const turnedTurns = Math.floor(rng() * 4) + 1;
+        if (t.hp > 0) t.turnedTurns = turnedTurns;
+        outcomes.push({
+          targetId: t.id, saveRoll, saveTotal, saveDc, saveBonus,
+          saved: false, damage, killed: t.hp === 0,
+          turned: t.hp > 0, turnedTurns: t.hp > 0 ? turnedTurns : 0,
+        });
+      } else {
+        const damage = t.hp;
+        t.hp = 0;
+        outcomes.push({
+          targetId: t.id, saveRoll, saveTotal, saveDc, saveBonus,
+          saved: false, damage, killed: true,
+          turned: false, turnedTurns: 0,
+        });
+      }
     } else {
       const damage = Math.max(1, Math.floor(t.maxHp * hpPct));
       t.hp = Math.max(0, t.hp - damage);
       outcomes.push({
-        targetId: t.id, saveRoll, saveTotal, saveDc,
+        targetId: t.id, saveRoll, saveTotal, saveDc, saveBonus,
         saved: true, damage, killed: t.hp === 0,
+        turned: false, turnedTurns: 0,
       });
     }
   }

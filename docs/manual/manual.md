@@ -364,7 +364,7 @@ Abilities are named capabilities granted by Race or Class (or other sources). Th
 | **Pick Locks** | Pick locked doors and chests — d20 + DEX mod vs DC 12, one lockpick consumed per attempt. | passive | permanent |
 | **Shadow Step** | Move after attacking — true hit-and-run play. | passive | permanent |
 | **Smite Undead** | Attacks against undead creatures deal double damage | passive |  |
-| **Turn Undead** | Channel holy energy at every undead on the battlefield. Each one must make a Wisdom save (d20 + WIS mod vs DC 10 + caster's WIS mod) or be destroyed outright; those that succeed are still seared for 50% of their HP in radiant damage. | battle | instant |
+| **Turn Undead** | Channel holy energy at every undead on the battlefield. Each one must make a Wisdom save (d20 + WIS mod vs DC 10 + caster's WIS mod) or be destroyed outright; those that succeed are still seared for 50% of their HP in radiant damage. Powerful undead (vampires, liches, …) add their turn resistance to the save and are never destroyed outright — on a failed save they are seared and TURNED, fleeing the holy light for 1d4 turns. | battle | instant |
 
 ### Race Abilities
 
@@ -393,7 +393,7 @@ Spells are MP-cost actions castable by classes that have a matching `casting_typ
 | **Major Heal** | 15 | 4 | 10 | select_ally_or_self | battle | Channels a powerful wave of restorative energy toward an ally, mending grievous wounds. |
 | **Push** | 14 | 5 | 0 | self | party | Emits a powerful wave of divine force that drives nearby monsters away from the party. |
 | **Mass Heal** | 25 | 6 | 0 | self | battle | A burst of divine light radiates from the caster, restoring health to all nearby allies. |
-| **Restore** | 35 | 7 | 0 | self | battle | A radiant pillar of divine power engulfs the party, fully restoring health and mana to all allies and purging all poisons from their bodies. |
+| **Restore** | 35 | 7 | 0 | self | battle | A radiant pillar of divine power engulfs the party, fully restoring health to all allies and mana to everyone but the caster, purging all poisons from their bodies. |
 
 ### Sorcerer Spells
 

@@ -52,6 +52,10 @@ import { PlayLogOverlay } from "./PlayLogOverlay";
 import { PlayCounterShopOverlay } from "./PlayCounterShopOverlay";
 import { PlayNpcDialogOverlay } from "./PlayNpcDialogOverlay";
 import { LinkPlacard } from "@/play/LinkPlacard";
+import {
+  questsTargetingPlace,
+  type QuestPlacardTarget,
+} from "@/play/questPlacardTargets";
 import type { CombatResolved } from "@/battle/scenes/CombatScene";
 import { PlayCombatHost } from "./PlayCombatHost";
 import { buildArenaCells, buildCustomArenaCells } from "@/play/buildArenaCells";
@@ -799,6 +803,9 @@ export function PlayHost() {
     name: string;
     description?: string;
     explored: boolean;
+    /** Active quests with an incomplete step at the destination —
+     *  drives the placard's gold quest treatment. */
+    questTargets?: QuestPlacardTarget[];
   } | null>(null);
   const pendingPlaceActionRef = useRef<(() => void) | null>(null);
   /** When non-null, the play-side counter shop is open against this
@@ -846,6 +853,21 @@ export function PlayHost() {
    *  NPC has a counter, exposes a Visit Counter button that hands
    *  off to the shop overlay. */
   const [npcDialogId, setNpcDialogId] = useState<string | null>(null);
+  /** Post-quest giver chatter — set when the party bumps a quest
+   *  giver whose quest is already turned in. From that point the
+   *  giver behaves like a normal NPC: the standard NPC dialog opens
+   *  with their name + sprite and a single line (the quest_giver's
+   *  authored `post_dialog`, else a generic thank-you). Cleared on
+   *  close; gates movement through overlaysOpenRef like every other
+   *  dialog. */
+  const [giverChatter, setGiverChatter] = useState<{
+    /** Quest id whose cell hosts the giver — used by Ask to Move to
+     *  relocate the giver's tile tags via requestQuestGiverMove. */
+    questId: string;
+    name: string;
+    sprite?: string;
+    text: string;
+  } | null>(null);
   /** Scrolling log of in-world messages — text-on-step from cells
    *  with the `text` field, plus the kernel's narrated events (Edge
    *  of the map, You descend into the dungeon, Approach Lair: …).
@@ -1351,6 +1373,7 @@ export function PlayHost() {
       logOpen ||
       counterShopId !== null ||
       npcDialogId !== null ||
+      giverChatter !== null ||
       placard !== null;
   }, [
     lockEncounter,
@@ -1363,6 +1386,7 @@ export function PlayHost() {
     logOpen,
     counterShopId,
     npcDialogId,
+    giverChatter,
     placard,
   ]);
   useEffect(() => {
@@ -3597,6 +3621,13 @@ export function PlayHost() {
                   name: dest?.name ?? ev.link.map_id,
                   description: dest?.description,
                   explored: !!saveRef.current?.maps?.[ev.link.map_id],
+                  // Gold quest treatment when an active quest has an
+                  // incomplete step on the destination map.
+                  questTargets: questsTargetingPlace(
+                    questDefsRef.current,
+                    questStatesRef.current,
+                    { placeKind: "link", mapId: ev.link.map_id },
+                  ),
                 });
               } else {
                 const dest = catalog.dungeons.find(
@@ -3622,6 +3653,13 @@ export function PlayHost() {
                   name: dest?.name ?? ev.dungeonId,
                   description: dest?.description,
                   explored: !!saveRef.current?.dungeons?.[instanceId],
+                  // Reach / spelunking / dungeon-kill steps make the
+                  // entrance quest-relevant, whatever the floor.
+                  questTargets: questsTargetingPlace(
+                    questDefsRef.current,
+                    questStatesRef.current,
+                    { placeKind: "dungeon", dungeonId },
+                  ),
                 });
               }
               return;
@@ -3921,8 +3959,23 @@ export function PlayHost() {
               // the current QuestState.
               const qstate = questStatesRef.current.get(ev.questId);
               // "turned_in" → quest is done and rewards have been
-              // handed off. Subsequent bumps stay silent.
-              if (qstate?.status === "turned_in") return;
+              // handed off. The giver becomes a normal NPC: bumping
+              // them opens the standard NPC dialog with their
+              // authored `post_dialog` (or a generic thank-you)
+              // instead of the quest overlay — and never silence,
+              // which read as the giver ignoring the player.
+              if (qstate?.status === "turned_in") {
+                const giver = ev.quest.quest_giver;
+                setGiverChatter({
+                  questId: ev.questId,
+                  name: giver?.npc_name ?? "Quest Giver",
+                  sprite: giver?.npc_sprite,
+                  text:
+                    giver?.post_dialog ??
+                    "Good to see you again, friend. I won't forget what you did for me.",
+                });
+                return;
+              }
               const def = questDefsRef.current.find((d) => d.id === ev.questId);
               const stepCount = def?.steps.length ?? 0;
               const progress = qstate?.stepProgress ?? [];
@@ -5709,12 +5762,49 @@ export function PlayHost() {
         );
       })() : null}
 
+      {/* Post-quest giver chatter — the standard NPC dialog, opened
+          when the party bumps a quest giver whose quest is already
+          turned in. No counter / steal / move actions: the giver is
+          an ordinary townsperson now, with one line of gratitude. */}
+      {giverChatter ? (
+        <PlayNpcDialogOverlay
+          npcName={giverChatter.name}
+          npcSprite={giverChatter.sprite}
+          dialogs={[{ id: "post_quest", text: giverChatter.text }]}
+          hasCounter={false}
+          onVisitCounter={() => undefined}
+          onAskToMove={() => {
+            // Same polite step-aside regular NPCs offer — the giver
+            // is an ordinary townsperson now and shouldn't block a
+            // doorway forever. The kernel relocates the cell's quest
+            // (+ any co-located npc) tags and repositions the sprite
+            // via npc_moved; we log the outcome and close on success
+            // so the player can step onto the freed tile.
+            const sim = simRef.current;
+            if (!sim) return;
+            const moved = sim.requestQuestGiverMove(giverChatter.questId);
+            setLogMessages((prev) => {
+              const msg = moved
+                ? `${giverChatter.name} steps aside.`
+                : `There's nowhere for ${giverChatter.name} to step.`;
+              const next = [...prev, msg];
+              return next.length > MAX_LOG
+                ? next.slice(next.length - MAX_LOG)
+                : next;
+            });
+            if (moved) setGiverChatter(null);
+          }}
+          onClose={() => setGiverChatter(null)}
+        />
+      ) : null}
+
       {placard ? (
         <LinkPlacard
           placeKind={placard.placeKind}
           name={placard.name}
           description={placard.description}
           explored={placard.explored}
+          questTargets={placard.questTargets}
           onConfirm={() => {
             const act = pendingPlaceActionRef.current;
             pendingPlaceActionRef.current = null;
