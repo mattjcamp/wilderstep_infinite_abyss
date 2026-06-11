@@ -2907,6 +2907,8 @@ export class CombatScene extends Phaser.Scene {
 
   /** Rebuild the use picker so the cursor + scroll window update. */
   private refreshUsePicker(): void {
+    const member = this.memberForCurrent();
+    const party = gameState.partyData;
     const lines = this.useOptions.map((o) => {
       const eff = o.item.effect ?? "—";
       const tag =
@@ -2917,7 +2919,15 @@ export class CombatScene extends Phaser.Scene {
         eff === "buff_ac"       ? "+AC" :
         eff === "combat_only"   ? "splash" :
         eff;
-      return `${o.item.name.padEnd(18, " ")} ${tag}`;
+      // Read charges live from the backing entry (not a snapshot) so
+      // the count stays right if the picker is re-rendered mid-fight.
+      const entry =
+        o.source === "personal"
+          ? member?.inventory[o.index]
+          : party?.inventory[o.index];
+      const n = entry?.charges ?? 1;
+      const label = n > 1 ? `${o.item.name} ×${n}` : o.item.name;
+      return `${label.padEnd(18, " ")} ${tag}`;
     });
     this.renderPicker("USE ITEM", lines, this.pickerCursor);
   }
@@ -2956,14 +2966,16 @@ export class CombatScene extends Phaser.Scene {
       return;
     }
 
-    // Item is consumed — Throw uses the same "splice on selection"
-    // pattern, but for Use we splice AFTER resolving so a refusal
-    // (already-full HP) doesn't burn the potion. Same arrays, same
-    // index semantics; the helper above doesn't touch inventory.
+    // Item is consumed — Throw uses the same charges-aware helper on
+    // selection, but for Use we consume AFTER resolving so a refusal
+    // (already-full HP) doesn't burn the potion. A bare splice here
+    // used to nuke the whole stack (3 Mana Potions gone after one
+    // drink); `consumeOneFromStackAt` decrements `charges` and only
+    // drops the row when the stack runs dry.
     if (opt.source === "personal" && member) {
-      member.inventory.splice(opt.index, 1);
+      consumeOneFromStackAt(member.inventory, opt.index);
     } else if (opt.source === "stash" && gameState.partyData) {
-      gameState.partyData.inventory.splice(opt.index, 1);
+      consumeOneFromStackAt(gameState.partyData.inventory, opt.index);
     }
 
     this.combat.log.push(result.message);

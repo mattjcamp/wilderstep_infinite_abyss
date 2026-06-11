@@ -377,7 +377,7 @@
     {
       "id": "the_royal_armory",
       "name": "The Royal Armory & The Ancient Dragon",
-      "description": "House Wellerman's relics were hidden from the dragon in a makeshift armory inside the Water Shrine, on an island far to the east. The cache has been found and seized. Take it back, arm your band, and put the Great Worm down for good.",
+      "description": "House Wellerman's relics were hidden from the dragon in a makeshift armory inside the Water Shrine, on an island far to the west. The cache has been found and seized. Take it back, arm your band, and put the Great Worm down for good.",
       "tags": [
         "main_story"
       ],
@@ -445,7 +445,7 @@
       "quest_giver": {
         "npc_name": "Lord Wellerman",
         "npc_sprite": "person/king1.png",
-        "start_dialog": "My family's strongest weapons lie hidden from the dragon in a makeshift armory — the Water Shrine, on an island far to the east. The hiding place has been found and taken. You'll want those relics before the trials ahead: go east, secure the armory, arm your band, and then end the Great Worm.",
+        "start_dialog": "My family's strongest weapons lie hidden from the dragon in a makeshift armory — the Water Shrine, on an island far to the west. The hiding place has been found and taken. You'll want those relics before the trials ahead: go east, secure the armory, arm your band, and then end the Great Worm.",
         "end_dialog": "Well fought. Now go forth and put the dragon down — before we turn to the harder task of driving the infernal horde back into its crack."
       },
       "rewards": {

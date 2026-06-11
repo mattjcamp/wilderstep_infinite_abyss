@@ -4,13 +4,13 @@
 
 # Bugs
 
-- Double check that the Gnome tinkers the full set of 20 arrows
 - In the party screen, we show the "light" toggle as if it is one even after it has run out
 
 # Polish
 
-- Clean up the manual, it still has the old game's name and the first page doesn't appear to be in sync with the markdown. Have LLM audit that the various tables are in sync with the game data model.
+- Make the Ancient Dragon encounter more difficult by adding two wyvern
 - Build a simple tutorial world
+
 
 ## Big Ideas
 
