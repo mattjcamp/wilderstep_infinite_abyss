@@ -90,6 +90,7 @@ const INSPECTOR_SHORTCUTS: ShortcutRow[] = [
   { key: "Q", description: "Quest log — active and completed quests" },
   { key: "L", description: "Adventure log — full message back-buffer" },
   { key: "H", description: "This help screen" },
+  { key: "⌘S / Ctrl-S", description: "Save menu — 3 slots + export to file" },
 ];
 
 const COMBAT_SHORTCUTS: ShortcutRow[] = [

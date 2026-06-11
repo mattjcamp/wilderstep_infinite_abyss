@@ -1,14 +1,9 @@
 
-# Bugs
-
-# Polish
-
 ## Big Ideas
 
 - Relic Quest: add a relic quest that provides an unlock for high level spells and abilities. After level 10, characters must complete Relic Quests to get a new spell. Relic quests will have level and class pre-reqs. Relic Quests could be initiated via the Character Sheet.
 - Add feature that uses pressure plates that open/close doors when the party walks over them
 - More Robust Trap System: Traps data model, explosive, poison, teleporting. Traps should now be placeable directly on the map
-- Better Save Game functionality
 - Implement module publishing for players
 
 # Notes

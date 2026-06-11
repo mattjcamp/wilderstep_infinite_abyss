@@ -30,6 +30,14 @@ export const SAVE_STORAGE_KEY = "wsia.save.v1";
  *  pre-fight state. One-deep — successive saves keep rolling the
  *  most-recent prior state into this slot. */
 export const SAVE_PREV_STORAGE_KEY = "wsia.save.v1.prev";
+/** Number of manual save slots offered in the save menu / title
+ *  screen. Slots are numbered 1..SAVE_SLOT_COUNT. */
+export const SAVE_SLOT_COUNT = 3;
+/** localStorage key prefix for manual save slots. Slot N is stored
+ *  under `${SAVE_SLOT_STORAGE_PREFIX}${N}`. Slots are copies of the
+ *  same WorldSave shape as the auto-save key — fully self-contained
+ *  snapshots (dungeon sessions rebuild from `save.dungeons`). */
+export const SAVE_SLOT_STORAGE_PREFIX = "wsia.save.v1.slot.";
 
 /** One character's mutable in-play state. The character's static
  *  identity (name/race/class/sprite) still comes from the module's

@@ -49,6 +49,7 @@ import {
   type PlayQuestCelebrationKind,
 } from "./PlayQuestCelebration";
 import { PlayLogOverlay } from "./PlayLogOverlay";
+import { PlaySaveMenuOverlay } from "./PlaySaveMenuOverlay";
 import { PlayCounterShopOverlay } from "./PlayCounterShopOverlay";
 import { PlayNpcDialogOverlay } from "./PlayNpcDialogOverlay";
 import { LinkPlacard } from "@/play/LinkPlacard";
@@ -414,7 +415,13 @@ function mapStateFromSnapshot(
     pickedItemCells: Array.from(snap.pickedItemCells),
   };
 }
-import { loadWorld, saveWorld } from "@/play/save";
+import {
+  downloadSaveExport,
+  listSlotSaves,
+  loadWorld,
+  saveToSlot,
+  saveWorld,
+} from "@/play/save";
 import { addToInventory, consumeOneFromInventory } from "@/play/inventoryStacking";
 import { counterStockKey } from "@/play/counterStock";
 import { applyCombatResultToSave } from "@/play/syncFromBattle";
@@ -793,6 +800,16 @@ export function PlayHost() {
   const [questLogOpen, setQuestLogOpen] = useState(false);
   const [helpTipsOpen, setHelpTipsOpen] = useState(false);
   const [logOpen, setLogOpen] = useState(false);
+  /** Save menu (⌘S / Ctrl-S). Opening snapshots the live sim via
+   *  `saveCurrent` first, so slot writes capture the exact moment
+   *  the player hit save. `slotSaves` holds the three manual slots'
+   *  contents for the menu's rows; refreshed on open + after every
+   *  slot write. Gated through overlaysOpenRef like the other
+   *  modals. */
+  const [saveMenuOpen, setSaveMenuOpen] = useState(false);
+  const [slotSaves, setSlotSaves] = useState<
+    ReadonlyArray<WorldSave | null>
+  >([]);
   /** Confirm placard for a flagged link / dungeon tile. Non-null while
    *  the placard is up; carries the resolved display info. The actual
    *  transition (traverse / descend) is stashed in
@@ -1371,6 +1388,7 @@ export function PlayHost() {
       questLogOpen ||
       helpTipsOpen ||
       logOpen ||
+      saveMenuOpen ||
       counterShopId !== null ||
       npcDialogId !== null ||
       giverChatter !== null ||
@@ -1384,6 +1402,7 @@ export function PlayHost() {
     questLogOpen,
     helpTipsOpen,
     logOpen,
+    saveMenuOpen,
     counterShopId,
     npcDialogId,
     giverChatter,
@@ -1860,6 +1879,47 @@ export function PlayHost() {
     // still sees the latest counters without React having to
     // re-render the whole tree.
   }, []);
+
+  // ⌘S / Ctrl-S — manual save menu. Always swallow the browser's
+  // "Save page" dialog, then open the menu when nothing blocking is
+  // up. A second ⌘S while open is handled by the overlay itself
+  // (close); combat / dialogs / other modals keep the shortcut
+  // inert so the player can't snapshot mid-encounter state the
+  // save shape doesn't capture.
+  useEffect(() => {
+    const onSaveKey = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey)) return;
+      if (e.key !== "s" && e.key !== "S") return;
+      e.preventDefault();
+      if (saveMenuOpen) return; // overlay's own listener closes
+      if (lockEncounter || chestEncounter || combat || questOffer) return;
+      if (partyScreenOpen || questLogOpen || helpTipsOpen || logOpen) return;
+      if (counterShopId !== null || npcDialogId !== null) return;
+      if (giverChatter !== null || placard !== null) return;
+      // Snapshot the live sim into saveRef + the auto-save slot so
+      // the menu's slot writes capture this exact moment.
+      saveCurrent();
+      setSlotSaves(listSlotSaves());
+      setSaveMenuOpen(true);
+    };
+    window.addEventListener("keydown", onSaveKey);
+    return () => window.removeEventListener("keydown", onSaveKey);
+  }, [
+    saveMenuOpen,
+    lockEncounter,
+    chestEncounter,
+    combat,
+    questOffer,
+    partyScreenOpen,
+    questLogOpen,
+    helpTipsOpen,
+    logOpen,
+    counterShopId,
+    npcDialogId,
+    giverChatter,
+    placard,
+    saveCurrent,
+  ]);
 
   // Phaser mount. Runs whenever we have a fresh catalog ready.
   useEffect(() => {
@@ -5594,6 +5654,27 @@ export function PlayHost() {
         <PlayLogOverlay
           messages={logMessages}
           onClose={() => setLogOpen(false)}
+        />
+      ) : null}
+
+      {/* Save menu — ⌘S / Ctrl-S. The live save was snapshotted into
+          saveRef when the menu opened; slot writes copy that
+          snapshot. */}
+      {saveMenuOpen ? (
+        <PlaySaveMenuOverlay
+          slots={slotSaves}
+          onSaveToSlot={(slot) => {
+            const save = saveRef.current;
+            if (!save) return false;
+            const ok = saveToSlot(slot, save);
+            if (ok) setSlotSaves(listSlotSaves());
+            return ok;
+          }}
+          onExport={() => {
+            const save = saveRef.current;
+            if (save) downloadSaveExport(save);
+          }}
+          onClose={() => setSaveMenuOpen(false)}
         />
       ) : null}
 

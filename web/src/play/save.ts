@@ -1,9 +1,14 @@
 /**
  * localStorage save layer.
  *
- * Single-slot auto-save. Every play-side write goes through `saveWorld`;
- * the entire WorldSave is serialised to JSON and persisted under
- * `SAVE_STORAGE_KEY`. Reads go through `loadWorld` which:
+ * One auto-save slot plus SAVE_SLOT_COUNT manual slots. Every
+ * play-side write goes through `saveWorld`; the entire WorldSave is
+ * serialised to JSON and persisted under `SAVE_STORAGE_KEY`. Manual
+ * slots (`saveToSlot` / `loadSlot` / `activateSlot`) are independent
+ * copies of the same shape under per-slot keys; export / import
+ * round-trips the same blob through a JSON file download so a save
+ * survives the browser's storage being wiped. Reads go through
+ * `loadWorld` which:
  *
  *   - returns null if no save exists, or the stored blob is unreadable
  *   - dispatches on `schemaVersion` to migrate older saves forward
@@ -21,6 +26,8 @@
 import {
   SAVE_PREV_STORAGE_KEY,
   SAVE_SCHEMA_VERSION,
+  SAVE_SLOT_COUNT,
+  SAVE_SLOT_STORAGE_PREFIX,
   SAVE_STORAGE_KEY,
   type WorldSave,
 } from "./saveTypes";
@@ -138,6 +145,162 @@ export function clearSave(): void {
     // Best-effort: if storage is unwritable, leave the blob alone.
   }
   clearAllDungeonSessions();
+}
+
+/** localStorage key for manual save slot N (1-based). Throws on an
+ *  out-of-range slot — callers iterate 1..SAVE_SLOT_COUNT, so a bad
+ *  index is a programming error, not a runtime condition. */
+function slotStorageKey(slot: number): string {
+  if (!Number.isInteger(slot) || slot < 1 || slot > SAVE_SLOT_COUNT) {
+    throw new Error(`save slot out of range: ${slot}`);
+  }
+  return `${SAVE_SLOT_STORAGE_PREFIX}${slot}`;
+}
+
+/** Read and parse manual save slot N. Same null semantics +
+ *  migration as `loadWorld`. */
+export function loadSlot(slot: number): WorldSave | null {
+  const key = slotStorageKey(slot);
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(key);
+    if (raw == null) return null;
+    return migrate(JSON.parse(raw) as unknown);
+  } catch {
+    return null;
+  }
+}
+
+/** Persist `save` into manual slot N, stamping schema version +
+ *  savedAt (the moment the player committed the slot). Unlike
+ *  `saveWorld` there's no backup roll — overwriting a slot is an
+ *  explicit player choice. Returns false when storage isn't
+ *  writable. */
+export function saveToSlot(slot: number, save: WorldSave): boolean {
+  const key = slotStorageKey(slot);
+  if (typeof window === "undefined") return false;
+  const stamped: WorldSave = {
+    ...save,
+    schemaVersion: SAVE_SCHEMA_VERSION,
+    savedAt: new Date().toISOString(),
+  };
+  try {
+    window.localStorage.setItem(key, JSON.stringify(stamped));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** All manual slots in order, index 0 = slot 1. Empty / corrupt
+ *  slots come back null. Used by the save menu + title screen to
+ *  render the slot list. */
+export function listSlotSaves(): ReadonlyArray<WorldSave | null> {
+  const out: Array<WorldSave | null> = [];
+  for (let slot = 1; slot <= SAVE_SLOT_COUNT; slot++) {
+    out.push(loadSlot(slot));
+  }
+  return out;
+}
+
+/** Promote manual slot N to the active save and resume from it.
+ *  The slot itself is left intact (slots are durable snapshots, not
+ *  a stack). The death-screen backup is cleared — it belonged to
+ *  whatever game was active before — and the in-memory dungeon
+ *  session store is flushed so the loaded save's `dungeons` record
+ *  rehydrates from scratch instead of leaking the prior run's
+ *  rolled layouts. Returns false when the slot is empty or storage
+ *  isn't writable. */
+export function activateSlot(slot: number): boolean {
+  const key = slotStorageKey(slot);
+  if (typeof window === "undefined") return false;
+  try {
+    const raw = window.localStorage.getItem(key);
+    if (raw == null) return false;
+    // Validate before promoting — a corrupt slot shouldn't clobber
+    // a working active save.
+    if (migrate(JSON.parse(raw) as unknown) == null) return false;
+    window.localStorage.setItem(SAVE_STORAGE_KEY, raw);
+    window.localStorage.removeItem(SAVE_PREV_STORAGE_KEY);
+  } catch {
+    return false;
+  }
+  clearAllDungeonSessions();
+  return true;
+}
+
+/** Filename for an exported save download —
+ *  `wilderstep-save-<moduleId>-<YYYYMMDD-HHMM>.json`. */
+export function exportFileName(save: WorldSave): string {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const stamp =
+    `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}` +
+    `-${pad(d.getHours())}${pad(d.getMinutes())}`;
+  const moduleId = (save.moduleId || "game").replace(/[^a-zA-Z0-9_-]/g, "_");
+  return `wilderstep-save-${moduleId}-${stamp}.json`;
+}
+
+/** Trigger a browser download of `save` as a standalone JSON file.
+ *  The export IS the WorldSave blob (schemaVersion included), so an
+ *  import years later still runs through the same `migrate` seam as
+ *  a localStorage read. Browser-only; no-op during SSR. */
+export function downloadSaveExport(save: WorldSave): void {
+  if (typeof window === "undefined") return;
+  const stamped: WorldSave = {
+    ...save,
+    schemaVersion: SAVE_SCHEMA_VERSION,
+    savedAt: save.savedAt || new Date().toISOString(),
+  };
+  const blob = new Blob([JSON.stringify(stamped, null, 2)], {
+    type: "application/json",
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = exportFileName(stamped);
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+/** Parse the text of an exported save file. Returns null when the
+ *  text isn't JSON, isn't a WorldSave, or carries an unknown schema
+ *  version — same trust boundary as a localStorage read, since the
+ *  file may have been hand-edited or truncated. */
+export function parseImportedSave(text: string): WorldSave | null {
+  try {
+    const migrated = migrate(JSON.parse(text) as unknown);
+    if (migrated == null) return null;
+    // Minimal structural sanity beyond the version stamp — the
+    // loader downstream assumes these exist and would crash deep
+    // inside PlayHost otherwise.
+    if (!migrated.moduleId || typeof migrated.moduleId !== "string") {
+      return null;
+    }
+    if (!migrated.party || typeof migrated.party !== "object") return null;
+    if (typeof migrated.party.currentMapId !== "string") return null;
+    return migrated;
+  } catch {
+    return null;
+  }
+}
+
+/** Install an imported save as the active game. Clears the death-
+ *  screen backup (it belonged to the prior game) and flushes the
+ *  in-memory dungeon sessions so the import's `dungeons` record
+ *  rehydrates cleanly. Returns false when storage isn't writable. */
+export function installImportedSave(save: WorldSave): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    window.localStorage.setItem(SAVE_STORAGE_KEY, JSON.stringify(save));
+    window.localStorage.removeItem(SAVE_PREV_STORAGE_KEY);
+  } catch {
+    return false;
+  }
+  clearAllDungeonSessions();
+  return true;
 }
 
 /** Dispatch on schemaVersion to migrate a raw blob to the current

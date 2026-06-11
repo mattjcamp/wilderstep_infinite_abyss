@@ -9,7 +9,7 @@
     {
       "id": "dragon-lair",
       "title": "The Dragon's Lair",
-      "role": "playable"
+      "role": "library"
     },
     {
       "id": "maps-mix-in",
@@ -18,7 +18,7 @@
     },
     {
       "id": "underworld-invaders",
-      "title": "The Warm Dark",
+      "title": "Emberscar",
       "role": "playable"
     },
     {
@@ -30,6 +30,11 @@
       "id": "npcs",
       "title": "Lore and NPCs",
       "role": "library"
+    },
+    {
+      "id": "test",
+      "title": "Test",
+      "role": "playable"
     }
   ]
 }
