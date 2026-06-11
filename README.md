@@ -7,8 +7,8 @@
 An Ultima III  and D&D inspired top-down, turn-based RPG built with TypeScript and Phaser. Lead a party of four adventurers through an open world of overworld exploration, town visits, dungeon delving, and turn-based tactical combat.
 
 <p align="center">
-  <a href="https://mattjcamp.github.io/wilderstep_infinite_abyss/play/">
-    <img src="https://img.shields.io/badge/%E2%96%B6%EF%B8%8E__Play_Wilderstep_Now!-FF6A00?style=for-the-badge&logoColor=white" alt="Play Wilderstep Now!" height="50">
+  <a href="https://mattjcamp.github.io/wilderstep_infinite_abyss">
+    <img src="docs/assets/play_button.svg" alt="Play Wilderstep Now!" width="420">
   </a>
 </p>
 
