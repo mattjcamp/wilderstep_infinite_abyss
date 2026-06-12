@@ -82,18 +82,32 @@ const AUDIO_PATH_RE =
 const AUDIO_INDEX_COMMENT =
   "Listing of every audio file under /public/audio/. Hand-maintained for now — Next.js static export can't directory-list at runtime, so the editor's SoundtrackPicker reads this file to know what tracks are available. Run `npm run reindex-audio` after dropping a file in this folder to regenerate it. Each `path` is what gets stored on a module / map / dungeon's soundtrack list and is what the SoundtrackPlayer hands to <audio>.src; `name` is the display label in the picker; optional `gain` (0-1) attenuates a track that's too loud relative to the rest of the soundtrack.";
 
-function corsHeaders() {
-  return {
-    "Access-Control-Allow-Origin": "*",
+function corsHeaders(req) {
+  const base = {
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
     "Access-Control-Max-Age": "3600",
   };
+  // The editor's publish client sends credentials (the hosted API
+  // needs its auth cookie; the request shape is shared). Browsers
+  // REJECT credentialed responses with a wildcard origin, so we
+  // reflect the caller's Origin instead. This server only ever runs
+  // on localhost during authoring, so reflecting any origin is fine.
+  const origin = req?.headers?.origin;
+  if (origin) {
+    return {
+      ...base,
+      "Access-Control-Allow-Origin": origin,
+      "Access-Control-Allow-Credentials": "true",
+      Vary: "Origin",
+    };
+  }
+  return { ...base, "Access-Control-Allow-Origin": "*" };
 }
 
-function sendJson(res, status, body) {
+function sendJson(req, res, status, body) {
   res.writeHead(status, {
-    ...corsHeaders(),
+    ...corsHeaders(req),
     "Content-Type": "application/json",
   });
   res.end(JSON.stringify(body));
@@ -381,11 +395,11 @@ async function handlePublish(req, res) {
     const raw = await readBody(req);
     body = JSON.parse(raw);
   } catch (e) {
-    sendJson(res, 400, { error: `Invalid JSON: ${e.message}` });
+    sendJson(req, res, 400, { error: `Invalid JSON: ${e.message}` });
     return;
   }
   if (!body || !Array.isArray(body.items)) {
-    sendJson(res, 400, { error: "Body must be { items: [...] }" });
+    sendJson(req, res, 400, { error: "Body must be { items: [...] }" });
     return;
   }
   const results = [];
@@ -397,19 +411,19 @@ async function handlePublish(req, res) {
       results.push({ ok: false, item, error: e.message });
     }
   }
-  sendJson(res, 200, { results });
+  sendJson(req, res, 200, { results });
 }
 
 const server = http.createServer(async (req, res) => {
   try {
     if (req.method === "OPTIONS") {
-      res.writeHead(204, corsHeaders());
+      res.writeHead(204, corsHeaders(req));
       res.end();
       return;
     }
     const url = new URL(req.url, `http://${req.headers.host}`);
     if (req.method === "GET" && url.pathname === "/status") {
-      sendJson(res, 200, {
+      sendJson(req, res, 200, {
         ok: true,
         modulesRoot: MODULES_ROOT,
         port: PORT,
@@ -420,11 +434,11 @@ const server = http.createServer(async (req, res) => {
       await handlePublish(req, res);
       return;
     }
-    sendJson(res, 404, { error: `Not found: ${req.method} ${url.pathname}` });
+    sendJson(req, res, 404, { error: `Not found: ${req.method} ${url.pathname}` });
   } catch (e) {
     // eslint-disable-next-line no-console
     console.error("publish-server error:", e);
-    sendJson(res, 500, { error: e.message });
+    sendJson(req, res, 500, { error: e.message });
   }
 });
 
