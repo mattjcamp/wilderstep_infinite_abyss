@@ -31,6 +31,7 @@
 
 import { withBasePath } from "@/util/basePath";
 import { loadDraft, loadIndexDraft, MANIFEST_KEY } from "./draft";
+import { moduleIdsEqual, moduleStorageSegment } from "./moduleIds";
 import { extractRecords, mergeModel } from "./merge";
 import { ALL_MODEL_KEYS, MODELS, type ModelKey } from "./models";
 import type {
@@ -67,12 +68,35 @@ async function tryFetchJson(url: string): Promise<unknown | null> {
   }
 }
 
+/** Where module files live. StaticModuleSource defaults to the
+ *  deployed static tree; RemoteModuleSource swaps in a hosted Read
+ *  API origin with the SAME path layout (the UGC plan keeps the
+ *  on-disk tree as the storage key layout, so one locator shape
+ *  covers both). `moduleStorageSegment` applies @core aliasing +
+ *  validity, so callers pass ids in either form. */
+export interface ModuleFileLocator {
+  /** URL of `<module>/<fileName>` (e.g. "tavern", "races.json"). */
+  moduleFile(moduleId: string, fileName: string): string;
+  /** URL of the catalog/index listing. */
+  index(): string;
+}
+
+/** Default locator — the static export under /modules/. */
+export function staticLocator(): ModuleFileLocator {
+  return {
+    moduleFile: (moduleId, fileName) =>
+      withBasePath(`/modules/${moduleStorageSegment(moduleId)}/${fileName}`),
+    index: () => withBasePath("/modules/index.json"),
+  };
+}
+
 /** Read a module's manifest, preferring a localStorage draft when
  *  present. Returns null if neither exists (e.g., a brand-new module
  *  whose draft hasn't been saved yet — caller should treat as
  *  missing). */
 async function loadModuleManifest(
   moduleId: string,
+  locator: ModuleFileLocator,
 ): Promise<(Partial<ModuleSummary> & { id?: string }) | null> {
   const draft = await loadDraft<Partial<ModuleSummary> & { id?: string }>(
     moduleId,
@@ -80,7 +104,7 @@ async function loadModuleManifest(
   );
   if (draft) return draft;
   return tryFetchJson(
-    withBasePath(`/modules/${moduleId}/module.json`),
+    locator.moduleFile(moduleId, "module.json"),
   ) as Promise<(Partial<ModuleSummary> & { id?: string }) | null>;
 }
 
@@ -151,8 +175,9 @@ function collectUsedLibraryIds(chain: ModuleSummary[]): string[] {
     for (const libId of uses) {
       if (seen.has(libId)) continue;
       // Don't apply a library that's already in the extends chain —
-      // it would double-merge its own file.
-      if (chain.some((c) => c.id === libId)) continue;
+      // it would double-merge its own file. Alias-aware so
+      // "@core/tavern" and "tavern" count as the same module.
+      if (chain.some((c) => moduleIdsEqual(c.id, libId))) continue;
       seen.add(libId);
       out.push(libId);
     }
@@ -167,18 +192,23 @@ function collectUsedLibraryIds(chain: ModuleSummary[]): string[] {
  *  effect immediately. */
 async function walkExtendsChain(
   moduleId: string,
+  locator: ModuleFileLocator,
 ): Promise<ModuleSummary[]> {
   const visited = new Set<string>();
   const chain: ModuleSummary[] = [];
   let currentId: string | undefined = moduleId;
   while (currentId) {
-    if (visited.has(currentId)) {
+    // Cycle detection keys off the ALIAS-RESOLVED id so a chain
+    // that mixes "@core/default" and "default" spellings is still
+    // recognised as revisiting the same module.
+    const key = moduleStorageSegment(currentId);
+    if (visited.has(key)) {
       throw new Error(
         `Module extends cycle detected at ${currentId} while resolving ${moduleId}`,
       );
     }
-    visited.add(currentId);
-    const meta = await loadModuleManifest(currentId);
+    visited.add(key);
+    const meta = await loadModuleManifest(currentId, locator);
     if (!meta) {
       throw new Error(
         `Module ${currentId} has no manifest (no draft, no /modules/${currentId}/module.json) while resolving ${moduleId}`,
@@ -192,18 +222,27 @@ async function walkExtendsChain(
 }
 
 export class StaticModuleSource implements ModuleSource {
+  /** File locations — static tree by default; RemoteModuleSource
+   *  passes a hosted-origin locator and inherits everything else
+   *  (extends/uses resolution, merge, drafts) unchanged. */
+  protected readonly locator: ModuleFileLocator;
+
+  constructor(locator: ModuleFileLocator = staticLocator()) {
+    this.locator = locator;
+  }
+
   async list(): Promise<ModuleSummary[]> {
     // Prefer the localStorage index draft so newly-created modules
     // show up in the picker before the user exports anything.
     const draftIndex = await loadIndexDraft<IndexFile>();
     const index = draftIndex ?? ((await fetchJson(
-      withBasePath("/modules/index.json"),
+      this.locator.index(),
     )) as IndexFile);
     const entries = index.modules ?? [];
     const out: ModuleSummary[] = [];
     for (const entry of entries) {
       try {
-        const meta = await loadModuleManifest(entry.id);
+        const meta = await loadModuleManifest(entry.id, this.locator);
         if (!meta) throw new Error(`no manifest`);
         out.push(toSummary(meta, entry));
       } catch (e) {
@@ -217,7 +256,7 @@ export class StaticModuleSource implements ModuleSource {
   }
 
   async load(moduleId: string): Promise<LoadedModule> {
-    const chain = await walkExtendsChain(moduleId);
+    const chain = await walkExtendsChain(moduleId, this.locator);
     const summary = chain[0];
 
     const data: Record<string, unknown> = {};
@@ -230,7 +269,7 @@ export class StaticModuleSource implements ModuleSource {
       for (const key of ALL_MODEL_KEYS) {
         const def = MODELS[key];
         const levelData = await tryFetchJson(
-          withBasePath(`/modules/${s.id}/${def.fileName}`),
+          this.locator.moduleFile(s.id, def.fileName),
         );
         if (levelData === null) continue;
         data[key] = mergeModel(def.collectionKey, data[key], levelData);
@@ -239,7 +278,7 @@ export class StaticModuleSource implements ModuleSource {
     for (const key of ALL_MODEL_KEYS) {
       const def = MODELS[key];
       const ownLevel = await tryFetchJson(
-        withBasePath(`/modules/${moduleId}/${def.fileName}`),
+        this.locator.moduleFile(moduleId, def.fileName),
       );
       if (ownLevel === null) continue;
       data[key] = mergeModel(def.collectionKey, data[key], ownLevel);
@@ -268,7 +307,7 @@ export class StaticModuleSource implements ModuleSource {
     key: ModelKey,
   ): Promise<ModelLayers> {
     const def = MODELS[key];
-    const chain = await walkExtendsChain(moduleId);
+    const chain = await walkExtendsChain(moduleId, this.locator);
     const usedLibraryIds = collectUsedLibraryIds(chain);
 
     // Inherited = the extends chain above this module, root-first.
@@ -276,7 +315,7 @@ export class StaticModuleSource implements ModuleSource {
     for (let i = chain.length - 1; i >= 1; i--) {
       const id = chain[i].id;
       const levelData = await tryFetchJson(
-        withBasePath(`/modules/${id}/${def.fileName}`),
+        this.locator.moduleFile(id, def.fileName),
       );
       if (levelData === null) continue;
       inherited = mergeModel(def.collectionKey, inherited, levelData);
@@ -284,7 +323,7 @@ export class StaticModuleSource implements ModuleSource {
 
     // ownFile = the requested module's own JSON, or null if absent.
     const ownFile = await tryFetchJson(
-      withBasePath(`/modules/${moduleId}/${def.fileName}`),
+      this.locator.moduleFile(moduleId, def.fileName),
     );
 
     return {
@@ -304,7 +343,7 @@ export class StaticModuleSource implements ModuleSource {
   async loadRawManifest(
     moduleId: string,
   ): Promise<Record<string, unknown> | null> {
-    const meta = await loadModuleManifest(moduleId);
+    const meta = await loadModuleManifest(moduleId, this.locator);
     if (!meta) return null;
     return meta as Record<string, unknown>;
   }
@@ -320,12 +359,12 @@ export class StaticModuleSource implements ModuleSource {
    *  etc.) propagates down the chain. A child can still override by
    *  setting its own soundtrack — leaf wins. */
   async resolveModuleSoundtrack(moduleId: string): Promise<string[]> {
-    const chain = await walkExtendsChain(moduleId);
+    const chain = await walkExtendsChain(moduleId, this.locator);
     // walkExtendsChain returns leaf-first (index 0 = the requested
     // module, end = root). Walk in that order; first non-empty list
     // wins, so a leaf override beats a parent definition.
     for (const summary of chain) {
-      const meta = await loadModuleManifest(summary.id);
+      const meta = await loadModuleManifest(summary.id, this.locator);
       if (!meta) continue;
       const list = (meta as { soundtrack?: unknown }).soundtrack;
       if (Array.isArray(list)) {
@@ -350,13 +389,13 @@ export class StaticModuleSource implements ModuleSource {
   async resolveModuleSightRadius(
     moduleId: string,
   ): Promise<Partial<Record<"day" | "twilight" | "night", number>>> {
-    const chain = await walkExtendsChain(moduleId);
+    const chain = await walkExtendsChain(moduleId, this.locator);
     const out: Partial<Record<"day" | "twilight" | "night", number>> = {};
     const modes = ["day", "twilight", "night"] as const;
     // Leaf-first walk: the first ancestor to define a given mode wins,
     // so we only write a mode the first time we see it.
     for (const summary of chain) {
-      const meta = await loadModuleManifest(summary.id);
+      const meta = await loadModuleManifest(summary.id, this.locator);
       if (!meta) continue;
       const settings = (meta as { settings?: { sight_radius?: unknown } })
         .settings;
@@ -386,12 +425,12 @@ export class StaticModuleSource implements ModuleSource {
   ): Promise<LibraryCatalogEntry[]> {
     const def = MODELS[key];
     if (def.collectionKey === null) return [];
-    const chain = await walkExtendsChain(moduleId);
+    const chain = await walkExtendsChain(moduleId, this.locator);
     const usedLibraryIds = collectUsedLibraryIds(chain);
     const out: LibraryCatalogEntry[] = [];
     for (const libId of usedLibraryIds) {
       const libData = await tryFetchJson(
-        withBasePath(`/modules/${libId}/${def.fileName}`),
+        this.locator.moduleFile(libId, def.fileName),
       );
       if (libData === null) continue;
       const records = extractRecords(def.collectionKey, libData);

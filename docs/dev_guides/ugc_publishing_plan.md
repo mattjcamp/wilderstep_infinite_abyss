@@ -206,7 +206,46 @@ working). The behavior change — players publishing live — lands in phase 3.
 
 ---
 
-## 11. Effort & risk summary
+## 11. Status (June 2026)
+
+Shipped in-repo (stack-neutral slice; no hosting yet):
+
+- **Namespacing (§4):** `src/data_model/moduleIds.ts` — `@handle/slug`
+  grammar, `@core` aliasing, alias-aware identity, ownership + v1
+  extends policy. Wired into `StaticModuleSource` (alias-resolved
+  URLs, alias-aware cycle/dedup checks). Bare ids fully back-compat.
+- **Remote read seam (§5):** `StaticModuleSource` refactored onto a
+  pluggable `ModuleFileLocator`; `RemoteModuleSource` +
+  `sourceConfig` (env-driven static/remote switch) shipped with
+  stubbed-fetch tests.
+- **Publish API port (§6):** `web/workers/publish-api/` — Cloudflare
+  Worker (R2-backed) with ownership, server-derived index, owner-
+  prefixed sprites, size caps, PNG signature sniff; auth stubbed
+  behind Cloudflare Access (JWT verification is a marked TODO).
+  `wrangler.toml` template + unit tests over an R2 mock.
+- **Contract:** `docs/dev_guides/ugc_api_contract.md` — what the
+  hosted services must serve; both front-end and worker are coded
+  against it.
+
+**Deployed + verified (June 2026):** worker live at
+`https://wilderstep-publish-api.wilderstep.workers.dev` (R2 bucket
+`wilderstep-ugc`), shipped module JSON seeded via
+`workers/publish-api/seed-bucket.mjs` (modules only — sprites still
+pending, run with `--sprites` when wanted). Read path proven end to
+end by `src/data_model/remoteLive.integration.test.ts` (opt-in:
+`LIVE_READ_HOST=<worker> npx vitest run …` from `web/`): catalog
+listing, extends-chain resolution through hosted core content, and
+@core alias resolution all pass against the live worker. **Phases
+1–2 complete.**
+
+Remaining before players can publish (phase 3): Cloudflare Access in
+front of /publish, finish the JWT verification marked TODO in
+worker.mjs, REMOVE the DEV_ALLOW_ANON / DEV_HANDLE vars from
+wrangler.toml, sign-in UI + "my modules", then flip the front-end
+env vars (`NEXT_PUBLIC_MODULE_SOURCE=remote`,
+`NEXT_PUBLIC_READ_HOST` / `NEXT_PUBLIC_PUBLISH_HOST=<worker>`).
+
+## 11½. Effort & risk summary
 
 - **Already done (~60–70%):** editor UI, content model, draft system,
   inheritance/merge, the read seam (`ModuleSource`), and the write protocol

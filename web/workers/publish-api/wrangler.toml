@@ -1,0 +1,30 @@
+# publish-api — Cloudflare Worker for player module publishing.
+# See ../../..//docs/dev_guides/ugc_api_contract.md and worker.mjs.
+#
+# Setup (one time):
+#   1. wrangler r2 bucket create wilderstep-ugc
+#   2. (optional) seed shipped content:  rclone/wrangler put the
+#      contents of web/public/modules + web/public/sprites under the
+#      same keys so the read path can serve core modules too.
+#   3. Put Cloudflare Access in front of the worker route and REMOVE
+#      the DEV_ALLOW_ANON var below.
+#   4. wrangler deploy
+#
+# Front-end env to point at it:
+#   NEXT_PUBLIC_PUBLISH_HOST=https://<worker-route>
+#   NEXT_PUBLIC_MODULE_SOURCE=remote
+#   NEXT_PUBLIC_READ_HOST=https://<worker-route>
+
+name = "wilderstep-publish-api"
+main = "worker.mjs"
+compatibility_date = "2026-06-01"
+
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "wilderstep-ugc"
+
+[vars]
+# DEV ONLY — anonymous publishes under a fixed handle. Delete both
+# lines before any non-local deployment.
+DEV_ALLOW_ANON = "true"
+DEV_HANDLE = "dev"
