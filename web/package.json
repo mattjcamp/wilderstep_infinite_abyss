@@ -2,7 +2,7 @@
   "name": "wilderstep-infinite-abyss-web",
   "version": "0.1.0",
   "private": true,
-  "description": "Wilderstep: Infinite Abyss — Next.js web app (game + module editor).",
+  "description": "Wilderstep: Infinite Abyss \u2014 Next.js web app (game + module editor).",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -12,7 +12,8 @@
     "publish-server": "node scripts/publish-server.mjs",
     "reindex-sprites": "node scripts/reindex-sprites.mjs",
     "reindex-audio": "node scripts/reindex-audio.mjs",
-    "dev:all": "node scripts/reindex-audio.mjs && (node scripts/publish-server.mjs & next dev)"
+    "dev:all": "node scripts/reindex-audio.mjs && (node scripts/publish-server.mjs & next dev)",
+    "dev:remote": "NEXT_PUBLIC_MODULE_SOURCE=remote NEXT_PUBLIC_READ_HOST=https://wilderstep-publish-api.wilderstep.workers.dev NEXT_PUBLIC_PUBLISH_HOST=https://wilderstep-publish-api.wilderstep.workers.dev next dev"
   },
   "dependencies": {
     "next": "14.2.18",
