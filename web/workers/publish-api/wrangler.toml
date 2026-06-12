@@ -32,18 +32,23 @@ bucket_name = "wilderstep-ugc"
 [vars]
 # Access JWT verification (auth fails closed while these are unset —
 # nobody can publish, reads still work).
-#ACCESS_TEAM_DOMAIN = "<team>.cloudflareaccess.com"
-#ACCESS_AUD = "<access-application-aud-tag>"
+ACCESS_TEAM_DOMAIN = "little-tree-b24e.cloudflareaccess.com"
+# AUD tag from the Access application (Zero Trust → Access →
+# Applications → <app> → Overview). Uncomment once created:
+ACCESS_AUD = "157678c7a07971508db31e525d6499f413c461a40f015b67a2b28cf3a2885256"
 
 # Origins allowed to make credentialed calls (the editor's deployed
 # origin + local dev). Comma-separated, exact origins.
 ALLOWED_ORIGINS = "http://localhost:3000"
 
-# Where /login bounces after Access authenticates (usually the
-# editor). A ?return= param matching ALLOWED_ORIGINS overrides it.
-LOGIN_REDIRECT_URL = "http://localhost:3000/editor"
+# Where /login bounces after Access authenticates. A ?return= param
+# matching ALLOWED_ORIGINS overrides it (the editor's Sign-in link
+# passes one), so this default only matters for hand-typed /login
+# visits — /status doubles as instant "am I signed in" feedback.
+# Point it at the deployed editor once one exists.
+LOGIN_REDIRECT_URL = "/status"
 
 # Identity → publish handle map (pre-D1 stand-in for the users
 # table). JSON object of email → handle; emails not in the map fall
 # back to a sanitised local-part.
-#HANDLE_MAP = '{ "mjcampbell74@gmail.com": "matt" }'
+HANDLE_MAP = '{ "mjcampbell74@gmail.com": "matt" }'
