@@ -28,6 +28,7 @@
  * rectangle), zoom/pan, walkable overlay, undo/redo.
  */
 
+import { encodeModuleId } from "./moduleRoutes";
 import {
   deleteRecordConfirmMessage,
   discardDraftConfirmMessage,
@@ -3159,7 +3160,7 @@ export function MapEditor({
     // Link arrivals skip "placing" — we already know the entry cell.
     setSimMode("active");
     // Strip the query so this only fires once per navigation.
-    router.replace(`/editor/${moduleId}/maps/${mapId}`, { scroll: false });
+    router.replace(`/editor/${encodeModuleId(moduleId)}/maps/${mapId}`, { scroll: false });
     // Run-once on mount: searchParams is stable enough here that
     // re-triggering on its identity change would be a bug.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -3222,7 +3223,7 @@ export function MapEditor({
         params.set("boat", "1");
         if (boat.boatSprite) params.set("boatSprite", boat.boatSprite);
       }
-      const url = `/editor/${moduleId}/maps/${link.map_id}?${params.toString()}`;
+      const url = `/editor/${encodeModuleId(moduleId)}/maps/${link.map_id}?${params.toString()}`;
       router.push(url);
     },
     [moduleId, router, state, mapId],
@@ -3482,7 +3483,7 @@ export function MapEditor({
               row: String(returnPos.row),
             });
             router.push(
-              `/editor/${moduleId}/sim/dungeon?${params.toString()}`,
+              `/editor/${encodeModuleId(moduleId)}/sim/dungeon?${params.toString()}`,
             );
           };
           setPlacard({
@@ -3591,7 +3592,7 @@ export function MapEditor({
           row: String(ev.returnPos.row),
         });
         router.push(
-          `/editor/${moduleId}/sim/dungeon?${params.toString()}`,
+          `/editor/${encodeModuleId(moduleId)}/sim/dungeon?${params.toString()}`,
         );
       }
     });
@@ -3873,7 +3874,7 @@ export function MapEditor({
       );
       return;
     }
-    router.push(`/editor/${moduleId}/maps`);
+    router.push(`/editor/${encodeModuleId(moduleId)}/maps`);
   };
 
   /** Commit edits from the Map Properties dialog into the draft.
@@ -4087,7 +4088,7 @@ export function MapEditor({
             {mapRecord.tags.map((t) => (
               <Link
                 key={t}
-                href={`/editor/${moduleId}/maps?tag=${encodeURIComponent(t)}`}
+                href={`/editor/${encodeModuleId(moduleId)}/maps?tag=${encodeURIComponent(t)}`}
                 title={`Browse maps tagged "${t}".`}
                 className="rounded border border-parchment/20 bg-ink/40 px-1.5 py-0.5 text-[12px] text-parchment/80 hover:border-parchment/50 hover:bg-ink/60 hover:text-parchment"
               >

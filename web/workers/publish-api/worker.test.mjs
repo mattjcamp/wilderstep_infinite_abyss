@@ -119,10 +119,15 @@ describe("handleItem — manifests and models", () => {
     ).rejects.toThrow(/cross-author/);
   });
 
-  it("rejects client-written index items and system audio", async () => {
-    await expect(
-      handleItem({ kind: "index", content: {} }, "matt", env()),
-    ).rejects.toThrow(/server-derived/);
+  it("accepts index items as a no-op and rejects system audio", async () => {
+    // The editor's publish-all flow sends its local index draft;
+    // the hosted index is server-derived, so the item succeeds
+    // WITHOUT writing anything (the client may then clear the
+    // draft — the server index already reflects the batch).
+    const e = env();
+    const out = await handleItem({ kind: "index", content: {} }, "matt", e);
+    expect(out.path).toMatch(/server-derived/);
+    expect(e.BUCKET.store.has("modules/index.json")).toBe(false);
     await expect(
       handleItem({ kind: "audio-index", tracks: [] }, "matt", env()),
     ).rejects.toThrow(/system content/);

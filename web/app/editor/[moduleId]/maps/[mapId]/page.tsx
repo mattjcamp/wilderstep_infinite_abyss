@@ -10,6 +10,7 @@
  * own maps.json on disk at build time.
  */
 
+import { decodeModuleIdParam, encodeModuleId } from "@/editor/moduleRoutes";
 import fs from "node:fs";
 import path from "node:path";
 import { Suspense } from "react";
@@ -49,19 +50,20 @@ export default function MapEditorPage({
 }: {
   params: { moduleId: string; mapId: string };
 }) {
-  if (!params.moduleId || !params.mapId) notFound();
+  const moduleId = decodeModuleIdParam(params.moduleId);
+  if (!moduleId || !params.mapId) notFound();
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
       <nav className="border-b border-parchment/10 bg-ink/40 px-4 py-2 text-xs text-parchment/50">
         <Link
-          href={`/editor/${params.moduleId}`}
+          href={`/editor/${encodeModuleId(moduleId)}`}
           className="hover:text-parchment/80"
         >
-          {params.moduleId}
+          {moduleId}
         </Link>
         <span className="mx-1">/</span>
         <Link
-          href={`/editor/${params.moduleId}/maps`}
+          href={`/editor/${encodeModuleId(moduleId)}/maps`}
           className="hover:text-parchment/80"
         >
           Maps
@@ -77,7 +79,7 @@ export default function MapEditorPage({
       <Suspense
         fallback={<p className="p-4 text-parchment/60">Loading map…</p>}
       >
-        <MapEditor moduleId={params.moduleId} mapId={params.mapId} />
+        <MapEditor moduleId={moduleId} mapId={params.mapId} />
       </Suspense>
     </div>
   );

@@ -4,6 +4,7 @@
  * and shows a table (collections) or a single-record dump (singletons).
  */
 
+import { decodeModuleIdParam, encodeModuleId } from "@/editor/moduleRoutes";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -33,19 +34,20 @@ export default function ModelBrowsePage({
 }: {
   params: { moduleId: string; modelKey: string };
 }) {
+  const moduleId = decodeModuleIdParam(params.moduleId);
   const def = getModel(params.modelKey);
   if (!def) notFound();
 
   return (
     <div>
       <nav className="border-b border-parchment/10 bg-ink/40 px-4 py-2 text-xs text-parchment/50">
-        <Link href={`/editor/${params.moduleId}`} className="hover:text-parchment/80">
-          {params.moduleId}
+        <Link href={`/editor/${encodeModuleId(moduleId)}`} className="hover:text-parchment/80">
+          {moduleId}
         </Link>
         <span className="mx-1">/</span>
         <span className="text-parchment/80">{def.label}</span>
         <span className="ml-3 text-parchment/40">
-          ({def.fileName} · /modules/{params.moduleId}/)
+          ({def.fileName} · /modules/{moduleId}/)
         </span>
       </nav>
       {params.modelKey === "maps" ? (
@@ -56,19 +58,19 @@ export default function ModelBrowsePage({
         <Suspense
           fallback={<p className="p-4 text-parchment/60">Loading maps…</p>}
         >
-          <MapsBrowse moduleId={params.moduleId} />
+          <MapsBrowse moduleId={moduleId} />
         </Suspense>
       ) : params.modelKey === "dungeons" ? (
-        <DungeonsBrowse moduleId={params.moduleId} />
+        <DungeonsBrowse moduleId={moduleId} />
       ) : params.modelKey === "quests" ? (
-        <QuestsBrowse moduleId={params.moduleId} />
+        <QuestsBrowse moduleId={moduleId} />
       ) : params.modelKey === "characters" ? (
-        <CharactersBrowse moduleId={params.moduleId} />
+        <CharactersBrowse moduleId={moduleId} />
       ) : params.modelKey === "party" ? (
-        <PartyBrowse moduleId={params.moduleId} />
+        <PartyBrowse moduleId={moduleId} />
       ) : (
         <ModelView
-          moduleId={params.moduleId}
+          moduleId={moduleId}
           modelKey={params.modelKey as ModelKey}
         />
       )}

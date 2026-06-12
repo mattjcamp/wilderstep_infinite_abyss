@@ -23,6 +23,8 @@ import {
   saveDraft,
   saveIndexDraft,
 } from "@/data_model/draft";
+import { SLUG_RE } from "@/data_model/moduleIds";
+import { usePublishServer } from "./usePublishServer";
 import type { ModuleSummary } from "@/data_model/ModuleSource";
 
 interface IndexEntry {
@@ -38,6 +40,13 @@ interface IndexFile {
 
 const ID_PATTERN = /^[a-z][a-z0-9-]*$/;
 
+/** When the hosted publish API knows who we are, new modules are
+ *  created under the author's namespace: the form takes a SLUG and
+ *  the real id becomes `@<handle>/<slug>` (the only id shape the
+ *  hosted API will accept for writes). Without a handle (local
+ *  publish-server, or not signed in) the historical bare-id flow is
+ *  unchanged. */
+
 type Role = "playable" | "library";
 
 export function NewModuleForm({
@@ -49,6 +58,7 @@ export function NewModuleForm({
   onCreated: () => void;
   onCancel: () => void;
 }) {
+  const { handle } = usePublishServer();
   const [id, setId] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -65,20 +75,26 @@ export function NewModuleForm({
     [existingModules, id],
   );
 
-  const trimmedId = id.trim();
-  const idValid = ID_PATTERN.test(trimmedId);
+  const trimmedInput = id.trim();
+  // Namespaced mode: input is the slug; the actual id is qualified.
+  const trimmedId = handle ? `@${handle}/${trimmedInput}` : trimmedInput;
+  const idValid = handle
+    ? SLUG_RE.test(trimmedInput)
+    : ID_PATTERN.test(trimmedInput);
   const idCollision = existingIds.has(trimmedId);
   const idError =
-    trimmedId.length === 0
+    trimmedInput.length === 0
       ? null
       : !idValid
-        ? "ID must be lowercase letters/digits/hyphens, starting with a letter (e.g. 'shadow-vale')."
+        ? handle
+          ? "Name must be lowercase letters/digits/hyphens/underscores, starting with a letter or digit (e.g. 'shadow-vale')."
+          : "ID must be lowercase letters/digits/hyphens, starting with a letter (e.g. 'shadow-vale')."
         : idCollision
           ? `A module with id "${trimmedId}" already exists.`
           : null;
 
   const canSubmit =
-    trimmedId.length > 0 &&
+    trimmedInput.length > 0 &&
     !idError &&
     title.trim().length > 0;
 
@@ -137,17 +153,30 @@ export function NewModuleForm({
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <label className="block">
           <span className="text-[13px] uppercase tracking-wide text-parchment/65">
-            ID
+            {handle ? "Name" : "ID"}
           </span>
-          <input
-            type="text"
-            value={id}
-            onChange={(e) => setId(e.target.value)}
-            placeholder="shadow-vale"
-            className="mt-1 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-sm text-parchment/90"
-          />
+          <div className="mt-1 flex items-center gap-1">
+            {handle ? (
+              <span className="shrink-0 font-mono text-sm text-parchment/55">
+                @{handle}/
+              </span>
+            ) : null}
+            <input
+              type="text"
+              value={id}
+              onChange={(e) => setId(e.target.value)}
+              placeholder="shadow-vale"
+              className="w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-sm text-parchment/90"
+            />
+          </div>
           {idError ? (
             <p className="mt-1 text-[13px] text-ember/80">{idError}</p>
+          ) : handle ? (
+            <p className="mt-1 text-[13px] text-parchment/65">
+              Published as{" "}
+              <code>{trimmedInput ? trimmedId : `@${handle}/…`}</code> —
+              your modules live under your handle.
+            </p>
           ) : (
             <p className="mt-1 text-[13px] text-parchment/65">
               Folder name under <code>web/public/modules/</code>.

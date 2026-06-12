@@ -102,7 +102,7 @@ environment.
 |---|---|
 | `manifest` | moduleId must be qualified `@<caller>/<slug>` (system ids rejected). Validates `extends` against the cross-author policy. Writes `modules/<id>/module.json`; upserts the catalog index entry. |
 | `model` | same ownership rule; fileName per `^[a-z][a-z0-9_]*\.json$` and must be a registered model file. Size-capped. |
-| `index` | **rejected** — the hosted catalog index is derived server-side, never client-written. |
+| `index` | **accepted as a no-op** (`ok: true`, nothing written) — the hosted index is server-derived from manifest writes/deletes, but the editor's publish-all flow still sends its local index draft, and succeeding lets the client clear that draft cleanly. |
 | `delete-module` | owner only; system ids always rejected. Deletes the prefix + index entry. |
 | `sprite` | writes under the CALLER's prefix: `sprites/@<handle>/<category>/<file>.png` (client-supplied category/filename validated by the local server's regexes; PNG data-URL payload verified + size-capped). Regenerates the owner's sprite index section. |
 | `delete-sprite` | owner prefix only. |

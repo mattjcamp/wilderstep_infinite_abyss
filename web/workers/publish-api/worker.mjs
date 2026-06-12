@@ -263,9 +263,13 @@ export async function handleItem(item, handle, env) {
   }
 
   if (item.kind === "index") {
-    throw new Error(
-      "The hosted catalog index is server-derived; 'index' items are not accepted",
-    );
+    // The hosted catalog index is server-derived (manifest writes
+    // upsert it; deletes remove it). The editor's publish-all flow
+    // still sends its local index draft, so we ACCEPT the item as a
+    // no-op rather than erroring — the client clears the index draft
+    // on ok, which is correct: the server's index already reflects
+    // the manifests in the same batch.
+    return { path: "(ignored — the hosted catalog index is server-derived)" };
   }
 
   if (item.kind === "delete-module") {

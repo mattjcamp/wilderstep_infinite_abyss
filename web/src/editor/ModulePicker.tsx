@@ -11,6 +11,7 @@
  * committed to disk yet).
  */
 
+import { encodeModuleId } from "./moduleRoutes";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { StaticModuleSource } from "@/data_model/StaticModuleSource";
@@ -497,7 +498,7 @@ export function ModulePicker() {
             return (
               <li key={m.id} className="relative">
                 <Link
-                  href={`/editor/${m.id}`}
+                  href={`/editor/${encodeModuleId(m.id)}`}
                   className="block rounded-md border border-parchment/20 bg-ink/40 p-4 pr-20 transition hover:border-parchment/40 hover:bg-ink/60"
                 >
                   <h2 className="font-display text-xl text-parchment">

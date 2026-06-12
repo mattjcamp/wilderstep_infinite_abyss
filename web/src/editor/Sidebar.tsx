@@ -7,6 +7,7 @@
  * single client component regardless of which page renders.
  */
 
+import { encodeModuleId } from "./moduleRoutes";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ALL_MODEL_KEYS, MODELS } from "@/data_model/models";
@@ -16,7 +17,7 @@ export function Sidebar({ moduleId }: { moduleId: string }) {
 
   const renderLink = (key: keyof typeof MODELS) => {
     const def = MODELS[key];
-    const href = `/editor/${moduleId}/${key}`;
+    const href = `/editor/${encodeModuleId(moduleId)}/${key}`;
     const active = pathname === href;
     return (
       <li key={key}>
@@ -43,7 +44,7 @@ export function Sidebar({ moduleId }: { moduleId: string }) {
         ← All modules
       </Link>
       <Link
-        href={`/editor/${moduleId}`}
+        href={`/editor/${encodeModuleId(moduleId)}`}
         className="mb-3 block border-b border-parchment/10 pb-2 font-display text-sm text-parchment/85 hover:text-parchment"
       >
         {moduleId}
@@ -60,9 +61,9 @@ export function Sidebar({ moduleId }: { moduleId: string }) {
       <ul className="space-y-0.5">
         <li>
           <Link
-            href={`/editor/${moduleId}/sprites`}
+            href={`/editor/${encodeModuleId(moduleId)}/sprites`}
             className={`block rounded px-2 py-1 text-sm transition ${
-              pathname === `/editor/${moduleId}/sprites`
+              pathname === `/editor/${encodeModuleId(moduleId)}/sprites`
                 ? "bg-ember/30 text-parchment"
                 : "text-parchment/85 hover:bg-ink/40 hover:text-parchment"
             }`}
@@ -72,9 +73,9 @@ export function Sidebar({ moduleId }: { moduleId: string }) {
         </li>
         <li>
           <Link
-            href={`/editor/${moduleId}/soundtrack`}
+            href={`/editor/${encodeModuleId(moduleId)}/soundtrack`}
             className={`block rounded px-2 py-1 text-sm transition ${
-              pathname === `/editor/${moduleId}/soundtrack`
+              pathname === `/editor/${encodeModuleId(moduleId)}/soundtrack`
                 ? "bg-ember/30 text-parchment"
                 : "text-parchment/85 hover:bg-ink/40 hover:text-parchment"
             }`}
@@ -94,9 +95,9 @@ export function Sidebar({ moduleId }: { moduleId: string }) {
       <ul className="space-y-0.5">
         <li>
           <Link
-            href={`/editor/${moduleId}/sim/battle`}
+            href={`/editor/${encodeModuleId(moduleId)}/sim/battle`}
             className={`block rounded px-2 py-1 text-sm transition ${
-              pathname === `/editor/${moduleId}/sim/battle`
+              pathname === `/editor/${encodeModuleId(moduleId)}/sim/battle`
                 ? "bg-ember/30 text-parchment"
                 : "text-parchment/85 hover:bg-ink/40 hover:text-parchment"
             }`}

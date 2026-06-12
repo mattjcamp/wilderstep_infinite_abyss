@@ -8,6 +8,7 @@
  * cataloging the set.
  */
 
+import { decodeModuleIdParam, encodeModuleId } from "@/editor/moduleRoutes";
 import Link from "next/link";
 import { SpriteView } from "@/editor/SpriteView";
 
@@ -20,14 +21,15 @@ export default function SpriteBrowsePage({
 }: {
   params: { moduleId: string };
 }) {
+  const moduleId = decodeModuleIdParam(params.moduleId);
   return (
     <div>
       <nav className="border-b border-parchment/10 bg-ink/40 px-4 py-2 text-xs text-parchment/50">
         <Link
-          href={`/editor/${params.moduleId}`}
+          href={`/editor/${encodeModuleId(moduleId)}`}
           className="hover:text-parchment/80"
         >
-          {params.moduleId}
+          {moduleId}
         </Link>
         <span className="mx-1">/</span>
         <span className="text-parchment/80">Sprites</span>

@@ -3,6 +3,7 @@
  * model cards linking into each model's browse view.
  */
 
+import { decodeModuleIdParam, encodeModuleId } from "@/editor/moduleRoutes";
 import Link from "next/link";
 import {
   ALL_MODEL_KEYS,
@@ -22,7 +23,7 @@ export default function ModuleEditorHome({
 }: {
   params: { moduleId: string };
 }) {
-  const { moduleId } = params;
+  const moduleId = decodeModuleIdParam(params.moduleId);
   return (
     <main className="mx-auto max-w-4xl p-8">
       <header className="mb-6">
@@ -46,7 +47,7 @@ export default function ModuleEditorHome({
         <ul className="grid gap-2 sm:grid-cols-2">
           <li>
             <Link
-              href={`/editor/${moduleId}/sprites`}
+              href={`/editor/${encodeModuleId(moduleId)}/sprites`}
               className="block rounded-md border border-parchment/15 bg-ink/30 p-3 transition hover:border-parchment/40 hover:bg-ink/50"
             >
               <div className="font-display text-lg text-parchment">Sprites</div>
@@ -58,7 +59,7 @@ export default function ModuleEditorHome({
           </li>
           <li>
             <Link
-              href={`/editor/${moduleId}/soundtrack`}
+              href={`/editor/${encodeModuleId(moduleId)}/soundtrack`}
               className="block rounded-md border border-parchment/15 bg-ink/30 p-3 transition hover:border-parchment/40 hover:bg-ink/50"
             >
               <div className="font-display text-lg text-parchment">
@@ -80,7 +81,7 @@ export default function ModuleEditorHome({
         <ul className="grid gap-2 sm:grid-cols-2">
           <li>
             <Link
-              href={`/editor/${moduleId}/sim/battle`}
+              href={`/editor/${encodeModuleId(moduleId)}/sim/battle`}
               className="block rounded-md border border-parchment/15 bg-ink/30 p-3 transition hover:border-parchment/40 hover:bg-ink/50"
             >
               <div className="font-display text-lg text-parchment">Battle</div>
@@ -92,7 +93,7 @@ export default function ModuleEditorHome({
           </li>
           <li>
             <Link
-              href={`/editor/${moduleId}/sim/dungeon`}
+              href={`/editor/${encodeModuleId(moduleId)}/sim/dungeon`}
               className="block rounded-md border border-parchment/15 bg-ink/30 p-3 transition hover:border-parchment/40 hover:bg-ink/50"
             >
               <div className="font-display text-lg text-parchment">Dungeon</div>
@@ -128,7 +129,7 @@ function Section({
           return (
             <li key={k}>
               <Link
-                href={`/editor/${moduleId}/${k}`}
+                href={`/editor/${encodeModuleId(moduleId)}/${k}`}
                 className="block rounded-md border border-parchment/15 bg-ink/30 p-3 transition hover:border-parchment/40 hover:bg-ink/50"
               >
                 <div className="font-display text-lg text-parchment">
