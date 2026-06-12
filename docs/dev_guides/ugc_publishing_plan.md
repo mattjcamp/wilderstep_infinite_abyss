@@ -238,12 +238,36 @@ listing, extends-chain resolution through hosted core content, and
 @core alias resolution all pass against the live worker. **Phases
 1–2 complete.**
 
-Remaining before players can publish (phase 3): Cloudflare Access in
-front of /publish, finish the JWT verification marked TODO in
-worker.mjs, REMOVE the DEV_ALLOW_ANON / DEV_HANDLE vars from
-wrangler.toml, sign-in UI + "my modules", then flip the front-end
-env vars (`NEXT_PUBLIC_MODULE_SOURCE=remote`,
-`NEXT_PUBLIC_READ_HOST` / `NEXT_PUBLIC_PUBLISH_HOST=<worker>`).
+**Phase 3 complete (June 2026):** Access + verified JWTs live
+(little-tree-b24e team, AUD configured), DEV_ALLOW_ANON removed,
+first player modules published as @matt/* and PLAYED from the hosted
+catalog via `npm run dev:remote`. Hardened along the way: draft-key
+parsing for qualified ids, game sources never read editor drafts,
+per-mode Next build caches, no-store catalog index + /reindex
+reconciler, credentialed CORS on the local publish-server.
+
+## Next session plan
+
+1. **Editor reads the configured source.** The editor still
+   instantiates StaticModuleSource directly, so in remote mode it
+   browses LOCAL modules only — once a published module's drafts are
+   cleared, the author can't reopen it to keep editing. Swap editor
+   surfaces to getModuleSource() (drafts stay preferred there) so
+   hosted @handle modules are editable: load published → edit as
+   drafts → republish. This closes the authoring loop.
+2. **Deploy to Cloudflare Pages.** Build the static export with the
+   remote env vars, add the Pages origin to ALLOWED_ORIGINS +
+   LOGIN_REDIRECT_URL, and the whole experience becomes a URL — no
+   npm required. Anyone in the Access policy can author; anyone can
+   play. (Also largely dissolves the third-party-cookie concern.)
+3. **Sprites**: seed-bucket --sprites, plus play-side resolution of
+   per-owner sprite paths (sprites/@handle/…) so published art
+   renders.
+4. **Phase 4 proper** (community surface): catalog search/browse,
+   author pages, "my modules", report flow + moderation flags — D1
+   enters here, per §3's schema.
+5. Phase 5 hardening overlaps the editor audit's P5: schema
+   validation on publish, rate limits, PNG re-encode.
 
 ## 11½. Effort & risk summary
 
