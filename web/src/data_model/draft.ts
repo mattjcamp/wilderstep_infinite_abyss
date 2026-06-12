@@ -143,7 +143,12 @@ export function listDraftKeys(): Array<{
     if (!k || !k.startsWith(`${DRAFT_PREFIX}/`)) continue;
     if (k === INDEX_KEY) continue;
     const rest = k.slice(DRAFT_PREFIX.length + 1);
-    const slash = rest.indexOf("/");
+    // Split at the LAST slash: model keys never contain one, but
+    // QUALIFIED module ids do (`@matt/sunken-keep`). A first-slash
+    // split mis-parsed `@matt/sunken-keep/module.json` into
+    // moduleId "@matt" + modelKey "sunken-keep/module.json", which
+    // silently dropped those drafts from publish payloads.
+    const slash = rest.lastIndexOf("/");
     if (slash < 0) continue;
     out.push({
       moduleId: rest.slice(0, slash),
