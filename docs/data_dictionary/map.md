@@ -65,6 +65,8 @@ ones today:
 | `dungeon` | string | Dungeon id. Stepping onto the cell descends into that dungeon (honours `show_link_placard`). |
 | `locked` | bool | Passage gated until unlocked (key / pick / scripted). |
 | `npc` / `counter` | string | NPC dialog / shop counter planted on the cell. |
+| `trap_id` | string | [Trap](trap.md) id from traps.json. Stepping onto the cell fires the trap once (damage roll, status effect, or teleport per the record's `trap_type`) and disarms it permanently (persisted in `SavedMapState.triggeredTraps`). Hidden unless Detect Traps is active. Legacy `trap: true` cells resolve to the default `dart_trap` record. |
+| `pressure_plate` | `{ map_id, col, row, tile_id }` | Step-toggled tile swap. Stepping onto the cell swaps the target cell `(map_id, col, row)` to the palette tile `tile_id`; stepping again restores the authored tile. The target may be on the same map (applies live: sprite, walkability, lighting) or another map (applies on next visit). Persisted as a tile override in the save, so the change survives reload and map re-entry. Authored in the editor's Cell Inspector ("Pressure Plate" row). |
 
 ## Notes and open questions
 

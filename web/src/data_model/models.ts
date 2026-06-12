@@ -29,6 +29,7 @@ export type ModelKey =
   | "party"
   | "spawns"
   | "encounters"
+  | "traps"
   | "character_classes"
   | "races"
   | "map_tiles"
@@ -284,6 +285,36 @@ const DEFS: Record<ModelKey, ModelDef> = {
         label: "Tags",
         format: (v) => (Array.isArray(v) ? v.join(", ") : ""),
       },
+    ],
+  },
+  traps: {
+    key: "traps",
+    label: "Traps",
+    fileName: "traps.json",
+    collectionKey: "traps",
+    docKey: "trap",
+    blurb: "Trap definitions — damage, status effects, teleports (placed via tile.trap_id)",
+    columns: [
+      { field: "name", label: "Name" },
+      { field: "trap_type", label: "Type" },
+      {
+        field: "damage_type",
+        label: "Damage",
+        // "fire 6–12" at a glance; effect-only / teleport traps show
+        // just the flavour type since they roll no dice.
+        compute: (rec) => {
+          const dt = asString(rec["damage_type"]);
+          const range = rec["damage_range"] as
+            | { min?: number; max?: number }
+            | null
+            | undefined;
+          if (!range || typeof range !== "object") return dt;
+          const { min, max } = range;
+          if (typeof min !== "number" || typeof max !== "number") return dt;
+          return dt ? `${dt} ${min}–${max}` : `${min}–${max}`;
+        },
+      },
+      { field: "effect", label: "Effect", format: asString },
     ],
   },
   character_classes: {

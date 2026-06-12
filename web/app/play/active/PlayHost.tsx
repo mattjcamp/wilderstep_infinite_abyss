@@ -147,6 +147,24 @@ const MAX_LOG = 200;
  *  can scroll above the strip rather than hide behind it. */
 const PLAY_LOG_HEIGHT = 32;
 
+/** Trap-burst colours `[main, accent]` keyed by the trap record's
+ *  `damage_type` — green puff for poison, violet for magic, etc.
+ *  Unlisted / absent types fall back to the legacy fire-orange so
+ *  pre-catalog traps look exactly as they always did. */
+const TRAP_VFX_DEFAULT: [number, number] = [
+  VFX_COLOURS.fire,
+  VFX_COLOURS.ember,
+];
+const TRAP_VFX_BY_DAMAGE_TYPE: Record<string, [number, number]> = {
+  fire: [VFX_COLOURS.fire, VFX_COLOURS.ember],
+  poison: [VFX_COLOURS.heal, VFX_COLOURS.curse],
+  magic: [VFX_COLOURS.arcane, VFX_COLOURS.curse],
+  arcane: [VFX_COLOURS.arcane, VFX_COLOURS.curse],
+  lightning: [VFX_COLOURS.lightning, VFX_COLOURS.white],
+  cold: [VFX_COLOURS.shield, VFX_COLOURS.white],
+  ice: [VFX_COLOURS.shield, VFX_COLOURS.white],
+};
+
 /** Map the game clock's time-of-day classification onto the
  *  WorldRenderer's lighting mode. Dawn + dusk both render as
  *  "twilight" (the lighting helper uses softer falloff than full
@@ -434,6 +452,16 @@ import {
 } from "@/play/awardQuestXp";
 import type { RawClass } from "@/battle/world/Classes";
 import { herbalismOnStep } from "@/play/herbalism";
+import {
+  readPressurePlate,
+  togglePressurePlate,
+} from "@/play/pressurePlates";
+import {
+  resolveTrapOutcome,
+  resolveTrapRecord,
+  type TrapRecord,
+  type TrapVictim,
+} from "@/play/traps";
 import { applyPassiveRegen, regenHasEffect } from "@/play/passiveRegen";
 import {
   completedStepIds,
@@ -705,6 +733,10 @@ interface LoadedCatalog {
     name?: string;
     params?: Record<string, unknown> | null;
   }>;
+  /** Trap catalog — resolved when the kernel emits trap_triggered.
+   *  Cells reference records via `trap_id`; legacy boolean traps
+   *  resolve to the default record (dart_trap). */
+  traps: ReadonlyArray<TrapRecord>;
   /** Recipes catalog — read by the Alchemist's brew_potion
    *  picker so a player can pick a recipe to convert reagents
    *  into a finished potion. Shape mirrors recipes.json
@@ -927,6 +959,14 @@ export function PlayHost() {
     removeItem: (col: number, row: number) => void;
   } | null>(null);
   const overlaysOpenRef = useRef(false);
+  /** Pre-override originals for cells on the CURRENTLY MOUNTED map,
+   *  keyed `"col,row"`. Stashed (a) by the mount-time tileOverrides
+   *  apply pass before it overwrites a cell, and (b) by a live
+   *  pressure-plate swap. Read when a plate toggles OFF so the
+   *  authored tile can be restored in place without remounting the
+   *  scene. Reset on every scene mount — it only describes the live
+   *  grid. */
+  const pristineCellsRef = useRef<Map<string, unknown>>(new Map());
   /** Session-only dungeon state. Null on the overworld. Populated
    *  when a `dungeon_entered` event lands; cleared when the party
    *  exits through stairs at F0 or stairs-down on the bottom floor.
@@ -2233,6 +2273,10 @@ export function PlayHost() {
           // capture it by reference, so subsequent createCells +
           // step pipeline reads see the post-override values).
           {
+            // Fresh stash per mount — the pristine map only describes
+            // THIS map's grid. Pressure-plate OFF presses read it to
+            // restore the authored tile live (see pressurePlates.ts).
+            pristineCellsRef.current = new Map();
             const overrides = save.maps[catalog.map.id]?.tileOverrides ?? [];
             for (const ov of overrides) {
               if (!ov.tileId) continue;
@@ -2243,6 +2287,16 @@ export function PlayHost() {
               if (ov.col < 0 || ov.col >= catalog.map.width) continue;
               const source = catalog.palette.find((t) => t.id === ov.tileId);
               if (!source) continue;
+              // Stash the authored cell before the first override
+              // lands on it ("first stash wins" — later overrides on
+              // the same cell must not overwrite the true original).
+              const key = `${ov.col},${ov.row}`;
+              if (!pristineCellsRef.current.has(key)) {
+                pristineCellsRef.current.set(
+                  key,
+                  catalog.map.grid[ov.row][ov.col],
+                );
+              }
               catalog.map.grid[ov.row][ov.col] = {
                 ...source,
               } as typeof catalog.map.grid[number][number];
@@ -2431,20 +2485,40 @@ export function PlayHost() {
             }
           }
 
+          // Disarm traps the save says already fired on this map.
+          // Authored overworld cells re-load ARMED from the map JSON
+          // on every mount; this pass makes the one-shot semantics
+          // stick across reloads / re-entry. Dungeon floors don't
+          // need it — dungeonLevelToMap already honours the session's
+          // per-level triggeredTraps.
+          if (!dungeonStateRef.current) {
+            const fired =
+              save.maps[catalog.map.id]?.triggeredTraps ?? [];
+            for (const key of fired) {
+              const [c, r] = key.split(",").map(Number);
+              if (!Number.isFinite(c) || !Number.isFinite(r)) continue;
+              const cell = catalog.map.grid[r]?.[c] as
+                | { trap?: boolean; trap_id?: string }
+                | undefined;
+              if (cell) {
+                cell.trap = false;
+                cell.trap_id = undefined;
+              }
+            }
+          }
           // Seed the live-traps set from the freshly-mounted catalog
-          // grid. dungeonLevelToMap already cleared the `trap` flag
-          // on cells the dungeon session marked as previously
-          // triggered, so anything still flagged here is armed.
+          // grid (post-disarm). Boolean traps and catalog `trap_id`
+          // traps both count — Detect Traps marks either kind.
           // Refresh the detected-trap overlay so the player sees red
           // Xs on every armed trap if Detect Traps is currently
           // active (and an empty layer otherwise).
           liveTrapsRef.current = new Set();
           for (let r = 0; r < catalog.map.height; r++) {
             for (let c = 0; c < catalog.map.width; c++) {
-              const cell = catalog.map.grid[r][c];
-              if (
-                (cell as { trap?: boolean } | undefined)?.trap
-              ) {
+              const cell = catalog.map.grid[r][c] as
+                | { trap?: boolean; trap_id?: string }
+                | undefined;
+              if (cell?.trap || cell?.trap_id) {
                 liveTrapsRef.current.add(`${c},${r}`);
               }
             }
@@ -3524,6 +3598,67 @@ export function PlayHost() {
                 // Herbalism is a flavour passive — never let an
                 // error in the find path crash the step handler.
               }
+              // ── Pressure plates ──────────────────────────────────
+              // Stepping onto a plate-attributed cell toggles its
+              // target tile (same map or another map). The change is
+              // persisted IMMEDIATELY as a tile override — it's a
+              // permanent world mutation, not session state — and
+              // applied live when the target is on this map (grid +
+              // sprite + relight; the sim shares the grid reference
+              // so walkability flips on the next step). A second
+              // press removes the override, restoring the authored
+              // tile. Dungeons are excluded — floors are procedural,
+              // plates are an authored-map feature.
+              try {
+                const pSave = saveRef.current;
+                const pCat = catalogRef.current;
+                if (pSave && pCat?.map && !dungeonStateRef.current) {
+                  const plate = readPressurePlate(
+                    pCat.map.grid?.[ev.to.row]?.[ev.to.col],
+                  );
+                  if (plate) {
+                    const result = togglePressurePlate(pSave, plate, {
+                      liveMapId: pCat.map.id ?? null,
+                      liveMap: pCat.map,
+                      palette: pCat.palette ?? [],
+                      renderer: rendererRef.current,
+                      sim: simRef.current,
+                      pristine: pristineCellsRef.current,
+                    });
+                    if (result.kind !== "invalid") {
+                      saveRef.current = result.nextSave;
+                      saveWorld(result.nextSave);
+                      // Stone-grind cue — the slab shifts on both
+                      // press and release. Same fire-and-forget
+                      // guard as the other step SFX: audio must
+                      // never break movement.
+                      try {
+                        Sfx.play("stone_slide");
+                      } catch {
+                        /* audio context not ready — skip */
+                      }
+                      const here = plate.map_id === pCat.map.id;
+                      const line =
+                        result.kind === "activated"
+                          ? here
+                            ? "Click — a plate sinks underfoot, and something shifts nearby."
+                            : "Click — a plate sinks underfoot. Somewhere far away, something shifts."
+                          : here
+                            ? "Clack — the plate rises, and something shifts back into place."
+                            : "Clack — the plate rises. Somewhere far away, something shifts back.";
+                      setLogMessages((prev) => {
+                        const next = [...prev, line];
+                        return next.length > MAX_LOG
+                          ? next.slice(next.length - MAX_LOG)
+                          : next;
+                      });
+                    }
+                  }
+                }
+              } catch {
+                // A misauthored plate must never crash the step
+                // pipeline — worst case the press just no-ops.
+              }
               // Passive regen — restful maps (towns / taverns) trickle
               // HP/MP back into living members each step. No-op off
               // restful maps and in dungeons. (Waits heal too, via the
@@ -3725,16 +3860,24 @@ export function PlayHost() {
               return;
             }
             if (ev.kind === "trap_triggered") {
-              // Trap feedback — fire-and-forget VFX/SFX so the
-              // player gets immediate "something just happened" cues
-              // independent of how the rest of the handler resolves
-              // (damage, log line, etc). Audio is a percussive
-              // "explosion" tone; visual is a fire-orange radial
-              // burst over the trap tile + a small screen shake.
-              // Wrapped in try/catch because both calls touch Phaser
-              // / WebAudio internals that can throw on a disposed
-              // scene; we don't want a render glitch to drop the
-              // damage application below.
+              // Catalog-driven trap resolution. The kernel disarmed
+              // the cell and handed us the trap_id (null for legacy
+              // boolean traps). We resolve the traps.json record and
+              // roll it via resolveTrapOutcome — damage / status
+              // effect / teleport, optional save roll — falling back
+              // to v1's hardcoded 3+d6 when no record resolves (e.g.
+              // a module without traps.json).
+              const key = `${ev.pos.col},${ev.pos.row}`;
+              const cat = catalogRef.current;
+              const record = cat
+                ? resolveTrapRecord(cat.traps ?? [], ev.trapId ?? null)
+                : null;
+
+              // Feedback first — fire-and-forget VFX/SFX so the
+              // player gets immediate cues independent of how the
+              // resolution below lands. Burst colour keys off the
+              // record's damage_type (green for poison, violet for
+              // magic, …); the legacy fire-orange is the default.
               const r = rendererRef.current;
               try {
                 Sfx.play("explosion");
@@ -3745,78 +3888,194 @@ export function PlayHost() {
                 try {
                   const px = ev.pos.col * TILE_SIZE + TILE_SIZE / 2;
                   const py = ev.pos.row * TILE_SIZE + TILE_SIZE / 2;
-                  void radialBurst(
-                    r.scene,
-                    { x: px, y: py },
-                    VFX_COLOURS.fire,
-                    VFX_COLOURS.ember,
-                    64,
-                  );
+                  const [main, accent] =
+                    TRAP_VFX_BY_DAMAGE_TYPE[record?.damage_type ?? ""] ??
+                    TRAP_VFX_DEFAULT;
+                  void radialBurst(r.scene, { x: px, y: py }, main, accent, 64);
                   screenShake(r.scene, 0.008, 240);
                 } catch {
                   /* scene disposed mid-step — skip */
                 }
               }
-              // Dungeon trap fired. Pick a random ALIVE party member
-              // and deal 3 + d6 damage (v1's exact formula).
-              // We mutate the saveRef in place (no setState — same
-              // reasoning as elsewhere: that would force a Phaser
-              // remount and teleport the party). The Party screen
-              // reads from saveRef when opened, so the player will
-              // see the post-hit HP next time they bring up the
-              // sheet.
-              const cur = saveRef.current;
-              if (!cur) {
-                liveTrapsRef.current.delete(`${ev.pos.col},${ev.pos.row}`);
-                refreshDetectedTraps();
-                return;
-              }
-              const aliveIdxs: number[] = [];
-              cur.party.members.forEach((m, i) => {
-                if (m.hp > 0) aliveIdxs.push(i);
-              });
-              if (aliveIdxs.length === 0) {
-                liveTrapsRef.current.delete(`${ev.pos.col},${ev.pos.row}`);
-                refreshDetectedTraps();
-                return;
-              }
-              const victimIdx =
-                aliveIdxs[Math.floor(Math.random() * aliveIdxs.length)];
-              const victim = cur.party.members[victimIdx];
-              const damage = 3 + Math.floor(Math.random() * 6);
-              const newHp = Math.max(0, victim.hp - damage);
-              const nextMembers = cur.party.members.map((m, i) =>
-                i === victimIdx ? { ...m, hp: newHp } : m,
-              );
-              const nextSave: WorldSave = {
-                ...cur,
-                party: { ...cur.party, members: nextMembers },
-              };
-              saveRef.current = nextSave;
-              saveWorld(nextSave);
-              setLogMessages((prev) => {
-                const line = `Trap! ${victim.id} takes ${damage} damage.`;
-                const next = [...prev, line];
-                return next.length > MAX_LOG
-                  ? next.slice(next.length - MAX_LOG)
-                  : next;
-              });
-              // Remove the just-triggered tile from the live-traps
-              // set and persist into the in-memory DungeonLevel so a
-              // remount (e.g. floor transition back to this level)
-              // doesn't re-arm the trap. dungeonLevelToMap already
-              // honours `level.triggeredTraps` when building the
-              // cell grid. Then refresh the detected-trap overlay so
-              // any red X on this cell clears.
-              const key = `${ev.pos.col},${ev.pos.row}`;
+
+              // One-shot bookkeeping: drop from the live set; persist
+              // the disarm into the dungeon session (overworld maps
+              // persist via save.maps[..].triggeredTraps below).
               liveTrapsRef.current.delete(key);
               const dStateNow = dungeonStateRef.current;
               if (dStateNow) {
                 const session = peekDungeonSession(dStateNow.instanceId);
-                const level = session?.levels[dStateNow.floorIdx];
-                level?.triggeredTraps?.add(key);
+                session?.levels[dStateNow.floorIdx]?.triggeredTraps?.add(key);
+              }
+
+              const cur = saveRef.current;
+              if (!cur) {
+                refreshDetectedTraps();
+                return;
+              }
+
+              // Alive victims, with ability scores for the save roll
+              // (catalog character first, custom-character record as
+              // fallback; missing scores roll at +0).
+              const charsById = new Map(
+                (cat?.characters ?? []).map((c) => [c.id, c]),
+              );
+              const victims: TrapVictim[] = [];
+              cur.party.members.forEach((m, i) => {
+                if (m.hp <= 0) return;
+                const rec = (charsById.get(m.id) ??
+                  (m.custom as Record<string, unknown> | null) ??
+                  {}) as {
+                  name?: string;
+                  strength?: number;
+                  dexterity?: number;
+                  intelligence?: number;
+                  wisdom?: number;
+                  constitution?: number;
+                };
+                victims.push({
+                  index: i,
+                  id: m.id,
+                  name: rec.name,
+                  hp: m.hp,
+                  stats: {
+                    strength: rec.strength,
+                    dexterity: rec.dexterity,
+                    intelligence: rec.intelligence,
+                    wisdom: rec.wisdom,
+                    constitution: rec.constitution,
+                  },
+                });
+              });
+
+              // ── Resolve ──────────────────────────────────────────
+              let lines: string[] = [];
+              let nextMembers = cur.party.members;
+              let teleportTo: {
+                map_id: string;
+                col: number;
+                row: number;
+              } | null = null;
+              if (record) {
+                const outcome = resolveTrapOutcome(record, victims);
+                lines = outcome.lines;
+                teleportTo = outcome.teleport;
+                if (outcome.hits.length > 0) {
+                  // Effect durations come from the effects catalog;
+                  // unknown ids default to a short 3-turn affliction
+                  // rather than dropping the hit.
+                  const durById = new Map(
+                    (cat?.effects ?? []).map((e) => [e.id, e.duration]),
+                  );
+                  const hitByIdx = new Map(
+                    outcome.hits.map((h) => [h.index, h]),
+                  );
+                  nextMembers = cur.party.members.map((m, i) => {
+                    const h = hitByIdx.get(i);
+                    if (!h) return m;
+                    let effects = m.effects;
+                    if (h.effect && !effects.some((e) => e.id === h.effect)) {
+                      effects = [
+                        ...effects,
+                        { id: h.effect, duration: durById.get(h.effect) ?? 3 },
+                      ];
+                    }
+                    return {
+                      ...m,
+                      hp: Math.max(0, m.hp - h.damage),
+                      effects,
+                    };
+                  });
+                }
+              } else if (victims.length > 0) {
+                // Legacy fallback — no catalog record resolved.
+                // v1's exact formula: 3 + d6 on one random member.
+                const v =
+                  victims[Math.floor(Math.random() * victims.length)];
+                const damage = 3 + Math.floor(Math.random() * 6);
+                nextMembers = cur.party.members.map((m, i) =>
+                  i === v.index
+                    ? { ...m, hp: Math.max(0, m.hp - damage) }
+                    : m,
+                );
+                lines = [`Trap! ${v.id} takes ${damage} damage.`];
+              }
+
+              // ── Persist ──────────────────────────────────────────
+              // Members + the overworld one-shot marker in a single
+              // write. saveRef is mutated without setState (a state
+              // push would remount Phaser mid-step); mapStateFrom-
+              // Snapshot spreads the prior map state forward, so the
+              // triggeredTraps list survives later checkpoints.
+              let nextMaps = cur.maps;
+              if (!dStateNow) {
+                const mapId = cur.party.currentMapId;
+                const prevMs = cur.maps[mapId] ?? {
+                  unlockedCells: [],
+                  defeatedEncounters: [],
+                  destroyedLairs: [],
+                };
+                const fired = prevMs.triggeredTraps ?? [];
+                if (!fired.includes(key)) {
+                  nextMaps = {
+                    ...cur.maps,
+                    [mapId]: {
+                      ...prevMs,
+                      triggeredTraps: [...fired, key],
+                    },
+                  };
+                }
+              }
+              const nextSave: WorldSave = {
+                ...cur,
+                party: { ...cur.party, members: nextMembers },
+                maps: nextMaps,
+              };
+              saveRef.current = nextSave;
+              saveWorld(nextSave);
+              if (lines.length > 0) {
+                setLogMessages((prev) => {
+                  const next = [...prev, ...lines];
+                  return next.length > MAX_LOG
+                    ? next.slice(next.length - MAX_LOG)
+                    : next;
+                });
               }
               refreshDetectedTraps();
+
+              // ── Teleport (last — may remount the scene) ──────────
+              // Same-map targets shift the party in place via the
+              // kernel; cross-map targets ride the link-traversal
+              // path (save position + remount at the destination).
+              // Procedural dungeon floors never author teleport
+              // traps, so the in-dungeon case is a no-op.
+              if (teleportTo && !dStateNow && cat) {
+                if (teleportTo.map_id === cat.map.id) {
+                  sim?.teleport(teleportTo.col, teleportTo.row);
+                  // Mirror the new position into the save so a
+                  // reload before the next checkpoint doesn't snap
+                  // the party back onto the (now disarmed) plate.
+                  const snapNow = sim?.snapshot();
+                  if (snapNow) {
+                    const tpSave: WorldSave = {
+                      ...nextSave,
+                      party: {
+                        ...nextSave.party,
+                        col: snapNow.pos.col,
+                        row: snapNow.pos.row,
+                      },
+                    };
+                    saveRef.current = tpSave;
+                    saveWorld(tpSave);
+                  }
+                } else {
+                  handleLinked({
+                    map_id: teleportTo.map_id,
+                    x: teleportTo.col,
+                    y: teleportTo.row,
+                  });
+                }
+              }
               return;
             }
             if (ev.kind === "item_picked") {
@@ -6024,6 +6283,7 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
     questsLayers,
     npcsLayers,
     countersLayers,
+    trapsLayers,
   ] = await Promise.all([
     src.loadModelLayers(moduleId, "map_tiles"),
     src.loadModelLayers(moduleId, "maps"),
@@ -6042,6 +6302,7 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
     src.loadModelLayers(moduleId, "quests").catch(() => null),
     src.loadModelLayers(moduleId, "npcs").catch(() => null),
     src.loadModelLayers(moduleId, "counters").catch(() => null),
+    src.loadModelLayers(moduleId, "traps").catch(() => null),
   ]);
 
   const paletteDoc = (mergeModel(
@@ -6238,6 +6499,14 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
     countersLayers?.inherited ?? [],
     countersLayers?.ownFile ?? null,
   ) ?? {}) as { counters?: PlayCounter[] };
+  // Trap catalog — resolved on trap_triggered. Cells carry a
+  // `trap_id` into the kernel; legacy boolean traps resolve to the
+  // default record (see src/play/traps.ts).
+  const trapsDoc = (mergeModel(
+    "traps",
+    trapsLayers?.inherited ?? [],
+    trapsLayers?.ownFile ?? null,
+  ) ?? {}) as { traps?: TrapRecord[] };
 
   // Module manifest — pull the default soundtrack playlist, walking
   // the extends chain so a parent module's playlist propagates to
@@ -6288,6 +6557,7 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
     items: itemsDoc.items ?? [],
     abilities: abilitiesDoc.abilities ?? [],
     recipes: recipesDoc.recipes ?? [],
+    traps: trapsDoc.traps ?? [],
     moduleSoundtrack,
     sightRadius,
   };

@@ -31,6 +31,14 @@ describe("Sfx catalog — registered generators", () => {
     expect(SFX_NAMES).toContain("chest_open");
   });
 
+  it("knows the stone_slide pressure-plate cue", () => {
+    // PlayHost plays this on every pressure-plate press/release.
+    // Same silent-no-op risk as the cues above if the registration
+    // is dropped.
+    expect(Sfx.has("stone_slide")).toBe(true);
+    expect(SFX_NAMES).toContain("stone_slide");
+  });
+
   it("returns false for unknown names rather than throwing", () => {
     // Defensive: a typoed name should be a quiet no-op, not a
     // crash. The overlay's call sites bank on this so they don't

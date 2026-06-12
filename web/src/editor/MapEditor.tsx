@@ -156,6 +156,12 @@ interface TileType {
    *  NPC's sprite renders as an overlay on the cell so designers can
    *  see at a glance where each villager / quest-giver stands. */
   npc: string;
+  /** Trap id from traps.json. Empty / absent means none. In play,
+   *  stepping onto the cell fires the trap once (damage / status
+   *  effect / teleport per the record's trap_type) and disarms it
+   *  permanently. Traps are hidden from the player unless Detect
+   *  Traps is active. */
+  trap_id?: string;
   sprite: string;
   /** Optional purely-visual background sprite drawn BEHIND `sprite`
    *  and lit the same way. A foreground tile with transparent pixels
@@ -171,6 +177,18 @@ interface TileType {
    *  immediately. Opt-in so only the tiles authors choose (dungeon
    *  mouths, region portals) announce themselves. */
   show_link_placard?: boolean;
+  /** Pressure plate — stepping onto this cell in play TOGGLES the
+   *  target cell `(map_id, col, row)` to the palette tile `tile_id`
+   *  (persisted as a tile override); the next step restores the
+   *  authored tile. The target may be on this map (renders live) or
+   *  any other map (applies on next visit). Null / absent = not a
+   *  plate. */
+  pressure_plate?: {
+    map_id: string;
+    col: number;
+    row: number;
+    tile_id: string;
+  } | null;
 }
 
 interface RefRecord {
@@ -271,8 +289,14 @@ function cellMatchesPalette(cell: TileType, palette: TileType[]): boolean {
   if ((cell.quest ?? "") !== (base.quest ?? "")) return false;
   if ((cell.dungeon ?? "") !== (base.dungeon ?? "")) return false;
   if ((cell.npc ?? "") !== (base.npc ?? "")) return false;
+  if ((cell.trap_id ?? "") !== (base.trap_id ?? "")) return false;
   if (cell.sprite !== base.sprite) return false;
   if (JSON.stringify(cell.link ?? null) !== JSON.stringify(base.link ?? null))
+    return false;
+  if (
+    JSON.stringify(cell.pressure_plate ?? null) !==
+    JSON.stringify(base.pressure_plate ?? null)
+  )
     return false;
   if (
     (cell.show_link_placard ?? false) !== (base.show_link_placard ?? false)
@@ -301,6 +325,12 @@ function fieldDiffersFromPalette(
     return (
       JSON.stringify(cell.link ?? null) !==
       JSON.stringify(base.link ?? null)
+    );
+  }
+  if (field === "pressure_plate") {
+    return (
+      JSON.stringify(cell.pressure_plate ?? null) !==
+      JSON.stringify(base.pressure_plate ?? null)
     );
   }
   return cell[field] !== base[field];
@@ -335,6 +365,9 @@ type LoadState =
        *  + golden-glow rendering. */
       availableDungeons: Array<{ id: string; name: string }>;
       availableQuests: QuestRecord[];
+      /** Every trap in the module's traps.json — feeds the cell
+       *  inspector's Trap dropdown. */
+      availableTraps: Array<{ id: string; name: string }>;
       /** Simulation-only catalog. Loaded alongside the painting data
        *  so the scene can pre-load party sprites in its single
        *  preload() pass. Null when a load failed; sim mode is still
@@ -879,6 +912,7 @@ export function MapEditor({
           npcsLayers,
           spellsLayers,
           monstersLayers,
+          trapsLayers,
         ] = await Promise.all([
           src.loadModelLayers(moduleId, "map_tiles"),
           src.loadModelLayers(moduleId, "maps"),
@@ -910,6 +944,10 @@ export function MapEditor({
           // monster id to a sprite + display name. Non-fatal so
           // modules without monsters.json still mount.
           src.loadModelLayers(moduleId, "monsters").catch(() => null),
+          // Traps catalog for the cell inspector's Trap picker.
+          // Non-fatal — modules without traps.json just show an
+          // empty dropdown.
+          src.loadModelLayers(moduleId, "traps").catch(() => null),
         ]);
         if (cancelled) return;
 
@@ -1172,6 +1210,18 @@ export function MapEditor({
           .sort((a, b) =>
             (a.name ?? a.id).localeCompare(b.name ?? b.id),
           );
+        // Traps picker for the cell inspector — id + name is all the
+        // dropdown needs.
+        const trapsMerged =
+          trapsLayers &&
+          (mergeModel(
+            "traps",
+            trapsLayers.inherited,
+            trapsLayers.ownFile,
+          ) as { traps?: Array<{ id: string; name?: string }> } | null);
+        const availableTraps = (trapsMerged?.traps ?? [])
+          .map((t) => ({ id: t.id, name: t.name ?? t.id }))
+          .sort((a, b) => a.name.localeCompare(b.name));
 
         setState({
           kind: "ok",
@@ -1187,6 +1237,7 @@ export function MapEditor({
           availableMaps,
           availableDungeons,
           availableQuests,
+          availableTraps,
           simParty: partyMerged ?? null,
           simCharacters: charactersMerged?.characters ?? [],
           simRaces: racesMerged?.races ?? [],
@@ -4441,6 +4492,7 @@ export function MapEditor({
             availableMaps={state.availableMaps}
             availableDungeons={state.availableDungeons}
             availableQuests={state.availableQuests}
+            availableTraps={state.availableTraps}
             onUpdate={(patch) => {
               if (selection.length === 0) return;
               // Apply the field change to EVERY selected cell. With a
@@ -4840,6 +4892,7 @@ function Inspector({
   availableMaps,
   availableDungeons,
   availableQuests,
+  availableTraps,
   onUpdate,
 }: {
   moduleId: string;
@@ -4868,6 +4921,8 @@ function Inspector({
    *  by the on-map quest-giver sprite + glow logic). */
   availableDungeons: Array<{ id: string; name: string }>;
   availableQuests: QuestRecord[];
+  /** Every trap in the module's traps.json — fed to the Trap dropdown. */
+  availableTraps: Array<{ id: string; name: string }>;
   onUpdate: (patch: Partial<TileType>) => void;
 }) {
   const modified =
@@ -5309,6 +5364,35 @@ function Inspector({
             onReset={() => onUpdate({ dungeon: undefined })}
           />
 
+          <SelectEditor
+            label="Trap"
+            help="Trap from traps.json. Empty for none. In play, stepping onto this cell fires the trap once (damage, status effect, or teleport per the record) and disarms it permanently. Hidden from the player unless Detect Traps is active."
+            value={instance.trap_id ?? ""}
+            paletteValue={base?.trap_id ?? instance.trap_id ?? ""}
+            options={[
+              { value: "", label: "(none)" },
+              ...availableTraps.map((t) => ({
+                value: t.id,
+                label: t.name !== t.id ? `${t.name} — ${t.id}` : t.id,
+              })),
+              ...(instance.trap_id &&
+              !availableTraps.some((t) => t.id === instance.trap_id)
+                ? [
+                    {
+                      value: instance.trap_id,
+                      label: `(missing) ${instance.trap_id}`,
+                    },
+                  ]
+                : []),
+            ]}
+            isModified={
+              !!base && fieldDiffersFromPalette(instance, palette, "trap_id")
+            }
+            canReset={!!base}
+            onChange={(v) => onUpdate({ trap_id: v })}
+            onReset={() => onUpdate({ trap_id: undefined })}
+          />
+
           <LinkEditor
             value={instance.link ?? null}
             paletteValue={base?.link ?? null}
@@ -5319,6 +5403,21 @@ function Inspector({
             availableMaps={availableMaps}
             onChange={(v) => onUpdate({ link: v })}
             onReset={() => onUpdate({ link: undefined })}
+          />
+
+          <PressurePlateEditor
+            moduleId={moduleId}
+            value={instance.pressure_plate ?? null}
+            paletteValue={base?.pressure_plate ?? null}
+            isModified={
+              !!base &&
+              fieldDiffersFromPalette(instance, palette, "pressure_plate")
+            }
+            canReset={!!base}
+            availableMaps={availableMaps}
+            palette={palette}
+            onChange={(v) => onUpdate({ pressure_plate: v })}
+            onReset={() => onUpdate({ pressure_plate: undefined })}
           />
 
           {!base ? (
@@ -5652,6 +5751,361 @@ function BoolEditor({
       {help ? (
         <p className="mt-1 text-xs text-parchment/65">{help}</p>
       ) : null}
+    </InspectorRow>
+  );
+}
+
+/** Inline palette-tile picker — the closed row shows the selected
+ *  tile's sprite thumbnail + name so authors can see at a glance
+ *  what a plate will paint; "Pick…" expands a filter bar and a
+ *  tag-grouped tile list (same grouping as the Tile Palette side
+ *  panel) with a thumbnail per tile. Expand-in-place pattern matches
+ *  SpritePicker — no floating popover to clip against the narrow
+ *  inspector column. Each row also badges non-walkable tiles
+ *  ("solid"), since the whole point of most plates is toggling a
+ *  door between its walkable and blocking forms. */
+function PaletteTilePicker({
+  moduleId,
+  value,
+  palette,
+  onChange,
+}: {
+  moduleId: string;
+  /** Currently selected palette tile id ("" = none yet). */
+  value: string;
+  palette: TileType[];
+  onChange: (tileId: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [filter, setFilter] = useState("");
+  const selected = palette.find((t) => t.id === value) ?? null;
+
+  const UNTAGGED = "(untagged)";
+  const q = filter.trim().toLowerCase();
+  const matches = q
+    ? palette.filter(
+        (t) =>
+          t.id.toLowerCase().includes(q) ||
+          (t.name ?? "").toLowerCase().includes(q) ||
+          (t.tag ?? "").toLowerCase().includes(q),
+      )
+    : palette;
+  const groups = new Map<string, TileType[]>();
+  for (const t of matches) {
+    const tag = t.tag && t.tag.trim() ? t.tag : UNTAGGED;
+    if (!groups.has(tag)) groups.set(tag, []);
+    groups.get(tag)!.push(t);
+  }
+  const ordered = [...groups.keys()].sort((a, b) => {
+    if (a === UNTAGGED) return 1;
+    if (b === UNTAGGED) return -1;
+    return a.localeCompare(b);
+  });
+
+  return (
+    <div className="mt-0.5 space-y-1">
+      <div className="flex items-center gap-2">
+        {selected ? (
+          <img
+            src={spriteThumbSrc(moduleId, selected.sprite)}
+            alt=""
+            width={24}
+            height={24}
+            style={{ imageRendering: "pixelated" }}
+            className="h-6 w-6 shrink-0 rounded border border-parchment/20 bg-ink/80 object-contain"
+          />
+        ) : (
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded border border-parchment/15 bg-ink/60 text-xs text-parchment/40">
+            ?
+          </span>
+        )}
+        <span className="min-w-0 flex-1 truncate text-[13px] text-parchment/90">
+          {selected ? (
+            <>
+              {selected.name || selected.id}{" "}
+              <span className="font-mono text-parchment/60">
+                ({selected.id})
+              </span>
+            </>
+          ) : value ? (
+            <span className="font-mono text-ember/80">{value}</span>
+          ) : (
+            <span className="text-parchment/55">— choose a tile —</span>
+          )}
+        </span>
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          className="rounded border border-parchment/30 px-2 py-0.5 text-xs text-parchment/85 hover:bg-ink/40"
+          title={
+            open
+              ? "Close the tile picker."
+              : "Pick the replacement tile from the palette (grouped by tag, with sprite previews)."
+          }
+        >
+          {open ? "Done" : "Pick…"}
+        </button>
+      </div>
+      {open ? (
+        <div className="rounded border border-parchment/15 bg-ink/40 p-1.5">
+          <input
+            type="text"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            placeholder="Filter by name, id, or tag…"
+            className="w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90 placeholder:text-parchment/50 focus:border-parchment/60 focus:outline-none"
+          />
+          <div className="mt-1.5 max-h-56 space-y-1.5 overflow-auto pr-1">
+            {ordered.map((tag) => (
+              <section key={tag}>
+                <p className="px-1 text-[11px] uppercase tracking-wide text-parchment/55">
+                  {tag}
+                </p>
+                <ul className="mt-0.5 space-y-0.5">
+                  {groups.get(tag)!.map((t) => {
+                    const active = t.id === value;
+                    return (
+                      <li key={t.id}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onChange(t.id);
+                            setOpen(false);
+                          }}
+                          className={`flex w-full items-center gap-2 rounded border px-2 py-1 text-left text-[13px] transition ${
+                            active
+                              ? "border-ember/60 bg-ember/20 text-parchment"
+                              : "border-parchment/10 bg-ink/40 text-parchment/85 hover:border-parchment/40 hover:bg-ink/60"
+                          }`}
+                        >
+                          <img
+                            src={spriteThumbSrc(moduleId, t.sprite)}
+                            alt=""
+                            width={24}
+                            height={24}
+                            style={{ imageRendering: "pixelated" }}
+                            className="h-6 w-6 shrink-0 object-contain"
+                          />
+                          <span className="min-w-0 flex-1 truncate">
+                            {t.name || t.id}{" "}
+                            <span className="font-mono text-parchment/55">
+                              ({t.id})
+                            </span>
+                          </span>
+                          {!t.walkable ? (
+                            <span
+                              className="shrink-0 rounded bg-parchment/10 px-1 py-0.5 text-[9px] uppercase tracking-wide text-parchment/65"
+                              title="Not walkable — painting this blocks the target cell."
+                            >
+                              solid
+                            </span>
+                          ) : null}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            ))}
+            {matches.length === 0 ? (
+              <p className="px-1 py-2 text-center text-xs text-parchment/55">
+                No palette tiles match &ldquo;{filter}&rdquo;.
+              </p>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/** Pressure-plate attribute editor. Mirrors LinkEditor's layout —
+ *  target map picker (grouped by tag, with a custom-id fallback for
+ *  forward references) + target col/row + the replacement palette
+ *  tile. In play, stepping on the cell toggles the target between
+ *  the chosen tile and its authored original. */
+function PressurePlateEditor({
+  moduleId,
+  value,
+  paletteValue,
+  isModified,
+  canReset,
+  availableMaps,
+  palette,
+  onChange,
+  onReset,
+}: {
+  /** Needed to resolve sprite thumbnails (draft-aware) in the
+   *  replace-tile picker. */
+  moduleId: string;
+  value: { map_id: string; col: number; row: number; tile_id: string } | null;
+  paletteValue: {
+    map_id: string;
+    col: number;
+    row: number;
+    tile_id: string;
+  } | null;
+  isModified: boolean;
+  canReset: boolean;
+  availableMaps: Array<{ id: string; name: string; tags?: string[] }>;
+  /** Tile Palette — feeds the replace-tile picker. */
+  palette: TileType[];
+  onChange: (
+    v: { map_id: string; col: number; row: number; tile_id: string } | null,
+  ) => void;
+  onReset: () => void;
+}) {
+  const hasPlate = value !== null;
+  const mapIsOrphan =
+    !!value &&
+    !!value.map_id &&
+    !availableMaps.some((m) => m.id === value.map_id);
+  const [customMode, setCustomMode] = useState<boolean>(false);
+  const useCustom = customMode || mapIsOrphan;
+  const tileIsOrphan =
+    !!value && !!value.tile_id && !palette.some((t) => t.id === value.tile_id);
+  return (
+    <InspectorRow
+      label="Pressure Plate"
+      isModified={isModified}
+      canReset={canReset}
+      onReset={onReset}
+    >
+      {hasPlate ? (
+        <div className="space-y-1">
+          <label className="block">
+            <span className="flex items-center justify-between">
+              <span className="text-xs text-parchment/65">target map</span>
+              <button
+                type="button"
+                onClick={() => setCustomMode((c) => !c)}
+                className="text-xs uppercase tracking-wide text-parchment/65 hover:text-parchment/80"
+                title={
+                  useCustom
+                    ? "Switch back to picking from the maps list."
+                    : "Switch to a free-form text field to type a custom or future map id."
+                }
+              >
+                {useCustom ? "Pick from list" : "Custom id"}
+              </button>
+            </span>
+            {useCustom ? (
+              <input
+                type="text"
+                value={value.map_id}
+                onChange={(e) =>
+                  onChange({ ...value, map_id: e.target.value })
+                }
+                placeholder="target-map"
+                className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-[13px] text-parchment/90 focus:border-parchment/60 focus:outline-none"
+              />
+            ) : (
+              <select
+                value={value.map_id}
+                onChange={(e) =>
+                  onChange({ ...value, map_id: e.target.value })
+                }
+                className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-[13px] text-parchment/90 focus:border-parchment/60 focus:outline-none"
+              >
+                {!value.map_id ? (
+                  <option value="">— choose a map —</option>
+                ) : null}
+                {groupByTags(availableMaps).map(([tag, maps]) => (
+                  <optgroup key={tag} label={tag}>
+                    {maps.map((m) => (
+                      <option key={`${tag}::${m.id}`} value={m.id}>
+                        {m.name} ({m.id})
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+            )}
+            {mapIsOrphan ? (
+              <span className="mt-0.5 block text-xs text-ember/80">
+                Map id <code>{value.map_id}</code> isn&apos;t in this
+                module yet — value preserved so the plate still
+                round-trips.
+              </span>
+            ) : null}
+          </label>
+          <div className="flex gap-2">
+            <label className="flex-1">
+              <span className="text-xs text-parchment/65">col</span>
+              <input
+                type="number"
+                value={value.col}
+                onChange={(e) =>
+                  onChange({ ...value, col: Number(e.target.value) || 0 })
+                }
+                className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90 focus:border-parchment/60 focus:outline-none"
+              />
+            </label>
+            <label className="flex-1">
+              <span className="text-xs text-parchment/65">row</span>
+              <input
+                type="number"
+                value={value.row}
+                onChange={(e) =>
+                  onChange({ ...value, row: Number(e.target.value) || 0 })
+                }
+                className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90 focus:border-parchment/60 focus:outline-none"
+              />
+            </label>
+          </div>
+          <div>
+            <span className="text-xs text-parchment/65">replace tile</span>
+            <PaletteTilePicker
+              moduleId={moduleId}
+              value={value.tile_id}
+              palette={palette}
+              onChange={(tileId) => onChange({ ...value, tile_id: tileId })}
+            />
+            {tileIsOrphan ? (
+              <span className="mt-0.5 block text-xs text-ember/80">
+                Tile id <code>{value.tile_id}</code> isn&apos;t in the
+                palette — the plate will no-op in play until it exists.
+              </span>
+            ) : null}
+          </div>
+          <p className="text-xs text-parchment/65">
+            Stepping on this cell swaps the target to the chosen tile;
+            stepping again restores the original. Persists in the save.
+          </p>
+          <button
+            type="button"
+            onClick={() => onChange(null)}
+            className="rounded border border-parchment/20 px-2 py-0.5 text-xs text-parchment/80 hover:bg-ink/40"
+            title="Remove the pressure plate from this cell (still an override — the palette tile keeps its plate, but this cell explicitly has none)."
+          >
+            Remove plate
+          </button>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2">
+          <span className="text-parchment/60">—</span>
+          <button
+            type="button"
+            onClick={() =>
+              onChange({
+                map_id: paletteValue?.map_id ?? "",
+                col: paletteValue?.col ?? 0,
+                row: paletteValue?.row ?? 0,
+                tile_id: paletteValue?.tile_id ?? "",
+              })
+            }
+            className="rounded border border-parchment/30 px-2 py-0.5 text-xs text-parchment/85 hover:bg-ink/40"
+          >
+            + Add pressure plate
+          </button>
+          {paletteValue ? (
+            <span className="text-xs text-parchment/60">
+              (palette: {paletteValue.map_id} {paletteValue.col},
+              {paletteValue.row} → {paletteValue.tile_id})
+            </span>
+          ) : null}
+        </div>
+      )}
     </InspectorRow>
   );
 }

@@ -31,6 +31,23 @@ export interface SimCell {
   light_range: number;
   /** Inter-map portal — null/undefined when this cell does not link. */
   link?: { map_id: string; x: number; y: number } | null;
+  /** Pressure plate — null/undefined when this cell is not a plate.
+   *  Stepping onto the cell TOGGLES the target cell's tile: the
+   *  first press swaps `(map_id, col, row)` to the palette tile
+   *  `tile_id` (persisted as a tile override, so it survives reload
+   *  and map re-entry); the next press removes the override,
+   *  restoring the authored tile. `map_id` may name the current map
+   *  (the swap renders live) or any other map (applied on next
+   *  visit). Authored on door/gate mechanisms: plate opens the door,
+   *  stepping again closes it. */
+  pressure_plate?: {
+    map_id: string;
+    col: number;
+    row: number;
+    /** Palette tile id (map_tiles.json) painted onto the target
+     *  while the plate is active. */
+    tile_id: string;
+  } | null;
   /** Optional purely-visual background sprite, drawn BEHIND the
    *  cell's main `sprite` and tinted by the same lighting pass. Lets a
    *  foreground tile with transparent pixels (a tower, a tree) sit on
@@ -126,6 +143,15 @@ export interface SimCell {
    *  refire. Dungeon-generated cells set this from the `TILE_TRAP`
    *  prototype; overworld cells can also carry it. */
   trap?: boolean;
+  /** Catalog id from traps.json — when set, this cell is a trap that
+   *  resolves through the trap catalog (damage roll, status effect,
+   *  or teleport per the record's `trap_type`). Same disarm-on-
+   *  trigger semantics as the boolean `trap`; the kernel clears both
+   *  fields and passes the id through on the `trap_triggered` event.
+   *  Takes precedence over `trap` when both are set. Empty /
+   *  undefined = not a catalog trap (the boolean may still arm a
+   *  legacy default trap). */
+  trap_id?: string;
   /** Catalog id of an item lying on this tile. Walking onto a normal
    *  item fires `item_picked` after the move resolves and the kernel
    *  clears this field. When the catalog flags the item as a chest

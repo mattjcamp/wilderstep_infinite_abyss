@@ -260,6 +260,16 @@ export interface SavedMapState {
    *  starts with no fog memory and the player rebuilds it
    *  organically as they explore. */
   visitedCells?: ReadonlyArray<string>;
+  /** Cells whose trap has already fired on this map — `"col,row"`
+   *  keys. Traps are one-shot: the kernel disarms the live cell on
+   *  trigger, and this list makes the disarm PERMANENT — the play
+   *  mount pass clears `trap` / `trap_id` from listed cells before
+   *  the sim sees the grid, so an authored trap doesn't re-arm on
+   *  reload or map re-entry. (Dungeon floors track the same thing in
+   *  the dungeon session's per-level `triggeredTraps` instead.)
+   *  Absent on older saves — treated as empty, so traps fired before
+   *  this field shipped re-arm once. */
+  triggeredTraps?: ReadonlyArray<string>;
   /** Cells whose authored `item` the party has already collected on
    *  this map — `"col,row"` keys. Populated by both pickup paths
    *  (walk-onto `item_picked` + chest-Open `clearCellItem`) and

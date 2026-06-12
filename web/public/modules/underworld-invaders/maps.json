@@ -133350,7 +133350,13 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/grass1.png",
-            "tag": "walkable"
+            "tag": "walkable",
+            "pressure_plate": {
+              "map_id": "",
+              "col": 0,
+              "row": 0,
+              "tile_id": ""
+            }
           },
           {
             "id": "water",

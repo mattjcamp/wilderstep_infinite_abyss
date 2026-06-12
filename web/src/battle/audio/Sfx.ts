@@ -348,6 +348,47 @@ function genChestOpen(ac: AudioContext, out: AudioNode, t0: number): void {
   tone(ac, out, noteHz("E6"), t0 + 0.50, 0.18, 0.14, "triangle", 0.005, 0.14);
 }
 
+function genStoneSlide(ac: AudioContext, out: AudioNode, t0: number): void {
+  // Pressure-plate cue — heavy stone grinding across a floor, ~0.8s:
+  //   1. The grind body: a sustained noise wash pushed through a
+  //      low-pass filter (~420Hz, sweeping down to ~260Hz) so the
+  //      white noise reads as stone-on-stone friction instead of the
+  //      bright hiss the combat bursts use. Slow attack — the slab
+  //      has to overcome friction before it moves.
+  //   2. A very low triangle rumble sweeping 95Hz → 60Hz underneath,
+  //      giving the slab physical weight.
+  //   3. A soft low "settle" thunk at the end as the stone comes to
+  //      rest.
+  // The filter is built inline because the shared noise() helper is
+  // unfiltered by design — this is the only cue (so far) that wants
+  // shaped noise; promote a filteredNoise() helper if a second one
+  // appears.
+  const dur = 0.6;
+  const sampleCount = Math.max(1, Math.floor(ac.sampleRate * dur));
+  const buf = ac.createBuffer(1, sampleCount, ac.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < sampleCount; i++) data[i] = Math.random() * 2 - 1;
+  const src = ac.createBufferSource();
+  src.buffer = buf;
+  const filter = ac.createBiquadFilter();
+  filter.type = "lowpass";
+  filter.frequency.setValueAtTime(420, t0);
+  filter.frequency.linearRampToValueAtTime(260, t0 + dur);
+  filter.Q.value = 0.8;
+  const env = ac.createGain();
+  env.gain.setValueAtTime(0.0001, t0);
+  env.gain.exponentialRampToValueAtTime(0.34, t0 + 0.08);
+  env.gain.setValueAtTime(0.34, t0 + dur * 0.7);
+  env.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  src.connect(filter).connect(env).connect(out);
+  src.start(t0);
+  src.stop(t0 + dur + 0.02);
+  // Weight under the grind.
+  sweep(ac, out, 95, 60, t0, dur, 0.20, "triangle");
+  // Settling thunk.
+  tone(ac, out, 70, t0 + dur, 0.09, 0.26, "triangle", 0.003, 0.06);
+}
+
 function genLevelUp(ac: AudioContext, out: AudioNode, t0: number): void {
   // Bright triumphant arpeggio with a sparkle tail.
   const seq = ["C5", "E5", "G5", "C6"];
@@ -390,6 +431,9 @@ const GENERATORS: Record<string, Generator> = {
   level_up:           genLevelUp,
   // Item-driven
   rest_complete:      genRestComplete,
+  // World mechanisms — pressure plates (PlayHost plays this on both
+  // press and release; the same slab grinds either way).
+  stone_slide:        genStoneSlide,
   // Treasure-chest "Open" cue — heard from the chest dialog when
   // the player commits to opening (or curiosity-opening an empty
   // chest). Distinct timbre from level_up / victory so the player

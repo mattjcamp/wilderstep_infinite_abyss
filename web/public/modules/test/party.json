@@ -1,0 +1,36 @@
+{
+  "start_position": {
+    "map_id": "overview_island",
+    "col": 4,
+    "row": 16
+  },
+  "avatar": "person/fighter18.png",
+  "gold": 50,
+  "roster": [
+    "caramon_majere",
+    "goldmoon",
+    "tanis_half_elven",
+    "raistlin_majere"
+  ],
+  "party_effects": [],
+  "inventory": [
+    {
+      "item": "torch",
+      "charges": 10
+    },
+    {
+      "item": "rock",
+      "charges": 20
+    },
+    {
+      "item": "lockpick",
+      "charges": 2
+    },
+    {
+      "item": "camping_supplies",
+      "charges": 3
+    }
+  ],
+  "torch_steps": 0,
+  "party": []
+}

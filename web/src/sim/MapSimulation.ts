@@ -535,7 +535,15 @@ export type SimEvent =
    *  damage, applies it, and surfaces a log line. The kernel has
    *  already disarmed the cell (set `trap = false`) before the event
    *  fires so it can't double-trigger. */
-  | { kind: "trap_triggered"; pos: Position }
+  | {
+      kind: "trap_triggered";
+      pos: Position;
+      /** traps.json record id from the cell's `trap_id`, or null for
+       *  legacy boolean traps (the host resolves null to the default
+       *  record). Optional for backward compat with older emit sites
+       *  — absent reads as null. */
+      trapId?: string | null;
+    }
   /** Fired AFTER the party finishes stepping onto a cell whose `item`
    *  field is set. Carries the item id + the cell coords so the host
    *  can decide what to do — add to inventory, credit a quest's
@@ -1525,9 +1533,20 @@ export class MapSimulation {
     // dungeon entrance / spawn / encounter checks since a triggered
     // trap should resolve immediately and the cell is now plain
     // floor for any subsequent effects.
-    if (target.trap) {
+    if (target.trap || target.trap_id) {
+      // Catalog-driven traps carry the record id through the event so
+      // the host can resolve damage/effect/teleport from traps.json.
+      // Legacy boolean traps emit trapId: null — the host resolves
+      // those to the default record (dart_trap), falling back to the
+      // original 3+d6 when no catalog is available.
+      const trapId = target.trap_id ?? null;
       target.trap = false;
-      this.emit({ kind: "trap_triggered", pos: { col: to.col, row: to.row } });
+      target.trap_id = undefined;
+      this.emit({
+        kind: "trap_triggered",
+        pos: { col: to.col, row: to.row },
+        trapId,
+      });
     }
 
     // ── Item pickup ─────────────────────────────────────────────────
