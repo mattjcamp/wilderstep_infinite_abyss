@@ -47,13 +47,19 @@ function contentTypeFor(file) {
 const roots = ["modules"];
 if (includeSprites) roots.push("sprites");
 
-const files = roots.flatMap((root) =>
-  walk(path.join(PUBLIC_DIR, root)).map((abs) => ({
-    abs,
-    // R2 key = path relative to public/, forward slashes.
-    key: path.relative(PUBLIC_DIR, abs).split(path.sep).join("/"),
-  })),
-);
+const files = roots
+  .flatMap((root) =>
+    walk(path.join(PUBLIC_DIR, root)).map((abs) => ({
+      abs,
+      // R2 key = path relative to public/, forward slashes.
+      key: path.relative(PUBLIC_DIR, abs).split(path.sep).join("/"),
+    })),
+  )
+  // The hosted catalog index is SERVER-DERIVED — uploading the local
+  // file would clobber entries for player-published modules (it did,
+  // once). After seeding, hit <worker>/reindex (signed in) to rebuild
+  // the index from every manifest actually in the bucket.
+  .filter(({ key }) => key !== "modules/index.json");
 
 console.log(
   `${dryRun ? "[dry-run] " : ""}Seeding ${files.length} files into r2://${BUCKET} (${roots.join(", ")})`,
@@ -94,6 +100,7 @@ for (const { abs, key } of files) {
 
 if (!dryRun && process.exitCode !== 1) {
   console.log(
-    "\nDone. Verify: curl <worker-url>/modules/index.json should list the shipped modules.",
+    "\nDone. Now rebuild the hosted catalog index: open <worker-url>/reindex" +
+      "\nin a signed-in browser (the index is server-derived; seeding never writes it).",
   );
 }

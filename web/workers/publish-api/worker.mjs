@@ -174,6 +174,48 @@ async function updateIndex(env, moduleId, entry /* null = remove */) {
   );
 }
 
+/** Rebuild modules/index.json from every module.json actually in
+ *  the bucket. The index is derived data — this is the reconciler
+ *  for anything that bypasses updateIndex (initial seeding, manual
+ *  bucket surgery, or the historical seed-script clobber). */
+export async function reindexModules(env) {
+  const entries = [];
+  let cursor;
+  do {
+    const page = await env.BUCKET.list({ prefix: "modules/", cursor });
+    for (const obj of page.objects) {
+      if (!obj.key.endsWith("/module.json")) continue;
+      const id = obj.key.slice("modules/".length, -"/module.json".length);
+      if (!parseModuleId(id)) continue; // foreign keys never become entries
+      const stored = await env.BUCKET.get(obj.key);
+      if (!stored) continue;
+      let manifest;
+      try {
+        manifest = await stored.json();
+      } catch {
+        continue; // unreadable manifest — skip rather than poison the index
+      }
+      entries.push({
+        id,
+        title:
+          typeof manifest?.title === "string" && manifest.title
+            ? manifest.title
+            : id,
+        ...(typeof manifest?.role === "string" && manifest.role
+          ? { role: manifest.role }
+          : {}),
+      });
+    }
+    cursor = page.truncated ? page.cursor : undefined;
+  } while (cursor);
+  await env.BUCKET.put(
+    "modules/index.json",
+    JSON.stringify({ modules: entries }, null, 2) + "\n",
+    { httpMetadata: { contentType: "application/json" } },
+  );
+  return entries;
+}
+
 async function countPrefix(env, prefix, cap) {
   let count = 0;
   let cursor;
@@ -432,6 +474,20 @@ export default {
         key === "modules/index.json" ? "no-store" : "public, max-age=60",
       );
       return new Response(obj.body, { headers });
+    }
+
+    // Rebuild the catalog index from bucket manifests. Idempotent,
+    // derived-data-only, but gated on auth so strangers can't use it
+    // as a free compute endpoint.
+    if (request.method === "GET" && url.pathname === "/reindex") {
+      const identity = await authenticate(request, env);
+      if (!identity) return json(401, { error: "Not signed in" });
+      const entries = await reindexModules(env);
+      return json(200, {
+        ok: true,
+        modules: entries.length,
+        ids: entries.map((e) => e.id),
+      });
     }
 
     if (request.method === "GET" && url.pathname === "/status") {
