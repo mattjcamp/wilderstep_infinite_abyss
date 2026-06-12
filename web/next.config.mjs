@@ -18,6 +18,16 @@ const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // NEXT_PUBLIC_* values are INLINED into compiled chunks, and the
+  // dev/build cache under distDir keeps serving the old inlines when
+  // env changes between runs. Remote mode (hosted module catalog —
+  // see sourceConfig.ts) therefore gets its own distDir, so
+  // `npm run dev` and `npm run dev:remote` can alternate without
+  // stale-chunk confusion or cache wipes.
+  distDir:
+    process.env.NEXT_PUBLIC_MODULE_SOURCE === "remote"
+      ? ".next-remote"
+      : ".next",
   ...(basePath
     ? {
         // Static export for GitHub Pages.

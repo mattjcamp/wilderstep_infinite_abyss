@@ -1,3 +1,8 @@
+## Start App Varations
+
+npm run dev:all          # LOCAL mode — static modules, publishes to web/public/ via publish-server
+npm run dev:remote   # REMOTE mode — hosted catalog, publishes to the cloud as @matt
+
 
 ## Big Ideas
 

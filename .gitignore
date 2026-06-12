@@ -7,6 +7,7 @@ _v1_reference
 # Node / Next.js (web/)
 web/node_modules/
 web/.next/
+web/.next-remote/
 web/out/
 web/next-env.d.ts
 web/*.tsbuildinfo
