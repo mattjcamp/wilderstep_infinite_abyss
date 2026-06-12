@@ -118,30 +118,42 @@ function jsonBytes(content) {
 
 // ── Auth ───────────────────────────────────────────────────────────
 
-/** Resolve the caller's handle. v1: Cloudflare Access fronts the
- *  route; the JWT's identity maps to a handle. DEV_ALLOW_ANON
- *  short-circuits for local `wrangler dev`.
+import {
+  cookieValue,
+  handleForIdentity,
+  verifyAccessJwt,
+} from "./accessAuth.mjs";
+
+/** Resolve the caller's verified handle, or null.
  *
- *  TODO(before production): verify the Cf-Access-Jwt-Assertion
- *  signature against the Access team's certs (jose / jwks fetch) and
- *  map identity → handle via the D1 users table instead of deriving
- *  it from the email local-part. */
+ *  Production path: the Access JWT arrives either as the
+ *  Cf-Access-Jwt-Assertion header (requests that passed through an
+ *  Access-protected path) or as the CF_Authorization cookie (set by
+ *  the interactive /login flow; sent cross-origin by the editor's
+ *  credentialed fetches). The signature is VERIFIED against the
+ *  team's JWKS, with aud + expiry checks — see accessAuth.mjs.
+ *
+ *  Fails closed: if ACCESS_TEAM_DOMAIN / ACCESS_AUD aren't
+ *  configured, nobody authenticates (except local dev below).
+ *
+ *  DEV_ALLOW_ANON short-circuits for local `wrangler dev` ONLY —
+ *  never set it on a deployed environment. */
 export async function authenticate(request, env) {
   if (env.DEV_ALLOW_ANON === "true") {
     return { handle: env.DEV_HANDLE || "dev" };
   }
-  const jwt = request.headers.get("Cf-Access-Jwt-Assertion");
+  if (!env.ACCESS_TEAM_DOMAIN || !env.ACCESS_AUD) return null;
+  const jwt =
+    request.headers.get("Cf-Access-Jwt-Assertion") ??
+    cookieValue(request.headers.get("Cookie"), "CF_Authorization");
   if (!jwt) return null;
-  try {
-    // Decode (NOT yet verify — see TODO above) to extract identity.
-    const payload = JSON.parse(atob(jwt.split(".")[1]));
-    const email = typeof payload.email === "string" ? payload.email : "";
-    const local = email.split("@")[0]?.toLowerCase().replace(/[^a-z0-9_-]/g, "-");
-    if (local && HANDLE_RE.test(local)) return { handle: local };
-    return null;
-  } catch {
-    return null;
-  }
+  const payload = await verifyAccessJwt(jwt, {
+    teamDomain: env.ACCESS_TEAM_DOMAIN,
+    aud: env.ACCESS_AUD,
+  });
+  if (!payload) return null;
+  const handle = handleForIdentity(payload.email, env);
+  return handle ? { handle, email: payload.email } : null;
 }
 
 // ── Catalog index maintenance ──────────────────────────────────────
@@ -330,25 +342,70 @@ export async function handleItem(item, handle, env) {
 
 // ── HTTP plumbing ──────────────────────────────────────────────────
 
-const CORS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, Cf-Access-Jwt-Assertion",
-  "Access-Control-Max-Age": "3600",
-};
-
-function json(status, body) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...CORS, "Content-Type": "application/json" },
-  });
+/** CORS headers. Credentialed requests (the editor's /publish and
+ *  /status calls carry the CF_Authorization cookie) require a
+ *  REFLECTED origin + Allow-Credentials — the `*` wildcard is
+ *  rejected by browsers when credentials ride along. Origins are
+ *  allow-listed via the ALLOWED_ORIGINS env (comma-separated). An
+ *  origin not on the list (or no Origin header — curl, same-origin)
+ *  gets the anonymous `*` headers, which is all the public read
+ *  path needs. */
+function corsHeaders(request, env) {
+  const base = {
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers":
+      "Content-Type, Authorization, Cf-Access-Jwt-Assertion",
+    "Access-Control-Max-Age": "3600",
+  };
+  const origin = request.headers.get("Origin");
+  const allowed = (env.ALLOWED_ORIGINS ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (origin && allowed.includes(origin)) {
+    return {
+      ...base,
+      "Access-Control-Allow-Origin": origin,
+      "Access-Control-Allow-Credentials": "true",
+      Vary: "Origin",
+    };
+  }
+  return { ...base, "Access-Control-Allow-Origin": "*" };
 }
 
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    const CORS = corsHeaders(request, env);
+    const json = (status, body) =>
+      new Response(JSON.stringify(body), {
+        status,
+        headers: { ...CORS, "Content-Type": "application/json" },
+      });
     if (request.method === "OPTIONS") {
       return new Response(null, { status: 204, headers: CORS });
+    }
+
+    // Interactive sign-in. THIS path (and only this path) sits
+    // behind the Cloudflare Access application — Access intercepts
+    // the navigation, runs its login flow, sets the CF_Authorization
+    // cookie for this domain, and only then lets the request reach
+    // us. We bounce the user back to the editor (LOGIN_REDIRECT_URL,
+    // or a ?return= param matching an allowed origin).
+    if (request.method === "GET" && url.pathname === "/login") {
+      const ret = url.searchParams.get("return");
+      const allowed = (env.ALLOWED_ORIGINS ?? "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const dest =
+        (ret && allowed.some((o) => ret.startsWith(o)) && ret) ||
+        env.LOGIN_REDIRECT_URL ||
+        "/status";
+      return new Response(null, {
+        status: 302,
+        headers: { ...CORS, Location: dest },
+      });
     }
 
     // Read path (v1: the same worker serves the storage tree so
@@ -368,7 +425,11 @@ export default {
 
     if (request.method === "GET" && url.pathname === "/status") {
       const identity = await authenticate(request, env);
-      return json(200, { ok: true, authenticated: identity !== null });
+      return json(200, {
+        ok: true,
+        authenticated: identity !== null,
+        handle: identity?.handle ?? null,
+      });
     }
 
     if (request.method === "POST" && url.pathname === "/publish") {

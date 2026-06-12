@@ -73,34 +73,73 @@ export interface PublishResponse {
   results: PublishItemResult[];
 }
 
-/** Probe the server. Returns false on any error (network, CORS,
- *  timeout). Safe to call from any environment — returns false
- *  outside the browser. */
-export async function probePublishServer(): Promise<boolean> {
-  if (typeof window === "undefined") return false;
+/** Probe result. `authenticated` is meaningful for the HOSTED
+ *  publish API (Cloudflare Access cookie present + valid); the local
+ *  dev server doesn't do auth and always reports authenticated
+ *  (its /status carries no `authenticated` field — absence is
+ *  treated as true so the local workflow is unchanged). */
+export interface PublishStatus {
+  available: boolean;
+  authenticated: boolean;
+  /** Publish handle the hosted API resolved for this identity. */
+  handle: string | null;
+}
+
+/** URL of the hosted sign-in flow — the worker's Access-protected
+ *  /login path. The editor offers this link when the API is up but
+ *  the user isn't signed in. `returnTo` bounces the browser back
+ *  after Access sets its cookie. */
+export function publishSignInUrl(returnTo?: string): string {
+  const ret = returnTo ?? (typeof window !== "undefined" ? window.location.href : "");
+  return `${PUBLISH_HOST}/login${ret ? `?return=${encodeURIComponent(ret)}` : ""}`;
+}
+
+/** Probe the publish API. Credentials ride along so the hosted
+ *  worker can see the Access cookie; the local server ignores them.
+ *  Returns all-false on any error (network, CORS, timeout). Safe to
+ *  call from any environment — inert outside the browser. */
+export async function probePublishServer(): Promise<PublishStatus> {
+  if (typeof window === "undefined") {
+    return { available: false, authenticated: false, handle: null };
+  }
   try {
     const res = await fetch(`${PUBLISH_HOST}/status`, {
       method: "GET",
       cache: "no-store",
+      credentials: "include",
     });
-    if (!res.ok) return false;
-    const body = (await res.json()) as { ok?: boolean };
-    return body.ok === true;
+    if (!res.ok) {
+      return { available: false, authenticated: false, handle: null };
+    }
+    const body = (await res.json()) as {
+      ok?: boolean;
+      authenticated?: boolean;
+      handle?: string | null;
+    };
+    return {
+      available: body.ok === true,
+      // Local dev server predates auth and omits the field — treat
+      // absence as authenticated so the local workflow is unchanged.
+      authenticated: body.ok === true && body.authenticated !== false,
+      handle: body.handle ?? null,
+    };
   } catch {
-    return false;
+    return { available: false, authenticated: false, handle: null };
   }
 }
 
 /** Send a batch of publish items. Resolves to per-item results so the
  *  caller can decide what to do (clear drafts for successful writes,
  *  surface errors for failed ones). Throws only on network failure or
- *  a non-200 status. */
+ *  a non-200 status. Credentials ride along for the hosted API's
+ *  Access cookie; the local server ignores them. */
 export async function publishItems(
   items: PublishItem[],
 ): Promise<PublishResponse> {
   const res = await fetch(`${PUBLISH_HOST}/publish`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    credentials: "include",
     body: JSON.stringify({ items }),
   });
   if (!res.ok) {

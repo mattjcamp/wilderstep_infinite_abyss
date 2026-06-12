@@ -64,13 +64,37 @@ Per-item results — partial failure is normal and the client already
 handles it. Batch-level errors (bad JSON, auth) use HTTP status +
 `{ error }`.
 
-### Auth
+### Auth (implemented)
 
-`Authorization: Bearer <token>` on /publish (and /status, which
-reports `authenticated: true/false`). v1 token = Cloudflare Access
-JWT (validated in the worker); the validated identity maps to a
-`handle`. Dev mode: the worker accepts `DEV_ALLOW_ANON=true` +
-`DEV_HANDLE=<handle>` env for local testing — never set in prod.
+Cloudflare Access, with the application protecting ONLY the worker's
+`/login` path. The flow:
+
+1. Editor sends the user to `<PUBLISH_HOST>/login?return=<editor-url>`
+   (`publishSignInUrl()` in publishClient). Access intercepts, runs
+   its login (One-time PIN or any configured IdP), sets the
+   `CF_Authorization` cookie for the worker's domain, and the worker
+   bounces the browser back to `return` (validated against
+   ALLOWED_ORIGINS) or LOGIN_REDIRECT_URL.
+2. The editor's `/status` + `/publish` fetches use
+   `credentials: "include"`, so the cookie rides along cross-origin.
+   These paths are NOT behind Access — the worker verifies the
+   cookie's JWT itself (accessAuth.mjs): RS256 signature against the
+   team JWKS (`https://<team>.cloudflareaccess.com/cdn-cgi/access/certs`,
+   cached), `exp`/`nbf` with small skew, `aud` must contain the
+   Access app's AUD tag. Fails closed — unset config means nobody
+   authenticates; reads stay anonymous.
+3. Identity → handle: `HANDLE_MAP` env (JSON email → handle) wins;
+   otherwise a sanitised email local-part. (Pre-D1 stand-in for the
+   users table.)
+
+`/status` reports `{ ok, authenticated, handle }`. CORS: origins in
+`ALLOWED_ORIGINS` get reflected-origin + `Allow-Credentials`
+headers; everything else gets anonymous `*` (read path only).
+
+Worker env: `ACCESS_TEAM_DOMAIN`, `ACCESS_AUD`, `ALLOWED_ORIGINS`,
+`LOGIN_REDIRECT_URL`, `HANDLE_MAP` — see wrangler.toml. Local dev:
+`wrangler dev --var DEV_ALLOW_ANON:true` — NEVER on a deployed
+environment.
 
 ### Item kinds, hosted semantics
 

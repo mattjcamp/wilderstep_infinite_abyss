@@ -24,6 +24,9 @@
  *     label, not "record".
  */
 
+import { publishSignInUrl } from "@/data_model/publishClient";
+import { usePublishServer } from "./usePublishServer";
+
 export function deleteRecordConfirmMessage(args: {
   /** Lower-case kind ("character", "map", "effect"). */
   kind: string;
@@ -55,13 +58,33 @@ export function discardDraftConfirmMessage(fileName: string): string {
 /** The standard unpublished-draft bar. Render directly under the
  *  browse header whenever the model has a draft. Visibility matters
  *  more since play went published-only: this banner is the answer to
- *  "I edited it, why hasn't the game changed?". */
+ *  "I edited it, why hasn't the game changed?".
+ *
+ *  When the hosted publish API is reachable but the user isn't
+ *  signed in (Cloudflare Access cookie absent/expired), the banner
+ *  also carries the Sign-in link — Publish buttons are hidden in
+ *  that state (usePublishServer folds auth into `available`), so
+ *  this is where the author learns why and what to do about it. */
 export function DraftBanner() {
+  const { reachable, authenticated } = usePublishServer();
+  const needsSignIn = reachable && !authenticated;
   return (
     <p className="mt-2 rounded border border-ember/40 bg-ember/15 px-3 py-1.5 text-[13px] text-parchment/90">
       <strong>Unpublished draft</strong> — these edits are saved in
       this browser only. The game plays published files; press{" "}
       <strong>Publish</strong> to make them playable.
+      {needsSignIn ? (
+        <>
+          {" "}
+          <a
+            href={publishSignInUrl()}
+            className="font-semibold underline hover:text-parchment"
+          >
+            Sign in to publish
+          </a>
+          {" "}— publishing requires an account.
+        </>
+      ) : null}
     </p>
   );
 }
