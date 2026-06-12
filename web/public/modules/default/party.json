@@ -1,8 +1,8 @@
 {
   "start_position": {
-    "map_id": "demo_map",
-    "col": 17,
-    "row": 4
+    "map_id": "overview_island",
+    "col": 4,
+    "row": 16
   },
   "avatar": "person/fighter18.png",
   "gold": 50,
