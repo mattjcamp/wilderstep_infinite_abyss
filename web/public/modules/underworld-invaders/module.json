@@ -2,7 +2,7 @@
   "_comment": "Draft module created in the editor. Export this file and drop it into web/public/modules/underworld-invaders/module.json.",
   "id": "underworld-invaders",
   "title": "Emberscar",
-  "description": "Varnfell's harbor stands empty, wolves hold the tradeway like soldiers, and the abandoned Frost Delve has started breathing warm air. The miners stopped digging nine years ago. Whatever they stopped short of didn't.",
+  "description": "Varnfell's harbor stands empty, wolves hold the tradeway like soldiers, and the abandoned Frost Delve has started breathing warm air. The miners stopped digging nine years ago. Whatever they stopped short of didn't. The land is under attack from ancient dragons and devils from below the world's crust. Who will be the one to save us from these ancient terrors?",
   "author": "hyperbolic",
   "version": "0.3.0",
   "extends": "default",

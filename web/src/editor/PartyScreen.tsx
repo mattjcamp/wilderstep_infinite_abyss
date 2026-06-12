@@ -332,6 +332,7 @@ const SYNTHETIC_EFFECT_NAMES: Record<string, string> = {
   torch: "Torch",
   infravision: "Infravision",
   detect_traps: "Detect Traps",
+  repel_monsters: "Repel Monsters",
 };
 
 function prettifyEffectId(id: string): string {

@@ -148,6 +148,11 @@ export interface SavedPartyState {
    *  the party's emitted light radius via Math.max() in the sim.
    *  Absent in legacy saves; the loader treats absence as 0. */
   magic_light_steps?: number;
+  /** Step countdown for the priest's Push spell (repel_monsters
+   *  party effect). While >0 the sim drives roaming monsters away
+   *  from the party each step instead of letting them pursue.
+   *  Absent in legacy saves; treated as 0. */
+  repel_monsters_steps?: number;
   /** Ability ids the player has toggled on from the Party screen's
    *  Effects panel. Persisted across reloads so a party who flagged
    *  Detect Traps, Infravision, etc. keeps the effect engaged when

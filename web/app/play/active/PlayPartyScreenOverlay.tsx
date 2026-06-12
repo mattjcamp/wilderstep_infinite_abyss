@@ -184,8 +184,14 @@ export function PlayPartyScreenOverlay({
   /** Fires AFTER a spell successfully lands (MP deducted, save
    *  committed). The host uses this to play the spell's animation +
    *  sound on the party cell — the overlay has no access to the
-   *  Phaser scene from here, but the host owns the renderer. */
-  onSpellCast?: (spellId: string) => void;
+   *  Phaser scene from here, but the host owns the renderer.
+   *  `actionParams` carries the spell's `action_params` so the host
+   *  can apply param-driven world effects (Push's shove radius /
+   *  distance) without re-resolving the catalog. */
+  onSpellCast?: (
+    spellId: string,
+    actionParams?: Record<string, unknown> | null,
+  ) => void;
   /** Fires AFTER a usable item successfully resolves (stack
    *  decremented, save committed). Same purpose as `onSpellCast` but
    *  keyed by catalog item id so the host can play item-specific VFX
@@ -815,6 +821,7 @@ export function PlayPartyScreenOverlay({
       }
       let magicLight = liveSave.party.magic_light_steps ?? 0;
       let torchSteps = liveSave.party.torch_steps;
+      let repelSteps = liveSave.party.repel_monsters_steps ?? 0;
       for (const id of removed) {
         if (id === "magic_light") {
           // Allow dismissing a cast Light spell by un-checking it in
@@ -829,6 +836,10 @@ export function PlayPartyScreenOverlay({
           // semantics; the catalog's per-torch charges field is
           // already off this stack because Use consumed one item).
           torchSteps = 0;
+        } else if (id === "repel_monsters") {
+          // Un-checking the Push spell's repel aura releases the
+          // monsters early — same dismiss-by-toggle shape as Light.
+          repelSteps = 0;
         } else if (id === "infravision") {
           infravision = false;
         }
@@ -842,6 +853,7 @@ export function PlayPartyScreenOverlay({
           party_effects: [...nextIds],
           magic_light_steps: magicLight,
           torch_steps: torchSteps,
+          repel_monsters_steps: repelSteps,
           infravision_active: infravision,
         },
       });
@@ -1501,11 +1513,67 @@ export function PlayPartyScreenOverlay({
     [state, liveSave, commit, onSpellCast],
   );
 
+  /** Cast the priest's Push spell (self-targeted divine shockwave).
+   *  Deducts caster MP, seeds `repel_monsters_steps` from the
+   *  spell's duration, and adds `repel_monsters` to `party_effects`
+   *  so the Effects panel reflects it. The world-side consequences
+   *  ride the host hooks: the commit's onMutateSave delta seeds the
+   *  kernel's repel aura, and onSpellCast (with the spell's
+   *  action_params) performs the cast-time shove + VFX. */
+  const applyRepel = useCallback(
+    (casterId: string, spell: PartySpellRef) => {
+      if (state.kind !== "ok") return;
+      const cur = liveSave;
+      const cost = spell.mp_cost ?? 0;
+
+      const casterSaved = cur.party.members.find((m) => m.id === casterId);
+      if (!casterSaved) {
+        setCastMessage("Cast failed — caster missing.");
+        return;
+      }
+      const casterMp = casterSaved.mp ?? 0;
+      if (casterMp < cost) {
+        setCastMessage(
+          `${state.characters.find((c) => c.id === casterId)?.name ?? casterId} doesn't have enough MP (${casterMp}/${cost}).`,
+        );
+        return;
+      }
+
+      const duration =
+        typeof spell.duration === "number" && spell.duration > 0
+          ? spell.duration
+          : 10;
+      const nextMembers = cur.party.members.map((m) =>
+        m.id === casterId ? { ...m, mp: casterMp - cost } : m,
+      );
+      const nextPartyEffects = new Set(cur.party.party_effects ?? []);
+      nextPartyEffects.add("repel_monsters");
+      const casterName =
+        state.characters.find((c) => c.id === casterId)?.name ?? casterId;
+      setCastMessage(
+        `${casterName} casts ${spell.name ?? "Push"} — monsters are driven back (${duration} steps).`,
+      );
+      setActiveEffectIds([...nextPartyEffects]);
+      commit({
+        ...cur,
+        party: {
+          ...cur.party,
+          members: nextMembers,
+          repel_monsters_steps: duration,
+          party_effects: [...nextPartyEffects],
+        },
+      });
+      // Spell landed — the host shoves nearby monsters (using the
+      // spell's radius / push_distance) and paints the shockwave.
+      onSpellCast?.(spell.id, spell.action_params ?? null);
+    },
+    [state, liveSave, commit, onSpellCast],
+  );
+
   /** Route an incoming Cast intent. Self-targeted spells fire
    *  immediately; ally-target spells stash the intent and open the
    *  target picker (rendered alongside the screen). Unsupported
-   *  targetings show a message rather than failing silently — Knock
-   *  and Push aren't wired up yet. */
+   *  targetings show a message rather than failing silently. */
   const handleCastSpell = useCallback(
     (casterId: string, spellId: string) => {
       if (state.kind !== "ok") return;
@@ -1531,6 +1599,10 @@ export function PlayPartyScreenOverlay({
           applyLight(casterId, spell);
           return;
         }
+        if (effectId === "repel_monsters") {
+          applyRepel(casterId, spell);
+          return;
+        }
       }
       if (
         spell.action === "heal" &&
@@ -1544,7 +1616,7 @@ export function PlayPartyScreenOverlay({
         `${spell.name ?? spell.id} isn't wired up out of combat yet.`,
       );
     },
-    [state, applyLight],
+    [state, applyLight, applyRepel],
   );
 
   // P closes the screen — same as the inspector-key shortcut that
@@ -1679,6 +1751,10 @@ export function PlayPartyScreenOverlay({
                 new Map<string, number>([
                   ["magic_light", liveSave.party.magic_light_steps ?? 0],
                   ["torch", liveSave.party.torch_steps ?? 0],
+                  [
+                    "repel_monsters",
+                    liveSave.party.repel_monsters_steps ?? 0,
+                  ],
                 ])
               }
             />

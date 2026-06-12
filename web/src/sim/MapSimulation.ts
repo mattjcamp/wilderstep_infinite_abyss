@@ -30,6 +30,7 @@ import {
 } from "./movement";
 import {
   canPursue,
+  fleeStep,
   findLairs,
   findPlacedEncounters,
   findQuestPlacedEncounters,
@@ -647,6 +648,13 @@ export interface MapSimulationOptions {
   grid: SimGrid;
   party: SimParty;
   catalog: SimCatalog;
+  /** Repel-aura knobs for the priest's Push spell — while the
+   *  party's `repel_monsters_steps` counter is live, monsters
+   *  within `radius` Chebyshev tiles flee `distance` cells per
+   *  party step instead of pursuing. The host derives these from
+   *  the `repel_monsters` effect record's params; defaults match
+   *  the default module's catalog (radius 3, distance 1). */
+  repelAura?: { radius: number; distance: number };
   /** Class id → display name lookup. The panel uses this for the
    *  per-member roster line. The kernel itself doesn't consult it. */
   classNameById: ReadonlyMap<string, string>;
@@ -842,6 +850,8 @@ export class MapSimulation {
   /** Live roamers — monsters the spawn loop has dropped onto the map.
    *  Mutated each step. Snapshot to the bridge via setRoamerPositions. */
   private roamers: SimRoamer[] = [];
+  /** Push-spell aura knobs — see MapSimulationOptions.repelAura. */
+  private repelAura: { radius: number; distance: number };
   /** Live placed-encounter entities — one per painted encounter cell,
    *  seeded at construction. Each entity pursues the party every
    *  step until defeated; victory removes the entity for the
@@ -930,6 +940,10 @@ export class MapSimulation {
     // detection, retrieve-step placement). Without this the freshly-
     // loaded JSON catalog re-spawns the item every map mount.
     this.pickedItemCells = new Set(opts.initialPickedItemCells ?? []);
+    this.repelAura = {
+      radius: Math.max(1, opts.repelAura?.radius ?? 3),
+      distance: Math.max(1, opts.repelAura?.distance ?? 1),
+    };
     for (const key of this.pickedItemCells) {
       const [cs, rs] = key.split(",");
       const c = Number(cs);
@@ -1930,26 +1944,31 @@ export class MapSimulation {
         return cell !== null && cell.walkable;
       };
       const isBlocked = (c: number, r: number) => occupied.has(`${c},${r}`);
-      const next = canPursue(
-        { col: placed.col, row: placed.row },
-        this.pos,
-        this.grid as unknown as ReadonlyArray<
-          ReadonlyArray<{ obstructs?: boolean } | null | undefined>
-        >,
-      )
-        ? roamStep(
-            { col: placed.col, row: placed.row },
-            this.pos,
-            isWalkable,
-            isBlocked,
-          )
-        : Math.random() < IDLE_WANDER_CHANCE
-          ? randomRoamStep(
+      // Push-spell aura — same flee-over-pursue override the roamer
+      // loop applies; placed encounters are "monsters" too.
+      const fled = this.repelFleeOrNull(placed, isWalkable, isBlocked);
+      const next =
+        fled ??
+        (canPursue(
+          { col: placed.col, row: placed.row },
+          this.pos,
+          this.grid as unknown as ReadonlyArray<
+            ReadonlyArray<{ obstructs?: boolean } | null | undefined>
+          >,
+        )
+          ? roamStep(
               { col: placed.col, row: placed.row },
+              this.pos,
               isWalkable,
               isBlocked,
             )
-          : { col: placed.col, row: placed.row };
+          : Math.random() < IDLE_WANDER_CHANCE
+            ? randomRoamStep(
+                { col: placed.col, row: placed.row },
+                isWalkable,
+                isBlocked,
+              )
+            : { col: placed.col, row: placed.row });
       placed.col = next.col;
       placed.row = next.row;
       occupied.add(`${next.col},${next.row}`);
@@ -1978,6 +1997,35 @@ export class MapSimulation {
       }
     }
     return trigger;
+  }
+
+  /** True while the priest's Push spell holds — monsters inside the
+   *  repel aura flee instead of pursuing. */
+  private repelActive(): boolean {
+    return (this.party.repel_monsters_steps ?? 0) > 0;
+  }
+
+  /** Flee destination for a repelled entity, or null when the repel
+   *  aura isn't active / the entity is outside it. Shared by the
+   *  roamer and placed-encounter pursuit loops. */
+  private repelFleeOrNull(
+    entity: { col: number; row: number },
+    isWalkable: (c: number, r: number) => boolean,
+    isBlocked: (c: number, r: number) => boolean,
+  ): Position | null {
+    if (!this.repelActive()) return null;
+    const dist = Math.max(
+      Math.abs(entity.col - this.pos.col),
+      Math.abs(entity.row - this.pos.row),
+    );
+    if (dist > this.repelAura.radius) return null;
+    return fleeStep(
+      entity,
+      this.pos,
+      this.repelAura.distance,
+      isWalkable,
+      isBlocked,
+    );
   }
 
   /** Parse a "col,row" key back into a Position. Returns null when
@@ -2129,26 +2177,32 @@ export class MapSimulation {
         return cell !== null && cell.walkable;
       };
       const isBlocked = (c: number, r: number) => occupied.has(`${c},${r}`);
-      const next = canPursue(
-        { col: roamer.col, row: roamer.row },
-        this.pos,
-        this.grid as unknown as ReadonlyArray<
-          ReadonlyArray<{ obstructs?: boolean } | null | undefined>
-        >,
-      )
-        ? roamStep(
-            { col: roamer.col, row: roamer.row },
-            this.pos,
-            isWalkable,
-            isBlocked,
-          )
-        : Math.random() < IDLE_WANDER_CHANCE
-          ? randomRoamStep(
+      // Push-spell aura: a repelled roamer flees instead of pursuing
+      // (or wandering) — it can never close on the party while the
+      // effect holds, since fleeStep only ever increases distance.
+      const fled = this.repelFleeOrNull(roamer, isWalkable, isBlocked);
+      const next =
+        fled ??
+        (canPursue(
+          { col: roamer.col, row: roamer.row },
+          this.pos,
+          this.grid as unknown as ReadonlyArray<
+            ReadonlyArray<{ obstructs?: boolean } | null | undefined>
+          >,
+        )
+          ? roamStep(
               { col: roamer.col, row: roamer.row },
+              this.pos,
               isWalkable,
               isBlocked,
             )
-          : { col: roamer.col, row: roamer.row };
+          : Math.random() < IDLE_WANDER_CHANCE
+            ? randomRoamStep(
+                { col: roamer.col, row: roamer.row },
+                isWalkable,
+                isBlocked,
+              )
+            : { col: roamer.col, row: roamer.row });
       roamer.col = next.col;
       roamer.row = next.row;
       occupied.add(`${next.col},${next.row}`);
@@ -2274,6 +2328,79 @@ export class MapSimulation {
       message: `Light shines (${steps} steps).`,
     });
     this.emit({ kind: "state" });
+  }
+
+  /** Cast (or expire) the priest's Push spell — sets the step
+   *  countdown for the repel_monsters party effect. While the
+   *  counter is live, monsters inside the repel aura flee from the
+   *  party each step instead of pursuing. MP deduction is the
+   *  caller's job — same convention as `castLightSpell`. Passing 0
+   *  turns the effect off (Effects-panel toggle). */
+  castRepelSpell(steps: number): void {
+    if (this.disposed) return;
+    if ((this.party.repel_monsters_steps ?? 0) === steps) return;
+    this.party = { ...this.party, repel_monsters_steps: steps };
+    this.emit({
+      kind: "log",
+      message:
+        steps > 0
+          ? `A wave of divine force holds the monsters back (${steps} steps).`
+          : "The repelling force fades.",
+    });
+    this.emit({ kind: "state" });
+  }
+
+  /** The Push spell's cast-time shove — every roaming monster and
+   *  placed encounter within `radius` Chebyshev tiles of the party
+   *  is driven up to `distance` cells away (stopping early at walls
+   *  / occupied cells). Repaints the entity overlays through the
+   *  bridge so the scatter is visible immediately, even under the
+   *  party-screen modal. Returns how many entities moved. */
+  pushRoamersAway(radius: number, distance: number): number {
+    if (this.disposed) return 0;
+    const occupied = new Set<string>([
+      ...this.roamers.map((r) => `${r.col},${r.row}`),
+      ...this.placedEncounters.map((p) => `${p.col},${p.row}`),
+    ]);
+    const isWalkable = (c: number, r: number) => {
+      const cell = cellAt(this.grid, c, r);
+      return cell !== null && cell.walkable;
+    };
+    let moved = 0;
+    const shove = (entity: { col: number; row: number }) => {
+      const dist = Math.max(
+        Math.abs(entity.col - this.pos.col),
+        Math.abs(entity.row - this.pos.row),
+      );
+      if (dist > radius) return;
+      const fromKey = `${entity.col},${entity.row}`;
+      occupied.delete(fromKey);
+      const next = fleeStep(
+        entity,
+        this.pos,
+        distance,
+        isWalkable,
+        (c, r) => occupied.has(`${c},${r}`),
+      );
+      if (next.col !== entity.col || next.row !== entity.row) moved += 1;
+      entity.col = next.col;
+      entity.row = next.row;
+      occupied.add(`${next.col},${next.row}`);
+    };
+    for (const roamer of this.roamers) shove(roamer);
+    for (const placed of this.placedEncounters) shove(placed);
+    if (moved > 0) {
+      this.bridge.setRoamerPositions?.(this.snapshotRoamers());
+      this.bridge.setPlacedEncounterPositions?.(
+        this.snapshotPlacedEncounters(),
+      );
+      this.emit({
+        kind: "log",
+        message: `${moved} monster${moved === 1 ? " is" : "s are"} hurled back by the blast.`,
+      });
+      this.emit({ kind: "state" });
+    }
+    return moved;
   }
 
   /** Activate or deactivate the party's infravision ability. The

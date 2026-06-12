@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   canPursue,
+  fleeStep,
   hasLineOfSight,
   IDLE_WANDER_CHANCE,
   PURSUIT_RADIUS,
@@ -163,6 +164,73 @@ describe("roamStep", () => {
       (c, r) => !(c === 1 && r === 0),
     );
     expect(out).toEqual({ col: 0, row: 0 });
+  });
+});
+
+describe("fleeStep", () => {
+  it("walks up to `distance` cells directly away from the party", () => {
+    // Roamer at (3,3), party at (1,3) — flee direction is +col.
+    const out = fleeStep(
+      { col: 3, row: 3 },
+      { col: 1, row: 3 },
+      3,
+      () => true,
+    );
+    expect(
+      Math.max(Math.abs(out.col - 1), Math.abs(out.row - 3)),
+    ).toBe(5); // started at distance 2, fled 3
+  });
+
+  it("never decreases distance and stops when boxed in", () => {
+    // Walls everywhere except the start cell — the roamer stays put.
+    const out = fleeStep(
+      { col: 2, row: 2 },
+      { col: 0, row: 0 },
+      5,
+      (c, r) => c === 2 && r === 2,
+    );
+    expect(out).toEqual({ col: 2, row: 2 });
+  });
+
+  it("stops early at a wall instead of teleporting through it", () => {
+    // Party at (0,2), roamer at (2,2); wall at col 4 — flee right
+    // reaches (3,2) and... col 4 blocked, but up/down at col 3 keep
+    // distance equal (3), not greater, so it halts at (3,2).
+    const out = fleeStep(
+      { col: 2, row: 2 },
+      { col: 0, row: 2 },
+      4,
+      (c) => c < 4,
+    );
+    expect(out).toEqual({ col: 3, row: 2 });
+  });
+
+  it("respects the blocked predicate (occupied cells)", () => {
+    // Party at (0,0), roamer at (2,2) — both "right" (3,2) and
+    // "down" (2,3) would grow Chebyshev distance to 3. Block right
+    // (another monster sits there) and the flee takes down instead.
+    const out = fleeStep(
+      { col: 2, row: 2 },
+      { col: 0, row: 0 },
+      1,
+      () => true,
+      (c, r) => c === 3 && r === 2,
+    );
+    expect(out).toEqual({ col: 2, row: 3 });
+  });
+
+  it("stays pinned when ahead is blocked and sidesteps don't help", () => {
+    // Party directly left on the same row: with "right" blocked,
+    // up/down keep Chebyshev distance EQUAL (not greater), so the
+    // monster is pinned rather than oscillating sideways.
+    const out = fleeStep(
+      { col: 2, row: 2 },
+      { col: 0, row: 2 },
+      3,
+      () => true,
+      (c, r) => c === 3 && r === 2,
+    );
+    expect(out).toEqual({ col: 2, row: 2 });
   });
 });
 

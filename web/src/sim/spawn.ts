@@ -277,6 +277,61 @@ export function roamStep(
   return best;
 }
 
+/**
+ * Flee path for a repelled monster — the inverse of {@link roamStep}.
+ * Takes up to `distance` single-cell moves, each one picked to
+ * MAXIMISE Chebyshev distance from the party (cardinal moves only,
+ * matching roamStep's movement model). Stops early when boxed in —
+ * no candidate strictly increases the distance — so a cornered
+ * monster presses against the wall instead of teleporting through
+ * it. Returns the final position (may equal the start).
+ *
+ * Used by the priest's Push spell: the cast-time shove walks
+ * several flee steps at once; the lingering repel aura walks
+ * `push_distance` of them per party step. Pure — caller supplies
+ * walkability + occupancy probes.
+ */
+export function fleeStep(
+  roamer: { col: number; row: number },
+  party: Position,
+  distance: number,
+  isWalkable: (col: number, row: number) => boolean,
+  blocked?: (col: number, row: number) => boolean,
+): Position {
+  let here: Position = { col: roamer.col, row: roamer.row };
+  const dirs: Array<[number, number]> = [
+    [0, -1],
+    [0, 1],
+    [-1, 0],
+    [1, 0],
+  ];
+  for (let step = 0; step < distance; step++) {
+    const hereDist = Math.max(
+      Math.abs(here.col - party.col),
+      Math.abs(here.row - party.row),
+    );
+    let best = here;
+    let bestDist = hereDist;
+    for (const [dc, dr] of dirs) {
+      const nc = here.col + dc;
+      const nr = here.row + dr;
+      if (!isWalkable(nc, nr)) continue;
+      if (blocked && blocked(nc, nr)) continue;
+      const d = Math.max(
+        Math.abs(nc - party.col),
+        Math.abs(nr - party.row),
+      );
+      if (d > bestDist) {
+        bestDist = d;
+        best = { col: nc, row: nr };
+      }
+    }
+    if (best === here) break; // boxed in — no move increases distance
+    here = best;
+  }
+  return here;
+}
+
 /** Probability that a monster which CAN'T currently pursue the party
  *  (out of range, or line of sight blocked) takes an idle wander step
  *  on a given turn. Keeps stationary monsters from looking frozen —

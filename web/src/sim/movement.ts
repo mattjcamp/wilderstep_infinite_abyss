@@ -146,11 +146,18 @@ export function partyLightSource(
  *  movement is resolved (the v1 convention), so a torch with 1 step
  *  left illuminates the tile you step ONTO before burning out. */
 export function tickPartyTimers(
-  party: Pick<SimParty, "torch_steps" | "magic_light_steps">,
-): Pick<SimParty, "torch_steps" | "magic_light_steps"> {
+  party: Pick<
+    SimParty,
+    "torch_steps" | "magic_light_steps" | "repel_monsters_steps"
+  >,
+): Pick<
+  SimParty,
+  "torch_steps" | "magic_light_steps" | "repel_monsters_steps"
+> {
   return {
     torch_steps: Math.max(0, party.torch_steps - 1),
     magic_light_steps: Math.max(0, (party.magic_light_steps ?? 0) - 1),
+    repel_monsters_steps: Math.max(0, (party.repel_monsters_steps ?? 0) - 1),
   };
 }
 

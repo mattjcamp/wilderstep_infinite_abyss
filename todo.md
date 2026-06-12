@@ -1,11 +1,7 @@
-## Backlog
-
-- Implmenet priest spell Push
 
 ## Big Ideas
 
 - Implement module publishing for players
-- Audit Editor UI: screens and editors should be as consistant as possible
 
 ## New Content for v2
 

@@ -338,6 +338,11 @@ export interface SimParty {
    *  SimParty inputs (older tests, fresh saves) may omit it; the
    *  kernel coerces absence to 0. */
   magic_light_steps?: number;
+  /** Step countdown for the priest's Push spell (repel_monsters
+   *  party effect). >0 = roaming monsters inside the repel aura are
+   *  driven away from the party each step instead of pursuing.
+   *  Decrements one per step; optional like the other counters. */
+  repel_monsters_steps?: number;
   /** Whether the party has currently *engaged* their infravision
    *  ability. The ability itself is a passive race trait (Dwarf in
    *  the default module); this flag is the player-controlled
@@ -433,6 +438,10 @@ export interface SimEffect {
   name: string;
   description: string;
   duration: number | "permanent" | "instant" | "until_save";
+  /** Effect-specific knobs from effects.json (e.g. repel_monsters'
+   *  `radius` + `push_distance` aura). Optional — most effects carry
+   *  none, and legacy catalog casts pass through whatever is there. */
+  params?: Record<string, unknown> | null;
 }
 
 /** Light range constants — same magic numbers v1 used. Held here so

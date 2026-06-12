@@ -1816,6 +1816,7 @@ export function PlayHost() {
           // the screen mid-dungeon.
           torch_steps: snap.party.torch_steps,
           magic_light_steps: snap.party.magic_light_steps ?? 0,
+          repel_monsters_steps: snap.party.repel_monsters_steps ?? 0,
           currentDungeon: {
             dungeonId: dungeonNow.dungeonId,
             instanceId: dungeonNow.instanceId,
@@ -1867,6 +1868,12 @@ export function PlayHost() {
       if (id === "magic_light" && (snap.party.magic_light_steps ?? 0) <= 0) {
         continue; // Cleric's Light burnt out
       }
+      if (
+        id === "repel_monsters" &&
+        (snap.party.repel_monsters_steps ?? 0) <= 0
+      ) {
+        continue; // Push's repelling force faded
+      }
       if (id === "torch" && snap.party.torch_steps <= 0) {
         continue; // Torch burnt out — drop from the Effects panel
       }
@@ -1891,6 +1898,7 @@ export function PlayHost() {
         infravision_active: !!snap.party.infravision_active,
         torch_steps: snap.party.torch_steps,
         magic_light_steps: snap.party.magic_light_steps ?? 0,
+        repel_monsters_steps: snap.party.repel_monsters_steps ?? 0,
         party_effects: partyEffects,
         // Mid-voyage state — onBoat flips during boarding /
         // disembarking; currentBoatSprite carries the sprite of the
@@ -3035,6 +3043,7 @@ export function PlayHost() {
             roster: [...save.party.roster],
             torch_steps: save.party.torch_steps,
             magic_light_steps: save.party.magic_light_steps ?? 0,
+            repel_monsters_steps: save.party.repel_monsters_steps ?? 0,
             infravision_active: save.party.infravision_active,
             gold: save.party.gold,
             inventory: [...save.party.inventory],
@@ -3459,6 +3468,30 @@ export function PlayHost() {
               dungeonMutations?.pickedItemCells ?? initialPickedItemCells,
             initialOnBoat: save.party.onBoat,
             initialCurrentBoatSprite: save.party.currentBoatSprite,
+            // Push-spell aura knobs from the repel_monsters effect
+            // record — data-driven so a module can retune the aura
+            // without a code change. Kernel defaults (3 / 1) apply
+            // when the record or its params are absent.
+            repelAura: (() => {
+              const params = catalog.effects.find(
+                (e) => e.id === "repel_monsters",
+              )?.params as
+                | { radius?: number; push_distance?: number }
+                | null
+                | undefined;
+              return params &&
+                (typeof params.radius === "number" ||
+                  typeof params.push_distance === "number")
+                ? {
+                    radius:
+                      typeof params.radius === "number" ? params.radius : 3,
+                    distance:
+                      typeof params.push_distance === "number"
+                        ? params.push_distance
+                        : 1,
+                  }
+                : undefined;
+            })(),
             questDefs,
             questStates: questStatesRef.current,
             currentLocation,
@@ -5697,6 +5730,17 @@ export function PlayHost() {
               ) {
                 sim.castLightSpell(next.party.magic_light_steps ?? 0);
               }
+              // Priest's Push spell — castRepelSpell reseeds the
+              // repel counter so monsters start fleeing. The cast-
+              // time SHOVE happens in onSpellCast below (it carries
+              // the spell's own radius / push_distance params).
+              // Passing 0 turns the effect off.
+              if (
+                (next.party.repel_monsters_steps ?? 0) !==
+                (prev.party.repel_monsters_steps ?? 0)
+              ) {
+                sim.castRepelSpell(next.party.repel_monsters_steps ?? 0);
+              }
               // Torch — also a party-level light source. Lighting a
               // torch (Use from the stash) or extinguishing one
               // (un-checking it in the Effects panel) lands here.
@@ -5759,7 +5803,7 @@ export function PlayHost() {
               }
             }
           }}
-          onSpellCast={(spellId) => {
+          onSpellCast={(spellId, actionParams) => {
             // Paint the spell's animation + play its SFX on the
             // party cell. The overlay is up so the player sees the
             // effect framing the world canvas behind the modal —
@@ -5772,8 +5816,36 @@ export function PlayHost() {
             const pos = sim.snapshot().pos;
             const px = pos.col * TILE_SIZE + TILE_SIZE / 2;
             const py = pos.row * TILE_SIZE + TILE_SIZE / 2;
+            // Push — the divine shockwave shoves every monster
+            // within the spell's radius before the lingering aura
+            // (seeded via castRepelSpell in onMutateSave above)
+            // takes over. Gameplay first, then VFX, so a render
+            // hiccup can't eat the shove.
+            if (spellId === "push") {
+              const p = (actionParams ?? {}) as {
+                radius?: number;
+                push_distance?: number;
+              };
+              sim.pushRoamersAway(
+                typeof p.radius === "number" ? p.radius : 5,
+                typeof p.push_distance === "number" ? p.push_distance : 3,
+              );
+            }
             try {
-              if (spellId === "light") {
+              if (spellId === "push") {
+                // Expanding holy shockwave — shield-blue ring +
+                // radial burst, with the turn-undead blast SFX
+                // (it's the same "divine force" family).
+                void glowAura(r.scene, { x: px, y: py }, VFX_COLOURS.shield);
+                void radialBurst(
+                  r.scene,
+                  { x: px, y: py },
+                  VFX_COLOURS.shield,
+                  VFX_COLOURS.white,
+                  48,
+                );
+                Sfx.play("turn_undead");
+              } else if (spellId === "light") {
                 // Soft expanding gold ring — matches `buff_aura`
                 // in the effect registry and the "Conjures a
                 // radiant orb of divine light" flavor in the
