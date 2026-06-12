@@ -52,8 +52,11 @@ interface IndexFile {
   modules?: IndexEntry[];
 }
 
-async function fetchJson(url: string): Promise<unknown> {
-  const res = await fetch(url);
+async function fetchJson(
+  url: string,
+  init?: RequestInit,
+): Promise<unknown> {
+  const res = await fetch(url, init);
   if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
   return res.json();
 }
@@ -252,8 +255,13 @@ export class StaticModuleSource implements ModuleSource {
     const draftIndex = this.preferDrafts
       ? await loadIndexDraft<IndexFile>()
       : null;
+    // The catalog index is the freshness-critical resource — a stale
+    // copy hides newly published modules entirely (and module rows
+    // are only attempted for ids the index lists, so the failure is
+    // silent). Bypass every HTTP cache layer for it.
     const index = draftIndex ?? ((await fetchJson(
       this.locator.index(),
+      { cache: "no-store" },
     )) as IndexFile);
     const entries = index.modules ?? [];
     const out: ModuleSummary[] = [];

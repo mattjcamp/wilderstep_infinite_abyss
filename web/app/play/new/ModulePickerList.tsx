@@ -53,6 +53,15 @@ export function ModulePickerList() {
     };
   }, []);
 
+  // Which catalog this build is wired to — NEXT_PUBLIC_* values are
+  // inlined at compile time, so this badge reports what the BUNDLE
+  // believes, which is exactly what we need when debugging mode
+  // switches (and useful context for players later).
+  const sourceBadge =
+    process.env.NEXT_PUBLIC_MODULE_SOURCE === "remote"
+      ? `hosted catalog (${process.env.NEXT_PUBLIC_READ_HOST ?? "no host!"})`
+      : "local modules";
+
   if (state.kind === "loading") {
     return <p className="text-parchment/55">Loading modules…</p>;
   }
@@ -79,7 +88,9 @@ export function ModulePickerList() {
     );
   }
   return (
-    <ul className="grid w-full max-w-3xl grid-cols-1 gap-3 sm:grid-cols-2">
+    <div className="flex w-full max-w-3xl flex-col items-center gap-3">
+      <p className="text-xs text-parchment/40">{sourceBadge}</p>
+    <ul className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2">
       {state.modules.map((m) => (
         <li key={m.id}>
           <Link
@@ -103,5 +114,6 @@ export function ModulePickerList() {
         </li>
       ))}
     </ul>
+    </div>
   );
 }

@@ -419,11 +419,18 @@ export default {
       (url.pathname.startsWith("/modules/") ||
         url.pathname.startsWith("/sprites/"))
     ) {
-      const obj = await env.BUCKET.get(url.pathname.slice(1));
+      const key = url.pathname.slice(1);
+      const obj = await env.BUCKET.get(key);
       if (!obj) return json(404, { error: `Not found: ${url.pathname}` });
       const headers = new Headers(CORS);
       obj.writeHttpMetadata(headers);
-      headers.set("Cache-Control", "public, max-age=60");
+      // The catalog index must never be served stale — a cached copy
+      // hides freshly published modules. Everything else can take a
+      // short browser cache.
+      headers.set(
+        "Cache-Control",
+        key === "modules/index.json" ? "no-store" : "public, max-age=60",
+      );
       return new Response(obj.body, { headers });
     }
 
