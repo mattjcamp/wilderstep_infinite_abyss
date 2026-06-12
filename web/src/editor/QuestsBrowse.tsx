@@ -17,6 +17,11 @@
  * Same draft / publish / export flow as the rest of the editor.
  */
 
+import {
+  DraftBanner,
+  deleteRecordConfirmMessage,
+  discardDraftConfirmMessage,
+} from "./editorShell";
 import { useEffect, useMemo, useState } from "react";
 import {
   discardDraft,
@@ -424,7 +429,12 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
     if (
       typeof window !== "undefined" &&
       !window.confirm(
-        `Delete quest "${id}"?\n\nRemoves the whole record (including its steps). Saves to the draft until you Publish.`,
+        deleteRecordConfirmMessage({
+          kind: "quest",
+          name: id,
+          fileName: FILE_NAME,
+          detail: "This deletes the whole quest, including its steps.",
+        }),
       )
     )
       return;
@@ -474,7 +484,12 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
       target &&
       typeof window !== "undefined" &&
       !window.confirm(
-        `Delete step "${target.name}" (${target.id}) from quest "${questId}"?`,
+        deleteRecordConfirmMessage({
+          kind: "step",
+          name: `${target.name} (${target.id})`,
+          fileName: FILE_NAME,
+          detail: `This removes the step from quest "${questId}".`,
+        }),
       )
     )
       return;
@@ -487,7 +502,7 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
     if (!hasDraft(moduleId, MODEL_KEY)) return;
     if (
       !window.confirm(
-        "Discard all pending changes to this module's quests file?",
+        discardDraftConfirmMessage(FILE_NAME),
       )
     )
       return;
@@ -624,6 +639,7 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
           ) : null}
         </div>
       </header>
+      {state.isDraft ? <DraftBanner /> : null}
 
       {creating ? (
         <div className="mt-4">

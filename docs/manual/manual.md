@@ -604,11 +604,13 @@ Once you in town, talk to the townspeople and you will find people with interest
 
 Get used to the controls, press the "P" key to see the state of your party, manage your inventory and view individual characters. Make sure each is ready for the next adventure. Once you have explored town and completed a few quests, it is time to venture out into the far more dangerous world.
 
+Sometimes, you may see the King's Eagle flying nearby. This is King Wellerman's messager and the eagle will have important information that you will need to start your adventure.
+
 ### How do I restore HP and MP between fights?
 
 Rest with Camping Supplies from the Party screen, or visit a temple in town.
 A Cleric or other healer can also cast healing spells on the party screen
-outside of combat.
+outside of combat. Sometimes, simply spending time in an inn or a grove will slowly replenish your hit points and magic points.
 
 ### Where do potion reagents come from?
 
@@ -630,7 +632,3 @@ Alchemist can then brew them into potions from the Party screen. The party can a
   outside the markers — including all of the hand-written Q&A above — stays
   untouched on every run.
 -->
-
----
-
-_End of manual._

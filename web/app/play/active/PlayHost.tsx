@@ -37,7 +37,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { withBasePath } from "@/util/basePath";
 import { mergeModel } from "@/data_model/merge";
-import { loadDraft } from "@/data_model/draft";
 import { StaticModuleSource } from "@/data_model/StaticModuleSource";
 import { ChestDialogOverlay } from "@/editor/ChestDialogOverlay";
 import { LockDialogOverlay } from "@/editor/LockDialogOverlay";
@@ -52,6 +51,7 @@ import { PlayLogOverlay } from "./PlayLogOverlay";
 import { PlaySaveMenuOverlay } from "./PlaySaveMenuOverlay";
 import { PlayCounterShopOverlay } from "./PlayCounterShopOverlay";
 import { PlayNpcDialogOverlay } from "./PlayNpcDialogOverlay";
+import { normalizeNpcDialogs } from "@/data_model/npcDialogs";
 import { LinkPlacard } from "@/play/LinkPlacard";
 import {
   questsTargetingPlace,
@@ -122,7 +122,6 @@ import {
 } from "@/vfx/Vfx";
 import { Sfx } from "@/battle/audio/Sfx";
 import { Soundtrack } from "@/audio/SoundtrackPlayer";
-import { loadSpriteDraft } from "@/data_model/spriteDraft";
 import {
   MINUTES_PER_STEP,
   advanceClock,
@@ -606,15 +605,6 @@ interface PlayItem {
   };
 }
 
-/** One line of NPC chatter from npcs.json. Surfaced in the
- *  NPC-dialog modal so the player can cycle through what the NPC
- *  has to say. */
-interface PlayNpcDialog {
-  id: string;
-  title?: string;
-  text: string;
-}
-
 /** Minimal NPC shape PlayHost cares about — id + name + sprite +
  *  optional `counter` linking the NPC to a shop counter + optional
  *  `dialogs` array. When a player walks into an NPC, the dialog
@@ -626,7 +616,12 @@ interface PlayNpc {
   name?: string;
   sprite?: string;
   counter?: string;
-  dialogs?: PlayNpcDialog[];
+  /** Authored dialog lines. Typed `unknown` deliberately — the JSON
+   *  may carry the canonical array, a bare single-dialog object, or
+   *  a plain string (hand-edit drift). Every consumer goes through
+   *  `normalizeNpcDialogs`, which coerces all of those into the
+   *  canonical array shape. */
+  dialogs?: unknown;
 }
 
 /** One temple-style service row on a `kind: "service"` counter
@@ -2248,17 +2243,12 @@ export function PlayHost() {
           super("PlayScene");
         }
         preload() {
-          // Sprite drafts (from the in-browser pixel editor) win over
-          // the on-disk PNG. Phaser's load.image accepts data URLs
-          // verbatim, so the draft's base64 payload threads through
-          // without a separate codec. The draft module is keyed by
-          // moduleId so edits in one module don't leak into another.
+          // Published sprites only — the game ignores in-browser
+          // pixel-editor drafts, same policy as the JSON catalogs in
+          // loadCatalog. Draft art stays visible inside the editor
+          // (palette thumbnails, canvas, sim mode) until published.
           for (const key of spriteKeys) {
-            const draft = loadSpriteDraft(save.moduleId, key);
-            this.load.image(
-              key,
-              draft ?? withBasePath(`/sprites/${key}`),
-            );
+            this.load.image(key, withBasePath(`/sprites/${key}`));
           }
         }
         create() {
@@ -5970,7 +5960,10 @@ export function PlayHost() {
           <PlayNpcDialogOverlay
             npcName={npc.name ?? npc.id}
             npcSprite={npc.sprite}
-            dialogs={npc.dialogs ?? []}
+            // Tolerant read — a bare dialog object or string (instead
+            // of the canonical array) still renders rather than
+            // collapsing to the "regards you in silence" fallback.
+            dialogs={normalizeNpcDialogs(npc.dialogs)}
             hasCounter={hasCounter}
             onVisitCounter={() => {
               if (!hasCounter || !counterId) return;
@@ -6312,16 +6305,17 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
   ) ?? {}) as { map_tiles?: PlayCell[] };
   const palette = paletteDoc.map_tiles ?? [];
 
-  // Prefer the localStorage draft of maps.json so unpublished edits
-  // (renamed tiles, new soundtrack overrides, fresh paint) show up
-  // in play without forcing a publish step. Mirrors the
-  // draft-overlay pattern used by MapEditor itself.
-  const mapsDraft = await loadDraft<Record<string, unknown>>(moduleId, "maps");
-  const mapsOwn = mapsDraft ?? mapsLayers.ownFile;
+  // PUBLISHED CONTENT ONLY. The game deliberately ignores the
+  // editor's localStorage drafts — every catalog here reads the
+  // on-disk module JSON, so what the player sees is exactly what
+  // has been published. Draft content stays visible inside the
+  // editor (including its sim mode); Publish is the doorway into
+  // the game. This used to draft-overlay maps/dungeons/npcs, which
+  // made play disagree with the published module in confusing ways.
   const mapsDoc = (mergeModel(
     "maps",
     mapsLayers.inherited,
-    mapsOwn,
+    mapsLayers.ownFile,
   ) ?? {}) as { maps?: PlayMapRecord[] };
   const allMaps = mapsDoc.maps ?? [];
   const mapId = save.party.currentMapId;
@@ -6463,18 +6457,10 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
       reagents: Record<string, number>;
     }>;
   };
-  // Same draft-overlay treatment for dungeons so an unpublished
-  // soundtrack / level edit shows up in play. DungeonsBrowse writes
-  // drafts under the same model key.
-  const dungeonsDraft = await loadDraft<Record<string, unknown>>(
-    moduleId,
-    "dungeons",
-  );
-  const dungeonsOwn = dungeonsDraft ?? dungeonsLayers?.ownFile ?? null;
   const dungeonsDoc = (mergeModel(
     "dungeons",
     dungeonsLayers?.inherited ?? [],
-    dungeonsOwn,
+    dungeonsLayers?.ownFile ?? null,
   ) ?? {}) as { dungeons?: DungeonRecord[] };
   const questsDoc = (mergeModel(
     "quests",

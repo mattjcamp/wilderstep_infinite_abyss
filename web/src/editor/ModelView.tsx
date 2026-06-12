@@ -38,6 +38,12 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { StaticModuleSource } from "@/data_model/StaticModuleSource";
 import {
+  DraftBanner,
+  deleteRecordConfirmMessage,
+  discardDraftConfirmMessage,
+} from "./editorShell";
+import { RecordSummary } from "./RecordSummary";
+import {
   discardDraft,
   downloadJson,
   hasDraft,
@@ -51,6 +57,7 @@ import {
   DIFFICULTY_TIERS,
   encounterDifficultyTier,
 } from "@/data_model/models";
+import { singularModelLabel } from "@/data_model/models";
 import type { LibraryCatalogEntry } from "@/data_model/ModuleSource";
 import { publishItems } from "@/data_model/publishClient";
 import { RecordForm } from "./RecordForm";
@@ -334,7 +341,7 @@ export function ModelView({
     if (!hasDraft(moduleId, modelKey)) return;
     if (
       typeof window !== "undefined" &&
-      !window.confirm("Discard all draft edits for this model?")
+      !window.confirm(discardDraftConfirmMessage(def.fileName))
     ) {
       return;
     }
@@ -564,10 +571,12 @@ export function ModelView({
         onExport={onExport}
         onPublish={onPublish}
       />
+      {derived.isDraft ? <DraftBanner /> : null}
 
       {/* Singleton */}
       {def.collectionKey === null ? (
         <SingletonView
+          moduleId={moduleId}
           displayed={derived.displayedSingleton}
           inherited={derived.inheritedSingleton}
           ownEffective={derived.ownEffective as Record_ | null}
@@ -592,8 +601,9 @@ export function ModelView({
               <RecordForm
                 record={blankFromTemplate(template)}
                 template={template}
-                submitLabel="Add"
+                submitLabel="Create"
                 modelKey={modelKey}
+                moduleId={moduleId}
                 existingTags={existingTags}
                 onSave={(rec) => {
                   const newId = String(rec.id ?? "");
@@ -739,6 +749,7 @@ export function ModelView({
                   const isEditing = editingId === id;
                   return (
                     <RowGroup
+                      moduleId={moduleId}
                       key={id}
                       record={r}
                       isOpen={isOpen}
@@ -1064,7 +1075,7 @@ function Header({
             onClick={onAdd}
             className="rounded border border-parchment/30 px-3 py-1 text-sm text-parchment/90 hover:bg-ink/40"
           >
-            + Add
+            + New {singularModelLabel(def.key)}
           </button>
         ) : null}
         {onDiscardDraft ? (
@@ -1112,6 +1123,7 @@ function SingletonView({
   provenance,
   editing,
   modelKey,
+  moduleId,
   onStartEdit,
   onCancelEdit,
   onSave,
@@ -1123,6 +1135,7 @@ function SingletonView({
   provenance: RowProvenance | null;
   editing: boolean;
   modelKey?: string;
+  moduleId?: string;
   onStartEdit: () => void;
   onCancelEdit: () => void;
   onSave: (updated: Record_) => void;
@@ -1144,14 +1157,13 @@ function SingletonView({
         <RecordForm
           record={displayed ?? inherited ?? {}}
           modelKey={modelKey}
+          moduleId={moduleId}
           onSave={onSave}
           onCancel={onCancelEdit}
         />
       ) : (
         <>
-          <pre className="overflow-auto rounded bg-ink/60 p-4 text-[13px] text-parchment/90">
-            {JSON.stringify(displayed, null, 2)}
-          </pre>
+          <RecordSummary record={displayed} />
           <div className="mt-3 flex items-center gap-2">
             <button
               type="button"
@@ -1286,6 +1298,7 @@ function RowGroup({
   showProvenance,
   hasSpriteColumn,
   modelKey,
+  moduleId,
   onToggle,
   onStartEdit,
   onCancelEdit,
@@ -1302,6 +1315,7 @@ function RowGroup({
   showProvenance: boolean;
   hasSpriteColumn: boolean;
   modelKey?: string;
+  moduleId?: string;
   onToggle: () => void;
   onStartEdit: () => void;
   onCancelEdit: () => void;
@@ -1357,15 +1371,14 @@ function RowGroup({
                 record={record}
                 template={template}
                 modelKey={modelKey}
+                moduleId={moduleId}
                 existingTags={existingTags}
                 onSave={onSaveEdit}
                 onCancel={onCancelEdit}
               />
             ) : (
               <div>
-                <pre className="overflow-auto rounded bg-ink/60 p-3 text-[13px] text-parchment/85">
-                  {JSON.stringify(record, null, 2)}
-                </pre>
+                <RecordSummary record={record} />
                 <div className="mt-2 flex items-center gap-2">
                   <button
                     type="button"
@@ -1398,8 +1411,11 @@ function RowGroup({
                         if (
                           typeof window !== "undefined" &&
                           !window.confirm(
-                            `Delete record "${String(record.id ?? "")}"?\n\n` +
-                              `Removes it from this module's ${def.fileName}. Saves to the draft until you Publish.`,
+                            deleteRecordConfirmMessage({
+                              kind: singularModelLabel(def.key).toLowerCase(),
+                              name: String(record.id ?? ""),
+                              fileName: def.fileName,
+                            }),
                           )
                         )
                           return;

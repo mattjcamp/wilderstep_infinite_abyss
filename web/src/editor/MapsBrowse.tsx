@@ -17,6 +17,11 @@
  * Carries the same draft → publish flow every other model uses.
  */
 
+import {
+  DraftBanner,
+  deleteRecordConfirmMessage,
+  discardDraftConfirmMessage,
+} from "./editorShell";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -501,7 +506,7 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
     if (
       typeof window !== "undefined" &&
       !window.confirm(
-        `Delete map "${id}"?\n\nRemoves it from this module's maps file. Saves to the draft until you Publish.`,
+        deleteRecordConfirmMessage({ kind: "map", name: id, fileName: FILE_NAME }),
       )
     )
       return;
@@ -594,7 +599,7 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
     if (!hasDraft(moduleId, MODEL_KEY)) return;
     if (
       !window.confirm(
-        "Discard all pending changes to this module's maps file?",
+        discardDraftConfirmMessage(FILE_NAME),
       )
     )
       return;
@@ -732,6 +737,7 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
           ) : null}
         </div>
       </header>
+      {state.isDraft ? <DraftBanner /> : null}
 
       {/* New-map form */}
       {creating ? (

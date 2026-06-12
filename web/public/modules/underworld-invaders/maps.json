@@ -44136,7 +44136,7 @@
             "spawn": null,
             "sprite": "map/sand.png",
             "tag": "walkable",
-            "item": "treasure_chest"
+            "item": ""
           },
           {
             "boat": false,
@@ -84771,7 +84771,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/grass1.png",
-            "tag": "walkable"
+            "tag": "walkable",
+            "npc": "kings_messenger"
           },
           {
             "boat": false,
@@ -128096,7 +128097,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/grass1.png",
-            "tag": "walkable"
+            "tag": "walkable",
+            "npc": "kings_messenger"
           },
           {
             "boat": false,

@@ -30,6 +30,14 @@ import { getCounterFieldConfig } from "./counterFields";
 import { MapPicker } from "./MapPicker";
 import { getMapFieldConfig } from "./mapFields";
 import { TagsPicker } from "./TagsPicker";
+import { DialogsEditor } from "./DialogsEditor";
+import { npcDialogLinesForEditing } from "@/data_model/npcDialogs";
+import { IdListPicker } from "./IdListPicker";
+import { getIdListFieldConfig } from "./idListFields";
+import { KeyMapEditor } from "./KeyMapEditor";
+import { getKeyMapFieldConfig } from "./keyMapFields";
+import { ParamsEditor } from "./ParamsEditor";
+import { getParamsFieldConfig } from "./paramsFields";
 
 /** Models whose records carry a free-form `tags: string[]` for editor
  *  organization. The form injects the field (even when a record hasn't
@@ -68,6 +76,14 @@ function inferKind(
   // Map-typed fields (e.g., spawn.custom_map, encounter.custom_map)
   // are Map id strings. The MapPicker handles null/"" as "(none)".
   if (getMapFieldConfig(key, modelKey) !== null) return "string";
+  // Id-list fields are always JSON (string arrays) so the picker can
+  // render even when the record's current value is null.
+  if (getIdListFieldConfig(key, modelKey) !== null) return "json";
+  // Key-map fields (reagents, stat_modifiers, equipped) likewise.
+  if (getKeyMapFieldConfig(key, modelKey) !== null) return "json";
+  // Params fields (effects/abilities/traps params, spell action
+  // params) likewise.
+  if (getParamsFieldConfig(key, modelKey) !== null) return "json";
   // Prefer the actual record's value; fall back to a sample peer.
   const v = value ?? sample;
   if (Array.isArray(v) || (v !== null && typeof v === "object")) return "json";
@@ -163,6 +179,7 @@ export function RecordForm({
   onCancel,
   submitLabel = "Save",
   modelKey,
+  moduleId,
   existingTags = [],
 }: {
   record: Record<string, unknown>;
@@ -175,6 +192,10 @@ export function RecordForm({
    *  config so per-model overrides (e.g., map_tiles.sprite → category
    *  "map" vs Character.sprite → category "person") apply correctly. */
   modelKey?: string;
+  /** Module whose resolved catalogs feed reference pickers (id-list
+   *  options respect module inheritance). Optional — pickers fall
+   *  back to the base module when absent. */
+  moduleId?: string;
   /** Tag suggestions (union of sibling records' tags) for the tags
    *  picker's autocomplete — keeps tag spelling consistent so the
    *  grouping doesn't fragment. */
@@ -232,6 +253,7 @@ export function RecordForm({
             value={drafts[f.key] ?? ""}
             error={errors[f.key]}
             modelKey={modelKey}
+            moduleId={moduleId}
             existingTags={existingTags}
             onChange={(v) => update(f.key, v)}
           />
@@ -268,6 +290,7 @@ function FieldRow({
   value,
   error,
   modelKey,
+  moduleId,
   existingTags = [],
   onChange,
 }: {
@@ -275,12 +298,160 @@ function FieldRow({
   value: string;
   error?: string;
   modelKey?: string;
+  moduleId?: string;
   existingTags?: string[];
   onChange: (v: string) => void;
 }) {
   const labelClasses =
     "min-w-[10rem] shrink-0 pt-1 text-sm text-parchment/85 font-mono";
 
+  // Id-list fields (encounter rosters, spawn lists, race abilities,
+  // item slots, …) render the IdListPicker — chips + a filterable
+  // catalog panel — instead of a raw JSON textarea. Draft stays a
+  // JSON string (same contract as every json field). Values that
+  // aren't a plain string array (legacy hand-edits with objects
+  // inside) fall through to the textarea so nothing is uneditable.
+  {
+    const idListCfg = getIdListFieldConfig(spec.key, modelKey);
+    if (idListCfg) {
+      let ids: string[] | null = null;
+      try {
+        const parsed = value.trim() === "" ? [] : JSON.parse(value);
+        if (parsed === null) ids = [];
+        else if (
+          Array.isArray(parsed) &&
+          parsed.every((x) => typeof x === "string")
+        ) {
+          ids = parsed as string[];
+        }
+      } catch {
+        ids = null;
+      }
+      if (ids !== null) {
+        return (
+          <div className="flex items-start gap-3">
+            <span className={labelClasses}>{spec.key}</span>
+            <IdListPicker
+              value={ids}
+              source={idListCfg.source}
+              moduleId={moduleId}
+              allowDuplicates={idListCfg.allowDuplicates}
+              help={idListCfg.help}
+              onChange={(next) => onChange(JSON.stringify(next))}
+            />
+          </div>
+        );
+      }
+    }
+  }
+  // Params fields render the ParamsEditor — typed rows from the
+  // model's knob vocabulary plus a custom-key escape hatch — instead
+  // of a raw JSON textarea. Any flat object (or null) qualifies;
+  // non-object values (legacy hand-edits) fall through to the
+  // textarea.
+  {
+    const paramsCfg = getParamsFieldConfig(spec.key, modelKey);
+    if (paramsCfg) {
+      let obj: Record<string, unknown> | null = null;
+      try {
+        const parsed = value.trim() === "" ? {} : JSON.parse(value);
+        if (parsed === null) obj = {};
+        else if (
+          parsed &&
+          typeof parsed === "object" &&
+          !Array.isArray(parsed)
+        ) {
+          obj = parsed as Record<string, unknown>;
+        }
+      } catch {
+        obj = null;
+      }
+      if (obj !== null) {
+        return (
+          <div className="flex items-start gap-3">
+            <span className={labelClasses}>{spec.key}</span>
+            <ParamsEditor
+              value={obj}
+              config={paramsCfg}
+              moduleId={moduleId}
+              onChange={(next) => onChange(JSON.stringify(next, null, 1))}
+            />
+          </div>
+        );
+      }
+    }
+  }
+  // Key-map fields (recipe reagents, stat modifiers, equipment
+  // slots) render the KeyMapEditor — rows of key → number / key →
+  // catalog-id — instead of a raw JSON textarea. Same parse-or-fall-
+  // through policy as the id-list branch: a value that isn't a flat
+  // map of numbers (number mode) or strings (id mode) keeps the
+  // textarea so legacy hand-edits stay editable.
+  {
+    const keyMapCfg = getKeyMapFieldConfig(spec.key, modelKey);
+    if (keyMapCfg) {
+      let map: Record<string, string | number> | null = null;
+      try {
+        const parsed = value.trim() === "" ? {} : JSON.parse(value);
+        if (parsed === null) map = {};
+        else if (
+          parsed &&
+          typeof parsed === "object" &&
+          !Array.isArray(parsed)
+        ) {
+          const entries = Object.entries(parsed as Record<string, unknown>);
+          const want = keyMapCfg.value.kind === "number" ? "number" : "string";
+          if (entries.every(([, v]) => typeof v === want)) {
+            map = parsed as Record<string, string | number>;
+          }
+        }
+      } catch {
+        map = null;
+      }
+      if (map !== null) {
+        return (
+          <div className="flex items-start gap-3">
+            <span className={labelClasses}>{spec.key}</span>
+            <KeyMapEditor
+              value={map}
+              config={keyMapCfg}
+              moduleId={moduleId}
+              onChange={(next) => onChange(JSON.stringify(next, null, 1))}
+            />
+          </div>
+        );
+      }
+    }
+  }
+  // NPC `dialogs` render the structured DialogsEditor instead of a
+  // raw JSON textarea — the textarea invited the shape mistake of a
+  // bare single-dialog object (no `[ ]`), which played back as the
+  // silent fallback. The draft stays a JSON string (same contract as
+  // every other json field); normalizeNpcDialogs coerces whatever
+  // shape the record carried (object / string / array) into the
+  // canonical array, so the first save through this editor also
+  // FIXES a malformed record. Unparseable raw JSON falls through to
+  // the plain textarea so it's still recoverable by hand.
+  if (spec.key === "dialogs" && modelKey === "npcs") {
+    let parsed: unknown = null;
+    let parseable = true;
+    try {
+      parsed = value.trim() === "" ? [] : JSON.parse(value);
+    } catch {
+      parseable = false;
+    }
+    if (parseable) {
+      return (
+        <div className="flex items-start gap-3">
+          <span className={labelClasses}>dialogs</span>
+          <DialogsEditor
+            lines={npcDialogLinesForEditing(parsed)}
+            onChange={(next) => onChange(JSON.stringify(next, null, 2))}
+          />
+        </div>
+      );
+    }
+  }
   // A `tags` field renders the chip-style TagsPicker instead of a raw
   // JSON textarea. The on-disk value stays a JSON string[] so the
   // submit-time `inputToValue("json", …)` round-trips it unchanged.

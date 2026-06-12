@@ -28,6 +28,10 @@
  * rectangle), zoom/pan, walkable overlay, undo/redo.
  */
 
+import {
+  deleteRecordConfirmMessage,
+  discardDraftConfirmMessage,
+} from "./editorShell";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -3847,9 +3851,11 @@ export function MapEditor({
     if (typeof window === "undefined") return;
     if (state.kind !== "ok") return;
     const ok = window.confirm(
-      `Delete map "${state.mapRecord.id}" (${state.mapRecord.name})?\n\n` +
-        `This removes it from this module's maps file. The change saves ` +
-        `to the draft until you Publish.`,
+      deleteRecordConfirmMessage({
+        kind: "map",
+        name: `${state.mapRecord.id} (${state.mapRecord.name})`,
+        fileName: "maps.json",
+      }),
     );
     if (!ok) return;
     const baseFile: Record<string, unknown> = state.ownFile
@@ -3974,9 +3980,7 @@ export function MapEditor({
     if (typeof window === "undefined") return;
     if (!hasDraft(moduleId, MODEL_KEY)) return;
     if (
-      !window.confirm(
-        "Discard pending map edits? This reverts to the on-disk maps.json and reloads.",
-      )
+      !window.confirm(discardDraftConfirmMessage("maps.json"))
     )
       return;
     discardDraft(moduleId, MODEL_KEY);

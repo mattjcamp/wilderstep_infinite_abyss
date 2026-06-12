@@ -1,10 +1,15 @@
+## Backlog
+
+- Implmenet priest spell Push
 
 ## Big Ideas
 
 - Implement module publishing for players
+- Audit Editor UI: screens and editors should be as consistant as possible
 
-## New Content for v3
+## New Content for v2
 
+- We will need fresh spell content past level 7-10 (sorcerer: Recall, Meteor Shower, Void Orb; priest: Day Light, Divine Smite, Resurrection
 - Relic Quest: add a relic quest that provides an unlock for high level spells and abilities. After level 10, characters must complete Relic Quests to get a new spell. Relic quests will have level and class pre-reqs. Relic Quests could be initiated via the Character Sheet.
 
 # Notes

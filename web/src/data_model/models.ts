@@ -441,6 +441,40 @@ const DEFS: Record<ModelKey, ModelDef> = {
 
 export const MODELS = DEFS;
 
+/** Singular display label per model — drives uniform shell copy
+ *  ("+ New Effect", `Delete effect "sleep"?`). Kept as an explicit
+ *  map because naive de-pluralisation mangles half the labels
+ *  (Abilities → "Abilitie"). */
+const SINGULAR_LABELS: Record<ModelKey, string> = {
+  abilities: "Ability",
+  effects: "Effect",
+  spells: "Spell",
+  recipes: "Recipe",
+  items: "Item",
+  counters: "Counter",
+  monsters: "Monster",
+  characters: "Character",
+  party: "Party",
+  spawns: "Spawn",
+  encounters: "Encounter",
+  traps: "Trap",
+  character_classes: "Character Class",
+  races: "Race",
+  map_tiles: "Map Tile",
+  maps: "Map",
+  dungeons: "Dungeon",
+  quests: "Quest",
+  animations: "Animation",
+  npcs: "NPC",
+};
+
+/** Singular label for a model ("Effect"), falling back to the plural
+ *  label for unknown keys so callers never render "undefined". */
+export function singularModelLabel(key: string): string {
+  if (key in SINGULAR_LABELS) return SINGULAR_LABELS[key as ModelKey];
+  return getModel(key)?.label ?? key;
+}
+
 export const ALL_MODEL_KEYS: ModelKey[] = Object.keys(DEFS) as ModelKey[];
 
 export function getModel(key: string): ModelDef | undefined {

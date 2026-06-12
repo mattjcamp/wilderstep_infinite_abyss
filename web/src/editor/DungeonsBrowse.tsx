@@ -22,6 +22,11 @@
  * Same draft / publish / export flow as the rest of the editor.
  */
 
+import {
+  DraftBanner,
+  deleteRecordConfirmMessage,
+  discardDraftConfirmMessage,
+} from "./editorShell";
 import { useEffect, useMemo, useState } from "react";
 import {
   discardDraft,
@@ -372,7 +377,12 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
     if (
       typeof window !== "undefined" &&
       !window.confirm(
-        `Delete dungeon "${id}"?\n\nRemoves the whole record (including its levels). Saves to the draft until you Publish.`,
+        deleteRecordConfirmMessage({
+          kind: "dungeon",
+          name: id,
+          fileName: FILE_NAME,
+          detail: "This deletes the whole dungeon, including its levels.",
+        }),
       )
     )
       return;
@@ -434,7 +444,12 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
       target &&
       typeof window !== "undefined" &&
       !window.confirm(
-        `Delete level "${target.name}" (${target.id}) from dungeon "${dungeonId}"?`,
+        deleteRecordConfirmMessage({
+          kind: "level",
+          name: `${target.name} (${target.id})`,
+          fileName: FILE_NAME,
+          detail: `This removes the level from dungeon "${dungeonId}".`,
+        }),
       )
     )
       return;
@@ -450,7 +465,7 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
     if (!hasDraft(moduleId, MODEL_KEY)) return;
     if (
       !window.confirm(
-        "Discard all pending changes to this module's dungeons file?",
+        discardDraftConfirmMessage(FILE_NAME),
       )
     )
       return;
@@ -587,6 +602,7 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
           ) : null}
         </div>
       </header>
+      {state.isDraft ? <DraftBanner /> : null}
 
       {creating ? (
         <div className="mt-4">

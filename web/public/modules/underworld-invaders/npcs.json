@@ -602,9 +602,11 @@
       "sprite": "monster/eagle.png",
       "counter": null,
       "personal_history": null,
-      "dialogs": [
-        "The king wants you to get stronger and when you are ready, seek him out in the Capital to the East"
-      ]
+      "dialogs": {
+        "id": "introduction",
+        "title": "The King's Message",
+        "text": "Seek out King Wellerman in the Capital! We are under attack and need to muster every adventurer in the realm now!"
+      }
     }
   ]
 }

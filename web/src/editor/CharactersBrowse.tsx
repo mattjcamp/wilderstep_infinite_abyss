@@ -13,6 +13,11 @@
  * through the existing draft → publish pipeline.
  */
 
+import {
+  DraftBanner,
+  deleteRecordConfirmMessage,
+  discardDraftConfirmMessage,
+} from "./editorShell";
 import { useEffect, useMemo, useState } from "react";
 import {
   discardDraft,
@@ -202,7 +207,11 @@ export function CharactersBrowse({ moduleId }: { moduleId: string }) {
     if (
       typeof window !== "undefined" &&
       !window.confirm(
-        `Delete character "${id}"?\n\nRemoves it from this module's characters file. Saves to the draft until you Publish.`,
+        deleteRecordConfirmMessage({
+          kind: "character",
+          name: id,
+          fileName: FILE_NAME,
+        }),
       )
     )
       return;
@@ -231,9 +240,7 @@ export function CharactersBrowse({ moduleId }: { moduleId: string }) {
     if (typeof window === "undefined") return;
     if (!hasDraft(moduleId, MODEL_KEY)) return;
     if (
-      !window.confirm(
-        "Discard all pending changes to this module's characters file?",
-      )
+      !window.confirm(discardDraftConfirmMessage(FILE_NAME))
     )
       return;
     discardDraft(moduleId, MODEL_KEY);
@@ -368,6 +375,7 @@ export function CharactersBrowse({ moduleId }: { moduleId: string }) {
           ) : null}
         </div>
       </header>
+      {state.isDraft ? <DraftBanner /> : null}
 
       {creating ? (
         <div className="mt-4">
