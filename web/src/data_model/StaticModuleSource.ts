@@ -97,12 +97,15 @@ export function staticLocator(): ModuleFileLocator {
 async function loadModuleManifest(
   moduleId: string,
   locator: ModuleFileLocator,
+  preferDrafts: boolean,
 ): Promise<(Partial<ModuleSummary> & { id?: string }) | null> {
-  const draft = await loadDraft<Partial<ModuleSummary> & { id?: string }>(
-    moduleId,
-    MANIFEST_KEY,
-  );
-  if (draft) return draft;
+  if (preferDrafts) {
+    const draft = await loadDraft<Partial<ModuleSummary> & { id?: string }>(
+      moduleId,
+      MANIFEST_KEY,
+    );
+    if (draft) return draft;
+  }
   return tryFetchJson(
     locator.moduleFile(moduleId, "module.json"),
   ) as Promise<(Partial<ModuleSummary> & { id?: string }) | null>;
@@ -193,6 +196,7 @@ function collectUsedLibraryIds(chain: ModuleSummary[]): string[] {
 async function walkExtendsChain(
   moduleId: string,
   locator: ModuleFileLocator,
+  preferDrafts: boolean,
 ): Promise<ModuleSummary[]> {
   const visited = new Set<string>();
   const chain: ModuleSummary[] = [];
@@ -208,7 +212,7 @@ async function walkExtendsChain(
       );
     }
     visited.add(key);
-    const meta = await loadModuleManifest(currentId, locator);
+    const meta = await loadModuleManifest(currentId, locator, preferDrafts);
     if (!meta) {
       throw new Error(
         `Module ${currentId} has no manifest (no draft, no /modules/${currentId}/module.json) while resolving ${moduleId}`,
@@ -224,17 +228,30 @@ async function walkExtendsChain(
 export class StaticModuleSource implements ModuleSource {
   /** File locations — static tree by default; RemoteModuleSource
    *  passes a hosted-origin locator and inherits everything else
-   *  (extends/uses resolution, merge, drafts) unchanged. */
+   *  (extends/uses resolution, merge) unchanged. */
   protected readonly locator: ModuleFileLocator;
+  /** Whether localStorage drafts shadow published files. TRUE for
+   *  the editor (drafts are the working copy); FALSE for the game
+   *  (published-only — see sourceConfig). Without this split, a
+   *  leftover index/manifest draft silently shadowed the HOSTED
+   *  catalog in remote play mode. */
+  protected readonly preferDrafts: boolean;
 
-  constructor(locator: ModuleFileLocator = staticLocator()) {
+  constructor(
+    locator: ModuleFileLocator = staticLocator(),
+    opts?: { preferDrafts?: boolean },
+  ) {
     this.locator = locator;
+    this.preferDrafts = opts?.preferDrafts ?? true;
   }
 
   async list(): Promise<ModuleSummary[]> {
-    // Prefer the localStorage index draft so newly-created modules
-    // show up in the picker before the user exports anything.
-    const draftIndex = await loadIndexDraft<IndexFile>();
+    // Editor mode prefers the localStorage index draft so newly-
+    // created modules show up in the picker before publishing;
+    // game mode (preferDrafts false) always reads the real index.
+    const draftIndex = this.preferDrafts
+      ? await loadIndexDraft<IndexFile>()
+      : null;
     const index = draftIndex ?? ((await fetchJson(
       this.locator.index(),
     )) as IndexFile);
@@ -242,7 +259,7 @@ export class StaticModuleSource implements ModuleSource {
     const out: ModuleSummary[] = [];
     for (const entry of entries) {
       try {
-        const meta = await loadModuleManifest(entry.id, this.locator);
+        const meta = await loadModuleManifest(entry.id, this.locator, this.preferDrafts);
         if (!meta) throw new Error(`no manifest`);
         out.push(toSummary(meta, entry));
       } catch (e) {
@@ -256,7 +273,7 @@ export class StaticModuleSource implements ModuleSource {
   }
 
   async load(moduleId: string): Promise<LoadedModule> {
-    const chain = await walkExtendsChain(moduleId, this.locator);
+    const chain = await walkExtendsChain(moduleId, this.locator, this.preferDrafts);
     const summary = chain[0];
 
     const data: Record<string, unknown> = {};
@@ -307,7 +324,7 @@ export class StaticModuleSource implements ModuleSource {
     key: ModelKey,
   ): Promise<ModelLayers> {
     const def = MODELS[key];
-    const chain = await walkExtendsChain(moduleId, this.locator);
+    const chain = await walkExtendsChain(moduleId, this.locator, this.preferDrafts);
     const usedLibraryIds = collectUsedLibraryIds(chain);
 
     // Inherited = the extends chain above this module, root-first.
@@ -343,7 +360,7 @@ export class StaticModuleSource implements ModuleSource {
   async loadRawManifest(
     moduleId: string,
   ): Promise<Record<string, unknown> | null> {
-    const meta = await loadModuleManifest(moduleId, this.locator);
+    const meta = await loadModuleManifest(moduleId, this.locator, this.preferDrafts);
     if (!meta) return null;
     return meta as Record<string, unknown>;
   }
@@ -359,12 +376,12 @@ export class StaticModuleSource implements ModuleSource {
    *  etc.) propagates down the chain. A child can still override by
    *  setting its own soundtrack — leaf wins. */
   async resolveModuleSoundtrack(moduleId: string): Promise<string[]> {
-    const chain = await walkExtendsChain(moduleId, this.locator);
+    const chain = await walkExtendsChain(moduleId, this.locator, this.preferDrafts);
     // walkExtendsChain returns leaf-first (index 0 = the requested
     // module, end = root). Walk in that order; first non-empty list
     // wins, so a leaf override beats a parent definition.
     for (const summary of chain) {
-      const meta = await loadModuleManifest(summary.id, this.locator);
+      const meta = await loadModuleManifest(summary.id, this.locator, this.preferDrafts);
       if (!meta) continue;
       const list = (meta as { soundtrack?: unknown }).soundtrack;
       if (Array.isArray(list)) {
@@ -389,13 +406,13 @@ export class StaticModuleSource implements ModuleSource {
   async resolveModuleSightRadius(
     moduleId: string,
   ): Promise<Partial<Record<"day" | "twilight" | "night", number>>> {
-    const chain = await walkExtendsChain(moduleId, this.locator);
+    const chain = await walkExtendsChain(moduleId, this.locator, this.preferDrafts);
     const out: Partial<Record<"day" | "twilight" | "night", number>> = {};
     const modes = ["day", "twilight", "night"] as const;
     // Leaf-first walk: the first ancestor to define a given mode wins,
     // so we only write a mode the first time we see it.
     for (const summary of chain) {
-      const meta = await loadModuleManifest(summary.id, this.locator);
+      const meta = await loadModuleManifest(summary.id, this.locator, this.preferDrafts);
       if (!meta) continue;
       const settings = (meta as { settings?: { sight_radius?: unknown } })
         .settings;
@@ -425,7 +442,7 @@ export class StaticModuleSource implements ModuleSource {
   ): Promise<LibraryCatalogEntry[]> {
     const def = MODELS[key];
     if (def.collectionKey === null) return [];
-    const chain = await walkExtendsChain(moduleId, this.locator);
+    const chain = await walkExtendsChain(moduleId, this.locator, this.preferDrafts);
     const usedLibraryIds = collectUsedLibraryIds(chain);
     const out: LibraryCatalogEntry[] = [];
     for (const libId of usedLibraryIds) {

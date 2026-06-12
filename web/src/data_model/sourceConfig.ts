@@ -44,14 +44,19 @@ export function createModuleSource(
 ): StaticModuleSource {
   if (mode === "remote") {
     if (readHost && readHost.trim().length > 0) {
-      return new RemoteModuleSource(readHost.trim());
+      // preferDrafts false: this source feeds the GAME, which plays
+      // published content only — a leftover editor draft must never
+      // shadow the hosted catalog.
+      return new RemoteModuleSource(readHost.trim(), {
+        preferDrafts: false,
+      });
     }
     // eslint-disable-next-line no-console
     console.warn(
       "NEXT_PUBLIC_MODULE_SOURCE=remote but NEXT_PUBLIC_READ_HOST is unset — falling back to the static source.",
     );
   }
-  return new StaticModuleSource();
+  return new StaticModuleSource(undefined, { preferDrafts: false });
 }
 
 /** Test-only escape hatch. */

@@ -42,7 +42,7 @@ export function remoteLocator(host: string): ModuleFileLocator {
 }
 
 export class RemoteModuleSource extends StaticModuleSource {
-  constructor(host: string) {
-    super(remoteLocator(host));
+  constructor(host: string, opts?: { preferDrafts?: boolean }) {
+    super(remoteLocator(host), opts);
   }
 }
