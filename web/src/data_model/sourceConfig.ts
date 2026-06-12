@@ -15,15 +15,20 @@
  * shouldn't brick the whole app.
  */
 
-import type { ModuleSource } from "./ModuleSource";
 import { StaticModuleSource } from "./StaticModuleSource";
 import { RemoteModuleSource } from "./RemoteModuleSource";
 
-let _cached: ModuleSource | null = null;
+let _cached: StaticModuleSource | null = null;
 
-/** The app-wide ModuleSource per build-time env. Cached — sources
- *  are stateless, so one instance serves every caller. */
-export function getModuleSource(): ModuleSource {
+/** The app-wide module source per build-time env. Cached — sources
+ *  are stateless, so one instance serves every caller.
+ *
+ *  Typed as StaticModuleSource (which RemoteModuleSource extends):
+ *  the extended surface — loadModelLayers, resolveModuleSoundtrack,
+ *  listLibraryRecords, … — is the contract real callers use; the
+ *  slim ModuleSource interface is the subset for future thin
+ *  implementations. */
+export function getModuleSource(): StaticModuleSource {
   if (_cached) return _cached;
   _cached = createModuleSource(
     process.env.NEXT_PUBLIC_MODULE_SOURCE,
@@ -36,7 +41,7 @@ export function getModuleSource(): ModuleSource {
 export function createModuleSource(
   mode: string | undefined,
   readHost: string | undefined,
-): ModuleSource {
+): StaticModuleSource {
   if (mode === "remote") {
     if (readHost && readHost.trim().length > 0) {
       return new RemoteModuleSource(readHost.trim());

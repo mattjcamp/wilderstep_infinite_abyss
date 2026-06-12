@@ -8,6 +8,7 @@
  */
 
 import { isPlayableModule, readAllModules } from "@/data_model/moduleIndex";
+import { decodeModuleIdParam } from "@/editor/moduleRoutes";
 import { BeginningScreen } from "./BeginningScreen";
 
 export function generateStaticParams() {
@@ -21,13 +22,16 @@ export default function BeginningScreenPage({
 }: {
   params: { moduleId: string };
 }) {
-  const modules = readAllModules();
-  const meta = modules.find((m) => m.id === params.moduleId);
+  const moduleId = decodeModuleIdParam(params.moduleId);
+  // Build-time metadata covers shipped modules; remote/qualified ids
+  // aren't in the static list, so BeginningScreen resolves their
+  // title + description client-side through the configured source.
+  const meta = readAllModules().find((m) => m.id === moduleId);
   return (
     <BeginningScreen
-      moduleId={params.moduleId}
-      title={meta?.title ?? params.moduleId}
-      description={meta?.description ?? ""}
+      moduleId={moduleId}
+      title={meta?.title}
+      description={meta?.description}
     />
   );
 }

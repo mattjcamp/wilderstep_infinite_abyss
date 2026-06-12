@@ -32,6 +32,7 @@
  * new `currentMapId` and a fresh Phaser game spins up.
  */
 
+import { getModuleSource } from "@/data_model/sourceConfig";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -6328,7 +6329,7 @@ export function PlayHost() {
  *  current map. Throws on a missing map or unreadable module data so
  *  the host's error state surfaces the problem cleanly. */
 async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
-  const src = new StaticModuleSource();
+  const src = getModuleSource();
   const moduleId = save.moduleId;
   const [
     mapTilesLayers,

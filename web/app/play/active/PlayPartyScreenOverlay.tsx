@@ -25,6 +25,7 @@
  * carries. Pressing P / ESC / clicking the backdrop dismisses.
  */
 
+import { getModuleSource } from "@/data_model/sourceConfig";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { mergeModel } from "@/data_model/merge";
 import { StaticModuleSource } from "@/data_model/StaticModuleSource";
@@ -262,7 +263,7 @@ export function PlayPartyScreenOverlay({
     let cancelled = false;
     (async () => {
       try {
-        const src = new StaticModuleSource();
+        const src = getModuleSource();
         const [
           partyLayers,
           charactersLayers,

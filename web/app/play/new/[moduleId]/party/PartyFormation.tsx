@@ -29,6 +29,8 @@
  * across a hard reload.
  */
 
+import { encodeModuleId } from "@/editor/moduleRoutes";
+import { getModuleSource } from "@/data_model/sourceConfig";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -112,7 +114,7 @@ export function PartyFormation({ moduleId }: { moduleId: string }) {
     let cancelled = false;
     (async () => {
       try {
-        const src = new StaticModuleSource();
+        const src = getModuleSource();
         const [
           partyLayers,
           characterLayers,
@@ -286,7 +288,7 @@ export function PartyFormation({ moduleId }: { moduleId: string }) {
       // Storage unavailable — fall through; the beginning screen will
       // detect the absent draft and route back here.
     }
-    router.push(`/play/new/${moduleId}/begin`);
+    router.push(`/play/new/${encodeModuleId(moduleId)}/begin`);
   };
 
   if (state.kind === "loading") {

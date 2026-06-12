@@ -42,6 +42,7 @@
  * on the first combat boot, not every encounter.
  */
 
+import { getModuleSource } from "@/data_model/sourceConfig";
 import { mergeModel } from "@/data_model/merge";
 import type { ModelKey } from "@/data_model/models";
 import { StaticModuleSource } from "@/data_model/StaticModuleSource";
@@ -272,7 +273,7 @@ export async function seedBattleCaches(
   save: WorldSave,
 ): Promise<void> {
   clearAllSeededCaches();
-  const src = new StaticModuleSource();
+  const src = getModuleSource();
 
   // Kick every load in parallel — they're independent.
   const [

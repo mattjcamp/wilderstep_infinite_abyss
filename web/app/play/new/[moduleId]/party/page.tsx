@@ -12,6 +12,7 @@
  */
 
 import { isPlayableModule, readAllModules } from "@/data_model/moduleIndex";
+import { decodeModuleIdParam } from "@/editor/moduleRoutes";
 import { PartyFormation } from "./PartyFormation";
 
 export function generateStaticParams() {
@@ -25,5 +26,5 @@ export default function PartyFormationPage({
 }: {
   params: { moduleId: string };
 }) {
-  return <PartyFormation moduleId={params.moduleId} />;
+  return <PartyFormation moduleId={decodeModuleIdParam(params.moduleId)} />;
 }

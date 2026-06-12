@@ -20,6 +20,8 @@
  * the player onto a half-built game.
  */
 
+import { encodeModuleId } from "@/editor/moduleRoutes";
+import { getModuleSource } from "@/data_model/sourceConfig";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -65,12 +67,15 @@ const PROMPT_DELAY_MS = 1500;
 
 export function BeginningScreen({
   moduleId,
-  title,
-  description,
+  title: titleProp,
+  description: descriptionProp,
 }: {
   moduleId: string;
-  title: string;
-  description: string;
+  /** Module title/description. Optional — absent for remote-catalog
+   *  modules the build didn't know about; resolved client-side from
+   *  the configured source's list(). */
+  title?: string;
+  description?: string;
 }) {
   const router = useRouter();
   const [draft, setDraft] = useState<PartyDraft | null | "loading">(
@@ -81,6 +86,41 @@ export function BeginningScreen({
   const [error, setError] = useState<string | null>(null);
   // Guard the commit path — keypress + click both fire, want one run.
   const committedRef = useRef(false);
+
+  // Module meta. The server page provides it for build-time-known
+  // modules; remote-catalog modules resolve it here from the
+  // configured source. Falls back to the raw id so the screen never
+  // renders blank while (or if) the lookup fails.
+  const [meta, setMeta] = useState<{
+    title: string;
+    description: string;
+  } | null>(
+    titleProp !== undefined
+      ? { title: titleProp, description: descriptionProp ?? "" }
+      : null,
+  );
+  useEffect(() => {
+    if (meta) return;
+    let cancelled = false;
+    getModuleSource()
+      .list()
+      .then((all) => {
+        if (cancelled) return;
+        const m = all.find((x) => x.id === moduleId);
+        setMeta({
+          title: m?.title ?? moduleId,
+          description: m?.description ?? "",
+        });
+      })
+      .catch(() => {
+        if (!cancelled) setMeta({ title: moduleId, description: "" });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [meta, moduleId]);
+  const title = meta?.title ?? moduleId;
+  const description = meta?.description ?? "";
 
   // Pick up the draft on mount. sessionStorage is browser-only.
   useEffect(() => {
@@ -107,7 +147,7 @@ export function BeginningScreen({
   // SoundtrackPlayer is a module-scope singleton, so the playback
   // survives the route transition into /play/active.
   useEffect(() => {
-    const src = new StaticModuleSource();
+    const src = getModuleSource();
     let cancelled = false;
     void src
       .resolveModuleSoundtrack(moduleId)
@@ -203,7 +243,7 @@ export function BeginningScreen({
           No party assembly in progress for this module.
         </p>
         <Link
-          href={`/play/new/${moduleId}/party`}
+          href={`/play/new/${encodeModuleId(moduleId)}/party`}
           className="text-ember underline"
         >
           Form your party
@@ -246,7 +286,7 @@ async function assembleInitialSave(
   moduleId: string,
   draft: PartyDraft,
 ): Promise<WorldSave> {
-  const src = new StaticModuleSource();
+  const src = getModuleSource();
   const [partyLayers, characterLayers] = await Promise.all([
     src.loadModelLayers(moduleId, "party"),
     src.loadModelLayers(moduleId, "characters"),
