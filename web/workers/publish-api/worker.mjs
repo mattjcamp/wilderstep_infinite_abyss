@@ -455,23 +455,21 @@ export default {
     }
 
     // Interactive sign-out. Bounce to the Cloudflare Access team-domain
-    // logout endpoint, which clears the CF_Authorization cookie; a
-    // ?return= matching an allowed origin is forwarded as Access's
-    // returnTo so the browser lands back in the app afterwards.
+    // logout endpoint, which clears the session / CF_Authorization
+    // cookie.
+    //
+    // We deliberately do NOT forward a ?returnTo=: Access only accepts
+    // logout redirects to URLs configured in the Access app, and an
+    // un-listed one fails with "Invalid redirect URL" *and aborts the
+    // logout* (the user stays signed in). With no returnTo, Access
+    // shows its own "logged out" page — reliable. To bounce back into
+    // the app instead, add the Pages origin to the Access app's allowed
+    // logout/redirect URLs and re-introduce returnTo here.
     if (request.method === "GET" && url.pathname === "/logout") {
-      const ret = url.searchParams.get("return");
-      const allowed = (env.ALLOWED_ORIGINS ?? "")
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean);
-      const safeReturn =
-        ret && allowed.some((o) => ret.startsWith(o)) ? ret : null;
       const team = env.ACCESS_TEAM_DOMAIN;
       const dest = team
-        ? `https://${team}/cdn-cgi/access/logout${
-            safeReturn ? `?returnTo=${encodeURIComponent(safeReturn)}` : ""
-          }`
-        : safeReturn || "/status";
+        ? `https://${team}/cdn-cgi/access/logout`
+        : "/status";
       return new Response(null, {
         status: 302,
         headers: { ...CORS, Location: dest },
