@@ -298,9 +298,19 @@ fully playable end to end. Three real bugs were fixed to get here:
    pure-remote read client with no bundled origin. Final check is
    visual — publish a module with custom pixel art and confirm it
    renders in play.
-4. **Phase 4 proper** (community surface): catalog search/browse,
-   author pages, "my modules", report flow + moderation flags — D1
-   enters here, per §3's schema.
+4. **Phase 4 proper** (community surface) — *in progress.*
+   **DONE (client-side, no D1):** live search/filter on the picker
+   (`/play/new`, over title/author/description/id) and author pages
+   (`/play/author?h=<handle>`, query-param so any runtime handle works
+   in the export). Shared pieces: `src/play/ModuleGrid.tsx` (catalog
+   hook + cards, owner-handle author links) and `src/play/moduleFilter.ts`
+   (pure, tested). Owner grouping keys off the handle parsed from the
+   id, not the free-text `author` field.
+   **Remaining (needs D1 / server state):** "my modules" view,
+   per-module `visibility` (private/unlisted/public), report flow +
+   moderation flags (ok/hidden/removed filtering the catalog) + admin
+   view — D1 enters here, per §3's schema. This is the next real
+   design step.
 5. Phase 5 hardening overlaps the editor audit's P5: schema
    validation on publish, rate limits, PNG re-encode.
 

@@ -25,3 +25,11 @@ export function playPartyHref(moduleId: string): string {
 export function playBeginHref(moduleId: string): string {
   return `/play/new/begin?m=${encodeModuleId(moduleId)}`;
 }
+
+/** Author page listing one handle's public modules. Query-param (not a
+ *  `[handle]` segment) for the same reason as the play routes: any
+ *  runtime handle must work in the static export. `handle` has no
+ *  leading `@`. */
+export function authorHref(handle: string): string {
+  return `/play/author?h=${encodeURIComponent(handle)}`;
+}

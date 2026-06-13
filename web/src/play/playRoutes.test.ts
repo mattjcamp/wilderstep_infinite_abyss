@@ -6,7 +6,7 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { playBeginHref, playPartyHref } from "./playRoutes";
+import { authorHref, playBeginHref, playPartyHref } from "./playRoutes";
 import { decodeModuleIdParam } from "@/editor/moduleRoutes";
 
 /** Pull the decoded `m` value back out of a generated href. */
@@ -27,6 +27,10 @@ describe("playRoutes", () => {
     // The @ and / must be percent-encoded, not left raw.
     expect(href).toBe("/play/new/party?m=%40matt%2Fremote_test");
     expect(href).not.toContain("/play/new/party?m=@matt/remote_test");
+  });
+
+  it("builds the query-param author page URL", () => {
+    expect(authorHref("matt")).toBe("/play/author?h=matt");
   });
 
   it("round-trips bare and qualified ids through decodeModuleIdParam", () => {
