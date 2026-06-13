@@ -20,7 +20,7 @@ import {
   publishSignInUrl,
   publishSignOutUrl,
 } from "@/data_model/publishClient";
-import { editorPath } from "@/editor/moduleRoutes";
+import { editorModuleHref } from "@/editor/moduleRoutes";
 import { playPartyHref } from "@/play/playRoutes";
 
 type ListState =
@@ -184,7 +184,7 @@ export default function MyModulesPage() {
                     </div>
                     <div className="flex shrink-0 flex-col items-stretch gap-2 text-sm">
                       <Link
-                        href={editorPath(m.id)}
+                        href={editorModuleHref(m.id)}
                         className="rounded border border-parchment/30 px-3 py-1 text-center text-parchment/80 hover:border-parchment/60 hover:text-parchment"
                       >
                         Edit

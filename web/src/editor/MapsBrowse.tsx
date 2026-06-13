@@ -17,7 +17,7 @@
  * Carries the same draft → publish flow every other model uses.
  */
 
-import { encodeModuleId } from "./moduleRoutes";
+import { editorMapHref } from "./moduleRoutes";
 import {
   DraftBanner,
   deleteRecordConfirmMessage,
@@ -328,7 +328,7 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
     }
     setCreating(false);
     // Drop straight into the visual editor for the new map.
-    router.push(`/editor/${encodeModuleId(moduleId)}/maps/${rec.id}`);
+    router.push(editorMapHref(moduleId, rec.id));
   };
 
   /**
@@ -553,7 +553,7 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
       );
       return;
     }
-    router.push(`/editor/${encodeModuleId(moduleId)}/maps/${newId}`);
+    router.push(editorMapHref(moduleId, newId));
   };
 
   /**
@@ -785,7 +785,7 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
                 <li key={`${tag}::${m.id}`}>
                   <div className="flex items-center justify-between gap-3 px-3 py-2">
                     <Link
-                      href={`/editor/${encodeModuleId(moduleId)}/maps/${m.id}`}
+                      href={editorMapHref(moduleId, m.id)}
                       className="min-w-0 flex-1 truncate text-sm text-parchment hover:text-parchment/100"
                     >
                       <span className="font-display">{m.name}</span>

@@ -24,8 +24,55 @@
  *     label, not "record".
  */
 
+import { useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { publishSignInUrl } from "@/data_model/publishClient";
+import { decodeModuleIdParam } from "./moduleRoutes";
 import { usePublishServer } from "./usePublishServer";
+import { Sidebar } from "./Sidebar";
+
+/** Read the editor's module id from the `?m=` query, decoded. Redirects
+ *  to the picker (`/editor`) when absent. Returns null until an id is
+ *  present (caller renders nothing). Must be called inside a Suspense
+ *  boundary — it reads useSearchParams (required for static export). */
+export function useEditorModuleId(): string | null {
+  const router = useRouter();
+  const raw = useSearchParams().get("m");
+  const moduleId = raw ? decodeModuleIdParam(raw) : "";
+  useEffect(() => {
+    if (!moduleId) router.replace("/editor");
+  }, [moduleId, router]);
+  return moduleId || null;
+}
+
+/**
+ * EditorShell — the editor chrome (Sidebar + scrollable content area).
+ *
+ * Was `app/editor/[moduleId]/layout.tsx`, but the editor routes moved
+ * to flat query-param routes (`/editor/module?m=…` etc.) so hosted
+ * `@handle/slug` modules can be edited on the static export (a
+ * `[moduleId]` segment only generates pages for build-time-known ids).
+ * A Next route layout can't read the `?m=` query, so each query-param
+ * page composes this shell explicitly.
+ */
+export function EditorShell({
+  moduleId,
+  children,
+}: {
+  moduleId: string;
+  children: React.ReactNode;
+}) {
+  return (
+    // h-screen (not min-h-screen) bounds the editor shell to the
+    // viewport so the content area scrolls INSIDE itself rather than
+    // growing the page — that's what lets a tall map canvas produce its
+    // own scrollbar instead of the whole body scrolling.
+    <div className="flex h-screen overflow-hidden">
+      <Sidebar moduleId={moduleId} />
+      <div className="min-w-0 flex-1 overflow-auto">{children}</div>
+    </div>
+  );
+}
 
 export function deleteRecordConfirmMessage(args: {
   /** Lower-case kind ("character", "map", "effect"). */

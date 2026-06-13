@@ -2,32 +2,47 @@
 
 /**
  * Editor sidebar — lists every model the editor knows about, grouped
- * by scope (per-module vs shared), plus an Assets section. The active
- * route is highlighted via usePathname() so the sidebar can stay a
- * single client component regardless of which page renders.
+ * by scope (per-module vs shared), plus Assets + Simulations. The
+ * active item is highlighted from the current query-param route:
+ * `/editor/model?k=<key>` for models, and pathname alone for the
+ * sprites/soundtrack/battle pages.
  */
 
-import { encodeModuleId } from "./moduleRoutes";
+import {
+  editorModuleHref,
+  editorModelHref,
+  editorSpritesHref,
+  editorSoundtrackHref,
+  editorBattleSimHref,
+} from "./moduleRoutes";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { ALL_MODEL_KEYS, MODELS } from "@/data_model/models";
+
+function linkClass(active: boolean): string {
+  return `block rounded px-2 py-1 text-sm transition ${
+    active
+      ? "bg-ember/30 text-parchment"
+      : "text-parchment/85 hover:bg-ink/40 hover:text-parchment"
+  }`;
+}
 
 export function Sidebar({ moduleId }: { moduleId: string }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  // Model links live at /editor/model?k=<key>; highlight the one whose
+  // key matches the current query (only when actually on the model
+  // route).
+  const activeModelKey =
+    pathname === "/editor/model" ? searchParams.get("k") : null;
 
   const renderLink = (key: keyof typeof MODELS) => {
     const def = MODELS[key];
-    const href = `/editor/${encodeModuleId(moduleId)}/${key}`;
-    const active = pathname === href;
     return (
       <li key={key}>
         <Link
-          href={href}
-          className={`block rounded px-2 py-1 text-sm transition ${
-            active
-              ? "bg-ember/30 text-parchment"
-              : "text-parchment/85 hover:bg-ink/40 hover:text-parchment"
-          }`}
+          href={editorModelHref(moduleId, key)}
+          className={linkClass(activeModelKey === key)}
         >
           {def.label}
         </Link>
@@ -44,7 +59,7 @@ export function Sidebar({ moduleId }: { moduleId: string }) {
         ← All modules
       </Link>
       <Link
-        href={`/editor/${encodeModuleId(moduleId)}`}
+        href={editorModuleHref(moduleId)}
         className="mb-3 block border-b border-parchment/10 pb-2 font-display text-sm text-parchment/85 hover:text-parchment"
       >
         {moduleId}
@@ -61,24 +76,16 @@ export function Sidebar({ moduleId }: { moduleId: string }) {
       <ul className="space-y-0.5">
         <li>
           <Link
-            href={`/editor/${encodeModuleId(moduleId)}/sprites`}
-            className={`block rounded px-2 py-1 text-sm transition ${
-              pathname === `/editor/${encodeModuleId(moduleId)}/sprites`
-                ? "bg-ember/30 text-parchment"
-                : "text-parchment/85 hover:bg-ink/40 hover:text-parchment"
-            }`}
+            href={editorSpritesHref(moduleId)}
+            className={linkClass(pathname === "/editor/sprites")}
           >
             Sprites
           </Link>
         </li>
         <li>
           <Link
-            href={`/editor/${encodeModuleId(moduleId)}/soundtrack`}
-            className={`block rounded px-2 py-1 text-sm transition ${
-              pathname === `/editor/${encodeModuleId(moduleId)}/soundtrack`
-                ? "bg-ember/30 text-parchment"
-                : "text-parchment/85 hover:bg-ink/40 hover:text-parchment"
-            }`}
+            href={editorSoundtrackHref(moduleId)}
+            className={linkClass(pathname === "/editor/soundtrack")}
           >
             Soundtrack
           </Link>
@@ -95,12 +102,8 @@ export function Sidebar({ moduleId }: { moduleId: string }) {
       <ul className="space-y-0.5">
         <li>
           <Link
-            href={`/editor/${encodeModuleId(moduleId)}/sim/battle`}
-            className={`block rounded px-2 py-1 text-sm transition ${
-              pathname === `/editor/${encodeModuleId(moduleId)}/sim/battle`
-                ? "bg-ember/30 text-parchment"
-                : "text-parchment/85 hover:bg-ink/40 hover:text-parchment"
-            }`}
+            href={editorBattleSimHref(moduleId)}
+            className={linkClass(pathname === "/editor/sim/battle")}
           >
             Battle
           </Link>

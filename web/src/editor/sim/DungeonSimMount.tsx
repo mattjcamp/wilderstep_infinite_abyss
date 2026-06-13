@@ -22,7 +22,7 @@
  * "exit" link target which we render as a return-to-picker prompt.
  */
 
-import { encodeModuleId } from "../moduleRoutes";
+import { editorMapHref } from "../moduleRoutes";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { withBasePath } from "@/util/basePath";
@@ -140,7 +140,11 @@ export function DungeonSimMount({
   // protocol drops the party onto the named cell with sim active.
   useEffect(() => {
     if (!exited || !returnTo) return;
-    const url = `/editor/${encodeModuleId(moduleId)}/maps/${returnTo.mapId}?sim=1&entryCol=${returnTo.col}&entryRow=${returnTo.row}`;
+    const url = editorMapHref(moduleId, returnTo.mapId, {
+      sim: "1",
+      entryCol: returnTo.col,
+      entryRow: returnTo.row,
+    });
     router.push(url);
   }, [exited, returnTo, moduleId, router]);
   // Catalogs loaded once at mount — needed for the sim's roamer
