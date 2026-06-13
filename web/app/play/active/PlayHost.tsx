@@ -33,6 +33,7 @@
  */
 
 import { getModuleSource } from "@/data_model/sourceConfig";
+import { spriteUrl, seedSpriteRouting } from "@/data_model/spriteUrl";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -1684,6 +1685,11 @@ export function PlayHost() {
       }
 
       try {
+        // Seed sprite routing before the Phaser game preloads: the
+        // preload's spriteUrl(key) calls read it to point a hosted
+        // module's custom uploads at the worker. No-op off remote.
+        await seedSpriteRouting(save.moduleId);
+        if (cancelled) return;
         const baseCatalog = await loadCatalog(save);
         if (cancelled) return;
         // Backfill max_hp / max_mp on save members from the catalog
@@ -2257,7 +2263,11 @@ export function PlayHost() {
           // loadCatalog. Draft art stays visible inside the editor
           // (palette thumbnails, canvas, sim mode) until published.
           for (const key of spriteKeys) {
-            this.load.image(key, withBasePath(`/sprites/${key}`));
+            // Texture key stays the bare path (the renderer looks
+            // textures up by it); only the URL routes — spriteUrl sends
+            // a hosted module's custom uploads to the worker, stock to
+            // the origin.
+            this.load.image(key, spriteUrl(key));
           }
         }
         create() {

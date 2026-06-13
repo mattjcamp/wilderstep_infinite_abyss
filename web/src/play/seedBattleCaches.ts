@@ -66,6 +66,10 @@ import {
 import { _clearEffectsCache, loadEffects } from "@/battle/world/Effects";
 import { _clearCountersCache, loadCounters } from "@/battle/world/Counters";
 import {
+  seedSpriteRouting,
+  clearSpriteRouting,
+} from "@/data_model/spriteUrl";
+import {
   _clearPartyCache,
   _setPartyCache,
   memberFromRaw,
@@ -286,6 +290,7 @@ function clearAllSeededCaches(): void {
   _clearEffectsCache();
   _clearCountersCache();
   _clearPartyCache();
+  clearSpriteRouting();
   gameState.partyData = null;
 }
 
@@ -307,6 +312,11 @@ export async function seedBattleCaches(
   save: WorldSave,
 ): Promise<void> {
   clearAllSeededCaches();
+  // Seed sprite routing before any URL baking: the monster + party
+  // hydration below (resolveSpriteUrl / spriteForMember) reads it to
+  // point custom art at the worker. After clearAllSeededCaches (which
+  // resets routing too) so this wins. No-op off the remote/hosted path.
+  await seedSpriteRouting(moduleId);
   const src = getModuleSource();
 
   // Kick every load in parallel — they're independent.

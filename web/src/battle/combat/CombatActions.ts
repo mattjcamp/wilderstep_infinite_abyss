@@ -21,6 +21,7 @@ import type { PartyMember } from "../world/Party";
 import { rollAttack, rollBonusDamage, rollDamage } from "./engine";
 import type { RNG } from "../rng";
 import { assetUrl, withBase } from "../world/Module";
+import { spriteUrl } from "@/data_model/spriteUrl";
 import type { Buff } from "./Buffs";
 
 /**
@@ -39,8 +40,12 @@ function resolveSummonSpriteUrl(sprite: unknown): string {
   if (sprite.startsWith("http://") || sprite.startsWith("https://")) {
     return sprite;
   }
+  // Already-rooted paths (legacy "/assets/…", or a pre-resolved
+  // "/sprites/…") pass through unchanged.
   if (sprite.startsWith("/")) return withBase(sprite);
-  return withBase(`/sprites/${sprite}`);
+  // Bare "monster/x.png" — route through spriteUrl so a hosted module's
+  // custom summon art lands on the worker (stock stays on the origin).
+  return spriteUrl(sprite);
 }
 
 /**

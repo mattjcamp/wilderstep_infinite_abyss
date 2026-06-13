@@ -84,6 +84,17 @@ export function createModuleSource(
   return new StaticModuleSource(undefined, { preferDrafts });
 }
 
+/** The hosted Read API origin when the app is in remote mode, else
+ *  null (local/static — including github.io). Normalised with no
+ *  trailing slash. Sprite routing uses this to point an author's
+ *  custom-art URLs at the worker; null keeps every caller on the
+ *  static origin, so non-remote builds are unaffected. */
+export function getReadHost(): string | null {
+  if (process.env.NEXT_PUBLIC_MODULE_SOURCE !== "remote") return null;
+  const host = process.env.NEXT_PUBLIC_READ_HOST?.trim();
+  return host && host.length > 0 ? host.replace(/\/+$/, "") : null;
+}
+
 /** Test-only escape hatch. */
 export function __resetModuleSourceForTests(): void {
   _cachedGame = null;

@@ -33,7 +33,8 @@
  *     the Sun Sword is wielded, etc.).
  */
 
-import { modulePath, withBase } from "./Module";
+import { modulePath } from "./Module";
+import { spriteUrl } from "@/data_model/spriteUrl";
 import type { Item } from "./Items";
 import { isStackable, loadItems } from "./Items";
 
@@ -222,14 +223,13 @@ export function spriteForMember(rawSprite: string | undefined, _klass: string): 
     // No source path — point at the generic "townsperson" placeholder
     // that the modules ship. Beats a class-named PNG that doesn't
     // exist under /sprites/.
-    return withBase(`/sprites/person/townsperson1.png`);
+    return spriteUrl("person/townsperson1.png");
   }
-  if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
-  if (raw.startsWith("/sprites/")) return withBase(raw);
-  // Strip any leading slash + an accidental "sprites/" prefix so we
-  // don't end up with `/sprites/sprites/...`.
-  const clean = raw.replace(/^\/+/, "").replace(/^sprites\//, "");
-  return withBase(`/sprites/${clean}`);
+  // spriteUrl handles http(s) passthrough, "/sprites/"/"sprites/"
+  // normalisation, and — in remote mode for a hosted module — routes
+  // the author's custom uploads to the worker (stock art stays on the
+  // origin, byte-identical to before).
+  return spriteUrl(raw);
 }
 
 // ── Inventory normalisation ────────────────────────────────────────

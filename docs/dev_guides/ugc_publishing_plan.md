@@ -246,23 +246,58 @@ parsing for qualified ids, game sources never read editor drafts,
 per-mode Next build caches, no-store catalog index + /reindex
 reconciler, credentialed CORS on the local publish-server.
 
+**Cloudflare Pages live + hosted modules playable (June 2026):** the
+whole experience is now a URL — `https://wilderstep.pages.dev` (Pages,
+git-connected to `main`, build `npm run build:pages`, root `web`,
+output `out`). GitHub Pages is kept as the game-only static deploy.
+Worker `ALLOWED_ORIGINS` + `LOGIN_REDIRECT_URL` now include the Pages
+origin (redeploy the worker manually with `wrangler deploy` after such
+changes). Hosted-only `@handle/*` modules are listed, played, and
+fully playable end to end. Three real bugs were fixed to get here:
+
+- **Export output dir.** `output: "export"` + a custom `distDir`
+  (the remote-mode `.next-remote`) makes Next treat the custom distDir
+  as the export OUTPUT dir, so the site landed in `.next-remote` not
+  `out` → "output directory not found". Static-export builds now keep
+  `.next` so the export lands in `out` (next.config.mjs).
+- **Static-export routing.** `/play/new/[moduleId]/{begin,party}` were
+  dynamic routes whose `generateStaticParams` only knew build-time
+  LOCAL ids, so hosted ids 404'd. Replaced with query-param routes
+  `/play/new/{begin,party}?m=<id>` (`src/play/playRoutes.ts`) — one
+  exported page each, any id. The active overworld was already
+  remote-aware (`PlayHost.loadCatalog` → `getModuleSource()`).
+- **Combat loot.** `CombatScene.loadCounters()` was the one combat
+  catalog not seeded by `seedBattleCaches`, so it hit the static
+  origin (404 in remote). Now seeded (re-keyed via `countersToRawMap`),
+  fixing loot for hosted AND local modules.
+
 ## Next session plan
 
-1. **Editor reads the configured source.** The editor still
-   instantiates StaticModuleSource directly, so in remote mode it
-   browses LOCAL modules only — once a published module's drafts are
-   cleared, the author can't reopen it to keep editing. Swap editor
-   surfaces to getModuleSource() (drafts stay preferred there) so
-   hosted @handle modules are editable: load published → edit as
-   drafts → republish. This closes the authoring loop.
-2. **Deploy to Cloudflare Pages.** Build the static export with the
-   remote env vars, add the Pages origin to ALLOWED_ORIGINS +
-   LOGIN_REDIRECT_URL, and the whole experience becomes a URL — no
-   npm required. Anyone in the Access policy can author; anyone can
-   play. (Also largely dissolves the third-party-cookie concern.)
-3. **Sprites**: seed-bucket --sprites, plus play-side resolution of
-   per-owner sprite paths (sprites/@handle/…) so published art
-   renders.
+1. ~~**Editor reads the configured source.**~~ **DONE.**
+   `getEditorModuleSource()` (remote/static per env, drafts preferred)
+   replaced direct `StaticModuleSource` use across the editor surfaces;
+   the authoring loop (load published → edit as drafts → republish) is
+   closed.
+2. ~~**Deploy to Cloudflare Pages.**~~ **DONE** — see the status block
+   above. Live, hosted modules playable.
+3. ~~**Sprites.**~~ **DONE (play-side).** A shared resolver
+   `src/data_model/spriteUrl.ts` routes a hosted module's CUSTOM
+   uploads to `<READ_HOST>/sprites/@handle/<cat>/<file>` and leaves
+   STOCK art on the static origin. It consults the owner sprite index
+   (`sprites/@handle/index.json`, `{categories:{cat:[file]}}`),
+   pre-seeded once per play boot into a module-scoped cache
+   (`seedSpriteRouting`, hooked into `seedBattleCaches` for combat and
+   `PlayHost` for the overworld — mirrors the catalog-seeding pattern).
+   The combat resolvers (`spriteForMember`, monster `resolveSpriteUrl`,
+   summon `resolveSummonSpriteUrl`, arena `toArenaCell`) and the
+   overworld preload (bare texture key, routed URL) delegate to it.
+   Strict no-op off remote / for bare + `@core` ids (local + github.io
+   unchanged). `seed-bucket --sprites` is **NOT required** for the
+   Pages deploy: stock art ships in the bundle and custom art is
+   written to R2 by the publish flow; `--sprites` only matters for a
+   pure-remote read client with no bundled origin. Final check is
+   visual — publish a module with custom pixel art and confirm it
+   renders in play.
 4. **Phase 4 proper** (community surface): catalog search/browse,
    author pages, "my modules", report flow + moderation flags — D1
    enters here, per §3's schema.

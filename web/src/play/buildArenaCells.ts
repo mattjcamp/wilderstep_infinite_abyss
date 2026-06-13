@@ -40,7 +40,7 @@
  * combat doesn't trigger those interactions.
  */
 
-import { withBase } from "@/battle/world/Module";
+import { spriteUrl } from "@/data_model/spriteUrl";
 import { ARENA_COLS, ARENA_ROWS } from "@/battle/combat/Arena";
 import type { ArenaCellInfo } from "@/battle/world/Maps";
 
@@ -71,7 +71,7 @@ export function toArenaCell(cell: WorldCell): ArenaCellInfo {
   const rawSprite = cell.sprite;
   const sprite =
     typeof rawSprite === "string" && rawSprite.length > 0
-      ? withBase(`/sprites/${rawSprite}`)
+      ? spriteUrl(rawSprite)
       : null;
   return {
     sprite,

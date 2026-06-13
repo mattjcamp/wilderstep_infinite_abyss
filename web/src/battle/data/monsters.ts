@@ -21,7 +21,8 @@
  */
 
 import type { Combatant } from "../types";
-import { modulePath, withBase } from "../world/Module";
+import { modulePath } from "../world/Module";
+import { spriteUrl } from "@/data_model/spriteUrl";
 
 export interface MonsterSpec {
   /** Snake_case identifier from v2's monsters.json (Map key). */
@@ -262,11 +263,10 @@ function onHitFromRaw(h: RawMonsterOnHit): MonsterOnHit | null {
  *  URL Phaser's loader can fetch. v2 assets live under `/sprites/`. */
 function resolveSpriteUrl(sprite: string | undefined): string {
   if (!sprite) return "";
-  if (sprite.startsWith("http://") || sprite.startsWith("https://")) {
-    return sprite;
-  }
-  if (sprite.startsWith("/")) return withBase(sprite);
-  return withBase(`/sprites/${sprite}`);
+  // spriteUrl handles http(s)/"/sprites/" normalisation and routes a
+  // hosted module's custom uploads to the worker (stock stays on the
+  // origin). Empty → "" is handled above.
+  return spriteUrl(sprite);
 }
 
 let _catalog: Map<string, MonsterSpec> | null = null;
@@ -350,7 +350,7 @@ export function makeMonsterByName(id: string, idSuffix = ""): Combatant {
       damage_dice: 1,
       damage_sides: 6,
       damage_bonus: 0,
-      sprite: withBase("/sprites/monster/goblin.png"),
+      sprite: spriteUrl("monster/goblin.png"),
       move_range: 3,
       battle_scale: 1,
       post_attack_move: 0,
