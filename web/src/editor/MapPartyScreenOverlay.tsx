@@ -14,7 +14,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { loadDraft, saveDraft } from "@/data_model/draft";
 import { mergeModel } from "@/data_model/merge";
-import { StaticModuleSource } from "@/data_model/StaticModuleSource";
+import { getEditorModuleSource } from "@/data_model/sourceConfig";
 import {
   PartyScreen,
   type PartyAbilityRef,
@@ -79,7 +79,7 @@ export function MapPartyScreenOverlay({
     let cancelled = false;
     (async () => {
       try {
-        const src = new StaticModuleSource();
+        const src = getEditorModuleSource();
         const [
           partyLayers,
           charactersLayers,

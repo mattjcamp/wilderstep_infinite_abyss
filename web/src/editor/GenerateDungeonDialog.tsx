@@ -19,7 +19,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { mergeModel } from "@/data_model/merge";
-import { StaticModuleSource } from "@/data_model/StaticModuleSource";
+import { getEditorModuleSource } from "@/data_model/sourceConfig";
 import { dungeonSeed } from "@/battle/world/Dungeon";
 import type { DungeonRecord } from "@/sim/dungeon/types";
 import { bakedMapId, nextFreeSuffix } from "./dungeonBake";
@@ -53,7 +53,7 @@ export function GenerateDungeonDialog({
     let cancelled = false;
     (async () => {
       try {
-        const src = new StaticModuleSource();
+        const src = getEditorModuleSource();
         const layers = await src.loadModelLayers(moduleId, "dungeons");
         const merged = mergeModel(
           "dungeons",

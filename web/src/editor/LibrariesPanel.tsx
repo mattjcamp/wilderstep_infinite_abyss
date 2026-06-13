@@ -16,7 +16,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { StaticModuleSource } from "@/data_model/StaticModuleSource";
+import { getEditorModuleSource } from "@/data_model/sourceConfig";
 import {
   discardDraft,
   downloadJson,
@@ -48,7 +48,7 @@ export function LibrariesPanel({ moduleId }: { moduleId: string }) {
 
   useEffect(() => {
     let cancelled = false;
-    const src = new StaticModuleSource();
+    const src = getEditorModuleSource();
     setState({ kind: "loading" });
     Promise.all([
       src.loadRawManifest(moduleId),
@@ -179,7 +179,7 @@ export function LibrariesPanel({ moduleId }: { moduleId: string }) {
     }
     discardDraft(moduleId, MANIFEST_KEY);
     // Reload manifest from disk.
-    const src = new StaticModuleSource();
+    const src = getEditorModuleSource();
     src.loadRawManifest(moduleId).then((manifest) => {
       if (manifest === null) return;
       setState({

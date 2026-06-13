@@ -28,7 +28,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { withBasePath } from "@/util/basePath";
-import { StaticModuleSource } from "@/data_model/StaticModuleSource";
+import { getEditorModuleSource } from "@/data_model/sourceConfig";
 import { MODELS, type ModelKey } from "@/data_model/models";
 import type { IdListSource } from "./idListFields";
 
@@ -92,7 +92,7 @@ async function loadModelRecords(
   moduleId: string,
   model: ModelKey,
 ): Promise<ReadonlyArray<Record<string, unknown>>> {
-  const src = new StaticModuleSource();
+  const src = getEditorModuleSource();
   const doc = (await src.loadModel(moduleId, model)) as
     | Record<string, unknown>
     | null;

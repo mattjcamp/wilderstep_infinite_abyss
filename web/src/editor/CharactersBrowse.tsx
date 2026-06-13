@@ -28,7 +28,7 @@ import {
 } from "@/data_model/draft";
 import { mergeModel } from "@/data_model/merge";
 import { publishItems } from "@/data_model/publishClient";
-import { StaticModuleSource } from "@/data_model/StaticModuleSource";
+import { getEditorModuleSource } from "@/data_model/sourceConfig";
 import {
   CharacterCreator,
   type AbilityRecord,
@@ -87,7 +87,7 @@ export function CharactersBrowse({ moduleId }: { moduleId: string }) {
   // ── Load characters + races + classes + abilities (draft-aware) ──
   const refresh = async () => {
     try {
-      const src = new StaticModuleSource();
+      const src = getEditorModuleSource();
       const [
         charactersLayers,
         racesLayers,

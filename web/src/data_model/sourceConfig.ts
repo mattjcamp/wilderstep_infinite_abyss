@@ -18,10 +18,17 @@
 import { StaticModuleSource } from "./StaticModuleSource";
 import { RemoteModuleSource } from "./RemoteModuleSource";
 
-let _cached: StaticModuleSource | null = null;
+// Two caches because the game and the editor want the SAME static/
+// remote selection but OPPOSITE draft semantics (preferDrafts), so
+// they can't share an instance.
+let _cachedGame: StaticModuleSource | null = null;
+let _cachedEditor: StaticModuleSource | null = null;
 
-/** The app-wide module source per build-time env. Cached — sources
+/** The GAME's module source per build-time env. Cached — sources
  *  are stateless, so one instance serves every caller.
+ *
+ *  preferDrafts is false: the game plays published content only, so
+ *  a leftover editor draft must never shadow the hosted catalog.
  *
  *  Typed as StaticModuleSource (which RemoteModuleSource extends):
  *  the extended surface — loadModelLayers, resolveModuleSoundtrack,
@@ -29,37 +36,56 @@ let _cached: StaticModuleSource | null = null;
  *  slim ModuleSource interface is the subset for future thin
  *  implementations. */
 export function getModuleSource(): StaticModuleSource {
-  if (_cached) return _cached;
-  _cached = createModuleSource(
+  if (_cachedGame) return _cachedGame;
+  _cachedGame = createModuleSource(
     process.env.NEXT_PUBLIC_MODULE_SOURCE,
     process.env.NEXT_PUBLIC_READ_HOST,
+    { preferDrafts: false },
   );
-  return _cached;
+  return _cachedGame;
 }
 
-/** Pure factory — exported for tests. */
+/** The EDITOR's module source per build-time env. Same static/remote
+ *  selection as getModuleSource(), but preferDrafts is true: drafts
+ *  are the editor's working copy and must shadow published files.
+ *
+ *  This is what lets remote-mode authoring close the loop — the
+ *  editor now browses the HOSTED catalog (not just local modules),
+ *  so a published @handle module can be reopened, edited as drafts,
+ *  and republished even after its drafts were cleared on publish
+ *  (ugc_publishing_plan.md "Next session plan" item 1). */
+export function getEditorModuleSource(): StaticModuleSource {
+  if (_cachedEditor) return _cachedEditor;
+  _cachedEditor = createModuleSource(
+    process.env.NEXT_PUBLIC_MODULE_SOURCE,
+    process.env.NEXT_PUBLIC_READ_HOST,
+    { preferDrafts: true },
+  );
+  return _cachedEditor;
+}
+
+/** Pure factory — exported for tests. `preferDrafts` defaults to
+ *  false (game semantics) so existing callers are unaffected. */
 export function createModuleSource(
   mode: string | undefined,
   readHost: string | undefined,
+  opts?: { preferDrafts?: boolean },
 ): StaticModuleSource {
+  const preferDrafts = opts?.preferDrafts ?? false;
   if (mode === "remote") {
     if (readHost && readHost.trim().length > 0) {
-      // preferDrafts false: this source feeds the GAME, which plays
-      // published content only — a leftover editor draft must never
-      // shadow the hosted catalog.
-      return new RemoteModuleSource(readHost.trim(), {
-        preferDrafts: false,
-      });
+      return new RemoteModuleSource(readHost.trim(), { preferDrafts });
     }
     // eslint-disable-next-line no-console
     console.warn(
       "NEXT_PUBLIC_MODULE_SOURCE=remote but NEXT_PUBLIC_READ_HOST is unset — falling back to the static source.",
     );
   }
-  return new StaticModuleSource(undefined, { preferDrafts: false });
+  return new StaticModuleSource(undefined, { preferDrafts });
 }
 
 /** Test-only escape hatch. */
 export function __resetModuleSourceForTests(): void {
-  _cached = null;
+  _cachedGame = null;
+  _cachedEditor = null;
 }

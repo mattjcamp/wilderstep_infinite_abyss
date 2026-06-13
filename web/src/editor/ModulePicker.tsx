@@ -14,7 +14,7 @@
 import { encodeModuleId } from "./moduleRoutes";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { StaticModuleSource } from "@/data_model/StaticModuleSource";
+import { getEditorModuleSource } from "@/data_model/sourceConfig";
 import {
   discardAllDraftsFor,
   discardDraft,
@@ -75,7 +75,7 @@ export function ModulePicker() {
   );
 
   const refresh = useCallback(() => {
-    const src = new StaticModuleSource();
+    const src = getEditorModuleSource();
     src
       .list()
       .then((modules) => {

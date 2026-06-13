@@ -38,7 +38,7 @@ import {
 import { mergeModel } from "@/data_model/merge";
 import type { LibraryCatalogEntry } from "@/data_model/ModuleSource";
 import { publishItems } from "@/data_model/publishClient";
-import { StaticModuleSource } from "@/data_model/StaticModuleSource";
+import { getEditorModuleSource } from "@/data_model/sourceConfig";
 import { withBasePath } from "@/util/basePath";
 import { SoundtrackPicker } from "./SoundtrackPicker";
 import { ID_PATTERN, TagsPicker } from "./TagsPicker";
@@ -215,7 +215,7 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
   // ── Load dungeons (draft-aware) ────────────────────────────────
   const refresh = async () => {
     try {
-      const src = new StaticModuleSource();
+      const src = getEditorModuleSource();
       const [layers, catalog, itemLayers, tileLayers] = await Promise.all([
         src.loadModelLayers(moduleId, "dungeons"),
         // Dungeons offered by `uses` libraries. Not part of the

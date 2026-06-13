@@ -36,7 +36,7 @@ import {
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { StaticModuleSource } from "@/data_model/StaticModuleSource";
+import { getEditorModuleSource } from "@/data_model/sourceConfig";
 import {
   discardDraft,
   hasDraft,
@@ -899,7 +899,7 @@ export function MapEditor({
     setState({ kind: "loading" });
     (async () => {
       try {
-        const src = new StaticModuleSource();
+        const src = getEditorModuleSource();
         const [
           paletteLayers,
           mapsLayers,

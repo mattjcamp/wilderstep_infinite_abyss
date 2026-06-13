@@ -36,7 +36,7 @@ import {
 import { mergeModel } from "@/data_model/merge";
 import type { LibraryCatalogEntry } from "@/data_model/ModuleSource";
 import { publishItems } from "@/data_model/publishClient";
-import { StaticModuleSource } from "@/data_model/StaticModuleSource";
+import { getEditorModuleSource } from "@/data_model/sourceConfig";
 import {
   encounterTemplateFromRaw,
   groupEncountersByArea,
@@ -151,7 +151,7 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
   // ── Load palette + maps (draft-aware) ──────────────────────────
   const refresh = async () => {
     try {
-      const src = new StaticModuleSource();
+      const src = getEditorModuleSource();
       const [paletteLayers, mapsLayers, catalog] = await Promise.all([
         src.loadModelLayers(moduleId, "map_tiles"),
         src.loadModelLayers(moduleId, "maps"),
@@ -360,7 +360,7 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
       // honoring that chain we'd silently bake every floor empty of
       // monsters when the child has no encounters.json of its own.
       let encountersError: string | null = null;
-      const src = new StaticModuleSource();
+      const src = getEditorModuleSource();
       const [encountersLayers, monstersLayers, tileLayers] = await Promise.all([
         src.loadModelLayers(moduleId, "encounters").catch((e) => {
           encountersError = e instanceof Error ? e.message : String(e);

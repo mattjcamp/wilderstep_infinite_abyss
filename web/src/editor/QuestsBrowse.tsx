@@ -33,7 +33,7 @@ import {
 import { mergeModel } from "@/data_model/merge";
 import type { LibraryCatalogEntry } from "@/data_model/ModuleSource";
 import { publishItems } from "@/data_model/publishClient";
-import { StaticModuleSource } from "@/data_model/StaticModuleSource";
+import { getEditorModuleSource } from "@/data_model/sourceConfig";
 import { EncounterPicker, type EncounterPickerEntry } from "./EncounterPicker";
 import { SpritePicker } from "./SpritePicker";
 import { ID_PATTERN, TagsPicker } from "./TagsPicker";
@@ -234,7 +234,7 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
 
   const refresh = async () => {
     try {
-      const src = new StaticModuleSource();
+      const src = getEditorModuleSource();
       const [
         questsLayers,
         catalog,

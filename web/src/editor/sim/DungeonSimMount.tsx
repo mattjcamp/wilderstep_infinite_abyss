@@ -34,7 +34,7 @@ import {
 import { TILE_STAIRS_DOWN } from "@/battle/world/Dungeon";
 import { TILE_FOREST_ARCHWAY_UP, TILE_FOREST_ARCHWAY_DOWN } from "@/battle/world/Tiles";
 import { mergeModel } from "@/data_model/merge";
-import { StaticModuleSource } from "@/data_model/StaticModuleSource";
+import { getEditorModuleSource } from "@/data_model/sourceConfig";
 import {
   MapSimulation,
   type LockEncounterOptions,
@@ -166,7 +166,7 @@ export function DungeonSimMount({
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const src = new StaticModuleSource();
+      const src = getEditorModuleSource();
       const [
         partyLayers,
         charLayers,

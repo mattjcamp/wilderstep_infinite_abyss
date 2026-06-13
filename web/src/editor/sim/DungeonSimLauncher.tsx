@@ -21,7 +21,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { mergeModel } from "@/data_model/merge";
-import { StaticModuleSource } from "@/data_model/StaticModuleSource";
+import { getEditorModuleSource } from "@/data_model/sourceConfig";
 import { dungeonSeed } from "@/battle/world/Dungeon";
 import {
   _clearEncountersCache,
@@ -103,7 +103,7 @@ export function DungeonSimLauncher({ moduleId }: { moduleId: string }) {
     let cancelled = false;
     (async () => {
       try {
-        const src = new StaticModuleSource();
+        const src = getEditorModuleSource();
         // Pin the battle loaders at this module + flush their
         // module-scoped caches so a swap to a different module
         // doesn't see stale encounters / monsters.

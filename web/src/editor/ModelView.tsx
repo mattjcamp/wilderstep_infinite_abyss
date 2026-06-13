@@ -36,7 +36,7 @@
  */
 
 import { Fragment, useEffect, useMemo, useState } from "react";
-import { StaticModuleSource } from "@/data_model/StaticModuleSource";
+import { getEditorModuleSource } from "@/data_model/sourceConfig";
 import {
   DraftBanner,
   deleteRecordConfirmMessage,
@@ -157,7 +157,7 @@ export function ModelView({
   // the same code path as the layers + catalog fetches.
   useEffect(() => {
     let cancelled = false;
-    const src = new StaticModuleSource();
+    const src = getEditorModuleSource();
     setState({ kind: "loading" });
     (async () => {
       try {
@@ -384,7 +384,7 @@ export function ModelView({
       // the on-disk file we just wrote. Re-fetch via the source so
       // the layered view reflects the new ownFile.
       discardDraft(moduleId, modelKey);
-      const src = new StaticModuleSource();
+      const src = getEditorModuleSource();
       const fresh = await src.loadModelLayers(moduleId, modelKey);
       setState((s) =>
         s.kind === "ok"
