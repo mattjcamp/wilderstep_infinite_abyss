@@ -7,6 +7,7 @@
 
 import Link from "next/link";
 import { ModulePicker } from "@/editor/ModulePicker";
+import { AccountNav } from "@/play/AccountNav";
 
 export default function EditorPage() {
   return (
@@ -18,9 +19,12 @@ export default function EditorPage() {
             Pick a module to browse its data.
           </p>
         </div>
-        <Link href="/" className="text-sm text-ember underline">
-          ← Landing
-        </Link>
+        <div className="flex items-center gap-4">
+          <AccountNav />
+          <Link href="/" className="text-sm text-ember underline">
+            ← Landing
+          </Link>
+        </div>
       </header>
 
       <ModulePicker />
