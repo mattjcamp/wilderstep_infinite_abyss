@@ -36,8 +36,18 @@ const nextConfig = {
   // see sourceConfig.ts) therefore gets its own distDir, so
   // `npm run dev` and `npm run dev:remote` can alternate without
   // stale-chunk confusion or cache wipes.
+  //
+  // BUT only for non-export (dev) builds: with `output: "export"`,
+  // Next's hasCustomExportOutput() treats a non-".next" distDir as the
+  // EXPORT OUTPUT dir (and resets distDir to ".next" internally). So a
+  // remote static-export build with distDir ".next-remote" would write
+  // the exported site into ".next-remote" instead of "out" — breaking
+  // the Cloudflare Pages output dir. Static-export builds keep ".next"
+  // so the export lands in "out" as expected. The dev cache-separation
+  // (dev vs dev:remote) is unaffected — those don't set STATIC_EXPORT.
   distDir:
-    process.env.NEXT_PUBLIC_MODULE_SOURCE === "remote"
+    process.env.NEXT_PUBLIC_MODULE_SOURCE === "remote" &&
+    process.env.STATIC_EXPORT !== "1"
       ? ".next-remote"
       : ".next",
   ...(staticExport
