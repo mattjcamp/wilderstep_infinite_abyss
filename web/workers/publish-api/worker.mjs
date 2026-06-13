@@ -454,6 +454,30 @@ export default {
       });
     }
 
+    // Interactive sign-out. Bounce to the Cloudflare Access team-domain
+    // logout endpoint, which clears the CF_Authorization cookie; a
+    // ?return= matching an allowed origin is forwarded as Access's
+    // returnTo so the browser lands back in the app afterwards.
+    if (request.method === "GET" && url.pathname === "/logout") {
+      const ret = url.searchParams.get("return");
+      const allowed = (env.ALLOWED_ORIGINS ?? "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const safeReturn =
+        ret && allowed.some((o) => ret.startsWith(o)) ? ret : null;
+      const team = env.ACCESS_TEAM_DOMAIN;
+      const dest = team
+        ? `https://${team}/cdn-cgi/access/logout${
+            safeReturn ? `?returnTo=${encodeURIComponent(safeReturn)}` : ""
+          }`
+        : safeReturn || "/status";
+      return new Response(null, {
+        status: 302,
+        headers: { ...CORS, Location: dest },
+      });
+    }
+
     // Read path (v1: the same worker serves the storage tree so
     // RemoteModuleSource needs no second service).
     if (

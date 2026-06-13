@@ -94,6 +94,15 @@ export function publishSignInUrl(returnTo?: string): string {
   return `${PUBLISH_HOST}/login${ret ? `?return=${encodeURIComponent(ret)}` : ""}`;
 }
 
+/** URL of the hosted sign-out flow — the worker's /logout route, which
+ *  302s to the Cloudflare Access team-domain logout (clearing the
+ *  CF_Authorization cookie) and bounces back to `returnTo` when it
+ *  matches an allowed origin. */
+export function publishSignOutUrl(returnTo?: string): string {
+  const ret = returnTo ?? (typeof window !== "undefined" ? window.location.href : "");
+  return `${PUBLISH_HOST}/logout${ret ? `?return=${encodeURIComponent(ret)}` : ""}`;
+}
+
 /** Probe the publish API. Credentials ride along so the hosted
  *  worker can see the Access cookie; the local server ignores them.
  *  Returns all-false on any error (network, CORS, timeout). Safe to
@@ -152,4 +161,16 @@ export async function publishItems(
     throw new Error(`Publish HTTP ${res.status}${detail ? `: ${detail}` : ""}`);
   }
   return (await res.json()) as PublishResponse;
+}
+
+/** Delete a published module (all its files + its catalog entry). The
+ *  server enforces ownership — only the `@handle` that owns the id may
+ *  delete it. Throws on a network error, a non-200, or a per-item
+ *  failure (e.g. not owned). */
+export async function deleteModule(moduleId: string): Promise<void> {
+  const res = await publishItems([{ kind: "delete-module", moduleId }]);
+  const r = res.results[0];
+  if (!r || !r.ok) {
+    throw new Error(r?.error ?? "Delete failed");
+  }
 }
