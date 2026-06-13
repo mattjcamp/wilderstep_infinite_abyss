@@ -38,15 +38,16 @@ ACCESS_TEAM_DOMAIN = "little-tree-b24e.cloudflareaccess.com"
 ACCESS_AUD = "157678c7a07971508db31e525d6499f413c461a40f015b67a2b28cf3a2885256"
 
 # Origins allowed to make credentialed calls (the editor's deployed
-# origin + local dev). Comma-separated, exact origins.
-ALLOWED_ORIGINS = "http://localhost:3000"
+# origins + local dev). Comma-separated, EXACT origins (scheme + host,
+# no trailing slash). Add a custom domain here too once one points at
+# the Pages project.
+ALLOWED_ORIGINS = "http://localhost:3000,https://wilderstep.pages.dev"
 
 # Where /login bounces after Access authenticates. A ?return= param
 # matching ALLOWED_ORIGINS overrides it (the editor's Sign-in link
 # passes one), so this default only matters for hand-typed /login
-# visits — /status doubles as instant "am I signed in" feedback.
-# Point it at the deployed editor once one exists.
-LOGIN_REDIRECT_URL = "/status"
+# visits. Points at the deployed Cloudflare Pages editor.
+LOGIN_REDIRECT_URL = "https://wilderstep.pages.dev/editor/"
 
 # Identity → publish handle map (pre-D1 stand-in for the users
 # table). JSON object of email → handle; emails not in the map fall
