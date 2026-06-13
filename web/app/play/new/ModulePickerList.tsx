@@ -18,7 +18,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { ModuleSummary } from "@/data_model/ModuleSource";
 import { getModuleSource } from "@/data_model/sourceConfig";
-import { encodeModuleId } from "@/editor/moduleRoutes";
+import { playPartyHref } from "@/play/playRoutes";
 
 function isPlayable(m: ModuleSummary): boolean {
   return m.role !== "core" && m.role !== "library";
@@ -94,7 +94,7 @@ export function ModulePickerList() {
       {state.modules.map((m) => (
         <li key={m.id}>
           <Link
-            href={`/play/new/${encodeModuleId(m.id)}/party`}
+            href={playPartyHref(m.id)}
             className="block rounded-md border border-parchment/20 bg-ink/40 p-4 transition hover:border-parchment/40 hover:bg-ink/30"
           >
             <div className="font-display text-xl text-parchment">

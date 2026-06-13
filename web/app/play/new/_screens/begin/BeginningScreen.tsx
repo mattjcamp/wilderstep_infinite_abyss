@@ -20,7 +20,7 @@
  * the player onto a half-built game.
  */
 
-import { encodeModuleId } from "@/editor/moduleRoutes";
+import { playPartyHref } from "@/play/playRoutes";
 import { getModuleSource } from "@/data_model/sourceConfig";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -243,7 +243,7 @@ export function BeginningScreen({
           No party assembly in progress for this module.
         </p>
         <Link
-          href={`/play/new/${encodeModuleId(moduleId)}/party`}
+          href={playPartyHref(moduleId)}
           className="text-ember underline"
         >
           Form your party

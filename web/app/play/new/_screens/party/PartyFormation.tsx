@@ -29,7 +29,7 @@
  * across a hard reload.
  */
 
-import { encodeModuleId } from "@/editor/moduleRoutes";
+import { playBeginHref } from "@/play/playRoutes";
 import { getModuleSource } from "@/data_model/sourceConfig";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -288,7 +288,7 @@ export function PartyFormation({ moduleId }: { moduleId: string }) {
       // Storage unavailable — fall through; the beginning screen will
       // detect the absent draft and route back here.
     }
-    router.push(`/play/new/${encodeModuleId(moduleId)}/begin`);
+    router.push(playBeginHref(moduleId));
   };
 
   if (state.kind === "loading") {

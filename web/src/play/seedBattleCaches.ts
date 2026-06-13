@@ -64,6 +64,7 @@ import {
   loadRaces,
 } from "@/battle/world/Classes";
 import { _clearEffectsCache, loadEffects } from "@/battle/world/Effects";
+import { _clearCountersCache, loadCounters } from "@/battle/world/Counters";
 import {
   _clearPartyCache,
   _setPartyCache,
@@ -120,6 +121,38 @@ async function loadMergedModel(
   } catch {
     return null;
   }
+}
+
+/** Counters are the one combat catalog whose v1 loader shape differs
+ *  from the v2 model file. `loadCounters` / `parseCounters` expect a
+ *  BARE object keyed by shop type — `{ general: {...}, weapon: {...} }`
+ *  — whereas the v2 `counters` model (collectionKey "counters") merges
+ *  to `{ counters: [ { id, name, items, … } ] }`. Re-key the merged
+ *  collection by each entry's `id` (which IS the shop type) so the
+ *  blob we seed matches what `loadCounters` would have fetched.
+ *
+ *  Without this, `CombatScene`'s direct `loadCounters()` (loot-drop
+ *  pool) hits `modulePath("counters.json")` — wrong origin in remote
+ *  mode (404), and even on the static origin the v2 collection file
+ *  mis-parses — so loot never drops. Seeding fixes both. */
+export function countersToRawMap(
+  merged: unknown,
+): Record<string, unknown> {
+  const list =
+    (merged as { counters?: Array<Record<string, unknown>> } | null)
+      ?.counters ?? [];
+  const out: Record<string, unknown> = {};
+  for (const c of list) {
+    if (!c || typeof c.id !== "string") continue;
+    out[c.id] = {
+      name: c.name,
+      description: c.description,
+      items: c.items,
+      kind: c.kind,
+      services: c.services,
+    };
+  }
+  return out;
 }
 
 /** Build the v1 `Party` object from the save + the module's merged
@@ -251,6 +284,7 @@ function clearAllSeededCaches(): void {
   _clearMonstersCache();
   _clearClassCaches();
   _clearEffectsCache();
+  _clearCountersCache();
   _clearPartyCache();
   gameState.partyData = null;
 }
@@ -283,6 +317,7 @@ export async function seedBattleCaches(
     monsters,
     races,
     effects,
+    counters,
     characters,
     characterClasses,
   ] = await Promise.all([
@@ -292,6 +327,7 @@ export async function seedBattleCaches(
     loadMergedModel(src, moduleId, "monsters"),
     loadMergedModel(src, moduleId, "races"),
     loadMergedModel(src, moduleId, "effects"),
+    loadMergedModel(src, moduleId, "counters"),
     loadMergedModel(src, moduleId, "characters"),
     loadMergedModel(src, moduleId, "character_classes"),
   ]);
@@ -315,6 +351,14 @@ export async function seedBattleCaches(
       : Promise.resolve(),
     effects
       ? seedViaBlob(effects, loadEffects).catch(() => undefined)
+      : Promise.resolve(),
+    // counters: re-keyed to the bare shop-type map loadCounters wants
+    // (see countersToRawMap). Seeds CombatScene's loot-drop pool so it
+    // never hits modulePath("counters.json") (wrong origin in remote).
+    counters
+      ? seedViaBlob(countersToRawMap(counters), loadCounters).catch(
+          () => undefined,
+        )
       : Promise.resolve(),
   ]);
 

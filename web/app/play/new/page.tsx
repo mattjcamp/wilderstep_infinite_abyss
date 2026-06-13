@@ -7,7 +7,9 @@
  * Modules with role "core" / "library" are excluded — they're not
  * meant to be played directly.
  *
- * Click → /play/new/[moduleId]/party.
+ * Click → /play/new/party?m=<moduleId> (query-param route so hosted
+ * `@handle/slug` ids, unknown at build time, aren't 404'd by the static
+ * export — see src/play/playRoutes.ts).
  */
 
 import Link from "next/link";
