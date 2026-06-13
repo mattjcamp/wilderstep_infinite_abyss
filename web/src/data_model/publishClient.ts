@@ -94,13 +94,18 @@ export function publishSignInUrl(returnTo?: string): string {
   return `${PUBLISH_HOST}/login${ret ? `?return=${encodeURIComponent(ret)}` : ""}`;
 }
 
-/** URL of the hosted sign-out flow — the worker's /logout route, which
- *  302s to the Cloudflare Access team-domain logout (clearing the
- *  CF_Authorization cookie) and bounces back to `returnTo` when it
- *  matches an allowed origin. */
-export function publishSignOutUrl(returnTo?: string): string {
-  const ret = returnTo ?? (typeof window !== "undefined" ? window.location.href : "");
-  return `${PUBLISH_HOST}/logout${ret ? `?return=${encodeURIComponent(ret)}` : ""}`;
+/** URL of the hosted sign-out flow — the PER-APPLICATION Cloudflare
+ *  Access logout on the worker's OWN domain. This is the one that
+ *  clears the `CF_Authorization` cookie this app set at sign-in, so a
+ *  subsequent /status reports signed-out.
+ *
+ *  (The team-domain logout only ends the broader team session; the
+ *  app's cookie/JWT stays valid until expiry, so the user still looked
+ *  signed in.) No `returnTo` — Access rejects redirect URLs that aren't
+ *  in its allow-list with "Invalid redirect URL", so we land on
+ *  Access's own logged-out page. */
+export function publishSignOutUrl(): string {
+  return `${PUBLISH_HOST}/cdn-cgi/access/logout`;
 }
 
 /** Probe the publish API. Credentials ride along so the hosted

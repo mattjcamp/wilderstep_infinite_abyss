@@ -14,14 +14,10 @@ function jsonResponse(body: unknown, status = 200): Response {
 }
 
 describe("publishSignOutUrl", () => {
-  it("points at the worker /logout route (no return outside the browser)", () => {
-    expect(publishSignOutUrl()).toMatch(/\/logout$/);
-  });
-
-  it("forwards an explicit, percent-encoded return target", () => {
-    expect(publishSignOutUrl("https://wilderstep.pages.dev/play/mine")).toMatch(
-      /\/logout\?return=https%3A%2F%2Fwilderstep\.pages\.dev%2Fplay%2Fmine$/,
-    );
+  it("points at the per-application Access logout on the worker domain", () => {
+    // The per-app logout clears THIS app's CF_Authorization cookie; the
+    // team-domain logout left it valid (user appeared still signed in).
+    expect(publishSignOutUrl()).toMatch(/\/cdn-cgi\/access\/logout$/);
   });
 });
 
