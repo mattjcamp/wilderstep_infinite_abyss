@@ -1,13 +1,10 @@
-## Start App Varations
+## Dev Notes
 
-npm run dev:all          # LOCAL mode — static modules, publishes to web/public/ via publish-server
-
-npm run dev:remote   # REMOTE mode — hosted catalog, publishes to the cloud as @matt
-
-
-## Big Ideas
-
-- Implement module publishing for players
+npm run dev:all     # LOCAL mode — static modules, publishes to web/public/ via publish-server
+npm run dev:remote  # REMOTE mode — hosted catalog, publishes to the cloud as @matt
+https://wilderstep.pages.dev/   # New URL for Cloudfare hosted game
+NOTE sometimes we will need to republish the worker via the command line
+NOTE let's put together a high level overview of the system and were each piece is located
 
 ## New Content for v2
 
