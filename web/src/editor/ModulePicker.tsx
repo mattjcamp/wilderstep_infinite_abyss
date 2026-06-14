@@ -45,6 +45,107 @@ import { ownerHandleOf } from "@/data_model/moduleIds";
  *  (the on-disk publish-server) has no ownership, so anything goes. */
 const IS_REMOTE = process.env.NEXT_PUBLIC_MODULE_SOURCE === "remote";
 
+/** Role-based folders for the picker, in display order. */
+type GroupKey = "mine" | "playable" | "library" | "core";
+const GROUP_ORDER: { key: GroupKey; label: string }[] = [
+  { key: "mine", label: "My Modules" },
+  { key: "playable", label: "Playable Adventures" },
+  { key: "library", label: "Libraries" },
+  { key: "core", label: "Core" },
+];
+
+/** Which folder a module belongs in. Ownership wins over role: a module
+ *  you own is always under "My Modules" regardless of its role. */
+function moduleGroup(m: ModuleSummary, handle: string | null): GroupKey {
+  if (IS_REMOTE && handle && ownerHandleOf(m.id) === handle) return "mine";
+  if (m.role === "core") return "core";
+  if (m.role === "library") return "library";
+  return "playable";
+}
+
+/** One module card. Properties/Delete appear only for modules the user
+ *  can edit/delete (own @handle in hosted mode; any non-core locally). */
+function ModuleCard({
+  m,
+  handle,
+  onEdit,
+  onDelete,
+}: {
+  m: ModuleSummary;
+  handle: string | null;
+  onEdit: (m: ModuleSummary) => void;
+  onDelete: (m: ModuleSummary) => void;
+}) {
+  const manifestDraft = hasDraft(m.id, MANIFEST_KEY);
+  // Default / any core module is protected — never deletable from the UI
+  // (keeps the inheritance root intact for modules that extend it).
+  const isProtected = m.id === "default" || m.role === "core";
+  const canDelete = IS_REMOTE
+    ? !!handle && ownerHandleOf(m.id) === handle
+    : !isProtected;
+  const canEditProps = IS_REMOTE
+    ? !!handle && ownerHandleOf(m.id) === handle
+    : true;
+  return (
+    <li className="relative">
+      <Link
+        href={editorModuleHref(m.id)}
+        className="block rounded-md border border-parchment/20 bg-ink/40 p-4 pr-20 transition hover:border-parchment/40 hover:bg-ink/60"
+      >
+        <h2 className="font-display text-xl text-parchment">{m.title}</h2>
+        <p className="mt-1 text-sm text-parchment/85">{m.description}</p>
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-[13px] text-parchment/70">
+          <span>id: {m.id}</span>
+          {m.author ? <span>by {m.author}</span> : null}
+          {m.role ? (
+            <span className="rounded bg-ember/30 px-2 py-0.5 text-parchment/90">
+              {m.role}
+            </span>
+          ) : null}
+          {manifestDraft ? (
+            <span className="rounded bg-parchment/20 px-2 py-0.5 text-parchment/90">
+              manifest draft
+            </span>
+          ) : null}
+          <span className="ml-auto uppercase tracking-wide text-parchment/60">
+            v{m.version}
+          </span>
+        </div>
+      </Link>
+      <div className="absolute right-2 top-2 flex gap-1">
+        {canEditProps ? (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onEdit(m);
+            }}
+            className="rounded border border-parchment/20 bg-ink/60 px-2 py-0.5 text-[13px] text-parchment/80 hover:border-parchment/50 hover:bg-ink/80 hover:text-parchment"
+            title="Edit this module's metadata (title, description, author, version, role)."
+          >
+            Properties
+          </button>
+        ) : null}
+        {canDelete ? (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onDelete(m);
+            }}
+            className="rounded border border-parchment/20 bg-ink/60 px-2 py-0.5 text-[13px] text-parchment/80 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
+            title="Remove this module from the index and discard its in-browser drafts. The on-disk folder must be deleted manually."
+          >
+            Delete
+          </button>
+        ) : null}
+      </div>
+    </li>
+  );
+}
+
 interface IndexEntry {
   id: string;
   title?: string;
@@ -69,6 +170,8 @@ type State =
 
 export function ModulePicker() {
   const { available: publishAvailable, handle } = usePublishServer();
+  // Collapsed role folders (by GroupKey); all expanded by default.
+  const [collapsed, setCollapsed] = useState<Set<GroupKey>>(new Set());
   const [state, setState] = useState<State>({ kind: "loading" });
   const [creating, setCreating] = useState(false);
   const [publishing, setPublishing] = useState(false);
@@ -493,92 +596,50 @@ export function ModulePicker() {
       {modules.length === 0 ? (
         <p className="text-parchment/80">No modules found.</p>
       ) : (
-        <ul className="grid gap-3 sm:grid-cols-2">
-          {modules.map((m) => {
-            const manifestDraft = hasDraft(m.id, MANIFEST_KEY);
-            // The Default / any core module is protected — never
-            // deletable from the UI. This keeps the inheritance root
-            // intact across modules that extend it.
-            const isProtected = m.id === "default" || m.role === "core";
-            // Only offer Delete for modules the user can actually delete.
-            // Hosted mode: only your OWN published @handle modules (the
-            // server rejects deleting anything else, and repo-managed
-            // bare-id modules like "default" / "side-quests" have no
-            // owner handle). Local dev: any non-core module.
-            const canDelete = IS_REMOTE
-              ? !!handle && ownerHandleOf(m.id) === handle
-              : !isProtected;
-            // Properties (edit metadata → draft → republish) is only
-            // meaningful for modules you can republish. Hosted mode: your
-            // own @handle modules. Local dev: any module's on-disk
-            // metadata is editable (incl. default), so keep it open.
-            const canEditProps = IS_REMOTE
-              ? !!handle && ownerHandleOf(m.id) === handle
-              : true;
+        <div className="flex flex-col gap-6">
+          {GROUP_ORDER.map(({ key, label }) => {
+            const group = modules.filter((m) => moduleGroup(m, handle) === key);
+            if (group.length === 0) return null;
+            const isCollapsed = collapsed.has(key);
             return (
-              <li key={m.id} className="relative">
-                <Link
-                  href={editorModuleHref(m.id)}
-                  className="block rounded-md border border-parchment/20 bg-ink/40 p-4 pr-20 transition hover:border-parchment/40 hover:bg-ink/60"
+              <section key={key}>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setCollapsed((prev) => {
+                      const next = new Set(prev);
+                      if (next.has(key)) next.delete(key);
+                      else next.add(key);
+                      return next;
+                    })
+                  }
+                  className="flex w-full items-center gap-2 border-b border-parchment/10 pb-1 text-left text-parchment/85 hover:text-parchment"
                 >
-                  <h2 className="font-display text-xl text-parchment">
-                    {m.title}
-                  </h2>
-                  <p className="mt-1 text-sm text-parchment/85">
-                    {m.description}
-                  </p>
-                  <div className="mt-3 flex flex-wrap items-center gap-2 text-[13px] text-parchment/70">
-                    <span>id: {m.id}</span>
-                    {m.author ? <span>by {m.author}</span> : null}
-                    {m.role ? (
-                      <span className="rounded bg-ember/30 px-2 py-0.5 text-parchment/90">
-                        {m.role}
-                      </span>
-                    ) : null}
-                    {manifestDraft ? (
-                      <span className="rounded bg-parchment/20 px-2 py-0.5 text-parchment/90">
-                        manifest draft
-                      </span>
-                    ) : null}
-                    <span className="ml-auto uppercase tracking-wide text-parchment/60">
-                      v{m.version}
-                    </span>
-                  </div>
-                </Link>
-                <div className="absolute right-2 top-2 flex gap-1">
-                  {canEditProps ? (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setEditingModule(m);
-                      }}
-                      className="rounded border border-parchment/20 bg-ink/60 px-2 py-0.5 text-[13px] text-parchment/80 hover:border-parchment/50 hover:bg-ink/80 hover:text-parchment"
-                      title="Edit this module's metadata (title, description, author, version, role)."
-                    >
-                      Properties
-                    </button>
-                  ) : null}
-                  {canDelete ? (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        onDeleteModule(m);
-                      }}
-                      className="rounded border border-parchment/20 bg-ink/60 px-2 py-0.5 text-[13px] text-parchment/80 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
-                      title="Remove this module from the index and discard its in-browser drafts. The on-disk folder must be deleted manually."
-                    >
-                      Delete
-                    </button>
-                  ) : null}
-                </div>
-              </li>
+                  <span className="w-3 text-parchment/50">
+                    {isCollapsed ? "▸" : "▾"}
+                  </span>
+                  <span className="font-display text-lg">{label}</span>
+                  <span className="text-sm text-parchment/45">
+                    {group.length}
+                  </span>
+                </button>
+                {!isCollapsed ? (
+                  <ul className="mt-3 grid gap-3 sm:grid-cols-2">
+                    {group.map((m) => (
+                      <ModuleCard
+                        key={m.id}
+                        m={m}
+                        handle={handle}
+                        onEdit={setEditingModule}
+                        onDelete={onDeleteModule}
+                      />
+                    ))}
+                  </ul>
+                ) : null}
+              </section>
             );
           })}
-        </ul>
+        </div>
       )}
 
       {editingModule ? (
