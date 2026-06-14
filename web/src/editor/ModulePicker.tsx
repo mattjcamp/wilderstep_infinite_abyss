@@ -39,6 +39,11 @@ import {
 } from "./ModulePropertiesDialog";
 import { NewModuleForm } from "./NewModuleForm";
 import { usePublishServer } from "./usePublishServer";
+import { ownerHandleOf } from "@/data_model/moduleIds";
+
+/** Hosted (remote) mode gates module management by ownership; local dev
+ *  (the on-disk publish-server) has no ownership, so anything goes. */
+const IS_REMOTE = process.env.NEXT_PUBLIC_MODULE_SOURCE === "remote";
 
 interface IndexEntry {
   id: string;
@@ -63,7 +68,7 @@ type State =
   | { kind: "error"; message: string };
 
 export function ModulePicker() {
-  const { available: publishAvailable } = usePublishServer();
+  const { available: publishAvailable, handle } = usePublishServer();
   const [state, setState] = useState<State>({ kind: "loading" });
   const [creating, setCreating] = useState(false);
   const [publishing, setPublishing] = useState(false);
@@ -495,6 +500,14 @@ export function ModulePicker() {
             // deletable from the UI. This keeps the inheritance root
             // intact across modules that extend it.
             const isProtected = m.id === "default" || m.role === "core";
+            // Only offer Delete for modules the user can actually delete.
+            // Hosted mode: only your OWN published @handle modules (the
+            // server rejects deleting anything else, and repo-managed
+            // bare-id modules like "default" / "side-quests" have no
+            // owner handle). Local dev: any non-core module.
+            const canDelete = IS_REMOTE
+              ? !!handle && ownerHandleOf(m.id) === handle
+              : !isProtected;
             return (
               <li key={m.id} className="relative">
                 <Link
@@ -538,7 +551,7 @@ export function ModulePicker() {
                   >
                     Properties
                   </button>
-                  {!isProtected ? (
+                  {canDelete ? (
                     <button
                       type="button"
                       onClick={(e) => {
