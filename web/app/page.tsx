@@ -38,7 +38,7 @@ export default function HomePage() {
           <p>
             Sign in with your account to unlock Dungeon Master mode. You can
             create your own adventures using Wilderstep&apos;s full-featured
-            game development kit. This includes custom maps, new monsters,
+            game development kit. You can make new maps, new monsters,
             quests, and more.
           </p>
         </div>

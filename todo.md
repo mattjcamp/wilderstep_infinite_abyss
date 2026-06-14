@@ -1,10 +1,3 @@
-## Dev Notes
-
-npm run dev:all     # LOCAL mode — static modules, publishes to web/public/ via publish-server
-npm run dev:remote  # REMOTE mode — hosted catalog, publishes to the cloud as @matt
-https://wilderstep.pages.dev/   # New URL for Cloudfare hosted game
-NOTE sometimes we will need to republish the worker via the command line
-NOTE let's put together a high level overview of the system and were each piece is located
 
 ## New Content for v2
 
@@ -12,6 +5,24 @@ NOTE let's put together a high level overview of the system and were each piece 
 - Relic Quest: add a relic quest that provides an unlock for high level spells and abilities. After level 10, characters must complete Relic Quests to get a new spell. Relic quests will have level and class pre-reqs. Relic Quests could be initiated via the Character Sheet.
 
 # Notes
+
+## Developer Notes
+
+npm run dev:all     # LOCAL mode — static modules, publishes to web/public/ via publish-server
+npm run dev:remote  # REMOTE mode — hosted catalog, publishes to the cloud as @matt
+https://wilderstep.pages.dev/   # New URL for Cloudfare hosted game
+NOTE sometimes we will need to republish the worker via the command line
+NOTE let's put together a high level overview of the system and were each piece is located
+
+### Adding New Players
+
+Approach A — invite specific people (best for now / a trusted test group). You add their email addresses to the Access policy. Steps:
+
+Go to one.dash.cloudflare.com → Access → Applications.
+Open your publish-API application (the one protecting …workers.dev/login).
+Open its Policies → edit the existing "Allow" policy.
+In the Include rule, add the new players' emails — either as individual Emails, or switch it to Emails ending in a domain (e.g. everyone @yourschool.edu) if you want to admit a whole group at once.
+Save.
 
 ## Battle Arena Maps
 
