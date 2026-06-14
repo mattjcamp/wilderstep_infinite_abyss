@@ -314,6 +314,58 @@ fully playable end to end. Three real bugs were fixed to get here:
 5. Phase 5 hardening overlaps the editor audit's P5: schema
    validation on publish, rate limits, PNG re-encode.
 
+## Workflow design notes (authoring UX — captured June 2026)
+
+From hands-on testing the hosted authoring loop, two design problems are
+clear. Not yet built — parked until real-author patterns are observed —
+but recorded so the thinking isn't lost.
+
+### 1. Split "Save" from "Publish"
+
+Today there is only ONE action — *publish* — and it conflates two
+things: the first time a player's work leaves their browser AND making
+it public. There is no in-between, and unpublished edits live ONLY in
+`localStorage` (draft.ts / spriteDraft.ts). So a player who edits in one
+browser and opens another, or clears their cache, **loses unpublished
+work**. That data-loss risk — not just naming — is the strongest reason
+to split the actions:
+
+- **Save** — persist the player's current working copy to the server.
+  Private to them, survives browsers/devices, acts as a backup. Maps to
+  per-user server-side draft storage (or a `private` visibility on the
+  module). Genuinely absent today.
+- **Publish** — explicit "share with others": promote the saved copy to
+  the public catalog (listed, playable). Plus a matching **Unpublish**
+  to pull it back to private.
+
+Both need per-user server state + a `visibility` flag — i.e. the D1 /
+Item-4 work. The current `PublishItem` write protocol already carries
+the content; what's missing is (a) a private/unpublished tier on the
+server and (b) the visibility field gating the catalog. The picker's
+draft toolbar (`Publish all drafts` / `Discard all drafts`) is the
+stand-in for this and should evolve into per-module Save/Publish state.
+
+### 2. Two content-management models collide in one screen
+
+"Dungeon Master Mode" shows two fundamentally different kinds of content
+with different lifecycles:
+
+- **Engine / shipped content** — `default` (core) and the bare-id
+  libraries (`side-quests`, `maps-mix-in`, …). Managed the *developer*
+  way: edited in the repo (`web/public/modules/`), committed to git,
+  deployed. Read-only to players; "edits" the editor lets you make are
+  browser-local and never persist.
+- **Player content** — `@handle/...`, managed the *hosted* way (the
+  Save/Publish lifecycle above).
+
+Showing both in one list, with the engine ones quietly read-only, is the
+core of the "what can I actually edit?" confusion. The role folders
+(Core / Libraries vs My Modules, added June 2026) are a first cut at
+separating them; a fuller version frames engine modules explicitly as
+read-only reference / building blocks and reserves Save/Publish controls
+for "your modules". (A clean conceptual line: engine content is part of
+the *app build*; player content is *data in R2*.)
+
 ## 11½. Effort & risk summary
 
 - **Already done (~60–70%):** editor UI, content model, draft system,
