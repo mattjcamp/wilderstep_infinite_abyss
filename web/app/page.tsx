@@ -12,10 +12,17 @@
  */
 import Link from "next/link";
 import { withBasePath } from "@/util/basePath";
+import { AccountNav } from "@/play/AccountNav";
 
 export default function HomePage() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-12 p-8">
+      {/* Account controls (Sign in / @handle · My Modules · Sign out).
+          Self-contained — renders nothing on builds where publishing
+          isn't reachable (e.g. the static github.io build). */}
+      <div className="absolute right-4 top-4">
+        <AccountNav />
+      </div>
       <header className="text-center">
         <h1 className="font-display text-5xl text-parchment">
           Wilderstep: Infinite Abyss
