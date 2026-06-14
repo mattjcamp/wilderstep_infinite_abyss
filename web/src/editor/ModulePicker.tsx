@@ -170,8 +170,11 @@ type State =
 
 export function ModulePicker() {
   const { available: publishAvailable, handle } = usePublishServer();
-  // Collapsed role folders (by GroupKey); all expanded by default.
-  const [collapsed, setCollapsed] = useState<Set<GroupKey>>(new Set());
+  // Folders start collapsed to draw attention to the player's own work;
+  // "My Modules" starts expanded.
+  const [collapsed, setCollapsed] = useState<Set<GroupKey>>(
+    () => new Set(GROUP_ORDER.filter((g) => g.key !== "mine").map((g) => g.key)),
+  );
   const [state, setState] = useState<State>({ kind: "loading" });
   const [creating, setCreating] = useState(false);
   const [publishing, setPublishing] = useState(false);
@@ -599,7 +602,10 @@ export function ModulePicker() {
         <div className="flex flex-col gap-6">
           {GROUP_ORDER.map(({ key, label }) => {
             const group = modules.filter((m) => moduleGroup(m, handle) === key);
-            if (group.length === 0) return null;
+            // "My Modules" stays visible even when empty (for signed-in
+            // users) with a create prompt; other folders hide when empty.
+            const mineEmptyState = key === "mine" && IS_REMOTE && !!handle;
+            if (group.length === 0 && !mineEmptyState) return null;
             const isCollapsed = collapsed.has(key);
             return (
               <section key={key}>
@@ -624,17 +630,33 @@ export function ModulePicker() {
                   </span>
                 </button>
                 {!isCollapsed ? (
-                  <ul className="mt-3 grid gap-3 sm:grid-cols-2">
-                    {group.map((m) => (
-                      <ModuleCard
-                        key={m.id}
-                        m={m}
-                        handle={handle}
-                        onEdit={setEditingModule}
-                        onDelete={onDeleteModule}
-                      />
-                    ))}
-                  </ul>
+                  group.length > 0 ? (
+                    <ul className="mt-3 grid gap-3 sm:grid-cols-2">
+                      {group.map((m) => (
+                        <ModuleCard
+                          key={m.id}
+                          m={m}
+                          handle={handle}
+                          onEdit={setEditingModule}
+                          onDelete={onDeleteModule}
+                        />
+                      ))}
+                    </ul>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setCreating(true)}
+                      className="mt-3 flex w-full flex-col items-center gap-1 rounded-md border border-dashed border-ember/40 bg-ink/30 p-6 text-center transition hover:border-ember hover:bg-ember/10"
+                    >
+                      <span className="font-display text-lg text-parchment">
+                        + Create your first module
+                      </span>
+                      <span className="text-sm text-parchment/60">
+                        You haven&apos;t made any modules yet — start your own
+                        adventure.
+                      </span>
+                    </button>
+                  )
                 ) : null}
               </section>
             );
