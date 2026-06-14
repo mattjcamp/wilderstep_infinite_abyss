@@ -43,6 +43,9 @@ export function SiteNav() {
       ) : null}
 
       <nav className="ml-auto flex items-center gap-4">
+        <Link href="/" className={linkClass}>
+          Home
+        </Link>
         <Link href="/play" className={linkClass}>
           Play
         </Link>
