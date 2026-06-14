@@ -203,7 +203,7 @@ export function ModulePropertiesDialog({
 
   return (
     <div
-      className="fixed inset-0 z-40 flex items-center justify-center bg-black/65"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4"
       role="dialog"
       aria-modal="true"
       aria-label="Module properties"
@@ -212,17 +212,17 @@ export function ModulePropertiesDialog({
       }}
     >
       <div
-        className="w-[560px] max-w-[92vw] rounded-lg border border-parchment/25 bg-ink/95 p-4 text-parchment shadow-xl"
+        className="flex max-h-[90vh] w-[560px] max-w-[92vw] flex-col rounded-lg border border-parchment/25 bg-ink/95 p-4 text-parchment shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <header className="mb-3 flex items-baseline justify-between">
+        <header className="mb-3 flex shrink-0 items-baseline justify-between">
           <h2 className="font-display text-xl">Module Properties</h2>
           <span className="font-mono text-xs text-parchment/65">
             id: {initial.id}
           </span>
         </header>
 
-        <div className="flex flex-col gap-3">
+        <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-1">
           {/* Title ----------------------------------------------- */}
           <label className="flex flex-col gap-1">
             <span className="text-[13px] text-parchment/85 font-mono">title</span>
@@ -254,14 +254,14 @@ export function ModulePropertiesDialog({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
-              className="rounded border border-parchment/20 bg-ink/40 px-2 py-1 text-sm text-parchment focus:border-parchment/45"
+              className="w-full min-w-0 rounded border border-parchment/20 bg-ink/40 px-2 py-1 text-sm text-parchment focus:border-parchment/45"
               placeholder="Short summary shown on the module card and play picker."
             />
           </label>
 
           {/* Author + Version ----------------------------------- */}
           <div className="flex gap-3">
-            <label className="flex flex-1 flex-col gap-1">
+            <label className="flex min-w-0 flex-1 flex-col gap-1">
               <span className="text-[13px] text-parchment/85 font-mono">
                 author
               </span>
@@ -269,7 +269,7 @@ export function ModulePropertiesDialog({
                 type="text"
                 value={author}
                 onChange={(e) => setAuthor(e.target.value)}
-                className="rounded border border-parchment/20 bg-ink/40 px-2 py-1 text-sm text-parchment focus:border-parchment/45"
+                className="w-full min-w-0 rounded border border-parchment/20 bg-ink/40 px-2 py-1 text-sm text-parchment focus:border-parchment/45"
                 placeholder="Your name (optional)"
               />
             </label>
@@ -282,7 +282,7 @@ export function ModulePropertiesDialog({
                 value={version}
                 onChange={(e) => setVersion(e.target.value)}
                 placeholder="0.1.0"
-                className="rounded border border-parchment/20 bg-ink/40 px-2 py-1 font-mono text-sm text-parchment focus:border-parchment/45"
+                className="w-full min-w-0 rounded border border-parchment/20 bg-ink/40 px-2 py-1 font-mono text-sm text-parchment focus:border-parchment/45"
               />
             </label>
           </div>
@@ -327,7 +327,7 @@ export function ModulePropertiesDialog({
                   ["night", sightNight, setSightNight],
                 ] as const
               ).map(([mode, value, setValue]) => (
-                <label key={mode} className="flex flex-1 flex-col gap-1">
+                <label key={mode} className="flex min-w-0 flex-1 flex-col gap-1">
                   <span className="text-xs text-parchment/80 font-mono">
                     {mode}
                   </span>
@@ -338,7 +338,7 @@ export function ModulePropertiesDialog({
                     value={value}
                     onChange={(e) => setValue(e.target.value)}
                     placeholder={`default ${SIGHT_RADIUS_DEFAULTS[mode]}`}
-                    className="rounded border border-parchment/20 bg-ink/40 px-2 py-1 font-mono text-sm text-parchment focus:border-parchment/45"
+                    className="w-full min-w-0 rounded border border-parchment/20 bg-ink/40 px-2 py-1 font-mono text-sm text-parchment focus:border-parchment/45"
                   />
                 </label>
               ))}
@@ -410,7 +410,7 @@ export function ModulePropertiesDialog({
           ) : null}
         </div>
 
-        <footer className="mt-4 flex items-center justify-end gap-2">
+        <footer className="mt-4 flex shrink-0 items-center justify-end gap-2">
           <button
             type="button"
             onClick={onClose}
