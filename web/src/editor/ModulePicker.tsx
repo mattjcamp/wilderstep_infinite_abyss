@@ -570,7 +570,11 @@ export function ModulePicker() {
           ) : null}
         </p>
         <div className="flex items-center gap-2">
-          {state.indexDraftActive ? (
+          {/* The index-draft + export controls manage a local
+              modules/index.json on disk — a local-dev concept. Hosted
+              authors never touch it (the catalog is server-derived), so
+              hide them in remote mode. */}
+          {!IS_REMOTE && state.indexDraftActive ? (
             <>
               <span className="rounded bg-ember/30 px-2 py-0.5 text-[13px] text-parchment/90">
                 index draft
@@ -598,7 +602,7 @@ export function ModulePicker() {
               onClick={onPublishAll}
               disabled={publishing}
               className="rounded border border-ember/60 bg-ember/30 px-3 py-1 text-sm text-parchment hover:bg-ember/50 disabled:cursor-not-allowed disabled:opacity-40"
-              title="Write every pending draft directly to disk via the local publish-server."
+              title="Publish every pending change (incl. newly created modules) to the catalog."
             >
               {publishing ? "Publishing…" : "Publish all drafts"}
             </button>
