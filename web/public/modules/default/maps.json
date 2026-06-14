@@ -8571,8 +8571,8 @@
           },
           {
             "boat": false,
-            "id": "sand_dense",
-            "name": "Dense Sand",
+            "id": "castle",
+            "name": "Castle",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -8582,8 +8582,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/sand_copy.png",
-            "tag": "terrain"
+            "sprite": "map/ruined_tower.png",
+            "tag": "building"
           },
           {
             "boat": false,
