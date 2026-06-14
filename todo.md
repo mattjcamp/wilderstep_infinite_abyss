@@ -9,13 +9,14 @@
 
 ## Developer Notes
 
-rpgmaker12345678@gmail.com is the "test user" that I have white listed.
 
+rpgmaker12345678@gmail.com is the "test user" that I have white listed
+mjcampbell74@gmail.com is @matt which is also whitelisted
+
+https://wilderstep.pages.dev/   # URL for Cloudfare hosted game
 npm run dev:all     # LOCAL mode — static modules, publishes to web/public/ via publish-server
-npm run dev:remote  # REMOTE mode — hosted catalog, publishes to the cloud as @matt
-https://wilderstep.pages.dev/   # New URL for Cloudfare hosted game
-NOTE sometimes we will need to republish the worker via the command line
-NOTE let's put together a high level overview of the system and were each piece is located
+^ use this for content changes that should be reflected in all modules that inherit from Default
+npm run dev:remote  # REMOTE to test remote version before release, publishes to the cloud as @matt
 
 ### Adding New Players
 
