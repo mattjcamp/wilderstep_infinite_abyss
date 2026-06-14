@@ -31,7 +31,11 @@ import {
 } from "@/data_model/draft";
 import { ALL_MODEL_KEYS, MODELS, type ModelKey } from "@/data_model/models";
 import type { ModuleSummary } from "@/data_model/ModuleSource";
-import { publishItems, type PublishItem } from "@/data_model/publishClient";
+import {
+  deleteModule,
+  publishItems,
+  type PublishItem,
+} from "@/data_model/publishClient";
 import { withBasePath } from "@/util/basePath";
 import {
   ModulePropertiesDialog,
@@ -386,6 +390,42 @@ export function ModulePicker() {
 
   const onDeleteModule = async (m: ModuleSummary) => {
     if (typeof window === "undefined") return;
+
+    if (IS_REMOTE) {
+      // Hosted: a real, ownership-enforced server delete — removes the
+      // module's files AND its catalog entry. (The local index-draft
+      // flow below only edits an in-browser index; it can't remove a
+      // hosted module, so "Publish all" would just bring it back.)
+      const ok = window.confirm(
+        `Delete module "${m.title ?? m.id}"?\n\n` +
+          `This permanently removes the published module (${m.id}) and ` +
+          `everything in it from the hosted catalog. It can't be undone.`,
+      );
+      if (!ok) return;
+      try {
+        await deleteModule(m.id);
+      } catch (e) {
+        window.alert(
+          `Couldn't delete ${m.id}: ${
+            e instanceof Error ? e.message : String(e)
+          }`,
+        );
+        return;
+      }
+      // Keep the editor view consistent: drop it from any pending index
+      // draft (the editor prefers drafts) and discard its model drafts.
+      const indexDraft = await loadIndexDraft<IndexFile>();
+      if (indexDraft) {
+        await saveIndexDraft({
+          ...indexDraft,
+          modules: (indexDraft.modules ?? []).filter((e) => e.id !== m.id),
+        });
+      }
+      discardAllDraftsFor(m.id);
+      refresh();
+      return;
+    }
+
     const ok = window.confirm(
       `Delete module "${m.id}"?\n\n` +
         `• Removes it from the modules index in your browser.\n` +
