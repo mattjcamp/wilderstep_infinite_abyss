@@ -18,7 +18,7 @@ NOTE let's put together a high level overview of the system and were each piece 
 
 Approach A — invite specific people (best for now / a trusted test group). You add their email addresses to the Access policy. Steps:
 
-Go to one.dash.cloudflare.com → Access → Applications.
+Go to one.dash.cloudflare.com > Zero Trust → Access → Applications.
 Open your publish-API application (the one protecting …workers.dev/login).
 Open its Policies → edit the existing "Allow" policy.
 In the Include rule, add the new players' emails — either as individual Emails, or switch it to Emails ending in a domain (e.g. everyone @yourschool.edu) if you want to admit a whole group at once.
