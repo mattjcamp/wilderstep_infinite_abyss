@@ -94,6 +94,32 @@ npx wrangler deploy
    editor (now possible in remote mode — see the editor-source change),
    edit, republish.
 
+## Updating engine / core content on the hosted deploy
+
+Core game content (the `default` module + the bare-id libraries) lives in
+the repo under `web/public/modules/` and is edited the developer way:
+edit locally (`npm run dev:all`), commit, push. That git push rebuilds
+the **static bundle** — but in hosted mode the worker reads core modules
+from **R2**, not from the static bundle, so R2 must be re-seeded or the
+change never shows on the live site.
+
+This is automated: **`.github/workflows/seed-r2.yml`** re-seeds R2 on
+every push to `main` that touches `web/public/modules/**`. One-time
+setup — add two repo secrets (Settings → Secrets and variables →
+Actions):
+
+- `CLOUDFLARE_API_TOKEN` — token with **R2 Storage: Edit** on the account.
+- `CLOUDFLARE_ACCOUNT_ID` — your Cloudflare account id.
+
+Manual fallback (or to run it yourself): `cd web/workers/publish-api &&
+node seed-bucket.mjs` (logged in via `wrangler login`). The worker caches
+module files for ~60s, so allow a moment / hard-refresh after a seed.
+
+Caveat: the action re-seeds module **data** only. If you **add or remove**
+a shipped module, also open `<worker-url>/reindex` once in a signed-in
+browser to rebuild the (server-derived) catalog index — that endpoint
+needs Access auth, which CI can't provide.
+
 ## Custom domain (optional, later)
 
 Point a domain (e.g. `play.wilderstep.com`) at the Pages project in
