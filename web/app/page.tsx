@@ -43,27 +43,44 @@ export default function HomePage() {
           </p>
         </div>
       </header>
-      <nav className="flex flex-col gap-4 sm:flex-row">
-        <Link
-          href="/play"
-          className="rounded-md border border-parchment/40 bg-ember px-8 py-3 text-lg text-parchment shadow transition hover:bg-ember/80"
-        >
-          Play
-        </Link>
-        {/* Editor (Dungeon Master mode) — only shown when signed in. */}
-        <EditorButton />
-        {/* Static PDF — not a Next route, so basePath isn't auto-applied
-            (it is for <Link>); prepend it by hand and open in a new tab
-            so the browser renders the PDF full-page on its own. */}
+      <div className="flex flex-col items-center gap-10">
+        <nav className="flex flex-col items-center gap-4 sm:flex-row">
+          <Link
+            href="/play"
+            className="rounded-md border border-parchment/40 bg-ember px-8 py-3 text-lg text-parchment shadow transition hover:bg-ember/80"
+          >
+            Play
+          </Link>
+          {/* Dungeon Master mode (the editor) — only shown when signed in. */}
+          <EditorButton />
+        </nav>
+
+        {/* Player's Manual as a "book" — the manual's own cover page
+            (rendered from manual.pdf) with a spine + drop shadow. Opens
+            the PDF in a new tab. Static assets aren't auto-basePath'd
+            the way <Link> is, so prepend it by hand. */}
         <a
           href={withBasePath("/manual.pdf")}
           target="_blank"
           rel="noopener noreferrer"
-          className="rounded-md border border-parchment/40 bg-ink/60 px-8 py-3 text-lg text-parchment shadow transition hover:bg-ink/40"
+          className="group flex flex-col items-center gap-3"
+          title="Open the Player's Handbook (PDF)"
         >
-          Player&apos;s Manual
+          <span className="relative block w-40 overflow-hidden rounded-l-sm rounded-r-md shadow-xl shadow-black/50 ring-1 ring-parchment/15 transition duration-200 group-hover:-translate-y-1 group-hover:shadow-2xl">
+            {/* book spine */}
+            <span className="pointer-events-none absolute inset-y-0 left-0 z-10 w-2 bg-gradient-to-r from-black/45 via-black/15 to-transparent" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={withBasePath("/manual-cover.png")}
+              alt="Player's Handbook"
+              className="block w-full"
+            />
+          </span>
+          <span className="text-sm uppercase tracking-wide text-parchment/65 transition group-hover:text-parchment">
+            Player&apos;s Manual
+          </span>
         </a>
-      </nav>
+      </div>
     </main>
   );
 }

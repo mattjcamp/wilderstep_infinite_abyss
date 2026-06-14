@@ -17,9 +17,9 @@ export function EditorButton() {
   return (
     <Link
       href="/editor"
-      className="rounded-md border border-parchment/40 bg-ink/60 px-8 py-3 text-lg text-parchment shadow transition hover:bg-ink/40"
+      className="rounded-md border border-ember/50 bg-ink/60 px-8 py-3 text-lg text-parchment shadow transition hover:border-ember hover:bg-ink/40"
     >
-      Editor
+      Dungeon Master Mode
     </Link>
   );
 }
