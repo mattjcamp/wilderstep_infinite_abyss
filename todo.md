@@ -8,6 +8,8 @@
 
 ## Developer Notes
 
+rpgmaker12345678@gmail.com is the "test user" that I have white listed.
+
 npm run dev:all     # LOCAL mode — static modules, publishes to web/public/ via publish-server
 npm run dev:remote  # REMOTE mode — hosted catalog, publishes to the cloud as @matt
 https://wilderstep.pages.dev/   # New URL for Cloudfare hosted game
