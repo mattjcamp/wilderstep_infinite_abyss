@@ -13,6 +13,7 @@
 import Link from "next/link";
 import { withBasePath } from "@/util/basePath";
 import { AccountNav } from "@/play/AccountNav";
+import { EditorButton } from "./EditorButton";
 
 export default function HomePage() {
   return (
@@ -49,12 +50,8 @@ export default function HomePage() {
         >
           Play
         </Link>
-        <Link
-          href="/editor"
-          className="rounded-md border border-parchment/40 bg-ink/60 px-8 py-3 text-lg text-parchment shadow transition hover:bg-ink/40"
-        >
-          Editor
-        </Link>
+        {/* Editor (Dungeon Master mode) — only shown when signed in. */}
+        <EditorButton />
         {/* Static PDF — not a Next route, so basePath isn't auto-applied
             (it is for <Link>); prepend it by hand and open in a new tab
             so the browser renders the PDF full-page on its own. */}
