@@ -508,6 +508,13 @@ export function ModulePicker() {
             const canDelete = IS_REMOTE
               ? !!handle && ownerHandleOf(m.id) === handle
               : !isProtected;
+            // Properties (edit metadata → draft → republish) is only
+            // meaningful for modules you can republish. Hosted mode: your
+            // own @handle modules. Local dev: any module's on-disk
+            // metadata is editable (incl. default), so keep it open.
+            const canEditProps = IS_REMOTE
+              ? !!handle && ownerHandleOf(m.id) === handle
+              : true;
             return (
               <li key={m.id} className="relative">
                 <Link
@@ -539,18 +546,20 @@ export function ModulePicker() {
                   </div>
                 </Link>
                 <div className="absolute right-2 top-2 flex gap-1">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setEditingModule(m);
-                    }}
-                    className="rounded border border-parchment/20 bg-ink/60 px-2 py-0.5 text-[13px] text-parchment/80 hover:border-parchment/50 hover:bg-ink/80 hover:text-parchment"
-                    title="Edit this module's metadata (title, description, author, version, role)."
-                  >
-                    Properties
-                  </button>
+                  {canEditProps ? (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setEditingModule(m);
+                      }}
+                      className="rounded border border-parchment/20 bg-ink/60 px-2 py-0.5 text-[13px] text-parchment/80 hover:border-parchment/50 hover:bg-ink/80 hover:text-parchment"
+                      title="Edit this module's metadata (title, description, author, version, role)."
+                    >
+                      Properties
+                    </button>
+                  ) : null}
                   {canDelete ? (
                     <button
                       type="button"
