@@ -454,25 +454,37 @@ export default {
       });
     }
 
-    // Interactive sign-out. Bounce to the Cloudflare Access team-domain
-    // logout endpoint, which clears the session / CF_Authorization
-    // cookie.
-    //
-    // We deliberately do NOT forward a ?returnTo=: Access only accepts
-    // logout redirects to URLs configured in the Access app, and an
-    // un-listed one fails with "Invalid redirect URL" *and aborts the
-    // logout* (the user stays signed in). With no returnTo, Access
-    // shows its own "logged out" page — reliable. To bounce back into
-    // the app instead, add the Pages origin to the Access app's allowed
-    // logout/redirect URLs and re-introduce returnTo here.
+    // Interactive sign-out. Hit the PER-APPLICATION Access logout on
+    // THIS worker's own origin (clears the CF_Authorization cookie this
+    // app set), with returnTo pointed at our own `/signed-out`. The
+    // returnTo is SAME-ORIGIN as the logout endpoint, which Access
+    // always allows — unlike a cross-domain returnTo (e.g. the Pages
+    // origin), which fails with "Invalid redirect URL" and aborts the
+    // logout. `/signed-out` then bounces to the public landing page.
     if (request.method === "GET" && url.pathname === "/logout") {
-      const team = env.ACCESS_TEAM_DOMAIN;
-      const dest = team
-        ? `https://${team}/cdn-cgi/access/logout`
-        : "/status";
+      const ret = `${url.origin}/signed-out`;
+      const dest = `${url.origin}/cdn-cgi/access/logout?returnTo=${encodeURIComponent(
+        ret,
+      )}`;
       return new Response(null, {
         status: 302,
         headers: { ...CORS, Location: dest },
+      });
+    }
+
+    // Post-logout landing — where Access drops the (now signed-out)
+    // user after clearing the cookie. Bounce them to the app's public
+    // landing page (the first https origin in ALLOWED_ORIGINS, i.e. the
+    // Pages site). This is a plain redirect, no Access involved, so the
+    // cross-origin hop needs no allow-listing.
+    if (request.method === "GET" && url.pathname === "/signed-out") {
+      const landing = (env.ALLOWED_ORIGINS ?? "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter((o) => /^https:\/\//.test(o))[0];
+      return new Response(null, {
+        status: 302,
+        headers: { ...CORS, Location: landing ? `${landing}/` : "/status" },
       });
     }
 

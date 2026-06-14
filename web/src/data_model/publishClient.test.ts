@@ -14,10 +14,10 @@ function jsonResponse(body: unknown, status = 200): Response {
 }
 
 describe("publishSignOutUrl", () => {
-  it("points at the per-application Access logout on the worker domain", () => {
-    // The per-app logout clears THIS app's CF_Authorization cookie; the
-    // team-domain logout left it valid (user appeared still signed in).
-    expect(publishSignOutUrl()).toMatch(/\/cdn-cgi\/access\/logout$/);
+  it("points at the worker /logout route (logout + redirect to landing)", () => {
+    // /logout runs the per-app Access logout (clears this app's cookie)
+    // then bounces to the public landing page via /signed-out.
+    expect(publishSignOutUrl()).toMatch(/\/logout$/);
   });
 });
 
