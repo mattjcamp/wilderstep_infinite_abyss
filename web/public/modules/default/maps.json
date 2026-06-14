@@ -8663,8 +8663,8 @@
           },
           {
             "boat": false,
-            "id": "sand_dense",
-            "name": "Dense Sand",
+            "id": "shrine",
+            "name": "Shrine",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -8674,8 +8674,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/sand_copy.png",
-            "tag": "terrain"
+            "sprite": "map/shrine.png",
+            "tag": "building"
           },
           {
             "id": "water",
