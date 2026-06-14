@@ -27,9 +27,20 @@ export default function HomePage() {
         <h1 className="font-display text-5xl text-parchment">
           Wilderstep: Infinite Abyss
         </h1>
-        <p className="mt-3 text-parchment/70">
-
-        </p>
+        <div className="mx-auto mt-4 max-w-2xl space-y-3 text-parchment/75">
+          <p>
+            Wilderstep: Infinite Abyss is a turn-based RPG built with
+            TypeScript and Phaser for your browser. Lead a party of four
+            adventurers through an open world of overworld exploration, town
+            visits, dungeon delving, and turn-based tactical combat.
+          </p>
+          <p>
+            Sign in with your account to unlock Dungeon Master mode. You can
+            create your own adventures using Wilderstep&apos;s full-featured
+            game development kit. This includes custom maps, new monsters,
+            quests, and more.
+          </p>
+        </div>
       </header>
       <nav className="flex flex-col gap-4 sm:flex-row">
         <Link
