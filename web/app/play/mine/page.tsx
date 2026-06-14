@@ -18,7 +18,6 @@ import { usePublishServer } from "@/editor/usePublishServer";
 import {
   deleteModule,
   publishSignInUrl,
-  publishSignOutUrl,
 } from "@/data_model/publishClient";
 import { editorModuleHref } from "@/editor/moduleRoutes";
 import { playPartyHref } from "@/play/playRoutes";
@@ -91,25 +90,13 @@ export default function MyModulesPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 p-8">
-      <header className="flex items-baseline justify-between">
-        <div>
-          <h1 className="font-display text-4xl text-parchment">My Modules</h1>
-          {authenticated && handle ? (
-            <p className="mt-1 text-parchment/60">
-              Signed in as <span className="font-mono">@{handle}</span>
-            </p>
-          ) : null}
-        </div>
-        <div className="flex items-center gap-4 text-sm">
-          <Link href="/play/new" className="text-parchment/60 underline hover:text-parchment">
-            Browse
-          </Link>
-          {authenticated ? (
-            <a href={publishSignOutUrl()} className="text-ember underline">
-              Sign out
-            </a>
-          ) : null}
-        </div>
+      <header>
+        <h1 className="font-display text-4xl text-parchment">My Modules</h1>
+        {authenticated && handle ? (
+          <p className="mt-1 text-parchment/60">
+            Signed in as <span className="font-mono">@{handle}</span>
+          </p>
+        ) : null}
       </header>
 
       {/* Probe in flight */}
