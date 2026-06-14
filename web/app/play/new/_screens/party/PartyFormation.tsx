@@ -293,14 +293,14 @@ export function PartyFormation({ moduleId }: { moduleId: string }) {
 
   if (state.kind === "loading") {
     return (
-      <main className="flex min-h-screen items-center justify-center p-8">
+      <main className="flex flex-1 items-center justify-center p-8">
         <p className="text-parchment/55">Loading module data…</p>
       </main>
     );
   }
   if (state.kind === "error") {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center gap-3 p-8">
+      <main className="flex flex-1 flex-col items-center justify-center gap-3 p-8">
         <p className="text-red-300">Failed to load module: {state.message}</p>
         <Link href="/play/new" className="text-parchment/70 underline">
           Pick a different module
@@ -311,7 +311,7 @@ export function PartyFormation({ moduleId }: { moduleId: string }) {
 
   const { catalog } = state;
   return (
-    <main className="mx-auto flex min-h-screen max-w-4xl flex-col gap-6 p-8">
+    <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 p-8">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="font-display text-3xl text-parchment">Form the Party</h1>

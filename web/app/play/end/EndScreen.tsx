@@ -52,7 +52,7 @@ export function EndScreen() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-12 bg-ink p-8">
+    <main className="flex flex-1 flex-col items-center justify-center gap-12 bg-ink p-8">
       <div className="text-center">
         <h1 className="font-display text-6xl tracking-wider text-red-300/90">
           They have fallen.

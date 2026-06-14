@@ -102,7 +102,7 @@ export function PlayLanding() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-10 p-8">
+    <main className="flex flex-1 flex-col items-center justify-center gap-10 p-8">
       <header className="text-center">
         <h1 className="font-display text-5xl text-parchment">
           Wilderstep: Infinite Abyss

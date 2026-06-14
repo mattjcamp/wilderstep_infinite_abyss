@@ -14,14 +14,10 @@
 
 import Link from "next/link";
 import { ModulePickerList } from "./ModulePickerList";
-import { AccountNav } from "@/play/AccountNav";
 
 export default function NewGameModulePicker() {
   return (
-    <main className="flex min-h-screen flex-col items-center gap-8 p-8">
-      <div className="flex w-full max-w-3xl justify-end">
-        <AccountNav />
-      </div>
+    <main className="flex flex-1 flex-col items-center gap-8 p-8">
       <header className="text-center">
         <h1 className="font-display text-4xl text-parchment">Choose a Module</h1>
         <p className="mt-2 text-parchment/60">

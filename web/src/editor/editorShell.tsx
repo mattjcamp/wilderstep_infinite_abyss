@@ -67,7 +67,7 @@ export function EditorShell({
     // viewport so the content area scrolls INSIDE itself rather than
     // growing the page — that's what lets a tall map canvas produce its
     // own scrollbar instead of the whole body scrolling.
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex min-h-0 flex-1 overflow-hidden">
       <Sidebar moduleId={moduleId} />
       <div className="min-w-0 flex-1 overflow-auto">{children}</div>
     </div>

@@ -90,7 +90,7 @@ export default function MyModulesPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-6 p-8">
+    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 p-8">
       <header className="flex items-baseline justify-between">
         <div>
           <h1 className="font-display text-4xl text-parchment">My Modules</h1>

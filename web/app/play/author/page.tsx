@@ -23,7 +23,7 @@ function AuthorModules() {
   const modules = filterModules(all, { handle });
 
   return (
-    <main className="flex min-h-screen flex-col items-center gap-8 p-8">
+    <main className="flex flex-1 flex-col items-center gap-8 p-8">
       <header className="text-center">
         <h1 className="font-display text-4xl text-parchment">
           Modules by @{handle || "…"}

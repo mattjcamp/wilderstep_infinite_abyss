@@ -238,7 +238,7 @@ export function BeginningScreen({
   // Route them back to party formation.
   if (draft === null) {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center gap-4 p-8">
+      <main className="flex flex-1 flex-col items-center justify-center gap-4 p-8">
         <p className="text-parchment/65">
           No party assembly in progress for this module.
         </p>
@@ -253,7 +253,7 @@ export function BeginningScreen({
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-ink p-8 text-center">
+    <main className="flex flex-1 flex-col items-center justify-center bg-ink p-8 text-center">
       <div className="max-w-2xl">
         <h1 className="font-display text-5xl text-parchment">{title}</h1>
         {description ? (
