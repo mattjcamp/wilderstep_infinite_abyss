@@ -1,8 +1,12 @@
-name: Deploy web app to GitHub Pages
+name: Deploy redirect to GitHub Pages
 
-# Builds the Next.js app under `web/` as a static export and publishes
-# the result to GitHub Pages. Triggered on every push to `main` and
-# manually via the Actions tab.
+# The game now lives on Cloudflare Pages (https://wilderstep.pages.dev/).
+# This workflow no longer builds the Next.js app — instead it publishes a
+# tiny set of redirect stubs from `pages-redirect/` so that anyone hitting
+# the old github.io URL is forwarded to the new site (path/query/hash
+# preserved, base prefix stripped).
+#
+# Triggered on every push to `main` and manually via the Actions tab.
 #
 # Prereqs (one-time setup in the repository):
 #   Settings → Pages → "Build and deployment" → Source: "GitHub Actions".
@@ -25,52 +29,17 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: web
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
-          cache-dependency-path: web/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run tests
-        # Fail-fast gate: if the sim / lighting / dungeon test suite
-        # regresses, we never get to the build step, the artifact
-        # never uploads, and the deploy job never runs. Keeps broken
-        # game logic from quietly reaching Pages.
-        run: npm test
-
-      - name: Build static export
-        env:
-          # Repo name → URL prefix on github.io. Resolves automatically
-          # from GitHub's event payload, so renaming the repo doesn't
-          # require a workflow edit. Picked up by next.config.mjs.
-          NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
-        run: npm run build
-
-      - name: Disable Jekyll
-        # GH Pages otherwise ignores files starting with `_` (e.g. `_next/`).
-        run: touch out/.nojekyll
-
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: web/out
-
   deploy:
-    needs: build
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: pages-redirect
+
       - id: deployment
         uses: actions/deploy-pages@v4
