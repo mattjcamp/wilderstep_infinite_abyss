@@ -1,0 +1,41 @@
+name: CI
+
+# Runs the test suite on every push and pull request to main/dev.
+#
+# This replaces the fail-fast test gate that used to live inside the
+# GitHub Pages deploy workflow. That workflow no longer builds the app
+# (Pages now just serves redirect stubs to the Cloudflare site), so the
+# test suite needs its own home to keep guarding against regressions in
+# the sim / lighting / dungeon logic.
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+# Cancel superseded runs on the same ref to save CI minutes.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
