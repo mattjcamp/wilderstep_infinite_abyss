@@ -61,14 +61,32 @@ async function fetchJson(
   return res.json();
 }
 
-async function tryFetchJson(url: string): Promise<unknown | null> {
+async function tryFetchJson(
+  url: string,
+  init?: RequestInit,
+): Promise<unknown | null> {
   try {
-    const res = await fetch(url);
+    const res = await fetch(url, init);
     if (!res.ok) return null;
     return await res.json();
   } catch {
     return null;
   }
+}
+
+/** Fetch options for editor-mode reads. The editor must always see the
+ *  freshest published file: right after a publish the draft is
+ *  discarded, so the next load falls back to the server copy — and if
+ *  that read is served from the browser's HTTP cache (locally there's
+ *  no cache header; on the hosted API model files carry
+ *  `max-age=60`), the author sees their just-published tiles "vanish"
+ *  on reload until the cache lapses. Bypassing the cache for editor
+ *  reads closes that window. The game (preferDrafts false) keeps the
+ *  short cache for performance — it reads published content where a
+ *  few seconds of staleness is harmless, and the freshness-critical
+ *  index is already fetched no-store. */
+function editorFetchInit(preferDrafts: boolean): RequestInit | undefined {
+  return preferDrafts ? { cache: "no-store" } : undefined;
 }
 
 /** Where module files live. StaticModuleSource defaults to the
@@ -111,6 +129,7 @@ async function loadModuleManifest(
   }
   return tryFetchJson(
     locator.moduleFile(moduleId, "module.json"),
+    editorFetchInit(preferDrafts),
   ) as Promise<(Partial<ModuleSummary> & { id?: string }) | null>;
 }
 
@@ -295,6 +314,7 @@ export class StaticModuleSource implements ModuleSource {
         const def = MODELS[key];
         const levelData = await tryFetchJson(
           this.locator.moduleFile(s.id, def.fileName),
+          editorFetchInit(this.preferDrafts),
         );
         if (levelData === null) continue;
         data[key] = mergeModel(def.collectionKey, data[key], levelData);
@@ -304,6 +324,7 @@ export class StaticModuleSource implements ModuleSource {
       const def = MODELS[key];
       const ownLevel = await tryFetchJson(
         this.locator.moduleFile(moduleId, def.fileName),
+        editorFetchInit(this.preferDrafts),
       );
       if (ownLevel === null) continue;
       data[key] = mergeModel(def.collectionKey, data[key], ownLevel);
@@ -341,6 +362,7 @@ export class StaticModuleSource implements ModuleSource {
       const id = chain[i].id;
       const levelData = await tryFetchJson(
         this.locator.moduleFile(id, def.fileName),
+        editorFetchInit(this.preferDrafts),
       );
       if (levelData === null) continue;
       inherited = mergeModel(def.collectionKey, inherited, levelData);
@@ -349,6 +371,7 @@ export class StaticModuleSource implements ModuleSource {
     // ownFile = the requested module's own JSON, or null if absent.
     const ownFile = await tryFetchJson(
       this.locator.moduleFile(moduleId, def.fileName),
+      editorFetchInit(this.preferDrafts),
     );
 
     return {
@@ -456,6 +479,7 @@ export class StaticModuleSource implements ModuleSource {
     for (const libId of usedLibraryIds) {
       const libData = await tryFetchJson(
         this.locator.moduleFile(libId, def.fileName),
+        editorFetchInit(this.preferDrafts),
       );
       if (libData === null) continue;
       const records = extractRecords(def.collectionKey, libData);
