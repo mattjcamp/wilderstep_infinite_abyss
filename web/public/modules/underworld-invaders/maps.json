@@ -109580,7 +109580,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/grass1.png",
-            "tag": "walkable"
+            "tag": "walkable",
+            "quest": "explore_a_dark_forest"
           },
           {
             "boat": false,
@@ -127058,7 +127059,7 @@
             "spawn": null,
             "sprite": "map/path.png",
             "tag": "walkable",
-            "quest": "explore_a_dark_forest"
+            "quest": ""
           },
           {
             "boat": false,

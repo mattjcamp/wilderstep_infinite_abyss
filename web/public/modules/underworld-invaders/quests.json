@@ -180,14 +180,14 @@
           "id": "explore_a_dark_forest_step_1",
           "name": "Walk the Dark Wood to its end",
           "kind": "reach",
-          "description": "Map the wood level by level — through the deep boughs, the strangle-green, and whatever the paths become after that.",
+          "description": "Map the dark woods at the top of the mountain range north of Hallowmere — through the deep boughs, the strangle-green, and whatever the paths become after that.",
           "dungeon_id": "dark_wood"
         }
       ],
       "quest_giver": {
         "npc_name": "Skara of the Ashen Clans",
         "npc_sprite": "person/barbarian_mage.png",
-        "start_dialog": "I came down from the fire mountains chasing a story: a wood that goes in further than it goes across, with old treasure where the paths stop behaving. My clan's singers say never walk a wrong wood alone, and I am — observe — alone. Walk it with me to the end. Whatever we find, we split. Whatever finds us, we share that too.",
+        "start_dialog": "I came down from the fire mountains chasing a story: a wood to the south above that mountain range near Hallowmere that goes in further than it goes across, with old treasure where the paths stop behaving. My clan's singers say never walk a wrong wood alone, and I am — observe — alone. Walk it with me to the end. Whatever we find, we split. Whatever finds us, we share that too.",
         "end_dialog": "A winter clearing at the bottom of a summer wood. The singers will call me a liar, and I'll be rich enough not to care. You've earned your half — and a verse in the song, if I survive the singing of it."
       },
       "rewards": {

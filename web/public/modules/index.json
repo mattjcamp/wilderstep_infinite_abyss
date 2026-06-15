@@ -30,11 +30,6 @@
       "id": "npcs",
       "title": "Lore and NPCs",
       "role": "library"
-    },
-    {
-      "id": "test-evn",
-      "title": "Test Environment",
-      "role": "playable"
     }
   ]
 }

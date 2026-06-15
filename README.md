@@ -35,7 +35,7 @@ An Ultima III  and D&D inspired top-down, turn-based RPG built with TypeScript a
 - Quests and random encounters
 - Crafting system
 - Monsters with unique abilities
-- [Wilderstep Player's Manual](docs/manual/manual.md) 
+- [Wilderstep Player's Manual](https://wilderstep.pages.dev/manual.pdf) 
 
 ---
 
