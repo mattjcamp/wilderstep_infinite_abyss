@@ -49,9 +49,6 @@ export function SiteNav() {
         <Link href="/play" className={linkClass}>
           Play
         </Link>
-        <Link href="/faq" className={linkClass}>
-          FAQ
-        </Link>
         <a
           href={withBasePath("/manual.pdf")}
           target="_blank"
@@ -70,6 +67,11 @@ export function SiteNav() {
             </Link>
           </>
         ) : null}
+
+        <Link href="/faq" className={linkClass}>
+          FAQ
+        </Link>
+
 
         {/* Auth control — nothing while the session is still being
             probed (available === null) or when there's no publish API. */}
