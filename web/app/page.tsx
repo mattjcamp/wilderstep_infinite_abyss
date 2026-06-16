@@ -23,9 +23,10 @@ export default function HomePage() {
         </h1>
         <div className="mx-auto mt-4 max-w-2xl space-y-3 text-parchment/75">
           <p>
-            Wilderstep: Infinite Abyss is a turn-based RPG built with
-            TypeScript and Phaser for your browser. Lead a party of four
-            adventurers through an open world of overworld exploration, town
+            Wilderstep: Infinite Abyss is a turn-based RPG featuring turn-based chessboard-like 
+            combat and sprawling overview maps inspired by the 1980s game Ultima 3.
+            Lead a party of four adventurers through an open world of overworld exploration, 
+            town
             visits, dungeon delving, and turn-based tactical combat.
           </p>
           <p>
