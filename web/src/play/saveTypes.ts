@@ -196,6 +196,17 @@ export interface SavedPartyState {
   /** Per-character state, keyed by character id. Tuple form keeps the
    *  serialised JSON readable and avoids any-as-object problems. */
   members: ReadonlyArray<SavedCharacterState>;
+  /** Where the adventure began — the module's `party.json`
+   *  start_position, captured at New Game. The sorcerer's Recall
+   *  spell falls back to this when no rune stone has been placed.
+   *  Absent in legacy saves (predating the feature); Recall then
+   *  requires a rune stone. */
+  startLocation?: { mapId: string; col: number; row: number };
+  /** The last spot the party dropped a Recall rune stone (the "Drop
+   *  Rune Stone" button on the Party screen). Recall teleports the
+   *  whole party here. A single overwritable anchor — dropping a new
+   *  stone replaces the old one. Absent until the party places one. */
+  runeStone?: { mapId: string; col: number; row: number };
   /** Where the party is inside a dungeon, when applicable. Absent
    *  on the overworld. When set, the play loader re-mounts the
    *  matching dungeon floor (regenerated deterministically from the

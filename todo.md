@@ -1,7 +1,17 @@
 
 ## New Content for v2
 
-- We will need fresh spell content past level 7-10 (sorcerer: Recall, Meteor Shower, Void Orb; priest: Day Light, Divine Smite, Resurrection
+- Let's add some fresh spell content past level 7-10:
+- - sorcerer: 
+    - Recall: level 8, party spell, teleports the party back to their starting location or the last location where they dropped a rune stone. (we will need to add a spot in the Party UI to let them drop a rune stone)
+    - Meteor Shower: level 9, combat spell, Meteors drop from the sky on each enemy causing damage (a fair amount more than fireball)
+    - Void Orb: level 10, combat spell, devastating damage targed on any enemy (significantly more damage than Meteor Shower)
+- - priest: 
+    Daylight: level 8, combat spell, lights up the entire battle arena
+    Divine Smite: level 9, combat spell, devastating damage targed on any enemy
+    Resurrection: level 10, party spell, resurrects one party member from the dead
+(Please create the data models and implemet the effects and UI)
+
 - Class Quest: add a class quest that provides an unlock for high level spells and abilities. After level 10, characters must complete Class Quests to get a new spell or ability. Class quests will have level and class pre-reqs. Class Quests could be initiated via the Character Sheet.
 
 # Notes

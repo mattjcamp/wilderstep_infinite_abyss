@@ -393,6 +393,13 @@ async function assembleInitialSave(
     currentBoatSprite: null,
     roster,
     members,
+    // Capture the journey's starting cell so the sorcerer's Recall
+    // spell can fall back to it when no rune stone has been placed.
+    startLocation: {
+      mapId: startPos.map_id ?? "",
+      col: startPos.col ?? 0,
+      row: startPos.row ?? 0,
+    },
   };
 
   return {

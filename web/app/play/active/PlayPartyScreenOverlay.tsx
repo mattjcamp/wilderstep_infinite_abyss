@@ -109,6 +109,13 @@ interface PendingHeal {
   spellId: string;
 }
 
+/** Pending Resurrection target pick — same shape as {@link PendingHeal}
+ *  but the picker lists only DOWNED members (hp ≤ 0). */
+interface PendingRevive {
+  casterId: string;
+  spellId: string;
+}
+
 /** Payload for a race-ability "flash" — the host listens for these
  *  to fire SFX + Phaser visuals at the party tile (and to surface a
  *  placard in the world view) so the player sees something happened
@@ -218,6 +225,9 @@ export function PlayPartyScreenOverlay({
    *  then renders a target-picker modal listing the roster. Cleared
    *  on pick or cancel. */
   const [pendingHeal, setPendingHeal] = useState<PendingHeal | null>(null);
+  const [pendingRevive, setPendingRevive] = useState<PendingRevive | null>(
+    null,
+  );
   /** True while the Tinker item-picker overlay is open. Cleared on
    *  pick / cancel. Modeled on `pendingHeal`'s shape but doesn't
    *  need any payload — the picker reads its options from the
@@ -1571,6 +1581,127 @@ export function PlayPartyScreenOverlay({
     [state, liveSave, commit, onSpellCast],
   );
 
+  /** Cast Recall (sorcerer). Deducts caster MP and asks the host to
+   *  teleport the whole party to their rune stone — or, if none was
+   *  placed, the journey's start. The actual world teleport lives on
+   *  the host (it owns the sim / map remount); here we just spend MP,
+   *  commit, and signal via onSpellCast so the host reads the freshly
+   *  committed anchor. */
+  const applyRecall = useCallback(
+    (casterId: string, spell: PartySpellRef) => {
+      if (state.kind !== "ok") return;
+      const cur = liveSave;
+      const anchor = cur.party.runeStone ?? cur.party.startLocation ?? null;
+      if (!anchor) {
+        setCastMessage(
+          "Recall fails — no rune stone has been placed and the journey's start is unknown.",
+        );
+        return;
+      }
+      const cost = spell.mp_cost ?? 0;
+      const casterSaved = cur.party.members.find((m) => m.id === casterId);
+      if (!casterSaved) {
+        setCastMessage("Cast failed — caster missing.");
+        return;
+      }
+      const casterMp = casterSaved.mp ?? 0;
+      if (casterMp < cost) {
+        setCastMessage(
+          `${state.characters.find((c) => c.id === casterId)?.name ?? casterId} doesn't have enough MP (${casterMp}/${cost}).`,
+        );
+        return;
+      }
+      const nextMembers = cur.party.members.map((m) =>
+        m.id === casterId ? { ...m, mp: casterMp - cost } : m,
+      );
+      const casterName =
+        state.characters.find((c) => c.id === casterId)?.name ?? casterId;
+      const dest = cur.party.runeStone ? "rune stone" : "the journey's start";
+      setCastMessage(`${casterName} casts Recall — the party folds space to ${dest}.`);
+      commit({
+        ...cur,
+        party: { ...cur.party, members: nextMembers },
+      });
+      // Host performs the teleport (reads the committed anchor) and
+      // closes the Party screen.
+      onSpellCast?.(spell.id);
+    },
+    [state, liveSave, commit, onSpellCast],
+  );
+
+  /** Drop (or move) the party's Recall rune stone at their current
+   *  location. A single overwritable anchor — dropping again relocates
+   *  it. Persisted on the save so Recall can return here later. */
+  const handleDropRuneStone = useCallback(() => {
+    if (state.kind !== "ok") return;
+    const cur = liveSave;
+    const anchor = {
+      mapId: cur.party.currentMapId,
+      col: cur.party.col,
+      row: cur.party.row,
+    };
+    setCastMessage("Rune stone placed — Recall will return the party here.");
+    commit({
+      ...cur,
+      party: { ...cur.party, runeStone: anchor },
+    });
+  }, [state, liveSave, commit]);
+
+  /** Apply Resurrection to one downed target. Mirrors applyHeal's
+   *  MP/commit flow but only works on a member at 0 HP, restoring them
+   *  to `heal_percent` of their max HP (default 50%). */
+  const applyRevive = useCallback(
+    (casterId: string, targetId: string, spell: PartySpellRef) => {
+      if (state.kind !== "ok") return;
+      const cur = liveSave;
+      const cost = spell.mp_cost ?? 0;
+      const casterSaved = cur.party.members.find((m) => m.id === casterId);
+      const targetSaved = cur.party.members.find((m) => m.id === targetId);
+      if (!casterSaved || !targetSaved) {
+        setCastMessage("Cast failed — caster or target missing.");
+        return;
+      }
+      const casterMp = casterSaved.mp ?? 0;
+      if (casterMp < cost) {
+        setCastMessage(
+          `${state.characters.find((c) => c.id === casterId)?.name ?? casterId} doesn't have enough MP (${casterMp}/${cost}).`,
+        );
+        return;
+      }
+      const targetName =
+        state.characters.find((c) => c.id === targetId)?.name ?? targetId;
+      if (targetSaved.hp > 0) {
+        setCastMessage(`${targetName} is not dead — Resurrection needs a fallen ally.`);
+        return;
+      }
+      const params = (spell.action_params ?? {}) as { heal_percent?: number };
+      const pct =
+        typeof params.heal_percent === "number" && params.heal_percent > 0
+          ? params.heal_percent
+          : 0.5;
+      const maxHp = state.maxHpById.get(targetId) ?? targetSaved.hp;
+      const revivedHp = Math.max(1, Math.round(maxHp * pct));
+      const nextMembers = cur.party.members.map((m) => {
+        if (m.id !== casterId && m.id !== targetId) return m;
+        let out = m;
+        if (m.id === casterId) out = { ...out, mp: casterMp - cost };
+        if (m.id === targetId) out = { ...out, hp: revivedHp };
+        return out;
+      });
+      const casterName =
+        state.characters.find((c) => c.id === casterId)?.name ?? casterId;
+      setCastMessage(
+        `${casterName} casts Resurrection — ${targetName} rises with ${revivedHp}/${maxHp} HP!`,
+      );
+      commit({
+        ...cur,
+        party: { ...cur.party, members: nextMembers },
+      });
+      onSpellCast?.(spell.id);
+    },
+    [state, liveSave, commit, onSpellCast],
+  );
+
   /** Route an incoming Cast intent. Self-targeted spells fire
    *  immediately; ally-target spells stash the intent and open the
    *  target picker (rendered alongside the screen). Unsupported
@@ -1613,11 +1744,22 @@ export function PlayPartyScreenOverlay({
         setPendingHeal({ casterId, spellId: spell.id });
         return;
       }
+      // Recall — sorcerer party teleport. No target picker; resolves
+      // against the saved rune stone / start location on the host.
+      if (spell.action === "teleport") {
+        applyRecall(casterId, spell);
+        return;
+      }
+      // Resurrection — open a picker listing only downed members.
+      if (spell.action === "revive") {
+        setPendingRevive({ casterId, spellId: spell.id });
+        return;
+      }
       setCastMessage(
         `${spell.name ?? spell.id} isn't wired up out of combat yet.`,
       );
     },
-    [state, applyLight, applyRepel],
+    [state, applyLight, applyRepel, applyRecall],
   );
 
   // P closes the screen — same as the inspector-key shortcut that
@@ -1674,14 +1816,25 @@ export function PlayPartyScreenOverlay({
           <h2 className="font-display text-base text-parchment">
             Party Screen
           </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded border border-parchment/20 px-2 py-0.5 text-xs text-parchment/70 hover:bg-ink/40"
-            title="Close (P or ESC)"
-          >
-            Close
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleDropRuneStone}
+              disabled={state.kind !== "ok"}
+              className="rounded border border-amber-300/40 bg-amber-300/10 px-2 py-0.5 text-xs text-amber-100/90 hover:bg-amber-300/20 disabled:cursor-not-allowed disabled:opacity-50"
+              title="Place a Recall rune stone at the party's current location. The sorcerer's Recall spell teleports the party back here."
+            >
+              Drop Rune Stone
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded border border-parchment/20 px-2 py-0.5 text-xs text-parchment/70 hover:bg-ink/40"
+              title="Close (P or ESC)"
+            >
+              Close
+            </button>
+          </div>
         </div>
         <div className="p-3">
           {castMessage ? (
@@ -1781,6 +1934,29 @@ export function PlayPartyScreenOverlay({
             const spell = state.spells.find((s) => s.id === pendingHeal.spellId);
             if (spell) applyHeal(pendingHeal.casterId, targetId, spell);
             setPendingHeal(null);
+          }}
+        />
+      ) : null}
+      {/* Target picker for Resurrection — lists only DOWNED members
+       *  (hp ≤ 0). Living members are shown disabled so the player
+       *  understands why they can't be picked. */}
+      {pendingRevive && state.kind === "ok" ? (
+        <ReviveTargetPicker
+          casterId={pendingRevive.casterId}
+          spell={
+            state.spells.find((s) => s.id === pendingRevive.spellId) ?? null
+          }
+          characters={state.characters}
+          maxHpById={state.maxHpById}
+          roster={liveSave.party.roster}
+          members={liveSave.party.members}
+          onCancel={() => setPendingRevive(null)}
+          onPick={(targetId) => {
+            const spell = state.spells.find(
+              (s) => s.id === pendingRevive.spellId,
+            );
+            if (spell) applyRevive(pendingRevive.casterId, targetId, spell);
+            setPendingRevive(null);
           }}
         />
       ) : null}
@@ -2241,6 +2417,103 @@ function HealTargetPicker({
             );
           })}
         </ul>
+      </div>
+    </div>
+  );
+}
+
+/** Target picker for Resurrection. Mirrors {@link HealTargetPicker}
+ *  but only enables DOWNED members (hp ≤ 0) — living allies are shown
+ *  greyed-out so the player sees the full roster and understands why
+ *  they can't be targeted. */
+function ReviveTargetPicker({
+  casterId,
+  spell,
+  characters,
+  maxHpById,
+  roster,
+  members,
+  onPick,
+  onCancel,
+}: {
+  casterId: string;
+  spell: PartySpellRef | null;
+  characters: ReadonlyArray<PartyCharacterRef>;
+  maxHpById: ReadonlyMap<string, number>;
+  roster: ReadonlyArray<string>;
+  members: ReadonlyArray<SavedCharacterState>;
+  onPick: (targetId: string) => void;
+  onCancel: () => void;
+}) {
+  const memberById = new Map(members.map((m) => [m.id, m] as const));
+  const characterById = new Map(characters.map((c) => [c.id, c] as const));
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        onCancel();
+      }
+    };
+    window.addEventListener("keydown", onKey, { capture: true });
+    return () =>
+      window.removeEventListener("keydown", onKey, { capture: true });
+  }, [onCancel]);
+
+  const casterName = characterById.get(casterId)?.name ?? casterId;
+  const anyDead = roster.some((id) => (memberById.get(id)?.hp ?? 1) <= 0);
+  return (
+    <div
+      onClick={onCancel}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-sm rounded-lg border border-parchment/25 bg-ink/95 shadow-2xl"
+      >
+        <div className="flex items-center justify-between border-b border-parchment/15 px-3 py-1.5">
+          <h3 className="font-display text-sm text-parchment">
+            {casterName} casts {spell?.name ?? "Resurrection"} — pick the fallen
+          </h3>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="rounded border border-parchment/20 px-2 py-0.5 text-xs text-parchment/70 hover:bg-ink/40"
+          >
+            Cancel
+          </button>
+        </div>
+        {!anyDead ? (
+          <p className="px-3 py-3 text-sm text-parchment/65">
+            No fallen companions to raise.
+          </p>
+        ) : (
+          <ul className="flex flex-col gap-1 p-2">
+            {roster.map((id) => {
+              const c = characterById.get(id);
+              const m = memberById.get(id);
+              if (!c || !m) return null;
+              const max = maxHpById.get(id) ?? m.hp;
+              const dead = m.hp <= 0;
+              return (
+                <li key={id}>
+                  <button
+                    type="button"
+                    onClick={() => onPick(id)}
+                    className="flex w-full items-center justify-between rounded border border-parchment/20 bg-ink/40 px-3 py-2 text-left text-sm text-parchment hover:bg-ink/60 disabled:cursor-not-allowed disabled:opacity-50"
+                    disabled={!dead}
+                    title={dead ? `Resurrect ${c.name}.` : `${c.name} is alive.`}
+                  >
+                    <span className="font-display">{c.name}</span>
+                    <span className="font-mono text-xs text-parchment/70">
+                      {dead ? "DOWNED" : `HP ${m.hp}/${max}`}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </div>
     </div>
   );

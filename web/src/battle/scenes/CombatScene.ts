@@ -482,6 +482,11 @@ export class CombatScene extends Phaser.Scene {
    *  light_source cells (plus a party self-light) to "punch" pools of
    *  light. Comes from CombatSceneData.darkness. */
   private darkness = false;
+  /** Set true when the priest's Daylight spell is cast — floods the
+   *  whole arena with light for the rest of the battle. While active,
+   *  `refreshDarkness` clears the darkness overlay entirely so every
+   *  cell reads as fully lit. Reset per encounter in init. */
+  private daylightActive = false;
   /** When true AND in darkness mode, infravision-augmented vision
    *  applies — but only on turns where the active actor's race
    *  grants the ability. The flag is the player-controlled global
@@ -739,6 +744,7 @@ export class CombatScene extends Phaser.Scene {
     this.onResolved = data?.onResolved ?? null;
     this.arenaCells = data?.arenaCells ?? null;
     this.darkness = !!data?.darkness;
+    this.daylightActive = false;
     this.partyInfravisionActive = !!data?.partyInfravisionActive;
     this.staticLights = [];
     this.triggerKey = data?.triggerKey ?? null;
@@ -1676,6 +1682,10 @@ export class CombatScene extends Phaser.Scene {
   }
 
   private refreshDarkness(): void {
+    // When the fight isn't dark — a bright arena, or Daylight has
+    // banished the dark (it flips `this.darkness` off) — there's no
+    // overlay to paint. The cast site already cleared the graphics and
+    // re-showed sprites, so simply bail.
     if (!this.darkness || !this.darknessGfx) return;
     const g = this.darknessGfx;
     const ig = this.infravisionGfx;
@@ -3272,6 +3282,38 @@ export class CombatScene extends Phaser.Scene {
         this.combat.log.push(`${me.name} casts ${spell.name} on self — heals ${r.heal} HP.`);
         void playVisualAt(this.bodyXY(me));
         this.refreshHp(me);
+      } else if (spell.effect_type === "daylight") {
+        // Banish darkness for the REST OF THE BATTLE — the whole arena
+        // now reads as a bright fight, not a localized light pool.
+        // `this.darkness` is the single lever every darkness-gated
+        // check reads (the overlay paint, `isCellVisibleToParty`
+        // targeting, the party-sprite gate), so flipping it off is
+        // literally "as if there was no darkness at all."
+        const wasDark = this.darkness;
+        this.daylightActive = true;
+        this.darkness = false;
+        this.darknessGfx?.clear();
+        this.infravisionGfx?.clear();
+        // Re-show anything the dark had hidden — party sprites that
+        // were standing in shadow and any visibility-gated arena
+        // emitters — now that the whole field is lit.
+        if (wasDark) {
+          for (const c of this.combat.combatants) {
+            const body = this.bodies.get(c.id);
+            if (body && c.hp > 0) body.setVisible(true);
+          }
+          for (const [, emitter] of this.arenaEmitters) {
+            emitter.setVisible(true);
+          }
+        }
+        // Warm, arena-wide flash so the cast reads instantly and is
+        // visibly distinct from Light's localized orb.
+        this.cameras.main.flash(500, 255, 248, 205);
+        this.combat.log.push(
+          wasDark
+            ? `${me.name} casts ${spell.name} — the battlefield floods with daylight!`
+            : `${me.name} casts ${spell.name} — radiant light washes over the arena.`,
+        );
       } else if (spell.effect_type === "invisibility") {
         // Caster fades from view: an "Invisibility"-tagged AC buff
         // hardens them to attacks, and the scene picks up the matching
@@ -3412,14 +3454,28 @@ export class CombatScene extends Phaser.Scene {
       // pass so a future spell-shaped mass attack doesn't drop
       // into the unsupported message.
       let total = 0;
+      let hitIdx = 0;
+      // Bombardment feel — the ground rumbles as the meteors fall.
+      screenShake(this, 0.006, 360);
       for (const foe of this.combat.combatants) {
         if (foe.side !== "enemies" || foe.hp <= 0) continue;
         const r = resolveDamageSpell(me, foe, spell, defaultRng);
         total += r.damage;
         this.refreshHp(foe);
+        // Stagger the per-foe impact (e.g. Meteor Shower's meteors) so
+        // they land in sequence rather than all flashing at once, and
+        // layer a fiery burst on each so a mass attack reads as a
+        // sky-wide bombardment even against a single foe.
+        const foePos = this.bodyXY(foe);
+        const delay = hitIdx * 90;
+        this.time.delayedCall(delay, () => {
+          void playVisualAt(foePos);
+          void radialBurst(this, foePos, VFX_COLOURS.fire, VFX_COLOURS.ember, 44);
+        });
+        hitIdx += 1;
       }
       this.combat.log.push(
-        `${me.name} casts ${spell.name} — enemies take ${total} HP total.`,
+        `${me.name} casts ${spell.name} — meteors rain down; enemies take ${total} HP total.`,
       );
     } else {
       // unsupported — needs a tile picker we haven't built.

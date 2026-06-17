@@ -136,7 +136,14 @@ export function resolveDamageSpell(
   // detail yet, so we treat them as auto-hit at full power. The
   // d20 + attackBonus check stays in the result for log parity.
   const roll = rollAttack(caster.attackBonus, target.ac, rng);
-  const damage = rollSpellDamage(spell, caster, rng);
+  let damage = rollSpellDamage(spell, caster, rng);
+  // Holy / anti-undead spells (Divine Smite) hit the undead harder.
+  // The multiplier only applies when the target carries the undead
+  // flag; living foes take the base roll.
+  const undeadMult = spell.effect_value?.vs_undead_multiplier;
+  if (typeof undeadMult === "number" && undeadMult > 0 && target.undead) {
+    damage = Math.max(1, Math.round(damage * undeadMult));
+  }
   target.hp = Math.max(0, target.hp - damage);
   return {
     attackerId: caster.id,

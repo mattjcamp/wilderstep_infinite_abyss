@@ -143,6 +143,10 @@ const SPELLS_ACTION_PARAMS: ParamsFieldConfig = {
     heal_percent: { kind: "number", help: "Heal as a % of max HP." },
     mp_percent: { kind: "number", help: "MP restored as a % of max MP." },
     damage_type: { kind: "string", help: "Damage flavour (fire, poison, …)." },
+    vs_undead_multiplier: {
+      kind: "number",
+      help: "Multiply damage by this when the target is undead (e.g. 1.5 for Divine Smite).",
+    },
     scope: { kind: "string", help: "Targeting scope discriminator." },
     cure_effects: {
       kind: "id_list",

@@ -5875,6 +5875,40 @@ export function PlayHost() {
             }
           }}
           onSpellCast={(spellId, actionParams) => {
+            // Recall (sorcerer) — teleport the whole party to their
+            // rune stone, or the journey's start if none was placed.
+            // The overlay already deducted MP + committed; we read the
+            // freshly-committed anchor from saveRef. Handled before the
+            // VFX guard below since the teleport remounts the scene.
+            if (spellId === "recall") {
+              const save = saveRef.current;
+              const anchor =
+                save?.party.runeStone ?? save?.party.startLocation ?? null;
+              if (save && anchor && anchor.mapId) {
+                // Drop any in-dungeon position so the loader mounts the
+                // overworld destination map, and move the party to the
+                // anchor cell. Mirrors the cross-map link teleport: set
+                // currentMapId + cell, persist, then remount.
+                const { currentDungeon: _leftBehind, ...restParty } =
+                  save.party;
+                void _leftBehind;
+                const next: WorldSave = {
+                  ...save,
+                  clockMinutes: clockRef.current,
+                  party: {
+                    ...restParty,
+                    currentMapId: anchor.mapId,
+                    col: anchor.col,
+                    row: anchor.row,
+                  },
+                };
+                saveWorld(next);
+                saveRef.current = next;
+                setPartyScreenOpen(false);
+                setReloadKey((k) => k + 1);
+              }
+              return;
+            }
             // Paint the spell's animation + play its SFX on the
             // party cell. The overlay is up so the player sees the
             // effect framing the world canvas behind the modal —

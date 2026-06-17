@@ -51,6 +51,10 @@ export interface SpellEffectValue {
   effect_id?: string;
   radius?: number;
   damage_type?: string;
+  /** Damage spells: multiply final damage by this factor when the
+   *  target is undead (e.g. Divine Smite's 1.5×). Ignored for living
+   *  targets and for spells that omit it. */
+  vs_undead_multiplier?: number;
   scope?: string;
   heal_percent?: number;
   mp_percent?: number;
