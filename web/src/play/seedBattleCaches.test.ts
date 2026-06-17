@@ -20,7 +20,15 @@ import { describe, expect, it, vi } from "vitest";
 
 import { gameState } from "@/battle/state";
 import type { Party } from "@/battle/world/Party";
-import { seedBattleCaches } from "./seedBattleCaches";
+import {
+  _clearEncountersCache,
+  loadAllEncounters,
+} from "@/battle/world/Encounters";
+import { __resetModuleSourceForTests } from "@/data_model/sourceConfig";
+import {
+  seedBattleCaches,
+  seedBattleCachesFromCatalog,
+} from "./seedBattleCaches";
 import type { WorldSave } from "./saveTypes";
 
 function minimalSave(): WorldSave {
@@ -105,6 +113,74 @@ describe("seedBattleCaches", () => {
       }
     } finally {
       vi.unstubAllGlobals();
+      gameState.partyData = null;
+    }
+  });
+});
+
+describe("seedBattleCachesFromCatalog (Battle Simulator, inheriting module)", () => {
+  it("seeds encounters resolved up the `extends` chain", async () => {
+    // Emulate the static module layout for a child module that extends
+    // a parent and ships ONLY module.json (no encounters.json) — the
+    // exact shape of the reported bug (`test-module extends default`).
+    const routes: Record<string, unknown> = {
+      "/modules/child/module.json": {
+        id: "child",
+        title: "Child",
+        extends: "parent",
+      },
+      "/modules/parent/module.json": { id: "parent", title: "Parent" },
+      // Encounters live ONLY on the parent — the child inherits them.
+      "/modules/parent/encounters.json": {
+        encounters: [
+          {
+            id: "inherited_rats",
+            area: "dungeon",
+            name: "Inherited Rats",
+            level: 1,
+            monsters: ["rat"],
+          },
+        ],
+      },
+    };
+    const fetchStub = vi.fn((input: unknown) => {
+      const url =
+        typeof input === "string"
+          ? input
+          : (input as { url?: string })?.url ?? String(input);
+      const path = url.split("?")[0];
+      if (path in routes) {
+        return Promise.resolve(
+          new Response(JSON.stringify(routes[path]), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          }),
+        );
+      }
+      // Everything else (the child's own files, other catalogs) 404s,
+      // exactly like an inheriting module on disk.
+      return Promise.resolve(new Response(null, { status: 404 }));
+    });
+    vi.stubGlobal("fetch", fetchStub);
+    vi.stubGlobal("URL", {
+      ...URL,
+      createObjectURL: vi.fn().mockReturnValue("blob:stub"),
+      revokeObjectURL: vi.fn(),
+    });
+    __resetModuleSourceForTests();
+    _clearEncountersCache();
+
+    try {
+      await seedBattleCachesFromCatalog("child");
+      // The flat fetch path would have 404'd on
+      // /modules/child/encounters.json; the seed must have resolved the
+      // parent's catalog and populated the cache instead.
+      const list = await loadAllEncounters();
+      expect(list.map((e) => e.id)).toEqual(["inherited_rats"]);
+    } finally {
+      vi.unstubAllGlobals();
+      __resetModuleSourceForTests();
+      _clearEncountersCache();
       gameState.partyData = null;
     }
   });

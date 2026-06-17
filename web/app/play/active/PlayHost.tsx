@@ -47,6 +47,7 @@ import { PlayPartyScreenOverlay } from "./PlayPartyScreenOverlay";
 import {
   PlayQuestCelebration,
   returnToGiverSubtitle,
+  stepFinalSubtitle,
   type PlayQuestCelebrationKind,
 } from "./PlayQuestCelebration";
 import { PlayLogOverlay } from "./PlayLogOverlay";
@@ -248,29 +249,51 @@ function applyStepRewardsToSave(
     skipItems?: boolean;
   },
 ): { nextSave: WorldSave; summary: string; hadTileAdds: boolean } {
-  if (rewards.items.length === 0 && rewards.tileAdds.length === 0) {
+  if (
+    rewards.items.length === 0 &&
+    rewards.returnItems.length === 0 &&
+    rewards.tileAdds.length === 0
+  ) {
     return { nextSave: save, summary: "", hadTileAdds: false };
   }
   const summaryParts: string[] = [];
 
-  // ── Items ───────────────────────────────────────────────────────
+  // ── Items (granted + returned) ──────────────────────────────────
+  // Resolve a catalog display name, falling back to the raw id so a
+  // missing catalog entry still surfaces *something* recognisable.
   const catalogItems = ctx.catalog?.items ?? [];
-  let nextInventory = save.party.inventory;
+  const labelFor = (id: string) =>
+    catalogItems.find((it) => it.id === id)?.name || id;
+  let nextParty: SavedPartyState = save.party;
+  // When `skipItems` is set the caller has already mutated the live
+  // battle-state party for BOTH the grants and the returns (see
+  // `applyStepItemsToBattleState`), so leave the save party alone here
+  // and let the post-combat sync carry the kernel's view across.
   if (!ctx.skipItems) {
-    nextInventory = save.party.inventory.map((e) => ({ ...e }));
+    // Grants land in the shared stash.
+    let stash = save.party.inventory.map((e) => ({ ...e }));
     for (const id of rewards.items) {
-      nextInventory = addToInventory(nextInventory, id, catalogItems, 1);
+      stash = addToInventory(stash, id, catalogItems, 1);
     }
+    nextParty = { ...save.party, inventory: stash };
+    // "Return Item": reclaim the listed ids from ANYWHERE in the party
+    // — shared stash, a member's personal inventory, or an equipped
+    // slot. Each id removes one copy (stack-aware). Best-effort: a
+    // party that no longer holds the item just keeps completing the
+    // step.
+    nextParty = removeItemsFromSavedParty(
+      nextParty,
+      rewards.returnItems,
+      catalogItems,
+    );
   }
   if (rewards.items.length > 0) {
-    // Use catalog display name when available; fall back to the raw
-    // id so a missing catalog entry still surfaces *something* the
-    // player can recognise.
-    const labels = rewards.items.map((id) => {
-      const def = catalogItems.find((it) => it.id === id);
-      return def?.name || id;
-    });
-    summaryParts.push(`+${labels.join(", ")}`);
+    summaryParts.push(`+${rewards.items.map(labelFor).join(", ")}`);
+  }
+  if (rewards.returnItems.length > 0) {
+    // Minus sign signals the reclaim in the celebration subtitle, e.g.
+    // "−Skeleton Key" so the player sees the item leave their pack.
+    summaryParts.push(`−${rewards.returnItems.map(labelFor).join(", ")}`);
   }
 
   // ── Tile adds ──────────────────────────────────────────────────
@@ -330,52 +353,60 @@ function applyStepRewardsToSave(
   const hadTileAdds = tileAddsApplied > 0;
   const nextSave: WorldSave = {
     ...save,
-    party: {
-      ...save.party,
-      inventory: nextInventory,
-    },
+    party: nextParty,
     maps: nextMaps,
   };
   if (r && hadTileAdds) r.relight();
   return { nextSave, summary: summaryParts.join(" · "), hadTileAdds };
 }
 
-/** Push step-reward items into the live `gameState.partyData.inventory`
- *  so the post-combat `applyCombatResultToSave` pass picks them up.
+/** Apply a kill step's item grants AND returns to the live
+ *  `gameState.partyData.inventory` so the post-combat
+ *  `applyCombatResultToSave` pass picks them up.
  *
  *  Why this exists: kill-credit step rewards fire from inside
  *  `resolveSpawnEncounter("won")` — which runs *before*
  *  `applyCombatResultToSave` overwrites `save.party.inventory` from
  *  `gameState.partyData.inventory`. If we only updated the save, the
- *  combat sync would silently throw the items away. Mutating the
- *  kernel's view ensures the additions survive the sync.
+ *  combat sync would silently throw the changes away. Mutating the
+ *  kernel's view ensures both the additions and the "Return Item"
+ *  removals survive the sync.
  *
  *  No-op when `gameState.partyData` is null (defensive — kill credits
  *  only fire during combat resolution, so this should always be live).
- *  Mirrors the stacking behaviour of `addToInventory` so a +1 Torch
- *  reward bumps an existing Torch stack rather than spawning a
- *  duplicate row.  */
+ *  Mirrors the stacking behaviour of `addToInventory` /
+ *  `removeFromInventory` so a +1 Torch reward bumps an existing Torch
+ *  stack rather than spawning a duplicate row, and a returned item
+ *  decrements its stack.  */
 function applyStepItemsToBattleState(
   items: ReadonlyArray<string>,
+  returnItems: ReadonlyArray<string>,
   catalog: LoadedCatalog | null,
 ): void {
-  if (items.length === 0) return;
+  if (items.length === 0 && returnItems.length === 0) return;
   const post = gameState.partyData;
   if (!post) return;
   const catalogItems = catalog?.items ?? [];
-  let next: ReadonlyArray<{
-    item: string;
-    charges?: number;
-    durability?: number;
-  }> = post.inventory;
-  for (const id of items) {
-    next = addToInventory(next, id, catalogItems, 1);
+  // Grants land in the shared stash (mutated in place so the post-combat
+  // sync re-reads the additions).
+  if (items.length > 0) {
+    let next: ReadonlyArray<{
+      item: string;
+      charges?: number;
+      durability?: number;
+    }> = post.inventory;
+    for (const id of items) {
+      next = addToInventory(next, id, catalogItems, 1);
+    }
+    post.inventory.length = 0;
+    for (const e of next) post.inventory.push(e);
   }
-  // Mutate in place — `applyCombatResultToSave` re-reads
-  // `gameState.partyData.inventory` so the array identity doesn't
-  // matter, just the contents.
-  post.inventory.length = 0;
-  for (const e of next) post.inventory.push(e);
+  // "Return Item": reclaim from ANYWHERE in the live party — shared
+  // stash, a member's personal inventory, or an equipped slot — so the
+  // reclaim survives the post-combat sync (which overwrites the save's
+  // stash, member inventories, AND equipped slots from this kernel
+  // party). Mutates `post` in place.
+  removeItemsFromLiveParty(post, returnItems, catalogItems);
 }
 
 /** Build the JSON-safe SavedMapState for a current sim snapshot.
@@ -441,7 +472,14 @@ import {
   saveToSlot,
   saveWorld,
 } from "@/play/save";
-import { addToInventory, consumeOneFromInventory } from "@/play/inventoryStacking";
+import {
+  addToInventory,
+  consumeOneFromInventory,
+} from "@/play/inventoryStacking";
+import {
+  removeItemsFromSavedParty,
+  removeItemsFromLiveParty,
+} from "@/play/returnQuestItems";
 import { counterStockKey } from "@/play/counterStock";
 import { applyCombatResultToSave } from "@/play/syncFromBattle";
 import { gameState } from "@/battle/state";
@@ -478,7 +516,11 @@ import {
   attemptPickpocket,
   canPickpocket,
 } from "@/play/raceAbilities";
-import type { SavedMapState, WorldSave } from "@/play/saveTypes";
+import type {
+  SavedMapState,
+  SavedPartyState,
+  WorldSave,
+} from "@/play/saveTypes";
 import type {
   SimCharacter,
   SimCharacterClass,
@@ -3786,6 +3828,21 @@ export function PlayHost() {
                           subtitle,
                         });
                       }
+                      // Echo any item grants / "Return Item" reclaims to
+                      // the log strip so the player can re-read what
+                      // changed once the placard fades — including the
+                      // auto-turn-in case, where the quest-complete
+                      // placard speaks to the quest rewards, not the
+                      // step's own item changes.
+                      if (applied.summary) {
+                        setLogMessages((prev) => {
+                          const line = `Step reward: ${applied.summary}.`;
+                          const next = [...prev, line];
+                          return next.length > MAX_LOG
+                            ? next.slice(next.length - MAX_LOG)
+                            : next;
+                        });
+                      }
                     }
                   }
                 }
@@ -4236,8 +4293,9 @@ export function PlayHost() {
                     fireQuestCelebration({
                       kind: "step-final",
                       title: def?.name ?? matchedQuestId,
-                      subtitle: returnToGiverSubtitle(
+                      subtitle: stepFinalSubtitle(
                         def?.questGiver?.npcName,
+                        stepRewardsSummary,
                       ),
                     });
                   } else {
@@ -4437,6 +4495,7 @@ export function PlayHost() {
                   // additions into the save instead of stomping them.
                   applyStepItemsToBattleState(
                     stepRewards.items,
+                    stepRewards.returnItems,
                     catalogRef.current,
                   );
                   const applied = applyStepRewardsToSave(
@@ -4484,16 +4543,17 @@ export function PlayHost() {
                 );
                 const step = def?.steps[ev.stepIdx];
                 if (ev.questCompleted) {
-                  // Step-final wins over rewards in the subtitle —
-                  // the "Return to {giver}" prompt is the most
-                  // actionable thing the player can do. Rewards
-                  // earned here get spoken to in the log strip
-                  // below instead.
+                  // Lead with the "Return to {giver}" prompt — the most
+                  // actionable thing the player can do — then append any
+                  // item changes from this closing step so a grant or a
+                  // "Return Item" reclaim still shows on the placard
+                  // (it's also echoed in the log strip below).
                   fireQuestCelebration({
                     kind: "step-final",
                     title: def?.name ?? ev.questId,
-                    subtitle: returnToGiverSubtitle(
+                    subtitle: stepFinalSubtitle(
                       def?.questGiver?.npcName,
+                      stepRewardsSummary,
                     ),
                   });
                 } else {

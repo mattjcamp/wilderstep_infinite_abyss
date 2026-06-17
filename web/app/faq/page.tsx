@@ -53,6 +53,31 @@ const FAQS: ReadonlyArray<Faq> = [
   },
 
 
+    {
+    q: "How do I get started with Dungeon Master Mode?",
+    a: (
+      <>
+The game is organized in modules, which include everything that defines an 
+adventure including monsters, maps, quests, and so on. Every module inherits the core game 
+via the Default Module. Default Module has all the monsters and characters used in the game.
+<br/><br/>
+When you create New Module, you start with a map and party already set up. You can create the 
+module adventure and immediately play a new game with it.
+<br/><br/>
+So to get started, go to the Maps list in the module and choose the map "Rock Island". You will
+see a copy of the map that you can use to edit. Click on a tile to see it's properties where 
+you can add encounters, quests, and much more. On the left is a palette that you can use 
+to paint more tiles.
+<br/><br/>
+The items in the game that you can edit are all in the left panel. This is where you would 
+add new monsters, encounters, and quests.
+<br/><br/>
+You must "Publish" your changes when you are ready to see them in your module. This is what
+writes your changes to the server and allows you to share your adventure.
+      </>
+    ),
+  },
+
 
   {
     q: "How much does it cost, and do I need to install anything?",
@@ -170,14 +195,6 @@ export default function FaqPage() {
         ))}
       </section>
 
-      <nav className="text-center">
-        <Link
-          href="/play"
-          className="text-sm text-parchment/55 underline hover:text-parchment/80"
-        >
-          Back to Play
-        </Link>
-      </nav>
     </main>
   );
 }

@@ -33,14 +33,12 @@
       "description": "A smoldering campfire attracts wandering creatures.",
       "spawn_monsters": [
         "orc",
-        "orc_shaman",
-        "orc",
         "goblin",
         "goblin"
       ],
       "spawn_chance": 5,
       "spawn_radius": 4,
-      "max_spawned": 3,
+      "max_spawned": 1,
       "boss_monsters": [
         "goblin",
         "goblin",

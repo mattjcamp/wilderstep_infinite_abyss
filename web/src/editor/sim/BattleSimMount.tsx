@@ -33,6 +33,53 @@
 import { useEffect, useRef } from "react";
 import type { ArenaCellInfo } from "@/battle/world/Maps";
 
+/** sessionStorage guard so a genuinely-missing chunk reloads at most
+ *  once instead of looping. Cleared after a full successful mount. */
+const CHUNK_RELOAD_KEY = "battlesim:chunk-reload";
+
+/** True for a webpack "stale chunk" failure — the requested chunk's
+ *  hashed filename no longer exists on the server. Happens after a dev
+ *  recompile (which re-chunks and renames) or a production redeploy
+ *  while the page was open. The data is fine; the page just holds a
+ *  reference to a chunk name that's been superseded. */
+function isChunkLoadError(err: unknown): boolean {
+  return (
+    err instanceof Error &&
+    (err.name === "ChunkLoadError" ||
+      /Loading chunk [\w-]+ failed/i.test(err.message))
+  );
+}
+
+/** Dynamic-import wrapper that recovers from a stale-chunk 404 by
+ *  reloading the page once (so it fetches the current chunk manifest).
+ *  Re-throws anything that isn't a chunk-load error, and won't reload a
+ *  second time in the same session — a real build break surfaces as the
+ *  error rather than an infinite reload loop. On a chunk error it
+ *  returns a never-settling promise so the caller doesn't proceed
+ *  before the reload takes effect. */
+async function importWithChunkRetry<T>(load: () => Promise<T>): Promise<T> {
+  try {
+    return await load();
+  } catch (err) {
+    let alreadyReloaded = false;
+    try {
+      alreadyReloaded = sessionStorage.getItem(CHUNK_RELOAD_KEY) === "1";
+    } catch {
+      /* sessionStorage unavailable — fall through to rethrow */
+    }
+    if (isChunkLoadError(err) && !alreadyReloaded && typeof window !== "undefined") {
+      try {
+        sessionStorage.setItem(CHUNK_RELOAD_KEY, "1");
+      } catch {
+        /* ignore */
+      }
+      window.location.reload();
+      return new Promise<T>(() => {});
+    }
+    throw err;
+  }
+}
+
 export function BattleSimMount({
   moduleId,
   monsterIds,
@@ -75,10 +122,10 @@ export function BattleSimMount({
     window.addEventListener("unhandledrejection", onRejection);
 
     (async () => {
-      const Phaser = await import("phaser");
+      const Phaser = await importWithChunkRetry(() => import("phaser"));
       if (cancelled || !containerRef.current) return;
-      const { CombatScene } = await import(
-        "@/battle/scenes/CombatScene"
+      const { CombatScene } = await importWithChunkRetry(
+        () => import("@/battle/scenes/CombatScene"),
       );
       // Point v1's loaders at the v2 module the user picked. Must
       // happen BEFORE the scene mounts since preload kicks off
@@ -149,6 +196,14 @@ export function BattleSimMount({
           },
         },
       });
+      // Full mount succeeded — clear the one-shot reload guard so a
+      // future stale chunk (next deploy / next dev recompile) can
+      // recover with its own single reload.
+      try {
+        sessionStorage.removeItem(CHUNK_RELOAD_KEY);
+      } catch {
+        /* ignore */
+      }
     })();
 
     return () => {

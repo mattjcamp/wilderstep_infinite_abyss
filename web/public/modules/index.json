@@ -30,6 +30,11 @@
       "id": "npcs",
       "title": "Lore and NPCs",
       "role": "library"
+    },
+    {
+      "id": "test-module",
+      "title": "Test Module",
+      "role": "playable"
     }
   ]
 }

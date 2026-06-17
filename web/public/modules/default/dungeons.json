@@ -28,16 +28,6 @@
           "id": "old_ruins_l2",
           "name": "Level 2",
           "depth": 2
-        },
-        {
-          "id": "old_ruins_l3",
-          "name": "Level 3",
-          "depth": 3
-        },
-        {
-          "id": "old_ruins_l4",
-          "name": "Level 4",
-          "depth": 4
         }
       ]
     }

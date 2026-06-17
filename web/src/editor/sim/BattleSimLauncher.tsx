@@ -10,10 +10,11 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { BattleSimMount } from "./BattleSimMount";
-import { loadAllEncounters, _clearEncountersCache, type EncounterTemplate } from "@/battle/world/Encounters";
-import { loadMonsters, _clearMonstersCache, type MonsterSpec } from "@/battle/data/monsters";
-import { loadArenaMaps, _clearMapsCache, type ArenaCellInfo, type ArenaMap } from "@/battle/world/Maps";
+import { loadAllEncounters, type EncounterTemplate } from "@/battle/world/Encounters";
+import { loadMonsters, type MonsterSpec } from "@/battle/data/monsters";
+import { loadArenaMaps, type ArenaCellInfo, type ArenaMap } from "@/battle/world/Maps";
 import { setActiveModule, withBase } from "@/battle/world/Module";
+import { seedBattleCachesFromCatalog } from "@/play/seedBattleCaches";
 import { ARENA_COLS, ARENA_ROWS } from "@/battle/combat/Arena";
 
 export function BattleSimLauncher({ moduleId }: { moduleId: string }) {
@@ -41,21 +42,26 @@ export function BattleSimLauncher({ moduleId }: { moduleId: string }) {
     useState<boolean>(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  // Pin loaders to the picked module + reset all three caches when
-  // switching modules so the pickers show the right catalog. The
-  // caches are also reset in case the user navigates between modules
-  // without a full page reload.
+  // Pin loaders to the picked module, then seed every v1battle cache
+  // from the module's INHERITANCE-RESOLVED catalogs. This is what makes
+  // the simulator work for a module that `extends` another and ships
+  // only the files it overrides (often just module.json): the raw v1
+  // loaders fetch a flat `/modules/<id>/X.json` that 404s for inherited
+  // files, but the seed resolves the `extends` chain (the same way the
+  // editor's other pages do) and populates the caches, so the loads
+  // below — and the Start Battle combat scene — all become cache hits.
+  // Re-runs on module switch, and the seed clears stale caches first.
   useEffect(() => {
     setActiveModule(moduleId);
-    _clearEncountersCache();
-    _clearMonstersCache();
-    _clearMapsCache();
     let cancelled = false;
     (async () => {
       try {
+        await seedBattleCachesFromCatalog(moduleId);
+        if (cancelled) return;
         // Three catalogs in parallel — encounters, monsters (so the
         // picker rows can render lead-monster sprites), and arena
         // maps (so the Map picker has options the moment it renders).
+        // All three are cache hits after the seed above.
         const [list, mons, maps] = await Promise.all([
           loadAllEncounters(),
           loadMonsters(),

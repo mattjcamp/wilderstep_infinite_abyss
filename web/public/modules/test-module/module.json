@@ -1,0 +1,10 @@
+{
+  "_comment": "Draft module created in the editor. Export this file and drop it into web/public/modules/test-module/module.json.",
+  "id": "test-module",
+  "title": "Test Module",
+  "description": "Test Module",
+  "author": "hyperbolic",
+  "version": "0.1.0",
+  "role": "playable",
+  "extends": "default"
+}

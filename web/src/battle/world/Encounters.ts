@@ -202,6 +202,22 @@ export function _clearEncountersCache(): void {
   _byAreaCache = null;
 }
 
+/** Seed the encounter caches directly from a pre-hydrated flat list,
+ *  bypassing the `modulePath` fetch. Used by the inheritance-aware
+ *  cache seeder (`seedBattleCaches*`) so a module that inherits its
+ *  encounters from a parent via `extends` — and therefore has no own
+ *  `encounters.json` to fetch — still populates the catalog the
+ *  simulator picker + spawners read. Populates both the flat list and
+ *  the by-area bucket so either accessor short-circuits to the seed. */
+export function _setEncountersCache(flat: EncounterTemplate[]): void {
+  _flatCache = flat;
+  const byArea: Record<string, EncounterTemplate[]> = {};
+  for (const e of flat) {
+    (byArea[e.area] ??= []).push(e);
+  }
+  _byAreaCache = byArea;
+}
+
 export interface SampleOptions {
   /** Inclusive lower bound on encounter level. Default 1. */
   minLevel?: number;

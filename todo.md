@@ -1,7 +1,6 @@
 
 ## New Content for v2
 
-- Add "Return Item" feature to Quest Step: the editor will be able to detail a list of quest items that will be returned after a quest step is completed. This way we can remove overpowered items needed to specify handle one type of problem in a quest without unbalancing future game play.
 - We will need fresh spell content past level 7-10 (sorcerer: Recall, Meteor Shower, Void Orb; priest: Day Light, Divine Smite, Resurrection
 - Class Quest: add a class quest that provides an unlock for high level spells and abilities. After level 10, characters must complete Class Quests to get a new spell or ability. Class quests will have level and class pre-reqs. Class Quests could be initiated via the Character Sheet.
 

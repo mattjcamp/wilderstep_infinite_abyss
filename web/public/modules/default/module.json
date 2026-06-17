@@ -5,8 +5,5 @@
   "description": "The base module — canonical effects, classes, races, items, monsters, etc. Other modules extend this one and override records by id.",
   "author": "Matt",
   "version": "0.1.0",
-  "role": "core",
-  "soundtrack": [
-    "/audio/aurelian_overture.mp3"
-  ]
+  "role": "core"
 }

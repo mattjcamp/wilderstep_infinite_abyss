@@ -195,6 +195,17 @@ export interface QuestStepRewards {
    *  Hosts merge into existing inventory stacks where stackable
    *  (same `addToInventory` path quest-level rewards use). */
   items: string[];
+  /** Item catalog ids REMOVED from the party's inventory on step
+   *  completion — the "Return Item" feature. The inverse of
+   *  {@link items}: each listed id consumes one copy from inventory
+   *  (stack-aware; list an id twice to take two). Lets a quest hand
+   *  out an overpowered tool for one step and reclaim it once the
+   *  step is done, so it can't unbalance later play. Removing more
+   *  copies than the party holds is a safe no-op for the shortfall —
+   *  the step still completes. Applied IMMEDIATELY alongside
+   *  {@link items} when the step's `stepProgress` flips true. Always
+   *  populated; absent JSON authors as `[]`. JSON key: `return_items`. */
+  returnItems: string[];
   /** Cells on named maps to paint with the named palette tile when
    *  the step completes. Same semantics as {@link QuestRewards.tileAdds}
    *  — recorded into `save.maps[mapId].tileOverrides` so the mutation
@@ -208,7 +219,7 @@ export interface QuestStepRewards {
  *  callers can read `step.rewards.items` / `step.rewards.tileAdds`
  *  without an undefined guard. */
 function emptyStepRewards(): QuestStepRewards {
-  return { items: [], tileAdds: [] };
+  return { items: [], returnItems: [], tileAdds: [] };
 }
 
 export interface QuestDef {
@@ -308,6 +319,9 @@ interface RawRewards {
  *  `tile_add` are honored — see {@link QuestStepRewards}. */
 interface RawStepRewards {
   items?: unknown;
+  /** Item ids to remove from inventory on step completion — the
+   *  "Return Item" feature. See {@link QuestStepRewards.returnItems}. */
+  return_items?: unknown;
   tile_add?: RawRewardTileAddOp[];
 }
 
@@ -399,7 +413,10 @@ function parseStepRewards(raw: RawStepRewards | null | undefined): QuestStepRewa
   const items = Array.isArray(raw.items)
     ? raw.items.filter((s): s is string => typeof s === "string")
     : [];
-  return { items, tileAdds: parseTileAdds(raw.tile_add) };
+  const returnItems = Array.isArray(raw.return_items)
+    ? raw.return_items.filter((s): s is string => typeof s === "string")
+    : [];
+  return { items, returnItems, tileAdds: parseTileAdds(raw.tile_add) };
 }
 
 function stepFromRaw(raw: RawQuestStep): QuestStep | null {
@@ -923,6 +940,7 @@ export function creditQuestKill(
 function snapshotStepRewards(rewards: QuestStepRewards): QuestStepRewards {
   return {
     items: [...rewards.items],
+    returnItems: [...rewards.returnItems],
     tileAdds: rewards.tileAdds.map((op) => ({ ...op })),
   };
 }

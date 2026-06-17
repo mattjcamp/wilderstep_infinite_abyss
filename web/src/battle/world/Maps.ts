@@ -153,3 +153,23 @@ export async function loadArenaMaps(): Promise<ArenaMap[]> {
 export function _clearMapsCache(): void {
   _flatCache = null;
 }
+
+/** Hydrate one raw maps.json entry into an {@link ArenaMap}. Exported
+ *  for callers that load maps through the data-model inheritance layer
+ *  (StaticModuleSource + mergeModel) rather than the active-module-only
+ *  `loadAllMaps` fetch — they hydrate each merged record themselves and
+ *  seed the cache via {@link _setMapsCache}. Returns null for a record
+ *  missing the required `id` / `name`. */
+export function arenaMapFromRaw(raw: unknown): ArenaMap | null {
+  if (!raw || typeof raw !== "object") return null;
+  return fromRaw(raw as RawMap);
+}
+
+/** Seed the maps cache directly from a pre-hydrated list, bypassing the
+ *  `modulePath` fetch. Used by the inheritance-aware cache seeder so a
+ *  module that inherits its maps from a parent via `extends` still
+ *  surfaces arenas in the simulator picker. `loadArenaMaps` reads this
+ *  same flat cache and applies the {@link ARENA_TAG} filter. */
+export function _setMapsCache(maps: ArenaMap[]): void {
+  _flatCache = maps;
+}

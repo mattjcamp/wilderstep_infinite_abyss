@@ -144,7 +144,7 @@ describe("matchesLocation (v2 structured)", () => {
     col: 0,
     row: 0,
     positions: [],
-    rewards: { items: [], tileAdds: [] },
+    rewards: { items: [], returnItems: [], tileAdds: [] },
   });
 
   it("empty location_kind matches anywhere", () => {
@@ -530,7 +530,111 @@ describe("step-level rewards", () => {
       ],
     });
     const step = defs[0].steps[0];
-    expect(step.rewards).toEqual({ items: [], tileAdds: [] });
+    expect(step.rewards).toEqual({ items: [], returnItems: [], tileAdds: [] });
+  });
+
+  it("parses a step's `return_items` (Return Item feature)", () => {
+    const defs = parseQuestsFile({
+      quests: [
+        {
+          id: "vault",
+          name: "The Sealed Vault",
+          steps: [
+            {
+              id: "s1",
+              name: "Unlock the vault",
+              kind: "retrieve",
+              item_id: "relic",
+              location_kind: "map",
+              map_id: "vault_map",
+              col: 2,
+              row: 2,
+              rewards: {
+                items: ["relic"],
+                return_items: ["master_key", "master_key"],
+              },
+            },
+          ],
+        },
+      ],
+    });
+    const step = defs[0].steps[0];
+    expect(step.rewards.items).toEqual(["relic"]);
+    // Listed twice → two copies reclaimed; order preserved.
+    expect(step.rewards.returnItems).toEqual(["master_key", "master_key"]);
+  });
+
+  it("defaults `return_items` to [] when the rewards block omits it", () => {
+    const defs = parseQuestsFile({
+      quests: [
+        {
+          id: "vault",
+          name: "vault",
+          steps: [
+            {
+              id: "s1",
+              name: "step",
+              kind: "kill",
+              params: { encounter_id: "guard", count: 1 },
+              rewards: { items: ["torch"] },
+            },
+          ],
+        },
+      ],
+    });
+    expect(defs[0].steps[0].rewards.returnItems).toEqual([]);
+  });
+
+  it("drops non-string `return_items` entries on load", () => {
+    const defs = parseQuestsFile({
+      quests: [
+        {
+          id: "vault",
+          name: "vault",
+          steps: [
+            {
+              id: "s1",
+              name: "step",
+              kind: "kill",
+              params: { encounter_id: "guard", count: 1 },
+              rewards: { return_items: ["key", 42, null, "key2"] },
+            },
+          ],
+        },
+      ],
+    });
+    expect(defs[0].steps[0].rewards.returnItems).toEqual(["key", "key2"]);
+  });
+
+  it("carries `return_items` through a kill-step credit snapshot", () => {
+    const defs = parseQuestsFile({
+      quests: [
+        {
+          id: "vault",
+          name: "The Sealed Vault",
+          steps: [
+            {
+              id: "s1",
+              name: "Defeat the warden",
+              kind: "kill",
+              params: { encounter_id: "warden", count: 1 },
+              rewards: { return_items: ["master_key"] },
+            },
+          ],
+        },
+      ],
+    });
+    const states = new Map<string, QuestState>();
+    ensureQuestStates(defs, states);
+    states.get("vault")!.status = "active";
+    const credit = creditQuestKill(defs, states, "vault", 0);
+    expect(credit).not.toBeNull();
+    expect(credit!.stepCompleted).toBe(true);
+    expect(credit!.stepRewards).not.toBeNull();
+    expect(credit!.stepRewards!.returnItems).toEqual(["master_key"]);
+    // Snapshot is a copy — mutating it must not touch the def.
+    credit!.stepRewards!.returnItems.push("dagger");
+    expect(defs[0].steps[0].rewards.returnItems).toEqual(["master_key"]);
   });
 
   it("drops malformed tile_add entries on load (bad map id / coords)", () => {
@@ -880,7 +984,11 @@ describe("step-level rewards", () => {
     states.get("amulet")!.status = "active";
     const credit = creditQuestRetrieve(defs, states, "amulet", 0);
     expect(credit).not.toBeNull();
-    expect(credit!.stepRewards).toEqual({ items: [], tileAdds: [] });
+    expect(credit!.stepRewards).toEqual({
+      items: [],
+      returnItems: [],
+      tileAdds: [],
+    });
   });
 });
 

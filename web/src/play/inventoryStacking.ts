@@ -190,3 +190,52 @@ export function consumeOneFromInventory(
   next[stashIndex] = { ...cur, charges: after };
   return next;
 }
+
+/** Remove up to `count` copies of `itemId` from an inventory by id.
+ *  Stack-aware: stackable rows have their `charges` decremented (the
+ *  row is spliced when it hits zero); non-stackable items splice one
+ *  row per copy. Best-effort — when the inventory holds fewer than
+ *  `count`, every copy it does hold is removed and the shortfall is
+ *  silently ignored (callers that need a hard "must have N" check
+ *  should validate with {@link quantityOf} first). Returns a NEW
+ *  array; never mutates the input. `count` defaults to 1.
+ *
+ *  This is the inverse of {@link addToInventory} and the shared home
+ *  for "consume by id" — the quest step "Return Item" reward and any
+ *  other id-keyed removal route through it so the stacking rules stay
+ *  in one place. */
+export function removeFromInventory(
+  inv: ReadonlyArray<InventoryEntry>,
+  itemId: string,
+  items: ReadonlyArray<StackableItemRef> | ReadonlyMap<string, StackableItemRef>,
+  count = 1,
+): InventoryEntry[] {
+  if (count <= 0) return inv.map((e) => ({ ...e }));
+  let next: InventoryEntry[] = inv.map((e) => ({ ...e }));
+  let remaining = count;
+  if (isStackable(itemId, items)) {
+    for (let i = 0; i < next.length && remaining > 0; i++) {
+      const row = next[i];
+      if (row.item !== itemId) continue;
+      const have = row.charges ?? 1;
+      const take = Math.min(have, remaining);
+      remaining -= take;
+      const left = have - take;
+      if (left <= 0) {
+        next.splice(i, 1);
+        i -= 1;
+      } else {
+        next[i] = { ...row, charges: left };
+      }
+    }
+  } else {
+    next = next.filter((row) => {
+      if (remaining > 0 && row.item === itemId) {
+        remaining -= 1;
+        return false;
+      }
+      return true;
+    });
+  }
+  return next;
+}

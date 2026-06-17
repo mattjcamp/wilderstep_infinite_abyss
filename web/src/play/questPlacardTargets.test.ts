@@ -19,7 +19,7 @@ function step(over: Partial<QuestStep>): QuestStep {
     count: 1,
     itemId: "",
     positions: [],
-    rewards: { items: [], tileAdds: [] },
+    rewards: { items: [], returnItems: [], tileAdds: [] },
     ...over,
   };
 }

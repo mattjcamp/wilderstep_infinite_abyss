@@ -141,6 +141,12 @@ interface QuestStep {
  *  subset of the quest-level {@link Rewards} — no XP / gold. */
 interface StepRewards {
   items?: string[];
+  /** Item ids RECLAIMED from the party's inventory when the step
+   *  completes — the "Return Item" feature. The inverse of `items`:
+   *  each listed id removes one copy (stack-aware). Use it to hand a
+   *  player an overpowered tool for one step and take it back after,
+   *  so it can't unbalance later play. JSON key: `return_items`. */
+  return_items?: string[];
   tile_add?: TileAddOp[];
 }
 
@@ -1241,10 +1247,11 @@ function StepRewardsEditor({
       </legend>
       <div className="flex items-center justify-between">
         <p className="text-xs text-parchment/75">
-          Items and tile changes applied <strong>immediately</strong>{" "}
-          when this step completes — use to gate the next step on a
-          map change (build a bridge, open a passage) or seed inventory
-          the next step needs.
+          Items granted, items reclaimed, and tile changes applied{" "}
+          <strong>immediately</strong> when this step completes — use to
+          gate the next step on a map change (build a bridge, open a
+          passage), seed inventory the next step needs, or reclaim an
+          overpowered quest item so it can&apos;t unbalance later play.
         </p>
         {has ? (
           <button
@@ -1275,6 +1282,17 @@ function StepRewardsEditor({
             items={r.items ?? []}
             catalog={items}
             onChange={(arr) => patch({ items: arr })}
+          />
+          {/* return_items — the inverse of the grant list above: each
+              listed id is reclaimed from the party's inventory when the
+              step completes. The "Return Item" feature — hand out an
+              overpowered tool for one step, take it back after. */}
+          <ItemsList
+            label="Return items"
+            emptyText="(no items reclaimed)"
+            items={r.return_items ?? []}
+            catalog={items}
+            onChange={(arr) => patch({ return_items: arr })}
           />
           {/* tile_add — paint a palette tile at (map, col, row) on
               completion. Same component the quest-level rewards use;
@@ -1428,10 +1446,17 @@ function ItemsList({
   items,
   catalog,
   onChange,
+  label = "Items",
+  emptyText = "(no item rewards)",
 }: {
   items: string[];
   catalog: ItemSummary[];
   onChange: (next: string[]) => void;
+  /** Section heading — defaults to "Items" (the grant list); the
+   *  Return Items list passes "Return items". */
+  label?: string;
+  /** Placeholder shown when the list is empty. */
+  emptyText?: string;
 }) {
   const updateAt = (idx: number, id: string) => {
     const next = items.slice();
@@ -1450,7 +1475,7 @@ function ItemsList({
     <div>
       <div className="flex items-center justify-between">
         <span className="text-xs uppercase tracking-wide text-parchment/75">
-          Items ({items.length})
+          {label} ({items.length})
         </span>
         <button
           type="button"
@@ -1462,7 +1487,7 @@ function ItemsList({
       </div>
       {items.length === 0 ? (
         <p className="mt-1 text-xs text-parchment/65">
-          (no item rewards)
+          {emptyText}
         </p>
       ) : (
         <ul className="mt-1 space-y-1">

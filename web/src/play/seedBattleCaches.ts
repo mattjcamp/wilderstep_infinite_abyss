@@ -42,7 +42,7 @@
  * on the first combat boot, not every encounter.
  */
 
-import { getModuleSource } from "@/data_model/sourceConfig";
+import { getEditorModuleSource, getModuleSource } from "@/data_model/sourceConfig";
 import { mergeModel } from "@/data_model/merge";
 import type { ModelKey } from "@/data_model/models";
 import { StaticModuleSource } from "@/data_model/StaticModuleSource";
@@ -50,6 +50,18 @@ import {
   _clearItemsCache,
   loadItems,
 } from "@/battle/world/Items";
+import {
+  _clearEncountersCache,
+  _setEncountersCache,
+  encounterTemplateFromRaw,
+  type EncounterTemplate,
+} from "@/battle/world/Encounters";
+import {
+  _clearMapsCache,
+  _setMapsCache,
+  arenaMapFromRaw,
+  type ArenaMap,
+} from "@/battle/world/Maps";
 import { _clearSpellsCache, loadSpells } from "@/battle/world/Spells";
 import {
   _clearAbilitiesCache,
@@ -317,8 +329,83 @@ export async function seedBattleCaches(
   // point custom art at the worker. After clearAllSeededCaches (which
   // resets routing too) so this wins. No-op off the remote/hosted path.
   await seedSpriteRouting(moduleId);
+  // The GAME source (preferDrafts false): live play reads published
+  // content only, never an editor's working draft.
   const src = getModuleSource();
+  const { characters } = await seedCombatCatalogs(src, moduleId);
 
+  // Party last — it depends on the characters catalog we just loaded
+  // via `mergeModel`. Built directly from the save (authoritative
+  // for HP/MP/inventory) and the merged module characters (sprites,
+  // base stats, equipment slots).
+  const party = buildPartyFromSave(
+    save,
+    characters as { characters?: CharacterRecord[] } | null,
+  );
+  _setPartyCache(party);
+}
+
+/**
+ * Seed every v1battle cache the editor's Battle Simulator needs from
+ * merged (inheritance-aware) data, building the party from the
+ * module's `party.json` rather than a save.
+ *
+ * Why this exists: the simulator is a "what-if" pane with no save — it
+ * fights the module's authored demo party. But CombatScene + the
+ * launcher's encounter/monster/arena pickers all read the v1battle
+ * loaders, which do a flat `fetch(modulePath("X.json"))` that does NOT
+ * walk the `extends` chain. A module like `test-module` that extends
+ * `default` and ships only `module.json` therefore 404s on every
+ * catalog — the picker shows "(failed to load)" and Start Battle has
+ * no party/monsters/items. This seeds the merged catalogs (plus
+ * encounters + arena maps for the picker) so every loader becomes a
+ * cache hit and the inheritance is resolved exactly as the editor's
+ * other pages resolve it.
+ *
+ * Uses the EDITOR module source (preferDrafts true) so an author's
+ * unpublished draft edits are reflected in the sim, matching the rest
+ * of the editor.
+ */
+export async function seedBattleCachesFromCatalog(
+  moduleId: string,
+): Promise<void> {
+  clearAllSeededCaches();
+  // The picker catalogs aren't part of the shared clear (the live game
+  // re-loads them lazily); reset them here so a module switch in the
+  // simulator doesn't reuse the prior module's encounters / arenas.
+  _clearEncountersCache();
+  _clearMapsCache();
+  await seedSpriteRouting(moduleId);
+  // The EDITOR source (preferDrafts true): the simulator should reflect
+  // an author's unpublished draft edits, like every other editor page.
+  const src = getEditorModuleSource();
+  const [{ characters }] = await Promise.all([
+    seedCombatCatalogs(src, moduleId),
+    seedPickerCatalogs(src, moduleId),
+  ]);
+
+  // Party from the module's authored seed (party.json), resolved up the
+  // extends chain. Null only if neither the module nor any ancestor
+  // declares a party — in which case we leave the cache empty and let
+  // CombatScene's own fallback handle it.
+  const party = buildPartyFromCatalog(
+    await loadMergedModel(src, moduleId, "party"),
+    characters as { characters?: CharacterRecord[] } | null,
+  );
+  if (party) _setPartyCache(party);
+}
+
+/**
+ * Seed the combat-critical catalogs (items, spells, abilities,
+ * monsters, races, effects, counters, classes) into the v1battle
+ * caches from `src`'s merged view. Shared by both the save-driven
+ * play seeder and the catalog-driven simulator seeder. Returns the
+ * merged `characters` model so the caller can build the party.
+ */
+async function seedCombatCatalogs(
+  src: StaticModuleSource,
+  moduleId: string,
+): Promise<{ characters: unknown | null }> {
   // Kick every load in parallel — they're independent.
   const [
     items,
@@ -403,13 +490,64 @@ export async function seedBattleCaches(
     _setAbilitiesCache([]);
   }
 
-  // Party last — it depends on the characters catalog we just loaded
-  // via `mergeModel`. Built directly from the save (authoritative
-  // for HP/MP/inventory) and the merged module characters (sprites,
-  // base stats, equipment slots).
-  const party = buildPartyFromSave(
-    save,
-    characters as { characters?: CharacterRecord[] } | null,
+  return { characters };
+}
+
+/**
+ * Seed the simulator-picker catalogs (encounters + arena maps) into
+ * the v1battle caches from `src`'s merged view. Unlike the combat
+ * catalogs these aren't blob-seedable (their loaders take no URL), so
+ * we hydrate each merged record and push it straight into the cache
+ * via the dedicated setters. Tolerant of a missing model anywhere in
+ * the chain — an empty picker is a valid (if unhelpful) state.
+ */
+async function seedPickerCatalogs(
+  src: StaticModuleSource,
+  moduleId: string,
+): Promise<void> {
+  const [encountersModel, mapsModel] = await Promise.all([
+    loadMergedModel(src, moduleId, "encounters"),
+    loadMergedModel(src, moduleId, "maps"),
+  ]);
+
+  const rawEncs =
+    (encountersModel as { encounters?: unknown[] } | null)?.encounters ?? [];
+  const encounters: EncounterTemplate[] = [];
+  for (const r of rawEncs) {
+    const e = encounterTemplateFromRaw(
+      r as Parameters<typeof encounterTemplateFromRaw>[0],
+    );
+    if (e) encounters.push(e);
+  }
+  _setEncountersCache(encounters);
+
+  const rawMaps = (mapsModel as { maps?: unknown[] } | null)?.maps ?? [];
+  const maps: ArenaMap[] = [];
+  for (const r of rawMaps) {
+    const m = arenaMapFromRaw(r);
+    if (m) maps.push(m);
+  }
+  _setMapsCache(maps);
+}
+
+/** Build the v1 `Party` from the module's merged `party.json` + merged
+ *  characters catalog — the simulator's save-free party. Mirrors
+ *  {@link buildPartyFromSave} but with no per-member save overrides.
+ *  Returns null when no party seed exists anywhere in the extends
+ *  chain. */
+function buildPartyFromCatalog(
+  partyModel: unknown | null,
+  mergedCharacters: { characters?: CharacterRecord[] } | null,
+): Party | null {
+  if (!partyModel || typeof partyModel !== "object") return null;
+  const moduleChars = mergedCharacters?.characters ?? [];
+  const charactersById = new Map<string, PartyMember>();
+  for (const raw of moduleChars) {
+    if (!raw?.id) continue;
+    charactersById.set(raw.id, memberFromRaw(raw));
+  }
+  return partyFromRaw(
+    partyModel as Parameters<typeof partyFromRaw>[0],
+    charactersById,
   );
-  _setPartyCache(party);
 }

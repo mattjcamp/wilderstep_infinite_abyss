@@ -267,3 +267,22 @@ export function returnToGiverSubtitle(giverName: string | undefined | null): str
     ? `Return to ${trimmed}`
     : "Return to the quest giver";
 }
+
+/**
+ * Compose the "Objectives Complete" (step-final) placard subtitle for
+ * the step that closes out a quest. Leads with the actionable
+ * {@link returnToGiverSubtitle} prompt and, when that closing step also
+ * granted or RECLAIMED items, appends the reward/return summary so a
+ * player whose final step took an item back (the "Return Item" feature)
+ * still sees it leave their pack — e.g. "Return to Jerald · −Skeleton
+ * Key". Falls back to the bare prompt when the step carried no item
+ * changes. Pure helper, exported so the host (and tests) can call it
+ * without importing the component itself.
+ */
+export function stepFinalSubtitle(
+  giverName: string | undefined | null,
+  summary: string,
+): string {
+  const base = returnToGiverSubtitle(giverName);
+  return summary ? `${base} · ${summary}` : base;
+}
