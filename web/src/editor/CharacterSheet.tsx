@@ -24,10 +24,12 @@
  * race-modifier previews without changing this file.
  */
 
+import { useState } from "react";
 import { SpritePicker } from "./SpritePicker";
 import { withBasePath } from "@/util/basePath";
 import { groupItemsByCategory } from "./itemTags";
-import { classAllowsItemType } from "@/battle/world/Classes";
+import { classAllowsItemType, type RawClass } from "@/battle/world/Classes";
+import { rollUpCharacterToLevel } from "./rollUpCharacter";
 
 /** Slim Item view the sheet needs — id, display name, icon
  *  (resolved against /sprites/item/<icon>.png), and the slots the
@@ -113,6 +115,14 @@ export function CharacterSheet({
      *  cleric's Hands picker won't list a crossbow. Absent → no
      *  restriction. */
     allowable_item_types?: string[];
+    /** Per-level progression fields (from character_classes.json) — the
+     *  "Roll up" control reads these (via classFromRaw) to apply
+     *  realistic HP/MP gains. Optional so hosts that pass a slimmer
+     *  class list still type-check (the control disables itself when
+     *  they're absent). */
+    hp_per_level?: number;
+    mp_per_level?: number;
+    casting_type?: string[];
   }>;
   /** Item catalog for the equipped-slot pickers. When omitted the
    *  equipped section degrades to read-only text — the host hasn't
@@ -125,6 +135,32 @@ export function CharacterSheet({
 }) {
   const patch = (p: Partial<CharacterRecord>) =>
     onChange({ ...character, ...p });
+
+  // ── "Roll up to level" ───────────────────────────────────────────
+  // Generate a realistic character at a higher level (HP/MP gains +
+  // credited XP) so an author can test late-game balance or start an
+  // adventure with a seasoned party. The math mirrors the game's
+  // awardXp — see rollUpCharacter.ts.
+  const [rollTarget, setRollTarget] = useState<number>(
+    () => (character.level ?? 1) + 1,
+  );
+  const rawClass = classes.find((c) => c.id === character.class) as
+    | RawClass
+    | undefined;
+  // Preview the gains so the author sees what "Roll up" will do before
+  // committing. No-op (0s) when the target isn't above the current
+  // level or the class progression isn't available.
+  const rollPreview = rollUpCharacterToLevel(
+    character,
+    rawClass,
+    rollTarget,
+  );
+  const canRoll =
+    !!rawClass && rollTarget > (character.level ?? 1) && rollPreview.levelsGained > 0;
+  const applyRollUp = () => {
+    if (!canRoll) return;
+    onChange(rollPreview.character);
+  };
 
   // Mutate a single key on `character.equipped` without dropping
   // unknown keys (forward-compat with future slots like head).
@@ -297,6 +333,49 @@ export function CharacterSheet({
               className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
             />
           </label>
+        </div>
+
+        {/* Roll up — generate a realistic character at a higher level.
+            Applies the game's per-level HP/MP gains and credits the XP
+            for that level, so authors can test late-game balance or
+            start an adventure with a seasoned party. */}
+        <div className="mt-3 rounded border border-amber-300/25 bg-amber-300/5 p-2">
+          <div className="flex flex-wrap items-end gap-2">
+            <label className="block">
+              <span className="text-xs uppercase tracking-wide text-parchment/65">
+                Roll up to level
+              </span>
+              <input
+                type="number"
+                min={(character.level ?? 1) + 1}
+                value={rollTarget}
+                onChange={(e) =>
+                  setRollTarget(Math.floor(Number(e.target.value) || 0))
+                }
+                className="mt-0.5 w-20 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
+              />
+            </label>
+            <button
+              type="button"
+              onClick={applyRollUp}
+              disabled={!canRoll}
+              className="rounded border border-amber-300/40 bg-amber-300/10 px-3 py-1 text-[13px] text-amber-100/90 hover:bg-amber-300/20 disabled:cursor-not-allowed disabled:opacity-50"
+              title="Apply level-up HP/MP gains and credit the XP for the target level."
+            >
+              Roll up
+            </button>
+            <p className="text-[11px] text-parchment/60">
+              {!rawClass
+                ? "Class progression unavailable."
+                : canRoll
+                  ? `+${rollPreview.levelsGained} lvl · +${rollPreview.hpGained} HP` +
+                    (rollPreview.mpGained > 0
+                      ? ` · +${rollPreview.mpGained} MP`
+                      : "") +
+                    ` · XP → ${rollPreview.exp.toLocaleString()}`
+                  : "Choose a level above the current one."}
+            </p>
+          </div>
         </div>
       </section>
 
