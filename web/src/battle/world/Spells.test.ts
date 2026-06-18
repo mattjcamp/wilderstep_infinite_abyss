@@ -62,8 +62,17 @@ describe("new high-level spells (spells.json)", () => {
     expect(s.min_level).toBe(10);
     expect(s.action).toBe("damage");
     expect(s.targeting).toBe("select_enemy");
-    expect(s.effect_value?.dice_count).toBe(12);
+    // Tuned down from 12d12 so it no longer one-shots 80-HP elites.
+    expect(s.effect_value?.dice_count).toBe(10);
     expect(s.effect_value?.dice_sides).toBe(12);
+  });
+
+  it("high-tier nukes cost enough to limit one cast per fight", () => {
+    // Tuned so a single cast empties enough of a level-10 caster's
+    // pool that a second cast is impossible (cost > half max MP).
+    expect(byId.get("meteor_shower")!.mp_cost).toBe(70);
+    expect(byId.get("void_orb")!.mp_cost).toBe(80);
+    expect(byId.get("divine_smite")!.mp_cost).toBe(60);
   });
 
   it("Daylight is a self-cast combat lighting spell", () => {

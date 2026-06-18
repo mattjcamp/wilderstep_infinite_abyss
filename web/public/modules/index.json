@@ -22,6 +22,11 @@
       "role": "playable"
     },
     {
+      "id": "underworld-invaders-2",
+      "title": "Emberscar-2",
+      "role": "playable"
+    },
+    {
       "id": "side-quests",
       "title": "Side Quests",
       "role": "library"

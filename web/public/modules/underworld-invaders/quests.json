@@ -79,6 +79,33 @@
       }
     },
     {
+      "id": "explore_the_ruins",
+      "name": "Explore the Old Ruins",
+      "description": "There is an island to the north east with unexplored ruins",
+      "tags": [
+        "old ruins"
+      ],
+      "steps": [
+        {
+          "id": "explore_the_ruins_step_1",
+          "name": "Explore the Ruins",
+          "kind": "reach",
+          "dungeon_id": "old_ruins"
+        }
+      ],
+      "quest_giver": {
+        "npc_name": "Old Hermit",
+        "npc_sprite": "person/halfling_mage2.png",
+        "start_dialog": "How Fares Thee? Rumor is that an old ruin is on an island to the north east, it seems like a good idea to explore that",
+        "end_dialog": "Great job, did you find anything interesting in those old ruins?",
+        "post_dialog": "Good to see you again"
+      },
+      "rewards": {
+        "xp": 100,
+        "gold": 100
+      }
+    },
+    {
       "id": "chase_out_the_goblins",
       "name": "The Grotto Below",
       "description": "The rat infestation traces back to a goblin grotto north of town — and the goblins have been tunneling toward Hollowmere. Break the warren before the town wakes up with a basement it didn't dig.",
@@ -439,7 +466,7 @@
           ],
           "location_kind": "map",
           "map_id": "caves_1_l3",
-          "description": "Descend into the cave on the island east of the capital and destroy the Ancient Dragon that has been tormenting the countryside."
+          "description": "Descend into the cave in the mountain northaast of the capital and destroy the Ancient Dragon that has been tormenting the countryside."
         }
       ],
       "quest_giver": {

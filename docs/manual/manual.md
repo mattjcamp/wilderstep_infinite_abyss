@@ -376,9 +376,11 @@ Abilities are named capabilities granted by Race or Class (or other sources). Th
 | **Pickpocket** | Attempt to steal items from town NPCs. Once per NPC, with a chance of failure. | party | permanent |
 | **Tinker** | Once per in-game day, fashion any single item normally found in a general store. | party | permanent |
 
+<!-- BEGIN GENERATED: spells — run `python3 docs/manual/build_spells.py` to refresh -->
+
 ## Spells
 
-Spells are MP-cost actions castable by classes that have a matching `casting_type`. The `Where` column tells you where the spell can be cast — `battle`, `party`, or `context` (contextual surfaces like the locked-door dialog).
+Spells are MP-cost actions castable by classes that have a matching `casting_type`. The `Where` column tells you where the spell can be cast — `battle`, `party`, or `context` (contextual surfaces like the locked-door dialog). _(This section is generated from `spells.json`; edit the data, not the prose here.)_
 
 
 ### Priest Spells
@@ -394,6 +396,10 @@ Spells are MP-cost actions castable by classes that have a matching `casting_typ
 | **Push** | 14 | 5 | 0 | self | party | Emits a powerful wave of divine force that drives nearby monsters away from the party. |
 | **Mass Heal** | 25 | 6 | 0 | self | battle | A burst of divine light radiates from the caster, restoring health to all nearby allies. |
 | **Restore** | 35 | 7 | 0 | self | battle | A radiant pillar of divine power engulfs the party, fully restoring health to all allies and mana to everyone but the caster, purging all poisons from their bodies. |
+| **Daylight** | 20 | 8 | 0 | self | battle | Floods the entire battlefield with brilliant daylight for the rest of the battle, banishing every shadow. |
+| **Divine Smite** | 60 | 9 | 6 | select_enemy | battle | Calls down a searing column of holy radiance that scours a single enemy — and burns the undead half again as hard. |
+| **Resurrection** | 50 | 10 | 6 | select_ally | party | Channels life back into a fallen companion, raising them from the dead at half their full strength. |
+
 
 ### Sorcerer Spells
 
@@ -411,6 +417,11 @@ Spells are MP-cost actions castable by classes that have a matching `casting_typ
 | **Lightning Bolt** | 25 | 5 | 99 | directional_projectile | battle | Unleashes a searing bolt of lightning that streaks in a straight line, electrocuting everything in its path. |
 | **Animate Dead** | 20 | 6 | 99 | select_tile | battle | Raises a powerful skeleton warrior from the earth to fight for the caster. |
 | **Fireball** | 30 | 7 | 99 | select_tile | battle | Hurls a massive ball of flame that detonates in a 3-tile radius, scorching everything — friend or foe — caught in the blast. |
+| **Recall** | 25 | 8 | 0 | self | party | Folds space around the whole party, drawing them back to their last rune stone — or, if none was placed, to where their journey began. |
+| **Meteor Shower** | 70 | 9 | 99 | auto_monster | battle | Calls a rain of blazing meteors down on every foe on the battlefield, scorching them all at once. |
+| **Void Orb** | 80 | 10 | 99 | select_enemy | battle | Conjures a sphere of absolute void that collapses on a single enemy, unmaking them with devastating force. |
+
+<!-- END GENERATED: spells -->
 
 <!-- BEGIN GENERATED: items — run `python3 docs/manual/build_items.py` to refresh -->
 

@@ -473,7 +473,7 @@
       "description": "Calls a rain of blazing meteors down on every foe on the battlefield, scorching them all at once.",
       "casting_type": "sorcerer",
       "min_level": 9,
-      "mp_cost": 40,
+      "mp_cost": 70,
       "range": 99,
       "targeting": "auto_monster",
       "usable_in": [
@@ -496,7 +496,7 @@
       "description": "Conjures a sphere of absolute void that collapses on a single enemy, unmaking them with devastating force.",
       "casting_type": "sorcerer",
       "min_level": 10,
-      "mp_cost": 60,
+      "mp_cost": 80,
       "range": 99,
       "targeting": "select_enemy",
       "usable_in": [
@@ -505,7 +505,7 @@
       "duration": "instant",
       "action": "damage",
       "action_params": {
-        "dice_count": 12,
+        "dice_count": 10,
         "dice_sides": 12,
         "stat_bonus": "intelligence",
         "min_damage": 1,
@@ -536,7 +536,7 @@
       "description": "Calls down a searing column of holy radiance that scours a single enemy \u2014 and burns the undead half again as hard.",
       "casting_type": "priest",
       "min_level": 9,
-      "mp_cost": 45,
+      "mp_cost": 60,
       "range": 6,
       "targeting": "select_enemy",
       "usable_in": [
