@@ -1,7 +1,13 @@
+## Remove Relics
+
+## Enchancements
+- Add line to remove relics from the kings quest after the demon is destroyed in Emberscar
+- Amp up the animations
+- Polish existing adventures
 
 ## New Content for v2
 
-- Class Quest: add a class quest that provides an unlock for high level spells and abilities. After level 10, characters must complete Class Quests to get a new spell or ability. Class quests will have level and class pre-reqs. Class Quests could be initiated via the Character Sheet.
+- Class Quest: add a class quest that provides an unlock for high level spells and abilities. After level 10, characters must complete Class Quests to get a new spell or ability. Class quests will have level and class pre-reqs. Class Quests could be initiated via the Character Sheet. This is something we might need if we made an adventure for the higher level characters.
 
 # Notes
 

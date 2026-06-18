@@ -380,46 +380,46 @@ Abilities are named capabilities granted by Race or Class (or other sources). Th
 
 ## Spells
 
-Spells are MP-cost actions castable by classes that have a matching `casting_type`. The `Where` column tells you where the spell can be cast — `battle`, `party`, or `context` (contextual surfaces like the locked-door dialog). _(This section is generated from `spells.json`; edit the data, not the prose here.)_
+Spells are MP-cost actions castable by classes that have a matching `casting_type`. The `Damage / Roll` column shows the dice a spell rolls — damage or healing as `{dice} + STAT` (e.g. `2d8 + INT`), with percentage values for spells that restore or revive; a dash means the spell has no roll (buffs, status effects, and utility). _(This section is generated from `spells.json`; edit the data, not the prose here.)_
 
 
 ### Priest Spells
 
-| Spell | MP | Min Lvl | Range | Targeting | Where | Description |
-|---|---:|---:|---:|---|---|---|
-| **Light** | 3 | 1 | 0 | select_tile | party, battle | Conjures a radiant orb of divine light at a chosen spot — anywhere on the battlefield. |
-| **Minor Heal** | 5 | 1 | 6 | select_ally_or_self | battle, party | Sends a gentle wave of healing energy toward an ally or the caster. |
-| **Cure Poison** | 5 | 2 | 99 | select_ally | battle | Draws the venom from an ally's body with a cleansing prayer, removing the poisoned condition. |
-| **Bless** | 10 | 3 | 0 | self | battle | Invokes a divine blessing that empowers all allies, granting them greater accuracy in battle. |
-| **Curse** | 10 | 3 | 99 | select_enemy | battle | Calls down a dark malediction on an enemy, weakening its defenses and dulling its attacks. |
-| **Major Heal** | 15 | 4 | 10 | select_ally_or_self | battle | Channels a powerful wave of restorative energy toward an ally, mending grievous wounds. |
-| **Push** | 14 | 5 | 0 | self | party | Emits a powerful wave of divine force that drives nearby monsters away from the party. |
-| **Mass Heal** | 25 | 6 | 0 | self | battle | A burst of divine light radiates from the caster, restoring health to all nearby allies. |
-| **Restore** | 35 | 7 | 0 | self | battle | A radiant pillar of divine power engulfs the party, fully restoring health to all allies and mana to everyone but the caster, purging all poisons from their bodies. |
-| **Daylight** | 20 | 8 | 0 | self | battle | Floods the entire battlefield with brilliant daylight for the rest of the battle, banishing every shadow. |
-| **Divine Smite** | 60 | 9 | 6 | select_enemy | battle | Calls down a searing column of holy radiance that scours a single enemy — and burns the undead half again as hard. |
-| **Resurrection** | 50 | 10 | 6 | select_ally | party | Channels life back into a fallen companion, raising them from the dead at half their full strength. |
+| Spell | MP | Min Lvl | Range | Damage / Roll | Description |
+|---|---:|---:|---:|---|---|
+| **Light** | 3 | 1 | 0 | — | Conjures a radiant orb of divine light at a chosen spot — anywhere on the battlefield. |
+| **Minor Heal** | 5 | 1 | 6 | 1d6 + WIS healed | Sends a gentle wave of healing energy toward an ally or the caster. |
+| **Cure Poison** | 5 | 2 | 99 | — | Draws the venom from an ally's body with a cleansing prayer, removing the poisoned condition. |
+| **Bless** | 10 | 3 | 0 | — | Invokes a divine blessing that empowers all allies, granting them greater accuracy in battle. |
+| **Curse** | 10 | 3 | 99 | — | Calls down a dark malediction on an enemy, weakening its defenses and dulling its attacks. |
+| **Major Heal** | 15 | 4 | 10 | 4d8 + WIS healed | Channels a powerful wave of restorative energy toward an ally, mending grievous wounds. |
+| **Push** | 14 | 5 | 0 | — | Emits a powerful wave of divine force that drives nearby monsters away from the party. |
+| **Mass Heal** | 25 | 6 | 0 | 3d10 + WIS healed | A burst of divine light radiates from the caster, restoring health to all nearby allies. |
+| **Restore** | 35 | 7 | 0 | 100% HP / 100% MP restored | A radiant pillar of divine power engulfs the party, fully restoring health to all allies and mana to everyone but the caster, purging all poisons from their bodies. |
+| **Daylight** | 20 | 8 | 0 | — | Floods the entire battlefield with brilliant daylight for the rest of the battle, banishing every shadow. |
+| **Divine Smite** | 60 | 9 | 6 | 10d10 + WIS radiant (×1.5 vs undead) | Calls down a searing column of holy radiance that scours a single enemy — and burns the undead half again as hard. |
+| **Resurrection** | 50 | 10 | 6 | 50% HP revived | Channels life back into a fallen companion, raising them from the dead at half their full strength. |
 
 
 ### Sorcerer Spells
 
-| Spell | MP | Min Lvl | Range | Targeting | Where | Description |
-|---|---:|---:|---:|---|---|---|
-| **Shield** | 4 | 1 | 5 | select_ally | battle | Conjures a faint magical barrier around an ally, slightly boosting their armor. |
-| **Sleep** | 5 | 1 | 99 | select_enemy | battle | Lulls a weak-minded creature into a light magical slumber. |
-| **Magic Dart** | 6 | 1 | 10 | directional_projectile | battle | Hurls an energy-charged dart in a straight line, stinging on impact. |
-| **Knock** | 6 | 2 | 1 | self | context | Sends a pulse of arcane force into a lock's mechanism, rattling tumblers and wards alike. Cast from the locked-door dialog when the party bumps a lock. |
-| **Long Shanks** | 6 | 2 | 99 | select_ally_or_self | battle | Enchants an ally's legs with unnatural speed, extending their movement range for 3 turns. May also be cast on yourself. |
-| **Magic Arrow** | 12 | 3 | 99 | select_enemy | battle | Conjures a piercing bolt of arcane energy that streaks toward a chosen foe. |
-| **Misty Step** | 8 | 4 | 6 | select_tile | battle | The caster vanishes in a swirl of silvery mist and reappears at a chosen location on the battlefield. |
-| **Invisibility** | 16 | 4 | 0 | self | battle | The caster bends light around themselves, becoming invisible to enemies for 3 turns. |
-| **Charm Person** | 14 | 5 | 99 | select_enemy | battle | Weaves an enchantment that bends the will of a humanoid creature, turning it against its allies for 3 turns. |
-| **Lightning Bolt** | 25 | 5 | 99 | directional_projectile | battle | Unleashes a searing bolt of lightning that streaks in a straight line, electrocuting everything in its path. |
-| **Animate Dead** | 20 | 6 | 99 | select_tile | battle | Raises a powerful skeleton warrior from the earth to fight for the caster. |
-| **Fireball** | 30 | 7 | 99 | select_tile | battle | Hurls a massive ball of flame that detonates in a 3-tile radius, scorching everything — friend or foe — caught in the blast. |
-| **Recall** | 25 | 8 | 0 | self | party | Folds space around the whole party, drawing them back to their last rune stone — or, if none was placed, to where their journey began. |
-| **Meteor Shower** | 70 | 9 | 99 | auto_monster | battle | Calls a rain of blazing meteors down on every foe on the battlefield, scorching them all at once. |
-| **Void Orb** | 80 | 10 | 99 | select_enemy | battle | Conjures a sphere of absolute void that collapses on a single enemy, unmaking them with devastating force. |
+| Spell | MP | Min Lvl | Range | Damage / Roll | Description |
+|---|---:|---:|---:|---|---|
+| **Shield** | 4 | 1 | 5 | — | Conjures a faint magical barrier around an ally, slightly boosting their armor. |
+| **Sleep** | 5 | 1 | 99 | — | Lulls a weak-minded creature into a light magical slumber. |
+| **Magic Dart** | 6 | 1 | 10 | 1d6 + INT | Hurls an energy-charged dart in a straight line, stinging on impact. |
+| **Knock** | 6 | 2 | 1 | — | Sends a pulse of arcane force into a lock's mechanism, rattling tumblers and wards alike. Cast from the locked-door dialog when the party bumps a lock. |
+| **Long Shanks** | 6 | 2 | 99 | — | Enchants an ally's legs with unnatural speed, extending their movement range for 3 turns. May also be cast on yourself. |
+| **Magic Arrow** | 12 | 3 | 99 | 2d8 + INT | Conjures a piercing bolt of arcane energy that streaks toward a chosen foe. |
+| **Misty Step** | 8 | 4 | 6 | — | The caster vanishes in a swirl of silvery mist and reappears at a chosen location on the battlefield. |
+| **Invisibility** | 16 | 4 | 0 | — | The caster bends light around themselves, becoming invisible to enemies for 3 turns. |
+| **Charm Person** | 14 | 5 | 99 | — | Weaves an enchantment that bends the will of a humanoid creature, turning it against its allies for 3 turns. |
+| **Lightning Bolt** | 25 | 5 | 99 | 6d6 + INT lightning | Unleashes a searing bolt of lightning that streaks in a straight line, electrocuting everything in its path. |
+| **Animate Dead** | 20 | 6 | 99 | — | Raises a powerful skeleton warrior from the earth to fight for the caster. |
+| **Fireball** | 30 | 7 | 99 | 5d8 + INT fire | Hurls a massive ball of flame that detonates in a 3-tile radius, scorching everything — friend or foe — caught in the blast. |
+| **Recall** | 25 | 8 | 0 | — | Folds space around the whole party, drawing them back to their last rune stone — or, if none was placed, to where their journey began. |
+| **Meteor Shower** | 70 | 9 | 99 | 8d8 + INT fire | Calls a rain of blazing meteors down on every foe on the battlefield, scorching them all at once. |
+| **Void Orb** | 80 | 10 | 99 | 10d12 + INT void | Conjures a sphere of absolute void that collapses on a single enemy, unmaking them with devastating force. |
 
 <!-- END GENERATED: spells -->
 

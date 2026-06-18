@@ -66,15 +66,52 @@ def cell(v) -> str:
     return str(v).replace("|", r"\|").replace("\n", " ").strip()
 
 
-def where_label(spell: dict) -> str:
-    """Map `usable_in` to the player-facing Where column. An empty list
-    means the spell is only castable from a contextual surface (Knock from
-    the locked-door dialog), shown as `context`."""
-    usable = spell.get("usable_in") or []
-    if isinstance(usable, str):
-        usable = [usable]
-    usable = [u for u in usable if u]
-    return ", ".join(usable) if usable else "context"
+STAT_ABBR = {"intelligence": "INT", "wisdom": "WIS", "strength": "STR",
+             "dexterity": "DEX", "constitution": "CON", "charisma": "CHA"}
+
+
+def _dice(p: dict) -> str:
+    """`{n}d{s} + STAT` from a params block, blank when no dice present."""
+    n, s = p.get("dice_count"), p.get("dice_sides")
+    if not n or not s:
+        return ""
+    out = f"{n}d{s}"
+    stat = p.get("stat_bonus")
+    if stat:
+        out += f" + {STAT_ABBR.get(stat, stat[:3].upper())}"
+    return out
+
+
+def roll_label(spell: dict) -> str:
+    """Player-facing Damage / effect roll for the spell, derived from its
+    `action` + `action_params`. Damage and heal spells show their dice
+    (`{n}d{s} + STAT`); percentage heals/revives show the percent restored.
+    Spells with no roll (buffs, status effects, utility) show a dash."""
+    action = spell.get("action")
+    p = spell.get("action_params") or {}
+
+    if action in ("damage", "aoe_damage"):
+        roll = _dice(p)
+        dmg_type = p.get("damage_type")
+        if dmg_type:
+            roll += f" {dmg_type}"
+        if p.get("vs_undead_multiplier"):
+            roll += f" (×{p['vs_undead_multiplier']:g} vs undead)"
+        return roll
+    if action == "heal":
+        roll = _dice(p)
+        return f"{roll} healed" if roll else ""
+    if action == "revive":
+        pct = p.get("heal_percent")
+        return f"{round(pct * 100)}% HP revived" if pct else "revive"
+    if action == "restore":
+        parts = []
+        if p.get("heal_percent"):
+            parts.append(f"{round(p['heal_percent'] * 100)}% HP")
+        if p.get("mp_percent"):
+            parts.append(f"{round(p['mp_percent'] * 100)}% MP")
+        return " / ".join(parts) + " restored" if parts else "restore"
+    return "—"
 
 
 # ── Bucketing + ordering ─────────────────────────────────────────────
@@ -93,8 +130,8 @@ def spell_table(spells: list[dict]) -> str:
     """One casting catalog's spells as a table, ordered by min level then
     MP cost so the list reads as a level-up progression."""
     rows = [
-        "| Spell | MP | Min Lvl | Range | Targeting | Where | Description |",
-        "|---|---:|---:|---:|---|---|---|",
+        "| Spell | MP | Min Lvl | Range | Damage / Roll | Description |",
+        "|---|---:|---:|---:|---|---|",
     ]
     spells = sorted(
         spells,
@@ -108,8 +145,8 @@ def spell_table(spells: list[dict]) -> str:
         rows.append(
             f"| **{cell(s.get('name', s.get('id')))}** "
             f"| {num(s.get('mp_cost'))} | {num(s.get('min_level'))} "
-            f"| {num(s.get('range'))} | {cell(s.get('targeting'))} "
-            f"| {cell(where_label(s))} | {cell(s.get('description'))} |"
+            f"| {num(s.get('range'))} | {cell(roll_label(s))} "
+            f"| {cell(s.get('description'))} |"
         )
     return "\n".join(rows)
 
@@ -124,10 +161,11 @@ def build_section(spells: list[dict]) -> str:
 
     intro = (
         "Spells are MP-cost actions castable by classes that have a matching "
-        "`casting_type`. The `Where` column tells you where the spell can be "
-        "cast — `battle`, `party`, or `context` (contextual surfaces like the "
-        "locked-door dialog). _(This section is generated from "
-        "`spells.json`; edit the data, not the prose here.)_"
+        "`casting_type`. The `Damage / Roll` column shows the dice a spell "
+        "rolls — damage or healing as `{dice} + STAT` (e.g. `2d8 + INT`), with "
+        "percentage values for spells that restore or revive; a dash means the "
+        "spell has no roll (buffs, status effects, and utility). _(This section "
+        "is generated from `spells.json`; edit the data, not the prose here.)_"
     )
 
     out = [f"## Spells\n\n{intro}\n"]
