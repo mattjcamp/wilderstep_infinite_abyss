@@ -81,6 +81,29 @@ function asString(v: unknown): string {
   return String(v);
 }
 
+/** Humanize a snake_case id (e.g. "fast_learner" → "Fast Learner") for
+ *  display in browse columns where only the raw id is on the record. */
+function humanizeId(v: unknown): string {
+  return String(v)
+    .split("_")
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
+/** Build a compute accessor for one entry of a record's `stat_modifiers`
+ *  map, formatted as a signed modifier ("+2", "0", "-1"). Blank when the
+ *  stat is absent. */
+function statMod(stat: string): (record: Record<string, unknown>) => string {
+  return (record) => {
+    const mods = record.stat_modifiers as Record<string, unknown> | undefined;
+    if (!mods || typeof mods !== "object") return "";
+    const n = (mods as Record<string, unknown>)[stat];
+    if (typeof n !== "number") return "";
+    return n > 0 ? `+${n}` : String(n);
+  };
+}
+
 /** Format a spell's dice roll from its `action_params` (e.g. "2d8"),
  *  used by damage / aoe_damage / heal spells. Returns "" when the spell
  *  has no associated roll (buffs, teleports, summons, …). */
@@ -355,8 +378,16 @@ const DEFS: Record<ModelKey, ModelDef> = {
     docKey: "race",
     blurb: "Playable races",
     columns: [      { field: "name", label: "Name" },
-      { field: "exp_per_level", label: "XP/Lvl", format: asString },
-      { field: "effects", label: "Effects", format: (v) => (Array.isArray(v) ? v.join(", ") : "") },
+      {
+        field: "abilities",
+        label: "Abilities",
+        format: (v) => (Array.isArray(v) ? v.map(humanizeId).join(", ") : ""),
+      },
+      { field: "stat_modifiers.strength", label: "STR", compute: statMod("strength") },
+      { field: "stat_modifiers.dexterity", label: "DEX", compute: statMod("dexterity") },
+      { field: "stat_modifiers.constitution", label: "CON", compute: statMod("constitution") },
+      { field: "stat_modifiers.intelligence", label: "INT", compute: statMod("intelligence") },
+      { field: "stat_modifiers.wisdom", label: "WIS", compute: statMod("wisdom") },
     ],
   },
   map_tiles: {

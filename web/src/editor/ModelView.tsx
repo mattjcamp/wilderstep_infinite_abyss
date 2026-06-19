@@ -1215,12 +1215,29 @@ function recordMatchesQuery(
   return hay.join("  ").toLowerCase().includes(q);
 }
 
+/** Read a column's value off a record, supporting dotted paths
+ *  (e.g. "stat_modifiers.strength") for columns whose display is driven
+ *  by a `compute` accessor over a nested object. A plain key falls back
+ *  to a direct lookup, preserving the original behavior. */
+function resolveField(r: Record_, field: string): unknown {
+  if (!field.includes(".")) return r[field];
+  return field
+    .split(".")
+    .reduce<unknown>(
+      (o, k) =>
+        o != null && typeof o === "object"
+          ? (o as Record<string, unknown>)[k]
+          : undefined,
+      r,
+    );
+}
+
 /** Comparator for click-to-sort. Numbers sort numerically, arrays
  *  (e.g. tags) by their first entry, everything else lexically. Empty /
  *  missing values sort last so untagged rows sink to the bottom. */
 function compareByField(a: Record_, b: Record_, field: string): number {
-  const av = a[field];
-  const bv = b[field];
+  const av = resolveField(a, field);
+  const bv = resolveField(b, field);
   const aEmpty = av == null || (Array.isArray(av) && av.length === 0);
   const bEmpty = bv == null || (Array.isArray(bv) && bv.length === 0);
   if (aEmpty && bEmpty) return 0;

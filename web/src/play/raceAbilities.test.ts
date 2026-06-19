@@ -6,8 +6,10 @@ import {
   canTinker,
   findAliveMemberOfRace,
   generalStockFor,
+  tinkerStockFor,
   type RaceAbilityCharacterRef,
   type RaceAbilityCounterRef,
+  type TinkerAbilityRef,
 } from "./raceAbilities";
 import { mulberry32 } from "@/battle/rng";
 import type {
@@ -99,6 +101,17 @@ function makeItems(): StackableItemRef[] {
     // Dagger is non-stackable in the shipped items.json.
     { id: "dagger", stackable: false },
   ];
+}
+
+/** Tinker-ability fixture — its `params.tinker_items` is the sole
+ *  source of the Tinker picker's choices. Defaults to the same ids
+ *  the legacy general-store fixture exposed so the existing cases
+ *  hold under the new ability-sourced model. */
+const TINKER_STOCK = ["torch", "lockpick", "healing_herb", "arrows", "dagger"];
+function makeTinkerAbility(
+  list: ReadonlyArray<string> = TINKER_STOCK,
+): TinkerAbilityRef {
+  return { params: { tinker_items: list } };
 }
 
 function makeCounters(): RaceAbilityCounterRef[] {
@@ -339,13 +352,47 @@ describe("generalStockFor", () => {
   });
 });
 
+describe("tinkerStockFor", () => {
+  it("returns deduped ids from the ability's params.tinker_items", () => {
+    const ability = makeTinkerAbility([
+      "torch",
+      "torch",
+      "arrows",
+      "lockpick",
+    ]);
+    expect(tinkerStockFor(ability)).toEqual(["torch", "arrows", "lockpick"]);
+  });
+
+  it("returns an empty list when the ability is missing or has no list (strict)", () => {
+    expect(tinkerStockFor(null)).toEqual([]);
+    expect(tinkerStockFor(undefined)).toEqual([]);
+    expect(tinkerStockFor({})).toEqual([]);
+    expect(tinkerStockFor({ params: {} })).toEqual([]);
+    expect(tinkerStockFor(makeTinkerAbility([]))).toEqual([]);
+  });
+
+  it("refuses every item when tinker_items is empty (no implicit fallback)", () => {
+    const save = makeSave({}, [savedMember({ id: "p1" })]);
+    const r = attemptTinker(
+      save,
+      [GNOME_HERO],
+      makeTinkerAbility([]),
+      makeItems(),
+      "torch",
+      5,
+    );
+    expect(r.ok).toBe(false);
+    expect(r.message).toMatch(/isn't something/i);
+  });
+});
+
 describe("attemptTinker", () => {
   it("refuses when no Gnome is in the party", () => {
     const save = makeSave({}, [savedMember({ id: "p1" })]);
     const r = attemptTinker(
       save,
       [HUMAN_HERO],
-      makeCounters(),
+      makeTinkerAbility(),
       makeItems(),
       "torch",
       5,
@@ -359,7 +406,7 @@ describe("attemptTinker", () => {
     const r = attemptTinker(
       save,
       [GNOME_HERO],
-      makeCounters(),
+      makeTinkerAbility(),
       makeItems(),
       "torch",
       5,
@@ -368,12 +415,12 @@ describe("attemptTinker", () => {
     expect(r.message).toMatch(/already tinkered today/i);
   });
 
-  it("refuses when the requested item isn't in the general store stock", () => {
+  it("refuses when the requested item isn't in the tinker_items list", () => {
     const save = makeSave({}, [savedMember({ id: "p1" })]);
     const r = attemptTinker(
       save,
       [GNOME_HERO],
-      makeCounters(),
+      makeTinkerAbility(),
       makeItems(),
       "holy_water",
       5,
@@ -390,7 +437,7 @@ describe("attemptTinker", () => {
     const r = attemptTinker(
       save,
       [GNOME_HERO],
-      makeCounters(),
+      makeTinkerAbility(),
       makeItems(),
       "torch",
       5,
@@ -408,7 +455,7 @@ describe("attemptTinker", () => {
     const r = attemptTinker(
       save,
       [GNOME_HERO],
-      makeCounters(),
+      makeTinkerAbility(),
       makeItems(),
       "lockpick",
       5,
@@ -422,7 +469,7 @@ describe("attemptTinker", () => {
     const r = attemptTinker(
       save,
       [GNOME_HERO],
-      makeCounters(),
+      makeTinkerAbility(),
       makeItems(),
       "arrows",
       5,
@@ -443,7 +490,7 @@ describe("attemptTinker", () => {
     const r = attemptTinker(
       save,
       [GNOME_HERO],
-      makeCounters(),
+      makeTinkerAbility(),
       makeItems(),
       "arrows",
       5,

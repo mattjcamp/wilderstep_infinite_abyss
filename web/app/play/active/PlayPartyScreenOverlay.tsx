@@ -49,7 +49,7 @@ import {
 import {
   attemptTinker,
   canTinker,
-  generalStockFor,
+  tinkerStockFor,
   type RaceAbilityCharacterRef,
 } from "@/play/raceAbilities";
 import {
@@ -548,7 +548,9 @@ export function PlayPartyScreenOverlay({
       const result = attemptTinker(
         liveSave,
         state.characters as ReadonlyArray<RaceAbilityCharacterRef>,
-        state.counters,
+        // The Tinker choices come from the ability's own `tinker_items`
+        // list now (curated in the editor), not the General Store.
+        state.abilities.find((a) => a.id === "tinker"),
         // Pass the catalog straight through. PartyItemRef already
         // carries `stackable` + `charges`, so the bundle helper reads
         // the right values and there's no hand-picked subset that can
@@ -1962,12 +1964,15 @@ export function PlayPartyScreenOverlay({
       ) : null}
       {/* Tinker item picker — opens when the player clicks the
        *  Tinker button on the actions strip above the Party
-       *  screen. Lists the General Store stock; clicking an item
-       *  runs the helper, surfaces the result in the cast-message
-       *  banner, and closes the picker. */}
+       *  screen. Lists the Tinker ability's own `tinker_items`
+       *  (curated in the editor); clicking an item runs the helper,
+       *  surfaces the result in the cast-message banner, and closes
+       *  the picker. */}
       {pendingTinker && state.kind === "ok" ? (
         <TinkerPicker
-          stockIds={generalStockFor(state.counters)}
+          stockIds={tinkerStockFor(
+            state.abilities.find((a) => a.id === "tinker"),
+          )}
           items={state.items}
           onPick={handleTinkerPick}
           onCancel={() => setPendingTinker(false)}

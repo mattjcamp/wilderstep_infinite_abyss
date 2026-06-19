@@ -229,10 +229,11 @@ export function canTinker(
 
 /** Deduped list of item ids the General Store stocks, sourced from
  *  the counters catalog's `general` entry. Items may repeat in the
- *  source (counters use repetition for purchase-weight); the Tinker
- *  picker only needs each id once. Returns an empty array when no
- *  general counter exists (a module that ships no general store
- *  can't tinker — graceful no-op). */
+ *  source (counters use repetition for purchase-weight); callers
+ *  only need each id once. Returns an empty array when no general
+ *  counter exists. NOTE: Tinker no longer uses this — its choices
+ *  come from the ability's own `tinker_items` list (see
+ *  `tinkerStockFor`). Kept as a general-purpose stock util. */
 export function generalStockFor(
   counters: ReadonlyArray<RaceAbilityCounterRef>,
 ): ReadonlyArray<string> {
@@ -248,20 +249,53 @@ export function generalStockFor(
   return out;
 }
 
+/** Minimal Tinker-ability shape — only the bit `tinkerStockFor`
+ *  reads. The play host hands the loaded `tinker` ability record
+ *  (from abilities.json) straight in; anything without a
+ *  `params.tinker_items` array yields an empty stock. */
+export interface TinkerAbilityRef {
+  params?: Record<string, unknown> | null;
+}
+
+/** Deduped list of item ids the Tinker ability can fashion, read
+ *  from the ability's `params.tinker_items`. This is now the single
+ *  source of truth for the Tinker picker's choices (replacing the
+ *  General Store stock). Returns an empty array when the ability is
+ *  missing or defines no list — an empty list means the Gnome has
+ *  nothing to tinker (strict: no implicit fallback). */
+export function tinkerStockFor(
+  ability: TinkerAbilityRef | null | undefined,
+): ReadonlyArray<string> {
+  const params = ability?.params;
+  const list =
+    params && typeof params === "object"
+      ? (params as Record<string, unknown>).tinker_items
+      : undefined;
+  if (!Array.isArray(list)) return [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const id of list) {
+    if (typeof id !== "string" || seen.has(id)) continue;
+    seen.add(id);
+    out.push(id);
+  }
+  return out;
+}
+
 /** Run one Tinker attempt for the named item. Returns the new save
  *  with the item added to the stash + `last_tinker_day` stamped, or
  *  a refusal with the appropriate message. Validates:
  *
  *    - An alive Gnome must be in the party.
  *    - `currentDay > save.party.last_tinker_day` (once per in-game day).
- *    - `itemId` must be in the general store's stock list — guards
- *      against a stale picker forwarding an item the module no
- *      longer carries.
+ *    - `itemId` must be in the Tinker ability's `tinker_items` list —
+ *      guards against a stale picker forwarding an item the module
+ *      no longer offers. An empty/absent list refuses everything.
  */
 export function attemptTinker(
   save: WorldSave,
   characters: ReadonlyArray<RaceAbilityCharacterRef>,
-  counters: ReadonlyArray<RaceAbilityCounterRef>,
+  tinkerAbility: TinkerAbilityRef | null | undefined,
   items: ReadonlyArray<StackableItemRef>,
   itemId: string,
   currentDay: number,
@@ -279,7 +313,7 @@ export function attemptTinker(
       message: `${gnome.name} has already tinkered today — try again tomorrow.`,
     };
   }
-  const stock = generalStockFor(counters);
+  const stock = tinkerStockFor(tinkerAbility);
   if (!stock.includes(itemId)) {
     return {
       ok: false,

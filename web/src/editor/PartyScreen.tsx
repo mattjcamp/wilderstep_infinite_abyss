@@ -164,6 +164,10 @@ export interface PartyAbilityRef {
    *  out-of-combat actions surfaced as a Use button on the character
    *  sheet. Absent / empty = passive. */
   usable_in?: string[];
+  /** Per-ability knob bag (mirrors the data model's `params`). Carried
+   *  through so play-side helpers can read ability-specific config —
+   *  e.g. Tinker's `tinker_items` list that drives its item picker. */
+  params?: Record<string, unknown> | null;
 }
 
 export interface PartyItemRef {

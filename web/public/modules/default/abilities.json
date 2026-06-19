@@ -162,14 +162,20 @@
       "name": "Tinker",
       "animation_id": null,
       "type": "race",
-      "description": "Once per in-game day, fashion any single item normally found in a general store.",
+      "description": "Once per in-game day, fashion a small trinket",
       "duration": "permanent",
+      "params": {
+        "uses_per_day": 1,
+        "tinker_items": [
+          "torch",
+          "iron_key",
+          "lockpick",
+          "dagger"
+        ]
+      },
       "usable_in": [
         "party"
-      ],
-      "params": {
-        "uses_per_day": 1
-      }
+      ]
     },
     {
       "id": "fast_learner",
@@ -187,11 +193,11 @@
       "name": "Nimble",
       "animation_id": null,
       "type": "race",
-      "description": "Allows extra movement, and the ability to move after an attack",
+      "description": "Allows extra movement",
       "duration": "permanent",
       "params": {
-        "extra_range": 3,
-        "post_attack_range": 2
+        "extra_range": 4,
+        "post_attack_range": 0
       }
     },
     {

@@ -22,12 +22,13 @@
       "name": "Dwarf",
       "description": "Stout and hardy, dwarves are natural miners and warriors with keen underground senses.",
       "stat_modifiers": {
-        "strength": 2,
-        "dexterity": -1,
+        "strength": 0,
+        "dexterity": -2,
         "constitution": 2,
-        "intelligence": 0,
-        "wisdom": 1
+        "intelligence": -1,
+        "wisdom": 0
       },
+      "exp_per_level": null,
       "abilities": [
         "infravision"
       ]
@@ -40,9 +41,10 @@
         "strength": -2,
         "dexterity": 2,
         "constitution": 0,
-        "intelligence": 0,
-        "wisdom": 1
+        "intelligence": -1,
+        "wisdom": 0
       },
+      "exp_per_level": null,
       "abilities": [
         "pickpocket"
       ]
@@ -52,11 +54,11 @@
       "name": "Elf",
       "description": "Graceful and keen-minded, elves have a natural affinity for magic and sharp senses.",
       "stat_modifiers": {
-        "strength": -1,
-        "dexterity": 1,
+        "strength": -2,
+        "dexterity": 0,
         "constitution": -1,
-        "intelligence": 2,
-        "wisdom": 0
+        "intelligence": 0,
+        "wisdom": 2
       },
       "exp_per_level": null,
       "abilities": [
@@ -68,12 +70,13 @@
       "name": "Gnome",
       "description": "Clever and curious, gnomes combine a knack for tinkering with innate magical talent.",
       "stat_modifiers": {
-        "strength": -1,
-        "dexterity": 0,
+        "strength": -2,
+        "dexterity": -1,
         "constitution": 0,
         "intelligence": 2,
-        "wisdom": 1
+        "wisdom": 0
       },
+      "exp_per_level": null,
       "abilities": [
         "tinker"
       ]

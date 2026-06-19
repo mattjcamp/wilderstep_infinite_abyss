@@ -892,8 +892,8 @@ export function pickpocket(
 // use it (pickpocket loot tables, future tinker variants).
 
 /**
- * A Gnome tinkers up an item the player picked from the general
- * store stock. Gated to once per in-game day: the caller passes the
+ * A Gnome tinkers up an item the player picked from the Tinker
+ * ability's item list. Gated to once per in-game day: the caller passes the
  * current `dayIndex` from GameTime, and we refuse when it matches
  * `party.last_tinker_day`. Mirrors the old random-pick version's
  * spirit ("a Gnome reaches into a cluttered pouch and pulls out
@@ -904,10 +904,10 @@ export function pickpocket(
  * Refuses when:
  *   - No Gnome is in `members` (active party).
  *   - The party already tinkered today (`lastTinkerDay === currentDay`).
- *   - `itemName` isn't in the supplied general-store catalog
- *     (`generalStock`). The caller is expected to source this from
- *     counters.json's "general" entry; we don't trust the picker
- *     UI to forward only valid names since save data could go
+ *   - `itemName` isn't in the supplied `tinkerStock`. The caller is
+ *     expected to source this from the Tinker ability's own
+ *     `params.tinker_items` list (abilities.json); we don't trust the
+ *     picker UI to forward only valid names since save data could go
  *     stale across module updates.
  *
  * On success, adds the item to the shared stash via `addToStash`
@@ -916,15 +916,15 @@ export function pickpocket(
  * until the clock rolls into tomorrow.
  *
  * `items` is the live items catalog (loaded from items.json) — used
- * to drive stackable behaviour. `generalStock` is the deduped set
- * of item names from counters.json's "general.items" array.
+ * to drive stackable behaviour. `tinkerStock` is the deduped set of
+ * item ids from the Tinker ability's `params.tinker_items`.
  */
 export function tinker(
   party: Party,
   members: PartyMember[],
   itemName: string,
   currentDay: number,
-  generalStock: ReadonlySet<string>,
+  tinkerStock: ReadonlySet<string>,
   items: Map<string, Item>,
 ): ActionResult {
   const gnome = findRace(members, "Gnome");
@@ -937,7 +937,7 @@ export function tinker(
       message: `${gnome.name} has already tinkered today — try again tomorrow.`,
     };
   }
-  if (!generalStock.has(itemName)) {
+  if (!tinkerStock.has(itemName)) {
     return {
       ok: false,
       message: `${itemName} isn't something a Gnome can tinker up.`,

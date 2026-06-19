@@ -37,7 +37,7 @@ The module provides a starting roster of ready-made characters, and you can also
 
 Characters waiting on the sidelines sit in an **Available** pool; add any of them to fill your ranks, or remove a member to send them back. You can **reorder** the party by dragging members up and down, and order matters: the member in the first slot is your **lead** — the figure shown walking the world map, and the one who acts first in battle. A common setup puts a sturdy front-liner in the lead and keeps fragile spellcasters further back.
 
-When your party is ready, choose **Begin** to enter the world. A good first party mixes durability, damage, and a little magic — a Fighter or Paladin to absorb hits, a Cleric or Wizard for spells, and a Thief or Ranger to handle locks and traps.
+When your party is ready, choose **Begin** to enter the world. A good first party mixes durability, damage, and a little magic — a Fighter or Paladin to absorb hits, a Cleric or Wizard for spells, and a Thief to handle locks and traps (a Ranger can spot traps too).
 
 ### Navigating the Map
 
@@ -167,16 +167,19 @@ Class determines combat role, movement range per turn, which weapons and armor t
 
 A class's full weapon and armor list appears in its entry in the Class Gallery below.
 
+<!-- BEGIN GENERATED: class-comparison — run `python3 docs/manual/build_class_gallery.py` to refresh -->
+
 | Class | Range | Casting | Abilities (min level) |
 |---|---:|---|---|
-| **Alchemist** | 4 | sorcerer | Herbalism (L1)<br/>Brew Potion (L1) |
+| **Alchemist** | 2 | sorcerer | Brew Potion (L1)<br/>Herbalism (L1) |
 | **Cleric** | 4 | priest | Turn Undead (L2) |
 | **Druid** | 2 | sorcerer, priest | Dual Casting (L1)<br/>Herbalism (L1) |
 | **Fighter** | 4 | none | — |
-| **Paladin** | 4 | priest | Turn Undead (L5)<br/>Smite Undead (L1) |
-| **Ranger** | 4 | priest | Pick Locks (L5)<br/>Craft Arrows (L2)<br/>Craft Fire Arrows (L5) |
-| **Thief** | 6 | none | Pick Locks (L1)<br/>Detect Traps (L1)<br/>Backstab (L3)<br/>Shadow Step (L7) |
+| **Paladin** | 4 | priest | Smite Undead (L1)<br/>Turn Undead (L5) |
+| **Ranger** | 4 | priest | Craft Arrows (L2)<br/>Craft Fire Arrows (L5) |
+| **Thief** | 6 | none | Detect Traps (L1)<br/>Pick Locks (L1)<br/>Backstab (L3)<br/>Shadow Step (L7) |
 | **Wizard** | 2 | sorcerer | — |
+<!-- END GENERATED: class-comparison -->
 
 ### Experience & Leveling
 

@@ -176,7 +176,7 @@
       "abilities": [
         {
           "ability_id": "turn_undead",
-          "min_level": 5
+          "min_level": 3
         },
         {
           "ability_id": "smite_undead",

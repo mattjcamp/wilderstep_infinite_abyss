@@ -52,6 +52,16 @@ LEVEL_BEGIN = (
 )
 LEVEL_END = "<!-- END GENERATED: leveling-table -->"
 
+# Third generated block: the at-a-glance comparison table at the top of the
+# Character Classes section (Class · Range · Casting · Abilities). It used
+# to be hand-maintained and drifted from the data, so it's now driven by
+# character_classes.json like everything else.
+COMP_BEGIN = (
+    "<!-- BEGIN GENERATED: class-comparison — "
+    "run `python3 docs/manual/build_class_gallery.py` to refresh -->"
+)
+COMP_END = "<!-- END GENERATED: class-comparison -->"
+
 # Armor item_types in ascending protection order (per the data dictionary).
 ARMOR_TIERS = ["cloth", "leather", "chain", "plate", "exotic"]
 ARMOR_SET = set(ARMOR_TIERS)
@@ -101,6 +111,50 @@ def abilities_label(abilities: list[dict], names: dict[str, str]) -> str:
         lvl = a.get("min_level", 1)
         parts.append(f"{names.get(aid, aid)} (L{lvl})")
     return ", ".join(parts)
+
+
+def abilities_label_multiline(abilities: list[dict], names: dict[str, str]) -> str:
+    """Same data as `abilities_label`, but stacked with <br/> for the
+    narrow Abilities cell of the comparison table."""
+    if not abilities:
+        return "—"
+    rows = sorted(
+        abilities,
+        key=lambda a: (a.get("min_level", 1), names.get(a.get("ability_id", ""), "")),
+    )
+    return "<br/>".join(
+        f"{names.get(a.get('ability_id', ''), a.get('ability_id', ''))} "
+        f"(L{a.get('min_level', 1)})"
+        for a in rows
+    )
+
+
+def comparison_casting_label(casting_type: list[str]) -> str:
+    """Raw casting catalog(s) for the comparison table — e.g. "sorcerer",
+    "sorcerer, priest", or "none". Ordered sorcerer-before-priest so the
+    output is stable regardless of data order."""
+    cats = list(casting_type or [])
+    if not cats:
+        return "none"
+    order = [c for c in ("sorcerer", "priest") if c in cats]
+    order += [c for c in cats if c not in ("sorcerer", "priest")]
+    return ", ".join(order)
+
+
+def comparison_table(classes: list[dict], names: dict[str, str]) -> str:
+    """The at-a-glance Class · Range · Casting · Abilities table. Sorted
+    alphabetically by display name to match the Class Gallery below it."""
+    rows = [
+        "| Class | Range | Casting | Abilities (min level) |",
+        "|---|---:|---|---|",
+    ]
+    for c in sorted(classes, key=lambda c: c.get("name", c["id"]).lower()):
+        name = c.get("name", c["id"])
+        rng = _esc_cell(str(c.get("range", "?")))
+        casting = _esc_cell(comparison_casting_label(c.get("casting_type", [])))
+        abil = abilities_label_multiline(c.get("abilities", []), names)
+        rows.append(f"| **{name}** | {rng} | {casting} | {abil} |")
+    return "\n".join(rows)
 
 
 def _esc_cell(s: str) -> str:
@@ -246,6 +300,17 @@ def main() -> None:
             "build-class-gallery: NOTE — leveling-table markers not found; "
             "skipped that block. Add them once in the Experience & Leveling "
             "section to enable it."
+        )
+
+    # ── Class comparison table block ─────────────────────────────────
+    replaced = _replace_block(new, COMP_BEGIN, COMP_END, comparison_table(classes, names))
+    if replaced is not None:
+        new = replaced
+    else:
+        print(
+            "build-class-gallery: NOTE — class-comparison markers not found; "
+            "skipped that block. Add them once around the Class · Range · "
+            "Casting · Abilities table to enable it."
         )
 
     if new != md:

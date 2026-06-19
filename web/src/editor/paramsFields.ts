@@ -89,6 +89,11 @@ const ABILITIES_PARAMS: ParamsFieldConfig = {
       source: { kind: "catalog", model: "map_tiles" },
       help: "Tile ids the ability works on (Herbalism foraging terrain).",
     },
+    tinker_items: {
+      kind: "id_list",
+      source: { kind: "catalog", model: "items" },
+      help: "Items a Gnome can tinker up — the choices the Tinker picker offers (replaces the old General Store stock).",
+    },
     sfx: {
       kind: "enum",
       options: SFX_NAMES,
