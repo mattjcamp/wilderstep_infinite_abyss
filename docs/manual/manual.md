@@ -153,13 +153,16 @@ Each race grants a set of innate abilities and applies stat modifiers when a cha
 
 Most races level up at the same rate. The exception is the **Fast Learner** ability (Humans): a character with it levels up about **25% faster** than everyone else. See [Experience & Leveling](#experience--leveling) under Character Classes for how leveling works.
 
+<!-- BEGIN GENERATED: races — run `python3 docs/manual/build_races_abilities.py` to refresh -->
+
 | Race | STR | DEX | CON | INT | WIS | Abilities |
 |---|---:|---:|---:|---:|---:|---|
-| **Dwarf** | +2 | -1 | +2 | 0 | +1 | Infravision |
-| **Elf** | -1 | +1 | -1 | +2 | 0 | Nimble |
-| **Gnome** | -1 | 0 | 0 | +2 | +1 | Tinker |
-| **Halfling** | -2 | +2 | 0 | 0 | +1 | Pickpocket |
+| **Dwarf** | 0 | -2 | +2 | -1 | 0 | Infravision |
+| **Elf** | -2 | 0 | -1 | 0 | +2 | Nimble |
+| **Gnome** | -2 | -1 | 0 | +2 | 0 | Tinker |
+| **Halfling** | -2 | +2 | 0 | -1 | 0 | Pickpocket |
 | **Human** | 0 | 0 | 0 | 0 | 0 | Fast Learner |
+<!-- END GENERATED: races -->
 
 ## Character Classes
 
@@ -175,7 +178,7 @@ A class's full weapon and armor list appears in its entry in the Class Gallery b
 | **Cleric** | 4 | priest | Turn Undead (L2) |
 | **Druid** | 2 | sorcerer, priest | Dual Casting (L1)<br/>Herbalism (L1) |
 | **Fighter** | 4 | none | — |
-| **Paladin** | 4 | priest | Smite Undead (L1)<br/>Turn Undead (L5) |
+| **Paladin** | 4 | priest | Smite Undead (L1)<br/>Turn Undead (L3) |
 | **Ranger** | 4 | priest | Craft Arrows (L2)<br/>Craft Fire Arrows (L5) |
 | **Thief** | 6 | none | Detect Traps (L1)<br/>Pick Locks (L1)<br/>Backstab (L3)<br/>Shadow Step (L7) |
 | **Wizard** | 2 | sorcerer | — |
@@ -299,7 +302,7 @@ A holy warrior who fights on the front line and channels divine power. Paladins 
 
 | Move | Casting | Weapons & Armor | Abilities |
 |:--:|:--|:--|:--|
-| 4 | Priest | 10 weapon types · up to chain armor | Smite Undead (L1), Turn Undead (L5) |
+| 4 | Priest | 10 weapon types · up to chain armor | Smite Undead (L1), Turn Undead (L3) |
 
 #### Ranger
 
@@ -355,12 +358,14 @@ Abilities are named capabilities granted by Race or Class (or other sources). Th
 
 ### Class Abilities
 
+<!-- BEGIN GENERATED: class-abilities — run `python3 docs/manual/build_races_abilities.py` to refresh -->
+
 | Ability | Description | Where | Duration |
 |---|---|---|---|
 | **Backstab** | Critical hits with daggers on a successful DEX save — the humble dagger becomes a devastating weapon. | passive | permanent |
 | **Brew Potion** | Combine regents using the guidance of a recipe to create a potion | party |  |
 | **Craft Arrows** | Allows the character to craft a bundle of arrows or bolts once per day. | party |  |
-| **Craft Fire Arrows** | Allows the character to craft a bundle of fire arrows once per day. | party |  |
+| **Craft Fire Arrows** | Allows the character to craft a bundle of fire arrows or fire bolts once per day. | party |  |
 | **Detect Traps** | Hidden traps are revealed before the party steps on them. | passive | permanent |
 | **Dual Casting** | Access to both the priest and sorcerer spell catalogs — the only class with both. | passive | permanent |
 | **Herbalism** | Nature lore spots reagents in the wild while travelling. Each step on a foraging tile (grass, forest, …) has a small chance to turn up a potion reagent. Alchemists in particular benefit from a doubled find rate. | passive | permanent |
@@ -368,16 +373,20 @@ Abilities are named capabilities granted by Race or Class (or other sources). Th
 | **Shadow Step** | Move after attacking — true hit-and-run play. | passive | permanent |
 | **Smite Undead** | Attacks against undead creatures deal double damage | passive |  |
 | **Turn Undead** | Channel holy energy at every undead on the battlefield. Each one must make a Wisdom save (d20 + WIS mod vs DC 10 + caster's WIS mod) or be destroyed outright; those that succeed are still seared for 50% of their HP in radiant damage. Powerful undead (vampires, liches, …) add their turn resistance to the save and are never destroyed outright — on a failed save they are seared and TURNED, fleeing the holy light for 1d4 turns. | battle | instant |
+<!-- END GENERATED: class-abilities -->
 
 ### Race Abilities
+
+<!-- BEGIN GENERATED: race-abilities — run `python3 docs/manual/build_races_abilities.py` to refresh -->
 
 | Ability | Description | Where | Duration |
 |---|---|---|---|
 | **Fast Learner** | Requires only 1125 XP per level instead of the standard 1500, leveling up roughly 25% faster than other races. | passive | permanent |
 | **Infravision** | Pierces darkness, revealing the world in shades of red. The bearer can see in absolute darkness without needing a torch. | passive | permanent |
-| **Nimble** | Allows extra movement, and the ability to move after an attack | passive | permanent |
+| **Nimble** | Allows extra movement | passive | permanent |
 | **Pickpocket** | Attempt to steal items from town NPCs. Once per NPC, with a chance of failure. | party | permanent |
-| **Tinker** | Once per in-game day, fashion any single item normally found in a general store. | party | permanent |
+| **Tinker** | Once per in-game day, fashion a small trinket | party | permanent |
+<!-- END GENERATED: race-abilities -->
 
 <!-- BEGIN GENERATED: spells — run `python3 docs/manual/build_spells.py` to refresh -->
 

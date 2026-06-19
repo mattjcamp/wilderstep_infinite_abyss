@@ -3,12 +3,13 @@
 
 Runs every generator in order:
 
-  1. build_class_gallery.py — refreshes the Class Gallery block
-  2. build_items.py         — refreshes the Items section
-  3. build_monsters.py      — refreshes the Monsters section
-  4. build_spells.py        — refreshes the Spells section
-     (1–4 each rewrite only their own marked block in manual.md)
-  5. build_manual.py        — renders manual.md → manual.pdf
+  1. build_class_gallery.py    — refreshes the Class Gallery + comparison
+  2. build_races_abilities.py  — refreshes the Races + Abilities tables
+  3. build_items.py            — refreshes the Items section
+  4. build_monsters.py         — refreshes the Monsters section
+  5. build_spells.py           — refreshes the Spells section
+     (1–5 each rewrite only their own marked block(s) in manual.md)
+  6. build_manual.py           — renders manual.md → manual.pdf
 
 Run:  python3 docs/manual/build_all.py
 
@@ -26,6 +27,7 @@ HERE = Path(__file__).resolve().parent
 
 STEPS = [
     "build_class_gallery.py",
+    "build_races_abilities.py",
     "build_items.py",
     "build_monsters.py",
     "build_spells.py",
