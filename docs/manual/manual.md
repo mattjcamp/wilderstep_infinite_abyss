@@ -179,7 +179,7 @@ A class's full weapon and armor list appears in its entry in the Class Gallery b
 | **Druid** | 2 | sorcerer, priest | Dual Casting (L1)<br/>Herbalism (L1) |
 | **Fighter** | 4 | none | — |
 | **Paladin** | 4 | priest | Smite Undead (L1)<br/>Turn Undead (L3) |
-| **Ranger** | 4 | priest | Craft Arrows (L2)<br/>Craft Fire Arrows (L5) |
+| **Ranger** | 4 | priest | Craft Arrows (L2)<br/>Craft Fire Arrows (L3) |
 | **Thief** | 6 | none | Detect Traps (L1)<br/>Pick Locks (L1)<br/>Backstab (L3)<br/>Shadow Step (L7) |
 | **Wizard** | 2 | sorcerer | — |
 <!-- END GENERATED: class-comparison -->
@@ -317,7 +317,7 @@ A wilderness hunter built around ranged combat. Rangers favor bows — the cross
 
 | Move | Casting | Weapons & Armor | Abilities |
 |:--:|:--|:--|:--|
-| 4 | Priest | 8 weapon types · up to leather armor | Craft Arrows (L2), Craft Fire Arrows (L5) |
+| 4 | Priest | 8 weapon types · up to leather armor | Craft Arrows (L2), Craft Fire Arrows (L3) |
 
 #### Thief
 
