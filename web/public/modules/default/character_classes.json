@@ -213,7 +213,7 @@
         },
         {
           "ability_id": "craft_fire_arrows",
-          "min_level": 5
+          "min_level": 3
         }
       ]
     },

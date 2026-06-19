@@ -34,6 +34,8 @@ import { DialogsEditor } from "./DialogsEditor";
 import { npcDialogLinesForEditing } from "@/data_model/npcDialogs";
 import { IdListPicker } from "./IdListPicker";
 import { getIdListFieldConfig } from "./idListFields";
+import { InventoryEditor, type InventoryEntry } from "./InventoryEditor";
+import { getInventoryFieldConfig } from "./inventoryFields";
 import { KeyMapEditor } from "./KeyMapEditor";
 import { getKeyMapFieldConfig } from "./keyMapFields";
 import { ParamsEditor } from "./ParamsEditor";
@@ -79,6 +81,10 @@ function inferKind(
   // Id-list fields are always JSON (string arrays) so the picker can
   // render even when the record's current value is null.
   if (getIdListFieldConfig(key, modelKey) !== null) return "json";
+  // Inventory fields are JSON ({ item, charges }[]) so the editor can
+  // render — and so submit re-parses the string back into an array —
+  // even when the record's current value is null/empty.
+  if (getInventoryFieldConfig(key, modelKey) !== null) return "json";
   // Key-map fields (reagents, stat_modifiers, equipped) likewise.
   if (getKeyMapFieldConfig(key, modelKey) !== null) return "json";
   // Params fields (effects/abilities/traps params, spell action
@@ -338,6 +344,48 @@ function FieldRow({
               allowDuplicates={idListCfg.allowDuplicates}
               help={idListCfg.help}
               onChange={(next) => onChange(JSON.stringify(next))}
+            />
+          </div>
+        );
+      }
+    }
+  }
+  // Inventory fields ({ item, charges }[]) render the InventoryEditor —
+  // an item picker (with sprites) + a per-row quantity — instead of a
+  // raw JSON textarea. A value that isn't an array of `{ item: string }`
+  // objects (legacy hand-edits) falls through to the textarea so it
+  // stays editable.
+  {
+    const invCfg = getInventoryFieldConfig(spec.key, modelKey);
+    if (invCfg) {
+      let entries: InventoryEntry[] | null = null;
+      try {
+        const parsed = value.trim() === "" ? [] : JSON.parse(value);
+        if (parsed === null) entries = [];
+        else if (
+          Array.isArray(parsed) &&
+          parsed.every(
+            (x) =>
+              x !== null &&
+              typeof x === "object" &&
+              !Array.isArray(x) &&
+              typeof (x as { item?: unknown }).item === "string",
+          )
+        ) {
+          entries = parsed as InventoryEntry[];
+        }
+      } catch {
+        entries = null;
+      }
+      if (entries !== null) {
+        return (
+          <div className="flex items-start gap-3">
+            <span className={labelClasses}>{spec.key}</span>
+            <InventoryEditor
+              value={entries}
+              moduleId={moduleId}
+              help={invCfg.help}
+              onChange={(next) => onChange(JSON.stringify(next, null, 1))}
             />
           </div>
         );

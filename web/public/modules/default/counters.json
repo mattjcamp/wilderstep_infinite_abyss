@@ -6,7 +6,6 @@
       "name": "Armor Shop",
       "description": "Sells protective armor and shields.",
       "items": [
-        "cloth",
         "leather",
         "leather",
         "leather",
@@ -38,9 +37,9 @@
         "healing_herb",
         "healing_herb",
         "healing_herb",
-        "arrows",
-        "bolts",
-        "stones",
+        "dagger",
+        "dagger",
+        "dagger",
         "dagger"
       ]
     },

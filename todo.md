@@ -1,7 +1,6 @@
 ## Remove Relics
 
 ## Enchancements
-- Add line to remove relics from the kings quest after the demon is destroyed in Emberscar
 - Amp up the animations
 - Polish existing adventures
 

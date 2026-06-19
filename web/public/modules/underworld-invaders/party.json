@@ -6,12 +6,7 @@
   },
   "avatar": "person/fighter18.png",
   "gold": 50,
-  "roster": [
-    "caramon_majere",
-    "goldmoon",
-    "tanis_half_elven",
-    "raistlin_majere"
-  ],
+  "roster": [],
   "party_effects": [],
   "inventory": [
     {
@@ -28,7 +23,7 @@
     },
     {
       "item": "camping_supplies",
-      "charges": 3
+      "charges": 2
     }
   ],
   "torch_steps": 0,

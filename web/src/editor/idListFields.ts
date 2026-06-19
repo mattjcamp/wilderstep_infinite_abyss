@@ -81,6 +81,12 @@ const PER_MODEL: Record<string, Record<string, IdListFieldConfig>> = {
       help: "Innate abilities every member of this race carries.",
     },
   },
+  party: {
+    roster: {
+      source: { kind: "catalog", model: "characters" },
+      help: "Characters that start in the party, in turn order. Each character once.",
+    },
+  },
   items: {
     slots: {
       source: { kind: "static", options: ["hands", "body"] },
