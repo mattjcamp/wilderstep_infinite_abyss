@@ -16,6 +16,9 @@ web/*.tsbuildinfo
 .env*.local
 web/.env*.local
 
+# Player's Manual build venv (docs/manual/build-manual.sh)
+docs/manual/.venv/
+
 # Logs
 npm-debug.log*
 yarn-debug.log*

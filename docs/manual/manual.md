@@ -207,9 +207,9 @@ The per-level amounts are set by class — durable martial classes gain the most
 |---|---:|---:|---|
 | **Alchemist** | 4 | 4 | Intelligence |
 | **Cleric** | 6 | 6 | Wisdom |
-| **Druid** | 6 | 6 | Int & Wis (avg) |
-| **Fighter** | 8 | — | — |
-| **Paladin** | 8 | 4 | Wisdom |
+| **Druid** | 4 | 4 | Int & Wis (avg) |
+| **Fighter** | 10 | — | — |
+| **Paladin** | 6 | 2 | Wisdom |
 | **Ranger** | 6 | 2 | Wisdom |
 | **Thief** | 6 | — | — |
 | **Wizard** | 4 | 8 | Intelligence |
@@ -236,7 +236,7 @@ A support specialist who turns the wild into an arsenal. Alchemists forage reage
 
 | Move | Casting | Weapons & Armor | Abilities |
 |:--:|:--|:--|:--|
-| 4 | Sorcerer | 4 weapon types · up to cloth armor | Brew Potion (L1), Herbalism (L1) |
+| 2 | Sorcerer | 4 weapon types · up to cloth armor | Brew Potion (L1), Herbalism (L1) |
 
 #### Cleric
 
@@ -296,14 +296,14 @@ A holy warrior who fights on the front line and channels divine power. Paladins 
 
 | Move | Casting | Weapons & Armor | Abilities |
 |:--:|:--|:--|:--|
-| 4 | Priest | 12 weapon types · up to chain armor | Smite Undead (L1), Turn Undead (L5) |
+| 4 | Priest | 10 weapon types · up to chain armor | Smite Undead (L1), Turn Undead (L5) |
 
 #### Ranger
 
 <table><tr>
 <td>
 
-A wilderness hunter built around ranged combat. Rangers favor bows — the crossbow included — and craft their own Arrows (level 2) and Fire Arrows (level 5) so they never run dry. They draw on a small priest catalog, pick locks from level 5, and move a nimble four tiles a turn: a self-sufficient skirmisher.
+A wilderness hunter built around ranged combat. Rangers favor bows — the crossbow included — and craft their own Arrows (level 2) and Fire Arrows (level 5) so they never run dry. They draw on a small priest catalog and move a nimble four tiles a turn: a self-sufficient skirmisher.
 
 </td>
 <td width="170"><img src="assets/portrait_ranger.png" width="150" alt="Ranger"></td>
@@ -311,7 +311,7 @@ A wilderness hunter built around ranged combat. Rangers favor bows — the cross
 
 | Move | Casting | Weapons & Armor | Abilities |
 |:--:|:--|:--|:--|
-| 4 | Priest | 8 weapon types · up to leather armor | Craft Arrows (L2), Craft Fire Arrows (L5), Pick Locks (L5) |
+| 4 | Priest | 8 weapon types · up to leather armor | Craft Arrows (L2), Craft Fire Arrows (L5) |
 
 #### Thief
 

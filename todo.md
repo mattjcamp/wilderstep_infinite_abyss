@@ -11,8 +11,12 @@
 
 # Notes
 
+cd web
+
 npm run dev:all
+npm run build:manual
 npm run dev:remote
+
 https://wilderstep.pages.dev
 rpgmaker12345678@gmail.com (@rpgmaker12345678)
 mjcampbell74@gmail.com (@matt)

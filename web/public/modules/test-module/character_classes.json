@@ -1,0 +1,42 @@
+{
+  "character_classes": [
+    {
+      "id": "paladin",
+      "name": "Paladin",
+      "description": "A holy warrior who fights on the front line and channels divine power. Paladins move four tiles a turn, wear chain and wield swords and spears, Smite Undead for double damage from level 1, and gain Turn Undead at level 5. They trade the Cleric's spell depth for martial muscle — the party's anti-undead vanguard.",
+      "range": 4,
+      "hp_per_level": 6,
+      "mp_per_level": 2,
+      "casting_type": [
+        "priest"
+      ],
+      "allowable_item_types": [
+        "fists",
+        "dagger",
+        "club",
+        "mace",
+        "sword",
+        "spear",
+        "gloves",
+        "sling",
+        "short_bow",
+        "long_bow",
+        "rock",
+        "cloth",
+        "leather",
+        "chain",
+        "wand"
+      ],
+      "abilities": [
+        {
+          "ability_id": "turn_undead",
+          "min_level": 5
+        },
+        {
+          "ability_id": "smite_undead",
+          "min_level": 1
+        }
+      ]
+    }
+  ]
+}

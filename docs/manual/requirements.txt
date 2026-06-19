@@ -1,0 +1,4 @@
+# Python dependencies for the Player's Manual build pipeline
+# (docs/manual/build_all.py and friends). Installed automatically into
+# docs/manual/.venv by build-manual.sh.
+reportlab>=4.0,<5.0

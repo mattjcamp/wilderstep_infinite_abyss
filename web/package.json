@@ -12,6 +12,7 @@
     "publish-server": "node scripts/publish-server.mjs",
     "reindex-sprites": "node scripts/reindex-sprites.mjs",
     "reindex-audio": "node scripts/reindex-audio.mjs",
+    "build:manual": "bash ../docs/manual/build-manual.sh",
     "dev:all": "node scripts/reindex-audio.mjs && (node scripts/publish-server.mjs & next dev)",
     "dev:remote": "NEXT_PUBLIC_MODULE_SOURCE=remote NEXT_PUBLIC_READ_HOST=https://wilderstep-publish-api.wilderstep.workers.dev NEXT_PUBLIC_PUBLISH_HOST=https://wilderstep-publish-api.wilderstep.workers.dev next dev",
     "build:pages": "STATIC_EXPORT=1 NEXT_PUBLIC_MODULE_SOURCE=remote NEXT_PUBLIC_READ_HOST=https://wilderstep-publish-api.wilderstep.workers.dev NEXT_PUBLIC_PUBLISH_HOST=https://wilderstep-publish-api.wilderstep.workers.dev next build"

@@ -1210,7 +1210,19 @@
               "col": 46,
               "row": 26
             }
-          ]
+          ],
+          "rewards": {
+            "return_items": [
+              "galewind_bow",
+              "meteorfall_mace",
+              "starcaller_wand",
+              "viperscale_sling",
+              "stormbolt_crossbow",
+              "sun_sword",
+              "rimefang_dagger",
+              "stoneguard_plate"
+            ]
+          }
         }
       ],
       "quest_giver": {
@@ -1221,7 +1233,11 @@
       },
       "rewards": {
         "xp": 1000,
-        "gold": 1000
+        "gold": 1000,
+        "items": [
+          "silver_bow",
+          "iron_sword"
+        ]
       }
     },
     {

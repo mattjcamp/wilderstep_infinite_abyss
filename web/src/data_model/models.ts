@@ -81,6 +81,17 @@ function asString(v: unknown): string {
   return String(v);
 }
 
+/** Format a spell's dice roll from its `action_params` (e.g. "2d8"),
+ *  used by damage / aoe_damage / heal spells. Returns "" when the spell
+ *  has no associated roll (buffs, teleports, summons, …). */
+function spellDice(record: Record<string, unknown>): string {
+  const ap = record.action_params;
+  if (!ap || typeof ap !== "object") return "";
+  const { dice_count, dice_sides } = ap as Record<string, unknown>;
+  if (dice_count === undefined || dice_sides === undefined) return "";
+  return `${dice_count}d${dice_sides}`;
+}
+
 /** Difficulty tiers in ascending order — drives the encounter browse
  *  column label and the difficulty dropdown filter. */
 export const DIFFICULTY_TIERS = ["Easy", "Normal", "Hard", "Deadly"] as const;
@@ -152,9 +163,9 @@ const DEFS: Record<ModelKey, ModelDef> = {
       // Grouped (collapsible) by `casting_type` catalog (sorcerer /
       // priest / …), so Catalog isn't its own column. Name leads.
       { field: "name", label: "Name" },
-      { field: "action", label: "Action" },
+      { field: "min_level", label: "Level", format: asString },
       { field: "mp_cost", label: "MP", format: asString },
-      { field: "min_level", label: "Min Lvl", format: asString },
+      { field: "action_params", label: "Dice", compute: spellDice },
     ],
   },
   recipes: {
@@ -325,6 +336,8 @@ const DEFS: Record<ModelKey, ModelDef> = {
     docKey: "character_class",
     blurb: "The eight playable classes",
     columns: [      { field: "name", label: "Name" },
+      { field: "hp_per_level", label: "HP", format: asString },
+      { field: "mp_per_level", label: "MP", format: asString },
       { field: "range", label: "Range", format: asString },
       {
         field: "casting_type",
