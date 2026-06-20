@@ -2,32 +2,6 @@
   "_comment": "Spawn-point catalog (real data drives the schema). Each spawn is monster-lair behavior the engine triggers when the party steps on (or near) a map cell whose tile carries this spawn's id in its `spawn` field. The binding lives on the map cell, not here — multiple cells (and multiple maps) can reuse the same Spawn. `spawn_monsters` and `boss_monsters` are Monster `id` strings (snake_case); `loot` is Item `id` strings. Duplicate entries in any of these are intentional — they control sampling weight (one Goblin five times = five times more likely). Optional `custom_map` is a Map `id` — when set, stepping into this lair's boss fight uses that authored battle map instead of the default arena.",
   "spawns": [
     {
-      "id": "monster_spawn",
-      "name": "Monster Spawn",
-      "description": "A monster lair.",
-      "spawn_monsters": [
-        "giant_rat",
-        "wolf",
-        "goblin",
-        "orc"
-      ],
-      "spawn_chance": 5,
-      "spawn_radius": 5,
-      "max_spawned": 2,
-      "boss_monsters": [
-        "goblin",
-        "orc",
-        "orc",
-        "orc"
-      ],
-      "xp_reward": 200,
-      "gold_reward": 200,
-      "loot": [
-        "arrows"
-      ],
-      "custom_map": "outdoor_arena"
-    },
-    {
       "id": "campfire_spawn",
       "name": "Campfire Spawn",
       "description": "A smoldering campfire attracts wandering creatures.",
@@ -83,68 +57,6 @@
         "arrows"
       ],
       "custom_map": "arena_graveyard"
-    },
-    {
-      "id": "dragon_lair",
-      "name": "Dragon",
-      "description": "A monster lair.",
-      "spawn_monsters": [
-        "dragon"
-      ],
-      "spawn_chance": 5,
-      "spawn_radius": 3,
-      "max_spawned": 1,
-      "boss_monsters": [
-        "dragon",
-        "wyvern",
-        "wyvern",
-        "dark_mage"
-      ],
-      "xp_reward": 1000,
-      "gold_reward": 1000,
-      "loot": [],
-      "custom_map": null
-    },
-    {
-      "id": "wyvern_lair",
-      "name": "Wyvern",
-      "description": "A monster lair.",
-      "spawn_monsters": [
-        "wyvern"
-      ],
-      "spawn_chance": 5,
-      "spawn_radius": 3,
-      "max_spawned": 2,
-      "boss_monsters": [
-        "wyvern",
-        "wyvern",
-        "dark_mage"
-      ],
-      "xp_reward": 500,
-      "gold_reward": 500,
-      "loot": [],
-      "custom_map": null
-    },
-    {
-      "id": "man_eater_spawn",
-      "name": "Man Eater Spawn",
-      "description": "An unsettling rustling sound comes from a thick bed of plants",
-      "spawn_monsters": [
-        "man_eater",
-        "man_eater"
-      ],
-      "spawn_chance": 20,
-      "spawn_radius": 3,
-      "max_spawned": 2,
-      "boss_monsters": [
-        "man_eater",
-        "man_eater",
-        "man_eater"
-      ],
-      "xp_reward": 200,
-      "gold_reward": 200,
-      "loot": [],
-      "custom_map": "outdoor_arena"
     }
   ]
 }

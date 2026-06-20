@@ -1,7 +1,7 @@
 
 ## Fine Tune
 
-- Delete most monsters other than the truly foundational ones, make sure each difficulty level has representation
+- Clean up the sprites and fine better sprites for items and monsters that were originally system designed
 - Make sure the remaining monsters are more thoughtfully designed
 - Drastically simplify the encounters
 - Audt the spawns

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Rebuild the entire player's manual in one command.
+"""Rebuild the manuals in one command.
 
 Runs every generator in order:
 
@@ -10,6 +10,9 @@ Runs every generator in order:
   5. build_spells.py           — refreshes the Spells section
      (1–5 each rewrite only their own marked block(s) in manual.md)
   6. build_manual.py           — renders manual.md → manual.pdf
+  7. build_dm_manual.py        — renders dm_manual.md → dm_manual.pdf
+     (the Dungeon Master's Manual is hand-written — no generators feed
+     it, so it's just a render step)
 
 Run:  python3 docs/manual/build_all.py
 
@@ -32,6 +35,7 @@ STEPS = [
     "build_monsters.py",
     "build_spells.py",
     "build_manual.py",
+    "build_dm_manual.py",
 ]
 
 
@@ -39,7 +43,8 @@ def main() -> None:
     for script in STEPS:
         print(f"\n── {script} " + "─" * (40 - len(script)))
         subprocess.run([sys.executable, str(HERE / script)], check=True)
-    print("\nmanual: full rebuild complete (manual.md + manual.pdf).")
+    print("\nmanual: full rebuild complete "
+          "(manual.md + manual.pdf, dm_manual.md + dm_manual.pdf).")
 
 
 if __name__ == "__main__":

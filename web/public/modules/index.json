@@ -7,11 +7,6 @@
       "role": "core"
     },
     {
-      "id": "dragon-lair",
-      "title": "The Dragon's Lair",
-      "role": "library"
-    },
-    {
       "id": "maps-mix-in",
       "title": "Maps and Buildings",
       "role": "library"

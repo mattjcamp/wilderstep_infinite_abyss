@@ -7,49 +7,45 @@
       "description": "A spring-loaded dart fires from a hidden housing. The default trap — legacy trap cells and procedural dungeon traps resolve to this record.",
       "trap_type": "damage",
       "damage_type": "piercing",
-      "damage_range": { "min": 4, "max": 9 },
+      "damage_range": {
+        "min": 4,
+        "max": 9
+      },
       "effect": null,
       "params": null
     },
     {
-      "id": "poison_dart_trap",
-      "name": "Poison Dart Trap",
-      "description": "A dart coated in greenish venom. A quick victim can twist away — half damage and no poison on a successful save.",
-      "trap_type": "damage",
-      "damage_type": "poison",
-      "damage_range": { "min": 2, "max": 6 },
-      "effect": "poisoned",
-      "params": { "targets": "one", "save_stat": "dexterity", "save_dc": 12 }
-    },
-    {
-      "id": "fire_rune_trap",
-      "name": "Fire Rune",
+      "id": "fire_trap",
+      "name": "Fire Trap",
       "description": "A glyph of searing flame that engulfs the whole party when tripped.",
       "trap_type": "damage",
       "damage_type": "fire",
-      "damage_range": { "min": 6, "max": 12 },
+      "damage_range": {
+        "min": 6,
+        "max": 12
+      },
       "effect": null,
-      "params": { "targets": "all", "save_stat": "dexterity", "save_dc": 13 }
+      "params": {
+        "targets": "all",
+        "save_stat": "dexterity",
+        "save_dc": 13
+      }
     },
     {
-      "id": "sleep_rune_trap",
-      "name": "Sleep Rune",
-      "description": "A soporific sigil — no damage, but everyone who fails the save drops into a magical slumber.",
-      "trap_type": "effect",
-      "damage_type": "magic",
-      "damage_range": null,
-      "effect": "sleep",
-      "params": { "targets": "all", "save_stat": "wisdom", "save_dc": 12 }
-    },
-    {
-      "id": "teleport_rune_trap",
-      "name": "Teleport Rune",
+      "id": "teleport_trap",
+      "name": "Teleport Trap",
       "description": "A translocation glyph that hurls the party elsewhere. Sample record — point params.teleport at your module's destination cell.",
       "trap_type": "teleport",
       "damage_type": "magic",
       "damage_range": null,
       "effect": null,
-      "params": { "teleport": { "map_id": "overview_island", "col": 5, "row": 5 } }
+      "params": {
+        "teleport": {
+          "map_id": "overview_island",
+          "col": 5,
+          "row": 5
+        }
+      }
     }
   ]
 }
