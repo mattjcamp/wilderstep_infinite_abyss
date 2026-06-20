@@ -37,20 +37,41 @@ import {
   type GridPos,
 } from "./Arena";
 import { getModifier, rollAttack, rollBonusDamage, rollD20, rollDice, rollInitiative } from "./engine";
-import {
-  sumBuff,
-  tickBuffs,
-  describeExpire,
-  type Buff,
-  type BuffKind,
-} from "./Buffs";
+import type { Buff, BuffKind } from "./Buffs";
 import type {
   AttackResult,
   Combatant,
   InitiativeRoll,
   Side,
 } from "../types";
-import type { MonsterSpell, MonsterPassive } from "../data/monsters";
+import type { MonsterSpell } from "../data/monsters";
+import {
+  applyEffect,
+  runControlledTurn,
+  turnControllingEffect,
+  tickRoundEffects,
+  applyIncomingDamageMods,
+  type ApplyEffectOptions,
+  type ActiveEffect,
+  type ConsumeEvent,
+  type EffectHost,
+} from "./effects/EffectRuntime";
+// Side-effect import: registers the `consumed` handler. Also provides
+// the swallow accessors / release helpers the engine calls directly.
+import {
+  isConsumed,
+  releaseConsumedBy,
+} from "./effects/consumedEffect";
+// Side-effect import: registers the passive handlers (regen,
+// fire_resistance, poison_immunity) onto the effect registry.
+import "./effects/passiveEffects";
+// Numeric buffs/debuffs now live in the unified effects list. These
+// helpers back the engine's public buff API; importing also registers
+// the `stat_modifier` handler that ticks buff durations.
+import { makeBuffEffect, sumBuffKind, buffsOf } from "./effects/buffEffects";
+import { spellBuffsFor } from "./effects/spellBuffs";
+
+export type { ConsumeEvent };
 
 /** Subset of MonsterSpell the dice helpers actually use. Keeping this
  *  narrow lets the helpers stay easy to test in isolation. */
@@ -81,12 +102,6 @@ function nearestInRange(
     if (d < bestDist) { best = c; bestDist = d; }
   }
   return best;
-}
-
-/** True iff the combatant carries a passive of the given kind. */
-function hasPassive(c: Combatant, kind: MonsterPassive["type"]): boolean {
-  if (!c.passives) return false;
-  return c.passives.some((p) => p.type === kind);
 }
 
 // ── Class-gated ability predicates ────────────────────────────────
@@ -163,16 +178,6 @@ export type MoveResult =
         | "already-attacked";
     };
 
-/** Events the round-end consume tick produces. The scene drains
- *  these via `popConsumeEvents()` after each `endTurn()` so it can
- *  float damage numbers / show an escape flash on the affected
- *  sprite. Without these the HP drain is invisible to the player. */
-export type ConsumeEvent =
-  | { targetId: string; kind: "applied"; consumerId: string }
-  | { targetId: string; kind: "tick"; damage: number }
-  | { targetId: string; kind: "saved" }
-  | { targetId: string; kind: "released" };
-
 /** What a monster's AI wants to do this step. */
 export type MonsterIntent =
   | { kind: "attack"; targetId: string }
@@ -199,12 +204,6 @@ export class Combat {
   private attackedThisTurn = false;
   readonly log: string[] = [];
   /**
-   * Numerical buffs / debuffs keyed by combatant id. Mirrors the
-   * Python game's bless_buffs / curse_buffs / range_buffs dicts
-   * unified into one structure. See `./Buffs.ts` for kinds.
-   */
-  private buffs = new Map<string, Buff[]>();
-  /**
    * Per-combatant summon timer (in rounds). Animate Dead and similar
    * spells push an entry here; tickSummons() decrements at end of
    * round and crumbles the summon to dust when it expires.
@@ -217,6 +216,29 @@ export class Combat {
    *  call. Drained by the scene each `endTurn()` so floating damage
    *  / escape labels animate in sync with HP changes. */
   private pendingConsumeEvents: ConsumeEvent[] = [];
+
+  /**
+   * Capability surface handed to effect handlers (see
+   * `effects/EffectRuntime.ts`). Arrow members are lazy, so referencing
+   * `this.rng` here is safe even though it's assigned in the
+   * constructor body. Keeping handlers behind this interface is what
+   * decouples them from the engine's internals.
+   */
+  private readonly effectHost: EffectHost = {
+    rng: () => this.rng(),
+    log: (line: string) => {
+      this.log.push(line);
+    },
+    combatantById: (id: string) =>
+      this.combatants.find((c) => c.id === id) ?? null,
+    findFreeTileNear: (pos) => this.findFreeTileNear(pos),
+    emitEvent: (ev) => {
+      this.pendingConsumeEvents.push(ev);
+    },
+    removeEffect: (bearer, eff) => {
+      bearer.effects = (bearer.effects ?? []).filter((e) => e !== eff);
+    },
+  };
 
   /**
    * Optional per-cell walkability predicate, supplied by the arena
@@ -489,24 +511,46 @@ export class Combat {
 
   // ── Buffs / debuffs ──────────────────────────────────────────────
 
-  /** Add a numerical buff or debuff to a combatant. */
+  /** Add a numerical buff or debuff to a combatant. Stored as a
+   *  `stat_modifier` effect in the unified effects list. */
   addBuff(combatantId: string, buff: Buff): void {
-    const list = this.buffs.get(combatantId) ?? [];
-    list.push(buff);
-    this.buffs.set(combatantId, list);
+    const c = this.byIdMaybe(combatantId);
+    if (!c) return;
+    (c.effects ??= []).push(makeBuffEffect(buff));
+  }
+
+  /**
+   * Apply a status spell's buff(s) to a combatant from the central
+   * spell→buff definitions (`effects/spellBuffs.ts`) — e.g. "bless"
+   * confers an attack-bonus buff, "curse" two penalties. The mapping +
+   * defaults live in one place; callers (the scene's cast branches) pass
+   * the spell's `effect_type`, `effect_value`, and `duration`. Returns
+   * the buffs that were applied so the caller can build its log line.
+   */
+  applySpellBuffs(
+    combatantId: string,
+    effectType: string,
+    effectValue: Record<string, unknown> | undefined,
+    duration: number | string | undefined,
+  ): Buff[] {
+    const buffs = spellBuffsFor(effectType, effectValue, duration);
+    for (const b of buffs) this.addBuff(combatantId, b);
+    return buffs;
   }
 
   /** Sum every active buff of `kind` on this combatant — handy for
    *  scenes wanting to display "+2 ATK" badges or log breakdowns. */
   sumBuff(combatantId: string, kind: BuffKind): number {
-    return sumBuff(this.buffs.get(combatantId), kind);
+    const c = this.byIdMaybe(combatantId);
+    return c ? sumBuffKind(c, kind) : 0;
   }
 
   /** Read-only view of every active buff/debuff on a combatant, in the
    *  order they were applied. Powers the combat inspector overlay's
    *  "Effects:" line; never mutated by callers. */
   buffsFor(combatantId: string): readonly Buff[] {
-    return this.buffs.get(combatantId) ?? [];
+    const c = this.byIdMaybe(combatantId);
+    return c ? buffsOf(c) : [];
   }
 
   /**
@@ -516,24 +560,22 @@ export class Combat {
    * "Invisibility" buff is in effect.
    */
   hasBuffFromSource(combatantId: string, source: string): boolean {
-    const list = this.buffs.get(combatantId);
-    if (!list) return false;
+    const c = this.byIdMaybe(combatantId);
+    if (!c) return false;
     const tag = source.toLowerCase();
-    return list.some((b) => b.source.toLowerCase() === tag);
+    return buffsOf(c).some((b) => b.source.toLowerCase() === tag);
   }
 
   /** Hit-roll bonus = base attackBonus + active attack_bonus buffs
    *  − active attack_penalty buffs. */
   effectiveAttackBonus(c: Combatant): number {
-    const list = this.buffs.get(c.id);
-    return c.attackBonus + sumBuff(list, "attack_bonus")
-                          - sumBuff(list, "attack_penalty");
+    return c.attackBonus + sumBuffKind(c, "attack_bonus")
+                          - sumBuffKind(c, "attack_penalty");
   }
 
   /** Defensive AC = base ac + ac_bonus − ac_penalty. */
   effectiveAc(c: Combatant): number {
-    const list = this.buffs.get(c.id);
-    return c.ac + sumBuff(list, "ac_bonus") - sumBuff(list, "ac_penalty");
+    return c.ac + sumBuffKind(c, "ac_bonus") - sumBuffKind(c, "ac_penalty");
   }
 
   /**
@@ -544,7 +586,7 @@ export class Combat {
    * stay explicit about which side of the calc each adds to.
    */
   effectiveDamageBonus(c: Combatant): number {
-    return sumBuff(this.buffs.get(c.id), "damage_bonus");
+    return sumBuffKind(c, "damage_bonus");
   }
 
   // ── Movement & bump-attack ───────────────────────────────────────
@@ -758,7 +800,7 @@ export class Combat {
     // Python game's `_release_consumed_fighter` triggered from
     // `_on_monster_killed`.
     if (killed) {
-      this.releaseAllConsumedBy(target.id);
+      releaseConsumedBy(this.effectHost, this.combatants, target.id);
     }
     // Detailed log line — mirrors the Python game's "(d20:N+M=T vs ACX)"
     // format so the player can see the math behind each swing. The
@@ -852,7 +894,7 @@ export class Combat {
     // members are off the board — exclude them from the AI target
     // list so a Man Eater doesn't "attack" someone in its own belly.
     const enemySide: Side = actor.side === "enemies" ? "party" : "enemies";
-    const targets = this.alive(enemySide).filter((c) => !c.consumed);
+    const targets = this.alive(enemySide).filter((c) => !isConsumed(c));
     if (targets.length === 0) return { kind: "wait" };
 
     // Turned undead (Turn Undead vs a resistant elite) — the holy
@@ -967,11 +1009,12 @@ export class Combat {
       this.cursor = (this.cursor + 1) % this.initiativeOrder.length;
       this.turnsAdvanced += 1;
       // End of a round — every combatant has had a chance to act.
-      // Tick all buff durations down once and log expirations.
+      // Summons crumble first (so a crumbling summon doesn't regen this
+      // round), then every combatant's effects tick (buff durations +
+      // expiry, regen, …).
       if (this.turnsAdvanced % this.combatants.length === 0) {
-        this.tickAllBuffs();
         this.tickSummons();
-        this.tickPassives();
+        this.tickEndOfRoundEffects();
       }
       if (this.byId(this.initiativeOrder[this.cursor].combatantId).hp > 0) {
         this.refillMovePoints();
@@ -982,19 +1025,6 @@ export class Combat {
           );
         }
         return;
-      }
-    }
-  }
-
-  /** Round-end tick. Decrements every active buff and logs expirations. */
-  private tickAllBuffs(): void {
-    for (const [id, list] of this.buffs) {
-      const expired = tickBuffs(list);
-      if (list.length === 0) this.buffs.delete(id);
-      for (const b of expired) {
-        const c = this.combatants.find((x) => x.id === id);
-        if (!c || c.hp <= 0) continue;
-        this.log.push(describeExpire(c.name, b.source));
       }
     }
   }
@@ -1022,126 +1052,58 @@ export class Combat {
   }
 
   /**
-   * End-of-round pass for monster `passives` array.
-   *
-   *   - `regen`            — heal `amount` HP, capped at maxHp.
-   *   - `fire_resistance`  — passive flag; consumed by spell damage.
-   *   - `poison_immunity`  — passive flag; consumed by future poison.
-   *
-   * Only the regen branch mutates state here; the other two are
-   * declarative flags read at damage-resolution time.
+   * End-of-round pass over every combatant's runtime effects + passive
+   * traits. The mechanics live in the effect registry now: buff
+   * durations tick + expire (`stat_modifier`), regen heals, etc. Runs
+   * over ALL combatants (buffs tick on the downed too, matching the old
+   * `tickAllBuffs`); per-effect handlers self-guard where it matters
+   * (regen skips the dead).
    */
-  private tickPassives(): void {
+  private tickEndOfRoundEffects(): void {
     for (const c of this.combatants) {
-      if (c.hp <= 0) continue;
-      if (!c.passives) continue;
-      for (const p of c.passives) {
-        if (p.type === "regen" && c.hp < c.maxHp) {
-          const before = c.hp;
-          c.hp = Math.min(c.maxHp, c.hp + p.amount);
-          const healed = c.hp - before;
-          if (healed > 0) {
-            this.log.push(`${c.name} regenerates ${healed} HP.`);
-          }
-        }
-      }
+      tickRoundEffects(this.effectHost, c);
     }
   }
 
-  /** True when the active combatant has been swallowed and their
-   *  turn should auto-resolve via `runConsumedAutoTurn` rather than
-   *  prompting the player or running the AI loop. */
+  /**
+   * Apply a runtime status effect to a combatant — the single, generic
+   * door every applier (monster on-hit, monster passive, spell, item,
+   * ability) goes through. The mechanics live in the handler registered
+   * for `effectId` (see `effects/EffectRuntime.ts`), so e.g. a spell can
+   * inflict the same "consumed" swallow a Man Eater does. Returns the
+   * live effect, or null when it didn't take hold (unknown id, resisted,
+   * already present, or no such target).
+   */
+  applyEffect(
+    targetId: string,
+    effectId: string,
+    opts: ApplyEffectOptions = {},
+  ): ActiveEffect | null {
+    const bearer = this.combatants.find((c) => c.id === targetId);
+    if (!bearer) return null;
+    return applyEffect(this.effectHost, bearer, effectId, opts);
+  }
+
+  /** True when the active combatant's turn is auto-controlled by an
+   *  effect (today: `consumed` / swallowed) and should auto-resolve via
+   *  `runControlledTurn` rather than prompting the player or AI. */
   isCurrentConsumed(): boolean {
-    return !!this.current.consumed;
+    return turnControllingEffect(this.effectHost, this.current) !== null;
   }
 
   /**
-   * Auto-resolve the active combatant's turn while they're consumed.
-   * Mirrors `_tick_consumed_fighter` at `src/states/combat.py:4771`:
-   *
-   *   - Roll d20 + STR mod vs the saved `saveDc`.
-   *   - Pass → spit them out at a free tile near the consumer
-   *     (or near their original position if the consumer's gone),
-   *     clear the debuff, queue a "saved" event.
-   *   - Fail → take `damagePerTurn` HP, queue a "tick" event. If
-   *     they hit 0 HP they died inside; the body is "released" at
-   *     the consumer's tile so it can be revived later.
+   * Auto-resolve the active combatant's turn for whichever effect is
+   * controlling it (today: `consumed`). The effect handler does the
+   * work — rolling the escape save, ticking crush damage, releasing on
+   * success / death / consumer-kill — and emits the scene events.
    *
    * Returns the queued events so the scene can animate. Caller is
    * responsible for calling `endTurn()` afterwards — the auto-resolve
    * always consumes the whole turn regardless of outcome.
    */
-  runConsumedAutoTurn(): ConsumeEvent[] {
-    const actor = this.current;
-    if (!actor.consumed) return [];
-    const data = actor.consumed;
-    const consumer = this.combatants.find((x) => x.id === data.consumerId);
-
-    // Consumer dead? Auto-release without rolling — the body just
-    // tumbles out as the beast falls.
-    if (!consumer || consumer.hp <= 0) {
-      this.releaseConsumed(actor, consumer ?? null);
-      this.log.push(`${actor.name} tumbles free as the beast falls!`);
-      return this.popConsumeEvents();
-    }
-
-    const strMod = Math.floor(((actor.strength ?? 10) - 10) / 2);
-    const roll = 1 + Math.floor(this.rng() * 20);
-    const total = roll + strMod;
-    if (total >= data.saveDc) {
-      this.releaseConsumed(actor, consumer);
-      this.log.push(
-        `${actor.name} fights free of ${consumer.name}! ` +
-        `(STR ${roll}+${strMod}=${total} vs DC ${data.saveDc})`
-      );
-      return this.popConsumeEvents();
-    }
-
-    // Save failed — take a per-turn HP tick.
-    const dmg = data.damagePerTurn;
-    actor.hp = Math.max(0, actor.hp - dmg);
-    this.log.push(
-      `${actor.name} is crushed inside ${consumer.name}! (-${dmg} HP) ` +
-      `(STR ${roll}+${strMod}=${total} vs DC ${data.saveDc} — Failed!)`
-    );
-    this.pendingConsumeEvents.push({ targetId: actor.id, kind: "tick", damage: dmg });
-    if (actor.hp === 0) {
-      // Died inside — clear the debuff and drop the body out so it
-      // can be revived later. The "released" event tells the scene
-      // to make the corpse visible again.
-      this.releaseConsumed(actor, consumer);
-      this.log.push(`${actor.name}'s body tumbles out, lifeless.`);
-    }
+  runControlledTurn(): ConsumeEvent[] {
+    runControlledTurn(this.effectHost, this.current);
     return this.popConsumeEvents();
-  }
-
-  /**
-   * Place a previously-consumed combatant back on the arena at a
-   * free tile near `consumer` (or their original position if the
-   * consumer is gone), clear their `consumed` marker, and queue a
-   * `saved` event for the scene to animate.
-   */
-  private releaseConsumed(actor: Combatant, consumer: Combatant | null): void {
-    const data = actor.consumed!;
-    const anchor = consumer && consumer.hp > 0
-      ? consumer.position
-      : data.originalPosition;
-    const newPos = this.findFreeTileNear(anchor) ?? anchor;
-    actor.position = { ...newPos };
-    actor.consumed = undefined;
-    this.pendingConsumeEvents.push({ targetId: actor.id, kind: "saved" });
-  }
-
-  /** Pop every consumed actor whose consumer just died back onto the
-   *  arena. Called from `attack()` and `castMonsterSpell` whenever
-   *  damage drops a target to 0 HP. */
-  private releaseAllConsumedBy(consumerId: string): void {
-    for (const c of this.combatants) {
-      if (!c.consumed || c.consumed.consumerId !== consumerId) continue;
-      const consumer = this.combatants.find((x) => x.id === consumerId) ?? null;
-      this.releaseConsumed(c, consumer);
-      this.log.push(`${c.name} tumbles free as the beast falls!`);
-    }
   }
 
   /** Spiral search for the first walkable, unoccupied tile within 5
@@ -1273,7 +1235,7 @@ export class Combat {
           : `${target.name} resists`;
         this.log.push(`${actor.name} casts ${spell.name}! ${dealtMsg}.`);
         if (target.hp === 0) {
-          this.releaseAllConsumedBy(target.id);
+          releaseConsumedBy(this.effectHost, this.combatants, target.id);
         }
         // Sleep / curse currently log only — the duration ticker for
         // monster-cast statuses is a follow-up.
@@ -1289,8 +1251,9 @@ export class Combat {
     };
   }
 
-  /** Sum dice + bonus for a damage spell, halving fire-typed damage
-   *  when the target has a `fire_resistance` passive. */
+  /** Sum dice + bonus for a damage spell, then fold the total through
+   *  the target's incoming-damage modifiers (e.g. a `fire_resistance`
+   *  trait halving fire-typed damage). */
   private rollMonsterSpellDamage(spell: MonsterSpellLike, target: Combatant): number {
     const dice = spell.damage_dice ?? 0;
     const sides = spell.damage_sides ?? 0;
@@ -1303,13 +1266,11 @@ export class Combat {
     for (let i = 0; i < dice; i++) {
       total += Math.floor(this.rng() * sides) + 1;
     }
-    if (spell.type === "breath_fire" || spell.type === "fireball") {
-      if (hasPassive(target, "fire_resistance")) {
-        const halved = Math.max(1, Math.floor(total / 2));
-        this.log.push(`${target.name}'s fire resistance halves ${total} → ${halved}.`);
-        return halved;
-      }
-    }
+    const kind =
+      spell.type === "breath_fire" || spell.type === "fireball"
+        ? "fire"
+        : "physical";
+    total = applyIncomingDamageMods(this.effectHost, target, total, kind);
     return Math.max(1, total);
   }
 
@@ -1330,13 +1291,19 @@ export class Combat {
 
   /**
    * Roll each `onHitEffects` entry attached to the attacker against
-   * the target after a successful melee hit. Currently handles:
+   * the target after a successful melee hit. Each entry rolls
+   * independently against its `chance` (0-100):
    *
-   *   - `drain`    — heal the attacker by `amount` (life-leech)
-   *   - `consume`  — apply the per-turn damage debuff that ticks
-   *                  in `tickConsumeDebuffs` until the victim saves
+   *   - `drain`    — heal the attacker by `amount` (life-leech). Still
+   *                  handled inline; it has no lingering status.
+   *   - `consume`  — apply the `consumed` (swallow) status through the
+   *                  generic effect runtime, which owns the STR save,
+   *                  the off-board move, and the per-turn crush ticks.
    *
-   * Each effect rolls independently against its `chance` (0-100).
+   * The on-hit entry is just the APPLIER here: it forwards the monster's
+   * per-hit overrides (save_dc, damage_per_turn) to `applyEffect`. The
+   * mechanics live in the `consumed` handler, so a spell/ability can
+   * inflict the very same effect.
    */
   private applyOnHitEffects(attacker: Combatant, target: Combatant): void {
     if (!attacker.onHitEffects) return;
@@ -1351,36 +1318,12 @@ export class Combat {
           this.log.push(`${attacker.name} drains ${healed} HP from ${target.name}.`);
         }
       } else if (eff.type === "consume") {
-        // STR save vs the consume DC — pass twists free, fail is
-        // swallowed whole. Mirrors `_apply_consume_effect` in
-        // `src/states/combat.py:4714`.
-        if (target.consumed) continue; // already inside something
-        const strMod = Math.floor(((target.strength ?? 10) - 10) / 2);
-        const roll = 1 + Math.floor(this.rng() * 20);
-        const total = roll + strMod;
-        if (total >= eff.save_dc) {
-          this.log.push(
-            `${target.name} twists free of ${attacker.name}'s jaws! ` +
-            `(STR ${roll}+${strMod}=${total} vs DC ${eff.save_dc})`
-          );
-          continue;
-        }
-        // Save failed — swallow whole. Stash the original position so
-        // we can release them near it later, then move off-board so
-        // collision / targeting helpers don't see them.
-        target.consumed = {
-          damagePerTurn: eff.damage_per_turn,
-          saveDc: eff.save_dc,
-          consumerId: attacker.id,
-          originalPosition: { ...target.position },
-        };
-        target.position = { col: -1, row: -1 };
-        this.log.push(
-          `${attacker.name} swallows ${target.name} whole! ` +
-          `(STR ${roll}+${strMod}=${total} vs DC ${eff.save_dc} — Failed!)`
-        );
-        this.pendingConsumeEvents.push({
-          targetId: target.id, kind: "applied", consumerId: attacker.id,
+        applyEffect(this.effectHost, target, "consumed", {
+          sourceId: attacker.id,
+          params: {
+            save_dc: eff.save_dc,
+            damage_per_turn: eff.damage_per_turn,
+          },
         });
       }
     }
@@ -1397,7 +1340,7 @@ export class Combat {
     // game's per-turn refill: the class budget, the race's innate
     // bonus, and any currently-stacked buffs sum into one budget.
     const racial = this.current.extraMoveRange ?? 0;
-    const bonus = sumBuff(this.buffs.get(this.current.id), "range_bonus");
+    const bonus = sumBuffKind(this.current, "range_bonus");
     this.movePoints = this.current.baseMoveRange + racial + bonus;
     // Fresh turn — the actor hasn't swung yet, so the bump-attack
     // gate reopens. Paired with the lock in `tryMove`'s bump branch.

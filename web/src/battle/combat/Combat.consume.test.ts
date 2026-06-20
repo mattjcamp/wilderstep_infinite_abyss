@@ -1,19 +1,24 @@
 /**
- * Engine contract for the Man Eater "swallow whole" (consume) on-hit
- * effect. The CombatScene renders off this contract: a swallowed actor
- * is moved OFF the board and flagged `consumed`, and `isCurrentConsumed`
- * routes their initiative slot into the auto-resolving STR-save tick
- * instead of a player/AI turn.
+ * Engine contract for the `consumed` ("swallowed whole") effect, now
+ * running on the generic effect runtime (`effects/EffectRuntime.ts` +
+ * `effects/consumedEffect.ts`).
  *
- * This locks the invariants the scene's overlay guards rely on — if a
- * swallowed actor's `position` ever stayed on-board, the scene's
- * selection ring + movement-reach overlay would paint at a real cell
- * and the swallowed character would look present + movable (the bug
- * these guards fix).
+ * Two things are locked here:
+ *   1. The mechanics survive the port — swallow on a failed STR save,
+ *      off-board move, auto-resolving escape turn, event emission.
+ *   2. The effect is DECOUPLED from monsters — `Combat.applyEffect` can
+ *      inflict it from any applier (a spell/ability stand-in), not just a
+ *      Man Eater on-hit. This is the whole point of the runtime layer.
+ *
+ * The CombatScene renders off this contract: a swallowed actor is moved
+ * off the board, `isCurrentConsumed` routes their slot into the
+ * auto-resolving tick, and `runControlledTurn` returns the events that
+ * re-show / reposition the sprite.
  */
 
 import { describe, it, expect } from "vitest";
 import { Combat } from "./Combat";
+import { consumedEffect, isConsumed } from "./effects/consumedEffect";
 import { mulberry32 } from "../rng";
 import type { Combatant } from "../types";
 
@@ -68,23 +73,24 @@ function swallowFixture(seed = 1) {
   return { combat, manEater, victim };
 }
 
-describe("Combat — Man Eater consume (swallow)", () => {
+describe("Combat — consumed effect (Man Eater swallow, via on-hit)", () => {
   it("flags the victim consumed and moves them off-board on a failed save", () => {
     const { combat, victim } = swallowFixture();
     combat.attack("victim");
 
-    expect(victim.consumed).toBeTruthy();
-    expect(victim.consumed?.consumerId).toBe("man_eater");
+    const eff = consumedEffect(victim);
+    expect(eff).toBeTruthy();
+    expect(eff?.sourceId).toBe("man_eater");
     // Off-board sentinel — the scene relies on this to keep the
     // swallowed actor's ring/reach overlay off the arena.
     expect(victim.position.col).toBeLessThan(0);
     expect(victim.position.row).toBeLessThan(0);
-    // The original cell is stashed for the later release.
-    expect(victim.consumed?.originalPosition).toEqual({ col: 5, row: 4 });
+    // The original cell is stashed (in handler state) for the release.
+    expect(eff?.state.originalPosition).toEqual({ col: 5, row: 4 });
   });
 
   it("emits an `applied` consume event for the scene to flash", () => {
-    const { combat, victim } = swallowFixture();
+    const { combat } = swallowFixture();
     combat.attack("victim");
     const events = combat.popConsumeEvents();
     expect(events).toContainEqual(
@@ -95,9 +101,6 @@ describe("Combat — Man Eater consume (swallow)", () => {
   it("reports isCurrentConsumed once the swallowed actor's slot comes up", () => {
     const { combat, victim } = swallowFixture();
     combat.attack("victim");
-    // Walk initiative until the swallowed victim is the active actor;
-    // their slot must report as consumed so the scene auto-resolves it
-    // instead of handing the player control.
     let guard = 0;
     while (combat.current.id !== victim.id && guard++ < 8) {
       combat.endTurn();
@@ -106,39 +109,97 @@ describe("Combat — Man Eater consume (swallow)", () => {
     expect(combat.isCurrentConsumed()).toBe(true);
   });
 
-  it("runConsumedAutoTurn RETURNS the escape events and DRAINS the queue", () => {
-    // This is the contract the scene's runConsumedTurn relies on: the
-    // auto-turn pops its own events into the return value, so a caller
-    // that re-pops the queue afterwards gets nothing. (The freed
-    // character's `saved` event — which re-shows + repositions the
-    // sprite — was being lost exactly because of a re-pop.)
+  it("runControlledTurn RETURNS the escape events and DRAINS the queue", () => {
+    // The contract runConsumedTurn (scene) relies on: the auto-turn pops
+    // its own events into the return value, so a caller that re-pops the
+    // queue afterwards gets nothing.
     const { combat, victim } = swallowFixture();
-    // Swallow the victim outright, then make escape a certainty
-    // (high STR vs a trivial DC) so the auto-turn yields a `saved`.
-    victim.consumed = {
-      damagePerTurn: 1,
-      saveDc: 5,
-      consumerId: "man_eater",
-      originalPosition: { col: 5, row: 4 },
-    };
+    // Swallow the victim outright via the runtime (set up the effect
+    // state directly), then make escape a certainty (high STR vs a
+    // trivial DC) so the auto-turn yields a `saved`.
+    victim.effects = [
+      {
+        effectId: "consumed",
+        params: { save_dc: 5, damage_per_turn: 1 },
+        sourceId: "man_eater",
+        state: { originalPosition: { col: 5, row: 4 } },
+      },
+    ];
     victim.position = { col: -1, row: -1 };
     victim.strength = 20; // +5 mod — clears DC 5 on any d20 roll
     let guard = 0;
     while (combat.current.id !== victim.id && guard++ < 8) combat.endTurn();
     expect(combat.current.id).toBe(victim.id);
 
-    const events = combat.runConsumedAutoTurn();
-    // The auto-turn produced the escape event...
+    const events = combat.runControlledTurn();
     expect(events).toContainEqual(
       expect.objectContaining({ targetId: "victim", kind: "saved" }),
     );
-    // ...and DRAINED the queue — re-popping (what the buggy scene did)
-    // returns nothing, which is why those events must be flashed from
-    // the return value.
+    // The auto-turn DRAINED the queue — re-popping returns nothing.
     expect(combat.popConsumeEvents()).toEqual([]);
-    // Engine state after escape: back on the board, no longer consumed.
-    expect(victim.consumed).toBeUndefined();
+    // Back on the board, no longer consumed.
+    expect(isConsumed(victim)).toBe(false);
     expect(victim.position.col).toBeGreaterThanOrEqual(0);
     expect(victim.position.row).toBeGreaterThanOrEqual(0);
+  });
+
+  it("tumbles the victim free when the consumer is dead", () => {
+    // Needs a reserve enemy so killing the Man Eater doesn't end the
+    // encounter before the victim's auto-turn (the consumer-dead branch
+    // of the handler's runTurn) gets a chance to release them.
+    const manEater = makeCombatant({
+      id: "man_eater", name: "Man Eater", side: "enemies",
+      attackBonus: 50, dexMod: 20,
+      onHitEffects: [{ type: "consume", chance: 100, damage_per_turn: 1, save_dc: 25 }],
+    });
+    const reserve = makeCombatant({ id: "reserve", name: "Reserve", side: "enemies" });
+    const victim = makeCombatant({ id: "victim", name: "Tarin", ac: 0, strength: 3 });
+    const combat = new Combat([victim], [manEater, reserve], mulberry32(1));
+    manEater.position = { col: 4, row: 4 };
+    victim.position = { col: 5, row: 4 };
+    reserve.position = { col: 10, row: 10 };
+
+    combat.attack("victim");
+    expect(isConsumed(victim)).toBe(true);
+
+    // Consumer dies (combat continues — reserve is alive).
+    manEater.hp = 0;
+    let guard = 0;
+    while (combat.current.id !== victim.id && guard++ < 12) combat.endTurn();
+    expect(combat.current.id).toBe(victim.id);
+    combat.runControlledTurn();
+    expect(isConsumed(victim)).toBe(false);
+    expect(victim.position.col).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe("Combat.applyEffect — consumed is applier-agnostic (decoupled)", () => {
+  it("lets a non-monster applier inflict `consumed` directly", () => {
+    // Simulates a spell/ability inflicting the swallow — no Man Eater
+    // on-hit involved. This is the decoupling the runtime layer buys us.
+    const caster = makeCombatant({ id: "caster", name: "Witch", side: "enemies" });
+    const victim = makeCombatant({ id: "victim", name: "Tarin", strength: 3 });
+    const combat = new Combat([victim], [caster], mulberry32(1));
+    caster.position = { col: 1, row: 1 };
+    victim.position = { col: 2, row: 1 };
+
+    const eff = combat.applyEffect("victim", "consumed", {
+      sourceId: "caster",
+      params: { save_dc: 25, damage_per_turn: 2 }, // unbeatable → swallowed
+    });
+
+    expect(eff).toBeTruthy();
+    expect(isConsumed(victim)).toBe(true);
+    expect(consumedEffect(victim)?.sourceId).toBe("caster");
+    expect(victim.position.col).toBeLessThan(0);
+  });
+
+  it("returns null and applies nothing for an unknown effect id", () => {
+    const a = makeCombatant({ id: "a", name: "A", side: "enemies" });
+    const victim = makeCombatant({ id: "victim", name: "Tarin" });
+    const combat = new Combat([victim], [a], mulberry32(1));
+    const eff = combat.applyEffect("victim", "no_such_effect");
+    expect(eff).toBeNull();
+    expect(victim.effects ?? []).toEqual([]);
   });
 });

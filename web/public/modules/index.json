@@ -21,11 +21,6 @@
       "title": "Emberscar",
       "role": "playable"
     },
-        {
-      "id": "underworld-invaders-test",
-      "title": "Emberscar Test",
-      "role": "playable"
-    },
     {
       "id": "side-quests",
       "title": "Side Quests",
@@ -35,11 +30,6 @@
       "id": "npcs",
       "title": "Lore and NPCs",
       "role": "library"
-    },
-    {
-      "id": "test-module",
-      "title": "Test Module",
-      "role": "playable"
     }
   ]
 }

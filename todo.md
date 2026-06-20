@@ -1,10 +1,13 @@
 
 I have a module already published that inherits from Default, but I am now in a situation where I want to really go back and fine tune the monsters in the game. That could mean deleting or really changing attributes. If I were to do that, would the monsters in the child game remain? Same question for encounters. My hope is that any monster I delete in the Default Module will become a "overriden" content in the child module.
 
-## Enchancements
-- fine-tune monsters and encounters
-- monster effects should have their own entry (these can be shared and reused)
-
+## Fine Tune
+- copy monsters, encounters, spawns (maybe the whole module) into Emberscar so that I can freely modify Default Module
+- Delete most monsters other than the truly foundational ones, make sure each difficulty level has representation
+- Make sure the remaining monsters are more thoughtfully designed
+- Drastically simplify the encounters
+- Audt the spawns
+- Clean up the resuable modules
 
 ## New Content for v2
 

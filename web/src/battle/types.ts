@@ -178,22 +178,18 @@ export interface Combatant {
    *  Charm-style spells filter on this. */
   humanoid?: boolean;
   /**
-   * Active swallow-whole debuff. Set by Man Eater's "consume" on-hit
-   * effect when its STR save fails. While set:
+   * Generic runtime status effects sitting on this combatant, applied
+   * through the effect runtime (`combat/effects/EffectRuntime.ts`) and
+   * keyed by `effect_id`. The handler for each id owns its mechanics —
+   * e.g. `consumed` (swallowed whole) moves the bearer off-board to
+   * `{-1,-1}`, takes over their turn, and ticks crush damage until they
+   * save free. Read via the effect helpers (`isConsumed`,
+   * `consumedEffect`, `findEffect`) rather than poking at this directly.
    *
-   *   - The combatant's `position` is `{-1,-1}` (off the board); the
-   *     scene hides their sprite and HP bar.
-   *   - On their turn, `Combat.runConsumedAutoTurn()` rolls the STR
-   *     save again — pass spits them back out near the consumer, fail
-   *     deals `damagePerTurn` damage.
-   *   - If the consumer dies, their next turn auto-releases.
+   * This replaces the old bespoke `consumed` field; see
+   * `docs/dev_guides/effect_decoupling_proposal.md`.
    */
-  consumed?: {
-    damagePerTurn: number;
-    saveDc: number;
-    consumerId: string;
-    originalPosition: { col: number; row: number };
-  };
+  effects?: import("./combat/effects/EffectRuntime").ActiveEffect[];
 }
 
 /**

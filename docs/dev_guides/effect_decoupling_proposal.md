@@ -1,9 +1,64 @@
 # Effect Decoupling — Analysis & Proposal
 
-**Status:** Analysis only (no code changes). Captures the current state of
-effect handling and a proposed runtime-decoupling plan, prompted by the
-observation that the `consumed` ("swallowed") effect appears to be a
-monster-specific mechanic with no general, reusable home.
+**Status:** Complete. All four increments landed on the new runtime
+layer (`web/src/battle/combat/effects/`). Every piece of combatant
+effect state — applied statuses, passive traits, and numeric buffs —
+flows through one registry and lives in one storage list
+(`Combatant.effects`), and the scene's spell casting no longer hardcodes
+what each spell does. Originally written as analysis-only; the plan was
+executed top-down.
+
+**Increment 3 (done):** The numeric buff/debuff system is unified onto
+the runtime. Buffs (Bless, Curse, Shield, Long Shanks, Elixir bonuses)
+are now `stat_modifier` `ActiveEffect`s in `Combatant.effects`, ticked +
+expired by the generic round mechanism (`buffEffects.ts`). The engine's
+parallel `buffs: Map` and the `Buffs.ts` sum/tick pass are gone; the
+public buff API (`addBuff` / `sumBuff` / `buffsFor` / `hasBuffFromSource`
+/ `effectiveAttackBonus` / `effectiveAc` / `effectiveDamageBonus`) is
+preserved and reimplemented over the effects list, so the ~10 callers
+(spell casting, class abilities, elixirs) and the inspector are
+untouched. Buff math had no prior coverage; `buffEffects.test.ts` adds
+characterization tests (effective stats, duration expiry, the views) to
+prove the move is behaviour-preserving.
+
+**Increment 4 (done):** The scene's per-spell buff knowledge is
+centralized. The hardcoded `addBuff({ kind, value, source })` literals in
+the `CombatScene` cast branches (bless, ac_buff/shield, curse,
+range_buff/long shanks, invisibility) are replaced by a single data
+table — `spellBuffs.ts` — mapping each spell `effect_type` to its buff
+kind(s), source label, magnitude fallback, and default duration. The
+scene now calls `combat.applySpellBuffs(targetId, effect_type,
+effect_value, duration)` and keeps only its cast animations + log copy;
+the mapping is one reusable source of truth (a monster casting Bless or
+an item could use it too). Cast animations stay scene-side by necessity
+(handlers can't drive Phaser), which is why this is a table + one engine
+door rather than per-spell handlers. Covered by `spellBuffs.test.ts`.
+
+The elixir/class-ability buffs keep using the generic `addBuff`
+primitive directly — they carry explicit kinds rather than a named spell
+`effect_type`, so they don't need the table.
+
+**Increment 1 (done):** `EffectRuntime.ts` (registry + `applyEffect` +
+turn-control dispatch + `EffectHost` capability surface) and
+`consumedEffect.ts` (the `consumed` handler). The bespoke
+`Combatant.consumed` field is gone, replaced by a generic
+`Combatant.effects: ActiveEffect[]`. `Combat.applyEffect(targetId, id,
+opts)` is the public door, so a spell/ability can now inflict the swallow,
+not just a Man Eater on-hit. Covered by `Combat.consume.test.ts`.
+
+**Increment 2 (done):** Monster passive *mechanics* moved onto the
+registry — `passiveEffects.ts` registers `regen` (round-tick heal),
+`fire_resistance` (incoming-damage modifier), and `poison_immunity`
+(an immunity `blocks` gate `applyEffect` honours). The handler interface
+gained `onRoundTick`, `modifyIncomingDamage`, and `blocks`; the engine's
+hardcoded `tickPassives` regen loop and `hasPassive` fire-resist check are
+gone, replaced by `tickRoundEffects` / `applyIncomingDamageMods`. Storage
+is deliberately unchanged: traits still live in `Combatant.passives`
+(monster spawn + the `CombatBridge` equipment refresh keep working), and
+the runtime adapts each passive to an `ActiveEffect` view via
+`activeEffectViews`. Folding passive *storage* into `Combatant.effects`
+(with equipment reconciliation) is left for later. Covered by
+`passiveEffects.test.ts`.
 
 ## TL;DR
 

@@ -30,6 +30,7 @@
 
 import Phaser from "phaser";
 import { Combat, isAiControlled, type ConsumeEvent } from "../combat/Combat";
+import { isConsumed, consumedEffect } from "../combat/effects/consumedEffect";
 import {
   ARENA_COLS,
   ARENA_ROWS,
@@ -1218,7 +1219,7 @@ export class CombatScene extends Phaser.Scene {
       // exactly those — calling flashConsumeEvents() with no argument
       // would re-pop an already-empty queue and silently drop them,
       // leaving a freed character's sprite hidden at its stale cell.
-      const events = this.combat.runConsumedAutoTurn();
+      const events = this.combat.runControlledTurn();
       this.flashConsumeEvents(events);
       this.refreshAll();
     } finally {
@@ -3372,15 +3373,13 @@ export class CombatScene extends Phaser.Scene {
         // buff source via refreshVisibility() to actually drop their
         // sprite alpha for the spell's full duration. Reappears
         // automatically when the buff ticks down.
-        const turns = typeof spell.duration === "number" ? spell.duration : 3;
-        this.combat.addBuff(me.id, {
-          kind: "ac_bonus",
-          value: 6,
-          turnsLeft: turns,
-          source: "Invisibility",
-        });
+        const [buff] = this.combat.applySpellBuffs(
+          me.id, "invisibility", spell.effect_value, spell.duration,
+        );
+        const value = buff?.value ?? 6;
+        const turns = buff?.turnsLeft ?? 3;
         this.combat.log.push(
-          `${me.name} casts ${spell.name} — fades from view (+6 AC for ${turns} turns).`
+          `${me.name} casts ${spell.name} — fades from view (+${value} AC for ${turns} turns).`
         );
       } else {
         void playVisualAt(this.bodyXY(me));
@@ -3393,18 +3392,15 @@ export class CombatScene extends Phaser.Scene {
       // bless_buffs dict — every alive ally gets +effect_value.attack_bonus
       // for `duration` rounds.
       if (spell.effect_type === "bless") {
-        const ev = spell.effect_value ?? {};
-        const value = typeof ev.attack_bonus === "number" ? ev.attack_bonus : 2;
-        const turns = typeof spell.duration === "number" ? spell.duration : 4;
+        let value = 2;
+        let turns = 4;
         let count = 0;
         for (const ally of this.combat.combatants) {
           if (ally.side !== "party" || ally.hp <= 0) continue;
-          this.combat.addBuff(ally.id, {
-            kind: "attack_bonus",
-            value,
-            turnsLeft: turns,
-            source: "Bless",
-          });
+          const [buff] = this.combat.applySpellBuffs(
+            ally.id, "bless", spell.effect_value, spell.duration,
+          );
+          if (buff) { value = buff.value; turns = buff.turnsLeft; }
           // Stagger the per-ally aura so they sparkle in sequence
           // rather than all flashing at once — feels more "blessing
           // sweeping over the party".
@@ -4234,15 +4230,11 @@ export class CombatScene extends Phaser.Scene {
           this.refreshHp(target);
         } else if (e === "ac_buff") {
           // Shield — single ally gains +AC for spell.duration rounds.
-          const ev = spell.effect_value ?? {};
-          const value = typeof ev.ac_bonus === "number" ? ev.ac_bonus : 1;
-          const turns = typeof spell.duration === "number" ? spell.duration : 3;
-          this.combat.addBuff(target.id, {
-            kind: "ac_bonus",
-            value,
-            turnsLeft: turns,
-            source: "Shield",
-          });
+          const [buff] = this.combat.applySpellBuffs(
+            target.id, "ac_buff", spell.effect_value, spell.duration,
+          );
+          const value = buff?.value ?? 1;
+          const turns = buff?.turnsLeft ?? 3;
           await runVisual(this.bodyXY(target), this.bodyXY(target));
           this.combat.log.push(
             `${me.name} casts ${spell.name} on ${target.name} — +${value} AC for ${turns} turns.`
@@ -4251,37 +4243,23 @@ export class CombatScene extends Phaser.Scene {
           // Curse — single enemy: -ATK to its hit rolls and -AC to
           // its defence (i.e. easier to hit). Mirrors the Python
           // game's curse_buffs which stores both penalties.
-          const ev = spell.effect_value ?? {};
-          const atk = typeof ev.attack_penalty === "number" ? ev.attack_penalty : 2;
-          const acP = typeof ev.ac_penalty === "number" ? ev.ac_penalty : 2;
-          const turns = typeof spell.duration === "number" ? spell.duration : 4;
-          this.combat.addBuff(target.id, {
-            kind: "attack_penalty",
-            value: atk,
-            turnsLeft: turns,
-            source: "Curse",
-          });
-          this.combat.addBuff(target.id, {
-            kind: "ac_penalty",
-            value: acP,
-            turnsLeft: turns,
-            source: "Curse",
-          });
+          const buffs = this.combat.applySpellBuffs(
+            target.id, "curse", spell.effect_value, spell.duration,
+          );
+          const atk = buffs.find((b) => b.kind === "attack_penalty")?.value ?? 2;
+          const acP = buffs.find((b) => b.kind === "ac_penalty")?.value ?? 2;
+          const turns = buffs[0]?.turnsLeft ?? 4;
           await runVisual(this.bodyXY(target), this.bodyXY(target));
           this.combat.log.push(
             `${me.name} casts ${spell.name} on ${target.name} — -${atk} ATK / -${acP} AC for ${turns} turns.`
           );
         } else if (e === "range_buff") {
           // Long Shanks — single ally gains extra movement range.
-          const ev = spell.effect_value ?? {};
-          const value = typeof ev.range_bonus === "number" ? ev.range_bonus : 4;
-          const turns = typeof spell.duration === "number" ? spell.duration : 3;
-          this.combat.addBuff(target.id, {
-            kind: "range_bonus",
-            value,
-            turnsLeft: turns,
-            source: "Long Shanks",
-          });
+          const [buff] = this.combat.applySpellBuffs(
+            target.id, "range_buff", spell.effect_value, spell.duration,
+          );
+          const value = buff?.value ?? 4;
+          const turns = buff?.turnsLeft ?? 3;
           await runVisual(this.bodyXY(target), this.bodyXY(target));
           this.combat.log.push(
             `${me.name} casts ${spell.name} on ${target.name} — +${value} move for ${turns} turns.`
@@ -5561,7 +5539,7 @@ export class CombatScene extends Phaser.Scene {
     return !this.busy && !this.ended &&
            this.combat.current.side === "party" &&
            !isAiControlled(this.combat.current) &&
-           !this.combat.current.consumed;
+           !isConsumed(this.combat.current);
   }
 
   // ── Turn flow ────────────────────────────────────────────────────
@@ -5693,8 +5671,9 @@ export class CombatScene extends Phaser.Scene {
       } else if (ev.kind === "tick" && ev.damage > 0) {
         // Victim is invisible — float the damage on their consumer
         // so the player can see whose belly the HP is leaving.
-        const consumer = target.consumed
-          ? this.bodies.get(target.consumed.consumerId)
+        const cs = consumedEffect(target);
+        const consumer = cs?.sourceId
+          ? this.bodies.get(cs.sourceId)
           : null;
         const x = consumer?.x ?? 480;
         const y = consumer?.y ?? 360;
@@ -6344,7 +6323,7 @@ export class CombatScene extends Phaser.Scene {
 
   private refreshTurnHeader(): void {
     const c = this.combat.current;
-    if (c.consumed) {
+    if (isConsumed(c)) {
       // Consumed combatants don't take a turn — the engine
       // auto-rolls their STR save during this slot. Tell the player
       // why nothing's happening (and why the action menu is dim).
@@ -6378,7 +6357,7 @@ export class CombatScene extends Phaser.Scene {
     const playerTurn =
       this.combat.current.side === "party" &&
       !isAiControlled(this.combat.current) &&
-      !this.combat.current.consumed;
+      !isConsumed(this.combat.current);
     if (!playerTurn) return [];
     const member = this.memberForCurrent();
     // Per-action enable state — dynamic based on the active member.
@@ -6629,7 +6608,7 @@ export class CombatScene extends Phaser.Scene {
       // selection ring: it would otherwise linger at their last
       // on-board cell (the ring isn't repositioned to the off-board
       // -1,-1 tile), reading as a present, selectable character.
-      ring.setVisible(c.id === activeId && c.hp > 0 && !c.consumed);
+      ring.setVisible(c.id === activeId && c.hp > 0 && !isConsumed(c));
     }
   }
 
@@ -6670,7 +6649,7 @@ export class CombatScene extends Phaser.Scene {
     // makes it look like they're on the board and can still move
     // (matching refreshTurnHeader / computeVisibleActions /
     // canTakePlayerInput, which already short-circuit on `consumed`).
-    if (this.combat.current.consumed) return;
+    if (isConsumed(this.combat.current)) return;
     const me = this.combat.current.position;
     const pending = this.pendingAction;
 
@@ -7454,7 +7433,7 @@ export class CombatScene extends Phaser.Scene {
       parts.push(this.formatBuff(b));
     }
     if (c.turnedTurns && c.turnedTurns > 0) parts.push(`Turned (${c.turnedTurns}t)`);
-    if (c.consumed) parts.push("Swallowed");
+    if (isConsumed(c)) parts.push("Swallowed");
     if (c.passives) for (const p of c.passives) parts.push(this.titleizeToken(p.type));
     out.push({
       text: `    Effects: ${parts.length ? parts.join(", ") : "none"}`,
