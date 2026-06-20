@@ -2,6 +2,73 @@
   "_comment": "Dragon's Lair playtest NPCs. This module extends `default`, so the four base NPCs (Elder Marisol, Orin the Smith, the Stranger in Grey, Alric the Armorer) are inherited and not redeclared here. Schema matches default/npcs.json: { id, name, sprite, counter, personal_history, dialogs: [{ id, title, text }] }. Dialog ids are unique within an NPC and stable for quest / script references.",
   "npcs": [
     {
+      "id": "elder_marisol",
+      "name": "Elder Marisol",
+      "sprite": "person/cleric1.png",
+      "counter": "healing",
+      "personal_history": "Marisol has guided the village of Hollowmere through three generations. Born to a fisher and a herbalist, she trained as a cleric in the mountain monasteries before returning home when her younger sister vanished into the Wandering Wood. She still wears her sister's iron pendant beneath her vestments. Quietly devout, plainly spoken, and slow to anger — but absolute when she's made up her mind.",
+      "dialogs": [
+        {
+          "id": "introduction",
+          "title": "First meeting",
+          "text": "Welcome to Hollowmere, travelers. We see few visitors this side of the Wandering Wood. If you mean us no harm, the hearth at the chapel is always lit."
+        },
+        {
+          "id": "wood_warning",
+          "title": "Warning about the wood",
+          "text": "Don't take the western path after dusk. The trees… remember things. My sister learned that lesson, and the wood kept her in payment."
+        },
+        {
+          "id": "farewell",
+          "title": "Parting words",
+          "text": "May the lantern guide you home. And if you find a girl with an iron pendant out there — bring her back to me."
+        }
+      ]
+    },
+    {
+      "id": "smith_orin",
+      "name": "Orin the Smith",
+      "sprite": "person/fighter1.png",
+      "counter": "weapon",
+      "personal_history": "Orin's forge has stood at the crossroads for nineteen years. Before that he served two campaigns under the eastern banner, lost half his left hand to a goblin axe, and decided that hammering iron paid better and hurt less than swinging it. He brags about his beer, dotes on his three daughters, and pretends not to hear when the village asks him to fix things for free.",
+      "dialogs": [
+        {
+          "id": "shop_greeting",
+          "title": "Behind the counter",
+          "text": "If it cuts, breaks, or burns, I can fix it. If you can pay. The two go together, friend."
+        },
+        {
+          "id": "war_story",
+          "title": "When asked about the eastern campaign",
+          "text": "I'll tell you this once and never again: the songs lie. There was no glory in those mud trenches. Only the lads who stopped breathing, and the rest of us, who couldn't."
+        }
+      ]
+    },
+    {
+      "id": "stranger_in_grey",
+      "name": "Stranger in Grey",
+      "sprite": "person/wizard1.png",
+      "counter": "",
+      "personal_history": "Nobody in Hollowmere knows where the Stranger came from, only that he arrived the same evening Marisol's sister disappeared, and has rented the same back room at the inn ever since. Pays in old coin, drinks alone, watches the western road. The innkeeper thinks he's harmless; the cooper thinks he's a haunt; Marisol won't say.",
+      "dialogs": [
+        {
+          "id": "shrug",
+          "title": "First approach",
+          "text": "I'm waiting for someone. They'll come back, eventually. Everyone does, eventually."
+        }
+      ]
+    },
+    {
+      "id": "armorer",
+      "name": "Alric the Armorer",
+      "sprite": "person/fighter17.png",
+      "counter": "armor",
+      "personal_history": null,
+      "dialogs": [
+        "Welcome to my weapons shop"
+      ]
+    },
+    {
       "id": "innkeeper_brenna",
       "name": "Brenna Quill",
       "sprite": "person/townsperson6.png",

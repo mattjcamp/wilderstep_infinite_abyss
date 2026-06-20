@@ -1,0 +1,164 @@
+{
+  "_comment": "Counter catalog (real data drives the schema). Counters are the shops and temples encountered behind town tiles. Each has an id, name, description, and either an `items` stock list (regular shops) or `kind: \"service\"` plus a `services` menu (temples). Stock entries are Item `id` strings (snake_case) — same convention Character/Party records are starting to adopt. Duplicates are intentional: they control stocking weight (four `cloth` and two `plate` means the shop seeds with that mix). v1's TS also used the general/weapon/armor counters' `items` arrays as the post-combat loot pool; if v2 keeps that double-duty, document it explicitly when the loot path is wired up.",
+  "counters": [
+    {
+      "id": "armor",
+      "name": "Armor Shop",
+      "description": "Sells protective armor and shields.",
+      "items": [
+        "leather",
+        "leather",
+        "leather",
+        "leather",
+        "chain",
+        "chain",
+        "chain",
+        "chain",
+        "plate",
+        "plate"
+      ]
+    },
+    {
+      "id": "general",
+      "name": "General Store",
+      "description": "Sells supplies, tools, and everyday adventuring gear.",
+      "items": [
+        "torch",
+        "torch",
+        "torch",
+        "torch",
+        "iron_key",
+        "lockpick",
+        "lockpick",
+        "lockpick",
+        "lockpick",
+        "camping_supplies",
+        "camping_supplies",
+        "healing_herb",
+        "healing_herb",
+        "healing_herb",
+        "dagger",
+        "dagger",
+        "dagger",
+        "dagger"
+      ]
+    },
+    {
+      "id": "healing",
+      "name": "Healing Counter",
+      "description": "A temple healer who mends flesh, restores the arcane, purges poison, and — for a price — returns the dead to life.",
+      "items": [],
+      "kind": "service",
+      "services": [
+        {
+          "id": "heal_all_hp",
+          "name": "Heal All HP",
+          "description": "Restore every living member to full hit points.",
+          "cost": 10
+        },
+        {
+          "id": "restore_all_mp",
+          "name": "Restore All MP",
+          "description": "Refill every living member's magic points.",
+          "cost": 10
+        },
+        {
+          "id": "cure_all_poisons",
+          "name": "Cure All Poisons",
+          "description": "Cleanse poison from every party member.",
+          "cost": 50
+        },
+        {
+          "id": "raise_dead",
+          "name": "Raise Dead",
+          "description": "Return a fallen ally to full health. Costly miracle.",
+          "cost": 1000
+        }
+      ]
+    },
+    {
+      "id": "potion_shop",
+      "name": "Potion Shop",
+      "description": "Sells potions",
+      "items": [
+        "healing_potion",
+        "healing_potion",
+        "healing_potion",
+        "healing_potion",
+        "mana_potion",
+        "mana_potion",
+        "mana_potion",
+        "mana_potion",
+        "fire_oil",
+        "fire_oil",
+        "fire_oil",
+        "fire_oil",
+        "fire_oil",
+        "elixir_of_strength",
+        "elixir_of_warding"
+      ]
+    },
+    {
+      "id": "reagent",
+      "name": "Reagent Shop",
+      "description": "Sells magical reagents and alchemical ingredients.",
+      "items": [
+        "serpent_root",
+        "glowcap_mushroom",
+        "moonpetal",
+        "brimite_ore",
+        "spring_water",
+        "serpent_root",
+        "glowcap_mushroom",
+        "moonpetal",
+        "brimite_ore",
+        "spring_water",
+        "serpent_root",
+        "glowcap_mushroom",
+        "moonpetal",
+        "brimite_ore",
+        "spring_water",
+        "serpent_root",
+        "glowcap_mushroom",
+        "moonpetal",
+        "brimite_ore",
+        "spring_water"
+      ]
+    },
+    {
+      "id": "weapon",
+      "name": "Weapons Shop",
+      "description": "Sells melee and ranged weapons for all classes.",
+      "items": [
+        "club",
+        "dagger",
+        "dagger",
+        "dagger",
+        "dagger",
+        "dagger",
+        "mace",
+        "mace",
+        "sword",
+        "sword",
+        "spear",
+        "spear",
+        "short_bow",
+        "short_bow",
+        "long_bow",
+        "long_bow",
+        "sling",
+        "sling",
+        "crossbow",
+        "crossbow",
+        "arrows",
+        "arrows",
+        "arrows",
+        "arrows",
+        "bolts",
+        "bolts",
+        "stones",
+        "stones"
+      ]
+    }
+  ]
+}

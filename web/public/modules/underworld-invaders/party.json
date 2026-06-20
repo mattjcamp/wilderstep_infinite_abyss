@@ -6,6 +6,12 @@
   },
   "avatar": "person/fighter18.png",
   "gold": 50,
+  "roster": [
+    "gimli",
+    "goldmoon",
+    "bilbo_baggins",
+    "raistlin_majere"
+  ],
   "party_effects": [],
   "inventory": [
     {

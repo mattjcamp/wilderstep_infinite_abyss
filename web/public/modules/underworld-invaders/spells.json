@@ -1,0 +1,577 @@
+{
+  "_comment": "Spell catalog (real data drives the schema). Each spell is a castable action — damage, heal, apply/cure an effect, summon, teleport, or a composite. `casting_type` (\"sorcerer\" / \"priest\") is the only class-eligibility gate; per-class min-level overrides live on `class_min_levels`. `usable_in` is a two-value enum: \"battle\" (in-combat) or \"party\" (out-of-combat — the party-management UI on any map). v1 split the out-of-combat case into overworld/town/dungeon, but no caller distinguished between them — collapsed to a single \"party\" value. Action-specific params (damage dice, effect ids, save DCs) live on `action_params`; the discriminator is `action`. See docs/data_dictionary/spell.md.",
+  "spells": [
+    {
+      "id": "magic_dart",
+      "name": "Magic Dart",
+      "animation_id": "magic_dart",
+      "description": "Hurls an energy-charged dart in a straight line, stinging on impact.",
+      "casting_type": "sorcerer",
+      "min_level": 1,
+      "mp_cost": 6,
+      "range": 4,
+      "targeting": "directional_projectile",
+      "usable_in": [
+        "battle"
+      ],
+      "duration": "instant",
+      "action": "damage",
+      "action_params": {
+        "dice_count": 1,
+        "dice_sides": 6,
+        "stat_bonus": "intelligence",
+        "min_damage": 1
+      }
+    },
+    {
+      "id": "shield",
+      "name": "Shield",
+      "animation_id": "shield_aura",
+      "description": "Conjures a faint magical barrier around an ally, slightly boosting their armor.",
+      "casting_type": "sorcerer",
+      "min_level": 1,
+      "mp_cost": 4,
+      "range": 5,
+      "targeting": "select_ally",
+      "usable_in": [
+        "battle"
+      ],
+      "duration": 3,
+      "action": "apply_effect",
+      "action_params": {
+        "effect_id": "ac_buff"
+      }
+    },
+    {
+      "id": "sleep",
+      "name": "Sleep",
+      "animation_id": "status_aura",
+      "description": "Lulls a weak-minded creature into a light magical slumber.",
+      "casting_type": "sorcerer",
+      "min_level": 1,
+      "mp_cost": 5,
+      "range": 99,
+      "targeting": "select_enemy",
+      "usable_in": [
+        "battle"
+      ],
+      "duration": 2,
+      "action": "apply_effect",
+      "action_params": {
+        "effect_id": "sleep",
+        "max_target_hp": 15,
+        "save_dc_stat": "intelligence",
+        "save_dc_base": 8
+      }
+    },
+    {
+      "id": "knock",
+      "name": "Knock",
+      "animation_id": "utility_clack",
+      "description": "Sends a pulse of arcane force into a lock's mechanism, rattling tumblers and wards alike. Cast from the locked-door dialog when the party bumps a lock.",
+      "casting_type": "sorcerer",
+      "min_level": 2,
+      "mp_cost": 6,
+      "range": 1,
+      "targeting": "self",
+      "usable_in": [],
+      "duration": "instant",
+      "action": "knock",
+      "action_params": {
+        "save_dc_base": 12,
+        "save_stat": "intelligence"
+      }
+    },
+    {
+      "id": "long_shanks",
+      "name": "Long Shanks",
+      "animation_id": "shield_aura",
+      "description": "Enchants an ally's legs with unnatural speed, extending their movement range for 3 turns. May also be cast on yourself.",
+      "casting_type": "sorcerer",
+      "min_level": 2,
+      "mp_cost": 6,
+      "range": 99,
+      "targeting": "select_ally_or_self",
+      "usable_in": [
+        "battle"
+      ],
+      "duration": 3,
+      "action": "apply_effect",
+      "action_params": {
+        "effect_id": "range_buff"
+      }
+    },
+    {
+      "id": "magic_arrow",
+      "name": "Magic Arrow",
+      "animation_id": "magic_arrow",
+      "description": "Conjures a piercing bolt of arcane energy that streaks toward a chosen foe.",
+      "casting_type": "sorcerer",
+      "min_level": 3,
+      "mp_cost": 12,
+      "range": 99,
+      "targeting": "select_enemy",
+      "usable_in": [
+        "battle"
+      ],
+      "duration": "instant",
+      "action": "damage",
+      "action_params": {
+        "dice_count": 2,
+        "dice_sides": 8,
+        "stat_bonus": "intelligence",
+        "min_damage": 1
+      }
+    },
+    {
+      "id": "invisibility",
+      "name": "Invisibility",
+      "animation_id": "shield_aura",
+      "description": "The caster bends light around themselves, becoming invisible to enemies for 3 turns.",
+      "casting_type": "sorcerer",
+      "min_level": 4,
+      "mp_cost": 16,
+      "range": 0,
+      "targeting": "self",
+      "usable_in": [
+        "battle"
+      ],
+      "duration": 3,
+      "action": "apply_effect",
+      "action_params": {
+        "effect_id": "invisibility"
+      }
+    },
+    {
+      "id": "misty_step",
+      "name": "Misty Step",
+      "animation_id": "teleport_blink",
+      "description": "The caster vanishes in a swirl of silvery mist and reappears at a chosen location on the battlefield.",
+      "casting_type": "sorcerer",
+      "min_level": 4,
+      "mp_cost": 8,
+      "range": 6,
+      "targeting": "select_tile",
+      "usable_in": [
+        "battle"
+      ],
+      "duration": "instant",
+      "action": "teleport",
+      "action_params": null
+    },
+    {
+      "id": "charm_person",
+      "name": "Charm Person",
+      "animation_id": "status_aura",
+      "description": "Weaves an enchantment that bends the will of a humanoid creature, turning it against its allies for 3 turns.",
+      "casting_type": "sorcerer",
+      "min_level": 5,
+      "mp_cost": 14,
+      "range": 99,
+      "targeting": "select_enemy",
+      "usable_in": [
+        "battle"
+      ],
+      "duration": 3,
+      "action": "apply_effect",
+      "action_params": {
+        "effect_id": "charm",
+        "save_dc_stat": "intelligence",
+        "save_dc_base": 12
+      }
+    },
+    {
+      "id": "lightning_bolt",
+      "name": "Lightning Bolt",
+      "animation_id": "lightning_strike",
+      "description": "Unleashes a searing bolt of lightning that streaks in a straight line, electrocuting everything in its path.",
+      "casting_type": "sorcerer",
+      "min_level": 5,
+      "mp_cost": 25,
+      "range": 99,
+      "targeting": "directional_projectile",
+      "usable_in": [
+        "battle"
+      ],
+      "duration": "instant",
+      "action": "damage",
+      "action_params": {
+        "dice_count": 6,
+        "dice_sides": 6,
+        "stat_bonus": "intelligence",
+        "min_damage": 1,
+        "damage_type": "lightning",
+        "pierce": true
+      }
+    },
+    {
+      "id": "animate_dead",
+      "name": "Animate Dead",
+      "animation_id": "summon_burst",
+      "description": "Raises a powerful skeleton warrior from the earth to fight for the caster.",
+      "casting_type": "sorcerer",
+      "min_level": 6,
+      "mp_cost": 20,
+      "range": 99,
+      "targeting": "select_tile",
+      "usable_in": [
+        "battle"
+      ],
+      "duration": 5,
+      "action": "summon",
+      "action_params": {
+        "creature": {
+          "name": "Skeleton",
+          "sprite": "monster/skeleton2.png",
+          "hp": 30,
+          "ac": 14,
+          "attack_bonus": 6,
+          "damage_dice": 2,
+          "damage_sides": 6,
+          "damage_bonus": 3
+        }
+      }
+    },
+    {
+      "id": "fireball",
+      "name": "Fireball",
+      "animation_id": "fireball_burst",
+      "description": "Hurls a massive ball of flame that detonates in a 3-tile radius, scorching everything — friend or foe — caught in the blast.",
+      "casting_type": "sorcerer",
+      "min_level": 7,
+      "mp_cost": 30,
+      "range": 99,
+      "targeting": "select_tile",
+      "usable_in": [
+        "battle"
+      ],
+      "duration": "instant",
+      "action": "aoe_damage",
+      "action_params": {
+        "dice_count": 5,
+        "dice_sides": 8,
+        "stat_bonus": "intelligence",
+        "min_damage": 1,
+        "radius": 3,
+        "damage_type": "fire"
+      }
+    },
+    {
+      "id": "light",
+      "name": "Light",
+      "animation_id": "status_aura",
+      "description": "Conjures a radiant orb of divine light at a chosen spot — anywhere on the battlefield.",
+      "casting_type": "priest",
+      "min_level": 1,
+      "mp_cost": 3,
+      "range": 0,
+      "targeting": "select_tile",
+      "usable_in": [
+        "party",
+        "battle"
+      ],
+      "duration": 200,
+      "action": "apply_effect",
+      "action_params": {
+        "effect_id": "magic_light",
+        "radius": 8
+      }
+    },
+    {
+      "id": "heal",
+      "name": "Minor Heal",
+      "animation_id": "heal_sparkles",
+      "description": "Sends a gentle wave of healing energy toward an ally or the caster.",
+      "casting_type": "priest",
+      "min_level": 1,
+      "mp_cost": 5,
+      "range": 6,
+      "targeting": "select_ally_or_self",
+      "usable_in": [
+        "battle",
+        "party"
+      ],
+      "duration": "instant",
+      "action": "heal",
+      "action_params": {
+        "dice_count": 1,
+        "dice_sides": 6,
+        "stat_bonus": "wisdom",
+        "min_heal": 1
+      }
+    },
+    {
+      "id": "cure_poison",
+      "name": "Cure Poison",
+      "animation_id": "heal_sparkles",
+      "description": "Draws the venom from an ally's body with a cleansing prayer, removing the poisoned condition.",
+      "casting_type": "priest",
+      "min_level": 2,
+      "mp_cost": 5,
+      "range": 99,
+      "targeting": "select_ally",
+      "usable_in": [
+        "battle"
+      ],
+      "duration": "instant",
+      "action": "cure_effect",
+      "action_params": {
+        "effect_id": "poisoned"
+      }
+    },
+    {
+      "id": "bless",
+      "name": "Bless",
+      "animation_id": "shield_aura",
+      "description": "Invokes a divine blessing that empowers all allies, granting them greater accuracy in battle.",
+      "casting_type": "priest",
+      "min_level": 3,
+      "mp_cost": 10,
+      "range": 0,
+      "targeting": "self",
+      "usable_in": [
+        "battle"
+      ],
+      "duration": 4,
+      "action": "apply_effect",
+      "action_params": {
+        "effect_id": "bless",
+        "attack_bonus": 2
+      }
+    },
+    {
+      "id": "curse",
+      "name": "Curse",
+      "animation_id": "curse_aura",
+      "description": "Calls down a dark malediction on an enemy, weakening its defenses and dulling its attacks.",
+      "casting_type": "priest",
+      "min_level": 3,
+      "mp_cost": 10,
+      "range": 99,
+      "targeting": "select_enemy",
+      "usable_in": [
+        "battle"
+      ],
+      "duration": 4,
+      "action": "apply_effect",
+      "action_params": {
+        "effect_id": "curse"
+      }
+    },
+    {
+      "id": "major_heal",
+      "name": "Major Heal",
+      "animation_id": "heal_sparkles",
+      "description": "Channels a powerful wave of restorative energy toward an ally, mending grievous wounds.",
+      "casting_type": "priest",
+      "min_level": 4,
+      "mp_cost": 15,
+      "range": 10,
+      "targeting": "select_ally_or_self",
+      "usable_in": [
+        "battle"
+      ],
+      "duration": "instant",
+      "action": "heal",
+      "action_params": {
+        "dice_count": 4,
+        "dice_sides": 8,
+        "stat_bonus": "wisdom",
+        "min_heal": 1
+      }
+    },
+    {
+      "id": "push",
+      "name": "Push",
+      "animation_id": "status_aura",
+      "description": "Emits a powerful wave of divine force that drives nearby monsters away from the party.",
+      "casting_type": "priest",
+      "min_level": 5,
+      "mp_cost": 14,
+      "range": 0,
+      "targeting": "self",
+      "usable_in": [
+        "party"
+      ],
+      "duration": 10,
+      "action": "apply_effect",
+      "action_params": {
+        "effect_id": "repel_monsters",
+        "radius": 5,
+        "push_distance": 3
+      }
+    },
+    {
+      "id": "mass_heal",
+      "name": "Mass Heal",
+      "animation_id": "heal_sparkles",
+      "description": "A burst of divine light radiates from the caster, restoring health to all nearby allies.",
+      "casting_type": "priest",
+      "min_level": 6,
+      "mp_cost": 25,
+      "range": 0,
+      "targeting": "self",
+      "usable_in": [
+        "battle"
+      ],
+      "duration": "instant",
+      "action": "heal",
+      "action_params": {
+        "dice_count": 3,
+        "dice_sides": 10,
+        "stat_bonus": "wisdom",
+        "min_heal": 1,
+        "scope": "all_allies"
+      }
+    },
+    {
+      "id": "restore",
+      "name": "Restore",
+      "animation_id": "heal_sparkles",
+      "description": "A radiant pillar of divine power engulfs the party, fully restoring health to all allies and mana to everyone but the caster, purging all poisons from their bodies.",
+      "casting_type": "priest",
+      "min_level": 7,
+      "mp_cost": 35,
+      "range": 0,
+      "targeting": "self",
+      "usable_in": [
+        "battle"
+      ],
+      "duration": "instant",
+      "action": "restore",
+      "action_params": {
+        "heal_percent": 1,
+        "mp_percent": 1,
+        "cure_effects": [
+          "poisoned"
+        ],
+        "scope": "all_allies"
+      }
+    },
+    {
+      "id": "recall",
+      "name": "Recall",
+      "animation_id": "teleport_blink",
+      "description": "Folds space around the whole party, drawing them back to their last rune stone — or, if none was placed, to where their journey began.",
+      "casting_type": "sorcerer",
+      "min_level": 8,
+      "mp_cost": 25,
+      "range": 0,
+      "targeting": "self",
+      "usable_in": [
+        "party"
+      ],
+      "duration": "instant",
+      "action": "teleport",
+      "action_params": {
+        "scope": "party"
+      }
+    },
+    {
+      "id": "meteor_shower",
+      "name": "Meteor Shower",
+      "animation_id": "meteor_strike",
+      "description": "Calls a rain of blazing meteors down on every foe on the battlefield, scorching them all at once.",
+      "casting_type": "sorcerer",
+      "min_level": 9,
+      "mp_cost": 70,
+      "range": 99,
+      "targeting": "auto_monster",
+      "usable_in": [
+        "battle"
+      ],
+      "duration": "instant",
+      "action": "damage",
+      "action_params": {
+        "dice_count": 8,
+        "dice_sides": 8,
+        "stat_bonus": "intelligence",
+        "min_damage": 1,
+        "damage_type": "fire"
+      }
+    },
+    {
+      "id": "void_orb",
+      "name": "Void Orb",
+      "animation_id": "void_orb",
+      "description": "Conjures a sphere of absolute void that collapses on a single enemy, unmaking them with devastating force.",
+      "casting_type": "sorcerer",
+      "min_level": 10,
+      "mp_cost": 80,
+      "range": 99,
+      "targeting": "select_enemy",
+      "usable_in": [
+        "battle"
+      ],
+      "duration": "instant",
+      "action": "damage",
+      "action_params": {
+        "dice_count": 10,
+        "dice_sides": 12,
+        "stat_bonus": "intelligence",
+        "min_damage": 1,
+        "damage_type": "void"
+      }
+    },
+    {
+      "id": "daylight",
+      "name": "Daylight",
+      "animation_id": "status_aura",
+      "description": "Floods the entire battlefield with brilliant daylight for the rest of the battle, banishing every shadow.",
+      "casting_type": "priest",
+      "min_level": 8,
+      "mp_cost": 20,
+      "range": 0,
+      "targeting": "self",
+      "usable_in": [
+        "battle"
+      ],
+      "duration": "instant",
+      "action": "daylight",
+      "action_params": {}
+    },
+    {
+      "id": "divine_smite",
+      "name": "Divine Smite",
+      "animation_id": "meteor_strike",
+      "description": "Calls down a searing column of holy radiance that scours a single enemy — and burns the undead half again as hard.",
+      "casting_type": "priest",
+      "min_level": 9,
+      "mp_cost": 60,
+      "range": 6,
+      "targeting": "select_enemy",
+      "usable_in": [
+        "battle"
+      ],
+      "duration": "instant",
+      "action": "damage",
+      "action_params": {
+        "dice_count": 10,
+        "dice_sides": 10,
+        "stat_bonus": "wisdom",
+        "min_damage": 1,
+        "damage_type": "radiant",
+        "vs_undead_multiplier": 1.5
+      }
+    },
+    {
+      "id": "resurrection",
+      "name": "Resurrection",
+      "animation_id": "heal_sparkles",
+      "description": "Channels life back into a fallen companion, raising them from the dead at half their full strength.",
+      "casting_type": "priest",
+      "min_level": 10,
+      "mp_cost": 50,
+      "range": 6,
+      "targeting": "select_ally",
+      "usable_in": [
+        "party"
+      ],
+      "duration": "instant",
+      "action": "revive",
+      "action_params": {
+        "heal_percent": 0.5
+      }
+    }
+  ]
+}
