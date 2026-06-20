@@ -59,6 +59,11 @@ export interface SpellEffectValue {
   heal_percent?: number;
   mp_percent?: number;
   cure_effects?: string[];
+  /** Directional damage spells: when true the bolt PIERCES — it passes
+   *  through every tile in its line, damaging each creature (friend or
+   *  foe) it crosses instead of stopping at the first. Lightning Bolt
+   *  uses this. */
+  pierce?: boolean;
   [key: string]: unknown;
 }
 

@@ -93,6 +93,7 @@ import {
   resolveTurnUndead,
   makeSummonedSkeleton,
   traceDirectionalRay,
+  traceDirectionalPierce,
   useCombatItem,
 } from "../combat/CombatActions";
 import { isCombatUsable } from "../world/Items";
@@ -728,6 +729,25 @@ export class CombatScene extends Phaser.Scene {
 
   private busy = false;
   private ended = false;
+
+  // ── Combatant inspector (P key) ──────────────────────────────────
+  /** True while the read-only party/monster inspector overlay is open.
+   *  Input handlers consult this so arrows scroll the list and other
+   *  keys are inert until it's dismissed. */
+  private inspectorOpen = false;
+  /** Every GameObject the open inspector created — destroyed on close. */
+  private inspectorObjs: Phaser.GameObjects.GameObject[] = [];
+  /** The scrolling content container (masked to the viewport). */
+  private inspectorContainer: Phaser.GameObjects.Container | null = null;
+  /** Graphics backing the container's geometry mask. */
+  private inspectorMaskG: Phaser.GameObjects.Graphics | null = null;
+  private inspectorScroll = 0;
+  private inspectorMaxScroll = 0;
+  private inspectorViewport = { x: 0, y: 0, w: 0, h: 0 };
+  /** Stored so it can be removed on close. */
+  private inspectorWheelHandler:
+    | ((p: Phaser.Input.Pointer, o: unknown, dx: number, dy: number) => void)
+    | null = null;
   /** Turn Undead is one-shot per encounter — the undead get used to
    *  the holy symbol after the first channel. Reset in init() when a
    *  fresh combat starts. */
@@ -759,6 +779,13 @@ export class CombatScene extends Phaser.Scene {
     this.returnPayload = data?.returnPayload ?? null;
     this.busy = false;
     this.ended = false;
+    // Inspector overlay is scene-local; a fresh boot starts with it
+    // closed (Phaser destroys the prior scene's GameObjects for us).
+    this.inspectorOpen = false;
+    this.inspectorObjs = [];
+    this.inspectorContainer = null;
+    this.inspectorMaskG = null;
+    this.inspectorWheelHandler = null;
     this.turnUndeadUsed = false;
     this.classTemplates.clear();
     this.actionCursor = 0;
@@ -2149,6 +2176,11 @@ export class CombatScene extends Phaser.Scene {
     // can flare an empty / dark cell instead of a creature. No-op
     // in every other mode.
     k.on("keydown-T", () => this.onTileAimKey());
+    // [P] — open / close the read-only combatant inspector: a
+    // scrollable roster of every party member and monster with their
+    // HP/MP, equipped gear, and active effects. Only opens on the
+    // player's turn; while open it captures arrows for scrolling.
+    k.on("keydown-P", () => this.toggleInspector());
     // Debug cheat: Shift+K instantly defeats every alive enemy and
     // routes through the standard victory path (so quest credit,
     // dungeon-monster cleanup, XP/loot drops all run normally). Hidden
@@ -2199,6 +2231,11 @@ export class CombatScene extends Phaser.Scene {
 
   /** ESC backs out of any sub-mode, or does nothing in default mode. */
   private cancelSubMode(): void {
+    // Esc closes the inspector first when it's open.
+    if (this.inspectorOpen) {
+      this.closeInspector();
+      return;
+    }
     if (this.mode === "default") return;
     this.mode = "default";
     this.pendingAction = null;
@@ -2225,6 +2262,7 @@ export class CombatScene extends Phaser.Scene {
    * what the player sees on screen.
    */
   private onDigit(n: number): void {
+    if (this.inspectorOpen) return;
     if (this.mode === "pick-throw" || this.mode === "pick-spell"
         || this.mode === "pick-use" || this.mode === "pick-equip"
         || this.mode === "pick-ammo") {
@@ -2267,6 +2305,13 @@ export class CombatScene extends Phaser.Scene {
    * keys navigate the menu.
    */
   private onArrowKey(key: string, dir: Direction): void {
+    // While the inspector is open, Up/Down (and W/S) scroll it; nothing
+    // else on the arena moves.
+    if (this.inspectorOpen) {
+      if (key === "UP" || key === "W") this.scrollInspector(-1);
+      else if (key === "DOWN" || key === "S") this.scrollInspector(1);
+      return;
+    }
     if (!this.canTakePlayerInput()) return;
     // In a scrollable picker UP/DOWN walks the picker cursor — not
     // the avatar.
@@ -2404,6 +2449,7 @@ export class CombatScene extends Phaser.Scene {
    * preserving the existing keyboard ergonomics there.
    */
   private onSpacePressed(): void {
+    if (this.inspectorOpen) return;
     if (!this.canTakePlayerInput()) return;
     if (this.mode === "default") {
       this.onEndTurnClicked();
@@ -2413,6 +2459,7 @@ export class CombatScene extends Phaser.Scene {
   }
 
   private activateAction(): void {
+    if (this.inspectorOpen) return;
     if (!this.canTakePlayerInput()) return;
     // Enter inside a scrollable picker activates the cursored row.
     if (this.mode === "pick-throw") {
@@ -3457,23 +3504,42 @@ export class CombatScene extends Phaser.Scene {
       let hitIdx = 0;
       // Bombardment feel — the ground rumbles as the meteors fall.
       screenShake(this, 0.006, 360);
+      // Lock input while the bombardment plays so the turn doesn't
+      // advance (and the victory transition doesn't fire) until every
+      // meteor has landed.
+      this.busy = true;
+      // Damage is applied to combat state up front, but each foe's HP
+      // bar / death tint is HELD BACK until that foe's own meteor
+      // actually lands — otherwise the bars empty (and monsters slump)
+      // before the strike arrives, so the meteor reads as an
+      // afterthought instead of the cause. Staggered ~90ms apart so the
+      // meteors cascade rather than flashing all at once.
+      const impacts: Promise<void>[] = [];
       for (const foe of this.combat.combatants) {
         if (foe.side !== "enemies" || foe.hp <= 0) continue;
         const r = resolveDamageSpell(me, foe, spell, defaultRng);
         total += r.damage;
-        this.refreshHp(foe);
-        // Stagger the per-foe impact (e.g. Meteor Shower's meteors) so
-        // they land in sequence rather than all flashing at once, and
-        // layer a fiery burst on each so a mass attack reads as a
-        // sky-wide bombardment even against a single foe.
+        const foeRef = foe;
         const foePos = this.bodyXY(foe);
         const delay = hitIdx * 90;
-        this.time.delayedCall(delay, () => {
-          void playVisualAt(foePos);
-          void radialBurst(this, foePos, VFX_COLOURS.fire, VFX_COLOURS.ember, 44);
-        });
+        impacts.push(
+          new Promise<void>((resolve) => {
+            this.time.delayedCall(delay, () => {
+              void (async () => {
+                // Wait for the meteor to descend + impact, THEN reveal
+                // the damage / death and layer a fiery burst on top.
+                await playVisualAt(foePos);
+                void radialBurst(this, foePos, VFX_COLOURS.fire, VFX_COLOURS.ember, 44);
+                this.refreshHp(foeRef);
+                resolve();
+              })();
+            });
+          }),
+        );
         hitIdx += 1;
       }
+      await Promise.all(impacts);
+      this.busy = false;
       this.combat.log.push(
         `${me.name} casts ${spell.name} — meteors rain down; enemies take ${total} HP total.`,
       );
@@ -4673,13 +4739,31 @@ export class CombatScene extends Phaser.Scene {
       const cell = this.arenaCells?.[r]?.[c];
       return cell?.obstructs === true;
     };
-    const trace = traceDirectionalRay(
-      me.position,
-      { dCol, dRow },
-      range,
-      obstructsRay,
-      (c, r) => this.combat.combatantAt(c, r),
-    );
+    // Piercing spells (Lightning Bolt — `action_params.pierce`) bore
+    // through every creature in the line; ordinary directional spells
+    // stop at the first. Both resolve to a flight endpoint plus the
+    // ordered list of creatures to damage.
+    const pierces = spell.action_params?.pierce === true;
+    const combatantAtCR = (c: number, r: number) =>
+      this.combat.combatantAt(c, r);
+    let endCol: number;
+    let endRow: number;
+    let targetIds: string[];
+    if (pierces) {
+      const t = traceDirectionalPierce(
+        me.position, { dCol, dRow }, range, obstructsRay, combatantAtCR,
+      );
+      endCol = t.endCol;
+      endRow = t.endRow;
+      targetIds = t.hitIds;
+    } else {
+      const t = traceDirectionalRay(
+        me.position, { dCol, dRow }, range, obstructsRay, combatantAtCR,
+      );
+      endCol = t.endCol;
+      endRow = t.endRow;
+      targetIds = t.hitId ? [t.hitId] : [];
+    }
 
     // Ensure the animation catalog is loaded before we resolve the
     // dispatch. Cached after first call so this is a no-op on every
@@ -4703,8 +4787,8 @@ export class CombatScene extends Phaser.Scene {
       // "none" or unset means skip the projectile draw (audio-only).
       const start = this.bodyXY(me);
       const endPx = {
-        x: this.tileX(trace.endCol),
-        y: this.tileY(trace.endRow),
+        x: this.tileX(endCol),
+        y: this.tileY(endRow),
       };
       const animVisual = (animation?.visual ?? "").trim();
       if (animVisual && animVisual !== "none") {
@@ -4714,19 +4798,35 @@ export class CombatScene extends Phaser.Scene {
         await projectile(this, start, endPx);
       }
 
-      if (trace.hitId) {
-        const target = this.combat.byId(trace.hitId);
-        // Directional spells don't discriminate — the bolt smacks the
-        // first creature in its path, friend or foe. Aim carefully.
-        const r = resolveDamageSpell(me, target, spell, defaultRng);
-        const friendly = target.side === me.side;
-        const tag = friendly ? " — FRIENDLY FIRE!" : "";
-        this.combat.log.push(
-          `${me.name} casts ${spell.name} → ${target.name} (${dir.toUpperCase()})${tag} — ${r.damage} dmg${r.killed ? ", defeated!" : "."}`
-        );
+      // Resolve damage on every creature the bolt crossed (one for an
+      // ordinary directional spell, all of them for a piercing one).
+      // Directional spells don't discriminate — friend or foe in the
+      // line gets hit, so aim carefully.
+      const targets = targetIds
+        .map((id) => this.combat.byId(id))
+        .filter((t): t is Combatant => !!t && t.hp > 0);
+      if (targets.length > 0) {
         if (hitSfx) Sfx.play(hitSfx);
-        await this.animateHit(target, r);
-        this.refreshHp(target);
+        let total = 0;
+        const anims: Promise<void>[] = [];
+        for (const target of targets) {
+          const r = resolveDamageSpell(me, target, spell, defaultRng);
+          total += r.damage;
+          const tag = target.side === me.side ? " — FRIENDLY FIRE!" : "";
+          this.combat.log.push(
+            `${me.name}'s ${spell.name} ${pierces ? "arcs through" : "strikes"} ${target.name} (${dir.toUpperCase()})${tag} — ${r.damage} dmg${r.killed ? ", defeated!" : "."}`,
+          );
+          // Electrocute every target at once — the bolt has already
+          // streaked the full line, so the flashes land together.
+          anims.push(this.animateHit(target, r));
+          this.refreshHp(target);
+        }
+        if (pierces && targets.length > 1) {
+          this.combat.log.push(
+            `${me.name}'s ${spell.name} electrocutes ${targets.length} in its path — ${total} HP total.`,
+          );
+        }
+        await Promise.all(anims);
       } else {
         this.combat.log.push(
           `${me.name}'s ${spell.name} flies ${dir.toUpperCase()} — fizzles, nothing in range.`
@@ -7216,6 +7316,288 @@ export class CombatScene extends Phaser.Scene {
       }
       bg.on("pointerdown", dismiss);
     });
+  }
+
+  // ── Combatant inspector (P) ──────────────────────────────────────
+  // A read-only, scrollable roster of every combatant — party and
+  // monsters — with HP/MP, equipped gear, and the effects they're
+  // currently under. Opened with P on the player's turn; closed with
+  // P or Esc. Lives entirely in the scene so it works identically in
+  // the live game and the editor's battle sim.
+
+  private toggleInspector(): void {
+    if (this.inspectorOpen) {
+      this.closeInspector();
+      return;
+    }
+    // Only on the player's turn, at the action menu (not mid-animation
+    // or inside a picker sub-mode).
+    if (!this.canTakePlayerInput() || this.mode !== "default") return;
+    this.openInspector();
+  }
+
+  /** Format one buff/debuff for the inspector's "Effects:" line, e.g.
+   *  Bless +2 ATK, Curse −2 AC. Penalty kinds store a positive
+   *  magnitude that the engine SUBTRACTS, so we render them with a
+   *  minus sign and the stat they hit — otherwise a debuff reads like
+   *  a bonus ("Curse +2"). */
+  private formatBuff(b: {
+    kind: string;
+    value: number;
+    turnsLeft: number;
+    source: string;
+  }): string {
+    const SPEC: Record<string, { sign: string; label: string }> = {
+      attack_bonus: { sign: "+", label: "ATK" },
+      attack_penalty: { sign: "−", label: "ATK" },
+      ac_bonus: { sign: "+", label: "AC" },
+      ac_penalty: { sign: "−", label: "AC" },
+      damage_bonus: { sign: "+", label: "DMG" },
+      range_bonus: { sign: "+", label: "RNG" },
+    };
+    const spec = SPEC[b.kind] ?? { sign: b.value >= 0 ? "+" : "−", label: "" };
+    const mag = Math.abs(b.value);
+    const stat = spec.label ? ` ${spec.label}` : "";
+    return `${b.source} ${spec.sign}${mag}${stat} (${b.turnsLeft}t)`;
+  }
+
+  /** snake_case / id → "Title Case" for display (race ids, passive
+   *  types, …). */
+  private titleizeToken(s: string): string {
+    return s
+      .split("_")
+      .filter(Boolean)
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" ");
+  }
+
+  /** The 2–4 text lines describing one combatant in the inspector. */
+  private inspectorLinesFor(
+    c: Combatant,
+  ): { text: string; size: number; color: string; gap: number }[] {
+    const out: { text: string; size: number; color: string; gap: number }[] = [];
+    const dead = c.hp <= 0;
+    const isParty = c.side === "party";
+    const member = this.memberByCombatantId(c.id);
+
+    const meta = isParty
+      ? [
+          c.charClass,
+          c.race ? this.titleizeToken(c.race) : null,
+          c.level ? `L${c.level}` : null,
+        ]
+          .filter(Boolean)
+          .join(" · ")
+      : c.undead
+        ? "Undead"
+        : c.humanoid
+          ? "Humanoid"
+          : "Monster";
+    const badge = isParty ? "PARTY" : "ENEMY";
+    const nameColor = dead ? "#7a6f5a" : isParty ? "#9be39b" : "#ff9b8a";
+    out.push({
+      text: `${c.name}${dead ? "  (defeated)" : ""}   —   ${meta}   [${badge}]`,
+      size: 16,
+      color: nameColor,
+      gap: 22,
+    });
+
+    // HP / MP / AC. MP only for casters (members with an MP pool).
+    const mp =
+      member && member.max_mp > 0 ? `    MP ${member.mp}/${member.max_mp}` : "";
+    out.push({
+      text: `    HP ${Math.max(0, c.hp)}/${c.maxHp}${mp}    AC ${c.ac}`,
+      size: 14,
+      color: dead ? "#8a8268" : "#dcd2a8",
+      gap: 18,
+    });
+
+    // Equipped gear — party members carry weapon + armor slots.
+    if (isParty) {
+      const handsId = member?.equipped.hands ?? null;
+      const bodyId = member?.equipped.body ?? null;
+      const weapon = handsId
+        ? this.items.get(handsId)?.name ?? handsId
+        : c.weaponName ?? "Unarmed";
+      const armor = bodyId ? this.items.get(bodyId)?.name ?? bodyId : "None";
+      out.push({
+        text: `    Weapon: ${weapon} · Armor: ${armor}`,
+        size: 13,
+        color: "#bdb38a",
+        gap: 18,
+      });
+    }
+
+    // Effects: active buffs/debuffs, plus the turned / swallowed states
+    // and always-on monster passives.
+    const parts: string[] = [];
+    for (const b of this.combat.buffsFor(c.id)) {
+      parts.push(this.formatBuff(b));
+    }
+    if (c.turnedTurns && c.turnedTurns > 0) parts.push(`Turned (${c.turnedTurns}t)`);
+    if (c.consumed) parts.push("Swallowed");
+    if (c.passives) for (const p of c.passives) parts.push(this.titleizeToken(p.type));
+    out.push({
+      text: `    Effects: ${parts.length ? parts.join(", ") : "none"}`,
+      size: 13,
+      color: parts.length ? "#cdb7e6" : "#8a8268",
+      gap: 24,
+    });
+    return out;
+  }
+
+  private openInspector(): void {
+    this.inspectorOpen = true;
+    const objs: Phaser.GameObjects.GameObject[] = [];
+
+    // Dim + click-block the arena beneath the panel.
+    const dim = this.add
+      .rectangle(ARENA_X, ARENA_Y, ARENA_W, ARENA_H, 0x05050c, 0.72)
+      .setOrigin(0)
+      .setDepth(198)
+      .setInteractive();
+    objs.push(dim);
+
+    const PX = ARENA_X + 10;
+    const PY = ARENA_Y + 10;
+    const PW = ARENA_W - 20;
+    const PH = ARENA_H - 20;
+    const panel = this.add
+      .rectangle(PX, PY, PW, PH, 0x161629, 0.98)
+      .setOrigin(0)
+      .setDepth(199)
+      .setStrokeStyle(2, 0xffd470);
+    objs.push(panel);
+
+    const TITLE_BAND = 34;
+    const FOOTER_BAND = 24;
+    const PAD = 12;
+    objs.push(
+      this.add
+        .text(PX + PW / 2, PY + 8, "PARTY  &  MONSTERS", {
+          fontFamily: "Georgia, serif",
+          fontSize: "18px",
+          color: "#ffd470",
+        })
+        .setOrigin(0.5, 0)
+        .setDepth(202),
+    );
+
+    // Scrolling viewport.
+    const vx = PX + PAD;
+    const vy = PY + TITLE_BAND;
+    const vw = PW - PAD * 2;
+    const vh = PH - TITLE_BAND - FOOTER_BAND;
+    this.inspectorViewport = { x: vx, y: vy, w: vw, h: vh };
+
+    const container = this.add.container(vx, vy).setDepth(201);
+    let cy = 0;
+    const stamp = (text: string, size: number, color: string): void => {
+      const t = this.add
+        .text(0, cy, text, {
+          fontFamily: "Georgia, serif",
+          fontSize: `${size}px`,
+          color,
+          wordWrap: { width: vw - 6 },
+        })
+        .setOrigin(0, 0);
+      container.add(t);
+    };
+    const section = (label: string): void => {
+      stamp(label, 13, "#ffd470");
+      cy += 22;
+    };
+
+    const party = this.combat.combatants.filter((c) => c.side === "party");
+    const enemies = this.combat.combatants.filter((c) => c.side === "enemies");
+    const aliveOf = (list: Combatant[]): number =>
+      list.filter((c) => c.hp > 0).length;
+
+    section(`PARTY  (${aliveOf(party)}/${party.length} standing)`);
+    for (const c of party) {
+      for (const l of this.inspectorLinesFor(c)) {
+        stamp(l.text, l.size, l.color);
+        cy += l.gap;
+      }
+      cy += 6;
+    }
+    cy += 8;
+    section(`MONSTERS  (${aliveOf(enemies)}/${enemies.length} standing)`);
+    for (const c of enemies) {
+      for (const l of this.inspectorLinesFor(c)) {
+        stamp(l.text, l.size, l.color);
+        cy += l.gap;
+      }
+      cy += 6;
+    }
+    const contentH = cy;
+
+    // Clip the container to the viewport.
+    const maskG = this.add.graphics().setVisible(false);
+    maskG.fillStyle(0xffffff);
+    maskG.fillRect(vx, vy, vw, vh);
+    container.setMask(maskG.createGeometryMask());
+    this.inspectorMaskG = maskG;
+    this.inspectorContainer = container;
+    objs.push(container);
+
+    this.inspectorScroll = 0;
+    this.inspectorMaxScroll = Math.max(0, contentH - vh);
+
+    const more = this.inspectorMaxScroll > 0 ? "↑/↓ or scroll · " : "";
+    objs.push(
+      this.add
+        .text(PX + PW / 2, PY + PH - 18, `[ ${more}P / Esc to close ]`, {
+          fontFamily: "monospace",
+          fontSize: "11px",
+          color: "#bdb38a",
+        })
+        .setOrigin(0.5, 0)
+        .setDepth(202),
+    );
+
+    // Mouse-wheel scrolling.
+    const wheel = (
+      _p: Phaser.Input.Pointer,
+      _o: unknown,
+      _dx: number,
+      dy: number,
+    ): void => {
+      if (!this.inspectorOpen) return;
+      this.scrollInspector(dy > 0 ? 1 : -1);
+    };
+    this.input.on("wheel", wheel);
+    this.inspectorWheelHandler = wheel;
+
+    this.inspectorObjs = objs;
+  }
+
+  private scrollInspector(dir: number): void {
+    if (!this.inspectorOpen || !this.inspectorContainer) return;
+    const STEP = 36;
+    this.inspectorScroll = Math.max(
+      0,
+      Math.min(this.inspectorMaxScroll, this.inspectorScroll + dir * STEP),
+    );
+    this.inspectorContainer.y =
+      this.inspectorViewport.y - this.inspectorScroll;
+  }
+
+  private closeInspector(): void {
+    if (!this.inspectorOpen) return;
+    this.inspectorOpen = false;
+    if (this.inspectorWheelHandler) {
+      this.input.off("wheel", this.inspectorWheelHandler);
+      this.inspectorWheelHandler = null;
+    }
+    if (this.inspectorContainer) this.inspectorContainer.clearMask(true);
+    if (this.inspectorMaskG) {
+      this.inspectorMaskG.destroy();
+      this.inspectorMaskG = null;
+    }
+    for (const o of this.inspectorObjs) o.destroy();
+    this.inspectorObjs = [];
+    this.inspectorContainer = null;
   }
 
   private showOverlay(label: string, color: string): void {

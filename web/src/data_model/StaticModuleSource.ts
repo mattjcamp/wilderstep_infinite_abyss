@@ -24,8 +24,9 @@
  *   - collections (records under a collectionKey, addressed by id)
  *     are merged by id — later records override earlier records of
  *     the same id; new ids are appended.
- *   - singletons (collectionKey === null, e.g. party) are replaced
- *     wholesale by the later layer.
+ *   - singletons (collectionKey === null, e.g. party) are merged
+ *     field by field — a later layer overrides only the keys it sets;
+ *     keys it omits are inherited from the earlier layer.
  *   - files missing at a level fall through.
  */
 

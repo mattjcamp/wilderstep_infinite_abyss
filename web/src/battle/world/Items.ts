@@ -65,6 +65,12 @@ export interface Item {
   ranged?: boolean;
   melee?: boolean;
   throwable?: boolean;
+  /** Finesse weapon (Dagger): its melee damage modifier comes from the
+   *  wielder's DEX instead of STR — so a nimble Thief's dagger (and the
+   *  Backstab that doubles its dice) scales off the stat the class
+   *  actually invests in. Absent / false = STR-based, like every other
+   *  melee weapon. */
+  finesse?: boolean;
   evasion?: number;
   /** Magic AC bonus that stacks with armor evasion when equipped. */
   ac_bonus?: number;

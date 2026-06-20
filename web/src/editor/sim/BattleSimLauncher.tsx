@@ -100,9 +100,12 @@ export function BattleSimLauncher({ moduleId }: { moduleId: string }) {
   const grouped = useMemo(() => {
     const byArea = new Map<string, EncounterTemplate[]>();
     for (const e of encounters) {
-      const arr = byArea.get(e.area) ?? [];
+      // Encounters with no `area` set would key the map on null and
+      // crash the alpha sort below; bucket them under "other".
+      const area = e.area ?? "other";
+      const arr = byArea.get(area) ?? [];
       arr.push(e);
-      byArea.set(e.area, arr);
+      byArea.set(area, arr);
     }
     // Stable area order: dungeon first (most encounters), then
     // overworld, then anything else in alpha order.

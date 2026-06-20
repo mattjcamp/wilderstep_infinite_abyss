@@ -1,0 +1,180 @@
+{
+  "characters": [
+    {
+      "id": "gimli",
+      "name": "Gimli",
+      "class": "fighter",
+      "race": "dwarf",
+      "gender": "Male",
+      "level": 10,
+      "exp": 67500,
+      "hp": 125,
+      "mp": 0,
+      "strength": 16,
+      "dexterity": 8,
+      "constitution": 15,
+      "intelligence": 7,
+      "wisdom": 8,
+      "sprite": "person/gnome_fighter2.png",
+      "equipped": {
+        "hands": "broad_axe",
+        "body": "leather"
+      },
+      "inventory": []
+    },
+    {
+      "id": "goldmoon",
+      "name": "Goldmoon",
+      "class": "cleric",
+      "race": "human",
+      "gender": "Female",
+      "level": 9,
+      "exp": 54000,
+      "hp": 65,
+      "mp": 85,
+      "strength": 8,
+      "dexterity": 11,
+      "constitution": 12,
+      "intelligence": 8,
+      "wisdom": 16,
+      "sprite": "person/female_priest01.png",
+      "equipped": {
+        "hands": "mace",
+        "body": "leather"
+      },
+      "inventory": []
+    },
+    {
+      "id": "stormblade",
+      "name": "Stormblade",
+      "class": "paladin",
+      "race": "human",
+      "gender": "Male",
+      "level": 1,
+      "exp": 0,
+      "hp": 12,
+      "mp": 5,
+      "strength": 15,
+      "dexterity": 12,
+      "constitution": 10,
+      "intelligence": 8,
+      "wisdom": 10,
+      "sprite": "person/half_ogre_fighter.png",
+      "equipped": {
+        "hands": "sword",
+        "body": "leather"
+      },
+      "inventory": []
+    },
+    {
+      "id": "raistlin_majere",
+      "name": "Raistlin Majere",
+      "class": "wizard",
+      "race": "gnome",
+      "gender": "Male",
+      "level": 10,
+      "exp": 67500,
+      "hp": 32,
+      "mp": 137,
+      "strength": 6,
+      "dexterity": 12,
+      "constitution": 8,
+      "intelligence": 20,
+      "wisdom": 8,
+      "sprite": "person/halfling_mage3.png",
+      "equipped": {
+        "hands": "dagger",
+        "body": "cloth"
+      },
+      "inventory": []
+    },
+    {
+      "id": "bilbo_baggins",
+      "name": "Bilbo Baggins",
+      "class": "thief",
+      "race": "halfling",
+      "gender": "Male",
+      "level": 10,
+      "exp": 67500,
+      "hp": 72,
+      "mp": 0,
+      "strength": 6,
+      "dexterity": 20,
+      "constitution": 13,
+      "intelligence": 7,
+      "wisdom": 8,
+      "sprite": "person/halfling_fighter3.png",
+      "equipped": {
+        "hands": "dagger",
+        "body": "leather"
+      },
+      "inventory": []
+    },
+    {
+      "id": "bellegaria",
+      "name": "Bellegaria",
+      "class": "alchemist",
+      "race": "human",
+      "gender": "Female",
+      "level": 1,
+      "exp": 0,
+      "hp": 7,
+      "mp": 12,
+      "strength": 8,
+      "dexterity": 8,
+      "constitution": 13,
+      "intelligence": 18,
+      "wisdom": 8,
+      "sprite": "person/human_druid31.png",
+      "equipped": {
+        "hands": "dagger",
+        "body": "cloth"
+      },
+      "inventory": []
+    },
+    {
+      "id": "jaheira",
+      "name": "Jaheira",
+      "class": "druid",
+      "race": "human",
+      "gender": "Male",
+      "level": 1,
+      "exp": 0,
+      "hp": 7,
+      "mp": 10,
+      "strength": 8,
+      "dexterity": 8,
+      "constitution": 8,
+      "intelligence": 16,
+      "wisdom": 15,
+      "sprite": "person/elf_dark_priest.png",
+      "equipped": {
+        "hands": "club",
+        "body": "leather"
+      },
+      "inventory": []
+    },
+    {
+      "id": "tanis",
+      "name": "Tanis",
+      "class": "ranger",
+      "race": "human",
+      "gender": "Male",
+      "level": 1,
+      "exp": 0,
+      "hp": 15,
+      "mp": 0,
+      "strength": 8,
+      "dexterity": 18,
+      "constitution": 10,
+      "intelligence": 8,
+      "wisdom": 11,
+      "sprite": "person/halfling_fighter.png",
+      "equipped": {
+        "hands": "short_bow",
+        "body": "leather"
+      },
+      "inventory": []
+    }
+  ]
+}

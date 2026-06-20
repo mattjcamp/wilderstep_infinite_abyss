@@ -42,6 +42,22 @@
       "hit_sfx": "explosion"
     },
     {
+      "id": "meteor_strike",
+      "name": "Meteor Strike",
+      "description": "A blazing meteor falls from the sky onto the target, trailing embers into a fiery impact burst. Same effect the Meteorfall Mace / Starfall Sling use; on an auto-monster spell one meteor drops on each foe.",
+      "visual": "meteor_strike",
+      "cast_sfx": "fireball",
+      "hit_sfx": "explosion"
+    },
+    {
+      "id": "void_orb",
+      "name": "Void Orb",
+      "description": "A large glowing multi-coloured sphere streaks from the caster to the target, churning through a violet/magenta/cyan void palette with a spark trail, then implodes and erupts in a shockwave. For high-tier single-target void spells.",
+      "visual": "void_orb",
+      "cast_sfx": "magic_burst",
+      "hit_sfx": "explosion"
+    },
+    {
       "id": "generic_projectile",
       "name": "Generic Projectile",
       "description": "Slow-bowed arcane line. The default for any projectile spell that doesn't specify another animation.",

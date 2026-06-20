@@ -613,6 +613,47 @@ export function traceDirectionalRay(
   return { endCol, endRow, hitId: null, fizzled: true };
 }
 
+export interface DirectionalPierceTrace {
+  endCol: number;
+  endRow: number;
+  /** Ids of EVERY alive creature the ray passes through, in order from
+   *  the caster outward. Empty when the bolt hits nothing. */
+  hitIds: string[];
+}
+
+/**
+ * Piercing variant of {@link traceDirectionalRay}: the bolt does NOT
+ * stop at the first creature — it passes through every tile in the
+ * cardinal line, collecting each alive combatant (friend or foe) it
+ * crosses, and only halts at a wall / arena edge or the range cap.
+ * Used by spells flagged `action_params.pierce` (Lightning Bolt), which
+ * electrocute everything in their path. `endCol/endRow` is the last
+ * open tile reached, so the projectile visual streaks the full line.
+ */
+export function traceDirectionalPierce(
+  origin: { col: number; row: number },
+  delta: { dCol: number; dRow: number },
+  range: number,
+  isWallAt: (col: number, row: number) => boolean,
+  combatantAt: (col: number, row: number) => Combatant | null,
+): DirectionalPierceTrace {
+  let tc = origin.col + delta.dCol;
+  let tr = origin.row + delta.dRow;
+  let endCol = origin.col;
+  let endRow = origin.row;
+  const hitIds: string[] = [];
+  for (let steps = 0; steps < range; steps++) {
+    if (isWallAt(tc, tr)) break; // a wall / edge stops the bolt
+    endCol = tc;
+    endRow = tr;
+    const occ = combatantAt(tc, tr);
+    if (occ) hitIds.push(occ.id); // pass through — keep going
+    tc += delta.dCol;
+    tr += delta.dRow;
+  }
+  return { endCol, endRow, hitIds };
+}
+
 /**
  * Build a Combatant for a summoned skeleton from an Animate Dead-style
  * spell. Reads the `skeleton_*` keys out of `spell.effect_value` and

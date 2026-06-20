@@ -64,8 +64,9 @@ export interface ModelDef {
   /** File name within the module folder (e.g. "effects.json"). */
   fileName: string;
   /** Top-level key under which records live in the JSON file, or null
-   *  for singleton files (Party). Singletons can't be merged by id and
-   *  are replaced wholesale when a child module defines the file. */
+   *  for singleton files (Party). Singletons can't be merged by id, so
+   *  a child module's file is merged onto the parent's field by field:
+   *  keys it sets override, keys it omits are inherited. */
   collectionKey: string | null;
   /** Columns shown in the browse table. Ignored when collectionKey is null. */
   columns: ColumnDef[];

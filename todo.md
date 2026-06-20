@@ -1,8 +1,8 @@
-## Remove Relics
+
 
 ## Enchancements
-- Amp up the animations
-- Polish existing adventures
+
+
 
 ## New Content for v2
 

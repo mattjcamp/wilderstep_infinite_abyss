@@ -8,7 +8,11 @@
  *    records override parent records of the same id; new ids are
  *    appended in child-declared order. Sibling top-level fields (like
  *    `_comment`) prefer the child.
- *  - Singletons (collectionKey === null): child replaces wholesale.
+ *  - Singletons (collectionKey === null, e.g. party): merged field by
+ *    field — a key the child sets overrides the parent's; a key the
+ *    child omits is INHERITED from the parent. (Previously the child
+ *    replaced the parent wholesale, which meant a child file had to
+ *    re-declare every field or silently blank the ones it left out.)
  */
 
 export function mergeModel(
@@ -17,7 +21,17 @@ export function mergeModel(
   child: unknown,
 ): unknown {
   if (collectionKey === null) {
-    return child;
+    // Singleton: shallow field-level merge so a child module inherits
+    // any field it doesn't set (e.g. the party roster) instead of
+    // wiping it. An absent child (no own file) leaves the parent as-is;
+    // an absent parent leaves the child as-is. A key the child sets —
+    // including an explicit empty array — still overrides the parent,
+    // so a module can deliberately blank a field when it means to.
+    const parentObj = (parent as Record<string, unknown> | null) ?? null;
+    const childObj = (child as Record<string, unknown> | null) ?? null;
+    if (childObj === null) return parentObj;
+    if (parentObj === null) return childObj;
+    return { ...parentObj, ...childObj };
   }
   const parentObj = (parent as Record<string, unknown> | null) ?? null;
   const childObj = (child as Record<string, unknown> | null) ?? null;

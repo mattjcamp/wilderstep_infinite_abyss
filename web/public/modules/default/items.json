@@ -75,6 +75,7 @@
       "power": 1,
       "ranged": false,
       "throwable": true,
+      "finesse": true,
       "slots": [
         "hands"
       ],

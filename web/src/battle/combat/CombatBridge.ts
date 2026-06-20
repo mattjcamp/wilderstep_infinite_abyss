@@ -223,10 +223,11 @@ function damageForWeapon(member: PartyMember, weapon: Item | null): DamageRoll {
   if (weapon.ranged) {
     return { dice: 1, sides: 4, bonus: mod(member.strength) - 1 };
   }
-  // Throwable melee weapons (Dagger) stay STR until the player
-  // explicitly throws them — matches `Member.get_damage_dice` at
-  // `src/party.py:973`.
-  const statMod = mod(member.strength);
+  // Most melee weapons add the wielder's STR mod. Finesse weapons
+  // (the Dagger) add DEX instead, so a DEX-built Thief's dagger — and
+  // the Backstab that doubles its dice — scales off the stat the class
+  // invests in rather than dragging a low STR into the total.
+  const statMod = weapon.finesse ? mod(member.dexterity) : mod(member.strength);
   const wp = weapon.power;
   if (wp <= 0)   return { dice: 0, sides: 0, bonus: 1 };
   if (wp === 1)  return { dice: 1, sides: 4, bonus: statMod - 1 };
@@ -296,12 +297,17 @@ export function combatStatsFor(
   // when equipped.
   const armorBonus = Math.floor((evasion - 50) / 2);
   const ac = 10 + dexMod + armorBonus + totalAcBonus(member.equipped, items);
-  // attackBonus + damage are the MELEE (bump-attack) profile, so
-  // they're always STR-based — a ranged weapon swung up close is an
-  // improvised club (see damageForWeapon). Projectile attacks use
-  // `dexMod` instead: resolveThrow reads it off the Combatant for
-  // both the Throw and Range flows.
-  const attackBonus = mod(member.strength);
+  // attackBonus + damage are the MELEE (bump-attack) profile, STR-based
+  // for ordinary weapons — a ranged weapon swung up close is an
+  // improvised club (see damageForWeapon). Finesse weapons (the Dagger)
+  // use DEX for BOTH the to-hit and the damage, so a DEX-built Thief is
+  // actually accurate with their signature weapon instead of dragging a
+  // low STR into the attack roll. Projectile attacks always use `dexMod`
+  // (resolveThrow reads it off the Combatant for the Throw / Range flows).
+  const attackBonus =
+    weapon?.finesse && !weapon.ranged
+      ? dexMod
+      : mod(member.strength);
   const damage = damageForWeapon(member, weapon);
   return {
     ac,

@@ -190,6 +190,28 @@ describe("Combat.attack — Backstab gate", () => {
     expect(passingSeed).not.toBeNull();
   });
 
+  it("damage line names the backstab and shows the doubled dice", () => {
+    // A backstab promotes the hit to a crit, so the dagger's 1d1 here
+    // doubles to 2d1. The readout must (a) say "backstabs" so the
+    // damage is tied to the BACKSTAB! beat, and (b) show the doubled
+    // dice + subtotal so a small total still reads as a real backstab.
+    for (let s = 1; s < 50; s++) {
+      const { combat } = attackFixture({ seed: s });
+      const result = combat.attack("goblin");
+      if (result.backstab) {
+        const dmgLine = combat.log.find(
+          (l) => l.includes("backstabs Goblin") && l.includes("dmg"),
+        );
+        expect(dmgLine).toBeTruthy();
+        expect(dmgLine).toContain("2d1 crit-doubled: 2");
+        // And it should NOT mislabel the backstab as a generic crit.
+        expect(dmgLine).not.toContain("crits Goblin");
+        return;
+      }
+    }
+    throw new Error("no passing-backstab seed found in range");
+  });
+
   it("doesn't log the probes line when the gate is closed (no false alarm)", () => {
     const { combat } = attackFixture({
       attackerOver: { charClass: "fighter" },

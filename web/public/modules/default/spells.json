@@ -1,5 +1,5 @@
 {
-  "_comment": "Spell catalog (real data drives the schema). Each spell is a castable action \u2014 damage, heal, apply/cure an effect, summon, teleport, or a composite. `casting_type` (\"sorcerer\" / \"priest\") is the only class-eligibility gate; per-class min-level overrides live on `class_min_levels`. `usable_in` is a two-value enum: \"battle\" (in-combat) or \"party\" (out-of-combat \u2014 the party-management UI on any map). v1 split the out-of-combat case into overworld/town/dungeon, but no caller distinguished between them \u2014 collapsed to a single \"party\" value. Action-specific params (damage dice, effect ids, save DCs) live on `action_params`; the discriminator is `action`. See docs/data_dictionary/spell.md.",
+  "_comment": "Spell catalog (real data drives the schema). Each spell is a castable action — damage, heal, apply/cure an effect, summon, teleport, or a composite. `casting_type` (\"sorcerer\" / \"priest\") is the only class-eligibility gate; per-class min-level overrides live on `class_min_levels`. `usable_in` is a two-value enum: \"battle\" (in-combat) or \"party\" (out-of-combat — the party-management UI on any map). v1 split the out-of-combat case into overworld/town/dungeon, but no caller distinguished between them — collapsed to a single \"party\" value. Action-specific params (damage dice, effect ids, save DCs) live on `action_params`; the discriminator is `action`. See docs/data_dictionary/spell.md.",
   "spells": [
     {
       "id": "magic_dart",
@@ -9,7 +9,7 @@
       "casting_type": "sorcerer",
       "min_level": 1,
       "mp_cost": 6,
-      "range": 10,
+      "range": 4,
       "targeting": "directional_projectile",
       "usable_in": [
         "battle"
@@ -200,7 +200,8 @@
         "dice_sides": 6,
         "stat_bonus": "intelligence",
         "min_damage": 1,
-        "damage_type": "lightning"
+        "damage_type": "lightning",
+        "pierce": true
       }
     },
     {
@@ -235,7 +236,7 @@
       "id": "fireball",
       "name": "Fireball",
       "animation_id": "fireball_burst",
-      "description": "Hurls a massive ball of flame that detonates in a 3-tile radius, scorching everything \u2014 friend or foe \u2014 caught in the blast.",
+      "description": "Hurls a massive ball of flame that detonates in a 3-tile radius, scorching everything — friend or foe — caught in the blast.",
       "casting_type": "sorcerer",
       "min_level": 7,
       "mp_cost": 30,
@@ -259,7 +260,7 @@
       "id": "light",
       "name": "Light",
       "animation_id": "status_aura",
-      "description": "Conjures a radiant orb of divine light at a chosen spot \u2014 anywhere on the battlefield.",
+      "description": "Conjures a radiant orb of divine light at a chosen spot — anywhere on the battlefield.",
       "casting_type": "priest",
       "min_level": 1,
       "mp_cost": 3,
@@ -451,7 +452,7 @@
       "id": "recall",
       "name": "Recall",
       "animation_id": "teleport_blink",
-      "description": "Folds space around the whole party, drawing them back to their last rune stone \u2014 or, if none was placed, to where their journey began.",
+      "description": "Folds space around the whole party, drawing them back to their last rune stone — or, if none was placed, to where their journey began.",
       "casting_type": "sorcerer",
       "min_level": 8,
       "mp_cost": 25,
@@ -469,7 +470,7 @@
     {
       "id": "meteor_shower",
       "name": "Meteor Shower",
-      "animation_id": "fireball_burst",
+      "animation_id": "meteor_strike",
       "description": "Calls a rain of blazing meteors down on every foe on the battlefield, scorching them all at once.",
       "casting_type": "sorcerer",
       "min_level": 9,
@@ -492,7 +493,7 @@
     {
       "id": "void_orb",
       "name": "Void Orb",
-      "animation_id": "fireball_burst",
+      "animation_id": "void_orb",
       "description": "Conjures a sphere of absolute void that collapses on a single enemy, unmaking them with devastating force.",
       "casting_type": "sorcerer",
       "min_level": 10,
@@ -532,8 +533,8 @@
     {
       "id": "divine_smite",
       "name": "Divine Smite",
-      "animation_id": "turn_undead",
-      "description": "Calls down a searing column of holy radiance that scours a single enemy \u2014 and burns the undead half again as hard.",
+      "animation_id": "meteor_strike",
+      "description": "Calls down a searing column of holy radiance that scours a single enemy — and burns the undead half again as hard.",
       "casting_type": "priest",
       "min_level": 9,
       "mp_cost": 60,

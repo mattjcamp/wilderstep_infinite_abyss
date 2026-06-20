@@ -30,6 +30,7 @@ import {
   meteorStrike,
   magicDart,
   magicArrow,
+  voidOrb,
   projectileLine,
   healingSparkles,
   glowAura,
@@ -161,6 +162,18 @@ function seedDefaults(): void {
       to,
       cfg?.color ?? VFX_COLOURS.arcane,
       cfg?.durationMs ?? 240,
+    ),
+  );
+
+  // Glowing multi-coloured sphere that churns through a void palette
+  // in flight, then implodes + erupts on impact. Used by Void Orb.
+  registerProjectileEffect("void_orb", (scene, from, to, cfg) =>
+    voidOrb(
+      scene,
+      from,
+      to,
+      cfg?.color ?? VFX_COLOURS.curse,
+      cfg?.durationMs ?? 520,
     ),
   );
 

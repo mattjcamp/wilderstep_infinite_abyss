@@ -428,3 +428,60 @@ describe("combatantFromMember — race-passive stamping", () => {
     expect(c.postAttackMove).toBeUndefined();
   });
 });
+
+describe("Finesse weapons — Dagger uses DEX for damage", () => {
+  const finesseItems = (): Map<string, Item> =>
+    new Map<string, Item>([
+      [
+        "dagger",
+        {
+          id: "dagger",
+          category: "weapons",
+          name: "Dagger",
+          slots: ["hands"],
+          character_can_equip: true,
+          power: 1,
+          throwable: true,
+          finesse: true,
+        },
+      ],
+      [
+        "mace",
+        {
+          id: "mace",
+          category: "weapons",
+          name: "Mace",
+          slots: ["hands"],
+          character_can_equip: true,
+          power: 3,
+        },
+      ],
+    ]);
+
+  it("adds the DEX modifier (not STR) to a finesse dagger's damage", () => {
+    // A nimble Thief: low STR (8 → −1), high DEX (16 → +3). The dagger
+    // is power 1 (1d4 − 1) so its bonus is statMod − 1.
+    const thief = makeMember({
+      strength: 8,
+      dexterity: 16,
+      equipped: { hands: "dagger", body: null },
+    });
+    const stats = combatStatsFor(thief, finesseItems());
+    // DEX +3, minus the power-1 rounding → bonus +2 (would be −2 on STR).
+    expect(stats.damage).toEqual({ dice: 1, sides: 4, bonus: 2 });
+    // To-hit also keys off DEX (+3), not the −1 STR mod.
+    expect(stats.attackBonus).toBe(3);
+  });
+
+  it("leaves non-finesse weapons (Mace) on STR for both to-hit and damage", () => {
+    const thief = makeMember({
+      strength: 8,
+      dexterity: 16,
+      equipped: { hands: "mace", body: null },
+    });
+    const stats = combatStatsFor(thief, finesseItems());
+    // Mace power 3 → 1d4 + STR mod (8 → −1), and STR-based to-hit.
+    expect(stats.damage).toEqual({ dice: 1, sides: 4, bonus: -1 });
+    expect(stats.attackBonus).toBe(-1);
+  });
+});

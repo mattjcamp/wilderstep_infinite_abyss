@@ -36,7 +36,7 @@ import {
   type Direction,
   type GridPos,
 } from "./Arena";
-import { getModifier, rollAttack, rollBonusDamage, rollD20, rollDamage, rollInitiative } from "./engine";
+import { getModifier, rollAttack, rollBonusDamage, rollD20, rollDice, rollInitiative } from "./engine";
 import {
   sumBuff,
   tickBuffs,
@@ -502,6 +502,13 @@ export class Combat {
     return sumBuff(this.buffs.get(combatantId), kind);
   }
 
+  /** Read-only view of every active buff/debuff on a combatant, in the
+   *  order they were applied. Powers the combat inspector overlay's
+   *  "Effects:" line; never mutated by callers. */
+  buffsFor(combatantId: string): readonly Buff[] {
+    return this.buffs.get(combatantId) ?? [];
+  }
+
   /**
    * True if this combatant has any active buff with the given source
    * tag (case-insensitive). Used by the scene to drive source-keyed
@@ -692,19 +699,25 @@ export class Combat {
     let damage = 0;
     let bonusDamage = 0;
     let smiteUndead = false;
+    // Captured for the damage-breakdown log line below so the player
+    // can see the dice subtotal separately from the flat modifier — a
+    // crit that doubles the dice stays visible even when a negative
+    // modifier nets a small total.
+    let diceSubtotal = 0;
+    let totalBonus = 0;
+    let rolledDiceCount = 0;
     if (roll.hit) {
       // `damage_bonus` buffs (Elixir of Strength) add a flat amount on
-      // top of the weapon's dice + base bonus. Critical hits double
-      // the dice but not the bonus — the buff stays additive on the
-      // bonus side, matching how `rollDamage` treats `bonus` already.
+      // top of the weapon's dice + base bonus. Critical hits double the
+      // dice but not the bonus. We roll the dice and add the modifier
+      // inline (rather than via `rollDamage`) so the dice subtotal and
+      // the modifier can be reported separately — same RNG draws as
+      // `rollDamage`, so damage values are unchanged.
       const buffBonus = this.effectiveDamageBonus(attacker);
-      damage = rollDamage(
-        attacker.damage.dice,
-        attacker.damage.sides,
-        attacker.damage.bonus + buffBonus,
-        critical,
-        this.rng
-      );
+      totalBonus = attacker.damage.bonus + buffBonus;
+      rolledDiceCount = attacker.damage.dice * (critical ? 2 : 1);
+      diceSubtotal = rollDice(rolledDiceCount, attacker.damage.sides, this.rng);
+      damage = Math.max(1, diceSubtotal + totalBonus);
       // Magic-item bonus damage — Sun Sword's 1d6 fire, etc. Rolled
       // separately so the dice spec can be either flat ("3") or
       // "NdM" ("1d6"). Crits double the dice the same way base
@@ -756,12 +769,39 @@ export class Combat {
     const dice = `d20:${roll.roll}${bonusStr}=${roll.total} vs AC${effAc}`;
     const dmgType = attacker.weaponDamageType;
     const typeSuffix = dmgType && dmgType !== "physical" ? ` (${dmgType})` : "";
-    const dmgBreakdown = bonusDamage > 0
-      ? ` — ${damage} dmg${typeSuffix} [${damage - bonusDamage}+${bonusDamage} bonus]`
-      : ` — ${damage} dmg${typeSuffix}`;
+    // Damage-math breakdown, mirroring the attack-roll readout so the
+    // player can see WHERE the number came from. Critical / backstab
+    // hits show the DOUBLED dice expression and the rolled subtotal
+    // explicitly, so a low total after a negative modifier (e.g. a −2
+    // STR dagger) still visibly reflects the doubling rather than
+    // looking like the ability fizzled.
+    let dmgBreakdown = ` — ${damage} dmg${typeSuffix}`;
+    if (roll.hit && rolledDiceCount > 0) {
+      const parts: string[] = [
+        `${rolledDiceCount}d${attacker.damage.sides}${critical ? " crit-doubled" : ""}: ${diceSubtotal}`,
+      ];
+      if (totalBonus !== 0) {
+        parts.push(`${totalBonus >= 0 ? "+" : "−"}${Math.abs(totalBonus)} mod`);
+      }
+      if (bonusDamage > 0) parts.push(`+${bonusDamage} bonus`);
+      if (smiteUndead) parts.push("×2 smite");
+      dmgBreakdown += ` [${parts.join(", ")}]`;
+    } else if (bonusDamage > 0) {
+      dmgBreakdown += ` [${damage - bonusDamage}+${bonusDamage} bonus]`;
+    }
+    // Attribute the hit to the move that drove it so the damage amount
+    // reads as part of the BACKSTAB! / SMITE! beat the player just saw,
+    // instead of a generic "crits" line.
+    const hitVerb = backstab
+      ? "backstabs"
+      : smiteUndead
+        ? "smites"
+        : critical
+          ? "crits"
+          : "hits";
     this.log.push(
       roll.hit
-        ? `${attacker.name} ${critical ? "crits" : "hits"} ${target.name} (${dice})${dmgBreakdown}${killed ? ", defeated!" : "."}`
+        ? `${attacker.name} ${hitVerb} ${target.name} (${dice})${dmgBreakdown}${killed ? ", defeated!" : "."}`
         : `${attacker.name} swings at ${target.name} (${dice}) — miss.`
     );
     return {

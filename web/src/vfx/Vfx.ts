@@ -308,6 +308,111 @@ export function magicDart(
 }
 
 /**
+ * Void Orb: a large, glowing, MULTI-COLOURED sphere that streaks from
+ * the caster to a single target. Layered shells (dark halo → bright
+ * mid → white core) churn through a void palette (violet, magenta,
+ * cyan, indigo) as it flies, trailing scattered multi-coloured sparks.
+ * On arrival it implodes to a point, then erupts in a white flash, a
+ * twin shockwave ring, and a multi-coloured ember scatter — a clearly
+ * "ultimate" read, distinct from the fire / arcane projectiles it used
+ * to borrow.
+ */
+export function voidOrb(
+  scene: Phaser.Scene,
+  from: Pt, to: Pt,
+  _color = COLOURS.curse,
+  durationMs = 520,
+): Promise<void> {
+  return new Promise((resolve) => {
+    // The orb cycles through these so it reads as "multi-coloured"
+    // rather than a single tint.
+    const palette = [0x9d4cff, 0xff4cf0, 0x4cc8ff, 0x6a3cff, 0xc28bff, 0x2ad6c8];
+
+    // Layered shells travel together; a timer recolours them.
+    const halo  = scene.add.circle(from.x, from.y, 18, palette[2], 0.26).setDepth(59);
+    const outer = scene.add.circle(from.x, from.y, 12, palette[0], 0.55).setDepth(60);
+    const mid   = scene.add.circle(from.x, from.y, 8,  palette[1], 0.85).setDepth(61);
+    const core  = scene.add.circle(from.x, from.y, 4,  COLOURS.white, 1).setDepth(62);
+    const shells = [halo, outer, mid, core];
+
+    // Shimmer: rotate the palette across the shells (and breathe the
+    // halo) so the orb visibly churns through colours in flight.
+    let step = 0;
+    const shimmer = scene.time.addEvent({
+      delay: 60,
+      loop: true,
+      callback: () => {
+        outer.setFillStyle(palette[step % palette.length], 0.55);
+        mid.setFillStyle(palette[(step + 2) % palette.length], 0.85);
+        halo.setFillStyle(palette[(step + 4) % palette.length], 0.26);
+        halo.setScale(1 + 0.14 * Math.sin(step * 0.8));
+        step += 1;
+      },
+    });
+
+    // Scattered multi-coloured spark trail along the flight path.
+    const trailCount = 12;
+    const interval = durationMs / trailCount;
+    for (let i = 0; i < trailCount; i++) {
+      scene.time.delayedCall(i * interval, () => {
+        const t = (i + 0.5) / trailCount;
+        const sx = lerp(from.x, to.x, t) + (Math.random() - 0.5) * 9;
+        const sy = lerp(from.y, to.y, t) + (Math.random() - 0.5) * 9;
+        const c = palette[Math.floor(Math.random() * palette.length)];
+        const spark = scene.add
+          .circle(sx, sy, 2 + Math.random() * 2, c, 0.85)
+          .setDepth(58);
+        scene.tweens.add({
+          targets: spark, alpha: 0, radius: 0.5,
+          duration: 360,
+          onComplete: () => spark.destroy(),
+        });
+      });
+    }
+
+    scene.tweens.add({
+      targets: shells,
+      x: to.x, y: to.y,
+      duration: durationMs,
+      ease: "Quad.In", // accelerate as the void collapses inward
+      onComplete: () => {
+        shimmer.remove();
+        // Implode to a bright point...
+        scene.tweens.add({
+          targets: shells, radius: 0.5,
+          duration: 90,
+          onComplete: () => {
+            shells.forEach((s) => s.destroy());
+            // ...then erupt: white flash + twin multi-coloured rings.
+            const flash = scene.add.circle(to.x, to.y, 6, COLOURS.white, 1).setDepth(64);
+            scene.tweens.add({
+              targets: flash, radius: 26, alpha: 0,
+              duration: 240,
+              onComplete: () => flash.destroy(),
+            });
+            [palette[0], palette[2]].forEach((c, idx) => {
+              const ring = scene.add
+                .circle(to.x, to.y, 8, c, 0)
+                .setDepth(63)
+                .setStrokeStyle(3, c, 0.9);
+              scene.tweens.add({
+                targets: ring, radius: 40 + idx * 12, alpha: 0,
+                duration: 360 + idx * 90,
+                onComplete: () => {
+                  ring.destroy();
+                  if (idx === 1) resolve();
+                },
+              });
+            });
+            void radialBurst(scene, to, palette[1], palette[3], 60);
+          },
+        });
+      },
+    });
+  });
+}
+
+/**
  * Magic Arrow: an elongated glowing shaft with a brighter tip and a
  * sparkle trail. Aimed at a specific target (no arc, fast linear
  * flight) — visually distinct from a regular bow shot so casters

@@ -152,6 +152,10 @@ const SPELLS_ACTION_PARAMS: ParamsFieldConfig = {
       kind: "number",
       help: "Multiply damage by this when the target is undead (e.g. 1.5 for Divine Smite).",
     },
+    pierce: {
+      kind: "json",
+      help: "true = a directional bolt passes through every creature in its line, damaging each (Lightning Bolt).",
+    },
     scope: { kind: "string", help: "Targeting scope discriminator." },
     cure_effects: {
       kind: "id_list",
