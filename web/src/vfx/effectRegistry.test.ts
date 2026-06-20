@@ -28,6 +28,7 @@ describe("effectRegistry", () => {
       "lightning_bolt",
       "meteor_strike",
       "magic_dart",
+      "void_orb",
       "magic_arrow",
       "projectile_line",
       "fire_projectile",
