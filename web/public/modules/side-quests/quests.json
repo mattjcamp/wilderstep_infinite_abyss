@@ -2,12 +2,99 @@
   "_comment": "Side Quests library. These quests are town-agnostic drop-ins for any campaign: location fields (location_kind, map_id, dungeon_id, col/row, positions) are intentionally omitted or left blank for the host campaign's author to fill in when placing the quest. Encounter and item ids reference the default module's catalogs (this module extends `default`). Quest givers correspond to NPC records in this module's npcs.json. Every quest carries exactly one difficulty tag — easy, normal, hard, or deadly — alongside its theme tags, so campaigns can browse by tier.",
   "quests": [
     {
+      "id": "rats",
+      "name": "The Giant Rats",
+      "description": "Get rid of those giant rats in town",
+      "tags": [
+        "side",
+        "easy"
+      ],
+      "steps": [
+        {
+          "id": "rats_step_1",
+          "name": "Step 1 Kill the Giant Rats",
+          "kind": "kill",
+          "description": "Kill the giant rats in town",
+          "tags": [
+            "rats"
+          ],
+          "location_kind": "map",
+          "map_id": "town_1",
+          "encounter_id": "rat_swarm",
+          "count": 1,
+          "rewards": {
+            "items": [
+              "starcaller_wand"
+            ]
+          }
+        },
+        {
+          "id": "rats_step_2",
+          "name": "Kill the rats in the outside world",
+          "kind": "kill",
+          "description": "Destory the giant rats that escaped the town",
+          "encounter_id": "rat_nest",
+          "positions": [
+            {
+              "col": 4,
+              "row": 12
+            }
+          ],
+          "location_kind": "map",
+          "map_id": "overview_island",
+          "rewards": {
+            "return_items": [
+              "starcaller_wand"
+            ]
+          }
+        }
+      ],
+      "quest_giver": {
+        "npc_name": "Jerald",
+        "npc_sprite": "person/hobbit2.png",
+        "start_dialog": "I'm the owner of the General Shop and my basement is infested with Giant Rats. Can you take care of this problem for me?",
+        "end_dialog": "Thank you so much for getting rid of those rats and dealing with that cave system... Who knew?",
+        "post_dialog": "Thank you so much for dealing with those rats"
+      },
+      "rewards": {
+        "xp": 100,
+        "gold": 100
+      }
+    },
+    {
+      "id": "explore_the_ruins",
+      "name": "Explore the Old Ruins",
+      "description": "There is an island to the north east with unexplored ruins",
+      "tags": [
+        "side",
+        "easy"
+      ],
+      "steps": [
+        {
+          "id": "explore_the_ruins_step_1",
+          "name": "Explore the Ruins",
+          "kind": "reach",
+          "dungeon_id": "old_ruins"
+        }
+      ],
+      "quest_giver": {
+        "npc_name": "Old Hermit",
+        "npc_sprite": "person/halfling_mage2.png",
+        "start_dialog": "How Fares Thee? Rumor is that an old ruin is on an island to the north east, it seems like a good idea to explore that",
+        "end_dialog": "Great job, did you find anything interesting in those old ruins?",
+        "post_dialog": "Good to see you again"
+      },
+      "rewards": {
+        "xp": 100,
+        "gold": 100
+      }
+    },
+    {
       "id": "wolves_in_the_fold",
       "name": "Wolves in the Fold",
       "description": "Pell Harrow's flock is being killed — not eaten, killed — and his dogs won't go past the cairn anymore. Find the wolves responsible and break the pack.",
       "tags": [
         "side",
-        "hunt",
         "easy"
       ],
       "steps": [
@@ -55,7 +142,6 @@
       "description": "Odessa Brim's seasonal crate of herbs never arrived, and her winter stock is sitting in the weather somewhere between her forager's camp and her counter. Find the crate and bring it back whole.",
       "tags": [
         "side",
-        "delivery",
         "easy"
       ],
       "steps": [
@@ -91,7 +177,6 @@
       "description": "Sister Wren has nine patients and nine days before a fever takes the weakest of them. The brew that breaks it needs fresh moonpetal and glowcap mushrooms from somewhere dark and damp.",
       "tags": [
         "side",
-        "gathering",
         "normal"
       ],
       "steps": [
@@ -140,7 +225,6 @@
       "description": "Garrod Vey surveyed for the crown for thirty years and retired with one blank space he never managed to fill. He wants it walked — every level, all the way down — so his ledger can die honest.",
       "tags": [
         "side",
-        "exploration",
         "normal"
       ],
       "steps": [
@@ -178,7 +262,6 @@
       "description": "Wick Tumbrel lost his first cargo in twenty-two years to robbers who knew his schedule, knew the bend in the road, and laughed while they worked. Find their camp, break it, and bring back the strongbox.",
       "tags": [
         "side",
-        "bandits",
         "normal"
       ],
       "steps": [
@@ -224,7 +307,6 @@
       "description": "The old graveyard Maud Grayle's husband kept for forty years has started opening from underneath. Put the dead back down, and find Aldous's silver ring if the digging shook it loose.",
       "tags": [
         "side",
-        "undead",
         "normal"
       ],
       "steps": [
@@ -282,7 +364,6 @@
       "description": "The rats under the Drowsy Ox have stopped being a nuisance and started being a population. Tilly Crocket wants her cellar back before the winter stores go.",
       "tags": [
         "side",
-        "vermin",
         "easy"
       ],
       "steps": [
@@ -330,7 +411,6 @@
       "description": "Goblins have been collecting a 'tithe' from outlying farms — a chicken here, a sack of grain there, and lately a threat where the chicken used to be. Hob Millet has decided he's done paying.",
       "tags": [
         "side",
-        "goblins",
         "easy"
       ],
       "steps": [
@@ -377,7 +457,6 @@
       "description": "Jasque's seasonal circuit has grown teeth: a goblin ambush at the ford and mixed packs running the hills above it. No circuit means no mended pots, no news, and no Jasque, and three villages mind about at least one of those.",
       "tags": [
         "side",
-        "roads",
         "normal"
       ],
       "steps": [
@@ -425,7 +504,6 @@
       "description": "Drums in the hills, three nights running, and goblin raiders mustering under a shaman's banner. Reeve Calder wants it ended while it's still a muster and not a march.",
       "tags": [
         "side",
-        "goblins",
         "normal"
       ],
       "steps": [
@@ -473,7 +551,6 @@
       "description": "The troll that ended Brask's sword career forty years ago has denned up within a day's walk of his gate, as if the world is daring him. He can't climb the ridge anymore. You can.",
       "tags": [
         "side",
-        "trolls",
         "hard"
       ],
       "steps": [
@@ -522,7 +599,6 @@
       "description": "Ogres have moved into the quarry and started treating the stone-cutting crews as a delivery service. Dagna Flint has payroll to meet and a contract that doesn't have an ogre clause.",
       "tags": [
         "side",
-        "ogres",
         "hard"
       ],
       "steps": [
@@ -571,7 +647,6 @@
       "description": "Corvin Ashe inherited a manor nobody has entered in sixty years, along with the wailing that comes off it at night. Somewhere inside is the family reliquary — and whatever has been keeping it.",
       "tags": [
         "side",
-        "undead",
         "deadly"
       ],
       "steps": [
@@ -583,7 +658,7 @@
           "tags": [
             "the_wailing_manor"
           ],
-          "encounter_id": "cursed_manor",
+          "encounter_id": "skeletons",
           "count": 1
         },
         {
@@ -629,8 +704,6 @@
         "xp": 700,
         "gold": 500,
         "items": [
-          "holy_water",
-          "holy_water",
           "elixir_of_warding"
         ]
       }
@@ -641,7 +714,6 @@
       "description": "Sir Roderic Vane has hunted the vampire he calls the Pale Lord across thirty years and three duchies, and the trail has finally gone to ground close by. Roderic's hands shake now. Yours don't.",
       "tags": [
         "side",
-        "vampires",
         "deadly"
       ],
       "steps": [

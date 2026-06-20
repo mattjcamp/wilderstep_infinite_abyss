@@ -175,6 +175,38 @@
       "tag": "building"
     },
     {
+      "boat": false,
+      "id": "dungeon_entrance_1",
+      "name": "Dungeon Entrance 1",
+      "walkable": true,
+      "obstructs": true,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": null,
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "map/dungeon_entrance_1.png",
+      "tag": "building"
+    },
+    {
+      "boat": false,
+      "id": "dungeon_entrance_2",
+      "name": "Dungeon Entrance 2",
+      "walkable": true,
+      "obstructs": true,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": null,
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "map/dungeon_entrance_2.png",
+      "tag": "building"
+    },
+    {
       "id": "alter",
       "name": "Alter",
       "walkable": false,

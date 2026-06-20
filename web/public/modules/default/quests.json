@@ -19,40 +19,16 @@
           ],
           "location_kind": "map",
           "map_id": "town_1",
-          "encounter_id": "rat_swarm",
+          "encounter_id": "giant_rats",
           "count": 1,
-          "rewards": {
-            "items": [
-              "starcaller_wand"
-            ]
-          }
-        },
-        {
-          "id": "rats_step_2",
-          "name": "Kill the rats in the outside world",
-          "kind": "kill",
-          "description": "Destory the giant rats that escaped the town",
-          "encounter_id": "rat_nest",
-          "positions": [
-            {
-              "col": 4,
-              "row": 12
-            }
-          ],
-          "location_kind": "map",
-          "map_id": "overview_island",
-          "rewards": {
-            "return_items": [
-              "starcaller_wand"
-            ]
-          }
+          "rewards": {}
         }
       ],
       "quest_giver": {
         "npc_name": "Jerald",
-        "npc_sprite": "person/hobbit2.png",
-        "start_dialog": "I'm the owner of the General Shop and my basement is infested with Giant Rats. Can you take care of this problem for me?",
-        "end_dialog": "Thank you so much for getting rid of those rats and dealing with that cave system... Who knew?",
+        "npc_sprite": "person/elf_dark_fighter2.png",
+        "start_dialog": "I'm the owner of the General Shop and my basement was infested with Giant Rats, and now they escaped into town. Can you take care of this problem for me, before the authorities find out and I am fined?",
+        "end_dialog": "Thank you so much for getting rid of those rats... Who knew?",
         "post_dialog": "Thank you so much for dealing with those rats"
       },
       "rewards": {

@@ -972,6 +972,17 @@ export function PlayHost() {
    *  shortcuts setLightingMode without a React render hop. */
   const clockRef = useRef(0);
   const rendererRef = useRef<WorldRenderer | null>(null);
+  /** Surface (overworld map id or dungeon floor) the CURRENTLY-mounted
+   *  renderer was seeded for — `map:<id>` or `dungeon:<id>:<floor>`,
+   *  matching `activeLocationPrefix()`. Set when the renderer mounts +
+   *  seeds its fog. Distinct from `dungeonStateRef.current`, which
+   *  reflects the INTENDED surface and flips the instant
+   *  `dungeon_entered` fires — before the remount. We gate the dungeon
+   *  fog/mutation write-back on this so the still-mounted overworld
+   *  renderer can't copy its visited set into a fresh dungeon floor's
+   *  exploredTiles (which was making the overworld — water + the boat —
+   *  bleed into the dungeon as remembered fog on first entry). */
+  const mountedSurfaceRef = useRef<string | null>(null);
   /** Painted in-canvas Help & Tips screen. Lives inside the Phaser
    *  scene and replaces the React `PlayHelpTipsOverlay` modal — first
    *  of the inspector screens to be painted (see PaintedHelpScreen
@@ -2488,10 +2499,13 @@ export function PlayHost() {
             const lvl = dungeonForFog.levels[dungeonForFog.floorIdx];
             const seeded = lvl?.exploredTiles ?? new Set<string>();
             this.world.setVisitedCells(seeded);
+            mountedSurfaceRef.current =
+              `dungeon:${dungeonForFog.dungeonId}:${dungeonForFog.floorIdx}`;
           } else {
             const persisted =
               save.maps?.[save.party.currentMapId]?.visitedCells ?? [];
             this.world.setVisitedCells(new Set(persisted));
+            mountedSurfaceRef.current = `map:${save.party.currentMapId}`;
           }
 
           // Seed `boatTextures` from the authored grid BEFORE the
@@ -4607,7 +4621,18 @@ export function PlayHost() {
               // need to survive floor transitions in both
               // directions.
               const dungeonNow = dungeonStateRef.current;
-              if (dungeonNow && sim) {
+              // Only mirror when the renderer/kernel actually mounted for
+              // THIS dungeon floor. `dungeonStateRef` flips the moment
+              // `dungeon_entered` fires, but the overworld scene is still
+              // mounted until the remount lands — without this guard the
+              // overworld kernel's `state` tick would copy the overworld's
+              // visited set + mutations into the fresh dungeon floor (the
+              // overworld water + boat bleeding in as remembered fog).
+              const mountedThisFloor =
+                dungeonNow !== null &&
+                mountedSurfaceRef.current ===
+                  `dungeon:${dungeonNow.dungeonId}:${dungeonNow.floorIdx}`;
+              if (dungeonNow && sim && mountedThisFloor) {
                 const session = peekDungeonSession(dungeonNow.instanceId);
                 if (session) {
                   const snap = sim.snapshot();

@@ -10122,8 +10122,8 @@
           },
           {
             "boat": false,
-            "id": "mountain_desert02",
-            "name": "Mountain Desert 02",
+            "id": "mountain_desert05",
+            "name": "Mountain Desert 05",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -10133,7 +10133,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/mountain_desert02.png",
+            "sprite": "map/mountain_desert05.png",
             "tag": "mountain"
           },
           {
@@ -10516,8 +10516,8 @@
           },
           {
             "boat": false,
-            "id": "forest_pine02",
-            "name": "Forest Pine 02",
+            "id": "forest_mixed02",
+            "name": "Forest Mixed 02",
             "walkable": true,
             "obstructs": true,
             "locked": false,
@@ -10527,7 +10527,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/forest_pine02.png",
+            "sprite": "map/forest_mixed02.png",
             "tag": "tree"
           },
           {
@@ -10595,8 +10595,8 @@
           },
           {
             "boat": false,
-            "id": "dungeon_entrance",
-            "name": "Dungeon Entrane",
+            "id": "dungeon_entrance_1",
+            "name": "Dungeon Entrance 1",
             "walkable": true,
             "obstructs": true,
             "locked": false,
@@ -10606,7 +10606,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/dungeon_entrance.png",
+            "sprite": "map/dungeon_entrance_1.png",
             "tag": "building",
             "dungeon": "old_ruins",
             "show_link_placard": true
@@ -12371,7 +12371,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/sand.png",
-            "tag": "walkable"
+            "tag": "walkable",
+            "background_sprite": "map/arch_blue.png"
           },
           {
             "boat": false,

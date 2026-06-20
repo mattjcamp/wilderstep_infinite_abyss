@@ -1146,7 +1146,7 @@
       "stackable": true,
       "charges": 1,
       "ignite": true,
-      "light_range": 5,
+      "light_range": 8,
       "range": 5
     },
     {

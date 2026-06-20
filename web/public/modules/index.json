@@ -25,6 +25,11 @@
       "id": "npcs",
       "title": "Lore and NPCs",
       "role": "library"
+    },
+    {
+      "id": "test",
+      "title": "Test",
+      "role": "playable"
     }
   ]
 }
