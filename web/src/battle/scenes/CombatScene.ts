@@ -29,7 +29,7 @@
  */
 
 import Phaser from "phaser";
-import { Combat, isAiControlled } from "../combat/Combat";
+import { Combat, isAiControlled, type ConsumeEvent } from "../combat/Combat";
 import {
   ARENA_COLS,
   ARENA_ROWS,
@@ -1213,8 +1213,13 @@ export class CombatScene extends Phaser.Scene {
    */
   private async runConsumedTurn(): Promise<void> {
     try {
-      this.combat.runConsumedAutoTurn();
-      this.flashConsumeEvents();
+      // runConsumedAutoTurn() DRAINS the engine's consume-event queue
+      // and RETURNS the events (tick / saved / released). We must flash
+      // exactly those — calling flashConsumeEvents() with no argument
+      // would re-pop an already-empty queue and silently drop them,
+      // leaving a freed character's sprite hidden at its stale cell.
+      const events = this.combat.runConsumedAutoTurn();
+      this.flashConsumeEvents(events);
       this.refreshAll();
     } finally {
       this.busy = false;
@@ -5667,9 +5672,12 @@ export class CombatScene extends Phaser.Scene {
    *   - On `saved` — show the body again at its new arena cell and
    *     float "ESCAPED!".
    */
-  private flashConsumeEvents(): void {
-    const events = this.combat.popConsumeEvents();
-    for (const ev of events) {
+  private flashConsumeEvents(events?: ConsumeEvent[]): void {
+    // Callers that already drained the queue (runConsumedTurn, via
+    // runConsumedAutoTurn's return) pass the events in directly;
+    // everyone else pops the queue accumulated since the last flash.
+    const list = events ?? this.combat.popConsumeEvents();
+    for (const ev of list) {
       const target = this.combat.byId(ev.targetId);
       const body = this.bodies.get(target.id);
       const ring = this.selRings.get(target.id);
@@ -6616,7 +6624,12 @@ export class CombatScene extends Phaser.Scene {
     for (const c of this.combat.combatants) {
       const ring = this.selRings.get(c.id);
       if (!ring) continue;
-      ring.setVisible(c.id === activeId && c.hp > 0);
+      // A swallowed combatant isn't on the board — their slot
+      // auto-resolves via the STR-save tick. Never show their
+      // selection ring: it would otherwise linger at their last
+      // on-board cell (the ring isn't repositioned to the off-board
+      // -1,-1 tile), reading as a present, selectable character.
+      ring.setVisible(c.id === activeId && c.hp > 0 && !c.consumed);
     }
   }
 
@@ -6652,6 +6665,12 @@ export class CombatScene extends Phaser.Scene {
   private drawActionHints(): void {
     this.clearMoveHints();
     if (this.combat.current.side !== "party") return;
+    // A swallowed actor takes no player turn — their slot auto-resolves
+    // via the STR-save tick. Painting their movement/reach overlay
+    // makes it look like they're on the board and can still move
+    // (matching refreshTurnHeader / computeVisibleActions /
+    // canTakePlayerInput, which already short-circuit on `consumed`).
+    if (this.combat.current.consumed) return;
     const me = this.combat.current.position;
     const pending = this.pendingAction;
 

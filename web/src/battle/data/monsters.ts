@@ -152,11 +152,19 @@ interface RawMonsterSpell {
 }
 
 interface RawMonsterPassive {
+  /** v2 discriminator — an id into effects.json (regen,
+   *  fire_resistance, poison_immunity). `type` is the legacy name,
+   *  accepted as a fallback. */
+  effect_id?: string;
   type?: string;
   amount?: number;
 }
 
 interface RawMonsterOnHit {
+  /** v2 discriminator — an id into effects.json (drain, consumed,
+   *  poisoned, slowed). `type` is the legacy name, accepted as a
+   *  fallback. */
+  effect_id?: string;
   type?: string;
   chance?: number;
   amount?: number;
@@ -228,26 +236,36 @@ function spellFromRaw(s: RawMonsterSpell): MonsterSpell | null {
 }
 
 function passiveFromRaw(p: RawMonsterPassive): MonsterPassive | null {
-  if (p.type === "regen") {
+  // v2 renamed the discriminator `type` → `effect_id` (an id into
+  // effects.json). Read `effect_id` first, falling back to the legacy
+  // `type` so older data still loads.
+  const id = p.effect_id ?? p.type;
+  if (id === "regen") {
     return {
       type: "regen",
       amount: typeof p.amount === "number" ? p.amount : 1,
     };
   }
-  if (p.type === "fire_resistance") return { type: "fire_resistance" };
-  if (p.type === "poison_immunity") return { type: "poison_immunity" };
+  if (id === "fire_resistance") return { type: "fire_resistance" };
+  if (id === "poison_immunity") return { type: "poison_immunity" };
   return null;
 }
 
 function onHitFromRaw(h: RawMonsterOnHit): MonsterOnHit | null {
-  if (h.type === "drain") {
+  // v2 renamed the discriminator `type` → `effect_id` (an id into
+  // effects.json). Read `effect_id` first, falling back to the legacy
+  // `type` so older data still loads.
+  const id = h.effect_id ?? h.type;
+  if (id === "drain") {
     return {
       type: "drain",
       chance: typeof h.chance === "number" ? h.chance : 0,
       amount: typeof h.amount === "number" ? h.amount : 0,
     };
   }
-  if (h.type === "consume") {
+  // effects.json names this effect "consumed"; the engine's internal
+  // on-hit discriminator is "consume". Accept the legacy "consume" too.
+  if (id === "consumed" || id === "consume") {
     return {
       type: "consume",
       chance: typeof h.chance === "number" ? h.chance : 0,
@@ -256,6 +274,10 @@ function onHitFromRaw(h: RawMonsterOnHit): MonsterOnHit | null {
       save_dc: typeof h.save_dc === "number" ? h.save_dc : 12,
     };
   }
+  // Other effects.json on-hit ids (poisoned, slowed) aren't modelled by
+  // the combat engine's applyOnHitEffects yet — drop them rather than
+  // crash. (Tracked separately; this fn only wires up what the engine
+  // can act on.)
   return null;
 }
 
