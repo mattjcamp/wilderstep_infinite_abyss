@@ -39,7 +39,7 @@ import {
 } from "./editorShell";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { getEditorModuleSource } from "@/data_model/sourceConfig";
 import {
   discardDraft,
@@ -727,6 +727,17 @@ export function MapEditor({
   const [collapsedTags, setCollapsedTags] = useState<Set<string>>(
     () => new Set(),
   );
+  /** Seed the Tile Palette side panel to ALL collapsed once the palette
+   *  loads, so it opens as a compact, drill-down index instead of a wall
+   *  of expanded tags. The ref guards it to a one-shot — the author's
+   *  manual expand/collapse persists afterwards. */
+  const seededPaletteCollapseRef = useRef(false);
+  useEffect(() => {
+    if (state.kind !== "ok" || seededPaletteCollapseRef.current) return;
+    if (state.palette.length === 0) return;
+    seededPaletteCollapseRef.current = true;
+    setCollapsedTags(collectTileTagPaths(state.palette));
+  }, [state]);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   // Refs that bridge React state into the Phaser scene's closure.
@@ -4339,15 +4350,11 @@ export function MapEditor({
       <div className="flex min-h-0 flex-1 overflow-hidden">
         <aside className="w-52 shrink-0 overflow-auto border-r border-parchment/10 bg-ink/20 p-3">
           {(() => {
-            // Derive the full set of tag-section headers so the toggle
-            // can flip between "all collapsed" and "all expanded".
-            // Mirrors the bucketing PaletteByTag uses internally.
-            const UNTAGGED = "(untagged)";
-            const allTags = new Set<string>();
-            for (const t of palette) {
-              const tag = t.tag && t.tag.trim() ? t.tag : UNTAGGED;
-              allTags.add(tag);
-            }
+            // Every node path in the tag tree (Shop, Shop›Alchemist,
+            // Shop›Alchemist›Boulder, …) so the toggle can flip the whole
+            // nested tree, not just the leaves. Mirrors PaletteByTag's
+            // grouping.
+            const allTags = collectTileTagPaths(palette);
             // If anything is still expanded, the toggle collapses all;
             // once everything's collapsed, it flips to expand-all.
             const allCollapsed =
@@ -4805,6 +4812,141 @@ function spriteThumbSrc(moduleId: string, sprite: string): string {
   return loadSpriteDraft(moduleId, sprite) ?? withBasePath(`/sprites/${sprite}`);
 }
 
+/** Bucket label for tiles with no tag. */
+const UNTAGGED_TILES = "(untagged)";
+
+/** A node in the tile-tag tree. Tags nest on ":" — a tag like
+ *  "shop: Alchemist: Boulder" becomes Shop › Alchemist › Boulder. A node
+ *  can hold both child nodes AND tiles that sit directly at its level. */
+interface TileTagNode {
+  /** This segment's label (e.g. "Alchemist"). */
+  label: string;
+  /** Full "a: b: c" path — the stable collapse key. */
+  path: string;
+  tiles: TileType[];
+  children: TileTagNode[];
+}
+
+/** Build the sorted tile-tag tree from a palette. Splits each tag on ":"
+ *  and files the tile under the resulting path; untagged tiles fall into
+ *  a trailing "(untagged)" group. */
+function buildTileTagTree(palette: TileType[]): TileTagNode[] {
+  const root: TileTagNode = { label: "", path: "", tiles: [], children: [] };
+  const byPath = new Map<string, TileTagNode>();
+  for (const t of palette) {
+    const raw = t.tag && t.tag.trim() ? t.tag : UNTAGGED_TILES;
+    const segs = raw.split(":").map((s) => s.trim()).filter(Boolean);
+    let parent = root;
+    let path = "";
+    for (const seg of segs.length > 0 ? segs : [UNTAGGED_TILES]) {
+      path = path ? `${path}: ${seg}` : seg;
+      let node = byPath.get(path);
+      if (!node) {
+        node = { label: seg, path, tiles: [], children: [] };
+        byPath.set(path, node);
+        parent.children.push(node);
+      }
+      parent = node;
+    }
+    parent.tiles.push(t);
+  }
+  const sort = (nodes: TileTagNode[]): void => {
+    nodes.sort((a, b) => {
+      if (a.label === UNTAGGED_TILES) return 1;
+      if (b.label === UNTAGGED_TILES) return -1;
+      return a.label.localeCompare(b.label);
+    });
+    for (const n of nodes) sort(n.children);
+  };
+  sort(root.children);
+  return root.children;
+}
+
+/** Total tiles in a node's subtree (drives the count badge). */
+function tileTagNodeCount(node: TileTagNode): number {
+  let n = node.tiles.length;
+  for (const c of node.children) n += tileTagNodeCount(c);
+  return n;
+}
+
+/** Every node path in a palette's tag tree — used by the "Collapse all"
+ *  toggle so it can flip the whole tree, not just the leaves. */
+function collectTileTagPaths(palette: TileType[]): Set<string> {
+  const out = new Set<string>();
+  const walk = (nodes: TileTagNode[]): void => {
+    for (const n of nodes) {
+      out.add(n.path);
+      walk(n.children);
+    }
+  };
+  walk(buildTileTagTree(palette));
+  return out;
+}
+
+/** Recursive, collapsible rendering of a tile-tag tree. Leaf tiles are
+ *  rendered by the caller's `renderTiles` so the brush palette and the
+ *  replace-picker share the grouping while keeping their own row styles. */
+function TileTagSections({
+  nodes,
+  depth,
+  collapsed,
+  onToggle,
+  renderTiles,
+}: {
+  nodes: TileTagNode[];
+  depth: number;
+  collapsed: ReadonlySet<string>;
+  onToggle: (path: string) => void;
+  renderTiles: (tiles: TileType[]) => ReactNode;
+}) {
+  return (
+    <div className="space-y-1">
+      {nodes.map((node) => {
+        const isCollapsed = collapsed.has(node.path);
+        return (
+          <section
+            key={node.path}
+            className="rounded border border-parchment/10 bg-ink/30"
+          >
+            <button
+              type="button"
+              onClick={() => onToggle(node.path)}
+              style={{ paddingLeft: 8 + depth * 12 }}
+              className="flex w-full items-center justify-between gap-2 py-1 pr-2 text-left text-[13px] uppercase tracking-wide text-parchment/80 hover:bg-ink/50"
+            >
+              <span className="flex items-center gap-1">
+                <span className="text-parchment/75">
+                  {isCollapsed ? "▸" : "▾"}
+                </span>
+                {node.label}
+              </span>
+              <span className="text-parchment/65 normal-case tracking-normal">
+                {tileTagNodeCount(node)}
+              </span>
+            </button>
+            {!isCollapsed ? (
+              <div className="pb-1">
+                {node.children.length > 0 ? (
+                  <div className="pl-1.5">
+                    <TileTagSections
+                      nodes={node.children}
+                      depth={depth + 1}
+                      collapsed={collapsed}
+                      onToggle={onToggle}
+                      renderTiles={renderTiles}
+                    />
+                  </div>
+                ) : null}
+                {node.tiles.length > 0 ? renderTiles(node.tiles) : null}
+              </div>
+            ) : null}
+          </section>
+        );
+      })}
+    </div>
+  );
+}
+
 function PaletteByTag({
   moduleId,
   palette,
@@ -4820,79 +4962,44 @@ function PaletteByTag({
   onToggleTag: (tag: string) => void;
   onPickBrush: (id: string) => void;
 }) {
-  const UNTAGGED = "(untagged)";
-  const groups = new Map<string, TileType[]>();
-  for (const t of palette) {
-    const tag = t.tag && t.tag.trim() ? t.tag : UNTAGGED;
-    if (!groups.has(tag)) groups.set(tag, []);
-    groups.get(tag)!.push(t);
-  }
-  const ordered = [...groups.keys()].sort((a, b) => {
-    if (a === UNTAGGED) return 1;
-    if (b === UNTAGGED) return -1;
-    return a.localeCompare(b);
-  });
+  const tree = buildTileTagTree(palette);
   return (
-    <div className="space-y-2">
-      {ordered.map((tag) => {
-        const tiles = groups.get(tag)!;
-        const isCollapsed = collapsed.has(tag);
-        return (
-          <section
-            key={tag}
-            className="rounded border border-parchment/10 bg-ink/30"
-          >
-            <button
-              type="button"
-              onClick={() => onToggleTag(tag)}
-              className="flex w-full items-center justify-between gap-2 px-2 py-1 text-left text-[13px] uppercase tracking-wide text-parchment/80 hover:bg-ink/50"
-            >
-              <span className="flex items-center gap-1">
-                <span className="text-parchment/75">
-                  {isCollapsed ? "▸" : "▾"}
-                </span>
-                {tag}
-              </span>
-              <span className="text-parchment/65 normal-case tracking-normal">
-                {tiles.length}
-              </span>
-            </button>
-            {!isCollapsed ? (
-              <ul className="space-y-1 px-1 pb-1">
-                {tiles.map((t) => {
-                  const active = activeBrush === t.id;
-                  return (
-                    <li key={t.id}>
-                      <button
-                        type="button"
-                        onClick={() => onPickBrush(t.id)}
-                        className={`flex w-full items-center gap-2 rounded border px-2 py-1 text-left text-sm transition ${
-                          active
-                            ? "border-ember/60 bg-ember/20 text-parchment"
-                            : "border-parchment/10 bg-ink/40 text-parchment/85 hover:border-parchment/40 hover:bg-ink/60"
-                        }`}
-                      >
-                        <img
-                          src={spriteThumbSrc(moduleId, t.sprite)}
-                          alt=""
-                          width={24}
-                          height={24}
-                          style={{ imageRendering: "pixelated" }}
-                          className="h-6 w-6 shrink-0 object-contain"
-                        />
-                        <span className="flex-1 truncate">
-                          {t.name || t.id}
-                        </span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            ) : null}
-          </section>
-        );
-      })}
-    </div>
+    <TileTagSections
+      nodes={tree}
+      depth={0}
+      collapsed={collapsed}
+      onToggle={onToggleTag}
+      renderTiles={(tiles) => (
+        <ul className="space-y-1 px-1 pb-1">
+          {tiles.map((t) => {
+            const active = activeBrush === t.id;
+            return (
+              <li key={t.id}>
+                <button
+                  type="button"
+                  onClick={() => onPickBrush(t.id)}
+                  className={`flex w-full items-center gap-2 rounded border px-2 py-1 text-left text-sm transition ${
+                    active
+                      ? "border-ember/60 bg-ember/20 text-parchment"
+                      : "border-parchment/10 bg-ink/40 text-parchment/85 hover:border-parchment/40 hover:bg-ink/60"
+                  }`}
+                >
+                  <img
+                    src={spriteThumbSrc(moduleId, t.sprite)}
+                    alt=""
+                    width={24}
+                    height={24}
+                    style={{ imageRendering: "pixelated" }}
+                    className="h-6 w-6 shrink-0 object-contain"
+                  />
+                  <span className="flex-1 truncate">{t.name || t.id}</span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    />
   );
 }
 
@@ -5797,9 +5904,17 @@ function PaletteTilePicker({
 }) {
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState("");
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
+  // Open this picker with every tag section collapsed (one-shot seed) so
+  // it reads as a compact index; the author expands what they need.
+  const seededRef = useRef(false);
+  useEffect(() => {
+    if (seededRef.current || palette.length === 0) return;
+    seededRef.current = true;
+    setCollapsed(collectTileTagPaths(palette));
+  }, [palette]);
   const selected = palette.find((t) => t.id === value) ?? null;
 
-  const UNTAGGED = "(untagged)";
   const q = filter.trim().toLowerCase();
   const matches = q
     ? palette.filter(
@@ -5809,17 +5924,14 @@ function PaletteTilePicker({
           (t.tag ?? "").toLowerCase().includes(q),
       )
     : palette;
-  const groups = new Map<string, TileType[]>();
-  for (const t of matches) {
-    const tag = t.tag && t.tag.trim() ? t.tag : UNTAGGED;
-    if (!groups.has(tag)) groups.set(tag, []);
-    groups.get(tag)!.push(t);
-  }
-  const ordered = [...groups.keys()].sort((a, b) => {
-    if (a === UNTAGGED) return 1;
-    if (b === UNTAGGED) return -1;
-    return a.localeCompare(b);
-  });
+  const tree = buildTileTagTree(matches);
+  const toggle = (path: string) =>
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(path)) next.delete(path);
+      else next.add(path);
+      return next;
+    });
 
   return (
     <div className="mt-0.5 space-y-1">
@@ -5875,13 +5987,14 @@ function PaletteTilePicker({
             className="w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90 placeholder:text-parchment/50 focus:border-parchment/60 focus:outline-none"
           />
           <div className="mt-1.5 max-h-56 space-y-1.5 overflow-auto pr-1">
-            {ordered.map((tag) => (
-              <section key={tag}>
-                <p className="px-1 text-[11px] uppercase tracking-wide text-parchment/55">
-                  {tag}
-                </p>
-                <ul className="mt-0.5 space-y-0.5">
-                  {groups.get(tag)!.map((t) => {
+            <TileTagSections
+              nodes={tree}
+              depth={0}
+              collapsed={collapsed}
+              onToggle={toggle}
+              renderTiles={(tiles) => (
+                <ul className="mt-0.5 space-y-0.5 px-1 pb-1">
+                  {tiles.map((t) => {
                     const active = t.id === value;
                     return (
                       <li key={t.id}>
@@ -5924,8 +6037,8 @@ function PaletteTilePicker({
                     );
                   })}
                 </ul>
-              </section>
-            ))}
+              )}
+            />
             {matches.length === 0 ? (
               <p className="px-1 py-2 text-center text-xs text-parchment/55">
                 No palette tiles match &ldquo;{filter}&rdquo;.

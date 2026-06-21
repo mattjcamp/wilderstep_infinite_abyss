@@ -24,7 +24,6 @@ import {
   deltaFor,
   directionForKey,
   findSpawn,
-  partyLightRange,
   partyLightSource,
   tickPartyTimers,
 } from "./movement";
@@ -74,6 +73,7 @@ import type {
   SimRace,
   SimSpell,
 } from "./types";
+import { TORCH_LIGHT_RANGE, MAGIC_LIGHT_RANGE } from "./types";
 
 /** The shape of the bridge a host (editor or game) provides so the
  *  simulation can drive its Phaser canvas. The kernel never reads
@@ -3138,12 +3138,27 @@ export class MapSimulation {
   }
 
   private currentLightRange(): number {
-    return partyLightRange(
-      this.party,
-      this.activeMembers,
-      this.catalog.races,
-      this.catalog.effects,
-    );
+    // Light range is data-driven from the lit source's item: a held
+    // torch lights to the torch item's `light_range` (items.json),
+    // mirroring the combat side which already reads `light_range` off
+    // items / ammo. Falls back to TORCH_LIGHT_RANGE only when the
+    // catalog has no torch record or it omits the field.
+    let best = 0;
+    if (this.party.torch_steps > 0) {
+      const torch = (this.catalog.items ?? []).find(
+        (it) => it.item_type === "torch" || it.id === "torch",
+      );
+      best = Math.max(
+        best,
+        typeof torch?.light_range === "number" && torch.light_range > 0
+          ? torch.light_range
+          : TORCH_LIGHT_RANGE,
+      );
+    }
+    if ((this.party.magic_light_steps ?? 0) > 0) {
+      best = Math.max(best, MAGIC_LIGHT_RANGE);
+    }
+    return best;
   }
 
   private computeLightSource(): SimLightSource | null {

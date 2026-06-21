@@ -35,7 +35,7 @@
  * merge layer.
  */
 
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { getEditorModuleSource } from "@/data_model/sourceConfig";
 import {
   DraftBanner,
@@ -131,13 +131,18 @@ export function ModelView({
   const [creating, setCreating] = useState(false);
   const [publishing, setPublishing] = useState(false);
   /** Tag-section collapse state for models that group by tag (the Tile
-   *  Palette today). Tags are expanded by default; entries in this
-   *  Set are the exceptions. Lives on the ModelView so navigating
-   *  away and back resets the view to "all expanded" — matches the
-   *  MapEditor side panel's behaviour and keeps state lightweight. */
+   *  Palette today). Seeded to ALL collapsed on first load of a grouped
+   *  model (see `seededCollapseFor` below) so the screen opens as a
+   *  compact, drill-down index; this Set then tracks the author's own
+   *  expand/collapse choices. */
   const [collapsedTags, setCollapsedTags] = useState<Set<string>>(
     () => new Set(),
   );
+  /** modelKey the collapse set was last seeded for. Guards the
+   *  default-collapse so it runs once per grouped model (re-seeding on a
+   *  model switch) without clobbering the author's manual toggles on
+   *  filter changes / re-renders. */
+  const seededCollapseFor = useRef<string | null>(null);
   /** Free-text filter over the browse table (matches id, name, tags,
    *  and any displayed column value). Empty = show everything. */
   const [query, setQuery] = useState("");
@@ -510,6 +515,30 @@ export function ModelView({
   // active tag filter already narrows to one tag so grouping by tag
   // would be redundant.
   const grouped = isGroupedModel(modelKey) && !sortField && !tagFilter;
+  // Default the collapsible tag sections to COLLAPSED the first time a
+  // grouped model's records are available, so the list opens compact and
+  // the author drills in. Re-running setState during render (guarded by
+  // the ref) is React's endorsed pattern for resetting state when a key
+  // input changes; the ref keys on modelKey so the author's manual
+  // toggles survive filters + re-renders, and a different model re-seeds.
+  if (
+    isGroupedModel(modelKey) &&
+    derived.records.length > 0 &&
+    seededCollapseFor.current !== (modelKey ?? "")
+  ) {
+    seededCollapseFor.current = modelKey ?? "";
+    const paths = new Set<string>();
+    for (const r of derived.records) {
+      const raw = groupTagOf(modelKey, r) ?? "(untagged)";
+      const segs = raw.split(":").map((s) => s.trim()).filter(Boolean);
+      let path = "";
+      for (const seg of segs.length > 0 ? segs : ["(untagged)"]) {
+        path = path ? `${path}: ${seg}` : seg;
+        paths.add(path);
+      }
+    }
+    setCollapsedTags(paths);
+  }
   const toggleSort = (field: string) => {
     if (sortField !== field) {
       setSortField(field);
@@ -681,9 +710,18 @@ export function ModelView({
               {grouped
                 ? (() => {
                     const UNTAGGED = "(untagged)";
+                    // Every node path in the tag tree (e.g. "shop" and
+                    // "shop: Armorer") so "Collapse all" flips the whole
+                    // nested tree, not just the leaf tags.
                     const allTags = new Set<string>();
                     for (const r of visibleRecords) {
-                      allTags.add(groupTagOf(modelKey, r) ?? UNTAGGED);
+                      const raw = groupTagOf(modelKey, r) ?? UNTAGGED;
+                      const segs = raw.split(":").map((s) => s.trim()).filter(Boolean);
+                      let path = "";
+                      for (const seg of segs.length > 0 ? segs : [UNTAGGED]) {
+                        path = path ? `${path}: ${seg}` : seg;
+                        allTags.add(path);
+                      }
                     }
                     if (allTags.size <= 1) return null;
                     const allCollapsed = collapsedTags.size >= allTags.size;
@@ -788,66 +826,98 @@ export function ModelView({
                 // in both views.
                 if (grouped) {
                   const UNTAGGED = "(untagged)";
-                  const groups = new Map<string, Array<{ rec: Record_; idx: number }>>();
+                  // Build a nested tree from the group tag, split on ":"
+                  // so a tag like "shop: Armorer" nests as Shop › Armorer
+                  // with the tiles at the leaf. A node can hold both child
+                  // nodes and records that sit directly at its level.
+                  interface GNode {
+                    label: string;
+                    path: string;
+                    recs: Array<{ rec: Record_; idx: number }>;
+                    children: GNode[];
+                  }
+                  const root: GNode = { label: "", path: "", recs: [], children: [] };
+                  const byPath = new Map<string, GNode>();
                   visibleRecords.forEach((r, i) => {
-                    const tag = groupTagOf(modelKey, r) ?? UNTAGGED;
-                    if (!groups.has(tag)) groups.set(tag, []);
-                    groups.get(tag)!.push({ rec: r, idx: i });
+                    const raw = groupTagOf(modelKey, r) ?? UNTAGGED;
+                    const segs = raw.split(":").map((s) => s.trim()).filter(Boolean);
+                    let parent = root;
+                    let path = "";
+                    for (const seg of segs.length > 0 ? segs : [UNTAGGED]) {
+                      path = path ? `${path}: ${seg}` : seg;
+                      let node = byPath.get(path);
+                      if (!node) {
+                        node = { label: seg, path, recs: [], children: [] };
+                        byPath.set(path, node);
+                        parent.children.push(node);
+                      }
+                      parent = node;
+                    }
+                    parent.recs.push({ rec: r, idx: i });
                   });
-                  const ordered = [...groups.keys()].sort((a, b) => {
-                    if (a === UNTAGGED) return 1;
-                    if (b === UNTAGGED) return -1;
-                    return a.localeCompare(b);
-                  });
-                  return (
-                    <tbody>
-                      {ordered.map((tag) => {
-                        const rows = groups.get(tag)!;
-                        const isCollapsed = collapsedTags.has(tag);
-                        return (
-                          <Fragment key={`tag-${tag}`}>
-                            <tr
-                              className="cursor-pointer border-t border-parchment/10 bg-ink/40 hover:bg-ink/55"
-                              onClick={() =>
-                                setCollapsedTags((prev) => {
-                                  const next = new Set(prev);
-                                  if (next.has(tag)) next.delete(tag);
-                                  else next.add(tag);
-                                  return next;
-                                })
-                              }
-                              title={
-                                isCollapsed
-                                  ? `Expand "${tag}" tiles`
-                                  : `Collapse "${tag}" tiles`
-                              }
-                            >
-                              <td
-                                colSpan={totalCols}
-                                className="px-2 py-1 text-[13px] uppercase tracking-wide text-parchment/85"
-                              >
-                                <span className="mr-2 text-parchment/75">
-                                  {isCollapsed ? "▸" : "▾"}
-                                </span>
-                                <span className="text-parchment/85">
-                                  {tag}
-                                </span>
-                                <span className="ml-2 normal-case tracking-normal text-parchment/65">
-                                  {rows.length}
-                                  {rows.length === 1 ? " entry" : " entries"}
-                                </span>
-                              </td>
-                            </tr>
-                            {!isCollapsed
-                              ? rows.map(({ rec, idx }) =>
-                                  renderRow(rec, idx),
-                                )
-                              : null}
-                          </Fragment>
-                        );
-                      })}
-                    </tbody>
-                  );
+                  const sortNodes = (nodes: GNode[]): void => {
+                    nodes.sort((a, b) =>
+                      a.label === UNTAGGED
+                        ? 1
+                        : b.label === UNTAGGED
+                          ? -1
+                          : a.label.localeCompare(b.label),
+                    );
+                    for (const n of nodes) sortNodes(n.children);
+                  };
+                  sortNodes(root.children);
+                  const countNode = (n: GNode): number =>
+                    n.recs.length +
+                    n.children.reduce((s, c) => s + countNode(c), 0);
+                  const emit = (nodes: GNode[], depth: number): ReactNode[] => {
+                    const out: ReactNode[] = [];
+                    for (const node of nodes) {
+                      const isCollapsed = collapsedTags.has(node.path);
+                      const count = countNode(node);
+                      out.push(
+                        <tr
+                          key={`tag-${node.path}`}
+                          className="cursor-pointer border-t border-parchment/10 bg-ink/40 hover:bg-ink/55"
+                          onClick={() =>
+                            setCollapsedTags((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(node.path)) next.delete(node.path);
+                              else next.add(node.path);
+                              return next;
+                            })
+                          }
+                          title={
+                            isCollapsed
+                              ? `Expand "${node.path}"`
+                              : `Collapse "${node.path}"`
+                          }
+                        >
+                          <td
+                            colSpan={totalCols}
+                            className="py-1 pr-2 text-[13px] uppercase tracking-wide text-parchment/85"
+                            style={{ paddingLeft: 8 + depth * 16 }}
+                          >
+                            <span className="mr-2 text-parchment/75">
+                              {isCollapsed ? "▸" : "▾"}
+                            </span>
+                            <span className="text-parchment/85">{node.label}</span>
+                            <span className="ml-2 normal-case tracking-normal text-parchment/65">
+                              {count}
+                              {count === 1 ? " entry" : " entries"}
+                            </span>
+                          </td>
+                        </tr>,
+                      );
+                      if (!isCollapsed) {
+                        out.push(...emit(node.children, depth + 1));
+                        for (const { rec, idx } of node.recs) {
+                          out.push(renderRow(rec, idx));
+                        }
+                      }
+                    }
+                    return out;
+                  };
+                  return <tbody>{emit(root.children, 0)}</tbody>;
                 }
                 return (
                   <tbody>

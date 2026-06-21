@@ -27,7 +27,7 @@ import {
   deleteRecordConfirmMessage,
   discardDraftConfirmMessage,
 } from "./editorShell";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   discardDraft,
   downloadJson,
@@ -1699,10 +1699,22 @@ function TilePalettePicker({
   warnNonWalkable?: boolean;
 }) {
   const [open, setOpen] = useState(false);
-  // Per-tag collapse state for the grouped grid. Empty by default so
-  // every group starts expanded (no tile is hidden until the author
-  // chooses to collapse a section).
+  // Per-tag collapse state for the grouped grid. Seeded to every tag
+  // collapsed once the palette loads (one-shot) so the picker opens as a
+  // compact tag index; the author expands the section they need.
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const seededRef = useRef(false);
+  useEffect(() => {
+    if (seededRef.current || paletteTiles.length === 0) return;
+    seededRef.current = true;
+    setCollapsed(
+      new Set(
+        paletteTiles.map((t) =>
+          t.tag && t.tag.trim() ? t.tag : UNTAGGED_TILES,
+        ),
+      ),
+    );
+  }, [paletteTiles]);
   const selected = value
     ? paletteTiles.find((t) => t.id === value)
     : undefined;

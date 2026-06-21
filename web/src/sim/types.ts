@@ -209,6 +209,13 @@ export interface SimItemRef {
    *  they're plot tokens, not door openers. Optional; absent reads
    *  as "no special behaviour." */
   item_type?: string;
+  /** Light radius (tiles) this item emits when lit/carried — read off
+   *  the full items.json record. The overworld/dungeon light model
+   *  reads the held torch's value here so a torch's reach is
+   *  data-driven (matching the combat side, which already reads
+   *  `light_range` off items/ammo) rather than a hardcoded constant.
+   *  Absent → the engine falls back to `TORCH_LIGHT_RANGE`. */
+  light_range?: number;
   /** RESERVED for the future multi-lock system — inert today. When
    *  set, names the lock category this key fits (matched against a
    *  door's {@link SimCell.lock_type}). A key with no `opens` (like

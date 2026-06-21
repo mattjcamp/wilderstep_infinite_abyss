@@ -33,6 +33,37 @@ import {
 } from "@/play/counterStock";
 import { isStackable, stackSizeOf } from "@/battle/world/Items";
 import { Sfx } from "@/battle/audio/Sfx";
+import { spriteUrl } from "@/data_model/spriteUrl";
+
+/** 20×20 item sprite for a shop row. Resolves the icon stem through
+ *  `spriteUrl` (same path the game loads item textures from, so hosted
+ *  module uploads route correctly). Falls back to a neutral box when an
+ *  item has no icon, and hides a broken image rather than showing the
+ *  browser's missing-image glyph. */
+function ItemSprite({ icon }: { icon?: string }) {
+  if (!icon) {
+    return (
+      <span
+        aria-hidden
+        className="h-5 w-5 shrink-0 rounded-sm border border-parchment/15 bg-ink/60"
+      />
+    );
+  }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={spriteUrl(`item/${icon}.png`)}
+      alt=""
+      width={20}
+      height={20}
+      style={{ imageRendering: "pixelated" }}
+      className="h-5 w-5 shrink-0 object-contain"
+      onError={(e) => {
+        (e.currentTarget as HTMLImageElement).style.visibility = "hidden";
+      }}
+    />
+  );
+}
 
 interface ShopItemRef {
   id: string;
@@ -820,18 +851,21 @@ export function PlayCounterShopOverlay({
                           : "",
                       ].join(" ")}
                     >
-                      <span className="truncate">
-                        {itemLabel(id)}
-                        {bundle > 1 ? (
-                          <span className="ml-1 text-parchment/55">
-                            ×{bundle}
-                          </span>
-                        ) : null}
-                        {wearLabel ? (
-                          <span className="ml-1 text-parchment/55">
-                            {wearLabel}
-                          </span>
-                        ) : null}
+                      <span className="flex min-w-0 items-center gap-2">
+                        <ItemSprite icon={def?.icon} />
+                        <span className="truncate">
+                          {itemLabel(id)}
+                          {bundle > 1 ? (
+                            <span className="ml-1 text-parchment/55">
+                              ×{bundle}
+                            </span>
+                          ) : null}
+                          {wearLabel ? (
+                            <span className="ml-1 text-parchment/55">
+                              {wearLabel}
+                            </span>
+                          ) : null}
+                        </span>
                       </span>
                       <span className="ml-2 shrink-0 font-mono text-xs text-parchment/65">
                         {price > 0 ? `${price}g` : "—"}
@@ -903,9 +937,12 @@ export function PlayCounterShopOverlay({
                           : "",
                       ].join(" ")}
                     >
-                      <span className="truncate">
-                        {itemLabel(entry.item)}
-                        {qtyLabel}
+                      <span className="flex min-w-0 items-center gap-2">
+                        <ItemSprite icon={def?.icon} />
+                        <span className="truncate">
+                          {itemLabel(entry.item)}
+                          {qtyLabel}
+                        </span>
                       </span>
                       <span className="ml-2 shrink-0 font-mono text-xs text-parchment/65">
                         {price > 0 ? (

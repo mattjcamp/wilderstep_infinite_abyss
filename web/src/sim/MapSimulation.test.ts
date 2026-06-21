@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { MapSimulation, type SceneBridge } from "./MapSimulation";
 import type { SimGrid, SimCell, SimParty, SimEvent } from "./types";
+import { TORCH_LIGHT_RANGE } from "./types";
 import {
   ensureQuestStates,
   parseQuestsFile,
@@ -73,6 +74,7 @@ function makeSim(opts?: {
     icon?: string;
     is_chest?: boolean;
     item_type?: string;
+    light_range?: number;
     contents?: {
       gold?: number;
       items?: ReadonlyArray<{ id: string; qty?: number }>;
@@ -740,6 +742,32 @@ describe("MapSimulation.stepInDirection — side effects", () => {
     });
     sim.stepInDirection("up"); // off-grid
     expect(sim.snapshot().party.torch_steps).toBe(5);
+  });
+
+  it("drives the lit torch's light range from the torch item's data", () => {
+    // The torch item (items.json) declares light_range: 8; the engine
+    // must use that, not the hardcoded TORCH_LIGHT_RANGE fallback.
+    const sim = makeSim({
+      party: { ...makeParty(), torch_steps: 5 },
+      items: [{ id: "torch", item_type: "torch", light_range: 8 }],
+    });
+    expect(sim.snapshot().lightRange).toBe(8);
+  });
+
+  it("falls back to TORCH_LIGHT_RANGE when the torch item omits light_range", () => {
+    const sim = makeSim({
+      party: { ...makeParty(), torch_steps: 5 },
+      items: [{ id: "torch", item_type: "torch" }],
+    });
+    expect(sim.snapshot().lightRange).toBe(TORCH_LIGHT_RANGE);
+  });
+
+  it("emits no party light when no torch is lit", () => {
+    const sim = makeSim({
+      party: { ...makeParty(), torch_steps: 0 },
+      items: [{ id: "torch", item_type: "torch", light_range: 8 }],
+    });
+    expect(sim.snapshot().lightRange).toBe(0);
   });
 
   it("calls bridge.setPartyAt for successful walks", () => {

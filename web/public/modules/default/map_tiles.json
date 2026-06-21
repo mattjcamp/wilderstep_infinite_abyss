@@ -2141,7 +2141,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_alchemist_boulder.png",
-      "tag": "shop: boulder"
+      "tag": "shop: Alchemist"
     },
     {
       "boat": false,
@@ -2157,7 +2157,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_armorer_boulder.png",
-      "tag": "shop: boulder"
+      "tag": "shop: Armorer"
     },
     {
       "boat": false,
@@ -2173,7 +2173,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_armory_boulder.png",
-      "tag": "shop: boulder"
+      "tag": "shop: Armory"
     },
     {
       "boat": false,
@@ -2189,7 +2189,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_bank_boulder.png",
-      "tag": "shop: boulder"
+      "tag": "shop: Bank"
     },
     {
       "boat": false,
@@ -2205,7 +2205,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_bowyer_boulder.png",
-      "tag": "shop: boulder"
+      "tag": "shop: Bowyer"
     },
     {
       "boat": false,
@@ -2221,7 +2221,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_chandler_boulder.png",
-      "tag": "shop: boulder"
+      "tag": "shop: Chandler"
     },
     {
       "boat": false,
@@ -2237,7 +2237,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_chapel_boulder.png",
-      "tag": "shop: boulder"
+      "tag": "shop: Chapel"
     },
     {
       "boat": false,
@@ -2253,7 +2253,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_druid_lodge_boulder.png",
-      "tag": "shop: boulder"
+      "tag": "shop: Druid Lodge"
     },
     {
       "boat": false,
@@ -2269,7 +2269,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_haunted_boulder.png",
-      "tag": "shop: boulder"
+      "tag": "shop: Haunted"
     },
     {
       "boat": false,
@@ -2285,7 +2285,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_inn_boulder.png",
-      "tag": "shop: boulder"
+      "tag": "shop: Inn"
     },
     {
       "boat": false,
@@ -2301,7 +2301,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_jeweler_boulder.png",
-      "tag": "shop: boulder"
+      "tag": "shop: Jeweler"
     },
     {
       "boat": false,
@@ -2317,7 +2317,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_keep_boulder.png",
-      "tag": "shop: boulder"
+      "tag": "shop: Keep"
     },
     {
       "boat": false,
@@ -2333,7 +2333,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_library_boulder.png",
-      "tag": "shop: boulder"
+      "tag": "shop: Library"
     },
     {
       "boat": false,
@@ -2349,7 +2349,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_lodging_boulder.png",
-      "tag": "shop: boulder"
+      "tag": "shop: Lodging"
     },
     {
       "boat": false,
@@ -2365,7 +2365,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_magic_shop_boulder.png",
-      "tag": "shop: boulder"
+      "tag": "shop: Magic Shop"
     },
     {
       "boat": false,
@@ -2381,7 +2381,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_outfitter_boulder.png",
-      "tag": "shop: boulder"
+      "tag": "shop: Outfitter"
     },
     {
       "boat": false,
@@ -2397,7 +2397,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_royal_house_boulder.png",
-      "tag": "shop: boulder"
+      "tag": "shop: Royal House"
     },
     {
       "boat": false,
@@ -2413,7 +2413,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_scriptorium_boulder.png",
-      "tag": "shop: boulder"
+      "tag": "shop: Scriptorium"
     },
     {
       "boat": false,
@@ -2429,7 +2429,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_swordsmith_boulder.png",
-      "tag": "shop: boulder"
+      "tag": "shop: Swordsmith"
     },
     {
       "boat": false,
@@ -2445,7 +2445,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_templar_hall_boulder.png",
-      "tag": "shop: boulder"
+      "tag": "shop: Templar Hall"
     },
     {
       "boat": false,
@@ -2461,7 +2461,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_temple_boulder.png",
-      "tag": "shop: boulder"
+      "tag": "shop: Temple"
     },
     {
       "boat": false,
@@ -2477,7 +2477,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_temple_grand_boulder.png",
-      "tag": "shop: boulder"
+      "tag": "shop: Temple Grand"
     },
     {
       "boat": false,
@@ -2493,7 +2493,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_thieves_den_boulder.png",
-      "tag": "shop: boulder"
+      "tag": "shop: Thieves Den"
     },
     {
       "boat": false,
@@ -2509,7 +2509,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_trainer_boulder.png",
-      "tag": "shop: boulder"
+      "tag": "shop: Trainer"
     },
     {
       "boat": false,
@@ -2525,7 +2525,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_weaponsmith_boulder.png",
-      "tag": "shop: boulder"
+      "tag": "shop: Weaponsmith"
     },
     {
       "boat": false,
@@ -2541,7 +2541,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_wizard_tower_boulder.png",
-      "tag": "shop: boulder"
+      "tag": "shop: Wizard Tower"
     },
     {
       "boat": false,
@@ -2557,7 +2557,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_alchemist_braced.png",
-      "tag": "shop: braced"
+      "tag": "shop: Alchemist"
     },
     {
       "boat": false,
@@ -2573,7 +2573,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_armorer_braced.png",
-      "tag": "shop: braced"
+      "tag": "shop: Armorer"
     },
     {
       "boat": false,
@@ -2589,7 +2589,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_armory_braced.png",
-      "tag": "shop: braced"
+      "tag": "shop: Armory"
     },
     {
       "boat": false,
@@ -2605,7 +2605,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_bank_braced.png",
-      "tag": "shop: braced"
+      "tag": "shop: Bank"
     },
     {
       "boat": false,
@@ -2621,7 +2621,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_bowyer_braced.png",
-      "tag": "shop: braced"
+      "tag": "shop: Bowyer"
     },
     {
       "boat": false,
@@ -2637,7 +2637,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_chandler_braced.png",
-      "tag": "shop: braced"
+      "tag": "shop: Chandler"
     },
     {
       "boat": false,
@@ -2653,7 +2653,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_chapel_braced.png",
-      "tag": "shop: braced"
+      "tag": "shop: Chapel"
     },
     {
       "boat": false,
@@ -2669,7 +2669,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_druid_lodge_braced.png",
-      "tag": "shop: braced"
+      "tag": "shop: Druid Lodge"
     },
     {
       "boat": false,
@@ -2685,7 +2685,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_haunted_braced.png",
-      "tag": "shop: braced"
+      "tag": "shop: Haunted"
     },
     {
       "boat": false,
@@ -2701,7 +2701,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_inn_braced.png",
-      "tag": "shop: braced"
+      "tag": "shop: Inn"
     },
     {
       "boat": false,
@@ -2717,7 +2717,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_jeweler_braced.png",
-      "tag": "shop: braced"
+      "tag": "shop: Jeweler"
     },
     {
       "boat": false,
@@ -2733,7 +2733,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_keep_braced.png",
-      "tag": "shop: braced"
+      "tag": "shop: Keep"
     },
     {
       "boat": false,
@@ -2749,7 +2749,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_library_braced.png",
-      "tag": "shop: braced"
+      "tag": "shop: Library"
     },
     {
       "boat": false,
@@ -2765,7 +2765,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_lodging_braced.png",
-      "tag": "shop: braced"
+      "tag": "shop: Lodging"
     },
     {
       "boat": false,
@@ -2781,7 +2781,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_magic_shop_braced.png",
-      "tag": "shop: braced"
+      "tag": "shop: Magic Shop"
     },
     {
       "boat": false,
@@ -2797,7 +2797,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_outfitter_braced.png",
-      "tag": "shop: braced"
+      "tag": "shop: Outfitter"
     },
     {
       "boat": false,
@@ -2813,7 +2813,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_royal_house_braced.png",
-      "tag": "shop: braced"
+      "tag": "shop: Royal House"
     },
     {
       "boat": false,
@@ -2829,7 +2829,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_scriptorium_braced.png",
-      "tag": "shop: braced"
+      "tag": "shop: Scriptorium"
     },
     {
       "boat": false,
@@ -2845,7 +2845,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_swordsmith_braced.png",
-      "tag": "shop: braced"
+      "tag": "shop: Swordsmith"
     },
     {
       "boat": false,
@@ -2861,7 +2861,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_templar_hall_braced.png",
-      "tag": "shop: braced"
+      "tag": "shop: Templar Hall"
     },
     {
       "boat": false,
@@ -2877,7 +2877,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_temple_braced.png",
-      "tag": "shop: braced"
+      "tag": "shop: Temple"
     },
     {
       "boat": false,
@@ -2893,7 +2893,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_thieves_den_braced.png",
-      "tag": "shop: braced"
+      "tag": "shop: Thieves Den"
     },
     {
       "boat": false,
@@ -2909,7 +2909,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_trainer_braced.png",
-      "tag": "shop: braced"
+      "tag": "shop: Trainer"
     },
     {
       "boat": false,
@@ -2925,7 +2925,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_weaponsmith_braced.png",
-      "tag": "shop: braced"
+      "tag": "shop: Weaponsmith"
     },
     {
       "boat": false,
@@ -2941,7 +2941,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_wizard_tower_braced.png",
-      "tag": "shop: braced"
+      "tag": "shop: Wizard Tower"
     },
     {
       "boat": false,
@@ -2957,7 +2957,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_alchemist_gray.png",
-      "tag": "shop: gray"
+      "tag": "shop: Alchemist"
     },
     {
       "boat": false,
@@ -2973,7 +2973,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_armorer_gray.png",
-      "tag": "shop: gray"
+      "tag": "shop: Armorer"
     },
     {
       "boat": false,
@@ -2989,7 +2989,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_armory_gray.png",
-      "tag": "shop: gray"
+      "tag": "shop: Armory"
     },
     {
       "boat": false,
@@ -3005,7 +3005,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_bank_gray.png",
-      "tag": "shop: gray"
+      "tag": "shop: Bank"
     },
     {
       "boat": false,
@@ -3021,7 +3021,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_bowyer_gray.png",
-      "tag": "shop: gray"
+      "tag": "shop: Bowyer"
     },
     {
       "boat": false,
@@ -3037,7 +3037,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_chandler_gray.png",
-      "tag": "shop: gray"
+      "tag": "shop: Chandler"
     },
     {
       "boat": false,
@@ -3053,7 +3053,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_chapel_gray.png",
-      "tag": "shop: gray"
+      "tag": "shop: Chapel"
     },
     {
       "boat": false,
@@ -3069,7 +3069,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_druid_lodge_gray.png",
-      "tag": "shop: gray"
+      "tag": "shop: Druid Lodge"
     },
     {
       "boat": false,
@@ -3085,7 +3085,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_inn_gray.png",
-      "tag": "shop: gray"
+      "tag": "shop: Inn"
     },
     {
       "boat": false,
@@ -3101,7 +3101,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_jeweler_gray.png",
-      "tag": "shop: gray"
+      "tag": "shop: Jeweler"
     },
     {
       "boat": false,
@@ -3117,7 +3117,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_keep_gray.png",
-      "tag": "shop: gray"
+      "tag": "shop: Keep"
     },
     {
       "boat": false,
@@ -3133,7 +3133,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_library_gray.png",
-      "tag": "shop: gray"
+      "tag": "shop: Library"
     },
     {
       "boat": false,
@@ -3149,7 +3149,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_lodging_gray.png",
-      "tag": "shop: gray"
+      "tag": "shop: Lodging"
     },
     {
       "boat": false,
@@ -3165,7 +3165,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_magic_shop_gray.png",
-      "tag": "shop: gray"
+      "tag": "shop: Magic Shop"
     },
     {
       "boat": false,
@@ -3181,7 +3181,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_outfitter_gray.png",
-      "tag": "shop: gray"
+      "tag": "shop: Outfitter"
     },
     {
       "boat": false,
@@ -3197,7 +3197,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_royal_house_gray.png",
-      "tag": "shop: gray"
+      "tag": "shop: Royal House"
     },
     {
       "boat": false,
@@ -3213,7 +3213,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_scriptorium_gray.png",
-      "tag": "shop: gray"
+      "tag": "shop: Scriptorium"
     },
     {
       "boat": false,
@@ -3229,7 +3229,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_swordsmith_gray.png",
-      "tag": "shop: gray"
+      "tag": "shop: Swordsmith"
     },
     {
       "boat": false,
@@ -3245,7 +3245,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_templar_hall_gray.png",
-      "tag": "shop: gray"
+      "tag": "shop: Templar Hall"
     },
     {
       "boat": false,
@@ -3261,7 +3261,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_temple_gray.png",
-      "tag": "shop: gray"
+      "tag": "shop: Temple"
     },
     {
       "boat": false,
@@ -3277,7 +3277,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_thieves_den_gray.png",
-      "tag": "shop: gray"
+      "tag": "shop: Thieves Den"
     },
     {
       "boat": false,
@@ -3293,7 +3293,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_trainer_gray.png",
-      "tag": "shop: gray"
+      "tag": "shop: Trainer"
     },
     {
       "boat": false,
@@ -3309,7 +3309,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_weaponsmith_gray.png",
-      "tag": "shop: gray"
+      "tag": "shop: Weaponsmith"
     },
     {
       "boat": false,
@@ -3325,7 +3325,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_wizard_tower_gray.png",
-      "tag": "shop: gray"
+      "tag": "shop: Wizard Tower"
     },
     {
       "boat": false,
@@ -3341,7 +3341,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_alchemist_marble.png",
-      "tag": "shop: marble"
+      "tag": "shop: Alchemist"
     },
     {
       "boat": false,
@@ -3357,7 +3357,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_armorer_marble.png",
-      "tag": "shop: marble"
+      "tag": "shop: Armorer"
     },
     {
       "boat": false,
@@ -3373,7 +3373,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_armory_marble.png",
-      "tag": "shop: marble"
+      "tag": "shop: Armory"
     },
     {
       "boat": false,
@@ -3389,7 +3389,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_bank_marble.png",
-      "tag": "shop: marble"
+      "tag": "shop: Bank"
     },
     {
       "boat": false,
@@ -3405,7 +3405,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_bowyer_marble.png",
-      "tag": "shop: marble"
+      "tag": "shop: Bowyer"
     },
     {
       "boat": false,
@@ -3421,7 +3421,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_chandler_marble.png",
-      "tag": "shop: marble"
+      "tag": "shop: Chandler"
     },
     {
       "boat": false,
@@ -3437,7 +3437,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_chapel_marble.png",
-      "tag": "shop: marble"
+      "tag": "shop: Chapel"
     },
     {
       "boat": false,
@@ -3453,7 +3453,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_druid_lodge_marble.png",
-      "tag": "shop: marble"
+      "tag": "shop: Druid Lodge"
     },
     {
       "boat": false,
@@ -3469,7 +3469,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_haunted_marble.png",
-      "tag": "shop: marble"
+      "tag": "shop: Haunted"
     },
     {
       "boat": false,
@@ -3485,7 +3485,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_inn_marble.png",
-      "tag": "shop: marble"
+      "tag": "shop: Inn"
     },
     {
       "boat": false,
@@ -3501,7 +3501,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_jeweler_marble.png",
-      "tag": "shop: marble"
+      "tag": "shop: Jeweler"
     },
     {
       "boat": false,
@@ -3517,7 +3517,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_keep_marble.png",
-      "tag": "shop: marble"
+      "tag": "shop: Keep"
     },
     {
       "boat": false,
@@ -3533,7 +3533,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_library_marble.png",
-      "tag": "shop: marble"
+      "tag": "shop: Library"
     },
     {
       "boat": false,
@@ -3549,7 +3549,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_lodging_marble.png",
-      "tag": "shop: marble"
+      "tag": "shop: Lodging"
     },
     {
       "boat": false,
@@ -3565,7 +3565,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_magic_shop_marble.png",
-      "tag": "shop: marble"
+      "tag": "shop: Magic Shop"
     },
     {
       "boat": false,
@@ -3581,7 +3581,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_outfitter_marble.png",
-      "tag": "shop: marble"
+      "tag": "shop: Outfitter"
     },
     {
       "boat": false,
@@ -3597,7 +3597,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_royal_house_marble.png",
-      "tag": "shop: marble"
+      "tag": "shop: Royal House"
     },
     {
       "boat": false,
@@ -3613,7 +3613,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_scriptorium_marble.png",
-      "tag": "shop: marble"
+      "tag": "shop: Scriptorium"
     },
     {
       "boat": false,
@@ -3629,7 +3629,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_swordsmith_marble.png",
-      "tag": "shop: marble"
+      "tag": "shop: Swordsmith"
     },
     {
       "boat": false,
@@ -3645,7 +3645,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_templar_hall_marble.png",
-      "tag": "shop: marble"
+      "tag": "shop: Templar Hall"
     },
     {
       "boat": false,
@@ -3661,7 +3661,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_temple_marble.png",
-      "tag": "shop: marble"
+      "tag": "shop: Temple"
     },
     {
       "boat": false,
@@ -3677,7 +3677,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_thieves_den_marble.png",
-      "tag": "shop: marble"
+      "tag": "shop: Thieves Den"
     },
     {
       "boat": false,
@@ -3693,7 +3693,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_trainer_marble.png",
-      "tag": "shop: marble"
+      "tag": "shop: Trainer"
     },
     {
       "boat": false,
@@ -3709,7 +3709,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_weaponsmith_marble.png",
-      "tag": "shop: marble"
+      "tag": "shop: Weaponsmith"
     },
     {
       "boat": false,
@@ -3725,7 +3725,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_wizard_tower_marble.png",
-      "tag": "shop: marble"
+      "tag": "shop: Wizard Tower"
     },
     {
       "boat": false,
@@ -3741,7 +3741,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_alchemist_pillar.png",
-      "tag": "shop: pillar"
+      "tag": "shop: Alchemist"
     },
     {
       "boat": false,
@@ -3757,7 +3757,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_armorer_pillar.png",
-      "tag": "shop: pillar"
+      "tag": "shop: Armorer"
     },
     {
       "boat": false,
@@ -3773,7 +3773,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_armory_pillar.png",
-      "tag": "shop: pillar"
+      "tag": "shop: Armory"
     },
     {
       "boat": false,
@@ -3789,7 +3789,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_bank_pillar.png",
-      "tag": "shop: pillar"
+      "tag": "shop: Bank"
     },
     {
       "boat": false,
@@ -3805,7 +3805,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_bowyer_pillar.png",
-      "tag": "shop: pillar"
+      "tag": "shop: Bowyer"
     },
     {
       "boat": false,
@@ -3821,7 +3821,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_chandler_pillar.png",
-      "tag": "shop: pillar"
+      "tag": "shop: Chandler"
     },
     {
       "boat": false,
@@ -3837,7 +3837,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_chapel_pillar.png",
-      "tag": "shop: pillar"
+      "tag": "shop: Chapel"
     },
     {
       "boat": false,
@@ -3853,7 +3853,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_druid_lodge_pillar.png",
-      "tag": "shop: pillar"
+      "tag": "shop: Druid Lodge"
     },
     {
       "boat": false,
@@ -3869,7 +3869,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_haunted_pillar.png",
-      "tag": "shop: pillar"
+      "tag": "shop: Haunted"
     },
     {
       "boat": false,
@@ -3885,7 +3885,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_inn_pillar.png",
-      "tag": "shop: pillar"
+      "tag": "shop: Inn"
     },
     {
       "boat": false,
@@ -3901,7 +3901,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_jeweler_pillar.png",
-      "tag": "shop: pillar"
+      "tag": "shop: Jeweler"
     },
     {
       "boat": false,
@@ -3917,7 +3917,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_keep_pillar.png",
-      "tag": "shop: pillar"
+      "tag": "shop: Keep"
     },
     {
       "boat": false,
@@ -3933,7 +3933,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_library_pillar.png",
-      "tag": "shop: pillar"
+      "tag": "shop: Library"
     },
     {
       "boat": false,
@@ -3949,7 +3949,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_lodging_pillar.png",
-      "tag": "shop: pillar"
+      "tag": "shop: Lodging"
     },
     {
       "boat": false,
@@ -3965,7 +3965,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_magic_shop_pillar.png",
-      "tag": "shop: pillar"
+      "tag": "shop: Magic Shop"
     },
     {
       "boat": false,
@@ -3981,7 +3981,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_outfitter_pillar.png",
-      "tag": "shop: pillar"
+      "tag": "shop: Outfitter"
     },
     {
       "boat": false,
@@ -3997,7 +3997,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_royal_house_pillar.png",
-      "tag": "shop: pillar"
+      "tag": "shop: Royal House"
     },
     {
       "boat": false,
@@ -4013,7 +4013,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_scriptorium_pillar.png",
-      "tag": "shop: pillar"
+      "tag": "shop: Scriptorium"
     },
     {
       "boat": false,
@@ -4029,7 +4029,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_swordsmith_pillar.png",
-      "tag": "shop: pillar"
+      "tag": "shop: Swordsmith"
     },
     {
       "boat": false,
@@ -4045,7 +4045,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_templar_hall_pillar.png",
-      "tag": "shop: pillar"
+      "tag": "shop: Templar Hall"
     },
     {
       "boat": false,
@@ -4061,7 +4061,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_temple_pillar.png",
-      "tag": "shop: pillar"
+      "tag": "shop: Temple"
     },
     {
       "boat": false,
@@ -4077,7 +4077,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_thieves_den_pillar.png",
-      "tag": "shop: pillar"
+      "tag": "shop: Thieves Den"
     },
     {
       "boat": false,
@@ -4093,7 +4093,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_trainer_pillar.png",
-      "tag": "shop: pillar"
+      "tag": "shop: Trainer"
     },
     {
       "boat": false,
@@ -4109,7 +4109,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_weaponsmith_pillar.png",
-      "tag": "shop: pillar"
+      "tag": "shop: Weaponsmith"
     },
     {
       "boat": false,
@@ -4125,7 +4125,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_wizard_tower_pillar.png",
-      "tag": "shop: pillar"
+      "tag": "shop: Wizard Tower"
     },
     {
       "boat": false,
@@ -4141,7 +4141,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_alchemist_rough.png",
-      "tag": "shop: rough"
+      "tag": "shop: Alchemist"
     },
     {
       "boat": false,
@@ -4157,7 +4157,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_armorer_rough.png",
-      "tag": "shop: rough"
+      "tag": "shop: Armorer"
     },
     {
       "boat": false,
@@ -4173,7 +4173,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_armory_rough.png",
-      "tag": "shop: rough"
+      "tag": "shop: Armory"
     },
     {
       "boat": false,
@@ -4189,7 +4189,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_bank_rough.png",
-      "tag": "shop: rough"
+      "tag": "shop: Bank"
     },
     {
       "boat": false,
@@ -4205,7 +4205,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_bowyer_rough.png",
-      "tag": "shop: rough"
+      "tag": "shop: Bowyer"
     },
     {
       "boat": false,
@@ -4221,7 +4221,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_chandler_rough.png",
-      "tag": "shop: rough"
+      "tag": "shop: Chandler"
     },
     {
       "boat": false,
@@ -4237,7 +4237,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_chapel_rough.png",
-      "tag": "shop: rough"
+      "tag": "shop: Chapel"
     },
     {
       "boat": false,
@@ -4253,7 +4253,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_druid_lodge_rough.png",
-      "tag": "shop: rough"
+      "tag": "shop: Druid Lodge"
     },
     {
       "boat": false,
@@ -4269,7 +4269,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_haunted_rough.png",
-      "tag": "shop: rough"
+      "tag": "shop: Haunted"
     },
     {
       "boat": false,
@@ -4285,7 +4285,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_inn_rough.png",
-      "tag": "shop: rough"
+      "tag": "shop: Inn"
     },
     {
       "boat": false,
@@ -4301,7 +4301,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_jeweler_rough.png",
-      "tag": "shop: rough"
+      "tag": "shop: Jeweler"
     },
     {
       "boat": false,
@@ -4317,7 +4317,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_keep_rough.png",
-      "tag": "shop: rough"
+      "tag": "shop: Keep"
     },
     {
       "boat": false,
@@ -4333,7 +4333,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_library_rough.png",
-      "tag": "shop: rough"
+      "tag": "shop: Library"
     },
     {
       "boat": false,
@@ -4349,7 +4349,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_lodging_rough.png",
-      "tag": "shop: rough"
+      "tag": "shop: Lodging"
     },
     {
       "boat": false,
@@ -4365,7 +4365,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_magic_shop_rough.png",
-      "tag": "shop: rough"
+      "tag": "shop: Magic Shop"
     },
     {
       "boat": false,
@@ -4381,7 +4381,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_outfitter_rough.png",
-      "tag": "shop: rough"
+      "tag": "shop: Outfitter"
     },
     {
       "boat": false,
@@ -4397,7 +4397,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_royal_house_rough.png",
-      "tag": "shop: rough"
+      "tag": "shop: Royal House"
     },
     {
       "boat": false,
@@ -4413,7 +4413,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_scriptorium_rough.png",
-      "tag": "shop: rough"
+      "tag": "shop: Scriptorium"
     },
     {
       "boat": false,
@@ -4429,7 +4429,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_swordsmith_rough.png",
-      "tag": "shop: rough"
+      "tag": "shop: Swordsmith"
     },
     {
       "boat": false,
@@ -4445,7 +4445,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_templar_hall_rough.png",
-      "tag": "shop: rough"
+      "tag": "shop: Templar Hall"
     },
     {
       "boat": false,
@@ -4461,7 +4461,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_temple_rough.png",
-      "tag": "shop: rough"
+      "tag": "shop: Temple"
     },
     {
       "boat": false,
@@ -4477,7 +4477,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_thieves_den_rough.png",
-      "tag": "shop: rough"
+      "tag": "shop: Thieves Den"
     },
     {
       "boat": false,
@@ -4493,7 +4493,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_trainer_rough.png",
-      "tag": "shop: rough"
+      "tag": "shop: Trainer"
     },
     {
       "boat": false,
@@ -4509,7 +4509,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_weaponsmith_rough.png",
-      "tag": "shop: rough"
+      "tag": "shop: Weaponsmith"
     },
     {
       "boat": false,
@@ -4525,7 +4525,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_wizard_tower_rough.png",
-      "tag": "shop: rough"
+      "tag": "shop: Wizard Tower"
     },
     {
       "boat": false,
@@ -4541,7 +4541,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_alchemist_stone.png",
-      "tag": "shop: stone"
+      "tag": "shop: Alchemist"
     },
     {
       "boat": false,
@@ -4557,7 +4557,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_armorer_stone.png",
-      "tag": "shop: stone"
+      "tag": "shop: Armorer"
     },
     {
       "boat": false,
@@ -4573,7 +4573,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_armory_stone.png",
-      "tag": "shop: stone"
+      "tag": "shop: Armory"
     },
     {
       "boat": false,
@@ -4589,7 +4589,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_bank_stone.png",
-      "tag": "shop: stone"
+      "tag": "shop: Bank"
     },
     {
       "boat": false,
@@ -4605,7 +4605,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_bowyer_stone.png",
-      "tag": "shop: stone"
+      "tag": "shop: Bowyer"
     },
     {
       "boat": false,
@@ -4621,7 +4621,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_chandler_stone.png",
-      "tag": "shop: stone"
+      "tag": "shop: Chandler"
     },
     {
       "boat": false,
@@ -4637,7 +4637,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_chapel_stone.png",
-      "tag": "shop: stone"
+      "tag": "shop: Chapel"
     },
     {
       "boat": false,
@@ -4653,7 +4653,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_druid_lodge_stone.png",
-      "tag": "shop: stone"
+      "tag": "shop: Druid Lodge"
     },
     {
       "boat": false,
@@ -4669,7 +4669,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_haunted_stone.png",
-      "tag": "shop: stone"
+      "tag": "shop: Haunted"
     },
     {
       "boat": false,
@@ -4685,7 +4685,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_inn_stone.png",
-      "tag": "shop: stone"
+      "tag": "shop: Inn"
     },
     {
       "boat": false,
@@ -4701,7 +4701,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_jeweler_stone.png",
-      "tag": "shop: stone"
+      "tag": "shop: Jeweler"
     },
     {
       "boat": false,
@@ -4717,7 +4717,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_keep_stone.png",
-      "tag": "shop: stone"
+      "tag": "shop: Keep"
     },
     {
       "boat": false,
@@ -4733,7 +4733,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_library_stone.png",
-      "tag": "shop: stone"
+      "tag": "shop: Library"
     },
     {
       "boat": false,
@@ -4749,7 +4749,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_lodging_stone.png",
-      "tag": "shop: stone"
+      "tag": "shop: Lodging"
     },
     {
       "boat": false,
@@ -4765,7 +4765,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_magic_shop_stone.png",
-      "tag": "shop: stone"
+      "tag": "shop: Magic Shop"
     },
     {
       "boat": false,
@@ -4781,7 +4781,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_outfitter_stone.png",
-      "tag": "shop: stone"
+      "tag": "shop: Outfitter"
     },
     {
       "boat": false,
@@ -4797,7 +4797,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_royal_house_stone.png",
-      "tag": "shop: stone"
+      "tag": "shop: Royal House"
     },
     {
       "boat": false,
@@ -4813,7 +4813,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_scriptorium_stone.png",
-      "tag": "shop: stone"
+      "tag": "shop: Scriptorium"
     },
     {
       "boat": false,
@@ -4829,7 +4829,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_swordsmith_stone.png",
-      "tag": "shop: stone"
+      "tag": "shop: Swordsmith"
     },
     {
       "boat": false,
@@ -4845,7 +4845,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_templar_hall_stone.png",
-      "tag": "shop: stone"
+      "tag": "shop: Templar Hall"
     },
     {
       "boat": false,
@@ -4861,7 +4861,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_temple_stone.png",
-      "tag": "shop: stone"
+      "tag": "shop: Temple"
     },
     {
       "boat": false,
@@ -4877,7 +4877,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_temple_grand_stone.png",
-      "tag": "shop: stone"
+      "tag": "shop: Temple Grand"
     },
     {
       "boat": false,
@@ -4893,7 +4893,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_thieves_den_stone.png",
-      "tag": "shop: stone"
+      "tag": "shop: Thieves Den"
     },
     {
       "boat": false,
@@ -4909,7 +4909,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_trainer_stone.png",
-      "tag": "shop: stone"
+      "tag": "shop: Trainer"
     },
     {
       "boat": false,
@@ -4925,7 +4925,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_weaponsmith_stone.png",
-      "tag": "shop: stone"
+      "tag": "shop: Weaponsmith"
     },
     {
       "boat": false,
@@ -4941,7 +4941,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_wizard_tower_stone.png",
-      "tag": "shop: stone"
+      "tag": "shop: Wizard Tower"
     },
     {
       "boat": false,
@@ -4973,7 +4973,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_alchemist.png",
-      "tag": "shop: timber"
+      "tag": "shop: Alchemist"
     },
     {
       "boat": false,
@@ -4989,7 +4989,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_armorer.png",
-      "tag": "shop: timber"
+      "tag": "shop: Armorer"
     },
     {
       "boat": false,
@@ -5005,7 +5005,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_armory.png",
-      "tag": "shop: timber"
+      "tag": "shop: Armory"
     },
     {
       "boat": false,
@@ -5021,7 +5021,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_bank.png",
-      "tag": "shop: timber"
+      "tag": "shop: Bank"
     },
     {
       "boat": false,
@@ -5037,7 +5037,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_bowyer.png",
-      "tag": "shop: timber"
+      "tag": "shop: Bowyer"
     },
     {
       "boat": false,
@@ -5053,7 +5053,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_chandler.png",
-      "tag": "shop: timber"
+      "tag": "shop: Chandler"
     },
     {
       "boat": false,
@@ -5069,7 +5069,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_chapel.png",
-      "tag": "shop: timber"
+      "tag": "shop: Chapel"
     },
     {
       "boat": false,
@@ -5085,7 +5085,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_druid_lodge.png",
-      "tag": "shop: timber"
+      "tag": "shop: Druid Lodge"
     },
     {
       "boat": false,
@@ -5101,7 +5101,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_haunted.png",
-      "tag": "shop: timber"
+      "tag": "shop: Haunted"
     },
     {
       "boat": false,
@@ -5117,7 +5117,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_inn.png",
-      "tag": "shop: timber"
+      "tag": "shop: Inn"
     },
     {
       "boat": false,
@@ -5133,7 +5133,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_jeweler.png",
-      "tag": "shop: timber"
+      "tag": "shop: Jeweler"
     },
     {
       "boat": false,
@@ -5149,7 +5149,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_keep.png",
-      "tag": "shop: timber"
+      "tag": "shop: Keep"
     },
     {
       "boat": false,
@@ -5165,7 +5165,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_library.png",
-      "tag": "shop: timber"
+      "tag": "shop: Library"
     },
     {
       "boat": false,
@@ -5181,7 +5181,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_lodging.png",
-      "tag": "shop: timber"
+      "tag": "shop: Lodging"
     },
     {
       "boat": false,
@@ -5197,7 +5197,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_magic_shop.png",
-      "tag": "shop: timber"
+      "tag": "shop: Magic Shop"
     },
     {
       "boat": false,
@@ -5213,7 +5213,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_outfitter.png",
-      "tag": "shop: timber"
+      "tag": "shop: Outfitter"
     },
     {
       "boat": false,
@@ -5229,7 +5229,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_royal_house.png",
-      "tag": "shop: timber"
+      "tag": "shop: Royal House"
     },
     {
       "boat": false,
@@ -5245,7 +5245,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_scriptorium.png",
-      "tag": "shop: timber"
+      "tag": "shop: Scriptorium"
     },
     {
       "boat": false,
@@ -5261,7 +5261,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_swordsmith.png",
-      "tag": "shop: timber"
+      "tag": "shop: Swordsmith"
     },
     {
       "boat": false,
@@ -5277,7 +5277,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_templar_hall.png",
-      "tag": "shop: timber"
+      "tag": "shop: Templar Hall"
     },
     {
       "boat": false,
@@ -5293,7 +5293,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_temple.png",
-      "tag": "shop: timber"
+      "tag": "shop: Temple"
     },
     {
       "boat": false,
@@ -5309,7 +5309,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_temple_grand.png",
-      "tag": "shop: timber"
+      "tag": "shop: Temple Grand"
     },
     {
       "boat": false,
@@ -5325,7 +5325,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_temple_grand_dark.png",
-      "tag": "shop: timber"
+      "tag": "shop: Temple Grand"
     },
     {
       "boat": false,
@@ -5341,7 +5341,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_thieves_den.png",
-      "tag": "shop: timber"
+      "tag": "shop: Thieves Den"
     },
     {
       "boat": false,
@@ -5357,7 +5357,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_trainer.png",
-      "tag": "shop: timber"
+      "tag": "shop: Trainer"
     },
     {
       "boat": false,
@@ -5373,7 +5373,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_weaponsmith.png",
-      "tag": "shop: timber"
+      "tag": "shop: Weaponsmith"
     },
     {
       "boat": false,
@@ -5389,7 +5389,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_wizard_tower.png",
-      "tag": "shop: timber"
+      "tag": "shop: Wizard Tower"
     },
     {
       "boat": false,
@@ -5405,7 +5405,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_alchemist_timbered.png",
-      "tag": "shop: timbered"
+      "tag": "shop: Alchemist"
     },
     {
       "boat": false,
@@ -5421,7 +5421,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_armorer_timbered.png",
-      "tag": "shop: timbered"
+      "tag": "shop: Armorer"
     },
     {
       "boat": false,
@@ -5437,7 +5437,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_armory_timbered.png",
-      "tag": "shop: timbered"
+      "tag": "shop: Armory"
     },
     {
       "boat": false,
@@ -5453,7 +5453,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_bank_timbered.png",
-      "tag": "shop: timbered"
+      "tag": "shop: Bank"
     },
     {
       "boat": false,
@@ -5469,7 +5469,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_bowyer_timbered.png",
-      "tag": "shop: timbered"
+      "tag": "shop: Bowyer"
     },
     {
       "boat": false,
@@ -5485,7 +5485,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_chandler_timbered.png",
-      "tag": "shop: timbered"
+      "tag": "shop: Chandler"
     },
     {
       "boat": false,
@@ -5501,7 +5501,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_chapel_timbered.png",
-      "tag": "shop: timbered"
+      "tag": "shop: Chapel"
     },
     {
       "boat": false,
@@ -5517,7 +5517,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_druid_lodge_timbered.png",
-      "tag": "shop: timbered"
+      "tag": "shop: Druid Lodge"
     },
     {
       "boat": false,
@@ -5533,7 +5533,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_haunted_timbered.png",
-      "tag": "shop: timbered"
+      "tag": "shop: Haunted"
     },
     {
       "boat": false,
@@ -5549,7 +5549,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_inn_timbered.png",
-      "tag": "shop: timbered"
+      "tag": "shop: Inn"
     },
     {
       "boat": false,
@@ -5565,7 +5565,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_jeweler_timbered.png",
-      "tag": "shop: timbered"
+      "tag": "shop: Jeweler"
     },
     {
       "boat": false,
@@ -5581,7 +5581,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_keep_timbered.png",
-      "tag": "shop: timbered"
+      "tag": "shop: Keep"
     },
     {
       "boat": false,
@@ -5597,7 +5597,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_library_timbered.png",
-      "tag": "shop: timbered"
+      "tag": "shop: Library"
     },
     {
       "boat": false,
@@ -5613,7 +5613,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_lodging_timbered.png",
-      "tag": "shop: timbered"
+      "tag": "shop: Lodging"
     },
     {
       "boat": false,
@@ -5629,7 +5629,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_magic_shop_timbered.png",
-      "tag": "shop: timbered"
+      "tag": "shop: Magic Shop"
     },
     {
       "boat": false,
@@ -5645,7 +5645,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_outfitter_timbered.png",
-      "tag": "shop: timbered"
+      "tag": "shop: Outfitter"
     },
     {
       "boat": false,
@@ -5661,7 +5661,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_royal_house_timbered.png",
-      "tag": "shop: timbered"
+      "tag": "shop: Royal House"
     },
     {
       "boat": false,
@@ -5677,7 +5677,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_scriptorium_timbered.png",
-      "tag": "shop: timbered"
+      "tag": "shop: Scriptorium"
     },
     {
       "boat": false,
@@ -5693,7 +5693,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_swordsmith_timbered.png",
-      "tag": "shop: timbered"
+      "tag": "shop: Swordsmith"
     },
     {
       "boat": false,
@@ -5709,7 +5709,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_templar_hall_timbered.png",
-      "tag": "shop: timbered"
+      "tag": "shop: Templar Hall"
     },
     {
       "boat": false,
@@ -5725,7 +5725,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_temple_timbered.png",
-      "tag": "shop: timbered"
+      "tag": "shop: Temple"
     },
     {
       "boat": false,
@@ -5741,7 +5741,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_thieves_den_timbered.png",
-      "tag": "shop: timbered"
+      "tag": "shop: Thieves Den"
     },
     {
       "boat": false,
@@ -5757,7 +5757,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_trainer_timbered.png",
-      "tag": "shop: timbered"
+      "tag": "shop: Trainer"
     },
     {
       "boat": false,
@@ -5773,7 +5773,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_weaponsmith_timbered.png",
-      "tag": "shop: timbered"
+      "tag": "shop: Weaponsmith"
     },
     {
       "boat": false,
@@ -5789,7 +5789,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/building_wizard_tower_timbered.png",
-      "tag": "shop: timbered"
+      "tag": "shop: Wizard Tower"
     },
     {
       "boat": false,

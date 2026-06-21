@@ -3526,7 +3526,13 @@ export function PlayHost() {
             initialDestroyedLairs:
               dungeonMutations?.destroyedLairs ?? initialDestroyedLairs,
             initialAcceptedQuests: new Set(save.acceptedQuests ?? []),
-            initialBoatPositions,
+            // Boats are an overworld concept. `mutations` here is the
+            // overworld map's state (currentMapId stays the overworld
+            // while in a dungeon), so its boatPositions would otherwise
+            // drop the party's parked boats into the dungeon at matching
+            // coords. Suppress in a dungeon → the kernel finds no
+            // `boat: true` cells in the dungeon grid and renders none.
+            initialBoatPositions: dungeonNow ? undefined : initialBoatPositions,
             // In a dungeon, opened-chest / collected-item state lives
             // on the floor mutation snapshot (keyed per instance+floor),
             // not the overworld map's pickedItemCells — so prefer it so
