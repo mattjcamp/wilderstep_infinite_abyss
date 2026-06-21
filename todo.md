@@ -1,10 +1,6 @@
 
 ## Fine Tune
 
-- Clean up the sprites and fine better sprites for items and monsters that were originally system designed
-- Make sure the remaining monsters are more thoughtfully designed
-
-
 # Notes
 
 cd web
@@ -12,6 +8,7 @@ cd web
 npm run dev:all
 npm run build:manual
 npm run dev:remote
+npm run reindex-sprites
 
 https://wilderstep.pages.dev
 rpgmaker12345678@gmail.com (@rpgmaker12345678)
