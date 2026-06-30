@@ -55,6 +55,7 @@ import {
   type SheetItemRef,
 } from "./CharacterSheetSim";
 import { DurabilityBar } from "./DurabilityBar";
+import { ItemSprite } from "./ItemSprite";
 import { resolveSpritePath } from "./spriteFields";
 
 // ── Data shapes (loose by design — the host loads JSON, we render) ──
@@ -1262,7 +1263,10 @@ export function PartyScreen({
                         cat?.description ?? "Click to select · Enter for actions"
                       }
                     >
-                      <span className="truncate">{label}</span>
+                      <span className="flex min-w-0 items-center gap-2">
+                        <ItemSprite icon={cat?.icon} size={18} />
+                        <span className="truncate">{label}</span>
+                      </span>
                       <span className="ml-auto flex shrink-0 items-center gap-2 text-[13px] text-parchment/75">
                         {showDur ? (
                           <DurabilityBar current={durCur} max={durMax} />

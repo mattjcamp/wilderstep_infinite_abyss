@@ -33,37 +33,7 @@ import {
 } from "@/play/counterStock";
 import { isStackable, stackSizeOf } from "@/battle/world/Items";
 import { Sfx } from "@/battle/audio/Sfx";
-import { spriteUrl } from "@/data_model/spriteUrl";
-
-/** 20×20 item sprite for a shop row. Resolves the icon stem through
- *  `spriteUrl` (same path the game loads item textures from, so hosted
- *  module uploads route correctly). Falls back to a neutral box when an
- *  item has no icon, and hides a broken image rather than showing the
- *  browser's missing-image glyph. */
-function ItemSprite({ icon }: { icon?: string }) {
-  if (!icon) {
-    return (
-      <span
-        aria-hidden
-        className="h-5 w-5 shrink-0 rounded-sm border border-parchment/15 bg-ink/60"
-      />
-    );
-  }
-  return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={spriteUrl(`item/${icon}.png`)}
-      alt=""
-      width={20}
-      height={20}
-      style={{ imageRendering: "pixelated" }}
-      className="h-5 w-5 shrink-0 object-contain"
-      onError={(e) => {
-        (e.currentTarget as HTMLImageElement).style.visibility = "hidden";
-      }}
-    />
-  );
-}
+import { ItemSprite } from "@/editor/ItemSprite";
 
 interface ShopItemRef {
   id: string;

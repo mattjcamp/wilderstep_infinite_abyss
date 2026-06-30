@@ -55,6 +55,7 @@ import type {
   PartySpellRef,
 } from "./PartyScreen";
 import { DurabilityBar } from "./DurabilityBar";
+import { ItemSprite } from "./ItemSprite";
 import { resolveSpritePath } from "./spriteFields";
 import {
   abilityMod as sharedAbilityMod,
@@ -1080,9 +1081,12 @@ export function CharacterSheetSim({
                         key={`${id ?? "_"}-${i}`}
                         className="flex items-center justify-between gap-2 text-parchment/85"
                       >
-                        <span className="truncate">
-                          {label}
-                          {qtyLabel}
+                        <span className="flex min-w-0 items-center gap-2">
+                          <ItemSprite icon={def?.icon} size={18} />
+                          <span className="truncate">
+                            {label}
+                            {qtyLabel}
+                          </span>
                         </span>
                         {showDur ? (
                           <DurabilityBar current={durCur} max={durMax} />
@@ -1118,7 +1122,10 @@ export function CharacterSheetSim({
                         ].join(" ")}
                         title={def?.description ?? "Click to select"}
                       >
-                        <span className="truncate">{label}</span>
+                        <span className="flex min-w-0 items-center gap-2">
+                          <ItemSprite icon={def?.icon} size={18} />
+                          <span className="truncate">{label}</span>
+                        </span>
                         <span className="ml-auto flex shrink-0 items-center gap-2 text-[13px] text-parchment/75">
                           {showDur ? (
                             <DurabilityBar current={durCur} max={durMax} />
@@ -1392,7 +1399,10 @@ function EquipRow({
   const content = (
     <>
       <span className="text-parchment/85">{slot}</span>
-      <span className="truncate text-parchment/95">{label}</span>
+      <span className="flex min-w-0 items-center gap-2 text-parchment/95">
+        {itemId ? <ItemSprite icon={def?.icon} size={18} /> : null}
+        <span className="truncate">{label}</span>
+      </span>
       <span className="justify-self-end">
         {showDur ? <DurabilityBar current={durCur} max={durMax} /> : null}
       </span>
