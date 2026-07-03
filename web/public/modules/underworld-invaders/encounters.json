@@ -660,10 +660,10 @@
       "id": "mind_flayer",
       "area": "dungeon",
       "theme": "magical",
-      "name": "Mind Flayer",
+      "name": "Deep Thrall",
       "level": 7,
       "weight": 12,
-      "monster_party_tile": "monster/daemon1.png",
+      "monster_party_tile": "monster/deep_thrall.png",
       "monsters": [
         "mind_flayer"
       ],
@@ -673,10 +673,10 @@
       "id": "mind_flayer_conclave",
       "area": "dungeon",
       "theme": "magical",
-      "name": "Mind Flayer Conclave",
+      "name": "Deep Thrall Conclave",
       "level": 8,
       "weight": 8,
-      "monster_party_tile": "monster/daemon1.png",
+      "monster_party_tile": "monster/deep_thrall.png",
       "monsters": [
         "mind_flayer",
         "mind_flayer"

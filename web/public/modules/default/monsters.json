@@ -561,7 +561,7 @@
     },
     {
       "id": "mind_flayer",
-      "name": "Mind Flayer",
+      "name": "Deep Thrall",
       "undead": false,
       "humanoid": false,
       "theme": "magical",
@@ -574,7 +574,7 @@
       "xp_reward": 140,
       "gold_min": 25,
       "gold_max": 90,
-      "sprite": "monster/daemon1.png",
+      "sprite": "monster/deep_thrall.png",
       "move_range": 3,
       "post_attack_move": 0,
       "battle_scale": 1,
@@ -911,6 +911,253 @@
           "duration": 3
         }
       ],
+      "passives": [
+        {
+          "effect_id": "fire_resistance"
+        }
+      ]
+    },
+    {
+      "id": "kobold",
+      "name": "Kobold",
+      "undead": false,
+      "humanoid": true,
+      "theme": "goblinoid",
+      "hp": 5,
+      "ac": 12,
+      "attack_bonus": 2,
+      "damage_dice": 1,
+      "damage_sides": 4,
+      "damage_bonus": 0,
+      "xp_reward": 15,
+      "gold_min": 1,
+      "gold_max": 6,
+      "sprite": "monster/kobold_mage.png",
+      "move_range": 6,
+      "post_attack_move": 1,
+      "battle_scale": 1,
+      "difficulty": "easy",
+      "strength": 7,
+      "dexterity": 15,
+      "constitution": 9,
+      "intelligence": 9,
+      "wisdom": 7,
+      "spells": [
+        {
+          "type": "magic_dart",
+          "name": "Spark",
+          "range": 5,
+          "cast_chance": 25,
+          "damage_dice": 1,
+          "damage_sides": 3,
+          "damage_bonus": 0
+        }
+      ]
+    },
+    {
+      "id": "ghost",
+      "name": "Ghost",
+      "undead": true,
+      "humanoid": false,
+      "theme": "undead",
+      "hp": 18,
+      "ac": 14,
+      "attack_bonus": 3,
+      "damage_dice": 1,
+      "damage_sides": 4,
+      "damage_bonus": 1,
+      "xp_reward": 55,
+      "gold_min": 0,
+      "gold_max": 10,
+      "sprite": "monster/ghost_red.png",
+      "move_range": 6,
+      "post_attack_move": 1,
+      "battle_scale": 1,
+      "difficulty": "normal",
+      "strength": 6,
+      "dexterity": 14,
+      "constitution": 11,
+      "intelligence": 10,
+      "wisdom": 12,
+      "on_hit_effects": [
+        {
+          "effect_id": "drain",
+          "chance": 30,
+          "amount": 2
+        }
+      ],
+      "passives": [
+        {
+          "effect_id": "poison_immunity"
+        }
+      ]
+    },
+    {
+      "id": "ooze",
+      "name": "Ooze",
+      "undead": false,
+      "humanoid": false,
+      "theme": "magical",
+      "hp": 24,
+      "ac": 8,
+      "attack_bonus": 3,
+      "damage_dice": 1,
+      "damage_sides": 6,
+      "damage_bonus": 1,
+      "xp_reward": 45,
+      "gold_min": 0,
+      "gold_max": 5,
+      "sprite": "monster/ooze_blue.png",
+      "move_range": 1,
+      "post_attack_move": 0,
+      "battle_scale": 1,
+      "difficulty": "normal",
+      "strength": 14,
+      "dexterity": 3,
+      "constitution": 16,
+      "intelligence": 1,
+      "wisdom": 3,
+      "on_hit_effects": [
+        {
+          "effect_id": "poisoned",
+          "chance": 35,
+          "damage_per_turn": 3,
+          "duration": 3
+        }
+      ],
+      "passives": [
+        {
+          "effect_id": "poison_immunity"
+        }
+      ]
+    },
+    {
+      "id": "gargoyle",
+      "name": "Gargoyle",
+      "undead": false,
+      "humanoid": true,
+      "theme": "magical",
+      "hp": 35,
+      "ac": 16,
+      "attack_bonus": 4,
+      "damage_dice": 1,
+      "damage_sides": 8,
+      "damage_bonus": 2,
+      "xp_reward": 85,
+      "gold_min": 5,
+      "gold_max": 20,
+      "sprite": "monster/gargoyle_red.png",
+      "move_range": 6,
+      "post_attack_move": 1,
+      "battle_scale": 1,
+      "difficulty": "hard",
+      "strength": 15,
+      "dexterity": 11,
+      "constitution": 16,
+      "intelligence": 6,
+      "wisdom": 9,
+      "passives": [
+        {
+          "effect_id": "fire_resistance"
+        }
+      ]
+    },
+    {
+      "id": "mummy",
+      "name": "Mummy",
+      "undead": true,
+      "turn_resistance": 2,
+      "humanoid": false,
+      "theme": "undead",
+      "hp": 45,
+      "ac": 13,
+      "attack_bonus": 5,
+      "damage_dice": 2,
+      "damage_sides": 6,
+      "damage_bonus": 1,
+      "xp_reward": 105,
+      "gold_min": 10,
+      "gold_max": 35,
+      "sprite": "monster/mummy_red.png",
+      "move_range": 2,
+      "post_attack_move": 0,
+      "battle_scale": 1,
+      "difficulty": "hard",
+      "strength": 16,
+      "dexterity": 8,
+      "constitution": 15,
+      "intelligence": 6,
+      "wisdom": 12,
+      "on_hit_effects": [
+        {
+          "effect_id": "poisoned",
+          "chance": 25,
+          "damage_per_turn": 3,
+          "duration": 4
+        }
+      ],
+      "passives": [
+        {
+          "effect_id": "poison_immunity"
+        }
+      ]
+    },
+    {
+      "id": "golem",
+      "name": "Golem",
+      "undead": false,
+      "humanoid": false,
+      "theme": "magical",
+      "hp": 65,
+      "ac": 17,
+      "attack_bonus": 6,
+      "damage_dice": 2,
+      "damage_sides": 8,
+      "damage_bonus": 2,
+      "xp_reward": 130,
+      "gold_min": 0,
+      "gold_max": 5,
+      "sprite": "monster/golem_blue.png",
+      "move_range": 2,
+      "post_attack_move": 0,
+      "battle_scale": 1,
+      "difficulty": "hard",
+      "strength": 20,
+      "dexterity": 6,
+      "constitution": 18,
+      "intelligence": 3,
+      "wisdom": 8,
+      "passives": [
+        {
+          "effect_id": "poison_immunity"
+        }
+      ]
+    },
+    {
+      "id": "fire_giant",
+      "name": "Fire Giant",
+      "undead": false,
+      "humanoid": true,
+      "theme": "cryptid",
+      "hp": 90,
+      "ac": 16,
+      "attack_bonus": 7,
+      "damage_dice": 2,
+      "damage_sides": 10,
+      "damage_bonus": 4,
+      "xp_reward": 175,
+      "gold_min": 30,
+      "gold_max": 100,
+      "sprite": "monster/giant_fire.png",
+      "move_range": 3,
+      "post_attack_move": 0,
+      "battle_scale": 2,
+      "difficulty": "deadly",
+      "strength": 22,
+      "dexterity": 9,
+      "constitution": 19,
+      "intelligence": 9,
+      "wisdom": 10,
       "passives": [
         {
           "effect_id": "fire_resistance"

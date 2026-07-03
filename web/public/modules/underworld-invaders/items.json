@@ -887,7 +887,9 @@
       "character_can_equip": false,
       "buy": 10,
       "sell": 6,
-      "quest_item": false
+      "quest_item": false,
+      "stackable": true,
+      "charges": 1
     },
     {
       "id": "lingering_venom",

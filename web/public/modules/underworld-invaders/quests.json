@@ -934,7 +934,7 @@
       "steps": [
         {
           "id": "the_horde_approaches_step_1",
-          "name": "Destroy the Mind Flayers",
+          "name": "Destroy the Deep Thralls",
           "kind": "kill",
           "encounter_id": "mind_flayer_conclave",
           "location_kind": "map",

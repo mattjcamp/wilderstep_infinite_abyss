@@ -747,7 +747,7 @@
     },
     {
       "id": "mind_flayer",
-      "name": "Mind Flayer",
+      "name": "Deep Thrall",
       "undead": false,
       "humanoid": false,
       "theme": "magical",
@@ -760,7 +760,7 @@
       "xp_reward": 140,
       "gold_min": 25,
       "gold_max": 90,
-      "sprite": "monster/daemon1.png",
+      "sprite": "monster/deep_thrall.png",
       "move_range": 3,
       "post_attack_move": 0,
       "battle_scale": 1,

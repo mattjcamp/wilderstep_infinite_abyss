@@ -49,14 +49,6 @@ export function SiteNav() {
         <Link href="/play" className={linkClass}>
           Play
         </Link>
-        <a
-          href={withBasePath("/manual.pdf")}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={linkClass}
-        >
-          Player&apos;s Manual
-        </a>
         {signedIn ? (
           <>
             <Link href="/editor" className={linkClass}>

@@ -1,7 +1,6 @@
 {
   "_comment": "Encounter catalog (real data drives the schema). Each encounter is a named monster roster used by the random-encounter sampler. `area` is the discriminator: \"dungeon\", \"house_basement\", or \"overworld\". `level` is the difficulty band (1–8); the sampler filters by min/max level. `weight` controls the relative pick probability inside an eligible band. `monsters[]` entries are Monster `id` strings (snake_case); duplicates are intentional — they spawn multiple instances of the same monster. `monster_party_tile` is the sprite shown for the lead monster on the overworld map (empty falls back to monsters[0]). v1 nested encounters under area-bucket keys; v2 flattens them into one array. Some v1 encounters share names across areas — those get area-suffixed ids here. Dropped: `terrain` (parsed but no v1 consumer). Optional `custom_map` is a Map `id` — when set, this encounter's battle uses that authored map instead of the default arena.",
   "encounters": [
-    
     {
       "id": "giant_rats",
       "area": "dungeon",
@@ -87,7 +86,6 @@
       ],
       "custom_map": null
     },
-
     {
       "id": "dragon",
       "area": "dungeon",
@@ -106,8 +104,6 @@
       "custom_map": null,
       "tags": null
     },
-
-    
     {
       "id": "wyverns",
       "area": "dungeon",
@@ -132,7 +128,7 @@
       "name": "Ogres",
       "level": 7,
       "weight": 12,
-      "monster_party_tile": "person/townsperson21.png",
+      "monster_party_tile": "monster/ogre_black.png",
       "monsters": [
         "ogre",
         "ogre",
@@ -163,10 +159,10 @@
       "id": "mind_flayers",
       "area": "dungeon",
       "theme": "magical",
-      "name": "Mind Flayers",
+      "name": "Deep Thralls",
       "level": 7,
       "weight": 12,
-      "monster_party_tile": "monster/daemon1.png",
+      "monster_party_tile": "monster/deep_thrall.png",
       "monsters": [
         "mind_flayer",
         "mind_flayer",
@@ -176,7 +172,6 @@
       ],
       "custom_map": null
     },
-
     {
       "id": "vampire_lord",
       "area": "dungeon",
@@ -184,7 +179,7 @@
       "name": "Vampire Lord",
       "level": 7,
       "weight": 10,
-      "monster_party_tile": "person/wizard5.png",
+      "monster_party_tile": "monster/vampire2.png",
       "monsters": [
         "vampire_lord",
         "vampire",
@@ -193,8 +188,6 @@
       ],
       "custom_map": null
     },
-
-
     {
       "id": "hydras",
       "area": "dungeon",
@@ -212,8 +205,6 @@
       ],
       "custom_map": null
     },
-
-
     {
       "id": "spiders",
       "area": "woods",
@@ -231,7 +222,6 @@
       ],
       "custom_map": "outdoor_arena"
     },
-
     {
       "id": "daemons",
       "area": "dungeon",
@@ -239,13 +229,239 @@
       "name": "Daemons",
       "level": 5,
       "weight": 15,
-      "monster_party_tile": "monster/daemon2.png",
+      "monster_party_tile": "monster/demon_major_lord.png",
       "monsters": [
         "daemon",
         "daemon",
         "imp",
         "imp",
         "imp"
+      ],
+      "custom_map": null,
+      "tags": null
+    },
+    {
+      "id": "dark_mage",
+      "area": "dungeon",
+      "theme": "humanoid",
+      "name": "Dark Mage",
+      "level": 4,
+      "weight": 15,
+      "monster_party_tile": "monster/dark_mage.png",
+      "monsters": [
+        "dark_mage",
+        "dark_mage",
+        "dark_mage"
+      ],
+      "custom_map": null
+    },
+    {
+      "id": "orc",
+      "area": "dungeon",
+      "theme": "goblinoid",
+      "name": "Orc",
+      "level": 4,
+      "weight": 15,
+      "monster_party_tile": "monster/orc_fighter7.png",
+      "monsters": [
+        "orc",
+        "orc",
+        "orc"
+      ],
+      "custom_map": null
+    },
+    {
+      "id": "zombie",
+      "area": "dungeon",
+      "theme": "undead",
+      "name": "Zombie",
+      "level": 4,
+      "weight": 15,
+      "monster_party_tile": "monster/zombie 2.png",
+      "monsters": [
+        "zombie",
+        "zombie",
+        "zombie"
+      ],
+      "custom_map": null
+    },
+    {
+      "id": "man_eater",
+      "area": "dungeon",
+      "theme": "cryptid",
+      "name": "Man Eater",
+      "level": 6,
+      "weight": 12,
+      "monster_party_tile": "monster/man_thing1.png",
+      "monsters": [
+        "man_eater",
+        "man_eater"
+      ],
+      "custom_map": null
+    },
+    {
+      "id": "cave_bat",
+      "area": "dungeon",
+      "theme": "animal",
+      "name": "Cave Bat",
+      "level": 1,
+      "weight": 20,
+      "monster_party_tile": "monster/bat_grey.png",
+      "monsters": [
+        "cave_bat",
+        "cave_bat",
+        "cave_bat",
+        "cave_bat",
+        "cave_bat"
+      ],
+      "custom_map": null
+    },
+    {
+      "id": "giant_centipede",
+      "area": "dungeon",
+      "theme": "animal",
+      "name": "Giant Centipede",
+      "level": 1,
+      "weight": 20,
+      "monster_party_tile": "monster/centipede_red.png",
+      "monsters": [
+        "giant_centipede",
+        "giant_centipede",
+        "giant_centipede",
+        "giant_centipede",
+        "giant_centipede"
+      ],
+      "custom_map": null
+    },
+    {
+      "id": "coil_serpent",
+      "area": "dungeon",
+      "theme": "animal",
+      "name": "Coil Serpent",
+      "level": 4,
+      "weight": 15,
+      "monster_party_tile": "monster/snake_blue.png",
+      "monsters": [
+        "coil_serpent",
+        "coil_serpent",
+        "coil_serpent"
+      ],
+      "custom_map": null
+    },
+    {
+      "id": "pirate",
+      "area": "dungeon",
+      "theme": "humanoid",
+      "name": "Pirate",
+      "level": 4,
+      "weight": 15,
+      "monster_party_tile": "monster/lark_f2.png",
+      "monsters": [
+        "pirate",
+        "pirate",
+        "pirate"
+      ],
+      "custom_map": null
+    },
+    {
+      "id": "kobold",
+      "area": "dungeon",
+      "theme": "goblinoid",
+      "name": "Kobold",
+      "level": 1,
+      "weight": 20,
+      "monster_party_tile": "monster/kobold_mage.png",
+      "monsters": [
+        "kobold",
+        "kobold",
+        "kobold",
+        "kobold",
+        "kobold"
+      ],
+      "custom_map": null
+    },
+    {
+      "id": "ghost",
+      "area": "dungeon",
+      "theme": "undead",
+      "name": "Ghost",
+      "level": 4,
+      "weight": 15,
+      "monster_party_tile": "monster/ghost_red.png",
+      "monsters": [
+        "ghost",
+        "ghost",
+        "ghost"
+      ],
+      "custom_map": null
+    },
+    {
+      "id": "ooze",
+      "area": "dungeon",
+      "theme": "magical",
+      "name": "Ooze",
+      "level": 4,
+      "weight": 15,
+      "monster_party_tile": "monster/ooze_blue.png",
+      "monsters": [
+        "ooze",
+        "ooze",
+        "ooze"
+      ],
+      "custom_map": null
+    },
+    {
+      "id": "gargoyle",
+      "area": "dungeon",
+      "theme": "magical",
+      "name": "Gargoyle",
+      "level": 6,
+      "weight": 12,
+      "monster_party_tile": "monster/gargoyle_red.png",
+      "monsters": [
+        "gargoyle",
+        "gargoyle"
+      ],
+      "custom_map": null
+    },
+    {
+      "id": "mummy",
+      "area": "dungeon",
+      "theme": "undead",
+      "name": "Mummy",
+      "level": 6,
+      "weight": 12,
+      "monster_party_tile": "monster/mummy_red.png",
+      "monsters": [
+        "mummy",
+        "mummy"
+      ],
+      "custom_map": null
+    },
+    {
+      "id": "golem",
+      "area": "dungeon",
+      "theme": "magical",
+      "name": "Golem",
+      "level": 6,
+      "weight": 12,
+      "monster_party_tile": "monster/golem_blue.png",
+      "monsters": [
+        "golem",
+        "golem"
+      ],
+      "custom_map": null
+    },
+    {
+      "id": "fire_giant",
+      "area": "dungeon",
+      "theme": "cryptid",
+      "name": "Fire Giant",
+      "level": 7,
+      "weight": 10,
+      "monster_party_tile": "monster/giant_fire.png",
+      "monsters": [
+        "fire_giant"
       ],
       "custom_map": null
     }

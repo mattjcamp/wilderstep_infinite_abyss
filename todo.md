@@ -1,3 +1,5 @@
+## Bugs
+
 
 ## Fine Tune
 
@@ -32,3 +34,6 @@ Target size: 16 cols × 14 rows. That fills the playable interior perfectly. Map
 
 Don't bother painting walls at the outer edges — the engine's perimeter wall covers those.
 The combat formation bands sit at rows 1-4 (enemies) and rows 11-14 (party). Leave those bands as walkable floor so combatants spawn cleanly. The middle bands (rows 5-10) are where pillars, pits, and obstacles read best.
+
+## Resolved
+- ~~Make sure Iron Keys are consumable (one per lock)~~ Verified 2026-07-03: sim + save-persistence code consume one key per lock (covered by MapSimulation tests). Likely cause of the report: quests grant multiple keys ("Pirates" gives 2) and non-stackable keys rendered as identical duplicate rows. Fixed by making iron_key stackable ("Iron Key (2)" counts down visibly). Re-publish underworld-invaders so the hosted copy picks up the catalog change.
