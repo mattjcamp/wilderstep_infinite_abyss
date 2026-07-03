@@ -1,7 +1,19 @@
+## Fine Tune
+
+- dial in monster AI, abilities, and animations, test in Battle Sim
+- Battle Screen: show item sprites, don't put items in Use Items that can't be used (like torches)
+- dial in side quests, add theme tags, add more steps, make the content more clear
+- tighten up game log
+
+## Source Material
+
+- start brainstorming ideas about the first original, immersive world that I will create for this game
+- world type, political structures, economy, towns, gods, epic stories, lost civizations
+- make a simple but playable classic D&D module: https://gamenightblog.com/sunless-citadel-campaign-resources/ is an example of a low level module
+
+
 ## Bugs
 
-
-## Fine Tune
 
 # Notes
 
