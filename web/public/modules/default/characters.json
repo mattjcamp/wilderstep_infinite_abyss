@@ -163,18 +163,15 @@
       "gender": "Male",
       "level": 1,
       "exp": 0,
-      "hp": 15,
-      "mp": 0,
+      "hp": 10,
+      "mp": 3,
       "strength": 8,
       "dexterity": 18,
       "constitution": 10,
       "intelligence": 8,
       "wisdom": 11,
-      "sprite": "person/halfling_fighter.png",
-      "equipped": {
-        "hands": "short_bow",
-        "body": "leather"
-      },
+      "sprite": "person/human_mage18.png",
+      "equipped": {},
       "inventory": []
     }
   ]

@@ -83,6 +83,17 @@ import { groupByTags } from "./mapTags";
 import { groupItemsByCategory } from "./itemTags";
 import { LockDialogOverlay } from "./LockDialogOverlay";
 import { MapAttributesDialog } from "./MapAttributesDialog";
+import { MapResizeDialog } from "./MapResizeDialog";
+import {
+  dominantGroundTileId,
+  resizeMapRecord,
+  sanitizeFillCell,
+  shiftPartyStart,
+  shiftRefsIntoMap,
+  type PartyFileLike,
+  type ResizeEdges,
+  type ResizeMapRecord,
+} from "./resizeMap";
 import { SpawnEncounterOverlay } from "./SpawnEncounterOverlay";
 import type {
   LockEncounterOptions,
@@ -671,6 +682,7 @@ export function MapEditor({
    *  the top-level Map record metadata (name, description, tags) —
    *  the per-cell painting flow is unaffected. */
   const [editingMapAttrs, setEditingMapAttrs] = useState(false);
+  const [resizingMap, setResizingMap] = useState(false);
 
   /** Ordered list of currently-selected cells. A plain click replaces
    *  it with a single cell; Cmd/Ctrl-click (in Inspect mode) toggles a
@@ -3128,10 +3140,16 @@ export function MapEditor({
       }
       sceneApiRef.current = null;
     };
-    // Only rebuild the scene when the map identity changes — paint
-    // updates patch the existing scene in-place.
+    // Only rebuild the scene when the map identity OR dimensions
+    // change — paint updates patch the existing scene in-place, but a
+    // resize needs a fresh canvas (Phaser's game width/height are
+    // fixed at creation).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.kind === "ok" ? state.mapRecord.id : null]);
+  }, [
+    state.kind === "ok" ? state.mapRecord.id : null,
+    state.kind === "ok" ? state.mapRecord.width : 0,
+    state.kind === "ok" ? state.mapRecord.height : 0,
+  ]);
 
   // ── Simulation mode lifecycle ───────────────────────────────────
   /** Pending spawn position for the next sim mount. Set by either:
@@ -4002,6 +4020,205 @@ export function MapEditor({
     setEditingMapAttrs(false);
   };
 
+  /** Resolve the tile that fills cells created by a resize: the map's
+   *  dominant walkable ("ground") tile, preferring the pristine
+   *  palette entry over a painted cell — painted cells can carry
+   *  per-cell customizations (an NPC, a link, on-step text) that must
+   *  not be stamped across hundreds of new cells; sanitizeFillCell
+   *  scrubs those when we do have to fall back to one. Last resorts:
+   *  first walkable palette tile, then palette[0] (mirrors how the
+   *  New Map form seeds a fresh grid). */
+  const resolveResizeFill = (): { cell: TileType; name: string } | null => {
+    if (state.kind !== "ok") return null;
+    const domId = dominantGroundTileId(
+      gridRef.current as unknown as ResizeMapRecord["grid"],
+    );
+    if (domId) {
+      const pal = state.palette.find((t) => t.id === domId);
+      if (pal) return { cell: pal, name: pal.name || pal.id };
+      for (const row of gridRef.current) {
+        for (const c of row) {
+          if (c.id === domId) {
+            const cell = sanitizeFillCell(
+              c as unknown as ResizeMapRecord["grid"][number][number],
+            ) as unknown as TileType;
+            return { cell, name: cell.name || cell.id };
+          }
+        }
+      }
+    }
+    const fallback = state.palette.find((t) => t.walkable) ?? state.palette[0];
+    return fallback
+      ? { cell: fallback, name: fallback.name || fallback.id }
+      : null;
+  };
+
+  /** Apply a resize from the dialog. Grows the grid (fill = dominant
+   *  ground tile), and — when space is added on the top/left — shifts
+   *  every stored coordinate pointing INTO this map: links + pressure
+   *  plates across all maps (inherited maps with such refs are
+   *  materialized into the module's own file, where they already win
+   *  the merge), and party.json's start_position via its own draft.
+   *  Persists through the same draft/publish fallback as every other
+   *  map edit, then swaps the live grid + state so the scene remounts
+   *  at the new dimensions (the mount effect keys on width/height). */
+  const onResizeMap = async (edges: ResizeEdges) => {
+    if (state.kind !== "ok") return;
+    const fill = resolveResizeFill();
+    if (!fill) {
+      window.alert(
+        "Can't resize: the module has no tile palette to fill new cells with.",
+      );
+      return;
+    }
+    const currentMap: MapRecord = {
+      ...state.mapRecord,
+      grid: gridRef.current,
+    };
+    let resized: MapRecord;
+    try {
+      resized = resizeMapRecord(
+        currentMap as unknown as ResizeMapRecord,
+        edges,
+        fill.cell as unknown as ResizeMapRecord["grid"][number][number],
+      ) as unknown as MapRecord;
+    } catch (e) {
+      window.alert(
+        `Couldn't resize map: ${e instanceof Error ? e.message : String(e)}`,
+      );
+      return;
+    }
+
+    const baseFile: Record<string, unknown> = state.ownFile
+      ? { ...state.ownFile }
+      : { maps: [] };
+    let list: MapRecord[] = Array.isArray(baseFile.maps)
+      ? [...(baseFile.maps as MapRecord[])]
+      : [];
+    const idx = list.findIndex((m) => m.id === mapId);
+    if (idx >= 0) list[idx] = resized;
+    else list.push(resized);
+
+    const dCol = edges.left;
+    const dRow = edges.top;
+    if (dCol > 0 || dRow > 0) {
+      // Inherited maps can hold links/plates into this map too. Pull
+      // the merged view, and materialize any inherited map whose refs
+      // need shifting into the own file (copy-on-write — own records
+      // win the merge by id, so the shifted copy takes effect).
+      try {
+        const src = getEditorModuleSource();
+        const layers = await src.loadModelLayers(moduleId, "maps");
+        const merged = mergeModel("maps", layers.inherited, {
+          maps: list,
+        }) as { maps?: MapRecord[] } | null;
+        const ownIds = new Set(list.map((m) => m.id));
+        const inheritedOnly = (merged?.maps ?? []).filter(
+          (m) => !ownIds.has(m.id),
+        );
+        // Probe pass: identity survives shiftRefsIntoMap only for maps
+        // with no matching refs, so a changed element marks a map that
+        // needs materializing. Push the ORIGINAL (unshifted) copy —
+        // the single shift pass over the full list below does the
+        // actual coordinate math exactly once for everyone.
+        const [probed] = shiftRefsIntoMap(
+          inheritedOnly as unknown as ResizeMapRecord[],
+          mapId,
+          dCol,
+          dRow,
+        );
+        for (let i = 0; i < inheritedOnly.length; i++) {
+          if (probed[i] !== (inheritedOnly[i] as unknown)) {
+            list.push(inheritedOnly[i]);
+          }
+        }
+      } catch {
+        // Merged-view fetch failed (offline source hiccup) — own-file
+        // refs below still shift; inherited ones may need manual
+        // fixing. Better a partial fix-up than a failed resize.
+      }
+      const [shiftedList] = shiftRefsIntoMap(
+        list as unknown as ResizeMapRecord[],
+        mapId,
+        dCol,
+        dRow,
+      );
+      list = shiftedList as unknown as MapRecord[];
+    }
+    baseFile.maps = list;
+    const updated =
+      (list.find((m) => m.id === mapId) as MapRecord | undefined) ?? resized;
+
+    try {
+      await persistMapsFileWithFallback(baseFile);
+    } catch (e) {
+      window.alert(
+        `Couldn't save resized map: ${
+          e instanceof Error ? e.message : String(e)
+        }`,
+      );
+      return;
+    }
+
+    // Party start position rides in party.json — its own model file,
+    // so it gets its own draft write. Copy-on-write: when the module
+    // has no own party file, the overlay we create carries just the
+    // shifted start_position and field-merges over the inherited one.
+    if (dCol > 0 || dRow > 0) {
+      try {
+        const src = getEditorModuleSource();
+        const layers = await src.loadModelLayers(moduleId, "party");
+        const draft = await loadDraft<PartyFileLike>(moduleId, "party");
+        const own =
+          draft ?? (layers.ownFile as PartyFileLike | null) ?? null;
+        const mergedParty = mergeModel(
+          "party",
+          layers.inherited,
+          own,
+        ) as PartyFileLike | null;
+        const sp = mergedParty?.start_position;
+        if (sp && sp.map_id === mapId) {
+          const base: PartyFileLike = own ?? {};
+          const withStart: PartyFileLike = {
+            ...base,
+            start_position: sp,
+          };
+          const [shifted, changed] = shiftPartyStart(
+            withStart,
+            mapId,
+            dCol,
+            dRow,
+          );
+          if (changed) await saveDraft(moduleId, "party", shifted);
+        }
+      } catch (e) {
+        // Non-fatal: the map itself resized fine. Surface the miss so
+        // the author can fix the start position by hand.
+        // eslint-disable-next-line no-console
+        console.warn(
+          "Map resized, but the party start position couldn't be updated:",
+          e,
+        );
+      }
+    }
+
+    // Swap the live grid + selection before the state write so every
+    // effect that fires off the new state sees consistent data. The
+    // scene mount effect keys on width/height and rebuilds the canvas.
+    gridRef.current = updated.grid;
+    // Old selection coordinates may point at different cells after a
+    // top/left grow — clear rather than translate; re-selecting is
+    // one click.
+    setSelection([]);
+    setState({
+      ...state,
+      mapRecord: updated,
+      ownFile: baseFile,
+      isDraft: hasDraft(moduleId, MODEL_KEY),
+    });
+    setResizingMap(false);
+  };
+
   const onDiscardDraft = () => {
     if (typeof window === "undefined") return;
     if (!hasDraft(moduleId, MODEL_KEY)) return;
@@ -4129,6 +4346,14 @@ export function MapEditor({
           title="Edit map properties (name, description, tags)."
         >
           Properties
+        </button>
+        <button
+          type="button"
+          onClick={() => setResizingMap(true)}
+          className="rounded border border-parchment/20 px-2 py-0.5 text-[13px] text-parchment/85 hover:bg-ink/40"
+          title="Grow the map — add rows/columns on any edge."
+        >
+          Resize
         </button>
         <span className="text-parchment/60">·</span>
         <div
@@ -4753,6 +4978,23 @@ export function MapEditor({
                 existingTags={existingTags}
                 onSave={onSaveMapAttrs}
                 onClose={() => setEditingMapAttrs(false)}
+              />
+            );
+          })()
+        : null}
+      {resizingMap
+        ? (() => {
+            const fill = resolveResizeFill();
+            return (
+              <MapResizeDialog
+                mapId={mapRecord.id}
+                width={mapRecord.width}
+                height={mapRecord.height}
+                fillTileName={fill ? fill.name : null}
+                onResize={(edges) => {
+                  void onResizeMap(edges);
+                }}
+                onClose={() => setResizingMap(false)}
               />
             );
           })()
