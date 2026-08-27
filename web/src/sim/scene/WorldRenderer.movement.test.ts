@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_MOVE_TWEEN_MS,
+  DEFAULT_STEP_ANIM,
   TILE_SIZE,
   WorldRenderer,
+  type StepAnimConfig,
 } from "./WorldRenderer";
 
 /**
@@ -20,26 +22,47 @@ import {
 interface FakeImage {
   x: number;
   y: number;
+  scaleX: number;
+  scaleY: number;
+  rotation: number;
+  flipX: boolean;
   destroyed: boolean;
   texture: { key: string };
   setOrigin(): FakeImage;
-  setDisplaySize(): FakeImage;
+  setDisplaySize(w: number, h: number): FakeImage;
   setDepth(): FakeImage;
   setPosition(x: number, y: number): FakeImage;
   setTexture(k: string): FakeImage;
   setVisible(): FakeImage;
-  setData(): FakeImage;
+  setFlipX(v: boolean): FakeImage;
+  setData(k: string, v: unknown): FakeImage;
+  getData(k: string): unknown;
   destroy(): void;
 }
 
 function fakeImage(x: number, y: number, key: string): FakeImage {
+  // Real backing store for setData/getData — the step animation keeps
+  // its base scale and current bob offset there, so a no-op stub would
+  // quietly make the unwind logic untestable.
+  const data = new Map<string, unknown>();
   const img: FakeImage = {
     x,
     y,
+    scaleX: 1,
+    scaleY: 1,
+    rotation: 0,
+    flipX: false,
     destroyed: false,
     texture: { key },
     setOrigin: () => img,
-    setDisplaySize: () => img,
+    setDisplaySize(w: number, h: number) {
+      // Every sprite in this project is a 32x32 source PNG, so scale
+      // is display size over tile size — which is how the renderer
+      // ends up with roamers at 0.95 and the party at 1.
+      img.scaleX = w / 32;
+      img.scaleY = h / 32;
+      return img;
+    },
     setDepth: () => img,
     setPosition(nx: number, ny: number) {
       img.x = nx;
@@ -51,7 +74,17 @@ function fakeImage(x: number, y: number, key: string): FakeImage {
       return img;
     },
     setVisible: () => img,
-    setData: () => img,
+    setFlipX(v: boolean) {
+      img.flipX = v;
+      return img;
+    },
+    setData(k: string, v: unknown) {
+      data.set(k, v);
+      return img;
+    },
+    getData(k: string) {
+      return data.get(k);
+    },
     destroy() {
       img.destroyed = true;
     },
@@ -65,6 +98,7 @@ interface TweenCfg {
   y?: number;
   duration?: number;
   ease?: string;
+  onUpdate?: (tween: { progress: number }) => void;
   onComplete?: () => void;
 }
 
@@ -120,7 +154,10 @@ const GRID = Array.from({ length: 3 }, () =>
   Array.from({ length: 3 }, () => ({ walkable: true })),
 );
 
-function makeRenderer(moveTweenMs?: number) {
+function makeRenderer(
+  moveTweenMs?: number,
+  stepAnim?: Partial<StepAnimConfig>,
+) {
   const f = fakeScene();
   const renderer = new WorldRenderer({
     // The fake implements only the slice of Phaser.Scene these code
@@ -128,6 +165,7 @@ function makeRenderer(moveTweenMs?: number) {
     scene: f.scene as unknown as Phaser.Scene,
     grid: GRID,
     ...(moveTweenMs === undefined ? {} : { moveTweenMs }),
+    ...(stepAnim === undefined ? {} : { stepAnim }),
   });
   return { renderer, ...f };
 }
@@ -389,5 +427,207 @@ describe("WorldRenderer — quest halo travel", () => {
     const { renderer, tweensAdded } = makeRenderer(0);
     renderer.slideQuestGlow({ col: 1, row: 1 }, { col: 1, row: 2 });
     expect(tweensAdded).toHaveLength(0);
+  });
+});
+
+describe("WorldRenderer — step animation on static art", () => {
+  /** Drive a slide's onUpdate to a given progress, 0..1. */
+  const at = (t: TweenCfg, progress: number) => t.onUpdate?.({ progress });
+
+  it("arcs the sprite up at mid-step and lands it flat", () => {
+    const { renderer, tweensAdded } = makeRenderer();
+    renderer.setPartyAt(1, 1);
+    renderer.setPartyAt(1, 2);
+    const sprite = renderer.partySprite!;
+    const t = tweensAdded[0];
+
+    at(t, 0.5);
+    // Half a tile along, and lifted by the full bob height.
+    const midY = (centerOf(1, 1).y + centerOf(1, 2).y) / 2;
+    expect(sprite.y).toBeCloseTo(midY - DEFAULT_STEP_ANIM.bobPx, 5);
+
+    t.onComplete?.();
+    expect(sprite.y).toBe(centerOf(1, 2).y);
+  });
+
+  it("does not let the bob compound across frames", () => {
+    // The offset is recomputed from the endpoints each frame rather
+    // than added to the sprite's live y — this is the regression that
+    // would otherwise walk the party off the map over a long journey.
+    const { renderer, tweensAdded } = makeRenderer();
+    renderer.setPartyAt(1, 1);
+    renderer.setPartyAt(1, 2);
+    const sprite = renderer.partySprite!;
+    const t = tweensAdded[0];
+
+    for (const p of [0.2, 0.4, 0.5, 0.5, 0.5, 0.8]) at(t, p);
+    at(t, 0.5);
+
+    const midY = (centerOf(1, 1).y + centerOf(1, 2).y) / 2;
+    expect(sprite.y).toBeCloseTo(midY - DEFAULT_STEP_ANIM.bobPx, 5);
+  });
+
+  it("stretches at the apex and restores base scale on landing", () => {
+    const { renderer, tweensAdded } = makeRenderer();
+    renderer.setPartyAt(1, 1);
+    renderer.setPartyAt(1, 2);
+    const sprite = renderer.partySprite!;
+    const t = tweensAdded[0];
+
+    at(t, 0.5);
+    expect(sprite.scaleY).toBeGreaterThan(1);
+    expect(sprite.scaleX).toBeLessThan(1);
+
+    t.onComplete?.();
+    expect(sprite.scaleY).toBe(1);
+    expect(sprite.scaleX).toBe(1);
+  });
+
+  it("turns to face travel, and keeps facing through a vertical step", () => {
+    const { renderer, tweensAdded } = makeRenderer();
+    renderer.setPartyAt(1, 1);
+    const sprite = renderer.partySprite!;
+
+    renderer.setPartyAt(0, 1); // west
+    expect(sprite.flipX).toBe(true);
+    tweensAdded[0].onComplete?.();
+
+    renderer.setPartyAt(0, 2); // south — facing must persist
+    expect(sprite.flipX).toBe(true);
+    tweensAdded[1].onComplete?.();
+
+    renderer.setPartyAt(1, 2); // east
+    expect(sprite.flipX).toBe(false);
+  });
+
+  it("unwinds a half-finished step when a new one interrupts it", () => {
+    const { renderer, tweensAdded } = makeRenderer();
+    renderer.setPartyAt(1, 1);
+    renderer.setPartyAt(1, 2);
+    const sprite = renderer.partySprite!;
+
+    at(tweensAdded[0], 0.5); // caught mid-hop, 2px high and stretched
+    renderer.setPartyAt(2, 2); // interrupt
+
+    // The replacement tween must start from the sprite's true line,
+    // not from the lifted position, or the bob bakes itself in.
+    expect(sprite.scaleY).toBe(1);
+    expect(sprite.getData("__stepBob")).toBe(0);
+  });
+
+  it("leaves the sprite alone when every knob is off", () => {
+    const { renderer, tweensAdded } = makeRenderer(undefined, {
+      bobPx: 0,
+      squashFactor: 0,
+      flipToFaceTravel: false,
+      leanDegrees: 0,
+    });
+    renderer.setPartyAt(1, 1);
+    renderer.setPartyAt(0, 1);
+    const sprite = renderer.partySprite!;
+
+    at(tweensAdded[0], 0.5);
+
+    expect(sprite.flipX).toBe(false);
+    expect(sprite.scaleY).toBe(1);
+    expect(sprite.rotation).toBe(0);
+    // Still slides — the motion and the step dressing are separate.
+    expect(tweensAdded).toHaveLength(1);
+  });
+});
+
+describe("WorldRenderer — monsters and NPCs step like the party", () => {
+  const at = (t: TweenCfg, progress: number) => t.onUpdate?.({ progress });
+  const roamerAt = (col: number, row: number) => [
+    { id: "r1", col, row, sprite: "monster/rat.png" },
+  ];
+
+  it("bobs and squashes a roaming monster", () => {
+    const { renderer, tweensAdded } = makeRenderer();
+    renderer.setRoamerPositions(roamerAt(1, 1));
+    renderer.setRoamerPositions(roamerAt(1, 2));
+    const img = renderer.roamerSprites.get("r1")!;
+
+    at(tweensAdded[0], 0.5);
+
+    const midY = (centerOf(1, 1).y + centerOf(1, 2).y) / 2;
+    expect(img.y).toBeCloseTo(midY - DEFAULT_STEP_ANIM.bobPx, 5);
+    expect(img.scaleY).toBeGreaterThan(img.scaleX);
+  });
+
+  it("multiplies the roamer's own resting scale, not 1", () => {
+    // Roamers render at 95% of a tile. If the squash maths assumed a
+    // base of 1, every monster would pop to full tile size the instant
+    // it took a step and stay there.
+    const { renderer, tweensAdded } = makeRenderer();
+    renderer.setRoamerPositions(roamerAt(1, 1));
+    const img = renderer.roamerSprites.get("r1")!;
+    const resting = img.scaleY;
+    expect(resting).toBeCloseTo(0.95, 5);
+
+    renderer.setRoamerPositions(roamerAt(1, 2));
+    at(tweensAdded[0], 0.5);
+    expect(img.scaleY).toBeCloseTo(
+      resting * (1 + DEFAULT_STEP_ANIM.squashFactor),
+      5,
+    );
+
+    tweensAdded[0].onComplete?.();
+    expect(img.scaleY).toBeCloseTo(resting, 5);
+  });
+
+  it("turns a monster to face the way it is moving", () => {
+    const { renderer, tweensAdded } = makeRenderer();
+    renderer.setRoamerPositions(roamerAt(1, 1));
+    const img = renderer.roamerSprites.get("r1")!;
+
+    renderer.setRoamerPositions(roamerAt(0, 1)); // west
+    expect(img.flipX).toBe(true);
+    tweensAdded[0].onComplete?.();
+
+    renderer.setRoamerPositions(roamerAt(1, 1)); // east
+    expect(img.flipX).toBe(false);
+  });
+
+  it("bobs and turns a wandering NPC", () => {
+    const { renderer, scene, tweensAdded } = makeRenderer();
+    const npc = scene.add.image(
+      centerOf(2, 1).x,
+      centerOf(2, 1).y,
+      "person/villager.png",
+    );
+
+    renderer.slideSprite(npc as unknown as Phaser.GameObjects.Image, 1, 1);
+
+    expect(npc.flipX).toBe(true); // walked west
+    // X is interpolated by Phaser's tween engine, which this fake does
+    // not run — so assert the tween was aimed correctly, and assert the
+    // bob on Y, which the renderer writes itself in onUpdate.
+    expect(tweensAdded[0].x).toBe(centerOf(1, 1).x);
+    at(tweensAdded[0], 0.5);
+    expect(npc.y).toBeCloseTo(centerOf(1, 1).y - DEFAULT_STEP_ANIM.bobPx, 5);
+  });
+
+  it("gives each mover its own independent step state", () => {
+    // Two monsters mid-step at different phases must not share a base
+    // scale or a bob offset.
+    const { renderer, tweensAdded } = makeRenderer();
+    renderer.setRoamerPositions([
+      { id: "a", col: 0, row: 0, sprite: "monster/rat.png" },
+      { id: "b", col: 2, row: 2, sprite: "monster/bat.png" },
+    ]);
+    renderer.setRoamerPositions([
+      { id: "a", col: 0, row: 1, sprite: "monster/rat.png" },
+      { id: "b", col: 2, row: 1, sprite: "monster/bat.png" },
+    ]);
+    const a = renderer.roamerSprites.get("a")!;
+    const b = renderer.roamerSprites.get("b")!;
+
+    at(tweensAdded[0], 1.0); // a has landed
+    at(tweensAdded[1], 0.5); // b is at its apex
+
+    expect(a.y).toBeCloseTo(centerOf(0, 1).y, 5);
+    const bMid = (centerOf(2, 2).y + centerOf(2, 1).y) / 2;
+    expect(b.y).toBeCloseTo(bMid - DEFAULT_STEP_ANIM.bobPx, 5);
   });
 });
