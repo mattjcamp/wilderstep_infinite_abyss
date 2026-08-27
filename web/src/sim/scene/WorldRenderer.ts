@@ -99,6 +99,25 @@ export type RenderGrid = ReadonlyArray<ReadonlyArray<RenderCell>>;
  *  consumer agrees on tile pitch + sprite display size. */
 export const TILE_SIZE = 32;
 
+/** Default duration, in milliseconds, of the slide a sprite plays when
+ *  it moves from one cell to the next. The simulation kernel is
+ *  unchanged and still commits every move instantly — this only
+ *  controls how long the *sprite* takes to catch up to the cell the
+ *  party already occupies. 140ms is roughly one step at a brisk walk;
+ *  below ~90ms the motion stops reading as movement and starts reading
+ *  as a smeared snap, above ~200ms input starts feeling laggy.
+ *
+ *  Set `moveTweenMs: 0` in the renderer config to restore the old
+ *  instant-snap behaviour. */
+export const DEFAULT_MOVE_TWEEN_MS = 140;
+
+/** A move longer than this many tiles is treated as a teleport (map
+ *  link, staircase, boat board, quest warp) and snaps instead of
+ *  sliding — otherwise the party would visibly glide across the whole
+ *  map when they take a staircase. Cardinal steps are always 1 tile,
+ *  so anything above this is by definition not a walk. */
+const TELEPORT_SNAP_TILES = 1.5;
+
 /** Depth for the optional per-cell background sprite — below the base
  *  tile (default depth 0) so a transparent foreground reveals it. */
 const BACKGROUND_CELL_DEPTH = -10;
@@ -135,6 +154,12 @@ export interface WorldRendererConfig {
    *  a generated `__party_marker` texture when this is empty or the
    *  named texture didn't load. */
   partyAvatar?: string;
+  /** How long, in ms, the party / roamer sprites take to slide between
+   *  cells. Defaults to {@link DEFAULT_MOVE_TWEEN_MS}. Pass 0 for the
+   *  original instant snap — useful for the editor's paint mode, for
+   *  headless tests, and as an accessibility escape hatch for players
+   *  who don't want interpolated motion. */
+  moveTweenMs?: number;
   /** True iff any currently-active party member's race carries the
    *  `infravision` ability. Set once at scene boot — the renderer
    *  doesn't recompute it. */
@@ -258,6 +283,25 @@ export class WorldRenderer {
    *  actual circles are drawn into `questGlowGraphics` on every
    *  `relight()` so the halo dims with ambient just like the cells. */
   questGlowCells: ReadonlySet<string> = new Set();
+  /** Transient per-cell pixel offsets applied to the quest halo,
+   *  keyed by the DESTINATION cell key.
+   *
+   *  The halo is immediate-mode Graphics rebuilt from a set of cell
+   *  keys, not a sprite, so unlike every other moving thing on the
+   *  map there is nothing for a tween to target. When a quest giver
+   *  wanders, its cell key changes and the disc would otherwise jump
+   *  to the new cell a frame before the NPC sprite finishes walking
+   *  there. So instead we draw the halo at its new cell plus an
+   *  offset that starts at the OLD cell's delta and is tweened to
+   *  zero on the same clock as the sprite — the two arrive together.
+   *
+   *  Entries are deleted when their tween completes, so the map is
+   *  empty whenever nothing is mid-step. */
+  private readonly questGlowOffsets = new Map<
+    string,
+    { dx: number; dy: number }
+  >();
+
   /** Lazily-created Phaser Graphics layer the halo is drawn into.
    *  Single graphics object cleared + redrawn per relight — cheap,
    *  since the typical glow-cell set has a handful of entries. */
@@ -265,6 +309,16 @@ export class WorldRenderer {
 
   /** The single party sprite. Null before `setPartyAt` fires. */
   partySprite: Phaser.GameObjects.Image | null = null;
+  /** Duration of the inter-cell slide in ms; 0 snaps. Read from
+   *  config at construction, mutable afterwards so a host can expose
+   *  a "reduce motion" toggle without rebuilding the renderer. */
+  moveTweenMs: number = DEFAULT_MOVE_TWEEN_MS;
+  /** The in-flight party slide, or null when the sprite is at rest on
+   *  its cell. Held (rather than asking Phaser via `isPlaying()`) so
+   *  `isPartyMoving` stays correct across Phaser versions and so the
+   *  kill-then-restart path can clear it deterministically —
+   *  `killTweensOf` does not fire `onComplete`. */
+  private partyMoveTween: Phaser.Tweens.Tween | null = null;
   /** Whether the renderer currently has a party position. Toggled
    *  by `setPartyAt` / `clearParty`. When false (paint mode in the
    *  editor, pre-sim setup), `relight()` passes `party: null` to
@@ -335,6 +389,7 @@ export class WorldRenderer {
     this.lightingMode = cfg.initialLightingMode ?? "night";
     this.sightRadiusByMode = cfg.sightRadiusByMode ?? {};
     this.fogEnabled = cfg.fogEnabled ?? true;
+    this.moveTweenMs = cfg.moveTweenMs ?? DEFAULT_MOVE_TWEEN_MS;
     this.onRelightHook = cfg.onRelight;
   }
 
@@ -547,8 +602,108 @@ export class WorldRenderer {
         .setDisplaySize(TILE_SIZE, TILE_SIZE)
         .setDepth(300);
     } else {
-      this.partySprite.setPosition(px, py);
+      this.slideTo(this.partySprite, px, py, (t) => {
+        this.partyMoveTween = t;
+      });
     }
+  }
+
+  /** Move `sprite` to (px, py) — sliding when the distance reads as a
+   *  single walking step and the slide is enabled, snapping otherwise.
+   *
+   *  Shared by the party sprite and the roamer / placed-encounter
+   *  layers so every moving thing on the map obeys the same duration,
+   *  easing, and teleport rule.
+   *
+   *  Easing is deliberately linear. An ease-in-out slide reads as a
+   *  hovering object being nudged; constant velocity reads as a
+   *  character walking, which is what a tile step is.
+   *
+   *  `onTween` receives the started tween (or null when the move
+   *  snapped) so a caller that needs to know whether motion is in
+   *  flight can track it. Any prior tween on the sprite is killed
+   *  first, so a move arriving mid-slide retargets cleanly rather
+   *  than compounding into a diagonal drift. */
+  private slideTo(
+    sprite: Phaser.GameObjects.Image,
+    px: number,
+    py: number,
+    onTween?: (tween: Phaser.Tweens.Tween | null) => void,
+  ): void {
+    this.scene.tweens.killTweensOf(sprite);
+    const far =
+      Math.abs(sprite.x - px) > TILE_SIZE * TELEPORT_SNAP_TILES ||
+      Math.abs(sprite.y - py) > TILE_SIZE * TELEPORT_SNAP_TILES;
+    if (this.moveTweenMs <= 0 || far) {
+      sprite.setPosition(px, py);
+      onTween?.(null);
+      return;
+    }
+    const tween = this.scene.tweens.add({
+      targets: sprite,
+      x: px,
+      y: py,
+      duration: this.moveTweenMs,
+      ease: "Linear",
+      onComplete: () => onTween?.(null),
+    });
+    onTween?.(tween);
+  }
+
+  /** Slide an arbitrary caller-owned sprite to the centre of
+   *  (col, row), using the same duration, easing and teleport rule as
+   *  the party and roamer layers.
+   *
+   *  Exists for overlay sprites the renderer does not own. NPCs and
+   *  quest givers are the case in point: the kernel moves them by
+   *  swapping an `npc` / `quest` *tag* between grid cells rather than
+   *  by handing us a positions list, so their Images live in the
+   *  host's own per-cell maps and never pass through `diffSprites`.
+   *  Routing them here keeps one definition of what a step looks
+   *  like — otherwise the timing rule gets copied into the host and
+   *  the two drift, which is exactly how the party ended up gliding
+   *  while the townsfolk teleported.
+   *
+   *  The host stays responsible for re-keying its own map; this only
+   *  moves the pixels. */
+  slideSprite(
+    sprite: Phaser.GameObjects.Image,
+    col: number,
+    row: number,
+  ): void {
+    this.slideTo(
+      sprite,
+      col * TILE_SIZE + TILE_SIZE / 2,
+      row * TILE_SIZE + TILE_SIZE / 2,
+    );
+  }
+
+  /** True while the party sprite is still catching up to its cell.
+   *
+   *  Hosts gate movement input on this: the kernel accepts steps as
+   *  fast as they arrive, and a held arrow key fires at the OS
+   *  auto-repeat rate (~30/sec), which would queue moves far faster
+   *  than a 140ms slide can play them and leave the sprite visibly
+   *  trailing the party's real position. */
+  isPartyMoving(): boolean {
+    return this.partyMoveTween !== null;
+  }
+
+  /** End any in-flight slide immediately, planting the sprite on its
+   *  current cell. For transitions that must not be caught mid-step —
+   *  entering a battle, changing maps, opening a modal that freezes
+   *  the world. */
+  snapPartyToTarget(): void {
+    if (this.partySprite) {
+      this.scene.tweens.killTweensOf(this.partySprite);
+      if (this.hasParty) {
+        this.partySprite.setPosition(
+          this.partyCol * TILE_SIZE + TILE_SIZE / 2,
+          this.partyRow * TILE_SIZE + TILE_SIZE / 2,
+        );
+      }
+    }
+    this.partyMoveTween = null;
   }
 
   /** Drop the party sprite — used when sim mode toggles off. Also
@@ -556,9 +711,13 @@ export class WorldRenderer {
    *  paint-mode behaviour (no LOS gate, emitters all visible). */
   clearParty(): void {
     if (this.partySprite) {
+      // Kill first: destroying a sprite that is still a live tween
+      // target leaves the tween mutating a dead game object.
+      this.scene.tweens.killTweensOf(this.partySprite);
       this.partySprite.destroy();
       this.partySprite = null;
     }
+    this.partyMoveTween = null;
     this.hasParty = false;
     this.partyCol = 0;
     this.partyRow = 0;
@@ -718,12 +877,58 @@ export class WorldRenderer {
       const b = Math.round(baseColor.b * brightness);
       const color = (r << 16) | (gg << 8) | b;
       g.fillStyle(color, alpha);
-      const cx = cs * TILE_SIZE + TILE_SIZE / 2;
-      const cy = rs * TILE_SIZE + TILE_SIZE / 2;
+      // Mid-step offset, if this cell's giver is still walking in.
+      // Absent (the common case) reads as zero.
+      const off = this.questGlowOffsets.get(key);
+      const cx = cs * TILE_SIZE + TILE_SIZE / 2 + (off?.dx ?? 0);
+      const cy = rs * TILE_SIZE + TILE_SIZE / 2 + (off?.dy ?? 0);
       // Slightly wider than the cell so the halo bleeds past sprite
       // edges. Matches the editor.
       g.fillCircle(cx, cy, TILE_SIZE * radiusFactor);
     }
+  }
+
+  /** Walk the quest halo from one cell to another instead of letting
+   *  it jump when the giver's cell key changes.
+   *
+   *  Call this alongside {@link slideSprite} for a quest giver, BEFORE
+   *  pushing the recomputed glow-cell set, so the first repaint
+   *  already carries the offset and the halo never paints a frame at
+   *  the destination.
+   *
+   *  Repaints on every tween frame. That is affordable precisely
+   *  because the halo set is tiny — a handful of discs — and only
+   *  while a giver is actually mid-step; the map is empty the rest of
+   *  the time. A move that exceeds the teleport threshold snaps, so
+   *  this agrees with the sprite it is chasing. */
+  slideQuestGlow(
+    from: { col: number; row: number },
+    to: { col: number; row: number },
+  ): void {
+    const key = `${to.col},${to.row}`;
+    const dx = (from.col - to.col) * TILE_SIZE;
+    const dy = (from.row - to.row) * TILE_SIZE;
+    const far =
+      Math.abs(dx) > TILE_SIZE * TELEPORT_SNAP_TILES ||
+      Math.abs(dy) > TILE_SIZE * TELEPORT_SNAP_TILES;
+    if (this.moveTweenMs <= 0 || far || (dx === 0 && dy === 0)) {
+      this.questGlowOffsets.delete(key);
+      return;
+    }
+    const offset = { dx, dy };
+    this.questGlowOffsets.set(key, offset);
+    this.scene.tweens.add({
+      targets: offset,
+      dx: 0,
+      dy: 0,
+      duration: this.moveTweenMs,
+      ease: "Linear",
+      onUpdate: () => this.repaintQuestGlow(),
+      onComplete: () => {
+        this.questGlowOffsets.delete(key);
+        this.repaintQuestGlow();
+      },
+    });
   }
 
   /** Update the player-engaged infravision flag + trigger a relight.
@@ -1054,6 +1259,8 @@ export class WorldRenderer {
     const wanted = new Map(positions.map((p) => [p.id, p]));
     for (const [id, img] of map) {
       if (wanted.has(id)) continue;
+      // Same ordering rule as clearParty — cancel before destroy.
+      this.scene.tweens.killTweensOf(img);
       img.destroy();
       map.delete(id);
     }
@@ -1084,7 +1291,10 @@ export class WorldRenderer {
           this.queueLazySpriteLoad(id, p.sprite, map);
         }
       } else {
-        img.setPosition(px, py);
+        // Roamers glide on the same clock as the party. A roamer that
+        // respawns or is re-placed elsewhere exceeds the teleport
+        // threshold inside slideTo and snaps instead.
+        this.slideTo(img, px, py);
         if (
           p.sprite &&
           this.scene.textures.exists(p.sprite) &&

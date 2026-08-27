@@ -108,7 +108,11 @@ import {
 } from "@/battle/world/Quests";
 import { overlayVisibleAt, tintForCell } from "@/sim/lighting";
 import { computeQuestGlowCells } from "@/sim/questGlow";
-import { TILE_SIZE, WorldRenderer } from "@/sim/scene/WorldRenderer";
+import {
+  DEFAULT_MOVE_TWEEN_MS,
+  TILE_SIZE,
+  WorldRenderer,
+} from "@/sim/scene/WorldRenderer";
 import { PaintedHelpScreen } from "@/sim/scene/PaintedHelpScreen";
 import {
   PaintedQuestLog,
@@ -3298,25 +3302,48 @@ export function PlayHost() {
                   ease: "Sine.easeInOut",
                 });
               } else {
-                scene.tweens.killTweensOf(scene.partyBoatSprite);
-                scene.partyBoatSprite.setPosition(
-                  col * TILE_SIZE + TILE_SIZE / 2,
-                  row * TILE_SIZE + TILE_SIZE / 2,
-                );
-                if (
-                  resolved &&
-                  scene.partyBoatSprite.texture.key !== resolved
-                ) {
-                  scene.partyBoatSprite.setTexture(resolved);
+                const boat = scene.partyBoatSprite;
+                scene.tweens.killTweensOf(boat);
+                if (resolved && boat.texture.key !== resolved) {
+                  boat.setTexture(resolved);
                 }
-                scene.tweens.add({
-                  targets: scene.partyBoatSprite,
-                  y: scene.partyBoatSprite.y - 2,
-                  duration: 900,
-                  yoyo: true,
-                  repeat: -1,
-                  ease: "Sine.easeInOut",
-                });
+                const bx = col * TILE_SIZE + TILE_SIZE / 2;
+                const by = row * TILE_SIZE + TILE_SIZE / 2;
+                // Restart the perpetual idle bob from the destination
+                // cell's centre. It has to be (re)started rather than
+                // left running because the slide below tweens `y`, and
+                // the bob tweens `y` too — one killTweensOf clears
+                // both, so whichever motion runs last owns the axis.
+                const startBob = () => {
+                  scene.tweens.add({
+                    targets: boat,
+                    y: by - 2,
+                    duration: 900,
+                    yoyo: true,
+                    repeat: -1,
+                    ease: "Sine.easeInOut",
+                  });
+                };
+                // Sail one cell → slide, matching the on-foot party.
+                // Board / disembark / warp → snap, same teleport rule
+                // WorldRenderer.slideTo applies. The <= 2px the bob
+                // may have lifted the hull is well inside the margin.
+                const step =
+                  Math.abs(boat.x - bx) <= TILE_SIZE * 1.5 &&
+                  Math.abs(boat.y - by) <= TILE_SIZE * 1.5;
+                if (DEFAULT_MOVE_TWEEN_MS > 0 && step) {
+                  scene.tweens.add({
+                    targets: boat,
+                    x: bx,
+                    y: by,
+                    duration: DEFAULT_MOVE_TWEEN_MS,
+                    ease: "Linear",
+                    onComplete: startBob,
+                  });
+                } else {
+                  boat.setPosition(bx, by);
+                  startBob();
+                }
               }
               // Hide the on-foot party sprite while the boat is
               // visible — they're one entity from the player's POV.
@@ -3347,6 +3374,27 @@ export function PlayHost() {
                 "Home",
                 "End",
               ]);
+              // Keys that advance a turn — the four directions plus
+              // the wait-in-place space. These are the ones gated on
+              // the slide animation below; everything else (inventory,
+              // map, camp, the number keys) passes through untouched
+              // so the UI stays responsive while the party is walking.
+              const TURN_KEYS = new Set<string>([
+                "w",
+                "W",
+                "a",
+                "A",
+                "s",
+                "S",
+                "d",
+                "D",
+                "ArrowUp",
+                "ArrowDown",
+                "ArrowLeft",
+                "ArrowRight",
+                " ",
+                "Spacebar",
+              ]);
               const listener = (e: KeyboardEvent) => {
                 const t = e.target as HTMLElement | null;
                 if (
@@ -3359,6 +3407,24 @@ export function PlayHost() {
                 }
                 if (overlaysOpenRef.current) return;
                 if (SCROLL_KEYS.has(e.key)) e.preventDefault();
+                // Movement gate. The kernel commits a step the instant
+                // it is asked, but the sprite needs MOVE_TWEEN_MS to
+                // cover the tile. Holding an arrow key fires at the OS
+                // auto-repeat rate — roughly 30 events a second — so
+                // without this guard the party's real position would
+                // run several tiles ahead of the sprite the player is
+                // watching, and releasing the key would leave the
+                // sprite skating to a stop well after input ended.
+                //
+                // Dropping the excess events (rather than queueing
+                // them) is deliberate: auto-repeat keeps firing every
+                // ~33ms, so the next accepted step lands within a
+                // frame or two of the slide finishing and held-key
+                // walking stays smooth. Queueing would instead bank
+                // the overflow and keep walking after the key is up.
+                if (TURN_KEYS.has(e.key) && renderer.isPartyMoving()) {
+                  return;
+                }
                 handler(e.key);
               };
               window.addEventListener("keydown", listener);
@@ -4729,24 +4795,49 @@ export function PlayHost() {
               const sceneSelf = this;
               const fromKey = `${ev.from.col},${ev.from.row}`;
               const toKey = `${ev.to.col},${ev.to.row}`;
-              const toX = ev.to.col * TILE_SIZE + TILE_SIZE / 2;
-              const toY = ev.to.row * TILE_SIZE + TILE_SIZE / 2;
+              // Slide rather than snap, so a wandering townsperson
+              // moves on the same clock as the party and the roaming
+              // monsters. The renderer owns the timing rule (and the
+              // teleport threshold, which catches an NPC relocated by
+              // the "step aside" dialog rather than by a wander roll);
+              // we only re-key our per-cell maps. Falls back to a
+              // direct set if the renderer isn't up yet — the overlay
+              // must not be left on the stale cell either way, or
+              // bumping the new cell opens a dialog for a sprite the
+              // player can still see standing somewhere else.
+              const slide = (img: Phaser.GameObjects.Image) => {
+                if (sceneSelf.world) {
+                  sceneSelf.world.slideSprite(img, ev.to.col, ev.to.row);
+                } else {
+                  img.setPosition(
+                    ev.to.col * TILE_SIZE + TILE_SIZE / 2,
+                    ev.to.row * TILE_SIZE + TILE_SIZE / 2,
+                  );
+                }
+              };
               const npcImg = sceneSelf.npcOverlays.get(fromKey);
               if (npcImg) {
                 sceneSelf.npcOverlays.delete(fromKey);
-                npcImg.setPosition(toX, toY);
+                slide(npcImg);
                 sceneSelf.npcOverlays.set(toKey, npcImg);
               }
               const questImg = sceneSelf.questOverlays.get(fromKey);
               if (questImg) {
                 sceneSelf.questOverlays.delete(fromKey);
-                questImg.setPosition(toX, toY);
+                slide(questImg);
                 sceneSelf.questOverlays.set(toKey, questImg);
               }
               if (ev.questId) {
                 // Quest-glow cells track the live grid, which the
                 // wander pass already mutated. Re-running the pass
                 // moves the halo to follow the giver.
+                //
+                // Seed the halo's travel offset FIRST: refreshQuestGlow
+                // repaints synchronously, and without the offset in
+                // place that repaint would land the disc on the
+                // destination cell while the giver is still a tile
+                // behind it.
+                sceneSelf.world?.slideQuestGlow(ev.from, ev.to);
                 refreshQuestGlow();
               }
               return;
