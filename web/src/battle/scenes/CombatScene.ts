@@ -122,6 +122,11 @@ import {
 } from "@/vfx/Vfx";
 import { resolveProjectileEffect } from "@/vfx/effectRegistry";
 import {
+  beginStep,
+  clearStepAnim,
+  DEFAULT_STEP_ANIM,
+} from "@/vfx/stepAnim";
+import {
   loadAnimations,
   getAnimationById,
 } from "@/vfx/animationsCatalog";
@@ -269,6 +274,14 @@ const SMITE_ALL_CHEAT = true;
 // so monster / character sprites — which ship as native 32×32 PNGs
 // — render at their native size, not stretched.
 const TILE = 32;
+/** How long a combatant takes to cross one tile, in ms.
+ *
+ *  Deliberately shorter than the overworld's DEFAULT_MOVE_TWEEN_MS
+ *  (140). A step you are waiting your turn on should feel decisive,
+ *  where an exploration step should feel like walking. The two scenes
+ *  share the SHAPE of the step (@/vfx/stepAnim) but not its tempo —
+ *  don't unify these without watching both. */
+const COMBAT_STEP_MS = 110;
 const HEADER_H = 32;
 const ARENA_X = 12;
 const ARENA_Y = HEADER_H + 8;             // 40
@@ -5844,13 +5857,41 @@ export class CombatScene extends Phaser.Scene {
     return new Promise((resolve) => {
       const body = this.bodies.get(actor.id)!;
       const ring = this.selRings.get(actor.id)!;
+      const toX = this.tileX(to.col);
+      const toY = this.tileY(to.row);
+      // Unwind any residual step before reading the start position —
+      // a combatant interrupted mid-hop would otherwise bake the 2px
+      // lift into its resting position.
+      clearStepAnim(body);
+      // The step dresses the BODY only. The selection ring marks a
+      // cell, not a character, so it rides the plain interpolation and
+      // stays flat on the tile while the body hops over it. Bodies can
+      // be Rectangles (monsters with no sprite art) — beginStep skips
+      // the horizontal flip for anything that can't flip.
+      const step = beginStep(
+        body,
+        { x: body.x, y: body.y },
+        { x: toX, y: toY },
+        DEFAULT_STEP_ANIM,
+      );
       this.tweens.add({
         targets: [body, ring],
-        x: this.tileX(to.col),
-        y: this.tileY(to.row),
-        duration: 110,
-        onUpdate: () => this.syncMonsterBar(actor.id),
+        x: toX,
+        y: toY,
+        duration: COMBAT_STEP_MS,
+        // Linear: beginStep treats progress as the interpolant, and an
+        // eased tween would drift the bob out of phase with the slide.
+        ease: "Linear",
+        onUpdate: (tw: Phaser.Tweens.Tween) => {
+          step(tw.progress);
+          // Bars follow the body, so they ride the hop too — which is
+          // what you want; a health bar pinned flat while its owner
+          // bobs reads as two separate objects.
+          this.syncMonsterBar(actor.id);
+        },
         onComplete: () => {
+          clearStepAnim(body);
+          body.setPosition(toX, toY);
           this.syncMonsterBar(actor.id);
           resolve();
         },
