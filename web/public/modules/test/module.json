@@ -6,5 +6,8 @@
   "author": "",
   "version": "0.1.0",
   "role": "playable",
-  "extends": "default"
+  "extends": "default",
+  "uses": [
+    "maps-mix-in"
+  ]
 }

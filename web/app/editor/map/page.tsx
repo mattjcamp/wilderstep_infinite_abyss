@@ -49,8 +49,13 @@ function MapEditorContent({ moduleId }: { moduleId: string }) {
         <span className="text-parchment/80">{mapId}</span>
       </nav>
       {/* MapEditor reads useSearchParams() for sim-mode auto-entry —
-          already inside the page-root Suspense boundary below. */}
-      <MapEditor moduleId={moduleId} mapId={mapId} />
+          already inside the page-root Suspense boundary below.
+          key={mapId} forces a fresh mount per map: since the move to
+          query-param routing, a link traversal is a same-pathname push,
+          which Next treats as same-route and would otherwise reuse this
+          instance — skipping the run-once effect that reads
+          entryCol/entryRow, so the party fell back to findSpawn. */}
+      <MapEditor key={mapId} moduleId={moduleId} mapId={mapId} />
     </div>
   );
 }

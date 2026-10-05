@@ -1,0 +1,32 @@
+{
+  "npcs": [
+    {
+      "id": "drago",
+      "name": "Drago",
+      "sprite": "person/barbarian_mage.png",
+      "counter": null,
+      "personal_history": "Drago was saved by the townsfolk in Hallowmere and in return he fought many battles to protect the town. His last adventure broke him, leaving him a shadow of himself. He bought Drago's Den, which everyone in town call's Drago's Dive, where he drinks through all of the money he makes selling booze to the latest crop of fools willing to do the people of Hallowmere's bidding",
+      "dialogs": [
+        {
+          "id": "dialog_1",
+          "title": "Welcome to Drago's Den",
+          "text": "Burp! Hi there, fresh meat... Welcome to Drago's Den, a place to come and meet fools like yourself who are looking for trouble in Varnfell."
+        }
+      ]
+    },
+    {
+      "id": "rosetta",
+      "name": "Rosetta",
+      "sprite": "person/human_mage14.png",
+      "counter": null,
+      "personal_history": "Rosetta's is the last of a family that used to be the center of social life in Hallowmere. Her family fell to misfortune and these days she takes any work that she can find to care for herself and her brother.",
+      "dialogs": [
+        {
+          "id": "dialog_1",
+          "title": "Introduction",
+          "text": "Hello, are you new to Hallowmere? Be careful with what you do while here in town. Hallowmere has a way of tearing down the most robust of souls and families."
+        }
+      ]
+    }
+  ]
+}
