@@ -582,6 +582,66 @@ export function MapEditor({
    *  Space+drag panning can mutate scrollLeft/scrollTop directly
    *  without React re-renders. */
   const canvasScrollRef = useRef<HTMLDivElement | null>(null);
+  /** Latest zoom factor, readable from long-lived closures (the sim
+   *  bridge is built once per sim mount and would otherwise capture a
+   *  stale zoom). */
+  const zoomRef = useRef<number>(zoom);
+  zoomRef.current = zoom;
+  /** Last cell the simulated party was shown at, or null right after a
+   *  sim mounts (i.e. on arrival at a new map). Drives the follow
+   *  camera: null / a multi-cell jump → center on the party; a normal
+   *  one-step move → nudge the viewport only when the party nears an
+   *  edge. */
+  const partyViewRef = useRef<{ col: number; row: number } | null>(null);
+  /** Keep the party cell at (col, row) visible during simulation by
+   *  scrolling the canvas panel. Without this, arriving on a larger map
+   *  (or walking off-screen) leaves the party outside the visible area.
+   *  Deliberately scrolls ONLY the canvas panel (not scrollIntoView,
+   *  which would also shift overflow-hidden ancestors and push the
+   *  toolbar off-screen). */
+  const followParty = useCallback((col: number, row: number) => {
+    const prev = partyViewRef.current;
+    partyViewRef.current = { col, row };
+    const jumped =
+      !prev || Math.abs(prev.col - col) > 2 || Math.abs(prev.row - row) > 2;
+    // Defer a tick so a just-mounted map has laid out before we measure.
+    // (setTimeout rather than requestAnimationFrame: rAF is paused in
+    // background tabs, which would silently drop the scroll.)
+    window.setTimeout(() => {
+      const el = canvasScrollRef.current;
+      const canvas = containerRef.current;
+      if (!el || !canvas) return;
+      const cellPx = TILE_SIZE * zoomRef.current;
+      const elRect = el.getBoundingClientRect();
+      const cRect = canvas.getBoundingClientRect();
+      // Cell's top-left in the scroll panel's content coordinates.
+      const cellX = cRect.left - elRect.left + el.scrollLeft + col * cellPx;
+      const cellY = cRect.top - elRect.top + el.scrollTop + row * cellPx;
+      const viewW = el.clientWidth;
+      const viewH = el.clientHeight;
+      let left: number;
+      let top: number;
+      if (jumped) {
+        left = cellX + cellPx / 2 - viewW / 2;
+        top = cellY + cellPx / 2 - viewH / 2;
+      } else {
+        // Follow-cam: scroll only once the party is within ~4 tiles of
+        // an edge, then just enough to restore that margin.
+        const mX = Math.min(cellPx * 4, viewW / 3);
+        const mY = Math.min(cellPx * 4, viewH / 3);
+        left = el.scrollLeft;
+        top = el.scrollTop;
+        if (cellX < left + mX) left = cellX - mX;
+        else if (cellX + cellPx > left + viewW - mX) left = cellX + cellPx - viewW + mX;
+        if (cellY < top + mY) top = cellY - mY;
+        else if (cellY + cellPx > top + viewH - mY) top = cellY + cellPx - viewH + mY;
+      }
+      // Assign directly (clamped by the browser) — no smooth scrolling,
+      // so rapid key repeats can't leave the camera lagging behind.
+      el.scrollLeft = left;
+      el.scrollTop = top;
+    }, 0);
+  }, []);
   /** True while the user holds Space — enables drag-to-pan and
    *  swaps the cursor to "grab" so the gesture is discoverable. */
   const [spaceHeld, setSpaceHeld] = useState(false);
@@ -3278,6 +3338,9 @@ export function MapEditor({
       }
       return;
     }
+    // Fresh sim mount (new map or restart) — the first party
+    // placement should center the viewport on the party.
+    partyViewRef.current = null;
     // Build a SimGrid view of the painted grid. Each TileType
     // already carries the SimCell shape, so a shallow cast is safe.
     const grid = state.mapRecord.grid as unknown as SimGrid;
@@ -3286,6 +3349,7 @@ export function MapEditor({
       setPartyAt: (col, row) => {
         const sprite = state.simParty?.avatar ?? "";
         sceneApiRef.current?.setPartyAt(col, row, sprite);
+        followParty(col, row);
       },
       clearParty: () => {
         sceneApiRef.current?.clearParty();
@@ -3308,6 +3372,7 @@ export function MapEditor({
       },
       setPartyBoatAt: (col, row, visible, sprite) => {
         sceneApiRef.current?.setPartyBoatAt(col, row, visible, sprite);
+        if (visible) followParty(col, row);
       },
       floatText: (col, row, text) => {
         sceneApiRef.current?.floatText(col, row, text);
@@ -3664,6 +3729,17 @@ export function MapEditor({
     state.kind === "ok" ? state.mapRecord.id : null,
     onLinkTraversed,
   ]);
+
+  // Zooming mid-simulation rescales the canvas around its top-left, so
+  // the party can drift off-screen. Re-center on the party after a zoom.
+  useEffect(() => {
+    if (simMode !== "active") return;
+    const at = partyViewRef.current;
+    if (!at) return;
+    partyViewRef.current = null; // force a center, not an edge nudge
+    followParty(at.col, at.row);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [zoom]);
 
   // Propagate grid-lines toggle to the running scene.
   useEffect(() => {
@@ -4707,6 +4783,7 @@ export function MapEditor({
               height: mapRecord.height * TILE_SIZE * zoom,
             }}
           >
+
             <div
               ref={containerRef}
               className="rounded border border-parchment/20 shadow-lg"
