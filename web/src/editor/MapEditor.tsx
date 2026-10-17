@@ -100,6 +100,7 @@ import type {
   SpawnEncounterOptions,
 } from "@/sim/MapSimulation";
 import type { SimSpawn } from "@/sim/spawn";
+import { type FogStyleByMode, normalizeFogStyles } from "@/sim/fogStyle";
 import type {
   SimCharacter,
   SimCharacterClass,
@@ -4009,6 +4010,7 @@ export function MapEditor({
     lighting?: "day" | "twilight" | "darkness" | "world_time";
     soundtrack?: string[];
     fog_of_war?: boolean;
+    fog_style?: FogStyleByMode;
     passive_regen?: { hp: number; mp: number };
   }) => {
     if (state.kind !== "ok") return;
@@ -4050,6 +4052,14 @@ export function MapEditor({
       (updatedMap as Record<string, unknown>).fog_of_war = false;
     } else {
       delete (updatedMap as Record<string, unknown>).fog_of_war;
+    }
+    // Fog style: persist only non-default bands ("cloud" is the
+    // default), so maps on clouds everywhere carry no `fog_style` key.
+    const fogStyle = normalizeFogStyles(next.fog_style);
+    if (fogStyle) {
+      (updatedMap as Record<string, unknown>).fog_style = fogStyle;
+    } else {
+      delete (updatedMap as Record<string, unknown>).fog_style;
     }
     // Passive regen: persist only when it actually heals, so non-restful
     // maps stay shape-clean (no `passive_regen` key at all).
@@ -5041,6 +5051,9 @@ export function MapEditor({
                   // Default on — only an explicit `false` disables it.
                   fog_of_war:
                     (mapRecord as Record<string, unknown>).fog_of_war !== false,
+                  fog_style: normalizeFogStyles(
+                    (mapRecord as Record<string, unknown>).fog_style,
+                  ),
                   passive_regen: ((): { hp: number; mp: number } | undefined => {
                     const v = (mapRecord as Record<string, unknown>)
                       .passive_regen as

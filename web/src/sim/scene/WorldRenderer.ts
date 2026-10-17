@@ -61,6 +61,10 @@ import {
 } from "@/sim/lighting";
 import { ANIMATION_CONFIGS } from "@/sim/tileAnimations";
 import { QUEST_GLOW } from "@/sim/questGlow";
+import {
+  type FogStyleByMode,
+  resolveFogStyle,
+} from "@/sim/fogStyle";
 import type { SimLightSource } from "@/sim/types";
 import { withBasePath } from "@/util/basePath";
 import {
@@ -204,6 +208,11 @@ export interface WorldRendererConfig {
    *  isn't needlessly clouded. Lighting (day/twilight/night, torches,
    *  infravision) is unaffected — only the fog bands switch off. */
   fogEnabled?: boolean;
+  /** Which cover style drapes unexplored cells in each lighting band
+   *  ("cloud" | "dark_cloud" | "darkness"). Hosts pass the map's `fog_style` here.
+   *  Missing bands default to "cloud" — the original look — so an
+   *  absent value renders exactly as before. See `@/sim/fogStyle`. */
+  fogStyleByMode?: FogStyleByMode;
   /** Hook fired after each relight pass — receives the shared
    *  LightingResult so callers can tint their own overlays in sync.
    *  Use `tintForCell(result, col, row)` (re-exported from this
@@ -221,6 +230,14 @@ const PARTICLE_TEX = "__particle";
  *  unexplored cells in day / twilight (see `relight`). One shared
  *  texture, instanced per cell. */
 const CLOUD_TEX = "__cloud_cover";
+/** Key for the procedurally-generated "darkness" cover texture — the
+ *  alternative fog-of-war style (map `fog_style`). An inky near-black
+ *  fill with faint cool mottling so a wide unexplored region reads as
+ *  deep shadow rather than a flat black rectangle. Drawn untinted. */
+const DARKNESS_TEX = "__darkness_cover";
+/** Key for the "dark clouds" cover texture — storm-cloud variant of
+ *  CLOUD_TEX (same billow layout, charcoal / slate palette). */
+const DARK_CLOUD_TEX = "__dark_cloud_cover";
 /** Depth for the cloud-cover layer. Sits ABOVE every terrain + overlay
  *  band (base cells 0, quest glow 60, detected traps 95, emitters 160,
  *  roamer / placed-encounter sprites 250) so undiscovered ground hides
@@ -374,6 +391,11 @@ export class WorldRenderer {
    *  dialog — e.g. a shop interior turns it off. */
   fogEnabled = true;
 
+  /** Per-lighting-band cover style for unexplored cells (map
+   *  `fog_style`). Resolved against `lightingMode` each relight, so a
+   *  map can wear clouds by day and darkness by night. */
+  fogStyleByMode: FogStyleByMode = {};
+
   /** Fog-of-war "visited cells" memory — every `"col,row"` the party
    *  has ever seen on this surface. Hosts seed it from persisted save
    *  state and call `setVisitedCells` whenever the set replaces
@@ -407,6 +429,7 @@ export class WorldRenderer {
     this.lightingMode = cfg.initialLightingMode ?? "night";
     this.sightRadiusByMode = cfg.sightRadiusByMode ?? {};
     this.fogEnabled = cfg.fogEnabled ?? true;
+    this.fogStyleByMode = { ...(cfg.fogStyleByMode ?? {}) };
     this.moveTweenMs = cfg.moveTweenMs ?? DEFAULT_MOVE_TWEEN_MS;
     this.stepAnim = { ...DEFAULT_STEP_ANIM, ...(cfg.stepAnim ?? {}) };
     this.onRelightHook = cfg.onRelight;
@@ -471,6 +494,72 @@ export class WorldRenderer {
       ];
       for (const [cx, cy, rad] of puffs) g.fillCircle(cx, cy, rad);
       g.generateTexture(CLOUD_TEX, s, s);
+      g.destroy();
+    }
+    // Dark-cloud cover tile — storm clouds. Same tileable billow
+    // layout as CLOUD_TEX but in charcoal / slate, with a darker
+    // underside band and lighter crowns so it reads as heavy weather
+    // rather than a grey square.
+    if (!this.scene.textures.exists(DARK_CLOUD_TEX)) {
+      const g = this.scene.add.graphics();
+      const s = TILE_SIZE;
+      g.fillStyle(0x3a3f48, 1);
+      g.fillRect(0, 0, s, s);
+      // Darker undersides, slightly offset down from each billow.
+      g.fillStyle(0x2a2e36, 1);
+      const shadows: Array<[number, number, number]> = [
+        [s * 0.5, s * 0.6, s * 0.4],
+        [s * 0.28, s * 0.44, s * 0.28],
+        [s * 0.72, s * 0.42, s * 0.28],
+        [s * 0.32, s * 0.82, s * 0.26],
+        [s * 0.7, s * 0.8, s * 0.28],
+      ];
+      for (const [cx, cy, rad] of shadows) g.fillCircle(cx, cy, rad);
+      // Billow crowns.
+      g.fillStyle(0x555b66, 1);
+      const puffs: Array<[number, number, number]> = [
+        [s * 0.5, s * 0.5, s * 0.36],
+        [s * 0.28, s * 0.34, s * 0.25],
+        [s * 0.72, s * 0.32, s * 0.25],
+        [s * 0.32, s * 0.72, s * 0.24],
+        [s * 0.7, s * 0.7, s * 0.26],
+      ];
+      for (const [cx, cy, rad] of puffs) g.fillCircle(cx, cy, rad);
+      // A few pale highlights on the tops of the billows.
+      g.fillStyle(0x6b7280, 0.7);
+      const highlights: Array<[number, number, number]> = [
+        [s * 0.46, s * 0.42, s * 0.16],
+        [s * 0.25, s * 0.28, s * 0.1],
+        [s * 0.68, s * 0.26, s * 0.1],
+        [s * 0.66, s * 0.64, s * 0.11],
+      ];
+      for (const [cx, cy, rad] of highlights) g.fillCircle(cx, cy, rad);
+      g.generateTexture(DARK_CLOUD_TEX, s, s);
+      g.destroy();
+    }
+    // Darkness-cover tile — the alternative fog-of-war style. A fully
+    // opaque near-black base (no gaps at the seams) with a few soft,
+    // slightly-lighter shadow pools so a large unexplored region has
+    // depth instead of reading as a flat black rectangle. Kept very
+    // dark: it must stay clearly darker than the REMEMBERED band.
+    if (!this.scene.textures.exists(DARKNESS_TEX)) {
+      const g = this.scene.add.graphics();
+      const s = TILE_SIZE;
+      g.fillStyle(0x030406, 1);
+      g.fillRect(0, 0, s, s);
+      const pools: Array<[number, number, number, number, number]> = [
+        // [cx, cy, radius, colour, alpha]
+        [s * 0.3, s * 0.35, s * 0.34, 0x0b0e16, 0.9],
+        [s * 0.72, s * 0.62, s * 0.3, 0x0a0c14, 0.85],
+        [s * 0.55, s * 0.2, s * 0.16, 0x0e1220, 0.6],
+        [s * 0.2, s * 0.8, s * 0.14, 0x0e1220, 0.55],
+        [s * 0.5, s * 0.5, s * 0.1, 0x121726, 0.45],
+      ];
+      for (const [cx, cy, rad, col, a] of pools) {
+        g.fillStyle(col, a);
+        g.fillCircle(cx, cy, rad);
+      }
+      g.generateTexture(DARKNESS_TEX, s, s);
       g.destroy();
     }
   }
@@ -996,6 +1085,13 @@ export class WorldRenderer {
     this.relight();
   }
 
+  /** Replace the per-band fog-of-war cover styles (map `fog_style`)
+   *  and relight so the change shows immediately. */
+  setFogStyleByMode(styles: FogStyleByMode | null | undefined): void {
+    this.fogStyleByMode = { ...(styles ?? {}) };
+    this.relight();
+  }
+
   /** Replace the fog-of-war visited set wholesale. Hosts call this on
    *  map swap / dungeon-floor change to seed the renderer with the
    *  persisted set for the new surface. Triggers a relight so the
@@ -1155,13 +1251,39 @@ export class WorldRenderer {
     // (The cloud texture itself has fully-opaque pixels across the
     // whole cell footprint, so setAlpha(1) leaves no gaps.)
     //
+    // Cover STYLE is authored per lighting band (map `fog_style`):
+    // "cloud" (default) is the tinted cloud described above;
+    // "dark_cloud" swaps in the storm-cloud texture, dimmed (less
+    // aggressively than plain cloud) at twilight / night;
+    // "darkness" swaps in the inky void texture and leaves it untinted,
+    // so e.g. a map can be clouded by day and swallowed by darkness at
+    // night. Resolved against the live `lightingMode`, so a clock tick
+    // across dusk re-skins the cover on the next relight.
+    //
     // `isUnexplored` is only ever set when fog is active and the party
     // is on the map (see lighting.ts), so paint-mode / no-party frames
     // naturally show no cover without a special case here. Sprites are
     // created lazily and then just toggled, so a fully-explored map
     // carries none and a re-covered cell reuses its instance.
+    const coverStyle = resolveFogStyle(this.fogStyleByMode, this.lightingMode);
+    const coverTex =
+      coverStyle === "darkness"
+        ? DARKNESS_TEX
+        : coverStyle === "dark_cloud"
+          ? DARK_CLOUD_TEX
+          : CLOUD_TEX;
     const coverTint =
-      this.lightingMode === "night"
+      coverStyle === "darkness"
+        ? 0xffffff // darkness texture carries its own colour
+        : coverStyle === "dark_cloud"
+          ? // Storm clouds dim with the light but stay visibly cloud-
+            // shaped at night (unlike the near-black plain cloud).
+            this.lightingMode === "night"
+            ? 0x6a7080
+            : this.lightingMode === "twilight"
+              ? 0xa8adb8
+              : 0xffffff
+          : this.lightingMode === "night"
         ? 0x05070b // near-black void
         : this.lightingMode === "twilight"
           ? 0x6b7280 // dusk-dimmed cloud
@@ -1178,7 +1300,7 @@ export class WorldRenderer {
         const c = Number(cs);
         const r = Number(rs);
         cloud = this.scene.add
-          .image(c * TILE_SIZE, r * TILE_SIZE, CLOUD_TEX)
+          .image(c * TILE_SIZE, r * TILE_SIZE, coverTex)
           .setOrigin(0)
           .setDisplaySize(TILE_SIZE, TILE_SIZE)
           .setDepth(CLOUD_CELL_DEPTH);
@@ -1187,6 +1309,10 @@ export class WorldRenderer {
       if (cloud) {
         cloud.setVisible(covered);
         if (covered) {
+          if (cloud.texture.key !== coverTex) {
+            cloud.setTexture(coverTex);
+            cloud.setDisplaySize(TILE_SIZE, TILE_SIZE);
+          }
           cloud.setAlpha(coverAlpha);
           if (coverTint === 0xffffff) cloud.clearTint();
           else cloud.setTint(coverTint);

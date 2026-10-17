@@ -31,6 +31,15 @@
 import { useEffect, useState } from "react";
 import { SoundtrackPicker } from "./SoundtrackPicker";
 import { TagsPicker } from "./TagsPicker";
+import {
+  DEFAULT_FOG_STYLE,
+  FOG_STYLE_LABELS,
+  FOG_STYLES,
+  type FogStyle,
+  type FogStyleByMode,
+  normalizeFogStyles,
+  resolveFogStyle,
+} from "@/sim/fogStyle";
 
 /** Authored lighting override for a map. `world_time` (default,
  *  expressed as `undefined`) defers to the world clock — day during
@@ -55,6 +64,10 @@ interface MapAttributes {
    *  fog off doesn't brighten a dark map, it just stops the
    *  explored / unexplored (cloud) gating. */
   fog_of_war?: boolean;
+  /** Per-lighting-band cover style for unexplored tiles ("cloud" |
+   *  "darkness"). Missing bands → "cloud". The dialog emits only the
+   *  non-default bands, or `undefined` when every band is "cloud". */
+  fog_style?: FogStyleByMode;
   /** Per-map background-music playlist override. Each entry is a
    *  file URL. Absent / empty array → fall back to the module
    *  manifest's default soundtrack (or silence if the module's is
@@ -68,6 +81,14 @@ interface MapAttributes {
    *  dungeons. */
   passive_regen?: { hp: number; mp: number };
 }
+
+type FogBand = "day" | "twilight" | "night";
+
+const FOG_BANDS: ReadonlyArray<{ band: FogBand; label: string }> = [
+  { band: "day", label: "Day" },
+  { band: "twilight", label: "Twilight" },
+  { band: "night", label: "Night" },
+];
 
 export function MapAttributesDialog({
   mapId,
@@ -92,6 +113,13 @@ export function MapAttributesDialog({
   const [fogOfWar, setFogOfWar] = useState<boolean>(
     initial.fog_of_war !== false,
   );
+  // Cover style per lighting band. Seeded from the record; any band it
+  // doesn't name shows the default ("cloud").
+  const [fogStyle, setFogStyle] = useState<Record<FogBand, FogStyle>>(() => ({
+    day: resolveFogStyle(initial.fog_style, "day"),
+    twilight: resolveFogStyle(initial.fog_style, "twilight"),
+    night: resolveFogStyle(initial.fog_style, "night"),
+  }));
   const [soundtrack, setSoundtrack] = useState<string[]>(
     initial.soundtrack ? [...initial.soundtrack] : [],
   );
@@ -135,6 +163,7 @@ export function MapAttributesDialog({
     lighting,
     soundtrack,
     fogOfWar,
+    fogStyle,
     regenEnabled,
     regenHp,
     regenMp,
@@ -167,6 +196,10 @@ export function MapAttributesDialog({
       // author turned it OFF — keeps fogged maps shape-identical
       // (no `"fog_of_war": true` churn). `false` is stored verbatim.
       fog_of_war: fogOfWar ? undefined : false,
+      // Fog style: keep only bands that differ from the default so a
+      // map left on clouds everywhere carries no `fog_style` key. Kept
+      // even while fog is off, so re-enabling fog restores the choice.
+      fog_style: normalizeFogStyles(fogStyle),
       // Passive regen: persist only when enabled AND at least one rate
       // heals, so non-restful maps stay shape-clean (no field at all).
       // Rates are clamped to non-negative integers.
@@ -329,6 +362,54 @@ export function MapAttributesDialog({
               </span>
             </span>
           </label>
+
+          {/* Fog style by time of day ---------------------------- */}
+          {/* How unexplored tiles are hidden in each lighting band.
+              Resolved against the EFFECTIVE band — the clock, or the
+              map's lighting override (a "darkness" map uses Night). */}
+          <div
+            className={`ml-6 flex flex-col gap-1 ${
+              fogOfWar ? "" : "pointer-events-none opacity-50"
+            }`}
+            aria-disabled={!fogOfWar}
+          >
+            <span className="text-[13px] text-parchment/85 font-mono">
+              fog style
+            </span>
+            <div className="grid grid-cols-3 gap-2">
+              {FOG_BANDS.map(({ band, label }) => (
+                <label key={band} className="flex flex-col gap-1">
+                  <span className="text-xs uppercase tracking-wide text-parchment/65">
+                    {label}
+                  </span>
+                  <select
+                    value={fogStyle[band]}
+                    disabled={!fogOfWar}
+                    onChange={(e) =>
+                      setFogStyle((prev) => ({
+                        ...prev,
+                        [band]: e.target.value as FogStyle,
+                      }))
+                    }
+                    className="rounded border border-parchment/20 bg-ink/40 px-2 py-1 text-sm text-parchment focus:border-parchment/45"
+                  >
+                    {FOG_STYLES.map((style) => (
+                      <option key={style} value={style}>
+                        {FOG_STYLE_LABELS[style]}
+                        {style === DEFAULT_FOG_STYLE ? " (default)" : ""}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ))}
+            </div>
+            <span className="text-xs text-parchment/65">
+              How unexplored tiles are hidden at each time of day — e.g.
+              clouds in the daytime, dark clouds at dusk, darkness at
+              night. Follows the
+              map&apos;s lighting override when one is set.
+            </span>
+          </div>
 
           {/* Passive regen --------------------------------------- */}
           {/* "Restful" maps slowly heal the party each turn (step or

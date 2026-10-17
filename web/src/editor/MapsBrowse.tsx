@@ -13,6 +13,8 @@
  *     multi-select for tags that suggests existing tags and lets you
  *     type new ones.
  *   - Click-to-open-editor on each row + a Delete button.
+ *   - A "Delete all" button on each tag group that removes every map
+ *     under that tag in one write (e.g. retire a whole town).
  *
  * Carries the same draft → publish flow every other model uses.
  */
@@ -46,7 +48,7 @@ import {
 import type { DungeonRecord } from "@/sim/dungeon/types";
 import { bakeDungeon } from "./dungeonBake";
 import { GenerateDungeonDialog } from "./GenerateDungeonDialog";
-import { compareTags, UNTAGGED } from "./mapTags";
+import { compareTags, planTagDelete, UNTAGGED } from "./mapTags";
 import { ID_PATTERN, TagsPicker } from "./TagsPicker";
 import { usePublishServer } from "./usePublishServer";
 
@@ -521,6 +523,90 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
   };
 
   /**
+   * Delete every map under a tag in one write — e.g. retire a whole
+   * town and its interiors at once. Only maps in this module's OWN
+   * file are removed; inherited maps (from `extends`) can't be deleted
+   * here because the merge would restore them, so they're listed in
+   * the confirm and left alone. Maps carrying other tags too are
+   * removed in full. The confirm also flags surviving maps whose link
+   * cells point into the deleted set, since those doors will dangle.
+   *
+   * Writes the own list (not the merged view) so the delete doesn't
+   * copy inherited maps into this module's file as a side effect, then
+   * refreshes to rebuild the merged view. Lands in the draft like any
+   * other edit — Discard reverts it until you Publish.
+   */
+  const onDeleteTag = async (tag: string) => {
+    if (state.kind !== "ok") return;
+    const own = Array.isArray(state.ownFile?.maps)
+      ? (state.ownFile!.maps as MapRecord[])
+      : [];
+    const plan = planTagDelete(tag, state.maps, own);
+    const label = tag === UNTAGGED ? "untagged" : `tagged "${tag}"`;
+    if (plan.toDelete.length === 0) {
+      window.alert(
+        plan.inherited.length > 0
+          ? `All ${plan.inherited.length} map(s) ${label} are inherited from a parent module and can't be deleted here. Delete them in the module that defines them.`
+          : `No maps ${label} to delete.`,
+      );
+      return;
+    }
+    const n = plan.toDelete.length;
+    const MAX_LISTED = 12;
+    const lines: string[] = [];
+    lines.push(`Delete all ${n} map${n === 1 ? "" : "s"} ${label}?`);
+    lines.push("");
+    for (const m of plan.toDelete.slice(0, MAX_LISTED)) {
+      const others = (m.tags ?? []).filter((t) => t !== tag);
+      lines.push(
+        `  · ${m.name} (${m.id})${others.length ? ` — also tagged ${others.join(", ")}` : ""}`,
+      );
+    }
+    if (n > MAX_LISTED) lines.push(`  · …and ${n - MAX_LISTED} more`);
+    if (plan.toDelete.some((m) => (m.tags ?? []).some((t) => t !== tag))) {
+      lines.push("");
+      lines.push("Maps that also carry other tags are deleted completely, not just untagged.");
+    }
+    if (plan.inherited.length > 0) {
+      lines.push("");
+      lines.push(
+        `${plan.inherited.length} inherited map(s) under this tag come from a parent module and will be kept.`,
+      );
+    }
+    if (plan.brokenLinks.length > 0) {
+      lines.push("");
+      lines.push("⚠ These remaining maps have doors/links into the deleted maps:");
+      for (const b of plan.brokenLinks.slice(0, MAX_LISTED)) {
+        lines.push(`  · ${b.name} (${b.count} link${b.count === 1 ? "" : "s"})`);
+      }
+      if (plan.brokenLinks.length > MAX_LISTED) {
+        lines.push(`  · …and ${plan.brokenLinks.length - MAX_LISTED} more`);
+      }
+    }
+    lines.push("");
+    lines.push(
+      `Removes them from this module's ${FILE_NAME}. The change saves to your draft — Discard reverts it until you Publish.`,
+    );
+    if (!window.confirm(lines.join("\n"))) return;
+    try {
+      const { publishedDirectly } = await persistMaps(plan.remainingOwn);
+      // persistMaps stores the list it was given as `maps`; rebuild the
+      // merged (inherited + own) view so the tree stays complete.
+      if (!publishedDirectly) await refresh();
+    } catch (e) {
+      window.alert(
+        `Couldn't delete maps: ${e instanceof Error ? e.message : String(e)}`,
+      );
+      return;
+    }
+    setOpenTags((prev) => {
+      const next = new Set(prev);
+      next.delete(tag);
+      return next;
+    });
+  };
+
+  /**
    * Duplicate a map — deep-clone every cell + its metadata into a new
    * record with a fresh id, append it to this module's own maps file,
    * and drop straight into the editor for the copy. Lets authors build
@@ -763,11 +849,11 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
             id={`maptag-${encodeURIComponent(tag)}`}
             className="scroll-mt-4"
           >
-            <h2 className="text-[13px] uppercase tracking-wide text-parchment/65">
+            <h2 className="flex items-center gap-2 text-[13px] uppercase tracking-wide text-parchment/65">
               <button
                 type="button"
                 onClick={() => toggleTag(tag)}
-                className="flex w-full items-center gap-2 rounded px-1 py-1 text-left uppercase tracking-wide hover:bg-ink/30 hover:text-parchment/85"
+                className="flex min-w-0 flex-1 items-center gap-2 rounded px-1 py-1 text-left uppercase tracking-wide hover:bg-ink/30 hover:text-parchment/85"
                 title={openTags.has(tag) ? "Collapse this tag group." : "Expand this tag group."}
               >
                 <span className="text-parchment/75">
@@ -777,6 +863,14 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
                 <span className="text-parchment/55 normal-case tracking-normal">
                   ({maps.length})
                 </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onDeleteTag(tag)}
+                className="shrink-0 rounded border border-parchment/20 px-2 py-0.5 text-[13px] normal-case tracking-normal text-parchment/70 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
+                title={`Delete every map ${tag === UNTAGGED ? "with no tags" : `tagged "${tag}"`} from this module's maps file. Asks first.`}
+              >
+                Delete all ({maps.length})
               </button>
             </h2>
             {openTags.has(tag) ? (

@@ -107,6 +107,7 @@ import {
   type QuestStepRewards,
 } from "@/battle/world/Quests";
 import { overlayVisibleAt, tintForCell } from "@/sim/lighting";
+import { normalizeFogStyles } from "@/sim/fogStyle";
 import { computeQuestGlowCells } from "@/sim/questGlow";
 import {
   DEFAULT_MOVE_TWEEN_MS,
@@ -595,6 +596,12 @@ interface PlayMapRecord {
    *  `lighting`: turning fog off doesn't change ambient brightness,
    *  only the explored / unexplored (cloud) gating. */
   fog_of_war?: boolean;
+  /** Optional per-lighting-band cover style for unexplored cells —
+   *  `{ day?, twilight?, night? }` each `"cloud" | "dark_cloud" |
+   *  "darkness"`. Missing
+   *  bands default to `"cloud"`. Lets a map show clouds by day and
+   *  darkness at night. See `@/sim/fogStyle`. */
+  fog_style?: unknown;
   /** Optional per-map background-music playlist. Each entry is an
    *  audio file URL. When present + non-empty, this list overrides
    *  the module-level default while the party is on this map;
@@ -2427,6 +2434,10 @@ export function PlayHost() {
             // the synthetic dungeon map, so this reads true). Lighting
             // is unaffected — only the explored / cloud gating.
             fogEnabled: catalog.map.fog_of_war !== false,
+            // Per-band cover style (clouds by day, darkness by night,
+            // etc.). Sanitised so hand-edited JSON can't break the
+            // renderer; absent → cloud in every band (original look).
+            fogStyleByMode: normalizeFogStyles(catalog.map.fog_style),
             // Tint + visibility for the PlayScene-managed overlays
             // (items, quest givers, NPCs). These are the "static"
             // layer above the cell sprites — distinct from the

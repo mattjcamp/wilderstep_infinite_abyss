@@ -47,7 +47,7 @@ Once you begin the game, you will see an icon appear that represents your advent
   <img src="assets/overview_map.png" alt="A map with fog of war and a party of adventurers" width="720">
 </p>
 
-You will see trees, mountains and points of interest like towns depicted on the map. The white "cloud cover" hides areas of the map that you have not explored. At the bottom of the screen you will see a readout that displays the day and time and the moon phase. The map will get dark at night.
+You will see trees, mountains and points of interest like towns depicted on the map. The white "cloud cover" hides areas of the map that you have not explored. Some maps shroud unexplored ground in darkness instead — often only at night, so the same map may be clouded by day and dark after sunset. At the bottom of the screen you will see a readout that displays the day and time and the moon phase. The map will get dark at night.
 
 You explore the world on a grid, moving **one tile per step** using the controls below.
 

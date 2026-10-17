@@ -57,3 +57,66 @@ export function groupByTags<T extends { tags?: string[]; name?: string; id: stri
       .sort((a, b) => (a.name ?? a.id).localeCompare(b.name ?? b.id)),
   ]);
 }
+
+/** Shape the bulk-delete planner needs from a map record. */
+interface DeletableMap {
+  id: string;
+  name?: string;
+  tags?: string[];
+  grid?: ReadonlyArray<ReadonlyArray<{ link?: { map_id?: string } | null } | null>>;
+}
+
+/** Result of {@link planTagDelete}. */
+export interface TagDeletePlan<T> {
+  /** Maps in this module's OWN file carrying the tag — these get
+   *  removed. */
+  toDelete: T[];
+  /** Maps carrying the tag that come from a parent module (inherited
+   *  via `extends`). They can't be removed from here — the merge
+   *  would bring them straight back — so they're reported, not
+   *  deleted. */
+  inherited: T[];
+  /** The module's own maps list after the delete. */
+  remainingOwn: T[];
+  /** Surviving maps (own or inherited) with at least one cell whose
+   *  `link.map_id` points at a deleted map, with the link count. */
+  brokenLinks: Array<{ id: string; name: string; count: number }>;
+}
+
+/**
+ * Plan a "delete every map under this tag" operation. `tag` may be
+ * {@link UNTAGGED} to target maps with no tags. A map is removed in
+ * full even when it carries other tags too — callers should say so.
+ *
+ * `resolved` is the merged view (inherited + own); `own` is this
+ * module's own maps list (what actually gets written back).
+ */
+export function planTagDelete<T extends DeletableMap>(
+  tag: string,
+  resolved: ReadonlyArray<T>,
+  own: ReadonlyArray<T>,
+): TagDeletePlan<T> {
+  const hasTag = (m: T) => {
+    const tags = Array.isArray(m.tags) ? m.tags : [];
+    return tag === UNTAGGED ? tags.length === 0 : tags.includes(tag);
+  };
+  const ownIds = new Set(own.map((m) => m.id));
+  const toDelete = own.filter(hasTag);
+  const deleteIds = new Set(toDelete.map((m) => m.id));
+  const inherited = resolved.filter((m) => hasTag(m) && !ownIds.has(m.id));
+  const remainingOwn = own.filter((m) => !deleteIds.has(m.id));
+  const brokenLinks: TagDeletePlan<T>["brokenLinks"] = [];
+  for (const m of resolved) {
+    if (deleteIds.has(m.id) || !Array.isArray(m.grid)) continue;
+    let count = 0;
+    for (const row of m.grid) {
+      if (!Array.isArray(row)) continue;
+      for (const cell of row) {
+        const target = cell?.link?.map_id;
+        if (target && deleteIds.has(target)) count++;
+      }
+    }
+    if (count > 0) brokenLinks.push({ id: m.id, name: m.name ?? m.id, count });
+  }
+  return { toDelete, inherited, remainingOwn, brokenLinks };
+}
