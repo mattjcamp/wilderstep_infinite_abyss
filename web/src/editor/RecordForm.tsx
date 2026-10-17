@@ -46,6 +46,20 @@ import { getParamsFieldConfig } from "./paramsFields";
  *  set it yet) and renders the chip-style TagsPicker for it. */
 const TAGGED_MODELS = new Set(["encounters"]);
 
+/** Optional numeric fields injected per model even when a record
+ *  hasn't set them, so authors can discover + fill them from the form.
+ *  Left blank they're dropped from the saved record (not written as
+ *  `null`), so untouched records stay shape-clean.
+ *    - npcs.exploration_xp — one-time "first conversation" XP override
+ *      (blank = module default, 0 = none). See play/explorationXp.ts. */
+const OPTIONAL_NUMBER_FIELDS: Record<string, readonly string[]> = {
+  npcs: ["exploration_xp"],
+};
+
+function isOptionalNumberField(key: string, modelKey?: string): boolean {
+  return !!modelKey && (OPTIONAL_NUMBER_FIELDS[modelKey] ?? []).includes(key);
+}
+
 type FieldKind =
   | "string"
   | "string-long"
@@ -90,6 +104,7 @@ function inferKind(
   // Params fields (effects/abilities/traps params, spell action
   // params) likewise.
   if (getParamsFieldConfig(key, modelKey) !== null) return "json";
+  if (isOptionalNumberField(key, modelKey)) return "number";
   // Prefer the actual record's value; fall back to a sample peer.
   const v = value ?? sample;
   if (Array.isArray(v) || (v !== null && typeof v === "object")) return "json";
@@ -136,6 +151,9 @@ function buildFieldList(
   // editing the JSON. Stored + parsed as a JSON array (string[]).
   if (modelKey && TAGGED_MODELS.has(modelKey) && !seen.has("tags")) {
     fields.push({ key: "tags", kind: "json" });
+  }
+  for (const k of (modelKey && OPTIONAL_NUMBER_FIELDS[modelKey]) || []) {
+    if (!fields.some((f) => f.key === k)) fields.push({ key: k, kind: "number" });
   }
   return fields;
 }
@@ -240,7 +258,10 @@ export function RecordForm({
     for (const f of fields) {
       const r = inputToValue(f.kind, drafts[f.key] ?? "");
       if (!r.ok) nextErrors[f.key] = r.error;
-      else next[f.key] = r.value;
+      else if (r.value === null && isOptionalNumberField(f.key, modelKey)) {
+        // Blank optional field → omit rather than persist `null`.
+        continue;
+      } else next[f.key] = r.value;
     }
     if (Object.keys(nextErrors).length) {
       setErrors(nextErrors);

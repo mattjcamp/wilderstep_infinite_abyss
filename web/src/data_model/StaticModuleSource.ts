@@ -30,6 +30,11 @@
  *   - files missing at a level fall through.
  */
 
+import {
+  type ExplorationXpSettings,
+  sanitizeExplorationXp,
+  withExplorationDefaults,
+} from "@/play/explorationXp";
 import { withBasePath } from "@/util/basePath";
 import { loadDraft, loadIndexDraft, MANIFEST_KEY } from "./draft";
 import { moduleIdsEqual, moduleStorageSegment } from "./moduleIds";
@@ -140,7 +145,10 @@ function toSummary(
     extends?: string;
     uses?: string[];
     soundtrack?: string[];
-    settings?: { sight_radius?: Record<string, unknown> };
+    settings?: {
+      sight_radius?: Record<string, unknown>;
+      exploration_xp?: unknown;
+    };
   },
   fallback: { id: string; title?: string; role?: string },
 ): ModuleSummary {
@@ -168,6 +176,8 @@ function toSummary(
     // to finite non-negative numbers per mode; unknown / junk entries
     // are dropped so the dialog never shows a bogus row.
     sightRadius: sanitizeSightRadius(meta.settings?.sight_radius),
+    // Own-file exploration XP amounts for the Module Properties dialog.
+    explorationXp: sanitizeExplorationXp(meta.settings?.exploration_xp),
   };
 }
 
@@ -460,6 +470,30 @@ export class StaticModuleSource implements ModuleSource {
       }
     }
     return out;
+  }
+
+  /** Resolve the one-time exploration XP amounts (map discovery /
+   *  first conversation) from `settings.exploration_xp`, walking the
+   *  extends chain leaf-first — a child can override just `npc` while
+   *  inheriting the parent's `map`. Keys no module sets fall back to
+   *  the engine defaults. */
+  async resolveModuleExplorationXp(
+    moduleId: string,
+  ): Promise<ExplorationXpSettings> {
+    const chain = await walkExtendsChain(moduleId, this.locator, this.preferDrafts);
+    const out: Partial<ExplorationXpSettings> = {};
+    for (const summary of chain) {
+      const meta = await loadModuleManifest(summary.id, this.locator, this.preferDrafts);
+      if (!meta) continue;
+      const found = sanitizeExplorationXp(
+        (meta as { settings?: { exploration_xp?: unknown } }).settings
+          ?.exploration_xp,
+      );
+      if (!found) continue;
+      if (out.map === undefined && found.map !== undefined) out.map = found.map;
+      if (out.npc === undefined && found.npc !== undefined) out.npc = found.npc;
+    }
+    return withExplorationDefaults(out);
   }
 
   /** Catalog of records available for import from the libraries this

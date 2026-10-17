@@ -530,6 +530,16 @@ export function ModulePicker() {
       } else {
         delete settings.sight_radius;
       }
+      // Exploration XP — same shape-clean rules: only set keys land.
+      const xp = patch.explorationXp;
+      const xpOut: Record<string, number> = {};
+      if (typeof xp?.map === "number") xpOut.map = xp.map;
+      if (typeof xp?.npc === "number") xpOut.npc = xp.npc;
+      if (Object.keys(xpOut).length > 0) {
+        settings.exploration_xp = xpOut;
+      } else {
+        delete settings.exploration_xp;
+      }
       if (Object.keys(settings).length > 0) {
         next.settings = settings;
       } else {

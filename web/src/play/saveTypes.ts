@@ -176,6 +176,15 @@ export interface SavedPartyState {
    *  doesn't survive a reload). Absent in legacy saves; treated
    *  as the empty set. */
   pickpocketedNpcs?: ReadonlyArray<string>;
+  /** Map ids the party has entered — drives the one-time exploration
+   *  XP reward (see `play/explorationXp.ts`). Absent on new games and
+   *  legacy saves; PlayHost seeds it on load from the current map +
+   *  every map already in `save.maps`, so nothing pays retroactively. */
+  discoveredMaps?: ReadonlyArray<string>;
+  /** People the party has talked to — `npc:<npcId>` / `quest:<questId>`
+   *  keys (see `npcMeetKey` / `questGiverMeetKey`). Drives the one-time
+   *  "first conversation" XP reward. Absent → nobody met yet. */
+  metNpcs?: ReadonlyArray<string>;
   /** In-game `dayIndex` (from GameTime) of the most recent Gnome
    *  Tinker use. The ability gates on `currentDay !== last_tinker_day`
    *  so the party can craft once per in-game day. Absent in legacy

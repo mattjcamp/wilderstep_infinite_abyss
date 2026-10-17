@@ -27,6 +27,14 @@
           "text": "Hello, are you new to Hallowmere? Be careful with what you do while here in town. Hallowmere has a way of tearing down the most robust of souls and families."
         }
       ]
+    },
+    {
+      "id": "albert",
+      "name": "Albert",
+      "sprite": "person/human_archer.png",
+      "counter": "armor",
+      "personal_history": "Albert arrived in Hallowmere as a young child who was too young to pitch into the town's defense. Instead of going off to war, Albert learned the armor trade and now outfits anyone in Halloween with good coin.",
+      "dialogs": []
     }
   ]
 }

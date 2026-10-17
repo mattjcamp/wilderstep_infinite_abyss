@@ -495,6 +495,15 @@ import {
   type QuestXpRaceRef,
 } from "@/play/awardQuestXp";
 import type { RawClass } from "@/battle/world/Classes";
+import {
+  DEFAULT_EXPLORATION_XP,
+  explorationRewardFor,
+  type ExplorationXpSettings,
+  markFirstTime,
+  npcMeetKey,
+  questGiverMeetKey,
+  seedDiscoveredMaps,
+} from "@/play/explorationXp";
 import { herbalismOnStep } from "@/play/herbalism";
 import {
   readPressurePlate,
@@ -602,6 +611,10 @@ interface PlayMapRecord {
    *  bands default to `"cloud"`. Lets a map show clouds by day and
    *  darkness at night. See `@/sim/fogStyle`. */
   fog_style?: unknown;
+  /** One-time "discovered this map" XP override. Absent → the module's
+   *  `settings.exploration_xp.map`; 0 → no reward. See
+   *  `@/play/explorationXp`. */
+  exploration_xp?: number;
   /** Optional per-map background-music playlist. Each entry is an
    *  audio file URL. When present + non-empty, this list overrides
    *  the module-level default while the party is on this map;
@@ -677,6 +690,9 @@ interface PlayNpc {
    *  `normalizeNpcDialogs`, which coerces all of those into the
    *  canonical array shape. */
   dialogs?: unknown;
+  /** One-time "first conversation" XP override. Absent → the module's
+   *  `settings.exploration_xp.npc`; 0 → no reward. */
+  exploration_xp?: number;
 }
 
 /** One temple-style service row on a `kind: "service"` counter
@@ -810,6 +826,10 @@ interface LoadedCatalog {
    *  into fog-of-war memory; the party's torch range is folded in on
    *  top at render time so dungeons reveal their light pool. */
   sightRadius: Partial<Record<"day" | "twilight" | "night", number>>;
+  /** One-time exploration XP amounts (map discovery / first
+   *  conversation) from `settings.exploration_xp`, resolved up the
+   *  extends chain with engine defaults filled in. */
+  explorationXp: ExplorationXpSettings;
 }
 
 interface State {
@@ -1143,6 +1163,38 @@ export function PlayHost() {
    *  Idempotent on the placard side — the `key` makes each entry
    *  unique so React doesn't collapse two back-to-back step
    *  completions for the same quest into one node.  */
+  /** One-time "first conversation" XP. `key` is an npcMeetKey /
+   *  questGiverMeetKey; no-op once that person is in the save's
+   *  `metNpcs`. Reads + writes through saveRef so it's safe to call
+   *  from the Phaser event closures. */
+  const grantMeetXp = useCallback(
+    (key: string, name: string, override: unknown) => {
+      const save = saveRef.current;
+      const catalog = catalogRef.current;
+      if (!save || !catalog) return;
+      const mark = markFirstTime(save.party.metNpcs, key);
+      if (!mark.firstTime) return;
+      const xp = explorationRewardFor(override, catalog.explorationXp.npc);
+      const award = applyExplorationXp(
+        { ...save, party: { ...save.party, metNpcs: mark.next } },
+        catalog,
+        xp,
+      );
+      saveRef.current = award.save;
+      saveWorld(award.save);
+      if (xp <= 0) return;
+      setLogMessages((prev) => {
+        const next = [
+          ...prev,
+          `Met ${name} — +${xp} XP.`,
+          ...award.levelUps.map((ev) => ev.message),
+        ];
+        return next.length > MAX_LOG ? next.slice(next.length - MAX_LOG) : next;
+      });
+    },
+    [],
+  );
+
   const fireQuestCelebration = useCallback(
     (args: {
       kind: PlayQuestCelebrationKind;
@@ -1830,6 +1882,63 @@ export function PlayHost() {
           };
           saveRef.current = save;
           saveWorld(save);
+        }
+        // Exploration XP — first visit to an overworld map. A save
+        // without a discovered list (new game / pre-feature save) is
+        // seeded from where the party stands + every map it already
+        // has state for, so nothing pays out retroactively and the
+        // starting map doesn't count. Dungeon floors are skipped (the
+        // party is still "on" the entrance map while inside).
+        const discoveryLog: string[] = [];
+        if (!dungeonStateRef.current) {
+          const mapId = save.party.currentMapId;
+          if (save.party.discoveredMaps === undefined) {
+            save = {
+              ...save,
+              party: {
+                ...save.party,
+                discoveredMaps: seedDiscoveredMaps(
+                  mapId,
+                  Object.keys(save.maps ?? {}),
+                ),
+              },
+            };
+            saveRef.current = save;
+            saveWorld(save);
+          } else {
+            const mark = markFirstTime(save.party.discoveredMaps, mapId);
+            if (mark.firstTime) {
+              const xp = explorationRewardFor(
+                baseCatalog.map.exploration_xp,
+                baseCatalog.explorationXp.map,
+              );
+              const award = applyExplorationXp(
+                {
+                  ...save,
+                  party: { ...save.party, discoveredMaps: mark.next },
+                },
+                baseCatalog,
+                xp,
+              );
+              save = award.save;
+              saveRef.current = save;
+              saveWorld(save);
+              if (xp > 0) {
+                discoveryLog.push(
+                  `Discovered ${baseCatalog.map.name ?? mapId} — +${xp} XP.`,
+                  ...award.levelUps.map((ev) => ev.message),
+                );
+              }
+            }
+          }
+        }
+        if (discoveryLog.length > 0) {
+          setLogMessages((prev) => {
+            const next = [...prev, ...discoveryLog];
+            return next.length > MAX_LOG
+              ? next.slice(next.length - MAX_LOG)
+              : next;
+          });
         }
         // Overlay the dungeon's current floor when the party is
         // inside a dungeon. Both the dungeon mount and the
@@ -4466,6 +4575,13 @@ export function PlayHost() {
               // giver tile, so the dialog mode is computed here from
               // the current QuestState.
               const qstate = questStatesRef.current.get(ev.questId);
+              // First conversation with this quest giver pays the
+              // one-time "met someone" XP (once per giver, any mode).
+              grantMeetXp(
+                questGiverMeetKey(ev.questId),
+                ev.quest.quest_giver?.npc_name ?? "the quest giver",
+                undefined,
+              );
               // "turned_in" → quest is done and rewards have been
               // handed off. The giver becomes a normal NPC: bumping
               // them opens the standard NPC dialog with their
@@ -4786,6 +4902,11 @@ export function PlayHost() {
                 );
                 return;
               }
+              grantMeetXp(
+                npcMeetKey(npc.id),
+                npc.name ?? npc.id,
+                npc.exploration_xp,
+              );
               setNpcDialogId(ev.npcId);
               return;
             }
@@ -6827,6 +6948,14 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
     // Silent — engine defaults apply if the manifest read fails.
   }
 
+  // Exploration XP amounts (settings.exploration_xp up the chain).
+  let explorationXp: ExplorationXpSettings = { ...DEFAULT_EXPLORATION_XP };
+  try {
+    explorationXp = await src.resolveModuleExplorationXp(moduleId);
+  } catch {
+    // Silent — engine defaults apply if the manifest read fails.
+  }
+
   return {
     map,
     allMaps,
@@ -6856,6 +6985,30 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
     traps: trapsDoc.traps ?? [],
     moduleSoundtrack,
     sightRadius,
+    explorationXp,
+  };
+}
+
+/** Grant one-time exploration XP to every living member of `save`'s
+ *  party, running the same level-up math as quest rewards. Pure —
+ *  returns the next save plus any level-up events for the log. */
+function applyExplorationXp(
+  save: WorldSave,
+  catalog: Pick<LoadedCatalog, "characters" | "classes" | "races">,
+  xp: number,
+): { save: WorldSave; levelUps: ReadonlyArray<QuestLevelUpEvent> } {
+  if (xp <= 0) return { save, levelUps: [] };
+  const res = awardQuestXpWithLevelUps(
+    save.party.members,
+    xp,
+    catalog.characters as unknown as ReadonlyArray<QuestXpCharacterRef>,
+    catalog.classes as unknown as ReadonlyArray<RawClass>,
+    catalog.races as unknown as ReadonlyArray<QuestXpRaceRef>,
+  );
+  if (!res.changed) return { save, levelUps: [] };
+  return {
+    save: { ...save, party: { ...save.party, members: res.nextMembers } },
+    levelUps: res.levelUps,
   };
 }
 

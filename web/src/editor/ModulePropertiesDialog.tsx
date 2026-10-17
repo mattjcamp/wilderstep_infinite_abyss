@@ -32,6 +32,7 @@
 import { useEffect, useState } from "react";
 import type { ModuleSummary } from "@/data_model/ModuleSource";
 import { SoundtrackPicker } from "./SoundtrackPicker";
+import { DEFAULT_EXPLORATION_XP } from "@/play/explorationXp";
 
 /** Subset of ModuleSummary that this dialog is allowed to mutate.
  *  Caller merges this back over the existing manifest so untouched
@@ -56,6 +57,12 @@ export interface ModulePropertiesPatch {
     day: number | undefined;
     twilight: number | undefined;
     night: number | undefined;
+  };
+  /** One-time exploration XP (`settings.exploration_xp`). `undefined`
+   *  = inherit / engine default; dropped from the saved manifest. */
+  explorationXp: {
+    map: number | undefined;
+    npc: number | undefined;
   };
 }
 
@@ -105,6 +112,14 @@ export function ModulePropertiesDialog({
     radiusToInput(initial.sightRadius?.night),
   );
 
+  // Exploration XP — same blank-means-default convention as the radii.
+  const [xpMap, setXpMap] = useState(
+    radiusToInput(initial.explorationXp?.map),
+  );
+  const [xpNpc, setXpNpc] = useState(
+    radiusToInput(initial.explorationXp?.npc),
+  );
+
   const [titleError, setTitleError] = useState<string | null>(null);
 
   // Same keyboard ergonomics as MapAttributesDialog — Escape closes,
@@ -133,6 +148,8 @@ export function ModulePropertiesDialog({
     sightDay,
     sightTwilight,
     sightNight,
+    xpMap,
+    xpNpc,
   ]);
 
   const handleSave = () => {
@@ -161,6 +178,11 @@ export function ModulePropertiesDialog({
         day: parseRadius(sightDay),
         twilight: parseRadius(sightTwilight),
         night: parseRadius(sightNight),
+      },
+      // Same parse rules: blank / invalid / negative → default.
+      explorationXp: {
+        map: parseRadius(xpMap),
+        npc: parseRadius(xpNpc),
       },
     });
   };
@@ -351,6 +373,47 @@ export function ModulePropertiesDialog({
               {SIGHT_RADIUS_DEFAULTS.night}). A carried torch always
               reveals at least its own light pool, so dungeons stay lit
               by the torch regardless of the night value.
+            </span>
+          </fieldset>
+
+          {/* Exploration XP ------------------------------------- */}
+          {/* One-time rewards for entering a map for the first time
+              and for the first conversation with each person. Maps and
+              NPCs can override (or zero) their own amount. */}
+          <fieldset className="flex flex-col gap-1">
+            <legend className="text-[13px] text-parchment/85 font-mono">
+              exploration XP
+            </legend>
+            <div className="flex gap-3">
+              {(
+                [
+                  ["map", "new map", xpMap, setXpMap],
+                  ["npc", "first conversation", xpNpc, setXpNpc],
+                ] as const
+              ).map(([key, label, value, setValue]) => (
+                <label key={key} className="flex min-w-0 flex-1 flex-col gap-1">
+                  <span className="text-xs text-parchment/80 font-mono">
+                    {label}
+                  </span>
+                  <input
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={value}
+                    onChange={(e) => setValue(e.target.value)}
+                    placeholder={`default ${DEFAULT_EXPLORATION_XP[key]}`}
+                    className="w-full min-w-0 rounded border border-parchment/20 bg-ink/40 px-2 py-1 font-mono text-sm text-parchment focus:border-parchment/45"
+                  />
+                </label>
+              ))}
+            </div>
+            <span className="text-xs text-parchment/65">
+              XP each living party member earns the first time the party
+              enters a map, and the first time it talks to each person.
+              Leave blank to inherit (defaults: map{" "}
+              {DEFAULT_EXPLORATION_XP.map}, conversation{" "}
+              {DEFAULT_EXPLORATION_XP.npc}); 0 turns it off. Individual
+              maps and NPCs can set their own amount.
             </span>
           </fieldset>
 

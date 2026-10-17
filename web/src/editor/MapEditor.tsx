@@ -4012,6 +4012,7 @@ export function MapEditor({
     fog_of_war?: boolean;
     fog_style?: FogStyleByMode;
     passive_regen?: { hp: number; mp: number };
+    exploration_xp?: number;
   }) => {
     if (state.kind !== "ok") return;
     const updatedMap: MapRecord = {
@@ -4060,6 +4061,14 @@ export function MapEditor({
       (updatedMap as Record<string, unknown>).fog_style = fogStyle;
     } else {
       delete (updatedMap as Record<string, unknown>).fog_style;
+    }
+    // Exploration XP override: persist only when set (blank = use the
+    // module amount); 0 is a real value meaning "no reward here".
+    if (typeof next.exploration_xp === "number") {
+      (updatedMap as Record<string, unknown>).exploration_xp =
+        next.exploration_xp;
+    } else {
+      delete (updatedMap as Record<string, unknown>).exploration_xp;
     }
     // Passive regen: persist only when it actually heals, so non-restful
     // maps stay shape-clean (no `passive_regen` key at all).
@@ -5051,6 +5060,11 @@ export function MapEditor({
                   // Default on — only an explicit `false` disables it.
                   fog_of_war:
                     (mapRecord as Record<string, unknown>).fog_of_war !== false,
+                  exploration_xp: ((): number | undefined => {
+                    const v = (mapRecord as Record<string, unknown>)
+                      .exploration_xp;
+                    return typeof v === "number" && v >= 0 ? v : undefined;
+                  })(),
                   fog_style: normalizeFogStyles(
                     (mapRecord as Record<string, unknown>).fog_style,
                   ),

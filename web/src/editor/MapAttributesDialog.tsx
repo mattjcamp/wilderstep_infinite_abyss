@@ -80,6 +80,10 @@ interface MapAttributes {
    *  safe havens. Absent → no passive healing. Never applies in
    *  dungeons. */
   passive_regen?: { hp: number; mp: number };
+  /** One-time "discovered a new map" XP override. Absent → the
+   *  module's amount (settings.exploration_xp.map). 0 turns the reward
+   *  off for this map; a larger number makes it worth more. */
+  exploration_xp?: number;
 }
 
 type FogBand = "day" | "twilight" | "night";
@@ -136,6 +140,12 @@ export function MapAttributesDialog({
   const [regenMp, setRegenMp] = useState<number>(
     initial.passive_regen?.mp ?? 1,
   );
+  // Exploration XP override as a string so blank = "module default".
+  const [explorationXp, setExplorationXp] = useState<string>(
+    typeof initial.exploration_xp === "number"
+      ? String(initial.exploration_xp)
+      : "",
+  );
   const [nameError, setNameError] = useState<string | null>(null);
 
   // Close on Escape, save on Cmd/Ctrl+Enter — mirrors common
@@ -167,6 +177,7 @@ export function MapAttributesDialog({
     regenEnabled,
     regenHp,
     regenMp,
+    explorationXp,
   ]);
 
   const handleSave = () => {
@@ -210,6 +221,13 @@ export function MapAttributesDialog({
               mp: Math.max(0, Math.floor(regenMp) || 0),
             }
           : undefined,
+      // Blank / invalid → undefined (use the module amount).
+      exploration_xp: (() => {
+        const t = explorationXp.trim();
+        if (t === "") return undefined;
+        const n = Number(t);
+        return Number.isFinite(n) && n >= 0 ? Math.floor(n) : undefined;
+      })(),
     });
   };
 
@@ -468,6 +486,27 @@ export function MapAttributesDialog({
               </div>
             ) : null}
           </div>
+
+          {/* Exploration XP --------------------------------------- */}
+          <label className="flex flex-col gap-1">
+            <span className="text-[13px] text-parchment/85 font-mono">
+              exploration XP
+            </span>
+            <input
+              type="number"
+              min={0}
+              step={1}
+              value={explorationXp}
+              onChange={(e) => setExplorationXp(e.target.value)}
+              placeholder="module default"
+              className="w-32 rounded border border-parchment/20 bg-ink/40 px-2 py-1 text-sm text-parchment focus:border-parchment/45"
+            />
+            <span className="text-xs text-parchment/65">
+              XP each party member earns the first time the party enters
+              this map. Blank uses the module&apos;s amount; 0 turns it off
+              (good for basements, arenas, or easily-farmed spots).
+            </span>
+          </label>
         </div>
 
         <footer className="mt-4 flex shrink-0 items-center justify-end gap-2">

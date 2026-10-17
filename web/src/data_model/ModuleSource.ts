@@ -58,6 +58,11 @@ export interface ModuleSummary {
    *  top at render time, so these are floors, not caps. Absent
    *  whole-object means "defaults for every mode." */
   sightRadius?: Partial<Record<"day" | "twilight" | "night", number>>;
+  /** One-time exploration XP amounts, mirrored from THIS manifest's
+   *  `settings.exploration_xp` (not inheritance-resolved). Partial —
+   *  missing keys fall back to the parent module, then the engine
+   *  defaults (see `play/explorationXp.ts`). */
+  explorationXp?: { map?: number; npc?: number };
 }
 
 /** A loaded module, including its metadata plus a fully resolved

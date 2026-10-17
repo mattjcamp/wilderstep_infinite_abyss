@@ -186,7 +186,7 @@ A class's full weapon and armor list appears in its entry in the Class Gallery b
 
 ### Experience & Leveling
 
-Characters earn **experience (XP)** by defeating monsters and by completing quests. Every party member who is still standing shares in the reward — each one receives the *full* amount, not a split — and a member who has fallen earns nothing until revived. XP from quests now counts toward leveling immediately, the same as XP from battle.
+Characters earn **experience (XP)** by defeating monsters and by completing quests, plus a small bonus for exploring: the first time your party enters a new map, and the first time it talks to each person, everyone earns a little XP. Every party member who is still standing shares in the reward — each one receives the *full* amount, not a split — and a member who has fallen earns nothing until revived. XP from quests now counts toward leveling immediately, the same as XP from battle.
 
 **Each level costs more than the last.** The cost of advancing from one level to the next is a base of **1,500 experience** multiplied by your *current* level:
 

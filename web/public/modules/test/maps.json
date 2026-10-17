@@ -68764,7 +68764,7 @@
       "description": "Drago's dive is a beaten up building smelling of old yeast and boiled meat. Yelling and loud banging can be heard as you approach the entrance.",
       "tags": [
         "Hallowmere",
-        "House"
+        "Inn"
       ],
       "width": 16,
       "height": 32,
@@ -129571,7 +129571,7 @@
       "description": "A small shop selling armor",
       "tags": [
         "Hallowmere",
-        "House"
+        "Shop"
       ],
       "width": 20,
       "height": 10,
@@ -131608,7 +131608,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/path.png",
-            "tag": "walkable"
+            "tag": "walkable",
+            "npc": "albert"
           },
           {
             "boat": false,
@@ -131793,9 +131794,9 @@
             "walkable": false,
             "obstructs": true,
             "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
+            "light_source": true,
+            "light_range": 2,
+            "animation": "torch",
             "counter": null,
             "encounter": null,
             "spawn": null,
@@ -132112,9 +132113,9 @@
             "walkable": false,
             "obstructs": true,
             "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
+            "light_source": true,
+            "light_range": 2,
+            "animation": "torch",
             "counter": null,
             "encounter": null,
             "spawn": null,
@@ -132746,7 +132747,7 @@
       "description": "A messy old shack, with shelves of glass bottles presssed up against the walls",
       "tags": [
         "Hallowmere",
-        "House"
+        "Shop"
       ],
       "width": 20,
       "height": 10,
@@ -135923,7 +135924,7 @@
       "description": "A small shop selling weapons",
       "tags": [
         "Hallowmere",
-        "House"
+        "Shop"
       ],
       "width": 20,
       "height": 10,
@@ -139107,7 +139108,7 @@
       "description": "A small shop selling clothes and supplies",
       "tags": [
         "Hallowmere",
-        "House"
+        "Shop"
       ],
       "width": 20,
       "height": 10,
@@ -147448,7 +147449,7 @@
       "description": "A shrine adorned with nautical images and statues of beasts from the deep sea",
       "tags": [
         "Hallowmere",
-        "House"
+        "Shop"
       ],
       "width": 16,
       "height": 32,
@@ -155579,7 +155580,7 @@
       "description": "A well appointed inn",
       "tags": [
         "Hallowmere",
-        "House"
+        "Inn"
       ],
       "width": 12,
       "height": 24,
@@ -160192,7 +160193,7 @@
       "description": "A well appointed inn",
       "tags": [
         "Hallowmere",
-        "House"
+        "Inn"
       ],
       "width": 12,
       "height": 24,
