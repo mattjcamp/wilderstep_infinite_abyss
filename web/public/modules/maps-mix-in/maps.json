@@ -158083,7 +158083,7 @@
             "spawn": null,
             "sprite": "map/swamp.png",
             "tag": "walkable",
-            "npc": "chicken"
+            "npc": ""
           },
           {
             "boat": false,
@@ -158643,7 +158643,7 @@
             "spawn": null,
             "sprite": "map/sand.png",
             "tag": "walkable",
-            "npc": "sheep"
+            "npc": ""
           },
           {
             "boat": false,
@@ -160550,7 +160550,7 @@
             "spawn": null,
             "sprite": "map/swamp.png",
             "tag": "walkable",
-            "npc": "sheep"
+            "npc": ""
           },
           {
             "boat": false,
@@ -160615,7 +160615,7 @@
             "spawn": null,
             "sprite": "map/swamp.png",
             "tag": "walkable",
-            "npc": "chicken"
+            "npc": ""
           },
           {
             "boat": false,
@@ -161301,7 +161301,7 @@
             "spawn": null,
             "sprite": "map/sand.png",
             "tag": "walkable",
-            "npc": "sheep"
+            "npc": ""
           },
           {
             "boat": false,
@@ -163487,7 +163487,7 @@
             "spawn": null,
             "sprite": "map/grass1.png",
             "tag": "walkable",
-            "npc": "villager"
+            "npc": ""
           },
           {
             "boat": false,
@@ -177297,7 +177297,7 @@
             "spawn": null,
             "sprite": "map/grass1.png",
             "tag": "walkable",
-            "npc": "villager"
+            "npc": ""
           },
           {
             "boat": false,
@@ -178797,7 +178797,7 @@
             "spawn": null,
             "sprite": "map/sand.png",
             "tag": "walkable",
-            "npc": "villager"
+            "npc": ""
           },
           {
             "boat": false,
@@ -183079,7 +183079,7 @@
             "spawn": null,
             "sprite": "map/floor_brown.png",
             "tag": "walkable",
-            "npc": "villager"
+            "npc": ""
           },
           {
             "boat": false,
@@ -183336,7 +183336,7 @@
             "spawn": null,
             "sprite": "map/sand.png",
             "tag": "walkable",
-            "npc": "villager"
+            "npc": ""
           },
           {
             "boat": false,
@@ -185745,7 +185745,7 @@
             "spawn": null,
             "sprite": "map/floor_brown.png",
             "tag": "walkable",
-            "npc": "villager"
+            "npc": ""
           },
           {
             "boat": false,
@@ -199236,7 +199236,7 @@
             "spawn": null,
             "sprite": "map/floor_brown.png",
             "tag": "walkable",
-            "npc": "rosetta"
+            "npc": ""
           },
           {
             "boat": false,
@@ -200864,7 +200864,7 @@
             "spawn": null,
             "sprite": "map/floor_brown.png",
             "tag": "walkable",
-            "npc": "drago"
+            "npc": ""
           },
           {
             "id": "wall_planks_dark",
@@ -254990,7 +254990,7 @@
             "spawn": null,
             "sprite": "map/floor_brown.png",
             "tag": "walkable",
-            "npc": "villager"
+            "npc": ""
           },
           {
             "boat": false,
@@ -257781,7 +257781,7 @@
             "spawn": null,
             "sprite": "map/path.png",
             "tag": "walkable",
-            "npc": "albert"
+            "npc": ""
           },
           {
             "boat": false,
@@ -259992,7 +259992,7 @@
             "spawn": null,
             "sprite": "map/sand.png",
             "tag": "walkable",
-            "npc": "everlyia"
+            "npc": ""
           },
           {
             "boat": false,
@@ -264144,7 +264144,7 @@
             "spawn": null,
             "sprite": "map/path.png",
             "tag": "walkable",
-            "npc": "wanda"
+            "npc": ""
           },
           {
             "boat": false,
@@ -266830,7 +266830,7 @@
             "spawn": null,
             "sprite": "map/path.png",
             "tag": "walkable",
-            "npc": "leroy"
+            "npc": ""
           },
           {
             "boat": false,
@@ -269188,7 +269188,7 @@
             "spawn": null,
             "sprite": "map/floor_gray.png",
             "tag": "walkable",
-            "npc": "alricsilv"
+            "npc": ""
           },
           {
             "boat": false,
@@ -274531,7 +274531,7 @@
             "spawn": null,
             "sprite": "map/town_floor.png",
             "tag": "walkable",
-            "npc": "hrefna"
+            "npc": ""
           },
           {
             "boat": false,
@@ -282389,7 +282389,7 @@
             "spawn": null,
             "sprite": "map/town_floor.png",
             "tag": "walkable",
-            "npc": "otto"
+            "npc": ""
           },
           {
             "boat": false,
@@ -295528,7 +295528,7 @@
             "spawn": null,
             "sprite": "map/sand.png",
             "tag": "walkable",
-            "npc": "villager"
+            "npc": ""
           },
           {
             "boat": false,
@@ -303652,7 +303652,7 @@
             "animation": "none",
             "counter": "",
             "encounter": "",
-            "spawn": "campfire_spawn",
+            "spawn": "",
             "sprite": "map/path.png",
             "tag": "terrain",
             "text": "",
@@ -314810,7 +314810,7 @@
             "animation": "none",
             "counter": "",
             "encounter": "",
-            "spawn": "campfire_spawn",
+            "spawn": "",
             "sprite": "map/path.png",
             "tag": "terrain",
             "text": "",
@@ -319409,7 +319409,7 @@
             "animation": "none",
             "counter": "",
             "encounter": "",
-            "spawn": "campfire_spawn",
+            "spawn": "",
             "sprite": "map/path.png",
             "tag": "terrain",
             "text": "",
@@ -325945,7 +325945,7 @@
             "light_range": 0,
             "animation": "none",
             "counter": "",
-            "encounter": "skeletons",
+            "encounter": "",
             "spawn": "",
             "sprite": "map/path.png",
             "tag": "terrain",
@@ -327719,7 +327719,7 @@
             "light_range": 0,
             "animation": "none",
             "counter": "",
-            "encounter": "kobold",
+            "encounter": "",
             "spawn": "",
             "sprite": "map/path.png",
             "tag": "terrain",
@@ -340419,7 +340419,7 @@
             "light_range": 0,
             "animation": "none",
             "counter": "",
-            "encounter": "goblins",
+            "encounter": "",
             "spawn": "",
             "sprite": "map/path.png",
             "tag": "terrain",
