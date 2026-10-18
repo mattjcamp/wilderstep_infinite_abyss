@@ -290,8 +290,15 @@ interface MapRecord {
 function cellMatchesPalette(cell: TileType, palette: TileType[]): boolean {
   const base = palette.find((t) => t.id === cell.id);
   if (!base) return true; // Orphan id — no palette to compare; treat as "fresh."
-  if (cell.name !== base.name) return false;
-  if ((cell.tag ?? "") !== (base.tag ?? "")) return false;
+  // `name` and `tag` are deliberately NOT compared. Both are copied onto
+  // each cell when it's painted, so they go stale whenever the palette
+  // is reorganised (tags renamed "terrain" → "walkable", etc.) or a
+  // dungeon bake relabels tiles ("Mountain" → "Cave Wall"). Comparing
+  // them marked almost every cell on those maps as overridden — a
+  // full-map mesh of dots after the first paint stroke. Neither changes
+  // how the tile plays, with one exception: the "water" tag drives NPC
+  // wandering, so a water / not-water mismatch still counts.
+  if ((cell.tag === "water") !== (base.tag === "water")) return false;
   if (cell.walkable !== base.walkable) return false;
   if (cell.obstructs !== base.obstructs) return false;
   if ((cell.boat ?? false) !== (base.boat ?? false)) return false;
@@ -794,6 +801,10 @@ export function MapEditor({
    *  When false the editor's sim-mode preview reveals the whole map,
    *  matching how the play scene renders a fog-off map. */
   const fogEnabledRef = useRef<boolean>(true);
+  /** Bumped once the Phaser scene has wired `sceneApiRef`, so effects
+   *  that push state into the scene (override markers) also run on
+   *  first load — not only after the first edit changes `state`. */
+  const [sceneReadyTick, setSceneReadyTick] = useState(0);
   /** Which palette-tag sections are currently collapsed in the side
    *  panel. Tags are expanded by default; entries here are the
    *  exceptions. */
@@ -1431,7 +1442,7 @@ export function MapEditor({
       }
     }
     sceneApiRef.current?.setOverrideMarkers(modified);
-  }, [state]);
+  }, [state, sceneReadyTick]);
 
   // Sync the fog-of-war ref from the map record (default on; only an
   // explicit `false` disables it) so the sim-mode preview matches how
@@ -1856,6 +1867,10 @@ export function MapEditor({
           this.fillPreviewGraphics = this.add.graphics();
           this.fillPreviewGraphics.setDepth(199);
 
+          // Let React effects know the scene API exists. The state
+          // update lands after create() finishes synchronously, so the
+          // API below is fully assigned by the time effects re-run.
+          setSceneReadyTick((n) => n + 1);
           // Expose a small API the React side can call.
           sceneApiRef.current = {
             setGridLinesVisible: (on) => {

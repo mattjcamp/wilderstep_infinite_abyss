@@ -8,6 +8,10 @@
  * shows a "Visit Counter" button that closes the dialog and routes
  * the player into the matching shop/temple overlay.
  *
+ * When the NPC has a `personal_history`, a "Backstory" action swaps the
+ * speech area for that text (and "Back" returns) — the same toggle the
+ * editor's simulation dialog offers. `B` toggles it from the keyboard.
+ *
  * Read-only — the modal doesn't persist any state on the NPC; it's
  * just chatter. Closing returns the player to the world map. ESC
  * and the backdrop dismiss.
@@ -26,6 +30,7 @@ export function PlayNpcDialogOverlay({
   npcName,
   npcSprite,
   dialogs,
+  backstory,
   hasCounter,
   onVisitCounter,
   canSteal,
@@ -36,6 +41,9 @@ export function PlayNpcDialogOverlay({
   npcName: string;
   npcSprite?: string;
   dialogs: ReadonlyArray<DialogLine>;
+  /** The NPC's `personal_history`. When non-blank, the footer offers a
+   *  Backstory toggle. Absent / blank → no toggle. */
+  backstory?: string;
   hasCounter: boolean;
   onVisitCounter: () => void;
   /** Fires when the player asks the NPC to step aside. The host
@@ -59,6 +67,14 @@ export function PlayNpcDialogOverlay({
   const [cursor, setCursor] = useState(0);
   const total = dialogs.length;
   const current = total > 0 ? dialogs[Math.min(cursor, total - 1)] : null;
+  // "speech" shows the dialog lines; "backstory" swaps in the NPC's
+  // personal_history. Mirrors the editor sim's NpcDialogOverlay.
+  const [view, setView] = useState<"speech" | "backstory">("speech");
+  const hasBackstory = !!(backstory && backstory.trim().length > 0);
+  const toggleBackstory = useMemo(
+    () => () => setView((v) => (v === "speech" ? "backstory" : "speech")),
+    [],
+  );
 
   // Build the action list dynamically from the visibility gates the
   // host wired. The order — Steal → Visit Counter → Leave — matches
@@ -70,11 +86,12 @@ export function PlayNpcDialogOverlay({
   // for screen-reader / debugging contexts; the visible UI reads
   // off the button JSX below for finer-grained styling control.
   interface DialogAction {
-    label: "Steal" | "Visit Counter" | "Ask to Move" | "Leave";
+    label: "Backstory" | "Steal" | "Visit Counter" | "Ask to Move" | "Leave";
     onClick: () => void;
   }
   const actions = useMemo<DialogAction[]>(() => {
     const list: DialogAction[] = [];
+    if (hasBackstory) list.push({ label: "Backstory", onClick: toggleBackstory });
     if (canSteal && onSteal) list.push({ label: "Steal", onClick: onSteal });
     if (hasCounter)
       list.push({ label: "Visit Counter", onClick: onVisitCounter });
@@ -82,7 +99,16 @@ export function PlayNpcDialogOverlay({
       list.push({ label: "Ask to Move", onClick: onAskToMove });
     list.push({ label: "Leave", onClick: onClose });
     return list;
-  }, [canSteal, hasCounter, onSteal, onVisitCounter, onAskToMove, onClose]);
+  }, [
+    hasBackstory,
+    toggleBackstory,
+    canSteal,
+    hasCounter,
+    onSteal,
+    onVisitCounter,
+    onAskToMove,
+    onClose,
+  ]);
   /** Which action button the keyboard cursor is on. Up/Down wraps
    *  through it; Enter fires the highlighted action. Defaults to 0
    *  — the first non-Leave entry when one exists, otherwise Leave
@@ -109,16 +135,24 @@ export function PlayNpcDialogOverlay({
         onClose();
         return;
       }
+      if ((e.key === "b" || e.key === "B") && hasBackstory) {
+        e.stopPropagation();
+        e.preventDefault();
+        toggleBackstory();
+        return;
+      }
       if (e.key === "ArrowRight") {
         e.stopPropagation();
         e.preventDefault();
-        if (total > 0) setCursor((i) => (i + 1) % total);
+        if (total > 0 && view === "speech") setCursor((i) => (i + 1) % total);
         return;
       }
       if (e.key === "ArrowLeft") {
         e.stopPropagation();
         e.preventDefault();
-        if (total > 0) setCursor((i) => (i - 1 + total) % total);
+        if (total > 0 && view === "speech") {
+          setCursor((i) => (i - 1 + total) % total);
+        }
         return;
       }
       if (e.key === "ArrowDown") {
@@ -163,7 +197,7 @@ export function PlayNpcDialogOverlay({
     window.addEventListener("keydown", onKey, { capture: true });
     return () =>
       window.removeEventListener("keydown", onKey, { capture: true });
-  }, [onClose, total, actions, actionIndex]);
+  }, [onClose, total, actions, actionIndex, hasBackstory, toggleBackstory, view]);
 
   return (
     <div
@@ -202,7 +236,16 @@ export function PlayNpcDialogOverlay({
         </header>
 
         <div className="flex-1 overflow-auto px-3 py-3">
-          {current ? (
+          {view === "backstory" && hasBackstory ? (
+            <article className="space-y-2">
+              <p className="text-[11px] uppercase tracking-wide text-amber-300">
+                Backstory
+              </p>
+              <p className="whitespace-pre-line text-sm leading-relaxed text-parchment/85">
+                {backstory}
+              </p>
+            </article>
+          ) : current ? (
             <article className="space-y-2">
               {current.title ? (
                 <p className="text-[11px] uppercase tracking-wide text-amber-300">
@@ -227,7 +270,7 @@ export function PlayNpcDialogOverlay({
 
         <footer className="flex items-center justify-between gap-2 border-t border-parchment/15 px-3 py-2">
           <div className="flex items-center gap-2">
-            {total > 1 ? (
+            {total > 1 && view === "speech" ? (
               <>
                 <button
                   type="button"
@@ -260,6 +303,9 @@ export function PlayNpcDialogOverlay({
             {(() => {
               const focusRing =
                 "outline outline-2 outline-amber-200 outline-offset-1";
+              const backstoryIdx = actions.findIndex(
+                (a) => a.label === "Backstory",
+              );
               const stealIdx = actions.findIndex((a) => a.label === "Steal");
               const counterIdx = actions.findIndex(
                 (a) => a.label === "Visit Counter",
@@ -270,6 +316,26 @@ export function PlayNpcDialogOverlay({
               const leaveIdx = actions.findIndex((a) => a.label === "Leave");
               return (
                 <>
+                  {backstoryIdx >= 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActionIndex(backstoryIdx);
+                        actions[backstoryIdx].onClick();
+                      }}
+                      className={[
+                        "rounded border border-parchment/20 bg-ink/40 px-3 py-1 text-xs text-parchment/85 hover:bg-ink/60",
+                        actionIndex === backstoryIdx ? focusRing : "",
+                      ].join(" ")}
+                      title={
+                        view === "speech"
+                          ? `Read ${npcName}'s backstory (B).`
+                          : `Return to ${npcName}'s words (B).`
+                      }
+                    >
+                      {view === "speech" ? "📖 Backstory" : "← Back"}
+                    </button>
+                  ) : null}
                   {stealIdx >= 0 ? (
                     <button
                       type="button"

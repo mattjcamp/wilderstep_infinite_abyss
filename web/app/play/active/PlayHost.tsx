@@ -693,6 +693,9 @@ interface PlayNpc {
   /** One-time "first conversation" XP override. Absent → the module's
    *  `settings.exploration_xp.npc`; 0 → no reward. */
   exploration_xp?: number;
+  /** Authored backstory. Readable in the dialog via the Backstory
+   *  toggle (same as the editor simulation). */
+  personal_history?: string;
 }
 
 /** One temple-style service row on a `kind: "service"` counter
@@ -6389,12 +6392,20 @@ export function PlayHost() {
           canPickpocket(liveSave, state.catalog.characters, npc.id);
         return (
           <PlayNpcDialogOverlay
+            // Keyed per NPC so the speech/backstory view resets when
+            // the dialog switches to a different person.
+            key={npc.id}
             npcName={npc.name ?? npc.id}
             npcSprite={npc.sprite}
             // Tolerant read — a bare dialog object or string (instead
             // of the canonical array) still renders rather than
             // collapsing to the "regards you in silence" fallback.
             dialogs={normalizeNpcDialogs(npc.dialogs)}
+            backstory={
+              typeof npc.personal_history === "string"
+                ? npc.personal_history
+                : undefined
+            }
             hasCounter={hasCounter}
             onVisitCounter={() => {
               if (!hasCounter || !counterId) return;
