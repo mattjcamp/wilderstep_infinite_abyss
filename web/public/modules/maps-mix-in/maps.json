@@ -158082,7 +158082,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/swamp.png",
-            "tag": "walkable"
+            "tag": "walkable",
+            "npc": "chicken"
           },
           {
             "boat": false,
@@ -158641,7 +158642,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/sand.png",
-            "tag": "walkable"
+            "tag": "walkable",
+            "npc": "sheep"
           },
           {
             "boat": false,
@@ -160547,7 +160549,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/swamp.png",
-            "tag": "walkable"
+            "tag": "walkable",
+            "npc": "sheep"
           },
           {
             "boat": false,
@@ -160611,7 +160614,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/swamp.png",
-            "tag": "walkable"
+            "tag": "walkable",
+            "npc": "chicken"
           },
           {
             "boat": false,
@@ -160696,7 +160700,7 @@
             "boat": false,
             "id": "shop_sign",
             "name": "Shop Sign",
-            "walkable": false,
+            "walkable": true,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -160706,7 +160710,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/shop_sign.png",
-            "tag": "outdoor"
+            "tag": "outdoor",
+            "text": "Animal Pen"
           },
           {
             "boat": false,
@@ -161295,7 +161300,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/sand.png",
-            "tag": "walkable"
+            "tag": "walkable",
+            "npc": "sheep"
           },
           {
             "boat": false,
@@ -162527,7 +162533,7 @@
             "boat": false,
             "id": "shop_sign",
             "name": "Shop Sign",
-            "walkable": false,
+            "walkable": true,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -162537,7 +162543,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/shop_sign.png",
-            "tag": "outdoor"
+            "tag": "outdoor",
+            "text": "Animal Pen"
           },
           {
             "boat": false,
@@ -163479,7 +163486,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/grass1.png",
-            "tag": "walkable"
+            "tag": "walkable",
+            "npc": "villager"
           },
           {
             "boat": false,
@@ -177288,7 +177296,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/grass1.png",
-            "tag": "walkable"
+            "tag": "walkable",
+            "npc": "villager"
           },
           {
             "boat": false,
@@ -178787,7 +178796,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/sand.png",
-            "tag": "walkable"
+            "tag": "walkable",
+            "npc": "villager"
           },
           {
             "boat": false,
@@ -183068,7 +183078,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/floor_brown.png",
-            "tag": "walkable"
+            "tag": "walkable",
+            "npc": "villager"
           },
           {
             "boat": false,
@@ -183324,7 +183335,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/sand.png",
-            "tag": "walkable"
+            "tag": "walkable",
+            "npc": "villager"
           },
           {
             "boat": false,
@@ -185732,7 +185744,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/floor_brown.png",
-            "tag": "walkable"
+            "tag": "walkable",
+            "npc": "villager"
           },
           {
             "boat": false,
@@ -235886,7 +235899,7 @@
       "description": "The Hallowmere town farm house",
       "tags": [
         "Hallowmere",
-        "House"
+        "Building"
       ],
       "width": 16,
       "height": 24,
@@ -242009,7 +242022,7 @@
       "description": "The Hallowmere town farm house",
       "tags": [
         "Hallowmere",
-        "House"
+        "Building"
       ],
       "width": 16,
       "height": 24,
@@ -254976,7 +254989,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/floor_brown.png",
-            "tag": "walkable"
+            "tag": "walkable",
+            "npc": "villager"
           },
           {
             "boat": false,
@@ -259977,7 +259991,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/sand.png",
-            "tag": "walkable"
+            "tag": "walkable",
+            "npc": "everlyia"
           },
           {
             "boat": false,
@@ -264128,7 +264143,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/path.png",
-            "tag": "walkable"
+            "tag": "walkable",
+            "npc": "wanda"
           },
           {
             "boat": false,
@@ -266813,7 +266829,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/path.png",
-            "tag": "walkable"
+            "tag": "walkable",
+            "npc": "leroy"
           },
           {
             "boat": false,
@@ -268443,7 +268460,7 @@
       "description": "A stone hall, suitable for the gathering of the elders",
       "tags": [
         "Hallowmere",
-        "House"
+        "Building"
       ],
       "width": 18,
       "height": 18,
@@ -269170,7 +269187,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/floor_gray.png",
-            "tag": "walkable"
+            "tag": "walkable",
+            "npc": "alricsilv"
           },
           {
             "boat": false,
@@ -274512,7 +274530,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/town_floor.png",
-            "tag": "walkable"
+            "tag": "walkable",
+            "npc": "hrefna"
           },
           {
             "boat": false,
@@ -282369,7 +282388,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/town_floor.png",
-            "tag": "walkable"
+            "tag": "walkable",
+            "npc": "otto"
           },
           {
             "boat": false,
@@ -295507,7 +295527,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/sand.png",
-            "tag": "walkable"
+            "tag": "walkable",
+            "npc": "villager"
           },
           {
             "boat": false,
@@ -303631,7 +303652,7 @@
             "animation": "none",
             "counter": "",
             "encounter": "",
-            "spawn": "",
+            "spawn": "campfire_spawn",
             "sprite": "map/path.png",
             "tag": "terrain",
             "text": "",
@@ -314789,7 +314810,7 @@
             "animation": "none",
             "counter": "",
             "encounter": "",
-            "spawn": "",
+            "spawn": "campfire_spawn",
             "sprite": "map/path.png",
             "tag": "terrain",
             "text": "",
@@ -319388,7 +319409,7 @@
             "animation": "none",
             "counter": "",
             "encounter": "",
-            "spawn": "",
+            "spawn": "campfire_spawn",
             "sprite": "map/path.png",
             "tag": "terrain",
             "text": "",
@@ -325924,7 +325945,7 @@
             "light_range": 0,
             "animation": "none",
             "counter": "",
-            "encounter": "",
+            "encounter": "skeletons",
             "spawn": "",
             "sprite": "map/path.png",
             "tag": "terrain",
@@ -327698,7 +327719,7 @@
             "light_range": 0,
             "animation": "none",
             "counter": "",
-            "encounter": "",
+            "encounter": "kobold",
             "spawn": "",
             "sprite": "map/path.png",
             "tag": "terrain",
@@ -340398,7 +340419,7 @@
             "light_range": 0,
             "animation": "none",
             "counter": "",
-            "encounter": "",
+            "encounter": "goblins",
             "spawn": "",
             "sprite": "map/path.png",
             "tag": "terrain",
