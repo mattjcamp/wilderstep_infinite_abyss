@@ -159665,7 +159665,7 @@
             "sprite": "map/door_a.png",
             "tag": "doors & stairs",
             "link": {
-              "map_id": "hut1_copy_copy_copy",
+              "map_id": "hut1_4",
               "x": 6,
               "y": 7
             }
@@ -160367,7 +160367,7 @@
             "sprite": "map/door_a.png",
             "tag": "doors & stairs",
             "link": {
-              "map_id": "hut1_copy_copy_copy_copy",
+              "map_id": "hut1_5",
               "x": 6,
               "y": 7
             }
@@ -161557,7 +161557,7 @@
             "sprite": "map/door_a.png",
             "tag": "doors & stairs",
             "link": {
-              "map_id": "hut1_copy_copy",
+              "map_id": "hut1_3",
               "x": 6,
               "y": 7
             }
@@ -165525,7 +165525,7 @@
             "sprite": "map/door_a.png",
             "tag": "doors & stairs",
             "link": {
-              "map_id": "hut_7_copy",
+              "map_id": "hut_8",
               "x": 5,
               "y": 11
             }
@@ -166035,7 +166035,7 @@
             "sprite": "map/door_a.png",
             "tag": "doors & stairs",
             "link": {
-              "map_id": "hut1_copy",
+              "map_id": "hut1_2",
               "x": 6,
               "y": 7
             }
@@ -179054,7 +179054,7 @@
             "sprite": "map/door_b_rough.png",
             "tag": "doors & stairs",
             "link": {
-              "map_id": "stone_house_1_copy_copy_copy_copy_copy",
+              "map_id": "stone_house_6",
               "x": 10,
               "y": 11
             }
@@ -179817,7 +179817,7 @@
             "sprite": "map/building_outfitter.png",
             "tag": "shop: Outfitter",
             "link": {
-              "map_id": "armory_1_copy_2_copy",
+              "map_id": "armory_4",
               "x": 16,
               "y": 9
             }
@@ -180973,7 +180973,7 @@
             "sprite": "map/door_b_rough.png",
             "tag": "doors & stairs",
             "link": {
-              "map_id": "stone_house_1_copy_copy_copy_copy",
+              "map_id": "stone_house_5",
               "x": 10,
               "y": 11
             }
@@ -181739,7 +181739,7 @@
             "sprite": "map/building_weaponsmith.png",
             "tag": "shop: Weaponsmith",
             "link": {
-              "map_id": "armory_1_copy_2",
+              "map_id": "armory_3",
               "x": 16,
               "y": 9
             }
@@ -182888,7 +182888,7 @@
             "sprite": "map/door_b_rough.png",
             "tag": "doors & stairs",
             "link": {
-              "map_id": "stone_house_1_copy_copy",
+              "map_id": "stone_house_3",
               "x": 10,
               "y": 11
             }
@@ -183653,7 +183653,7 @@
             "sprite": "map/building_alchemist.png",
             "tag": "shop: Alchemist",
             "link": {
-              "map_id": "armory_1_copy",
+              "map_id": "armory_2",
               "x": 16,
               "y": 9
             }
@@ -184803,7 +184803,7 @@
             "sprite": "map/door_b_rough.png",
             "tag": "doors & stairs",
             "link": {
-              "map_id": "stone_house_1_copy",
+              "map_id": "stone_house_2",
               "x": 10,
               "y": 11
             }
@@ -187837,7 +187837,7 @@
             "sprite": "map/door_a_pillar.png",
             "tag": "doors & stairs",
             "link": {
-              "map_id": "wood_house_2_copy_copy_copy",
+              "map_id": "wood_house_6",
               "x": 0,
               "y": 9
             }
@@ -189095,7 +189095,7 @@
             "sprite": "map/doorway_dark.png",
             "tag": "doors & stairs",
             "link": {
-              "map_id": "wood_house_2_copy_2",
+              "map_id": "wood_house_4",
               "x": 0,
               "y": 9
             }
@@ -190388,7 +190388,7 @@
             "sprite": "map/doorway_dark_marble.png",
             "tag": "doors & stairs",
             "link": {
-              "map_id": "wood_house_2_copy_copy",
+              "map_id": "wood_house_5",
               "x": 0,
               "y": 9
             }
@@ -192936,7 +192936,7 @@
             "sprite": "map/door_a_braced.png",
             "tag": "doors & stairs",
             "link": {
-              "map_id": "wood_house_2_copy",
+              "map_id": "wood_house_3",
               "x": 0,
               "y": 9
             }
@@ -213010,7 +213010,7 @@
       }
     },
     {
-      "id": "wood_house_2_copy",
+      "id": "wood_house_3",
       "name": "Stone House 2",
       "description": "A sturdy stone house built from rock quarried near the Northern mountains",
       "tags": [
@@ -216815,7 +216815,7 @@
       }
     },
     {
-      "id": "wood_house_2_copy_2",
+      "id": "wood_house_4",
       "name": "Wood House 3",
       "description": "A simple, timber, house",
       "tags": [
@@ -220619,7 +220619,7 @@
       }
     },
     {
-      "id": "stone_house_1_copy",
+      "id": "stone_house_2",
       "name": "Stone House 4",
       "description": "A sturdy house made of stone.",
       "tags": [
@@ -223674,7 +223674,7 @@
       }
     },
     {
-      "id": "stone_house_1_copy_copy",
+      "id": "stone_house_3",
       "name": "Stone House 5",
       "description": "A sturdy house made of stone.",
       "tags": [
@@ -226729,7 +226729,7 @@
       }
     },
     {
-      "id": "stone_house_1_copy_copy_copy",
+      "id": "stone_house_4",
       "name": "Stone House 6",
       "description": "A sturdy house made of stone.",
       "tags": [
@@ -229784,7 +229784,7 @@
       }
     },
     {
-      "id": "stone_house_1_copy_copy_copy_copy",
+      "id": "stone_house_5",
       "name": "Stone House 7",
       "description": "A sturdy house made of stone.",
       "tags": [
@@ -232839,7 +232839,7 @@
       }
     },
     {
-      "id": "stone_house_1_copy_copy_copy_copy_copy",
+      "id": "stone_house_6",
       "name": "Stone House 8",
       "description": "A sturdy house made of stone.",
       "tags": [
@@ -236386,7 +236386,7 @@
             "sprite": "map/stairs_down.png",
             "tag": "indoor",
             "link": {
-              "map_id": "hallowmere_farmhouse_level_1_copy",
+              "map_id": "hallowmere_farmhouse_level_2",
               "x": 14,
               "y": 1
             }
@@ -242017,7 +242017,7 @@
       }
     },
     {
-      "id": "hallowmere_farmhouse_level_1_copy",
+      "id": "hallowmere_farmhouse_level_2",
       "name": "Farmhouse, Level 2",
       "description": "The Hallowmere town farm house",
       "tags": [
@@ -248127,7 +248127,7 @@
       }
     },
     {
-      "id": "wood_house_2_copy_copy",
+      "id": "wood_house_5",
       "name": "Stone House 9",
       "description": "A sturdy stone house built from rock quarried near the Northern mountains",
       "tags": [
@@ -251932,7 +251932,7 @@
       }
     },
     {
-      "id": "wood_house_2_copy_copy_copy",
+      "id": "wood_house_6",
       "name": "Stone House 10",
       "description": "A sturdy stone house built from rock quarried near the Northern mountains",
       "tags": [
@@ -258914,7 +258914,7 @@
       }
     },
     {
-      "id": "armory_1_copy",
+      "id": "armory_2",
       "name": "Potions & Poisons",
       "description": "A messy old shack, with shelves of glass bottles presssed up against the walls",
       "tags": [
@@ -262092,7 +262092,7 @@
       }
     },
     {
-      "id": "armory_1_copy_2",
+      "id": "armory_3",
       "name": "Wanda's Weapons",
       "description": "A small shop selling weapons",
       "tags": [
@@ -265277,7 +265277,7 @@
       }
     },
     {
-      "id": "armory_1_copy_2_copy",
+      "id": "armory_4",
       "name": "Leroy's Sundries",
       "description": "A small shop selling clothes and supplies",
       "tags": [
@@ -281931,7 +281931,7 @@
             "sprite": "map/stairs_entrance_rough.png",
             "tag": "doors & stairs",
             "link": {
-              "map_id": "otto_inn_1_copy",
+              "map_id": "otto_inn_2",
               "x": 10,
               "y": 0
             }
@@ -286366,7 +286366,7 @@
       }
     },
     {
-      "id": "otto_inn_1_copy",
+      "id": "otto_inn_2",
       "name": "Otto's Inn Basement",
       "description": "A well appointed inn",
       "tags": [
@@ -291977,7 +291977,7 @@
       }
     },
     {
-      "id": "hut1_copy",
+      "id": "hut1_2",
       "name": "Shabby Hut 2",
       "description": "A shabby hut buiit from discarded wood and rocks",
       "tags": [
@@ -293014,7 +293014,7 @@
       }
     },
     {
-      "id": "hut1_copy_copy",
+      "id": "hut1_3",
       "name": "Shabby Hut 3",
       "description": "A shabby hut buiit from discarded wood and rocks",
       "tags": [
@@ -294051,7 +294051,7 @@
       }
     },
     {
-      "id": "hut1_copy_copy_copy",
+      "id": "hut1_4",
       "name": "Shabby Hut 4",
       "description": "A shabby hut buiit from discarded wood and rocks",
       "tags": [
@@ -295090,7 +295090,7 @@
       }
     },
     {
-      "id": "hut1_copy_copy_copy_copy",
+      "id": "hut1_5",
       "name": "Shabby Hut 5",
       "description": "A shabby hut buiit from discarded wood and rocks",
       "tags": [
@@ -298265,7 +298265,7 @@
       }
     },
     {
-      "id": "hut_7_copy",
+      "id": "hut_8",
       "name": "Shabby Hut 8",
       "description": "An unkept hut",
       "tags": [
@@ -304535,7 +304535,7 @@
             "npc": "",
             "trap": false,
             "link": {
-              "map_id": "otto_inn_1_copy",
+              "map_id": "otto_inn_2",
               "x": 10,
               "y": 22
             }

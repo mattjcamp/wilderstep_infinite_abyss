@@ -3,6 +3,7 @@ import {
   compareTags,
   groupByTags,
   PINNED_TAGS,
+  nextCopyId,
   planTagDelete,
   UNTAGGED,
 } from "./mapTags";
@@ -110,5 +111,39 @@ describe("planTagDelete", () => {
     const own = [town, loose, { id: "bare", name: "Bare" }];
     const plan = planTagDelete(UNTAGGED, own, own);
     expect(plan.toDelete.map((m) => m.id)).toEqual(["loose", "bare"]);
+  });
+});
+
+describe("nextCopyId", () => {
+  it("numbers copies instead of appending _copy", () => {
+    expect(nextCopyId("otto_inn", new Set(["otto_inn"]))).toBe("otto_inn_2");
+    expect(
+      nextCopyId("stone_house_1", new Set(["stone_house_1", "stone_house_2"])),
+    ).toBe("stone_house_3");
+  });
+
+  it("counts up from the highest existing number", () => {
+    expect(nextCopyId("hut_7", new Set(["hut_6", "hut_7"]))).toBe("hut_8");
+    expect(
+      nextCopyId("wood_house_1", new Set(["wood_house_1", "wood_house_5"])),
+    ).toBe("wood_house_6");
+  });
+
+  it("copying a copy doesn't grow the id", () => {
+    const ids = new Set(["hut1", "hut1_2", "hut1_3"]);
+    expect(nextCopyId("hut1_3", ids)).toBe("hut1_4");
+  });
+
+  it("collapses legacy _copy chains", () => {
+    expect(nextCopyId("armory_1_copy_2_copy", new Set(["armory_1"]))).toBe(
+      "armory_2",
+    );
+    expect(nextCopyId("stone_house_1_copy_copy_copy", new Set())).toBe(
+      "stone_house_2",
+    );
+  });
+
+  it("keeps ids that would strip to nothing", () => {
+    expect(nextCopyId("copy", new Set(["copy"]))).toBe("copy_2");
   });
 });

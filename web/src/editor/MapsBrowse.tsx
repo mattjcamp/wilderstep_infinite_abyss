@@ -48,7 +48,7 @@ import {
 import type { DungeonRecord } from "@/sim/dungeon/types";
 import { bakeDungeon } from "./dungeonBake";
 import { GenerateDungeonDialog } from "./GenerateDungeonDialog";
-import { compareTags, planTagDelete, UNTAGGED } from "./mapTags";
+import { compareTags, nextCopyId, planTagDelete, UNTAGGED } from "./mapTags";
 import { ID_PATTERN, TagsPicker } from "./TagsPicker";
 import { usePublishServer } from "./usePublishServer";
 
@@ -618,13 +618,10 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
   const onDuplicate = async (src: MapRecord) => {
     if (state.kind !== "ok") return;
     const existing = new Set(state.maps.map((m) => m.id));
-    // Unique id: "<id>_copy", then "_copy_2", "_copy_3", … if taken.
-    let newId = `${src.id}_copy`;
-    if (existing.has(newId)) {
-      let n = 2;
-      while (existing.has(`${src.id}_copy_${n}`)) n++;
-      newId = `${src.id}_copy_${n}`;
-    }
+    // Unique numbered id ("stone_house_1" → "stone_house_2", …). Any
+    // trailing number / legacy "_copy" is replaced rather than appended
+    // to, so copies of copies keep short ids. See nextCopyId.
+    const newId = nextCopyId(src.id, existing);
     // Deep clone via JSON round-trip — the grid is plain data (nested
     // TileType rows + link objects), so this fully detaches the copy
     // from the source.

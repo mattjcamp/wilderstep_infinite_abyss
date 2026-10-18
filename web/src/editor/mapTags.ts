@@ -120,3 +120,34 @@ export function planTagDelete<T extends DeletableMap>(
   }
   return { toDelete, inherited, remainingOwn, brokenLinks };
 }
+
+/**
+ * Id for a copy of map `srcId` — `<base>_<n>`, where `<base>` is `srcId`
+ * with any trailing `_copy` / `_<digits>` segments stripped and `n` is one
+ * more than the highest number already used with that base (min 2).
+ * Copying a copy therefore never grows the id, and numbers count up:
+ *
+ *   stone_house_1        → stone_house_2 (or _7 if _2…_6 exist)
+ *   hut_7                → hut_8
+ *   armory_1_copy_2_copy → armory_2 (legacy ids collapse too)
+ *   otto_inn             → otto_inn_2
+ *
+ * `existing` is every id already in use (inherited + own).
+ */
+export function nextCopyId(srcId: string, existing: ReadonlySet<string>): string {
+  let base = srcId;
+  for (;;) {
+    const stripped = base.replace(/_(?:copy|\d+)$/, "");
+    if (stripped === base || stripped.length === 0) break;
+    base = stripped;
+  }
+  let n = 2;
+  const prefix = `${base}_`;
+  for (const id of existing) {
+    if (!id.startsWith(prefix)) continue;
+    const rest = id.slice(prefix.length);
+    if (/^\d+$/.test(rest)) n = Math.max(n, Number(rest) + 1);
+  }
+  while (existing.has(`${base}_${n}`)) n++; // defensive
+  return `${base}_${n}`;
+}
