@@ -1,3 +1,12 @@
 {
-  "npcs": []
+  "npcs": [
+    {
+      "id": "dog",
+      "name": "Dog",
+      "sprite": "person/animal_dog_grey.png",
+      "counter": null,
+      "personal_history": "Wolf",
+      "dialogs": []
+    }
+  ]
 }

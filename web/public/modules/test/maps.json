@@ -64030,7 +64030,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/path.png",
-            "tag": "walkable"
+            "tag": "walkable",
+            "npc": "dog"
           },
           {
             "boat": false,
