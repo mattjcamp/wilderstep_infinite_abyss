@@ -7239,7 +7239,8 @@
           }
         ]
       ],
-      "fog_of_war": false
+      "fog_of_war": false,
+      "lighting": "day"
     },
     {
       "id": "overview_island",
@@ -20579,7 +20580,8 @@
           }
         ]
       ],
-      "fog_of_war": false
+      "fog_of_war": false,
+      "lighting": "day"
     },
     {
       "id": "dungeon_battle_arena",
@@ -24184,7 +24186,7 @@
           }
         ]
       ],
-      "lighting": "darkness",
+      "lighting": "day",
       "fog_of_war": false
     },
     {
@@ -24192,7 +24194,6 @@
       "name": "Town",
       "description": "The only town on Rock Island",
       "tags": [
-        "overview",
         "town"
       ],
       "width": 20,
