@@ -8,7 +8,7 @@
       "name": "Giant Rats",
       "level": 1,
       "weight": 30,
-      "monster_party_tile": "monster/giant_rat.png",
+      "monster_party_tile": "monster/rat_grey.png",
       "monsters": [
         "giant_rat",
         "giant_rat",
@@ -16,7 +16,8 @@
         "giant_rat",
         "giant_rat"
       ],
-      "custom_map": null
+      "custom_map": null,
+      "tags": null
     },
     {
       "id": "goblins",
@@ -25,7 +26,7 @@
       "name": "Goblins",
       "level": 1,
       "weight": 15,
-      "monster_party_tile": "monster/goblin.png",
+      "monster_party_tile": "person/race7_fighter.png",
       "monsters": [
         "goblin",
         "goblin",
@@ -33,7 +34,8 @@
         "goblin",
         "goblin"
       ],
-      "custom_map": "outdoor_arena"
+      "custom_map": "outdoor_arena",
+      "tags": null
     },
     {
       "id": "wolfs",
@@ -42,7 +44,7 @@
       "name": "Wolfs",
       "level": 2,
       "weight": 25,
-      "monster_party_tile": "monster/wolf.png",
+      "monster_party_tile": "monster/gray_wolf.png",
       "monsters": [
         "wolf",
         "wolf",
@@ -50,7 +52,8 @@
         "wolf",
         "wolf"
       ],
-      "custom_map": null
+      "custom_map": null,
+      "tags": null
     },
     {
       "id": "skeletons",
@@ -76,7 +79,7 @@
       "name": "Trolls",
       "level": 5,
       "weight": 10,
-      "monster_party_tile": "monster/troll.png",
+      "monster_party_tile": "monster/troll_fighter.png",
       "monsters": [
         "troll",
         "troll",
@@ -84,7 +87,8 @@
         "troll",
         "troll"
       ],
-      "custom_map": null
+      "custom_map": null,
+      "tags": null
     },
     {
       "id": "dragon",
@@ -247,13 +251,14 @@
       "name": "Dark Mage",
       "level": 4,
       "weight": 15,
-      "monster_party_tile": "monster/dark_mage.png",
+      "monster_party_tile": "person/halfling_mage3.png",
       "monsters": [
         "dark_mage",
         "dark_mage",
         "dark_mage"
       ],
-      "custom_map": null
+      "custom_map": null,
+      "tags": null
     },
     {
       "id": "orc",
@@ -355,13 +360,14 @@
       "name": "Pirate",
       "level": 4,
       "weight": 15,
-      "monster_party_tile": "monster/lark_f2.png",
+      "monster_party_tile": "person/race1_fighter2.png",
       "monsters": [
         "pirate",
         "pirate",
         "pirate"
       ],
-      "custom_map": null
+      "custom_map": null,
+      "tags": null
     },
     {
       "id": "kobold",
