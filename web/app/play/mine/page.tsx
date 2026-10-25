@@ -28,7 +28,7 @@ type ListState =
   | { kind: "error"; message: string };
 
 function isPlayable(m: ModuleSummary): boolean {
-  return m.role !== "core" && m.role !== "library";
+  return m.role !== "core" && m.role !== "library" && m.role !== "theme";
 }
 
 export default function MyModulesPage() {

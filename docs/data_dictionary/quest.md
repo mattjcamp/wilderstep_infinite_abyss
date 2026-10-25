@@ -42,7 +42,7 @@ A single inline object describing the NPC. The same NPC handles both the offer (
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `npc_name` | string | yes | Display name shown above the dialog box (e.g. `"Old Hermit"`). |
-| `npc_sprite` | string | yes | Sprite path under `web/public/sprites/` (e.g. `"person/hobbit2.png"`). Same convention as Character `sprite`. |
+| `npc_sprite` | string | yes | Sprite path relative to a module's `sprites/` folder (base art: `web/public/modules/default/sprites/`) (e.g. `"person/hobbit2.png"`). Same convention as Character `sprite`. |
 | `start_dialog` | string | yes | The dialog shown when the player first talks to the NPC, offering the quest. |
 | `end_dialog` | string | yes | The dialog shown when the player returns after completing the final step, accepting the completion. |
 | `post_dialog` | string | no | Chatter shown when the player bumps the giver AFTER the quest is turned in — the giver behaves like a normal NPC from then on (standard NPC dialog, no quest overlay). Falls back to a generic "thanks again" line when absent. |
@@ -63,7 +63,7 @@ If a `tile_remove` and a `tile_add` target the same cell on the same map, the ru
 
 ## Cross-references to other models
 
-- `quest_giver.npc_sprite` → sprite asset under `web/public/sprites/person/`.
+- `quest_giver.npc_sprite` → sprite asset under a module's `sprites/person/` (base art: `web/public/modules/default/sprites/person/`).
 - `rewards.items[]` → [Item](item.md) ids.
 - `rewards.tile_remove[].map` / `rewards.tile_add[].map` → [Map](map.md) ids.
 - `rewards.tile_add[].tile_id` → [Map Tile](map_tile.md) `id`.

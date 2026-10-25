@@ -10,7 +10,7 @@
    keep native pixel scale so a chicken stays smaller than a horse. Content
    is centered horizontally and bottom-anchored on a 32x32 canvas.
 
-Outputs go to processed_sprites/npc/ and web/public/sprites/person/
+Outputs go to processed_sprites/npc/ and web/public/modules/default/sprites/person/
 (the category NPC sprite pickers default to). Run
 `npm run reindex-sprites` in web/ afterwards.
 
@@ -22,7 +22,7 @@ from PIL import Image
 HERE = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.join(HERE, "free_to_use_sprites_org")
 OUT_DIRS = [os.path.join(HERE, "processed_sprites", "npc"),
-            os.path.join(HERE, "..", "web", "public", "sprites", "person")]
+            os.path.join(HERE, "..", "web", "public", "modules", "default", "sprites", "person")]
 T = 32
 
 PEOPLE = [  # (row, col) in dg_people32.gif -> name

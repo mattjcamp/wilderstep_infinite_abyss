@@ -19,7 +19,7 @@ import { ownerHandleOf } from "@/data_model/moduleIds";
 import { playPartyHref, authorHref } from "@/play/playRoutes";
 
 function isPlayable(m: ModuleSummary): boolean {
-  return m.role !== "core" && m.role !== "library";
+  return m.role !== "core" && m.role !== "library" && m.role !== "theme";
 }
 
 export type CatalogState =

@@ -24,12 +24,14 @@
  *     label, not "record".
  */
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { publishSignInUrl } from "@/data_model/publishClient";
 import { decodeModuleIdParam } from "./moduleRoutes";
 import { usePublishServer } from "./usePublishServer";
 import { Sidebar } from "./Sidebar";
+import { seedSpriteLayers } from "@/data_model/spriteUrl";
+import { getEditorModuleSource } from "@/data_model/sourceConfig";
 
 /** Read the editor's module id from the `?m=` query, decoded. Redirects
  *  to the picker (`/editor`) when absent. Returns null until an id is
@@ -62,6 +64,25 @@ export function EditorShell({
   moduleId: string;
   children: React.ReactNode;
 }) {
+  // Resolve this module's sprite layers (its own art, its art theme,
+  // each parent's, then Default's) before any page renders a sprite —
+  // spriteUrl() is synchronous and reads the seeded layers.
+  const [spritesReady, setSpritesReady] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    // Draft-aware module list, so an unpublished theme pick in Module
+    // Properties shows up in the editor straight away.
+    void getEditorModuleSource()
+      .list()
+      .catch(() => undefined)
+      .then((summaries) => seedSpriteLayers(moduleId, summaries))
+      .finally(() => {
+        if (!cancelled) setSpritesReady(moduleId);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [moduleId]);
   return (
     // h-screen (not min-h-screen) bounds the editor shell to the
     // viewport so the content area scrolls INSIDE itself rather than
@@ -69,7 +90,9 @@ export function EditorShell({
     // own scrollbar instead of the whole body scrolling.
     <div className="flex min-h-0 flex-1 overflow-hidden">
       <Sidebar moduleId={moduleId} />
-      <div className="min-w-0 flex-1 overflow-auto">{children}</div>
+      <div className="min-w-0 flex-1 overflow-auto">
+        {spritesReady === moduleId ? children : null}
+      </div>
     </div>
   );
 }

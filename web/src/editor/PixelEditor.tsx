@@ -531,7 +531,7 @@ export function PixelEditor({
   // ── Publish (publish-server only) ─────────────────────────────────
   // Mirrors the JSON Publish buttons elsewhere in the editor: a local
   // POST to the publish-server writes the PNG into
-  // public/sprites/<category>/<filename> and rebuilds index.json. On
+  // modules/<moduleId>/sprites/<category>/<filename> and rebuilds that module's index.json. On
   // success the local draft is discarded — the canonical version
   // lives on disk now. Hidden when the server isn't reachable
   // (deployed build, no `npm run publish-server` running).
@@ -555,7 +555,7 @@ export function PixelEditor({
     setPublishing(true);
     try {
       const response = await publishItems([
-        { kind: "sprite", category, fileName, dataUrl },
+        { kind: "sprite", moduleId, category, fileName, dataUrl },
       ]);
       const first = response.results[0];
       if (!first || !first.ok) {
@@ -640,7 +640,7 @@ export function PixelEditor({
                 void handlePublish();
               }}
               disabled={publishing}
-              title="Write the PNG to public/sprites/ + regenerate index.json. Same publish flow used for maps + other module data."
+              title="Write the PNG to this module's sprites/ folder + regenerate its index.json. Same publish flow used for maps + other module data."
               className="rounded border border-amber-300/50 bg-amber-700/30 px-3 py-1 text-sm text-parchment hover:bg-amber-700/50 disabled:opacity-50"
             >
               {publishing ? "Publishing…" : "Publish"}

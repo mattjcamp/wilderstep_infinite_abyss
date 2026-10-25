@@ -48,7 +48,7 @@ v1 nested encounters under three top-level area keys (`dungeon`, `house_basement
 ## Cross-references to other models
 
 - `monsters[]` → [Monster](monster.md) ids
-- `monster_party_tile` is a sprite path, not a [Monster](monster.md) reference — it points at a file under `web/public/sprites/`
+- `monster_party_tile` is a sprite path, not a [Monster](monster.md) reference — it points at a file in a module's `sprites/` folder (base art: `web/public/modules/default/sprites/`)
 - `custom_map` → [Map](map.md) id (optional battle arena for the encounter's fight)
 - Referenced *by* future [NPC](npc.md) records (v1's town NPCs could trigger named encounters) and [Quest Step](quest_step.md) kill-step rows
 

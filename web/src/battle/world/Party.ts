@@ -205,7 +205,7 @@ interface RawParty {
 // here. Anything that already starts with `/sprites/` is honoured
 // as-is (with the deploy base prefixed); anything else lands under
 // `/sprites/` so the URL the Phaser loader fetches matches the file
-// actually shipped in `public/sprites/`.
+// actually shipped in a module's `sprites/` folder.
 
 /**
  * Resolve a raw sprite path to a usable `/sprites/...` URL.

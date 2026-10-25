@@ -59,7 +59,7 @@ export interface ModuleMetadata {
  *  case (per ModuleSummary.role) and an explicit "playable" — is
  *  considered playable. Keeping this list centralized so the picker
  *  page and the static-params route generators can't drift. */
-const NON_PLAYABLE_ROLES = new Set(["core", "library"]);
+const NON_PLAYABLE_ROLES = new Set(["core", "library", "theme"]);
 
 /** True when this module should appear in /play/new and have its
  *  per-module routes pre-rendered. */

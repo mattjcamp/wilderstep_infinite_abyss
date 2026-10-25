@@ -32,12 +32,17 @@ export type PublishItem =
   | { kind: "index"; content: unknown }
   | { kind: "delete-module"; moduleId: string }
   // ── Sprite assets ───────────────────────────────────────────────
-  // Sprites live in their own tree (public/sprites/<category>/…) and
-  // the server keeps `index.json` in sync after every write/delete so
-  // the editor's catalog refresh costs one publish round-trip.
+  // Sprites live in each module's own tree
+  // (public/modules/<moduleId>/sprites/<category>/…; the base art is in
+  // the Default module) and the server keeps that module's
+  // `sprites/index.json` in sync after every write/delete so the
+  // editor's catalog refresh costs one publish round-trip.
   | {
       kind: "sprite";
-      /** Folder name under public/sprites/. Server enforces
+      /** Module whose `sprites/` folder receives the file. Defaults to
+       *  "default" (the base art) when omitted. */
+      moduleId?: string;
+      /** Folder name under the module's sprites/. Server enforces
        *  /^[a-z][a-z0-9_]*$/. New categories materialise on first use. */
       category: string;
       /** PNG filename. Server enforces /^[a-z0-9_][a-z0-9_-]*\.png$/i. */
@@ -45,8 +50,8 @@ export type PublishItem =
       /** Base64 data URL — must start with `data:image/png;base64,`. */
       dataUrl: string;
     }
-  | { kind: "sprite-index" }
-  | { kind: "delete-sprite"; category: string; fileName: string }
+  | { kind: "sprite-index"; moduleId?: string }
+  | { kind: "delete-sprite"; moduleId?: string; category: string; fileName: string }
   // ── Audio catalog ───────────────────────────────────────────────
   // The soundtrack catalog (public/audio/index.json) is a flat
   // `tracks: [{ path, name?, gain? }]` list. The editor sends the

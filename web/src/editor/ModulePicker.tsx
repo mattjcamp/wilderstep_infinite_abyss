@@ -50,11 +50,12 @@ import { ownerHandleOf } from "@/data_model/moduleIds";
 const IS_REMOTE = process.env.NEXT_PUBLIC_MODULE_SOURCE === "remote";
 
 /** Role-based folders for the picker, in display order. */
-type GroupKey = "mine" | "playable" | "library" | "core";
+type GroupKey = "mine" | "playable" | "library" | "theme" | "core";
 const GROUP_ORDER: { key: GroupKey; label: string }[] = [
   { key: "mine", label: "My Modules" },
   { key: "playable", label: "Playable Adventures" },
   { key: "library", label: "Libraries" },
+  { key: "theme", label: "Art Themes" },
   { key: "core", label: "Core" },
 ];
 
@@ -64,6 +65,7 @@ function moduleGroup(m: ModuleSummary, handle: string | null): GroupKey {
   if (IS_REMOTE && handle && ownerHandleOf(m.id) === handle) return "mine";
   if (m.role === "core") return "core";
   if (m.role === "library") return "library";
+  if (m.role === "theme") return "theme";
   return "playable";
 }
 
@@ -500,6 +502,8 @@ export function ModulePicker() {
     else delete next.version;
     if (patch.role) next.role = patch.role;
     else delete next.role;
+    if (patch.theme) next.theme = patch.theme;
+    else delete next.theme;
     // Soundtrack list — persist when non-empty, drop the key when
     // the textarea was cleared. Keeps quiet modules shape-clean
     // rather than committing a noisy `"soundtrack": []`.
@@ -721,6 +725,11 @@ export function ModulePicker() {
       {editingModule ? (
         <ModulePropertiesDialog
           initial={editingModule}
+          themes={
+            state.kind === "ok"
+              ? state.modules.filter((x) => x.role === "theme")
+              : []
+          }
           onSave={(patch) => onSaveModuleAttrs(editingModule, patch)}
           onClose={() => setEditingModule(null)}
         />

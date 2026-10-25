@@ -27,8 +27,14 @@ export interface ModuleSummary {
    *                   Editable, but not surfaced in the play picker.
    *   - "library"   → importable add-on. Editable, not playable on its own.
    *   - "playable"  → a runnable adventure. Shown in the play picker.
+   *   - "theme"     → an art theme: only a `sprites/` folder. Picked by
+   *                   other modules via `theme`; not playable.
    *  Omitted == playable. */
   role?: string;
+  /** Art theme module id. Sprites resolve from this module's own
+   *  `sprites/`, then the theme's, then each parent's, then Default's.
+   *  Omitted → inherit the nearest parent's theme (Default has none). */
+  theme?: string;
   /** Parent module id to inherit from. Records in this module override
    *  records in the parent by id; missing files fall through to the
    *  parent. Omit on the root module. */

@@ -47,7 +47,7 @@ const ID_PATTERN = /^[a-z][a-z0-9-]*$/;
  *  publish-server, or not signed in) the historical bare-id flow is
  *  unchanged. */
 
-type Role = "playable" | "library";
+type Role = "playable" | "library" | "theme";
 
 export function NewModuleForm({
   existingModules,
@@ -269,6 +269,19 @@ export function NewModuleForm({
               Library
               <span className="text-[13px] text-parchment/65">
                 — content available for import in other modules
+              </span>
+            </label>
+            <label className="flex items-center gap-2 text-sm text-parchment/85">
+              <input
+                type="radio"
+                name="role"
+                value="theme"
+                checked={role === "theme"}
+                onChange={() => setRole("theme")}
+              />
+              Art theme
+              <span className="text-[13px] text-parchment/65">
+                — sprites only; other modules pick it as their theme
               </span>
             </label>
           </div>

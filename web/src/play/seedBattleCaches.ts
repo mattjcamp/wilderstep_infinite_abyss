@@ -375,10 +375,11 @@ export async function seedBattleCachesFromCatalog(
   // simulator doesn't reuse the prior module's encounters / arenas.
   _clearEncountersCache();
   _clearMapsCache();
-  await seedSpriteRouting(moduleId);
   // The EDITOR source (preferDrafts true): the simulator should reflect
-  // an author's unpublished draft edits, like every other editor page.
+  // an author's unpublished draft edits, like every other editor page —
+  // including a draft art-theme pick for sprite layering.
   const src = getEditorModuleSource();
+  await seedSpriteRouting(moduleId, await src.list().catch(() => undefined));
   const [{ characters }] = await Promise.all([
     seedCombatCatalogs(src, moduleId),
     seedPickerCatalogs(src, moduleId),

@@ -24,7 +24,7 @@ import {
   resolveSpritePath,
   type SpriteFieldConfig,
 } from "./spriteFields";
-import { spriteUrl, spriteIndexUrl } from "@/data_model/spriteUrl";
+import { spriteUrl, fetchSpriteCatalog } from "@/data_model/spriteUrl";
 
 interface SpriteIndex {
   _comment?: string;
@@ -53,11 +53,7 @@ export function SpritePicker({
   useEffect(() => {
     if (!open || indexState.kind !== "idle") return;
     setIndexState({ kind: "loading" });
-    fetch(spriteIndexUrl())
-      .then((r) => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.json() as Promise<SpriteIndex>;
-      })
+    fetchSpriteCatalog()
       .then((index) => setIndexState({ kind: "ok", index }))
       .catch((e: unknown) =>
         setIndexState({

@@ -5,8 +5,9 @@
  *
  * Module records reference sprites bare/category-relative
  * ("person/hero.png") whether the art is a shipped stock sprite (lives
- * at the origin `/sprites/person/hero.png`, bundled into the static
- * export) or an author upload (lives in R2 at
+ * in a module's `sprites/` folder on the origin — the base art in
+ * `/modules/default/sprites/person/hero.png` — bundled into the static
+ * export; see "Module sprite layers" below) or an author upload (lives in R2 at
  * `sprites/@<handle>/person/hero.png`, written by the publish API).
  * The ONLY way to tell them apart is the owner's sprite index
  * `sprites/@<handle>/index.json`.
@@ -69,7 +70,194 @@ export function spriteUrl(raw: string): string {
   if (_ownerHandle && _readHost && ownerIndexHas(clean)) {
     return `${_readHost}/sprites/@${_ownerHandle}/${clean}`;
   }
-  return withBasePath(`/sprites/${clean}`);
+  // Module layers, nearest first (the module, its parents, …). The
+  // first module whose sprite index lists the file supplies it.
+  for (const layer of _layers) {
+    if (layer.files.has(clean)) return moduleSpriteUrl(layer.moduleId, clean);
+  }
+  // Base art always lives in the Default module.
+  return moduleSpriteUrl(BASE_SPRITE_MODULE, clean);
+}
+
+// ── Module sprite layers ────────────────────────────────────────────
+//
+// Every module may ship its own art in `modules/<id>/sprites/<cat>/…`
+// with a generated `sprites/index.json`. The base art lives in the
+// Default module. A sprite reference ("map/grass.png") resolves to the
+// nearest module in the active module's chain that has the file, so a
+// module (or later, its art theme) can override any subset of the base
+// art and fall back to it for the rest.
+
+/** Module that holds the base art every chain falls back to. */
+export const BASE_SPRITE_MODULE = "default";
+
+interface SpriteLayer {
+  moduleId: string;
+  /** "<category>/<file>" entries from the module's sprite index. */
+  files: Set<string>;
+  categories: Record<string, string[]>;
+}
+
+let _layers: SpriteLayer[] = [];
+
+function moduleSpriteUrl(moduleId: string, clean: string): string {
+  return withBasePath(`/modules/${moduleId}/sprites/${clean}`);
+}
+
+/** Read one module's sprite index; null when it has no sprites. */
+async function fetchModuleSpriteIndex(
+  moduleId: string,
+): Promise<Record<string, string[]> | null> {
+  try {
+    const res = await fetch(spriteIndexUrl(moduleId), { cache: "no-store" });
+    if (!res.ok) return null;
+    const raw = (await res.json()) as { categories?: Record<string, unknown> };
+    const out: Record<string, string[]> = {};
+    for (const [cat, files] of Object.entries(raw.categories ?? {})) {
+      if (Array.isArray(files)) {
+        out[cat] = files.filter((f): f is string => typeof f === "string");
+      }
+    }
+    return out;
+  } catch {
+    return null;
+  }
+}
+
+/** One module in a chain, as far as sprite layering cares. */
+export interface SpriteChainEntry {
+  id: string;
+  extends?: string;
+  theme?: string;
+}
+
+/** The module's `extends` chain, nearest first, read from the static
+ *  module.json files (published content — what the game plays). Stops
+ *  quietly at anything it can't read (hosted ids, a missing manifest);
+ *  the Default fallback still applies. */
+async function staticModuleChain(moduleId: string): Promise<SpriteChainEntry[]> {
+  const chain: SpriteChainEntry[] = [];
+  let current: string | undefined = moduleId;
+  while (current && !chain.some((c) => c.id === current) && chain.length < 16) {
+    if (ownerHandleOf(current)) break; // hosted: not on the static tree
+    const entry: SpriteChainEntry = { id: current };
+    chain.push(entry);
+    try {
+      const res = await fetch(withBasePath(`/modules/${current}/module.json`), {
+        cache: "no-store",
+      });
+      if (!res.ok) break;
+      const meta = (await res.json()) as { extends?: unknown; theme?: unknown };
+      if (typeof meta.theme === "string" && meta.theme.trim()) {
+        entry.theme = meta.theme.trim();
+      }
+      current =
+        typeof meta.extends === "string" && meta.extends
+          ? meta.extends
+          : current === BASE_SPRITE_MODULE
+            ? undefined
+            : BASE_SPRITE_MODULE;
+    } catch {
+      break;
+    }
+  }
+  return chain;
+}
+
+/** Same chain, built from already-loaded module summaries (the editor
+ *  passes its draft-aware list so an unpublished theme pick applies). */
+function chainFromSummaries(
+  moduleId: string,
+  summaries: ReadonlyArray<SpriteChainEntry>,
+): SpriteChainEntry[] {
+  const byId = new Map(summaries.map((m) => [m.id, m]));
+  const chain: SpriteChainEntry[] = [];
+  let current: string | undefined = moduleId;
+  while (current && !chain.some((c) => c.id === current) && chain.length < 16) {
+    const m: SpriteChainEntry = byId.get(current) ?? { id: current };
+    chain.push(m);
+    current = m.extends ?? (current === BASE_SPRITE_MODULE ? undefined : BASE_SPRITE_MODULE);
+  }
+  return chain;
+}
+
+/** Module ids whose `sprites/` folders a module draws from, nearest
+ *  first: the module itself, its art theme (the nearest theme declared
+ *  along the chain), each parent, then Default. Pure — exported for
+ *  tests. */
+export function spriteLayerOrder(chain: ReadonlyArray<SpriteChainEntry>): string[] {
+  const out: string[] = [];
+  const add = (id: string | undefined) => {
+    if (id && !out.includes(id)) out.push(id);
+  };
+  add(chain[0]?.id);
+  add(chain.find((c) => c.theme)?.theme);
+  for (const c of chain.slice(1)) add(c.id);
+  add(BASE_SPRITE_MODULE);
+  return out;
+}
+
+/** Load the sprite layers for `moduleId`: its own sprites, its art
+ *  theme's, each parent's, then Default's. Called by
+ *  `seedSpriteRouting` at play boot (published manifests) and by the
+ *  editor shell (pass its draft-aware module list as `summaries`),
+ *  before any sprite is resolved. */
+export async function seedSpriteLayers(
+  moduleId: string,
+  summaries?: ReadonlyArray<SpriteChainEntry>,
+): Promise<void> {
+  const chain = summaries
+    ? chainFromSummaries(moduleId, summaries)
+    : await staticModuleChain(moduleId);
+  const order = spriteLayerOrder(chain);
+  const indexes = await Promise.all(order.map(fetchModuleSpriteIndex));
+  _layers = [];
+  order.forEach((id, i) => {
+    const categories = indexes[i];
+    if (!categories) return;
+    const files = new Set<string>();
+    for (const [cat, list] of Object.entries(categories)) {
+      for (const f of list) files.add(`${cat}/${f}`);
+    }
+    _layers.push({ moduleId: id, files, categories });
+  });
+}
+
+/** Module ids of the currently seeded layers, nearest first. */
+export function seededSpriteLayers(): string[] {
+  return _layers.map((l) => l.moduleId);
+}
+
+/** Merged sprite catalog for the seeded module chain: every
+ *  category → filenames any layer provides, plus which module supplies
+ *  each "<cat>/<file>". Falls back to the base module's index when no
+ *  layers are seeded (pages that resolve sprites without a module). */
+export async function fetchSpriteCatalog(): Promise<{
+  categories: Record<string, string[]>;
+  origin: Record<string, string>;
+}> {
+  let layers = _layers;
+  if (layers.length === 0) {
+    const base = await fetchModuleSpriteIndex(BASE_SPRITE_MODULE);
+    layers = base
+      ? [{ moduleId: BASE_SPRITE_MODULE, files: new Set(), categories: base }]
+      : [];
+  }
+  const categories: Record<string, string[]> = {};
+  const origin: Record<string, string> = {};
+  for (const layer of layers) {
+    for (const [cat, list] of Object.entries(layer.categories)) {
+      const bucket = (categories[cat] ??= []);
+      for (const f of list) {
+        const key = `${cat}/${f}`;
+        if (key in origin) continue; // nearer layer already supplies it
+        origin[key] = layer.moduleId;
+        bucket.push(f);
+      }
+    }
+  }
+  for (const list of Object.values(categories)) list.sort();
+  return { categories, origin };
 }
 
 /** Seed the sprite-routing cache for a play session. No-op (clears to
@@ -77,8 +265,12 @@ export function spriteUrl(raw: string): string {
  *  the owner index; any failure (incl. the common "no custom sprites →
  *  404") fails open, leaving every sprite on the stock origin. Call
  *  once at each play boot BEFORE sprites are resolved. */
-export async function seedSpriteRouting(moduleId: string): Promise<void> {
+export async function seedSpriteRouting(
+  moduleId: string,
+  summaries?: ReadonlyArray<SpriteChainEntry>,
+): Promise<void> {
   clearSpriteRouting();
+  await seedSpriteLayers(moduleId, summaries);
   const handle = ownerHandleOf(moduleId);
   const host = getReadHost();
   if (!handle || !host) return;
@@ -108,6 +300,7 @@ export async function seedSpriteRouting(moduleId: string): Promise<void> {
  *  seedBattleCaches so a different play session can't reuse the prior
  *  owner's index. */
 export function clearSpriteRouting(): void {
+  _layers = [];
   _ownerHandle = null;
   _readHost = null;
   _ownerIndex = null;
@@ -130,9 +323,21 @@ export function __setSpriteRoutingForTests(
     : null;
 }
 
-/** URL of the sprite catalog (category → filenames). The single place
- *  that knows where the index lives, so the per-module sprite layout
- *  only has to change here. */
-export function spriteIndexUrl(): string {
-  return withBasePath("/sprites/index.json");
+/** Test-only: install sprite layers directly (bypasses the fetches).
+ *  Entries are nearest-first: [moduleId, category → filenames]. */
+export function __setSpriteLayersForTests(
+  layers: Array<[string, Record<string, string[]>]>,
+): void {
+  _layers = layers.map(([moduleId, categories]) => {
+    const files = new Set<string>();
+    for (const [cat, list] of Object.entries(categories)) {
+      for (const f of list) files.add(`${cat}/${f}`);
+    }
+    return { moduleId, files, categories };
+  });
+}
+
+/** URL of a module's generated sprite index (category → filenames). */
+export function spriteIndexUrl(moduleId: string = BASE_SPRITE_MODULE): string {
+  return withBasePath(`/modules/${moduleId}/sprites/index.json`);
 }

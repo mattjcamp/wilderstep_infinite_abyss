@@ -25,7 +25,7 @@ function SpriteBrowse() {
           </Link>
           <span className="mx-1">/</span>
           <span className="text-parchment/80">Sprites</span>
-          <span className="ml-3 text-parchment/40">(/sprites/)</span>
+          <span className="ml-3 text-parchment/40">(module sprites)</span>
         </nav>
         <SpriteView />
       </div>

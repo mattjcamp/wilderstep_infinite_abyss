@@ -40,7 +40,7 @@ END = "<!-- END GENERATED: monsters -->"
 
 # Sprite path relative to docs/manual/manual.md → repo web assets. The
 # monster `sprite` field already includes the "monster/" subfolder.
-SPRITE_REL = "../../web/public/sprites"
+SPRITE_REL = "../../web/public/modules/default/sprites"
 
 # Difficulty tiers in ascending challenge; boss is the apex. Anything
 # unrecognised sorts last.

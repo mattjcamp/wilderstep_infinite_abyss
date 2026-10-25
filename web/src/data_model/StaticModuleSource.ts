@@ -159,6 +159,10 @@ function toSummary(
     author: meta.author ?? "",
     version: meta.version ?? "0.0.0",
     role: meta.role ?? fallback.role,
+    theme:
+      typeof meta.theme === "string" && meta.theme.trim()
+        ? meta.theme.trim()
+        : undefined,
     extends: meta.extends,
     uses: meta.uses,
     // Carry the default soundtrack through so the Module Properties

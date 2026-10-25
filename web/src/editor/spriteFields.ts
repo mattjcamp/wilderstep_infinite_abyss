@@ -18,7 +18,7 @@
  * any new pick produces a canonical path.
  *
  * Adding sprite-field support to a new record field is one entry
- * here plus making sure the sprite folder exists under web/public/sprites/.
+ * here plus making sure the sprite folder exists under a module's sprites/.
  */
 
 import { spriteUrl } from "@/data_model/spriteUrl";

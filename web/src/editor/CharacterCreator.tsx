@@ -31,7 +31,7 @@ import {
   makeBlankCharacter,
   type CharacterRecord,
 } from "./CharacterSheet";
-import { spriteUrl, spriteIndexUrl } from "@/data_model/spriteUrl";
+import { spriteUrl, fetchSpriteCatalog } from "@/data_model/spriteUrl";
 
 // ── Tunable creator rules (mirror v1 — see header comment above) ───
 
@@ -786,11 +786,7 @@ function Step4Sprite({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch(spriteIndexUrl())
-      .then((r) => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.json() as Promise<SpriteIndex>;
-      })
+    fetchSpriteCatalog()
       .then((idx) => setIndex(idx))
       .catch((e: unknown) =>
         setError(e instanceof Error ? e.message : String(e)),

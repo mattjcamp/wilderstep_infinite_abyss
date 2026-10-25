@@ -43,6 +43,9 @@ export interface ModulePropertiesPatch {
   author: string;
   version: string;
   role: string | undefined;
+  /** Art theme module id; `undefined` = inherit the parent's theme
+   *  (dropped from the saved manifest). */
+  theme: string | undefined;
   /** Default background-music playlist for the module. Each entry is
    *  a file URL (typically under `/audio/...`). Empty array means
    *  the field is dropped from the saved manifest so quiet modules
@@ -73,10 +76,13 @@ const SIGHT_RADIUS_DEFAULTS = { day: 10, twilight: 6, night: 1 } as const;
 
 export function ModulePropertiesDialog({
   initial,
+  themes = [],
   onSave,
   onClose,
 }: {
   initial: ModuleSummary;
+  /** Art theme modules (role "theme") the module can pick from. */
+  themes?: ModuleSummary[];
   onSave: (next: ModulePropertiesPatch) => void;
   onClose: () => void;
 }) {
@@ -90,6 +96,8 @@ export function ModulePropertiesDialog({
   const initialRole =
     initial.role === undefined || initial.role === "" ? "playable" : initial.role;
   const [role, setRole] = useState<string>(initialRole);
+  /** "" = inherit the parent's theme (field dropped on save). */
+  const [theme, setTheme] = useState<string>(initial.theme ?? "");
   // Ordered list of audio paths. The SoundtrackPicker owns the
   // selection UI (preview + reorder + add/remove); we just hold the
   // working list here and pass it to the picker.
@@ -144,6 +152,7 @@ export function ModulePropertiesDialog({
     author,
     version,
     role,
+    theme,
     soundtrack,
     sightDay,
     sightTwilight,
@@ -166,6 +175,8 @@ export function ModulePropertiesDialog({
       // Translate the UI's "playable" sentinel back to omitted, keeping
       // file contents idiomatic per ModuleSummary's docstring.
       role: role === "playable" ? undefined : role,
+      // A theme module can't itself pick a theme.
+      theme: role === "theme" || !theme ? undefined : theme,
       // Picker hands back a clean ordered list; we forward it
       // verbatim. Caller (ModulePicker) decides whether to persist
       // or drop the field based on emptiness.
@@ -213,6 +224,11 @@ export function ModulePropertiesDialog({
       value: "library",
       label: "Library",
       hint: "Importable add-on. Not playable on its own.",
+    },
+    {
+      value: "theme",
+      label: "Art theme",
+      hint: "Sprites only. Other modules pick it as their theme. Not playable.",
     },
   ];
   if (initial.role === "core") {
@@ -416,6 +432,41 @@ export function ModulePropertiesDialog({
               maps and NPCs can set their own amount.
             </span>
           </fieldset>
+
+          {/* Art theme ------------------------------------------- */}
+          {role !== "theme" ? (
+            <label className="flex flex-col gap-1">
+              <span className="text-[13px] text-parchment/85 font-mono">
+                theme
+              </span>
+              <select
+                value={theme}
+                onChange={(e) => setTheme(e.target.value)}
+                className="rounded border border-parchment/20 bg-ink/40 px-2 py-1 text-sm text-parchment focus:border-parchment/45"
+              >
+                <option value="">
+                  {initial.extends
+                    ? `(inherit from ${initial.extends})`
+                    : "(none: base art)"}
+                </option>
+                {themes
+                  .filter((t) => t.id !== initial.id)
+                  .map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.title || t.id}
+                    </option>
+                  ))}
+                {theme && !themes.some((t) => t.id === theme) ? (
+                  <option value={theme}>{theme} (not found)</option>
+                ) : null}
+              </select>
+              <span className="text-xs text-parchment/65">
+                Sprites come from this module first, then its theme, then
+                the modules it extends, then Default&apos;s base art.
+                Anything the theme hasn&apos;t drawn yet uses the base art.
+              </span>
+            </label>
+          ) : null}
 
           {/* Role ------------------------------------------------ */}
           <fieldset className="flex flex-col gap-1">

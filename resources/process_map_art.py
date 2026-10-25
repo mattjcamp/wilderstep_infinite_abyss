@@ -2,7 +2,7 @@
 """Turn large hand-/AI-drawn map-feature art into game-ready 32x32 tiles.
 
 Map sprites in the game are 32x32 RGBA tiles on a transparent background
-(see web/public/sprites/map). Source art here is a big illustration on a
+(see web/public/modules/default/sprites/map). Source art here is a big illustration on a
 solid (near-)black background — e.g. the dungeon-entrance renders. Per
 sprite:
 
@@ -13,7 +13,7 @@ sprite:
      cave mouth of a dungeon entrance stays a solid opening rather than
      turning into a see-through hole onto the map below.
 
-Output goes straight into web/public/sprites/map/ so the tiles are ready
+Output goes straight into web/public/modules/default/sprites/map/ so the tiles are ready
 to reference from a module (e.g. Default's map_tiles.json). Re-run
 `node web/scripts/reindex-sprites.mjs` afterwards so the editor's sprite
 picker catalogs the new files.
@@ -31,7 +31,7 @@ TARGET = 32
 BLACK_THRESH = 28  # max(r,g,b) <= this counts as background black
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
-MAP_DIR = os.path.join(REPO, "web", "public", "sprites", "map")
+MAP_DIR = os.path.join(REPO, "web", "public", "modules", "default", "sprites", "map")
 
 # Default jobs: (source file in resources/, output sprite name).
 DEFAULT_JOBS = [
