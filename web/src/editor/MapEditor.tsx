@@ -63,6 +63,12 @@ import {
 } from "@/sim/lighting";
 import { SimPanel } from "@/sim/SimPanel";
 import { computeQuestGlowCells } from "@/sim/questGlow";
+import { MAP_BACKDROP_COLOR } from "@/sim/scene/WorldRenderer";
+import {
+  RENDER_SCALE,
+  applyRenderScale,
+  installHiDpiText,
+} from "@/util/renderScale";
 import { ANIMATION_CONFIGS } from "@/sim/tileAnimations";
 import type { AnimationKind } from "@/sim/tileAnimations";
 import { MapPartyScreenOverlay } from "./MapPartyScreenOverlay";
@@ -113,6 +119,7 @@ import type {
 } from "@/sim/types";
 import { usePublishServer } from "./usePublishServer";
 import { spriteUrl } from "@/data_model/spriteUrl";
+import { isWaterTag } from "@/sim/tileTags";
 
 const TILE_SIZE = 32;
 const MODEL_KEY = "maps";
@@ -286,7 +293,7 @@ interface MapRecord {
 
 /** Comparing a painted cell to its palette-of-origin (matched by id)
  *  tells us whether the cell has been customized since paint. Used
- *  for the canvas marker + the "modified" pill in the inspector. */
+ *  for the "modified" pill in the inspector. */
 function cellMatchesPalette(cell: TileType, palette: TileType[]): boolean {
   const base = palette.find((t) => t.id === cell.id);
   if (!base) return true; // Orphan id — no palette to compare; treat as "fresh."
@@ -298,7 +305,7 @@ function cellMatchesPalette(cell: TileType, palette: TileType[]): boolean {
   // full-map mesh of dots after the first paint stroke. Neither changes
   // how the tile plays, with one exception: the "water" tag drives NPC
   // wandering, so a water / not-water mismatch still counts.
-  if ((cell.tag === "water") !== (base.tag === "water")) return false;
+  if (isWaterTag(cell.tag) !== isWaterTag(base.tag)) return false;
   if (cell.walkable !== base.walkable) return false;
   if (cell.obstructs !== base.obstructs) return false;
   if ((cell.boat ?? false) !== (base.boat ?? false)) return false;
@@ -432,7 +439,7 @@ export function MapEditor({
   const { available: publishAvailable } = usePublishServer();
   const [state, setState] = useState<LoadState>({ kind: "loading" });
   const [activeBrush, setActiveBrush] = useState<string | null>(null);
-  const [gridLinesOn, setGridLinesOn] = useState(true);
+  const [gridLinesOn, setGridLinesOn] = useState(false);
   /** Simulation mode state machine.
    *   - "off"     → Inspector visible, paint/inspect/pan tools work.
    *   - "placing" → user clicked Simulate; the next walkable click on
@@ -801,10 +808,6 @@ export function MapEditor({
    *  When false the editor's sim-mode preview reveals the whole map,
    *  matching how the play scene renders a fog-off map. */
   const fogEnabledRef = useRef<boolean>(true);
-  /** Bumped once the Phaser scene has wired `sceneApiRef`, so effects
-   *  that push state into the scene (override markers) also run on
-   *  first load — not only after the first edit changes `state`. */
-  const [sceneReadyTick, setSceneReadyTick] = useState(0);
   /** Which palette-tag sections are currently collapsed in the side
    *  panel. Tags are expanded by default; entries here are the
    *  exceptions. */
@@ -859,7 +862,6 @@ export function MapEditor({
     setSelectionCells: (
       cells: ReadonlyArray<{ col: number; row: number }>,
     ) => void;
-    setOverrideMarkers: (cells: Array<{ col: number; row: number }>) => void;
     /** Update a single cell's rendered texture from its sprite path. */
     refreshCell: (col: number, row: number, spriteKey: string) => void;
     /** Re-tint every cell based on the lighting mode + current grid. */
@@ -1427,23 +1429,6 @@ export function MapEditor({
     };
   }, [state, moduleId, mapId, draftQuotaExceeded]);
 
-  // Override markers — a cell is "modified" when it diverges from its
-  // palette-of-origin (matched by id). Recompute whenever state changes.
-  useEffect(() => {
-    if (state.kind !== "ok") return;
-    const modified: Array<{ col: number; row: number }> = [];
-    for (let r = 0; r < state.mapRecord.height; r++) {
-      for (let c = 0; c < state.mapRecord.width; c++) {
-        const cell = state.mapRecord.grid[r]?.[c];
-        if (!cell) continue;
-        if (!cellMatchesPalette(cell, state.palette)) {
-          modified.push({ col: c, row: r });
-        }
-      }
-    }
-    sceneApiRef.current?.setOverrideMarkers(modified);
-  }, [state, sceneReadyTick]);
-
   // Sync the fog-of-war ref from the map record (default on; only an
   // explicit `false` disables it) so the sim-mode preview matches how
   // the play scene renders this map. Relight so a fog toggle saved via
@@ -1476,6 +1461,7 @@ export function MapEditor({
         import("@/battle/audio/Sfx"),
       ]);
       if (cancelled || !containerRef.current) return;
+      installHiDpiText(Phaser);
 
       const {
         palette,
@@ -1564,7 +1550,7 @@ export function MapEditor({
       // tile leaves it empty. Pre-add it to the sprite keys so boards
       // never miss the texture.
       const WATER_SPRITE_KEY =
-        palette.find((t) => t.tag === "water")?.sprite ?? "";
+        palette.find((t) => isWaterTag(t.tag))?.sprite ?? "";
       if (WATER_SPRITE_KEY) spriteKeys.add(WATER_SPRITE_KEY);
       // Sim-mode sprites: party avatar + every active member's
       // portrait. Pre-load defensively so toggling sim on doesn't
@@ -1593,7 +1579,6 @@ export function MapEditor({
         loadingTextures: Set<string> = new Set();
         gridGraphics: Phaser.GameObjects.Graphics | null = null;
         selectionGraphics: Phaser.GameObjects.Graphics | null = null;
-        overrideGraphics: Phaser.GameObjects.Graphics | null = null;
         /** Animation emitters keyed by "col,row". Each is a Phaser
          *  particle emitter; null when a cell has no animation. */
         emitters: Map<
@@ -1767,6 +1752,23 @@ export function MapEditor({
         }
 
         create() {
+          // Same render path as the game: a RENDER_SCALE× backbuffer
+          // with the camera zoomed to match, so 64×64 art draws 1:1
+          // instead of being shrunk to 32 px (see @/util/renderScale).
+          applyRenderScale(this);
+          // Black backdrop under the map so transparent tile pixels read
+          // as black, matching the game (see WorldRenderer).
+          this.add
+            .rectangle(
+              0,
+              0,
+              mapRecord.width * TILE_SIZE,
+              mapRecord.height * TILE_SIZE,
+              MAP_BACKDROP_COLOR,
+              1,
+            )
+            .setOrigin(0)
+            .setDepth(-15);
           for (let r = 0; r < mapRecord.height; r++) {
             for (let c = 0; c < mapRecord.width; c++) {
               const cell = gridRef.current[r][c];
@@ -1845,11 +1847,6 @@ export function MapEditor({
             g.destroy();
           }
 
-          // Override markers — small ember dot per overridden cell.
-          // Sits between grid lines (100) and selection (200).
-          this.overrideGraphics = this.add.graphics();
-          this.overrideGraphics.setDepth(150);
-
           // Quest-relevance halo — a single Graphics layer drawn
           // BELOW the item/encounter overlays so the halo sits
           // behind the sprite. Depth 65 places it above the base
@@ -1867,10 +1864,6 @@ export function MapEditor({
           this.fillPreviewGraphics = this.add.graphics();
           this.fillPreviewGraphics.setDepth(199);
 
-          // Let React effects know the scene API exists. The state
-          // update lands after create() finishes synchronously, so the
-          // API below is fully assigned by the time effects re-run.
-          setSceneReadyTick((n) => n + 1);
           // Expose a small API the React side can call.
           sceneApiRef.current = {
             setGridLinesVisible: (on) => {
@@ -1923,18 +1916,6 @@ export function MapEditor({
                 TILE_SIZE,
                 TILE_SIZE,
               );
-            },
-            setOverrideMarkers: (overridden) => {
-              if (!this.overrideGraphics) return;
-              this.overrideGraphics.clear();
-              this.overrideGraphics.fillStyle(0xffb84d, 1);
-              for (const { col, row } of overridden) {
-                this.overrideGraphics.fillCircle(
-                  col * TILE_SIZE + TILE_SIZE - 4,
-                  row * TILE_SIZE + 4,
-                  3,
-                );
-              }
             },
             refreshCell: (col, row, spriteKey) => {
               const img = this.cells.get(`${col},${row}`);
@@ -2944,8 +2925,8 @@ export function MapEditor({
         }
 
         paintAt(p: Phaser.Input.Pointer, fromDown: boolean) {
-          const c = Math.floor(p.x / TILE_SIZE);
-          const r = Math.floor(p.y / TILE_SIZE);
+          const c = Math.floor(p.worldX / TILE_SIZE);
+          const r = Math.floor(p.worldY / TILE_SIZE);
           if (
             c < 0 ||
             r < 0 ||
@@ -3049,8 +3030,8 @@ export function MapEditor({
          *  match paintAt so the fill tool can't accidentally hijack
          *  a sim placement or click. */
         fillStart(p: Phaser.Input.Pointer) {
-          const c = Math.floor(p.x / TILE_SIZE);
-          const r = Math.floor(p.y / TILE_SIZE);
+          const c = Math.floor(p.worldX / TILE_SIZE);
+          const r = Math.floor(p.worldY / TILE_SIZE);
           if (
             c < 0 ||
             r < 0 ||
@@ -3074,8 +3055,8 @@ export function MapEditor({
         fillDrag(p: Phaser.Input.Pointer) {
           const start = fillStartRef.current;
           if (!start) return;
-          const c = Math.floor(p.x / TILE_SIZE);
-          const r = Math.floor(p.y / TILE_SIZE);
+          const c = Math.floor(p.worldX / TILE_SIZE);
+          const r = Math.floor(p.worldY / TILE_SIZE);
           const cc = Math.max(0, Math.min(mapRecord.width - 1, c));
           const rr = Math.max(0, Math.min(mapRecord.height - 1, r));
           onCellTouchedRef.current(cc, rr);
@@ -3097,8 +3078,8 @@ export function MapEditor({
             simModeRef.current === "active"
           )
             return;
-          const c = Math.floor(p.x / TILE_SIZE);
-          const r = Math.floor(p.y / TILE_SIZE);
+          const c = Math.floor(p.worldX / TILE_SIZE);
+          const r = Math.floor(p.worldY / TILE_SIZE);
           const cc = Math.max(0, Math.min(mapRecord.width - 1, c));
           const rr = Math.max(0, Math.min(mapRecord.height - 1, r));
           const brush = brushRef.current;
@@ -3198,8 +3179,13 @@ export function MapEditor({
 
       game = new Phaser.Game({
         type: Phaser.AUTO,
-        width: mapRecord.width * TILE_SIZE,
-        height: mapRecord.height * TILE_SIZE,
+        // Hi-res backbuffer shown at the logical CSS size, and
+        // nearest-neighbour sampling — matches the game so tiles look
+        // the same (no blurred, darkened art).
+        width: mapRecord.width * TILE_SIZE * RENDER_SCALE,
+        height: mapRecord.height * TILE_SIZE * RENDER_SCALE,
+        scale: { zoom: 1 / RENDER_SCALE },
+        pixelArt: true,
         parent: containerRef.current,
         scene: MapScene,
         backgroundColor: "#0a0908",

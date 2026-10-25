@@ -245,10 +245,10 @@ const DEFAULT_WALL_PROTO = proto({
 
 /** ── Cave style tiles ─────────────────────────────────────────── */
 const CAVE_FLOOR_PROTO = proto({
-  id: "path",
+  id: "grass_brown",
   name: "Cave Floor",
   tag: "terrain",
-  paletteId: "path",
+  paletteId: "grass_brown",
 });
 
 const CAVE_WALL_PROTO = proto({
@@ -278,10 +278,10 @@ const FOREST_WALL_PROTO = proto({
 });
 
 const FOREST_PATH_PROTO = proto({
-  id: "path",
-  name: "Path",
+  id: "grass_brown",
+  name: "Brown Grass",
   tag: "terrain",
-  paletteId: "path",
+  paletteId: "grass_brown",
 });
 
 const FOREST_ARCHWAY_UP_PROTO = proto({
@@ -389,9 +389,9 @@ export function prototypeForTileId(
       return FOREST_WALL_PROTO;
     case TILE_DUNGEON:
       return proto({
-        id: "dungeon_entrance",
-        name: "Dungeon Entrance",
-        paletteId: "dungeon_entrance",
+        id: "cave_entrance",
+        name: "Cave Entrance",
+        paletteId: "cave_entrance",
       });
   }
   // Cosmetic / unknown — caller can decide what to do.
@@ -408,13 +408,13 @@ export const DUNGEON_PALETTE_IDS: readonly string[] = [
   "chest",
   "door",
   "door_locked",
-  "path",
+  "grass_brown",
   "mountain",
   "grass",
   "forest",
   "water",
   "sand",
-  "dungeon_entrance",
+  "cave_entrance",
 ];
 
 /** Palette id → sprite lookup for a prototype's `paletteId`. Returns

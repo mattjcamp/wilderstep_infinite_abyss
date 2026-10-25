@@ -140,6 +140,7 @@ import {
   lunarPhaseName,
   makeClock,
 } from "@/battle/world/GameTime";
+import { isWaterTag } from "@/sim/tileTags";
 
 /** How many log lines the adventure log retains. The in-canvas
  *  scene-log strip shows just the most recent one or two, but the
@@ -2338,7 +2339,7 @@ export function PlayHost() {
       // editor sim's heuristic so a custom-art module's water
       // sprite gets used instead of the hardcoded fallback.
       const waterSprite =
-        catalog.palette.find((t) => (t as { tag?: string }).tag === "water")
+        catalog.palette.find((t) => isWaterTag((t as { tag?: string }).tag))
           ?.sprite ?? "";
       if (waterSprite) spriteKeys.add(waterSprite);
 
@@ -3073,7 +3074,9 @@ export function PlayHost() {
                 0x12121f,
                 1,
               )
-              .setDepth(-10)
+              // Below the map's black backdrop (-15) and background
+              // cells (-10); only the padding ring shows.
+              .setDepth(-20)
               .setStrokeStyle(2, 0x2a2a3a)
               .setVisible(this.mapFitsView());
           }

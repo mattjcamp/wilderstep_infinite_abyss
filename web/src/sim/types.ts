@@ -88,7 +88,8 @@ export interface SimCell {
    *  `tag === "water"` because a bridge tile is still walkable on
    *  foot — water tiles are not. */
   boat_passable?: boolean;
-  /** Free-form designer tag. The sim only reads "water" — boats can
+  /** Free-form designer tag (groups nest on ":"). The sim only reads a
+   *  last segment of "water" (see tileTags.ts) — boats can
    *  sail across cells whose `tag === "water"`. Other tag values are
    *  ignored by the kernel. */
   tag?: string;

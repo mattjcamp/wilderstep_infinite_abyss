@@ -22,7 +22,7 @@ describe("prototypeForTileId — TILE_TRAP", () => {
     expect(trap).not.toBeNull();
     expect(caveFloor).not.toBeNull();
     expect(trap!.paletteId).toBe(caveFloor!.paletteId);
-    expect(trap!.paletteId).toBe("path");
+    expect(trap!.paletteId).toBe("grass_brown");
     expect(trap!.trap).toBe(true);
   });
 

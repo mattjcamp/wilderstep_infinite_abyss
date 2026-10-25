@@ -141,6 +141,11 @@ const TELEPORT_SNAP_TILES = 1.5;
 /** Depth for the optional per-cell background sprite — below the base
  *  tile (default depth 0) so a transparent foreground reveals it. */
 const BACKGROUND_CELL_DEPTH = -10;
+/** Colour shown through transparent pixels of map tiles. Tile art can
+ *  leave its background transparent (so cells can layer) and still read
+ *  as drawn on black. Drawn under everything else on the map. */
+export const MAP_BACKDROP_COLOR = 0x000000;
+const MAP_BACKDROP_DEPTH = -15;
 
 /** Roamer / placed-encounter row entry — what `setRoamerPositions`
  *  and `setPlacedEncounterPositions` accept. Matches the kernel's
@@ -580,6 +585,13 @@ export class WorldRenderer {
    *  cells using the same sprite) so the relight pass can swap
    *  textures cheaply when a cell enters the remembered band. */
   createCells(): void {
+    // Solid backdrop under the whole map so transparent tile pixels
+    // show black rather than the canvas / frame colour.
+    const mapCols = Math.max(0, ...this.grid.map((row) => row?.length ?? 0));
+    this.scene.add
+      .rectangle(0, 0, mapCols * TILE_SIZE, this.grid.length * TILE_SIZE, MAP_BACKDROP_COLOR, 1)
+      .setOrigin(0)
+      .setDepth(MAP_BACKDROP_DEPTH);
     for (let r = 0; r < this.grid.length; r++) {
       const row = this.grid[r];
       if (!row) continue;

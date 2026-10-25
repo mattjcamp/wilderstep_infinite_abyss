@@ -78,7 +78,8 @@ import {
 } from "../world/Lighting";
 import { awardXp, type LevelUpEvent } from "../world/Leveling";
 import { defaultRng } from "../rng";
-import { applyRenderScale } from "@/util/renderScale";
+import { applyRenderScale, RENDER_SCALE } from "@/util/renderScale";
+import { MAP_BACKDROP_COLOR } from "@/sim/scene/WorldRenderer";
 import {
   resolveThrow,
   isThrowable,
@@ -1296,9 +1297,19 @@ export class CombatScene extends Phaser.Scene {
     //     Stamps queued before `render()` are otherwise invisible.
     let floorRT: Phaser.GameObjects.RenderTexture | null = null;
     if (mapCells) {
+      // Backed at RENDER_SCALE× so 64×64 tile art stamps 1:1 (crisp),
+      // then displayed at the arena's logical size. Filled black first so
+      // transparent tile pixels read as black, like the world map.
       floorRT = this.add
-        .renderTexture(ARENA_X, ARENA_Y, ARENA_W, ARENA_H)
-        .setOrigin(0);
+        .renderTexture(
+          ARENA_X,
+          ARENA_Y,
+          ARENA_W * RENDER_SCALE,
+          ARENA_H * RENDER_SCALE,
+        )
+        .setOrigin(0)
+        .setDisplaySize(ARENA_W, ARENA_H);
+      floorRT.fill(MAP_BACKDROP_COLOR, 1);
     }
 
     for (let row = 0; row < ARENA_ROWS; row++) {
@@ -1326,10 +1337,22 @@ export class CombatScene extends Phaser.Scene {
           // Coordinates are RT-local (origin at ARENA_X/Y), so no
           // arena offset here. `originX/Y: 0` stamps from the
           // texture's top-left rather than its center.
-          floorRT.stamp(cellUrl, undefined, col * TILE, row * TILE, {
-            originX: 0,
-            originY: 0,
-          });
+          // Scale each tile to exactly one cell whatever its native
+          // size (32×32 legacy art or 64×64 theme art).
+          const srcW = this.textures.get(cellUrl).getSourceImage().width || TILE;
+          const srcH = this.textures.get(cellUrl).getSourceImage().height || TILE;
+          floorRT.stamp(
+            cellUrl,
+            undefined,
+            col * TILE * RENDER_SCALE,
+            row * TILE * RENDER_SCALE,
+            {
+              originX: 0,
+              originY: 0,
+              scaleX: (TILE * RENDER_SCALE) / srcW,
+              scaleY: (TILE * RENDER_SCALE) / srcH,
+            },
+          );
         } else if (!floorRT) {
           // Default arena (no map picked) keeps the legacy
           // rectangle fill. With a map picked, missing cells fall

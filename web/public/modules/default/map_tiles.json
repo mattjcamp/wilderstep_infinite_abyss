@@ -15,12 +15,12 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/grass.png",
-      "tag": "walkable"
+      "tag": "overview"
     },
     {
       "boat": false,
-      "id": "path",
-      "name": "Path",
+      "id": "grass_brown",
+      "name": "Brown Grass",
       "walkable": true,
       "obstructs": false,
       "locked": false,
@@ -30,8 +30,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/path.png",
-      "tag": "walkable"
+      "sprite": "map/grass_brown.png",
+      "tag": "overview"
     },
     {
       "id": "water",
@@ -46,7 +46,23 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/water.png",
-      "tag": "water"
+      "tag": "overview: water"
+    },
+    {
+      "id": "ship",
+      "name": "Ship",
+      "walkable": true,
+      "obstructs": false,
+      "boat": true,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "map/ship.png",
+      "tag": "overview: water"
     },
     {
       "boat": false,
@@ -62,7 +78,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/floor_dark.png",
-      "tag": "walkable"
+      "tag": "overview"
     },
     {
       "boat": false,
@@ -78,7 +94,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/floor_gray.png",
-      "tag": "walkable"
+      "tag": "overview"
     },
     {
       "boat": false,
@@ -94,7 +110,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/floor_brown.png",
-      "tag": "walkable"
+      "tag": "overview"
     },
     {
       "boat": false,
@@ -156,7 +172,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/sand.png",
-      "tag": "walkable"
+      "tag": "overview"
     },
     {
       "boat": false,
@@ -172,7 +188,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/rocks.png",
-      "tag": "mountain"
+      "tag": "overview: mountain"
     },
     {
       "id": "wall_fieldstone_dark",
@@ -203,7 +219,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/forest.png",
-      "tag": "tree"
+      "tag": "overview: tree"
     },
     {
       "boat": false,
@@ -236,7 +252,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/grass_snowy.png",
-      "tag": "walkable"
+      "tag": "overview"
     },
     {
       "boat": false,
@@ -283,7 +299,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/tree.png",
-      "tag": "tree"
+      "tag": "overview: tree"
     },
     {
       "id": "wall_planks_light",
@@ -345,7 +361,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/swamp.png",
-      "tag": "walkable"
+      "tag": "overview"
     },
     {
       "id": "wall_brick_red",
@@ -376,7 +392,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/forest_mixed.png",
-      "tag": "tree"
+      "tag": "overview: tree"
     },
     {
       "boat": false,
@@ -392,12 +408,12 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/town.png",
-      "tag": "building"
+      "tag": "overview: building"
     },
     {
       "boat": false,
-      "id": "dungeon_entrance",
-      "name": "Dungeon Entrance",
+      "id": "cave_entrance",
+      "name": "Cave Entrance",
       "walkable": true,
       "obstructs": true,
       "locked": false,
@@ -407,8 +423,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/dungeon_entrance.png",
-      "tag": "building"
+      "sprite": "map/cave_entrance.png",
+      "tag": "overview: building"
     },
     {
       "boat": false,
@@ -504,7 +520,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/bridge.png",
-      "tag": "outdoor"
+      "tag": "overview: outdoor"
     }
   ]
 }

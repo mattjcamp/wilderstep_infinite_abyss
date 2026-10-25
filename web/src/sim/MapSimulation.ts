@@ -74,6 +74,7 @@ import type {
   SimSpell,
 } from "./types";
 import { TORCH_LIGHT_RANGE, MAGIC_LIGHT_RANGE } from "./types";
+import { isWaterTag } from "./tileTags";
 
 /** The shape of the bridge a host (editor or game) provides so the
  *  simulation can drive its Phaser canvas. The kernel never reads
@@ -1335,7 +1336,7 @@ export class MapSimulation {
      *  (shouldn't happen, but the prior behavior tolerated it). */
     const targetBoatSprite =
       this.boatPositions.get(targetKey) ?? target.sprite ?? "";
-    const targetIsWater = (target.tag ?? "") === "water";
+    const targetIsWater = isWaterTag(target.tag);
     // Bridge semantics — palette tiles flagged `boat_passable` (e.g.
     // wooden footbridges) accept a sailing boat as if they were
     // water. The renderer paints a "bridge top" overlay above the
