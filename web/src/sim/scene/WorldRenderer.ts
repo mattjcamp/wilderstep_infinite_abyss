@@ -67,6 +67,7 @@ import {
 } from "@/sim/fogStyle";
 import type { SimLightSource } from "@/sim/types";
 import { withBasePath } from "@/util/basePath";
+import { RENDER_SCALE } from "@/util/renderScale";
 import {
   beginStep,
   clearStepAnim,
@@ -111,7 +112,11 @@ export type RenderGrid = ReadonlyArray<ReadonlyArray<RenderCell>>;
 
 /** Cell size in pixels. Both the editor's MapScene and the dungeon
  *  scene have always used 32×32; centralising it here means every
- *  consumer agrees on tile pitch + sprite display size. */
+ *  consumer agrees on tile pitch + sprite display size.
+ *
+ *  This is LOGICAL pixels. Cameras zoom by RENDER_SCALE (see
+ *  @/util/renderScale), so on the canvas a tile is 64 real px and
+ *  sprites may be authored at 64×64 for full detail. */
 export const TILE_SIZE = 32;
 
 /** Default duration, in milliseconds, of the slide a sprite plays when
@@ -459,11 +464,12 @@ export class WorldRenderer {
     // marker dot in every code path.
     if (!this.scene.textures.exists(PARTY_MARKER_TEX)) {
       const g = this.scene.add.graphics();
+      const k = RENDER_SCALE;
       g.fillStyle(0xffb84d, 1);
-      g.fillCircle(16, 16, 13);
-      g.lineStyle(2, 0x4a1c00, 1);
-      g.strokeCircle(16, 16, 13);
-      g.generateTexture(PARTY_MARKER_TEX, 32, 32);
+      g.fillCircle(16 * k, 16 * k, 13 * k);
+      g.lineStyle(2 * k, 0x4a1c00, 1);
+      g.strokeCircle(16 * k, 16 * k, 13 * k);
+      g.generateTexture(PARTY_MARKER_TEX, 32 * k, 32 * k);
       g.destroy();
     }
     // Cloud-cover tile — a soft greyish-white puff that fully covers
@@ -476,7 +482,8 @@ export class WorldRenderer {
     // a cell.
     if (!this.scene.textures.exists(CLOUD_TEX)) {
       const g = this.scene.add.graphics();
-      const s = TILE_SIZE;
+      // Drawn at backbuffer resolution; displayed at TILE_SIZE.
+      const s = TILE_SIZE * RENDER_SCALE;
       // Base fill — covers the whole cell so there are no transparent
       // gaps at the corners when tiles sit edge-to-edge.
       g.fillStyle(0xc8ccd4, 1);
@@ -502,7 +509,8 @@ export class WorldRenderer {
     // rather than a grey square.
     if (!this.scene.textures.exists(DARK_CLOUD_TEX)) {
       const g = this.scene.add.graphics();
-      const s = TILE_SIZE;
+      // Drawn at backbuffer resolution; displayed at TILE_SIZE.
+      const s = TILE_SIZE * RENDER_SCALE;
       g.fillStyle(0x3a3f48, 1);
       g.fillRect(0, 0, s, s);
       // Darker undersides, slightly offset down from each billow.
@@ -544,7 +552,8 @@ export class WorldRenderer {
     // dark: it must stay clearly darker than the REMEMBERED band.
     if (!this.scene.textures.exists(DARKNESS_TEX)) {
       const g = this.scene.add.graphics();
-      const s = TILE_SIZE;
+      // Drawn at backbuffer resolution; displayed at TILE_SIZE.
+      const s = TILE_SIZE * RENDER_SCALE;
       g.fillStyle(0x030406, 1);
       g.fillRect(0, 0, s, s);
       const pools: Array<[number, number, number, number, number]> = [
@@ -697,11 +706,12 @@ export class WorldRenderer {
         !this.scene.textures.exists(PARTY_MARKER_TEX)
       ) {
         const g = this.scene.add.graphics();
+        const k = RENDER_SCALE;
         g.fillStyle(0xffb84d, 1);
-        g.fillCircle(16, 16, 13);
-        g.lineStyle(2, 0x4a1c00, 1);
-        g.strokeCircle(16, 16, 13);
-        g.generateTexture(PARTY_MARKER_TEX, 32, 32);
+        g.fillCircle(16 * k, 16 * k, 13 * k);
+        g.lineStyle(2 * k, 0x4a1c00, 1);
+        g.strokeCircle(16 * k, 16 * k, 13 * k);
+        g.generateTexture(PARTY_MARKER_TEX, 32 * k, 32 * k);
         g.destroy();
       }
       this.partySprite = this.scene.add

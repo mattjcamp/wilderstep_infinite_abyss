@@ -80,6 +80,7 @@ import {
 } from "../world/Lighting";
 import { awardXp, type LevelUpEvent } from "../world/Leveling";
 import { defaultRng } from "../rng";
+import { applyRenderScale } from "@/util/renderScale";
 import {
   resolveThrow,
   isThrowable,
@@ -271,8 +272,9 @@ const SMITE_ALL_CHEAT = true;
 
 // ── Layout (canvas is 960×720) ────────────────────────────────────
 // TILE matches the rest of the engine (overworld + town interiors)
-// so monster / character sprites — which ship as native 32×32 PNGs
-// — render at their native size, not stretched.
+// TILE is in LOGICAL pixels; the camera zooms by RENDER_SCALE so a
+// tile is 64 real px. Sprites are always display-sized to TILE, so
+// 64×64 art draws 1:1 and legacy 32×32 art upscales 2× crisp.
 const TILE = 32;
 /** How long a combatant takes to cross one tile, in ms.
  *
@@ -921,6 +923,7 @@ export class CombatScene extends Phaser.Scene {
   }
 
   async create(): Promise<void> {
+    applyRenderScale(this);
     // Live-debug hook — `window.__combat` is the running CombatScene
     // so the dev console / Claude-in-Chrome can introspect the
     // engine state when something looks off.
@@ -2107,11 +2110,11 @@ export class CombatScene extends Phaser.Scene {
       // existing 32×32 silhouette for everyone else.
       const scale = c.battleScale && c.battleScale > 1 ? c.battleScale : 1;
       if (c.sprite && this.textures.exists(c.sprite)) {
-        // Sprites are native 32×32 — render unscaled so transparency
-        // holds and the pixel art stays crisp.
+        // Always display-size to the tile (in logical px) so the
+        // source art can be 32×32 or 64×64 — see @/util/renderScale.
         body = this.add.image(x, y, c.sprite);
+        body.setDisplaySize(TILE * scale, TILE * scale);
         if (scale !== 1) {
-          body.setDisplaySize(TILE * scale, TILE * scale);
           body.setDepth(2); // above same-tile fellows so the giant reads
         }
       } else {
@@ -5466,7 +5469,7 @@ export class CombatScene extends Phaser.Scene {
     this.selRings.set(id, ring);
     let body: Phaser.GameObjects.Image | Phaser.GameObjects.Rectangle;
     if (skeleton.sprite && this.textures.exists(skeleton.sprite)) {
-      body = this.add.image(x, y, skeleton.sprite);
+      body = this.add.image(x, y, skeleton.sprite).setDisplaySize(TILE, TILE);
     } else if (skeleton.sprite) {
       // Sprite is declared (via the spell's `creature.sprite`) but
       // wasn't part of the preload pass — summon-spell creature art
@@ -5488,7 +5491,10 @@ export class CombatScene extends Phaser.Scene {
         // gone or the destroyed Phaser objects would throw.
         const current = this.bodies.get(id);
         if (!current || current !== body) return;
-        const sprite = this.add.image(x, y, url).setDepth(body.depth);
+        const sprite = this.add
+          .image(x, y, url)
+          .setDisplaySize(TILE, TILE)
+          .setDepth(body.depth);
         body.destroy();
         this.bodies.set(id, sprite);
       });
@@ -5510,9 +5516,13 @@ export class CombatScene extends Phaser.Scene {
       const fn = resolveProjectileEffect({ effect_type: animVisual });
       void fn(this, { x, y }, { x, y });
     }
-    body.setScale(0.2);
+    // Grow from 20% to the body's resting scale (which isn't 1 when
+    // the texture is larger/smaller than the tile).
+    const restX = body.scaleX;
+    const restY = body.scaleY;
+    body.setScale(restX * 0.2, restY * 0.2);
     this.tweens.add({
-      targets: body, scale: 1,
+      targets: body, scaleX: restX, scaleY: restY,
       duration: 320, ease: "Back.Out",
     });
 

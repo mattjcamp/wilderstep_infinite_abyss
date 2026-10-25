@@ -37,6 +37,7 @@
  *     way it does for the React overlay today.
  */
 
+import { uiZoomOf } from "@/util/renderScale";
 import type Phaser from "phaser";
 
 /** Subset of the Soundtrack module the help screen actually reads /
@@ -531,10 +532,11 @@ export class PaintedHelpScreen {
   }
 
   private dragSlider(pointer: Phaser.Input.Pointer): void {
-    // `pointer.x` is canvas-space (the scene's input plugin already
-    // translates window coords into canvas pixels). Project onto the
-    // track's range, clamp, write through.
-    const rel = pointer.x - this.sliderTrackX;
+    // `pointer.x` is canvas-space (backbuffer px); divide by the
+    // camera zoom to get the logical px the layout is authored in.
+    // Project onto the track's range, clamp, write through.
+    const zoom = uiZoomOf(this.scene);
+    const rel = pointer.x / zoom - this.sliderTrackX;
     const ratio = Math.max(0, Math.min(1, rel / SLIDER_WIDTH));
     this.applyVolume(ratio);
   }

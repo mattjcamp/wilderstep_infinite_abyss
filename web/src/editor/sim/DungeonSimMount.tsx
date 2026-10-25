@@ -55,6 +55,7 @@ import {
 } from "@/sim/dungeon/dungeonSession";
 import { tintForCell } from "@/sim/lighting";
 import { TILE_SIZE, WorldRenderer } from "@/sim/scene/WorldRenderer";
+import { RENDER_SCALE, applyRenderScale, installHiDpiText } from "@/util/renderScale";
 import type {
   SimCharacter,
   SimCharacterClass,
@@ -323,6 +324,7 @@ export function DungeonSimMount({
     (async () => {
       const Phaser = await import("phaser");
       if (cancelled || !containerRef.current) return;
+      installHiDpiText(Phaser);
 
       const spriteKeys = new Set<string>(DUNGEON_SPRITE_KEYS);
       // Add every cell's sprite (covers anything the prototype table
@@ -378,6 +380,7 @@ export function DungeonSimMount({
         }
 
         create() {
+          applyRenderScale(this);
           // Detect infravision once at scene boot. Walks the party's
           // roster → character.race → race.abilities, returns true
           // when ANY active member's race carries the "infravision"
@@ -610,11 +613,13 @@ export function DungeonSimMount({
 
       game = new Phaser.Game({
         type: Phaser.AUTO,
-        width,
-        height,
+        width: width * RENDER_SCALE,
+        height: height * RENDER_SCALE,
         parent: containerRef.current,
         backgroundColor: "#0c0c14",
         pixelArt: true,
+        // Hi-res backbuffer, shown at the logical CSS size.
+        scale: { zoom: 1 / RENDER_SCALE },
         scene: DungeonScene,
       });
     })();

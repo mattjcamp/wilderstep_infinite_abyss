@@ -549,6 +549,14 @@ import type {
 } from "@/sim/types";
 import type { SimSpawn } from "@/sim/spawn";
 import type { CharacterRecord } from "@/editor/CharacterSheet";
+import {
+  RENDER_SCALE,
+  WORLD_ZOOM_STEPS,
+  installHiDpiText,
+  installWorldAndUiCameras,
+  loadWorldZoomIdx,
+  saveWorldZoomIdx,
+} from "@/util/renderScale";
 
 /** Cells the kernel reads. Mirrors `TileType` from the editor without
  *  pulling that module's React-side type in. The cell carries every
@@ -2160,6 +2168,7 @@ export function PlayHost() {
     (async () => {
       const Phaser = await import("phaser");
       if (cancelled || !containerRef.current) return;
+      installHiDpiText(Phaser);
 
       // Collect every sprite key the cells, party, monsters, and
       // dropped items need. Item icons resolve to `item/<icon>.png`
@@ -2359,6 +2368,13 @@ export function PlayHost() {
 
       class PlayScene extends Phaser.Scene {
         world: WorldRenderer | null = null;
+        /** World zoom on top of RENDER_SCALE — how physically big a
+         *  tile is on screen. Cycled with Z (see WORLD_ZOOM_STEPS). */
+        worldZoom = 1;
+        worldZoomIdx = 0;
+        /** Faint frame drawn around maps that fit the view; shown /
+         *  hidden as world zoom changes what "fits" means. */
+        mapFrame: Phaser.GameObjects.Rectangle | null = null;
         /** Cell-bound item overlays keyed "col,row". One per cell
          *  whose `item` field resolves to a known item with an icon.
          *  Rendered at depth 70 — above the floor, below particles
@@ -2447,6 +2463,9 @@ export function PlayHost() {
           }
         }
         create() {
+          this.worldZoomIdx = loadWorldZoomIdx();
+          this.worldZoom = WORLD_ZOOM_STEPS[this.worldZoomIdx];
+          installWorldAndUiCameras(this, this.worldZoom);
           // Apply per-cell tile overrides from the save BEFORE
           // anything reads catalog.map.grid. Each entry is `{ col,
           // row, tileId }` — populated by the `rewards.tile_add`
@@ -3021,8 +3040,8 @@ export function PlayHost() {
             // Grab/hand pan: dragging the world right scrolls the view
             // left so the map tracks the cursor.
             const next = this.clampPan(
-              cam.scrollX - (p.x - this.panLastX),
-              cam.scrollY - (p.y - this.panLastY),
+              cam.scrollX - (p.x - this.panLastX) / cam.zoom,
+              cam.scrollY - (p.y - this.panLastY) / cam.zoom,
             );
             cam.setScroll(Math.round(next.x), Math.round(next.y));
             this.panLastX = p.x;
@@ -3039,13 +3058,9 @@ export function PlayHost() {
           // small centered scene reads as intentional rather than
           // floating in the void: a faint panel just outside the map's
           // edges, behind the tiles.
-          const usableHeight = PLAY_CANVAS_HEIGHT - PLAY_LOG_HEIGHT;
-          const mapFitsView =
-            mapPixelWidth <= PLAY_CANVAS_WIDTH &&
-            mapPixelHeight <= usableHeight;
-          if (mapFitsView) {
+          {
             const pad = 10;
-            this.add
+            this.mapFrame = this.add
               .rectangle(
                 mapPixelWidth / 2,
                 mapPixelHeight / 2,
@@ -3055,8 +3070,19 @@ export function PlayHost() {
                 1,
               )
               .setDepth(-10)
-              .setStrokeStyle(2, 0x2a2a3a);
+              .setStrokeStyle(2, 0x2a2a3a)
+              .setVisible(this.mapFitsView());
           }
+
+          // Z cycles world zoom (physical tile size on screen). The UI
+          // camera keeps the log strip / painted overlays unchanged.
+          this.input.keyboard?.on("keydown", (e: KeyboardEvent) => {
+            if (e.key !== "z" && e.key !== "Z") return;
+            if (e.metaKey || e.ctrlKey || e.altKey) return;
+            const t = e.target as HTMLElement | null;
+            if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+            this.setWorldZoomIdx((this.worldZoomIdx + 1) % WORLD_ZOOM_STEPS.length);
+          });
 
           // Install the bottom log strip — mirrors v1's
           // `installSceneLog`. The strip uses scrollFactor 0 so its
@@ -3172,11 +3198,33 @@ export function PlayHost() {
          *  log strip, and overflow-follow leaves the log's headroom so
          *  the bottom row clears the strip. `instant` snaps (mount);
          *  otherwise we ease toward the target for smooth scrolling. */
+        /** Visible world area in logical px at the current world zoom
+         *  (the log strip's band excluded from the height). */
+        viewSize(): { viewW: number; usableH: number } {
+          return {
+            viewW: PLAY_CANVAS_WIDTH / this.worldZoom,
+            usableH: (PLAY_CANVAS_HEIGHT - PLAY_LOG_HEIGHT) / this.worldZoom,
+          };
+        }
+
+        mapFitsView(): boolean {
+          const { viewW, usableH } = this.viewSize();
+          return mapPixelWidth <= viewW && mapPixelHeight <= usableH;
+        }
+
+        setWorldZoomIdx(idx: number): void {
+          this.worldZoomIdx = idx;
+          this.worldZoom = WORLD_ZOOM_STEPS[idx];
+          saveWorldZoomIdx(idx);
+          this.cameras.main.setZoom(RENDER_SCALE * this.worldZoom);
+          this.mapFrame?.setVisible(this.mapFitsView());
+          this.recenterCamera(true);
+        }
+
         recenterCamera(instant: boolean): void {
           const cam = this.cameras.main;
           const sprite = this.world?.partySprite;
-          const viewW = PLAY_CANVAS_WIDTH;
-          const usableH = PLAY_CANVAS_HEIGHT - PLAY_LOG_HEIGHT;
+          const { viewW, usableH } = this.viewSize();
           const px = sprite ? sprite.x : mapPixelWidth / 2;
           const py = sprite ? sprite.y : mapPixelHeight / 2;
           const tx =
@@ -3209,8 +3257,7 @@ export function PlayHost() {
          *  Space+drag look-around so the player can't scroll into the
          *  void beyond the map. */
         clampPan(x: number, y: number): { x: number; y: number } {
-          const viewW = PLAY_CANVAS_WIDTH;
-          const usableH = PLAY_CANVAS_HEIGHT - PLAY_LOG_HEIGHT;
+          const { viewW, usableH } = this.viewSize();
           const cx =
             mapPixelWidth <= viewW
               ? (mapPixelWidth - viewW) / 2
@@ -4983,8 +5030,10 @@ export function PlayHost() {
 
       game = new Phaser.Game({
         type: Phaser.AUTO,
-        width,
-        height,
+        // Backbuffer is RENDER_SCALE× the logical frame; each scene
+        // zooms its camera to match (see @/util/renderScale).
+        width: width * RENDER_SCALE,
+        height: height * RENDER_SCALE,
         parent: containerRef.current,
         backgroundColor: "#0c0c14",
         pixelArt: true,

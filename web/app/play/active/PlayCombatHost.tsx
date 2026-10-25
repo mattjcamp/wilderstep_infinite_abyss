@@ -24,6 +24,7 @@ import type { CombatResolved } from "@/battle/scenes/CombatScene";
 import type { ArenaCellInfo } from "@/battle/world/Maps";
 import { seedBattleCaches } from "@/play/seedBattleCaches";
 import type { WorldSave } from "@/play/saveTypes";
+import { RENDER_SCALE, installHiDpiText } from "@/util/renderScale";
 
 interface Props {
   moduleId: string;
@@ -108,6 +109,7 @@ export function PlayCombatHost({
     (async () => {
       const Phaser = await import("phaser");
       if (cancelled || !containerRef.current) return;
+      installHiDpiText(Phaser);
       const { CombatScene } = await import("@/battle/scenes/CombatScene");
       const { setActiveModule } = await import("@/battle/world/Module");
       setActiveModule(moduleId);
@@ -130,8 +132,8 @@ export function PlayCombatHost({
       // matching what PlayHost does for the overworld.
       game = new Phaser.Game({
         type: Phaser.AUTO,
-        width: 960,
-        height: 720,
+        width: 960 * RENDER_SCALE,
+        height: 720 * RENDER_SCALE,
         parent: containerRef.current,
         backgroundColor: "#0c0c14",
         pixelArt: true,

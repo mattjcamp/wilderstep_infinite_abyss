@@ -45,12 +45,17 @@ import { withBasePath } from "@/util/basePath";
 /** Display scale — every grid cell paints as a SCALE×SCALE block on
  *  screen so the artist can comfortably click individual pixels. The
  *  exported PNG is always at native resolution; SCALE only affects
- *  the on-screen working surface. */
-const SCALE = 16;
+ *  the on-screen working surface. Derived from the sprite's size so
+ *  larger (64×64) sprites still fit on screen. */
+function cellScaleFor(w: number, h: number): number {
+  // ~512px working surface: 32×32 → 16px cells, 64×64 → 8px cells.
+  return Math.max(4, Math.floor(512 / Math.max(w, h, 1)));
+}
 
-/** Default canvas size for new sprites. Matches `TILE_SIZE` from the
- *  world renderer so painted tiles fit the grid without resampling. */
-const DEFAULT_NEW_SIZE = 32;
+/** Default canvas size for new sprites. Matches a tile on the game's
+ *  backbuffer: a tile is 64 real px (TILE_SIZE × RENDER_SCALE),
+ *  so 64×64 art draws 1:1. 32×32 sprites still work (upscaled 2×). */
+const DEFAULT_NEW_SIZE = 64;
 
 /** Preset palette — picked to cover the v1 game's overall art style:
  *  earthy browns + warm woods (terrain), greens (foliage), blues
@@ -239,6 +244,7 @@ export function PixelEditor({
       newSpriteSize?.h ?? DEFAULT_NEW_SIZE,
     ),
   );
+  const SCALE = cellScaleFor(canvas.w, canvas.h);
   const [tool, setTool] = useState<Tool>("pencil");
   const [color, setColor] = useState<string>(PRESET_PALETTE[0]);
   const [customHex, setCustomHex] = useState<string>("#9966cc");
@@ -414,7 +420,7 @@ export function PixelEditor({
       const row = Math.floor(y / SCALE);
       return { col, row };
     },
-    [],
+    [SCALE],
   );
 
   const onPointerDown = useCallback(
