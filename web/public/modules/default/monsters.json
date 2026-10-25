@@ -3,7 +3,7 @@
     {
       "id": "giant_rat",
       "name": "Giant Rat",
-      "sprite": "monster/rat_grey.png",
+      "sprite": "monster/giant_rat.png",
       "tags": [
         "Mutated Animals"
       ]

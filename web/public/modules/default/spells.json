@@ -222,7 +222,7 @@
       "action_params": {
         "creature": {
           "name": "Skeleton",
-          "sprite": "monster/skeleton2.png",
+          "sprite": "monster/skeleton.png",
           "hp": 30,
           "ac": 14,
           "attack_bonus": 6,

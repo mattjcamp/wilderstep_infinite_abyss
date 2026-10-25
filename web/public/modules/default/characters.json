@@ -16,7 +16,7 @@
       "constitution": 17,
       "intelligence": 7,
       "wisdom": 8,
-      "sprite": "person/barbarian_fighter2.png",
+      "sprite": "person/fighter.png",
       "equipped": {},
       "inventory": []
     },
@@ -35,7 +35,7 @@
       "constitution": 9,
       "intelligence": 8,
       "wisdom": 18,
-      "sprite": "person/barbarian_priest.png",
+      "sprite": "person/cleric.png",
       "equipped": {},
       "inventory": []
     },
@@ -54,7 +54,7 @@
       "constitution": 11,
       "intelligence": 20,
       "wisdom": 8,
-      "sprite": "person/gnome_mage5.png",
+      "sprite": "person/wizard.png",
       "equipped": {},
       "inventory": []
     },
@@ -73,7 +73,7 @@
       "constitution": 13,
       "intelligence": 7,
       "wisdom": 8,
-      "sprite": "person/gnome_mage4.png",
+      "sprite": "person/thief.png",
       "equipped": {},
       "inventory": []
     }

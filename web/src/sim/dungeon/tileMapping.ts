@@ -274,7 +274,7 @@ const FOREST_WALL_PROTO = proto({
   tag: "outdoor",
   walkable: false,
   obstructs: true,
-  paletteId: "forest_maple02",
+  paletteId: "forest",
 });
 
 const FOREST_PATH_PROTO = proto({
@@ -391,7 +391,7 @@ export function prototypeForTileId(
       return proto({
         id: "dungeon_entrance",
         name: "Dungeon Entrance",
-        paletteId: "dungeon_entrance_2",
+        paletteId: "dungeon_entrance",
       });
   }
   // Cosmetic / unknown — caller can decide what to do.
@@ -411,10 +411,10 @@ export const DUNGEON_PALETTE_IDS: readonly string[] = [
   "path",
   "mountain",
   "grass",
-  "forest_maple02",
+  "forest",
   "water",
   "sand",
-  "dungeon_entrance_2",
+  "dungeon_entrance",
 ];
 
 /** Palette id → sprite lookup for a prototype's `paletteId`. Returns

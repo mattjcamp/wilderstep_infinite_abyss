@@ -6,7 +6,7 @@
       "tags": [
         "Mutated Animal"
       ],
-      "monster_party_tile": "monster/rat_grey.png",
+      "monster_party_tile": "monster/giant_rat.png",
       "monsters": [
         "giant_rat",
         "giant_rat",

@@ -14,7 +14,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/grass1.png",
+      "sprite": "map/grass.png",
       "tag": "walkable"
     },
     {
@@ -50,8 +50,8 @@
     },
     {
       "boat": false,
-      "id": "floor",
-      "name": "Floor",
+      "id": "floor_dark",
+      "name": "Dark Floor",
       "walkable": true,
       "obstructs": false,
       "locked": false,
@@ -61,7 +61,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/town_floor.png",
+      "sprite": "map/floor_dark.png",
       "tag": "walkable"
     },
     {
@@ -109,7 +109,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/mountains.png",
+      "sprite": "map/mountain.png",
       "tag": "wall"
     },
     {
@@ -160,8 +160,8 @@
     },
     {
       "boat": false,
-      "id": "mountain_desert01",
-      "name": "Mountain Desert 01",
+      "id": "rocks",
+      "name": "Rocks",
       "walkable": false,
       "obstructs": true,
       "locked": false,
@@ -171,7 +171,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/mountain_desert01.png",
+      "sprite": "map/rocks.png",
       "tag": "mountain"
     },
     {
@@ -191,8 +191,8 @@
     },
     {
       "boat": false,
-      "id": "forest_maple02",
-      "name": "Forest Maple 02",
+      "id": "forest",
+      "name": "Forest",
       "walkable": true,
       "obstructs": true,
       "locked": false,
@@ -202,14 +202,14 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/forest_maple02.png",
+      "sprite": "map/forest.png",
       "tag": "tree"
     },
     {
       "boat": false,
       "boat_passable": false,
-      "id": "table_top",
-      "name": "Table Top",
+      "id": "table",
+      "name": "Table",
       "walkable": false,
       "obstructs": true,
       "locked": false,
@@ -235,7 +235,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/grass1_snowy.png",
+      "sprite": "map/grass_snowy.png",
       "tag": "walkable"
     },
     {
@@ -255,8 +255,8 @@
       "tag": "indoor"
     },
     {
-      "id": "wall_brown",
-      "name": null,
+      "id": "wall_brick_brown",
+      "name": "Brown Brick Wall",
       "walkable": false,
       "obstructs": true,
       "locked": false,
@@ -266,13 +266,13 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/brick_wall_brown.png",
+      "sprite": "map/wall_brick_brown.png",
       "tag": "wall"
     },
     {
       "boat": false,
-      "id": "forest_maple01",
-      "name": "Forest Maple 01",
+      "id": "tree",
+      "name": "Tree",
       "walkable": true,
       "obstructs": true,
       "locked": false,
@@ -282,7 +282,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/forest_maple01.png",
+      "sprite": "map/tree.png",
       "tag": "tree"
     },
     {
@@ -313,12 +313,12 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/dungeon_door.png",
+      "sprite": "map/door.png",
       "tag": "indoor"
     },
     {
-      "id": "wall_gray",
-      "name": "Gray Wall",
+      "id": "wall_stone",
+      "name": "Stone Wall",
       "walkable": false,
       "obstructs": true,
       "locked": false,
@@ -328,7 +328,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/wall_light.png",
+      "sprite": "map/wall_stone.png",
       "tag": "wall"
     },
     {
@@ -348,8 +348,8 @@
       "tag": "walkable"
     },
     {
-      "id": "wall",
-      "name": "Wall",
+      "id": "wall_brick_red",
+      "name": "Red Brick Wall",
       "walkable": false,
       "obstructs": true,
       "locked": false,
@@ -359,13 +359,13 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/brick_wall_red.png",
+      "sprite": "map/wall_brick_red.png",
       "tag": "wall"
     },
     {
       "boat": false,
-      "id": "forest_mixed02",
-      "name": "Forest Mixed 02",
+      "id": "forest_mixed",
+      "name": "Mixed Forest",
       "walkable": true,
       "obstructs": true,
       "locked": false,
@@ -375,7 +375,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/forest_mixed02.png",
+      "sprite": "map/forest_mixed.png",
       "tag": "tree"
     },
     {
@@ -396,8 +396,8 @@
     },
     {
       "boat": false,
-      "id": "dungeon_entrance_2",
-      "name": "Dungeon Entrance 2",
+      "id": "dungeon_entrance",
+      "name": "Dungeon Entrance",
       "walkable": true,
       "obstructs": true,
       "locked": false,
@@ -407,7 +407,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/dungeon_entrance_2.png",
+      "sprite": "map/dungeon_entrance.png",
       "tag": "building"
     },
     {
@@ -455,7 +455,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/chest_tile.png",
+      "sprite": "map/chest.png",
       "tag": "indoor"
     },
     {
@@ -486,14 +486,14 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/locked_door.png",
+      "sprite": "map/door_locked.png",
       "tag": "indoor"
     },
     {
       "boat": false,
       "boat_passable": true,
-      "id": "bridge_2",
-      "name": "Bridge 2",
+      "id": "bridge",
+      "name": "Bridge",
       "walkable": true,
       "obstructs": false,
       "locked": false,
@@ -503,7 +503,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/bridge_copy.png",
+      "sprite": "map/bridge.png",
       "tag": "outdoor"
     }
   ]
