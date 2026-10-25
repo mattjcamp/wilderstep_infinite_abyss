@@ -30,6 +30,8 @@ import http from "node:http";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { watch } from "node:fs";
+import { reindexAllSprites, reindexModuleSprites } from "./reindex-sprites.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PUBLISH_PORT || 4001);
@@ -459,4 +461,62 @@ server.listen(PORT, "127.0.0.1", () => {
   console.log(`module writes go under ${MODULES_ROOT}`);
   // eslint-disable-next-line no-console
   console.log(`sprite writes go under ${MODULES_ROOT}/<module>/sprites`);
+  void startSpriteWatcher();
 });
+
+// ── Sprite folder watcher ──────────────────────────────────────────
+//
+// Authors can drop PNGs straight into modules/<id>/sprites/<category>/
+// (from another art program, Finder, git pull, …). The game only sees
+// files listed in that module's sprites/index.json, so while this
+// server runs it keeps every index in step with the folders: one full
+// pass at startup (catches anything added while it was off), then a
+// rebuild of the affected module's index shortly after any PNG is
+// added, removed or renamed. index.json writes are ignored so the
+// watcher never triggers itself.
+
+const SPRITE_PNG_RE = /^([a-z][a-z0-9-]*)[\\/]sprites[\\/].+\.png$/i;
+const pendingReindex = new Map();
+
+function scheduleSpriteReindex(moduleId) {
+  clearTimeout(pendingReindex.get(moduleId));
+  pendingReindex.set(
+    moduleId,
+    setTimeout(async () => {
+      pendingReindex.delete(moduleId);
+      try {
+        const counts = await reindexModuleSprites(moduleId, MODULES_ROOT);
+        const n = counts ? Object.values(counts).reduce((a, b) => a + b, 0) : 0;
+        // eslint-disable-next-line no-console
+        console.log(`sprites: reindexed ${moduleId} (${n} files)`);
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.error(`sprites: reindex of ${moduleId} failed:`, e.message);
+      }
+    }, 300),
+  );
+}
+
+async function startSpriteWatcher() {
+  try {
+    await reindexAllSprites(MODULES_ROOT, () => {});
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.error("sprites: startup reindex failed:", e.message);
+  }
+  try {
+    watch(MODULES_ROOT, { recursive: true }, (_event, filename) => {
+      if (!filename) return;
+      const m = SPRITE_PNG_RE.exec(String(filename));
+      if (m) scheduleSpriteReindex(m[1]);
+    });
+    // eslint-disable-next-line no-console
+    console.log("sprites: watching modules/*/sprites/ — new PNGs are indexed automatically");
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.error(
+      "sprites: folder watching unavailable; run `npm run reindex-sprites` after adding PNGs.",
+      e.message,
+    );
+  }
+}
