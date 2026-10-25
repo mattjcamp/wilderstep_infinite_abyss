@@ -10,6 +10,16 @@
       "id": "maps-mix-in",
       "title": "Maps and Buildings",
       "role": "library"
+    },
+    {
+      "id": "test-icons",
+      "title": "Test Iconns",
+      "role": "theme"
+    },
+    {
+      "id": "test",
+      "title": "Test",
+      "role": "playable"
     }
   ]
 }

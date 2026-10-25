@@ -1,0 +1,10 @@
+{
+  "_comment": "Draft module created in the editor. Export this file and drop it into web/public/modules/test-icons/module.json.",
+  "id": "test-icons",
+  "title": "Test Iconns",
+  "description": "",
+  "author": "",
+  "version": "0.1.0",
+  "role": "theme",
+  "extends": "default"
+}

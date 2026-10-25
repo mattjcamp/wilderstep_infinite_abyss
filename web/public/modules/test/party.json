@@ -1,0 +1,36 @@
+{
+  "start_position": {
+    "map_id": "overview_1",
+    "col": 6,
+    "row": 11
+  },
+  "avatar": "person/fighter.png",
+  "gold": 50,
+  "roster": [
+    "fighter",
+    "cleric",
+    "thief",
+    "wizard"
+  ],
+  "party_effects": [],
+  "inventory": [
+    {
+      "item": "torch",
+      "charges": 2
+    },
+    {
+      "item": "rock",
+      "charges": 10
+    },
+    {
+      "item": "lockpick",
+      "charges": 2
+    },
+    {
+      "item": "camping_supplies",
+      "charges": 2
+    }
+  ],
+  "torch_steps": 0,
+  "party": []
+}
