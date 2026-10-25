@@ -8,7 +8,7 @@
  * MapSimulation.resolveSpawnEncounter) -> creditQuestKill.
  */
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   activeKillStepsAt,
@@ -28,7 +28,9 @@ function loadDefs() {
   return parseQuestsFile(raw);
 }
 
-describe("rats quest step 4 (goblins in hollowmere_town_house_3)", () => {
+// Emberscar (underworld-invaders) was retired in the 2026-10 content trim;
+// this repro runs only if its quests.json is restored.
+describe.skipIf(!existsSync(questsPath))("rats quest step 4 (goblins in hollowmere_town_house_3)", () => {
   it("spawns and credits the kill step after steps 1-3 are done (in-order play)", () => {
     const defs = loadDefs();
     const states = new Map<string, QuestState>();

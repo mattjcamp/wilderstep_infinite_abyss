@@ -103,7 +103,7 @@ function proto(over: Partial<DungeonTilePrototype>): DungeonTilePrototype {
     obstructs: false,
     light_source: false,
     light_range: 0,
-    sprite: "map/stone_floor.png",
+    sprite: "map/floor_gray.png",
     boat: false,
     locked: false,
     text: "",
@@ -162,7 +162,7 @@ const TRAP_PROTO = proto({
   // here only matched the "ruins" style by coincidence.
   id: "dungeon_floor_trap",
   name: "Trap",
-  sprite: "map/stone_floor.png",
+  sprite: "map/floor_gray.png",
   trap: true,
 });
 
@@ -196,7 +196,7 @@ const WALL_TORCH_PROTO = proto({
   obstructs: true,
   light_source: true,
   light_range: 5,
-  sprite: "map/wall_torch.png",
+  sprite: "map/wall_masonry_dark.png",
   animation: "torch",
 });
 
@@ -221,7 +221,7 @@ const LOCKED_DOOR_PROTO = proto({
 const DEFAULT_FLOOR_PROTO = proto({
   id: "dungeon_floor",
   name: "Dungeon Floor",
-  sprite: "map/stone_floor.png",
+  sprite: "map/floor_gray.png",
 });
 
 const DEFAULT_WALL_PROTO = proto({
@@ -229,7 +229,7 @@ const DEFAULT_WALL_PROTO = proto({
   name: "Dungeon Wall",
   walkable: false,
   obstructs: true,
-  sprite: "map/stone_wall.png",
+  sprite: "map/wall_fieldstone_dark.png",
 });
 
 /** ── Cave style tiles ─────────────────────────────────────────── */
@@ -263,7 +263,7 @@ const FOREST_WALL_PROTO = proto({
   tag: "outdoor",
   walkable: false,
   obstructs: true,
-  sprite: "map/forest2.png",
+  sprite: "map/forest_maple02.png",
 });
 
 const FOREST_PATH_PROTO = proto({
@@ -276,19 +276,17 @@ const FOREST_PATH_PROTO = proto({
 const FOREST_ARCHWAY_UP_PROTO = proto({
   id: "stairs_up",
   name: "Forest Archway",
-  // A forest is a sprawling place, not a staircase — so the entrance /
-  // way-back transition is a glowing GOLD archway (warm = the familiar
-  // way out) rather than the stairs-up sprite. Mirrors v1's brightly-
-  // coloured forest arches.
-  sprite: "map/arch_gold.png",
+  // Was a gold archway sprite; uses the stairs-up art since the
+  // 2026-10 tile trim until a forest arch is redrawn.
+  sprite: "map/stairs_up.png",
 });
 
 const FOREST_ARCHWAY_DOWN_PROTO = proto({
   id: "stairs_down",
   name: "Forest Archway (Down)",
-  // Descent into the next forest area is a glowing BLUE archway
-  // (cool = deeper / unknown). Paired with the gold entrance arch.
-  sprite: "map/arch_blue.png",
+  // Was a blue archway sprite; uses the stairs-down art since the
+  // 2026-10 tile trim until a forest arch is redrawn.
+  sprite: "map/stairs_down.png",
 });
 
 /** Resolve a v1 numeric tile id to a v2 cell prototype. Returns null
@@ -382,7 +380,7 @@ export function prototypeForTileId(
       return proto({
         id: "dungeon_entrance",
         name: "Dungeon Entrance",
-        sprite: "map/dungeon_entrance.png",
+        sprite: "map/dungeon_entrance_2.png",
       });
   }
   // Cosmetic / unknown — caller can decide what to do.
@@ -393,23 +391,19 @@ export function prototypeForTileId(
  *  which tile ids the level actually carries. Hand to Phaser's
  *  preload pass so transitions feel instant. */
 export const DUNGEON_SPRITE_KEYS: readonly string[] = [
-  "map/stone_floor.png",
-  "map/stone_wall.png",
+  "map/floor_gray.png",
+  "map/wall_fieldstone_dark.png",
   "map/stairs_up.png",
   "map/stairs_down.png",
-  // Forest transition arches (gold = entrance/up, blue = descent/down)
-  // — used in place of stairs for forest-style dungeons.
-  "map/arch_gold.png",
-  "map/arch_blue.png",
   "map/chest_tile.png",
-  "map/wall_torch.png",
+  "map/wall_masonry_dark.png",
   "map/dungeon_door.png",
   "map/locked_door.png",
   "map/path.png",
   "map/mountains.png",
   "map/grass1.png",
-  "map/forest2.png",
+  "map/forest_maple02.png",
   "map/water.png",
   "map/sand.png",
-  "map/dungeon_entrance.png",
+  "map/dungeon_entrance_2.png",
 ];

@@ -322,7 +322,7 @@ const FALLBACK_WALL: DungeonTilePrototype = {
   obstructs: true,
   light_source: false,
   light_range: 0,
-  sprite: "map/stone_wall.png",
+  sprite: "map/wall_fieldstone_dark.png",
   boat: false,
   locked: false,
   text: "",

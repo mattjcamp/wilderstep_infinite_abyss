@@ -42,7 +42,7 @@ describe("prototypeForTileId — TILE_TRAP", () => {
     expect(trap).not.toBeNull();
     expect(ruinsFloor).not.toBeNull();
     expect(trap!.sprite).toBe(ruinsFloor!.sprite);
-    expect(trap!.sprite).toBe("map/stone_floor.png");
+    expect(trap!.sprite).toBe("map/floor_gray.png");
     expect(trap!.trap).toBe(true);
   });
 
@@ -57,26 +57,25 @@ describe("prototypeForTileId — TILE_TRAP", () => {
 });
 
 describe("prototypeForTileId — forest transition arches", () => {
-  // A forest is a sprawling place, not a staircase, so its level
-  // transitions render as brightly-coloured arches (gold = up/entrance,
-  // blue = down/descent) rather than the stairs sprites. Guard against
-  // a regression that points them back at stairs_*.png.
-  it("maps the UP archway to the gold arch sprite, walkable", () => {
+  // Forest transitions had their own gold/blue arch sprites; since the
+  // 2026-10 tile trim they borrow the stairs art until arches are
+  // redrawn. They must stay walkable and keep their stairs ids.
+  it("maps the UP archway to the stairs-up sprite, walkable", () => {
     const up = prototypeForTileId(TILE_FOREST_ARCHWAY_UP, "forest");
-    expect(up!.sprite).toBe("map/arch_gold.png");
+    expect(up!.sprite).toBe("map/stairs_up.png");
     expect(up!.walkable).toBe(true);
   });
 
-  it("maps the DOWN archway to the blue arch sprite, walkable", () => {
+  it("maps the DOWN archway to the stairs-down sprite, walkable", () => {
     const down = prototypeForTileId(TILE_FOREST_ARCHWAY_DOWN, "forest");
-    expect(down!.sprite).toBe("map/arch_blue.png");
+    expect(down!.sprite).toBe("map/stairs_down.png");
     expect(down!.walkable).toBe(true);
   });
 
-  it("archway sprites are arches, not stairs", () => {
+  it("archways keep their stairs ids", () => {
     const up = prototypeForTileId(TILE_FOREST_ARCHWAY_UP, "forest");
     const down = prototypeForTileId(TILE_FOREST_ARCHWAY_DOWN, "forest");
-    expect(up!.sprite).not.toContain("stairs");
-    expect(down!.sprite).not.toContain("stairs");
+    expect(up!.id).toBe("stairs_up");
+    expect(down!.id).toBe("stairs_down");
   });
 });
