@@ -19,8 +19,8 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { withBasePath } from "@/util/basePath";
 import type { SimQuestRef } from "@/sim/types";
+import { spriteUrl } from "@/data_model/spriteUrl";
 
 interface Props {
   quest: SimQuestRef;
@@ -137,7 +137,7 @@ export function QuestDialogOverlay({
 
   const giver = quest.quest_giver;
   const giverSprite = giver?.npc_sprite
-    ? withBasePath(`/sprites/${giver.npc_sprite}`)
+    ? spriteUrl(giver.npc_sprite)
     : null;
   const giverName = giver?.npc_name ?? "Quest Giver";
   // Dialog text varies by state:

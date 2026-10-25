@@ -21,7 +21,7 @@
  * here plus making sure the sprite folder exists under web/public/sprites/.
  */
 
-import { withBasePath } from "@/util/basePath";
+import { spriteUrl } from "@/data_model/spriteUrl";
 
 export interface SpriteFieldConfig {
   /** Sprite category to default to in the picker (the group expanded
@@ -95,11 +95,11 @@ export function resolveSpritePath(
   const trimmed = (value ?? "").trim();
   if (!trimmed) return null;
   if (trimmed.includes("/")) {
-    return withBasePath(`/sprites/${trimmed}`);
+    return spriteUrl(trimmed);
   }
   // Stem form: <category>/<stem>.png
   const withExt = /\.[a-z]+$/i.test(trimmed) ? trimmed : `${trimmed}.png`;
-  return withBasePath(`/sprites/${config.category}/${withExt}`);
+  return spriteUrl(`${config.category}/${withExt}`);
 }
 
 /** Format the value to store given a picked (category, filename) pair

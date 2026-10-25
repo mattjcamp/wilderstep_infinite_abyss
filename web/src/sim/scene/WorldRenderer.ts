@@ -66,7 +66,6 @@ import {
   resolveFogStyle,
 } from "@/sim/fogStyle";
 import type { SimLightSource } from "@/sim/types";
-import { withBasePath } from "@/util/basePath";
 import { RENDER_SCALE } from "@/util/renderScale";
 import {
   beginStep,
@@ -74,6 +73,7 @@ import {
   DEFAULT_STEP_ANIM,
   type StepAnimConfig,
 } from "@/vfx/stepAnim";
+import { spriteUrl } from "@/data_model/spriteUrl";
 
 // Re-exported so callers configuring the renderer can reach the
 // step-animation types without a second import path. The battle
@@ -1515,7 +1515,7 @@ export class WorldRenderer {
         `lazy-loading. Add it to the host's preload list to avoid the ` +
         `placeholder marker on first paint.`,
     );
-    const url = withBasePath(`/sprites/${spriteKey}`);
+    const url = spriteUrl(spriteKey);
     this.scene.load.image(spriteKey, url);
     this.scene.load.once(
       `filecomplete-image-${spriteKey}`,

@@ -20,7 +20,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { withBasePath } from "@/util/basePath";
+import { spriteUrl } from "@/data_model/spriteUrl";
 
 interface DialogEntry {
   id: string;
@@ -43,9 +43,9 @@ export interface NpcOverlayRecord {
  *  preview so the overlay's portrait matches the on-map render. */
 function resolveNpcSpriteUrl(raw: string | undefined): string | null {
   if (!raw) return null;
-  if (raw.includes("/")) return withBasePath(`/sprites/${raw}`);
+  if (raw.includes("/")) return spriteUrl(raw);
   const withExt = /\.[a-z]+$/i.test(raw) ? raw : `${raw}.png`;
-  return withBasePath(`/sprites/person/${withExt}`);
+  return spriteUrl(`person/${withExt}`);
 }
 
 export function NpcDialogOverlay({

@@ -24,7 +24,7 @@
  */
 
 import { useState } from "react";
-import { withBasePath } from "@/util/basePath";
+import { spriteUrl } from "@/data_model/spriteUrl";
 
 /** The slice of an encounter the picker reads. Hosts pass their merged
  *  encounters.json records (extra fields are ignored). */
@@ -302,7 +302,7 @@ function SpriteThumb({ path, alt }: { path: string; alt: string }) {
   // eslint-disable-next-line @next/next/no-img-element
   return (
     <img
-      src={withBasePath(`/sprites/${path}`)}
+      src={spriteUrl(path)}
       alt={alt}
       width={24}
       height={24}

@@ -27,10 +27,10 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { withBasePath } from "@/util/basePath";
 import { getEditorModuleSource } from "@/data_model/sourceConfig";
 import { MODELS, type ModelKey } from "@/data_model/models";
 import type { IdListSource } from "./idListFields";
+import { spriteUrl } from "@/data_model/spriteUrl";
 
 export interface IdListOption {
   id: string;
@@ -49,9 +49,9 @@ function thumbFor(
   const sprite = typeof rec.sprite === "string" ? rec.sprite : null;
   if (model === "items") {
     const icon = typeof rec.icon === "string" ? rec.icon : null;
-    return icon ? withBasePath(`/sprites/item/${icon}.png`) : null;
+    return icon ? spriteUrl(`item/${icon}.png`) : null;
   }
-  if (sprite) return withBasePath(`/sprites/${sprite}`);
+  if (sprite) return spriteUrl(sprite);
   return null;
 }
 

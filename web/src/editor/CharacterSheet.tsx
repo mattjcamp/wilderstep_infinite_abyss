@@ -26,10 +26,10 @@
 
 import { useState } from "react";
 import { SpritePicker } from "./SpritePicker";
-import { withBasePath } from "@/util/basePath";
 import { groupItemsByCategory } from "./itemTags";
 import { classAllowsItemType, type RawClass } from "@/battle/world/Classes";
 import { rollCharacterToLevel } from "./rollUpCharacter";
+import { spriteUrl } from "@/data_model/spriteUrl";
 
 /** Slim Item view the sheet needs — id, display name, icon
  *  (resolved against /sprites/item/<icon>.png), and the slots the
@@ -498,7 +498,7 @@ function EquipSlotPicker({
   const missing = value && !current ? value : "";
 
   const previewSrc = current?.icon
-    ? withBasePath(`/sprites/item/${current.icon}.png`)
+    ? spriteUrl(`item/${current.icon}.png`)
     : null;
 
   return (

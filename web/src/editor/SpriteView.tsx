@@ -22,7 +22,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
-import { withBasePath } from "@/util/basePath";
 import {
   copySpriteDraft,
   discardSpriteDraft,
@@ -31,6 +30,7 @@ import {
   loadSpriteDraft,
 } from "@/data_model/spriteDraft";
 import { PixelEditor } from "./PixelEditor";
+import { spriteUrl, spriteIndexUrl } from "@/data_model/spriteUrl";
 
 interface SpriteIndex {
   _comment?: string;
@@ -72,7 +72,7 @@ export function SpriteView() {
 
   useEffect(() => {
     setState({ kind: "loading" });
-    fetch(withBasePath("/sprites/index.json"))
+    fetch(spriteIndexUrl())
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
@@ -157,7 +157,7 @@ export function SpriteView() {
             if (!hasSpriteDraft(moduleId, fromPath)) {
               try {
                 const res = await fetch(
-                  withBasePath(`/sprites/${fromPath.replace(/^\/+/, "")}`),
+                  spriteUrl(fromPath.replace(/^\/+/, "")),
                 );
                 if (res.ok) {
                   const blob = await res.blob();
@@ -266,7 +266,7 @@ function Thumbnail({
   const src = useMemo(() => {
     void version; // dep — recompute when bumped
     const draft = loadSpriteDraft(moduleId, path);
-    return draft ?? withBasePath(`/sprites/${path}`);
+    return draft ?? spriteUrl(path);
   }, [moduleId, path, version]);
   return (
     <img

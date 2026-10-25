@@ -39,11 +39,11 @@ import { mergeModel } from "@/data_model/merge";
 import type { LibraryCatalogEntry } from "@/data_model/ModuleSource";
 import { publishItems } from "@/data_model/publishClient";
 import { getEditorModuleSource } from "@/data_model/sourceConfig";
-import { withBasePath } from "@/util/basePath";
 import { SoundtrackPicker } from "./SoundtrackPicker";
 import { ID_PATTERN, TagsPicker } from "./TagsPicker";
 import { usePublishServer } from "./usePublishServer";
 import { groupItemsByCategory } from "./itemTags";
+import { spriteUrl } from "@/data_model/spriteUrl";
 
 const MODEL_KEY = "dungeons";
 const FILE_NAME = "dungeons.json";
@@ -1621,7 +1621,7 @@ function tileLabel(
  *  servable URL. Tolerates already-prefixed or empty values. */
 function tileSpriteSrc(sprite: string): string {
   if (!sprite) return "";
-  return withBasePath(`/sprites/${sprite}`);
+  return spriteUrl(sprite);
 }
 
 /** Small pixel-art thumbnail for a palette tile (or a placeholder box

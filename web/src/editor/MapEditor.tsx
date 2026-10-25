@@ -48,7 +48,6 @@ import {
   saveDraft,
 } from "@/data_model/draft";
 import { mergeModel } from "@/data_model/merge";
-import { withBasePath } from "@/util/basePath";
 import { loadSpriteDraft } from "@/data_model/spriteDraft";
 import { publishItems } from "@/data_model/publishClient";
 import { MapSimulation, type SceneBridge } from "@/sim/MapSimulation";
@@ -113,6 +112,7 @@ import type {
   SimSpell,
 } from "@/sim/types";
 import { usePublishServer } from "./usePublishServer";
+import { spriteUrl } from "@/data_model/spriteUrl";
 
 const TILE_SIZE = 32;
 const MODEL_KEY = "maps";
@@ -1695,7 +1695,7 @@ export function MapEditor({
               }
               retriedFromDisk.add(key);
               this.loadingTextures.delete(key);
-              this.load.image(key, withBasePath(`/sprites/${key}`));
+              this.load.image(key, spriteUrl(key));
               if (!this.load.isLoading()) this.load.start();
             },
           );
@@ -1707,7 +1707,7 @@ export function MapEditor({
             const draft = loadSpriteDraft(moduleId, sprite);
             this.load.image(
               sprite,
-              draft ?? withBasePath(`/sprites/${sprite}`),
+              draft ?? spriteUrl(sprite),
             );
           }
         }
@@ -1735,7 +1735,7 @@ export function MapEditor({
             this.loadingTextures.delete(key),
           );
           const draft = loadSpriteDraft(moduleId, key);
-          this.load.image(key, draft ?? withBasePath(`/sprites/${key}`));
+          this.load.image(key, draft ?? spriteUrl(key));
           if (!this.load.isLoading()) this.load.start();
         }
 
@@ -5170,7 +5170,7 @@ function SimPlacingPanel({ onCancel }: { onCancel: () => void }) {
  *  show one image in the palette and another on the map. */
 function spriteThumbSrc(moduleId: string, sprite: string): string {
   if (!sprite) return "";
-  return loadSpriteDraft(moduleId, sprite) ?? withBasePath(`/sprites/${sprite}`);
+  return loadSpriteDraft(moduleId, sprite) ?? spriteUrl(sprite);
 }
 
 /** Bucket label for tiles with no tag. */
@@ -5734,7 +5734,7 @@ function Inspector({
               const found = items.find((i) => i.id === id);
               const icon = found?.icon;
               if (!icon) return null;
-              return withBasePath(`/sprites/item/${icon}.png`);
+              return spriteUrl(`item/${icon}.png`);
             })()}
             isModified={
               !!base && fieldDiffersFromPalette(instance, palette, "item")
@@ -5780,8 +5780,8 @@ function Inspector({
               // under /sprites/, bare stems fall back to the default
               // person folder.
               return sprite.includes("/")
-                ? withBasePath(`/sprites/${sprite}`)
-                : withBasePath(`/sprites/person/${sprite}`);
+                ? spriteUrl(sprite)
+                : spriteUrl(`person/${sprite}`);
             })()}
             isModified={
               !!base && fieldDiffersFromPalette(instance, palette, "npc")

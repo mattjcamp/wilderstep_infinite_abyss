@@ -27,11 +27,11 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { withBasePath } from "@/util/basePath";
 import {
   makeBlankCharacter,
   type CharacterRecord,
 } from "./CharacterSheet";
+import { spriteUrl, spriteIndexUrl } from "@/data_model/spriteUrl";
 
 // ── Tunable creator rules (mirror v1 — see header comment above) ───
 
@@ -786,7 +786,7 @@ function Step4Sprite({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch(withBasePath("/sprites/index.json"))
+    fetch(spriteIndexUrl())
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json() as Promise<SpriteIndex>;
@@ -836,7 +836,7 @@ function Step4Sprite({
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={withBasePath(`/sprites/${s.path}`)}
+                      src={spriteUrl(s.path)}
                       alt={s.stem}
                       width={48}
                       height={48}
@@ -1000,7 +1000,7 @@ function Step6Confirm({
           {sprite ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={withBasePath(`/sprites/${sprite}`)}
+              src={spriteUrl(sprite)}
               alt=""
               width={64}
               height={64}

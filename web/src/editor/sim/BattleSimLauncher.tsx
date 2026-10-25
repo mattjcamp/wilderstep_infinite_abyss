@@ -13,9 +13,10 @@ import { BattleSimMount } from "./BattleSimMount";
 import { loadAllEncounters, type EncounterTemplate } from "@/battle/world/Encounters";
 import { loadMonsters, type MonsterSpec } from "@/battle/data/monsters";
 import { loadArenaMaps, type ArenaCellInfo, type ArenaMap } from "@/battle/world/Maps";
-import { setActiveModule, withBase } from "@/battle/world/Module";
+import { setActiveModule } from "@/battle/world/Module";
 import { seedBattleCachesFromCatalog } from "@/play/seedBattleCaches";
 import { ARENA_COLS, ARENA_ROWS } from "@/battle/combat/Arena";
+import { spriteUrl } from "@/data_model/spriteUrl";
 
 export function BattleSimLauncher({ moduleId }: { moduleId: string }) {
   const [started, setStarted] = useState(false);
@@ -157,7 +158,7 @@ export function BattleSimLauncher({ moduleId }: { moduleId: string }) {
         const spritePath = cell.sprite;
         const sprite =
           typeof spritePath === "string" && spritePath.length > 0
-            ? withBase(`/sprites/${spritePath}`)
+            ? spriteUrl(spritePath)
             : null;
         // Lighting fields ride through the ArenaMapCell index
         // signature — the map editor saves them as `light_source` /

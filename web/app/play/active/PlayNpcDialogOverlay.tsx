@@ -18,7 +18,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { withBasePath } from "@/util/basePath";
+import { spriteUrl } from "@/data_model/spriteUrl";
 
 interface DialogLine {
   id: string;
@@ -212,7 +212,7 @@ export function PlayNpcDialogOverlay({
           {npcSprite ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={withBasePath(`/sprites/${npcSprite}`)}
+              src={spriteUrl(npcSprite)}
               alt=""
               width={40}
               height={40}

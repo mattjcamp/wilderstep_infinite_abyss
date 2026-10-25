@@ -44,6 +44,7 @@ import {
   type AbilityRecord,
 } from "@/editor/CharacterCreator";
 import type { CharacterRecord } from "@/editor/CharacterSheet";
+import { spriteUrl } from "@/data_model/spriteUrl";
 
 /** A resolved slot — either a reference to a module-supplied
  *  character by id, or a freshly built CharacterRecord the player
@@ -691,7 +692,7 @@ function SpritePortrait({ sprite }: { sprite?: string }) {
   // the prefix; anything starting with / passes through.
   const url = sprite.startsWith("/")
     ? withBasePath(sprite)
-    : withBasePath(`/sprites/${sprite}`);
+    : spriteUrl(sprite);
   // eslint-disable-next-line @next/next/no-img-element
   return (
     <img

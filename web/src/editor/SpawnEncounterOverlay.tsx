@@ -20,9 +20,9 @@
  */
 
 import { useEffect, useState } from "react";
-import { withBasePath } from "@/util/basePath";
 import type { SpawnEncounterOptions } from "@/sim/MapSimulation";
 import type { SimMonsterRef } from "@/sim/types";
+import { spriteUrl } from "@/data_model/spriteUrl";
 
 interface Props {
   options: SpawnEncounterOptions;
@@ -102,7 +102,7 @@ export function SpawnEncounterOverlay({
             {options.monsters.map((id, i) => {
               const m = byId.get(id);
               const src = m?.sprite
-                ? withBasePath(`/sprites/${m.sprite}`)
+                ? spriteUrl(m.sprite)
                 : null;
               return (
                 <li

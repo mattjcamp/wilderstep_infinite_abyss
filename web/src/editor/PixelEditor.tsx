@@ -40,7 +40,7 @@ import {
 } from "@/data_model/spriteDraft";
 import { publishItems } from "@/data_model/publishClient";
 import { usePublishServer } from "./usePublishServer";
-import { withBasePath } from "@/util/basePath";
+import { spriteUrl } from "@/data_model/spriteUrl";
 
 /** Display scale — every grid cell paints as a SCALE×SCALE block on
  *  screen so the artist can comfortably click individual pixels. The
@@ -289,7 +289,7 @@ export function PixelEditor({
     // through an <img> element, which gives us cross-browser PNG
     // decoding without bundling a decoder.
     const draft = loadSpriteDraft(moduleId, path);
-    const src = draft ?? withBasePath(`/sprites/${path.replace(/^\/+/, "")}`);
+    const src = draft ?? spriteUrl(path.replace(/^\/+/, ""));
 
     const img = new Image();
     // Same-origin / data URLs both pass cleanly; setting crossOrigin

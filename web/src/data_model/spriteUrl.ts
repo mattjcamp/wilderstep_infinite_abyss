@@ -129,3 +129,10 @@ export function __setSpriteRoutingForTests(
       }
     : null;
 }
+
+/** URL of the sprite catalog (category → filenames). The single place
+ *  that knows where the index lives, so the per-module sprite layout
+ *  only has to change here. */
+export function spriteIndexUrl(): string {
+  return withBasePath("/sprites/index.json");
+}

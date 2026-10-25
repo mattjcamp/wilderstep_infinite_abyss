@@ -26,8 +26,8 @@
  */
 
 import { useEffect, useState } from "react";
-import { withBasePath } from "@/util/basePath";
 import type { ChestContents } from "@/sim/types";
+import { spriteUrl } from "@/data_model/spriteUrl";
 
 interface ChestItemForDisplay {
   id: string;
@@ -122,7 +122,7 @@ export function ChestDialogOverlay({
   }, [actions, focusedAction, onOpen, onLeave]);
 
   const chestSpriteSrc = chestIcon
-    ? withBasePath(`/sprites/item/${chestIcon}.png`)
+    ? spriteUrl(`item/${chestIcon}.png`)
     : null;
 
   return (
@@ -187,7 +187,7 @@ export function ChestDialogOverlay({
                   const display = itemDisplay.find((d) => d.id === it.id);
                   const label = display?.name ?? it.id;
                   const iconSrc = display?.icon
-                    ? withBasePath(`/sprites/item/${display.icon}.png`)
+                    ? spriteUrl(`item/${display.icon}.png`)
                     : null;
                   const qty = it.qty ?? 1;
                   return (

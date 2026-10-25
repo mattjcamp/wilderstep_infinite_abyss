@@ -19,12 +19,12 @@
  */
 
 import { useEffect, useState } from "react";
-import { withBasePath } from "@/util/basePath";
 import {
   formatPickedValue,
   resolveSpritePath,
   type SpriteFieldConfig,
 } from "./spriteFields";
+import { spriteUrl, spriteIndexUrl } from "@/data_model/spriteUrl";
 
 interface SpriteIndex {
   _comment?: string;
@@ -53,7 +53,7 @@ export function SpritePicker({
   useEffect(() => {
     if (!open || indexState.kind !== "idle") return;
     setIndexState({ kind: "loading" });
-    fetch(withBasePath("/sprites/index.json"))
+    fetch(spriteIndexUrl())
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json() as Promise<SpriteIndex>;
@@ -219,7 +219,7 @@ function SpriteGrid({
                         title={`${cat}/${file}`}
                       >
                         <img
-                          src={withBasePath(`/sprites/${cat}/${file}`)}
+                          src={spriteUrl(`${cat}/${file}`)}
                           alt={file}
                           width={40}
                           height={40}

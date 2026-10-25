@@ -25,7 +25,6 @@
 import { editorMapHref } from "../moduleRoutes";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { withBasePath } from "@/util/basePath";
 import { loadSpriteDraft } from "@/data_model/spriteDraft";
 import {
   TILE_STAIRS,
@@ -66,6 +65,7 @@ import type {
   SimRace,
   SimSpell,
 } from "@/sim/types";
+import { spriteUrl } from "@/data_model/spriteUrl";
 
 
 interface Props {
@@ -376,7 +376,7 @@ export function DungeonSimMount({
             const draft = loadSpriteDraft(moduleId, key);
             this.load.image(
               key,
-              draft ?? withBasePath(`/sprites/${key}`),
+              draft ?? spriteUrl(key),
             );
           }
         }
