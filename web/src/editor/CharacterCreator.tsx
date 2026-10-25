@@ -142,6 +142,9 @@ export interface ClassRecord {
    *  `"priest"`, or `"none"`. Used by the character sheet's Spells
    *  section to filter castable spells. */
   casting_type?: string[];
+  /** Portrait the creator pre-selects when this class is picked
+   *  (e.g. "person/fighter.png"). Blank/absent = no suggestion. */
+  default_sprite?: string;
 }
 
 export interface AbilityRecord {
@@ -231,7 +234,8 @@ export function CharacterCreator({
   // player has explicitly chosen one.
   useEffect(() => {
     if (!spriteTouched) {
-      setSprite(defaultSpriteFor(classId));
+      const suggested = classes.find((c) => c.id === classId)?.default_sprite;
+      setSprite(typeof suggested === "string" ? suggested.trim() : "");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [classId]);
@@ -1095,30 +1099,5 @@ function slugify(s: string): string {
     .replace(/[^a-z0-9]+/g, "_")
     .replace(/^_+|_+$/g, "")
     || "character";
-}
-
-/** Default sprite suggestion for a freshly-picked class. Keys mirror
- *  v1's `defaultAvatarFor`. Authors can override on the sprite step. */
-function defaultSpriteFor(classId: string): string {
-  switch (classId) {
-    case "fighter":
-      return "person/fighter6.png";
-    case "paladin":
-      return "person/fighter1.png";
-    case "ranger":
-      return "person/ranger1.png";
-    case "thief":
-      return "person/thief1.png";
-    case "cleric":
-      return "person/cleric1.png";
-    case "druid":
-      return "person/druid1.png";
-    case "wizard":
-      return "person/wizard1.png";
-    case "alchemist":
-      return "person/wizard4.png";
-    default:
-      return "";
-  }
 }
 

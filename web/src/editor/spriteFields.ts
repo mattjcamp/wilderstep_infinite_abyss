@@ -44,6 +44,9 @@ const FIELDS: Record<string, SpriteFieldConfig> = {
   // Quest.quest_giver.npc_sprite — the NPC the player talks to to
   // offer/complete a quest. Always a person sprite.
   npc_sprite: { category: "person", format: "path" },
+  // Character Class: portrait the character creator suggests when
+  // this class is picked.
+  default_sprite: { category: "person", format: "path" },
 };
 
 /** Per-model overrides — when the same field name means different

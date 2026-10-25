@@ -87,23 +87,6 @@
       "range": 4
     },
     {
-      "id": "fists",
-      "category": "weapons",
-      "name": "Fists",
-      "animation_id": null,
-      "description": "Bare knuckles. Not much, but always available.",
-      "icon": "gloves",
-      "item_type": "fists",
-      "power": 0,
-      "ranged": false,
-      "slots": [
-        "hands"
-      ],
-      "durability": 0,
-      "party_can_equip": false,
-      "character_can_equip": true
-    },
-    {
       "id": "halberd",
       "category": "weapons",
       "name": "Halberd",
@@ -327,146 +310,6 @@
       }
     },
     {
-      "id": "rimefang_dagger",
-      "category": "weapons",
-      "name": "Rimefang Dagger",
-      "animation_id": null,
-      "description": "A relic blade of everfrost glass that never dulls. Each strike sheathes the wound in biting cold.",
-      "icon": "dagger09",
-      "item_type": "dagger",
-      "power": 18,
-      "ranged": false,
-      "throwable": true,
-      "slots": [
-        "hands"
-      ],
-      "durability": 0,
-      "party_can_equip": false,
-      "character_can_equip": true,
-      "buy": 0,
-      "sell": 0,
-      "ac_bonus": 0,
-      "bonus_damage": "1d6",
-      "damage_type": "ice",
-      "combat_aura": {
-        "color": 9430015
-      }
-    },
-    {
-      "id": "stormbolt_crossbow",
-      "category": "weapons",
-      "name": "Stormbolt Crossbow",
-      "animation_id": "lightning_strike",
-      "description": "A relic crossbow strung with a filament of captured lightning. Its bolts crackle and arc into whatever they strike.",
-      "icon": "crossbow_heavy",
-      "item_type": "crossbow",
-      "power": 18,
-      "ranged": true,
-      "throwable": false,
-      "slots": [
-        "hands"
-      ],
-      "durability": 0,
-      "party_can_equip": false,
-      "character_can_equip": true,
-      "buy": 0,
-      "sell": 0,
-      "ammo": "bolts",
-      "targeting": "target",
-      "range": 8,
-      "ac_bonus": 0,
-      "bonus_damage": "1d6",
-      "damage_type": "lightning",
-      "combat_aura": {
-        "color": 6742271
-      }
-    },
-    {
-      "id": "meteorfall_mace",
-      "category": "weapons",
-      "name": "Meteorfall Mace",
-      "animation_id": null,
-      "description": "A relic maul forged from a fallen star. It lands with the weight of the heavens, scorching stone where it strikes.",
-      "icon": "mace_magic",
-      "item_type": "mace",
-      "power": 20,
-      "ranged": false,
-      "throwable": false,
-      "slots": [
-        "hands"
-      ],
-      "durability": 0,
-      "party_can_equip": false,
-      "character_can_equip": true,
-      "buy": 0,
-      "sell": 0,
-      "ac_bonus": 0,
-      "bonus_damage": "1d8",
-      "damage_type": "meteor",
-      "combat_aura": {
-        "color": 16739133
-      }
-    },
-    {
-      "id": "galewind_bow",
-      "category": "weapons",
-      "name": "Dawnlight Bow",
-      "animation_id": null,
-      "description": "A silver relic bow light enough for any short-bow hand to draw. Each arrow blazes with captured daylight, and wherever it strikes a pool of radiance blooms — lighting even the deepest dark.",
-      "icon": "bow_long",
-      "item_type": "short_bow",
-      "power": 16,
-      "ranged": true,
-      "throwable": false,
-      "slots": [
-        "hands"
-      ],
-      "durability": 0,
-      "party_can_equip": false,
-      "character_can_equip": true,
-      "buy": 0,
-      "sell": 0,
-      "ammo": "arrows",
-      "targeting": "directional",
-      "range": 8,
-      "ac_bonus": 0,
-      "bonus_damage": "1d6",
-      "damage_type": "light",
-      "light_range": 5,
-      "combat_aura": {
-        "color": 16770186
-      }
-    },
-    {
-      "id": "viperscale_sling",
-      "category": "weapons",
-      "name": "Starfall Sling",
-      "animation_id": "meteor_strike",
-      "description": "A relic sling whose every stone blazes into a falling star. What it looses streaks down from the heavens to strike with cosmic fire.",
-      "icon": "sling02",
-      "item_type": "sling",
-      "power": 16,
-      "ranged": true,
-      "throwable": false,
-      "slots": [
-        "hands"
-      ],
-      "durability": 0,
-      "party_can_equip": false,
-      "character_can_equip": true,
-      "buy": 0,
-      "sell": 0,
-      "ammo": "stones",
-      "targeting": "directional",
-      "range": 6,
-      "ac_bonus": 0,
-      "bonus_damage": "1d6",
-      "damage_type": "meteor",
-      "combat_aura": {
-        "color": 16739133
-      }
-    },
-    {
       "id": "stoneguard_plate",
       "category": "armors",
       "name": "Stoneguard Plate",
@@ -488,34 +331,6 @@
       "evasion": 66,
       "ac_bonus": 0,
       "damage_type": "earth"
-    },
-    {
-      "id": "starcaller_wand",
-      "category": "weapons",
-      "name": "Starcaller Wand",
-      "animation_id": null,
-      "description": "A relic wand that needs no ammunition — it looses raw arcane force at a distance. Indestructible and humming with starlight.",
-      "icon": "wand11",
-      "item_type": "wand",
-      "power": 16,
-      "ranged": true,
-      "throwable": false,
-      "slots": [
-        "hands"
-      ],
-      "durability": 0,
-      "party_can_equip": false,
-      "character_can_equip": true,
-      "buy": 0,
-      "sell": 0,
-      "targeting": "target",
-      "range": 8,
-      "ac_bonus": 0,
-      "bonus_damage": "1d8",
-      "damage_type": "arcane",
-      "combat_aura": {
-        "color": 13073919
-      }
     },
     {
       "id": "sword",
@@ -728,25 +543,6 @@
       "charges": 3
     },
     {
-      "id": "dragonheart",
-      "category": "quest",
-      "name": "Dragonheart",
-      "animation_id": null,
-      "description": "The smoldering heart of an ancient wyrm. It beats once every few minutes, slow as the tide, and the air around it shimmers with heat.",
-      "icon": "artifact",
-      "item_type": "quest_item",
-      "power": null,
-      "ranged": false,
-      "throwable": false,
-      "slots": null,
-      "durability": null,
-      "party_can_equip": false,
-      "character_can_equip": false,
-      "buy": null,
-      "sell": null,
-      "quest_item": true
-    },
-    {
       "id": "elixir_of_strength",
       "category": "potion",
       "name": "Elixir of Strength",
@@ -789,25 +585,6 @@
       "effect": "buff_ac",
       "stackable": true,
       "charges": 1
-    },
-    {
-      "id": "family_heirloom",
-      "category": "quest",
-      "name": "Family Heirloom",
-      "animation_id": null,
-      "description": "A delicate silver locket engraved with a family crest. It belongs to Elara.",
-      "icon": "artifact",
-      "item_type": "quest_item",
-      "power": null,
-      "ranged": false,
-      "throwable": false,
-      "slots": null,
-      "durability": null,
-      "party_can_equip": false,
-      "character_can_equip": false,
-      "buy": null,
-      "sell": null,
-      "quest_item": true
     },
     {
       "id": "fire_oil",
@@ -1068,25 +845,6 @@
       "charges": 1
     },
     {
-      "id": "shadow_crystal",
-      "category": "quest",
-      "name": "Shadow Crystal",
-      "animation_id": null,
-      "description": "A pulsing dark crystal radiating ancient power. The innkeeper seeks this.",
-      "icon": "artifact",
-      "item_type": "quest_item",
-      "power": null,
-      "ranged": false,
-      "throwable": false,
-      "slots": null,
-      "durability": null,
-      "party_can_equip": false,
-      "character_can_equip": false,
-      "buy": null,
-      "sell": null,
-      "quest_item": true
-    },
-    {
       "id": "silver_key",
       "category": "general",
       "name": "Silver Key",
@@ -1233,52 +991,6 @@
       "charges": 20,
       "ignite": true,
       "light_range": 3
-    },
-    {
-      "id": "treasure_chest",
-      "category": "quest",
-      "name": "Treasure Chest",
-      "animation_id": null,
-      "description": "What treasure lies inside?",
-      "icon": "chest",
-      "item_type": "chest",
-      "power": 0,
-      "ranged": false,
-      "throwable": false,
-      "slots": [],
-      "durability": 0,
-      "party_can_equip": false,
-      "character_can_equip": false,
-      "buy": 0,
-      "sell": 0,
-      "is_chest": true,
-      "contents": {
-        "gold": 10,
-        "items": [
-          {
-            "id": "healing_herb",
-            "qty": 2
-          }
-        ]
-      }
-    },
-    {
-      "id": "relic_chest",
-      "category": "quest",
-      "name": "Relic Chest",
-      "animation_id": null,
-      "description": "A chest containing a relic",
-      "icon": "relic_chest",
-      "item_type": "chest",
-      "power": 0,
-      "ranged": false,
-      "throwable": false,
-      "slots": [],
-      "durability": 0,
-      "party_can_equip": false,
-      "character_can_equip": false,
-      "buy": 0,
-      "sell": 0
     },
     {
       "id": "retrievable_chest",

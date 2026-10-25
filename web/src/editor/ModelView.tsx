@@ -147,6 +147,9 @@ const EXTRA_FIELD_DEFAULTS: Partial<Record<ModelKey, Record<string, unknown>>> =
   // tiles a vessel can sail UNDER (walkable on foot, sail-through
   // for a boat) such as wooden footbridges.
   map_tiles: { boat: false, boat_passable: false },
+  // Character Classes: the portrait the character creator suggests for
+  // this class (blank = no suggestion; the player picks one).
+  character_classes: { default_sprite: "" },
   // Monsters and Encounters list every field the game reads, so the
   // form shows them all even when existing records are sparse (e.g.
   // a freshly started catalog). Values double as the defaults for a

@@ -7,7 +7,6 @@
       "armor_platemail_ribbed.png",
       "arrow_flaming.png",
       "arrow_steel.png",
-      "artifact.png",
       "axe03.png",
       "bolt_flaming.png",
       "bolt_steel.png",
@@ -19,14 +18,11 @@
       "club01.png",
       "crossbow_heavy.png",
       "dagger.png",
-      "dagger09.png",
-      "gloves.png",
       "halberd.png",
       "herb.png",
       "key_bronze.png",
       "key_silver.png",
       "mace07.png",
-      "mace_magic.png",
       "pebbles.png",
       "potion.png",
       "potion_aquamarine.png",
@@ -39,18 +35,15 @@
       "potion_short_tan.png",
       "potion_small_grey.png",
       "potion_tall_green2.png",
-      "relic_chest.png",
       "robe_green.png",
       "rock.png",
       "scroll0001.png",
-      "sling02.png",
       "spear 2.png",
       "sword.png",
       "sword25.png",
       "sword_broad.png",
       "tool.png",
-      "torch.png",
-      "wand11.png"
+      "torch.png"
     ],
     "map": [
       "brick_wall_brown.png",
@@ -87,7 +80,6 @@
       "window.png"
     ],
     "monster": [
-      "giant_rat.png",
       "goblin.png",
       "rat_grey.png",
       "skeleton2.png"
@@ -95,18 +87,10 @@
     "person": [
       "barbarian_fighter2.png",
       "barbarian_priest.png",
-      "cleric1.png",
-      "druid1.png",
       "female_paladin01.png",
-      "fighter1.png",
-      "fighter6.png",
       "gnome_mage4.png",
       "gnome_mage5.png",
-      "ranger1.png",
-      "thief1.png",
-      "townsperson1.png",
-      "wizard1.png",
-      "wizard4.png"
+      "townsperson1.png"
     ]
   }
 }

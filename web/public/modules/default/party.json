@@ -1,14 +1,14 @@
 {
   "start_position": {
-    "map_id": "overview_island",
-    "col": 4,
-    "row": 16
+    "map_id": "overview_1",
+    "col": 6,
+    "row": 11
   },
   "avatar": "person/female_paladin01.png",
   "gold": 50,
   "roster": [
-    "cleric",
     "fighter",
+    "cleric",
     "thief",
     "wizard"
   ],
