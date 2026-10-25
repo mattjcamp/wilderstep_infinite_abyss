@@ -86,7 +86,7 @@ import {
   TILE_STAIRS_DOWN,
 } from "@/battle/world/Dungeon";
 import { TILE_FOREST_ARCHWAY_DOWN } from "@/battle/world/Tiles";
-import { DUNGEON_SPRITE_KEYS } from "@/sim/dungeon/tileMapping";
+import { dungeonSpriteKeys } from "@/sim/dungeon/tileMapping";
 import type { EncounterTemplate } from "@/battle/world/Encounters";
 import {
   MapSimulation,
@@ -2181,7 +2181,11 @@ export function PlayHost() {
       // (chests, locked doors, torches). Preload them up front so a
       // mid-game floor transition doesn't blink missing tiles.
       if (dungeonStateRef.current) {
-        for (const key of DUNGEON_SPRITE_KEYS) spriteKeys.add(key);
+        const paletteSprites = new Map<string, string>();
+        for (const t of catalog.palette) {
+          if (t.id && t.sprite) paletteSprites.set(t.id, t.sprite);
+        }
+        for (const key of dungeonSpriteKeys(paletteSprites)) spriteKeys.add(key);
       }
       for (const row of catalog.map.grid) {
         for (const cell of row) {
@@ -2335,7 +2339,7 @@ export function PlayHost() {
       // sprite gets used instead of the hardcoded fallback.
       const waterSprite =
         catalog.palette.find((t) => (t as { tag?: string }).tag === "water")
-          ?.sprite ?? "map/water.png";
+          ?.sprite ?? "";
       if (waterSprite) spriteKeys.add(waterSprite);
 
       // Viewport: a fixed 4:3 window matching the v1 web game's

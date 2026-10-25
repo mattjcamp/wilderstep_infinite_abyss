@@ -38,20 +38,18 @@ import {
   DIR_DELTAS,
   type Direction,
 } from "../combat/Arena";
-import { makeSampleParty, PARTY_SPRITES, preloadPartyMemberSprites } from "../data/fighters";
+import { makeSampleParty, preloadPartyMemberSprites } from "../data/fighters";
 import {
   makeSampleEncounter,
   makeMonsterByName,
   loadMonsters,
   loadedMonsterSprites,
-  MONSTER_SPRITES,
 } from "../data/monsters";
 import { gameState } from "../state";
 import {
   isAuthoredEncounterId,
   authoredDefeatKey,
 } from "../world/InteriorSpawn";
-import { assetUrl } from "../world/Module";
 import { ANIMATION_CONFIGS } from "@/sim/tileAnimations";
 import { loadItems, type Item } from "../world/Items";
 import { loadCounters } from "../world/Counters";
@@ -897,20 +895,9 @@ export class CombatScene extends Phaser.Scene {
   }
 
   preload(): void {
-    for (const path of [...PARTY_SPRITES, ...MONSTER_SPRITES]) {
-      this.load.image(path, path);
-    }
-    // The active party (when launched from the world) is built from
-    // data/party.json, so we don't know which class sprites we'll
-    // need until create() runs. Preload the whole shipped set so any
-    // PartyMember.sprite path resolves immediately when drawn.
-    for (const f of [
-      "alchemist", "barbarian", "cleric", "fighter",
-      "illusionist", "paladin", "ranger", "thief", "wizard",
-    ]) {
-      const path = assetUrl(`/assets/characters/${f}.png`);
-      this.load.image(path, path);
-    }
+    // Party and monster sprites come from module data and are queued
+    // in create() once the roster is known (preloadPartyMemberSprites
+    // + the monster catalog) — no built-in art is preloaded here.
     // Arena floor sprites come from arenaCells (a v2 map matrix) and
     // are queued in create() once the per-cell URLs are known; nothing
     // to preload here statically. The NEAREST filter applied at texture

@@ -1560,11 +1560,11 @@ export function MapEditor({
       }
       // Resolve a "swap to water" sprite for cells that lose their
       // boat. Pick the first water-tagged tile in the palette (the
-      // designer's chosen canonical water) and fall back to a known
-      // path if the palette doesn't have one. Pre-add it to the
-      // sprite keys so boards never miss the texture.
+      // designer's chosen canonical water); a palette with no water
+      // tile leaves it empty. Pre-add it to the sprite keys so boards
+      // never miss the texture.
       const WATER_SPRITE_KEY =
-        palette.find((t) => t.tag === "water")?.sprite ?? "map/water.png";
+        palette.find((t) => t.tag === "water")?.sprite ?? "";
       if (WATER_SPRITE_KEY) spriteKeys.add(WATER_SPRITE_KEY);
       // Sim-mode sprites: party avatar + every active member's
       // portrait. Pre-load defensively so toggling sim on doesn't

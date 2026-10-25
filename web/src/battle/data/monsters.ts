@@ -372,7 +372,9 @@ export function makeMonsterByName(id: string, idSuffix = ""): Combatant {
       damage_dice: 1,
       damage_sides: 6,
       damage_bonus: 0,
-      sprite: spriteUrl("monster/goblin.png"),
+      // No art for an id missing from the catalog — combat draws its
+      // coloured placeholder square instead of borrowing a sprite.
+      sprite: "",
       move_range: 3,
       battle_scale: 1,
       post_attack_move: 0,
@@ -430,11 +432,6 @@ export function makeMonsterByName(id: string, idSuffix = ""): Combatant {
     humanoid: spec.humanoid,
   };
 }
-
-/** Pre-seed list of monster sprite URLs the Phaser preloader needs
- *  before the loader runs. Empty until `loadMonsters` populates the
- *  catalog; the scene preloads the rest dynamically. */
-export const MONSTER_SPRITES: string[] = [];
 
 /** Sprites for every monster currently in the loaded catalog. */
 export function loadedMonsterSprites(): string[] {

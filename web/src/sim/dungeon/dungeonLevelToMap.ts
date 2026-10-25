@@ -37,7 +37,11 @@ import {
   TILE_MOUNTAIN,
 } from "@/battle/world/Tiles";
 import type { DungeonLevel, DungeonStyle } from "@/battle/world/Dungeon";
-import { prototypeForTileId, type DungeonTilePrototype } from "./tileMapping";
+import {
+  prototypeForTileId,
+  resolveDungeonSprite,
+  type DungeonTilePrototype,
+} from "./tileMapping";
 
 /** A dungeon-level cell. Compatible with the editor's `TileType` and
  *  the simulator's `SimCell` — both consume this subset of fields. */
@@ -79,13 +83,12 @@ export interface DungeonLevelToMapOptions {
    *  stairs-down link to the next floor or to the overworld (bottom-
    *  floor exit). */
   totalFloors: number;
-  /** `map_tiles` palette id → sprite path. Only consulted for
-   *  `style: "custom"` floors, where the level's `customFloor` /
-   *  `customWall` palette ids resolve to the sprites painted on the
-   *  generic carved floor / wall cells. Absent (or a missing id) falls
-   *  back to the ruins floor/wall sprite, so a custom dungeon whose
-   *  palette ids don't resolve still renders as a playable stone
-   *  dungeon rather than blank. */
+  /** `map_tiles` palette id → sprite path, built from the module's
+   *  tile palette. Every cell's art resolves through it: each tile
+   *  prototype names a palette id (`paletteId`), and `style: "custom"`
+   *  floors additionally swap in the level's `customFloor` /
+   *  `customWall` / stairs palette ids. A missing id leaves that cell
+   *  without art (the renderer skips empty sprites). */
   customTileSprites?: ReadonlyMap<string, string>;
 }
 
@@ -149,6 +152,9 @@ export function dungeonLevelToMap(
       const base: DungeonMapCell = proto
         ? cloneProto(proto)
         : cloneProto(prototypeForTileId(0, style) ?? FALLBACK_WALL);
+      // Art comes from the module's tile palette, never from a path
+      // baked into the engine (see tileMapping.ts).
+      base.sprite = resolveDungeonSprite(base.paletteId, opts.customTileSprites);
       // Custom-style palette swap. `lookupId` (not `tileId`) is used for
       // the floor test so a chest cell — which renders on a floor base —
       // also picks up the custom floor sprite under its chest overlay.
@@ -199,7 +205,7 @@ export function dungeonLevelToMap(
         // stays the floor's, and an overlay carries the chest art.
         base.id = "chest";
         base.name = "Chest";
-        base.placedItemSprite = "map/chest_tile.png";
+        base.placedItemSprite = resolveDungeonSprite("chest", opts.customTileSprites);
         // Bind the cell to the configured chest ITEM so the kernel's
         // bump pipeline fires `chest_encountered` (the item is
         // authored `is_chest: true`) and the party gets its real
@@ -322,7 +328,8 @@ const FALLBACK_WALL: DungeonTilePrototype = {
   obstructs: true,
   light_source: false,
   light_range: 0,
-  sprite: "map/wall_fieldstone_dark.png",
+  sprite: "",
+  paletteId: "wall_fieldstone_dark",
   boat: false,
   locked: false,
   text: "",

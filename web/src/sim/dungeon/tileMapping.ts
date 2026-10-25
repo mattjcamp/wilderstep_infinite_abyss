@@ -13,9 +13,15 @@
  * dungeon-level → MapRecord converter) deep-copy the prototype per
  * cell and patch any per-cell extras (e.g. `link` on stairs).
  *
- * The mapping is intentionally hardcoded by *style* (cave / forest /
- * default). When a tile id has no style override (e.g. TILE_CHEST),
- * the default prototype is reused across all styles.
+ * The mapping is hardcoded by *style* (cave / forest / default). When
+ * a tile id has no style override (e.g. TILE_CHEST), the default
+ * prototype is reused across all styles.
+ *
+ * Prototypes never name a sprite file. Each names the `map_tiles`
+ * palette id it borrows art from (`paletteId`); the converter looks
+ * the sprite up in the module's palette. A palette missing that id
+ * leaves the cell without art rather than pointing at a file the
+ * module may not ship.
  */
 
 import {
@@ -60,9 +66,13 @@ export interface DungeonTilePrototype {
    *  same as overworld torches. */
   light_source: boolean;
   light_range: number;
-  /** Render texture path relative to `/sprites/`. The Phaser scene
-   *  resolves it through `withBasePath("/sprites/" + sprite)`. */
+  /** Render texture path relative to `/sprites/`. Empty on the
+   *  prototypes — filled from the module's tile palette via
+   *  `paletteId` (see `resolveDungeonSprite`), so dungeon art always
+   *  comes from the module, never from paths baked into the engine. */
   sprite: string;
+  /** `map_tiles` palette id whose sprite this cell borrows. */
+  paletteId: string;
   /** Most fields below are inert for dungeons but the editor's
    *  TileType schema requires them — populate with neutral defaults
    *  so the cell shape is fully compatible. */
@@ -103,7 +113,8 @@ function proto(over: Partial<DungeonTilePrototype>): DungeonTilePrototype {
     obstructs: false,
     light_source: false,
     light_range: 0,
-    sprite: "map/floor_gray.png",
+    sprite: "",
+    paletteId: "floor_gray",
     boat: false,
     locked: false,
     text: "",
@@ -128,19 +139,19 @@ function proto(over: Partial<DungeonTilePrototype>): DungeonTilePrototype {
 const STAIRS_UP_PROTO = proto({
   id: "stairs_up",
   name: "Stairs Up",
-  sprite: "map/stairs_up.png",
+  paletteId: "stairs_up",
 });
 
 const STAIRS_DOWN_PROTO = proto({
   id: "stairs_down",
   name: "Stairs Down",
-  sprite: "map/stairs_down.png",
+  paletteId: "stairs_down",
 });
 
 const CHEST_PROTO = proto({
   id: "chest",
   name: "Chest",
-  sprite: "map/chest_tile.png",
+  paletteId: "chest",
   // Walkable so the party can stand on the cell to open the chest.
   // The simulator doesn't model loot yet — the cell just reads as
   // floor with a chest overlay.
@@ -162,7 +173,7 @@ const TRAP_PROTO = proto({
   // here only matched the "ruins" style by coincidence.
   id: "dungeon_floor_trap",
   name: "Trap",
-  sprite: "map/floor_gray.png",
+  paletteId: "floor_gray",
   trap: true,
 });
 
@@ -171,10 +182,10 @@ const TRAP_PROTO = proto({
  *  surfaced as a tiny helper because the trap prototype needs the
  *  same answer (so a trap reads as floor-on-the-current-style, not
  *  as a hardcoded stone block). */
-function floorSpriteFor(style: DungeonStyle): string {
-  if (style === "caves") return CAVE_FLOOR_PROTO.sprite;
-  if (style === "forest") return FOREST_FLOOR_PROTO.sprite;
-  return DEFAULT_FLOOR_PROTO.sprite;
+function floorPaletteIdFor(style: DungeonStyle): string {
+  if (style === "caves") return CAVE_FLOOR_PROTO.paletteId;
+  if (style === "forest") return FOREST_FLOOR_PROTO.paletteId;
+  return DEFAULT_FLOOR_PROTO.paletteId;
 }
 
 const ARTIFACT_PROTO = proto({
@@ -182,7 +193,7 @@ const ARTIFACT_PROTO = proto({
   name: "Quest Artifact",
   // Reuse the chest sprite for now — the artifact pickup path isn't
   // wired up in v2 yet.
-  sprite: "map/chest_tile.png",
+  paletteId: "chest",
 });
 
 const WALL_TORCH_PROTO = proto({
@@ -196,14 +207,14 @@ const WALL_TORCH_PROTO = proto({
   obstructs: true,
   light_source: true,
   light_range: 5,
-  sprite: "map/wall_masonry_dark.png",
+  paletteId: "wall_masonry_dark",
   animation: "torch",
 });
 
 const DUNGEON_DOOR_PROTO = proto({
   id: "dungeon_door",
   name: "Dungeon Door",
-  sprite: "map/dungeon_door.png",
+  paletteId: "door",
 });
 
 const LOCKED_DOOR_PROTO = proto({
@@ -214,14 +225,14 @@ const LOCKED_DOOR_PROTO = proto({
   walkable: false,
   obstructs: false,
   locked: true,
-  sprite: "map/locked_door.png",
+  paletteId: "door_locked",
 });
 
 /** ── Style-default tiles (stone dungeon) ──────────────────────── */
 const DEFAULT_FLOOR_PROTO = proto({
   id: "dungeon_floor",
   name: "Dungeon Floor",
-  sprite: "map/floor_gray.png",
+  paletteId: "floor_gray",
 });
 
 const DEFAULT_WALL_PROTO = proto({
@@ -229,7 +240,7 @@ const DEFAULT_WALL_PROTO = proto({
   name: "Dungeon Wall",
   walkable: false,
   obstructs: true,
-  sprite: "map/wall_fieldstone_dark.png",
+  paletteId: "wall_fieldstone_dark",
 });
 
 /** ── Cave style tiles ─────────────────────────────────────────── */
@@ -237,7 +248,7 @@ const CAVE_FLOOR_PROTO = proto({
   id: "path",
   name: "Cave Floor",
   tag: "terrain",
-  sprite: "map/path.png",
+  paletteId: "path",
 });
 
 const CAVE_WALL_PROTO = proto({
@@ -246,7 +257,7 @@ const CAVE_WALL_PROTO = proto({
   tag: "outdoor",
   walkable: false,
   obstructs: true,
-  sprite: "map/mountains.png",
+  paletteId: "mountain",
 });
 
 /** ── Forest style tiles ──────────────────────────────────────── */
@@ -254,7 +265,7 @@ const FOREST_FLOOR_PROTO = proto({
   id: "grass",
   name: "Grass",
   tag: "outdoor",
-  sprite: "map/grass1.png",
+  paletteId: "grass",
 });
 
 const FOREST_WALL_PROTO = proto({
@@ -263,14 +274,14 @@ const FOREST_WALL_PROTO = proto({
   tag: "outdoor",
   walkable: false,
   obstructs: true,
-  sprite: "map/forest_maple02.png",
+  paletteId: "forest_maple02",
 });
 
 const FOREST_PATH_PROTO = proto({
   id: "path",
   name: "Path",
   tag: "terrain",
-  sprite: "map/path.png",
+  paletteId: "path",
 });
 
 const FOREST_ARCHWAY_UP_PROTO = proto({
@@ -278,7 +289,7 @@ const FOREST_ARCHWAY_UP_PROTO = proto({
   name: "Forest Archway",
   // Was a gold archway sprite; uses the stairs-up art since the
   // 2026-10 tile trim until a forest arch is redrawn.
-  sprite: "map/stairs_up.png",
+  paletteId: "stairs_up",
 });
 
 const FOREST_ARCHWAY_DOWN_PROTO = proto({
@@ -286,7 +297,7 @@ const FOREST_ARCHWAY_DOWN_PROTO = proto({
   name: "Forest Archway (Down)",
   // Was a blue archway sprite; uses the stairs-down art since the
   // 2026-10 tile trim until a forest arch is redrawn.
-  sprite: "map/stairs_down.png",
+  paletteId: "stairs_down",
 });
 
 /** Resolve a v1 numeric tile id to a v2 cell prototype. Returns null
@@ -311,7 +322,7 @@ export function prototypeForTileId(
       // is drawn separately by WorldRenderer.setDetectedTraps on top
       // of this base sprite, so swapping the base doesn't affect
       // detection.
-      return { ...TRAP_PROTO, sprite: floorSpriteFor(style) };
+      return { ...TRAP_PROTO, paletteId: floorPaletteIdFor(style) };
     case TILE_ARTIFACT:
       return ARTIFACT_PROTO;
     case TILE_WALL_TORCH:
@@ -365,14 +376,14 @@ export function prototypeForTileId(
         name: "Water",
         tag: "water",
         walkable: false,
-        sprite: "map/water.png",
+        paletteId: "water",
       });
     case TILE_SAND:
       return proto({
         id: "sand",
         name: "Sand",
         tag: "outdoor",
-        sprite: "map/sand.png",
+        paletteId: "sand",
       });
     case TILE_FOREST:
       return FOREST_WALL_PROTO;
@@ -380,30 +391,50 @@ export function prototypeForTileId(
       return proto({
         id: "dungeon_entrance",
         name: "Dungeon Entrance",
-        sprite: "map/dungeon_entrance_2.png",
+        paletteId: "dungeon_entrance_2",
       });
   }
   // Cosmetic / unknown — caller can decide what to do.
   return null;
 }
 
-/** Sprite paths every dungeon scene needs preloaded, regardless of
- *  which tile ids the level actually carries. Hand to Phaser's
- *  preload pass so transitions feel instant. */
-export const DUNGEON_SPRITE_KEYS: readonly string[] = [
-  "map/floor_gray.png",
-  "map/wall_fieldstone_dark.png",
-  "map/stairs_up.png",
-  "map/stairs_down.png",
-  "map/chest_tile.png",
-  "map/wall_masonry_dark.png",
-  "map/dungeon_door.png",
-  "map/locked_door.png",
-  "map/path.png",
-  "map/mountains.png",
-  "map/grass1.png",
-  "map/forest_maple02.png",
-  "map/water.png",
-  "map/sand.png",
-  "map/dungeon_entrance_2.png",
+/** Every palette id the dungeon prototypes can borrow art from. */
+export const DUNGEON_PALETTE_IDS: readonly string[] = [
+  "floor_gray",
+  "wall_fieldstone_dark",
+  "wall_masonry_dark",
+  "stairs_up",
+  "stairs_down",
+  "chest",
+  "door",
+  "door_locked",
+  "path",
+  "mountain",
+  "grass",
+  "forest_maple02",
+  "water",
+  "sand",
+  "dungeon_entrance_2",
 ];
+
+/** Palette id → sprite lookup for a prototype's `paletteId`. Returns
+ *  "" when the module's palette has no such tile. */
+export function resolveDungeonSprite(
+  paletteId: string,
+  paletteSprites: ReadonlyMap<string, string> | undefined,
+): string {
+  return paletteSprites?.get(paletteId) ?? "";
+}
+
+/** Sprites a dungeon scene should preload, resolved from the module
+ *  palette: every sprite the prototypes can borrow. */
+export function dungeonSpriteKeys(
+  paletteSprites: ReadonlyMap<string, string> | undefined,
+): string[] {
+  const out = new Set<string>();
+  for (const id of DUNGEON_PALETTE_IDS) {
+    const s = resolveDungeonSprite(id, paletteSprites);
+    if (s) out.add(s);
+  }
+  return [...out];
+}

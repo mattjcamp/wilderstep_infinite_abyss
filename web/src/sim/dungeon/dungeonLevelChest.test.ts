@@ -33,12 +33,19 @@ function chestFloor(chestItem: string): DungeonLevel {
   };
 }
 
+// Dungeon art resolves through the module palette (palette id → sprite).
+const PALETTE = new Map<string, string>([
+  ["floor_gray", "map/floor_gray.png"],
+  ["chest", "map/chest_tile.png"],
+]);
+
 describe("dungeonLevelToMap — chest item binding", () => {
   it("stamps the configured chest item onto the chest cell", () => {
     const map = dungeonLevelToMap(chestFloor("iron_chest"), {
       dungeonId: "d",
       floorIdx: 0,
       totalFloors: 1,
+      customTileSprites: PALETTE,
     });
     const cell = map.grid[1][1];
     // The item binding is what routes the bump through the
@@ -56,6 +63,7 @@ describe("dungeonLevelToMap — chest item binding", () => {
       dungeonId: "d",
       floorIdx: 0,
       totalFloors: 1,
+      customTileSprites: PALETTE,
     });
     const cell = map.grid[1][1];
     expect(cell.item).toBe("");
@@ -69,6 +77,7 @@ describe("dungeonLevelToMap — chest item binding", () => {
       dungeonId: "d",
       floorIdx: 0,
       totalFloors: 1,
+      customTileSprites: PALETTE,
     });
     expect(map.grid[0][0].item).toBe("");
     expect(map.grid[1][1].item).toBe("iron_chest");

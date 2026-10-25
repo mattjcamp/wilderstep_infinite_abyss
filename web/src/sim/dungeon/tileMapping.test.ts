@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { prototypeForTileId } from "./tileMapping";
+import { dungeonSpriteKeys, prototypeForTileId, resolveDungeonSprite } from "./tileMapping";
 import { TILE_TRAP } from "@/battle/world/Dungeon";
 import {
   TILE_FOREST_ARCHWAY_UP,
@@ -21,8 +21,8 @@ describe("prototypeForTileId — TILE_TRAP", () => {
     const caveFloor = prototypeForTileId(20 /* TILE_DFLOOR */, "caves");
     expect(trap).not.toBeNull();
     expect(caveFloor).not.toBeNull();
-    expect(trap!.sprite).toBe(caveFloor!.sprite);
-    expect(trap!.sprite).toBe("map/path.png");
+    expect(trap!.paletteId).toBe(caveFloor!.paletteId);
+    expect(trap!.paletteId).toBe("path");
     expect(trap!.trap).toBe(true);
   });
 
@@ -31,8 +31,8 @@ describe("prototypeForTileId — TILE_TRAP", () => {
     const forestFloor = prototypeForTileId(20 /* TILE_DFLOOR */, "forest");
     expect(trap).not.toBeNull();
     expect(forestFloor).not.toBeNull();
-    expect(trap!.sprite).toBe(forestFloor!.sprite);
-    expect(trap!.sprite).toBe("map/grass1.png");
+    expect(trap!.paletteId).toBe(forestFloor!.paletteId);
+    expect(trap!.paletteId).toBe("grass");
     expect(trap!.trap).toBe(true);
   });
 
@@ -41,8 +41,8 @@ describe("prototypeForTileId — TILE_TRAP", () => {
     const ruinsFloor = prototypeForTileId(20 /* TILE_DFLOOR */, "ruins");
     expect(trap).not.toBeNull();
     expect(ruinsFloor).not.toBeNull();
-    expect(trap!.sprite).toBe(ruinsFloor!.sprite);
-    expect(trap!.sprite).toBe("map/floor_gray.png");
+    expect(trap!.paletteId).toBe(ruinsFloor!.paletteId);
+    expect(trap!.paletteId).toBe("floor_gray");
     expect(trap!.trap).toBe(true);
   });
 
@@ -62,13 +62,13 @@ describe("prototypeForTileId — forest transition arches", () => {
   // redrawn. They must stay walkable and keep their stairs ids.
   it("maps the UP archway to the stairs-up sprite, walkable", () => {
     const up = prototypeForTileId(TILE_FOREST_ARCHWAY_UP, "forest");
-    expect(up!.sprite).toBe("map/stairs_up.png");
+    expect(up!.paletteId).toBe("stairs_up");
     expect(up!.walkable).toBe(true);
   });
 
   it("maps the DOWN archway to the stairs-down sprite, walkable", () => {
     const down = prototypeForTileId(TILE_FOREST_ARCHWAY_DOWN, "forest");
-    expect(down!.sprite).toBe("map/stairs_down.png");
+    expect(down!.paletteId).toBe("stairs_down");
     expect(down!.walkable).toBe(true);
   });
 
@@ -77,5 +77,23 @@ describe("prototypeForTileId — forest transition arches", () => {
     const down = prototypeForTileId(TILE_FOREST_ARCHWAY_DOWN, "forest");
     expect(up!.id).toBe("stairs_up");
     expect(down!.id).toBe("stairs_down");
+  });
+});
+
+describe("dungeon art comes from the module palette", () => {
+  it("prototypes carry no sprite path of their own", () => {
+    for (const style of ["ruins", "caves", "forest"] as const) {
+      for (let id = 0; id < 200; id++) {
+        const p = prototypeForTileId(id, style);
+        if (p) expect(p.sprite).toBe("");
+      }
+    }
+  });
+
+  it("resolves a palette id through the module palette, empty when missing", () => {
+    const palette = new Map([["stairs_up", "map/my_stairs.png"]]);
+    expect(resolveDungeonSprite("stairs_up", palette)).toBe("map/my_stairs.png");
+    expect(resolveDungeonSprite("chest", palette)).toBe("");
+    expect(dungeonSpriteKeys(palette)).toEqual(["map/my_stairs.png"]);
   });
 });

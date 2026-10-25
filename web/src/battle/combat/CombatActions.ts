@@ -20,7 +20,7 @@ import type { ClassTemplate } from "../world/Classes";
 import type { PartyMember } from "../world/Party";
 import { rollAttack, rollBonusDamage, rollDamage } from "./engine";
 import type { RNG } from "../rng";
-import { assetUrl, withBase } from "../world/Module";
+import { withBase } from "../world/Module";
 import { spriteUrl } from "@/data_model/spriteUrl";
 import type { Buff } from "./Buffs";
 
@@ -29,13 +29,12 @@ import type { Buff } from "./Buffs";
  * Phaser can load. Mirrors the v2 monster catalog's `resolveSpriteUrl`
  * — bare keys like `"monster/skeleton2.png"` land under `/sprites/`,
  * already-rooted paths (`"/assets/..."` or full URLs) pass through.
- * Falls back to the legacy `/assets/monsters/skeleton.png` so older
- * spell data without a `sprite` field still renders a graphic instead
- * of the no-texture rectangle.
+ * Spell data without a `sprite` returns "" — combat draws its
+ * coloured placeholder square rather than borrowing built-in art.
  */
 function resolveSummonSpriteUrl(sprite: unknown): string {
   if (typeof sprite !== "string" || sprite.length === 0) {
-    return assetUrl("/assets/monsters/skeleton.png");
+    return "";
   }
   if (sprite.startsWith("http://") || sprite.startsWith("https://")) {
     return sprite;

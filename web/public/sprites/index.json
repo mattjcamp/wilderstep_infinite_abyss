@@ -80,7 +80,6 @@
       "window.png"
     ],
     "monster": [
-      "goblin.png",
       "rat_grey.png",
       "skeleton2.png"
     ],
@@ -89,8 +88,7 @@
       "barbarian_priest.png",
       "female_paladin01.png",
       "gnome_mage4.png",
-      "gnome_mage5.png",
-      "townsperson1.png"
+      "gnome_mage5.png"
     ]
   }
 }

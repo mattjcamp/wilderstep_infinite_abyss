@@ -9,15 +9,6 @@
 import Phaser from "phaser";
 import type { Combatant } from "../types";
 import type { Party } from "../world/Party";
-import { assetUrl } from "../world/Module";
-
-/** Sprite paths the party-related preloader needs. */
-export const PARTY_SPRITES: string[] = [
-  assetUrl("/assets/characters/fighter.png"),
-  assetUrl("/assets/characters/barbarian.png"),
-  assetUrl("/assets/characters/ranger.png"),
-  assetUrl("/assets/characters/wizard.png"),
-];
 
 /**
  * Distinct sprite paths used by every member in `party` (full
@@ -81,7 +72,7 @@ export function makeSampleParty(): Combatant[] {
       damage: { dice: 1, sides: 8, bonus: 3 }, // longsword + STR
       dexMod: 1,
       color: [180, 60, 60], // ember red
-      sprite: assetUrl("/assets/characters/fighter.png"),
+      sprite: "",
       baseMoveRange: 4,
       position: { col: 0, row: 0 }, // overwritten by Combat
     },
@@ -96,7 +87,7 @@ export function makeSampleParty(): Combatant[] {
       damage: { dice: 1, sides: 12, bonus: 4 }, // greataxe + STR
       dexMod: 0,
       color: [200, 130, 60], // amber
-      sprite: assetUrl("/assets/characters/barbarian.png"),
+      sprite: "",
       baseMoveRange: 3,
       position: { col: 0, row: 0 },
     },
@@ -111,7 +102,7 @@ export function makeSampleParty(): Combatant[] {
       damage: { dice: 1, sides: 8, bonus: 3 }, // longbow + DEX
       dexMod: 3,
       color: [80, 160, 100], // forest green
-      sprite: assetUrl("/assets/characters/ranger.png"),
+      sprite: "",
       baseMoveRange: 5,
       position: { col: 0, row: 0 },
     },
@@ -126,7 +117,7 @@ export function makeSampleParty(): Combatant[] {
       damage: { dice: 1, sides: 6, bonus: 2 }, // staff or fire bolt
       dexMod: 1,
       color: [120, 100, 200], // arcane violet
-      sprite: assetUrl("/assets/characters/wizard.png"),
+      sprite: "",
       baseMoveRange: 4,
       position: { col: 0, row: 0 },
     },

@@ -12,7 +12,6 @@
  * trigger detection, overworld fallback rendering).
  */
 
-import { BASE_PATH } from "./Module";
 
 // ── Overworld tiles ─────────────────────────────────────────────
 export const TILE_GRASS = 0;
@@ -114,30 +113,20 @@ const FALLBACK: TileDef = { color: [60, 60, 60], walkable: false, name: "Unknown
 /**
  * Hardcoded defs for overworld tiles + encounter trigger glyphs.
  *
- * Sprite paths follow the canonical `/assets/<key>.png` convention;
- * town/dungeon tiles aren't here — they're per-cell on a v2 map.
+ * Walkability / fallback colour only — tile art always comes from the
+ * module's tile palette (per-cell `sprite` on a v2 map).
  */
 const DEFS: Record<number, TileDef> = {
-  [TILE_GRASS]:    { color: [34, 139, 34],  walkable: true,  name: "Grass",
-                     sprite: `${BASE_PATH}/assets/overworld/grass.png` },
-  [TILE_WATER]:    { color: [30, 90, 180],  walkable: false, name: "Water",
-                     sprite: `${BASE_PATH}/assets/overworld/water.png` },
-  [TILE_FOREST]:   { color: [0, 80, 0],     walkable: true,  name: "Forest",
-                     sprite: `${BASE_PATH}/assets/overworld/forest.png` },
-  [TILE_MOUNTAIN]: { color: [130, 130, 130],walkable: false, name: "Mountain",
-                     sprite: `${BASE_PATH}/assets/overworld/mountain.png` },
-  [TILE_TOWN]:     { color: [180, 140, 80], walkable: true,  name: "Town",
-                     sprite: `${BASE_PATH}/assets/overworld/town.png` },
-  [TILE_DUNGEON]:  { color: [120, 40, 80],  walkable: true,  name: "Dungeon",
-                     sprite: `${BASE_PATH}/assets/overworld/dungeon.png` },
-  [TILE_PATH]:     { color: [160, 140, 100],walkable: true,  name: "Path",
-                     sprite: `${BASE_PATH}/assets/overworld/path.png` },
-  [TILE_SAND]:     { color: [210, 190, 130],walkable: true,  name: "Sand",
-                     sprite: `${BASE_PATH}/assets/overworld/sand.png` },
-  [TILE_BRIDGE]:   { color: [140, 100, 50], walkable: true,  name: "Bridge",
-                     sprite: `${BASE_PATH}/assets/overworld/bridge.png` },
-  [TILE_DUNGEON_CLEARED]: { color: [80, 70, 60], walkable: true, name: "Cleared Dungeon",
-                     sprite: `${BASE_PATH}/assets/overworld/dungeon_cleared.png` },
+  [TILE_GRASS]:    { color: [34, 139, 34],  walkable: true,  name: "Grass" },
+  [TILE_WATER]:    { color: [30, 90, 180],  walkable: false, name: "Water" },
+  [TILE_FOREST]:   { color: [0, 80, 0],     walkable: true,  name: "Forest" },
+  [TILE_MOUNTAIN]: { color: [130, 130, 130],walkable: false, name: "Mountain" },
+  [TILE_TOWN]:     { color: [180, 140, 80], walkable: true,  name: "Town" },
+  [TILE_DUNGEON]:  { color: [120, 40, 80],  walkable: true,  name: "Dungeon" },
+  [TILE_PATH]:     { color: [160, 140, 100],walkable: true,  name: "Path" },
+  [TILE_SAND]:     { color: [210, 190, 130],walkable: true,  name: "Sand" },
+  [TILE_BRIDGE]:   { color: [140, 100, 50], walkable: true,  name: "Bridge" },
+  [TILE_DUNGEON_CLEARED]: { color: [80, 70, 60], walkable: true, name: "Cleared Dungeon" },
   // Encounter triggers: rendered with a ✦ glyph overlaid on the
   // fallback colour. Sprites in /assets/items/campfire.png etc. are
   // available via tile_defs.json runtime entries if a scene wants
@@ -155,9 +144,6 @@ const DEFS: Record<number, TileDef> = {
   [TILE_FOREST_ARCHWAY_UP]:   { color: [220, 180, 90],  walkable: true, name: "Forest Archway" },
   [TILE_FOREST_ARCHWAY_DOWN]: { color: [100, 120, 210], walkable: true, name: "Forest Archway" },
 };
-
-/** Path to the player avatar sprite. */
-export const PLAYER_SPRITE = `${BASE_PATH}/assets/overworld/party_marker.png`;
 
 /**
  * Look up the def for a tile id. Returns FALLBACK (grey "Unknown")

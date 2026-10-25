@@ -47,7 +47,7 @@ import {
   EXIT_TO_OVERWORLD_MAP_ID,
   type DungeonMapRecord,
 } from "@/sim/dungeon/dungeonLevelToMap";
-import { DUNGEON_SPRITE_KEYS } from "@/sim/dungeon/tileMapping";
+import { dungeonSpriteKeys } from "@/sim/dungeon/tileMapping";
 import {
   getFloorMutations,
   peekDungeonSession,
@@ -326,7 +326,9 @@ export function DungeonSimMount({
       if (cancelled || !containerRef.current) return;
       installHiDpiText(Phaser);
 
-      const spriteKeys = new Set<string>(DUNGEON_SPRITE_KEYS);
+      const spriteKeys = new Set<string>(
+        dungeonSpriteKeys(catalog?.customTileSprites),
+      );
       // Add every cell's sprite (covers anything the prototype table
       // didn't pre-declare).
       for (const row of floorRecord.grid) {

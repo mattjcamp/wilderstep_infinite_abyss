@@ -220,10 +220,9 @@ interface RawParty {
 export function spriteForMember(rawSprite: string | undefined, _klass: string): string {
   const raw = (rawSprite ?? "").trim();
   if (!raw) {
-    // No source path — point at the generic "townsperson" placeholder
-    // that the modules ship. Beats a class-named PNG that doesn't
-    // exist under /sprites/.
-    return spriteUrl("person/townsperson1.png");
+    // No source path — no art; combat draws the member's coloured
+    // placeholder square rather than borrowing a sprite file.
+    return "";
   }
   // spriteUrl handles http(s) passthrough, "/sprites/"/"sprites/"
   // normalisation, and — in remote mode for a hosted module — routes
