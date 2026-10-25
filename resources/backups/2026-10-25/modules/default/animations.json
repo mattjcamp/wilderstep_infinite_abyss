@@ -1,0 +1,141 @@
+{
+  "_comment": "Animation catalog — the curated list of visual + audio bundles that designers can attach to spells, abilities, items, and effects. Each record indexes one visual (matching a key in the VFX projectile registry at web/src/vfx/effectRegistry.ts) and zero-to-two SFX names (matching generators in web/src/battle/audio/Sfx.ts). Adding new visuals or sounds requires a code change; this file just lets designers pick from what's available. The 'none' record is a sentinel meaning 'no visual, no sound' — use it explicitly to suppress fallback behavior. See docs/data_dictionary/animation.md.",
+  "animations": [
+    {
+      "id": "none",
+      "name": "None",
+      "description": "Explicit no-op — suppress any default visual and silence both SFX slots. Use when a record should be deliberately silent.",
+      "visual": "none",
+      "cast_sfx": "",
+      "hit_sfx": ""
+    },
+    {
+      "id": "lightning_strike",
+      "name": "Lightning Strike",
+      "description": "Jagged blue-white zigzag drawn from caster to target, fading out over ~280ms. Cast roar + crackling impact.",
+      "visual": "lightning_bolt",
+      "cast_sfx": "fireball",
+      "hit_sfx": "explosion"
+    },
+    {
+      "id": "magic_dart",
+      "name": "Magic Dart",
+      "description": "Fast arcane orb with a sparkle trail and a bright impact ring. The classic single-target arcane projectile.",
+      "visual": "magic_dart",
+      "cast_sfx": "magic_burst",
+      "hit_sfx": "magic_burst"
+    },
+    {
+      "id": "magic_arrow",
+      "name": "Magic Arrow",
+      "description": "Glowing shaft with a bright tip, sparkle trail, and a fragmenting impact. Reads as 'magic, not mundane' on aimed shots.",
+      "visual": "magic_arrow",
+      "cast_sfx": "magic_burst",
+      "hit_sfx": "magic_burst"
+    },
+    {
+      "id": "fireball_burst",
+      "name": "Fireball Burst",
+      "description": "Bowed orange projectile to the target, with an explosion sound on impact. Pair with an AOE on the destination.",
+      "visual": "fire_projectile",
+      "cast_sfx": "fireball",
+      "hit_sfx": "explosion"
+    },
+    {
+      "id": "meteor_strike",
+      "name": "Meteor Strike",
+      "description": "A blazing meteor falls from the sky onto the target, trailing embers into a fiery impact burst. Same effect the Meteorfall Mace / Starfall Sling use; on an auto-monster spell one meteor drops on each foe.",
+      "visual": "meteor_strike",
+      "cast_sfx": "fireball",
+      "hit_sfx": "explosion"
+    },
+    {
+      "id": "void_orb",
+      "name": "Void Orb",
+      "description": "A large glowing multi-coloured sphere streaks from the caster to the target, churning through a violet/magenta/cyan void palette with a spark trail, then implodes and erupts in a shockwave. For high-tier single-target void spells.",
+      "visual": "void_orb",
+      "cast_sfx": "magic_burst",
+      "hit_sfx": "explosion"
+    },
+    {
+      "id": "generic_projectile",
+      "name": "Generic Projectile",
+      "description": "Slow-bowed arcane line. The default for any projectile spell that doesn't specify another animation.",
+      "visual": "projectile_line",
+      "cast_sfx": "magic_burst",
+      "hit_sfx": ""
+    },
+    {
+      "id": "heal_sparkles",
+      "name": "Healing Sparkles",
+      "description": "Rising green sparkles below the target. Use for any positive-restoration spell.",
+      "visual": "heal_sparkles",
+      "cast_sfx": "heal",
+      "hit_sfx": ""
+    },
+    {
+      "id": "shield_aura",
+      "name": "Shield Aura",
+      "description": "Soft expanding gold ring around the target with a crystalline chime. Use for AC buffs / protective effects.",
+      "visual": "buff_aura",
+      "cast_sfx": "shield",
+      "hit_sfx": ""
+    },
+    {
+      "id": "status_aura",
+      "name": "Status Aura",
+      "description": "General gold ring + cast chime — covers neutral status applies like sleep, charm, push, light.",
+      "visual": "buff_aura",
+      "cast_sfx": "shield",
+      "hit_sfx": ""
+    },
+    {
+      "id": "curse_aura",
+      "name": "Curse Aura",
+      "description": "Soft expanding purple ring with a chime. Use for hex / curse / debuff spells.",
+      "visual": "curse_aura",
+      "cast_sfx": "shield",
+      "hit_sfx": ""
+    },
+    {
+      "id": "turn_undead",
+      "name": "Turn Undead",
+      "description": "Bright radial burst with a holy chord cast sound. Reserved for radiant / undead-bane abilities.",
+      "visual": "radial_burst",
+      "cast_sfx": "turn_undead",
+      "hit_sfx": ""
+    },
+    {
+      "id": "teleport_blink",
+      "name": "Teleport Blink",
+      "description": "Soft arcane burst at the destination with a chime — pairs with the actor sprite snapping to the new tile.",
+      "visual": "radial_burst",
+      "cast_sfx": "shield",
+      "hit_sfx": ""
+    },
+    {
+      "id": "summon_burst",
+      "name": "Summon Burst",
+      "description": "Radial burst at the spawn tile + chime. Use for animate_dead / summon spells.",
+      "visual": "radial_burst",
+      "cast_sfx": "shield",
+      "hit_sfx": ""
+    },
+    {
+      "id": "utility_clack",
+      "name": "Utility Clack",
+      "description": "Lock-pick / mechanical SFX with no visual. Use for non-visual utility spells (knock, dispel-lock).",
+      "visual": "none",
+      "cast_sfx": "lock_pick_success",
+      "hit_sfx": ""
+    },
+    {
+      "id": "level_up_chime",
+      "name": "Level Up Chime",
+      "description": "Triumphant arpeggio with a sparkle tail. Best for character-progression moments (level up, learn ability).",
+      "visual": "none",
+      "cast_sfx": "level_up",
+      "hit_sfx": ""
+    }
+  ]
+}

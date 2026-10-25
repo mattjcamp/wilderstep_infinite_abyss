@@ -1,0 +1,10 @@
+{
+  "_comment": "Draft module created in the editor. Export this file and drop it into web/public/modules/npcs/module.json.",
+  "id": "npcs",
+  "title": "Lore and NPCs",
+  "description": "A library of world lore and NPC",
+  "author": "hyperbolic",
+  "version": "0.1.0",
+  "role": "library",
+  "extends": "default"
+}

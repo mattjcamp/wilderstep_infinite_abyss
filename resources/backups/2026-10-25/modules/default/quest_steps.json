@@ -1,0 +1,4 @@
+{
+  "_comment": "DEPRECATED — Quest Steps are now inline objects under Quest.steps[] in quests.json. This file is retained empty so old code paths that fetch it don't 404; safe to delete when convenient. See docs/data_dictionary/quest_step.md for the inline shape.",
+  "quest_steps": []
+}

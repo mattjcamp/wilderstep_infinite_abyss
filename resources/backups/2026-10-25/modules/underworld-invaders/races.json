@@ -1,0 +1,85 @@
+{
+  "_comment": "Race catalog (real data drives the schema). Each race has stat modifiers applied at character creation, an optional XP curve override (Humans level faster), and an `abilities` list of innate Ability ids granted to members of this race. Ability records (name, description, default params) live in abilities.json — this file only carries the reference. v1 called this field `effects` and pointed at Effect ids; v2 renamed it to `abilities` and migrated the records into the dedicated Ability catalog.",
+  "races": [
+    {
+      "id": "human",
+      "name": "Human",
+      "description": "Versatile and adaptable, humans excel in no single area but have no weaknesses. They learn quickly and level up faster than other races.",
+      "stat_modifiers": {
+        "strength": 0,
+        "dexterity": 0,
+        "constitution": 0,
+        "intelligence": 0,
+        "wisdom": 0
+      },
+      "exp_per_level": 1125,
+      "abilities": [
+        "fast_learner"
+      ]
+    },
+    {
+      "id": "dwarf",
+      "name": "Dwarf",
+      "description": "Stout and hardy, dwarves are natural miners and warriors with keen underground senses.",
+      "stat_modifiers": {
+        "strength": 0,
+        "dexterity": -2,
+        "constitution": 2,
+        "intelligence": -1,
+        "wisdom": 0
+      },
+      "exp_per_level": null,
+      "abilities": [
+        "infravision"
+      ]
+    },
+    {
+      "id": "halfling",
+      "name": "Halfling",
+      "description": "Small and nimble, halflings are surprisingly resilient and hard to hit.",
+      "stat_modifiers": {
+        "strength": -2,
+        "dexterity": 2,
+        "constitution": 0,
+        "intelligence": -1,
+        "wisdom": 0
+      },
+      "exp_per_level": null,
+      "abilities": [
+        "pickpocket"
+      ]
+    },
+    {
+      "id": "elf",
+      "name": "Elf",
+      "description": "Graceful and keen-minded, elves have a natural affinity for magic and sharp senses.",
+      "stat_modifiers": {
+        "strength": -2,
+        "dexterity": 0,
+        "constitution": -1,
+        "intelligence": 0,
+        "wisdom": 2
+      },
+      "exp_per_level": null,
+      "abilities": [
+        "nimble"
+      ]
+    },
+    {
+      "id": "gnome",
+      "name": "Gnome",
+      "description": "Clever and curious, gnomes combine a knack for tinkering with innate magical talent.",
+      "stat_modifiers": {
+        "strength": -2,
+        "dexterity": -1,
+        "constitution": 0,
+        "intelligence": 2,
+        "wisdom": 0
+      },
+      "exp_per_level": null,
+      "abilities": [
+        "tinker"
+      ]
+    }
+  ]
+}

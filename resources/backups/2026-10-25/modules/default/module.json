@@ -1,0 +1,9 @@
+{
+  "_comment": "Base module — every other module inherits from this one unless it declares a different `extends`. Role `core` means it's editable in the editor but hidden from the play picker; the canonical record set lives here and child modules override by record id. See web/src/data_model/StaticModuleSource.ts for the merge semantics.",
+  "id": "default",
+  "title": "Default Module",
+  "description": "The base module — canonical effects, classes, races, items, monsters, etc. Other modules extend this one and override records by id.",
+  "author": "Matt",
+  "version": "0.1.0",
+  "role": "core"
+}

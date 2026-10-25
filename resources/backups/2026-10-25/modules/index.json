@@ -1,0 +1,25 @@
+{
+  "_comment": "Modules index — managed by the editor in draft form; export and drop into web/public/modules/index.json to commit.",
+  "modules": [
+    {
+      "id": "default",
+      "title": "Default Module",
+      "role": "core"
+    },
+    {
+      "id": "maps-mix-in",
+      "title": "Maps and Buildings",
+      "role": "library"
+    },
+    {
+      "id": "underworld-invaders",
+      "title": "Emberscar",
+      "role": "playable"
+    },
+    {
+      "id": "npcs",
+      "title": "Lore and NPCs",
+      "role": "library"
+    }
+  ]
+}

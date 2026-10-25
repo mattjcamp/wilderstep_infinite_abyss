@@ -1,0 +1,99 @@
+{
+  "_comment": "Recipe catalog (real data drives the schema). Each recipe is an option the player can pick from the alchemy / brew UI. The record names what it is, lists the reagents required (keys are Item ids, values are integer counts), and names the Item id produced on a successful brew (`result_item`). Today every recipe's `result_item` happens to equal its own `id` — that's a convenience of the seed data, not a contract; future recipes can produce an arbitrary Item. DC, result count, and other crafting mechanics are intentionally deferred and will land on Recipe (or an adjacent model) when the brew-execution path is implemented. See docs/data_dictionary/recipe.md.",
+  "recipes": [
+    {
+      "id": "healing_potion",
+      "name": "Healing Potion",
+      "result_item": "healing_potion",
+      "reagents": {
+        "moonpetal": 1,
+        "spring_water": 1
+      }
+    },
+    {
+      "id": "mana_potion",
+      "name": "Mana Potion",
+      "result_item": "mana_potion",
+      "reagents": {
+        "glowcap_mushroom": 1,
+        "spring_water": 1
+      }
+    },
+    {
+      "id": "antidote",
+      "name": "Antidote",
+      "result_item": "antidote",
+      "reagents": {
+        "serpent_root": 1,
+        "spring_water": 1
+      }
+    },
+    {
+      "id": "fire_oil",
+      "name": "Fire Oil",
+      "result_item": "fire_oil",
+      "reagents": {
+        "brimite_ore": 1,
+        "glowcap_mushroom": 1
+      }
+    },
+    {
+      "id": "elixir_of_strength",
+      "name": "Elixir of Strength",
+      "result_item": "elixir_of_strength",
+      "reagents": {
+        "moonpetal": 1,
+        "serpent_root": 1,
+        "brimite_ore": 1
+      }
+    },
+    {
+      "id": "elixir_of_warding",
+      "name": "Elixir of Warding",
+      "result_item": "elixir_of_warding",
+      "reagents": {
+        "moonpetal": 2,
+        "spring_water": 1
+      }
+    },
+    {
+      "id": "poison_vial",
+      "name": "Poison Vial",
+      "result_item": "poison_vial",
+      "reagents": {
+        "serpent_root": 2,
+        "spring_water": 1
+      }
+    },
+    {
+      "id": "paralytic_poison",
+      "name": "Paralytic Poison",
+      "result_item": "paralytic_poison",
+      "reagents": {
+        "serpent_root": 1,
+        "glowcap_mushroom": 1,
+        "spring_water": 1
+      }
+    },
+    {
+      "id": "weakening_poison",
+      "name": "Weakening Poison",
+      "result_item": "weakening_poison",
+      "reagents": {
+        "serpent_root": 1,
+        "brimite_ore": 1,
+        "spring_water": 1
+      }
+    },
+    {
+      "id": "lingering_venom",
+      "name": "Lingering Venom",
+      "result_item": "lingering_venom",
+      "reagents": {
+        "serpent_root": 2,
+        "moonpetal": 1,
+        "spring_water": 1
+      }
+    }
+  ]
+}

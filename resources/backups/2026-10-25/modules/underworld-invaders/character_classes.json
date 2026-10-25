@@ -1,0 +1,249 @@
+{
+  "_comment": "Character class catalog (real data drives the schema). Each class carries movement range, a casting_type list, a list of ability references (the catalog records live in abilities.json), and an allowable_item_types list gating which weapon and armor item_types the class may equip. `casting_type` ties the class to the spell catalog — values are `none` (no spells), `sorcerer` (arcane/INT-flavored), or `priest` (divine/WIS-flavored); Druid is the only class with both. Spell eligibility is purely casting_type-based: any class with a matching catalog can cast any spell in that catalog. Per-class level overrides for specific spells live on Spell.class_min_levels. `abilities[]` entries reference Ability records by id with a per-class `min_level` (e.g. Paladin gets Turn Undead at 5 while Cleric gets it at 2). Per-class item gating lives here on `allowable_item_types` (values are Item.item_type) — Item.party_can_equip / Item.character_can_equip still controls equip *scope* (party vs. character slot) but no longer carries any class info. XP-per-level lives on Race. `description` is a short prose blurb (role / playstyle, grounded in the class's mechanics) used by the manual's class gallery and available to any future in-game/editor surface.",
+  "character_classes": [
+    {
+      "id": "fighter",
+      "name": "Fighter",
+      "description": "The workhorse of any party. Fighters command the widest armory in the game — every weapon family from fists to halberds and every armor from cloth to plate — and cover a brisk four tiles a turn. They cast no spells and have no special tricks; their strength is sheer durability and reliability, which makes them ideal in the lead slot soaking the first blows.",
+      "range": 4,
+      "hp_per_level": 10,
+      "mp_per_level": 0,
+      "casting_type": [
+        "none"
+      ],
+      "allowable_item_types": [
+        "fists",
+        "dagger",
+        "club",
+        "mace",
+        "sword",
+        "axe",
+        "halberd",
+        "spear",
+        "gloves",
+        "sling",
+        "short_bow",
+        "long_bow",
+        "crossbow",
+        "rock",
+        "cloth",
+        "leather",
+        "chain",
+        "plate",
+        "exotic"
+      ]
+    },
+    {
+      "id": "thief",
+      "name": "Thief",
+      "description": "The fastest, sneakiest member of any party, covering six tiles a turn. Thieves pick locks and spot traps from level 1, land devastating Backstab criticals with daggers from level 3, and at level 7 can Shadow Step to move again after striking. Lightly armored and non-magical, they win through speed, utility, and hit-and-run positioning.",
+      "range": 6,
+      "hp_per_level": 6,
+      "mp_per_level": 0,
+      "casting_type": [
+        "none"
+      ],
+      "allowable_item_types": [
+        "fists",
+        "dagger",
+        "club",
+        "sling",
+        "short_bow",
+        "cloth",
+        "leather"
+      ],
+      "abilities": [
+        {
+          "ability_id": "pick_locks",
+          "min_level": 1
+        },
+        {
+          "ability_id": "detect_traps",
+          "min_level": 1
+        },
+        {
+          "ability_id": "backstab",
+          "min_level": 3
+        },
+        {
+          "ability_id": "shadow_step",
+          "min_level": 7
+        }
+      ]
+    },
+    {
+      "id": "cleric",
+      "name": "Cleric",
+      "description": "The party's divine anchor. Clerics draw on the priest catalog to heal and protect, wade in wearing chain with a mace or sling, and from level 2 can Turn Undead to wither the unliving. Slow on their feet at two tiles a turn, they reward patient, central positioning over aggression.",
+      "range": 4,
+      "hp_per_level": 6,
+      "mp_per_level": 6,
+      "casting_type": [
+        "priest"
+      ],
+      "allowable_item_types": [
+        "fists",
+        "club",
+        "mace",
+        "sling",
+        "cloth",
+        "leather",
+        "chain",
+        "wand"
+      ],
+      "abilities": [
+        {
+          "ability_id": "turn_undead",
+          "min_level": 2
+        }
+      ]
+    },
+    {
+      "id": "wizard",
+      "name": "Wizard",
+      "description": "A glass cannon of raw arcane power. Wizards cast from the sorcerer catalog but are the frailest class — limited to cloth and a dagger or club, and only two tiles of movement. Keep them well behind the front line: their spells can decide a fight, but a single solid hit can end them.",
+      "range": 2,
+      "hp_per_level": 4,
+      "mp_per_level": 8,
+      "casting_type": [
+        "sorcerer"
+      ],
+      "allowable_item_types": [
+        "fists",
+        "dagger",
+        "club",
+        "cloth",
+        "wand"
+      ]
+    },
+    {
+      "id": "druid",
+      "name": "Druid",
+      "description": "The only class that wields both arcane and divine magic, thanks to Dual Casting from level 1. Druids forage for reagents as they travel (Herbalism) and fight in leather with simple weapons. Versatile but slow at two tiles a turn and squishier than a true warrior — a flexible spellcaster for players who like options.",
+      "range": 2,
+      "hp_per_level": 4,
+      "mp_per_level": 4,
+      "casting_type": [
+        "sorcerer",
+        "priest"
+      ],
+      "allowable_item_types": [
+        "fists",
+        "dagger",
+        "club",
+        "mace",
+        "sling",
+        "cloth",
+        "leather",
+        "wand"
+      ],
+      "abilities": [
+        {
+          "ability_id": "dual_casting",
+          "min_level": 1
+        },
+        {
+          "ability_id": "herbalism",
+          "min_level": 1
+        }
+      ]
+    },
+    {
+      "id": "paladin",
+      "name": "Paladin",
+      "description": "A holy warrior who fights on the front line and channels divine power. Paladins move four tiles a turn, wear chain and wield swords and spears, Smite Undead for double damage from level 1, and gain Turn Undead at level 5. They trade the Cleric's spell depth for martial muscle — the party's anti-undead vanguard.",
+      "range": 4,
+      "hp_per_level": 6,
+      "mp_per_level": 2,
+      "casting_type": [
+        "priest"
+      ],
+      "allowable_item_types": [
+        "fists",
+        "dagger",
+        "club",
+        "mace",
+        "sword",
+        "spear",
+        "gloves",
+        "sling",
+        "rock",
+        "cloth",
+        "leather",
+        "chain",
+        "wand"
+      ],
+      "abilities": [
+        {
+          "ability_id": "turn_undead",
+          "min_level": 3
+        },
+        {
+          "ability_id": "smite_undead",
+          "min_level": 1
+        }
+      ]
+    },
+    {
+      "id": "ranger",
+      "name": "Ranger",
+      "description": "A wilderness hunter built around ranged combat. Rangers favor bows — the crossbow included — and craft their own Arrows (level 2) and Fire Arrows (level 5) so they never run dry. They draw on a small priest catalog and move a nimble four tiles a turn: a self-sufficient skirmisher.",
+      "range": 4,
+      "hp_per_level": 6,
+      "mp_per_level": 2,
+      "casting_type": [
+        "priest"
+      ],
+      "allowable_item_types": [
+        "fists",
+        "dagger",
+        "club",
+        "sword",
+        "sling",
+        "short_bow",
+        "long_bow",
+        "crossbow",
+        "cloth",
+        "leather"
+      ],
+      "abilities": [
+        {
+          "ability_id": "craft_arrows",
+          "min_level": 2
+        },
+        {
+          "ability_id": "craft_fire_arrows",
+          "min_level": 3
+        }
+      ]
+    },
+    {
+      "id": "alchemist",
+      "name": "Alchemist",
+      "description": "A support specialist who turns the wild into an arsenal. Alchemists forage reagents (Herbalism) and Brew Potions from level 1, keeping the party stocked with healing and buffs. They cast from the sorcerer catalog but fight poorly — only a dagger, sling, and cloth — so they shine in the back ranks as a crafter and caster.",
+      "range": 2,
+      "hp_per_level": 4,
+      "mp_per_level": 4,
+      "casting_type": [
+        "sorcerer"
+      ],
+      "allowable_item_types": [
+        "fists",
+        "dagger",
+        "sling",
+        "cloth",
+        "wand"
+      ],
+      "abilities": [
+        {
+          "ability_id": "herbalism",
+          "min_level": 1
+        },
+        {
+          "ability_id": "brew_potion",
+          "min_level": 1
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,249 @@
+{
+  "_comment": "Ability catalog (real data drives the schema). An Ability is a named capability that lives on a Character — granted by a race, by a class, or by some other source (item, quest, scripted). Descriptions here are granter-agnostic; per-granter level gates (and any future per-granter param overrides) live on the granting record (Character Class.abilities, Race.abilities). Setting `party_effect: true` marks the Ability as a togglable party-wide effect — its id may appear in the Party.party_effects[] list and the in-game Party screen renders it as a toggle; without that flag the Ability is character/combat-only and renders on the character sheet instead. See docs/data_dictionary/ability.md.",
+  "abilities": [
+    {
+      "id": "pick_locks",
+      "name": "Pick Locks",
+      "animation_id": null,
+      "type": "class",
+      "description": "Pick locked doors and chests — d20 + DEX mod vs DC 12, one lockpick consumed per attempt.",
+      "duration": "permanent",
+      "params": {
+        "dc": 12,
+        "save_stat": "dexterity"
+      }
+    },
+    {
+      "id": "detect_traps",
+      "name": "Detect Traps",
+      "animation_id": null,
+      "type": "class",
+      "description": "Hidden traps are revealed before the party steps on them.",
+      "duration": "permanent",
+      "party_effect": true,
+      "params": null
+    },
+    {
+      "id": "backstab",
+      "name": "Backstab",
+      "animation_id": null,
+      "type": "class",
+      "description": "Critical hits with daggers on a successful DEX save — the humble dagger becomes a devastating weapon.",
+      "duration": "permanent",
+      "params": {
+        "save_stat": "dexterity",
+        "weapon_type": "dagger"
+      }
+    },
+    {
+      "id": "shadow_step",
+      "name": "Shadow Step",
+      "animation_id": null,
+      "type": "class",
+      "description": "Move after attacking — true hit-and-run play.",
+      "duration": "permanent",
+      "params": null
+    },
+    {
+      "id": "turn_undead",
+      "name": "Turn Undead",
+      "animation_id": "turn_undead",
+      "type": "class",
+      "description": "Channel holy energy at every undead on the battlefield. Each one must make a Wisdom save (d20 + WIS mod vs DC 10 + caster's WIS mod) or be destroyed outright; those that succeed are still seared for 50% of their HP in radiant damage. Powerful undead (vampires, liches, …) add their turn resistance to the save and are never destroyed outright — on a failed save they are seared and TURNED, fleeing the holy light for 1d4 turns.",
+      "duration": "instant",
+      "usable_in": [
+        "battle"
+      ],
+      "params": {
+        "action": "turn_undead",
+        "mp_cost": 0,
+        "range": 99,
+        "targeting": "auto_monster",
+        "save_stat": "wisdom",
+        "save_dc_base": 10,
+        "fail_hp_percent": 50,
+        "sfx": "turn_undead"
+      }
+    },
+    {
+      "id": "dual_casting",
+      "name": "Dual Casting",
+      "animation_id": null,
+      "type": "class",
+      "description": "Access to both the priest and sorcerer spell catalogs — the only class with both.",
+      "duration": "permanent",
+      "params": null
+    },
+    {
+      "id": "herbalism",
+      "name": "Herbalism",
+      "animation_id": null,
+      "type": "class",
+      "description": "Nature lore spots reagents in the wild while travelling. Each step on a foraging tile (grass, forest, …) has a small chance to turn up a potion reagent. Alchemists in particular benefit from a doubled find rate.",
+      "duration": "permanent",
+      "params": {
+        "dc": 13,
+        "save_stat": "intelligence",
+        "find_chance": 0.02,
+        "alchemist_multiplier": 2,
+        "terrain": [
+          "grass",
+          "grass2",
+          "forest",
+          "path",
+          "swamp",
+          "palm_tree",
+          "tree",
+          "tree_1",
+          "apple_tree",
+          "forest_canopy01",
+          "forest_canopy02",
+          "forest_jungle01",
+          "forest_jungle02",
+          "forest_maple01",
+          "forest_maple02",
+          "forest_maple03",
+          "forest_maple04",
+          "forest_mixed01",
+          "forest_mixed02",
+          "forest_mixed03",
+          "forest_pine01",
+          "forest_pine02",
+          "forest_pine03",
+          "forest_pine04",
+          "forest_pine05",
+          "forest_pine06",
+          "forest_willow01",
+          "forest_willow02",
+          "forest_willow03",
+          "tree_jungle01",
+          "tree_maple01",
+          "tree_maple02",
+          "tree_mixed01",
+          "tree_pine01",
+          "tree_pine02",
+          "tree_pine03",
+          "tree_pine04",
+          "tree_pine05",
+          "tree_pine06",
+          "tree_pine07",
+          "tree_pine08",
+          "tree_pine09",
+          "tree_pine10",
+          "tree_pine11",
+          "tree_pine12"
+        ]
+      }
+    },
+    {
+      "id": "infravision",
+      "name": "Infravision",
+      "animation_id": null,
+      "type": "race",
+      "description": "Pierces darkness, revealing the world in shades of red. The bearer can see in absolute darkness without needing a torch.",
+      "duration": "permanent",
+      "party_effect": true,
+      "params": null
+    },
+    {
+      "id": "pickpocket",
+      "name": "Pickpocket",
+      "animation_id": null,
+      "type": "race",
+      "description": "Attempt to steal items from town NPCs. Once per NPC, with a chance of failure.",
+      "duration": "permanent",
+      "usable_in": [
+        "party"
+      ],
+      "params": null
+    },
+    {
+      "id": "tinker",
+      "name": "Tinker",
+      "animation_id": null,
+      "type": "race",
+      "description": "Once per in-game day, fashion a small trinket",
+      "duration": "permanent",
+      "params": {
+        "uses_per_day": 1,
+        "tinker_items": [
+          "torch",
+          "iron_key",
+          "lockpick",
+          "dagger"
+        ]
+      },
+      "usable_in": [
+        "party"
+      ]
+    },
+    {
+      "id": "fast_learner",
+      "name": "Fast Learner",
+      "animation_id": null,
+      "type": "race",
+      "description": "Requires only 1125 XP per level instead of the standard 1500, leveling up roughly 25% faster than other races.",
+      "duration": "permanent",
+      "params": {
+        "note": "The mechanic lives on Race.exp_per_level; this record is the character-sheet entry."
+      }
+    },
+    {
+      "id": "nimble",
+      "name": "Nimble",
+      "animation_id": null,
+      "type": "race",
+      "description": "Allows extra movement",
+      "duration": "permanent",
+      "params": {
+        "extra_range": 4,
+        "post_attack_range": 0
+      }
+    },
+    {
+      "id": "brew_potion",
+      "name": "Brew Potion",
+      "animation_id": null,
+      "type": "class",
+      "description": "Combine regents using the guidance of a recipe to create a potion",
+      "duration": null,
+      "usable_in": [
+        "party"
+      ],
+      "params": {}
+    },
+    {
+      "id": "craft_arrows",
+      "name": "Craft Arrows",
+      "animation_id": null,
+      "type": "class",
+      "description": "Allows the character to craft a bundle of arrows or bolts once per day.",
+      "duration": null,
+      "usable_in": [
+        "party"
+      ],
+      "params": {}
+    },
+    {
+      "id": "smite_undead",
+      "name": "Smite Undead",
+      "animation_id": null,
+      "type": "class",
+      "description": "Attacks against undead creatures deal double damage",
+      "duration": null,
+      "params": {}
+    },
+    {
+      "id": "craft_fire_arrows",
+      "name": "Craft Fire Arrows",
+      "animation_id": null,
+      "type": "class",
+      "description": "Allows the character to craft a bundle of fire arrows or fire bolts once per day.",
+      "duration": null,
+      "usable_in": [
+        "party"
+      ],
+      "params": {}
+    }
+  ]
+}

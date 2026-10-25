@@ -1,0 +1,4 @@
+{
+  "_comment": "DEPRECATED — Dungeon Levels are now inline objects under Dungeon.levels[] in dungeons.json. This file is retained empty so old code paths that fetch it don't 404; safe to delete when convenient. See docs/data_dictionary/dungeon_level.md for the inline shape.",
+  "dungeon_levels": []
+}
