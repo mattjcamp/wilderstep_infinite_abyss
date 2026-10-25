@@ -10,16 +10,6 @@
       "id": "maps-mix-in",
       "title": "Maps and Buildings",
       "role": "library"
-    },
-    {
-      "id": "underworld-invaders",
-      "title": "Emberscar",
-      "role": "playable"
-    },
-    {
-      "id": "npcs",
-      "title": "Lore and NPCs",
-      "role": "library"
     }
   ]
 }
