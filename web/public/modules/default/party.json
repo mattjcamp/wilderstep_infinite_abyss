@@ -4,23 +4,23 @@
     "col": 4,
     "row": 16
   },
-  "avatar": "person/fighter18.png",
+  "avatar": "person/female_paladin01.png",
   "gold": 50,
   "roster": [
-    "gimli",
-    "goldmoon",
-    "bilbo_baggins",
-    "raistlin_majere"
+    "cleric",
+    "fighter",
+    "thief",
+    "wizard"
   ],
   "party_effects": [],
   "inventory": [
     {
       "item": "torch",
-      "charges": 10
+      "charges": 2
     },
     {
       "item": "rock",
-      "charges": 20
+      "charges": 10
     },
     {
       "item": "lockpick",

@@ -261,6 +261,11 @@ const DEFS: Record<ModelKey, ModelDef> = {
       { field: "hp", label: "HP", format: asString },
       { field: "ac", label: "AC", format: asString },
       { field: "difficulty", label: "Difficulty" },
+      {
+        field: "tags",
+        label: "Tags",
+        format: (v) => (Array.isArray(v) ? v.join(", ") : ""),
+      },
     ],
   },
   characters: {

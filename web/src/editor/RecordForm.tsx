@@ -30,6 +30,7 @@ import { getCounterFieldConfig } from "./counterFields";
 import { MapPicker } from "./MapPicker";
 import { getMapFieldConfig } from "./mapFields";
 import { TagsPicker } from "./TagsPicker";
+import { normalizeTags } from "./recordTags";
 import { DialogsEditor } from "./DialogsEditor";
 import { npcDialogLinesForEditing } from "@/data_model/npcDialogs";
 import { IdListPicker } from "./IdListPicker";
@@ -44,7 +45,7 @@ import { getParamsFieldConfig } from "./paramsFields";
 /** Models whose records carry a free-form `tags: string[]` for editor
  *  organization. The form injects the field (even when a record hasn't
  *  set it yet) and renders the chip-style TagsPicker for it. */
-const TAGGED_MODELS = new Set(["encounters"]);
+const TAGGED_MODELS = new Set(["encounters", "monsters"]);
 
 /** Optional numeric fields injected per model even when a record
  *  hasn't set them, so authors can discover + fill them from the form.
@@ -79,6 +80,9 @@ function inferKind(
   sample?: unknown,
   modelKey?: string,
 ): FieldKind {
+  // `tags` is always a string[] — never infer it from a value, or a
+  // record whose tags were saved as a string would keep saving one.
+  if (key === "tags") return "json";
   // Known sprite-typed fields are always strings, so the picker can
   // render even when the field is currently null/empty (e.g., a
   // freshly-added `avatar` on Party).
@@ -149,13 +153,20 @@ function buildFieldList(
   // Tagged models always expose a `tags` field even when the record
   // hasn't set one yet, so authors can start tagging without first
   // editing the JSON. Stored + parsed as a JSON array (string[]).
-  if (modelKey && TAGGED_MODELS.has(modelKey) && !seen.has("tags")) {
+  if (modelKey && TAGGED_MODELS.has(modelKey) && !fields.some((f) => f.key === "tags")) {
     fields.push({ key: "tags", kind: "json" });
   }
   for (const k of (modelKey && OPTIONAL_NUMBER_FIELDS[modelKey]) || []) {
     if (!fields.some((f) => f.key === k)) fields.push({ key: k, kind: "number" });
   }
   return fields;
+}
+
+function isEmptyValue(v: unknown): boolean {
+  if (v === null || v === undefined || v === false || v === "") return true;
+  if (Array.isArray(v)) return v.length === 0;
+  if (typeof v === "object") return Object.keys(v as object).length === 0;
+  return false;
 }
 
 function valueToInput(kind: FieldKind, v: unknown): string {
@@ -234,6 +245,11 @@ export function RecordForm({
   const [drafts, setDrafts] = useState<Record<string, string>>(() => {
     const seed: Record<string, string> = {};
     for (const f of fields) seed[f.key] = valueToInput(f.kind, record[f.key]);
+    // Tags may be stored in a legacy string shape — seed the picker
+    // with the decoded array so the next save writes a real array.
+    if (fields.some((f) => f.key === "tags")) {
+      seed.tags = JSON.stringify(normalizeTags(record.tags));
+    }
     // Also seed booleans as "true"/"false" strings.
     for (const f of fields)
       if (f.kind === "boolean") seed[f.key] = String(Boolean(record[f.key]));
@@ -260,6 +276,11 @@ export function RecordForm({
       if (!r.ok) nextErrors[f.key] = r.error;
       else if (r.value === null && isOptionalNumberField(f.key, modelKey)) {
         // Blank optional field → omit rather than persist `null`.
+        continue;
+      } else if (!(f.key in record) && isEmptyValue(r.value)) {
+        // A field the record never had (shown because the model lists
+        // it) and left empty → don't write it, so sparse records stay
+        // sparse instead of filling up with nulls / false / [].
         continue;
       } else next[f.key] = r.value;
     }

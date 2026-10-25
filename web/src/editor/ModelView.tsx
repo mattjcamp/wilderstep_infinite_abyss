@@ -61,6 +61,7 @@ import { singularModelLabel } from "@/data_model/models";
 import type { LibraryCatalogEntry } from "@/data_model/ModuleSource";
 import { publishItems } from "@/data_model/publishClient";
 import { RecordForm } from "./RecordForm";
+import { normalizeTags } from "./recordTags";
 import {
   getSpriteFieldConfig,
   resolveSpritePath,
@@ -68,6 +69,57 @@ import {
 import { usePublishServer } from "./usePublishServer";
 
 type Record_ = Record<string, unknown>;
+
+/** Every monster field the engine reads (src/battle/data/monsters.ts),
+ *  in form order, with new-record defaults. */
+const MONSTER_FIELDS: Record<string, unknown> = {
+  id: "",
+  name: "",
+  sprite: "",
+  theme: "",
+  difficulty: "normal",
+  tags: [],
+  hp: 10,
+  ac: 10,
+  attack_bonus: 0,
+  damage_dice: 1,
+  damage_sides: 6,
+  damage_bonus: 0,
+  move_range: 3,
+  post_attack_move: 0,
+  battle_scale: 1,
+  xp_reward: 10,
+  gold_min: 0,
+  gold_max: 0,
+  strength: 10,
+  dexterity: 10,
+  constitution: 10,
+  intelligence: 10,
+  wisdom: 10,
+  undead: false,
+  humanoid: false,
+  turn_resistance: 0,
+  spells: [],
+  passives: [],
+  on_hit_effects: [],
+};
+
+/** Every encounter field the game reads (src/battle/world/Encounters.ts
+ *  + MapSimulation's custom_map), in form order, with new-record
+ *  defaults. */
+const ENCOUNTER_FIELDS: Record<string, unknown> = {
+  id: "",
+  name: "",
+  area: "",
+  theme: "",
+  tags: [],
+  level: 1,
+  weight: 1,
+  monster_party_tile: "",
+  monsters: [],
+  custom_map: "",
+  darkness: false,
+};
 
 /**
  * Per-model field defaults that must surface in the auto-generated
@@ -95,7 +147,15 @@ const EXTRA_FIELD_DEFAULTS: Partial<Record<ModelKey, Record<string, unknown>>> =
   // tiles a vessel can sail UNDER (walkable on foot, sail-through
   // for a boat) such as wooden footbridges.
   map_tiles: { boat: false, boat_passable: false },
+  // Monsters and Encounters list every field the game reads, so the
+  // form shows them all even when existing records are sparse (e.g.
+  // a freshly started catalog). Values double as the defaults for a
+  // brand-new record. Fields an existing record lacks and the author
+  // leaves blank are not written (see RecordForm).
+  monsters: MONSTER_FIELDS,
+  encounters: ENCOUNTER_FIELDS,
 };
+
 
 type Layers = {
   inherited: Record_ | null;
@@ -469,10 +529,7 @@ export function ModelView({
   const existingTags: string[] = (() => {
     const s = new Set<string>();
     for (const r of derived.records) {
-      const t = (r as Record<string, unknown>)["tags"];
-      if (Array.isArray(t)) {
-        for (const x of t) if (typeof x === "string" && x) s.add(x);
-      }
+      for (const x of normalizeTags((r as Record<string, unknown>)["tags"])) s.add(x);
     }
     return [...s].sort();
   })();
@@ -628,7 +685,10 @@ export function ModelView({
             <div className="mt-4">
               <p className="mb-2 text-sm text-parchment/85">New record</p>
               <RecordForm
-                record={blankFromTemplate(template)}
+                record={{
+                  ...blankFromTemplate(template),
+                  ...structuredClone(EXTRA_FIELD_DEFAULTS[modelKey] ?? {}),
+                }}
                 template={template}
                 submitLabel="Create"
                 modelKey={modelKey}
@@ -1336,8 +1396,7 @@ function isGroupedModel(modelKey: string | undefined): boolean {
 /** True when a record carries `tag` — checks the `tags` array (when
  *  present) and the singular `tag` (tile palette). */
 function recordHasTag(r: Record_, tag: string): boolean {
-  const arr = r["tags"];
-  if (Array.isArray(arr) && arr.includes(tag)) return true;
+  if (normalizeTags(r["tags"]).includes(tag)) return true;
   return r["tag"] === tag;
 }
 
@@ -1349,9 +1408,12 @@ function groupTagOf(modelKey: string | undefined, r: Record_): string | null {
   }
   if (modelKey === "encounters" || modelKey === "monsters") {
     // Encounters and monsters group by `theme` (devil, undead,
-    // animal, …), not tags.
+    // animal, …) — it also drives themed-dungeon encounter picks. With
+    // no theme set, fall back to the first editor tag so freshly
+    // tagged records don't all land in "(untagged)".
     const t = r["theme"];
-    return typeof t === "string" && t.trim() ? t : null;
+    if (typeof t === "string" && t.trim()) return t;
+    return normalizeTags(r["tags"])[0] ?? null;
   }
   if (modelKey === "items") {
     // Items group by `category` (weapons, armors, general, …).
