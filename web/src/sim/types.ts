@@ -76,7 +76,7 @@ export interface SimCell {
   counter?: string;
   /** True = this cell is a boat the party can board. Stepping onto it
    *  from land mounts the party; the sim then lets them sail across
-   *  tiles tagged "water" until they step onto walkable land again,
+   *  water tiles (`water: true`) until they step onto walkable land again,
    *  at which point the boat stays behind on the last water cell. */
   boat?: boolean;
   /** True = a boat can sail through this cell (the boat passes UNDER
@@ -88,10 +88,11 @@ export interface SimCell {
    *  `tag === "water"` because a bridge tile is still walkable on
    *  foot — water tiles are not. */
   boat_passable?: boolean;
-  /** Free-form designer tag (groups nest on ":"). The sim only reads a
-   *  last segment of "water" (see tileTags.ts) — boats can
-   *  sail across cells whose `tag === "water"`. Other tag values are
-   *  ignored by the kernel. */
+  /** True = water: boats sail across it, NPCs won't wander onto it.
+   *  (Older data used `tag: "water"`; see isWaterCell in tileTags.ts.) */
+  water?: boolean;
+  /** Free-form designer tag for grouping tiles in the editor (groups
+   *  nest on ":"). Ignored by the kernel except the legacy "water". */
   tag?: string;
   /** Render texture for the cell. The sim kernel doesn't paint, but
    *  it passes this through to the host on boat boarding so the

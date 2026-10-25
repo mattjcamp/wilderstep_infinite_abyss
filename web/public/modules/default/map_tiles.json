@@ -46,7 +46,8 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/water.png",
-      "tag": "overview: water"
+      "tag": "overview",
+      "water": true
     },
     {
       "id": "ship",
@@ -62,7 +63,8 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/ship.png",
-      "tag": "overview: water"
+      "tag": "overview",
+      "water": true
     },
     {
       "boat": false,
@@ -126,7 +128,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/mountain.png",
-      "tag": "wall"
+      "tag": "overview"
     },
     {
       "id": "wall_planks_dark",
@@ -141,21 +143,6 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/wall_planks_dark.png",
-      "tag": "wall"
-    },
-    {
-      "id": "wall_masonry_dark",
-      "name": "Masonry Wall, Dark",
-      "walkable": false,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "map/wall_masonry_dark.png",
       "tag": "wall"
     },
     {
@@ -175,22 +162,6 @@
       "tag": "overview"
     },
     {
-      "boat": false,
-      "id": "rocks",
-      "name": "Rocks",
-      "walkable": false,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "map/rocks.png",
-      "tag": "overview: mountain"
-    },
-    {
       "id": "wall_fieldstone_dark",
       "name": "Fieldstone Wall, Dark",
       "walkable": false,
@@ -204,22 +175,6 @@
       "spawn": null,
       "sprite": "map/wall_fieldstone_dark.png",
       "tag": "wall"
-    },
-    {
-      "boat": false,
-      "id": "forest",
-      "name": "Forest",
-      "walkable": true,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "map/forest.png",
-      "tag": "overview: tree"
     },
     {
       "boat": false,
@@ -271,21 +226,6 @@
       "tag": "indoor"
     },
     {
-      "id": "wall_brick_brown",
-      "name": "Brown Brick Wall",
-      "walkable": false,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": null,
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "map/wall_brick_brown.png",
-      "tag": "wall"
-    },
-    {
       "boat": false,
       "id": "tree",
       "name": "Tree",
@@ -299,22 +239,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/tree.png",
-      "tag": "overview: tree"
-    },
-    {
-      "id": "wall_planks_light",
-      "name": "Plank Wall, Light",
-      "walkable": false,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "map/wall_planks_light.png",
-      "tag": "wall"
+      "tag": "overview"
     },
     {
       "boat": false,
@@ -333,68 +258,6 @@
       "tag": "indoor"
     },
     {
-      "id": "wall_stone",
-      "name": "Stone Wall",
-      "walkable": false,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": null,
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "map/wall_stone.png",
-      "tag": "wall"
-    },
-    {
-      "boat": false,
-      "id": "swamp",
-      "name": "Swamp",
-      "walkable": true,
-      "obstructs": false,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": null,
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "map/swamp.png",
-      "tag": "overview"
-    },
-    {
-      "id": "wall_brick_red",
-      "name": "Red Brick Wall",
-      "walkable": false,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "map/wall_brick_red.png",
-      "tag": "wall"
-    },
-    {
-      "boat": false,
-      "id": "forest_mixed",
-      "name": "Mixed Forest",
-      "walkable": true,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "map/forest_mixed.png",
-      "tag": "overview: tree"
-    },
-    {
       "boat": false,
       "id": "town",
       "name": "Town",
@@ -408,7 +271,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/town.png",
-      "tag": "overview: building"
+      "tag": "overview"
     },
     {
       "boat": false,
@@ -424,7 +287,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/cave_entrance.png",
-      "tag": "overview: building"
+      "tag": "overview"
     },
     {
       "boat": false,
@@ -520,7 +383,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/bridge.png",
-      "tag": "overview: outdoor"
+      "tag": "overview"
     }
   ]
 }

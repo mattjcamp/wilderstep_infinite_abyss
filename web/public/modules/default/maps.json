@@ -4964,8 +4964,8 @@
             "tag": "overview"
           },
           {
-            "id": "wall_masonry_dark",
-            "name": "Masonry Wall, Dark",
+            "id": "wall_fieldstone_dark",
+            "name": "Fieldstone Wall, Dark",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -4975,7 +4975,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/wall_masonry_dark.png",
+            "sprite": "map/wall_fieldstone_dark.png",
             "tag": "wall"
           },
           {
@@ -5267,8 +5267,8 @@
             "tag": "overview"
           },
           {
-            "id": "wall_masonry_dark",
-            "name": "Masonry Wall, Dark",
+            "id": "wall_fieldstone_dark",
+            "name": "Fieldstone Wall, Dark",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -5278,12 +5278,12 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/wall_masonry_dark.png",
+            "sprite": "map/wall_fieldstone_dark.png",
             "tag": "wall"
           },
           {
-            "id": "wall_masonry_dark",
-            "name": "Masonry Wall, Dark",
+            "id": "wall_fieldstone_dark",
+            "name": "Fieldstone Wall, Dark",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -5293,12 +5293,12 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/wall_masonry_dark.png",
+            "sprite": "map/wall_fieldstone_dark.png",
             "tag": "wall"
           },
           {
-            "id": "wall_masonry_dark",
-            "name": "Masonry Wall, Dark",
+            "id": "wall_fieldstone_dark",
+            "name": "Fieldstone Wall, Dark",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -5308,7 +5308,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/wall_masonry_dark.png",
+            "sprite": "map/wall_fieldstone_dark.png",
             "tag": "wall"
           },
           {
@@ -5581,8 +5581,8 @@
             "tag": "overview"
           },
           {
-            "id": "wall_masonry_dark",
-            "name": "Masonry Wall, Dark",
+            "id": "wall_fieldstone_dark",
+            "name": "Fieldstone Wall, Dark",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -5592,7 +5592,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/wall_masonry_dark.png",
+            "sprite": "map/wall_fieldstone_dark.png",
             "tag": "wall"
           },
           {
@@ -5612,8 +5612,8 @@
             "tag": "indoor"
           },
           {
-            "id": "wall_masonry_dark",
-            "name": "Masonry Wall, Dark",
+            "id": "wall_fieldstone_dark",
+            "name": "Fieldstone Wall, Dark",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -5623,7 +5623,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/wall_masonry_dark.png",
+            "sprite": "map/wall_fieldstone_dark.png",
             "tag": "wall"
           },
           {
@@ -10088,7 +10088,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "id": "water",
@@ -10103,7 +10104,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "id": "water",
@@ -10118,7 +10120,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "id": "water",
@@ -10133,7 +10136,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "boat": false,
@@ -10422,9 +10426,10 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/ship.png",
-            "tag": "overview: water",
+            "tag": "overview",
             "boat": true,
-            "background_sprite": "map/water.png"
+            "background_sprite": "map/water.png",
+            "water": true
           },
           {
             "id": "water",
@@ -10439,7 +10444,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "boat": false,
@@ -10760,7 +10766,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "id": "water",
@@ -10775,7 +10782,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "boat": false,
@@ -10891,8 +10899,8 @@
           },
           {
             "boat": false,
-            "id": "rocks",
-            "name": "Rocks",
+            "id": "mountain",
+            "name": "Mountain",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -10902,8 +10910,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/rocks.png",
-            "tag": "overview: mountain"
+            "sprite": "map/mountain.png",
+            "tag": "overview"
           },
           {
             "boat": false,
@@ -11096,7 +11104,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "id": "water",
@@ -11111,7 +11120,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "boat": false,
@@ -11195,8 +11205,8 @@
           },
           {
             "boat": false,
-            "id": "rocks",
-            "name": "Rocks",
+            "id": "mountain",
+            "name": "Mountain",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -11206,13 +11216,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/rocks.png",
-            "tag": "overview: mountain"
+            "sprite": "map/mountain.png",
+            "tag": "overview"
           },
           {
             "boat": false,
-            "id": "rocks",
-            "name": "Rocks",
+            "id": "mountain",
+            "name": "Mountain",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -11222,13 +11232,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/rocks.png",
-            "tag": "overview: mountain"
+            "sprite": "map/mountain.png",
+            "tag": "overview"
           },
           {
             "boat": false,
-            "id": "rocks",
-            "name": "Rocks",
+            "id": "mountain",
+            "name": "Mountain",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -11238,8 +11248,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/rocks.png",
-            "tag": "overview: mountain"
+            "sprite": "map/mountain.png",
+            "tag": "overview"
           },
           {
             "boat": false,
@@ -11416,7 +11426,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "id": "water",
@@ -11431,7 +11442,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "boat": false,
@@ -11531,8 +11543,8 @@
           },
           {
             "boat": false,
-            "id": "rocks",
-            "name": "Rocks",
+            "id": "mountain",
+            "name": "Mountain",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -11542,13 +11554,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/rocks.png",
-            "tag": "overview: mountain"
+            "sprite": "map/mountain.png",
+            "tag": "overview"
           },
           {
             "boat": false,
-            "id": "rocks",
-            "name": "Rocks",
+            "id": "mountain",
+            "name": "Mountain",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -11558,8 +11570,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/rocks.png",
-            "tag": "overview: mountain"
+            "sprite": "map/mountain.png",
+            "tag": "overview"
           },
           {
             "boat": false,
@@ -11736,7 +11748,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "id": "water",
@@ -11751,7 +11764,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "boat": false,
@@ -11863,12 +11877,12 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/cave_entrance.png",
-            "tag": "overview: building"
+            "tag": "overview"
           },
           {
             "boat": false,
-            "id": "rocks",
-            "name": "Rocks",
+            "id": "mountain",
+            "name": "Mountain",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -11878,8 +11892,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/rocks.png",
-            "tag": "overview: mountain"
+            "sprite": "map/mountain.png",
+            "tag": "overview"
           },
           {
             "boat": false,
@@ -12056,7 +12070,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "id": "water",
@@ -12071,7 +12086,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "boat": false,
@@ -12187,8 +12203,8 @@
           },
           {
             "boat": false,
-            "id": "rocks",
-            "name": "Rocks",
+            "id": "mountain",
+            "name": "Mountain",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -12198,13 +12214,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/rocks.png",
-            "tag": "overview: mountain"
+            "sprite": "map/mountain.png",
+            "tag": "overview"
           },
           {
             "boat": false,
-            "id": "rocks",
-            "name": "Rocks",
+            "id": "mountain",
+            "name": "Mountain",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -12214,8 +12230,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/rocks.png",
-            "tag": "overview: mountain"
+            "sprite": "map/mountain.png",
+            "tag": "overview"
           },
           {
             "boat": false,
@@ -12392,7 +12408,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "boat": false,
@@ -12524,8 +12541,8 @@
           },
           {
             "boat": false,
-            "id": "rocks",
-            "name": "Rocks",
+            "id": "mountain",
+            "name": "Mountain",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -12535,8 +12552,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/rocks.png",
-            "tag": "overview: mountain"
+            "sprite": "map/mountain.png",
+            "tag": "overview"
           },
           {
             "boat": false,
@@ -12713,7 +12730,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "id": "water",
@@ -12728,7 +12746,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "boat": false,
@@ -12910,8 +12929,8 @@
           },
           {
             "boat": false,
-            "id": "forest_mixed",
-            "name": "Mixed Forest",
+            "id": "tree",
+            "name": "Tree",
             "walkable": true,
             "obstructs": true,
             "locked": false,
@@ -12921,8 +12940,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/forest_mixed.png",
-            "tag": "overview: tree"
+            "sprite": "map/tree.png",
+            "tag": "overview"
           },
           {
             "boat": false,
@@ -13049,7 +13068,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "boat": false,
@@ -13247,8 +13267,8 @@
           },
           {
             "boat": false,
-            "id": "forest_mixed",
-            "name": "Mixed Forest",
+            "id": "tree",
+            "name": "Tree",
             "walkable": true,
             "obstructs": true,
             "locked": false,
@@ -13258,8 +13278,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/forest_mixed.png",
-            "tag": "overview: tree"
+            "sprite": "map/tree.png",
+            "tag": "overview"
           },
           {
             "boat": false,
@@ -13370,7 +13390,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "boat": false,
@@ -13552,8 +13573,8 @@
           },
           {
             "boat": false,
-            "id": "forest_mixed",
-            "name": "Mixed Forest",
+            "id": "tree",
+            "name": "Tree",
             "walkable": true,
             "obstructs": true,
             "locked": false,
@@ -13563,13 +13584,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/forest_mixed.png",
-            "tag": "overview: tree"
+            "sprite": "map/tree.png",
+            "tag": "overview"
           },
           {
             "boat": false,
-            "id": "forest_mixed",
-            "name": "Mixed Forest",
+            "id": "tree",
+            "name": "Tree",
             "walkable": true,
             "obstructs": true,
             "locked": false,
@@ -13579,8 +13600,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/forest_mixed.png",
-            "tag": "overview: tree"
+            "sprite": "map/tree.png",
+            "tag": "overview"
           },
           {
             "boat": false,
@@ -13596,7 +13617,7 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/town.png",
-            "tag": "overview: building"
+            "tag": "overview"
           },
           {
             "boat": false,
@@ -13691,7 +13712,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "id": "water",
@@ -13706,7 +13728,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "id": "water",
@@ -13721,7 +13744,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "boat": false,
@@ -13855,8 +13879,8 @@
         [
           {
             "boat": false,
-            "id": "forest_mixed",
-            "name": "Mixed Forest",
+            "id": "tree",
+            "name": "Tree",
             "walkable": true,
             "obstructs": true,
             "locked": false,
@@ -13866,13 +13890,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/forest_mixed.png",
-            "tag": "overview: tree"
+            "sprite": "map/tree.png",
+            "tag": "overview"
           },
           {
             "boat": false,
-            "id": "forest_mixed",
-            "name": "Mixed Forest",
+            "id": "tree",
+            "name": "Tree",
             "walkable": true,
             "obstructs": true,
             "locked": false,
@@ -13882,8 +13906,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/forest_mixed.png",
-            "tag": "overview: tree"
+            "sprite": "map/tree.png",
+            "tag": "overview"
           },
           {
             "boat": false,
@@ -14042,7 +14066,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "id": "water",
@@ -14057,7 +14082,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "id": "water",
@@ -14072,7 +14098,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "boat": false,
@@ -14174,8 +14201,8 @@
         [
           {
             "boat": false,
-            "id": "forest_mixed",
-            "name": "Mixed Forest",
+            "id": "tree",
+            "name": "Tree",
             "walkable": true,
             "obstructs": true,
             "locked": false,
@@ -14185,8 +14212,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/forest_mixed.png",
-            "tag": "overview: tree"
+            "sprite": "map/tree.png",
+            "tag": "overview"
           },
           {
             "boat": false,
@@ -14393,7 +14420,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "boat": false,
@@ -14714,7 +14742,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "id": "water",
@@ -14729,7 +14758,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "id": "water",
@@ -14744,7 +14774,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "boat": false,
@@ -15065,7 +15096,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "boat": false,
@@ -15386,7 +15418,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "id": "water",
@@ -15401,7 +15434,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "boat": false,
@@ -15722,7 +15756,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "boat": false,
@@ -16043,7 +16078,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "id": "water",
@@ -16058,7 +16094,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "boat": false,
@@ -16363,7 +16400,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "id": "water",
@@ -16378,7 +16416,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "id": "water",
@@ -16393,7 +16432,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "boat": false,

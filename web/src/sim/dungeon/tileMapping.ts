@@ -77,6 +77,8 @@ export interface DungeonTilePrototype {
    *  TileType schema requires them — populate with neutral defaults
    *  so the cell shape is fully compatible. */
   boat: boolean;
+  /** True for water cells (boats sail, NPCs avoid). */
+  water?: boolean;
   locked: boolean;
   text: string;
   animation: "none" | "torch" | "fire" | "fairy" | "smoke";
@@ -207,7 +209,7 @@ const WALL_TORCH_PROTO = proto({
   obstructs: true,
   light_source: true,
   light_range: 5,
-  paletteId: "wall_masonry_dark",
+  paletteId: "wall_fieldstone_dark",
   animation: "torch",
 });
 
@@ -269,12 +271,12 @@ const FOREST_FLOOR_PROTO = proto({
 });
 
 const FOREST_WALL_PROTO = proto({
-  id: "forest",
-  name: "Forest",
+  id: "tree",
+  name: "Tree",
   tag: "outdoor",
   walkable: false,
   obstructs: true,
-  paletteId: "forest",
+  paletteId: "tree",
 });
 
 const FOREST_PATH_PROTO = proto({
@@ -375,6 +377,7 @@ export function prototypeForTileId(
         id: "water",
         name: "Water",
         tag: "water",
+        water: true,
         walkable: false,
         paletteId: "water",
       });
@@ -402,7 +405,6 @@ export function prototypeForTileId(
 export const DUNGEON_PALETTE_IDS: readonly string[] = [
   "floor_gray",
   "wall_fieldstone_dark",
-  "wall_masonry_dark",
   "stairs_up",
   "stairs_down",
   "chest",
@@ -411,7 +413,7 @@ export const DUNGEON_PALETTE_IDS: readonly string[] = [
   "grass_brown",
   "mountain",
   "grass",
-  "forest",
+  "tree",
   "water",
   "sand",
   "cave_entrance",

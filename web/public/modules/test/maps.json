@@ -88,7 +88,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "id": "water",
@@ -103,7 +104,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "id": "water",
@@ -118,7 +120,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "id": "water",
@@ -133,7 +136,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "boat": false,
@@ -423,8 +427,9 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/ship.png",
-            "tag": "overview: water",
-            "background_sprite": "map/water.png"
+            "tag": "overview",
+            "background_sprite": "map/water.png",
+            "water": true
           },
           {
             "id": "water",
@@ -439,8 +444,9 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water",
-            "boat": false
+            "tag": "overview",
+            "boat": false,
+            "water": true
           },
           {
             "boat": false,
@@ -761,8 +767,9 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water",
-            "boat": false
+            "tag": "overview",
+            "boat": false,
+            "water": true
           },
           {
             "id": "water",
@@ -777,7 +784,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "boat": false,
@@ -1099,7 +1107,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "id": "water",
@@ -1114,7 +1123,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "boat": false,
@@ -1422,7 +1432,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "id": "water",
@@ -1437,7 +1448,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "boat": false,
@@ -1744,7 +1756,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "id": "water",
@@ -1759,7 +1772,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "boat": false,
@@ -1871,7 +1885,7 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/cave_entrance.png",
-            "tag": "overview: building",
+            "tag": "overview",
             "background_sprite": "map/grass_brown.png"
           },
           {
@@ -2066,7 +2080,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "id": "water",
@@ -2081,8 +2096,9 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water",
-            "boat": false
+            "tag": "overview",
+            "boat": false,
+            "water": true
           },
           {
             "boat": false,
@@ -2405,7 +2421,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "boat": false,
@@ -2727,8 +2744,9 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water",
-            "boat": false
+            "tag": "overview",
+            "boat": false,
+            "water": true
           },
           {
             "id": "water",
@@ -2743,7 +2761,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "boat": false,
@@ -2937,7 +2956,7 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/tree.png",
-            "tag": "overview: tree",
+            "tag": "overview",
             "background_sprite": "map/grass_brown.png"
           },
           {
@@ -3065,7 +3084,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "boat": false,
@@ -3275,7 +3295,7 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/tree.png",
-            "tag": "overview: tree",
+            "tag": "overview",
             "background_sprite": "map/grass_brown.png"
           },
           {
@@ -3387,7 +3407,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "boat": false,
@@ -3581,7 +3602,7 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/tree.png",
-            "tag": "overview: tree",
+            "tag": "overview",
             "background_sprite": "map/grass_brown.png"
           },
           {
@@ -3598,7 +3619,7 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/tree.png",
-            "tag": "overview: tree",
+            "tag": "overview",
             "background_sprite": "map/grass_brown.png"
           },
           {
@@ -3615,7 +3636,7 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/town.png",
-            "tag": "overview: building",
+            "tag": "overview",
             "background_sprite": "map/grass_brown.png"
           },
           {
@@ -3711,7 +3732,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "id": "water",
@@ -3726,7 +3748,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "id": "water",
@@ -3741,7 +3764,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "boat": false,
@@ -3887,7 +3911,7 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/tree.png",
-            "tag": "overview: tree",
+            "tag": "overview",
             "background_sprite": "map/grass_brown.png"
           },
           {
@@ -3904,7 +3928,7 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/tree.png",
-            "tag": "overview: tree",
+            "tag": "overview",
             "background_sprite": "map/grass_brown.png"
           },
           {
@@ -4064,7 +4088,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "id": "water",
@@ -4079,7 +4104,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "id": "water",
@@ -4094,7 +4120,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "boat": false,
@@ -4208,7 +4235,7 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/tree.png",
-            "tag": "overview: tree",
+            "tag": "overview",
             "background_sprite": "map/grass_brown.png"
           },
           {
@@ -4416,7 +4443,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "boat": false,
@@ -4737,7 +4765,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "id": "water",
@@ -4752,7 +4781,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "id": "water",
@@ -4767,7 +4797,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "boat": false,
@@ -5088,7 +5119,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "boat": false,
@@ -5409,7 +5441,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "id": "water",
@@ -5424,7 +5457,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "boat": false,
@@ -5745,7 +5779,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "boat": false,
@@ -6066,7 +6101,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "id": "water",
@@ -6081,7 +6117,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "boat": false,
@@ -6386,7 +6423,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "id": "water",
@@ -6401,7 +6439,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "id": "water",
@@ -6416,7 +6455,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview: water"
+            "tag": "overview",
+            "water": true
           },
           {
             "boat": false,

@@ -146,7 +146,7 @@ const EXTRA_FIELD_DEFAULTS: Partial<Record<ModelKey, Record<string, unknown>>> =
   // hand-editing JSON. `boat_passable` is the bridge counterpart —
   // tiles a vessel can sail UNDER (walkable on foot, sail-through
   // for a boat) such as wooden footbridges.
-  map_tiles: { boat: false, boat_passable: false },
+  map_tiles: { boat: false, boat_passable: false, water: false },
   // Character Classes: the portrait the character creator suggests for
   // this class (blank = no suggestion; the player picks one).
   character_classes: { default_sprite: "" },

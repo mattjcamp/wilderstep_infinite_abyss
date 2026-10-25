@@ -119,7 +119,7 @@ import type {
 } from "@/sim/types";
 import { usePublishServer } from "./usePublishServer";
 import { spriteUrl } from "@/data_model/spriteUrl";
-import { isWaterTag } from "@/sim/tileTags";
+import { isWaterCell } from "@/sim/tileTags";
 
 const TILE_SIZE = 32;
 const MODEL_KEY = "maps";
@@ -303,9 +303,9 @@ function cellMatchesPalette(cell: TileType, palette: TileType[]): boolean {
   // dungeon bake relabels tiles ("Mountain" → "Cave Wall"). Comparing
   // them marked almost every cell on those maps as overridden — a
   // full-map mesh of dots after the first paint stroke. Neither changes
-  // how the tile plays, with one exception: the "water" tag drives NPC
+  // how the tile plays, with one exception: being water drives NPC
   // wandering, so a water / not-water mismatch still counts.
-  if (isWaterTag(cell.tag) !== isWaterTag(base.tag)) return false;
+  if (isWaterCell(cell) !== isWaterCell(base)) return false;
   if (cell.walkable !== base.walkable) return false;
   if (cell.obstructs !== base.obstructs) return false;
   if ((cell.boat ?? false) !== (base.boat ?? false)) return false;
@@ -1550,7 +1550,7 @@ export function MapEditor({
       // tile leaves it empty. Pre-add it to the sprite keys so boards
       // never miss the texture.
       const WATER_SPRITE_KEY =
-        palette.find((t) => isWaterTag(t.tag))?.sprite ?? "";
+        palette.find((t) => isWaterCell(t))?.sprite ?? "";
       if (WATER_SPRITE_KEY) spriteKeys.add(WATER_SPRITE_KEY);
       // Sim-mode sprites: party avatar + every active member's
       // portrait. Pre-load defensively so toggling sim on doesn't

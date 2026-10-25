@@ -22,7 +22,7 @@
  */
 
 import type { Position, SimCell, SimGrid } from "./types";
-import { isWaterTag } from "./tileTags";
+import { isWaterCell } from "./tileTags";
 
 /** Probability that any given NPC takes a step on a turn. Per
  *  product call: "moderate chance (50%)". Exported so tests can
@@ -88,7 +88,7 @@ export function findNpcCells(grid: SimGrid): NpcMove["from"][] {
 export function isWanderDestination(cell: SimCell | null | undefined): boolean {
   if (!cell) return false;
   if (!cell.walkable) return false;
-  if (isWaterTag(cell.tag)) return false;
+  if (isWaterCell(cell)) return false;
   // Any gameplay tag → off-limits. The list mirrors the bump-
   // detection branches in MapSimulation.stepInDirection: anywhere
   // the party would stop / trigger something, an NPC also

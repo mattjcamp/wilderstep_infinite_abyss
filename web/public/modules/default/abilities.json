@@ -89,9 +89,6 @@
         "terrain": [
           "grass",
           "grass_brown",
-          "swamp",
-          "forest",
-          "forest_mixed",
           "tree"
         ]
       }
