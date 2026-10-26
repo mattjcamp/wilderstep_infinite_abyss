@@ -68,6 +68,7 @@ import {
   RENDER_SCALE,
   applyRenderScale,
   installHiDpiText,
+  swapTexture,
 } from "@/util/renderScale";
 import { ANIMATION_CONFIGS } from "@/sim/tileAnimations";
 import type { AnimationKind } from "@/sim/tileAnimations";
@@ -1734,7 +1735,7 @@ export function MapEditor({
           if (bgSprite) {
             if (existing) {
               this.ensureTexture(bgSprite, () =>
-                existing.setTexture(bgSprite),
+                swapTexture(existing, bgSprite),
               );
             } else {
               const bg = this.add
@@ -1743,7 +1744,7 @@ export function MapEditor({
                 .setDisplaySize(TILE_SIZE, TILE_SIZE)
                 .setDepth(-10);
               this.backgroundCells.set(key, bg);
-              this.ensureTexture(bgSprite, () => bg.setTexture(bgSprite));
+              this.ensureTexture(bgSprite, () => swapTexture(bg, bgSprite));
             }
           } else if (existing) {
             existing.destroy();
@@ -1921,7 +1922,7 @@ export function MapEditor({
               const img = this.cells.get(`${col},${row}`);
               if (!img) return;
               if (!this.textures.exists(spriteKey)) return;
-              img.setTexture(spriteKey);
+              swapTexture(img, spriteKey);
             },
             refreshAnimations: () => {
               // Assigned for real below — placeholder so the API object
@@ -2170,7 +2171,7 @@ export function MapEditor({
                   sceneSelf.textures.exists(spritePath) &&
                   sceneSelf.partySprite.texture.key !== spritePath
                 ) {
-                  sceneSelf.partySprite.setTexture(spritePath);
+                  swapTexture(sceneSelf.partySprite, spritePath);
                 }
               }
             };
@@ -2320,7 +2321,17 @@ export function MapEditor({
                   WATER_SPRITE &&
                   sceneSelf.textures.exists(WATER_SPRITE)
                 ) {
-                  baseImg.setTexture(WATER_SPRITE);
+                  swapTexture(baseImg, WATER_SPRITE);
+                }
+                {
+                  // Drop the water underlay added when the boat parked
+                  // here; restore the cell's authored background.
+                  const [cs, rs] = key.split(",").map(Number);
+                  sceneSelf.syncBackgroundCell(
+                    cs,
+                    rs,
+                    gridRef.current[rs]?.[cs]?.background_sprite,
+                  );
                 }
                 sceneSelf.boatTextures.delete(key);
                 // Silence unused-binding warnings without using `_`
@@ -2337,7 +2348,20 @@ export function MapEditor({
                   sprite &&
                   sceneSelf.textures.exists(sprite)
                 ) {
-                  baseImg.setTexture(sprite);
+                  swapTexture(baseImg, sprite);
+                }
+                {
+                  // Keep water visible around the parked hull (boat
+                  // art is transparent around it). An authored
+                  // background on the cell wins.
+                  const [cs, rs] = key.split(",").map(Number);
+                  const authored =
+                    gridRef.current[rs]?.[cs]?.background_sprite;
+                  sceneSelf.syncBackgroundCell(
+                    cs,
+                    rs,
+                    authored || WATER_SPRITE || undefined,
+                  );
                 }
                 sceneSelf.boatTextures.set(key, sprite);
               }
@@ -2386,7 +2410,7 @@ export function MapEditor({
                   sprite &&
                   sceneSelf.partyBoatSprite.texture.key !== sprite
                 ) {
-                  sceneSelf.partyBoatSprite.setTexture(sprite);
+                  swapTexture(sceneSelf.partyBoatSprite, sprite);
                 }
                 repositionWithBob(sceneSelf.partyBoatSprite, col, row);
               }
@@ -2456,7 +2480,7 @@ export function MapEditor({
                     sceneSelf.textures.exists(p.sprite) &&
                     img.texture.key !== p.sprite
                   ) {
-                    img.setTexture(p.sprite);
+                    swapTexture(img, p.sprite);
                   }
                 }
               }
@@ -2472,7 +2496,7 @@ export function MapEditor({
               const img = sceneSelf.cells.get(key);
               if (!img) return;
               if (sprite && sceneSelf.textures.exists(sprite)) {
-                img.setTexture(sprite);
+                swapTexture(img, sprite);
               }
               // The animation/encounter/etc. overlays on this cell
               // (if any) are tied to the cell's other fields; the
@@ -2531,7 +2555,7 @@ export function MapEditor({
                     sceneSelf.textures.exists(p.sprite) &&
                     img.texture.key !== p.sprite
                   ) {
-                    img.setTexture(p.sprite);
+                    swapTexture(img, p.sprite);
                   }
                 }
               }
@@ -3018,7 +3042,7 @@ export function MapEditor({
             // painted cell shows it immediately rather than staying on
             // its previous texture until a reload.
             this.ensureTexture(fresh.sprite, () =>
-              img.setTexture(fresh.sprite),
+              swapTexture(img, fresh.sprite),
             );
           }
           this.syncBackgroundCell(c, r, fresh.background_sprite);
@@ -3135,7 +3159,7 @@ export function MapEditor({
                 // Load on demand if not yet preloaded (a mid-session
                 // sprite) so the filled cells render immediately.
                 this.ensureTexture(fresh.sprite, () =>
-                  img.setTexture(fresh.sprite),
+                  swapTexture(img, fresh.sprite),
                 );
               }
               changed = true;

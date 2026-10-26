@@ -557,6 +557,7 @@ import {
   installWorldAndUiCameras,
   loadWorldZoomIdx,
   saveWorldZoomIdx,
+  swapTexture,
 } from "@/util/renderScale";
 
 /** Cells the kernel reads. Mirrors `TileType` from the editor without
@@ -3411,6 +3412,7 @@ export function PlayHost() {
                 if (waterSprite && scene.textures.exists(waterSprite)) {
                   const [cs, rs] = key.split(",");
                   renderer.setCellSprite(Number(cs), Number(rs), waterSprite);
+                  renderer.setBoatUnderlay(Number(cs), Number(rs), null);
                 }
                 scene.boatTextures.delete(key);
               }
@@ -3421,6 +3423,10 @@ export function PlayHost() {
                 if (sprite && scene.textures.exists(sprite)) {
                   const [cs, rs] = key.split(",");
                   renderer.setCellSprite(Number(cs), Number(rs), sprite);
+                  // Water stays visible around the parked hull.
+                  if (waterSprite) {
+                    renderer.setBoatUnderlay(Number(cs), Number(rs), waterSprite);
+                  }
                 }
                 scene.boatTextures.set(key, sprite);
               }
@@ -3482,7 +3488,7 @@ export function PlayHost() {
                 const boat = scene.partyBoatSprite;
                 scene.tweens.killTweensOf(boat);
                 if (resolved && boat.texture.key !== resolved) {
-                  boat.setTexture(resolved);
+                  swapTexture(boat, resolved);
                 }
                 const bx = col * TILE_SIZE + TILE_SIZE / 2;
                 const by = row * TILE_SIZE + TILE_SIZE / 2;

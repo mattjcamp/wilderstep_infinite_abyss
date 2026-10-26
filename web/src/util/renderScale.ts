@@ -123,3 +123,28 @@ export function uiZoomOf(scene: PhaserNS.Scene): number {
   const ui = cams.getCamera?.("ui") ?? cams.main;
   return ui?.zoom || 1;
 }
+
+/** Minimal shape of a Phaser Image for {@link swapTexture}. */
+interface TextureSwappable {
+  displayWidth?: number;
+  displayHeight?: number;
+  setTexture(key: string): unknown;
+  setDisplaySize?(w: number, h: number): unknown;
+}
+
+/**
+ * Swap an image's texture WITHOUT changing its on-screen size.
+ *
+ * Phaser's `setTexture` keeps the image's scale, not its display size,
+ * so swapping a 32×32 texture for a 64×64 one doubles the drawn size
+ * (the tile spills into its neighbours, which then cover it and make
+ * it look cropped and zoomed). Every texture swap on a sized sprite
+ * goes through here instead.
+ */
+export function swapTexture<T extends TextureSwappable>(img: T, key: string): T {
+  const w = img.displayWidth;
+  const h = img.displayHeight;
+  img.setTexture(key);
+  if (img.setDisplaySize && w && h) img.setDisplaySize(w, h);
+  return img;
+}

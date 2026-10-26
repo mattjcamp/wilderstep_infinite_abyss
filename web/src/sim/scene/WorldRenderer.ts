@@ -66,7 +66,7 @@ import {
   resolveFogStyle,
 } from "@/sim/fogStyle";
 import type { SimLightSource } from "@/sim/types";
-import { RENDER_SCALE } from "@/util/renderScale";
+import { RENDER_SCALE, swapTexture } from "@/util/renderScale";
 import {
   beginStep,
   clearStepAnim,
@@ -913,9 +913,38 @@ export class WorldRenderer {
     const img = this.cells.get(key);
     if (!img) return;
     if (!this.scene.textures.exists(sprite)) return;
-    if (img.texture.key !== sprite) img.setTexture(sprite);
+    if (img.texture.key !== sprite) swapTexture(img, sprite);
     this.cellTextureKeys.set(key, sprite);
     this.ensureGrayscaleTexture(sprite);
+  }
+
+  /** Cells where {@link setBoatUnderlay} created a background image
+   *  (so it only removes what it added, never authored backgrounds). */
+  private readonly boatUnderlays = new Set<string>();
+
+  /** Keep water visible behind a loose boat. Boat art is usually
+   *  transparent around the hull, and a dropped boat replaces the
+   *  cell's water sprite, so without an underlay the hull would sit on
+   *  the black backdrop. Pass the water sprite when a boat lands on a
+   *  cell and `null` when it leaves. A cell with an authored
+   *  `background_sprite` keeps that one untouched. */
+  setBoatUnderlay(col: number, row: number, sprite: string | null): void {
+    const key = `${col},${row}`;
+    if (sprite) {
+      if (this.backgroundCells.has(key)) return;
+      if (!this.scene.textures.exists(sprite)) return;
+      const bgImg = this.scene.add
+        .image(col * TILE_SIZE, row * TILE_SIZE, sprite)
+        .setOrigin(0)
+        .setDisplaySize(TILE_SIZE, TILE_SIZE)
+        .setDepth(BACKGROUND_CELL_DEPTH);
+      this.backgroundCells.set(key, bgImg);
+      this.boatUnderlays.add(key);
+    } else if (this.boatUnderlays.has(key)) {
+      this.backgroundCells.get(key)?.destroy();
+      this.backgroundCells.delete(key);
+      this.boatUnderlays.delete(key);
+    }
   }
 
   /** Paint a red-X overlay on every cell whose key is in `cells`, and
@@ -1248,7 +1277,7 @@ export class WorldRenderer {
       const grayKey = this.grayTextureCache.get(origKey);
       const desiredKey = remembered && grayKey ? grayKey : origKey;
       if (img.texture.key !== desiredKey) {
-        img.setTexture(desiredKey);
+        swapTexture(img, desiredKey);
       }
     }
     // Unexplored-cover layer — drape never-seen cells so the player
@@ -1332,7 +1361,7 @@ export class WorldRenderer {
         cloud.setVisible(covered);
         if (covered) {
           if (cloud.texture.key !== coverTex) {
-            cloud.setTexture(coverTex);
+            swapTexture(cloud, coverTex);
             cloud.setDisplaySize(TILE_SIZE, TILE_SIZE);
           }
           cloud.setAlpha(coverAlpha);
@@ -1487,7 +1516,7 @@ export class WorldRenderer {
           this.scene.textures.exists(p.sprite) &&
           img.texture.key !== p.sprite
         ) {
-          img.setTexture(p.sprite);
+          swapTexture(img, p.sprite);
         } else if (p.sprite && !this.scene.textures.exists(p.sprite)) {
           // Same self-healing as the create branch.
           this.queueLazySpriteLoad(id, p.sprite, map);
@@ -1544,7 +1573,7 @@ export class WorldRenderer {
             // that already got their real texture from another
             // path.
             if (img.texture.key === "__party_marker") {
-              img.setTexture(spriteKey);
+              swapTexture(img, spriteKey);
             }
           }
         }
@@ -1556,7 +1585,7 @@ export class WorldRenderer {
           direct.texture.key !== spriteKey &&
           this.scene.textures.exists(spriteKey)
         ) {
-          direct.setTexture(spriteKey);
+          swapTexture(direct, spriteKey);
         }
       },
     );
