@@ -121,8 +121,15 @@
     ],
     "person": [
       "cleric.png",
+      "dwarf_female.png",
+      "dwarf_male.png",
       "fighter.png",
+      "gnome_female.png",
+      "gnome_male.png",
+      "halfling_female.png",
+      "halfling_male.png",
       "party.png",
+      "person_female.png",
       "person_male.png",
       "thief.png",
       "wizard.png"
