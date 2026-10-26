@@ -56,6 +56,8 @@ const FIELDS: Record<string, SpriteFieldConfig> = {
 const PER_MODEL: Record<string, Record<string, SpriteFieldConfig>> = {
   map_tiles: {
     sprite: { category: "map", format: "path" },
+    // Drawn behind `sprite` (shows through its transparent pixels).
+    background_sprite: { category: "map", format: "path" },
   },
   monsters: {
     sprite: { category: "monster", format: "path" },

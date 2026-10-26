@@ -13,7 +13,7 @@ import { join } from "node:path";
 
 const PUBLIC = join(__dirname, "../../public");
 const MODULES = join(PUBLIC, "modules");
-const SPRITE_RE = /^(map|person|monster|item)\/[^"]+\.png$/;
+const SPRITE_RE = /^(map|indoor|person|monster|item)\/[^"]+\.png$/;
 
 function collect(node: unknown, out: Set<string>, key = ""): void {
   if (typeof node === "string") {

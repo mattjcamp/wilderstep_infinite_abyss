@@ -116,7 +116,7 @@ function proto(over: Partial<DungeonTilePrototype>): DungeonTilePrototype {
     light_source: false,
     light_range: 0,
     sprite: "",
-    paletteId: "floor_gray",
+    paletteId: "floor",
     boat: false,
     locked: false,
     text: "",
@@ -175,7 +175,7 @@ const TRAP_PROTO = proto({
   // here only matched the "ruins" style by coincidence.
   id: "dungeon_floor_trap",
   name: "Trap",
-  paletteId: "floor_gray",
+  paletteId: "floor",
   trap: true,
 });
 
@@ -234,7 +234,7 @@ const LOCKED_DOOR_PROTO = proto({
 const DEFAULT_FLOOR_PROTO = proto({
   id: "dungeon_floor",
   name: "Dungeon Floor",
-  paletteId: "floor_gray",
+  paletteId: "floor",
 });
 
 const DEFAULT_WALL_PROTO = proto({
@@ -247,10 +247,10 @@ const DEFAULT_WALL_PROTO = proto({
 
 /** ── Cave style tiles ─────────────────────────────────────────── */
 const CAVE_FLOOR_PROTO = proto({
-  id: "grass_brown",
+  id: "grass",
   name: "Cave Floor",
   tag: "terrain",
-  paletteId: "grass_brown",
+  paletteId: "grass",
 });
 
 const CAVE_WALL_PROTO = proto({
@@ -280,10 +280,10 @@ const FOREST_WALL_PROTO = proto({
 });
 
 const FOREST_PATH_PROTO = proto({
-  id: "grass_brown",
-  name: "Brown Grass",
+  id: "grass",
+  name: "Grass",
   tag: "terrain",
-  paletteId: "grass_brown",
+  paletteId: "grass",
 });
 
 const FOREST_ARCHWAY_UP_PROTO = proto({
@@ -382,12 +382,8 @@ export function prototypeForTileId(
         paletteId: "water",
       });
     case TILE_SAND:
-      return proto({
-        id: "sand",
-        name: "Sand",
-        tag: "outdoor",
-        paletteId: "sand",
-      });
+      // Sand was merged into Grass in the palette.
+      return FOREST_FLOOR_PROTO;
     case TILE_FOREST:
       return FOREST_WALL_PROTO;
     case TILE_DUNGEON:
@@ -403,19 +399,17 @@ export function prototypeForTileId(
 
 /** Every palette id the dungeon prototypes can borrow art from. */
 export const DUNGEON_PALETTE_IDS: readonly string[] = [
-  "floor_gray",
+  "floor",
   "wall_stone",
   "stairs_up",
   "stairs_down",
   "chest",
   "door",
   "door_locked",
-  "grass_brown",
   "mountain",
   "grass",
   "tree",
   "water",
-  "sand",
   "cave_entrance",
 ];
 

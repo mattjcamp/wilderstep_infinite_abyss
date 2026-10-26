@@ -22,7 +22,7 @@ describe("prototypeForTileId — TILE_TRAP", () => {
     expect(trap).not.toBeNull();
     expect(caveFloor).not.toBeNull();
     expect(trap!.paletteId).toBe(caveFloor!.paletteId);
-    expect(trap!.paletteId).toBe("grass_brown");
+    expect(trap!.paletteId).toBe("grass");
     expect(trap!.trap).toBe(true);
   });
 
@@ -42,7 +42,7 @@ describe("prototypeForTileId — TILE_TRAP", () => {
     expect(trap).not.toBeNull();
     expect(ruinsFloor).not.toBeNull();
     expect(trap!.paletteId).toBe(ruinsFloor!.paletteId);
-    expect(trap!.paletteId).toBe("floor_gray");
+    expect(trap!.paletteId).toBe("floor");
     expect(trap!.trap).toBe(true);
   });
 

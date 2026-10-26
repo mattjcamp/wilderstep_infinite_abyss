@@ -146,7 +146,22 @@ const EXTRA_FIELD_DEFAULTS: Partial<Record<ModelKey, Record<string, unknown>>> =
   // hand-editing JSON. `boat_passable` is the bridge counterpart —
   // tiles a vessel can sail UNDER (walkable on foot, sail-through
   // for a boat) such as wooden footbridges.
-  map_tiles: { boat: false, boat_passable: false, water: false },
+  // The rest mirror the per-cell inspector in the Map Editor, so any
+  // default a painted cell can carry is settable on the palette tile
+  // (painting copies every palette field onto the cell).
+  map_tiles: {
+    boat: false,
+    boat_passable: false,
+    water: false,
+    background_sprite: "",
+    show_link_placard: false,
+    text: "",
+    item: "",
+    npc: "",
+    quest: "",
+    dungeon: "",
+    trap_id: "",
+  },
   // Character Classes: the portrait the character creator suggests for
   // this class (blank = no suggestion; the player picks one).
   character_classes: { default_sprite: "" },

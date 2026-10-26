@@ -18,22 +18,6 @@
       "tag": "overview"
     },
     {
-      "boat": false,
-      "id": "grass_brown",
-      "name": "Brown Grass",
-      "walkable": true,
-      "obstructs": false,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "map/grass_brown.png",
-      "tag": "overview"
-    },
-    {
       "id": "water",
       "name": "Water",
       "walkable": false,
@@ -68,8 +52,8 @@
     },
     {
       "boat": false,
-      "id": "floor_dark",
-      "name": "Dark Floor",
+      "id": "floor",
+      "name": "Floor",
       "walkable": true,
       "obstructs": false,
       "locked": false,
@@ -79,39 +63,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/floor_dark.png",
-      "tag": "overview"
-    },
-    {
-      "boat": false,
-      "id": "floor_gray",
-      "name": "Gray Floor",
-      "walkable": true,
-      "obstructs": false,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": null,
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "map/floor_gray.png",
-      "tag": "overview"
-    },
-    {
-      "boat": false,
-      "id": "floor_brown",
-      "name": "Brown Floor",
-      "walkable": true,
-      "obstructs": false,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": null,
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "map/floor_brown.png",
+      "sprite": "indoor/floor.png",
       "tag": "overview"
     },
     {
@@ -142,24 +94,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/wall_planks_dark.png",
-      "tag": "wall"
-    },
-    {
-      "boat": false,
-      "id": "sand",
-      "name": "Sand",
-      "walkable": true,
-      "obstructs": false,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": null,
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "map/sand.png",
-      "tag": "overview"
+      "sprite": "indoor/wall_planks.png",
+      "tag": "town"
     },
     {
       "id": "wall_stone",
@@ -173,8 +109,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/wall_stone.png",
-      "tag": "wall"
+      "sprite": "indoor/wall_stone.png",
+      "tag": "town"
     },
     {
       "boat": false,
@@ -190,24 +126,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/table.png",
+      "sprite": "indoor/table.png",
       "tag": "indoor"
-    },
-    {
-      "boat": false,
-      "id": "grass_snowy",
-      "name": "Grass, Snowy",
-      "walkable": true,
-      "obstructs": false,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": null,
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "map/grass_snowy.png",
-      "tag": "overview"
     },
     {
       "boat": false,
@@ -222,7 +142,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/window.png",
+      "sprite": "indoor/window.png",
       "tag": "indoor"
     },
     {
@@ -254,7 +174,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/door.png",
+      "sprite": "indoor/door.png",
       "tag": "indoor"
     },
     {
@@ -302,7 +222,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/stairs_up.png",
+      "sprite": "indoor/stairs_up.png",
       "tag": "indoor"
     },
     {
@@ -318,7 +238,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/stairs_down.png",
+      "sprite": "indoor/stairs_down.png",
       "tag": "indoor"
     },
     {
@@ -334,7 +254,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/chest.png",
+      "sprite": "item/chest.png",
       "tag": "indoor"
     },
     {
@@ -349,7 +269,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/counter.png",
+      "sprite": "indoor/counter.png",
       "tag": "indoor"
     },
     {
@@ -365,7 +285,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/door_locked.png",
+      "sprite": "indoor/door_locked.png",
       "tag": "indoor"
     },
     {

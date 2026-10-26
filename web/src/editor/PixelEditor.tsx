@@ -84,6 +84,18 @@ const PRESET_PALETTE: ReadonlyArray<string> = [
 
 type Tool = "pencil" | "eraser" | "fill" | "eyedropper";
 
+/** Square brush sizes (in sprite pixels) for the pencil + eraser.
+ *  `[` / `]` step through these. */
+export const BRUSH_SIZES = [1, 2, 3, 4, 6, 8] as const;
+
+/** Top-left cell of an n×n brush centred on (col, row). Even sizes
+ *  lean up/left so a 2×2 brush covers the hovered cell + one to the
+ *  right and below. */
+export function brushOrigin(col: number, row: number, size: number) {
+  const off = Math.floor((size - 1) / 2);
+  return { col: col - off, row: row - off };
+}
+
 /** Sentinel value for "the current colour is the transparent slot."
  *  The palette renders this as a checker swatch; selecting it makes
  *  the pencil paint transparent pixels (functionally equivalent to
@@ -246,6 +258,9 @@ export function PixelEditor({
   );
   const SCALE = cellScaleFor(canvas.w, canvas.h);
   const [tool, setTool] = useState<Tool>("pencil");
+  const [brushSize, setBrushSize] = useState<number>(1);
+  /** Cell under the pointer — drives the brush-footprint outline. */
+  const [hoverCell, setHoverCell] = useState<{ col: number; row: number } | null>(null);
   const [color, setColor] = useState<string>(PRESET_PALETTE[0]);
   const [customHex, setCustomHex] = useState<string>("#9966cc");
   const [loadStatus, setLoadStatus] = useState<"loading" | "ready" | "error">(
@@ -354,23 +369,28 @@ export function PixelEditor({
   const paintCell = useCallback(
     (col: number, row: number) => {
       setCanvas((prev) => {
-        if (col < 0 || row < 0 || col >= prev.w || row >= prev.h) return prev;
-        const next = prev.pixels.slice();
-        const i = row * prev.w + col;
         // Transparent paint comes from either the explicit "eraser"
         // tool OR the "Transparent" palette slot — both routes write
         // an alpha-0 pixel.
         const value =
           tool === "eraser" ? TRANSPARENT : currentReplacementPixel;
-        // Idempotent — clicking an already-painted cell of the same
-        // colour shouldn't re-render. Tiny perf win; bigger UX win
-        // (no flicker on repeat-clicks).
-        if (pixelsEqual(prev.pixels[i], value)) return prev;
-        next[i] = value;
-        return { ...prev, pixels: next };
+        const o = brushOrigin(col, row, brushSize);
+        let next: Pixel[] | null = null;
+        for (let r = o.row; r < o.row + brushSize; r++) {
+          for (let c = o.col; c < o.col + brushSize; c++) {
+            if (c < 0 || r < 0 || c >= prev.w || r >= prev.h) continue;
+            const i = r * prev.w + c;
+            // Idempotent — skip cells already this colour so repeat
+            // passes don't re-render (no flicker).
+            if (pixelsEqual(prev.pixels[i], value)) continue;
+            if (!next) next = prev.pixels.slice();
+            next[i] = value;
+          }
+        }
+        return next ? { ...prev, pixels: next } : prev;
       });
     },
-    [currentReplacementPixel, tool],
+    [currentReplacementPixel, tool, brushSize],
   );
 
   /** Single-shot flood fill — called once on pointer-down for the
@@ -452,8 +472,9 @@ export function PixelEditor({
 
   const onPointerMove = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
-      if (!draggingRef.current) return;
       const { col, row } = cellFromEvent(e);
+      setHoverCell((h) => (h && h.col === col && h.row === row ? h : { col, row }));
+      if (!draggingRef.current) return;
       paintCell(col, row);
     },
     [cellFromEvent, paintCell],
@@ -475,6 +496,19 @@ export function PixelEditor({
           target.tagName === "TEXTAREA" ||
           target.isContentEditable)
       ) {
+        return;
+      }
+      if (!e.metaKey && !e.ctrlKey && (e.key === "[" || e.key === "]")) {
+        e.preventDefault();
+        setBrushSize((cur) => {
+          const idx = BRUSH_SIZES.indexOf(cur as (typeof BRUSH_SIZES)[number]);
+          const at = idx < 0 ? 0 : idx;
+          const nextIdx =
+            e.key === "]"
+              ? Math.min(BRUSH_SIZES.length - 1, at + 1)
+              : Math.max(0, at - 1);
+          return BRUSH_SIZES[nextIdx];
+        });
         return;
       }
       if ((e.metaKey || e.ctrlKey) && e.key === "z") {
@@ -693,6 +727,7 @@ export function PixelEditor({
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
           onPointerCancel={onPointerUp}
+          onPointerLeave={() => setHoverCell(null)}
         >
           {canvas.pixels.map((p, i) => {
             if (p.a === 0) return null;
@@ -712,6 +747,24 @@ export function PixelEditor({
               />
             );
           })}
+          {/* Brush footprint outline for pencil / eraser. */}
+          {hoverCell && (tool === "pencil" || tool === "eraser")
+            ? (() => {
+                const o = brushOrigin(hoverCell.col, hoverCell.row, brushSize);
+                return (
+                  <div
+                    className="pointer-events-none absolute border border-amber-300/90"
+                    style={{
+                      left: `${o.col * SCALE}px`,
+                      top: `${o.row * SCALE}px`,
+                      width: `${brushSize * SCALE}px`,
+                      height: `${brushSize * SCALE}px`,
+                      boxShadow: "0 0 0 1px rgba(0,0,0,0.6)",
+                    }}
+                  />
+                );
+              })()
+            : null}
         </div>
 
         <div className="flex flex-col gap-3">
@@ -770,6 +823,36 @@ export function PixelEditor({
             >
               Eyedropper
             </button>
+          </div>
+
+          {/* Brush size — applies to Pencil + Eraser. `[` / `]` step
+              smaller / bigger. */}
+          <div className="flex flex-col gap-1">
+            <span className="text-[12px] text-parchment/70">
+              Brush size: {brushSize}×{brushSize}{" "}
+              <span className="text-parchment/50">([ / ])</span>
+            </span>
+            <div className="flex gap-1">
+              {BRUSH_SIZES.map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setBrushSize(n)}
+                  title={`${n}×${n} brush`}
+                  className={[
+                    "flex h-7 w-7 items-center justify-center rounded border",
+                    brushSize === n
+                      ? "border-amber-300 bg-amber-700/30"
+                      : "border-parchment/20 bg-ink/40 hover:bg-ink/60",
+                  ].join(" ")}
+                >
+                  <span
+                    className="block bg-parchment/85"
+                    style={{ width: `${Math.max(2, n * 2)}px`, height: `${Math.max(2, n * 2)}px` }}
+                  />
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Current colour */}

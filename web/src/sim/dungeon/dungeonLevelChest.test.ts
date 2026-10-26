@@ -35,7 +35,7 @@ function chestFloor(chestItem: string): DungeonLevel {
 
 // Dungeon art resolves through the module palette (palette id → sprite).
 const PALETTE = new Map<string, string>([
-  ["floor_gray", "map/floor_gray.png"],
+  ["floor", "indoor/floor.png"],
   ["chest", "map/chest_tile.png"],
 ]);
 
