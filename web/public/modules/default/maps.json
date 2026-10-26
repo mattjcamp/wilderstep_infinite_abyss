@@ -20387,7 +20387,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "indoor/wall_left.png",
-            "tag": "shop"
+            "tag": "shop",
+            "background_sprite": "indoor/floor_planks_alt.png"
           },
           {
             "boat": false,
