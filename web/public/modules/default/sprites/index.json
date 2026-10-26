@@ -15,6 +15,7 @@
       "floor_pebbles.png",
       "floor_planks.png",
       "floor_smooth.png",
+      "pillar.png",
       "pit.png",
       "pit_edge.png",
       "pots.png",
@@ -122,6 +123,7 @@
       "cleric.png",
       "fighter.png",
       "party.png",
+      "person_male.png",
       "thief.png",
       "wizard.png"
     ]

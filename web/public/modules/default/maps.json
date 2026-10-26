@@ -21282,8 +21282,8 @@
           },
           {
             "boat": false,
-            "id": "dungeon_floor_smooth",
-            "name": "Dungeon Floor, Smooth",
+            "id": "dungeon_floor_cobble",
+            "name": "Dungeon Floor, Cobble",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -21293,7 +21293,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/floor_smooth.png",
+            "sprite": "dungeon/floor_cobble.png",
             "tag": "dungeon"
           },
           {
@@ -21526,8 +21526,8 @@
           },
           {
             "boat": false,
-            "id": "dungeon_floor_smooth",
-            "name": "Dungeon Floor, Smooth",
+            "id": "dungeon_floor_cobble",
+            "name": "Dungeon Floor, Cobble",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -21537,13 +21537,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/floor_smooth.png",
+            "sprite": "dungeon/floor_cobble.png",
             "tag": "dungeon"
           },
           {
             "boat": false,
-            "id": "dungeon_floor_smooth",
-            "name": "Dungeon Floor, Smooth",
+            "id": "dungeon_floor_cobble",
+            "name": "Dungeon Floor, Cobble",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -21553,7 +21553,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/floor_smooth.png",
+            "sprite": "dungeon/floor_cobble.png",
             "tag": "dungeon"
           },
           {
@@ -21741,8 +21741,8 @@
           },
           {
             "boat": false,
-            "id": "dungeon_floor_smooth",
-            "name": "Dungeon Floor, Smooth",
+            "id": "dungeon_floor_cobble",
+            "name": "Dungeon Floor, Cobble",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -21752,13 +21752,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/floor_smooth.png",
+            "sprite": "dungeon/floor_cobble.png",
             "tag": "dungeon"
           },
           {
             "boat": false,
-            "id": "dungeon_floor_smooth",
-            "name": "Dungeon Floor, Smooth",
+            "id": "dungeon_floor_cobble",
+            "name": "Dungeon Floor, Cobble",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -21768,13 +21768,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/floor_smooth.png",
+            "sprite": "dungeon/floor_cobble.png",
             "tag": "dungeon"
           },
           {
             "boat": false,
-            "id": "dungeon_floor_smooth",
-            "name": "Dungeon Floor, Smooth",
+            "id": "dungeon_floor_cobble",
+            "name": "Dungeon Floor, Cobble",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -21784,13 +21784,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/floor_smooth.png",
+            "sprite": "dungeon/floor_cobble.png",
             "tag": "dungeon"
           },
           {
             "boat": false,
-            "id": "dungeon_floor_smooth",
-            "name": "Dungeon Floor, Smooth",
+            "id": "dungeon_floor_cobble",
+            "name": "Dungeon Floor, Cobble",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -21800,13 +21800,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/floor_smooth.png",
+            "sprite": "dungeon/floor_cobble.png",
             "tag": "dungeon"
           },
           {
             "boat": false,
-            "id": "dungeon_floor_smooth",
-            "name": "Dungeon Floor, Smooth",
+            "id": "dungeon_floor_cobble",
+            "name": "Dungeon Floor, Cobble",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -21816,7 +21816,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/floor_smooth.png",
+            "sprite": "dungeon/floor_cobble.png",
             "tag": "dungeon"
           },
           {
@@ -22003,8 +22003,8 @@
           },
           {
             "boat": false,
-            "id": "dungeon_floor_smooth",
-            "name": "Dungeon Floor, Smooth",
+            "id": "dungeon_floor_cobble",
+            "name": "Dungeon Floor, Cobble",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -22014,14 +22014,14 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/floor_smooth.png",
+            "sprite": "dungeon/floor_cobble.png",
             "tag": "dungeon"
           },
           {
             "boat": false,
-            "id": "dungeon_floor_smooth",
-            "name": "Dungeon Floor, Smooth",
-            "walkable": true,
+            "id": "dungeon_chest",
+            "name": "Dungeon Chest",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -22030,13 +22030,14 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/floor_smooth.png",
-            "tag": "dungeon"
+            "sprite": "dungeon/chest.png",
+            "tag": "dungeon",
+            "background_sprite": "dungeon/floor_brick.png"
           },
           {
             "boat": false,
-            "id": "dungeon_floor_smooth",
-            "name": "Dungeon Floor, Smooth",
+            "id": "dungeon_floor_cobble",
+            "name": "Dungeon Floor, Cobble",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -22046,7 +22047,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/floor_smooth.png",
+            "sprite": "dungeon/floor_cobble.png",
             "tag": "dungeon"
           },
           {
@@ -22263,8 +22264,8 @@
           },
           {
             "boat": false,
-            "id": "dungeon_floor_smooth",
-            "name": "Dungeon Floor, Smooth",
+            "id": "dungeon_floor_cobble",
+            "name": "Dungeon Floor, Cobble",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -22274,13 +22275,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/floor_smooth.png",
+            "sprite": "dungeon/floor_cobble.png",
             "tag": "dungeon"
           },
           {
             "boat": false,
-            "id": "dungeon_floor_smooth",
-            "name": "Dungeon Floor, Smooth",
+            "id": "dungeon_floor_cobble",
+            "name": "Dungeon Floor, Cobble",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -22290,13 +22291,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/floor_smooth.png",
+            "sprite": "dungeon/floor_cobble.png",
             "tag": "dungeon"
           },
           {
             "boat": false,
-            "id": "dungeon_floor_smooth",
-            "name": "Dungeon Floor, Smooth",
+            "id": "dungeon_floor_cobble",
+            "name": "Dungeon Floor, Cobble",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -22306,7 +22307,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/floor_smooth.png",
+            "sprite": "dungeon/floor_cobble.png",
             "tag": "dungeon"
           },
           {

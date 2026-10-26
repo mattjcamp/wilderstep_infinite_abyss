@@ -836,7 +836,7 @@
     {
       "boat": false,
       "id": "dungeon_wall_pillar",
-      "name": "Dungeon Wall, Pillar",
+      "name": "Dungeon Wall, Pillar End",
       "walkable": false,
       "obstructs": true,
       "locked": false,
@@ -847,6 +847,22 @@
       "encounter": null,
       "spawn": null,
       "sprite": "dungeon/wall_pillar.png",
+      "tag": "dungeon"
+    },
+    {
+      "boat": false,
+      "id": "dungeon_pillar",
+      "name": "Dungeon Pillar",
+      "walkable": false,
+      "obstructs": true,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeon/pillar.png",
       "tag": "dungeon"
     },
     {
