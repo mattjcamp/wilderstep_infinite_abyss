@@ -51,7 +51,7 @@ const palette = new Map<string, string>([
   // The ruins prototypes' own palette tiles (every dungeon cell now
   // resolves its art through the palette).
   ["floor_gray", "map/floor_gray.png"],
-  ["wall_fieldstone_dark", "map/wall_fieldstone_dark.png"],
+  ["wall_stone", "map/wall_stone.png"],
   ["stairs_up", "map/stairs_up.png"],
   ["stairs_down", "map/stairs_down.png"],
   ["grass", "map/grass1.png"],

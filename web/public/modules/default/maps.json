@@ -4964,8 +4964,8 @@
             "tag": "overview"
           },
           {
-            "id": "wall_fieldstone_dark",
-            "name": "Fieldstone Wall, Dark",
+            "id": "wall_stone",
+            "name": "Stone Wall",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -4975,7 +4975,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/wall_fieldstone_dark.png",
+            "sprite": "map/wall_stone.png",
             "tag": "wall"
           },
           {
@@ -5267,8 +5267,8 @@
             "tag": "overview"
           },
           {
-            "id": "wall_fieldstone_dark",
-            "name": "Fieldstone Wall, Dark",
+            "id": "wall_stone",
+            "name": "Stone Wall",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -5278,12 +5278,12 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/wall_fieldstone_dark.png",
+            "sprite": "map/wall_stone.png",
             "tag": "wall"
           },
           {
-            "id": "wall_fieldstone_dark",
-            "name": "Fieldstone Wall, Dark",
+            "id": "wall_stone",
+            "name": "Stone Wall",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -5293,12 +5293,12 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/wall_fieldstone_dark.png",
+            "sprite": "map/wall_stone.png",
             "tag": "wall"
           },
           {
-            "id": "wall_fieldstone_dark",
-            "name": "Fieldstone Wall, Dark",
+            "id": "wall_stone",
+            "name": "Stone Wall",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -5308,7 +5308,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/wall_fieldstone_dark.png",
+            "sprite": "map/wall_stone.png",
             "tag": "wall"
           },
           {
@@ -5581,8 +5581,8 @@
             "tag": "overview"
           },
           {
-            "id": "wall_fieldstone_dark",
-            "name": "Fieldstone Wall, Dark",
+            "id": "wall_stone",
+            "name": "Stone Wall",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -5592,7 +5592,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/wall_fieldstone_dark.png",
+            "sprite": "map/wall_stone.png",
             "tag": "wall"
           },
           {
@@ -5612,8 +5612,8 @@
             "tag": "indoor"
           },
           {
-            "id": "wall_fieldstone_dark",
-            "name": "Fieldstone Wall, Dark",
+            "id": "wall_stone",
+            "name": "Stone Wall",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -5623,7 +5623,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/wall_fieldstone_dark.png",
+            "sprite": "map/wall_stone.png",
             "tag": "wall"
           },
           {

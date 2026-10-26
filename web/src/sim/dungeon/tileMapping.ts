@@ -209,7 +209,7 @@ const WALL_TORCH_PROTO = proto({
   obstructs: true,
   light_source: true,
   light_range: 5,
-  paletteId: "wall_fieldstone_dark",
+  paletteId: "wall_stone",
   animation: "torch",
 });
 
@@ -242,7 +242,7 @@ const DEFAULT_WALL_PROTO = proto({
   name: "Dungeon Wall",
   walkable: false,
   obstructs: true,
-  paletteId: "wall_fieldstone_dark",
+  paletteId: "wall_stone",
 });
 
 /** ── Cave style tiles ─────────────────────────────────────────── */
@@ -404,7 +404,7 @@ export function prototypeForTileId(
 /** Every palette id the dungeon prototypes can borrow art from. */
 export const DUNGEON_PALETTE_IDS: readonly string[] = [
   "floor_gray",
-  "wall_fieldstone_dark",
+  "wall_stone",
   "stairs_up",
   "stairs_down",
   "chest",
