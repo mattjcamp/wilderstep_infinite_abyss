@@ -579,8 +579,8 @@
     },
     {
       "boat": false,
-      "id": "shop_crate",
-      "name": "Shop Crate",
+      "id": "object_crate",
+      "name": "Crate",
       "walkable": false,
       "obstructs": true,
       "locked": false,
@@ -590,8 +590,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "indoor/crate.png",
-      "tag": "shop"
+      "sprite": "objects/crate.png",
+      "tag": "objects"
     },
     {
       "boat": false,
@@ -659,8 +659,24 @@
     },
     {
       "boat": false,
-      "id": "shop_lantern",
-      "name": "Shop Lantern",
+      "id": "shop_door",
+      "name": "Shop Door",
+      "walkable": true,
+      "obstructs": true,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "indoor/shop_door.png",
+      "tag": "shop"
+    },
+    {
+      "boat": false,
+      "id": "object_lantern",
+      "name": "Lantern",
       "walkable": false,
       "obstructs": true,
       "locked": false,
@@ -670,8 +686,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "indoor/lantern.png",
-      "tag": "shop"
+      "sprite": "objects/lantern.png",
+      "tag": "objects"
     },
     {
       "boat": false,
@@ -1075,8 +1091,8 @@
     },
     {
       "boat": false,
-      "id": "dungeon_chest",
-      "name": "Dungeon Chest",
+      "id": "object_chest",
+      "name": "Chest",
       "walkable": false,
       "obstructs": false,
       "locked": false,
@@ -1086,13 +1102,13 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/chest.png",
-      "tag": "dungeon"
+      "sprite": "objects/chest.png",
+      "tag": "objects"
     },
     {
       "boat": false,
-      "id": "dungeon_crate",
-      "name": "Dungeon Crate",
+      "id": "object_barrel",
+      "name": "Barrel",
       "walkable": false,
       "obstructs": false,
       "locked": false,
@@ -1102,13 +1118,13 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/crate.png",
-      "tag": "dungeon"
+      "sprite": "objects/barrel.png",
+      "tag": "objects"
     },
     {
       "boat": false,
-      "id": "dungeon_barrel",
-      "name": "Dungeon Barrel",
+      "id": "object_pots",
+      "name": "Pots",
       "walkable": false,
       "obstructs": false,
       "locked": false,
@@ -1118,24 +1134,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/barrel.png",
-      "tag": "dungeon"
-    },
-    {
-      "boat": false,
-      "id": "dungeon_pots",
-      "name": "Dungeon Pots",
-      "walkable": false,
-      "obstructs": false,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "dungeon/pots.png",
-      "tag": "dungeon"
+      "sprite": "objects/pots.png",
+      "tag": "objects"
     },
     {
       "boat": false,
@@ -1155,8 +1155,8 @@
     },
     {
       "boat": false,
-      "id": "dungeon_brazier",
-      "name": "Dungeon Brazier",
+      "id": "object_brazier",
+      "name": "Brazier",
       "walkable": false,
       "obstructs": false,
       "locked": false,
@@ -1166,8 +1166,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/brazier.png",
-      "tag": "dungeon"
+      "sprite": "objects/brazier.png",
+      "tag": "objects"
     },
     {
       "boat": false,
@@ -1187,8 +1187,8 @@
     },
     {
       "boat": false,
-      "id": "dungeon_bones",
-      "name": "Dungeon Bones",
+      "id": "object_bones",
+      "name": "Bones",
       "walkable": true,
       "obstructs": false,
       "locked": false,
@@ -1198,8 +1198,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/bones.png",
-      "tag": "dungeon"
+      "sprite": "objects/bones.png",
+      "tag": "objects"
     },
     {
       "boat": false,

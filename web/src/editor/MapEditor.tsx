@@ -69,6 +69,7 @@ import {
   applyRenderScale,
   installHiDpiText,
   swapTexture,
+  NATIVE_TILE_CSS_PX,
 } from "@/util/renderScale";
 import { ANIMATION_CONFIGS } from "@/sim/tileAnimations";
 import type { AnimationKind } from "@/sim/tileAnimations";
@@ -590,10 +591,17 @@ export function MapEditor({
    *  produces matching scrollbars for pan. Phaser pointer events still
    *  resolve to correct game coordinates because getBoundingClientRect
    *  returns post-transform dimensions. */
-  const ZOOM_STEPS = [0.5, 0.75, 1, 1.25, 1.5, 2, 3] as const;
-  const DEFAULT_ZOOM_IDX = 2; // = 1.0
+  //  100% = NATIVE: each tile on screen is NATIVE_TILE_CSS_PX (64) CSS
+  //  px, i.e. a 64×64 sprite shown 1:1. The canvas itself is laid out
+  //  at the logical TILE_SIZE (32) per tile, so the CSS scale applied
+  //  is `zoom * NATIVE_SCALE`.
+  const ZOOM_STEPS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2] as const;
+  const DEFAULT_ZOOM_IDX = 3; // = 1.0 = native
+  const NATIVE_SCALE = NATIVE_TILE_CSS_PX / TILE_SIZE;
   const [zoomIdx, setZoomIdx] = useState<number>(DEFAULT_ZOOM_IDX);
   const zoom = ZOOM_STEPS[zoomIdx];
+  /** CSS scale actually applied to the logical-size canvas. */
+  const displayZoom = zoom * NATIVE_SCALE;
   /** Ref to the scrollable canvas viewport so middle-mouse-drag and
    *  Space+drag panning can mutate scrollLeft/scrollTop directly
    *  without React re-renders. */
@@ -601,8 +609,8 @@ export function MapEditor({
   /** Latest zoom factor, readable from long-lived closures (the sim
    *  bridge is built once per sim mount and would otherwise capture a
    *  stale zoom). */
-  const zoomRef = useRef<number>(zoom);
-  zoomRef.current = zoom;
+  const zoomRef = useRef<number>(displayZoom);
+  zoomRef.current = displayZoom;
   /** Last cell the simulated party was shown at, or null right after a
    *  sim mounts (i.e. on arrival at a new map). Drives the follow
    *  camera: null / a multi-cell jump → center on the party; a normal
@@ -4823,8 +4831,8 @@ export function MapEditor({
               resolve to correct game-space coords. */}
           <div
             style={{
-              width: mapRecord.width * TILE_SIZE * zoom,
-              height: mapRecord.height * TILE_SIZE * zoom,
+              width: mapRecord.width * TILE_SIZE * displayZoom,
+              height: mapRecord.height * TILE_SIZE * displayZoom,
             }}
           >
 
@@ -4835,7 +4843,7 @@ export function MapEditor({
                 width: mapRecord.width * TILE_SIZE,
                 height: mapRecord.height * TILE_SIZE,
                 transformOrigin: "0 0",
-                transform: `scale(${zoom})`,
+                transform: `scale(${displayZoom})`,
               }}
             />
           </div>

@@ -553,6 +553,7 @@ import type { CharacterRecord } from "@/editor/CharacterSheet";
 import {
   RENDER_SCALE,
   WORLD_ZOOM_STEPS,
+  nativeWorldZoom,
   installHiDpiText,
   installWorldAndUiCameras,
   loadWorldZoomIdx,
@@ -2470,8 +2471,19 @@ export function PlayHost() {
         }
         create() {
           this.worldZoomIdx = loadWorldZoomIdx();
-          this.worldZoom = WORLD_ZOOM_STEPS[this.worldZoomIdx];
+          this.worldZoom = this.effectiveWorldZoom(this.worldZoomIdx);
           installWorldAndUiCameras(this, this.worldZoom);
+          // FIT scaling changes how big the canvas is on screen when
+          // the window resizes; re-derive the zoom so tiles stay at
+          // their native 64 CSS px.
+          this.scale.on("resize", () => {
+            const z = this.effectiveWorldZoom(this.worldZoomIdx);
+            if (Math.abs(z - this.worldZoom) < 1e-6) return;
+            this.worldZoom = z;
+            this.cameras.main.setZoom(RENDER_SCALE * this.worldZoom);
+            this.mapFrame?.setVisible(this.mapFitsView());
+            this.recenterCamera(true);
+          });
           // Apply per-cell tile overrides from the save BEFORE
           // anything reads catalog.map.grid. Each entry is `{ col,
           // row, tileId }` — populated by the `rewards.tile_add`
@@ -3220,9 +3232,17 @@ export function PlayHost() {
           return mapPixelWidth <= viewW && mapPixelHeight <= usableH;
         }
 
+        /** World zoom for a Z step: the step times "native" (each tile
+         *  shown at 64 CSS px whatever size FIT gives the canvas). */
+        effectiveWorldZoom(idx: number): number {
+          const shown = this.scale.displaySize?.width || this.scale.width;
+          const displayScale = shown / this.scale.width;
+          return nativeWorldZoom(displayScale, TILE_SIZE, WORLD_ZOOM_STEPS[idx]);
+        }
+
         setWorldZoomIdx(idx: number): void {
           this.worldZoomIdx = idx;
-          this.worldZoom = WORLD_ZOOM_STEPS[idx];
+          this.worldZoom = this.effectiveWorldZoom(idx);
           saveWorldZoomIdx(idx);
           this.cameras.main.setZoom(RENDER_SCALE * this.worldZoom);
           this.mapFrame?.setVisible(this.mapFitsView());

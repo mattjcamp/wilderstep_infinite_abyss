@@ -67,7 +67,32 @@ export function pointerLogical(p: { x: number; y: number }): { x: number; y: num
 
 /** Selectable world-zoom steps. 1 = ~30×22 tiles in view, 1.5 = ~20×15,
  *  2 = ~15×11. Cycled in play with the Z key. */
+/** Z-key steps, as multiples of the NATIVE tile size (a 64×64 sprite
+ *  shown at 64 CSS px per tile — see {@link nativeWorldZoom}). */
 export const WORLD_ZOOM_STEPS = [1, 1.5, 2] as const;
+
+/** Size of one map tile on screen at "native" resolution, in CSS px:
+ *  the art is 64×64, so a tile is shown 1:1 with its sprite. */
+export const NATIVE_TILE_CSS_PX = 64;
+
+/**
+ * World zoom (on top of RENDER_SCALE) that shows a TILE_SIZE-logical
+ * tile at {@link NATIVE_TILE_CSS_PX} CSS pixels, given how many CSS
+ * pixels the canvas currently spends per backbuffer pixel
+ * (`displayScale`; Phaser FIT mode changes this with the window).
+ * The camera zoom is rounded so a tile is a whole number of
+ * backbuffer pixels, which keeps the pixel art as even as possible.
+ */
+export function nativeWorldZoom(
+  displayScale: number,
+  tileSizeLogical: number,
+  step = 1,
+): number {
+  if (!(displayScale > 0)) return step;
+  const wantTileBackbufferPx = (NATIVE_TILE_CSS_PX * step) / displayScale;
+  const tileBb = Math.max(1, Math.round(wantTileBackbufferPx));
+  return tileBb / (tileSizeLogical * RENDER_SCALE);
+}
 const WORLD_ZOOM_KEY = "wilderstep.worldZoomIdx";
 
 export function loadWorldZoomIdx(): number {

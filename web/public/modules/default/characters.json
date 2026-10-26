@@ -16,7 +16,7 @@
       "constitution": 17,
       "intelligence": 7,
       "wisdom": 8,
-      "sprite": "person/fighter.png",
+      "sprite": "person/dwarf_male.png",
       "equipped": {},
       "inventory": []
     },
@@ -35,7 +35,7 @@
       "constitution": 9,
       "intelligence": 8,
       "wisdom": 18,
-      "sprite": "person/cleric.png",
+      "sprite": "person/person_female.png",
       "equipped": {},
       "inventory": []
     },
@@ -54,7 +54,7 @@
       "constitution": 11,
       "intelligence": 20,
       "wisdom": 8,
-      "sprite": "person/wizard.png",
+      "sprite": "person/gnome_male.png",
       "equipped": {},
       "inventory": []
     },
@@ -73,7 +73,7 @@
       "constitution": 13,
       "intelligence": 7,
       "wisdom": 8,
-      "sprite": "person/thief.png",
+      "sprite": "person/halfling_female.png",
       "equipped": {},
       "inventory": []
     }

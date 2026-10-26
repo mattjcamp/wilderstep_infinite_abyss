@@ -31,11 +31,23 @@ SCHEMES = {
 FIRE_TILES = {"torch.png", "brazier.png"}
 
 
+# Tiles that now live in another sprites/ folder (relative to the
+# Default sprites root), and tiles to leave alone for now.
+MOVED = {'chest.png': 'objects', 'crate.png': 'objects', 'pots.png': 'objects', 'brazier.png': 'objects', 'barrel.png': 'objects', 'bones.png': 'objects'}
+SKIP = set()
+
+
+def out_path(f):
+    if f in MOVED:
+        return os.path.join(OUT_DIR, "..", MOVED[f], f)
+    return os.path.join(OUT_DIR, f)
+
+
 def main(scheme="cold_stone"):
     s = SCHEMES[scheme]
     n = 0
     for f in sorted(os.listdir(SRC_DIR)):
-        if not f.endswith(".png"):
+        if not f.endswith(".png") or f in SKIP:
             continue
         im = Image.open(os.path.join(SRC_DIR, f)).convert("RGBA")
         px = im.load()
@@ -47,7 +59,7 @@ def main(scheme="cold_stone"):
                 r, g, b, a = px[x, y]
                 if a and (r, g, b) in mapping:
                     px[x, y] = mapping[(r, g, b)] + (a,)
-        im.save(os.path.join(OUT_DIR, f))
+        im.save(out_path(f))
         n += 1
     print(f"{n} tiles recoloured to {scheme}")
 

@@ -54,7 +54,9 @@ import {
 } from "@/sim/dungeon/dungeonSession";
 import { tintForCell } from "@/sim/lighting";
 import { TILE_SIZE, WorldRenderer } from "@/sim/scene/WorldRenderer";
-import { RENDER_SCALE, applyRenderScale, installHiDpiText } from "@/util/renderScale";
+import { RENDER_SCALE, applyRenderScale, installHiDpiText,
+  NATIVE_TILE_CSS_PX,
+} from "@/util/renderScale";
 import type {
   SimCharacter,
   SimCharacterClass,
@@ -620,8 +622,8 @@ export function DungeonSimMount({
         parent: containerRef.current,
         backgroundColor: "#0c0c14",
         pixelArt: true,
-        // Hi-res backbuffer, shown at the logical CSS size.
-        scale: { zoom: 1 / RENDER_SCALE },
+        // Hi-res backbuffer shown 1:1 — tiles at their native 64 CSS px.
+        scale: { zoom: NATIVE_TILE_CSS_PX / (TILE_SIZE * RENDER_SCALE) },
         scene: DungeonScene,
       });
     })();
