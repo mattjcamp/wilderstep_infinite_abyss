@@ -12,6 +12,24 @@
         "giant_rat",
         "giant_rat"
       ]
+    },
+    {
+      "id": "skeletons",
+      "name": "Sketetons",
+      "area": null,
+      "theme": null,
+      "tags": [
+        "Undead"
+      ],
+      "level": 1,
+      "weight": 1,
+      "monster_party_tile": "monster/skeleton.png",
+      "monsters": [
+        "skeleton",
+        "skeleton"
+      ],
+      "custom_map": "default_battle_arena",
+      "darkness": false
     }
   ]
 }

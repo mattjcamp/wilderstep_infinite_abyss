@@ -559,6 +559,8 @@ import {
   loadWorldZoomIdx,
   saveWorldZoomIdx,
   swapTexture,
+  LOGICAL_HEIGHT,
+  LOGICAL_WIDTH,
 } from "@/util/renderScale";
 
 /** Cells the kernel reads. Mirrors `TileType` from the editor without
@@ -2363,8 +2365,8 @@ export function PlayHost() {
       // 960×720 at 32px tiles ≈ 30 × 22.5 visible tiles — enough
       // map context that the party never feels cramped, matching
       // the v1 game's framing.
-      const PLAY_CANVAS_WIDTH = 960;
-      const PLAY_CANVAS_HEIGHT = 720;
+      const PLAY_CANVAS_WIDTH = LOGICAL_WIDTH;
+      const PLAY_CANVAS_HEIGHT = LOGICAL_HEIGHT;
       const width = PLAY_CANVAS_WIDTH;
       const height = PLAY_CANVAS_HEIGHT;
       // Pixel extent of the current map — independent of the canvas
@@ -2376,7 +2378,8 @@ export function PlayHost() {
       class PlayScene extends Phaser.Scene {
         world: WorldRenderer | null = null;
         /** World zoom on top of RENDER_SCALE — how physically big a
-         *  tile is on screen. Cycled with Z (see WORLD_ZOOM_STEPS). */
+         *  tile is on screen. Cycled with Z: 100% → 50% → 25%
+         *  (see WORLD_ZOOM_STEPS). */
         worldZoom = 1;
         worldZoomIdx = 0;
         /** Faint frame drawn around maps that fit the view; shown /

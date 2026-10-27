@@ -30,3 +30,15 @@ describe("nativeWorldZoom", () => {
     expect(nativeWorldZoom(0, TILE, 1.5)).toBe(1.5);
   });
 });
+
+describe("Z zoom steps", () => {
+  it("cycle 100% → 50% → 25%", async () => {
+    const { WORLD_ZOOM_STEPS, zoomStepLabel } = await import("./renderScale");
+    expect([...WORLD_ZOOM_STEPS]).toEqual([1, 0.5, 0.25]);
+    expect([0, 1, 2].map(zoomStepLabel)).toEqual(["100%", "50%", "25%"]);
+  });
+  it("50% shows tiles at 32 CSS px and 25% at 16", () => {
+    expect(tileCss(nativeWorldZoom(0.5, TILE, 0.5), 0.5)).toBe(32);
+    expect(tileCss(nativeWorldZoom(0.5, TILE, 0.25), 0.5)).toBe(16);
+  });
+});

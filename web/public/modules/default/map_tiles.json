@@ -242,22 +242,6 @@
       "tag": "indoor"
     },
     {
-      "boat": false,
-      "id": "chest",
-      "name": "Chest",
-      "walkable": true,
-      "obstructs": false,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": null,
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "item/chest.png",
-      "tag": "indoor"
-    },
-    {
       "id": "counter",
       "name": "Counter",
       "walkable": false,
@@ -1139,8 +1123,8 @@
     },
     {
       "boat": false,
-      "id": "dungeon_torch",
-      "name": "Dungeon Torch",
+      "id": "object_torch",
+      "name": "Torch",
       "walkable": false,
       "obstructs": false,
       "locked": false,
@@ -1150,8 +1134,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/torch.png",
-      "tag": "dungeon"
+      "sprite": "objects/torch.png",
+      "tag": "objects"
     },
     {
       "boat": false,

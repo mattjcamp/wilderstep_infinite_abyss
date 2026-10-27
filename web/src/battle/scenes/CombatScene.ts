@@ -78,7 +78,16 @@ import {
 } from "../world/Lighting";
 import { awardXp, type LevelUpEvent } from "../world/Leveling";
 import { defaultRng } from "../rng";
-import { applyRenderScale, RENDER_SCALE } from "@/util/renderScale";
+import {
+  applyRenderScale,
+  LOGICAL_HEIGHT,
+  LOGICAL_WIDTH,
+  loadWorldZoomIdx,
+  nativeWorldZoom,
+  RENDER_SCALE,
+  saveWorldZoomIdx,
+  WORLD_ZOOM_STEPS,
+} from "@/util/renderScale";
 import { MAP_BACKDROP_COLOR } from "@/sim/scene/WorldRenderer";
 import {
   resolveThrow,
@@ -269,7 +278,7 @@ interface CombatSceneData {
 // player can't trip into it.
 const SMITE_ALL_CHEAT = true;
 
-// ── Layout (canvas is 960×720) ────────────────────────────────────
+// ── Layout (canvas is LOGICAL_WIDTH × LOGICAL_HEIGHT = 1280×720) ──────
 // TILE matches the rest of the engine (overworld + town interiors)
 // TILE is in LOGICAL pixels; the camera zooms by RENDER_SCALE so a
 // tile is 64 real px. Sprites are always display-sized to TILE, so
@@ -283,19 +292,27 @@ const TILE = 32;
  *  share the SHAPE of the step (@/vfx/stepAnim) but not its tempo —
  *  don't unify these without watching both. */
 const COMBAT_STEP_MS = 110;
+/** Depth at and above which objects are dialogs / banners drawn over
+ *  the arena at the frame's normal size (not zoomed with the arena). */
+const OVERLAY_DEPTH = 120;
 const HEADER_H = 32;
 const ARENA_X = 12;
 const ARENA_Y = HEADER_H + 8;             // 40
+// ARENA_W/H: the battlefield itself (18 × 16 tiles) in world units.
+// VIEW_W/H: the on-screen window the arena camera draws it into; the
+// camera zooms tiles to native size and scrolls within the battlefield.
 const ARENA_W = ARENA_COLS * TILE;        // 18 × 32 = 576
 const ARENA_H = ARENA_ROWS * TILE;        // 16 × 32 = 512
-const HUD_X = ARENA_X + ARENA_W + 12;     // 600
-const HUD_W = 960 - HUD_X - 12;           // 348
+const HUD_W = 348;
+const VIEW_W = LOGICAL_WIDTH - ARENA_X - 12 - HUD_W - 12;   // 896
+const VIEW_H = ARENA_H;                   // 512
+const HUD_X = ARENA_X + VIEW_W + 12;      // 920
 const HUD_Y = ARENA_Y;
-const HUD_H = ARENA_H;
+const HUD_H = VIEW_H;
 const LOG_X = 12;
-const LOG_Y = ARENA_Y + ARENA_H + 8;      // 560
-const LOG_W = 960 - 24;                   // 936
-const LOG_H = 720 - LOG_Y - 12;           // 148
+const LOG_Y = ARENA_Y + VIEW_H + 8;       // 560
+const LOG_W = LOGICAL_WIDTH - 24;         // 1256
+const LOG_H = LOGICAL_HEIGHT - LOG_Y - 12;           // 148
 
 // ── Web-app theme palette (matches PartyScene + TownScene) ────────
 const C = {
@@ -584,6 +601,15 @@ export class CombatScene extends Phaser.Scene {
   private roamerId: string | null = null;
 
   private bodies = new Map<string, Phaser.GameObjects.Image | Phaser.GameObjects.Rectangle>();
+  /** Native-resolution arena view (see installArenaCamera). The main
+   *  camera draws the header / HUD / log at the frame's usual size;
+   *  `arenaCam` draws only the arena, zoomed so a tile is 64 CSS px
+   *  and scrolled to follow the action; `overlayCam` draws dialogs and
+   *  banners (depth >= OVERLAY_DEPTH) on top, unzoomed. */
+  private arenaCam: Phaser.Cameras.Scene2D.Camera | null = null;
+  /** Z-key zoom step for the arena view (shared with the map screen). */
+  private arenaZoomIdx = 0;
+  private overlayCam: Phaser.Cameras.Scene2D.Camera | null = null;
   private selRings = new Map<string, Phaser.GameObjects.Rectangle>();
   private moveHintRects: Phaser.GameObjects.Rectangle[] = [];
   /** Repeating timers — one per combatant — that pulse a `glowAura`
@@ -912,6 +938,7 @@ export class CombatScene extends Phaser.Scene {
 
   async create(): Promise<void> {
     applyRenderScale(this);
+    this.installArenaCamera();
     // Live-debug hook — `window.__combat` is the running CombatScene
     // so the dev console / Claude-in-Chrome can introspect the
     // engine state when something looks off.
@@ -1098,6 +1125,8 @@ export class CombatScene extends Phaser.Scene {
 
     this.cameras.main.setBackgroundColor("#0c0c14");
     this.cameras.main.fadeIn(220, 0, 0, 0);
+    this.arenaCam?.fadeIn(220, 0, 0, 0);
+    this.overlayCam?.fadeIn(220, 0, 0, 0);
 
     // Belt-and-braces — destroy any leftover static decor (panels /
     // headers / labels) tracked from a previous create() pass before
@@ -1269,14 +1298,14 @@ export class CombatScene extends Phaser.Scene {
   }
 
   private drawHeader(): void {
-    this.panel(0, 0, 960, HEADER_H);
+    this.panel(0, 0, LOGICAL_WIDTH, HEADER_H);
     this.track(
-      this.add.text(960 / 2, 6, "BATTLE", FONT_TITLE()).setOrigin(0.5, 0),
+      this.add.text(LOGICAL_WIDTH / 2, 6, "BATTLE", FONT_TITLE()).setOrigin(0.5, 0),
     );
   }
 
   private drawArena(): void {
-    this.panel(ARENA_X - 4, ARENA_Y - 4, ARENA_W + 8, ARENA_H + 8);
+    this.panel(ARENA_X - 4, ARENA_Y - 4, VIEW_W + 8, VIEW_H + 8);
     const mapCells = this.arenaCells;
 
     // Bake the per-cell floor sprites into one RenderTexture. Without
@@ -2208,6 +2237,13 @@ export class CombatScene extends Phaser.Scene {
     // can flare an empty / dark cell instead of a creature. No-op
     // in every other mode.
     k.on("keydown-T", () => this.onTileAimKey());
+    // [Z] — zoom the arena view: 100% → 50% → 25% (the same setting as
+    // the map screen's Z). Zooming out stops once the whole battlefield
+    // is in view.
+    k.on("keydown-Z", (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      this.cycleArenaZoom();
+    });
     // [P] — open / close the read-only combatant inspector: a
     // scrollable roster of every party member and monster with their
     // HP/MP, equipped gear, and active effects. Only opens on the
@@ -3388,6 +3424,7 @@ export class CombatScene extends Phaser.Scene {
         // Warm, arena-wide flash so the cast reads instantly and is
         // visibly distinct from Light's localized orb.
         this.cameras.main.flash(500, 255, 248, 205);
+        this.arenaCam?.flash(500, 255, 248, 205);
         this.combat.log.push(
           wasDark
             ? `${me.name} casts ${spell.name} — the battlefield floods with daylight!`
@@ -5708,8 +5745,8 @@ export class CombatScene extends Phaser.Scene {
         const consumer = cs?.sourceId
           ? this.bodies.get(cs.sourceId)
           : null;
-        const x = consumer?.x ?? 480;
-        const y = consumer?.y ?? 360;
+        const x = consumer?.x ?? ARENA_X + ARENA_W / 2;
+        const y = consumer?.y ?? ARENA_Y + ARENA_H / 2;
         this.floatLabel(x, y - 12, `${target.name} -${ev.damage}`, "#ff6b6b");
       } else if (ev.kind === "saved") {
         // The engine has already updated the position. Snap the body
@@ -6354,7 +6391,7 @@ export class CombatScene extends Phaser.Scene {
             void partyDeathSlump(this, body);
             partyDeathBanner(
               this,
-              { x: ARENA_X, y: ARENA_Y, width: ARENA_W, height: ARENA_H },
+              { x: ARENA_X, y: ARENA_Y, width: VIEW_W, height: VIEW_H },
               target.name,
             );
             Sfx.play("defeat");
@@ -7064,6 +7101,8 @@ export class CombatScene extends Phaser.Scene {
         return;
       }
       this.cameras.main.fadeOut(220, 0, 0, 0);
+      this.arenaCam?.fadeOut(220, 0, 0, 0);
+      this.overlayCam?.fadeOut(220, 0, 0, 0);
       this.cameras.main.once("camerafadeoutcomplete", () => {
         // v1 scene-switching path. Defeat is a special case: the
         // dungeon flow needs to drop the party back on the overworld
@@ -7193,8 +7232,8 @@ export class CombatScene extends Phaser.Scene {
     if (lines.length === 0) return;
     const text = lines.join("\n");
     const t = this.add.text(
-      ARENA_X + ARENA_W / 2,
-      ARENA_Y + ARENA_H / 2 + 56,
+      ARENA_X + VIEW_W / 2,
+      ARENA_Y + VIEW_H / 2 + 56,
       text,
       {
         fontFamily: "Georgia, serif",
@@ -7284,8 +7323,8 @@ export class CombatScene extends Phaser.Scene {
       for (const l of lines) bodyH += SPACING[l.kind];
       bodyH += BOTTOM_PAD;
       const H = TITLE_BAND + bodyH + FOOTER_BAND;
-      const X = ARENA_X + (ARENA_W - W) / 2;
-      const Y = ARENA_Y + (ARENA_H - H) / 2;
+      const X = ARENA_X + (VIEW_W - W) / 2;
+      const Y = ARENA_Y + (VIEW_H - H) / 2;
 
       const objs: Phaser.GameObjects.GameObject[] = [];
       const bg = this.add
@@ -7511,7 +7550,7 @@ export class CombatScene extends Phaser.Scene {
 
     // Dim + click-block the arena beneath the panel.
     const dim = this.add
-      .rectangle(ARENA_X, ARENA_Y, ARENA_W, ARENA_H, 0x05050c, 0.72)
+      .rectangle(ARENA_X, ARENA_Y, VIEW_W, VIEW_H, 0x05050c, 0.72)
       .setOrigin(0)
       .setDepth(198)
       .setInteractive();
@@ -7519,8 +7558,8 @@ export class CombatScene extends Phaser.Scene {
 
     const PX = ARENA_X + 10;
     const PY = ARENA_Y + 10;
-    const PW = ARENA_W - 20;
-    const PH = ARENA_H - 20;
+    const PW = VIEW_W - 20;
+    const PH = VIEW_H - 20;
     const panel = this.add
       .rectangle(PX, PY, PW, PH, 0x161629, 0.98)
       .setOrigin(0)
@@ -7662,13 +7701,148 @@ export class CombatScene extends Phaser.Scene {
   private showOverlay(label: string, color: string): void {
     if (this.overlayText) this.overlayText.destroy();
     this.overlayText = this.add
-      .text(ARENA_X + ARENA_W / 2, ARENA_Y + ARENA_H / 2, label, {
+      .text(ARENA_X + VIEW_W / 2, ARENA_Y + VIEW_H / 2, label, {
         fontFamily: "Georgia, serif",
         fontSize: "48px",
         color,
         stroke: "#1a1a2e",
         strokeThickness: 8,
       })
-      .setOrigin(0.5);
+      .setOrigin(0.5)
+      .setDepth(OVERLAY_DEPTH);   // drawn unzoomed over the arena view
+  }
+
+  // ── Native-resolution arena camera ───────────────────────────────
+  /** Arena camera zoom: tiles at 64 CSS px (native art size) for the
+   *  canvas's current on-screen size, never smaller than the whole
+   *  arena filling its window. */
+  private arenaZoom(): number {
+    const shown = this.scale.displaySize?.width || this.scale.width;
+    const displayScale = shown / this.scale.width;
+    const step = WORLD_ZOOM_STEPS[this.arenaZoomIdx] ?? 1;
+    // Never zoom out further than the whole battlefield fitting the view.
+    const fit = Math.min(VIEW_W / ARENA_W, VIEW_H / ARENA_H);
+    return RENDER_SCALE * Math.max(fit, nativeWorldZoom(displayScale, TILE, step));
+  }
+
+  private cycleArenaZoom(): void {
+    this.arenaZoomIdx = (this.arenaZoomIdx + 1) % WORLD_ZOOM_STEPS.length;
+    saveWorldZoomIdx(this.arenaZoomIdx);
+    this.arenaCam?.setZoom(this.arenaZoom());
+  }
+
+  private installArenaCamera(): void {
+    const R = RENDER_SCALE;
+    this.arenaZoomIdx = loadWorldZoomIdx();
+    if (this.arenaCam) this.cameras.remove(this.arenaCam);
+    if (this.overlayCam) this.cameras.remove(this.overlayCam);
+    const arena = this.cameras
+      .add(ARENA_X * R, ARENA_Y * R, VIEW_W * R, VIEW_H * R, false, "arena")
+      .setOrigin(0, 0)
+      .setZoom(this.arenaZoom());
+    // Start on the arena's top-left; update() follows the action.
+    arena.setScroll(ARENA_X, ARENA_Y);
+    const overlay = this.cameras
+      .add(0, 0, this.scale.width, this.scale.height, false, "overlay")
+      .setOrigin(0, 0)
+      .setZoom(R);
+    this.arenaCam = arena;
+    this.overlayCam = overlay;
+    const mainId = this.cameras.main.id;
+    const arenaId = arena.id;
+    const overlayId = overlay.id;
+    // Route every game object to exactly one camera. cameraFilter is a
+    // bitmask of the cameras that must NOT draw the object.
+    this.events.off("prerender", this.routeCameras, this);
+    this.routeIds = { mainId, arenaId, overlayId };
+    this.events.on("prerender", this.routeCameras, this);
+    this.scale.off("resize", this.onArenaResize, this);
+    this.scale.on("resize", this.onArenaResize, this);
+    this.events.once("shutdown", () => {
+      this.events.off("prerender", this.routeCameras, this);
+      this.scale.off("resize", this.onArenaResize, this);
+    });
+  }
+
+  private routeIds = { mainId: 0, arenaId: 0, overlayId: 0 };
+
+  private onArenaResize(): void {
+    this.arenaCam?.setZoom(this.arenaZoom());
+  }
+
+  /** Which camera draws `go`: explicit arena tag, particles and
+   *  graphics below the overlay band belong to the arena (graphics
+   *  draw in absolute arena coordinates from x/y 0); dialogs, banners
+   *  and the inspector (depth >= OVERLAY_DEPTH) go to the overlay
+   *  camera; anything else is placed by where it sits on the frame. */
+  private cameraFor(go: Phaser.GameObjects.GameObject): "arena" | "hud" | "overlay" {
+    const o = go as unknown as { depth?: number; x?: number; y?: number; type?: string; __arena?: boolean };
+    if (o.__arena) return "arena";
+    if (go instanceof Phaser.GameObjects.Particles.ParticleEmitter) return "arena";
+    const depth = o.depth ?? 0;
+    if (depth >= OVERLAY_DEPTH) return "overlay";
+    if (go instanceof Phaser.GameObjects.Graphics) return "arena";
+    const x = o.x ?? -1;
+    const y = o.y ?? -1;
+    // HP bars float a little above the top row, hence the margin.
+    if (x >= ARENA_X && x < ARENA_X + ARENA_W && y >= ARENA_Y - 8 && y < ARENA_Y + ARENA_H) {
+      return "arena";
+    }
+    return "hud";
+  }
+
+  private routeCameras(): void {
+    const { mainId, arenaId, overlayId } = this.routeIds;
+    for (const go of this.children.list) {
+      const which = this.cameraFor(go);
+      (go as unknown as { cameraFilter: number }).cameraFilter =
+        which === "arena" ? mainId | overlayId
+          : which === "overlay" ? mainId | arenaId
+            : arenaId | overlayId;
+    }
+  }
+
+  /** Where the arena view should be centred: the tile cursor while
+   *  picking a tile, the highlighted target while picking a target,
+   *  otherwise whoever is acting (their sprite, so moves are tracked
+   *  mid-tween). */
+  private arenaFocus(): { x: number; y: number } | null {
+    if (this.mode === "pick-tile") {
+      return { x: this.tileX(this.tileCursorPos.col), y: this.tileY(this.tileCursorPos.row) };
+    }
+    if (this.mode === "pick-target") {
+      const t = this.currentTargetList()[this.targetCursor];
+      if (t) return { x: this.tileX(t.position.col), y: this.tileY(t.position.row) };
+    }
+    const cur = this.combat?.current;
+    if (!cur) return null;
+    const body = this.bodies.get(cur.id);
+    if (body) return { x: body.x, y: body.y };
+    return { x: this.tileX(cur.position.col), y: this.tileY(cur.position.row) };
+  }
+
+  update(): void {
+    const cam = this.arenaCam;
+    if (!cam) return;
+    let f: { x: number; y: number } | null = null;
+    try {
+      f = this.arenaFocus();
+    } catch {
+      f = null;   // combat not set up yet (async create)
+    }
+    if (!f) return;
+    const viewW = cam.width / cam.zoom;
+    const viewH = cam.height / cam.zoom;
+    const tx = f.x - viewW / 2;
+    const ty = f.y - viewH / 2;
+    // Keep the view inside the arena (clamped by hand: Phaser's camera
+    // bounds assume a centred origin, this camera is top-left anchored).
+    // A battlefield smaller than the view (zoomed out) is centred in it.
+    const clamp = (v: number, lo: number, span: number, view: number) =>
+      view >= span ? lo - (view - span) / 2 : Math.min(Math.max(v, lo), lo + span - view);
+    const cx = clamp(tx, ARENA_X, ARENA_W, viewW);
+    const cy = clamp(ty, ARENA_Y, ARENA_H, viewH);
+    cam.scrollX += (cx - cam.scrollX) * 0.2;
+    cam.scrollY += (cy - cam.scrollY) * 0.2;
   }
 }

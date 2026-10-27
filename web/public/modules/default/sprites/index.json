@@ -15,7 +15,6 @@
       "pit_edge.png",
       "rubble.png",
       "stairs.png",
-      "torch.png",
       "wall_alt.png",
       "wall_archway.png",
       "wall_banner.png",
@@ -77,7 +76,6 @@
       "bow_long.png",
       "bow_short.png",
       "chain.png",
-      "chest.png",
       "cloth.png",
       "club.png",
       "crossbow.png",
@@ -119,7 +117,8 @@
       "chest.png",
       "crate.png",
       "lantern.png",
-      "pots.png"
+      "pots.png",
+      "torch.png"
     ],
     "person": [
       "dwarf_female.png",

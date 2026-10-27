@@ -84,6 +84,7 @@ interface ShortcutRow {
 const MOVE_SHORTCUTS: ShortcutRow[] = [
   { key: "Arrows", description: "Move the party one tile in that direction" },
   { key: "W A S D", description: "Alternate movement keys" },
+  { key: "Z", description: "Zoom the view: 100% / 50% / 25% (map and combat)" },
 ];
 
 const INSPECTOR_SHORTCUTS: ShortcutRow[] = [

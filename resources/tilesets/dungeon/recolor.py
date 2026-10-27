@@ -33,7 +33,7 @@ FIRE_TILES = {"torch.png", "brazier.png"}
 
 # Tiles that now live in another sprites/ folder (relative to the
 # Default sprites root), and tiles to leave alone for now.
-MOVED = {'chest.png': 'objects', 'crate.png': 'objects', 'pots.png': 'objects', 'brazier.png': 'objects', 'barrel.png': 'objects', 'bones.png': 'objects'}
+MOVED = {'chest.png': 'objects', 'crate.png': 'objects', 'pots.png': 'objects', 'brazier.png': 'objects', 'barrel.png': 'objects', 'bones.png': 'objects', 'torch.png': 'objects'}
 SKIP = set()
 
 

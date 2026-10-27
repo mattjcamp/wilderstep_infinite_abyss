@@ -1,7 +1,7 @@
 /**
  * Render scale — how many real canvas pixels back one logical pixel.
  *
- * All game code (tile pitch, HUD layout, the 960×720 frame) is written
+ * All game code (tile pitch, HUD layout, the 1280×720 frame) is written
  * in LOGICAL pixels. Each Phaser game allocates a backbuffer that is
  * RENDER_SCALE× larger and each scene's main camera zooms by the same
  * factor (origin pinned top-left), so:
@@ -22,7 +22,8 @@ import type PhaserNS from "phaser";
 export const RENDER_SCALE = 2;
 
 /** Logical size of the standard game frame. */
-export const LOGICAL_WIDTH = 960;
+/** Logical game frame: 1280×720 (16:9 widescreen). */
+export const LOGICAL_WIDTH = 1280;
 export const LOGICAL_HEIGHT = 720;
 
 let textPatched = false;
@@ -68,8 +69,14 @@ export function pointerLogical(p: { x: number; y: number }): { x: number; y: num
 /** Selectable world-zoom steps. 1 = ~30×22 tiles in view, 1.5 = ~20×15,
  *  2 = ~15×11. Cycled in play with the Z key. */
 /** Z-key steps, as multiples of the NATIVE tile size (a 64×64 sprite
- *  shown at 64 CSS px per tile — see {@link nativeWorldZoom}). */
-export const WORLD_ZOOM_STEPS = [1, 1.5, 2] as const;
+ *  shown at 64 CSS px per tile — see {@link nativeWorldZoom}). Z cycles
+ *  100% → 50% → 25% → 100%, on the map and in combat (shared setting). */
+export const WORLD_ZOOM_STEPS = [1, 0.5, 0.25] as const;
+
+/** Label for a zoom step, e.g. "50%". */
+export function zoomStepLabel(i: number): string {
+  return `${Math.round((WORLD_ZOOM_STEPS[i] ?? 1) * 100)}%`;
+}
 
 /** Size of one map tile on screen at "native" resolution, in CSS px:
  *  the art is 64×64, so a tile is shown 1:1 with its sprite. */
@@ -93,7 +100,8 @@ export function nativeWorldZoom(
   const tileBb = Math.max(1, Math.round(wantTileBackbufferPx));
   return tileBb / (tileSizeLogical * RENDER_SCALE);
 }
-const WORLD_ZOOM_KEY = "wilderstep.worldZoomIdx";
+// v2: the steps changed meaning (were 100/150/200%), so start fresh.
+const WORLD_ZOOM_KEY = "wilderstep.worldZoomIdx.v2";
 
 export function loadWorldZoomIdx(): number {
   try {

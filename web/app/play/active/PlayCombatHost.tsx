@@ -24,7 +24,7 @@ import type { CombatResolved } from "@/battle/scenes/CombatScene";
 import type { ArenaCellInfo } from "@/battle/world/Maps";
 import { seedBattleCaches } from "@/play/seedBattleCaches";
 import type { WorldSave } from "@/play/saveTypes";
-import { RENDER_SCALE, installHiDpiText } from "@/util/renderScale";
+import { LOGICAL_HEIGHT, LOGICAL_WIDTH, RENDER_SCALE, installHiDpiText } from "@/util/renderScale";
 
 interface Props {
   moduleId: string;
@@ -125,15 +125,15 @@ export function PlayCombatHost({
       await seedBattleCaches(moduleId, save);
       if (cancelled || !containerRef.current) return;
 
-      // The v1 canvas is 960×720 by spec — CombatScene depends on
+      // The battle frame is LOGICAL_WIDTH×LOGICAL_HEIGHT (1280×720) — CombatScene depends on
       // that geometry for its hand-laid HUD layout. Scale.FIT lets
       // the canvas DOM element shrink to fit the parent box on
       // smaller viewports without breaking the internal HUD math,
       // matching what PlayHost does for the overworld.
       game = new Phaser.Game({
         type: Phaser.AUTO,
-        width: 960 * RENDER_SCALE,
-        height: 720 * RENDER_SCALE,
+        width: LOGICAL_WIDTH * RENDER_SCALE,
+        height: LOGICAL_HEIGHT * RENDER_SCALE,
         parent: containerRef.current,
         backgroundColor: "#0c0c14",
         pixelArt: true,

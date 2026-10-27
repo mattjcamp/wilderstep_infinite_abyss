@@ -32,7 +32,7 @@
 
 import { useEffect, useRef } from "react";
 import type { ArenaCellInfo } from "@/battle/world/Maps";
-import { RENDER_SCALE, installHiDpiText } from "@/util/renderScale";
+import { LOGICAL_HEIGHT, LOGICAL_WIDTH, RENDER_SCALE, installHiDpiText } from "@/util/renderScale";
 
 /** sessionStorage guard so a genuinely-missing chunk reloads at most
  *  once instead of looping. Cleared after a full successful mount. */
@@ -152,15 +152,15 @@ export function BattleSimMount({
       const { gameState } = await import("@/battle/state");
       gameState.partyData = null;
 
-      // v1 canvas is 960×720 by spec.
+      // Battle frame: LOGICAL_WIDTH × LOGICAL_HEIGHT (1280×720).
       game = new Phaser.Game({
         type: Phaser.AUTO,
-        width: 960 * RENDER_SCALE,
-        height: 720 * RENDER_SCALE,
+        width: LOGICAL_WIDTH * RENDER_SCALE,
+        height: LOGICAL_HEIGHT * RENDER_SCALE,
         parent: containerRef.current,
         backgroundColor: "#0c0c14",
         pixelArt: true,
-        // Hi-res backbuffer, shown at the logical 960×720 CSS size.
+        // Hi-res backbuffer, shown at the logical 1280×720 CSS size.
         scale: { zoom: 1 / RENDER_SCALE },
         scene: [],
         callbacks: {

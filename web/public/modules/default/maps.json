@@ -16702,10 +16702,10 @@
           },
           {
             "boat": false,
-            "id": "object_crate",
-            "name": "Crate",
-            "walkable": false,
-            "obstructs": true,
+            "id": "shop_floor_planks_alt",
+            "name": "Shop Floor, Alt",
+            "walkable": true,
+            "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -16713,16 +16713,15 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "objects/crate.png",
-            "tag": "objects",
-            "background_sprite": "indoor/floor_planks_alt.png"
+            "sprite": "indoor/floor_planks_alt.png",
+            "tag": "shop"
           },
           {
             "boat": false,
-            "id": "object_crate",
-            "name": "Crate",
-            "walkable": false,
-            "obstructs": true,
+            "id": "shop_floor_planks_alt",
+            "name": "Shop Floor, Alt",
+            "walkable": true,
+            "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -16730,9 +16729,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "objects/crate.png",
-            "tag": "objects",
-            "background_sprite": "indoor/floor_planks_alt.png"
+            "sprite": "indoor/floor_planks_alt.png",
+            "tag": "shop"
           },
           {
             "boat": false,
@@ -16968,9 +16966,9 @@
           },
           {
             "boat": false,
-            "id": "object_chest",
-            "name": "Chest",
-            "walkable": false,
+            "id": "shop_floor_planks",
+            "name": "Shop Floor",
+            "walkable": true,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -16979,15 +16977,14 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "objects/chest.png",
-            "tag": "objects",
-            "background_sprite": "map/grass.png"
+            "sprite": "indoor/floor_planks.png",
+            "tag": "shop"
           },
           {
             "boat": false,
-            "id": "object_chest",
-            "name": "Chest",
-            "walkable": false,
+            "id": "shop_floor_planks",
+            "name": "Shop Floor",
+            "walkable": true,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -16996,9 +16993,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "objects/chest.png",
-            "tag": "objects",
-            "background_sprite": "map/grass.png"
+            "sprite": "indoor/floor_planks.png",
+            "tag": "shop"
           },
           {
             "boat": false,
@@ -17054,10 +17050,10 @@
           },
           {
             "boat": false,
-            "id": "shop_table_single",
-            "name": "Shop Table, Small",
-            "walkable": false,
-            "obstructs": true,
+            "id": "shop_floor_planks",
+            "name": "Shop Floor",
+            "walkable": true,
+            "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -17065,9 +17061,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/table_single.png",
-            "tag": "shop",
-            "background_sprite": "indoor/floor_planks_alt.png"
+            "sprite": "indoor/floor_planks.png",
+            "tag": "shop"
           },
           {
             "boat": false,
@@ -19962,7 +19957,7 @@
             "light_range": 0,
             "animation": "none",
             "counter": null,
-            "encounter": null,
+            "encounter": "skeletons",
             "spawn": null,
             "sprite": "dungeon/floor_smooth.png",
             "tag": "dungeon"
