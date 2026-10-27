@@ -1,0 +1,22 @@
+{
+ "town_signpost": "objects/signpost.png",
+ "town_notice_board": "objects/notice_board.png",
+ "town_banner_pennant": "objects/banner_pennant.png",
+ "town_banner_double": "objects/banner_double.png",
+ "town_barrel_1": "objects/barrel_1.png",
+ "town_barrel_2": "objects/barrel_2.png",
+ "town_barrel_small": "objects/barrel_small.png",
+ "town_trough": "objects/trough.png",
+ "town_crate": "objects/crate_2.png",
+ "town_crates_double": "objects/crates_double.png",
+ "town_cart_r0c0": "objects/cart_r0c0.png",
+ "town_cart_r0c1": "objects/cart_r0c1.png",
+ "town_workbench": "objects/workbench.png",
+ "town_lamp_post_r0c0": "objects/lamp_post_r0c0.png",
+ "town_lamp_post_r1c0": "objects/lamp_post_r1c0.png",
+ "town_bench_1": "objects/bench_1.png",
+ "town_bench_2": "objects/bench_2.png",
+ "town_flower_pot_1": "objects/flower_pot_1.png",
+ "town_flower_pot_2": "objects/flower_pot_2.png",
+ "town_flower_box": "objects/flower_box.png"
+}
