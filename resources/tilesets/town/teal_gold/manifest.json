@@ -2554,5 +2554,285 @@
     "col": 3
    }
   ]
+ },
+ {
+  "name": "fence_rail_v",
+  "label": "Town Fence, Rail Vertical",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "fence_rail_v",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "fence_rail_v_top",
+  "label": "Town Fence, Rail Vertical (top end)",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "fence_rail_v_top",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "fence_rail_v_bottom",
+  "label": "Town Fence, Rail Vertical (bottom end)",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "fence_rail_v_bottom",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "fence_rail_corner_tl",
+  "label": "Town Fence, Rail Corner, Top Left",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "fence_rail_corner_tl",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "fence_rail_corner_tr",
+  "label": "Town Fence, Rail Corner, Top Right",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "fence_rail_corner_tr",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "fence_rail_corner_bl",
+  "label": "Town Fence, Rail Corner, Bottom Left",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "fence_rail_corner_bl",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "fence_rail_corner_br",
+  "label": "Town Fence, Rail Corner, Bottom Right",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "fence_rail_corner_br",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "wall_v",
+  "label": "Town Wall, Stone Vertical",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": true
+  },
+  "parts": [
+   {
+    "file": "wall_v",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "wall_v_top",
+  "label": "Town Wall, Stone Vertical (top end)",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": true
+  },
+  "parts": [
+   {
+    "file": "wall_v_top",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "wall_v_bottom",
+  "label": "Town Wall, Stone Vertical (bottom end)",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": true
+  },
+  "parts": [
+   {
+    "file": "wall_v_bottom",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "wall_corner_tl",
+  "label": "Town Wall, Stone Corner, Top Left",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": true
+  },
+  "parts": [
+   {
+    "file": "wall_corner_tl",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "wall_corner_tr",
+  "label": "Town Wall, Stone Corner, Top Right",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": true
+  },
+  "parts": [
+   {
+    "file": "wall_corner_tr",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "wall_corner_bl",
+  "label": "Town Wall, Stone Corner, Bottom Left",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": true
+  },
+  "parts": [
+   {
+    "file": "wall_corner_bl",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "wall_corner_br",
+  "label": "Town Wall, Stone Corner, Bottom Right",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": true
+  },
+  "parts": [
+   {
+    "file": "wall_corner_br",
+    "row": 0,
+    "col": 0
+   }
+  ]
  }
 ]

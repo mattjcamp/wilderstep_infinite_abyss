@@ -180,7 +180,11 @@ def main():
     for it in man:
         cols, rows = it["footprint"]
         parts = [p for p in it["parts"] if os.path.exists(os.path.join(SRC, p["file"] + ".png"))]
-        if not parts or it["name"].startswith("grass"):
+        # grass and the sheet's paths were removed (paths are now
+        # path_straight_* / path_bend_* from make_path_corners.py, and the
+        # plaza became brick_path_* from make_brick_path.py)
+        if not parts or it["name"].startswith(("grass", "path", "plaza", "house_wall", "roof")) \
+                or it["name"] in ("house_stone_2", "house_timber_1"):
             continue
         big = Image.new("RGBA", (cols * 64, rows * 64), (0, 0, 0, 0))
         for p in parts:
