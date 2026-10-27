@@ -19,11 +19,12 @@ name: Seed engine modules to R2
 #   CLOUDFLARE_ACCOUNT_ID  — your Cloudflare account id.
 #
 # Scope note: this re-seeds module DATA (idempotent overwrite of every
-# shipped module file). If you ADD or REMOVE a shipped module, also hit
-# <worker-url>/reindex once in a signed-in browser to rebuild the catalog
-# index — that endpoint requires Access auth, which CI can't provide, so
-# it's intentionally left manual. Editing data inside an existing module
-# (the common case) needs no reindex.
+# shipped module file) and then refreshes the hosted catalog index: its
+# built-in entries are replaced by web/public/modules/index.json (so an
+# added module appears and a removed one drops off the list) while
+# player-published "@handle/…" entries are left untouched — see
+# web/workers/publish-api/catalogMerge.mjs. A removed module's FILES are
+# not deleted from R2 (it simply stops being listed).
 
 on:
   push:

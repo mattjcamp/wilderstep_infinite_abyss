@@ -242,12 +242,29 @@ export function ModulePicker() {
    *  deletions implied by the draft index → publish payload. */
   const buildPublishPayload = async (): Promise<{
     items: PublishItem[];
-    summary: { writes: number; deletes: number; deletedIds: string[] };
+    summary: {
+      writes: number;
+      deletes: number;
+      deletedIds: string[];
+      /** Hosted only: built-in modules with browser drafts that the
+       *  hosted API can't accept (they ship with the game and change
+       *  only through a push). Their drafts are kept, not sent. */
+      skippedBuiltIn: string[];
+    };
   }> => {
     const items: PublishItem[] = [];
     const knownModelKeys = new Set<string>(ALL_MODEL_KEYS);
+    const skippedBuiltIn = new Set<string>();
 
     for (const { moduleId, modelKey } of listDraftKeys()) {
+      // On the hosted site only your own "@handle/…" modules are
+      // writable; built-in modules (default, test, …) and other
+      // players' modules are read-only there and would just come back
+      // as errors, so their drafts stay in the browser.
+      if (IS_REMOTE && (ownerHandleOf(moduleId) === null || ownerHandleOf(moduleId) !== handle)) {
+        skippedBuiltIn.add(moduleId);
+        continue;
+      }
       const content = await loadDraft<unknown>(moduleId, modelKey);
       if (content === null || content === undefined) continue;
       if (modelKey === MANIFEST_KEY) {
@@ -271,8 +288,11 @@ export function ModulePicker() {
 
     // Deletions: modules on disk but not in the draft index (when
     // there is a draft index). Skip "default" — server refuses anyway.
+    // Hosted: never — the static index lists built-in modules the
+    // hosted API can't delete, and hosted modules are deleted one at a
+    // time with their own Delete button (onDeleteModule).
     const deletedIds: string[] = [];
-    if (indexDraft !== null) {
+    if (indexDraft !== null && !IS_REMOTE) {
       try {
         const r = await fetch(withBasePath("/modules/index.json"), {
           cache: "no-store",
@@ -306,6 +326,7 @@ export function ModulePicker() {
         writes: items.filter((i) => i.kind !== "delete-module").length,
         deletes: deletedIds.length,
         deletedIds,
+        skippedBuiltIn: [...skippedBuiltIn],
       },
     };
   };
@@ -313,8 +334,19 @@ export function ModulePicker() {
   const onPublishAll = async () => {
     if (typeof window === "undefined") return;
     const { items, summary } = await buildPublishPayload();
-    if (items.length === 0) {
-      window.alert("No drafts to publish.");
+    const builtInNote =
+      summary.skippedBuiltIn.length > 0
+        ? `Edits to modules you can't publish here (${summary.skippedBuiltIn.join(", ")}) ` +
+          `stay in this browser. Built-in modules ship with the game and ` +
+          `can only be changed by editing them locally and pushing to GitHub; ` +
+          `other players' modules can only be published by their owner.`
+        : "";
+    const onlyIndex =
+      IS_REMOTE && items.every((i) => i.kind === "index");
+    if (items.length === 0 || onlyIndex) {
+      window.alert(
+        builtInNote ? `Nothing to publish here.\n\n${builtInNote}` : "No drafts to publish.",
+      );
       return;
     }
     const lines = [
@@ -324,8 +356,14 @@ export function ModulePicker() {
           : "") +
         "?",
       "",
-      "This will write directly to web/public/modules/.",
+      IS_REMOTE
+        ? "This publishes your modules to the hosted site."
+        : "This will write directly to web/public/modules/.",
     ];
+    if (builtInNote) {
+      lines.push("");
+      lines.push(builtInNote);
+    }
     if (summary.deletes > 0) {
       lines.push("");
       lines.push(`Folders to delete: ${summary.deletedIds.join(", ")}`);
