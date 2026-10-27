@@ -1,4 +1,5 @@
 ## Fine Tune
+
 - Simplify Default Module: make the base graphics etc more managable etc
 - Only include most classic D&D monsters in Default: 
     Giant Rats, Giant Bats, Dire Wolves, Goblins, Orcs, Slime Mold, Gelatinous Cubes, Ghosts, Zombies, Skeletons, Lich, Elementals, Demons, Giant Spiders, Trolls, Vampires, Dragons
