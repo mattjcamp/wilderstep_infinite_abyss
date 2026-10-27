@@ -1,0 +1,2558 @@
+[
+ {
+  "name": "grass_01",
+  "label": "Town Grass 1",
+  "kind": "ground",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": true,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "grass_01",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "grass_02",
+  "label": "Town Grass 2",
+  "kind": "ground",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": true,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "grass_02",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "grass_03",
+  "label": "Town Grass 3",
+  "kind": "ground",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": true,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "grass_03",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "grass_04",
+  "label": "Town Grass 4",
+  "kind": "ground",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": true,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "grass_04",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "grass_05",
+  "label": "Town Grass 5",
+  "kind": "ground",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": true,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "grass_05",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "grass_06",
+  "label": "Town Grass 6",
+  "kind": "ground",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": true,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "grass_06",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "grass_07",
+  "label": "Town Grass 7",
+  "kind": "ground",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": true,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "grass_07",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "grass_08",
+  "label": "Town Grass 8",
+  "kind": "ground",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": true,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "grass_08",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "grass_09",
+  "label": "Town Grass 9",
+  "kind": "ground",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": true,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "grass_09",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "grass_10",
+  "label": "Town Grass 10",
+  "kind": "ground",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": true,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "grass_10",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "grass_11",
+  "label": "Town Grass 11",
+  "kind": "ground",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": true,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "grass_11",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "grass_12",
+  "label": "Town Grass 12",
+  "kind": "ground",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": true,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "grass_12",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "grass_13",
+  "label": "Town Grass 13",
+  "kind": "ground",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": true,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "grass_13",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "grass_14",
+  "label": "Town Grass 14",
+  "kind": "ground",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": true,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "grass_14",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "grass_15",
+  "label": "Town Grass 15",
+  "kind": "ground",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": true,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "grass_15",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "grass_16",
+  "label": "Town Grass 16",
+  "kind": "ground",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": true,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "grass_16",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "cobble_01",
+  "label": "Town Cobblestone 1",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": true,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "cobble_01",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "cobble_02",
+  "label": "Town Cobblestone 2",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": true,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "cobble_02",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "cobble_03",
+  "label": "Town Cobblestone 3",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": true,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "cobble_03",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "cobble_04",
+  "label": "Town Cobblestone 4",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": true,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "cobble_04",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "cobble_05",
+  "label": "Town Cobblestone 5",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": true,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "cobble_05",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "cobble_06",
+  "label": "Town Cobblestone 6",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": true,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "cobble_06",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "cobble_07",
+  "label": "Town Cobblestone 7",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": true,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "cobble_07",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "cobble_08",
+  "label": "Town Cobblestone 8",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": true,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "cobble_08",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "cobble_09",
+  "label": "Town Cobblestone 9",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": true,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "cobble_09",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "cobble_10",
+  "label": "Town Cobblestone 10",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": true,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "cobble_10",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "cobble_11",
+  "label": "Town Cobblestone 11",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": true,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "cobble_11",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "cobble_12",
+  "label": "Town Cobblestone 12",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": true,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "cobble_12",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "cobble_13",
+  "label": "Town Cobblestone 13",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": true,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "cobble_13",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "cobble_14",
+  "label": "Town Cobblestone 14",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": true,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "cobble_14",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "cobble_15",
+  "label": "Town Cobblestone 15",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": true,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "cobble_15",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "cobble_16",
+  "label": "Town Cobblestone 16",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": true,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "cobble_16",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "wall_stone_a",
+  "label": "Town Wall, Stone A",
+  "kind": "object",
+  "footprint": [
+   2,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": true
+  },
+  "parts": [
+   {
+    "file": "wall_stone_a_r0c0",
+    "row": 0,
+    "col": 0
+   },
+   {
+    "file": "wall_stone_a_r0c1",
+    "row": 0,
+    "col": 1
+   }
+  ]
+ },
+ {
+  "name": "wall_stone_b",
+  "label": "Town Wall, Stone B",
+  "kind": "object",
+  "footprint": [
+   2,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": true
+  },
+  "parts": [
+   {
+    "file": "wall_stone_b_r0c0",
+    "row": 0,
+    "col": 0
+   },
+   {
+    "file": "wall_stone_b_r0c1",
+    "row": 0,
+    "col": 1
+   }
+  ]
+ },
+ {
+  "name": "wall_battlement",
+  "label": "Town Wall, Battlement",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": true
+  },
+  "parts": [
+   {
+    "file": "wall_battlement",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "wall_archway",
+  "label": "Town Wall, Archway",
+  "kind": "object",
+  "footprint": [
+   2,
+   1
+  ],
+  "flags": {
+   "walkable": true,
+   "obstructs": true
+  },
+  "parts": [
+   {
+    "file": "wall_archway_r0c0",
+    "row": 0,
+    "col": 0
+   },
+   {
+    "file": "wall_archway_r0c1",
+    "row": 0,
+    "col": 1
+   }
+  ]
+ },
+ {
+  "name": "wall_low",
+  "label": "Town Wall, Low",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": true
+  },
+  "parts": [
+   {
+    "file": "wall_low",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "fence_iron_a",
+  "label": "Town Fence, Iron A",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "fence_iron_a",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "fence_picket",
+  "label": "Town Fence, Picket",
+  "kind": "object",
+  "footprint": [
+   2,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "fence_picket_r0c0",
+    "row": 0,
+    "col": 0
+   },
+   {
+    "file": "fence_picket_r0c1",
+    "row": 0,
+    "col": 1
+   }
+  ]
+ },
+ {
+  "name": "fence_iron_b",
+  "label": "Town Fence, Iron B",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "fence_iron_b",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "wall_ruined",
+  "label": "Town Wall, Ruined",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": true
+  },
+  "parts": [
+   {
+    "file": "wall_ruined",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "gate_portcullis",
+  "label": "Town Gate, Portcullis",
+  "kind": "object",
+  "footprint": [
+   2,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "gate_portcullis_r0c0",
+    "row": 0,
+    "col": 0
+   },
+   {
+    "file": "gate_portcullis_r0c1",
+    "row": 0,
+    "col": 1
+   }
+  ]
+ },
+ {
+  "name": "fence_iron_c",
+  "label": "Town Fence, Iron C",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "fence_iron_c",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "tree_large_1",
+  "label": "Town Tree, Large 1",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": true
+  },
+  "parts": [
+   {
+    "file": "tree_large_1",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "tree_large_2",
+  "label": "Town Tree, Large 2",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": true
+  },
+  "parts": [
+   {
+    "file": "tree_large_2",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "tree_large_3",
+  "label": "Town Tree, Large 3",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": true
+  },
+  "parts": [
+   {
+    "file": "tree_large_3",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "tree_small_1",
+  "label": "Town Tree, Small 1",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": true
+  },
+  "parts": [
+   {
+    "file": "tree_small_1",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "tree_small_2",
+  "label": "Town Tree, Small 2",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": true
+  },
+  "parts": [
+   {
+    "file": "tree_small_2",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "flower_1",
+  "label": "Town Flowers 1",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": true,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "flower_1",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "flower_2",
+  "label": "Town Flowers 2",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": true,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "flower_2",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "flower_3",
+  "label": "Town Flowers 3",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": true,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "flower_3",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "flower_4",
+  "label": "Town Flowers 4",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": true,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "flower_4",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "bush_small",
+  "label": "Town Bush, Small",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "bush_small",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "bush_1",
+  "label": "Town Bush 1",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "bush_1",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "bush_2",
+  "label": "Town Bush 2",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "bush_2",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "bush_3",
+  "label": "Town Bush 3",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "bush_3",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "fence_rail_broken",
+  "label": "Town Fence, Rail Broken",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "fence_rail_broken",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "fence_rail",
+  "label": "Town Fence, Rail",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "fence_rail",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "fence_rail_end",
+  "label": "Town Fence, Rail End",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "fence_rail_end",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "fence_rail_low_broken",
+  "label": "Town Fence, Low Broken",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "fence_rail_low_broken",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "fence_rail_low",
+  "label": "Town Fence, Low",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "fence_rail_low",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "fence_rail_gate",
+  "label": "Town Fence, Gate",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": true,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "fence_rail_gate",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "signpost",
+  "label": "Town Signpost",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "signpost",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "house_stone_1",
+  "label": "Town House, Stone 1",
+  "kind": "object",
+  "footprint": [
+   2,
+   2
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": true
+  },
+  "parts": [
+   {
+    "file": "house_stone_1_r0c0",
+    "row": 0,
+    "col": 0
+   },
+   {
+    "file": "house_stone_1_r0c1",
+    "row": 0,
+    "col": 1
+   },
+   {
+    "file": "house_stone_1_r1c0",
+    "row": 1,
+    "col": 0
+   },
+   {
+    "file": "house_stone_1_r1c1",
+    "row": 1,
+    "col": 1
+   }
+  ]
+ },
+ {
+  "name": "house_stone_2",
+  "label": "Town House, Stone 2",
+  "kind": "object",
+  "footprint": [
+   2,
+   2
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": true
+  },
+  "parts": [
+   {
+    "file": "house_stone_2_r0c0",
+    "row": 0,
+    "col": 0
+   },
+   {
+    "file": "house_stone_2_r0c1",
+    "row": 0,
+    "col": 1
+   },
+   {
+    "file": "house_stone_2_r1c0",
+    "row": 1,
+    "col": 0
+   },
+   {
+    "file": "house_stone_2_r1c1",
+    "row": 1,
+    "col": 1
+   }
+  ]
+ },
+ {
+  "name": "house_timber_1",
+  "label": "Town House, Timber 1",
+  "kind": "object",
+  "footprint": [
+   2,
+   2
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": true
+  },
+  "parts": [
+   {
+    "file": "house_timber_1_r0c0",
+    "row": 0,
+    "col": 0
+   },
+   {
+    "file": "house_timber_1_r0c1",
+    "row": 0,
+    "col": 1
+   },
+   {
+    "file": "house_timber_1_r1c0",
+    "row": 1,
+    "col": 0
+   },
+   {
+    "file": "house_timber_1_r1c1",
+    "row": 1,
+    "col": 1
+   }
+  ]
+ },
+ {
+  "name": "house_timber_shop",
+  "label": "Town House, Timber Shop",
+  "kind": "object",
+  "footprint": [
+   2,
+   2
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": true
+  },
+  "parts": [
+   {
+    "file": "house_timber_shop_r0c0",
+    "row": 0,
+    "col": 0
+   },
+   {
+    "file": "house_timber_shop_r0c1",
+    "row": 0,
+    "col": 1
+   },
+   {
+    "file": "house_timber_shop_r1c0",
+    "row": 1,
+    "col": 0
+   },
+   {
+    "file": "house_timber_shop_r1c1",
+    "row": 1,
+    "col": 1
+   }
+  ]
+ },
+ {
+  "name": "tower",
+  "label": "Town Tower",
+  "kind": "object",
+  "footprint": [
+   1,
+   2
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": true
+  },
+  "parts": [
+   {
+    "file": "tower_r0c0",
+    "row": 0,
+    "col": 0
+   },
+   {
+    "file": "tower_r1c0",
+    "row": 1,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "market_stall_1",
+  "label": "Town Market Stall 1",
+  "kind": "object",
+  "footprint": [
+   2,
+   2
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": true
+  },
+  "parts": [
+   {
+    "file": "market_stall_1_r0c0",
+    "row": 0,
+    "col": 0
+   },
+   {
+    "file": "market_stall_1_r0c1",
+    "row": 0,
+    "col": 1
+   },
+   {
+    "file": "market_stall_1_r1c0",
+    "row": 1,
+    "col": 0
+   },
+   {
+    "file": "market_stall_1_r1c1",
+    "row": 1,
+    "col": 1
+   }
+  ]
+ },
+ {
+  "name": "market_stall_2",
+  "label": "Town Market Stall 2",
+  "kind": "object",
+  "footprint": [
+   2,
+   2
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": true
+  },
+  "parts": [
+   {
+    "file": "market_stall_2_r0c0",
+    "row": 0,
+    "col": 0
+   },
+   {
+    "file": "market_stall_2_r0c1",
+    "row": 0,
+    "col": 1
+   },
+   {
+    "file": "market_stall_2_r1c0",
+    "row": 1,
+    "col": 0
+   },
+   {
+    "file": "market_stall_2_r1c1",
+    "row": 1,
+    "col": 1
+   }
+  ]
+ },
+ {
+  "name": "notice_board",
+  "label": "Town Notice Board",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "notice_board",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "banner_pennant",
+  "label": "Town Banner, Pennant",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "banner_pennant",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "banner_double",
+  "label": "Town Banner, Double",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "banner_double",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "well",
+  "label": "Town Well",
+  "kind": "object",
+  "footprint": [
+   1,
+   2
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "well_r0c0",
+    "row": 0,
+    "col": 0
+   },
+   {
+    "file": "well_r1c0",
+    "row": 1,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "statue",
+  "label": "Town Statue",
+  "kind": "object",
+  "footprint": [
+   1,
+   2
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": true
+  },
+  "parts": [
+   {
+    "file": "statue_r0c0",
+    "row": 0,
+    "col": 0
+   },
+   {
+    "file": "statue_r1c0",
+    "row": 1,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "barrel_1",
+  "label": "Town Barrel 1",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "barrel_1",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "barrel_2",
+  "label": "Town Barrel 2",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "barrel_2",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "barrel_small",
+  "label": "Town Barrel, Small",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "barrel_small",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "trough",
+  "label": "Town Trough",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "trough",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "roof_flat",
+  "label": "Town Roof, Flat",
+  "kind": "object",
+  "footprint": [
+   2,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": true
+  },
+  "parts": [
+   {
+    "file": "roof_flat_r0c0",
+    "row": 0,
+    "col": 0
+   },
+   {
+    "file": "roof_flat_r0c1",
+    "row": 0,
+    "col": 1
+   }
+  ]
+ },
+ {
+  "name": "roof_gable",
+  "label": "Town Roof, Gable",
+  "kind": "object",
+  "footprint": [
+   2,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": true
+  },
+  "parts": [
+   {
+    "file": "roof_gable_r0c0",
+    "row": 0,
+    "col": 0
+   },
+   {
+    "file": "roof_gable_r0c1",
+    "row": 0,
+    "col": 1
+   }
+  ]
+ },
+ {
+  "name": "house_wall_brick",
+  "label": "Town House Wall, Brick",
+  "kind": "object",
+  "footprint": [
+   2,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": true
+  },
+  "parts": [
+   {
+    "file": "house_wall_brick_r0c0",
+    "row": 0,
+    "col": 0
+   },
+   {
+    "file": "house_wall_brick_r0c1",
+    "row": 0,
+    "col": 1
+   }
+  ]
+ },
+ {
+  "name": "house_wall_gable",
+  "label": "Town House Wall, Gable",
+  "kind": "object",
+  "footprint": [
+   2,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": true
+  },
+  "parts": [
+   {
+    "file": "house_wall_gable_r0c0",
+    "row": 0,
+    "col": 0
+   },
+   {
+    "file": "house_wall_gable_r0c1",
+    "row": 0,
+    "col": 1
+   }
+  ]
+ },
+ {
+  "name": "roof_peak_1",
+  "label": "Town Roof, Peak 1",
+  "kind": "object",
+  "footprint": [
+   2,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": true
+  },
+  "parts": [
+   {
+    "file": "roof_peak_1_r0c0",
+    "row": 0,
+    "col": 0
+   },
+   {
+    "file": "roof_peak_1_r0c1",
+    "row": 0,
+    "col": 1
+   }
+  ]
+ },
+ {
+  "name": "roof_peak_2",
+  "label": "Town Roof, Peak 2",
+  "kind": "object",
+  "footprint": [
+   2,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": true
+  },
+  "parts": [
+   {
+    "file": "roof_peak_2_r0c0",
+    "row": 0,
+    "col": 0
+   },
+   {
+    "file": "roof_peak_2_r0c1",
+    "row": 0,
+    "col": 1
+   }
+  ]
+ },
+ {
+  "name": "house_wall_door",
+  "label": "Town House Wall, Door",
+  "kind": "object",
+  "footprint": [
+   2,
+   1
+  ],
+  "flags": {
+   "walkable": true,
+   "obstructs": true
+  },
+  "parts": [
+   {
+    "file": "house_wall_door_r0c0",
+    "row": 0,
+    "col": 0
+   },
+   {
+    "file": "house_wall_door_r0c1",
+    "row": 0,
+    "col": 1
+   }
+  ]
+ },
+ {
+  "name": "house_wall_plain",
+  "label": "Town House Wall, Plain",
+  "kind": "object",
+  "footprint": [
+   2,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": true
+  },
+  "parts": [
+   {
+    "file": "house_wall_plain_r0c0",
+    "row": 0,
+    "col": 0
+   },
+   {
+    "file": "house_wall_plain_r0c1",
+    "row": 0,
+    "col": 1
+   }
+  ]
+ },
+ {
+  "name": "tower_small",
+  "label": "Town Tower, Small",
+  "kind": "object",
+  "footprint": [
+   1,
+   2
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": true
+  },
+  "parts": [
+   {
+    "file": "tower_small_r0c0",
+    "row": 0,
+    "col": 0
+   },
+   {
+    "file": "tower_small_r1c0",
+    "row": 1,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "chapel",
+  "label": "Town Chapel",
+  "kind": "object",
+  "footprint": [
+   2,
+   2
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": true
+  },
+  "parts": [
+   {
+    "file": "chapel_r0c0",
+    "row": 0,
+    "col": 0
+   },
+   {
+    "file": "chapel_r0c1",
+    "row": 0,
+    "col": 1
+   },
+   {
+    "file": "chapel_r1c0",
+    "row": 1,
+    "col": 0
+   },
+   {
+    "file": "chapel_r1c1",
+    "row": 1,
+    "col": 1
+   }
+  ]
+ },
+ {
+  "name": "crate",
+  "label": "Town Crate",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "crate",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "crates_double",
+  "label": "Town Crates, Double",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "crates_double",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "cart",
+  "label": "Town Cart",
+  "kind": "object",
+  "footprint": [
+   2,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "cart_r0c0",
+    "row": 0,
+    "col": 0
+   },
+   {
+    "file": "cart_r0c1",
+    "row": 0,
+    "col": 1
+   }
+  ]
+ },
+ {
+  "name": "workbench",
+  "label": "Town Workbench",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "workbench",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "lamp_post",
+  "label": "Town Lamp Post",
+  "kind": "object",
+  "footprint": [
+   1,
+   2
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": false,
+   "light_source": true,
+   "light_range": 4
+  },
+  "parts": [
+   {
+    "file": "lamp_post_r0c0",
+    "row": 0,
+    "col": 0
+   },
+   {
+    "file": "lamp_post_r1c0",
+    "row": 1,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "bench_1",
+  "label": "Town Bench 1",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "bench_1",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "bench_2",
+  "label": "Town Bench 2",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "bench_2",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "flower_pot_1",
+  "label": "Town Flower Pot 1",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "flower_pot_1",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "flower_pot_2",
+  "label": "Town Flower Pot 2",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "flower_pot_2",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "flower_box",
+  "label": "Town Flower Box",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "flower_box",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "bridge_arch",
+  "label": "Town Bridge, Arch",
+  "kind": "object",
+  "footprint": [
+   2,
+   1
+  ],
+  "flags": {
+   "walkable": true,
+   "obstructs": false,
+   "boat_passable": true
+  },
+  "parts": [
+   {
+    "file": "bridge_arch_r0c0",
+    "row": 0,
+    "col": 0
+   },
+   {
+    "file": "bridge_arch_r0c1",
+    "row": 0,
+    "col": 1
+   }
+  ]
+ },
+ {
+  "name": "bridge_rail",
+  "label": "Town Bridge, Rail",
+  "kind": "object",
+  "footprint": [
+   2,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "bridge_rail_r0c0",
+    "row": 0,
+    "col": 0
+   },
+   {
+    "file": "bridge_rail_r0c1",
+    "row": 0,
+    "col": 1
+   }
+  ]
+ },
+ {
+  "name": "water_1",
+  "label": "Town Water 1",
+  "kind": "ground",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": false,
+   "water": true
+  },
+  "parts": [
+   {
+    "file": "water_1",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "water_2",
+  "label": "Town Water 2",
+  "kind": "ground",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": false,
+   "water": true
+  },
+  "parts": [
+   {
+    "file": "water_2",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "dock_gate",
+  "label": "Town Dock Gate",
+  "kind": "object",
+  "footprint": [
+   1,
+   2
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "dock_gate_r0c0",
+    "row": 0,
+    "col": 0
+   },
+   {
+    "file": "dock_gate_r1c0",
+    "row": 1,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "pond",
+  "label": "Town Pond",
+  "kind": "ground",
+  "footprint": [
+   2,
+   2
+  ],
+  "flags": {
+   "walkable": false,
+   "obstructs": false,
+   "water": true
+  },
+  "parts": [
+   {
+    "file": "pond_r0c0",
+    "row": 0,
+    "col": 0
+   },
+   {
+    "file": "pond_r0c1",
+    "row": 0,
+    "col": 1
+   },
+   {
+    "file": "pond_r1c0",
+    "row": 1,
+    "col": 0
+   },
+   {
+    "file": "pond_r1c1",
+    "row": 1,
+    "col": 1
+   }
+  ]
+ },
+ {
+  "name": "path_1",
+  "label": "Town Path 1",
+  "kind": "object",
+  "footprint": [
+   2,
+   1
+  ],
+  "flags": {
+   "walkable": true,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "path_1_r0c0",
+    "row": 0,
+    "col": 0
+   },
+   {
+    "file": "path_1_r0c1",
+    "row": 0,
+    "col": 1
+   }
+  ]
+ },
+ {
+  "name": "path_2",
+  "label": "Town Path 2",
+  "kind": "object",
+  "footprint": [
+   2,
+   1
+  ],
+  "flags": {
+   "walkable": true,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "path_2_r0c0",
+    "row": 0,
+    "col": 0
+   },
+   {
+    "file": "path_2_r0c1",
+    "row": 0,
+    "col": 1
+   }
+  ]
+ },
+ {
+  "name": "path_3",
+  "label": "Town Path 3",
+  "kind": "object",
+  "footprint": [
+   2,
+   1
+  ],
+  "flags": {
+   "walkable": true,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "path_3_r0c0",
+    "row": 0,
+    "col": 0
+   },
+   {
+    "file": "path_3_r0c1",
+    "row": 0,
+    "col": 1
+   }
+  ]
+ },
+ {
+  "name": "path_4",
+  "label": "Town Path 4",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": true,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "path_4",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "path_corner",
+  "label": "Town Path Corner",
+  "kind": "object",
+  "footprint": [
+   3,
+   1
+  ],
+  "flags": {
+   "walkable": true,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "path_corner_r0c0",
+    "row": 0,
+    "col": 0
+   },
+   {
+    "file": "path_corner_r0c1",
+    "row": 0,
+    "col": 1
+   },
+   {
+    "file": "path_corner_r0c2",
+    "row": 0,
+    "col": 2
+   }
+  ]
+ },
+ {
+  "name": "path_bend",
+  "label": "Town Path Bend",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": true,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "path_bend",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "path_shore",
+  "label": "Town Path Shore",
+  "kind": "object",
+  "footprint": [
+   1,
+   1
+  ],
+  "flags": {
+   "walkable": true,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "path_shore",
+    "row": 0,
+    "col": 0
+   }
+  ]
+ },
+ {
+  "name": "plaza",
+  "label": "Town Plaza",
+  "kind": "object",
+  "footprint": [
+   4,
+   2
+  ],
+  "flags": {
+   "walkable": true,
+   "obstructs": false
+  },
+  "parts": [
+   {
+    "file": "plaza_r0c0",
+    "row": 0,
+    "col": 0
+   },
+   {
+    "file": "plaza_r0c1",
+    "row": 0,
+    "col": 1
+   },
+   {
+    "file": "plaza_r0c2",
+    "row": 0,
+    "col": 2
+   },
+   {
+    "file": "plaza_r0c3",
+    "row": 0,
+    "col": 3
+   },
+   {
+    "file": "plaza_r1c0",
+    "row": 1,
+    "col": 0
+   },
+   {
+    "file": "plaza_r1c1",
+    "row": 1,
+    "col": 1
+   },
+   {
+    "file": "plaza_r1c2",
+    "row": 1,
+    "col": 2
+   },
+   {
+    "file": "plaza_r1c3",
+    "row": 1,
+    "col": 3
+   }
+  ]
+ }
+]

@@ -28,6 +28,7 @@
  * rectangle), zoom/pan, walkable overlay, undo/redo.
  */
 
+import { multiTileLayout } from "./multiTileLayout";
 import {
   editorMapHref,
   editorModelHref,
@@ -5348,7 +5349,57 @@ function PaletteByTag({
       depth={0}
       collapsed={collapsed}
       onToggle={onToggleTag}
-      renderTiles={(tiles) => (
+      renderTiles={(tiles) => {
+        // Multi-tile pieces (a building split into parts) show as the
+        // assembled picture: each part sits at its row/col, so you can
+        // see what goes where and click the part you want.
+        const layout = multiTileLayout(tiles);
+        if (layout) {
+          return (
+            <div className="px-1 pb-2">
+              <div
+                className="mx-auto grid w-fit gap-px rounded border border-parchment/10 bg-ink/60 p-1"
+                style={{ gridTemplateColumns: `repeat(${layout.cols}, 48px)` }}
+              >
+                {layout.cells.map((t, i) =>
+                  t ? (
+                    <button
+                      key={t.id}
+                      type="button"
+                      title={t.name || t.id}
+                      onClick={() => onPickBrush(t.id)}
+                      className={`h-12 w-12 rounded-sm ${
+                        activeBrush === t.id
+                          ? "outline outline-2 outline-ember"
+                          : "hover:outline hover:outline-1 hover:outline-parchment/60"
+                      }`}
+                    >
+                      <img
+                        src={spriteThumbSrc(moduleId, t.sprite)}
+                        alt={t.name || t.id}
+                        width={48}
+                        height={48}
+                        style={{ imageRendering: "pixelated" }}
+                        className="h-12 w-12"
+                      />
+                    </button>
+                  ) : (
+                    <span key={`empty-${i}`} className="h-12 w-12" />
+                  ),
+                )}
+              </div>
+              {(() => {
+                const active = tiles.find((t) => t.id === activeBrush);
+                return (
+                  <p className="mt-1 text-center text-xs text-parchment/70">
+                    {active ? active.name : "Click a part to paint it"}
+                  </p>
+                );
+              })()}
+            </div>
+          );
+        }
+        return (
         <ul className="space-y-1 px-1 pb-1">
           {tiles.map((t) => {
             const active = activeBrush === t.id;
@@ -5356,6 +5407,7 @@ function PaletteByTag({
               <li key={t.id}>
                 <button
                   type="button"
+                  title={t.name || t.id}
                   onClick={() => onPickBrush(t.id)}
                   className={`flex w-full items-center gap-2 rounded border px-2 py-1 text-left text-sm transition ${
                     active
@@ -5377,10 +5429,12 @@ function PaletteByTag({
             );
           })}
         </ul>
-      )}
+        );
+      }}
     />
   );
 }
+
 
 function Inspector({
   moduleId,
