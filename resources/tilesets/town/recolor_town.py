@@ -185,7 +185,8 @@ def main():
         # plaza became brick_path_* from make_brick_path.py)
         if not parts or it["name"].startswith(("grass", "path", "plaza", "house_wall", "roof", "cobble", "fence",
                                                "wall_stone", "wall_battlement", "wall_low", "wall_ruined", "wall_v", "wall_corner",
-                                               "wall_archway", "gate_portcullis")) \
+                                               "wall_archway", "gate_portcullis", "bridge_arch",
+                                               "bridge_rail", "pond", "water_1")) \
                 or it["name"] in ("house_stone_2", "house_timber_1", "market_stall_1", "market_stall_2",
                                    "tree_large_2", "tree_large_3", "tree_small_2"):
             continue

@@ -622,7 +622,7 @@ export function DungeonSimMount({
         parent: containerRef.current,
         backgroundColor: "#0c0c14",
         pixelArt: true,
-        // Hi-res backbuffer shown 1:1 — tiles at their native 64 CSS px.
+        // Hi-res backbuffer shown 1:1 — tiles at their standard tile size (NATIVE_TILE_CSS_PX).
         scale: { zoom: NATIVE_TILE_CSS_PX / (TILE_SIZE * RENDER_SCALE) },
         scene: DungeonScene,
       });

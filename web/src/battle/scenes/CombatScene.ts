@@ -603,7 +603,7 @@ export class CombatScene extends Phaser.Scene {
   private bodies = new Map<string, Phaser.GameObjects.Image | Phaser.GameObjects.Rectangle>();
   /** Native-resolution arena view (see installArenaCamera). The main
    *  camera draws the header / HUD / log at the frame's usual size;
-   *  `arenaCam` draws only the arena, zoomed so a tile is 64 CSS px
+   *  `arenaCam` draws only the arena, zoomed so a tile is NATIVE_TILE_CSS_PX CSS px
    *  and scrolled to follow the action; `overlayCam` draws dialogs and
    *  banners (depth >= OVERLAY_DEPTH) on top, unzoomed. */
   private arenaCam: Phaser.Cameras.Scene2D.Camera | null = null;
@@ -7713,7 +7713,7 @@ export class CombatScene extends Phaser.Scene {
   }
 
   // ── Native-resolution arena camera ───────────────────────────────
-  /** Arena camera zoom: tiles at 64 CSS px (native art size) for the
+  /** Arena camera zoom: tiles at NATIVE_TILE_CSS_PX CSS px for the
    *  canvas's current on-screen size, never smaller than the whole
    *  arena filling its window. */
   private arenaZoom(): number {

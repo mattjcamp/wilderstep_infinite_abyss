@@ -6,9 +6,9 @@ const TILE = 32;
 const tileCss = (z: number, ds: number) => TILE * RENDER_SCALE * z * ds;
 
 describe("nativeWorldZoom", () => {
-  it("shows tiles at 64 CSS px when the canvas is shown at half its backbuffer", () => {
+  it("shows tiles at NATIVE_TILE_CSS_PX when the canvas is shown at half its backbuffer", () => {
     const z = nativeWorldZoom(0.5, TILE);
-    expect(z).toBe(2);
+    expect(z).toBe(NATIVE_TILE_CSS_PX / 32);
     expect(tileCss(z, 0.5)).toBe(NATIVE_TILE_CSS_PX);
   });
 
@@ -23,7 +23,7 @@ describe("nativeWorldZoom", () => {
   });
 
   it("applies Z steps as multiples of native", () => {
-    expect(tileCss(nativeWorldZoom(0.5, TILE, 2), 0.5)).toBe(128);
+    expect(tileCss(nativeWorldZoom(0.5, TILE, 2), 0.5)).toBe(NATIVE_TILE_CSS_PX * 2);
   });
 
   it("falls back to the step when the display scale is unknown", () => {
@@ -38,7 +38,7 @@ describe("Z zoom steps", () => {
     expect([0, 1, 2].map(zoomStepLabel)).toEqual(["100%", "50%", "25%"]);
   });
   it("50% shows tiles at 32 CSS px and 25% at 16", () => {
-    expect(tileCss(nativeWorldZoom(0.5, TILE, 0.5), 0.5)).toBe(32);
-    expect(tileCss(nativeWorldZoom(0.5, TILE, 0.25), 0.5)).toBe(16);
+    expect(tileCss(nativeWorldZoom(0.5, TILE, 0.5), 0.5)).toBe(NATIVE_TILE_CSS_PX / 2);
+    expect(tileCss(nativeWorldZoom(0.5, TILE, 0.25), 0.5)).toBe(NATIVE_TILE_CSS_PX / 4);
   });
 });

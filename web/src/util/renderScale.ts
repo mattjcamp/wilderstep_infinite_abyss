@@ -68,8 +68,8 @@ export function pointerLogical(p: { x: number; y: number }): { x: number; y: num
 
 /** Selectable world-zoom steps. 1 = ~30×22 tiles in view, 1.5 = ~20×15,
  *  2 = ~15×11. Cycled in play with the Z key. */
-/** Z-key steps, as multiples of the NATIVE tile size (a 64×64 sprite
- *  shown at 64 CSS px per tile — see {@link nativeWorldZoom}). Z cycles
+/** Z-key steps, as multiples of the standard on-screen tile size
+ *  ({@link NATIVE_TILE_CSS_PX} CSS px per tile — see {@link nativeWorldZoom}). Z cycles
  *  100% → 50% → 25% → 100%, on the map and in combat (shared setting). */
 export const WORLD_ZOOM_STEPS = [1, 0.5, 0.25] as const;
 
@@ -78,9 +78,14 @@ export function zoomStepLabel(i: number): string {
   return `${Math.round((WORLD_ZOOM_STEPS[i] ?? 1) * 100)}%`;
 }
 
-/** Size of one map tile on screen at "native" resolution, in CSS px:
- *  the art is 64×64, so a tile is shown 1:1 with its sprite. */
-export const NATIVE_TILE_CSS_PX = 64;
+/** Pixel size of the tile art (sprites are drawn 64×64). */
+export const SPRITE_ART_PX = 64;
+
+/** Size of one map tile on screen at 100% zoom, in CSS px. This is
+ *  75% of the art size (64 px felt too big): 48 CSS px per tile in
+ *  play, combat, the Map Editor and the dungeon sim. Change this one
+ *  number to resize tiles everywhere. */
+export const NATIVE_TILE_CSS_PX = 48;
 
 /**
  * World zoom (on top of RENDER_SCALE) that shows a TILE_SIZE-logical

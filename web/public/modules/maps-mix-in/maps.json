@@ -222882,8 +222882,8 @@
           },
           {
             "boat": false,
-            "id": "town_water_1",
-            "name": "Town Water 1",
+            "id": "town_water_2",
+            "name": "Town Water 2",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -222893,7 +222893,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/water_1.png",
+            "sprite": "town/water_2.png",
             "tag": "town:water",
             "water": true
           },
@@ -223515,8 +223515,8 @@
           },
           {
             "boat": false,
-            "id": "town_water_1",
-            "name": "Town Water 1",
+            "id": "town_water_2",
+            "name": "Town Water 2",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -223526,7 +223526,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/water_1.png",
+            "sprite": "town/water_2.png",
             "tag": "town:water",
             "water": true
           },
@@ -223549,8 +223549,8 @@
           },
           {
             "boat": false,
-            "id": "town_water_1",
-            "name": "Town Water 1",
+            "id": "town_water_2",
+            "name": "Town Water 2",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -223560,7 +223560,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/water_1.png",
+            "sprite": "town/water_2.png",
             "tag": "town:water",
             "water": true
           },
@@ -224021,8 +224021,8 @@
           },
           {
             "boat": false,
-            "id": "town_water_1",
-            "name": "Town Water 1",
+            "id": "town_water_2",
+            "name": "Town Water 2",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -224032,7 +224032,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/water_1.png",
+            "sprite": "town/water_2.png",
             "tag": "town:water",
             "water": true
           },
@@ -224654,8 +224654,8 @@
           },
           {
             "boat": false,
-            "id": "town_water_1",
-            "name": "Town Water 1",
+            "id": "town_water_2",
+            "name": "Town Water 2",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -224665,7 +224665,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/water_1.png",
+            "sprite": "town/water_2.png",
             "tag": "town:water",
             "water": true
           },
@@ -224688,8 +224688,8 @@
           },
           {
             "boat": false,
-            "id": "town_water_1",
-            "name": "Town Water 1",
+            "id": "town_water_2",
+            "name": "Town Water 2",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -224699,7 +224699,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/water_1.png",
+            "sprite": "town/water_2.png",
             "tag": "town:water",
             "water": true
           },
@@ -225740,8 +225740,8 @@
           },
           {
             "boat": false,
-            "id": "town_water_1",
-            "name": "Town Water 1",
+            "id": "town_water_2",
+            "name": "Town Water 2",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -225751,7 +225751,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/water_1.png",
+            "sprite": "town/water_2.png",
             "tag": "town:water",
             "water": true,
             "link": {
@@ -226421,8 +226421,8 @@
           },
           {
             "boat": false,
-            "id": "town_water_1",
-            "name": "Town Water 1",
+            "id": "town_water_2",
+            "name": "Town Water 2",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -226432,7 +226432,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/water_1.png",
+            "sprite": "town/water_2.png",
             "tag": "town:water",
             "water": true
           },
@@ -227053,8 +227053,8 @@
           },
           {
             "boat": false,
-            "id": "town_water_1",
-            "name": "Town Water 1",
+            "id": "town_water_2",
+            "name": "Town Water 2",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -227064,7 +227064,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/water_1.png",
+            "sprite": "town/water_2.png",
             "tag": "town:water",
             "water": true,
             "link": {
@@ -227092,8 +227092,8 @@
           },
           {
             "boat": false,
-            "id": "town_water_1",
-            "name": "Town Water 1",
+            "id": "town_water_2",
+            "name": "Town Water 2",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -227103,7 +227103,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/water_1.png",
+            "sprite": "town/water_2.png",
             "tag": "town:water",
             "water": true
           },
@@ -227734,8 +227734,8 @@
           },
           {
             "boat": false,
-            "id": "town_water_1",
-            "name": "Town Water 1",
+            "id": "town_water_2",
+            "name": "Town Water 2",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -227745,7 +227745,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/water_1.png",
+            "sprite": "town/water_2.png",
             "tag": "town:water",
             "water": true
           },
@@ -227768,8 +227768,8 @@
           },
           {
             "boat": false,
-            "id": "town_water_1",
-            "name": "Town Water 1",
+            "id": "town_water_2",
+            "name": "Town Water 2",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -227779,7 +227779,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/water_1.png",
+            "sprite": "town/water_2.png",
             "tag": "town:water",
             "water": true
           },
@@ -227802,8 +227802,8 @@
           },
           {
             "boat": false,
-            "id": "town_water_1",
-            "name": "Town Water 1",
+            "id": "town_water_2",
+            "name": "Town Water 2",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -227813,7 +227813,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/water_1.png",
+            "sprite": "town/water_2.png",
             "tag": "town:water",
             "water": true
           },
@@ -228367,8 +228367,8 @@
           },
           {
             "boat": false,
-            "id": "town_water_1",
-            "name": "Town Water 1",
+            "id": "town_water_2",
+            "name": "Town Water 2",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -228378,7 +228378,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/water_1.png",
+            "sprite": "town/water_2.png",
             "tag": "town:water",
             "water": true,
             "link": {
@@ -228406,8 +228406,8 @@
           },
           {
             "boat": false,
-            "id": "town_water_1",
-            "name": "Town Water 1",
+            "id": "town_water_2",
+            "name": "Town Water 2",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -228417,7 +228417,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/water_1.png",
+            "sprite": "town/water_2.png",
             "tag": "town:water",
             "water": true
           },
@@ -228440,8 +228440,8 @@
           },
           {
             "boat": false,
-            "id": "town_water_1",
-            "name": "Town Water 1",
+            "id": "town_water_2",
+            "name": "Town Water 2",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -228451,7 +228451,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/water_1.png",
+            "sprite": "town/water_2.png",
             "tag": "town:water",
             "water": true
           },
@@ -229037,8 +229037,8 @@
           },
           {
             "boat": false,
-            "id": "town_water_1",
-            "name": "Town Water 1",
+            "id": "town_water_2",
+            "name": "Town Water 2",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -229048,7 +229048,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/water_1.png",
+            "sprite": "town/water_2.png",
             "tag": "town:water",
             "water": true
           },
@@ -229071,8 +229071,8 @@
           },
           {
             "boat": false,
-            "id": "town_water_1",
-            "name": "Town Water 1",
+            "id": "town_water_2",
+            "name": "Town Water 2",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -229082,7 +229082,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/water_1.png",
+            "sprite": "town/water_2.png",
             "tag": "town:water",
             "water": true
           },
@@ -236597,8 +236597,8 @@
           },
           {
             "boat": false,
-            "id": "town_water_1",
-            "name": "Town Water 1",
+            "id": "town_water_2",
+            "name": "Town Water 2",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -236608,7 +236608,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/water_1.png",
+            "sprite": "town/water_2.png",
             "tag": "town:water",
             "water": true
           },
@@ -236631,8 +236631,8 @@
           },
           {
             "boat": false,
-            "id": "town_water_1",
-            "name": "Town Water 1",
+            "id": "town_water_2",
+            "name": "Town Water 2",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -236642,7 +236642,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/water_1.png",
+            "sprite": "town/water_2.png",
             "tag": "town:water",
             "water": true
           },
@@ -237277,8 +237277,8 @@
           },
           {
             "boat": false,
-            "id": "town_water_1",
-            "name": "Town Water 1",
+            "id": "town_water_2",
+            "name": "Town Water 2",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -237288,7 +237288,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/water_1.png",
+            "sprite": "town/water_2.png",
             "tag": "town:water",
             "water": true
           },
@@ -239643,8 +239643,8 @@
           },
           {
             "boat": false,
-            "id": "town_water_1",
-            "name": "Town Water 1",
+            "id": "town_water_2",
+            "name": "Town Water 2",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -239654,7 +239654,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/water_1.png",
+            "sprite": "town/water_2.png",
             "tag": "town:water",
             "water": true
           },
@@ -239677,8 +239677,8 @@
           },
           {
             "boat": false,
-            "id": "town_water_1",
-            "name": "Town Water 1",
+            "id": "town_water_2",
+            "name": "Town Water 2",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -239688,7 +239688,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/water_1.png",
+            "sprite": "town/water_2.png",
             "tag": "town:water",
             "water": true
           },
@@ -240281,8 +240281,8 @@
           },
           {
             "boat": false,
-            "id": "town_water_1",
-            "name": "Town Water 1",
+            "id": "town_water_2",
+            "name": "Town Water 2",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -240292,7 +240292,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/water_1.png",
+            "sprite": "town/water_2.png",
             "tag": "town:water",
             "water": true
           },
@@ -240315,8 +240315,8 @@
           },
           {
             "boat": false,
-            "id": "town_water_1",
-            "name": "Town Water 1",
+            "id": "town_water_2",
+            "name": "Town Water 2",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -240326,7 +240326,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/water_1.png",
+            "sprite": "town/water_2.png",
             "tag": "town:water",
             "water": true
           },

@@ -39,33 +39,34 @@ def arms(piece):
 
 
 class Art:
-    def __init__(self):
-        self.px = [[CLEAR] * N for _ in range(N)]
+    def __init__(self, w=N, h=N):
+        self.w, self.h = w, h
+        self.px = [[CLEAR] * w for _ in range(h)]
 
     def rect(self, x0, y0, x1, y1, c):
-        for y in range(max(0, y0), min(N - 1, y1) + 1):
-            for x in range(max(0, x0), min(N - 1, x1) + 1):
+        for y in range(max(0, y0), min(self.h - 1, y1) + 1):
+            for x in range(max(0, x0), min(self.w - 1, x1) + 1):
                 self.px[y][x] = c
 
     def outline(self, col):
         """Clear pixels next to a filled one become the outline colour
         (pixels past the tile edge never count, so runs join cleanly)."""
         add = []
-        for y in range(N):
-            for x in range(N):
+        for y in range(self.h):
+            for x in range(self.w):
                 if self.px[y][x] is not CLEAR:
                     continue
                 for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
                     X, Y = x + dx, y + dy
-                    if 0 <= X < N and 0 <= Y < N and self.px[Y][X] not in (CLEAR, col):
+                    if 0 <= X < self.w and 0 <= Y < self.h and self.px[Y][X] not in (CLEAR, col):
                         add.append((x, y)); break
         for x, y in add:
             self.px[y][x] = col
 
     def image(self):
-        im = Image.new("RGBA", (N, N), (0, 0, 0, 0))
+        im = Image.new("RGBA", (self.w, self.h), (0, 0, 0, 0))
         im.putdata([(c + (255,)) if c else (0, 0, 0, 0) for row in self.px for c in row])
-        return im.resize((N * 2, N * 2), Image.NEAREST)
+        return im.resize((self.w * 2, self.h * 2), Image.NEAREST)
 
 
 # ── wood ──────────────────────────────────────────────────────────
@@ -354,6 +355,57 @@ def arch_gate(portcullis):
     return a
 
 
+def stone_bridge():
+    """Two-tile humped stone bridge for a horizontal stone-fence run:
+    the ends match the fence's cap and face, the deck rises to a crown
+    in the middle and a wide arch opens underneath (walkable)."""
+    import math
+    p = STONE
+    W = 2 * N
+    a = Art(W, N)
+    top = lambda x: CAP0 - int(round(5 * math.sin(math.pi * x / (W - 1))))
+    cx, half, rise = (W - 1) / 2, 17.0, 8.0                # the opening
+    def opening(x, y):
+        dx = (x - cx) / half
+        return abs(dx) < 1 and y >= FACE1 - rise * math.sqrt(1 - dx * dx)
+    for x in range(W):
+        t = top(x)
+        for y in range(t, FACE1 + 1):
+            if opening(x, y):
+                continue
+            if y < t + 6:                                   # the deck's cap
+                c = p["light"]
+                if (x % 8 == 0) or (y == t + 2 and x % 8 == 4):
+                    c = p["main"]
+            else:                                           # block face
+                c = p["main"]
+                k = (y - (t + 6)) % 4
+                row = (y - (t + 6)) // 4
+                if y == t + 6 or k == 3:
+                    c = p["dark"]
+                elif (x + 4 * (row % 2)) % 8 == 2:
+                    c = p["dark"]
+                elif (x + 4 * (row % 2)) % 8 == 3 and k == 0:
+                    c = p["light"]
+            a.px[y][x] = c
+    # voussoir ring round the opening, joints pointing at the centre
+    ring = []
+    for y in range(N):
+        for x in range(W):
+            if a.px[y][x] is CLEAR or opening(x, y):
+                continue
+            near = any(0 <= x + dx < W and 0 <= y + dy < N and opening(x + dx, y + dy)
+                       for dx in (-2, -1, 0, 1, 2) for dy in (-1, 0, 1, 2))
+            if near:
+                ring.append((x, y))
+    for (x, y) in ring:
+        ang = math.atan2(FACE1 + 0.5 - y, x - cx)
+        f = (ang / math.pi * 9) % 1
+        a.px[y][x] = p["dark"] if f < 0.14 else p["light"]
+    a.outline(p["line"])
+    return a
+
+
 GATES = {"wood": {"gate_h": wood_gate_h, "gate_v": wood_gate_v},
          "stone": {"gate_h": stone_gate_h, "gate_v": stone_gate_v,
                    "archway": lambda: arch_gate(False),
@@ -369,4 +421,7 @@ if __name__ == "__main__":
             fn(piece).image().save(os.path.join(out, f"fence_{kind}_{piece}.png"))
         for piece, gfn in GATES[kind].items():
             gfn().image().save(os.path.join(out, f"fence_{kind}_{piece}.png"))
-    print(sum(len(PIECES) + len(g) for g in GATES.values()), "pieces ->", out)
+    br = stone_bridge().image()                     # two tiles: _r0c0 / _r0c1
+    for c in range(2):
+        br.crop((c * 64, 0, c * 64 + 64, 64)).save(os.path.join(out, f"fence_stone_bridge_r0c{c}.png"))
+    print(sum(len(PIECES) + len(g) for g in GATES.values()) + 2, "pieces ->", out)

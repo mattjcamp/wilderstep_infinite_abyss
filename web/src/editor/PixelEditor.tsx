@@ -32,7 +32,7 @@
  * either form works.
  */
 
-import { NATIVE_TILE_CSS_PX } from "@/util/renderScale";
+import { SPRITE_ART_PX } from "@/util/renderScale";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   discardSpriteDraft,
@@ -975,9 +975,9 @@ function NativePreview({ canvas }: { canvas: CanvasState }) {
     }
     ctx.putImageData(img, 0, 0);
   }, [canvas]);
-  // Show the sprite at native tile size (64 CSS px): 64×64 art 1:1,
+  // Show the sprite at its true art size (64 CSS px): 64×64 art 1:1,
   // smaller legacy art (32×32) scaled up by a whole number.
-  const k = Math.max(1, Math.floor(NATIVE_TILE_CSS_PX / Math.max(canvas.w, canvas.h)));
+  const k = Math.max(1, Math.floor(SPRITE_ART_PX / Math.max(canvas.w, canvas.h)));
   return (
     <canvas
       ref={ref}

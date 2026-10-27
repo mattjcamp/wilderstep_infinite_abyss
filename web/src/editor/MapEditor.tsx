@@ -592,8 +592,8 @@ export function MapEditor({
    *  produces matching scrollbars for pan. Phaser pointer events still
    *  resolve to correct game coordinates because getBoundingClientRect
    *  returns post-transform dimensions. */
-  //  100% = NATIVE: each tile on screen is NATIVE_TILE_CSS_PX (64) CSS
-  //  px, i.e. a 64×64 sprite shown 1:1. The canvas itself is laid out
+  //  100% = standard size: each tile on screen is NATIVE_TILE_CSS_PX
+  //  (48) CSS px, the same size as in play. The canvas itself is laid out
   //  at the logical TILE_SIZE (32) per tile, so the CSS scale applied
   //  is `zoom * NATIVE_SCALE`.
   const ZOOM_STEPS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2] as const;

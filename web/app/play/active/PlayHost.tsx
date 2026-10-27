@@ -2478,7 +2478,7 @@ export function PlayHost() {
           installWorldAndUiCameras(this, this.worldZoom);
           // FIT scaling changes how big the canvas is on screen when
           // the window resizes; re-derive the zoom so tiles stay at
-          // their native 64 CSS px.
+          // their standard tile size (NATIVE_TILE_CSS_PX).
           this.scale.on("resize", () => {
             const z = this.effectiveWorldZoom(this.worldZoomIdx);
             if (Math.abs(z - this.worldZoom) < 1e-6) return;
@@ -3236,7 +3236,7 @@ export function PlayHost() {
         }
 
         /** World zoom for a Z step: the step times "native" (each tile
-         *  shown at 64 CSS px whatever size FIT gives the canvas). */
+         *  shown at NATIVE_TILE_CSS_PX CSS px whatever size FIT gives the canvas). */
         effectiveWorldZoom(idx: number): number {
           const shown = this.scale.displaySize?.width || this.scale.width;
           const displayScale = shown / this.scale.width;
