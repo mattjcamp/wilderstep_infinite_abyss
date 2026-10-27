@@ -218992,7 +218992,7 @@
           },
           {
             "boat": false,
-            "id": "chest",
+            "id": "object_chest",
             "name": "Chest",
             "walkable": true,
             "obstructs": false,
@@ -219003,8 +219003,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "item/chest.png",
-            "tag": "indoor"
+            "sprite": "objects/chest.png",
+            "tag": "objects"
           },
           {
             "boat": false,
@@ -277332,7 +277332,7 @@
           },
           {
             "boat": false,
-            "id": "chest",
+            "id": "object_chest",
             "name": "Chest",
             "walkable": true,
             "obstructs": false,
@@ -277343,8 +277343,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "item/chest.png",
-            "tag": "indoor"
+            "sprite": "objects/chest.png",
+            "tag": "objects"
           },
           {
             "id": "wall_planks_dark",
@@ -278972,7 +278972,7 @@
           },
           {
             "boat": false,
-            "id": "chest",
+            "id": "object_chest",
             "name": "Chest",
             "walkable": true,
             "obstructs": false,
@@ -278983,12 +278983,12 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "item/chest.png",
-            "tag": "indoor"
+            "sprite": "objects/chest.png",
+            "tag": "objects"
           },
           {
             "boat": false,
-            "id": "chest",
+            "id": "object_chest",
             "name": "Chest",
             "walkable": true,
             "obstructs": false,
@@ -278999,8 +278999,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "item/chest.png",
-            "tag": "indoor"
+            "sprite": "objects/chest.png",
+            "tag": "objects"
           },
           {
             "boat": false,
@@ -279290,7 +279290,7 @@
           },
           {
             "boat": false,
-            "id": "chest",
+            "id": "object_chest",
             "name": "Chest",
             "walkable": true,
             "obstructs": false,
@@ -279301,8 +279301,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "item/chest.png",
-            "tag": "indoor"
+            "sprite": "objects/chest.png",
+            "tag": "objects"
           },
           {
             "boat": false,
@@ -282314,7 +282314,7 @@
           },
           {
             "boat": false,
-            "id": "chest",
+            "id": "object_chest",
             "name": "Chest",
             "walkable": true,
             "obstructs": false,
@@ -282325,12 +282325,12 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "item/chest.png",
-            "tag": "indoor"
+            "sprite": "objects/chest.png",
+            "tag": "objects"
           },
           {
             "boat": false,
-            "id": "chest",
+            "id": "object_chest",
             "name": "Chest",
             "walkable": true,
             "obstructs": false,
@@ -282341,12 +282341,12 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "item/chest.png",
-            "tag": "indoor"
+            "sprite": "objects/chest.png",
+            "tag": "objects"
           },
           {
             "boat": false,
-            "id": "chest",
+            "id": "object_chest",
             "name": "Chest",
             "walkable": true,
             "obstructs": false,
@@ -282357,12 +282357,12 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "item/chest.png",
-            "tag": "indoor"
+            "sprite": "objects/chest.png",
+            "tag": "objects"
           },
           {
             "boat": false,
-            "id": "chest",
+            "id": "object_chest",
             "name": "Chest",
             "walkable": true,
             "obstructs": false,
@@ -282373,8 +282373,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "item/chest.png",
-            "tag": "indoor"
+            "sprite": "objects/chest.png",
+            "tag": "objects"
           },
           {
             "id": "wall_stone",
@@ -282616,7 +282616,7 @@
           },
           {
             "boat": false,
-            "id": "chest",
+            "id": "object_chest",
             "name": "Chest",
             "walkable": true,
             "obstructs": false,
@@ -282627,12 +282627,12 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "item/chest.png",
-            "tag": "indoor"
+            "sprite": "objects/chest.png",
+            "tag": "objects"
           },
           {
             "boat": false,
-            "id": "chest",
+            "id": "object_chest",
             "name": "Chest",
             "walkable": true,
             "obstructs": false,
@@ -282643,12 +282643,12 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "item/chest.png",
-            "tag": "indoor"
+            "sprite": "objects/chest.png",
+            "tag": "objects"
           },
           {
             "boat": false,
-            "id": "chest",
+            "id": "object_chest",
             "name": "Chest",
             "walkable": true,
             "obstructs": false,
@@ -282659,8 +282659,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "item/chest.png",
-            "tag": "indoor"
+            "sprite": "objects/chest.png",
+            "tag": "objects"
           },
           {
             "id": "wall_stone",
@@ -282918,7 +282918,7 @@
           },
           {
             "boat": false,
-            "id": "chest",
+            "id": "object_chest",
             "name": "Chest",
             "walkable": true,
             "obstructs": false,
@@ -282929,12 +282929,12 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "item/chest.png",
-            "tag": "indoor"
+            "sprite": "objects/chest.png",
+            "tag": "objects"
           },
           {
             "boat": false,
-            "id": "chest",
+            "id": "object_chest",
             "name": "Chest",
             "walkable": true,
             "obstructs": false,
@@ -282945,8 +282945,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "item/chest.png",
-            "tag": "indoor"
+            "sprite": "objects/chest.png",
+            "tag": "objects"
           },
           {
             "id": "wall_stone",
@@ -303447,7 +303447,7 @@
           },
           {
             "boat": false,
-            "id": "chest",
+            "id": "object_chest",
             "name": "Chest",
             "walkable": true,
             "obstructs": false,
@@ -303458,12 +303458,12 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "item/chest.png",
-            "tag": "indoor"
+            "sprite": "objects/chest.png",
+            "tag": "objects"
           },
           {
             "boat": false,
-            "id": "chest",
+            "id": "object_chest",
             "name": "Chest",
             "walkable": true,
             "obstructs": false,
@@ -303474,8 +303474,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "item/chest.png",
-            "tag": "indoor"
+            "sprite": "objects/chest.png",
+            "tag": "objects"
           },
           {
             "boat": false,
@@ -303639,7 +303639,7 @@
           },
           {
             "boat": false,
-            "id": "chest",
+            "id": "object_chest",
             "name": "Chest",
             "walkable": true,
             "obstructs": false,
@@ -303650,12 +303650,12 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "item/chest.png",
-            "tag": "indoor"
+            "sprite": "objects/chest.png",
+            "tag": "objects"
           },
           {
             "boat": false,
-            "id": "chest",
+            "id": "object_chest",
             "name": "Chest",
             "walkable": true,
             "obstructs": false,
@@ -303666,12 +303666,12 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "item/chest.png",
-            "tag": "indoor"
+            "sprite": "objects/chest.png",
+            "tag": "objects"
           },
           {
             "boat": false,
-            "id": "chest",
+            "id": "object_chest",
             "name": "Chest",
             "walkable": true,
             "obstructs": false,
@@ -303682,8 +303682,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "item/chest.png",
-            "tag": "indoor"
+            "sprite": "objects/chest.png",
+            "tag": "objects"
           },
           {
             "boat": false,
@@ -303828,7 +303828,7 @@
           },
           {
             "boat": false,
-            "id": "chest",
+            "id": "object_chest",
             "name": "Chest",
             "walkable": true,
             "obstructs": false,
@@ -303839,12 +303839,12 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "item/chest.png",
-            "tag": "indoor"
+            "sprite": "objects/chest.png",
+            "tag": "objects"
           },
           {
             "boat": false,
-            "id": "chest",
+            "id": "object_chest",
             "name": "Chest",
             "walkable": true,
             "obstructs": false,
@@ -303855,12 +303855,12 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "item/chest.png",
-            "tag": "indoor"
+            "sprite": "objects/chest.png",
+            "tag": "objects"
           },
           {
             "boat": false,
-            "id": "chest",
+            "id": "object_chest",
             "name": "Chest",
             "walkable": true,
             "obstructs": false,
@@ -303871,12 +303871,12 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "item/chest.png",
-            "tag": "indoor"
+            "sprite": "objects/chest.png",
+            "tag": "objects"
           },
           {
             "boat": false,
-            "id": "chest",
+            "id": "object_chest",
             "name": "Chest",
             "walkable": true,
             "obstructs": false,
@@ -303887,8 +303887,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "item/chest.png",
-            "tag": "indoor"
+            "sprite": "objects/chest.png",
+            "tag": "objects"
           },
           {
             "boat": false,
@@ -304020,7 +304020,7 @@
           },
           {
             "boat": false,
-            "id": "chest",
+            "id": "object_chest",
             "name": "Chest",
             "walkable": true,
             "obstructs": false,
@@ -304031,12 +304031,12 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "item/chest.png",
-            "tag": "indoor"
+            "sprite": "objects/chest.png",
+            "tag": "objects"
           },
           {
             "boat": false,
-            "id": "chest",
+            "id": "object_chest",
             "name": "Chest",
             "walkable": true,
             "obstructs": false,
@@ -304047,12 +304047,12 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "item/chest.png",
-            "tag": "indoor"
+            "sprite": "objects/chest.png",
+            "tag": "objects"
           },
           {
             "boat": false,
-            "id": "chest",
+            "id": "object_chest",
             "name": "Chest",
             "walkable": true,
             "obstructs": false,
@@ -304063,12 +304063,12 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "item/chest.png",
-            "tag": "indoor"
+            "sprite": "objects/chest.png",
+            "tag": "objects"
           },
           {
             "boat": false,
-            "id": "chest",
+            "id": "object_chest",
             "name": "Chest",
             "walkable": true,
             "obstructs": false,
@@ -304079,8 +304079,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "item/chest.png",
-            "tag": "indoor"
+            "sprite": "objects/chest.png",
+            "tag": "objects"
           },
           {
             "boat": false,
@@ -308293,7 +308293,7 @@
           },
           {
             "boat": false,
-            "id": "chest",
+            "id": "object_chest",
             "name": "Chest",
             "walkable": true,
             "obstructs": false,
@@ -308304,8 +308304,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "item/chest.png",
-            "tag": "indoor"
+            "sprite": "objects/chest.png",
+            "tag": "objects"
           },
           {
             "boat": false,
@@ -311469,7 +311469,7 @@
           },
           {
             "boat": false,
-            "id": "chest",
+            "id": "object_chest",
             "name": "Chest",
             "walkable": true,
             "obstructs": false,
@@ -311480,8 +311480,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "item/chest.png",
-            "tag": "indoor"
+            "sprite": "objects/chest.png",
+            "tag": "objects"
           },
           {
             "boat": false,
