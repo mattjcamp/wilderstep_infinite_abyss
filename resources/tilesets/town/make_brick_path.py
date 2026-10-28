@@ -47,9 +47,18 @@ def texture():
     return t
 
 
+JUNCTIONS = {"cross": (True, True, True, True),
+             "t_left": (True, True, True, False), "t_right": (True, True, False, True),
+             "t_up": (True, False, True, True), "t_down": (False, True, True, True)}
+
+
 def inside(x, y, piece):
     """Is (x, y) on the path for this piece?"""
     inV, inH = B0 <= x <= B1, B0 <= y <= B1
+    if piece in JUNCTIONS:
+        up, down, left, right = JUNCTIONS[piece]
+        return (inV and inH) or (inV and ((up and y < B0) or (down and y > B1))) \
+            or (inH and ((left and x < B0) or (right and x > B1)))
     if piece == "straight_v":
         return inV
     if piece == "straight_h":
@@ -94,6 +103,7 @@ if __name__ == "__main__":
     out = sys.argv[1]
     os.makedirs(out, exist_ok=True)
     tex = texture()
-    for n in ("straight_v", "straight_h", "bend_tl", "bend_tr", "bend_bl", "bend_br"):
+    names = ("straight_v", "straight_h", "bend_tl", "bend_tr", "bend_bl", "bend_br") + tuple(JUNCTIONS)
+    for n in names:
         piece(n, tex).save(os.path.join(out, f"brick_path_{n}.png"))
-    print("6 pieces ->", out)
+    print(len(names), "pieces ->", out)

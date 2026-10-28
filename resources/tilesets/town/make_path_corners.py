@@ -45,5 +45,37 @@ def corner(up, left):
             im.putpixel((x, y), p)
     return im
 
+def junction(up, down, left, right):
+    """T-junctions and the cross: arms on the given sides. The centre
+    square keeps an edge only on sides with no arm; where two arms meet
+    the corner is left open, as on the bends."""
+    im = Image.new("RGBA", (64, 64), CLEAR)
+    for y in range(64):
+        for x in range(64):
+            inV, inH = VX0 <= x <= VX1, HY0 <= y <= HY1
+            if inV and ((up and y < HY0) or (down and y > HY1)):
+                p = V.getpixel((x, y))
+            elif inH and ((left and x < VX0) or (right and x > VX1)):
+                p = H.getpixel((x, y))
+            elif inV and inH:
+                if not up and y <= HT or not down and y >= HB:
+                    p = H.getpixel((x, y))
+                elif not left and x <= VL or not right and x >= VR:
+                    p = V.getpixel((x, y))
+                else:
+                    hi = HT < y < HB; vi = VL < x < VR
+                    p = H.getpixel((x, y)) if hi else (V.getpixel((x, y)) if vi else TAN)
+                    if p[3] == 0 or (p[0] < 120 and not (hi and vi)): p = TAN
+            else:
+                continue
+            im.putpixel((x, y), p)
+    return im
+
+
 for name, up, left in (("tl", False, False), ("tr", False, True), ("bl", True, False), ("br", True, True)):
     corner(up, left).save(os.path.join(OUT, f"path_bend_{name}.png"))
+JUNCTIONS = {"cross": (True, True, True, True),
+             "t_left": (True, True, True, False), "t_right": (True, True, False, True),
+             "t_up": (True, False, True, True), "t_down": (False, True, True, True)}
+for name, arms in JUNCTIONS.items():
+    junction(*arms).save(os.path.join(OUT, f"path_{name}.png"))
