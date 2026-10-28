@@ -414,11 +414,10 @@
             "tag": "overview"
           },
           {
-            "id": "ship",
-            "name": "Ship",
-            "walkable": true,
+            "id": "water",
+            "name": "Water",
+            "walkable": false,
             "obstructs": false,
-            "boat": true,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -426,10 +425,10 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/ship.png",
-            "tag": "overview",
+            "sprite": "map/water.png",
+            "tag": "map",
             "water": true,
-            "background_sprite": "map/water.png"
+            "boat_sprite": "map/ship.png"
           },
           {
             "id": "water",

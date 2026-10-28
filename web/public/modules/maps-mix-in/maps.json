@@ -5818,7 +5818,7 @@
           {
             "id": "water",
             "name": "Water",
-            "walkable": true,
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -5828,9 +5828,9 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview",
-            "boat": true,
-            "water": true
+            "tag": "map",
+            "water": true,
+            "boat_sprite": "map/ship.png"
           },
           {
             "id": "water",
@@ -385697,7 +385697,7 @@
           {
             "id": "water",
             "name": "Water",
-            "walkable": true,
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -385707,9 +385707,9 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/water.png",
-            "tag": "overview",
-            "boat": true,
-            "water": true
+            "tag": "map",
+            "water": true,
+            "boat_sprite": "map/ship.png"
           },
           {
             "boat": false,

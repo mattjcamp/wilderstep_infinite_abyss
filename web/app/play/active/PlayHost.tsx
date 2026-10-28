@@ -585,6 +585,8 @@ interface PlayCell {
   npc?: string;
   dungeon?: string;
   boat?: boolean;
+  /** Sprite of a boat moored on top of this (water) cell. */
+  boat_sprite?: string;
   /** True = a boat can sail UNDER this tile (bridge semantics). The
    *  tile stays walkable on foot; the sim treats it as a sail-through
    *  for boat movement, and the play scene paints a bridge-top
@@ -2335,13 +2337,24 @@ export function PlayHost() {
           if (npcSprite) spriteKeys.add(npcSprite);
         }
       }
-      // Boat sprite + water sprite for the board / disembark
-      // texture swaps. The kernel tracks which cells have loose
-      // boats; the scene flips between the boat texture and the
-      // module's water texture as boats are boarded + dropped.
-      // Picking the first water-tagged palette tile mirrors the
-      // editor sim's heuristic so a custom-art module's water
-      // sprite gets used instead of the hardcoded fallback.
+      // Boats are overlays drawn on top of the water they float on,
+      // so boarding / leaving a boat never repaints a map cell (a
+      // river piece stays a river piece). Preload every boat sprite:
+      // boats moored on cells (`boat_sprite`), legacy boat tiles and
+      // any boat-flagged palette tile (a saved game may have moved a
+      // boat anywhere).
+      for (const row of catalog.map.grid) {
+        for (const cell of row) {
+          if (cell.boat_sprite) spriteKeys.add(cell.boat_sprite);
+        }
+      }
+      for (const t of catalog.palette as Array<{ boat?: unknown; sprite?: string }>) {
+        if (t.boat && t.sprite) spriteKeys.add(t.sprite);
+      }
+      // Water sprite drawn UNDER a legacy boat tile (the boat tile
+      // replaced the water cell). Picking the first water-tagged
+      // palette tile mirrors the editor sim's heuristic so a
+      // custom-art module's water sprite gets used.
       const waterSprite =
         catalog.palette.find((t) => isWaterCell(t as { water?: unknown; tag?: string }))
           ?.sprite ?? "";
@@ -2408,14 +2421,12 @@ export function PlayHost() {
          *  shadow reads as shadowed. Mirrors the MapEditor's
          *  `npcOverlays` rendering for parity between author + play. */
         npcOverlays: Map<string, Phaser.GameObjects.Image> = new Map();
-        /** Cells currently rendering a boat texture — keyed "col,row",
-         *  value is the boat's sprite key. The map cell IS the boat:
-         *  setBoatPositions diffs this against the kernel's live boat
-         *  list and swaps each cell's texture between water (the
-         *  party just boarded it) and the boat sprite (a boat is
-         *  parked there). Initial state captured during the scene's
-         *  create() pass from cells whose `boat` field is true. */
-        boatTextures: Map<string, string> = new Map();
+        /** Loose (parked) boats, keyed "col,row". Each is an Image
+         *  drawn ON TOP of the cell, like an NPC — the cell's own
+         *  sprite (open water, a river piece) is never touched.
+         *  setBoatPositions diffs this against the kernel's live
+         *  boat list. */
+        boatOverlays: Map<string, Phaser.GameObjects.Image> = new Map();
         /** Bridge-top overlays keyed "col,row". One per cell whose
          *  palette flag `boat_passable` is true (wooden footbridges,
          *  stone arches, etc.). The base cell still draws at depth 0
@@ -2645,6 +2656,9 @@ export function PlayHost() {
               for (const [key, img] of this.npcOverlays) {
                 applyOverlayCellState(img, key);
               }
+              for (const [key, img] of this.boatOverlays) {
+                applyOverlayCellState(img, key);
+              }
             },
           });
           rendererRef.current = this.world;
@@ -2675,22 +2689,17 @@ export function PlayHost() {
             mountedSurfaceRef.current = `map:${save.party.currentMapId}`;
           }
 
-          // Seed `boatTextures` from the authored grid BEFORE the
-          // kernel's first `setBoatPositions` call lands. The grid's
-          // `boat: true` cells render with their boat sprite via
-          // createCells; the bridge's diff handler needs to know that
-          // baseline so it can correctly swap cells back to water on
-          // first init. Without this seed, a save where the party
-          // moved a boat from A to B would: render cell A with the
-          // boat sprite (from authored data), receive a setBoatPositions
-          // call listing only B as wanted, find scene.boatTextures
-          // empty, and never swap A to water — leaving a ghost boat
-          // at the original cell.
-          for (let r = 0; r < catalog.map.height; r++) {
-            for (let c = 0; c < catalog.map.width; c++) {
-              const cell = catalog.map.grid[r][c];
-              if (cell.boat && cell.sprite) {
-                this.boatTextures.set(`${c},${r}`, cell.sprite);
+          // Legacy boat tiles (`boat: true`) replaced the water cell
+          // with the boat picture. Show water in the cell instead; the
+          // boat itself is drawn as an overlay once the kernel reports
+          // the boat positions (setBoatPositions).
+          if (waterSprite && this.textures.exists(waterSprite)) {
+            for (let r = 0; r < catalog.map.height; r++) {
+              for (let c = 0; c < catalog.map.width; c++) {
+                const cell = catalog.map.grid[r][c];
+                if (cell.boat && !cell.boat_sprite && cell.sprite) {
+                  this.world.setCellSprite(c, r, waterSprite);
+                }
               }
             }
           }
@@ -3399,14 +3408,13 @@ export function PlayHost() {
                 onComplete: () => label.destroy(),
               });
             },
-            // Boats render via cell-texture swaps + a party-bound
-            // overlay sprite, mirroring the editor sim's pattern:
+            // Boats render as overlays on top of the map, never by
+            // repainting cells, mirroring the editor sim's pattern:
             //
             //   1. setBoatPositions — the kernel hands us the list of
-            //      loose boats (cell + sprite). Cells that lost their
-            //      boat (party just boarded) swap back to the water
-            //      sprite; cells that gained one swap to the boat
-            //      sprite. The map cell IS the boat.
+            //      loose boats (cell + sprite). Each gets an Image on
+            //      top of its cell; boats the party boarded lose theirs.
+            //      The water / river tile underneath never changes.
             //   2. setPartyBoatAt — creates/destroys the
             //      `partyBoatSprite` overlay at the party's cell
             //      while aboard. Hides the partySprite so the boat
@@ -3417,42 +3425,41 @@ export function PlayHost() {
               const wanted = new Map(
                 positions.map((p) => [`${p.col},${p.row}`, p.sprite]),
               );
-              // Route through `renderer.setCellSprite` instead of
-              // poking the cell image directly: the renderer needs to
-              // update its `cellTextureKeys` map alongside the live
-              // texture so the fog-of-war relight pass treats the new
-              // sprite as the cell's "original" (otherwise relight
-              // would revert a boarded boat cell back to the boat
-              // texture on the next frame). setCellSprite also pre-
-              // bakes a grayscale variant so the swapped cell still
-              // grayscales correctly once it enters the remembered
-              // band.
-              //
-              // Cells that lost their boat (party boarded here) →
-              // back to the water sprite.
-              for (const [key] of scene.boatTextures) {
-                if (wanted.has(key)) continue;
-                if (waterSprite && scene.textures.exists(waterSprite)) {
-                  const [cs, rs] = key.split(",");
-                  renderer.setCellSprite(Number(cs), Number(rs), waterSprite);
-                  renderer.setBoatUnderlay(Number(cs), Number(rs), null);
-                }
-                scene.boatTextures.delete(key);
+              // Boats the party picked up (or that moved away).
+              for (const [key, img] of scene.boatOverlays) {
+                if (wanted.get(key) === img.texture.key) continue;
+                img.destroy();
+                scene.boatOverlays.delete(key);
               }
-              // Cells that gained a boat (disembarked here, or first
-              // boot from a save where the party left a boat behind).
+              // Boats parked / moored here. Drawn above the cell at
+              // NPC depth so the water under them stays visible.
               for (const [key, sprite] of wanted) {
-                if (scene.boatTextures.get(key) === sprite) continue;
-                if (sprite && scene.textures.exists(sprite)) {
-                  const [cs, rs] = key.split(",");
-                  renderer.setCellSprite(Number(cs), Number(rs), sprite);
-                  // Water stays visible around the parked hull.
-                  if (waterSprite) {
-                    renderer.setBoatUnderlay(Number(cs), Number(rs), waterSprite);
-                  }
+                if (scene.boatOverlays.has(key)) continue;
+                if (!sprite || !scene.textures.exists(sprite)) continue;
+                const [cs, rs] = key.split(",");
+                const c = Number(cs);
+                const r = Number(rs);
+                // A boat tile painted mid-session (quest reward
+                // tile_add) replaced the cell — show water under it.
+                if (
+                  renderer.getCellSprite(c, r) === sprite &&
+                  waterSprite &&
+                  scene.textures.exists(waterSprite)
+                ) {
+                  renderer.setCellSprite(c, r, waterSprite);
                 }
-                scene.boatTextures.set(key, sprite);
+                const img = scene.add
+                  .image(
+                    c * TILE_SIZE + TILE_SIZE / 2,
+                    r * TILE_SIZE + TILE_SIZE / 2,
+                    sprite,
+                  )
+                  .setOrigin(0.5)
+                  .setDisplaySize(TILE_SIZE, TILE_SIZE)
+                  .setDepth(74);
+                scene.boatOverlays.set(key, img);
               }
+              renderer.relight();
             },
             setPartyBoatAt: (col, row, visible, sprite) => {
               const scene = this;

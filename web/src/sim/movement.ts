@@ -185,8 +185,10 @@ export function findSpawn(
   const height = grid.length;
   const width = height > 0 ? grid[0]!.length : 0;
   if (height === 0 || width === 0) return { col: 0, row: 0 };
-  // 1. Preferred is fine on its own — use it.
+  // 1. Preferred is fine on its own — use it. A boat moored on water
+  //    there counts too: the party starts aboard it.
   if (isValidSpawn(grid, preferred.col, preferred.row)) return preferred;
+  if (grid[preferred.row]?.[preferred.col]?.boat_sprite) return preferred;
   // 2. Spiral out from the preferred coordinate, clamped to grid. The
   //    cap is generous; we want a walkable cell *somewhere*.
   const maxR = Math.max(width, height);

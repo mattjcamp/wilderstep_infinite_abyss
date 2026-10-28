@@ -144,6 +144,11 @@ interface TileType {
    *  Not "passable by boat" — that distinction is a tile being water,
    *  which is conveyed by the tile's other gameplay attributes. */
   boat: boolean;
+  /** Sprite of a boat moored ON this cell (cells only — never set on
+   *  palette tiles). Painting a boat palette tile onto a water cell
+   *  sets this instead of replacing the water, so a river piece stays
+   *  a river piece; the boat is drawn on top like an NPC. */
+  boat_sprite?: string;
   /** True = a boat can sail UNDER this tile (bridge semantics). The
    *  tile stays walkable on foot; the sim treats it like water for
    *  the boat-classification branch, and the play renderer paints a
@@ -889,6 +894,9 @@ export function MapEditor({
     playItemPickup: (col: number, row: number) => void;
     /** Sync per-cell NPC-sprite overlays from each cell's npc field. */
     refreshNpcOverlays: () => void;
+    /** Sync moored-boat overlays: from each cell's `boat_sprite` while
+     *  painting, from the sim's live boat positions while simulating. */
+    refreshBoatOverlays: () => void;
     /** Sync the quest-giver sprite overlay (cells with `quest` set
      *  render the quest's quest_giver.npc_sprite) AND the soft
      *  golden glow drawn behind quest-relevant cells (givers,
@@ -904,8 +912,8 @@ export function MapEditor({
      *  Null disables the extra source. */
     setPartyLight: (source: SimLightSource | null) => void;
     /** Sync the "loose" boats sitting on the world map. Each entry
-     *  carries the boat's sprite so cells can swap their render
-     *  texture between boat and water as boats move around. */
+     *  carries the boat's sprite; boats are drawn as overlays on top
+     *  of their cell, never by repainting it. */
     setBoatPositions: (
       positions: ReadonlyArray<{
         col: number;
@@ -1527,6 +1535,7 @@ export function MapEditor({
         for (const cell of row) {
           if (cell?.sprite) spriteKeys.add(cell.sprite);
           if (cell?.background_sprite) spriteKeys.add(cell.background_sprite);
+          if (cell?.boat_sprite) spriteKeys.add(cell.boat_sprite);
         }
       }
       for (const e of encounters) {
@@ -1638,13 +1647,13 @@ export function MapEditor({
          *  entity has been defeated) lands here while sim mode is
          *  on. Cleared back to an empty Set on sim teardown. */
         suppressedEncounterCells: Set<string> = new Set();
-        /** Sprite key for each cell that currently holds a loose boat.
-         *  Boats render via the cell's own image (swapped between
-         *  boat and water textures) rather than a separate overlay —
-         *  so when the party boards, the same cell smoothly becomes
-         *  water. The Map gives the scene memory of which cells need
-         *  to be reverted back to water when the boat is picked up. */
-        boatTextures: Map<string, string> = new Map();
+        /** Boat overlay sprites keyed by "col,row" — drawn on top of
+         *  the cell (its water / river sprite is never touched). */
+        boatOverlays: Map<string, Phaser.GameObjects.Image> = new Map();
+        /** While the sim runs: its live loose-boat positions ("col,row"
+         *  → sprite), which replace the authored `boat_sprite` cells as
+         *  the source for boatOverlays. Null in the painting view. */
+        simBoats: Map<string, string> | null = null;
         /** Boat sprite that follows the party while they're aboard.
          *  Single Image, depth just below the party sprite so the
          *  party rides the boat — except partySprite is hidden while
@@ -1953,6 +1962,9 @@ export function MapEditor({
               // Assigned for real below — placeholder so the API object
               // matches the type until create() finishes wiring it.
             },
+            refreshBoatOverlays: () => {
+              // Assigned for real below.
+            },
             refreshQuestOverlays: () => {
               // Assigned for real below.
             },
@@ -2079,6 +2091,10 @@ export function MapEditor({
                 const [cs, rs] = key.split(",");
                 applyTint(img, Number(cs), Number(rs));
               }
+              for (const [key, img] of this.boatOverlays) {
+                const [cs, rs] = key.split(",");
+                applyTint(img, Number(cs), Number(rs));
+              }
               for (const [key, img] of this.questGiverOverlays) {
                 const [cs, rs] = key.split(",");
                 applyTint(img, Number(cs), Number(rs));
@@ -2105,9 +2121,7 @@ export function MapEditor({
                   emitter.setVisible(true);
                 }
               }
-              // Loose boats render via the cell image itself
-              // (texture-swapped between boat and water) so the
-              // per-cell tint loop above already handles them.
+              // Loose boats are overlays tinted with the loop above.
               // The partyBoatSprite is a separate Image; clear its
               // tint in Day, leave alone otherwise (it follows the
               // party and the party owns the light pool around it).
@@ -2202,6 +2216,9 @@ export function MapEditor({
               // helper picks up the right branch.
               sceneSelf.partyCol = null;
               sceneSelf.partyRow = null;
+              // Boats go back to where the author moored them.
+              sceneSelf.simBoats = null;
+              sceneApiRef.current?.refreshBoatOverlays();
             };
             // Floater for tile.text. Spawned about two tiles above
             // the cell so the party sprite doesn't sit on top of the
@@ -2278,17 +2295,14 @@ export function MapEditor({
               });
             };
             // ── Boat helpers ───────────────────────────────────────────
-            // Boats render via cell-texture swaps, not extra overlay
-            // sprites. The cell image at a boat's position carries the
-            // boat texture; when the party boards we swap that cell to
-            // a water texture and show the partyBoatSprite instead.
+            // Boats are overlay sprites on top of their cell; the
+            // cell's own sprite (open water, a river piece) is never
+            // repainted, so boarding / leaving can't damage the map.
             //
             //   1. applyBoatBob — perpetual sin-wave y tween so the
             //      partyBoatSprite rocks gently on the water.
-            //   2. setBoatPositions — diffs the host-supplied set of
-            //      loose boats; cells that lost their boat get the
-            //      water sprite, cells that gained one get the boat's
-            //      sprite. The map cell IS the boat.
+            //   2. setBoatPositions — diffs the sim's loose boats
+            //      against the boat overlays on screen.
             //   3. setPartyBoatAt — lazily creates the partyBoatSprite
             //      while aboard; hides the partySprite at the same
             //      time so the party visually IS the boat.
@@ -2316,64 +2330,65 @@ export function MapEditor({
               );
               applyBoatBob(img);
             };
-            sceneApiRef.current.setBoatPositions = (positions) => {
-              const wanted = new Map(
-                positions.map((p) => [`${p.col},${p.row}`, p.sprite]),
-              );
-              // Cells that lost their boat (party just boarded here)
-              // get swapped back to the water sprite.
-              for (const [key, _sprite] of sceneSelf.boatTextures) {
-                if (wanted.has(key)) continue;
+            // Draw boat overlays for the given "col,row" → sprite set,
+            // diffing against what's on screen. Boats sit on top of
+            // their cell (depth 74, just under NPCs) and never change
+            // the cell's own sprite.
+            const syncBoatOverlays = (wanted: Map<string, string>) => {
+              for (const [key, img] of sceneSelf.boatOverlays) {
+                if (wanted.get(key) === img.texture.key) continue;
+                img.destroy();
+                sceneSelf.boatOverlays.delete(key);
+              }
+              for (const [key, sprite] of wanted) {
+                if (sceneSelf.boatOverlays.has(key)) continue;
+                if (!sprite || !sceneSelf.textures.exists(sprite)) continue;
+                const [c, r] = key.split(",").map(Number);
+                // Legacy boat tile (the boat replaced the water cell):
+                // show water in the cell under the overlay.
                 const baseImg = sceneSelf.cells.get(key);
                 if (
                   baseImg &&
+                  baseImg.texture.key === sprite &&
                   WATER_SPRITE &&
                   sceneSelf.textures.exists(WATER_SPRITE)
                 ) {
                   swapTexture(baseImg, WATER_SPRITE);
                 }
-                {
-                  // Drop the water underlay added when the boat parked
-                  // here; restore the cell's authored background.
-                  const [cs, rs] = key.split(",").map(Number);
-                  sceneSelf.syncBackgroundCell(
-                    cs,
-                    rs,
-                    gridRef.current[rs]?.[cs]?.background_sprite,
-                  );
+                const img = sceneSelf.add
+                  .image(
+                    c * TILE_SIZE + TILE_SIZE / 2,
+                    r * TILE_SIZE + TILE_SIZE / 2,
+                    sprite,
+                  )
+                  .setOrigin(0.5)
+                  .setDisplaySize(TILE_SIZE, TILE_SIZE)
+                  .setDepth(74);
+                if (baseImg && baseImg.isTinted) {
+                  img.setTint(baseImg.tintTopLeft);
                 }
-                sceneSelf.boatTextures.delete(key);
-                // Silence unused-binding warnings without using `_`
-                // in a way that complicates the destructure.
-                void _sprite;
+                sceneSelf.boatOverlays.set(key, img);
               }
-              // Cells that gained a boat (disembarked here, or sim
-              // start-up) get the boat sprite painted in.
-              for (const [key, sprite] of wanted) {
-                if (sceneSelf.boatTextures.get(key) === sprite) continue;
-                const baseImg = sceneSelf.cells.get(key);
-                if (
-                  baseImg &&
-                  sprite &&
-                  sceneSelf.textures.exists(sprite)
-                ) {
-                  swapTexture(baseImg, sprite);
-                }
-                {
-                  // Keep water visible around the parked hull (boat
-                  // art is transparent around it). An authored
-                  // background on the cell wins.
-                  const [cs, rs] = key.split(",").map(Number);
-                  const authored =
-                    gridRef.current[rs]?.[cs]?.background_sprite;
-                  sceneSelf.syncBackgroundCell(
-                    cs,
-                    rs,
-                    authored || WATER_SPRITE || undefined,
-                  );
-                }
-                sceneSelf.boatTextures.set(key, sprite);
+            };
+            sceneApiRef.current.refreshBoatOverlays = () => {
+              if (sceneSelf.simBoats) {
+                syncBoatOverlays(sceneSelf.simBoats);
+                return;
               }
+              const wanted = new Map<string, string>();
+              for (let r = 0; r < mapRecord.height; r++) {
+                for (let c = 0; c < mapRecord.width; c++) {
+                  const boat = gridRef.current[r]?.[c]?.boat_sprite;
+                  if (boat) wanted.set(`${c},${r}`, boat);
+                }
+              }
+              syncBoatOverlays(wanted);
+            };
+            sceneApiRef.current.setBoatPositions = (positions) => {
+              sceneSelf.simBoats = new Map(
+                positions.map((p) => [`${p.col},${p.row}`, p.sprite]),
+              );
+              syncBoatOverlays(sceneSelf.simBoats);
             };
             sceneApiRef.current.setPartyBoatAt = (
               col,
@@ -2950,6 +2965,7 @@ export function MapEditor({
           // Initial NPC-overlay pass — seeds sprites for cells whose
           // npc is set at load time.
           sceneApiRef.current.refreshNpcOverlays();
+          sceneApiRef.current.refreshBoatOverlays();
           // Initial quest-overlay pass — seeds quest-giver sprites
           // for any cell with `quest` set, and draws the golden glow
           // behind quest-relevant cells (givers + matching encounters
@@ -3005,9 +3021,31 @@ export function MapEditor({
           if (!brush) return;
           const brushTile = paletteById.get(brush);
           if (!brushTile) return;
+          const existing = gridRef.current[r][c];
+          // Boats moor ON water: painting a boat tile onto a water cell
+          // (open sea, a river piece) keeps the cell and places the
+          // boat on top of it. Painting any other tile over the cell
+          // replaces it as usual, which also removes the boat.
+          if (
+            brushTile.boat &&
+            brushTile.sprite &&
+            existing &&
+            !existing.boat &&
+            isWaterCell(existing)
+          ) {
+            if (existing.boat_sprite === brushTile.sprite) return;
+            gridRef.current[r][c] = {
+              ...existing,
+              boat_sprite: brushTile.sprite,
+            };
+            this.ensureTexture(brushTile.sprite, () =>
+              sceneApiRef.current?.refreshBoatOverlays(),
+            );
+            persistRef.current();
+            return;
+          }
           // Skip if the cell already equals the brush tile field-for-
           // field (drag-over of already-painted cells is a hot path).
-          const existing = gridRef.current[r][c];
           if (
             existing &&
             existing.id === brushTile.id &&
@@ -3036,7 +3074,10 @@ export function MapEditor({
             JSON.stringify(existing.link ?? null) ===
               JSON.stringify(brushTile.link ?? null) &&
             (existing.show_link_placard ?? false) ===
-              (brushTile.show_link_placard ?? false)
+              (brushTile.show_link_placard ?? false) &&
+            // A moored boat is part of the cell: painting the same
+            // water over it removes the boat.
+            !existing.boat_sprite
           ) {
             return;
           }
@@ -3818,6 +3859,11 @@ export function MapEditor({
   // depth stack.
   useEffect(() => {
     sceneApiRef.current?.refreshNpcOverlays();
+  }, [state]);
+
+  // Moored boats (`boat_sprite`) render as overlays on their water cell.
+  useEffect(() => {
+    sceneApiRef.current?.refreshBoatOverlays();
   }, [state]);
 
   // Sync the quest-giver overlay + golden glow with the grid. Runs
@@ -5603,6 +5649,21 @@ function Inspector({
             onChange={(v) => onUpdate({ boat: v })}
             onReset={() => onUpdate({ boat: undefined })}
           />
+
+          {instance.boat_sprite ? (
+            <div className="flex items-center justify-between gap-2 text-xs">
+              <span title="A boat moored on this water cell. Paint a boat tile onto water to moor one; the water underneath is kept.">
+                Moored boat: {instance.boat_sprite}
+              </span>
+              <button
+                type="button"
+                className="border border-parchment/30 px-2 py-0.5 hover:bg-parchment/10"
+                onClick={() => onUpdate({ boat_sprite: undefined })}
+              >
+                Remove
+              </button>
+            </div>
+          ) : null}
 
           <BoolEditor
             label="Boat passable"

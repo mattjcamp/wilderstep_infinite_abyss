@@ -15,7 +15,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/grass.png",
-      "tag": "overview"
+      "tag": "map"
     },
     {
       "id": "water",
@@ -30,7 +30,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/water.png",
-      "tag": "overview",
+      "tag": "map",
       "water": true
     },
     {
@@ -47,7 +47,24 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/ship.png",
-      "tag": "overview",
+      "tag": "map",
+      "water": true
+    },
+    {
+      "id": "boat_small",
+      "name": "Boat (small)",
+      "walkable": true,
+      "obstructs": false,
+      "boat": true,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "map/boat_small.png",
+      "tag": "map",
       "water": true
     },
     {
@@ -80,7 +97,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/mountain.png",
-      "tag": "overview",
+      "tag": "map",
       "background_sprite": "map/grass.png"
     },
     {
@@ -160,7 +177,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/tree.png",
-      "tag": "overview",
+      "tag": "map",
       "background_sprite": "map/grass.png"
     },
     {
@@ -193,7 +210,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/town.png",
-      "tag": "overview",
+      "tag": "map",
       "background_sprite": "map/grass.png"
     },
     {
@@ -210,7 +227,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/cave_entrance.png",
-      "tag": "overview",
+      "tag": "map",
       "background_sprite": "map/grass.png"
     },
     {
@@ -291,7 +308,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/bridge.png",
-      "tag": "overview"
+      "tag": "map"
     },
     {
       "boat": false,
@@ -1640,7 +1657,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "town/tree_large_1.png",
-      "tag": "town:trees",
+      "tag": "town:greenery:trees",
       "background_sprite": "map/grass.png"
     },
     {
@@ -1657,7 +1674,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "town/tree_small_1.png",
-      "tag": "town:trees",
+      "tag": "town:greenery:trees",
       "background_sprite": "map/grass.png"
     },
     {
@@ -1674,7 +1691,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "town/flower_1.png",
-      "tag": "town:flowers",
+      "tag": "town:greenery:flowers",
       "background_sprite": "map/grass.png"
     },
     {
@@ -1691,41 +1708,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "town/flower_2.png",
-      "tag": "town:flowers",
-      "background_sprite": "map/grass.png"
-    },
-    {
-      "boat": false,
-      "id": "town_flower_3",
-      "name": "Town Flowers 3",
-      "walkable": true,
-      "obstructs": false,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "town/flower_3.png",
-      "tag": "town:flowers",
-      "background_sprite": "map/grass.png"
-    },
-    {
-      "boat": false,
-      "id": "town_flower_4",
-      "name": "Town Flowers 4",
-      "walkable": true,
-      "obstructs": false,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "town/flower_4.png",
-      "tag": "town:flowers",
+      "tag": "town:greenery:flowers",
       "background_sprite": "map/grass.png"
     },
     {
@@ -1742,13 +1725,13 @@
       "encounter": null,
       "spawn": null,
       "sprite": "town/bush_small.png",
-      "tag": "town:bushes",
+      "tag": "town:greenery:bushes",
       "background_sprite": "map/grass.png"
     },
     {
       "boat": false,
-      "id": "town_bush_1",
-      "name": "Town Bush 1",
+      "id": "town_bush",
+      "name": "Town Bush",
       "walkable": false,
       "obstructs": false,
       "locked": false,
@@ -1759,41 +1742,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "town/bush_1.png",
-      "tag": "town:bushes",
-      "background_sprite": "map/grass.png"
-    },
-    {
-      "boat": false,
-      "id": "town_bush_2",
-      "name": "Town Bush 2",
-      "walkable": false,
-      "obstructs": false,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "town/bush_2.png",
-      "tag": "town:bushes",
-      "background_sprite": "map/grass.png"
-    },
-    {
-      "boat": false,
-      "id": "town_bush_3",
-      "name": "Town Bush 3",
-      "walkable": false,
-      "obstructs": false,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "town/bush_3.png",
-      "tag": "town:bushes",
+      "tag": "town:greenery:bushes",
       "background_sprite": "map/grass.png"
     },
     {
@@ -1950,6 +1899,7 @@
     },
     {
       "boat": false,
+      "background_sprite": "map/grass.png",
       "id": "town_tower_r0c0",
       "name": "Town Tower (top)",
       "walkable": false,
@@ -1962,11 +1912,11 @@
       "encounter": null,
       "spawn": null,
       "sprite": "town/tower_r0c0.png",
-      "tag": "town:tower",
-      "background_sprite": "map/grass.png"
+      "tag": "town:tower:large"
     },
     {
       "boat": false,
+      "background_sprite": "map/grass.png",
       "id": "town_tower_r1c0",
       "name": "Town Tower (bottom)",
       "walkable": false,
@@ -1979,13 +1929,12 @@
       "encounter": null,
       "spawn": null,
       "sprite": "town/tower_r1c0.png",
-      "tag": "town:tower",
-      "background_sprite": "map/grass.png"
+      "tag": "town:tower:large"
     },
     {
       "boat": false,
-      "id": "town_market_stall_r0c0",
-      "name": "Town Market Stall (top left)",
+      "id": "town_market_stall",
+      "name": "Town Market Stall",
       "walkable": false,
       "obstructs": true,
       "locked": false,
@@ -1995,58 +1944,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/market_stall_r0c0.png",
-      "tag": "town:market stall",
-      "background_sprite": "map/grass.png"
-    },
-    {
-      "boat": false,
-      "id": "town_market_stall_r0c1",
-      "name": "Town Market Stall (top right)",
-      "walkable": false,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "town/market_stall_r0c1.png",
-      "tag": "town:market stall",
-      "background_sprite": "map/grass.png"
-    },
-    {
-      "boat": false,
-      "id": "town_market_stall_r1c0",
-      "name": "Town Market Stall (bottom left)",
-      "walkable": false,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "town/market_stall_r1c0.png",
-      "tag": "town:market stall",
-      "background_sprite": "map/grass.png"
-    },
-    {
-      "boat": false,
-      "id": "town_market_stall_r1c1",
-      "name": "Town Market Stall (bottom right)",
-      "walkable": false,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "town/market_stall_r1c1.png",
+      "sprite": "town/market_stall.png",
       "tag": "town:market stall",
       "background_sprite": "map/grass.png"
     },
@@ -2232,6 +2130,7 @@
     },
     {
       "boat": false,
+      "background_sprite": "map/grass.png",
       "id": "town_tower_small_r0c0",
       "name": "Town Tower, Small (top)",
       "walkable": false,
@@ -2244,11 +2143,11 @@
       "encounter": null,
       "spawn": null,
       "sprite": "town/tower_small_r0c0.png",
-      "tag": "town:tower small",
-      "background_sprite": "map/grass.png"
+      "tag": "town:tower:small"
     },
     {
       "boat": false,
+      "background_sprite": "map/grass.png",
       "id": "town_tower_small_r1c0",
       "name": "Town Tower, Small (bottom)",
       "walkable": false,
@@ -2261,8 +2160,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "town/tower_small_r1c0.png",
-      "tag": "town:tower small",
-      "background_sprite": "map/grass.png"
+      "tag": "town:tower:small"
     },
     {
       "boat": false,
@@ -2587,7 +2485,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "town/path_straight_v.png",
-      "tag": "town:paths:dirt",
+      "tag": "paths:dirt",
       "background_sprite": "map/grass.png"
     },
     {
@@ -2604,7 +2502,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "town/path_straight_h.png",
-      "tag": "town:paths:dirt",
+      "tag": "paths:dirt",
       "background_sprite": "map/grass.png"
     },
     {
@@ -2621,7 +2519,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "town/path_bend_tl.png",
-      "tag": "town:paths:dirt",
+      "tag": "paths:dirt",
       "background_sprite": "map/grass.png"
     },
     {
@@ -2638,7 +2536,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "town/path_bend_tr.png",
-      "tag": "town:paths:dirt",
+      "tag": "paths:dirt",
       "background_sprite": "map/grass.png"
     },
     {
@@ -2655,7 +2553,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "town/path_bend_bl.png",
-      "tag": "town:paths:dirt",
+      "tag": "paths:dirt",
       "background_sprite": "map/grass.png"
     },
     {
@@ -2672,7 +2570,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "town/path_bend_br.png",
-      "tag": "town:paths:dirt",
+      "tag": "paths:dirt",
       "background_sprite": "map/grass.png"
     },
     {
@@ -2689,7 +2587,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "town/path_cross.png",
-      "tag": "town:paths:dirt",
+      "tag": "paths:dirt",
       "background_sprite": "map/grass.png"
     },
     {
@@ -2706,7 +2604,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "town/path_t_left.png",
-      "tag": "town:paths:dirt",
+      "tag": "paths:dirt",
       "background_sprite": "map/grass.png"
     },
     {
@@ -2723,7 +2621,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "town/path_t_right.png",
-      "tag": "town:paths:dirt",
+      "tag": "paths:dirt",
       "background_sprite": "map/grass.png"
     },
     {
@@ -2740,7 +2638,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "town/path_t_up.png",
-      "tag": "town:paths:dirt",
+      "tag": "paths:dirt",
       "background_sprite": "map/grass.png"
     },
     {
@@ -2757,7 +2655,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "town/path_t_down.png",
-      "tag": "town:paths:dirt",
+      "tag": "paths:dirt",
       "background_sprite": "map/grass.png"
     },
     {
@@ -2774,7 +2672,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "town/brick_path_straight_v.png",
-      "tag": "town:paths:brick",
+      "tag": "paths:brick",
       "background_sprite": "map/grass.png"
     },
     {
@@ -2791,7 +2689,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "town/brick_path_straight_h.png",
-      "tag": "town:paths:brick",
+      "tag": "paths:brick",
       "background_sprite": "map/grass.png"
     },
     {
@@ -2808,7 +2706,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "town/brick_path_bend_tl.png",
-      "tag": "town:paths:brick",
+      "tag": "paths:brick",
       "background_sprite": "map/grass.png"
     },
     {
@@ -2825,7 +2723,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "town/brick_path_bend_tr.png",
-      "tag": "town:paths:brick",
+      "tag": "paths:brick",
       "background_sprite": "map/grass.png"
     },
     {
@@ -2842,7 +2740,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "town/brick_path_bend_bl.png",
-      "tag": "town:paths:brick",
+      "tag": "paths:brick",
       "background_sprite": "map/grass.png"
     },
     {
@@ -2859,7 +2757,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "town/brick_path_bend_br.png",
-      "tag": "town:paths:brick",
+      "tag": "paths:brick",
       "background_sprite": "map/grass.png"
     },
     {
@@ -2876,7 +2774,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "town/brick_path_cross.png",
-      "tag": "town:paths:brick",
+      "tag": "paths:brick",
       "background_sprite": "map/grass.png"
     },
     {
@@ -2893,7 +2791,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "town/brick_path_t_left.png",
-      "tag": "town:paths:brick",
+      "tag": "paths:brick",
       "background_sprite": "map/grass.png"
     },
     {
@@ -2910,7 +2808,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "town/brick_path_t_right.png",
-      "tag": "town:paths:brick",
+      "tag": "paths:brick",
       "background_sprite": "map/grass.png"
     },
     {
@@ -2927,7 +2825,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "town/brick_path_t_up.png",
-      "tag": "town:paths:brick",
+      "tag": "paths:brick",
       "background_sprite": "map/grass.png"
     },
     {
@@ -2944,7 +2842,205 @@
       "encounter": null,
       "spawn": null,
       "sprite": "town/brick_path_t_down.png",
-      "tag": "town:paths:brick",
+      "tag": "paths:brick",
+      "background_sprite": "map/grass.png"
+    },
+    {
+      "boat": false,
+      "id": "river_straight_v",
+      "name": "River Straight (vertical)",
+      "walkable": false,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "town/river_straight_v.png",
+      "tag": "paths:river",
+      "water": true,
+      "background_sprite": "map/grass.png"
+    },
+    {
+      "boat": false,
+      "id": "river_straight_h",
+      "name": "River Straight (horizontal)",
+      "walkable": false,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "town/river_straight_h.png",
+      "tag": "paths:river",
+      "water": true,
+      "background_sprite": "map/grass.png"
+    },
+    {
+      "boat": false,
+      "id": "river_bend_tl",
+      "name": "River Bend (top-left)",
+      "walkable": false,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "town/river_bend_tl.png",
+      "tag": "paths:river",
+      "water": true,
+      "background_sprite": "map/grass.png"
+    },
+    {
+      "boat": false,
+      "id": "river_bend_tr",
+      "name": "River Bend (top-right)",
+      "walkable": false,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "town/river_bend_tr.png",
+      "tag": "paths:river",
+      "water": true,
+      "background_sprite": "map/grass.png"
+    },
+    {
+      "boat": false,
+      "id": "river_bend_bl",
+      "name": "River Bend (bottom-left)",
+      "walkable": false,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "town/river_bend_bl.png",
+      "tag": "paths:river",
+      "water": true,
+      "background_sprite": "map/grass.png"
+    },
+    {
+      "boat": false,
+      "id": "river_bend_br",
+      "name": "River Bend (bottom-right)",
+      "walkable": false,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "town/river_bend_br.png",
+      "tag": "paths:river",
+      "water": true,
+      "background_sprite": "map/grass.png"
+    },
+    {
+      "boat": false,
+      "id": "river_cross",
+      "name": "River Cross (4-way)",
+      "walkable": false,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "town/river_cross.png",
+      "tag": "paths:river",
+      "water": true,
+      "background_sprite": "map/grass.png"
+    },
+    {
+      "boat": false,
+      "id": "river_t_left",
+      "name": "River T (branch left)",
+      "walkable": false,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "town/river_t_left.png",
+      "tag": "paths:river",
+      "water": true,
+      "background_sprite": "map/grass.png"
+    },
+    {
+      "boat": false,
+      "id": "river_t_right",
+      "name": "River T (branch right)",
+      "walkable": false,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "town/river_t_right.png",
+      "tag": "paths:river",
+      "water": true,
+      "background_sprite": "map/grass.png"
+    },
+    {
+      "boat": false,
+      "id": "river_t_up",
+      "name": "River T (branch up)",
+      "walkable": false,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "town/river_t_up.png",
+      "tag": "paths:river",
+      "water": true,
+      "background_sprite": "map/grass.png"
+    },
+    {
+      "boat": false,
+      "id": "river_t_down",
+      "name": "River T (branch down)",
+      "walkable": false,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "town/river_t_down.png",
+      "tag": "paths:river",
+      "water": true,
       "background_sprite": "map/grass.png"
     }
   ]

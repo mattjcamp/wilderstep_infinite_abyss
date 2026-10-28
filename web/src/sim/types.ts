@@ -79,6 +79,12 @@ export interface SimCell {
    *  water tiles (`water: true`) until they step onto walkable land again,
    *  at which point the boat stays behind on the last water cell. */
   boat?: boolean;
+  /** Sprite of a boat moored ON this cell. The cell itself stays what
+   *  it is (open water, a river piece, …); the boat is drawn on top
+   *  of it like an NPC, so boarding / leaving never repaints the map.
+   *  Preferred over the legacy `boat: true`, where the boat tile
+   *  replaced the water tile. */
+  boat_sprite?: string;
   /** True = a boat can sail through this cell (the boat passes UNDER
    *  it). Authored on bridge tiles so the bridge stays walkable on
    *  foot AND sailable underneath; the sim's classification treats

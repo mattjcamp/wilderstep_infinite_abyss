@@ -918,33 +918,10 @@ export class WorldRenderer {
     this.ensureGrayscaleTexture(sprite);
   }
 
-  /** Cells where {@link setBoatUnderlay} created a background image
-   *  (so it only removes what it added, never authored backgrounds). */
-  private readonly boatUnderlays = new Set<string>();
-
-  /** Keep water visible behind a loose boat. Boat art is usually
-   *  transparent around the hull, and a dropped boat replaces the
-   *  cell's water sprite, so without an underlay the hull would sit on
-   *  the black backdrop. Pass the water sprite when a boat lands on a
-   *  cell and `null` when it leaves. A cell with an authored
-   *  `background_sprite` keeps that one untouched. */
-  setBoatUnderlay(col: number, row: number, sprite: string | null): void {
-    const key = `${col},${row}`;
-    if (sprite) {
-      if (this.backgroundCells.has(key)) return;
-      if (!this.scene.textures.exists(sprite)) return;
-      const bgImg = this.scene.add
-        .image(col * TILE_SIZE, row * TILE_SIZE, sprite)
-        .setOrigin(0)
-        .setDisplaySize(TILE_SIZE, TILE_SIZE)
-        .setDepth(BACKGROUND_CELL_DEPTH);
-      this.backgroundCells.set(key, bgImg);
-      this.boatUnderlays.add(key);
-    } else if (this.boatUnderlays.has(key)) {
-      this.backgroundCells.get(key)?.destroy();
-      this.backgroundCells.delete(key);
-      this.boatUnderlays.delete(key);
-    }
+  /** The sprite key a cell is currently drawn with (after any
+   *  {@link setCellSprite} swaps), or undefined for an empty cell. */
+  getCellSprite(col: number, row: number): string | undefined {
+    return this.cellTextureKeys.get(`${col},${row}`);
   }
 
   /** Paint a red-X overlay on every cell whose key is in `cells`, and

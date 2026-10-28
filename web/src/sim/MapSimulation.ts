@@ -1081,7 +1081,11 @@ export class MapSimulation {
         if (!row) continue;
         for (let c = 0; c < row.length; c++) {
           const cell = row[c];
-          if (cell?.boat) {
+          // A boat moored on top of a water cell (current format) or a
+          // legacy boat tile that replaced the water cell.
+          if (cell?.boat_sprite) {
+            this.boatPositions.set(`${c},${r}`, cell.boat_sprite);
+          } else if (cell?.boat) {
             this.boatPositions.set(`${c},${r}`, cell.sprite ?? "");
           }
         }
@@ -1124,7 +1128,11 @@ export class MapSimulation {
       if (!row) continue;
       for (let c = 0; c < row.length; c++) {
         const cell = row[c];
-        if (!cell?.boat) continue;
+        // Only legacy boat tiles need repair; a cell with a moored
+        // `boat_sprite` is already plain water underneath, and the
+        // live boatPositions map (not the cell) says whether the boat
+        // is still there — the grid itself is never touched.
+        if (!cell?.boat || cell.boat_sprite) continue;
         if (this.boatPositions.has(`${c},${r}`)) continue;
         cell.boat = false;
         cell.walkable = false;
@@ -1457,9 +1465,16 @@ export class MapSimulation {
       // by a boat, blocked on foot. The mutation is in-memory; on
       // save reload, the constructor re-applies the same mutation
       // (see the seed-time pass after boatPositions/onBoat are set).
-      target.boat = false;
-      target.walkable = false;
-      target.water = true;
+      // A boat moored on top of a cell (`boat_sprite`) leaves the
+      // cell untouched — it's already water, and boatPositions is the
+      // source of truth (the editor's sim shares the authored grid,
+      // so the kernel must not edit it). Legacy boat tiles still get
+      // downgraded to water.
+      if (!target.boat_sprite) {
+        target.boat = false;
+        target.walkable = false;
+        target.water = true;
+      }
       this.bridge.setBoatPositions(this.snapshotBoats());
       this.bridge.setPartyBoatAt(to.col, to.row, true, targetBoatSprite);
       this.emit({ kind: "boarded", pos: { ...to } });

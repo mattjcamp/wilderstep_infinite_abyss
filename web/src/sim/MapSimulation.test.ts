@@ -628,6 +628,81 @@ describe("MapSimulation.stepInDirection — boat handling", () => {
   });
 });
 
+describe("MapSimulation — boats moored on top of water (boat_sprite)", () => {
+  /** A river piece: water, not walkable, its own sprite. */
+  const river = (over: Partial<SimCell> = {}) =>
+    cell({
+      id: "river_straight_h",
+      sprite: "town/river_straight_h.png",
+      walkable: false,
+      water: true,
+      ...over,
+    });
+
+  it("boards, sails and leaves a boat without touching the river cells", () => {
+    const grid = makeGrid();
+    grid[0][1] = river({ boat_sprite: "map/boat_small.png" });
+    grid[0][2] = river();
+    // (0,3) is grass — the party steps ashore there.
+    const before = JSON.parse(JSON.stringify(grid));
+    const bridge = fakeBridge();
+    const sim = makeSim({ grid, bridge });
+    // The moored boat is reported as a loose boat with its own sprite.
+    expect(bridge.setBoatPositions).toHaveBeenLastCalledWith([
+      { col: 1, row: 0, sprite: "map/boat_small.png" },
+    ]);
+    const events = captureEvents(sim);
+    sim.stepInDirection("right"); // board
+    expect(events.find((e) => e.kind === "boarded")).toBeDefined();
+    expect(bridge.setPartyBoatAt).toHaveBeenLastCalledWith(
+      1,
+      0,
+      true,
+      "map/boat_small.png",
+    );
+    expect(bridge.setBoatPositions).toHaveBeenLastCalledWith([]);
+    sim.stepInDirection("right"); // sail along the river
+    expect(sim.snapshot().pos).toEqual({ col: 2, row: 0 });
+    sim.stepInDirection("right"); // step ashore
+    const dis = events.find((e) => e.kind === "disembarked");
+    if (dis?.kind !== "disembarked") throw new Error("no disembark");
+    expect(dis.boatAt).toEqual({ col: 2, row: 0 });
+    expect(bridge.setBoatPositions).toHaveBeenLastCalledWith([
+      { col: 2, row: 0, sprite: "map/boat_small.png" },
+    ]);
+    // The map data is exactly as authored: river pieces stay river
+    // pieces and the authored mooring is left in place.
+    expect(grid).toEqual(before);
+  });
+
+  it("can't walk onto the river where the boat used to be", () => {
+    const grid = makeGrid();
+    grid[0][1] = river({ boat_sprite: "map/boat_small.png" });
+    grid[1][1] = river();
+    const sim = makeSim({ grid });
+    sim.stepInDirection("right"); // board at (1,0)
+    sim.stepInDirection("down"); // sail to (1,1)
+    sim.stepInDirection("left"); // ashore at (0,1); boat stays at (1,1)
+    expect(sim.snapshot().pos).toEqual({ col: 0, row: 1 });
+    sim.stepInDirection("up"); // (0,0) grass
+    sim.stepInDirection("right"); // (1,0): river, no boat any more
+    expect(sim.snapshot().pos).toEqual({ col: 0, row: 0 });
+  });
+
+  it("starts the party aboard when it spawns on a moored boat", () => {
+    const grid = makeGrid();
+    grid[0][0] = river({ boat_sprite: "map/boat_small.png" });
+    const bridge = fakeBridge();
+    makeSim({ grid, bridge, startAt: { col: 0, row: 0 } });
+    expect(bridge.setPartyBoatAt).toHaveBeenLastCalledWith(
+      0,
+      0,
+      true,
+      "map/boat_small.png",
+    );
+  });
+});
+
 describe("MapSimulation — boat-borne arrival via link", () => {
   it("seeds initialOnBoat + sprite at a non-walkable water startAt", () => {
     // Destination side of a boat link traversal — the host mounts a
