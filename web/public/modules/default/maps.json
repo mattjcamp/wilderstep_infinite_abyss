@@ -14,8 +14,8 @@
         [
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -25,13 +25,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -41,13 +41,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -57,13 +57,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -73,13 +73,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -89,13 +89,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -105,13 +105,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -121,13 +121,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -137,13 +137,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -153,13 +153,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -169,13 +169,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -185,13 +185,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -201,13 +201,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -217,13 +217,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -233,13 +233,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -249,13 +249,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -265,15 +265,15 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           }
         ],
         [
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -283,13 +283,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -299,13 +299,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_planks",
+            "name": "Dungeon Floor, Planks",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -315,13 +315,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_planks.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_planks",
+            "name": "Dungeon Floor, Planks",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -331,13 +331,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_planks.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_planks",
+            "name": "Dungeon Floor, Planks",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -347,13 +347,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_planks.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_planks",
+            "name": "Dungeon Floor, Planks",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -363,13 +363,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_planks.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_planks",
+            "name": "Dungeon Floor, Planks",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -379,13 +379,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_planks.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_planks",
+            "name": "Dungeon Floor, Planks",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -395,13 +395,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_planks.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_planks",
+            "name": "Dungeon Floor, Planks",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -411,13 +411,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_planks.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_planks",
+            "name": "Dungeon Floor, Planks",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -427,13 +427,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_planks.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -443,13 +443,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -459,13 +459,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -475,13 +475,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -491,13 +491,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -507,13 +507,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -523,15 +523,15 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           }
         ],
         [
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -541,13 +541,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -557,13 +557,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -573,13 +573,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -589,13 +589,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -605,13 +605,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -621,13 +621,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -637,13 +637,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -653,13 +653,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -669,13 +669,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -685,13 +685,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -701,13 +701,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -717,13 +717,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -733,13 +733,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -749,13 +749,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -765,13 +765,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -781,15 +781,15 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           }
         ],
         [
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -799,13 +799,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -815,13 +815,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -831,13 +831,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -847,13 +847,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -863,13 +863,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -879,13 +879,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -895,13 +895,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -911,13 +911,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -927,13 +927,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -943,13 +943,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -959,13 +959,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -975,13 +975,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -991,13 +991,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1007,13 +1007,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1023,13 +1023,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1039,15 +1039,15 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           }
         ],
         [
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1057,13 +1057,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1073,13 +1073,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1089,13 +1089,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1105,13 +1105,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1121,13 +1121,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1137,13 +1137,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1153,13 +1153,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1169,13 +1169,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1185,13 +1185,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1201,13 +1201,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1217,13 +1217,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1233,13 +1233,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1249,13 +1249,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1265,13 +1265,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1281,13 +1281,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1297,15 +1297,15 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           }
         ],
         [
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1315,13 +1315,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1331,13 +1331,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1347,13 +1347,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1363,13 +1363,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1379,13 +1379,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1395,13 +1395,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1411,13 +1411,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1427,13 +1427,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1443,13 +1443,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1459,13 +1459,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1475,13 +1475,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1491,13 +1491,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1507,13 +1507,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1523,13 +1523,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1539,13 +1539,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1555,15 +1555,15 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           }
         ],
         [
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1573,13 +1573,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1589,13 +1589,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1605,14 +1605,14 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
-            "walkable": true,
+            "id": "dungeon_pit",
+            "name": "Dungeon Pit",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -1621,13 +1621,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/pit.png",
+            "tag": "dungeon:water & pits"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1637,13 +1637,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1653,13 +1653,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1669,13 +1669,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1685,13 +1685,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1701,13 +1701,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1717,13 +1717,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1733,13 +1733,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1749,13 +1749,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1765,13 +1765,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1781,13 +1781,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1797,13 +1797,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1813,15 +1813,15 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           }
         ],
         [
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1831,13 +1831,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1847,13 +1847,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1863,13 +1863,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1879,13 +1879,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1895,13 +1895,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1911,13 +1911,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1927,13 +1927,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1943,13 +1943,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1959,13 +1959,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -1975,14 +1975,14 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
-            "walkable": true,
+            "id": "dungeon_pit_corner_tl",
+            "name": "Dungeon Pit, Corner Top Left",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -1991,14 +1991,15 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/pit_corner_tl.png",
+            "tag": "dungeon:water & pits",
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
-            "walkable": true,
+            "id": "dungeon_pit_top",
+            "name": "Dungeon Pit, Top Edge",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -2007,14 +2008,15 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/pit_top.png",
+            "tag": "dungeon:water & pits",
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
-            "walkable": true,
+            "id": "dungeon_pit_corner_tr",
+            "name": "Dungeon Pit, Corner Top Right",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -2023,13 +2025,14 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/pit_corner_tr.png",
+            "tag": "dungeon:water & pits",
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2039,13 +2042,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2055,13 +2058,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2071,15 +2074,15 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           }
         ],
         [
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2089,13 +2092,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2105,13 +2108,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2121,13 +2124,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2137,13 +2140,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2153,13 +2156,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2169,13 +2172,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2185,13 +2188,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2201,13 +2204,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2217,13 +2220,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2233,14 +2236,14 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
-            "walkable": true,
+            "id": "dungeon_pit_corner_bl",
+            "name": "Dungeon Pit, Corner Bottom Left",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -2249,14 +2252,15 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/pit_corner_bl.png",
+            "tag": "dungeon:water & pits",
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
-            "walkable": true,
+            "id": "dungeon_pit_bottom",
+            "name": "Dungeon Pit, Bottom Edge",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -2265,14 +2269,15 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/pit_bottom.png",
+            "tag": "dungeon:water & pits",
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
-            "walkable": true,
+            "id": "dungeon_pit_corner_br",
+            "name": "Dungeon Pit, Corner Bottom Right",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -2281,13 +2286,14 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/pit_corner_br.png",
+            "tag": "dungeon:water & pits",
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2297,13 +2303,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2313,13 +2319,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2329,15 +2335,15 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           }
         ],
         [
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2347,13 +2353,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2363,13 +2369,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2379,13 +2385,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2395,13 +2401,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2411,13 +2417,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2427,13 +2433,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2443,13 +2449,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2459,13 +2465,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2475,13 +2481,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2491,13 +2497,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2507,13 +2513,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2523,13 +2529,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2539,13 +2545,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2555,13 +2561,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2571,13 +2577,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2587,15 +2593,15 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           }
         ],
         [
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2605,13 +2611,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2621,13 +2627,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2637,13 +2643,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2653,13 +2659,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2669,13 +2675,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2685,13 +2691,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2701,13 +2707,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2717,13 +2723,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2733,13 +2739,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2749,13 +2755,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2765,13 +2771,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2781,13 +2787,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2797,13 +2803,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2813,13 +2819,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2829,13 +2835,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_brick",
+            "name": "Dungeon Floor, Brick",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2845,15 +2851,15 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_brick.png",
+            "tag": "dungeon:floors"
           }
         ],
         [
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2863,13 +2869,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2879,13 +2885,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2895,13 +2901,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2911,13 +2917,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2927,13 +2933,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2943,13 +2949,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2959,13 +2965,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2975,13 +2981,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -2991,13 +2997,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -3007,13 +3013,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -3023,13 +3029,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -3039,13 +3045,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -3055,13 +3061,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -3071,13 +3077,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -3087,13 +3093,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "floor",
-            "name": "Floor",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -3103,8 +3109,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor.png",
-            "tag": "overview"
+            "sprite": "dungeon/floor_flagstone.png",
+            "tag": "dungeon:floors"
           }
         ],
         [
@@ -5523,8 +5529,13 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/cave_entrance.png",
-            "tag": "overview",
-            "background_sprite": "map/grass.png"
+            "tag": "map",
+            "background_sprite": "map/grass.png",
+            "link": {
+              "map_id": "dungeon_1",
+              "x": 7,
+              "y": 11
+            }
           },
           {
             "boat": false,
@@ -7373,8 +7384,9 @@
             "background_sprite": "map/grass.png"
           },
           {
-            "id": "water",
-            "name": "Water",
+            "boat": false,
+            "id": "river_straight_h",
+            "name": "River Straight (horizontal)",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -7384,13 +7396,15 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/water.png",
-            "tag": "overview",
-            "water": true
+            "sprite": "town/river_straight_h.png",
+            "tag": "paths:river",
+            "water": true,
+            "background_sprite": "map/grass.png"
           },
           {
-            "id": "water",
-            "name": "Water",
+            "boat": false,
+            "id": "river_straight_h",
+            "name": "River Straight (horizontal)",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -7400,13 +7414,15 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/water.png",
-            "tag": "overview",
-            "water": true
+            "sprite": "town/river_straight_h.png",
+            "tag": "paths:river",
+            "water": true,
+            "background_sprite": "map/grass.png"
           },
           {
-            "id": "water",
-            "name": "Water",
+            "boat": false,
+            "id": "river_bend_tr",
+            "name": "River Bend (top-right)",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -7416,9 +7432,10 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/water.png",
-            "tag": "overview",
-            "water": true
+            "sprite": "town/river_bend_tr.png",
+            "tag": "paths:river",
+            "water": true,
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -7729,8 +7746,9 @@
             "tag": "overview"
           },
           {
-            "id": "water",
-            "name": "Water",
+            "boat": false,
+            "id": "river_bend_bl",
+            "name": "River Bend (bottom-left)",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -7740,13 +7758,15 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/water.png",
-            "tag": "overview",
-            "water": true
+            "sprite": "town/river_bend_bl.png",
+            "tag": "paths:river",
+            "water": true,
+            "background_sprite": "map/grass.png"
           },
           {
-            "id": "water",
-            "name": "Water",
+            "boat": false,
+            "id": "river_straight_h",
+            "name": "River Straight (horizontal)",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -7756,13 +7776,15 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/water.png",
-            "tag": "overview",
-            "water": true
+            "sprite": "town/river_straight_h.png",
+            "tag": "paths:river",
+            "water": true,
+            "background_sprite": "map/grass.png"
           },
           {
-            "id": "water",
-            "name": "Water",
+            "boat": false,
+            "id": "river_bend_tr",
+            "name": "River Bend (top-right)",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -7772,9 +7794,10 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/water.png",
-            "tag": "overview",
-            "water": true
+            "sprite": "town/river_bend_tr.png",
+            "tag": "paths:river",
+            "water": true,
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -8084,8 +8107,9 @@
             "tag": "overview"
           },
           {
-            "id": "water",
-            "name": "Water",
+            "boat": false,
+            "id": "river_straight_v",
+            "name": "River Straight (vertical)",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -8095,9 +8119,10 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/water.png",
-            "tag": "overview",
-            "water": true
+            "sprite": "town/river_straight_v.png",
+            "tag": "paths:river",
+            "water": true,
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -8406,8 +8431,9 @@
             "tag": "overview"
           },
           {
-            "id": "water",
-            "name": "Water",
+            "boat": false,
+            "id": "river_bend_bl",
+            "name": "River Bend (bottom-left)",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -8417,13 +8443,15 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/water.png",
-            "tag": "overview",
-            "water": true
+            "sprite": "town/river_bend_bl.png",
+            "tag": "paths:river",
+            "water": true,
+            "background_sprite": "map/grass.png"
           },
           {
-            "id": "water",
-            "name": "Water",
+            "boat": false,
+            "id": "river_straight_h",
+            "name": "River Straight (horizontal)",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -8433,13 +8461,15 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/water.png",
-            "tag": "overview",
-            "water": true
+            "sprite": "town/river_straight_h.png",
+            "tag": "paths:river",
+            "water": true,
+            "background_sprite": "map/grass.png"
           },
           {
-            "id": "water",
-            "name": "Water",
+            "boat": false,
+            "id": "river_bend_tr",
+            "name": "River Bend (top-right)",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -8449,9 +8479,10 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/water.png",
-            "tag": "overview",
-            "water": true
+            "sprite": "town/river_bend_tr.png",
+            "tag": "paths:river",
+            "water": true,
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -8760,8 +8791,9 @@
             "tag": "overview"
           },
           {
-            "id": "water",
-            "name": "Water",
+            "boat": false,
+            "id": "river_straight_v",
+            "name": "River Straight (vertical)",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -8771,9 +8803,10 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/water.png",
-            "tag": "overview",
-            "water": true
+            "sprite": "town/river_straight_v.png",
+            "tag": "paths:river",
+            "water": true,
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -9082,8 +9115,9 @@
             "tag": "overview"
           },
           {
-            "id": "water",
-            "name": "Water",
+            "boat": false,
+            "id": "river_bend_bl",
+            "name": "River Bend (bottom-left)",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -9093,13 +9127,15 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/water.png",
-            "tag": "overview",
-            "water": true
+            "sprite": "town/river_bend_bl.png",
+            "tag": "paths:river",
+            "water": true,
+            "background_sprite": "map/grass.png"
           },
           {
-            "id": "water",
-            "name": "Water",
+            "boat": false,
+            "id": "river_bend_tr",
+            "name": "River Bend (top-right)",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -9109,9 +9145,10 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/water.png",
-            "tag": "overview",
-            "water": true
+            "sprite": "town/river_bend_tr.png",
+            "tag": "paths:river",
+            "water": true,
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -9420,8 +9457,9 @@
             "tag": "overview"
           },
           {
-            "id": "water",
-            "name": "Water",
+            "boat": false,
+            "id": "river_straight_v",
+            "name": "River Straight (vertical)",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -9431,9 +9469,10 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/water.png",
-            "tag": "overview",
-            "water": true
+            "sprite": "town/river_straight_v.png",
+            "tag": "paths:river",
+            "water": true,
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -9742,8 +9781,9 @@
             "tag": "overview"
           },
           {
-            "id": "water",
-            "name": "Water",
+            "boat": false,
+            "id": "river_straight_v",
+            "name": "River Straight (vertical)",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -9753,14 +9793,16 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/water.png",
-            "tag": "overview",
-            "water": true
+            "sprite": "town/river_straight_v.png",
+            "tag": "paths:river",
+            "water": true,
+            "background_sprite": "map/grass.png"
           },
           {
-            "id": "water",
-            "name": "Water",
-            "walkable": false,
+            "boat": false,
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -9769,9 +9811,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/water.png",
-            "tag": "overview",
-            "water": true
+            "sprite": "map/grass.png",
+            "tag": "map"
           },
           {
             "boat": false,
@@ -10064,8 +10105,9 @@
             "tag": "overview"
           },
           {
-            "id": "water",
-            "name": "Water",
+            "boat": false,
+            "id": "river_straight_v",
+            "name": "River Straight (vertical)",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -10075,14 +10117,16 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/water.png",
-            "tag": "overview",
-            "water": true
+            "sprite": "town/river_straight_v.png",
+            "tag": "paths:river",
+            "water": true,
+            "background_sprite": "map/grass.png"
           },
           {
-            "id": "water",
-            "name": "Water",
-            "walkable": false,
+            "boat": false,
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -10091,14 +10135,14 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/water.png",
-            "tag": "overview",
-            "water": true
+            "sprite": "map/grass.png",
+            "tag": "map"
           },
           {
-            "id": "water",
-            "name": "Water",
-            "walkable": false,
+            "boat": false,
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -10107,9 +10151,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/water.png",
-            "tag": "overview",
-            "water": true
+            "sprite": "map/grass.png",
+            "tag": "map"
           },
           {
             "boat": false,
@@ -10625,10 +10668,10 @@
           },
           {
             "boat": false,
-            "id": "shop_floor_planks",
-            "name": "Shop Floor",
-            "walkable": true,
-            "obstructs": false,
+            "id": "shop_wall_corner_tl",
+            "name": "Shop Wall Corner, Top Left",
+            "walkable": false,
+            "obstructs": true,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -10636,15 +10679,15 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor_planks.png",
+            "sprite": "indoor/wall_corner_tl.png",
             "tag": "shop"
           },
           {
             "boat": false,
-            "id": "shop_floor_planks",
-            "name": "Shop Floor",
-            "walkable": true,
-            "obstructs": false,
+            "id": "shop_wall_corner_tr",
+            "name": "Shop Wall Corner, Top Right",
+            "walkable": false,
+            "obstructs": true,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -10652,7 +10695,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor_planks.png",
+            "sprite": "indoor/wall_corner_tr.png",
             "tag": "shop"
           },
           {
@@ -10757,10 +10800,10 @@
           },
           {
             "boat": false,
-            "id": "shop_floor_planks",
-            "name": "Shop Floor",
-            "walkable": true,
-            "obstructs": false,
+            "id": "shop_wall_left",
+            "name": "Shop Wall, Left",
+            "walkable": false,
+            "obstructs": true,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -10768,15 +10811,16 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor_planks.png",
-            "tag": "shop"
+            "sprite": "indoor/wall_left.png",
+            "tag": "shop",
+            "background_sprite": "indoor/floor_planks.png"
           },
           {
             "boat": false,
-            "id": "shop_floor_planks",
-            "name": "Shop Floor",
-            "walkable": true,
-            "obstructs": false,
+            "id": "shop_wall_right",
+            "name": "Shop Wall, Right",
+            "walkable": false,
+            "obstructs": true,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -10784,8 +10828,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor_planks.png",
-            "tag": "shop"
+            "sprite": "indoor/wall_right.png",
+            "tag": "shop",
+            "background_sprite": "indoor/floor_planks.png"
           },
           {
             "boat": false,
@@ -10889,10 +10934,10 @@
           },
           {
             "boat": false,
-            "id": "shop_floor_planks_alt",
-            "name": "Shop Floor, Alt",
-            "walkable": true,
-            "obstructs": false,
+            "id": "shop_wall_bottom",
+            "name": "Shop Wall, Bottom",
+            "walkable": false,
+            "obstructs": true,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -10900,15 +10945,15 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor_planks_alt.png",
+            "sprite": "indoor/wall_bottom.png",
             "tag": "shop"
           },
           {
             "boat": false,
-            "id": "shop_floor_planks_alt",
-            "name": "Shop Floor, Alt",
-            "walkable": true,
-            "obstructs": false,
+            "id": "shop_wall_bottom",
+            "name": "Shop Wall, Bottom",
+            "walkable": false,
+            "obstructs": true,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -10916,7 +10961,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "indoor/floor_planks_alt.png",
+            "sprite": "indoor/wall_bottom.png",
             "tag": "shop"
           },
           {
@@ -11104,8 +11149,8 @@
             "background_sprite": "indoor/wall_bottom.png",
             "link": {
               "map_id": "town_1",
-              "x": 15,
-              "y": 6
+              "x": 12,
+              "y": 9
             }
           },
           {
@@ -11292,10 +11337,10 @@
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
-            "walkable": false,
-            "obstructs": true,
+            "id": "dungeon_stairs",
+            "name": "Dungeon Stairs",
+            "walkable": true,
+            "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -11303,8 +11348,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
-            "tag": "dungeon:walls:room walls"
+            "sprite": "dungeon/stairs.png",
+            "tag": "dungeon:doors & stairs"
           },
           {
             "boat": false,
@@ -11779,10 +11824,10 @@
           },
           {
             "boat": false,
-            "id": "dungeon_wall_window",
-            "name": "Dungeon Wall, Window",
-            "walkable": false,
-            "obstructs": true,
+            "id": "dungeon_floor_cobble",
+            "name": "Dungeon Floor, Cobble",
+            "walkable": true,
+            "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -11790,15 +11835,15 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_window.png",
-            "tag": "dungeon:walls:room walls"
+            "sprite": "dungeon/floor_cobble.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "dungeon_wall_window",
-            "name": "Dungeon Wall, Window",
-            "walkable": false,
-            "obstructs": true,
+            "id": "dungeon_floor_cobble",
+            "name": "Dungeon Floor, Cobble",
+            "walkable": true,
+            "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -11806,8 +11851,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_window.png",
-            "tag": "dungeon:walls:room walls"
+            "sprite": "dungeon/floor_cobble.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
@@ -12072,8 +12117,8 @@
           },
           {
             "boat": false,
-            "id": "dungeon_floor_cobble",
-            "name": "Dungeon Floor, Cobble",
+            "id": "dungeon_stairs",
+            "name": "Dungeon Stairs, Down",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -12083,13 +12128,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/floor_cobble.png",
-            "tag": "dungeon:floors"
+            "sprite": "dungeon/stairs.png",
+            "tag": "dungeon:doors & stairs"
           },
           {
             "boat": false,
-            "id": "dungeon_floor_cobble",
-            "name": "Dungeon Floor, Cobble",
+            "id": "dungeon_stairs_up",
+            "name": "Dungeon Stairs, Up",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -12099,8 +12144,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/floor_cobble.png",
-            "tag": "dungeon:floors"
+            "sprite": "dungeon/stairs_up.png",
+            "tag": "dungeon:doors & stairs"
           },
           {
             "boat": false,
@@ -12425,12 +12470,12 @@
             "spawn": null,
             "sprite": "dungeon/wall_left.png",
             "tag": "dungeon:walls:room walls",
-            "background_sprite": "dungeon/floor_cobble.png"
+            "background_sprite": "dungeon/floor_flagstone.png"
           },
           {
             "boat": false,
-            "id": "dungeon_floor_cobble",
-            "name": "Dungeon Floor, Cobble",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -12440,13 +12485,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/floor_cobble.png",
+            "sprite": "dungeon/floor_flagstone.png",
             "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "dungeon_floor_cobble",
-            "name": "Dungeon Floor, Cobble",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -12456,13 +12501,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/floor_cobble.png",
+            "sprite": "dungeon/floor_flagstone.png",
             "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "dungeon_floor_cobble",
-            "name": "Dungeon Floor, Cobble",
+            "id": "dungeon_floor_flagstone",
+            "name": "Dungeon Floor, Flagstone",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -12472,7 +12517,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/floor_cobble.png",
+            "sprite": "dungeon/floor_flagstone.png",
             "tag": "dungeon:floors"
           },
           {
@@ -12490,7 +12535,7 @@
             "spawn": null,
             "sprite": "dungeon/wall_right.png",
             "tag": "dungeon:walls:room walls",
-            "background_sprite": "dungeon/floor_cobble.png"
+            "background_sprite": "dungeon/floor_flagstone.png"
           },
           {
             "boat": false,
@@ -12562,10 +12607,10 @@
           },
           {
             "boat": false,
-            "id": "dungeon_wall_corner_tl",
-            "name": "Dungeon Wall, Corner Top Left",
-            "walkable": false,
-            "obstructs": true,
+            "id": "dungeon_floor_cobble",
+            "name": "Dungeon Floor, Cobble",
+            "walkable": true,
+            "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -12573,15 +12618,15 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_corner_tl.png",
-            "tag": "dungeon:walls:junctions"
+            "sprite": "dungeon/floor_cobble.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "dungeon_wall_top",
-            "name": "Dungeon Wall, Top",
-            "walkable": false,
-            "obstructs": true,
+            "id": "dungeon_floor_cobble",
+            "name": "Dungeon Floor, Cobble",
+            "walkable": true,
+            "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -12589,15 +12634,15 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_top.png",
-            "tag": "dungeon:walls:room walls"
+            "sprite": "dungeon/floor_cobble.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "dungeon_wall_top",
-            "name": "Dungeon Wall, Top",
-            "walkable": false,
-            "obstructs": true,
+            "id": "dungeon_floor_cobble",
+            "name": "Dungeon Floor, Cobble",
+            "walkable": true,
+            "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -12605,15 +12650,15 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_top.png",
-            "tag": "dungeon:walls:room walls"
+            "sprite": "dungeon/floor_cobble.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "dungeon_wall_top",
-            "name": "Dungeon Wall, Top",
-            "walkable": false,
-            "obstructs": true,
+            "id": "dungeon_floor_cobble",
+            "name": "Dungeon Floor, Cobble",
+            "walkable": true,
+            "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -12621,15 +12666,15 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_top.png",
-            "tag": "dungeon:walls:room walls"
+            "sprite": "dungeon/floor_cobble.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "dungeon_wall_corner_tr",
-            "name": "Dungeon Wall, Corner Top Right",
-            "walkable": false,
-            "obstructs": true,
+            "id": "dungeon_floor_cobble",
+            "name": "Dungeon Floor, Cobble",
+            "walkable": true,
+            "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -12637,8 +12682,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_corner_tr.png",
-            "tag": "dungeon:walls:junctions"
+            "sprite": "dungeon/floor_cobble.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
@@ -13120,9 +13165,8 @@
             "background_sprite": "map/water.png"
           },
           {
-            "boat": false,
-            "id": "dungeon_pit_centre",
-            "name": "Dungeon Pit, Centre",
+            "id": "water",
+            "name": "Water",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -13132,14 +13176,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/pit_centre.png",
-            "tag": "dungeon:water & pits",
-            "background_sprite": "map/water.png"
+            "sprite": "map/water.png",
+            "tag": "map",
+            "water": true
           },
           {
-            "boat": false,
-            "id": "dungeon_pit_centre",
-            "name": "Dungeon Pit, Centre",
+            "id": "water",
+            "name": "Water",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -13149,9 +13192,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/pit_centre.png",
-            "tag": "dungeon:water & pits",
-            "background_sprite": "map/water.png"
+            "sprite": "map/water.png",
+            "tag": "map",
+            "water": true
           },
           {
             "boat": false,
@@ -13400,9 +13443,8 @@
             "background_sprite": "map/water.png"
           },
           {
-            "boat": false,
-            "id": "dungeon_pit_centre",
-            "name": "Dungeon Pit, Centre",
+            "id": "water",
+            "name": "Water",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -13412,9 +13454,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/pit_centre.png",
-            "tag": "dungeon:water & pits",
-            "background_sprite": "map/water.png"
+            "sprite": "map/water.png",
+            "tag": "map",
+            "water": true
           },
           {
             "boat": false,
@@ -13762,8 +13804,8 @@
           },
           {
             "boat": false,
-            "id": "dungeon_floor_cobble",
-            "name": "Dungeon Floor, Cobble",
+            "id": "dungeon_ladder_down",
+            "name": "Dungeon Ladder, Down",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -13773,13 +13815,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/floor_cobble.png",
-            "tag": "dungeon:floors"
+            "sprite": "dungeon/ladder_down.png",
+            "tag": "dungeon:doors & stairs"
           },
           {
             "boat": false,
-            "id": "dungeon_floor_cobble",
-            "name": "Dungeon Floor, Cobble",
+            "id": "dungeon_ladder_up",
+            "name": "Dungeon Ladder, Up",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -13789,8 +13831,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/floor_cobble.png",
-            "tag": "dungeon:floors"
+            "sprite": "dungeon/ladder_up.png",
+            "tag": "dungeon:doors & stairs"
           },
           {
             "boat": false,
@@ -14231,9 +14273,9 @@
             "sprite": "dungeon/wall_archway.png",
             "tag": "dungeon",
             "link": {
-              "map_id": "town_1",
-              "x": 4,
-              "y": 6
+              "map_id": "overview_1",
+              "x": 15,
+              "y": 5
             }
           },
           {
@@ -14677,9 +14719,9 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
+            "id": "town_well_r0c0",
+            "name": "Town Well (top)",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -14688,8 +14730,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
+            "sprite": "town/well_r0c0.png",
+            "tag": "town:well",
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -14937,9 +14980,9 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
+            "id": "town_well_r1c0",
+            "name": "Town Well (bottom)",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -14948,8 +14991,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
+            "sprite": "town/well_r1c0.png",
+            "tag": "town:well",
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -14965,7 +15009,71 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/grass.png",
-            "tag": "overview"
+            "tag": "map"
+          },
+          {
+            "boat": false,
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/grass.png",
+            "tag": "map"
+          },
+          {
+            "boat": false,
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/grass.png",
+            "tag": "map"
+          },
+          {
+            "boat": false,
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/grass.png",
+            "tag": "map"
+          },
+          {
+            "boat": false,
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/grass.png",
+            "tag": "map"
           },
           {
             "boat": false,
@@ -14977,7 +15085,7 @@
             "light_source": false,
             "light_range": 0,
             "animation": "none",
-            "counter": null,
+            "counter": "general",
             "encounter": null,
             "spawn": null,
             "sprite": "town/market_stall.png",
@@ -15034,70 +15142,6 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
-          },
-          {
-            "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
-          },
-          {
-            "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
-          },
-          {
-            "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
-          },
-          {
-            "boat": false,
             "id": "town_market_stall",
             "name": "Town Market Stall",
             "walkable": false,
@@ -15106,7 +15150,7 @@
             "light_source": false,
             "light_range": 0,
             "animation": "none",
-            "counter": null,
+            "counter": "weapon",
             "encounter": null,
             "spawn": null,
             "sprite": "town/market_stall.png",
@@ -15196,38 +15240,6 @@
             "sprite": "town/fence_wood_gate_v.png",
             "tag": "town:fences:wood",
             "background_sprite": "map/grass.png"
-          },
-          {
-            "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
-          },
-          {
-            "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
           },
           {
             "boat": false,
@@ -15260,7 +15272,7 @@
             "encounter": null,
             "spawn": null,
             "sprite": "town/path_straight_h.png",
-            "tag": "town:paths:dirt",
+            "tag": "paths:dirt",
             "background_sprite": "map/grass.png"
           },
           {
@@ -15277,7 +15289,7 @@
             "encounter": null,
             "spawn": null,
             "sprite": "town/path_straight_h.png",
-            "tag": "town:paths:dirt",
+            "tag": "paths:dirt",
             "background_sprite": "map/grass.png"
           },
           {
@@ -15294,13 +15306,13 @@
             "encounter": null,
             "spawn": null,
             "sprite": "town/path_straight_h.png",
-            "tag": "town:paths:dirt",
+            "tag": "paths:dirt",
             "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
-            "id": "town_path_t_down",
-            "name": "Town Path T (branch down)",
+            "id": "town_path_straight_h",
+            "name": "Town Path Straight (horizontal)",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -15310,8 +15322,42 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/path_t_down.png",
-            "tag": "town:paths:dirt",
+            "sprite": "town/path_straight_h.png",
+            "tag": "paths:dirt",
+            "background_sprite": "map/grass.png"
+          },
+          {
+            "boat": false,
+            "id": "town_path_straight_h",
+            "name": "Town Path Straight (horizontal)",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "town/path_straight_h.png",
+            "tag": "paths:dirt",
+            "background_sprite": "map/grass.png"
+          },
+          {
+            "boat": false,
+            "id": "town_path_cross",
+            "name": "Town Path Cross (4-way)",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "town/path_cross.png",
+            "tag": "paths:dirt",
             "background_sprite": "map/grass.png"
           },
           {
@@ -15496,7 +15542,7 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/grass.png",
-            "tag": "overview"
+            "tag": "map"
           },
           {
             "boat": false,
@@ -15609,7 +15655,7 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/grass.png",
-            "tag": "overview"
+            "tag": "map"
           },
           {
             "boat": false,
@@ -15625,7 +15671,7 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/grass.png",
-            "tag": "overview"
+            "tag": "map"
           },
           {
             "boat": false,
@@ -15641,7 +15687,7 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/grass.png",
-            "tag": "overview"
+            "tag": "map"
           },
           {
             "boat": false,
@@ -15657,531 +15703,7 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/grass.png",
-            "tag": "overview"
-          },
-          {
-            "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
-          },
-          {
-            "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
-          },
-          {
-            "boat": false,
-            "id": "town_fence_wood_gate_v",
-            "name": "Town Fence, Wood Gate (vertical)",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "town/fence_wood_gate_v.png",
-            "tag": "town:fences:wood",
-            "background_sprite": "map/grass.png"
-          }
-        ],
-        [
-          {
-            "boat": false,
-            "id": "town_fence_wood_gate_v",
-            "name": "Town Fence, Wood Gate (vertical)",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "town/fence_wood_gate_v.png",
-            "tag": "town:fences:wood",
-            "background_sprite": "map/grass.png"
-          },
-          {
-            "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
-          },
-          {
-            "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
-          },
-          {
-            "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
-          },
-          {
-            "boat": false,
-            "id": "town_well_r0c0",
-            "name": "Town Well (top)",
-            "walkable": false,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "town/well_r0c0.png",
-            "tag": "town:well",
-            "background_sprite": "map/grass.png"
-          },
-          {
-            "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
-          },
-          {
-            "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
-          },
-          {
-            "boat": false,
-            "id": "town_path_straight_v",
-            "name": "Town Path Straight (vertical)",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "town/path_straight_v.png",
-            "tag": "town:paths:dirt",
-            "background_sprite": "map/grass.png"
-          },
-          {
-            "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
-          },
-          {
-            "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
-          },
-          {
-            "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
-          },
-          {
-            "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
-          },
-          {
-            "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
-          },
-          {
-            "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
-          },
-          {
-            "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
-          },
-          {
-            "boat": false,
-            "id": "town_fence_wood_gate_v",
-            "name": "Town Fence, Wood Gate (vertical)",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "town/fence_wood_gate_v.png",
-            "tag": "town:fences:wood",
-            "background_sprite": "map/grass.png"
-          }
-        ],
-        [
-          {
-            "boat": false,
-            "id": "town_fence_wood_gate_v",
-            "name": "Town Fence, Wood Gate (vertical)",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "town/fence_wood_gate_v.png",
-            "tag": "town:fences:wood",
-            "background_sprite": "map/grass.png"
-          },
-          {
-            "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
-          },
-          {
-            "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
-          },
-          {
-            "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
-          },
-          {
-            "boat": false,
-            "id": "town_well_r1c0",
-            "name": "Town Well (bottom)",
-            "walkable": false,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "town/well_r1c0.png",
-            "tag": "town:well",
-            "background_sprite": "map/grass.png"
-          },
-          {
-            "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
-          },
-          {
-            "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
-          },
-          {
-            "boat": false,
-            "id": "town_path_straight_v",
-            "name": "Town Path Straight (vertical)",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "town/path_straight_v.png",
-            "tag": "town:paths:dirt",
-            "background_sprite": "map/grass.png"
-          },
-          {
-            "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
-          },
-          {
-            "boat": false,
-            "id": "object_brazier",
-            "name": "Brazier",
-            "walkable": false,
-            "obstructs": false,
-            "locked": false,
-            "light_source": true,
-            "light_range": 5,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "objects/brazier.png",
-            "tag": "objects"
-          },
-          {
-            "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
-          },
-          {
-            "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
-          },
-          {
-            "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
+            "tag": "map"
           },
           {
             "boat": false,
@@ -16313,7 +15835,7 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/grass.png",
-            "tag": "overview"
+            "tag": "map"
           },
           {
             "boat": false,
@@ -16362,6 +15884,419 @@
             "spawn": null,
             "sprite": "town/path_straight_v.png",
             "tag": "town:paths:dirt",
+            "background_sprite": "map/grass.png"
+          },
+          {
+            "boat": false,
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/grass.png",
+            "tag": "overview"
+          },
+          {
+            "boat": false,
+            "id": "town_shrine_r0c0",
+            "name": "Town Shrine (top left)",
+            "walkable": false,
+            "obstructs": true,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "town/shrine_r0c0.png",
+            "tag": "town:house:shrine",
+            "background_sprite": "map/grass.png"
+          },
+          {
+            "boat": false,
+            "id": "town_shrine_r0c1",
+            "name": "Town Shrine (top right)",
+            "walkable": false,
+            "obstructs": true,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "town/shrine_r0c1.png",
+            "tag": "town:house:shrine",
+            "background_sprite": "map/grass.png"
+          },
+          {
+            "boat": false,
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/grass.png",
+            "tag": "map"
+          },
+          {
+            "boat": false,
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/grass.png",
+            "tag": "map"
+          },
+          {
+            "boat": false,
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/grass.png",
+            "tag": "map"
+          },
+          {
+            "boat": false,
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/grass.png",
+            "tag": "map"
+          },
+          {
+            "boat": false,
+            "id": "town_fence_wood_gate_v",
+            "name": "Town Fence, Wood Gate (vertical)",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "town/fence_wood_gate_v.png",
+            "tag": "town:fences:wood",
+            "background_sprite": "map/grass.png"
+          }
+        ],
+        [
+          {
+            "boat": false,
+            "id": "town_fence_wood_gate_v",
+            "name": "Town Fence, Wood Gate (vertical)",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "town/fence_wood_gate_v.png",
+            "tag": "town:fences:wood",
+            "background_sprite": "map/grass.png"
+          },
+          {
+            "boat": false,
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/grass.png",
+            "tag": "overview"
+          },
+          {
+            "boat": false,
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/grass.png",
+            "tag": "overview"
+          },
+          {
+            "boat": false,
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/grass.png",
+            "tag": "overview"
+          },
+          {
+            "boat": false,
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/grass.png",
+            "tag": "map"
+          },
+          {
+            "boat": false,
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/grass.png",
+            "tag": "overview"
+          },
+          {
+            "boat": false,
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/grass.png",
+            "tag": "overview"
+          },
+          {
+            "boat": false,
+            "id": "town_path_straight_v",
+            "name": "Town Path Straight (vertical)",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "town/path_straight_v.png",
+            "tag": "town:paths:dirt",
+            "background_sprite": "map/grass.png"
+          },
+          {
+            "boat": false,
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/grass.png",
+            "tag": "overview"
+          },
+          {
+            "boat": false,
+            "id": "town_shrine_r1c0",
+            "name": "Town Shrine (bottom left)",
+            "walkable": false,
+            "obstructs": true,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "town/shrine_r1c0.png",
+            "tag": "town:house:shrine",
+            "background_sprite": "map/grass.png"
+          },
+          {
+            "boat": false,
+            "id": "town_shrine_r1c1",
+            "name": "Town Shrine (bottom right)",
+            "walkable": false,
+            "obstructs": true,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "town/shrine_r1c1.png",
+            "tag": "town:house:shrine",
+            "background_sprite": "map/grass.png"
+          },
+          {
+            "boat": false,
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/grass.png",
+            "tag": "map"
+          },
+          {
+            "boat": false,
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/grass.png",
+            "tag": "map"
+          },
+          {
+            "boat": false,
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/grass.png",
+            "tag": "map"
+          },
+          {
+            "boat": false,
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/grass.png",
+            "tag": "map"
+          },
+          {
+            "boat": false,
+            "id": "town_fence_wood_gate_v",
+            "name": "Town Fence, Wood Gate (vertical)",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "town/fence_wood_gate_v.png",
+            "tag": "town:fences:wood",
+            "background_sprite": "map/grass.png"
+          }
+        ],
+        [
+          {
+            "boat": false,
+            "id": "town_fence_wood_gate_v",
+            "name": "Town Fence, Wood Gate (vertical)",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "town/fence_wood_gate_v.png",
+            "tag": "town:fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -16462,6 +16397,57 @@
           },
           {
             "boat": false,
+            "id": "town_path_t_right",
+            "name": "Town Path T (branch right)",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "town/path_t_right.png",
+            "tag": "paths:dirt",
+            "background_sprite": "map/grass.png"
+          },
+          {
+            "boat": false,
+            "id": "town_path_straight_h",
+            "name": "Town Path Straight (horizontal)",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "town/path_straight_h.png",
+            "tag": "paths:dirt",
+            "background_sprite": "map/grass.png"
+          },
+          {
+            "boat": false,
+            "id": "town_path_bend_br",
+            "name": "Town Path Bend (bottom-right)",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "town/path_bend_br.png",
+            "tag": "paths:dirt",
+            "background_sprite": "map/grass.png"
+          },
+          {
+            "boat": false,
             "id": "grass",
             "name": "Grass",
             "walkable": true,
@@ -16474,7 +16460,71 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/grass.png",
-            "tag": "overview"
+            "tag": "map"
+          },
+          {
+            "boat": false,
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/grass.png",
+            "tag": "map"
+          },
+          {
+            "boat": false,
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/grass.png",
+            "tag": "map"
+          },
+          {
+            "boat": false,
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/grass.png",
+            "tag": "map"
+          },
+          {
+            "boat": false,
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/grass.png",
+            "tag": "map"
           },
           {
             "boat": false,
@@ -16657,7 +16707,7 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/grass.png",
-            "tag": "overview"
+            "tag": "map"
           },
           {
             "boat": false,
@@ -16779,10 +16829,10 @@
           },
           {
             "boat": false,
-            "id": "town_tree_large_1",
-            "name": "Town Tree, Large 1",
-            "walkable": false,
-            "obstructs": true,
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -16790,9 +16840,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/tree_large_1.png",
-            "tag": "town:trees",
-            "background_sprite": "map/grass.png"
+            "sprite": "map/grass.png",
+            "tag": "map"
           },
           {
             "boat": false,
@@ -16830,9 +16879,9 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
+            "id": "town_bush_small",
+            "name": "Town Bush, Small",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -16841,8 +16890,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
+            "sprite": "town/bush_small.png",
+            "tag": "town:greenery:bushes",
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -16961,8 +17011,8 @@
             "boat": false,
             "id": "town_chapel_r1c0",
             "name": "Town Chapel (bottom left)",
-            "walkable": false,
-            "obstructs": true,
+            "walkable": true,
+            "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -16972,14 +17022,19 @@
             "spawn": null,
             "sprite": "town/chapel_r1c0.png",
             "tag": "town:house:chapel",
-            "background_sprite": "map/grass.png"
+            "background_sprite": "map/grass.png",
+            "link": {
+              "map_id": "shop_4",
+              "x": 1,
+              "y": 7
+            }
           },
           {
             "boat": false,
             "id": "town_chapel_r1c1",
             "name": "Town Chapel (bottom right)",
-            "walkable": false,
-            "obstructs": true,
+            "walkable": true,
+            "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -17061,22 +17116,6 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
-          },
-          {
-            "boat": false,
             "id": "town_path_bend_bl",
             "name": "Town Path Bend (bottom-left)",
             "walkable": true,
@@ -17089,7 +17128,7 @@
             "encounter": null,
             "spawn": null,
             "sprite": "town/path_bend_bl.png",
-            "tag": "town:paths:dirt",
+            "tag": "paths:dirt",
             "background_sprite": "map/grass.png"
           },
           {
@@ -17106,7 +17145,24 @@
             "encounter": null,
             "spawn": null,
             "sprite": "town/path_straight_h.png",
-            "tag": "town:paths:dirt",
+            "tag": "paths:dirt",
+            "background_sprite": "map/grass.png"
+          },
+          {
+            "boat": false,
+            "id": "town_path_straight_h",
+            "name": "Town Path Straight (horizontal)",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "town/path_straight_h.png",
+            "tag": "paths:dirt",
             "background_sprite": "map/grass.png"
           },
           {
@@ -17225,7 +17281,7 @@
             "encounter": null,
             "spawn": null,
             "sprite": "town/path_straight_h.png",
-            "tag": "town:paths:dirt",
+            "tag": "paths:dirt",
             "background_sprite": "map/grass.png"
           },
           {
@@ -17242,7 +17298,7 @@
             "encounter": null,
             "spawn": null,
             "sprite": "town/path_bend_br.png",
-            "tag": "town:paths:dirt",
+            "tag": "paths:dirt",
             "background_sprite": "map/grass.png"
           },
           {

@@ -187,7 +187,7 @@ def main():
                                                "wall_stone", "wall_battlement", "wall_low", "wall_ruined", "wall_v", "wall_corner",
                                                "wall_archway", "gate_portcullis", "bridge_arch",
                                                "bridge_rail", "pond", "water", "bush_2", "bush_3")) \
-                or it["name"] in ("house_stone_2", "house_timber_1", "market_stall_1", "market_stall_2",  # stall is now the hand-made 1-tile market_stall.png
+                or it["name"] in ("house_stone_1", "house_stone_2", "house_timber_1", "house_timber_shop", "chapel", "well", "tower_small", "tower", "market_stall_1", "market_stall_2",  # stall is now the hand-made 1-tile market_stall.png
                                   
                                    "tree_large_2", "tree_large_3", "tree_small_2"):
             continue
