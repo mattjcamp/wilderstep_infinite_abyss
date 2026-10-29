@@ -36,6 +36,366 @@
       ],
       "custom_map": "default_battle_arena",
       "darkness": false
+    },
+    {
+      "id": "goblins",
+      "name": "Goblins",
+      "area": "dungeon",
+      "theme": "humanoid",
+      "tags": [
+        "Goblinoids"
+      ],
+      "level": 1,
+      "weight": 30,
+      "monster_party_tile": "monster/goblin.png",
+      "monsters": [
+        "goblin",
+        "goblin",
+        "goblin"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "dire_wolves",
+      "name": "Dire Wolves",
+      "area": "dungeon",
+      "theme": "animal",
+      "tags": [
+        "Beasts"
+      ],
+      "level": 3,
+      "weight": 20,
+      "monster_party_tile": "monster/dire_wolf.png",
+      "monsters": [
+        "dire_wolf",
+        "dire_wolf"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "giant_bats",
+      "name": "Giant Bats",
+      "area": "dungeon",
+      "theme": "animal",
+      "tags": [
+        "Beasts"
+      ],
+      "level": 1,
+      "weight": 25,
+      "monster_party_tile": "monster/giant_bat.png",
+      "monsters": [
+        "giant_bat",
+        "giant_bat",
+        "giant_bat"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "slime_molds",
+      "name": "Slime Molds",
+      "area": "dungeon",
+      "theme": "cryptid",
+      "tags": [
+        "Oozes"
+      ],
+      "level": 1,
+      "weight": 15,
+      "monster_party_tile": "monster/slime_mold.png",
+      "monsters": [
+        "slime_mold",
+        "slime_mold"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "orc_warband",
+      "name": "Orc Warband",
+      "area": "dungeon",
+      "theme": "humanoid",
+      "tags": [
+        "Orcs"
+      ],
+      "level": 2,
+      "weight": 25,
+      "monster_party_tile": "monster/orc.png",
+      "monsters": [
+        "orc",
+        "orc"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "orcs_and_goblins",
+      "name": "Orcs and Goblins",
+      "area": "dungeon",
+      "theme": "humanoid",
+      "tags": [
+        "Orcs"
+      ],
+      "level": 2,
+      "weight": 20,
+      "monster_party_tile": "monster/orc.png",
+      "monsters": [
+        "orc",
+        "goblin",
+        "goblin"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "zombies",
+      "name": "Zombies",
+      "area": "dungeon",
+      "theme": "undead",
+      "tags": [
+        "Undead"
+      ],
+      "level": 2,
+      "weight": 25,
+      "monster_party_tile": "monster/zombie.png",
+      "monsters": [
+        "zombie",
+        "zombie",
+        "zombie"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "restless_dead",
+      "name": "Restless Dead",
+      "area": "dungeon",
+      "theme": "undead",
+      "tags": [
+        "Undead"
+      ],
+      "level": 3,
+      "weight": 20,
+      "monster_party_tile": "monster/zombie.png",
+      "monsters": [
+        "zombie",
+        "zombie",
+        "skeleton",
+        "skeleton"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "ghosts",
+      "name": "Ghosts",
+      "area": "dungeon",
+      "theme": "undead",
+      "tags": [
+        "Undead"
+      ],
+      "level": 3,
+      "weight": 20,
+      "monster_party_tile": "monster/ghost.png",
+      "monsters": [
+        "ghost",
+        "ghost"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "gelatinous_cube",
+      "name": "Gelatinous Cube",
+      "area": "dungeon",
+      "theme": "cryptid",
+      "tags": [
+        "Oozes"
+      ],
+      "level": 3,
+      "weight": 15,
+      "monster_party_tile": "monster/gelatinous_cube.png",
+      "monsters": [
+        "gelatinous_cube"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "giant_spiders",
+      "name": "Giant Spiders",
+      "area": "dungeon",
+      "theme": "animal",
+      "tags": [
+        "Beasts"
+      ],
+      "level": 3,
+      "weight": 20,
+      "monster_party_tile": "monster/giant_spider.png",
+      "monsters": [
+        "giant_spider",
+        "giant_spider"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "troll",
+      "name": "Troll",
+      "area": "dungeon",
+      "theme": "humanoid",
+      "tags": [
+        "Giants"
+      ],
+      "level": 5,
+      "weight": 15,
+      "monster_party_tile": "monster/troll.png",
+      "monsters": [
+        "troll"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "fire_elemental",
+      "name": "Fire Elemental",
+      "area": "dungeon",
+      "theme": "elemental",
+      "tags": [
+        "Elementals"
+      ],
+      "level": 5,
+      "weight": 10,
+      "monster_party_tile": "monster/fire_elemental.png",
+      "monsters": [
+        "fire_elemental"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "water_elemental",
+      "name": "Water Elemental",
+      "area": "dungeon",
+      "theme": "elemental",
+      "tags": [
+        "Elementals"
+      ],
+      "level": 5,
+      "weight": 10,
+      "monster_party_tile": "monster/water_elemental.png",
+      "monsters": [
+        "water_elemental"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "earth_elemental",
+      "name": "Earth Elemental",
+      "area": "dungeon",
+      "theme": "elemental",
+      "tags": [
+        "Elementals"
+      ],
+      "level": 5,
+      "weight": 10,
+      "monster_party_tile": "monster/earth_elemental.png",
+      "monsters": [
+        "earth_elemental"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "air_elemental",
+      "name": "Air Elemental",
+      "area": "dungeon",
+      "theme": "elemental",
+      "tags": [
+        "Elementals"
+      ],
+      "level": 5,
+      "weight": 10,
+      "monster_party_tile": "monster/air_elemental.png",
+      "monsters": [
+        "air_elemental"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "demon",
+      "name": "Demon",
+      "area": "dungeon",
+      "theme": "devil",
+      "tags": [
+        "Demons"
+      ],
+      "level": 6,
+      "weight": 15,
+      "monster_party_tile": "monster/demon.png",
+      "monsters": [
+        "demon"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "vampire",
+      "name": "Vampire",
+      "area": "dungeon",
+      "theme": "undead",
+      "tags": [
+        "Undead"
+      ],
+      "level": 7,
+      "weight": 10,
+      "monster_party_tile": "monster/vampire.png",
+      "monsters": [
+        "vampire",
+        "giant_bat",
+        "giant_bat"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "the_lich",
+      "name": "The Lich",
+      "area": "dungeon",
+      "theme": "undead",
+      "tags": [
+        "Undead"
+      ],
+      "level": 8,
+      "weight": 10,
+      "monster_party_tile": "monster/lich.png",
+      "monsters": [
+        "lich",
+        "skeleton",
+        "skeleton"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "red_dragon",
+      "name": "Red Dragon",
+      "area": "dungeon",
+      "theme": "magical",
+      "tags": [
+        "Dragons"
+      ],
+      "level": 8,
+      "weight": 5,
+      "monster_party_tile": "monster/red_dragon.png",
+      "monsters": [
+        "red_dragon"
+      ],
+      "custom_map": null,
+      "darkness": false
     }
   ]
 }

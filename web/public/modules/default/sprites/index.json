@@ -118,8 +118,26 @@
       "water.png"
     ],
     "monster": [
+      "air_elemental.png",
+      "demon.png",
+      "dire_wolf.png",
+      "earth_elemental.png",
+      "fire_elemental.png",
+      "gelatinous_cube.png",
+      "ghost.png",
+      "giant_bat.png",
       "giant_rat.png",
-      "skeleton.png"
+      "giant_spider.png",
+      "goblin.png",
+      "lich.png",
+      "orc.png",
+      "red_dragon.png",
+      "skeleton.png",
+      "slime_mold.png",
+      "troll.png",
+      "vampire.png",
+      "water_elemental.png",
+      "zombie.png"
     ],
     "objects": [
       "banner_double.png",

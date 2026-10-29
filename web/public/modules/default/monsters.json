@@ -69,6 +69,829 @@
         }
       ],
       "on_hit_effects": []
+    },
+    {
+      "id": "goblin",
+      "name": "Goblin",
+      "sprite": "monster/goblin.png",
+      "theme": "humanoid",
+      "difficulty": "easy",
+      "tags": [
+        "Goblinoids"
+      ],
+      "hp": 7,
+      "ac": 13,
+      "attack_bonus": 3,
+      "damage_dice": 1,
+      "damage_sides": 6,
+      "damage_bonus": 0,
+      "move_range": 6,
+      "post_attack_move": 2,
+      "battle_scale": 1,
+      "xp_reward": 20,
+      "gold_min": 2,
+      "gold_max": 10,
+      "strength": 8,
+      "dexterity": 14,
+      "constitution": 10,
+      "intelligence": 10,
+      "wisdom": 8,
+      "undead": false,
+      "humanoid": true,
+      "turn_resistance": 0,
+      "spells": [],
+      "passives": [],
+      "on_hit_effects": []
+    },
+    {
+      "id": "dire_wolf",
+      "name": "Dire Wolf",
+      "sprite": "monster/dire_wolf.png",
+      "theme": "animal",
+      "difficulty": "hard",
+      "tags": [
+        "Beasts"
+      ],
+      "hp": 26,
+      "ac": 14,
+      "attack_bonus": 4,
+      "damage_dice": 1,
+      "damage_sides": 8,
+      "damage_bonus": 2,
+      "move_range": 8,
+      "post_attack_move": 0,
+      "battle_scale": 1,
+      "xp_reward": 60,
+      "gold_min": 0,
+      "gold_max": 0,
+      "strength": 17,
+      "dexterity": 15,
+      "constitution": 15,
+      "intelligence": 3,
+      "wisdom": 12,
+      "undead": false,
+      "humanoid": false,
+      "turn_resistance": 0,
+      "spells": [],
+      "passives": [],
+      "on_hit_effects": []
+    },
+    {
+      "id": "giant_bat",
+      "name": "Giant Bat",
+      "sprite": "monster/giant_bat.png",
+      "theme": "animal",
+      "difficulty": "easy",
+      "tags": [
+        "Beasts"
+      ],
+      "hp": 6,
+      "ac": 13,
+      "attack_bonus": 3,
+      "damage_dice": 1,
+      "damage_sides": 4,
+      "damage_bonus": 0,
+      "move_range": 10,
+      "post_attack_move": 3,
+      "battle_scale": 1,
+      "xp_reward": 15,
+      "gold_min": 0,
+      "gold_max": 0,
+      "strength": 4,
+      "dexterity": 16,
+      "constitution": 10,
+      "intelligence": 2,
+      "wisdom": 12,
+      "undead": false,
+      "humanoid": false,
+      "turn_resistance": 0,
+      "spells": [],
+      "passives": [],
+      "on_hit_effects": []
+    },
+    {
+      "id": "orc",
+      "name": "Orc",
+      "sprite": "monster/orc.png",
+      "theme": "humanoid",
+      "difficulty": "normal",
+      "tags": [
+        "Orcs"
+      ],
+      "hp": 15,
+      "ac": 13,
+      "attack_bonus": 4,
+      "damage_dice": 1,
+      "damage_sides": 10,
+      "damage_bonus": 1,
+      "move_range": 5,
+      "post_attack_move": 0,
+      "battle_scale": 1,
+      "xp_reward": 40,
+      "gold_min": 5,
+      "gold_max": 20,
+      "strength": 16,
+      "dexterity": 12,
+      "constitution": 16,
+      "intelligence": 7,
+      "wisdom": 11,
+      "undead": false,
+      "humanoid": true,
+      "turn_resistance": 0,
+      "spells": [],
+      "passives": [],
+      "on_hit_effects": []
+    },
+    {
+      "id": "slime_mold",
+      "name": "Slime Mold",
+      "sprite": "monster/slime_mold.png",
+      "theme": "cryptid",
+      "difficulty": "easy",
+      "tags": [
+        "Oozes"
+      ],
+      "hp": 14,
+      "ac": 7,
+      "attack_bonus": 2,
+      "damage_dice": 1,
+      "damage_sides": 4,
+      "damage_bonus": 0,
+      "move_range": 1,
+      "post_attack_move": 0,
+      "battle_scale": 1,
+      "xp_reward": 20,
+      "gold_min": 0,
+      "gold_max": 0,
+      "strength": 6,
+      "dexterity": 4,
+      "constitution": 14,
+      "intelligence": 1,
+      "wisdom": 6,
+      "undead": false,
+      "humanoid": false,
+      "turn_resistance": 0,
+      "spells": [
+        {
+          "type": "poison",
+          "name": "Spore Cloud",
+          "range": 3,
+          "cast_chance": 30,
+          "save_dc": 11,
+          "damage_per_turn": 2,
+          "duration": 3
+        }
+      ],
+      "passives": [
+        {
+          "effect_id": "poison_immunity"
+        }
+      ],
+      "on_hit_effects": []
+    },
+    {
+      "id": "gelatinous_cube",
+      "name": "Gelatinous Cube",
+      "sprite": "monster/gelatinous_cube.png",
+      "theme": "cryptid",
+      "difficulty": "normal",
+      "tags": [
+        "Oozes"
+      ],
+      "hp": 40,
+      "ac": 6,
+      "attack_bonus": 4,
+      "damage_dice": 1,
+      "damage_sides": 6,
+      "damage_bonus": 1,
+      "move_range": 2,
+      "post_attack_move": 0,
+      "battle_scale": 1,
+      "xp_reward": 70,
+      "gold_min": 5,
+      "gold_max": 30,
+      "strength": 14,
+      "dexterity": 3,
+      "constitution": 20,
+      "intelligence": 1,
+      "wisdom": 6,
+      "undead": false,
+      "humanoid": false,
+      "turn_resistance": 0,
+      "spells": [],
+      "passives": [
+        {
+          "effect_id": "poison_immunity"
+        }
+      ],
+      "on_hit_effects": [
+        {
+          "effect_id": "consumed",
+          "chance": 40,
+          "damage_per_turn": 3,
+          "save_dc": 12
+        }
+      ]
+    },
+    {
+      "id": "ghost",
+      "name": "Ghost",
+      "sprite": "monster/ghost.png",
+      "theme": "undead",
+      "difficulty": "normal",
+      "tags": [
+        "Undead"
+      ],
+      "hp": 18,
+      "ac": 12,
+      "attack_bonus": 3,
+      "damage_dice": 1,
+      "damage_sides": 6,
+      "damage_bonus": 0,
+      "move_range": 6,
+      "post_attack_move": 1,
+      "battle_scale": 1,
+      "xp_reward": 55,
+      "gold_min": 0,
+      "gold_max": 0,
+      "strength": 6,
+      "dexterity": 13,
+      "constitution": 10,
+      "intelligence": 10,
+      "wisdom": 12,
+      "undead": true,
+      "humanoid": false,
+      "turn_resistance": 0,
+      "spells": [
+        {
+          "type": "curse",
+          "name": "Haunting Wail",
+          "range": 5,
+          "cast_chance": 20,
+          "duration": 3,
+          "ac_penalty": 2,
+          "attack_penalty": 2
+        }
+      ],
+      "passives": [
+        {
+          "effect_id": "poison_immunity"
+        }
+      ],
+      "on_hit_effects": [
+        {
+          "effect_id": "drain",
+          "chance": 30,
+          "amount": 2
+        }
+      ]
+    },
+    {
+      "id": "zombie",
+      "name": "Zombie",
+      "sprite": "monster/zombie.png",
+      "theme": "undead",
+      "difficulty": "easy",
+      "tags": [
+        "Undead"
+      ],
+      "hp": 22,
+      "ac": 8,
+      "attack_bonus": 3,
+      "damage_dice": 1,
+      "damage_sides": 6,
+      "damage_bonus": 1,
+      "move_range": 2,
+      "post_attack_move": 0,
+      "battle_scale": 1,
+      "xp_reward": 30,
+      "gold_min": 0,
+      "gold_max": 0,
+      "strength": 13,
+      "dexterity": 6,
+      "constitution": 16,
+      "intelligence": 3,
+      "wisdom": 6,
+      "undead": true,
+      "humanoid": false,
+      "turn_resistance": 0,
+      "spells": [],
+      "passives": [
+        {
+          "effect_id": "poison_immunity"
+        }
+      ],
+      "on_hit_effects": []
+    },
+    {
+      "id": "lich",
+      "name": "Lich",
+      "sprite": "monster/lich.png",
+      "theme": "undead",
+      "difficulty": "deadly",
+      "tags": [
+        "Undead"
+      ],
+      "hp": 75,
+      "ac": 16,
+      "attack_bonus": 6,
+      "damage_dice": 1,
+      "damage_sides": 8,
+      "damage_bonus": 3,
+      "move_range": 3,
+      "post_attack_move": 0,
+      "battle_scale": 1,
+      "xp_reward": 800,
+      "gold_min": 100,
+      "gold_max": 300,
+      "strength": 11,
+      "dexterity": 16,
+      "constitution": 16,
+      "intelligence": 20,
+      "wisdom": 14,
+      "undead": true,
+      "humanoid": true,
+      "turn_resistance": 6,
+      "spells": [
+        {
+          "type": "sleep",
+          "name": "Dark Slumber",
+          "range": 8,
+          "cast_chance": 30,
+          "save_dc": 16,
+          "duration": 3,
+          "max_target_hp": 70
+        },
+        {
+          "type": "curse",
+          "name": "Hex",
+          "range": 8,
+          "cast_chance": 25,
+          "duration": 4,
+          "ac_penalty": 3,
+          "attack_penalty": 3
+        },
+        {
+          "type": "lightning_bolt",
+          "name": "Lightning Bolt",
+          "range": 7,
+          "cast_chance": 20,
+          "damage_dice": 4,
+          "damage_sides": 6,
+          "damage_bonus": 0
+        },
+        {
+          "type": "fireball",
+          "name": "Fireball",
+          "range": 7,
+          "cast_chance": 20,
+          "damage_dice": 4,
+          "damage_sides": 6,
+          "damage_bonus": 0,
+          "save_dc": 15
+        }
+      ],
+      "passives": [
+        {
+          "effect_id": "poison_immunity"
+        }
+      ],
+      "on_hit_effects": [
+        {
+          "effect_id": "drain",
+          "chance": 30,
+          "amount": 6
+        }
+      ]
+    },
+    {
+      "id": "giant_spider",
+      "name": "Giant Spider",
+      "sprite": "monster/giant_spider.png",
+      "theme": "animal",
+      "difficulty": "normal",
+      "tags": [
+        "Beasts"
+      ],
+      "hp": 26,
+      "ac": 14,
+      "attack_bonus": 5,
+      "damage_dice": 1,
+      "damage_sides": 8,
+      "damage_bonus": 2,
+      "move_range": 6,
+      "post_attack_move": 0,
+      "battle_scale": 1,
+      "xp_reward": 60,
+      "gold_min": 0,
+      "gold_max": 0,
+      "strength": 14,
+      "dexterity": 16,
+      "constitution": 12,
+      "intelligence": 2,
+      "wisdom": 11,
+      "undead": false,
+      "humanoid": false,
+      "turn_resistance": 0,
+      "spells": [
+        {
+          "type": "sleep",
+          "name": "Web",
+          "range": 5,
+          "cast_chance": 25,
+          "save_dc": 12,
+          "duration": 2,
+          "max_target_hp": 40
+        },
+        {
+          "type": "poison",
+          "name": "Venom Bite",
+          "range": 1,
+          "cast_chance": 30,
+          "save_dc": 12,
+          "damage_per_turn": 3,
+          "duration": 3
+        }
+      ],
+      "passives": [],
+      "on_hit_effects": []
+    },
+    {
+      "id": "troll",
+      "name": "Troll",
+      "sprite": "monster/troll.png",
+      "theme": "humanoid",
+      "difficulty": "hard",
+      "tags": [
+        "Giants"
+      ],
+      "hp": 60,
+      "ac": 15,
+      "attack_bonus": 6,
+      "damage_dice": 1,
+      "damage_sides": 10,
+      "damage_bonus": 4,
+      "move_range": 5,
+      "post_attack_move": 0,
+      "battle_scale": 1,
+      "xp_reward": 200,
+      "gold_min": 10,
+      "gold_max": 40,
+      "strength": 18,
+      "dexterity": 13,
+      "constitution": 20,
+      "intelligence": 7,
+      "wisdom": 9,
+      "undead": false,
+      "humanoid": false,
+      "turn_resistance": 0,
+      "spells": [],
+      "passives": [
+        {
+          "effect_id": "regen",
+          "amount": 5
+        }
+      ],
+      "on_hit_effects": []
+    },
+    {
+      "id": "vampire",
+      "name": "Vampire",
+      "sprite": "monster/vampire.png",
+      "theme": "undead",
+      "difficulty": "deadly",
+      "tags": [
+        "Undead"
+      ],
+      "hp": 65,
+      "ac": 16,
+      "attack_bonus": 6,
+      "damage_dice": 1,
+      "damage_sides": 8,
+      "damage_bonus": 4,
+      "move_range": 6,
+      "post_attack_move": 0,
+      "battle_scale": 1,
+      "xp_reward": 600,
+      "gold_min": 50,
+      "gold_max": 200,
+      "strength": 18,
+      "dexterity": 18,
+      "constitution": 18,
+      "intelligence": 17,
+      "wisdom": 15,
+      "undead": true,
+      "humanoid": true,
+      "turn_resistance": 4,
+      "spells": [
+        {
+          "type": "sleep",
+          "name": "Hypnotic Gaze",
+          "range": 6,
+          "cast_chance": 30,
+          "save_dc": 15,
+          "duration": 3,
+          "max_target_hp": 60
+        }
+      ],
+      "passives": [
+        {
+          "effect_id": "regen",
+          "amount": 4
+        }
+      ],
+      "on_hit_effects": [
+        {
+          "effect_id": "drain",
+          "chance": 40,
+          "amount": 6
+        }
+      ]
+    },
+    {
+      "id": "demon",
+      "name": "Demon",
+      "sprite": "monster/demon.png",
+      "theme": "devil",
+      "difficulty": "hard",
+      "tags": [
+        "Demons"
+      ],
+      "hp": 50,
+      "ac": 15,
+      "attack_bonus": 6,
+      "damage_dice": 1,
+      "damage_sides": 10,
+      "damage_bonus": 3,
+      "move_range": 7,
+      "post_attack_move": 0,
+      "battle_scale": 1,
+      "xp_reward": 250,
+      "gold_min": 20,
+      "gold_max": 80,
+      "strength": 18,
+      "dexterity": 14,
+      "constitution": 18,
+      "intelligence": 10,
+      "wisdom": 12,
+      "undead": false,
+      "humanoid": false,
+      "turn_resistance": 0,
+      "spells": [
+        {
+          "type": "fireball",
+          "name": "Hellfire",
+          "range": 6,
+          "cast_chance": 20,
+          "damage_dice": 3,
+          "damage_sides": 6,
+          "damage_bonus": 0,
+          "save_dc": 13
+        }
+      ],
+      "passives": [
+        {
+          "effect_id": "fire_resistance"
+        },
+        {
+          "effect_id": "poison_immunity"
+        }
+      ],
+      "on_hit_effects": []
+    },
+    {
+      "id": "fire_elemental",
+      "name": "Fire Elemental",
+      "sprite": "monster/fire_elemental.png",
+      "theme": "elemental",
+      "difficulty": "hard",
+      "tags": [
+        "Elementals"
+      ],
+      "hp": 45,
+      "ac": 13,
+      "attack_bonus": 6,
+      "damage_dice": 1,
+      "damage_sides": 10,
+      "damage_bonus": 3,
+      "move_range": 7,
+      "post_attack_move": 0,
+      "battle_scale": 1,
+      "xp_reward": 200,
+      "gold_min": 0,
+      "gold_max": 0,
+      "strength": 10,
+      "dexterity": 17,
+      "constitution": 16,
+      "intelligence": 6,
+      "wisdom": 10,
+      "undead": false,
+      "humanoid": false,
+      "turn_resistance": 0,
+      "spells": [
+        {
+          "type": "breath_fire",
+          "name": "Flame Burst",
+          "range": 3,
+          "cast_chance": 30,
+          "damage_dice": 2,
+          "damage_sides": 6,
+          "damage_bonus": 0,
+          "save_dc": 13
+        }
+      ],
+      "passives": [
+        {
+          "effect_id": "fire_resistance"
+        },
+        {
+          "effect_id": "poison_immunity"
+        }
+      ],
+      "on_hit_effects": []
+    },
+    {
+      "id": "water_elemental",
+      "name": "Water Elemental",
+      "sprite": "monster/water_elemental.png",
+      "theme": "elemental",
+      "difficulty": "hard",
+      "tags": [
+        "Elementals"
+      ],
+      "hp": 50,
+      "ac": 14,
+      "attack_bonus": 6,
+      "damage_dice": 1,
+      "damage_sides": 8,
+      "damage_bonus": 4,
+      "move_range": 5,
+      "post_attack_move": 0,
+      "battle_scale": 1,
+      "xp_reward": 200,
+      "gold_min": 0,
+      "gold_max": 0,
+      "strength": 18,
+      "dexterity": 14,
+      "constitution": 18,
+      "intelligence": 5,
+      "wisdom": 10,
+      "undead": false,
+      "humanoid": false,
+      "turn_resistance": 0,
+      "spells": [],
+      "passives": [
+        {
+          "effect_id": "fire_resistance"
+        },
+        {
+          "effect_id": "poison_immunity"
+        }
+      ],
+      "on_hit_effects": [
+        {
+          "effect_id": "consumed",
+          "chance": 30,
+          "damage_per_turn": 3,
+          "save_dc": 13
+        }
+      ]
+    },
+    {
+      "id": "earth_elemental",
+      "name": "Earth Elemental",
+      "sprite": "monster/earth_elemental.png",
+      "theme": "elemental",
+      "difficulty": "hard",
+      "tags": [
+        "Elementals"
+      ],
+      "hp": 65,
+      "ac": 17,
+      "attack_bonus": 6,
+      "damage_dice": 1,
+      "damage_sides": 12,
+      "damage_bonus": 3,
+      "move_range": 3,
+      "post_attack_move": 0,
+      "battle_scale": 1,
+      "xp_reward": 200,
+      "gold_min": 0,
+      "gold_max": 0,
+      "strength": 20,
+      "dexterity": 8,
+      "constitution": 20,
+      "intelligence": 5,
+      "wisdom": 10,
+      "undead": false,
+      "humanoid": false,
+      "turn_resistance": 0,
+      "spells": [],
+      "passives": [
+        {
+          "effect_id": "poison_immunity"
+        }
+      ],
+      "on_hit_effects": []
+    },
+    {
+      "id": "air_elemental",
+      "name": "Air Elemental",
+      "sprite": "monster/air_elemental.png",
+      "theme": "elemental",
+      "difficulty": "hard",
+      "tags": [
+        "Elementals"
+      ],
+      "hp": 40,
+      "ac": 15,
+      "attack_bonus": 6,
+      "damage_dice": 1,
+      "damage_sides": 8,
+      "damage_bonus": 3,
+      "move_range": 10,
+      "post_attack_move": 3,
+      "battle_scale": 1,
+      "xp_reward": 200,
+      "gold_min": 0,
+      "gold_max": 0,
+      "strength": 14,
+      "dexterity": 20,
+      "constitution": 14,
+      "intelligence": 6,
+      "wisdom": 10,
+      "undead": false,
+      "humanoid": false,
+      "turn_resistance": 0,
+      "spells": [
+        {
+          "type": "lightning_bolt",
+          "name": "Thunder Gust",
+          "range": 6,
+          "cast_chance": 25,
+          "damage_dice": 2,
+          "damage_sides": 6,
+          "damage_bonus": 0
+        }
+      ],
+      "passives": [
+        {
+          "effect_id": "poison_immunity"
+        }
+      ],
+      "on_hit_effects": []
+    },
+    {
+      "id": "red_dragon",
+      "name": "Red Dragon",
+      "sprite": "monster/red_dragon.png",
+      "theme": "magical",
+      "difficulty": "boss",
+      "tags": [
+        "Dragons"
+      ],
+      "hp": 160,
+      "ac": 18,
+      "attack_bonus": 8,
+      "damage_dice": 2,
+      "damage_sides": 8,
+      "damage_bonus": 4,
+      "move_range": 6,
+      "post_attack_move": 0,
+      "battle_scale": 2,
+      "xp_reward": 2000,
+      "gold_min": 500,
+      "gold_max": 1500,
+      "strength": 24,
+      "dexterity": 10,
+      "constitution": 22,
+      "intelligence": 16,
+      "wisdom": 13,
+      "undead": false,
+      "humanoid": false,
+      "turn_resistance": 0,
+      "spells": [
+        {
+          "type": "breath_fire",
+          "name": "Fire Breath",
+          "range": 6,
+          "cast_chance": 40,
+          "damage_dice": 6,
+          "damage_sides": 6,
+          "damage_bonus": 0,
+          "save_dc": 15
+        }
+      ],
+      "passives": [
+        {
+          "effect_id": "fire_resistance"
+        },
+        {
+          "effect_id": "regen",
+          "amount": 5
+        }
+      ],
+      "on_hit_effects": []
     }
   ]
 }
