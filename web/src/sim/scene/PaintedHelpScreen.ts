@@ -85,6 +85,7 @@ const MOVE_SHORTCUTS: ShortcutRow[] = [
   { key: "Arrows", description: "Move the party one tile in that direction" },
   { key: "W A S D", description: "Alternate movement keys" },
   { key: "Z", description: "Zoom the view: 100% / 50% / 25% (map and combat)" },
+  { key: "F", description: "Toggle fullscreen" },
 ];
 
 const INSPECTOR_SHORTCUTS: ShortcutRow[] = [
@@ -145,8 +146,8 @@ const CHECKBOX_SIZE = 12;
 /** Painted Help & Tips screen. One instance per Phaser scene. */
 export class PaintedHelpScreen {
   private readonly scene: Phaser.Scene;
-  private readonly canvasWidth: number;
-  private readonly canvasHeight: number;
+  private canvasWidth: number;
+  private canvasHeight: number;
   private readonly soundtrack: PaintedHelpScreenSoundtrack;
   private readonly onCloseCallback: () => void;
   private readonly depth: number;
@@ -176,6 +177,13 @@ export class PaintedHelpScreen {
     this.soundtrack = cfg.soundtrack;
     this.onCloseCallback = cfg.onClose;
     this.depth = cfg.depth ?? 2000;
+  }
+
+  /** The host's play frame changed shape (edge-to-edge play follows
+   *  the window). Takes effect the next time the screen opens. */
+  setCanvasSize(width: number, height: number): void {
+    this.canvasWidth = width;
+    this.canvasHeight = height;
   }
 
   /** Whether the screen is currently painted. */

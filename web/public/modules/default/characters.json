@@ -16,7 +16,7 @@
       "constitution": 17,
       "intelligence": 7,
       "wisdom": 8,
-      "sprite": "person/dwarf_male.png",
+      "sprite": "person/dwarf_female_paladin.png",
       "equipped": {
         "hands": "sword",
         "body": "leather"
@@ -38,7 +38,7 @@
       "constitution": 9,
       "intelligence": 8,
       "wisdom": 18,
-      "sprite": "person/person_female.png",
+      "sprite": "person/person_female_cleric.png",
       "equipped": {
         "hands": "mace",
         "body": "leather"
@@ -60,7 +60,7 @@
       "constitution": 11,
       "intelligence": 20,
       "wisdom": 8,
-      "sprite": "person/gnome_male.png",
+      "sprite": "person/gnome_female_wizard.png",
       "equipped": {
         "hands": "dagger",
         "body": "cloth"
@@ -82,7 +82,7 @@
       "constitution": 13,
       "intelligence": 7,
       "wisdom": 8,
-      "sprite": "person/halfling_female.png",
+      "sprite": "person/halfling_female_thief.png",
       "equipped": {
         "hands": "short_bow",
         "body": "leather"

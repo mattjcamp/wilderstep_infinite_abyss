@@ -28,6 +28,7 @@ import {
   parseImportedSave,
 } from "@/play/save";
 import { Soundtrack } from "@/audio/SoundtrackPlayer";
+import { enterFullscreen, exitFullscreen } from "@/util/fullscreen";
 import type { WorldSave } from "@/play/saveTypes";
 
 function formatWhen(iso: string | undefined): string | null {
@@ -59,6 +60,9 @@ export function PlayLanding() {
     // player commits a new module on the begin screen, or when the
     // active host mounts.
     Soundtrack.stop();
+    // Same for fullscreen: play mode runs fullscreen, the title screen
+    // goes back to a normal window.
+    exitFullscreen();
   }, []);
 
   const activeSave = save === "loading" ? null : save;
@@ -75,7 +79,10 @@ export function PlayLanding() {
     ) {
       return;
     }
-    if (activateSlot(slotNumber)) router.push("/play/active");
+    if (activateSlot(slotNumber)) {
+      enterFullscreen();
+      router.push("/play/active");
+    }
   };
 
   const onImportFile = async (file: File) => {
@@ -97,7 +104,10 @@ export function PlayLanding() {
     ) {
       return;
     }
-    if (installImportedSave(imported)) router.push("/play/active");
+    if (installImportedSave(imported)) {
+      enterFullscreen();
+      router.push("/play/active");
+    }
     else setImportError("Couldn't write the save — storage unavailable.");
   };
 
@@ -245,6 +255,7 @@ function ReturnButton({ save }: { save: WorldSave | null | "loading" }) {
   return (
     <Link
       href="/play/active"
+      onClick={() => enterFullscreen()}
       className="rounded-md border border-parchment/40 bg-ink/40 px-8 py-3 text-center text-lg text-parchment shadow transition hover:bg-ink/20"
     >
       <div>Return to Game</div>

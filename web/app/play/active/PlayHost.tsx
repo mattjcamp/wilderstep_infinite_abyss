@@ -155,6 +155,40 @@ const MAX_LOG = 200;
  *  can scroll above the strip rather than hide behind it. */
 const PLAY_LOG_HEIGHT = 32;
 
+/** Widest / tallest window shape the world view stretches to fill.
+ *  Outside this range (a portrait phone, a freakishly wide strip) the
+ *  view stops growing and Scale.FIT letterboxes the rest, so the
+ *  backbuffer never balloons. */
+const PLAY_MIN_ASPECT = 1;
+const PLAY_MAX_ASPECT = 3.6;
+
+/**
+ * Logical size of the play view for a given stage element — the
+ * edge-to-edge frame. The view keeps the window's shape (so there are
+ * no letterbox bars) while never dropping below the standard
+ * LOGICAL_WIDTH × LOGICAL_HEIGHT frame, so the log strip and the
+ * painted Help / Quest Log panels always have at least the room they
+ * were designed for. Wider windows get a wider frame (more map in
+ * view); taller-than-16:9 windows get a taller one. Tile size on
+ * screen is set separately (NATIVE_TILE_CSS_PX), so a bigger frame
+ * means more tiles, not bigger tiles.
+ *
+ * Returns null when the element has no size yet (or is hidden, e.g.
+ * `display: none` under combat) — callers keep the current frame.
+ */
+function playFrameFor(
+  el: HTMLElement | null,
+): { width: number; height: number } | null {
+  const w = el?.clientWidth ?? 0;
+  const h = el?.clientHeight ?? 0;
+  if (w <= 0 || h <= 0) return null;
+  const aspect = Math.min(Math.max(w / h, PLAY_MIN_ASPECT), PLAY_MAX_ASPECT);
+  if (aspect >= LOGICAL_WIDTH / LOGICAL_HEIGHT) {
+    return { width: Math.round(LOGICAL_HEIGHT * aspect), height: LOGICAL_HEIGHT };
+  }
+  return { width: LOGICAL_WIDTH, height: Math.round(LOGICAL_WIDTH / aspect) };
+}
+
 /** Trap-burst colours `[main, accent]` keyed by the trap record's
  *  `damage_type` — green puff for poison, violet for magic, etc.
  *  Unlisted / absent types fall back to the legacy fire-orange so
@@ -562,6 +596,7 @@ import {
   LOGICAL_HEIGHT,
   LOGICAL_WIDTH,
 } from "@/util/renderScale";
+import { toggleFullscreen } from "@/util/fullscreen";
 
 /** Cells the kernel reads. Mirrors `TileType` from the editor without
  *  pulling that module's React-side type in. The cell carries every
@@ -1633,6 +1668,22 @@ export function PlayHost() {
   useEffect(() => {
     const onInspectorKey = (e: KeyboardEvent) => {
       const key = e.key.toLowerCase();
+      // F → toggle browser fullscreen. Allowed anytime (even with a
+      // menu open or mid-combat) since it only changes the window.
+      if (key === "f" && !e.metaKey && !e.ctrlKey && !e.altKey && !e.repeat) {
+        const ft = e.target as HTMLElement | null;
+        if (
+          ft &&
+          (ft.tagName === "INPUT" ||
+            ft.tagName === "TEXTAREA" ||
+            ft.isContentEditable)
+        ) {
+          return;
+        }
+        e.preventDefault();
+        toggleFullscreen();
+        return;
+      }
       if (
         key !== "p" &&
         key !== "q" &&
@@ -2171,6 +2222,7 @@ export function PlayHost() {
     let cancelled = false;
     let game: import("phaser").Game | null = null;
     let sim: MapSimulation | null = null;
+    let resizeObserver: ResizeObserver | null = null;
 
     (async () => {
       const Phaser = await import("phaser");
@@ -2378,8 +2430,18 @@ export function PlayHost() {
       // 960×720 at 32px tiles ≈ 30 × 22.5 visible tiles — enough
       // map context that the party never feels cramped, matching
       // the v1 game's framing.
-      const PLAY_CANVAS_WIDTH = LOGICAL_WIDTH;
-      const PLAY_CANVAS_HEIGHT = LOGICAL_HEIGHT;
+      //
+      // Edge-to-edge: the frame now takes the stage's shape instead of
+      // a fixed 16:9 (see playFrameFor), and follows it as the window
+      // resizes or enters / leaves fullscreen (ResizeObserver below).
+      // These two are `let` for that reason — everything that lays out
+      // against the view reads them live.
+      const initialFrame = playFrameFor(containerRef.current) ?? {
+        width: LOGICAL_WIDTH,
+        height: LOGICAL_HEIGHT,
+      };
+      let PLAY_CANVAS_WIDTH = initialFrame.width;
+      let PLAY_CANVAS_HEIGHT = initialFrame.height;
       const width = PLAY_CANVAS_WIDTH;
       const height = PLAY_CANVAS_HEIGHT;
       // Pixel extent of the current map — independent of the canvas
@@ -2490,11 +2552,17 @@ export function PlayHost() {
           // FIT scaling changes how big the canvas is on screen when
           // the window resizes; re-derive the zoom so tiles stay at
           // their standard tile size (NATIVE_TILE_CSS_PX).
+          //
+          // The frame itself can also change shape (edge-to-edge play —
+          // see playFrameFor), so the screen-fixed UI is re-laid out and
+          // the camera re-centred against the new view every time.
           this.scale.on("resize", () => {
+            this.layoutScreenUi();
             const z = this.effectiveWorldZoom(this.worldZoomIdx);
-            if (Math.abs(z - this.worldZoom) < 1e-6) return;
-            this.worldZoom = z;
-            this.cameras.main.setZoom(RENDER_SCALE * this.worldZoom);
+            if (Math.abs(z - this.worldZoom) >= 1e-6) {
+              this.worldZoom = z;
+              this.cameras.main.setZoom(RENDER_SCALE * this.worldZoom);
+            }
             this.mapFrame?.setVisible(this.mapFitsView());
             this.recenterCamera(true);
           });
@@ -3230,6 +3298,18 @@ export function PlayHost() {
          *  log strip, and overflow-follow leaves the log's headroom so
          *  the bottom row clears the strip. `instant` snaps (mount);
          *  otherwise we ease toward the target for smooth scrolling. */
+        /** Re-pin the screen-fixed UI to the current frame size: the
+         *  bottom log / clock strip spans the full width at the bottom
+         *  edge, and the painted Help / Quest Log screens centre on the
+         *  new frame the next time they open. */
+        layoutScreenUi(): void {
+          const logY = PLAY_CANVAS_HEIGHT - PLAY_LOG_HEIGHT;
+          this.logBar?.setPosition(0, logY).setSize(PLAY_CANVAS_WIDTH, PLAY_LOG_HEIGHT);
+          this.logText?.setY(logY + 8);
+          helpScreenRef.current?.setCanvasSize(PLAY_CANVAS_WIDTH, PLAY_CANVAS_HEIGHT);
+          questLogScreenRef.current?.setCanvasSize(PLAY_CANVAS_WIDTH, PLAY_CANVAS_HEIGHT);
+        }
+
         /** Visible world area in logical px at the current world zoom
          *  (the log strip's band excluded from the height). */
         viewSize(): { viewW: number; usableH: number } {
@@ -5091,6 +5171,22 @@ export function PlayHost() {
         },
         scene: PlayScene,
       });
+
+      // Edge-to-edge: when the stage changes size (window resize,
+      // entering / leaving fullscreen) re-shape the game's frame to
+      // match, so FIT never has to letterbox. Skipped while the stage
+      // is hidden (combat) — it re-measures when it's shown again.
+      if (typeof ResizeObserver !== "undefined" && containerRef.current) {
+        resizeObserver = new ResizeObserver(() => {
+          const f = playFrameFor(containerRef.current);
+          if (!f || !game) return;
+          if (f.width === PLAY_CANVAS_WIDTH && f.height === PLAY_CANVAS_HEIGHT) return;
+          PLAY_CANVAS_WIDTH = f.width;
+          PLAY_CANVAS_HEIGHT = f.height;
+          game.scale.setGameSize(f.width * RENDER_SCALE, f.height * RENDER_SCALE);
+        });
+        resizeObserver.observe(containerRef.current);
+      }
     })();
 
     /** Push a log line for each spelunking reach-step that just
@@ -5551,6 +5647,8 @@ export function PlayHost() {
       // Quest Log painter — same window-listener teardown concern.
       questLogScreenRef.current?.dispose();
       questLogScreenRef.current = null;
+      resizeObserver?.disconnect();
+      resizeObserver = null;
       if (game) {
         game.destroy(true);
         game = null;
@@ -5882,7 +5980,7 @@ export function PlayHost() {
     //
     // Scope: /play only. The editors live under app/editor/* with
     // their own h-full layout chain and aren't affected by this. */
-    <main className="grid h-dvh w-screen grid-rows-[1fr_auto] overflow-hidden bg-[#0c0c14]">
+    <main className="grid h-dvh w-screen grid-rows-[1fr] overflow-hidden bg-[#0c0c14]">
       {/* Stage cell — flexible row. Houses the world canvas AND the
        *  combat canvas as absolutely-positioned siblings so toggling
        *  combat is a `display: none` swap rather than a layout shift.
@@ -5964,15 +6062,8 @@ export function PlayHost() {
       ) : null}
       </div>
 
-      {/* Footer row — auto-sized, sits at the bottom of the dvh
-       *  grid. Inline log + quest panels were removed and moved into
-       *  dedicated inspector overlays opened by L and Q. The footer
-       *  is the only persistent chrome below the canvas now. */}
-      <footer className="flex-none px-3 py-1.5 text-center text-xs text-parchment/45">
-        {combat
-          ? "Combat resolves when one side falls."
-          : "Arrow keys to move. Walking onto a link saves automatically."}
-      </footer>
+      {/* (The old footer hint row under the canvas is gone — play is
+       *  edge-to-edge now; the controls live on the H help screen.) */}
 
       {lockEncounter ? (
         <LockDialogOverlay

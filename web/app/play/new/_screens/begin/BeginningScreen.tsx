@@ -33,6 +33,7 @@ import { setActiveModule, loadModuleConfig } from "@/battle/world/Module";
 import { saveWorld } from "@/play/save";
 import { clearAllDungeonSessions } from "@/sim/dungeon/dungeonSession";
 import { Soundtrack } from "@/audio/SoundtrackPlayer";
+import { enterFullscreen } from "@/util/fullscreen";
 import type {
   SavedCharacterState,
   SavedPartyState,
@@ -180,6 +181,10 @@ export function BeginningScreen({
 
     const commit = async () => {
       if (committedRef.current) return;
+      // Go fullscreen for play. Must run synchronously inside the
+      // key / click gesture — before any await — or the browser
+      // refuses it. Best-effort; the game also fills a plain window.
+      enterFullscreen();
       committedRef.current = true;
       setCommitting(true);
       try {

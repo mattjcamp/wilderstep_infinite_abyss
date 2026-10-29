@@ -136,8 +136,8 @@ interface PaintedEntryGeometry {
 /** Painted Quest Log screen. One instance per Phaser scene. */
 export class PaintedQuestLog {
   private readonly scene: Phaser.Scene;
-  private readonly canvasWidth: number;
-  private readonly canvasHeight: number;
+  private canvasWidth: number;
+  private canvasHeight: number;
   private readonly onCloseCallback: () => void;
   private readonly depth: number;
 
@@ -189,6 +189,13 @@ export class PaintedQuestLog {
     this.canvasHeight = cfg.canvasHeight;
     this.onCloseCallback = cfg.onClose;
     this.depth = cfg.depth ?? 2000;
+  }
+
+  /** The host's play frame changed shape (edge-to-edge play follows
+   *  the window). Takes effect the next time the screen opens. */
+  setCanvasSize(width: number, height: number): void {
+    this.canvasWidth = width;
+    this.canvasHeight = height;
   }
 
   isOpen(): boolean {

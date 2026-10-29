@@ -22,6 +22,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { clearSave, loadPrevSave, restorePrevSave } from "@/play/save";
 import { Soundtrack } from "@/audio/SoundtrackPlayer";
+import { enterFullscreen } from "@/util/fullscreen";
 import type { WorldSave } from "@/play/saveTypes";
 
 export function EndScreen() {
@@ -43,6 +44,7 @@ export function EndScreen() {
 
   const onContinue = () => {
     if (!restorePrevSave()) return;
+    enterFullscreen();
     router.push("/play/active");
   };
 
