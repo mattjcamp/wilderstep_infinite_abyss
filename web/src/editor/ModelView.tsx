@@ -172,6 +172,18 @@ const EXTRA_FIELD_DEFAULTS: Partial<Record<ModelKey, Record<string, unknown>>> =
   // leaves blank are not written (see RecordForm).
   monsters: MONSTER_FIELDS,
   encounters: ENCOUNTER_FIELDS,
+  // NPCs: every field the game reads, so the form always offers the
+  // sprite picker, counter picker, backstory textarea and dialogs
+  // editor — even when the first record in the catalog is sparse
+  // (e.g. a freshly started module whose only NPC has id + name).
+  npcs: {
+    id: "",
+    name: "",
+    sprite: "",
+    counter: "",
+    personal_history: "",
+    dialogs: [],
+  },
 };
 
 

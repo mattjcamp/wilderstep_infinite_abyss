@@ -1,4 +1,20 @@
 {
   "_comment": "NPC catalog — non-player characters the game references by id. Each record carries a name, sprite (rendered when the NPC appears on a map or in dialog), `personal_history` (the long backstory text designers and writers can lean on for voice / motivation), and a `dialogs` array. Each dialog is a { id, title, text } record so quests / scripts can reference a specific dialog by stable id (e.g. npc.dialogs.where('id', 'introduction')). The `id` on a dialog is unique within the NPC, not globally; the `title` is a short human-readable label for the editor list view. See docs/data_dictionary/npc.md.",
-  "npcs": []
+  "npcs": [
+    {
+      "id": "olga_shopkeeper",
+      "name": "Olga",
+      "sprite": "person/person_female_villager_poor.png",
+      "counter": "general",
+      "personal_history": "Olga bought her shop after her adventuring brother left her everything.",
+      "dialogs": [
+        {
+          "id": "dialog_1",
+          "title": "Greeting",
+          "text": "Hello fellow traveler, may I interest you in my wares?"
+        }
+      ],
+      "exploration_xp": 5
+    }
+  ]
 }
