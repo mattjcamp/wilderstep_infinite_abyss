@@ -43,8 +43,8 @@ top.alpha_composite(side.crop((0, 38, STRIP_W, 64)), (0, 38))
 tl = top
 
 out = {"wall_corner_tl": tl, "wall_corner_tr": ImageOps.mirror(tl),
-       "wall_side_left": side, "wall_side_right": ImageOps.mirror(side),
-       "wall_corner_bl": bl, "wall_corner_br": ImageOps.mirror(bl)}
+       "wall_side_left": side, "wall_side_right": ImageOps.mirror(side)}
+# (bottom corners dropped — the top corners serve both ends)
 for n, im in out.items():
     im.save(os.path.join(D, n + ".png"))
 print("ok")
