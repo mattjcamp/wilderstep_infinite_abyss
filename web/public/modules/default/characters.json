@@ -17,7 +17,10 @@
       "intelligence": 7,
       "wisdom": 8,
       "sprite": "person/dwarf_male.png",
-      "equipped": {},
+      "equipped": {
+        "hands": "sword",
+        "body": "leather"
+      },
       "inventory": []
     },
     {
@@ -36,7 +39,10 @@
       "intelligence": 8,
       "wisdom": 18,
       "sprite": "person/person_female.png",
-      "equipped": {},
+      "equipped": {
+        "hands": "mace",
+        "body": "leather"
+      },
       "inventory": []
     },
     {
@@ -55,7 +61,10 @@
       "intelligence": 20,
       "wisdom": 8,
       "sprite": "person/gnome_male.png",
-      "equipped": {},
+      "equipped": {
+        "hands": "dagger",
+        "body": "cloth"
+      },
       "inventory": []
     },
     {
@@ -74,7 +83,10 @@
       "intelligence": 7,
       "wisdom": 8,
       "sprite": "person/halfling_female.png",
-      "equipped": {},
+      "equipped": {
+        "hands": "short_bow",
+        "body": "leather"
+      },
       "inventory": []
     }
   ]

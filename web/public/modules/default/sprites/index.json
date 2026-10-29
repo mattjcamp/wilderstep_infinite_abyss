@@ -42,8 +42,7 @@
       "wall_t_down.png",
       "wall_t_up.png",
       "wall_top.png",
-      "wall_window.png",
-      "water.png"
+      "wall_window.png"
     ],
     "indoor": [
       "counter.png",
@@ -212,6 +211,22 @@
       "house_timber_shop_r0c1.png",
       "house_timber_shop_r1c0.png",
       "house_timber_shop_r1c1.png",
+      "lake_corner_bl.png",
+      "lake_corner_br.png",
+      "lake_corner_tl.png",
+      "lake_corner_tr.png",
+      "lake_edge_bottom.png",
+      "lake_edge_left.png",
+      "lake_edge_right.png",
+      "lake_edge_top.png",
+      "lake_inlet_bottom.png",
+      "lake_inlet_left.png",
+      "lake_inlet_right.png",
+      "lake_inlet_top.png",
+      "lake_inner_bl.png",
+      "lake_inner_br.png",
+      "lake_inner_tl.png",
+      "lake_inner_tr.png",
       "market_stall.png",
       "path_bend_bl.png",
       "path_bend_br.png",
@@ -247,7 +262,6 @@
       "tower_small_r1c0.png",
       "tree_large_1.png",
       "tree_small_1.png",
-      "water_2.png",
       "well_r0c0.png",
       "well_r1c0.png"
     ]

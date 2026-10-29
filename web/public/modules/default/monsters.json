@@ -4,41 +4,70 @@
       "id": "giant_rat",
       "name": "Giant Rat",
       "sprite": "monster/giant_rat.png",
+      "theme": "animal",
+      "difficulty": "easy",
       "tags": [
         "Mutated Animals"
-      ]
-    },
-    {
-      "id": "skeleton",
-      "name": "Skeleton",
-      "sprite": "monster/skeleton.png",
-      "theme": null,
-      "difficulty": "normal",
-      "tags": [
-        "Undead"
       ],
-      "hp": 10,
-      "ac": 10,
-      "attack_bonus": 0,
+      "hp": 8,
+      "ac": 12,
+      "attack_bonus": 2,
       "damage_dice": 1,
-      "damage_sides": 6,
+      "damage_sides": 4,
       "damage_bonus": 0,
-      "move_range": 3,
+      "move_range": 10,
       "post_attack_move": 0,
       "battle_scale": 1,
-      "xp_reward": 10,
-      "gold_min": 0,
-      "gold_max": 0,
-      "strength": 10,
-      "dexterity": 10,
+      "xp_reward": 15,
+      "gold_min": 2,
+      "gold_max": 8,
+      "strength": 6,
+      "dexterity": 14,
       "constitution": 10,
-      "intelligence": 10,
+      "intelligence": 2,
       "wisdom": 10,
       "undead": false,
       "humanoid": false,
       "turn_resistance": 0,
       "spells": [],
       "passives": [],
+      "on_hit_effects": []
+    },
+    {
+      "id": "skeleton",
+      "name": "Skeleton",
+      "sprite": "monster/skeleton.png",
+      "theme": "undead",
+      "difficulty": "normal",
+      "tags": [
+        "Undead"
+      ],
+      "hp": 16,
+      "ac": 13,
+      "attack_bonus": 3,
+      "damage_dice": 1,
+      "damage_sides": 6,
+      "damage_bonus": 1,
+      "move_range": 3,
+      "post_attack_move": 0,
+      "battle_scale": 1,
+      "xp_reward": 30,
+      "gold_min": 5,
+      "gold_max": 15,
+      "strength": 10,
+      "dexterity": 14,
+      "constitution": 11,
+      "intelligence": 6,
+      "wisdom": 8,
+      "undead": true,
+      "humanoid": false,
+      "turn_resistance": 0,
+      "spells": [],
+      "passives": [
+        {
+          "effect_id": "poison_immunity"
+        }
+      ],
       "on_hit_effects": []
     }
   ]

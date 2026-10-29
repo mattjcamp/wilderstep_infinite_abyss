@@ -7047,7 +7047,7 @@
             "encounter": null,
             "spawn": null,
             "sprite": "town/river_straight_v.png",
-            "tag": "paths:river",
+            "tag": "Water:River",
             "water": true,
             "background_sprite": "map/grass.png"
           },
@@ -7065,7 +7065,7 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/grass.png",
-            "tag": "overview"
+            "tag": "map"
           },
           {
             "boat": false,
@@ -7351,24 +7351,8 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
-          },
-          {
-            "boat": false,
-            "id": "river_bend_bl",
-            "name": "River Bend (bottom-left)",
+            "id": "lake_corner_tl",
+            "name": "Lake Corner (top-left)",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -7378,15 +7362,15 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/river_bend_bl.png",
-            "tag": "paths:river",
+            "sprite": "town/lake_corner_tl.png",
+            "tag": "Water:Lake",
             "water": true,
             "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
-            "id": "river_straight_h",
-            "name": "River Straight (horizontal)",
+            "id": "lake_inlet_top",
+            "name": "Lake River Inlet (top)",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -7396,15 +7380,15 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/river_straight_h.png",
-            "tag": "paths:river",
+            "sprite": "town/lake_inlet_top.png",
+            "tag": "Water:Lake",
             "water": true,
             "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
-            "id": "river_straight_h",
-            "name": "River Straight (horizontal)",
+            "id": "lake_edge_top",
+            "name": "Lake Shore (top land)",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -7414,15 +7398,15 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/river_straight_h.png",
-            "tag": "paths:river",
+            "sprite": "town/lake_edge_top.png",
+            "tag": "Water:Lake",
             "water": true,
             "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
-            "id": "river_bend_tr",
-            "name": "River Bend (top-right)",
+            "id": "lake_edge_top",
+            "name": "Lake Shore (top land)",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -7432,8 +7416,26 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/river_bend_tr.png",
-            "tag": "paths:river",
+            "sprite": "town/lake_edge_top.png",
+            "tag": "Water:Lake",
+            "water": true,
+            "background_sprite": "map/grass.png"
+          },
+          {
+            "boat": false,
+            "id": "lake_corner_tr",
+            "name": "Lake Corner (top-right)",
+            "walkable": false,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "town/lake_corner_tr.png",
+            "tag": "Water:Lake",
             "water": true,
             "background_sprite": "map/grass.png"
           },
@@ -7683,72 +7685,8 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
-          },
-          {
-            "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
-          },
-          {
-            "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
-          },
-          {
-            "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
-          },
-          {
-            "boat": false,
-            "id": "river_bend_bl",
-            "name": "River Bend (bottom-left)",
+            "id": "lake_edge_left",
+            "name": "Lake Shore (left land)",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -7758,8 +7696,74 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/river_bend_bl.png",
-            "tag": "paths:river",
+            "sprite": "town/lake_edge_left.png",
+            "tag": "Water:Lake",
+            "water": true,
+            "background_sprite": "map/grass.png"
+          },
+          {
+            "id": "water",
+            "name": "Water",
+            "walkable": false,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/water.png",
+            "tag": "Water",
+            "water": true
+          },
+          {
+            "id": "water",
+            "name": "Water",
+            "walkable": false,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/water.png",
+            "tag": "Water",
+            "water": true
+          },
+          {
+            "id": "water",
+            "name": "Water",
+            "walkable": false,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/water.png",
+            "tag": "Water",
+            "water": true
+          },
+          {
+            "boat": false,
+            "id": "lake_inlet_right",
+            "name": "Lake River Inlet (right)",
+            "walkable": false,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "town/lake_inlet_right.png",
+            "tag": "Water:Lake",
             "water": true,
             "background_sprite": "map/grass.png"
           },
@@ -8012,9 +8016,9 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
+            "id": "lake_edge_left",
+            "name": "Lake Shore (left land)",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -8023,14 +8027,64 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
+            "sprite": "town/lake_edge_left.png",
+            "tag": "Water:Lake",
+            "water": true,
+            "background_sprite": "map/grass.png"
+          },
+          {
+            "id": "water",
+            "name": "Water",
+            "walkable": false,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/water.png",
+            "tag": "Water",
+            "water": true
+          },
+          {
+            "id": "water",
+            "name": "Water",
+            "walkable": false,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/water.png",
+            "tag": "Water",
+            "water": true
+          },
+          {
+            "id": "water",
+            "name": "Water",
+            "walkable": false,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/water.png",
+            "tag": "Water",
+            "water": true
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
+            "id": "lake_edge_right",
+            "name": "Lake Shore (right land)",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -8039,56 +8093,10 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
-          },
-          {
-            "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
-          },
-          {
-            "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
-          },
-          {
-            "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
+            "sprite": "town/lake_edge_right.png",
+            "tag": "Water:Lake",
+            "water": true,
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -8336,9 +8344,9 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
+            "id": "lake_corner_bl",
+            "name": "Lake Corner (bottom-left)",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -8347,14 +8355,16 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
+            "sprite": "town/lake_corner_bl.png",
+            "tag": "Water:Lake",
+            "water": true,
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
+            "id": "lake_edge_bottom",
+            "name": "Lake Shore (bottom land)",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -8363,14 +8373,16 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
+            "sprite": "town/lake_edge_bottom.png",
+            "tag": "Water:Lake",
+            "water": true,
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
+            "id": "lake_edge_bottom",
+            "name": "Lake Shore (bottom land)",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -8379,14 +8391,16 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
+            "sprite": "town/lake_edge_bottom.png",
+            "tag": "Water:Lake",
+            "water": true,
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
+            "id": "lake_edge_bottom",
+            "name": "Lake Shore (bottom land)",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -8395,14 +8409,16 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
+            "sprite": "town/lake_edge_bottom.png",
+            "tag": "Water:Lake",
+            "water": true,
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
+            "id": "lake_corner_br",
+            "name": "Lake Corner (bottom-right)",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -8411,8 +8427,10 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
+            "sprite": "town/lake_corner_br.png",
+            "tag": "Water:Lake",
+            "water": true,
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -10175,7 +10193,10 @@
       "fog_style": {
         "twilight": "dark_cloud",
         "night": "darkness"
-      }
+      },
+      "soundtrack": [
+        "/audio/the_trooper.mp3"
+      ]
     },
     {
       "id": "shop_4",
@@ -11305,9 +11326,9 @@
           },
           {
             "boat": false,
-            "id": "dungeon_wall_archway",
-            "name": "Dungeon Wall, Archway",
-            "walkable": true,
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
+            "walkable": false,
             "obstructs": true,
             "locked": false,
             "light_source": false,
@@ -11316,8 +11337,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_archway.png",
-            "tag": "dungeon"
+            "sprite": "dungeon/wall_top.png",
+            "tag": "dungeon:walls:room walls"
           },
           {
             "boat": false,
@@ -11337,24 +11358,8 @@
           },
           {
             "boat": false,
-            "id": "dungeon_stairs",
-            "name": "Dungeon Stairs",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "dungeon/stairs.png",
-            "tag": "dungeon:doors & stairs"
-          },
-          {
-            "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -11364,23 +11369,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
-            "tag": "dungeon:walls:room walls"
-          },
-          {
-            "boat": false,
-            "id": "dungeon_wall_window",
-            "name": "Dungeon Wall, Window",
-            "walkable": false,
-            "obstructs": true,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "dungeon/wall_window.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon:walls:room walls"
           },
           {
@@ -11401,10 +11390,10 @@
           },
           {
             "boat": false,
-            "id": "dungeon_wall_portcullis",
-            "name": "Dungeon Portcullis",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
-            "obstructs": false,
+            "obstructs": true,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -11412,7 +11401,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_portcullis.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon:walls:room walls"
           },
           {
@@ -11433,8 +11422,8 @@
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -11444,7 +11433,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon:walls:room walls"
           },
           {
@@ -11481,8 +11470,8 @@
           },
           {
             "boat": false,
-            "id": "dungeon_wall_banner",
-            "name": "Dungeon Wall, Banner",
+            "id": "dungeon_wall_bottom",
+            "name": "Dungeon Wall, Bottom",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -11492,7 +11481,39 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_banner.png",
+            "sprite": "dungeon/wall_bottom.png",
+            "tag": "dungeon:walls:room walls"
+          },
+          {
+            "boat": false,
+            "id": "dungeon_wall_bottom",
+            "name": "Dungeon Wall, Bottom",
+            "walkable": false,
+            "obstructs": true,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "dungeon/wall_bottom.png",
+            "tag": "dungeon:walls:room walls"
+          },
+          {
+            "boat": false,
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
+            "walkable": false,
+            "obstructs": true,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon:walls:room walls"
           },
           {
@@ -11544,12 +11565,12 @@
             "spawn": null,
             "sprite": "dungeon/wall_left.png",
             "tag": "dungeon:walls:room walls",
-            "background_sprite": "dungeon/floor_cobble.png"
+            "background_sprite": "dungeon/floor_pebbles.png"
           },
           {
             "boat": false,
-            "id": "dungeon_floor_cobble",
-            "name": "Dungeon Floor, Cobble",
+            "id": "dungeon_floor_pebbles",
+            "name": "Dungeon Floor, Pebbles",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -11559,13 +11580,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/floor_cobble.png",
+            "sprite": "dungeon/floor_pebbles.png",
             "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "dungeon_floor_cobble",
-            "name": "Dungeon Floor, Cobble",
+            "id": "dungeon_floor_pebbles",
+            "name": "Dungeon Floor, Pebbles",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -11575,7 +11596,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/floor_cobble.png",
+            "sprite": "dungeon/floor_pebbles.png",
             "tag": "dungeon:floors"
           },
           {
@@ -11804,12 +11825,12 @@
             "spawn": null,
             "sprite": "dungeon/wall_left.png",
             "tag": "dungeon:walls:room walls",
-            "background_sprite": "dungeon/floor_cobble.png"
+            "background_sprite": "dungeon/floor_pebbles.png"
           },
           {
             "boat": false,
-            "id": "dungeon_floor_cobble",
-            "name": "Dungeon Floor, Cobble",
+            "id": "dungeon_floor_pebbles",
+            "name": "Dungeon Floor, Pebbles",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -11819,13 +11840,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/floor_cobble.png",
+            "sprite": "dungeon/floor_pebbles.png",
             "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "dungeon_floor_cobble",
-            "name": "Dungeon Floor, Cobble",
+            "id": "dungeon_floor_pebbles",
+            "name": "Dungeon Floor, Pebbles",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -11835,7 +11856,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/floor_cobble.png",
+            "sprite": "dungeon/floor_pebbles.png",
             "tag": "dungeon:floors"
           },
           {
@@ -12065,12 +12086,12 @@
             "spawn": null,
             "sprite": "dungeon/wall_left.png",
             "tag": "dungeon:walls:room walls",
-            "background_sprite": "dungeon/floor_cobble.png"
+            "background_sprite": "dungeon/floor_pebbles.png"
           },
           {
             "boat": false,
-            "id": "dungeon_floor_cobble",
-            "name": "Dungeon Floor, Cobble",
+            "id": "dungeon_floor_pebbles",
+            "name": "Dungeon Floor, Pebbles",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -12080,7 +12101,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/floor_cobble.png",
+            "sprite": "dungeon/floor_pebbles.png",
             "tag": "dungeon:floors"
           },
           {
@@ -12117,8 +12138,8 @@
           },
           {
             "boat": false,
-            "id": "dungeon_stairs",
-            "name": "Dungeon Stairs, Down",
+            "id": "dungeon_floor_cobble",
+            "name": "Dungeon Floor, Cobble",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -12128,13 +12149,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/stairs.png",
-            "tag": "dungeon:doors & stairs"
+            "sprite": "dungeon/floor_cobble.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
-            "id": "dungeon_stairs_up",
-            "name": "Dungeon Stairs, Up",
+            "id": "dungeon_floor_cobble",
+            "name": "Dungeon Floor, Cobble",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -12144,8 +12165,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/stairs_up.png",
-            "tag": "dungeon:doors & stairs"
+            "sprite": "dungeon/floor_cobble.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
@@ -12325,12 +12346,12 @@
             "spawn": null,
             "sprite": "dungeon/wall_left.png",
             "tag": "dungeon:walls:room walls",
-            "background_sprite": "dungeon/floor_cobble.png"
+            "background_sprite": "dungeon/floor_pebbles.png"
           },
           {
             "boat": false,
-            "id": "dungeon_floor_cobble",
-            "name": "Dungeon Floor, Cobble",
+            "id": "dungeon_floor_pebbles",
+            "name": "Dungeon Floor, Pebbles",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -12340,7 +12361,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/floor_cobble.png",
+            "sprite": "dungeon/floor_pebbles.png",
             "tag": "dungeon:floors"
           },
           {
@@ -12515,7 +12536,7 @@
             "light_range": 0,
             "animation": "none",
             "counter": null,
-            "encounter": null,
+            "encounter": "skeletons",
             "spawn": null,
             "sprite": "dungeon/floor_flagstone.png",
             "tag": "dungeon:floors"
@@ -12587,12 +12608,12 @@
             "spawn": null,
             "sprite": "dungeon/wall_left.png",
             "tag": "dungeon:walls:room walls",
-            "background_sprite": "dungeon/floor_cobble.png"
+            "background_sprite": "dungeon/floor_pebbles.png"
           },
           {
             "boat": false,
-            "id": "dungeon_floor_cobble",
-            "name": "Dungeon Floor, Cobble",
+            "id": "dungeon_floor_pebbles",
+            "name": "Dungeon Floor, Pebbles",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -12602,7 +12623,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/floor_cobble.png",
+            "sprite": "dungeon/floor_pebbles.png",
             "tag": "dungeon:floors"
           },
           {
@@ -13804,8 +13825,8 @@
           },
           {
             "boat": false,
-            "id": "dungeon_ladder_down",
-            "name": "Dungeon Ladder, Down",
+            "id": "dungeon_floor_cobble",
+            "name": "Dungeon Floor, Cobble",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -13815,24 +13836,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/ladder_down.png",
-            "tag": "dungeon:doors & stairs"
-          },
-          {
-            "boat": false,
-            "id": "dungeon_ladder_up",
-            "name": "Dungeon Ladder, Up",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "dungeon/ladder_up.png",
-            "tag": "dungeon:doors & stairs"
+            "sprite": "dungeon/floor_cobble.png",
+            "tag": "dungeon:floors"
           },
           {
             "boat": false,
@@ -13862,6 +13867,22 @@
             "animation": "none",
             "counter": null,
             "encounter": null,
+            "spawn": null,
+            "sprite": "dungeon/floor_cobble.png",
+            "tag": "dungeon:floors"
+          },
+          {
+            "boat": false,
+            "id": "dungeon_floor_cobble",
+            "name": "Dungeon Floor, Cobble",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": "giant_rats",
             "spawn": null,
             "sprite": "dungeon/floor_cobble.png",
             "tag": "dungeon:floors"
@@ -14413,7 +14434,10 @@
         "day": "darkness",
         "twilight": "darkness",
         "night": "darkness"
-      }
+      },
+      "soundtrack": [
+        "/audio/Lost in the Labyrinth.mp3"
+      ]
     },
     {
       "id": "town_1",

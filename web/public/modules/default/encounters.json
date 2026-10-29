@@ -3,26 +3,32 @@
     {
       "id": "giant_rats",
       "name": "Giant Rats",
+      "area": "dungeon",
+      "theme": "animal",
       "tags": [
-        "Mutated Animal"
+        "Mutated Animals"
       ],
+      "level": 1,
+      "weight": 30,
       "monster_party_tile": "monster/giant_rat.png",
       "monsters": [
         "giant_rat",
         "giant_rat",
         "giant_rat"
-      ]
+      ],
+      "custom_map": "default_battle_arena",
+      "darkness": false
     },
     {
       "id": "skeletons",
-      "name": "Sketetons",
-      "area": null,
-      "theme": null,
+      "name": "Skeletons",
+      "area": "dungeon",
+      "theme": "undead",
       "tags": [
         "Undead"
       ],
-      "level": 1,
-      "weight": 1,
+      "level": 3,
+      "weight": 30,
       "monster_party_tile": "monster/skeleton.png",
       "monsters": [
         "skeleton",
