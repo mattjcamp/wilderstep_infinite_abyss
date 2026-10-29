@@ -32,6 +32,16 @@ bl.alpha_composite(side.crop((0, 0, STRIP_W, 40)), (0, 0))
 # the strip ends in its own short face, like the sheet's corner does
 bl.alpha_composite(tl.crop((0, 38, STRIP_W, 64)), (0, 40))
 
+# Top corner: the plain wall's full face (the sheet's corner face was
+# shorter, so it didn't line up with `wall` tiles beside it) with the
+# cap + side strip down its left edge; below the cap the strip is the
+# same as the side wall's so it runs straight on into it.
+top = wall.copy()
+top.paste((0, 0, 0, 0), (0, 0, STRIP_W, 64))
+top.alpha_composite(tl.crop((0, 0, STRIP_W, 38)), (0, 0))
+top.alpha_composite(side.crop((0, 38, STRIP_W, 64)), (0, 38))
+tl = top
+
 out = {"wall_corner_tl": tl, "wall_corner_tr": ImageOps.mirror(tl),
        "wall_side_left": side, "wall_side_right": ImageOps.mirror(side),
        "wall_corner_bl": bl, "wall_corner_br": ImageOps.mirror(bl)}

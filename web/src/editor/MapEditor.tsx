@@ -28,6 +28,7 @@
  * rectangle), zoom/pan, walkable overlay, undo/redo.
  */
 
+import { shortTileLabels } from "./tileLabels";
 import { multiTileLayout } from "./multiTileLayout";
 import {
   editorMapHref,
@@ -5445,9 +5446,20 @@ function PaletteByTag({
             </div>
           );
         }
+        // Drop the words every tile in the group shares ("Dungeon
+        // Wall, …") so the part that tells them apart fits; the shared
+        // words are shown once above the list, the full name on hover.
+        const { prefix, labels } = shortTileLabels(
+          tiles.map((t) => t.name || t.id),
+        );
         return (
         <ul className="space-y-1 px-1 pb-1">
-          {tiles.map((t) => {
+          {prefix ? (
+            <li className="px-1 text-[11px] uppercase tracking-wide text-parchment/50">
+              {prefix}
+            </li>
+          ) : null}
+          {tiles.map((t, i) => {
             const active = activeBrush === t.id;
             return (
               <li key={t.id}>
@@ -5469,7 +5481,9 @@ function PaletteByTag({
                     style={{ imageRendering: "pixelated" }}
                     className="h-6 w-6 shrink-0 object-contain"
                   />
-                  <span className="flex-1 truncate">{t.name || t.id}</span>
+                  <span className="line-clamp-2 flex-1 break-words leading-tight">
+                    {labels[i]}
+                  </span>
                 </button>
               </li>
             );
