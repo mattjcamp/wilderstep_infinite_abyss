@@ -2233,6 +2233,23 @@
     },
     {
       "boat": false,
+      "id": "town_gravestone",
+      "name": "Town Gravestone",
+      "walkable": false,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "town/gravestone.png",
+      "tag": "town:graveyard",
+      "background_sprite": "map/grass.png"
+    },
+    {
+      "boat": false,
       "id": "object_barrel_1",
       "name": "Barrel 1",
       "walkable": false,

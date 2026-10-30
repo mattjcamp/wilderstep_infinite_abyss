@@ -737,7 +737,7 @@ export interface MapSimulationOptions {
    *  encounters here. Omitted = no quest-driven placements. */
   currentLocation?: CombatLocation;
   /** Enable the per-turn NPC / quest-giver wander pass — each
-   *  cell carrying an `npc` or `quest` tag gets a 50% roll to
+   *  cell carrying an `npc` or `quest` tag gets a wander roll to
    *  drift one cardinal tile. The pass mutates the grid in place
    *  (the tag follows the entity into its new home), so hosts
    *  that share the grid reference with an authoring surface
@@ -746,6 +746,11 @@ export interface MapSimulationOptions {
    *  sim mode and the test suite opt out unless they're explicitly
    *  exercising the feature. Defaults to `false`. */
   enableNpcWander?: boolean;
+  /** Per-NPC wander gate, keyed by NPC id (the cell's `npc` value).
+   *  Return false for NPCs whose behavior keeps them in place
+   *  ("dance" / "still"). Omitted → every NPC wanders. Quest-only
+   *  giver cells (no `npc` id) always wander, as before. */
+  npcCanWander?: (npcId: string) => boolean;
 }
 
 /** The simulation controller. One per active sim session; mounted by
@@ -880,6 +885,7 @@ export class MapSimulation {
    *  {@link MapSimulationOptions.enableNpcWander}. Captured at
    *  construction; not mutable mid-run. */
   private readonly npcWanderEnabled: boolean;
+  private readonly npcCanWander?: (npcId: string) => boolean;
   private disposed = false;
 
   constructor(opts: MapSimulationOptions) {
@@ -927,6 +933,7 @@ export class MapSimulation {
     this.acceptedQuests = new Set(opts.initialAcceptedQuests ?? []);
     this.groundTile = opts.catalog.groundTile;
     this.npcWanderEnabled = opts.enableNpcWander ?? false;
+    this.npcCanWander = opts.npcCanWander;
     // Mutation state — seeded from per-session options so a host
     // remounting the same grid (e.g. dungeon floor revisits)
     // resumes where it left off. Cloned into new Sets so the
@@ -1760,7 +1767,7 @@ export class MapSimulation {
     this.bridge.setPlacedEncounterPositions?.(this.snapshotPlacedEncounters());
 
     // ── NPC wander ───────────────────────────────────────────────────
-    // Every step, give each NPC / quest giver a 50% chance to drift
+    // Every step, give each wandering NPC / quest giver a chance to drift
     // one cardinal tile. Runs AFTER the spawn + roamer + placed-
     // encounter passes so live monster positions block wander
     // destinations (an NPC won't try to share a tile with a wolf).
@@ -1791,6 +1798,9 @@ export class MapSimulation {
       this.grid,
       (c, r) => occupied.has(`${c},${r}`),
       Math.random,
+      this.npcCanWander
+        ? (npcId) => !npcId || this.npcCanWander!(npcId)
+        : undefined,
     );
     for (const m of moves) {
       // The destination cell now has the entity's tag(s); rebuild

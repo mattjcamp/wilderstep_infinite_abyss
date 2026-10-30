@@ -39,6 +39,7 @@ import { InventoryEditor, type InventoryEntry } from "./InventoryEditor";
 import { getInventoryFieldConfig } from "./inventoryFields";
 import { KeyMapEditor } from "./KeyMapEditor";
 import { getKeyMapFieldConfig } from "./keyMapFields";
+import { NPC_BEHAVIORS } from "@/sim/npcBehavior";
 import { ParamsEditor } from "./ParamsEditor";
 import { getParamsFieldConfig } from "./paramsFields";
 
@@ -56,6 +57,24 @@ const TAGGED_MODELS = new Set(["encounters", "monsters"]);
 const OPTIONAL_NUMBER_FIELDS: Record<string, readonly string[]> = {
   npcs: ["exploration_xp"],
 };
+
+/** Fixed-choice string fields rendered as a dropdown, per model.
+ *  The first option is the default; a record that hasn't set the
+ *  field shows it selected and, if left untouched, stays unwritten
+ *  (so older records keep their shape). */
+const CHOICE_FIELDS: Record<
+  string,
+  Record<string, ReadonlyArray<{ value: string; label: string }>>
+> = {
+  npcs: { behavior: NPC_BEHAVIORS },
+};
+
+function getChoiceField(
+  key: string,
+  modelKey?: string,
+): ReadonlyArray<{ value: string; label: string }> | null {
+  return (modelKey && CHOICE_FIELDS[modelKey]?.[key]) || null;
+}
 
 function isOptionalNumberField(key: string, modelKey?: string): boolean {
   return !!modelKey && (OPTIONAL_NUMBER_FIELDS[modelKey] ?? []).includes(key);
@@ -272,6 +291,15 @@ export function RecordForm({
     const next: Record<string, unknown> = {};
     const nextErrors: Record<string, string> = {};
     for (const f of fields) {
+      const choices = getChoiceField(f.key, modelKey);
+      if (choices && !(drafts[f.key] ?? "")) {
+        // Untouched dropdown on a record that never had the field →
+        // leave it unwritten; otherwise persist the shown default.
+        if (f.key in record && record[f.key] != null) {
+          next[f.key] = choices[0].value;
+        }
+        continue;
+      }
       const r = inputToValue(f.kind, drafts[f.key] ?? "");
       if (!r.ok) nextErrors[f.key] = r.error;
       else if (r.value === null && isOptionalNumberField(f.key, modelKey)) {
@@ -688,6 +716,34 @@ function FieldRow({
         </label>
         <div className="flex-1">
           <CounterPicker value={value} onChange={onChange} />
+          {error ? <p className="mt-1 text-[13px] text-ember">{error}</p> : null}
+        </div>
+      </div>
+    );
+  }
+
+  // Fixed-choice fields (npc.behavior) render a dropdown.
+  const choices = getChoiceField(spec.key, modelKey);
+  if (choices) {
+    const known = choices.some((o) => o.value === value);
+    return (
+      <div className="flex items-start gap-3">
+        <label htmlFor={spec.key} className={labelClasses}>
+          {spec.key}
+        </label>
+        <div className="flex-1">
+          <select
+            id={spec.key}
+            value={known ? value : choices[0].value}
+            onChange={(e) => onChange(e.target.value)}
+            className={`${inputBase} ${inputColor}`}
+          >
+            {choices.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
           {error ? <p className="mt-1 text-[13px] text-ember">{error}</p> : null}
         </div>
       </div>

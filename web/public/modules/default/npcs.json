@@ -33,6 +33,86 @@
       "personal_history": "Yesterday, the sheep ate some grass",
       "dialogs": [],
       "exploration_xp": 0
+    },
+    {
+      "id": "agnetha",
+      "name": "Agnetha",
+      "sprite": "person/person_female_musician_recorder.png",
+      "counter": null,
+      "personal_history": "Agnetha is a musician from up North",
+      "dialogs": [
+        {
+          "id": "dialog_1",
+          "title": "Love",
+          "text": "In the North, we talk about Love. In these parts it is all ghosts and goblins. We sing to remind the spirits to move on."
+        }
+      ],
+      "behavior": "dance",
+      "exploration_xp": 10
+    },
+    {
+      "id": "frida",
+      "name": "Frida",
+      "sprite": "person/person_female_musician_fiddle.png",
+      "counter": null,
+      "personal_history": "Frida had a difficult childhold living under the yoke of the Orc King. But, she escaped and brings her music to the Inn.",
+      "dialogs": [
+        {
+          "id": "dialog_1",
+          "title": "Flirting",
+          "text": "Oh look what a handsome bunch we have. Do you like my guitar?"
+        }
+      ],
+      "behavior": "dance",
+      "exploration_xp": 10
+    },
+    {
+      "id": "bjorn",
+      "name": "Bjorn",
+      "sprite": "person/person_male_musician_lute.png",
+      "counter": null,
+      "personal_history": "Bjorn is a half-elf who has survived by playing his music for The Orc King.",
+      "dialogs": [
+        {
+          "id": "dialog_1",
+          "title": "Hey There",
+          "text": "Heeey you! "
+        }
+      ],
+      "behavior": "dance",
+      "exploration_xp": 10
+    },
+    {
+      "id": "benoit",
+      "name": "Benoit",
+      "sprite": "person/person_male_musician_harp.png",
+      "counter": null,
+      "personal_history": "Benoit comes from the privileged class in town, playing music is his way to stick his independence in his stuffy family's face.",
+      "dialogs": [
+        {
+          "id": "dialog_1",
+          "title": "What Do You Think?",
+          "text": "Have you read the ancient books? They say that music is the only real philosphy."
+        }
+      ],
+      "behavior": "dance",
+      "exploration_xp": 10
+    },
+    {
+      "id": "ola",
+      "name": "Ola",
+      "sprite": "person/person_male_musician_drum.png",
+      "counter": null,
+      "personal_history": "No one knows where Ola comes from. Less people care.",
+      "dialogs": [
+        {
+          "id": "dialog_1",
+          "title": "Hey",
+          "text": "Hey You"
+        }
+      ],
+      "behavior": "dance",
+      "exploration_xp": 0
     }
   ]
 }

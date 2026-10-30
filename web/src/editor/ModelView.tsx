@@ -202,6 +202,8 @@ const EXTRA_FIELD_DEFAULTS: Partial<Record<ModelKey, Record<string, unknown>>> =
     counter: "",
     personal_history: "",
     dialogs: [],
+    // wander (default) | dance | still — see sim/npcBehavior.
+    behavior: "",
   },
 };
 

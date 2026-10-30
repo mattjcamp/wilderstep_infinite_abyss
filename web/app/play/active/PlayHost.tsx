@@ -108,6 +108,11 @@ import {
 } from "@/battle/world/Quests";
 import { overlayVisibleAt, tintForCell } from "@/sim/lighting";
 import { normalizeFogStyles } from "@/sim/fogStyle";
+import {
+  normalizeNpcBehavior,
+  npcBehaviorWanders,
+  startNpcDance,
+} from "@/sim/npcBehavior";
 import { computeQuestGlowCells } from "@/sim/questGlow";
 import {
   DEFAULT_MOVE_TWEEN_MS,
@@ -743,6 +748,8 @@ interface PlayNpc {
   /** One-time "first conversation" XP override. Absent → the module's
    *  `settings.exploration_xp.npc`; 0 → no reward. */
   exploration_xp?: number;
+  /** "wander" (default) | "dance" | "still" — see sim/npcBehavior. */
+  behavior?: string;
   /** Authored backstory. Readable in the dialog via the Backstory
    *  toggle (same as the editor simulation). */
   personal_history?: string;
@@ -3052,6 +3059,12 @@ export function PlayHost() {
                 .setOrigin(0.5)
                 .setDisplaySize(TILE_SIZE * 0.95, TILE_SIZE * 0.95)
                 .setDepth(75);
+              // "dance" NPCs sway in place for as long as the scene
+              // lives; the tween only touches `angle`, so wander
+              // slides / step-aside moves (which set x/y) still work.
+              if (normalizeNpcBehavior(npcsById.get(npcId)?.behavior) === "dance") {
+                startNpcDance(this.tweens, img);
+              }
               this.npcOverlays.set(`${c},${r}`, img);
             }
           }
@@ -3927,13 +3940,19 @@ export function PlayHost() {
             questDefs,
             questStates: questStatesRef.current,
             currentLocation,
-            // Per-turn NPC / quest-giver wander — each tagged cell
-            // rolls 50% per step to drift one cardinal tile. The
+            // Per-turn NPC / quest-giver wander — each wandering NPC
+            // rolls NPC_WANDER_CHANCE per step to drift one cardinal
+            // tile; "dance" / "still" NPCs stay on their cell. The
             // editor's sim mode shares its grid with the authoring
             // surface and intentionally leaves this off; the live
             // play scene wants the ambient motion so towns don't
             // feel static.
             enableNpcWander: true,
+            npcCanWander: (() => {
+              const behaviorById = new Map<string, unknown>();
+              for (const n of catalog.npcs) behaviorById.set(n.id, n.behavior);
+              return (npcId: string) => npcBehaviorWanders(behaviorById.get(npcId));
+            })(),
           });
           simRef.current = sim;
 

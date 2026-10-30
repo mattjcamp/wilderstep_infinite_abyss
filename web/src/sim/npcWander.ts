@@ -138,6 +138,11 @@ export function runNpcWander(
   grid: SimGrid,
   isOccupied: (col: number, row: number) => boolean,
   rng: WanderRng,
+  /** Optional per-NPC gate. Return false to keep an NPC in place
+   *  (NPC behavior "dance" / "still"). Called with the cell's `npc`
+   *  id (possibly undefined for a quest-only giver cell). Skipped
+   *  NPCs consume no RNG rolls. Omitted → every NPC may wander. */
+  canWander?: (npcId: string | undefined, questId: string | undefined) => boolean,
 ): NpcMove[] {
   // Snapshot the candidate cells BEFORE mutating — otherwise an
   // NPC that moves earlier in the pass would be re-considered at
@@ -156,6 +161,8 @@ export function runNpcWander(
 
   const moves: NpcMove[] = [];
   for (const npc of candidates) {
+    // Behavior gate — dancing / stationary NPCs never wander.
+    if (canWander && !canWander(npc.npcId, npc.questId)) continue;
     // Roll #1: should this NPC move at all?
     if (rng() >= NPC_WANDER_CHANCE) continue;
 

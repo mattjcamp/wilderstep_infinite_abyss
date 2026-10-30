@@ -31,6 +31,7 @@ The on-disk representation in a real module will collect many records of this ty
 |---|---|---|---|---|
 | `id` | string | yes | Unique identifier for this record, scoped to its module | TBD |
 | `name` | string | yes | Human-readable display name | TBD |
+| `behavior` | `"wander"` \| `"dance"` \| `"still"` | no | How the NPC acts on the map. `wander` (default when absent) rolls `NPC_WANDER_CHANCE` each party step to drift one tile; `dance` stays on its cell and sways in place; `still` stays on its cell without animating. See `web/src/sim/npcBehavior.ts`. | Yes |
 
 ## Polymorphic discriminators
 

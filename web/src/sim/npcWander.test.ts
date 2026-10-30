@@ -7,6 +7,7 @@ import {
   runNpcWander,
 } from "./npcWander";
 import type { SimCell, SimGrid } from "./types";
+import { normalizeNpcBehavior, npcBehaviorWanders } from "./npcBehavior";
 
 /** Plain walkable floor — the default cell most fixtures start from. */
 function floor(over: Partial<SimCell> = {}): SimCell {
@@ -276,5 +277,44 @@ describe("runNpcWander", () => {
     // Expect ~350 ± a generous margin so the test never flakes.
     expect(moved).toBeGreaterThan(270);
     expect(moved).toBeLessThan(430);
+  });
+});
+
+describe("runNpcWander — behavior gate", () => {
+  it("keeps NPCs the gate rejects in place and consumes no rolls for them", () => {
+    const g = gridOf(5);
+    g[1][1].npc = "dancer";
+    g[3][3].npc = "walker";
+    let rolls = 0;
+    const rng = () => {
+      rolls += 1;
+      return 0.0;
+    };
+    const moves = runNpcWander(
+      g as SimGrid,
+      NO_ONE,
+      rng,
+      (npcId) => npcId !== "dancer",
+    );
+    expect(moves.map((m) => m.npcId)).toEqual(["walker"]);
+    expect(g[1][1].npc).toBe("dancer");
+    // Only the walker rolled: one gate roll + one direction roll.
+    expect(rolls).toBe(2);
+  });
+});
+
+describe("npc behavior helpers", () => {
+  it("defaults missing / unknown behavior to wander", () => {
+    expect(normalizeNpcBehavior(undefined)).toBe("wander");
+    expect(normalizeNpcBehavior("")).toBe("wander");
+    expect(normalizeNpcBehavior("moonwalk")).toBe("wander");
+    expect(normalizeNpcBehavior("dance")).toBe("dance");
+    expect(normalizeNpcBehavior("still")).toBe("still");
+  });
+  it("only wander-behavior NPCs wander", () => {
+    expect(npcBehaviorWanders(undefined)).toBe(true);
+    expect(npcBehaviorWanders("wander")).toBe(true);
+    expect(npcBehaviorWanders("dance")).toBe(false);
+    expect(npcBehaviorWanders("still")).toBe(false);
   });
 });

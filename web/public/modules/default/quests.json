@@ -8,15 +8,6 @@
       "tags": [],
       "steps": [
         {
-          "id": "the_crystal_skull_step_1",
-          "name": "Step 1",
-          "kind": "discover",
-          "location_kind": "map",
-          "map_id": "dungeon_1",
-          "col": 11,
-          "row": 23
-        },
-        {
           "id": "the_crystal_skull_step_2",
           "name": "Step 2",
           "kind": "retrieve",
@@ -24,18 +15,86 @@
           "location_kind": "map",
           "map_id": "dungeon_2",
           "col": 14,
-          "row": 8
+          "row": 8,
+          "description": "Find the Crystal Skull hidden in the wizards maze"
         }
       ],
       "quest_giver": {
         "npc_name": "Gareth",
         "npc_sprite": "person/person_male_villager_wealthy.png",
         "start_dialog": "Please fine adventures, the undead haunt our lands because the stupid Guild of Sorcerers has stolen the Crystal Skull and hid it deep in the mountains to the East. Please retrieve the Skull and give it back to the Deep Ones. ",
-        "end_dialog": ""
+        "end_dialog": "Glad to see you have return and now our deceased friends and family can rest with The Deep One"
+      }
+    },
+    {
+      "id": "the_wandering_corpse",
+      "name": "The Wandering Corpse",
+      "description": "The town's dead will not stay in their resting places, and it is up to you to put them to rest",
+      "tags": [],
+      "steps": [
+        {
+          "id": "the_wandering_corpse_step_1",
+          "name": "Step 1",
+          "kind": "kill",
+          "encounter_id": "restless_dead",
+          "count": 5,
+          "location_kind": "map",
+          "map_id": "town_1",
+          "description": "Put the Town's love ones... to rest"
+        },
+        {
+          "id": "the_wandering_corpse_step_2",
+          "name": "Step 2",
+          "kind": "kill",
+          "encounter_id": "ghosts",
+          "location_kind": "map",
+          "map_id": "town_1",
+          "positions": [
+            {
+              "col": 3,
+              "row": 2
+            }
+          ],
+          "description": "Send the last ghost back to the spirit world"
+        }
+      ],
+      "quest_giver": {
+        "npc_name": "Earnest",
+        "npc_sprite": "person/person_male_cleric.png",
+        "start_dialog": "The town's dead will not stay in their resting places, can you please channel their spirits and put them to rest?",
+        "end_dialog": "Thank you for your service to The Deep One"
       },
       "rewards": {
         "xp": 200,
         "gold": 200
+      }
+    },
+    {
+      "id": "the_giant_bats",
+      "name": "Bats in the Inn",
+      "description": "The inn has become infested with Giant Bats",
+      "tags": [],
+      "steps": [
+        {
+          "id": "the_giant_bats_step_1",
+          "name": "Step 1",
+          "kind": "kill",
+          "encounter_id": "giant_bats",
+          "location_kind": "map",
+          "map_id": "shop_4",
+          "count": 2,
+          "description": "Remove the bats from the Inn"
+        }
+      ],
+      "quest_giver": {
+        "npc_name": "Leanna",
+        "npc_sprite": "person/person_female_villager_wealthy.png",
+        "start_dialog": "Burp! Please sirs. madams. Ummm, gnomes? Doesn't matter.... But, please, I'm begging you! The Inn is infested by giant bats and I need to get my mead on. Can you please remove the pests. I will be eternally in your debt!",
+        "end_dialog": "Thanks for the peace"
+      },
+      "rewards": {
+        "xp": 50,
+        "gold": 50
       }
     }
   ]

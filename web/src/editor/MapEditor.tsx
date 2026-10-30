@@ -74,6 +74,7 @@ import {
   NATIVE_TILE_CSS_PX,
 } from "@/util/renderScale";
 import { ANIMATION_CONFIGS } from "@/sim/tileAnimations";
+import { normalizeNpcBehavior, startNpcDance } from "@/sim/npcBehavior";
 import type { AnimationKind } from "@/sim/tileAnimations";
 import { MapPartyScreenOverlay } from "./MapPartyScreenOverlay";
 import { NpcDialogOverlay } from "./NpcDialogOverlay";
@@ -260,6 +261,8 @@ interface ItemRecord extends RefRecord {
  *  resolve a preview thumbnail and render the on-map overlay. */
 interface NpcRecord extends RefRecord {
   sprite?: string;
+  /** "wander" (default) | "dance" | "still" — see sim/npcBehavior. */
+  behavior?: string;
 }
 /** Quest record from quests.json — only the bits the cell inspector
  *  dropdown and the quest-glow / quest-giver renderer actually read.
@@ -2836,6 +2839,7 @@ export function MapEditor({
                   // Remove any existing overlay first.
                   const existing = sceneSelf.npcOverlays.get(key);
                   if (existing) {
+                    sceneSelf.tweens.killTweensOf(existing);
                     existing.destroy();
                     sceneSelf.npcOverlays.delete(key);
                     sceneSelf.npcOverlayIds.delete(key);
@@ -2867,6 +2871,14 @@ export function MapEditor({
                   const baseImg = sceneSelf.cells.get(key);
                   if (baseImg && baseImg.isTinted) {
                     img.setTint(baseImg.tintTopLeft);
+                  }
+                  // Preview the "dance" behavior right in the editor
+                  // so authors see the sway where they placed it.
+                  // (killTweensOf above stops it when the overlay goes.)
+                  if (
+normalizeNpcBehavior(npc?.behavior) === "dance"
+                  ) {
+                    startNpcDance(sceneSelf.tweens, img);
                   }
                   sceneSelf.npcOverlays.set(key, img);
                   sceneSelf.npcOverlayIds.set(key, npcId);
