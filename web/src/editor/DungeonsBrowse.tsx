@@ -61,7 +61,11 @@ type ChestItem = {
 
 /** Closed style enum — the procedural generator's supported themes.
  *  Add new values here when the generator grows. */
-const STYLES = ["caves", "ruins", "forest", "custom"] as const;
+const STYLES = ["caves", "ruins", "forest", "custom", "dungeon"] as const;
+/** Dropdown labels where the raw value needs a hint. */
+const STYLE_LABELS: Partial<Record<(typeof STYLES)[number], string>> = {
+  dungeon: "dungeon (new tileset)",
+};
 type Style = (typeof STYLES)[number];
 
 /** Same difficulty enum the Monster model uses. */
@@ -1228,7 +1232,7 @@ function GeneratorFields({
             ) : null}
             {STYLES.map((s) => (
               <option key={s} value={s}>
-                {s}
+                {STYLE_LABELS[s] ?? s}
               </option>
             ))}
             {style && !STYLES.includes(style as Style) ? (

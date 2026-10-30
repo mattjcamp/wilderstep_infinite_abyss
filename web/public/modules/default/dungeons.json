@@ -1,4 +1,58 @@
 {
   "_comment": "Dungeon catalog (real data drives the schema). A Dungeon is an *authored* multi-level dungeon — id, display name, optional flavor description, optional tags (editor-side organizational labels — same convention as Map.tags), and an ordered list of inline Dungeon Level records under `levels[]`. Each level is `{ id, name, tags?, depth, map_id }` — the Map id points at the actual playable tile grid. Dungeon Levels live inline because they have no meaning outside their parent Dungeon (no other model references them). This is distinct from Dungeon Config (in dungeon_configs.json), which describes a *procedural* generator's input parameters — authored dungeons are entirely hand-painted maps, procedural ones are rolled at runtime. The catalog ships empty; populate as adventures are designed. See docs/data_dictionary/dungeon.md.",
-  "dungeons": []
+  "dungeons": [
+    {
+      "id": "hidden_grotto",
+      "name": "Hidden Grotto",
+      "description": "An old forgotten grotto hidden deep in the mountain",
+      "tags": [],
+      "style": "caves",
+      "difficulty": "normal",
+      "size": {
+        "width": 32,
+        "height": 32
+      },
+      "torch_density": 0.15,
+      "locked_doors": 0.25,
+      "levels": [
+        {
+          "id": "hidden_grotto_l1",
+          "name": "Level 1",
+          "depth": 1
+        },
+        {
+          "id": "hidden_grotto_l2",
+          "name": "Level 2",
+          "depth": 2
+        }
+      ],
+      "theme": "cryptid"
+    },
+    {
+      "id": "stone_halls",
+      "name": "Stone Halls",
+      "description": "Torch-lit halls of fitted stone, built by hands long gone.",
+      "tags": [],
+      "style": "dungeon",
+      "difficulty": "normal",
+      "size": {
+        "width": 32,
+        "height": 32
+      },
+      "torch_density": 0.15,
+      "locked_doors": 0.25,
+      "levels": [
+        {
+          "id": "stone_halls_l1",
+          "name": "Level 1",
+          "depth": 1
+        },
+        {
+          "id": "stone_halls_l2",
+          "name": "Level 2",
+          "depth": 2
+        }
+      ]
+    }
+  ]
 }

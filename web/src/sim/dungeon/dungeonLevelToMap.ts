@@ -19,6 +19,7 @@
  * render it without a code branch.
  */
 
+import { autotileDungeonWalls } from "./dungeonAutotile";
 import {
   TILE_FOREST_ARCHWAY_DOWN,
   TILE_FOREST_ARCHWAY_UP,
@@ -39,6 +40,8 @@ import {
 import type { DungeonLevel, DungeonStyle } from "@/battle/world/Dungeon";
 import {
   prototypeForTileId,
+  CHEST_PALETTE_ID,
+  DUNGEON_TILESET_FLOOR_ID,
   resolveDungeonSprite,
   type DungeonTilePrototype,
 } from "./tileMapping";
@@ -205,7 +208,9 @@ export function dungeonLevelToMap(
         // stays the floor's, and an overlay carries the chest art.
         base.id = "chest";
         base.name = "Chest";
-        base.placedItemSprite = resolveDungeonSprite("chest", opts.customTileSprites);
+        base.placedItemSprite =
+          resolveDungeonSprite(CHEST_PALETTE_ID, opts.customTileSprites) ||
+          resolveDungeonSprite("chest", opts.customTileSprites);
         // Bind the cell to the configured chest ITEM so the kernel's
         // bump pipeline fires `chest_encountered` (the item is
         // authored `is_chest: true`) and the party gets its real
@@ -221,6 +226,29 @@ export function dungeonLevelToMap(
       row.push(base);
     }
     grid.push(row);
+  }
+
+  // Dungeon Tileset: give every wall its directional piece (faces,
+  // side strips, corners, tees, solid rock) from its neighbours.
+  if (style === "dungeon") {
+    autotileDungeonWalls(grid, {
+      isWall: (cell) => cell.id === "dungeon_wall" || cell.id === "wall_torch",
+      sprites: opts.customTileSprites,
+      floorSprite: resolveDungeonSprite(DUNGEON_TILESET_FLOOR_ID, opts.customTileSprites),
+      keepId: (cell) => cell.id === "wall_torch",
+    });
+    // Doors are drawn as part of the wall face — back them with the
+    // same solid-rock black so their transparent corners match.
+    const rock = resolveDungeonSprite("dungeon_pit_centre", opts.customTileSprites);
+    if (rock) {
+      for (const row of grid) {
+        for (const cell of row) {
+          if (cell.id === "dungeon_door" || cell.id === "door_locked") {
+            cell.background_sprite = rock;
+          }
+        }
+      }
+    }
   }
 
   // Walking onto monster positions kicks off combat through the

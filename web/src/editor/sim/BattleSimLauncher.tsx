@@ -183,8 +183,16 @@ export function BattleSimLauncher({ moduleId }: { moduleId: string }) {
           typeof rawAnim === "string" && rawAnim !== "none" && rawAnim !== ""
             ? rawAnim
             : undefined;
+        // Floor under a placed object (barrel, chest, …) — the map
+        // editor's `background_sprite`, drawn beneath `sprite`.
+        const rawBg = cell.background_sprite;
+        const backgroundSprite =
+          typeof rawBg === "string" && rawBg.length > 0
+            ? spriteUrl(rawBg)
+            : null;
         row.push({
           sprite,
+          backgroundSprite,
           walkable: cell.walkable !== false,
           obstructs: cell.obstructs === true,
           lightSource: lightSource || undefined,

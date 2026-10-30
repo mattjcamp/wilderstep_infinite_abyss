@@ -49,6 +49,8 @@ import type { ArenaCellInfo } from "@/battle/world/Maps";
  *  either to avoid coupling; the renderer only reads these fields. */
 interface WorldCell {
   sprite?: string;
+  /** Floor drawn under `sprite` (map-editor `background_sprite`). */
+  background_sprite?: string | null;
   walkable?: boolean;
   obstructs?: boolean;
   light_source?: boolean;
@@ -73,8 +75,12 @@ export function toArenaCell(cell: WorldCell): ArenaCellInfo {
     typeof rawSprite === "string" && rawSprite.length > 0
       ? spriteUrl(rawSprite)
       : null;
+  const rawBg = cell.background_sprite;
+  const backgroundSprite =
+    typeof rawBg === "string" && rawBg.length > 0 ? spriteUrl(rawBg) : null;
   return {
     sprite,
+    backgroundSprite,
     walkable: cell.walkable !== false,
     obstructs: cell.obstructs === true,
     lightSource: cell.light_source ? true : undefined,

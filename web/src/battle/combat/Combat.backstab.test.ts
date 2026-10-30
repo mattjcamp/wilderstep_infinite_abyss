@@ -156,8 +156,7 @@ describe("Combat.attack — Backstab gate", () => {
       // Confirm the failure log line is present.
       expect(
         combat.log.some((line) =>
-          line.includes("probes for an opening on Goblin") &&
-          line.includes("— no opening."),
+          line.includes("finds no opening on Goblin"),
         ),
       ).toBe(true);
     }
@@ -180,7 +179,7 @@ describe("Combat.attack — Backstab gate", () => {
         expect(
           combat.log.some(
             (line) =>
-              line.includes("finds an opening!") &&
+              line.includes("finds an opening") &&
               line.includes("BACKSTAB!"),
           ),
         ).toBe(true);
@@ -190,20 +189,20 @@ describe("Combat.attack — Backstab gate", () => {
     expect(passingSeed).not.toBeNull();
   });
 
-  it("damage line names the backstab and shows the doubled dice", () => {
+  it("damage line names the backstab and reports the doubled damage", () => {
     // A backstab promotes the hit to a crit, so the dagger's 1d1 here
-    // doubles to 2d1. The readout must (a) say "backstabs" so the
-    // damage is tied to the BACKSTAB! beat, and (b) show the doubled
-    // dice + subtotal so a small total still reads as a real backstab.
+    // doubles to 2d1 = 2. The log keeps to basic details: the line
+    // must say "backstabs" (tying the damage to the BACKSTAB! beat)
+    // and report the damage dealt.
     for (let s = 1; s < 50; s++) {
       const { combat } = attackFixture({ seed: s });
       const result = combat.attack("goblin");
       if (result.backstab) {
         const dmgLine = combat.log.find(
-          (l) => l.includes("backstabs Goblin") && l.includes("dmg"),
+          (l) => l.includes("backstabs Goblin") && l.includes("damage"),
         );
         expect(dmgLine).toBeTruthy();
-        expect(dmgLine).toContain("2d1 crit-doubled: 2");
+        expect(dmgLine).toContain(`for ${result.damage} damage`);
         // And it should NOT mislabel the backstab as a generic crit.
         expect(dmgLine).not.toContain("crits Goblin");
         return;
@@ -219,7 +218,7 @@ describe("Combat.attack — Backstab gate", () => {
     });
     combat.attack("goblin");
     expect(
-      combat.log.some((line) => line.includes("probes for an opening")),
+      combat.log.some((line) => line.includes("finds no opening")),
     ).toBe(false);
     expect(
       combat.log.some((line) => line.includes("BACKSTAB!")),

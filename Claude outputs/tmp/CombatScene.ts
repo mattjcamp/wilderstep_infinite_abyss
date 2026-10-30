@@ -12,12 +12,12 @@
  *   │                            │ LOG                          │
  *   │                            │ (newest lines that fit,      │
  *   │                            │  dice + mods)                │
- *   ├─ Portrait ─┬─ Actions (45%) ─┴─────┬─ Inventory (45%) ────┤
- *   │  ┌──────┐  │ -- GIMLI'S TURN -- 6/6 │ INVENTORY            │
- *   │  │avatar│  │ > Attack   Abilities   │ Torch ×3   Rope      │
- *   │  └──────┘  │   Range    Use Item    │ Potion ×2            │
- *   │   Gimli    │   Throw    End Turn    │                      │
- *   └────────────┴────────────────────────┴──────────────────────┘
+ *   ├─ Portrait ─┬─ Actions (70%) ─────┴──────┬─ Inventory (20%) ──┤
+ *   │  ┌──────┐  │      [⚔][🏹][🗡][✦]          │     INVENTORY      │
+ *   │  │avatar│  │      [⚡][🧪][🛡][⌛]          │ [🔥3][🧪2][⛺][🗝]  │
+ *   │  └──────┘  │                              │ [🌿][🪨]            │
+ *   │   Gimli    │   Strike an adjacent enemy   │ (item icons)       │
+ *   └────────────┴──────────────────────────────┴────────────────────┘
  *   (portrait = whoever is acting, enemies included)
  *
  * All frames below the header share one grid (12px margin, 8px
@@ -323,8 +323,8 @@ const ARENA_FRAME_H = VIEW_H + ARENA_PAD * 2;                // 520
 const HUD_X = ARENA_FRAME_X + ARENA_FRAME_W + GUTTER;        // 920
 const HUD_Y = FRAME_TOP;                                     // 40
 const HUD_H = ARENA_FRAME_H;                                 // 520
-// Bottom strip — three panels on the same frame grid, split 10 / 45 /
-// 45 of the usable width: the active combatant's portrait, the
+// Bottom strip — three panels on the same frame grid, split 10 / 70 /
+// 20 of the usable width: the active combatant's portrait, the
 // action menu, and the active member's inventory. The battle log
 // lives in the right-hand HUD under the party cards.
 const BOTTOM_Y = FRAME_TOP + ARENA_FRAME_H + GUTTER;         // 568
@@ -333,10 +333,16 @@ const BOTTOM_INNER_W = LOGICAL_WIDTH - MARGIN * 2 - GUTTER * 2; // 1240
 const PORTRAIT_X = MARGIN;                                   // 12
 const PORTRAIT_W = Math.round(BOTTOM_INNER_W * 0.1);         // 124
 const ACTIONS_X = PORTRAIT_X + PORTRAIT_W + GUTTER;          // 144
-const ACTIONS_W = Math.round((BOTTOM_INNER_W - PORTRAIT_W) / 2); // 558
-const INVENTORY_X = ACTIONS_X + ACTIONS_W + GUTTER;          // 710
-const INVENTORY_W =
-  LOGICAL_WIDTH - MARGIN - INVENTORY_X;                      // 558
+const INVENTORY_W = Math.round(BOTTOM_INNER_W * 0.2);        // 248
+const ACTIONS_W = BOTTOM_INNER_W - PORTRAIT_W - INVENTORY_W; // 868
+const INVENTORY_X = ACTIONS_X + ACTIONS_W + GUTTER;          // 1020
+/** Inventory icon grid: cell size / pitch (item art is 32px, drawn
+ *  1:1 at 32 logical px), columns that fit the panel, and rows that
+ *  fit under the heading. */
+const INV_CELL = 32;
+const INV_PITCH = 36;
+const INV_COLS = Math.floor((INVENTORY_W - 20 + (INV_PITCH - INV_CELL)) / INV_PITCH); // 6
+const INV_ROWS = 2;
 const ACTIONS_Y = BOTTOM_Y;
 const ACTIONS_H = BOTTOM_H;
 /** Action icon matrix: columns, cell pitch, cell + icon size. Eight
@@ -351,13 +357,18 @@ const ACTION_ICON = 48;
  *  panel as an icon matrix, same cell size as the action icons:
  *  SUBMENU_COLS × SUBMENU_ROWS cells on screen, scrolling a row at a
  *  time to keep the cursor in view. The last entry is always Back. */
-const SUBMENU_COLS = 8;
+// As many columns as the (wide) Action panel holds, capped at 16.
+const SUBMENU_COLS = Math.min(16, Math.floor((ACTIONS_W - 48) / 54));
 const SUBMENU_ROWS = 2;
 const SUBMENU_VISIBLE = SUBMENU_COLS * SUBMENU_ROWS;
 /** Back entry icon — module sprite actions/back.png. */
 const BACK_ICON_URL = (): string => spriteUrl("actions/back.png");
 /** Portrait size inside the 10% panel (square, leaves room for the name). */
 const PORTRAIT_SIZE = 84;
+/** Active-combatant highlight animation: halo layers around the ring /
+ *  portrait frame and the pulse period. */
+const GLOW_LAYERS = 2;
+const GLOW_PERIOD_MS = 1100;
 
 // ── Web-app theme palette (matches PartyScene + TownScene) ────────
 const C = {
@@ -673,6 +684,11 @@ export class CombatScene extends Phaser.Scene {
   private arenaZoomIdx = 0;
   private overlayCam: Phaser.Cameras.Scene2D.Camera | null = null;
   private selRings = new Map<string, Phaser.GameObjects.Rectangle>();
+  /** Soft halos drawn around the active combatant's ring on the arena
+   *  and around the portrait frame; animated in `pulseActiveHighlight`
+   *  (called from update) so both pulse and glow in sync. */
+  private activeGlow: Phaser.GameObjects.Rectangle[] = [];
+  private portraitGlow: Phaser.GameObjects.Rectangle[] = [];
   private moveHintRects: Phaser.GameObjects.Rectangle[] = [];
   /** Repeating timers — one per combatant — that pulse a `glowAura`
    *  ring beneath their body every few hundred ms. Started in
@@ -738,6 +754,10 @@ export class CombatScene extends Phaser.Scene {
   private portraitName!: Phaser.GameObjects.Text;
   /** Bottom-right inventory panel body text. */
   private inventoryText!: Phaser.GameObjects.Text;
+  private inventoryHeading!: Phaser.GameObjects.Text;
+  /** Icon cells currently drawn in the inventory panel (rebuilt on
+   *  every refresh). */
+  private inventoryObjects: Phaser.GameObjects.GameObject[] = [];
   private actionIcons: Phaser.GameObjects.Image[] = [];
   /** Name + hint of the highlighted action, beside the matrix. */
   private actionHintText!: Phaser.GameObjects.Text;
@@ -915,6 +935,8 @@ export class CombatScene extends Phaser.Scene {
     for (const body of this.bodies.values()) body?.destroy();
     this.bodies.clear();
     for (const ring of this.selRings.values()) ring?.destroy();
+    for (const g of this.activeGlow) g?.destroy();
+    this.activeGlow = [];
     this.selRings.clear();
     // Stop any wielder-aura timers from the previous run before the
     // bodies they reference are gone — otherwise the next tick fires
@@ -1124,12 +1146,14 @@ export class CombatScene extends Phaser.Scene {
         const seen = new Set<string>();
         for (const row of this.arenaCells) {
           for (const cell of row) {
-            const url = cell?.sprite ?? null;
-            if (!url || seen.has(url)) continue;
-            seen.add(url);
-            if (!this.textures.exists(url)) {
-              this.load.image(url, url);
-              queued += 1;
+            // The cell's sprite plus the floor drawn under it.
+            for (const url of [cell?.sprite ?? null, cell?.backgroundSprite ?? null]) {
+              if (!url || seen.has(url)) continue;
+              seen.add(url);
+              if (!this.textures.exists(url)) {
+                this.load.image(url, url);
+                queued += 1;
+              }
             }
           }
         }
@@ -1452,16 +1476,17 @@ export class CombatScene extends Phaser.Scene {
         // as live GameObjects, so the per-frame cost stays flat.
         const cell = mapCells?.[row]?.[col] ?? null;
         const cellUrl = cell?.sprite ?? null;
-        if (floorRT && cellUrl && this.textures.exists(cellUrl)) {
-          // Coordinates are RT-local (origin at ARENA_X/Y), so no
-          // arena offset here. `originX/Y: 0` stamps from the
-          // texture's top-left rather than its center.
-          // Scale each tile to exactly one cell whatever its native
-          // size (32×32 legacy art or 64×64 theme art).
-          const srcW = this.textures.get(cellUrl).getSourceImage().width || TILE;
-          const srcH = this.textures.get(cellUrl).getSourceImage().height || TILE;
+        // Coordinates are RT-local (origin at ARENA_X/Y), so no arena
+        // offset here. `originX/Y: 0` stamps from the texture's
+        // top-left rather than its center. Each tile is scaled to
+        // exactly one cell whatever its native size (32×32 legacy art
+        // or 64×64 theme art).
+        const stampCell = (url: string) => {
+          if (!floorRT) return;
+          const srcW = this.textures.get(url).getSourceImage().width || TILE;
+          const srcH = this.textures.get(url).getSourceImage().height || TILE;
           floorRT.stamp(
-            cellUrl,
+            url,
             undefined,
             col * TILE * RENDER_SCALE,
             row * TILE * RENDER_SCALE,
@@ -1472,6 +1497,13 @@ export class CombatScene extends Phaser.Scene {
               scaleY: (TILE * RENDER_SCALE) / srcH,
             },
           );
+        };
+        if (floorRT && cellUrl && this.textures.exists(cellUrl)) {
+          // Floor under a placed object first (its background_sprite),
+          // so the object's transparent pixels show floor, not void.
+          const bgUrl = cell?.backgroundSprite ?? null;
+          if (bgUrl && this.textures.exists(bgUrl)) stampCell(bgUrl);
+          stampCell(cellUrl);
         } else if (!floorRT) {
           // Default arena (no map picked) keeps the legacy
           // rectangle fill. With a map picked, missing cells fall
@@ -2069,6 +2101,26 @@ export class CombatScene extends Phaser.Scene {
     // ── Bottom strip: portrait | actions | inventory ──────────────
     // Portrait — whoever is acting (party member, summon or enemy).
     this.panel(PORTRAIT_X, BOTTOM_Y, PORTRAIT_W, BOTTOM_H);
+    // Portrait glow halos (behind the frame), pulsed with the arena
+    // ring in `pulseActiveHighlight`.
+    this.portraitGlow = [];
+    for (let i = 0; i < GLOW_LAYERS; i++) {
+      const grow = 3 * (i + 1);
+      this.portraitGlow.push(
+        this.track(
+          this.add
+            .rectangle(
+              PORTRAIT_X + PORTRAIT_W / 2,
+              BOTTOM_Y + 12 + PORTRAIT_SIZE / 2,
+              PORTRAIT_SIZE + grow,
+              PORTRAIT_SIZE + grow,
+              C.cursor,
+              0,
+            )
+            .setStrokeStyle(2, C.cursor, 0),
+        ),
+      );
+    }
     this.portraitFrame = this.track(
       this.add
         .rectangle(
@@ -2104,12 +2156,18 @@ export class CombatScene extends Phaser.Scene {
     // Inventory — the active member's personal pack (placeholder
     // presentation; refreshed with the turn header).
     this.panel(INVENTORY_X, BOTTOM_Y, INVENTORY_W, BOTTOM_H);
-    this.track(this.add.text(INVENTORY_X + 14, BOTTOM_Y + 8, "INVENTORY", FONT_HEAD()));
+    // Heading doubles as the hover readout: it shows an item's name
+    // while the pointer is over that icon.
+    this.inventoryHeading = this.track(
+      this.add
+        .text(INVENTORY_X + INVENTORY_W / 2, BOTTOM_Y + 8, "INVENTORY", FONT_HEAD())
+        .setOrigin(0.5, 0),
+    );
+    // Empty / enemy-turn note, centred under the heading.
     this.inventoryText = this.track(
-      this.add.text(INVENTORY_X + 14, BOTTOM_Y + 34, "", {
-        ...FONT_MONO(C.body),
-        lineSpacing: 4,
-      }),
+      this.add
+        .text(INVENTORY_X + INVENTORY_W / 2, BOTTOM_Y + 60, "", FONT_MONO(C.body))
+        .setOrigin(0.5, 0),
     );
 
     // Action matrix — one cell per slot in PARTY_ACTIONS, row-major
@@ -2269,6 +2327,8 @@ export class CombatScene extends Phaser.Scene {
     for (const body of this.bodies.values()) body?.destroy();
     this.bodies.clear();
     for (const ring of this.selRings.values()) ring?.destroy();
+    for (const g of this.activeGlow) g?.destroy();
+    this.activeGlow = [];
     this.selRings.clear();
     // Re-seed wielder auras too. Same idempotent-rebuild reasoning
     // as bodies / selection rings — the timer references a body
@@ -2285,6 +2345,16 @@ export class CombatScene extends Phaser.Scene {
     // refresh path doesn't touch them. The wholesale teardown in
     // `clearStaleDraws` handles their disposal on scene exit.
 
+    // Active-combatant glow — created before the bodies so it draws
+    // behind the sprites; positioned / pulsed every frame.
+    for (let i = 0; i < GLOW_LAYERS; i++) {
+      const halo = this.add
+        .rectangle(0, 0, TILE + 3 * (i + 1), TILE + 3 * (i + 1), C.cursor, 0)
+        .setStrokeStyle(2, C.cursor, 0)
+        .setVisible(false);
+      (halo as unknown as { __arena: boolean }).__arena = true;
+      this.activeGlow.push(halo);
+    }
     for (const c of this.combat.combatants) {
       const x = this.tileX(c.position.col);
       const y = this.tileY(c.position.row);
@@ -3047,16 +3117,12 @@ export class CombatScene extends Phaser.Scene {
         const friendly = occupant.side === me.side;
         const ffTag = friendly ? " — FRIENDLY FIRE!" : "";
         const rType = result.damageType;
-        const rTypeSuffix = rType && rType !== "physical" ? ` (${rType})` : "";
-        const rBonus = result.bonusDamage ?? 0;
-        const rBreakdown =
-          rBonus > 0
-            ? `${result.damage} dmg${rTypeSuffix} [${result.damage - rBonus}+${rBonus} bonus]`
-            : `${result.damage} dmg${rTypeSuffix}`;
+        const rTypeSuffix = rType && rType !== "physical" ? ` ${rType}` : "";
+        const rBreakdown = `for ${result.damage}${rTypeSuffix} damage`;
         this.combat.log.push(
           result.hit
-            ? `${me.name} fires ${ammoName} at ${occupant.name} (d20:${result.roll}=${result.total} vs AC${occupant.ac})${ffTag} — ${rBreakdown}${result.killed ? ", defeated!" : "."}`
-            : `${me.name} fires ${ammoName} at ${occupant.name} — miss.`,
+            ? `${me.name} fires ${ammoName} at ${occupant.name} ${rBreakdown}${result.killed ? " — defeated!" : "."}${ffTag}`
+            : `${me.name} fires ${ammoName} at ${occupant.name} and misses.`,
         );
         await this.animateHit(occupant, result);
         this.refreshHp(occupant);
@@ -4003,13 +4069,12 @@ export class CombatScene extends Phaser.Scene {
     let i = 0;
     for (const o of result.outcomes) {
       const target = this.combat.byId(o.targetId);
-      const dice = `${o.saveRoll}+${o.saveBonus}=${o.saveTotal} vs DC ${o.saveDc}`;
       this.combat.log.push(
         o.saved
-          ? `${target.name} resists (${dice}) — seared for ${o.damage} damage!`
+          ? `${target.name} resists, seared for ${o.damage} damage.`
           : o.turned
-            ? `${target.name} fails its save (${dice}) — seared for ${o.damage} damage and TURNED! It recoils from the light for ${o.turnedTurns} ${o.turnedTurns === 1 ? "turn" : "turns"}.`
-            : `${target.name} fails its save (${dice}) — DESTROYED!`,
+            ? `${target.name} is seared for ${o.damage} damage and TURNED for ${o.turnedTurns} ${o.turnedTurns === 1 ? "turn" : "turns"}!`
+            : `${target.name} is DESTROYED!`,
       );
       const body = this.bodies.get(target.id);
       if (body) {
@@ -4222,8 +4287,8 @@ export class CombatScene extends Phaser.Scene {
         const result = resolveThrow(me, target, action.item, defaultRng);
         this.combat.log.push(
           result.hit
-            ? `${me.name} throws ${action.item.name} at ${target.name} (d20:${result.roll}=${result.total} vs AC${target.ac}) — ${result.damage} dmg${result.killed ? ", defeated!" : "."}`
-            : `${me.name} throws ${action.item.name} at ${target.name} — miss.`
+            ? `${me.name} throws ${action.item.name} at ${target.name} for ${result.damage} damage${result.killed ? " — defeated!" : "."}`
+            : `${me.name} throws ${action.item.name} at ${target.name} and misses.`
         );
         // Throw whoosh + visible projectile arc from caster → target.
         Sfx.play("chirp");
@@ -4282,16 +4347,12 @@ export class CombatScene extends Phaser.Scene {
         // so an elemental ranged weapon (Stormbolt Crossbow's
         // lightning, etc.) reads its magic damage at a glance.
         const rType = result.damageType;
-        const rTypeSuffix = rType && rType !== "physical" ? ` (${rType})` : "";
-        const rBonus = result.bonusDamage ?? 0;
-        const rBreakdown =
-          rBonus > 0
-            ? ` — ${result.damage} dmg${rTypeSuffix} [${result.damage - rBonus}+${rBonus} bonus]`
-            : ` — ${result.damage} dmg${rTypeSuffix}`;
+        const rTypeSuffix = rType && rType !== "physical" ? ` ${rType}` : "";
+        const rBreakdown = `for ${result.damage}${rTypeSuffix} damage`;
         this.combat.log.push(
           result.hit
-            ? `${me.name} fires ${ammoLabel} at ${target.name} (d20:${result.roll}=${result.total} vs AC${target.ac})${rBreakdown}${result.killed ? ", defeated!" : "."}`
-            : `${me.name} fires ${ammoLabel} at ${target.name} — miss.`
+            ? `${me.name} fires ${ammoLabel} at ${target.name} ${rBreakdown}${result.killed ? " — defeated!" : "."}`
+            : `${me.name} fires ${ammoLabel} at ${target.name} and misses.`
         );
         // Elemental projectile visual for a relic ranged weapon.
         // Resolution priority:
@@ -4460,7 +4521,7 @@ export class CombatScene extends Phaser.Scene {
           await runVisual(this.bodyXY(me), this.bodyXY(target));
           const r = resolveDamageSpell(me, target, spell, defaultRng);
           this.combat.log.push(
-            `${me.name} casts ${spell.name} on ${target.name} — ${r.damage} dmg${r.killed ? ", defeated!" : "."}`
+            `${me.name} casts ${spell.name} on ${target.name} for ${r.damage} damage${r.killed ? " — defeated!" : "."}`
           );
           if (hitSfx) Sfx.play(hitSfx);
           await this.animateHit(target, r);
@@ -4515,20 +4576,14 @@ export class CombatScene extends Phaser.Scene {
             typeof ev.save_dc_stat === "string" || typeof ev.save_dc_base === "number";
           if (hasSave && !isAlly) {
             const save = rollSpellSave(me, target, spell, defaultRng);
-            const stat = save.saveStat.toUpperCase().slice(0, 3);
-            const sign = save.bonus >= 0 ? "+" : "";
-            const verdict = save.saved ? "saved" : "failed";
-            const dice =
-              `${stat} save: d20(${save.roll}) ${sign}${save.bonus} = ${save.total} ` +
-              `vs DC ${save.dc} — ${verdict}`;
             if (save.saved) {
               this.combat.log.push(
-                `${me.name} casts ${spell.name} on ${target.name} — resisted! (${dice})`,
+                `${me.name} casts ${spell.name} on ${target.name}, but it resists.`,
               );
             } else {
               this.combat.log.push(
                 `${me.name} casts ${spell.name} on ${target.name} — ` +
-                `${describeStatusCast(me, target, spell)} (${dice})`,
+                `${describeStatusCast(me, target, spell)}`,
               );
             }
           } else {
@@ -5050,7 +5105,7 @@ export class CombatScene extends Phaser.Scene {
           total += r.damage;
           const tag = target.side === me.side ? " — FRIENDLY FIRE!" : "";
           this.combat.log.push(
-            `${me.name}'s ${spell.name} ${pierces ? "arcs through" : "strikes"} ${target.name} (${dir.toUpperCase()})${tag} — ${r.damage} dmg${r.killed ? ", defeated!" : "."}`,
+            `${me.name}'s ${spell.name} ${pierces ? "arcs through" : "strikes"} ${target.name} for ${r.damage} damage${r.killed ? " — defeated!" : "."}${tag}`,
           );
           // Electrocute every target at once — the bolt has already
           // streaked the full line, so the flashes land together.
@@ -5195,16 +5250,12 @@ export class CombatScene extends Phaser.Scene {
         const ammoLabel = ammoDef?.name ?? weapon.name;
         // Damage-type + bonus breakdown, matching the precision branch.
         const rType = result.damageType;
-        const rTypeSuffix = rType && rType !== "physical" ? ` (${rType})` : "";
-        const rBonus = result.bonusDamage ?? 0;
-        const rBreakdown =
-          rBonus > 0
-            ? `${result.damage} dmg${rTypeSuffix} [${result.damage - rBonus}+${rBonus} bonus]`
-            : `${result.damage} dmg${rTypeSuffix}`;
+        const rTypeSuffix = rType && rType !== "physical" ? ` ${rType}` : "";
+        const rBreakdown = `for ${result.damage}${rTypeSuffix} damage`;
         this.combat.log.push(
           result.hit
-            ? `${me.name} looses ${ammoLabel} → ${target.name} (${dir.toUpperCase()})${tag} — ${rBreakdown}${result.killed ? ", defeated!" : "."}`
-            : `${me.name} looses ${ammoLabel} → ${target.name} (${dir.toUpperCase()}) — miss.`,
+            ? `${me.name} fires ${ammoLabel} at ${target.name} ${rBreakdown}${result.killed ? " — defeated!" : "."}${tag}`
+            : `${me.name} fires ${ammoLabel} at ${target.name} and misses.`,
         );
         await this.animateHit(target, result);
         // Elemental impact: themed crackle/boom SFX + tinted burst.
@@ -5604,7 +5655,7 @@ export class CombatScene extends Phaser.Scene {
     const parts = [`${enemies} foe${enemies === 1 ? "" : "s"}`];
     if (allies > 0) parts.push(`${allies} all${allies === 1 ? "y" : "ies"} (FRIENDLY FIRE)`);
     this.combat.log.push(
-      `${caster.name} casts ${spell.name} — ${parts.join(", ")} hit, ${total} dmg total.`
+      `${caster.name} casts ${spell.name} — ${parts.join(", ")} hit, ${total} damage total.`
     );
   }
 
@@ -6645,6 +6696,9 @@ export class CombatScene extends Phaser.Scene {
   /** Placeholder inventory list for the active party member: item
    *  names with charges, two columns. Enemies / summons show a dash. */
   private refreshInventoryPanel(): void {
+    for (const o of this.inventoryObjects) o.destroy();
+    this.inventoryObjects = [];
+    this.inventoryHeading.setText("INVENTORY");
     const member = this.memberForCurrent();
     if (!member) {
       this.inventoryText.setText("—");
@@ -6654,25 +6708,91 @@ export class CombatScene extends Phaser.Scene {
       this.inventoryText.setText("(empty)");
       return;
     }
-    const names = member.inventory.map((it) => {
-      const name = this.items.get(it.item)?.name ?? it.item;
-      return typeof it.charges === "number" ? `${name} ×${it.charges}` : name;
+    this.inventoryText.setText("");
+    // Icon grid: one cell per inventory entry, a charge count in the
+    // corner, the item's name in the heading on hover. Entries past
+    // the grid's capacity collapse into a final "+N" cell.
+    const cap = INV_COLS * INV_ROWS;
+    const entries = member.inventory;
+    const overflow = entries.length > cap ? entries.length - (cap - 1) : 0;
+    const shown = overflow > 0 ? entries.slice(0, cap - 1) : entries;
+    const cols = Math.min(INV_COLS, entries.length > cap ? INV_COLS : entries.length);
+    const gridW = cols * INV_PITCH - (INV_PITCH - INV_CELL);
+    const x0 = INVENTORY_X + Math.round((INVENTORY_W - gridW) / 2);
+    const y0 = BOTTOM_Y + 36;
+    const cellAt = (i: number) => ({
+      x: x0 + (i % INV_COLS) * INV_PITCH,
+      y: y0 + Math.floor(i / INV_COLS) * INV_PITCH,
     });
-    const perCol = 4;
-    const colW = 36;
-    const shown = names.slice(0, perCol * 2);
-    if (names.length > shown.length) {
-      shown[shown.length - 1] = `+${names.length - shown.length + 1} more…`;
+    shown.forEach((it, i) => {
+      const def = this.items.get(it.item);
+      const name = def?.name ?? it.item;
+      const { x, y } = cellAt(i);
+      const cell = this.add
+        .rectangle(x, y, INV_CELL, INV_CELL, 0x1c1c2a, 1)
+        .setOrigin(0)
+        .setStrokeStyle(1, C.panelEdge)
+        .setInteractive();
+      cell.on("pointerover", () => {
+        this.inventoryHeading.setText(
+          typeof it.charges === "number" ? `${name} ×${it.charges}` : name,
+        );
+        this.fitInventoryHeading();
+      });
+      cell.on("pointerout", () => {
+        this.inventoryHeading.setText("INVENTORY");
+        this.fitInventoryHeading();
+      });
+      this.inventoryObjects.push(cell);
+      const key = itemIconUrl(def);
+      if (key && this.textures.exists(key)) {
+        this.inventoryObjects.push(
+          this.add
+            .image(x + INV_CELL / 2, y + INV_CELL / 2, key)
+            .setDisplaySize(INV_CELL, INV_CELL),
+        );
+      } else {
+        this.inventoryObjects.push(
+          this.add
+            .text(x + INV_CELL / 2, y + INV_CELL / 2, name.slice(0, 3), FONT_MONO(C.body))
+            .setOrigin(0.5),
+        );
+      }
+      // Stack / charge count in the bottom-right corner.
+      if (typeof it.charges === "number" && it.charges > 1) {
+        this.inventoryObjects.push(
+          this.add
+            .text(x + INV_CELL - 1, y + INV_CELL + 1, String(it.charges), {
+              ...FONT_MONO(C.gold),
+              fontSize: "10px",
+              stroke: "#0c0c14",
+              strokeThickness: 3,
+            })
+            .setOrigin(1, 1),
+        );
+      }
+    });
+    if (overflow > 0) {
+      const { x, y } = cellAt(cap - 1);
+      this.inventoryObjects.push(
+        this.add
+          .rectangle(x, y, INV_CELL, INV_CELL, 0x1c1c2a, 1)
+          .setOrigin(0)
+          .setStrokeStyle(1, C.panelEdge),
+        this.add
+          .text(x + INV_CELL / 2, y + INV_CELL / 2, `+${overflow}`, FONT_MONO(C.gold))
+          .setOrigin(0.5),
+      );
     }
-    const rows: string[] = [];
-    for (let r = 0; r < perCol; r++) {
-      const left = shown[r] ?? "";
-      const right = shown[r + perCol] ?? "";
-      if (!left && !right) break;
-      const l = left.length > colW - 2 ? left.slice(0, colW - 3) + "…" : left;
-      rows.push(right ? l.padEnd(colW) + right : l);
-    }
-    this.inventoryText.setText(rows.join("\n"));
+    this.fitInventoryHeading();
+  }
+
+  /** Shrink the inventory heading if a long item name overflows. */
+  private fitInventoryHeading(): void {
+    const h = this.inventoryHeading;
+    h.setScale(1);
+    const maxW = INVENTORY_W - 16;
+    if (h.width > maxW) h.setScale(maxW / h.width);
   }
 
   private refreshTurnHeader(): void {
@@ -8061,6 +8181,41 @@ export class CombatScene extends Phaser.Scene {
     this.arenaCam?.setZoom(this.arenaZoom());
   }
 
+  /** Pulse + glow the orange highlight on whoever is acting — their
+   *  ring on the arena and the portrait frame in the bottom strip —
+   *  on one shared sine so the two breathe together. The arena halos
+   *  follow the ring every frame (it slides with the body mid-move). */
+  private pulseActiveHighlight(): void {
+    let currentId: string | null = null;
+    try {
+      currentId = this.combat?.current?.id ?? null;
+    } catch {
+      currentId = null; // combat not set up yet (async create)
+    }
+    const p = (Math.sin((this.time.now / GLOW_PERIOD_MS) * Math.PI * 2) + 1) / 2;
+    const ring = currentId ? this.selRings.get(currentId) : undefined;
+    const show = !!ring && ring.visible;
+    if (ring && show) {
+      ring.setStrokeStyle(2, C.cursor, 0.75 + 0.25 * p);
+    }
+    this.activeGlow.forEach((halo, i) => {
+      if (!halo.active) return;
+      halo.setVisible(show);
+      if (!ring || !show) return;
+      halo.setPosition(ring.x, ring.y);
+      halo.setScale(1 + 0.03 * p);
+      halo.setStrokeStyle(1, C.cursor, (0.7 - i * 0.25) * (0.45 + 0.55 * p));
+    });
+    if (this.portraitFrame?.active) {
+      this.portraitFrame.setStrokeStyle(2, C.cursor, 0.75 + 0.25 * p);
+    }
+    this.portraitGlow.forEach((halo, i) => {
+      if (!halo.active) return;
+      halo.setScale(1 + 0.02 * p);
+      halo.setStrokeStyle(1, C.cursor, (0.7 - i * 0.25) * (0.45 + 0.55 * p));
+    });
+  }
+
   /** Which camera draws `go`: explicit arena tag, particles and
    *  graphics below the overlay band belong to the arena (graphics
    *  draw in absolute arena coordinates from x/y 0); dialogs, banners
@@ -8113,6 +8268,7 @@ export class CombatScene extends Phaser.Scene {
   }
 
   update(): void {
+    this.pulseActiveHighlight();
     const cam = this.arenaCam;
     if (!cam) return;
     let f: { x: number; y: number } | null = null;

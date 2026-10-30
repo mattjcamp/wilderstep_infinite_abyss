@@ -75,7 +75,11 @@ const WALL_TILES: ReadonlySet<number> = new Set([
 // climactic floor inside an otherwise-deadly dungeon, set via a
 // Dungeon Level override.
 
-export type DungeonStyle = "caves" | "ruins" | "forest" | "custom";
+/** `"dungeon"` = rooms-and-corridors painted with the Dungeon Tileset
+ *  (directional walls autotiled by neighbour — see sim/dungeon/
+ *  dungeonAutotile.ts). Carves the same TILE_DWALL / TILE_DFLOOR grid
+ *  as "ruins". */
+export type DungeonStyle = "caves" | "ruins" | "forest" | "custom" | "dungeon";
 export type Difficulty = "easy" | "normal" | "hard" | "deadly" | "boss";
 export type LevelSize = "small" | "medium" | "large";
 export type TorchDensity = "none" | "sparse" | "moderate" | "abundant";

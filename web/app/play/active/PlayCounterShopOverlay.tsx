@@ -766,7 +766,10 @@ export function PlayCounterShopOverlay({
             })}
           </section>
         ) : (
-        <div className="grid flex-1 grid-cols-2 gap-3 overflow-hidden p-3">
+        // min-h-0 + a single minmax(0,1fr) row (grid-rows-1) keep the
+        // grid inside the modal's max height instead of growing to fit
+        // every row; each list then scrolls on its own.
+        <div className="grid min-h-0 flex-1 grid-cols-2 grid-rows-1 gap-3 overflow-hidden p-3">
           {/* Stock — click to buy */}
           <section className="flex min-h-0 flex-col">
             <h3
@@ -779,7 +782,7 @@ export function PlayCounterShopOverlay({
             >
               {focusZone === "stock" ? "▸ " : ""}Stock ({stock.length})
             </h3>
-            <ul className="flex-1 space-y-1 overflow-auto pr-1 text-sm">
+            <ul className="min-h-0 flex-1 space-y-1 overflow-auto pr-1 text-sm">
               {stock.length === 0 ? (
                 <li className="text-xs text-parchment/45">(sold out)</li>
               ) : null}
@@ -859,7 +862,7 @@ export function PlayCounterShopOverlay({
             >
               {focusZone === "stash" ? "▸ " : ""}Your Stash ({inventory.length})
             </h3>
-            <ul className="flex-1 space-y-1 overflow-auto pr-1 text-sm">
+            <ul className="min-h-0 flex-1 space-y-1 overflow-auto pr-1 text-sm">
               {inventory.length === 0 ? (
                 <li className="text-xs text-parchment/45">(empty)</li>
               ) : null}

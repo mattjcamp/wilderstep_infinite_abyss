@@ -83,6 +83,11 @@ export const ARENA_TAG = "battle_screen_arena";
  */
 export interface ArenaCellInfo {
   sprite: string | null;
+  /** Resolved URL of the cell's `background_sprite` — drawn UNDER
+   *  `sprite` so a placed object (barrel, chest, statue) with a
+   *  transparent background sits on its floor instead of the void.
+   *  Null / absent → nothing underneath. */
+  backgroundSprite?: string | null;
   walkable: boolean;
   obstructs: boolean;
   /** When true (and combat is run in darkness mode), this cell emits a

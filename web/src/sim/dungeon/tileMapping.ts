@@ -102,6 +102,10 @@ export interface DungeonTilePrototype {
    *  thing sitting on it. When undefined / empty, the cell
    *  renders as just its base. */
   placedItemSprite?: string;
+  /** Sprite drawn UNDER `sprite` — set by the Dungeon Tileset
+   *  autotiler on thin strip walls so the room's floor shows through
+   *  their transparent pixels. */
+  background_sprite?: string;
 }
 
 /** Build a fully-defaulted prototype with the supplied fields. Spread
@@ -134,6 +138,10 @@ function proto(over: Partial<DungeonTilePrototype>): DungeonTilePrototype {
   };
 }
 
+/** Palette id of the chest art (the old bare "chest" id was retired
+ *  in the 2026-10 tile trim; the Default palette ships "object_chest"). */
+export const CHEST_PALETTE_ID = "object_chest";
+
 /** ── Style-agnostic dungeon furniture ─────────────────────────────
  *  Stairs / chests / traps / torches look the same regardless of
  *  whether you're in a cave or a stone dungeon. */
@@ -153,7 +161,7 @@ const STAIRS_DOWN_PROTO = proto({
 const CHEST_PROTO = proto({
   id: "chest",
   name: "Chest",
-  paletteId: "chest",
+  paletteId: CHEST_PALETTE_ID,
   // Walkable so the party can stand on the cell to open the chest.
   // The simulator doesn't model loot yet — the cell just reads as
   // floor with a chest overlay.
@@ -195,7 +203,7 @@ const ARTIFACT_PROTO = proto({
   name: "Quest Artifact",
   // Reuse the chest sprite for now — the artifact pickup path isn't
   // wired up in v2 yet.
-  paletteId: "chest",
+  paletteId: CHEST_PALETTE_ID,
 });
 
 const WALL_TORCH_PROTO = proto({
@@ -302,6 +310,82 @@ const FOREST_ARCHWAY_DOWN_PROTO = proto({
   paletteId: "stairs_down",
 });
 
+/** ── Dungeon Tileset style ("dungeon") ─────────────────────────
+ *  Flagstone floor, Dungeon Tileset doors / stairs. Walls start as
+ *  one generic block (id "dungeon_wall"); the converter's autotile
+ *  pass then picks each wall's directional piece from its
+ *  neighbours (`autotileDungeonWalls`). */
+export const DUNGEON_TILESET_FLOOR_ID = "dungeon_floor_flagstone";
+
+const DT_FLOOR_PROTO = proto({
+  id: DUNGEON_TILESET_FLOOR_ID,
+  name: "Dungeon Floor, Flagstone",
+  paletteId: DUNGEON_TILESET_FLOOR_ID,
+});
+const DT_WALL_PROTO = proto({
+  id: "dungeon_wall",
+  name: "Dungeon Wall",
+  walkable: false,
+  obstructs: true,
+  paletteId: "dungeon_wall_top",
+});
+const DT_STAIRS_UP_PROTO = proto({
+  id: "stairs_up",
+  name: "Dungeon Stairs, Up",
+  paletteId: "dungeon_stairs_up",
+});
+const DT_STAIRS_DOWN_PROTO = proto({
+  id: "stairs_down",
+  name: "Dungeon Stairs, Down",
+  paletteId: "dungeon_stairs",
+});
+const DT_DOOR_PROTO = proto({
+  id: "dungeon_door",
+  name: "Dungeon Door",
+  paletteId: "dungeon_door",
+});
+const DT_LOCKED_DOOR_PROTO = proto({
+  id: "door_locked",
+  name: "Locked Door",
+  walkable: false,
+  obstructs: false,
+  locked: true,
+  paletteId: "dungeon_door",
+});
+const DT_WALL_TORCH_PROTO = proto({
+  ...WALL_TORCH_PROTO,
+  paletteId: "dungeon_wall_top",
+});
+
+function dungeonTilesetProto(tileId: number): DungeonTilePrototype | null {
+  switch (tileId) {
+    case TILE_DFLOOR:
+    case TILE_PATH:
+    case TILE_GRASS:
+    case TILE_SAND:
+      return DT_FLOOR_PROTO;
+    case TILE_DWALL:
+    case TILE_MOUNTAIN:
+    case TILE_FOREST:
+      return DT_WALL_PROTO;
+    case TILE_STAIRS:
+    case TILE_FOREST_ARCHWAY_UP:
+      return DT_STAIRS_UP_PROTO;
+    case TILE_STAIRS_DOWN:
+    case TILE_FOREST_ARCHWAY_DOWN:
+      return DT_STAIRS_DOWN_PROTO;
+    case TILE_DDOOR:
+      return DT_DOOR_PROTO;
+    case TILE_LOCKED_DOOR:
+      return DT_LOCKED_DOOR_PROTO;
+    case TILE_WALL_TORCH:
+      return DT_WALL_TORCH_PROTO;
+    case TILE_TRAP:
+      return { ...TRAP_PROTO, paletteId: DUNGEON_TILESET_FLOOR_ID };
+  }
+  return null;
+}
+
 /** Resolve a v1 numeric tile id to a v2 cell prototype. Returns null
  *  for tile ids the generator never emits OR cosmetic ids the
  *  simulator can safely skip (puddles / moss). Callers default to a
@@ -310,6 +394,12 @@ export function prototypeForTileId(
   tileId: number,
   style: DungeonStyle,
 ): DungeonTilePrototype | null {
+  // The Dungeon Tileset style has its own floor / walls / stairs /
+  // doors; chests + artifacts fall through to the shared furniture.
+  if (style === "dungeon") {
+    const p = dungeonTilesetProto(tileId);
+    if (p) return p;
+  }
   // Style-agnostic furniture takes precedence.
   switch (tileId) {
     case TILE_STAIRS:
@@ -403,7 +493,23 @@ export const DUNGEON_PALETTE_IDS: readonly string[] = [
   "wall_stone",
   "stairs_up",
   "stairs_down",
-  "chest",
+  CHEST_PALETTE_ID,
+  // Dungeon Tileset style — floor, furniture and every wall piece the
+  // autotiler can pick.
+  DUNGEON_TILESET_FLOOR_ID,
+  "dungeon_stairs_up",
+  "dungeon_stairs",
+  "dungeon_door",
+  "dungeon_wall_top",
+  "dungeon_wall_bottom",
+  "dungeon_wall_left",
+  "dungeon_wall_right",
+  "dungeon_wall_divider",
+  "dungeon_wall_corner_tl",
+  "dungeon_wall_corner_tr",
+  "dungeon_wall_t_down",
+  "dungeon_wall_t_up",
+  "dungeon_pit_centre",
   "door",
   "door_locked",
   "mountain",

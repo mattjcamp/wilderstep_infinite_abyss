@@ -203,6 +203,20 @@ export class Combat {
    */
   private attackedThisTurn = false;
   readonly log: string[] = [];
+  /** Running "X moves N tiles." line: consecutive steps by the same
+   *  combatant update one line in place instead of adding a line per
+   *  step. A new line starts once anything else is logged between. */
+  private moveLog: { actorId: string; index: number; steps: number } | null = null;
+
+  private logMoveStep(actor: Combatant): void {
+    const m = this.moveLog;
+    const steps =
+      m && m.actorId === actor.id && m.index === this.log.length - 1 ? m.steps + 1 : 1;
+    const line = `${actor.name} moves ${steps} tile${steps === 1 ? "" : "s"}.`;
+    if (steps > 1 && m) this.log[m.index] = line;
+    else this.log.push(line);
+    this.moveLog = { actorId: actor.id, index: this.log.length - 1, steps };
+  }
   /**
    * Per-combatant summon timer (in rounds). Animate Dead and similar
    * spells push an entry here; tickSummons() decrements at end of
@@ -302,13 +316,9 @@ export class Combat {
     this.advanceToAlive();
     this.refillMovePoints();
 
-    // Opening banner — mirrors the Python game's "Party vs N enemies!"
-    // intro lines so the bottom log opens with context.
-    const enemyNames = enemies.map((e) => e.name).join(", ");
-    this.log.push(`--- Party vs ${enemies.length} enemies! ---`);
-    if (enemyNames) this.log.push(`(${enemyNames})`);
-    this.log.push(`${party.length} party members engage!`);
-    this.log.push(`-- ${this.current.name}'s turn --`);
+    // No opening banner / turn announcements: the log records only
+    // what combatants DO (moves, attacks, spells, effects). Whose turn
+    // it is reads from the portrait + highlight ring.
   }
 
   /**
@@ -684,6 +694,7 @@ export class Combat {
     const from = { ...actor.position };
     actor.position = { col: nc, row: nr };
     this.movePoints -= 1;
+    this.logMoveStep(actor);
     return { kind: "moved", from, to: { col: nc, row: nr }, pointsLeft: this.movePoints };
   }
 
@@ -720,13 +731,10 @@ export class Combat {
       const saveRoll = rollD20(this.rng);
       const dexMod = getModifier(attacker.dexterity ?? 10);
       const total = saveRoll + dexMod;
-      const dice = `d20:${saveRoll}+${dexMod}=${total} vs DC 12`;
       if (total >= 12) {
         backstab = true;
         critical = true;
-        this.log.push(
-          `${attacker.name} finds an opening! (${dice}) — BACKSTAB!`,
-        );
+        this.log.push(`${attacker.name} finds an opening — BACKSTAB!`);
       } else {
         // Tell the player the ability fired even when the save
         // failed — without this the gate looks silently absent
@@ -734,7 +742,7 @@ export class Combat {
         // at all. Same dice-math format as the success line so
         // both branches read consistently in the log strip.
         this.log.push(
-          `${attacker.name} probes for an opening on ${target.name} (${dice}) — no opening.`,
+          `${attacker.name} finds no opening on ${target.name}.`,
         );
       }
     }
@@ -802,35 +810,9 @@ export class Combat {
     if (killed) {
       releaseConsumedBy(this.effectHost, this.combatants, target.id);
     }
-    // Detailed log line — mirrors the Python game's "(d20:N+M=T vs ACX)"
-    // format so the player can see the math behind each swing. The
-    // bonus shown is the effective one so a Blessed attacker visibly
-    // adds the +2. Magic weapons append a damage-type tag so the
-    // player can see Sun Sword's fire damage at a glance.
-    const bonusStr = effAtk >= 0 ? `+${effAtk}` : `${effAtk}`;
-    const dice = `d20:${roll.roll}${bonusStr}=${roll.total} vs AC${effAc}`;
+    // Magic weapons tag their damage type ("2 fire damage").
     const dmgType = attacker.weaponDamageType;
-    const typeSuffix = dmgType && dmgType !== "physical" ? ` (${dmgType})` : "";
-    // Damage-math breakdown, mirroring the attack-roll readout so the
-    // player can see WHERE the number came from. Critical / backstab
-    // hits show the DOUBLED dice expression and the rolled subtotal
-    // explicitly, so a low total after a negative modifier (e.g. a −2
-    // STR dagger) still visibly reflects the doubling rather than
-    // looking like the ability fizzled.
-    let dmgBreakdown = ` — ${damage} dmg${typeSuffix}`;
-    if (roll.hit && rolledDiceCount > 0) {
-      const parts: string[] = [
-        `${rolledDiceCount}d${attacker.damage.sides}${critical ? " crit-doubled" : ""}: ${diceSubtotal}`,
-      ];
-      if (totalBonus !== 0) {
-        parts.push(`${totalBonus >= 0 ? "+" : "−"}${Math.abs(totalBonus)} mod`);
-      }
-      if (bonusDamage > 0) parts.push(`+${bonusDamage} bonus`);
-      if (smiteUndead) parts.push("×2 smite");
-      dmgBreakdown += ` [${parts.join(", ")}]`;
-    } else if (bonusDamage > 0) {
-      dmgBreakdown += ` [${damage - bonusDamage}+${bonusDamage} bonus]`;
-    }
+    const typeSuffix = dmgType && dmgType !== "physical" ? ` ${dmgType}` : "";
     // Attribute the hit to the move that drove it so the damage amount
     // reads as part of the BACKSTAB! / SMITE! beat the player just saw,
     // instead of a generic "crits" line.
@@ -841,10 +823,11 @@ export class Combat {
         : critical
           ? "crits"
           : "hits";
+    // Basic details only — who, whom, how much.
     this.log.push(
       roll.hit
-        ? `${attacker.name} ${hitVerb} ${target.name} (${dice})${dmgBreakdown}${killed ? ", defeated!" : "."}`
-        : `${attacker.name} swings at ${target.name} (${dice}) — miss.`
+        ? `${attacker.name} ${hitVerb} ${target.name} for ${damage}${typeSuffix} damage${killed ? " — defeated!" : "."}`
+        : `${attacker.name} misses ${target.name}.`
     );
     return {
       attackerId: attacker.id,
@@ -1018,7 +1001,6 @@ export class Combat {
       }
       if (this.byId(this.initiativeOrder[this.cursor].combatantId).hp > 0) {
         this.refillMovePoints();
-        this.log.push(`-- ${this.current.name}'s turn --`);
         if ((this.current.turnedTurns ?? 0) > 0) {
           this.log.push(
             `${this.current.name} is turned — it recoils from the holy light!`,
