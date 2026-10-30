@@ -4,6 +4,7 @@
     {
       "id": "magic_dart",
       "name": "Magic Dart",
+      "icon": "magic_dart",
       "animation_id": "magic_dart",
       "description": "Hurls an energy-charged dart in a straight line, stinging on impact.",
       "casting_type": "sorcerer",
@@ -26,6 +27,7 @@
     {
       "id": "shield",
       "name": "Shield",
+      "icon": "shield",
       "animation_id": "shield_aura",
       "description": "Conjures a faint magical barrier around an ally, slightly boosting their armor.",
       "casting_type": "sorcerer",
@@ -45,6 +47,7 @@
     {
       "id": "sleep",
       "name": "Sleep",
+      "icon": "sleep",
       "animation_id": "status_aura",
       "description": "Lulls a weak-minded creature into a light magical slumber.",
       "casting_type": "sorcerer",
@@ -67,6 +70,7 @@
     {
       "id": "knock",
       "name": "Knock",
+      "icon": "knock",
       "animation_id": "utility_clack",
       "description": "Sends a pulse of arcane force into a lock's mechanism, rattling tumblers and wards alike. Cast from the locked-door dialog when the party bumps a lock.",
       "casting_type": "sorcerer",
@@ -85,6 +89,7 @@
     {
       "id": "long_shanks",
       "name": "Long Shanks",
+      "icon": "long_shanks",
       "animation_id": "shield_aura",
       "description": "Enchants an ally's legs with unnatural speed, extending their movement range for 3 turns. May also be cast on yourself.",
       "casting_type": "sorcerer",
@@ -104,6 +109,7 @@
     {
       "id": "magic_arrow",
       "name": "Magic Arrow",
+      "icon": "magic_arrow",
       "animation_id": "magic_arrow",
       "description": "Conjures a piercing bolt of arcane energy that streaks toward a chosen foe.",
       "casting_type": "sorcerer",
@@ -126,6 +132,7 @@
     {
       "id": "invisibility",
       "name": "Invisibility",
+      "icon": "invisibility",
       "animation_id": "shield_aura",
       "description": "The caster bends light around themselves, becoming invisible to enemies for 3 turns.",
       "casting_type": "sorcerer",
@@ -145,6 +152,7 @@
     {
       "id": "misty_step",
       "name": "Misty Step",
+      "icon": "misty_step",
       "animation_id": "teleport_blink",
       "description": "The caster vanishes in a swirl of silvery mist and reappears at a chosen location on the battlefield.",
       "casting_type": "sorcerer",
@@ -162,6 +170,7 @@
     {
       "id": "charm_person",
       "name": "Charm Person",
+      "icon": "charm_person",
       "animation_id": "status_aura",
       "description": "Weaves an enchantment that bends the will of a humanoid creature, turning it against its allies for 3 turns.",
       "casting_type": "sorcerer",
@@ -183,6 +192,7 @@
     {
       "id": "lightning_bolt",
       "name": "Lightning Bolt",
+      "icon": "lightning_bolt",
       "animation_id": "lightning_strike",
       "description": "Unleashes a searing bolt of lightning that streaks in a straight line, electrocuting everything in its path.",
       "casting_type": "sorcerer",
@@ -207,6 +217,7 @@
     {
       "id": "animate_dead",
       "name": "Animate Dead",
+      "icon": "animate_dead",
       "animation_id": "summon_burst",
       "description": "Raises a powerful skeleton warrior from the earth to fight for the caster.",
       "casting_type": "sorcerer",
@@ -235,6 +246,7 @@
     {
       "id": "fireball",
       "name": "Fireball",
+      "icon": "fireball",
       "animation_id": "fireball_burst",
       "description": "Hurls a massive ball of flame that detonates in a 3-tile radius, scorching everything — friend or foe — caught in the blast.",
       "casting_type": "sorcerer",
@@ -259,6 +271,7 @@
     {
       "id": "light",
       "name": "Light",
+      "icon": "light",
       "animation_id": "status_aura",
       "description": "Conjures a radiant orb of divine light at a chosen spot — anywhere on the battlefield.",
       "casting_type": "priest",
@@ -280,6 +293,7 @@
     {
       "id": "heal",
       "name": "Minor Heal",
+      "icon": "heal",
       "animation_id": "heal_sparkles",
       "description": "Sends a gentle wave of healing energy toward an ally or the caster.",
       "casting_type": "priest",
@@ -303,6 +317,7 @@
     {
       "id": "cure_poison",
       "name": "Cure Poison",
+      "icon": "cure_poison",
       "animation_id": "heal_sparkles",
       "description": "Draws the venom from an ally's body with a cleansing prayer, removing the poisoned condition.",
       "casting_type": "priest",
@@ -322,6 +337,7 @@
     {
       "id": "bless",
       "name": "Bless",
+      "icon": "bless",
       "animation_id": "shield_aura",
       "description": "Invokes a divine blessing that empowers all allies, granting them greater accuracy in battle.",
       "casting_type": "priest",
@@ -342,6 +358,7 @@
     {
       "id": "curse",
       "name": "Curse",
+      "icon": "curse",
       "animation_id": "curse_aura",
       "description": "Calls down a dark malediction on an enemy, weakening its defenses and dulling its attacks.",
       "casting_type": "priest",
@@ -361,6 +378,7 @@
     {
       "id": "major_heal",
       "name": "Major Heal",
+      "icon": "major_heal",
       "animation_id": "heal_sparkles",
       "description": "Channels a powerful wave of restorative energy toward an ally, mending grievous wounds.",
       "casting_type": "priest",
@@ -383,6 +401,7 @@
     {
       "id": "push",
       "name": "Push",
+      "icon": "push",
       "animation_id": "status_aura",
       "description": "Emits a powerful wave of divine force that drives nearby monsters away from the party.",
       "casting_type": "priest",
@@ -404,6 +423,7 @@
     {
       "id": "mass_heal",
       "name": "Mass Heal",
+      "icon": "mass_heal",
       "animation_id": "heal_sparkles",
       "description": "A burst of divine light radiates from the caster, restoring health to all nearby allies.",
       "casting_type": "priest",
@@ -427,6 +447,7 @@
     {
       "id": "restore",
       "name": "Restore",
+      "icon": "restore",
       "animation_id": "heal_sparkles",
       "description": "A radiant pillar of divine power engulfs the party, fully restoring health to all allies and mana to everyone but the caster, purging all poisons from their bodies.",
       "casting_type": "priest",
@@ -451,6 +472,7 @@
     {
       "id": "recall",
       "name": "Recall",
+      "icon": "recall",
       "animation_id": "teleport_blink",
       "description": "Folds space around the whole party, drawing them back to their last rune stone — or, if none was placed, to where their journey began.",
       "casting_type": "sorcerer",
@@ -470,6 +492,7 @@
     {
       "id": "meteor_shower",
       "name": "Meteor Shower",
+      "icon": "meteor_shower",
       "animation_id": "meteor_strike",
       "description": "Calls a rain of blazing meteors down on every foe on the battlefield, scorching them all at once.",
       "casting_type": "sorcerer",
@@ -493,6 +516,7 @@
     {
       "id": "void_orb",
       "name": "Void Orb",
+      "icon": "void_orb",
       "animation_id": "void_orb",
       "description": "Conjures a sphere of absolute void that collapses on a single enemy, unmaking them with devastating force.",
       "casting_type": "sorcerer",
@@ -516,6 +540,7 @@
     {
       "id": "daylight",
       "name": "Daylight",
+      "icon": "daylight",
       "animation_id": "status_aura",
       "description": "Floods the entire battlefield with brilliant daylight for the rest of the battle, banishing every shadow.",
       "casting_type": "priest",
@@ -533,6 +558,7 @@
     {
       "id": "divine_smite",
       "name": "Divine Smite",
+      "icon": "divine_smite",
       "animation_id": "meteor_strike",
       "description": "Calls down a searing column of holy radiance that scours a single enemy — and burns the undead half again as hard.",
       "casting_type": "priest",
@@ -557,6 +583,7 @@
     {
       "id": "resurrection",
       "name": "Resurrection",
+      "icon": "resurrection",
       "animation_id": "heal_sparkles",
       "description": "Channels life back into a fallen companion, raising them from the dead at half their full strength.",
       "casting_type": "priest",

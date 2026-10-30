@@ -51,6 +51,10 @@ function thumbFor(
     const icon = typeof rec.icon === "string" ? rec.icon : null;
     return icon ? spriteUrl(`item/${icon}.png`) : null;
   }
+  if (model === "spells") {
+    const icon = typeof rec.icon === "string" ? rec.icon : null;
+    return icon ? spriteUrl(`spells/${icon}.png`) : null;
+  }
   if (sprite) return spriteUrl(sprite);
   return null;
 }

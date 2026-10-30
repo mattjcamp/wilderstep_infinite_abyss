@@ -52,6 +52,7 @@ Each record:
 |---|---|---|---|---|
 | `id` | string | yes | Stable identifier; referenced by Item (`activates_spell`), Monster (`spells[]`), and combat logs | TBD |
 | `name` | string | yes | Display label | TBD |
+| `icon` | string | no | Icon stem in the `spells/` sprite folder (`sprites/spells/<icon>.png`) — shown beside the spell in the battle Cast menu and as the record thumbnail in the editor. The Default module ships one per spell, named after the spell id. | Yes |
 | `description` | string | yes | Tooltip / spellbook text | TBD |
 | `casting_type` | string | yes | Spellcasting school / catalog — `"sorcerer"` (arcane / INT-flavored) or `"priest"` (divine / WIS-flavored). This is the *only* gating field for class eligibility: a class can cast this spell iff its [Character Class](character_class.md) `casting_type[]` includes this value. There is no per-spell allow-list — every class in the matching catalog can cast every spell in the catalog. | TBD |
 | `class_min_levels` | object | no | Per-class min level override (e.g. `{ "Paladin": 5 }`) when a specific class learns the spell at a different level than the spell's base `min_level`. Keys are class display names (PascalCase). No spell uses this in current data — it's preserved against the case where a future spell needs class-specific gating. | TBD |

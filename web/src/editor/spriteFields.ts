@@ -62,6 +62,11 @@ const PER_MODEL: Record<string, Record<string, SpriteFieldConfig>> = {
   monsters: {
     sprite: { category: "monster", format: "path" },
   },
+  // Spell icons live in their own sprites/spells/ folder (the shared
+  // `icon` field otherwise means an item icon).
+  spells: {
+    icon: { category: "spells", format: "stem" },
+  },
 };
 
 /** Returns the picker config for a field, or null if the field isn't

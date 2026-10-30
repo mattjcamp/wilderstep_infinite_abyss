@@ -29707,7 +29707,7 @@
             "sprite": "indoor/table_h_right.png",
             "tag": "shop",
             "background_sprite": "indoor/floor_planks.png",
-            "npc": "ola"
+            "npc": "frida"
           },
           {
             "boat": false,
@@ -29757,7 +29757,7 @@
             "spawn": null,
             "sprite": "indoor/floor_planks_alt.png",
             "tag": "shop",
-            "npc": "frida"
+            "npc": "benoit"
           },
           {
             "boat": false,
@@ -29792,7 +29792,7 @@
             "sprite": "indoor/wall_right.png",
             "tag": "shop",
             "background_sprite": "indoor/floor_planks.png",
-            "npc": "benoit"
+            "npc": "ola"
           }
         ],
         [

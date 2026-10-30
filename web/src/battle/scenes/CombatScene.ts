@@ -4,24 +4,24 @@
  *   ┌─ Top status bar ──────────────────────────────────────────┐
  *   │  BATTLE                                                   │
  *   ├─ Arena (left) ─────────────┬─ Right HUD ──────────────────┤
- *   │  18×21 grid of terrain     │ PARTY                        │
+ *   │  18×16 grid of terrain     │ PARTY                        │
  *   │  tiles matching the        │ ┌──┐ Gimli   ▓▓▓ 20/20       │
- *   │  encounter location.       │ │  │                          │
- *   │  Party at the bottom,      │ ├──┤ Merry   ▓▓▓ 20/20       │
- *   │  enemies at the top.       │ │…│                          │
- *   │                            │ ├──┤ Gandolf ▓▓▓ 20/20  ▓▓ MP│
- *   │                            │ │…│                          │
- *   │                            │ ├──┤ Selina  ▓▓▓ 20/20  ▓▓ MP│
- *   │                            │ │…│                          │
- *   │                            │ -- Gimli'S TURN --            │
- *   │                            │ > Attack                      │
- *   │                            │   End Turn                    │
- *   │                            │   Flee                        │
- *   │                            │   Throw    (coming soon)      │
- *   │                            │   Defend   (coming soon)      │
- *   ├────────────────────────────┴───────────────────────────────┤
- *   │ Battle log (full-width — last ~7 lines, dice + mods)       │
- *   └────────────────────────────────────────────────────────────┘
+ *   │  encounter location.       │ ├──┤ Merry   ▓▓▓ 20/20       │
+ *   │  Party at the bottom,      │ ├──┤ Gandolf ▓▓▓ 20/20  ▓▓ MP│
+ *   │  enemies at the top.       │ ├──┤ Selina  ▓▓▓ 20/20  ▓▓ MP│
+ *   │                            │ LOG                          │
+ *   │                            │ (newest lines that fit,      │
+ *   │                            │  dice + mods)                │
+ *   ├─ Portrait ─┬─ Actions (45%) ─┴─────┬─ Inventory (45%) ────┤
+ *   │  ┌──────┐  │ -- GIMLI'S TURN -- 6/6 │ INVENTORY            │
+ *   │  │avatar│  │ > Attack   Abilities   │ Torch ×3   Rope      │
+ *   │  └──────┘  │   Range    Use Item    │ Potion ×2            │
+ *   │   Gimli    │   Throw    End Turn    │                      │
+ *   └────────────┴────────────────────────┴──────────────────────┘
+ *   (portrait = whoever is acting, enemies included)
+ *
+ * All frames below the header share one grid (12px margin, 8px
+ * gutters) so their edges line up — see the Layout constants.
  *
  * Movement uses arrow keys / WASD or tap-to-step (cardinal only).
  * The action menu uses UP/DOWN/Enter and works on top of the action
@@ -143,6 +143,7 @@ import { Sfx } from "../audio/Sfx";
 import type { Combatant, AttackResult } from "../types";
 import type { PartyMember } from "../world/Party";
 import { consumeOneFromStackAt } from "../world/Party";
+import { spriteUrl } from "@/data_model/spriteUrl";
 
 /** Outcome the React-mounted host receives when the combat scene
  *  resolves. The v1 scene-switching path mutates `gameState.partyData`
@@ -296,23 +297,67 @@ const COMBAT_STEP_MS = 110;
  *  the arena at the frame's normal size (not zoomed with the arena). */
 const OVERLAY_DEPTH = 120;
 const HEADER_H = 32;
-const ARENA_X = 12;
-const ARENA_Y = HEADER_H + 8;             // 40
+// Frame grid — every panel below the header sits on the same grid so
+// their edges line up: a 12px margin to the screen edge, an 8px
+// gutter between panels. The arena, party HUD and log frames share
+// left / right / top / bottom edges exactly; the arena's camera view
+// sits ARENA_PAD inside its frame so the border never covers tiles.
+const MARGIN = 12;
+const GUTTER = 8;
+const ARENA_PAD = 4;
+const FRAME_TOP = HEADER_H + GUTTER;      // 40
+const ARENA_FRAME_X = MARGIN;             // 12
+const ARENA_X = ARENA_FRAME_X + ARENA_PAD; // 16
+const ARENA_Y = FRAME_TOP + ARENA_PAD;    // 44
 // ARENA_W/H: the battlefield itself (18 × 16 tiles) in world units.
 // VIEW_W/H: the on-screen window the arena camera draws it into; the
 // camera zooms tiles to native size and scrolls within the battlefield.
 const ARENA_W = ARENA_COLS * TILE;        // 18 × 32 = 576
 const ARENA_H = ARENA_ROWS * TILE;        // 16 × 32 = 512
 const HUD_W = 348;
-const VIEW_W = LOGICAL_WIDTH - ARENA_X - 12 - HUD_W - 12;   // 896
-const VIEW_H = ARENA_H;                   // 512
-const HUD_X = ARENA_X + VIEW_W + 12;      // 920
-const HUD_Y = ARENA_Y;
-const HUD_H = VIEW_H;
-const LOG_X = 12;
-const LOG_Y = ARENA_Y + VIEW_H + 8;       // 560
-const LOG_W = LOGICAL_WIDTH - 24;         // 1256
-const LOG_H = LOGICAL_HEIGHT - LOG_Y - 12;           // 148
+const ARENA_FRAME_W =
+  LOGICAL_WIDTH - MARGIN - GUTTER - HUD_W - MARGIN;          // 900
+const VIEW_W = ARENA_FRAME_W - ARENA_PAD * 2;                // 892
+const VIEW_H = ARENA_H;                                      // 512
+const ARENA_FRAME_H = VIEW_H + ARENA_PAD * 2;                // 520
+const HUD_X = ARENA_FRAME_X + ARENA_FRAME_W + GUTTER;        // 920
+const HUD_Y = FRAME_TOP;                                     // 40
+const HUD_H = ARENA_FRAME_H;                                 // 520
+// Bottom strip — three panels on the same frame grid, split 10 / 45 /
+// 45 of the usable width: the active combatant's portrait, the
+// action menu, and the active member's inventory. The battle log
+// lives in the right-hand HUD under the party cards.
+const BOTTOM_Y = FRAME_TOP + ARENA_FRAME_H + GUTTER;         // 568
+const BOTTOM_H = LOGICAL_HEIGHT - BOTTOM_Y - MARGIN;         // 140
+const BOTTOM_INNER_W = LOGICAL_WIDTH - MARGIN * 2 - GUTTER * 2; // 1240
+const PORTRAIT_X = MARGIN;                                   // 12
+const PORTRAIT_W = Math.round(BOTTOM_INNER_W * 0.1);         // 124
+const ACTIONS_X = PORTRAIT_X + PORTRAIT_W + GUTTER;          // 144
+const ACTIONS_W = Math.round((BOTTOM_INNER_W - PORTRAIT_W) / 2); // 558
+const INVENTORY_X = ACTIONS_X + ACTIONS_W + GUTTER;          // 710
+const INVENTORY_W =
+  LOGICAL_WIDTH - MARGIN - INVENTORY_X;                      // 558
+const ACTIONS_Y = BOTTOM_Y;
+const ACTIONS_H = BOTTOM_H;
+/** Action icon matrix: columns, cell pitch, cell + icon size. Eight
+ *  slots (4 × 2) — one per possible action; only available actions
+ *  are drawn, packed from the top-left. */
+const ACTION_GRID_COLS = 4;
+const ACTION_GRID_ROWS = 2;
+const ACTION_CELL = 50;
+const ACTION_PITCH = 54;
+const ACTION_ICON = 48;
+/** Sub-menu (spell / item / ability lists) shown inside the Action
+ *  panel as an icon matrix, same cell size as the action icons:
+ *  SUBMENU_COLS × SUBMENU_ROWS cells on screen, scrolling a row at a
+ *  time to keep the cursor in view. The last entry is always Back. */
+const SUBMENU_COLS = 8;
+const SUBMENU_ROWS = 2;
+const SUBMENU_VISIBLE = SUBMENU_COLS * SUBMENU_ROWS;
+/** Back entry icon — module sprite actions/back.png. */
+const BACK_ICON_URL = (): string => spriteUrl("actions/back.png");
+/** Portrait size inside the 10% panel (square, leaves room for the name). */
+const PORTRAIT_SIZE = 84;
 
 // ── Web-app theme palette (matches PartyScene + TownScene) ────────
 const C = {
@@ -367,32 +412,49 @@ type ActionId =
 interface ActionEntry {
   id: ActionId;
   label: string;
+  /** One-line description shown beside the icon matrix when the
+   *  action is highlighted. */
+  hint: string;
 }
 
+/** Icon sprite for an action — module sprite `actions/<id>.png` (its
+ *  own sprite folder), so a module can re-skin the battle menu by
+ *  shipping its own icons. */
+const actionIconUrl = (id: ActionId): string => spriteUrl(`actions/${id}.png`);
+
+/** Icon sprite for a spell — `spells/<spell.icon>.png`, or null when
+ *  the spell names no icon. */
+const spellIconUrl = (spell: { icon?: string }): string | null =>
+  spell.icon ? spriteUrl(`spells/${spell.icon}.png`) : null;
+
+/** Icon sprite for an item — `item/<item.icon>.png`, or null. */
+const itemIconUrl = (item: { icon?: string | null } | null | undefined): string | null =>
+  item?.icon ? spriteUrl(`item/${item.icon}.png`) : null;
+
 const PARTY_ACTIONS: ActionEntry[] = [
-  { id: "attack",  label: "Attack"          },
-  { id: "range",   label: "Range"           },
-  { id: "throw",   label: "Throw"           },
-  { id: "cast",    label: "Cast"            },
+  { id: "attack",  label: "Attack",     hint: "Strike an adjacent enemy" },
+  { id: "range",   label: "Range",      hint: "Fire your ranged weapon" },
+  { id: "throw",   label: "Throw",      hint: "Throw an item at a target" },
+  { id: "cast",    label: "Cast",       hint: "Cast a spell" },
   // "Abilities" surfaces combat-active class/race abilities
   // (today: Turn Undead). Separate from Cast because abilities
   // and spells are different concepts — abilities don't cost MP,
   // gate by class+level rather than casting catalog, and often
   // carry once-per-encounter limits or other ability-specific
   // rules the spell picker can't express.
-  { id: "ability", label: "Abilities"       },
+  { id: "ability", label: "Abilities",  hint: "Use a class or race ability" },
   // "Use" surfaces combat-usable consumables — Healing Potion, Mana
   // Potion, Antidote, Healing Herb, the throwable poisons. Party-only
   // items (Torch, Camping Supplies, Lockpick) are filtered out by
   // `isCombatUsable` so they never appear in this picker.
-  { id: "use",    label: "Use Item"        },
+  { id: "use",     label: "Use Item",   hint: "Drink or use a consumable" },
   // "Equip" lets the active member swap weapons / armor mid-fight
   // out of their personal inventory (the shared stash isn't reachable
   // from combat — that mirrors how Throw and Use already work for
   // *equippable* items: shared stash items show up only for
   // throwables / consumables, not for gear). Consumes the turn.
-  { id: "equip",  label: "Equip Item"      },
-  { id: "end",    label: "End Turn  [SPACE]" },
+  { id: "equip",   label: "Equip Item", hint: "Swap a weapon or armor" },
+  { id: "end",     label: "End Turn",   hint: "Finish this turn  [SPACE]" },
 ];
 
 /**
@@ -667,9 +729,18 @@ export class CombatScene extends Phaser.Scene {
   >();
 
   private logText!: Phaser.GameObjects.Text;
-  private turnText!: Phaser.GameObjects.Text;
-  private movePointsText!: Phaser.GameObjects.Text;
-  private actionTexts: Phaser.GameObjects.Text[] = [];
+  /** Box the battle log draws into (HUD column, below the party
+   *  cards). Measured by drawHud, consumed by drawLog / refreshLog. */
+  private logArea = { x: 0, y: 0, w: 0, h: 0 };
+  /** Bottom-left portrait panel: frame, current image, name. */
+  private portraitFrame!: Phaser.GameObjects.Rectangle;
+  private portraitImage: Phaser.GameObjects.GameObject | null = null;
+  private portraitName!: Phaser.GameObjects.Text;
+  /** Bottom-right inventory panel body text. */
+  private inventoryText!: Phaser.GameObjects.Text;
+  private actionIcons: Phaser.GameObjects.Image[] = [];
+  /** Name + hint of the highlighted action, beside the matrix. */
+  private actionHintText!: Phaser.GameObjects.Text;
   private actionRowHandles: Phaser.GameObjects.Rectangle[] = [];
   /**
    * Static decorations created during create() — panel backgrounds,
@@ -767,6 +838,9 @@ export class CombatScene extends Phaser.Scene {
   private classTemplates: Map<string, ClassTemplate> = new Map();
   /** Picker overlay objects (cleared on mode transition). */
   private pickerObjects: Phaser.GameObjects.GameObject[] = [];
+  /** True while a list sub-menu (spells, items, abilities, ammo)
+   *  occupies the Action panel in place of the icon matrix. */
+  private subMenuOpen = false;
 
   private busy = false;
   private ended = false;
@@ -888,8 +962,8 @@ export class CombatScene extends Phaser.Scene {
     for (const f of this.fireCells.values()) f.emitter?.destroy();
     this.fireCells.clear();
     this.fireDamagedThisTurn.clear();
-    for (const t of this.actionTexts) t?.destroy();
-    this.actionTexts.length = 0;
+    for (const t of this.actionIcons) t?.destroy();
+    this.actionIcons.length = 0;
     for (const h of this.actionRowHandles) h?.destroy();
     this.actionRowHandles.length = 0;
     // Static panels / labels / dividers — every nearly-opaque
@@ -1022,6 +1096,22 @@ export class CombatScene extends Phaser.Scene {
       for (const path of loadedMonsterSprites()) {
         if (!this.textures.exists(path)) {
           this.load.image(path, path);
+          queued += 1;
+        }
+      }
+      // Action-menu icons (module sprites actions/<id>.png) and the
+      // spell icons shown in the Cast sub-menu (spells/<icon>.png).
+      // Plus the item icons used by the Throw / Use / Equip / ammo
+      // sub-menus, and the sub-menu's Back icon.
+      const iconUrls = [
+        ...PARTY_ACTIONS.map((a) => actionIconUrl(a.id)),
+        BACK_ICON_URL(),
+        ...this.spells.map((sp) => spellIconUrl(sp)),
+        ...[...this.items.values()].map((it) => itemIconUrl(it)),
+      ];
+      for (const url of iconUrls) {
+        if (url && !this.textures.exists(url)) {
+          this.load.image(url, url);
           queued += 1;
         }
       }
@@ -1305,7 +1395,7 @@ export class CombatScene extends Phaser.Scene {
   }
 
   private drawArena(): void {
-    this.panel(ARENA_X - 4, ARENA_Y - 4, VIEW_W + 8, VIEW_H + 8);
+    this.panel(ARENA_FRAME_X, FRAME_TOP, ARENA_FRAME_W, ARENA_FRAME_H);
     const mapCells = this.arenaCells;
 
     // Bake the per-cell floor sprites into one RenderTexture. Without
@@ -1941,8 +2031,8 @@ export class CombatScene extends Phaser.Scene {
       card?.mpText?.destroy();
     }
     this.partyCards.clear();
-    for (const t of this.actionTexts) t?.destroy();
-    this.actionTexts.length = 0;
+    for (const t of this.actionIcons) t?.destroy();
+    this.actionIcons.length = 0;
     for (const h of this.actionRowHandles) h?.destroy();
     this.actionRowHandles.length = 0;
 
@@ -1968,26 +2058,80 @@ export class CombatScene extends Phaser.Scene {
     );
     cy += 10;
 
-    // -- Name'S TURN --
-    this.turnText = this.track(
-      this.add.text(HUD_X + 14, cy, "", FONT_HEAD()).setOrigin(0, 0),
-    );
-    cy += 22;
-    this.movePointsText = this.track(
-      this.add.text(HUD_X + 14, cy, "", FONT_MONO()).setOrigin(0, 0),
-    );
-    cy += 24;
+    // Battle log fills the rest of the HUD column (drawn by drawLog).
+    this.logArea = {
+      x: HUD_X + 14,
+      y: cy,
+      w: HUD_W - 28,
+      h: HUD_Y + HUD_H - 10 - cy,
+    };
 
-    // Action menu — one Phaser row per slot in PARTY_ACTIONS. The
-    // upper bound stays fixed so the layout reserves enough screen
-    // real estate for every action even when most are hidden; the
-    // refresh pass below blanks out rows it isn't using.
-    for (let i = 0; i < PARTY_ACTIONS.length; i++) {
-      const ry = cy + i * 22;
-      const handle = this.add
-        .rectangle(HUD_X + 12, ry, HUD_W - 24, 22, C.selectBg, 0)
+    // ── Bottom strip: portrait | actions | inventory ──────────────
+    // Portrait — whoever is acting (party member, summon or enemy).
+    this.panel(PORTRAIT_X, BOTTOM_Y, PORTRAIT_W, BOTTOM_H);
+    this.portraitFrame = this.track(
+      this.add
+        .rectangle(
+          PORTRAIT_X + (PORTRAIT_W - PORTRAIT_SIZE) / 2,
+          BOTTOM_Y + 12,
+          PORTRAIT_SIZE,
+          PORTRAIT_SIZE,
+          0x1c1c2a,
+          1,
+        )
         .setOrigin(0)
+        .setStrokeStyle(1, C.panelEdge),
+    );
+    this.portraitName = this.track(
+      this.add
+        .text(PORTRAIT_X + PORTRAIT_W / 2, BOTTOM_Y + 12 + PORTRAIT_SIZE + 10, "", FONT_BODY())
+        .setOrigin(0.5, 0),
+    );
+
+    // Actions — icon matrix centred across the top, the highlighted
+    // action's hint centred underneath.
+    this.panel(ACTIONS_X, ACTIONS_Y, ACTIONS_W, ACTIONS_H);
+    const gridW = ACTION_GRID_COLS * ACTION_PITCH - (ACTION_PITCH - ACTION_CELL);
+    const gridH = ACTION_GRID_ROWS * ACTION_PITCH - (ACTION_PITCH - ACTION_CELL);
+    const menuX = ACTIONS_X + Math.round((ACTIONS_W - gridW) / 2);
+    const menuY = ACTIONS_Y + 10;
+    this.actionHintText = this.track(
+      this.add
+        .text(ACTIONS_X + ACTIONS_W / 2, menuY + gridH + 8, "", FONT_MONO(C.body))
+        .setOrigin(0.5, 0),
+    );
+
+    // Inventory — the active member's personal pack (placeholder
+    // presentation; refreshed with the turn header).
+    this.panel(INVENTORY_X, BOTTOM_Y, INVENTORY_W, BOTTOM_H);
+    this.track(this.add.text(INVENTORY_X + 14, BOTTOM_Y + 8, "INVENTORY", FONT_HEAD()));
+    this.inventoryText = this.track(
+      this.add.text(INVENTORY_X + 14, BOTTOM_Y + 34, "", {
+        ...FONT_MONO(C.body),
+        lineSpacing: 4,
+      }),
+    );
+
+    // Action matrix — one cell per slot in PARTY_ACTIONS, row-major
+    // in an ACTION_GRID_COLS-wide grid. The slot count stays fixed so
+    // the layout reserves room for every action; refreshActionMenu
+    // packs only the AVAILABLE actions into the first cells and hides
+    // the rest.
+    for (let i = 0; i < PARTY_ACTIONS.length; i++) {
+      const rx = menuX + (i % ACTION_GRID_COLS) * ACTION_PITCH;
+      const ry = menuY + Math.floor(i / ACTION_GRID_COLS) * ACTION_PITCH;
+      const handle = this.add
+        .rectangle(rx, ry, ACTION_CELL, ACTION_CELL, 0x1c1c2a, 1)
+        .setOrigin(0)
+        .setStrokeStyle(1, C.panelEdge)
         .setInteractive({ useHandCursor: true });
+      // Hovering a cell previews its name + hint without moving the
+      // keyboard cursor.
+      handle.on("pointerover", () => {
+        const action = this.visibleActions[i];
+        if (action) this.showActionInfo(action);
+      });
+      handle.on("pointerout", () => this.showActionInfo(null));
       // The captured `i` is the RENDERED row index — `refreshActionMenu`
       // packs `visibleActions` into those rows top-down, so clicking
       // row 2 means "whichever action is currently drawn at row 2."
@@ -2015,9 +2159,12 @@ export class CombatScene extends Phaser.Scene {
           this.refreshLog();
         }
       });
-      const t = this.add.text(HUD_X + 24, ry + 2, "", FONT_BODY());
+      const icon = this.add
+        .image(rx + ACTION_CELL / 2, ry + ACTION_CELL / 2, "__DEFAULT")
+        .setDisplaySize(ACTION_ICON, ACTION_ICON)
+        .setVisible(false);
       this.actionRowHandles.push(handle);
-      this.actionTexts.push(t);
+      this.actionIcons.push(icon);
     }
   }
 
@@ -2091,14 +2238,17 @@ export class CombatScene extends Phaser.Scene {
   }
 
   private drawLog(): void {
-    this.panel(LOG_X, LOG_Y, LOG_W, LOG_H);
+    // The log sits in the HUD column under the party cards; drawHud
+    // measured the space left over into `logArea`.
+    const a = this.logArea;
+    this.track(this.add.text(a.x, a.y, "LOG", FONT_HEAD()));
     this.logText = this.track(
-      this.add.text(LOG_X + 14, LOG_Y + 10, "", {
+      this.add.text(a.x, a.y + 26, "", {
         fontFamily: "monospace",
         fontSize: "12px",
         color: hex(C.body),
         lineSpacing: 2,
-        wordWrap: { width: LOG_W - 28, useAdvancedWrap: true },
+        wordWrap: { width: a.w, useAdvancedWrap: true },
       }),
     );
   }
@@ -2331,20 +2481,11 @@ export class CombatScene extends Phaser.Scene {
    */
   private onDigit(n: number): void {
     if (this.inspectorOpen) return;
-    if (this.mode === "pick-throw" || this.mode === "pick-spell"
-        || this.mode === "pick-use" || this.mode === "pick-equip"
-        || this.mode === "pick-ammo") {
-      const total =
-        this.mode === "pick-throw" ? this.throwOptions.length :
-        this.mode === "pick-use"   ? this.useOptions.length :
-        this.mode === "pick-equip" ? this.equipOptions.length :
-        this.mode === "pick-ammo"  ? this.ammoOptions.length :
-        this.spellOptions.length;
-      if (total === 0) return;
-      const visibleMax = 12;
-      const visibleCount = Math.min(visibleMax, total);
-      const half = Math.floor(visibleCount / 2);
-      const topRow = Math.max(0, Math.min(total - visibleCount, this.pickerCursor - half));
+    if (this.listOptionCount() >= 0) {
+      // 1-9 pick the Nth entry currently on screen (the Back row
+      // counts, so its number backs out too).
+      const total = this.listOptionCount() + 1;
+      const topRow = this.subMenuTopRow(total, this.pickerCursor);
       const absIndex = topRow + (n - 1);
       if (absIndex < 0 || absIndex >= total) return;
       this.pickerCursor = absIndex;
@@ -2383,12 +2524,14 @@ export class CombatScene extends Phaser.Scene {
     if (!this.canTakePlayerInput()) return;
     // In a scrollable picker UP/DOWN walks the picker cursor — not
     // the avatar.
-    if (this.mode === "pick-throw" || this.mode === "pick-spell"
-        || this.mode === "pick-use" || this.mode === "pick-equip"
-        || this.mode === "pick-ammo") {
-      if (key === "UP")   return this.movePickerCursor(-1);
-      if (key === "DOWN") return this.movePickerCursor(1);
-      return; // ignore left/right in pickers
+    if (this.listOptionCount() >= 0) {
+      // Sub-menu matrix: LEFT / RIGHT step cells (wrapping), UP /
+      // DOWN jump a row.
+      if (key === "LEFT")  return this.movePickerCursor(-1);
+      if (key === "RIGHT") return this.movePickerCursor(1);
+      if (key === "UP")    return this.movePickerCursor(-SUBMENU_COLS, false);
+      if (key === "DOWN")  return this.movePickerCursor(SUBMENU_COLS, false);
+      return;
     }
     // In pick-target mode arrow keys cycle the highlighted target
     // — the 1-9 number row stays available too, but arrows + Enter
@@ -2427,9 +2570,12 @@ export class CombatScene extends Phaser.Scene {
       }
       return;
     }
-    if (key === "UP")    return this.moveActionCursor(-1);
-    if (key === "DOWN")  return this.moveActionCursor(1);
-    if (key === "LEFT" || key === "RIGHT") return;
+    // Action matrix navigation: LEFT / RIGHT step through the cells
+    // (wrapping), UP / DOWN jump a whole row. WASD still walks.
+    if (key === "LEFT")  return this.moveActionCursor(-1);
+    if (key === "RIGHT") return this.moveActionCursor(1);
+    if (key === "UP")    return this.moveActionCursor(-ACTION_GRID_COLS, false);
+    if (key === "DOWN")  return this.moveActionCursor(ACTION_GRID_COLS, false);
     void this.tryPlayerStep(dir);
   }
 
@@ -2471,25 +2617,58 @@ export class CombatScene extends Phaser.Scene {
     this.drawTargetBadges(side);
   }
 
-  /** Move the picker cursor through the active option list. Re-renders
-   *  the picker so the highlight + scroll window update. */
-  private movePickerCursor(delta: number): void {
-    const total =
-      this.mode === "pick-throw" ? this.throwOptions.length :
-      this.mode === "pick-spell" ? this.spellOptions.length :
-      this.mode === "pick-use"   ? this.useOptions.length :
-      this.mode === "pick-equip" ? this.equipOptions.length :
-      this.mode === "pick-ammo"  ? this.ammoOptions.length : 0;
-    if (total === 0) return;
-    this.pickerCursor = (this.pickerCursor + delta + total) % total;
+  /** Number of real options in the open list picker, or -1 when the
+   *  current mode isn't a list picker. The sub-menu adds one more
+   *  row after these — "◂ Back" — at index === this count. */
+  private listOptionCount(): number {
+    switch (this.mode) {
+      case "pick-throw":   return this.throwOptions.length;
+      case "pick-spell":   return this.spellOptions.length;
+      case "pick-use":     return this.useOptions.length;
+      case "pick-equip":   return this.equipOptions.length;
+      case "pick-ammo":    return this.ammoOptions.length;
+      case "pick-ability": return this.abilityOptions.length;
+      default:             return -1;
+    }
+  }
+
+  /** Re-render whichever list picker is open (cursor / scroll moved). */
+  private refreshListPicker(): void {
     if (this.mode === "pick-throw") this.refreshThrowPicker();
     else if (this.mode === "pick-spell") this.refreshSpellPicker();
     else if (this.mode === "pick-use") this.refreshUsePicker();
     else if (this.mode === "pick-equip") this.refreshEquipPicker();
     else if (this.mode === "pick-ammo") this.refreshAmmoPicker();
+    else if (this.mode === "pick-ability") this.refreshAbilityPicker();
   }
 
-  private moveActionCursor(delta: number): void {
+  /** First entry index shown in the sub-menu so `cursor` stays in
+   *  view. `total` includes the Back row. Shared by the renderer and
+   *  the 1-9 shortcut so both agree on what's on screen. */
+  private subMenuTopRow(total: number, cursor: number): number {
+    if (total <= SUBMENU_VISIBLE) return 0;
+    // Scroll whole matrix rows so columns stay put.
+    const totalRows = Math.ceil(total / SUBMENU_COLS);
+    const cursorRow = Math.floor(Math.max(0, cursor) / SUBMENU_COLS);
+    const firstRow = Math.max(0, Math.min(totalRows - SUBMENU_ROWS, cursorRow - (SUBMENU_ROWS - 1)));
+    return firstRow * SUBMENU_COLS;
+  }
+
+  /** Move the picker cursor through the active option list (Back row
+   *  included). Re-renders the sub-menu so highlight + scroll update. */
+  private movePickerCursor(delta: number, wrap = true): void {
+    const count = this.listOptionCount();
+    if (count < 0) return;
+    const total = count + 1; // + Back
+    let next = this.pickerCursor + delta;
+    if (wrap) next = (next + total) % total;
+    else if (next < 0) return;
+    else if (next >= total) next = total - 1; // down from a short row → last cell
+    this.pickerCursor = next;
+    this.refreshListPicker();
+  }
+
+  private moveActionCursor(delta: number, wrap = true): void {
     if (this.mode !== "default") return;
     // Shared source of truth with `refreshActionMenu` — both consult
     // the same enable predicates so the cursor can never land on a
@@ -2504,6 +2683,9 @@ export class CombatScene extends Phaser.Scene {
     );
     let cur = enabledIdx.indexOf(this.actionCursor);
     if (cur < 0) cur = 0;
+    // Row jumps (wrap=false) stay put when there's no cell in that
+    // direction; cell steps wrap around the ends.
+    if (!wrap && (cur + delta < 0 || cur + delta >= enabledIdx.length)) return;
     const next = (cur + delta + enabledIdx.length) % enabledIdx.length;
     this.actionCursor = enabledIdx[next];
     this.refreshActionMenu();
@@ -2529,6 +2711,14 @@ export class CombatScene extends Phaser.Scene {
   private activateAction(): void {
     if (this.inspectorOpen) return;
     if (!this.canTakePlayerInput()) return;
+    // "◂ Back" — the row after the last option in any list sub-menu.
+    {
+      const count = this.listOptionCount();
+      if (count >= 0 && this.pickerCursor === count) {
+        this.cancelSubMode();
+        return;
+      }
+    }
     // Enter inside a scrollable picker activates the cursored row.
     if (this.mode === "pick-throw") {
       const opt = this.throwOptions[this.pickerCursor];
@@ -2926,10 +3116,15 @@ export class CombatScene extends Phaser.Scene {
           if (e.item === id) count += e.charges ?? 1;
         }
       }
-      const tag = def?.ignite ? "  [ignites]" : "";
+      const tag = def?.ignite ? " (ignites)" : "";
       return `${name} ×${count}${tag}`;
     });
-    this.renderPicker("PICK AMMO", lines, this.pickerCursor);
+    this.renderPicker(
+      "PICK AMMO",
+      lines,
+      this.pickerCursor,
+      this.ammoOptions.map((id) => itemIconUrl(this.items.get(id))),
+    );
   }
 
   /** Commit the player's ammo pick and continue into target /
@@ -3067,10 +3262,13 @@ export class CombatScene extends Phaser.Scene {
 
   /** Rebuild the throw picker so the cursor + scroll window update. */
   private refreshThrowPicker(): void {
-    const lines = this.throwOptions.map(
-      (o) => `${o.item.name} (pwr ${o.item.power ?? 1})`
+    const lines = this.throwOptions.map((o) => o.item.name);
+    this.renderPicker(
+      "PICK ITEM TO THROW",
+      lines,
+      this.pickerCursor,
+      this.throwOptions.map((o) => itemIconUrl(o.item)),
     );
-    this.renderPicker("PICK ITEM TO THROW", lines, this.pickerCursor);
   }
 
   /**
@@ -3119,15 +3317,6 @@ export class CombatScene extends Phaser.Scene {
     const member = this.memberForCurrent();
     const party = gameState.partyData;
     const lines = this.useOptions.map((o) => {
-      const eff = o.item.effect ?? "—";
-      const tag =
-        eff === "heal_hp"      ? "+HP" :
-        eff === "heal_mp"      ? "+MP" :
-        eff === "cure_poison"  ? "cure poison" :
-        eff === "buff_strength" ? "+STR" :
-        eff === "buff_ac"       ? "+AC" :
-        eff === "combat_only"   ? "splash" :
-        eff;
       // Read charges live from the backing entry (not a snapshot) so
       // the count stays right if the picker is re-rendered mid-fight.
       const entry =
@@ -3135,10 +3324,14 @@ export class CombatScene extends Phaser.Scene {
           ? member?.inventory[o.index]
           : party?.inventory[o.index];
       const n = entry?.charges ?? 1;
-      const label = n > 1 ? `${o.item.name} ×${n}` : o.item.name;
-      return `${label.padEnd(18, " ")} ${tag}`;
+      return n > 1 ? `${o.item.name} ×${n}` : o.item.name;
     });
-    this.renderPicker("USE ITEM", lines, this.pickerCursor);
+    this.renderPicker(
+      "USE ITEM",
+      lines,
+      this.pickerCursor,
+      this.useOptions.map((o) => itemIconUrl(o.item)),
+    );
   }
 
   /**
@@ -3261,19 +3454,13 @@ export class CombatScene extends Phaser.Scene {
 
   /** Rebuild the equip picker so the cursor + scroll window update. */
   private refreshEquipPicker(): void {
-    const lines = this.equipOptions.map((o) => {
-      // Use the first UI-supported slot — `equippableSlots` already
-      // filtered out anything we can't surface, so this is always
-      // the "where will this go?" answer the player needs.
-      const fits = equippableSlots(o.item);
-      const slot = fits[0];
-      const tag =
-        slot === "hands" ? "hands" :
-        slot === "body"  ? "body"  :
-        "—";
-      return `${o.item.name.padEnd(18, " ")} ${tag}`;
-    });
-    this.renderPicker("EQUIP ITEM", lines, this.pickerCursor);
+    const lines = this.equipOptions.map((o) => o.item.name);
+    this.renderPicker(
+      "EQUIP ITEM",
+      lines,
+      this.pickerCursor,
+      this.equipOptions.map((o) => itemIconUrl(o.item)),
+    );
   }
 
   /**
@@ -3642,19 +3829,13 @@ export class CombatScene extends Phaser.Scene {
 
   /** Rebuild the spell picker so the cursor + scroll window update. */
   private refreshSpellPicker(): void {
-    const tagFor = (s: Spell): string => {
-      const k = classifyCombatCast(s);
-      if (k === "self")        return "SELF";
-      if (k === "pick-ally")   return "ALLY";
-      if (k === "pick-enemy")  return "ENEMY";
-      if (k === "mass-ally")   return "PARTY";
-      if (k === "mass-enemy")  return "ENEMIES";
-      return "—";
-    };
-    const lines = this.spellOptions.map(
-      (s) => `${s.name.padEnd(18, " ")} ${s.mp_cost} MP   ${tagFor(s)}`
+    const lines = this.spellOptions.map((sp) => sp.name);
+    this.renderPicker(
+      "PICK SPELL",
+      lines,
+      this.pickerCursor,
+      this.spellOptions.map((sp) => spellIconUrl(sp)),
     );
-    this.renderPicker("PICK SPELL", lines, this.pickerCursor);
   }
 
   // ── Abilities (class + race) ────────────────────────────────────
@@ -3714,16 +3895,9 @@ export class CombatScene extends Phaser.Scene {
   }
 
   /** Rebuild the ability picker — cursor / scroll-window refresh,
-   *  same shape as `refreshSpellPicker` so the player reads both
-   *  panels at a glance. The right-column tag identifies the
-   *  ability's grant lane (CLASS / RACE) since that's the most
-   *  useful at-a-glance differentiator in the picker. */
+   *  same shape as `refreshSpellPicker`. */
   private refreshAbilityPicker(): void {
-    const tagFor = (a: Ability): string =>
-      a.type === "race" ? "RACE" : "CLASS";
-    const lines = this.abilityOptions.map(
-      (a) => `${a.name.padEnd(18, " ")}        ${tagFor(a)}`,
-    );
+    const lines = this.abilityOptions.map((a) => a.name);
     this.renderPicker("PICK ABILITY", lines, this.pickerCursor);
   }
 
@@ -4391,85 +4565,101 @@ export class CombatScene extends Phaser.Scene {
    * popups before they were converted; today every caller passes a
    * cursor).
    */
-  private renderPicker(title: string, lines: string[], cursor = -1): void {
+  private renderPicker(
+    _title: string,
+    /** Name of each option — shown on the panel's bottom line when
+     *  that option is highlighted (or hovered). */
+    lines: string[],
+    cursor = -1,
+    /** Texture key per option, drawn in its matrix cell. Options with
+     *  no icon fall back to a short text label in the cell. */
+    icons?: ReadonlyArray<string | null>,
+  ): void {
     this.clearPicker();
-    const VISIBLE_MAX = 12;
-    const total = lines.length;
-    const visibleCount = Math.min(VISIBLE_MAX, total);
-    // Compute scroll window so `cursor` is always in view.
-    let topRow = 0;
-    if (cursor >= 0 && total > visibleCount) {
-      const half = Math.floor(visibleCount / 2);
-      topRow = Math.max(0, Math.min(total - visibleCount, cursor - half));
-    }
-    const rowH = 18;
-    const titleH = 24;
-    const hintH = 28;
-    const bodyH = visibleCount * rowH + 8;
-    const w = HUD_W - 12;
-    const h = titleH + bodyH + hintH;
-    const x = HUD_X + 6;
-    const y = HUD_Y + HUD_H - 6 - h;
-    // Backing panel with a rust accent border so it pops over the
-    // dimmer HUD background.
-    const bg = this.add
-      .rectangle(x, y, w, h, 0x10101a, 0.98)
-      .setOrigin(0)
-      .setStrokeStyle(2, C.accent);
-    this.pickerObjects.push(bg);
-    this.pickerObjects.push(
-      this.add.text(x + 10, y + 6, title, FONT_HEAD(C.accent))
-    );
+    // The sub-menu takes over the Action panel: hide the action icons
+    // (refreshActionMenu honours `subMenuOpen`) and lay the options
+    // out in the same kind of icon matrix, Back as the last cell.
+    this.subMenuOpen = true;
+    this.refreshActionMenu();
+    const labels = [...lines, "Back"];
+    const keys: Array<string | null> = [
+      ...lines.map((_, i) => icons?.[i] ?? null),
+      BACK_ICON_URL(),
+    ];
+    const total = labels.length;
+    const topRow = this.subMenuTopRow(total, cursor);
+    const visibleCount = Math.min(SUBMENU_VISIBLE, total - topRow);
 
-    // Scroll indicator (top) — small triangle pointing up if there are
-    // hidden rows above.
+    const cols = Math.min(SUBMENU_COLS, visibleCount);
+    const gridW = cols * ACTION_PITCH - (ACTION_PITCH - ACTION_CELL);
+    const menuX = ACTIONS_X + Math.round((ACTIONS_W - gridW) / 2);
+    const menuY = ACTIONS_Y + 10;
+
+    // Scroll indicators — more cells above / below the window.
     if (topRow > 0) {
       this.pickerObjects.push(
-        this.add.text(x + w - 24, y + 6, "▲", FONT_MONO(C.gold))
+        this.add.text(ACTIONS_X + ACTIONS_W - 22, menuY, "▲", FONT_MONO(C.gold)),
       );
     }
-
-    const startY = y + titleH;
-    for (let i = 0; i < visibleCount; i++) {
-      const row = topRow + i;
-      const line = lines[row];
-      const ry = startY + i * rowH;
-      const isCursor = row === cursor;
-      if (isCursor) {
-        // Selection bar + accent stripe down the left edge.
-        this.pickerObjects.push(
-          this.add.rectangle(x + 4, ry, w - 8, rowH, C.selectBg, 1).setOrigin(0)
-        );
-        this.pickerObjects.push(
-          this.add.rectangle(x + 4, ry, 3, rowH, C.accent, 1).setOrigin(0)
-        );
-      }
-      // Number-key shortcut shows visible row number 1..VISIBLE_MAX.
-      const shortcut = i < 9 ? `[${i + 1}] ` : "    ";
-      this.pickerObjects.push(
-        this.add.text(x + 10, ry + 1, `${shortcut}${line}`,
-          FONT_BODY(isCursor ? C.body : C.dim))
-      );
-    }
-
-    // Scroll indicator (bottom).
     if (topRow + visibleCount < total) {
       this.pickerObjects.push(
-        this.add.text(x + w - 24, startY + bodyH - 18, "▼", FONT_MONO(C.gold))
+        this.add.text(
+          ACTIONS_X + ACTIONS_W - 22,
+          menuY + SUBMENU_ROWS * ACTION_PITCH - 22,
+          "▼",
+          FONT_MONO(C.gold),
+        ),
       );
     }
 
-    const hintText = total > visibleCount
-      ? "[↑↓] scroll  [Enter] pick  [1-9] shortcut  [ESC] cancel"
-      : "[↑↓] move  [Enter] pick  [1-9] shortcut  [ESC] cancel";
-    this.pickerObjects.push(
-      this.add.text(x + 10, y + h - 22, hintText, FONT_MONO(C.faint))
-    );
+    const labelFor = (row: number) => labels[row] ?? "";
+    for (let i = 0; i < visibleCount; i++) {
+      const row = topRow + i;
+      const rx = menuX + (i % SUBMENU_COLS) * ACTION_PITCH;
+      const ry = menuY + Math.floor(i / SUBMENU_COLS) * ACTION_PITCH;
+      const isCursor = row === cursor;
+      const cell = this.add
+        .rectangle(rx, ry, ACTION_CELL, ACTION_CELL, isCursor ? C.selectBg : 0x1c1c2a, 1)
+        .setOrigin(0)
+        .setStrokeStyle(isCursor ? 2 : 1, isCursor ? C.accent : C.panelEdge)
+        .setInteractive({ useHandCursor: true });
+      cell.on("pointerdown", () => {
+        this.pickerCursor = row;
+        this.activateAction();
+      });
+      // Hover previews the name on the bottom line; leaving restores
+      // the keyboard-highlighted entry's name.
+      cell.on("pointerover", () => this.actionHintText.setText(labelFor(row)));
+      cell.on("pointerout", () => this.actionHintText.setText(labelFor(cursor)));
+      this.pickerObjects.push(cell);
+      const key = keys[row];
+      if (key && this.textures.exists(key)) {
+        this.pickerObjects.push(
+          this.add
+            .image(rx + ACTION_CELL / 2, ry + ACTION_CELL / 2, key)
+            .setDisplaySize(ACTION_ICON, ACTION_ICON),
+        );
+      } else {
+        // No art for this option — a short text tag keeps the cell
+        // identifiable; the full name shows on the bottom line.
+        this.pickerObjects.push(
+          this.add
+            .text(rx + ACTION_CELL / 2, ry + ACTION_CELL / 2, labelFor(row).slice(0, 5), FONT_MONO(C.body))
+            .setOrigin(0.5),
+        );
+      }
+    }
+    this.actionHintText.setText(labelFor(cursor));
   }
 
   private clearPicker(): void {
     for (const o of this.pickerObjects) o.destroy();
     this.pickerObjects = [];
+    // Hand the Action panel back to the icon matrix.
+    if (this.subMenuOpen) {
+      this.subMenuOpen = false;
+      if (this.actionIcons.length > 0) this.refreshActionMenu();
+    }
   }
 
   /** Draw 1..N badges over each valid target on the arena. The
@@ -6419,20 +6609,78 @@ export class CombatScene extends Phaser.Scene {
     this.refreshDarkness();
   }
 
-  private refreshTurnHeader(): void {
+  /** Portrait of the active combatant (party, summon or enemy). */
+  private refreshPortrait(): void {
     const c = this.combat.current;
-    if (isConsumed(c)) {
-      // Consumed combatants don't take a turn — the engine
-      // auto-rolls their STR save during this slot. Tell the player
-      // why nothing's happening (and why the action menu is dim).
-      this.turnText.setText(`-- ${c.name.toUpperCase()} IS SWALLOWED --`);
-      this.movePointsText.setText("(rolling escape save…)");
+    this.portraitImage?.destroy();
+    this.portraitImage = null;
+    const f = this.portraitFrame;
+    const pad = 4;
+    if (c.sprite && this.textures.exists(c.sprite)) {
+      this.portraitImage = this.add
+        .image(f.x + pad, f.y + pad, c.sprite)
+        .setOrigin(0)
+        .setDisplaySize(PORTRAIT_SIZE - pad * 2, PORTRAIT_SIZE - pad * 2);
+    } else {
+      this.portraitImage = this.add
+        .rectangle(
+          f.x + pad,
+          f.y + pad,
+          PORTRAIT_SIZE - pad * 2,
+          PORTRAIT_SIZE - pad * 2,
+          Phaser.Display.Color.GetColor(...c.color),
+        )
+        .setOrigin(0);
+    }
+    this.portraitName.setText(c.name);
+    this.portraitName.setColor(hex(c.side === "enemies" ? C.accent : C.body));
+    // Shrink long names to fit the narrow panel.
+    this.portraitName.setScale(1);
+    const maxW = PORTRAIT_W - 12;
+    if (this.portraitName.width > maxW) {
+      this.portraitName.setScale(maxW / this.portraitName.width);
+    }
+  }
+
+  /** Placeholder inventory list for the active party member: item
+   *  names with charges, two columns. Enemies / summons show a dash. */
+  private refreshInventoryPanel(): void {
+    const member = this.memberForCurrent();
+    if (!member) {
+      this.inventoryText.setText("—");
       return;
     }
-    this.turnText.setText(`-- ${c.name.toUpperCase()}'S TURN --`);
-    this.movePointsText.setText(
-      `Moves: ${this.combat.movePoints}/${c.baseMoveRange}`
-    );
+    if (member.inventory.length === 0) {
+      this.inventoryText.setText("(empty)");
+      return;
+    }
+    const names = member.inventory.map((it) => {
+      const name = this.items.get(it.item)?.name ?? it.item;
+      return typeof it.charges === "number" ? `${name} ×${it.charges}` : name;
+    });
+    const perCol = 4;
+    const colW = 36;
+    const shown = names.slice(0, perCol * 2);
+    if (names.length > shown.length) {
+      shown[shown.length - 1] = `+${names.length - shown.length + 1} more…`;
+    }
+    const rows: string[] = [];
+    for (let r = 0; r < perCol; r++) {
+      const left = shown[r] ?? "";
+      const right = shown[r + perCol] ?? "";
+      if (!left && !right) break;
+      const l = left.length > colW - 2 ? left.slice(0, colW - 3) + "…" : left;
+      rows.push(right ? l.padEnd(colW) + right : l);
+    }
+    this.inventoryText.setText(rows.join("\n"));
+  }
+
+  private refreshTurnHeader(): void {
+    this.refreshPortrait();
+    this.refreshInventoryPanel();
+    // Whose turn it is reads from the portrait panel; a swallowed
+    // combatant's "rolling escape save" note shows in the action
+    // hint line (see showActionInfo).
   }
 
   /** Single source of truth for "which action rows should be
@@ -6502,6 +6750,7 @@ export class CombatScene extends Phaser.Scene {
     // the same filter at open time so a level-up mid-fight is
     // surfaced on the very next refresh.
     const canAbility = !!member && this.memberHasCombatAbility();
+    const canAttack = this.hasAdjacentEnemy();
     const isEnabled = (id: ActionId): boolean => {
       if (id === "range")   return canRange;
       if (id === "throw")   return canThrow;
@@ -6509,13 +6758,26 @@ export class CombatScene extends Phaser.Scene {
       if (id === "ability") return canAbility;
       if (id === "use")     return canUse;
       if (id === "equip")   return canEquip;
-      // Attack + End are always selectable during a player turn —
-      // Attack lets the player see "no adjacent enemy" feedback in
-      // the log; End is the no-op the player needs when nothing
-      // else applies.
+      // Attack shows only with a living enemy in one of the four
+      // neighbouring cells (the same test the Attack handler uses).
+      if (id === "attack")  return canAttack;
+      // End Turn is always available during a player turn — it's the
+      // no-op the player needs when nothing else applies.
       return true;
     };
     return PARTY_ACTIONS.filter((a) => isEnabled(a.id));
+  }
+
+  /** True when a living opponent stands in one of the four cells
+   *  orthogonally adjacent to the active combatant — mirrors the
+   *  Attack action's own target search. */
+  private hasAdjacentEnemy(): boolean {
+    const me = this.combat.current;
+    for (const [dc, dr] of [[0, -1], [0, 1], [1, 0], [-1, 0]] as const) {
+      const occ = this.combat.combatantAt(me.position.col + dc, me.position.row + dr);
+      if (occ && occ.side !== me.side && occ.hp > 0) return true;
+    }
+    return false;
   }
 
   private refreshActionMenu(): void {
@@ -6541,31 +6803,54 @@ export class CombatScene extends Phaser.Scene {
       this.actionCursor = PARTY_ACTIONS.indexOf(this.visibleActions[0]);
     }
     for (let i = 0; i < PARTY_ACTIONS.length; i++) {
-      const text = this.actionTexts[i];
+      const icon = this.actionIcons[i];
       const handle = this.actionRowHandles[i];
-      const action = this.visibleActions[i];
+      const action = this.subMenuOpen ? undefined : this.visibleActions[i];
       if (!action) {
-        // No backing action at this row — blank it out. Empty text +
-        // zero-alpha fill + no interactivity so a stray pointer
-        // can't activate it.
-        text.setText("");
-        handle.setFillStyle(C.selectBg, 0);
+        // Unavailable / unused slot — hide it entirely and drop the
+        // hit-box so a stray click can't activate it.
+        icon.setVisible(false);
+        handle.setVisible(false);
         handle.disableInteractive();
         continue;
       }
-      // Re-enable interaction every refresh so a row that was just
-      // hidden (and had its hit-box dropped) wakes up cleanly when
-      // the conditions that disabled it reverse mid-fight.
+      // Re-enable every refresh so a slot that was just hidden wakes
+      // up cleanly when the conditions that hid it reverse mid-fight.
+      handle.setVisible(true);
       handle.setInteractive({ useHandCursor: true });
-      // Cursor highlight — `actionCursor` is still an index into
-      // PARTY_ACTIONS, so the visible row "owns" the cursor when its
-      // PARTY_ACTIONS index matches.
+      const key = actionIconUrl(action.id);
+      if (this.textures.exists(key)) {
+        icon.setTexture(key).setDisplaySize(ACTION_ICON, ACTION_ICON).setVisible(true);
+      } else {
+        icon.setVisible(false);
+      }
+      // Cursor highlight — `actionCursor` indexes PARTY_ACTIONS, so
+      // the cell "owns" the cursor when its action's index matches.
       const cursor = PARTY_ACTIONS.indexOf(action) === this.actionCursor;
-      text.setColor(hex(C.body));
-      const prefix = cursor ? "> " : "  ";
-      text.setText(`${prefix}${action.label}`);
-      handle.setFillStyle(C.selectBg, cursor ? 1 : 0);
+      handle.setFillStyle(cursor ? C.selectBg : 0x1c1c2a, 1);
+      handle.setStrokeStyle(cursor ? 2 : 1, cursor ? C.accent : C.panelEdge);
     }
+    this.showActionInfo(null);
+  }
+
+  /** Fill the name + hint readout beside the action matrix. `null`
+   *  shows the keyboard-highlighted action (or clears the readout
+   *  when no action is available, e.g. on an enemy's turn). */
+  private showActionInfo(action: ActionEntry | null): void {
+    if (!this.actionHintText) return;
+    // While a sub-menu is open, renderPicker owns this line (it
+    // shows the highlighted option's name).
+    if (this.subMenuOpen) return;
+    // A swallowed combatant has no actions — say why instead.
+    if (!action && isConsumed(this.combat.current)) {
+      this.actionHintText.setText("Swallowed — rolling escape save…");
+      return;
+    }
+    const a =
+      action ??
+      this.visibleActions.find((v) => PARTY_ACTIONS.indexOf(v) === this.actionCursor) ??
+      null;
+    this.actionHintText.setText(a ? a.hint : "");
   }
 
   /** True when active member or shared stash has at least one item
@@ -6690,10 +6975,16 @@ export class CombatScene extends Phaser.Scene {
   }
 
   private refreshLog(): void {
-    // Show the last seven lines so the dice/mod detail and the
-    // turn announcements don't push the encounter banner off the
-    // top in the first round.
-    this.logText.setText(this.combat.log.slice(-7).join("\n"));
+    // Show as many of the newest lines as fit the HUD log box.
+    // Long lines word-wrap in the narrow column, so measure the
+    // rendered height and drop the oldest lines until it fits.
+    const maxH = this.logArea.h - 26;
+    let lines = this.combat.log.slice(-24);
+    this.logText.setText(lines.join("\n"));
+    while (lines.length > 1 && this.logText.height > maxH) {
+      lines = lines.slice(1);
+      this.logText.setText(lines.join("\n"));
+    }
   }
 
   private highlightActiveActor(): void {
