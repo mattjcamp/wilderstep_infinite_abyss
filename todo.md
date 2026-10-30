@@ -1,11 +1,12 @@
+## Flesh Out Core
+- Make a credible set of Demo adventures along with some roguelike elements to flesh out the map we already have.
+
+## Improve UI
+- Make combat UI more graphical with action icons
+- Fine town the overall user experience
 
 ## Lore
 - start brainstorming ideas about the first original, immersive world that I will create for this game:world type, political structures, economy, towns, gods, epic stories, lost civizations
-
-
-
-
-
 
 # Notes
 

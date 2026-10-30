@@ -24,6 +24,15 @@
       "personal_history": "Garath comes from a noble family, but he is a bit of a scoundrel.",
       "dialogs": [],
       "exploration_xp": 10
+    },
+    {
+      "id": "sheep",
+      "name": "Sheep",
+      "sprite": "person/animal_sheep.png",
+      "counter": null,
+      "personal_history": "Yesterday, the sheep ate some grass",
+      "dialogs": [],
+      "exploration_xp": 0
     }
   ]
 }

@@ -436,6 +436,9 @@ type LoadState =
     }
   | { kind: "error"; message: string };
 
+/** How many Paint strokes / Fill rectangles the Map Editor can undo. */
+const UNDO_LIMIT = 100;
+
 export function MapEditor({
   moduleId,
   mapId,
@@ -855,6 +858,32 @@ export function MapEditor({
   const gridRef = useRef<TileType[][]>([]);
   const paletteRef = useRef<TileType[]>([]);
   const persistRef = useRef<() => void>(() => {});
+  /** Undo history for tile placements (Paint strokes + Fill
+   *  rectangles). Each entry maps "col,row" → the cell as it was
+   *  BEFORE that edit, so undoing one entry restores every cell the
+   *  stroke touched. Newest entry last; capped at UNDO_LIMIT. Cleared
+   *  when a different map loads or the map is resized (old
+   *  coordinates would point at the wrong cells). */
+  const undoStackRef = useRef<Array<Map<string, TileType>>>([]);
+  /** The Paint stroke in progress (pointerdown → pointerup). Cells are
+   *  recorded the first time the stroke changes them. */
+  const strokeRef = useRef<Map<string, TileType> | null>(null);
+  /** Mirrors undoStackRef.current.length so the Undo button can
+   *  enable / disable itself. */
+  const [undoCount, setUndoCount] = useState(0);
+  const pushUndoRef = useRef<(entry: Map<string, TileType>) => void>(() => {});
+  pushUndoRef.current = (entry) => {
+    if (entry.size === 0) return;
+    const stack = undoStackRef.current;
+    stack.push(entry);
+    if (stack.length > UNDO_LIMIT) stack.splice(0, stack.length - UNDO_LIMIT);
+    setUndoCount(stack.length);
+  };
+  const clearUndo = () => {
+    undoStackRef.current = [];
+    strokeRef.current = null;
+    setUndoCount(0);
+  };
   /** Scene calls this on every cell the pointer touches so the React
    *  inspector tracks the latest interaction. `opts.additive` (set when
    *  the user Cmd/Ctrl-clicks in Inspect mode) extends the selection
@@ -880,6 +909,9 @@ export function MapEditor({
     ) => void;
     /** Update a single cell's rendered texture from its sprite path. */
     refreshCell: (col: number, row: number, spriteKey: string) => void;
+    /** Redraw a cell (base sprite + background layer) from whatever
+     *  gridRef currently holds there. Used by Undo. */
+    restoreCell: (col: number, row: number) => void;
     /** Re-tint every cell based on the lighting mode + current grid. */
     relight: (mode: "day" | "twilight" | "night") => void;
     /** Sync per-cell particle emitters to the current grid's animation values. */
@@ -1223,6 +1255,7 @@ export function MapEditor({
         // Drop any leftover sparse overrides from older data revisions.
         delete (mapRecord as Record<string, unknown>).cells;
         gridRef.current = materialized;
+        clearUndo();
         paletteRef.current = palette;
         // Seed the brush with the first walkable tile, falling back to first tile.
         const firstBrush =
@@ -1832,9 +1865,16 @@ export function MapEditor({
           this.input.on(
             "pointerdown",
             (p: Phaser.Input.Pointer) => {
+              // A stroke whose pointerup we never saw (e.g. released
+              // outside the window) is committed before starting anew.
+              if (strokeRef.current) {
+                pushUndoRef.current(strokeRef.current);
+                strokeRef.current = null;
+              }
               if (toolRef.current === "fill") {
                 this.fillStart(p);
               } else {
+                if (toolRef.current === "paint") strokeRef.current = new Map();
                 this.paintAt(p, true);
               }
             },
@@ -1853,6 +1893,11 @@ export function MapEditor({
           // edge still finalizes the rect.
           const onPointerUp = (p: Phaser.Input.Pointer) => {
             if (toolRef.current === "fill") this.fillCommit(p);
+            // Close the Paint stroke — the whole drag is one undo step.
+            if (strokeRef.current) {
+              pushUndoRef.current(strokeRef.current);
+              strokeRef.current = null;
+            }
           };
           this.input.on("pointerup", onPointerUp);
           this.input.on("pointerupoutside", onPointerUp);
@@ -1942,6 +1987,16 @@ export function MapEditor({
               if (!img) return;
               if (!this.textures.exists(spriteKey)) return;
               swapTexture(img, spriteKey);
+            },
+            restoreCell: (col, row) => {
+              const cell = gridRef.current[row]?.[col];
+              if (!cell) return;
+              const img = this.cells.get(`${col},${row}`);
+              if (img && cell.sprite) {
+                const sprite = cell.sprite;
+                this.ensureTexture(sprite, () => swapTexture(img, sprite));
+              }
+              this.syncBackgroundCell(col, row, cell.background_sprite);
             },
             refreshAnimations: () => {
               // Assigned for real below — placeholder so the API object
@@ -3035,6 +3090,10 @@ export function MapEditor({
             isWaterCell(existing)
           ) {
             if (existing.boat_sprite === brushTile.sprite) return;
+            const stroke = strokeRef.current;
+            if (stroke && !stroke.has(`${c},${r}`)) {
+              stroke.set(`${c},${r}`, { ...existing });
+            }
             gridRef.current[r][c] = {
               ...existing,
               boat_sprite: brushTile.sprite,
@@ -3085,6 +3144,10 @@ export function MapEditor({
           // Paint = fresh deep-copy of the palette entry. Every field
           // materializes inline; the cell is its own data from here.
           const fresh: TileType = { ...brushTile };
+          const stroke = strokeRef.current;
+          if (existing && stroke && !stroke.has(`${c},${r}`)) {
+            stroke.set(`${c},${r}`, { ...existing });
+          }
           gridRef.current[r][c] = fresh;
           const img = this.cells.get(`${c},${r}`);
           if (img && fresh.sprite) {
@@ -3166,6 +3229,7 @@ export function MapEditor({
           const r0 = Math.min(start.row, rr);
           const r1 = Math.max(start.row, rr);
           let changed = false;
+          const undoEntry = new Map<string, TileType>();
           for (let row = r0; row <= r1; row++) {
             for (let col = c0; col <= c1; col++) {
               const existing = gridRef.current[row][col];
@@ -3203,6 +3267,7 @@ export function MapEditor({
                 continue;
               }
               const fresh: TileType = { ...brushTile };
+              if (existing) undoEntry.set(`${col},${row}`, { ...existing });
               gridRef.current[row][col] = fresh;
               const img = this.cells.get(`${col},${row}`);
               this.syncBackgroundCell(col, row, fresh.background_sprite);
@@ -3217,7 +3282,10 @@ export function MapEditor({
             }
           }
           onCellTouchedRef.current(cc, rr);
-          if (changed) persistRef.current();
+          if (changed) {
+            pushUndoRef.current(undoEntry);
+            persistRef.current();
+          }
         }
 
         /** Render the Fill-tool's preview rectangle between two cell
@@ -3879,6 +3947,49 @@ export function MapEditor({
     sceneApiRef.current?.refreshQuestOverlays();
   }, [state, lightingMode]);
 
+  // ── Undo (tile placements) ──────────────────────────────────────
+  /** Revert the most recent Paint stroke or Fill rectangle: put every
+   *  touched cell back to what it held before, redraw those cells, and
+   *  persist the draft (which also re-syncs NPC / item / boat / quest
+   *  overlays through the state-keyed effects above). */
+  const undoLastEdit = () => {
+    if (simModeRef.current === "active") return;
+    const entry = undoStackRef.current.pop();
+    setUndoCount(undoStackRef.current.length);
+    if (!entry) return;
+    for (const [key, prev] of entry) {
+      const [col, row] = key.split(",").map(Number);
+      if (!gridRef.current[row]?.[col]) continue;
+      gridRef.current[row][col] = { ...prev };
+      sceneApiRef.current?.restoreCell(col, row);
+    }
+    persistRef.current();
+  };
+  const undoLastEditRef = useRef(undoLastEdit);
+  undoLastEditRef.current = undoLastEdit;
+
+  // Cmd+Z (macOS) / Ctrl+Z — same shortcut as the sprite editor.
+  // Ignored while typing in a field so text inputs keep their own undo.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey) || e.shiftKey || e.altKey) return;
+      if (e.key !== "z" && e.key !== "Z") return;
+      const t = e.target as HTMLElement | null;
+      if (
+        t &&
+        (t.tagName === "INPUT" ||
+          t.tagName === "TEXTAREA" ||
+          t.tagName === "SELECT" ||
+          t.isContentEditable)
+      )
+        return;
+      e.preventDefault();
+      undoLastEditRef.current();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   // ── Cell mutators (driven by the Inspector) ─────────────────────
   /** Apply a field patch directly to the cell at (col, row). The cell
    *  is its own data — no separate overrides array. `undefined` in the
@@ -4382,6 +4493,7 @@ export function MapEditor({
     // effect that fires off the new state sees consistent data. The
     // scene mount effect keys on width/height and rebuilds the canvas.
     gridRef.current = updated.grid;
+    clearUndo();
     // Old selection coordinates may point at different cells after a
     // top/left grow — clear rather than translate; re-selecting is
     // one click.
@@ -4530,6 +4642,19 @@ export function MapEditor({
           title="Grow the map — add rows/columns on any edge."
         >
           Resize
+        </button>
+        <button
+          type="button"
+          onClick={() => undoLastEdit()}
+          disabled={undoCount === 0 || simMode === "active"}
+          className="rounded border border-parchment/20 px-2 py-0.5 text-[13px] text-parchment/85 hover:bg-ink/40 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
+          title={
+            undoCount > 0
+              ? `Undo the last tile placement (⌘Z / Ctrl+Z) — ${undoCount} step${undoCount === 1 ? "" : "s"} available`
+              : "Nothing to undo yet (⌘Z / Ctrl+Z)"
+          }
+        >
+          ↶ Undo
         </button>
         <span className="text-parchment/60">·</span>
         <div

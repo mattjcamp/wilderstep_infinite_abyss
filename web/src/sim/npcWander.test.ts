@@ -32,8 +32,8 @@ function gridOf(size: number): SimCell[][] {
 const NO_ONE = () => false;
 
 describe("NPC_WANDER_CHANCE", () => {
-  it("is 50% per the product spec", () => {
-    expect(NPC_WANDER_CHANCE).toBe(0.5);
+  it("is 35% per the product spec", () => {
+    expect(NPC_WANDER_CHANCE).toBe(0.35);
   });
 });
 
@@ -95,7 +95,7 @@ describe("isWanderDestination", () => {
 });
 
 describe("runNpcWander", () => {
-  it("never moves an NPC when every roll is above 0.5 (50% threshold)", () => {
+  it("never moves an NPC when every roll is above the 35% threshold", () => {
     const g = gridOf(5);
     g[2][2].npc = "guard";
     const moves = runNpcWander(g as SimGrid, NO_ONE, () => 0.99);
@@ -104,10 +104,10 @@ describe("runNpcWander", () => {
     expect(g[2][2].npc).toBe("guard");
   });
 
-  it("moves an NPC when the roll passes the 50% gate", () => {
+  it("moves an NPC when the roll passes the 35% gate", () => {
     const g = gridOf(5);
     g[2][2].npc = "guard";
-    // First roll: 0.0 → passes the < 0.5 gate.
+    // First roll: 0.0 → passes the < 0.35 gate.
     // Second roll: 0.0 → picks index 0 of the eligible neighbours.
     // CARDINALS order is up, down, left, right, so neighbour 0 is
     // (col=2, row=1).
@@ -158,7 +158,7 @@ describe("runNpcWander", () => {
     g[3][2].walkable = false; // down
     g[2][1].walkable = false; // left
     // (2,3) right stays walkable
-    // mulberry32(7) gives < 0.5 on first call (passes gate) then
+    // mulberry32(7) gives < 0.35 on first call (passes gate) then
     // any direction-index — but with only one eligible neighbour
     // the pick is deterministic regardless.
     const moves = runNpcWander(g as SimGrid, NO_ONE, mulberry32(7));
@@ -260,9 +260,9 @@ describe("runNpcWander", () => {
     expect(moves[1].to).toEqual({ col: 3, row: 1 });
   });
 
-  it("over many trials with a uniform RNG, ~50% of NPCs move", () => {
+  it("over many trials with a uniform RNG, ~35% of NPCs move", () => {
     // Statistical sanity check: with a well-distributed RNG, the
-    // observed move rate converges on 50%. Loose bounds keep the
+    // observed move rate converges on 35%. Loose bounds keep the
     // test deterministic-ish without hand-tuning the seed.
     const trials = 1000;
     let moved = 0;
@@ -273,8 +273,8 @@ describe("runNpcWander", () => {
       const m = runNpcWander(g as SimGrid, NO_ONE, rng);
       if (m.length > 0) moved += 1;
     }
-    // Expect ~500 ± a generous margin so the test never flakes.
-    expect(moved).toBeGreaterThan(400);
-    expect(moved).toBeLessThan(600);
+    // Expect ~350 ± a generous margin so the test never flakes.
+    expect(moved).toBeGreaterThan(270);
+    expect(moved).toBeLessThan(430);
   });
 });

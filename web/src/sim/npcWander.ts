@@ -25,9 +25,9 @@ import type { Position, SimCell, SimGrid } from "./types";
 import { isWaterCell } from "./tileTags";
 
 /** Probability that any given NPC takes a step on a turn. Per
- *  product call: "moderate chance (50%)". Exported so tests can
- *  assert the rate without re-deriving it. */
-export const NPC_WANDER_CHANCE = 0.5;
+ *  product call: 35% (lowered from 50% — NPCs felt too restless).
+ *  Exported so tests can assert the rate without re-deriving it. */
+export const NPC_WANDER_CHANCE = 0.35;
 
 /** RNG contract — Math.random-style function returning [0, 1).
  *  Matches the {@link SpawnRng} contract in `spawn.ts` so a single
