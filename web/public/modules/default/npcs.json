@@ -15,6 +15,15 @@
         }
       ],
       "exploration_xp": 5
+    },
+    {
+      "id": "garath",
+      "name": "Garath",
+      "sprite": "person/person_male_villager_wealthy.png",
+      "counter": null,
+      "personal_history": "Garath comes from a noble family, but he is a bit of a scoundrel.",
+      "dialogs": [],
+      "exploration_xp": 10
     }
   ]
 }

@@ -1,18 +1,7 @@
-## Fine Tune
 
-- Simplify Default Module: make the base graphics etc more managable etc
-- Only include most classic D&D monsters in Default: 
-    Giant Rats, Giant Bats, Dire Wolves, Goblins, Orcs, Slime Mold, Gelatinous Cubes, Ghosts, Zombies, Skeletons, Lich, Elementals, Demons, Giant Spiders, Trolls, Vampires, Dragons
-- Adjust the basic maps: overview, town, shop, dungeon
-
-## Custom Art Style
-- Dark background pixel icon style
-- Colorful graphic style
-
-## Varnfell Lore
+## Lore
 - start brainstorming ideas about the first original, immersive world that I will create for this game:world type, political structures, economy, towns, gods, epic stories, lost civizations
 
-## Tales of Hallowmere (1st Module)
 
 
 

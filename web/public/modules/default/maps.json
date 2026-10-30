@@ -13770,7 +13770,8 @@
               "map_id": "dungeon_1",
               "x": 11,
               "y": 23
-            }
+            },
+            "show_link_placard": true
           },
           {
             "boat": false,
@@ -22136,12 +22137,12 @@
             "walkable": true,
             "obstructs": false,
             "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
+            "light_source": true,
+            "light_range": 3,
+            "animation": "fire",
             "counter": null,
             "encounter": null,
-            "spawn": null,
+            "spawn": "goblin_spawn",
             "sprite": "map/grass.png",
             "tag": "overview"
           },
@@ -23483,9 +23484,9 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
+            "id": "river_straight_v",
+            "name": "River Straight (vertical)",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -23494,8 +23495,10 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "town/river_straight_v.png",
+            "tag": "Water:River",
+            "water": true,
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -24125,9 +24128,9 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
+            "id": "river_straight_v",
+            "name": "River Straight (vertical)",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -24136,8 +24139,10 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "town/river_straight_v.png",
+            "tag": "Water:River",
+            "water": true,
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -24767,9 +24772,9 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
+            "id": "river_straight_v",
+            "name": "River Straight (vertical)",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -24778,8 +24783,10 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "town/river_straight_v.png",
+            "tag": "Water:River",
+            "water": true,
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -25409,9 +25416,9 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
+            "id": "river_straight_v",
+            "name": "River Straight (vertical)",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -25420,8 +25427,10 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "town/river_straight_v.png",
+            "tag": "Water:River",
+            "water": true,
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -26051,9 +26060,9 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
+            "id": "river_straight_v",
+            "name": "River Straight (vertical)",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -26062,8 +26071,10 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "town/river_straight_v.png",
+            "tag": "Water:River",
+            "water": true,
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -26693,9 +26704,9 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
+            "id": "river_straight_v",
+            "name": "River Straight (vertical)",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -26704,8 +26715,10 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "town/river_straight_v.png",
+            "tag": "Water:River",
+            "water": true,
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -27335,9 +27348,9 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
+            "id": "river_straight_v",
+            "name": "River Straight (vertical)",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -27346,8 +27359,10 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "town/river_straight_v.png",
+            "tag": "Water:River",
+            "water": true,
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -27977,9 +27992,9 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
+            "id": "river_straight_v",
+            "name": "River Straight (vertical)",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -27988,8 +28003,10 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "town/river_straight_v.png",
+            "tag": "Water:River",
+            "water": true,
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -28619,9 +28636,9 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
+            "id": "river_straight_v",
+            "name": "River Straight (vertical)",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -28630,8 +28647,10 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "town/river_straight_v.png",
+            "tag": "Water:River",
+            "water": true,
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -29261,9 +29280,9 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
+            "id": "river_straight_v",
+            "name": "River Straight (vertical)",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -29272,8 +29291,10 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "town/river_straight_v.png",
+            "tag": "Water:River",
+            "water": true,
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -29488,7 +29509,10 @@
       "fog_style": {
         "twilight": "dark_cloud",
         "night": "darkness"
-      }
+      },
+      "soundtrack": [
+        "/audio/Mysteries of the Moonstone Citadel.mp3"
+      ]
     },
     {
       "id": "shop_4",
@@ -31512,7 +31536,7 @@
             "boat": false,
             "id": "object_pots",
             "name": "Pots",
-            "walkable": false,
+            "walkable": true,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -32065,7 +32089,7 @@
             "boat": false,
             "id": "dungeon_wall_left",
             "name": "Dungeon Wall, Left",
-            "walkable": false,
+            "walkable": true,
             "obstructs": true,
             "locked": false,
             "light_source": false,
@@ -32082,7 +32106,7 @@
             "boat": false,
             "id": "dungeon_wall_divider",
             "name": "Dungeon Wall, Divider",
-            "walkable": false,
+            "walkable": true,
             "obstructs": true,
             "locked": false,
             "light_source": false,
@@ -32099,7 +32123,7 @@
             "boat": false,
             "id": "dungeon_wall_right",
             "name": "Dungeon Wall, Right",
-            "walkable": false,
+            "walkable": true,
             "obstructs": true,
             "locked": false,
             "light_source": false,
@@ -32459,7 +32483,7 @@
             "boat": false,
             "id": "dungeon_wall_left",
             "name": "Dungeon Wall, Left",
-            "walkable": false,
+            "walkable": true,
             "obstructs": true,
             "locked": false,
             "light_source": false,
@@ -32476,7 +32500,7 @@
             "boat": false,
             "id": "dungeon_wall_divider",
             "name": "Dungeon Wall, Divider",
-            "walkable": false,
+            "walkable": true,
             "obstructs": true,
             "locked": false,
             "light_source": false,
@@ -32493,7 +32517,7 @@
             "boat": false,
             "id": "dungeon_wall_right",
             "name": "Dungeon Wall, Right",
-            "walkable": false,
+            "walkable": true,
             "obstructs": true,
             "locked": false,
             "light_source": false,
@@ -32853,7 +32877,7 @@
             "boat": false,
             "id": "dungeon_wall_left",
             "name": "Dungeon Wall, Left",
-            "walkable": false,
+            "walkable": true,
             "obstructs": true,
             "locked": false,
             "light_source": false,
@@ -32870,7 +32894,7 @@
             "boat": false,
             "id": "dungeon_wall_divider",
             "name": "Dungeon Wall, Divider",
-            "walkable": false,
+            "walkable": true,
             "obstructs": true,
             "locked": false,
             "light_source": false,
@@ -32887,7 +32911,7 @@
             "boat": false,
             "id": "dungeon_wall_right",
             "name": "Dungeon Wall, Right",
-            "walkable": false,
+            "walkable": true,
             "obstructs": true,
             "locked": false,
             "light_source": false,
@@ -38452,7 +38476,12 @@
             "encounter": null,
             "spawn": null,
             "sprite": "dungeon/ladder_down.png",
-            "tag": "dungeon:doors & stairs"
+            "tag": "dungeon:doors & stairs",
+            "link": {
+              "map_id": "dungeon_2",
+              "x": 1,
+              "y": 2
+            }
           },
           {
             "boat": false,
@@ -40591,7 +40620,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/grass.png",
-            "tag": "map"
+            "tag": "map",
+            "quest": "the_crystal_skull"
           },
           {
             "boat": false,
@@ -46353,7 +46383,12 @@
             "tag": "dungeon:walls:room walls"
           }
         ]
-      ]
+      ],
+      "fog_style": {
+        "day": "darkness",
+        "twilight": "darkness",
+        "night": "darkness"
+      }
     }
   ]
 }

@@ -1009,6 +1009,25 @@
       "character_can_equip": false,
       "buy": 0,
       "sell": 0
+    },
+    {
+      "id": "crystal_skull",
+      "category": "general",
+      "name": "The Crystal Skull",
+      "animation_id": null,
+      "description": "A flawless skull carved from a single piece of clear crystal. Pale light gathers in its eye sockets, as if something is looking back.",
+      "icon": "crystal_skull",
+      "item_type": "quest_item",
+      "power": null,
+      "ranged": false,
+      "throwable": false,
+      "slots": null,
+      "durability": null,
+      "party_can_equip": false,
+      "character_can_equip": false,
+      "buy": null,
+      "sell": null,
+      "quest_item": true
     }
   ]
 }

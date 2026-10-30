@@ -104,6 +104,24 @@ const MONSTER_FIELDS: Record<string, unknown> = {
   on_hit_effects: [],
 };
 
+/** Every spawn (monster lair) field the game reads — see
+ *  docs/data_dictionary/spawn.md — in form order, with new-record
+ *  defaults. */
+const SPAWN_FIELDS: Record<string, unknown> = {
+  id: "",
+  name: "",
+  description: "",
+  spawn_monsters: [],
+  spawn_chance: 5,
+  spawn_radius: 5,
+  max_spawned: 2,
+  boss_monsters: [],
+  xp_reward: 0,
+  gold_reward: 0,
+  loot: [],
+  custom_map: "",
+};
+
 /** Every encounter field the game reads (src/battle/world/Encounters.ts
  *  + MapSimulation's custom_map), in form order, with new-record
  *  defaults. */
@@ -172,6 +190,7 @@ const EXTRA_FIELD_DEFAULTS: Partial<Record<ModelKey, Record<string, unknown>>> =
   // leaves blank are not written (see RecordForm).
   monsters: MONSTER_FIELDS,
   encounters: ENCOUNTER_FIELDS,
+  spawns: SPAWN_FIELDS,
   // NPCs: every field the game reads, so the form always offers the
   // sprite picker, counter picker, backstory textarea and dialogs
   // editor — even when the first record in the catalog is sparse

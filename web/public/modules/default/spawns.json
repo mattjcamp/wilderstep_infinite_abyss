@@ -1,4 +1,26 @@
 {
   "_comment": "Spawn-point catalog (real data drives the schema). Each spawn is monster-lair behavior the engine triggers when the party steps on (or near) a map cell whose tile carries this spawn's id in its `spawn` field. The binding lives on the map cell, not here — multiple cells (and multiple maps) can reuse the same Spawn. `spawn_monsters` and `boss_monsters` are Monster `id` strings (snake_case); `loot` is Item `id` strings. Duplicate entries in any of these are intentional — they control sampling weight (one Goblin five times = five times more likely). Optional `custom_map` is a Map `id` — when set, stepping into this lair's boss fight uses that authored battle map instead of the default arena.",
-  "spawns": []
+  "spawns": [
+    {
+      "id": "goblin_spawn",
+      "name": "Goblin Spawn",
+      "description": "A group of goblins, surely up to no good",
+      "spawn_monsters": [
+        "goblin",
+        "goblin",
+        "goblin"
+      ],
+      "spawn_chance": 5,
+      "spawn_radius": 5,
+      "max_spawned": 2,
+      "boss_monsters": [
+        "dire_wolf"
+      ],
+      "xp_reward": 200,
+      "gold_reward": 50,
+      "loot": [
+        "camping_supplies"
+      ]
+    }
+  ]
 }
