@@ -5,11 +5,6 @@
       "id": "default",
       "title": "Default Module",
       "role": "core"
-    },
-    {
-      "id": "test-4",
-      "title": "Test 4",
-      "role": "playable"
     }
   ]
 }
