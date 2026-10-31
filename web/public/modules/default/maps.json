@@ -6346,10 +6346,10 @@
           },
           {
             "boat": false,
-            "id": "tree",
-            "name": "Tree",
+            "id": "grass",
+            "name": "Grass",
             "walkable": true,
-            "obstructs": true,
+            "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -6357,16 +6357,15 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/tree.png",
-            "tag": "map",
-            "background_sprite": "map/grass.png"
+            "sprite": "map/grass.png",
+            "tag": "map"
           },
           {
             "boat": false,
-            "id": "tree",
-            "name": "Tree",
+            "id": "grass",
+            "name": "Grass",
             "walkable": true,
-            "obstructs": true,
+            "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -6374,16 +6373,15 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/tree.png",
-            "tag": "map",
-            "background_sprite": "map/grass.png"
+            "sprite": "map/grass.png",
+            "tag": "map"
           },
           {
             "boat": false,
-            "id": "tree",
-            "name": "Tree",
+            "id": "grass",
+            "name": "Grass",
             "walkable": true,
-            "obstructs": true,
+            "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -6391,16 +6389,15 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/tree.png",
-            "tag": "map",
-            "background_sprite": "map/grass.png"
+            "sprite": "map/grass.png",
+            "tag": "map"
           },
           {
             "boat": false,
-            "id": "tree",
-            "name": "Tree",
+            "id": "grass",
+            "name": "Grass",
             "walkable": true,
-            "obstructs": true,
+            "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -6408,16 +6405,15 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/tree.png",
-            "tag": "map",
-            "background_sprite": "map/grass.png"
+            "sprite": "map/grass.png",
+            "tag": "map"
           },
           {
             "boat": false,
-            "id": "tree",
-            "name": "Tree",
+            "id": "grass",
+            "name": "Grass",
             "walkable": true,
-            "obstructs": true,
+            "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -6425,9 +6421,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/tree.png",
-            "tag": "map",
-            "background_sprite": "map/grass.png"
+            "sprite": "map/grass.png",
+            "tag": "map"
           },
           {
             "boat": false,
@@ -7039,10 +7034,10 @@
           },
           {
             "boat": false,
-            "id": "tree",
-            "name": "Tree",
+            "id": "grass",
+            "name": "Grass",
             "walkable": true,
-            "obstructs": true,
+            "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -7050,16 +7045,15 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/tree.png",
-            "tag": "map",
-            "background_sprite": "map/grass.png"
+            "sprite": "map/grass.png",
+            "tag": "map"
           },
           {
             "boat": false,
-            "id": "tree",
-            "name": "Tree",
+            "id": "grass",
+            "name": "Grass",
             "walkable": true,
-            "obstructs": true,
+            "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -7067,9 +7061,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/tree.png",
-            "tag": "map",
-            "background_sprite": "map/grass.png"
+            "sprite": "map/grass.png",
+            "tag": "map"
           },
           {
             "boat": false,
@@ -7536,8 +7529,8 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
+            "id": "overworld_watchtower",
+            "name": "Watchtower",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -7547,8 +7540,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "overworld/watchtower.png",
+            "tag": "map:settlements",
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -8929,10 +8923,10 @@
         [
           {
             "boat": false,
-            "id": "mountain",
-            "name": "Mountain",
-            "walkable": false,
-            "obstructs": true,
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -8940,16 +8934,15 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/mountain.png",
-            "tag": "map",
-            "background_sprite": "map/grass.png"
+            "sprite": "map/grass.png",
+            "tag": "map"
           },
           {
             "boat": false,
-            "id": "mountain",
-            "name": "Mountain",
-            "walkable": false,
-            "obstructs": true,
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -8957,9 +8950,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/mountain.png",
-            "tag": "map",
-            "background_sprite": "map/grass.png"
+            "sprite": "map/grass.png",
+            "tag": "map"
           },
           {
             "boat": false,
@@ -10411,10 +10403,10 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
+            "id": "overworld_tree_fir",
+            "name": "Tree (Fir)",
             "walkable": true,
-            "obstructs": false,
+            "obstructs": true,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -10422,8 +10414,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
+            "sprite": "overworld/tree_fir.png",
+            "tag": "map:trees & forests",
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -26714,19 +26707,20 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
+            "id": "overworld_lighthouse",
+            "name": "Lighthouse",
             "walkable": true,
             "obstructs": false,
             "locked": false,
-            "light_source": false,
-            "light_range": 0,
+            "light_source": true,
+            "light_range": 6,
             "animation": "none",
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "overworld/lighthouse.png",
+            "tag": "map:settlements",
+            "background_sprite": "map/water.png"
           },
           {
             "id": "water",
@@ -47637,7 +47631,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/grass.png",
-            "tag": "map"
+            "tag": "map",
+            "quest": "the_giant_bats"
           },
           {
             "boat": false,
@@ -48840,7 +48835,7 @@
             "spawn": null,
             "sprite": "map/grass.png",
             "tag": "map",
-            "quest": "the_giant_bats"
+            "quest": ""
           },
           {
             "boat": false,

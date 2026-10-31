@@ -37,7 +37,7 @@
           "name": "Step 1",
           "kind": "kill",
           "encounter_id": "restless_dead",
-          "count": 5,
+          "count": 2,
           "location_kind": "map",
           "map_id": "town_1",
           "description": "Put the Town's love ones... to rest"

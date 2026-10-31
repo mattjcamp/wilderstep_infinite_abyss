@@ -2578,6 +2578,7 @@
     },
     {
       "boat": false,
+      "background_sprite": "map/grass.png",
       "id": "object_signpost",
       "name": "Signpost",
       "walkable": false,
