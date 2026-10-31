@@ -30084,7 +30084,7 @@
             "spawn": null,
             "sprite": "indoor/wall_left.png",
             "tag": "shop",
-            "background_sprite": "indoor/floor_planks_alt.png"
+            "background_sprite": "indoor/floor_planks.png"
           },
           {
             "boat": false,
@@ -30352,7 +30352,7 @@
             "spawn": null,
             "sprite": "indoor/wall_left.png",
             "tag": "shop",
-            "background_sprite": "indoor/floor_planks_alt.png"
+            "background_sprite": "indoor/floor_planks.png"
           },
           {
             "boat": false,
@@ -30618,7 +30618,7 @@
             "spawn": null,
             "sprite": "indoor/wall_left.png",
             "tag": "shop",
-            "background_sprite": "indoor/floor_planks_alt.png"
+            "background_sprite": "indoor/floor_planks.png"
           },
           {
             "boat": false,
@@ -33305,8 +33305,8 @@
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -33316,13 +33316,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon:walls:room walls"
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -33332,13 +33332,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon:walls:room walls"
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -33348,7 +33348,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon:walls:room walls"
           },
           {
@@ -33403,8 +33403,8 @@
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -33414,13 +33414,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon:walls:room walls"
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -33430,13 +33430,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon:walls:room walls"
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -33446,13 +33446,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon:walls:room walls"
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -33462,13 +33462,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon:walls:room walls"
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -33478,13 +33478,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon:walls:room walls"
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -33494,7 +33494,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon:walls:room walls"
           },
           {
@@ -34085,8 +34085,8 @@
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -34096,13 +34096,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon:walls:room walls"
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -34112,13 +34112,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon:walls:room walls"
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -34128,7 +34128,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon:walls:room walls"
           },
           {
@@ -34183,8 +34183,8 @@
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -34194,13 +34194,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon:walls:room walls"
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -34210,13 +34210,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon:walls:room walls"
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -34226,13 +34226,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon:walls:room walls"
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -34242,13 +34242,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon:walls:room walls"
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -34258,13 +34258,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon:walls:room walls"
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -34274,7 +34274,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon:walls:room walls"
           },
           {
@@ -35743,8 +35743,8 @@
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -35754,7 +35754,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon:walls:room walls"
           },
           {
@@ -35775,8 +35775,8 @@
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -35786,7 +35786,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon:walls:room walls"
           },
           {
@@ -35807,8 +35807,8 @@
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -35818,13 +35818,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon:walls:room walls"
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -35834,13 +35834,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon:walls:room walls"
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -35850,13 +35850,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon:walls:room walls"
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -35866,7 +35866,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon:walls:room walls"
           },
           {
@@ -35887,8 +35887,8 @@
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -35898,7 +35898,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon:walls:room walls"
           },
           {
@@ -36993,8 +36993,8 @@
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -37004,13 +37004,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon:walls:room walls"
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -37020,13 +37020,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon:walls:room walls"
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -37036,7 +37036,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon:walls:room walls"
           },
           {
@@ -37759,8 +37759,8 @@
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -37770,7 +37770,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon:walls:room walls"
           },
           {
@@ -37791,8 +37791,8 @@
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -37802,13 +37802,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon:walls:room walls"
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -37818,13 +37818,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon:walls:room walls"
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -37834,7 +37834,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon:walls:room walls"
           },
           {
@@ -39988,8 +39988,8 @@
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -39999,13 +39999,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon"
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -40015,13 +40015,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon"
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -40031,13 +40031,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon"
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -40047,13 +40047,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon"
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -40063,13 +40063,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon"
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -40079,7 +40079,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon"
           },
           {
@@ -40105,8 +40105,8 @@
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -40116,13 +40116,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon"
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -40132,13 +40132,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon"
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -40148,13 +40148,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon"
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -40164,13 +40164,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon"
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -40180,13 +40180,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon"
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -40196,13 +40196,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon"
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -40212,7 +40212,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon"
           },
           {
@@ -50788,8 +50788,8 @@
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -50799,13 +50799,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon:walls:room walls"
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -50815,13 +50815,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon:walls:room walls"
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -50831,7 +50831,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon:walls:room walls"
           },
           {
@@ -52299,8 +52299,8 @@
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -52310,13 +52310,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon:walls:room walls"
           },
           {
             "boat": false,
-            "id": "dungeon_wall_bottom",
-            "name": "Dungeon Wall, Bottom",
+            "id": "dungeon_wall_top",
+            "name": "Dungeon Wall, Top",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -52326,7 +52326,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "dungeon/wall_bottom.png",
+            "sprite": "dungeon/wall_top.png",
             "tag": "dungeon:walls:room walls"
           },
           {
@@ -52360,7 +52360,7 @@
             "spawn": null,
             "sprite": "dungeon/wall_right.png",
             "tag": "dungeon:walls:room walls",
-            "background_sprite": "dungeon/wall_bottom.png"
+            "background_sprite": "dungeon/wall_top.png"
           },
           {
             "boat": false,

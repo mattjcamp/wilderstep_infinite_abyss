@@ -31,7 +31,7 @@ describe("autotileDungeonWalls", () => {
     ]);
     run(g);
     expect(g[0][3].id).toBe(IDS.faceTop); // floor below
-    expect(g[3][3].id).toBe(IDS.faceBottom); // floor above
+    expect(g[3][3].id).toBe(IDS.faceTop); // floor above → same face piece
     expect(g[1][1].id).toBe(IDS.left); // room to the east
     expect(g[1][5].id).toBe(IDS.right); // room to the west
     expect(g[1][1].background_sprite).toBe("floor.png"); // strips sit on floor

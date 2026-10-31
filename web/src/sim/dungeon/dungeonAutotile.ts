@@ -8,8 +8,9 @@
  * dungeon maps:
  *
  *   - Floor to the SOUTH → brick face (`dungeon_wall_top`): the wall
- *     you look at across the room. Floor only to the NORTH → face too
- *     (`dungeon_wall_bottom`).
+ *     you look at across the room. Floor only to the NORTH → the same
+ *     face (the top and bottom face art was identical, so there is one
+ *     face piece).
  *   - Floor to the EAST only → `dungeon_wall_left` (thin strip on the
  *     cell's left edge, the room's floor showing to its right).
  *     Floor to the WEST only → `dungeon_wall_right`. Floor on both
@@ -42,7 +43,7 @@ export interface AutotileCell {
 }
 
 type Piece =
-  | "faceTop" | "faceBottom" | "left" | "right" | "divider"
+  | "faceTop" | "left" | "right" | "divider"
   | "cornerTl" | "cornerTr" | "tDown" | "tUp" | "rock";
 
 /** Palette ids for one tileset's wall pieces. The Dungeon and Cave
@@ -52,7 +53,6 @@ type Piece =
 export function tilesetWallIds(prefix: "dungeon" | "cave"): Record<Piece, string> {
   return {
     faceTop: `${prefix}_wall_top`,
-    faceBottom: `${prefix}_wall_bottom`,
     left: `${prefix}_wall_left`,
     right: `${prefix}_wall_right`,
     divider: `${prefix}_wall_divider`,
@@ -71,7 +71,6 @@ export const CAVE_TILESET_WALL_IDS = tilesetWallIds("cave");
 
 const PIECE_LABELS: Record<Piece, string> = {
   faceTop: "Wall, Top",
-  faceBottom: "Wall, Bottom",
   left: "Wall, Left",
   right: "Wall, Right",
   divider: "Wall, Divider",
@@ -83,7 +82,7 @@ const PIECE_LABELS: Record<Piece, string> = {
 };
 
 const STRIPS: ReadonlySet<Piece> = new Set(["left", "right", "divider"]);
-const FACES: ReadonlySet<Piece> = new Set(["faceTop", "faceBottom"]);
+const FACES: ReadonlySet<Piece> = new Set(["faceTop"]);
 
 /** Pick the wall piece for every cell where `isWall(cell)` holds.
  *  `isOpen(cell)` = the party can be there (floor, door, stairs…).
@@ -123,7 +122,7 @@ export function autotileDungeonWalls<C extends AutotileCell>(
         open(r - 1, c - 1) || open(r - 1, c + 1) || open(r + 1, c - 1) || open(r + 1, c + 1);
       piece[r][c] =
         s ? "faceTop"
-        : n ? "faceBottom"
+        : n ? "faceTop"
         : e && w ? "divider"
         : e ? "left"
         : w ? "right"

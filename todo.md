@@ -1,3 +1,6 @@
+## Bugs
+- During a kill quest, I would lose a player so I would reload the browswer to start from the last location or I would end and come back to play later. When I did that the enemies didn't reappear and I could not find them to kill them and therefore complete the quest.
+
 ## Flesh Out Core
 - Make a credible set of Demo adventures along with some roguelike elements to flesh out the map we already have.
 

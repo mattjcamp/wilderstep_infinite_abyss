@@ -840,22 +840,6 @@
     },
     {
       "boat": false,
-      "id": "dungeon_wall_bottom",
-      "name": "Dungeon Wall, Bottom",
-      "walkable": false,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "dungeon/wall_bottom.png",
-      "tag": "dungeon:walls:room walls"
-    },
-    {
-      "boat": false,
       "id": "dungeon_wall_left",
       "name": "Dungeon Wall, Left",
       "walkable": false,
@@ -1504,22 +1488,6 @@
     },
     {
       "boat": false,
-      "id": "cave_wall_bottom",
-      "name": "Cave Wall, Bottom",
-      "walkable": false,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "cave/wall_bottom.png",
-      "tag": "cave:walls:room walls"
-    },
-    {
-      "boat": false,
       "id": "cave_wall_left",
       "name": "Cave Wall, Left",
       "walkable": false,
@@ -1724,22 +1692,6 @@
       "encounter": null,
       "spawn": null,
       "sprite": "cave/wall_t_up.png",
-      "tag": "cave:walls:junctions"
-    },
-    {
-      "boat": false,
-      "id": "cave_wall_cross",
-      "name": "Cave Wall, Cross",
-      "walkable": false,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "cave/wall_cross.png",
       "tag": "cave:walls:junctions"
     },
     {
