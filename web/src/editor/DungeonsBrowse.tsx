@@ -61,10 +61,11 @@ type ChestItem = {
 
 /** Closed style enum — the procedural generator's supported themes.
  *  Add new values here when the generator grows. */
-const STYLES = ["caves", "ruins", "forest", "custom", "dungeon"] as const;
+const STYLES = ["caves", "ruins", "forest", "custom", "dungeon", "cavern"] as const;
 /** Dropdown labels where the raw value needs a hint. */
 const STYLE_LABELS: Partial<Record<(typeof STYLES)[number], string>> = {
   dungeon: "dungeon (new tileset)",
+  cavern: "cavern (cave tileset)",
 };
 type Style = (typeof STYLES)[number];
 

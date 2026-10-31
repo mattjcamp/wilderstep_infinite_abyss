@@ -357,6 +357,66 @@ const DT_WALL_TORCH_PROTO = proto({
   paletteId: "dungeon_wall_top",
 });
 
+/** ── Cave Tileset style ("cavern") ─────────────────────────────
+ *  Same shape as the Dungeon Tileset style with the cave pieces:
+ *  dirt floor (the converter mixes in gravel / rock / moss patches),
+ *  cave door + steps, walls autotiled from the generic "cave_wall". */
+export const CAVE_TILESET_FLOOR_ID = "cave_floor_dirt";
+
+const CV_FLOOR_PROTO = proto({
+  id: CAVE_TILESET_FLOOR_ID,
+  name: "Cave Floor, Dirt",
+  paletteId: CAVE_TILESET_FLOOR_ID,
+});
+const CV_WALL_PROTO = proto({
+  id: "cave_wall",
+  name: "Cave Wall",
+  walkable: false,
+  obstructs: true,
+  paletteId: "cave_wall_top",
+});
+const CV_STAIRS_UP_PROTO = proto({ id: "stairs_up", name: "Cave Steps, Up", paletteId: "cave_stairs_up" });
+const CV_STAIRS_DOWN_PROTO = proto({ id: "stairs_down", name: "Cave Steps, Down", paletteId: "cave_stairs" });
+const CV_DOOR_PROTO = proto({ id: "cave_door", name: "Cave Door", paletteId: "cave_door" });
+const CV_LOCKED_DOOR_PROTO = proto({
+  id: "door_locked",
+  name: "Locked Door",
+  walkable: false,
+  obstructs: false,
+  locked: true,
+  paletteId: "cave_door",
+});
+const CV_WALL_TORCH_PROTO = proto({ ...WALL_TORCH_PROTO, paletteId: "cave_wall_top" });
+
+function cavernTilesetProto(tileId: number): DungeonTilePrototype | null {
+  switch (tileId) {
+    case TILE_DFLOOR:
+    case TILE_PATH:
+    case TILE_GRASS:
+    case TILE_SAND:
+      return CV_FLOOR_PROTO;
+    case TILE_DWALL:
+    case TILE_MOUNTAIN:
+    case TILE_FOREST:
+      return CV_WALL_PROTO;
+    case TILE_STAIRS:
+    case TILE_FOREST_ARCHWAY_UP:
+      return CV_STAIRS_UP_PROTO;
+    case TILE_STAIRS_DOWN:
+    case TILE_FOREST_ARCHWAY_DOWN:
+      return CV_STAIRS_DOWN_PROTO;
+    case TILE_DDOOR:
+      return CV_DOOR_PROTO;
+    case TILE_LOCKED_DOOR:
+      return CV_LOCKED_DOOR_PROTO;
+    case TILE_WALL_TORCH:
+      return CV_WALL_TORCH_PROTO;
+    case TILE_TRAP:
+      return { ...TRAP_PROTO, paletteId: CAVE_TILESET_FLOOR_ID };
+  }
+  return null;
+}
+
 function dungeonTilesetProto(tileId: number): DungeonTilePrototype | null {
   switch (tileId) {
     case TILE_DFLOOR:
@@ -398,6 +458,10 @@ export function prototypeForTileId(
   // doors; chests + artifacts fall through to the shared furniture.
   if (style === "dungeon") {
     const p = dungeonTilesetProto(tileId);
+    if (p) return p;
+  }
+  if (style === "cavern") {
+    const p = cavernTilesetProto(tileId);
     if (p) return p;
   }
   // Style-agnostic furniture takes precedence.
@@ -510,6 +574,26 @@ export const DUNGEON_PALETTE_IDS: readonly string[] = [
   "dungeon_wall_t_down",
   "dungeon_wall_t_up",
   "dungeon_pit_centre",
+  // Cave Tileset style — floors, furniture, features, wall pieces.
+  CAVE_TILESET_FLOOR_ID,
+  "cave_floor_gravel",
+  "cave_floor_rock",
+  "cave_floor_moss",
+  "cave_stairs_up",
+  "cave_stairs",
+  "cave_door",
+  "cave_stalagmite",
+  "cave_rubble",
+  "cave_wall_top",
+  "cave_wall_bottom",
+  "cave_wall_left",
+  "cave_wall_right",
+  "cave_wall_divider",
+  "cave_wall_corner_tl",
+  "cave_wall_corner_tr",
+  "cave_wall_t_down",
+  "cave_wall_t_up",
+  "cave_pit_centre",
   "door",
   "door_locked",
   "mountain",

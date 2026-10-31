@@ -79,7 +79,11 @@ const WALL_TILES: ReadonlySet<number> = new Set([
  *  (directional walls autotiled by neighbour — see sim/dungeon/
  *  dungeonAutotile.ts). Carves the same TILE_DWALL / TILE_DFLOOR grid
  *  as "ruins". */
-export type DungeonStyle = "caves" | "ruins" | "forest" | "custom" | "dungeon";
+export type DungeonStyle =
+  | "caves" | "ruins" | "forest" | "custom" | "dungeon"
+  /** Rooms-and-corridors roughened into a cave (see `roughenCavern`)
+   *  and painted with the Cave Tileset (autotiled like "dungeon"). */
+  | "cavern";
 export type Difficulty = "easy" | "normal" | "hard" | "deadly" | "boss";
 export type LevelSize = "small" | "medium" | "large";
 export type TorchDensity = "none" | "sparse" | "moderate" | "abundant";
@@ -818,6 +822,43 @@ function placeForestEdgeStairs(
  * rooms; tree-walls flagged non-walkable per cell so the player can't
  * stroll through woods the way they can on the overworld.
  */
+/**
+ * Cavern post-process — bites random notches out of the walls that
+ * border open floor so rooms and corridors read as natural rock, not
+ * cut stone. CARVE-ONLY (wall → floor), so it can never disconnect a
+ * path or wall in a door. Skips the map border, torches, and walls
+ * next to doors (a notch beside a door would let the party walk
+ * around it).
+ */
+function roughenCavern(g: Grid, rng: RNG): void {
+  const isDoor = (c: number, r: number) => {
+    const t = getTile(g, c, r);
+    return t === TILE_DDOOR || t === TILE_LOCKED_DOOR;
+  };
+  const picks: Array<[number, number]> = [];
+  for (let r = 1; r < g.height - 1; r++) {
+    for (let c = 1; c < g.width - 1; c++) {
+      if (getTile(g, c, r) !== TILE_DWALL) continue;
+      if (g.decorations[`${c},${r}`] !== undefined) continue;
+      let floorN = 0;
+      let nearDoor = false;
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          if (isDoor(c + dc, r + dr)) nearDoor = true;
+        }
+      }
+      if (nearDoor) continue;
+      for (const [dc, dr] of [[0, -1], [0, 1], [1, 0], [-1, 0]]) {
+        if (getTile(g, c + dc, r + dr) === TILE_DFLOOR) floorN++;
+      }
+      // Bumps on the rock face: one or two open sides, ~30% chance.
+      if (floorN >= 1 && floorN <= 2 && rng() < 0.3) picks.push([c, r]);
+    }
+  }
+  // Apply after the scan so one notch doesn't snowball into the next.
+  for (const [c, r] of picks) setTile(g, c, r, TILE_DFLOOR);
+}
+
 function applyForestTerrain(g: Grid, rooms: Room[], rng: RNG): void {
   const roomCells = new Set<string>();
   for (const room of rooms) {
@@ -1352,6 +1393,8 @@ export function generateDungeonLevel(opts: GenerateLevelOptions): DungeonLevel {
 
   // ── Forest post-process ──
   if (style === "forest") applyForestTerrain(grid, rooms, rng);
+  // ── Cavern post-process: rough, irregular rock walls ──
+  if (style === "cavern") roughenCavern(grid, rng);
 
   return {
     name: opts.name,

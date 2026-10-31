@@ -6,7 +6,7 @@
       "name": "Hidden Grotto",
       "description": "An old forgotten grotto hidden deep in the mountain",
       "tags": [],
-      "style": "caves",
+      "style": "cavern",
       "difficulty": "normal",
       "size": {
         "width": 32,
@@ -26,7 +26,7 @@
           "depth": 2
         }
       ],
-      "theme": "cryptid"
+      "theme": "humanoid"
     },
     {
       "id": "stone_halls",

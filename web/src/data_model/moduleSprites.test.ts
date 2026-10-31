@@ -13,20 +13,29 @@ import { join } from "node:path";
 
 const PUBLIC = join(__dirname, "../../public");
 const MODULES = join(PUBLIC, "modules");
-const SPRITE_RE = /^(map|indoor|dungeon|objects|town|person|monster|item)\/[^"]+\.png$/;
+const SPRITE_RE =
+  /^(map|indoor|dungeon|cave|objects|town|person|monster|item|spells|actions)\/[^"]+\.png$/;
 
-function collect(node: unknown, out: Set<string>, key = ""): void {
+/** Folder a bare `icon` stem resolves into, by data file: spell icons
+ *  live in `spells/`, everything else's (items, chests, …) in `item/`. */
+function iconFolderFor(file: string): string {
+  return file === "spells.json" ? "spells" : "item";
+}
+
+function collect(node: unknown, out: Set<string>, iconFolder: string, key = ""): void {
   if (typeof node === "string") {
     if (SPRITE_RE.test(node)) out.add(node);
-    else if (key === "icon" && node) out.add(`item/${node.replace(/\.png$/, "")}.png`);
+    else if (key === "icon" && node) {
+      out.add(`${iconFolder}/${node.replace(/\.png$/, "")}.png`);
+    }
     return;
   }
   if (Array.isArray(node)) {
-    for (const v of node) collect(v, out, key);
+    for (const v of node) collect(v, out, iconFolder, key);
     return;
   }
   if (node && typeof node === "object") {
-    for (const [k, v] of Object.entries(node)) collect(v, out, k);
+    for (const [k, v] of Object.entries(node)) collect(v, out, iconFolder, k);
   }
 }
 
@@ -59,7 +68,11 @@ describe("module sprite references", () => {
       const refs = new Set<string>();
       for (const f of readdirSync(join(MODULES, mod))) {
         if (!f.endsWith(".json")) continue;
-        collect(JSON.parse(readFileSync(join(MODULES, mod, f), "utf-8")), refs);
+        collect(
+          JSON.parse(readFileSync(join(MODULES, mod, f), "utf-8")),
+          refs,
+          iconFolderFor(f),
+        );
       }
       // A reference resolves to the nearest module in the chain (the
       // module, its art theme, its parents, then Default) that ships it.

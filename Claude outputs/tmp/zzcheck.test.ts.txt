@@ -1,0 +1,13 @@
+import { it } from "vitest";
+import { generateDungeonLevel } from "@/battle/world/Dungeon";
+import { dungeonLevelToMap } from "@/sim/dungeon/dungeonLevelToMap";
+import { DUNGEON_PALETTE_IDS } from "@/sim/dungeon/tileMapping";
+it("x", () => {
+  const s = new Set<string>();
+  for (const seed of [1,2,3]) {
+    const level = generateDungeonLevel({ name: "F1", width: 40, height: 30, style: "cavern", difficulty: "normal", floorIdx: 0, placeStairsDown: true, lockProbability: 0.2, torchProbability: 0.1, seed });
+    const map = dungeonLevelToMap(level, { dungeonId: "c", floorIdx: 0, totalFloors: 2, customTileSprites: new Map(DUNGEON_PALETTE_IDS.map((id) => [id, id])) });
+    for (const row of map.grid) for (const c of row) if (c.id.startsWith("dungeon_")) s.add(`${c.id} sprite=${c.sprite} trap=${c.trap}`);
+  }
+  console.log([...s]);
+});

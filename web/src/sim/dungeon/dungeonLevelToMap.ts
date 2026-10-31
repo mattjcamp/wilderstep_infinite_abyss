@@ -42,6 +42,7 @@ import {
   prototypeForTileId,
   CHEST_PALETTE_ID,
   DUNGEON_TILESET_FLOOR_ID,
+  CAVE_TILESET_FLOOR_ID,
   resolveDungeonSprite,
   type DungeonTilePrototype,
 } from "./tileMapping";
@@ -228,29 +229,6 @@ export function dungeonLevelToMap(
     grid.push(row);
   }
 
-  // Dungeon Tileset: give every wall its directional piece (faces,
-  // side strips, corners, tees, solid rock) from its neighbours.
-  if (style === "dungeon") {
-    autotileDungeonWalls(grid, {
-      isWall: (cell) => cell.id === "dungeon_wall" || cell.id === "wall_torch",
-      sprites: opts.customTileSprites,
-      floorSprite: resolveDungeonSprite(DUNGEON_TILESET_FLOOR_ID, opts.customTileSprites),
-      keepId: (cell) => cell.id === "wall_torch",
-    });
-    // Doors are drawn as part of the wall face — back them with the
-    // same solid-rock black so their transparent corners match.
-    const rock = resolveDungeonSprite("dungeon_pit_centre", opts.customTileSprites);
-    if (rock) {
-      for (const row of grid) {
-        for (const cell of row) {
-          if (cell.id === "dungeon_door" || cell.id === "door_locked") {
-            cell.background_sprite = rock;
-          }
-        }
-      }
-    }
-  }
-
   // Walking onto monster positions kicks off combat through the
   // placed-encounter subsystem. We do that by stamping an
   // `encounter` id onto each cell that holds a `DungeonMonster`.
@@ -269,6 +247,13 @@ export function dungeonLevelToMap(
       // synthesize them.
       cell.encounter = `__dungeon_enc_${m.id}__`;
     }
+  }
+
+  // Tileset styles ("dungeon" / "cavern"): give every wall its
+  // directional piece from its neighbours. Runs after encounters are
+  // stamped so the cavern feature pass can keep clear of monsters.
+  if (style === "dungeon" || style === "cavern") {
+    applyTilesetStyle(grid, style, level, opts.customTileSprites, `${dungeonId}:${floorIdx}`);
   }
 
   return {
@@ -462,5 +447,141 @@ function patchDecoration(
     // surrounding style. v1's wall_torch.png was authored against
     // overworld brick walls; dungeon stone walls would clash.
     cell.animation = "torch";
+  }
+}
+
+/** Small deterministic hash → [0, 1). Keeps tileset dressing (cave
+ *  floor patches, stalagmites) stable for a given dungeon + floor, so
+ *  re-entering a floor or re-baking it paints the same map. */
+function hash01(seed: string, x: number, y: number): number {
+  let h = 2166136261;
+  const s = `${seed}|${x}|${y}`;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  h ^= h >>> 13;
+  h = Math.imul(h, 0x5bd1e995);
+  h ^= h >>> 15;
+  return (h >>> 0) / 4294967296;
+}
+
+/** Smooth value noise over a coarse lattice — big soft patches. */
+function patchNoise(seed: string, c: number, r: number, cell = 5): number {
+  const gx = c / cell, gy = r / cell;
+  const x0 = Math.floor(gx), y0 = Math.floor(gy);
+  const fx = gx - x0, fy = gy - y0;
+  const sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);
+  const v = (x: number, y: number) => hash01(seed, x, y);
+  const a = v(x0, y0) + (v(x0 + 1, y0) - v(x0, y0)) * sx;
+  const b = v(x0, y0 + 1) + (v(x0 + 1, y0 + 1) - v(x0, y0 + 1)) * sx;
+  return a + (b - a) * sy;
+}
+
+/** Dungeon / Cave Tileset dressing + wall autotiling. */
+function applyTilesetStyle(
+  grid: DungeonMapCell[][],
+  style: "dungeon" | "cavern",
+  level: DungeonLevel,
+  sprites: ReadonlyMap<string, string> | undefined,
+  seed: string,
+): void {
+  const cave = style === "cavern";
+  const prefix = cave ? "cave" : "dungeon";
+  const floorId = cave ? CAVE_TILESET_FLOOR_ID : DUNGEON_TILESET_FLOOR_ID;
+  const floorSprite = resolveDungeonSprite(floorId, sprites);
+  const wallId = cave ? "cave_wall" : "dungeon_wall";
+
+  if (cave) {
+    // Floor patches — dirt with soft areas of gravel, bare rock and
+    // moss. Applied to every cell that renders on the floor (plain
+    // floor, concealed traps, chest bases) so a trap never shows up as
+    // a different-looking tile from the floor around it.
+    const variants: Array<[number, string]> = [
+      [0.42, CAVE_TILESET_FLOOR_ID],
+      [0.62, "cave_floor_gravel"],
+      [0.8, "cave_floor_rock"],
+      [1.01, "cave_floor_moss"],
+    ];
+    for (let r = 0; r < grid.length; r++) {
+      for (let c = 0; c < grid[r].length; c++) {
+        const cell = grid[r][c];
+        const floorBacked =
+          cell.id === CAVE_TILESET_FLOOR_ID || cell.trap || cell.id === "chest";
+        if (!floorBacked) continue;
+        const n = patchNoise(seed, c, r);
+        const id = variants.find(([t]) => n < t)![1];
+        const sprite = resolveDungeonSprite(id, sprites);
+        if (!sprite) continue;
+        cell.sprite = sprite;
+        if (cell.id === CAVE_TILESET_FLOOR_ID) {
+          cell.id = id;
+          cell.paletteId = id;
+        }
+      }
+    }
+  }
+
+  autotileDungeonWalls(grid, {
+    isWall: (cell) => cell.id === wallId || cell.id === "wall_torch",
+    sprites,
+    floorSprite,
+    keepId: (cell) => cell.id === "wall_torch",
+    tileset: cave ? "cave" : "dungeon",
+  });
+
+  // Doors are drawn as part of the wall face — back them with the
+  // solid-rock black so their transparent corners match.
+  const rock = resolveDungeonSprite(`${prefix}_pit_centre`, sprites);
+  if (rock) {
+    for (const row of grid) {
+      for (const cell of row) {
+        if (cell.id === `${prefix}_door` || cell.id === "door_locked") {
+          cell.background_sprite = rock;
+        }
+      }
+    }
+  }
+
+  if (!cave) return;
+  // Cave features — a sparse scatter of stalagmites and rubble. Only
+  // on a plain floor cell whose 8 neighbours are ALL plain floor, so a
+  // feature can never block a corridor, a doorway, stairs or a
+  // monster, and two features never touch. Never on the entry cell.
+  const plain = (cell: DungeonMapCell | undefined) =>
+    !!cell &&
+    cell.walkable &&
+    cell.id.startsWith("cave_floor_") &&
+    !cell.trap &&
+    !cell.encounter &&
+    !cell.item &&
+    !cell.link;
+  const stal = resolveDungeonSprite("cave_stalagmite", sprites);
+  const rubble = resolveDungeonSprite("cave_rubble", sprites);
+  for (let r = 1; r < grid.length - 1; r++) {
+    for (let c = 1; c < grid[r].length - 1; c++) {
+      const cell = grid[r][c];
+      if (!plain(cell)) continue;
+      if (c === level.entryCol && r === level.entryRow) continue;
+      let open = true;
+      for (let dr = -1; dr <= 1 && open; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          if ((dr || dc) && !plain(grid[r + dr]?.[c + dc])) { open = false; break; }
+        }
+      }
+      if (!open) continue;
+      const roll = hash01(seed + ":feature", c, r);
+      if (roll >= 0.05) continue;
+      const isStal = roll < 0.035;
+      const sprite = isStal ? stal : rubble;
+      if (!sprite) continue;
+      cell.background_sprite = cell.sprite; // the floor under it
+      cell.sprite = sprite;
+      cell.id = isStal ? "cave_stalagmite" : "cave_rubble";
+      cell.name = isStal ? "Cave Stalagmite" : "Cave Rubble";
+      cell.walkable = false;
+      // Stalagmites block sight like a pillar; rubble is low.
+      cell.obstructs = isStal;
+    }
   }
 }

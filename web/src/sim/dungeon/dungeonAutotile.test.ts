@@ -135,3 +135,66 @@ describe("dungeon style — full generated floor", () => {
     expect(ids.has(IDS.left) || ids.has(IDS.right) || ids.has(IDS.divider)).toBe(true);
   });
 });
+
+describe("cavern style — full generated floor", () => {
+  const gen = (seed: number) => {
+    const level = generateDungeonLevel({
+      name: "F1", width: 40, height: 30, style: "cavern", difficulty: "normal",
+      floorIdx: 0, placeStairsDown: true, lockProbability: 0.2, torchProbability: 0.1, seed,
+    });
+    const palette = new Map(DUNGEON_PALETTE_IDS.map((id) => [id, `sprite/${id}.png`]));
+    const map = dungeonLevelToMap(level, { dungeonId: "c", floorIdx: 0, totalFloors: 2, customTileSprites: palette });
+    return { level, map };
+  };
+
+  it("paints with Cave Tileset art: autotiled cave walls, patchy floors, features", () => {
+    const ids = new Set<string>();
+    for (const seed of [1, 2, 3]) {
+      const { map } = gen(seed);
+      for (const row of map.grid) {
+        for (const cell of row) {
+          expect(cell.sprite).not.toBe("");
+          expect(cell.id).not.toBe("cave_wall"); // all walls autotiled
+          // Nothing from the dungeon set. (Concealed traps keep the shared
+          // "dungeon_floor_trap" id but wear the cave floor art.)
+          if (!cell.trap) expect(cell.id.startsWith("dungeon_")).toBe(false);
+          expect(cell.sprite.includes("dungeon_")).toBe(false);
+          ids.add(cell.id);
+        }
+      }
+    }
+    expect(ids.has("cave_wall_top")).toBe(true);
+    expect(ids.has("cave_pit_centre")).toBe(true);
+    expect(ids.has("cave_floor_dirt")).toBe(true);
+    // Floor patches: at least one non-dirt floor variant shows up.
+    expect(["cave_floor_gravel", "cave_floor_rock", "cave_floor_moss"].some((v) => ids.has(v))).toBe(true);
+    expect(ids.has("cave_stalagmite") || ids.has("cave_rubble")).toBe(true);
+  });
+
+  it("never blocks the way down: stairs-down stays reachable from the entry", () => {
+    for (const seed of [1, 2, 3, 4, 5, 6]) {
+      const { level, map } = gen(seed);
+      const H = map.grid.length, W = map.grid[0].length;
+      const seen = new Set<string>([`${level.entryCol},${level.entryRow}`]);
+      const q: Array<[number, number]> = [[level.entryCol, level.entryRow]];
+      let foundDown = false;
+      while (q.length) {
+        const [c, r] = q.shift()!;
+        const cell = map.grid[r][c];
+        if (cell.id === "stairs_down") foundDown = true;
+        for (const [dc, dr] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const nc = c + dc, nr = r + dr;
+          if (nc < 0 || nr < 0 || nc >= W || nr >= H) continue;
+          const n = map.grid[nr][nc];
+          // Passable = walkable, or a door (locked doors open with a pick).
+          if (!(n.walkable || n.locked || n.id === "cave_door")) continue;
+          const k = `${nc},${nr}`;
+          if (seen.has(k)) continue;
+          seen.add(k);
+          q.push([nc, nr]);
+        }
+      }
+      expect(foundDown).toBe(true);
+    }
+  });
+});

@@ -41,32 +41,44 @@ export interface AutotileCell {
   background_sprite?: string;
 }
 
-/** Palette ids the autotiler paints with. */
-export const DUNGEON_TILESET_WALL_IDS = {
-  faceTop: "dungeon_wall_top",
-  faceBottom: "dungeon_wall_bottom",
-  left: "dungeon_wall_left",
-  right: "dungeon_wall_right",
-  divider: "dungeon_wall_divider",
-  cornerTl: "dungeon_wall_corner_tl",
-  cornerTr: "dungeon_wall_corner_tr",
-  tDown: "dungeon_wall_t_down",
-  tUp: "dungeon_wall_t_up",
-  rock: "dungeon_pit_centre",
-} as const;
+type Piece =
+  | "faceTop" | "faceBottom" | "left" | "right" | "divider"
+  | "cornerTl" | "cornerTr" | "tDown" | "tUp" | "rock";
 
-type Piece = keyof typeof DUNGEON_TILESET_WALL_IDS;
+/** Palette ids for one tileset's wall pieces. The Dungeon and Cave
+ *  tilesets share piece names under their own prefix
+ *  (`dungeon_wall_top` / `cave_wall_top`, …), so one set of rules
+ *  autotiles both. */
+export function tilesetWallIds(prefix: "dungeon" | "cave"): Record<Piece, string> {
+  return {
+    faceTop: `${prefix}_wall_top`,
+    faceBottom: `${prefix}_wall_bottom`,
+    left: `${prefix}_wall_left`,
+    right: `${prefix}_wall_right`,
+    divider: `${prefix}_wall_divider`,
+    cornerTl: `${prefix}_wall_corner_tl`,
+    cornerTr: `${prefix}_wall_corner_tr`,
+    tDown: `${prefix}_wall_t_down`,
+    tUp: `${prefix}_wall_t_up`,
+    rock: `${prefix}_pit_centre`,
+  };
+}
 
-const NAMES: Record<Piece, string> = {
-  faceTop: "Dungeon Wall, Top",
-  faceBottom: "Dungeon Wall, Bottom",
-  left: "Dungeon Wall, Left",
-  right: "Dungeon Wall, Right",
-  divider: "Dungeon Wall, Divider",
-  cornerTl: "Dungeon Wall, Corner Top Left",
-  cornerTr: "Dungeon Wall, Corner Top Right",
-  tDown: "Dungeon Wall, T (down)",
-  tUp: "Dungeon Wall, T (up)",
+/** Palette ids the autotiler paints with for the Dungeon Tileset. */
+export const DUNGEON_TILESET_WALL_IDS = tilesetWallIds("dungeon");
+/** …and for the Cave Tileset. */
+export const CAVE_TILESET_WALL_IDS = tilesetWallIds("cave");
+
+const PIECE_LABELS: Record<Piece, string> = {
+  faceTop: "Wall, Top",
+  faceBottom: "Wall, Bottom",
+  left: "Wall, Left",
+  right: "Wall, Right",
+  divider: "Wall, Divider",
+  cornerTl: "Wall, Corner Top Left",
+  cornerTr: "Wall, Corner Top Right",
+  tDown: "Wall, T (down)",
+  tUp: "Wall, T (up)",
   rock: "Solid Rock",
 };
 
@@ -86,8 +98,14 @@ export function autotileDungeonWalls<C extends AutotileCell>(
     /** Keep the cell's own id (e.g. "wall_torch") instead of the
      *  piece's palette id. */
     keepId?: (cell: C) => boolean;
+    /** Which tileset's pieces to paint with. Default: Dungeon. */
+    tileset?: "dungeon" | "cave";
   },
 ): void {
+  const ids = tilesetWallIds(opts.tileset ?? "dungeon");
+  const label = (p: Piece) =>
+    p === "rock" ? PIECE_LABELS.rock
+      : `${opts.tileset === "cave" ? "Cave" : "Dungeon"} ${PIECE_LABELS[p]}`;
   const h = grid.length;
   const at = (r: number, c: number): C | undefined => grid[r]?.[c];
   const open = (r: number, c: number): boolean => {
@@ -134,17 +152,17 @@ export function autotileDungeonWalls<C extends AutotileCell>(
       const p = piece[r][c];
       if (!p) continue;
       const cell = grid[r][c];
-      const paletteId = DUNGEON_TILESET_WALL_IDS[p];
+      const paletteId = ids[p];
       const sprite = opts.sprites?.get(paletteId);
       if (sprite) cell.sprite = sprite;
       if (!opts.keepId?.(cell)) {
         cell.id = paletteId;
-        cell.name = NAMES[p];
+        cell.name = label(p);
       }
       // Strips sit on the room's floor; faces / corners / tees get the
       // solid-rock black behind their transparent mortar so the gaps
       // read as deep shadow regardless of the renderer's backdrop.
-      const rockSprite = opts.sprites?.get(DUNGEON_TILESET_WALL_IDS.rock);
+      const rockSprite = opts.sprites?.get(ids.rock);
       if (STRIPS.has(p) && opts.floorSprite) cell.background_sprite = opts.floorSprite;
       else if (p !== "rock" && rockSprite) cell.background_sprite = rockSprite;
       else delete cell.background_sprite;
