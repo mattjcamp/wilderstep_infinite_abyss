@@ -104,7 +104,7 @@ environment.
 | `model` | same ownership rule; fileName per `^[a-z][a-z0-9_]*\.json$` and must be a registered model file. Size-capped. |
 | `index` | **accepted as a no-op** (`ok: true`, nothing written) — the hosted index is server-derived from manifest writes/deletes, but the editor's publish-all flow still sends its local index draft, and succeeding lets the client clear that draft cleanly. |
 | `delete-module` | owner only; system ids always rejected. Deletes the prefix + index entry. |
-| `sprite` | writes under the CALLER's prefix: `sprites/@<handle>/<category>/<file>.png` (client-supplied category/filename validated by the local server's regexes; PNG data-URL payload verified + size-capped). Regenerates the owner's sprite index section. |
+| `sprite` | writes under the CALLER's prefix: `sprites/@<handle>/<category>/<file>.png`, where `<file>` may include up to five subfolders (`house/chapel/door.png`) so art can mirror the Tile Palette tag hierarchy (client-supplied category/filename validated by the local server's regexes — no dots in folder segments, so no `..` traversal; PNG data-URL payload verified + size-capped). Regenerates the owner's sprite index section. |
 | `delete-sprite` | owner prefix only. |
 | `sprite-index` | regenerates the owner's section only. |
 | `audio-index` | **rejected** in v1 — the audio catalog is system content. |

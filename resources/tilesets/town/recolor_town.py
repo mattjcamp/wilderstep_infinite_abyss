@@ -14,6 +14,8 @@ import json, os, sys
 import numpy as np
 from PIL import Image
 from scipy import ndimage
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "tools"))
+from sprite_paths import relocate  # legacy flat path -> current sprite folder
 
 SRC, OUT = sys.argv[1], sys.argv[2]
 SCHEME = sys.argv[3] if len(sys.argv) > 3 else "classic"
@@ -170,7 +172,7 @@ def out_path(file):
         path = os.path.join(OUT, "..", MOVED[file])
         os.makedirs(os.path.dirname(path), exist_ok=True)
         return path
-    return os.path.join(OUT, file + ".png")
+    return relocate(os.path.join(OUT, file + ".png"))
 
 
 def main():

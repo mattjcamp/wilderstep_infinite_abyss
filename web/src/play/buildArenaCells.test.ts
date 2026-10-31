@@ -5,12 +5,12 @@ describe("toArenaCell", () => {
   it("carries the map cell's background_sprite through for the battle floor", () => {
     const cell = toArenaCell({
       sprite: "objects/barrel.png",
-      background_sprite: "dungeon/floor_brick.png",
+      background_sprite: "dungeon/floors/floor_brick.png",
       walkable: false,
       obstructs: true,
     });
     expect(cell.sprite).toMatch(/objects\/barrel\.png$/);
-    expect(cell.backgroundSprite).toMatch(/dungeon\/floor_brick\.png$/);
+    expect(cell.backgroundSprite).toMatch(/dungeon\/floors\/floor_brick\.png$/);
   });
 
   it("leaves backgroundSprite null when the cell has none", () => {

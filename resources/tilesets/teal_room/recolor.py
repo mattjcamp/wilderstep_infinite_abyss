@@ -11,6 +11,9 @@ swap; the lantern's light keeps a warm GLOW so it reads as a lamp.
 """
 import os, sys
 from PIL import Image
+import sys as _sys
+_sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "tools"))
+from sprite_paths import relocate  # legacy flat path -> current sprite folder
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 SRC_DIR = os.path.join(ROOT, "teal_gold")
@@ -37,8 +40,8 @@ SKIP = set()
 
 def out_path(f):
     if f in MOVED:
-        return os.path.join(OUT_DIR, "..", MOVED[f], f)
-    return os.path.join(OUT_DIR, f)
+        return relocate(os.path.join(OUT_DIR, "..", MOVED[f], f))
+    return relocate(os.path.join(OUT_DIR, f))
 
 
 def main(scheme="warm_timber"):

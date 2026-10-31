@@ -33,15 +33,57 @@
  * back into the module folder for permanent storage.
  */
 
+import { canonicalSpritePath } from "./spriteUrl";
+
 const DRAFT_PREFIX = "sprite_drafts";
 
+let _legacyMigrated = false;
+
+/** One-time rename of drafts saved under a legacy (pre-reorg, flat)
+ *  sprite path to the sprite's current path, so edits made before the
+ *  sprite folders were reorganised still show up. Never overwrites a
+ *  draft already saved at the new path. Safe to call repeatedly. */
+export function migrateLegacySpriteDrafts(): void {
+  if (_legacyMigrated || typeof localStorage === "undefined") return;
+  _legacyMigrated = true;
+  try {
+    const keys: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith(`${DRAFT_PREFIX}/`)) keys.push(k);
+    }
+    for (const k of keys) {
+      const rest = k.slice(DRAFT_PREFIX.length + 1);
+      // "<moduleId>/<cat>/<file>"; module ids may contain one slash
+      // (`@owner/slug`), so try each split and rename the first match.
+      for (let at = rest.indexOf("/"); at > 0; at = rest.indexOf("/", at + 1)) {
+        const sprite = rest.slice(at + 1);
+        const next = canonicalSpritePath(sprite);
+        if (next === sprite) continue;
+        const nk = `${DRAFT_PREFIX}/${rest.slice(0, at)}/${next}`;
+        const v = localStorage.getItem(k);
+        if (v !== null && localStorage.getItem(nk) === null) localStorage.setItem(nk, v);
+        localStorage.removeItem(k);
+        break;
+      }
+    }
+  } catch {
+    /* storage unavailable — nothing to migrate */
+  }
+}
+
+/** Test-only: allow the migration to run again. */
+export function __resetLegacyDraftMigrationForTests(): void {
+  _legacyMigrated = false;
+}
+
 function key(moduleId: string, spritePath: string): string {
+  migrateLegacySpriteDrafts();
   // Normalise the sprite path: strip any leading "/sprites/" and any
   // leading slash so callers can pass either form ("map/grass.png" or
   // "/sprites/map/grass.png") and land on the same key.
-  const trimmed = spritePath
-    .replace(/^\/?sprites\//, "")
-    .replace(/^\/+/, "");
+  // Legacy (pre-reorg) paths resolve to the sprite's current path.
+  const trimmed = canonicalSpritePath(spritePath);
   return `${DRAFT_PREFIX}/${moduleId}/${trimmed}`;
 }
 
@@ -101,6 +143,7 @@ export function discardSpriteDraft(
  *  "Drafts" badge without reaching for storage keys. */
 export function listSpriteDrafts(moduleId: string): ReadonlyArray<string> {
   if (typeof localStorage === "undefined") return [];
+  migrateLegacySpriteDrafts();
   const prefix = `${DRAFT_PREFIX}/${moduleId}/`;
   const out: string[] = [];
   try {

@@ -224,6 +224,26 @@ describe("handleItem — sprites", () => {
     expect(idx.categories).toEqual({ monster: ["slime.png"] });
   });
 
+  it("accepts sprites in subfolders and indexes them category-relative", async () => {
+    const e = env();
+    const out = await handleItem(
+      { kind: "sprite", category: "town", fileName: "house/chapel/door.png", dataUrl: PNG_1X1 },
+      "matt",
+      e,
+    );
+    expect(out.path).toBe("sprites/@matt/town/house/chapel/door.png");
+    const idx = readJson(e.BUCKET.store, "sprites/@matt/index.json");
+    expect(idx.categories).toEqual({ town: ["house/chapel/door.png"] });
+  });
+
+  it("rejects traversal and dotfile segments in sprite fileNames", async () => {
+    for (const fileName of ["../x.png", "a/../x.png", ".hidden/x.png", "a//x.png", "/x.png"]) {
+      await expect(
+        handleItem({ kind: "sprite", category: "town", fileName, dataUrl: PNG_1X1 }, "matt", env()),
+      ).rejects.toThrow(/fileName/);
+    }
+  });
+
   it("rejects non-PNG payloads by signature", () => {
     const fakePng = `data:image/png;base64,${btoa("GIF89a not a png")}`;
     expect(() => pngBytesFromDataUrl(fakePng)).toThrow(/signature/);

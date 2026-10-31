@@ -28,6 +28,20 @@
 import { withBasePath } from "@/util/basePath";
 import { getReadHost } from "./sourceConfig";
 import { ownerHandleOf } from "./moduleIds";
+import spriteAliasData from "./spriteAliases.json";
+
+/** Legacy sprite path → current path (sprites were moved into folders
+ *  mirroring the Tile Palette tag hierarchy). Applied only when the
+ *  path as written isn't found anywhere, so a module that still ships
+ *  or uploads an override at an old path keeps winning. */
+const SPRITE_ALIASES: Record<string, string> =
+  (spriteAliasData as { aliases: Record<string, string> }).aliases;
+
+/** Current path for a (possibly legacy) "<cat>/<file>" sprite ref. */
+export function canonicalSpritePath(raw: string): string {
+  const clean = normalizeSpritePath(raw);
+  return SPRITE_ALIASES[clean] ?? clean;
+}
 
 interface OwnerSpriteIndex {
   /** category → set of bare PNG filenames the owner uploaded. */
@@ -66,17 +80,22 @@ export function ownerIndexHas(clean: string): boolean {
 export function spriteUrl(raw: string): string {
   if (!raw) return raw;
   if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
-  const clean = normalizeSpritePath(raw);
-  if (_ownerHandle && _readHost && ownerIndexHas(clean)) {
-    return `${_readHost}/sprites/@${_ownerHandle}/${clean}`;
-  }
-  // Module layers, nearest first (the module, its parents, …). The
-  // first module whose sprite index lists the file supplies it.
-  for (const layer of _layers) {
-    if (layer.files.has(clean)) return moduleSpriteUrl(layer.moduleId, clean);
+  const written = normalizeSpritePath(raw);
+  const aliased = SPRITE_ALIASES[written];
+  // Try the path as written first, then (for a legacy flat path) its
+  // new home, so an override still published at the old path wins.
+  for (const clean of aliased ? [written, aliased] : [written]) {
+    if (_ownerHandle && _readHost && ownerIndexHas(clean)) {
+      return `${_readHost}/sprites/@${_ownerHandle}/${clean}`;
+    }
+    // Module layers, nearest first (the module, its parents, …). The
+    // first module whose sprite index lists the file supplies it.
+    for (const layer of _layers) {
+      if (layer.files.has(clean)) return moduleSpriteUrl(layer.moduleId, clean);
+    }
   }
   // Base art always lives in the Default module.
-  return moduleSpriteUrl(BASE_SPRITE_MODULE, clean);
+  return moduleSpriteUrl(BASE_SPRITE_MODULE, aliased ?? written);
 }
 
 // ── Module sprite layers ────────────────────────────────────────────

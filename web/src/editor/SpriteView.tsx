@@ -244,7 +244,7 @@ export function SpriteView() {
       ) : null}
 
       <div className="mt-6 space-y-6">
-        {Object.entries(categories).map(([cat, files]) => {
+        {spriteFolderGroups(categories).map(([cat, folder, files]) => {
           const filtered = files.filter(
             (f) =>
               (!needle || f.toLowerCase().includes(needle)) &&
@@ -252,15 +252,15 @@ export function SpriteView() {
           );
           if (filtered.length === 0) return null;
           return (
-            <section key={cat}>
+            <section key={`${cat}/${folder}`}>
               <h2 className="mb-2 text-[13px] uppercase tracking-wide text-parchment/60">
-                {cat} · {filtered.length}
+                {[cat, ...(folder ? folder.split("/") : [])].join(" › ")} · {filtered.length}
                 {filtered.length !== files.length ? ` of ${files.length}` : ""}
               </h2>
               <ul className="grid grid-cols-[repeat(auto-fill,minmax(90px,1fr))] gap-2">
                 {filtered.map((file) => {
                   const path = `${cat}/${file}`;
-                  const label = file.replace(/\.png$/, "");
+                  const label = file.slice(file.lastIndexOf("/") + 1).replace(/\.png$/, "");
                   const isDrafted = draftedPaths.has(path);
                   const from = origin[path] ?? BASE_SPRITE_MODULE;
                   return (
@@ -302,6 +302,30 @@ export function SpriteView() {
       </div>
     </div>
   );
+}
+
+/** Split each category's files into one group per subfolder, so the
+ *  sprite browser mirrors the folder (and Tile Palette tag) hierarchy:
+ *  [category, "house/chapel" | "", files-with-their-subpath]. Groups
+ *  keep the category order and sort subfolders after the root files. */
+export function spriteFolderGroups(
+  categories: Record<string, string[]>,
+): Array<[string, string, string[]]> {
+  const out: Array<[string, string, string[]]> = [];
+  for (const [cat, files] of Object.entries(categories)) {
+    const byFolder = new Map<string, string[]>();
+    for (const f of files) {
+      const slash = f.lastIndexOf("/");
+      const folder = slash >= 0 ? f.slice(0, slash) : "";
+      const list = byFolder.get(folder) ?? [];
+      list.push(f);
+      byFolder.set(folder, list);
+    }
+    for (const folder of [...byFolder.keys()].sort()) {
+      out.push([cat, folder, byFolder.get(folder)!]);
+    }
+  }
+  return out;
 }
 
 /** Thumbnail that prefers the localStorage draft over the on-disk

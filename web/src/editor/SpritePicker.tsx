@@ -194,7 +194,11 @@ function SpriteGrid({
               <ul className="grid grid-cols-[repeat(auto-fill,minmax(56px,1fr))] gap-1.5">
                 {filtered.map((file) => {
                   const path = `${cat}/${file}`;
-                  const stem = file.replace(/\.[a-z]+$/i, "");
+                  // Leaf name only — files may sit in subfolders
+                  // ("house/chapel/door.png"); the full path is the tooltip.
+                  const stem = file
+                    .slice(file.lastIndexOf("/") + 1)
+                    .replace(/\.[a-z]+$/i, "");
                   // Mark the current selection if either format matches.
                   const isCurrent =
                     currentValue === path ||

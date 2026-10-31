@@ -1,5 +1,5 @@
 {
-  "_comment": "Tile Palette — reusable tile types used to paint maps. Each tile carries: `id` (the cell reference), display `name`, `tag` (string used to group tiles in the editor palette panel — empty for untagged), `sprite` (path under /sprites/map/), and the behavioral attributes — `walkable` (blocks movement when false), `obstructs` (blocks light + ranged line-of-sight when true), `locked` (gates passage/interaction until unlocked), `light_source` (the tile emits light), `light_range` (light radius in cells), `animation` (visual effect — \"none\" | \"torch\" | \"fire\" | \"fairy\" | \"smoke\"), `counter` (id from counters.json — empty for none), `encounter` (id from encounters.json — empty for none; the encounter sprite renders as an overlay), and `spawn` (id from spawns.json — empty for none). Optional `link` is a one-way portal: `{ \"map_id\": \"<target>\", \"x\": <col>, \"y\": <row> }`. Map cells are full copies of palette entries; palette edits don't auto-propagate to painted cells.",
+  "_comment": "Tile Palette — reusable tile types used to paint maps. Each tile carries: `id` (the cell reference), display `name`, `tag` (string used to group tiles in the editor palette panel — empty for untagged), `sprite` (path under sprites/; the folder mirrors the tag hierarchy, e.g. tag `town:house:chapel` → `town/house/chapel/<file>.png`), and the behavioral attributes — `walkable` (blocks movement when false), `obstructs` (blocks light + ranged line-of-sight when true), `locked` (gates passage/interaction until unlocked), `light_source` (the tile emits light), `light_range` (light radius in cells), `animation` (visual effect — \"none\" | \"torch\" | \"fire\" | \"fairy\" | \"smoke\"), `counter` (id from counters.json — empty for none), `encounter` (id from encounters.json — empty for none; the encounter sprite renders as an overlay), and `spawn` (id from spawns.json — empty for none). Optional `link` is a one-way portal: `{ \"map_id\": \"<target>\", \"x\": <col>, \"y\": <row> }`. Map cells are full copies of palette entries; palette edits don't auto-propagate to painted cells.",
   "map_tiles": [
     {
       "boat": false,
@@ -29,7 +29,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "map/water.png",
+      "sprite": "water/water.png",
       "tag": "Water",
       "water": true
     },
@@ -323,7 +323,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "indoor/wall_top.png",
+      "sprite": "shop/wall_top.png",
       "tag": "shop"
     },
     {
@@ -339,7 +339,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "indoor/wall_bottom.png",
+      "sprite": "shop/wall_bottom.png",
       "tag": "shop"
     },
     {
@@ -355,7 +355,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "indoor/wall_left.png",
+      "sprite": "shop/wall_left.png",
       "tag": "shop"
     },
     {
@@ -371,7 +371,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "indoor/wall_right.png",
+      "sprite": "shop/wall_right.png",
       "tag": "shop"
     },
     {
@@ -387,7 +387,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "indoor/wall_corner_tl.png",
+      "sprite": "shop/wall_corner_tl.png",
       "tag": "shop"
     },
     {
@@ -403,7 +403,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "indoor/wall_corner_tr.png",
+      "sprite": "shop/wall_corner_tr.png",
       "tag": "shop"
     },
     {
@@ -419,7 +419,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "indoor/wall_corner_bl.png",
+      "sprite": "shop/wall_corner_bl.png",
       "tag": "shop"
     },
     {
@@ -435,7 +435,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "indoor/wall_corner_br.png",
+      "sprite": "shop/wall_corner_br.png",
       "tag": "shop"
     },
     {
@@ -451,7 +451,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "indoor/floor_planks.png",
+      "sprite": "shop/floor_planks.png",
       "tag": "shop"
     },
     {
@@ -467,7 +467,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "indoor/floor_planks_alt.png",
+      "sprite": "shop/floor_planks_alt.png",
       "tag": "shop"
     },
     {
@@ -483,7 +483,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "indoor/table_h_left.png",
+      "sprite": "shop/table_h_left.png",
       "tag": "shop"
     },
     {
@@ -499,7 +499,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "indoor/table_h_mid.png",
+      "sprite": "shop/table_h_mid.png",
       "tag": "shop"
     },
     {
@@ -515,7 +515,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "indoor/table_h_right.png",
+      "sprite": "shop/table_h_right.png",
       "tag": "shop"
     },
     {
@@ -531,7 +531,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "indoor/table_v_top.png",
+      "sprite": "shop/table_v_top.png",
       "tag": "shop"
     },
     {
@@ -547,7 +547,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "indoor/table_v_mid.png",
+      "sprite": "shop/table_v_mid.png",
       "tag": "shop"
     },
     {
@@ -563,7 +563,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "indoor/table_v_bottom.png",
+      "sprite": "shop/table_v_bottom.png",
       "tag": "shop"
     },
     {
@@ -579,7 +579,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "indoor/table_single.png",
+      "sprite": "shop/table_single.png",
       "tag": "shop"
     },
     {
@@ -611,7 +611,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "indoor/window_left.png",
+      "sprite": "shop/window_left.png",
       "tag": "shop"
     },
     {
@@ -627,7 +627,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "indoor/window_right.png",
+      "sprite": "shop/window_right.png",
       "tag": "shop"
     },
     {
@@ -643,7 +643,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "indoor/window_single.png",
+      "sprite": "shop/window_single.png",
       "tag": "shop"
     },
     {
@@ -659,7 +659,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "indoor/notice_board.png",
+      "sprite": "shop/notice_board.png",
       "tag": "shop"
     },
     {
@@ -675,7 +675,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "indoor/fireplace.png",
+      "sprite": "shop/fireplace.png",
       "tag": "shop"
     },
     {
@@ -691,7 +691,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "indoor/shop_door.png",
+      "sprite": "shop/shop_door.png",
       "tag": "shop"
     },
     {
@@ -723,7 +723,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/floor_cobble.png",
+      "sprite": "dungeon/floors/floor_cobble.png",
       "tag": "dungeon:floors"
     },
     {
@@ -739,7 +739,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/floor_flagstone.png",
+      "sprite": "dungeon/floors/floor_flagstone.png",
       "tag": "dungeon:floors"
     },
     {
@@ -755,7 +755,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/floor_smooth.png",
+      "sprite": "dungeon/floors/floor_smooth.png",
       "tag": "dungeon:floors"
     },
     {
@@ -771,7 +771,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/floor_pebbles.png",
+      "sprite": "dungeon/floors/floor_pebbles.png",
       "tag": "dungeon:floors"
     },
     {
@@ -787,7 +787,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/floor_brick.png",
+      "sprite": "dungeon/floors/floor_brick.png",
       "tag": "dungeon:floors"
     },
     {
@@ -803,7 +803,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/floor_planks.png",
+      "sprite": "dungeon/floors/floor_planks.png",
       "tag": "dungeon:floors"
     },
     {
@@ -819,7 +819,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/floor_grate.png",
+      "sprite": "dungeon/floors/floor_grate.png",
       "tag": "dungeon:floors"
     },
     {
@@ -835,7 +835,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/wall_top.png",
+      "sprite": "dungeon/walls/room_walls/wall_top.png",
       "tag": "dungeon:walls:room walls"
     },
     {
@@ -851,7 +851,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/wall_left.png",
+      "sprite": "dungeon/walls/room_walls/wall_left.png",
       "tag": "dungeon:walls:room walls"
     },
     {
@@ -867,7 +867,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/wall_right.png",
+      "sprite": "dungeon/walls/room_walls/wall_right.png",
       "tag": "dungeon:walls:room walls"
     },
     {
@@ -883,7 +883,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/wall_corner_tl.png",
+      "sprite": "dungeon/walls/junctions/wall_corner_tl.png",
       "tag": "dungeon:walls:junctions"
     },
     {
@@ -899,7 +899,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/wall_corner_tr.png",
+      "sprite": "dungeon/walls/junctions/wall_corner_tr.png",
       "tag": "dungeon:walls:junctions"
     },
     {
@@ -915,7 +915,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/wall_window.png",
+      "sprite": "dungeon/walls/room_walls/wall_window.png",
       "tag": "dungeon:walls:room walls"
     },
     {
@@ -931,7 +931,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/wall_banner.png",
+      "sprite": "dungeon/walls/room_walls/wall_banner.png",
       "tag": "dungeon:walls:room walls"
     },
     {
@@ -947,7 +947,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/wall_archway.png",
+      "sprite": "dungeon/walls/room_walls/wall_archway.png",
       "tag": "dungeon:walls:room walls"
     },
     {
@@ -963,7 +963,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/wall_portcullis.png",
+      "sprite": "dungeon/walls/room_walls/wall_portcullis.png",
       "tag": "dungeon:walls:room walls"
     },
     {
@@ -979,7 +979,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/wall_divider.png",
+      "sprite": "dungeon/walls/junctions/wall_divider.png",
       "tag": "dungeon:walls:junctions"
     },
     {
@@ -995,7 +995,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/wall_divider_top.png",
+      "sprite": "dungeon/walls/junctions/wall_divider_top.png",
       "tag": "dungeon:walls:junctions"
     },
     {
@@ -1011,7 +1011,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/wall_divider_end.png",
+      "sprite": "dungeon/walls/junctions/wall_divider_end.png",
       "tag": "dungeon:walls:junctions"
     },
     {
@@ -1027,7 +1027,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/wall_t_down.png",
+      "sprite": "dungeon/walls/junctions/wall_t_down.png",
       "tag": "dungeon:walls:junctions"
     },
     {
@@ -1043,7 +1043,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/wall_t_up.png",
+      "sprite": "dungeon/walls/junctions/wall_t_up.png",
       "tag": "dungeon:walls:junctions"
     },
     {
@@ -1059,7 +1059,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/wall_cross.png",
+      "sprite": "dungeon/walls/junctions/wall_cross.png",
       "tag": "dungeon:walls:junctions"
     },
     {
@@ -1075,7 +1075,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/door.png",
+      "sprite": "dungeon/doors_and_stairs/door.png",
       "tag": "dungeon:doors & stairs"
     },
     {
@@ -1091,7 +1091,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/stairs.png",
+      "sprite": "dungeon/doors_and_stairs/stairs.png",
       "tag": "dungeon:doors & stairs"
     },
     {
@@ -1107,7 +1107,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/stairs_up.png",
+      "sprite": "dungeon/doors_and_stairs/stairs_up.png",
       "tag": "dungeon:doors & stairs"
     },
     {
@@ -1123,7 +1123,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/ladder_down.png",
+      "sprite": "dungeon/doors_and_stairs/ladder_down.png",
       "tag": "dungeon:doors & stairs"
     },
     {
@@ -1139,7 +1139,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/ladder_up.png",
+      "sprite": "dungeon/doors_and_stairs/ladder_up.png",
       "tag": "dungeon:doors & stairs"
     },
     {
@@ -1155,7 +1155,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/pit.png",
+      "sprite": "dungeon/water_and_pits/pit.png",
       "tag": "dungeon:water & pits"
     },
     {
@@ -1171,7 +1171,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/pit_edge.png",
+      "sprite": "dungeon/water_and_pits/pit_edge.png",
       "tag": "dungeon:water & pits"
     },
     {
@@ -1187,9 +1187,9 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/pit_top.png",
+      "sprite": "dungeon/water_and_pits/pit_top.png",
       "tag": "dungeon:water & pits",
-      "background_sprite": "dungeon/floor_cobble.png"
+      "background_sprite": "dungeon/floors/floor_cobble.png"
     },
     {
       "boat": false,
@@ -1204,9 +1204,9 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/pit_bottom.png",
+      "sprite": "dungeon/water_and_pits/pit_bottom.png",
       "tag": "dungeon:water & pits",
-      "background_sprite": "dungeon/floor_cobble.png"
+      "background_sprite": "dungeon/floors/floor_cobble.png"
     },
     {
       "boat": false,
@@ -1221,9 +1221,9 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/pit_left.png",
+      "sprite": "dungeon/water_and_pits/pit_left.png",
       "tag": "dungeon:water & pits",
-      "background_sprite": "dungeon/floor_cobble.png"
+      "background_sprite": "dungeon/floors/floor_cobble.png"
     },
     {
       "boat": false,
@@ -1238,9 +1238,9 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/pit_right.png",
+      "sprite": "dungeon/water_and_pits/pit_right.png",
       "tag": "dungeon:water & pits",
-      "background_sprite": "dungeon/floor_cobble.png"
+      "background_sprite": "dungeon/floors/floor_cobble.png"
     },
     {
       "boat": false,
@@ -1255,9 +1255,9 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/pit_corner_tl.png",
+      "sprite": "dungeon/water_and_pits/pit_corner_tl.png",
       "tag": "dungeon:water & pits",
-      "background_sprite": "dungeon/floor_cobble.png"
+      "background_sprite": "dungeon/floors/floor_cobble.png"
     },
     {
       "boat": false,
@@ -1272,9 +1272,9 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/pit_corner_tr.png",
+      "sprite": "dungeon/water_and_pits/pit_corner_tr.png",
       "tag": "dungeon:water & pits",
-      "background_sprite": "dungeon/floor_cobble.png"
+      "background_sprite": "dungeon/floors/floor_cobble.png"
     },
     {
       "boat": false,
@@ -1289,9 +1289,9 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/pit_corner_bl.png",
+      "sprite": "dungeon/water_and_pits/pit_corner_bl.png",
       "tag": "dungeon:water & pits",
-      "background_sprite": "dungeon/floor_cobble.png"
+      "background_sprite": "dungeon/floors/floor_cobble.png"
     },
     {
       "boat": false,
@@ -1306,9 +1306,9 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/pit_corner_br.png",
+      "sprite": "dungeon/water_and_pits/pit_corner_br.png",
       "tag": "dungeon:water & pits",
-      "background_sprite": "dungeon/floor_cobble.png"
+      "background_sprite": "dungeon/floors/floor_cobble.png"
     },
     {
       "boat": false,
@@ -1323,7 +1323,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/pit_centre.png",
+      "sprite": "dungeon/water_and_pits/pit_centre.png",
       "tag": "dungeon:water & pits"
     },
     {
@@ -1339,7 +1339,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/pillar.png",
+      "sprite": "dungeon/features/pillar.png",
       "tag": "dungeon:features"
     },
     {
@@ -1355,7 +1355,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/rubble.png",
+      "sprite": "dungeon/features/rubble.png",
       "tag": "dungeon:features"
     },
     {
@@ -1371,7 +1371,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/floor_rock.png",
+      "sprite": "cave/floors/floor_rock.png",
       "tag": "cave:floors"
     },
     {
@@ -1387,7 +1387,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/floor_slab.png",
+      "sprite": "cave/floors/floor_slab.png",
       "tag": "cave:floors"
     },
     {
@@ -1403,7 +1403,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/floor_dirt.png",
+      "sprite": "cave/floors/floor_dirt.png",
       "tag": "cave:floors"
     },
     {
@@ -1419,7 +1419,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/floor_gravel.png",
+      "sprite": "cave/floors/floor_gravel.png",
       "tag": "cave:floors"
     },
     {
@@ -1435,7 +1435,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/floor_moss.png",
+      "sprite": "cave/floors/floor_moss.png",
       "tag": "cave:floors"
     },
     {
@@ -1451,7 +1451,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/floor_sand.png",
+      "sprite": "cave/floors/floor_sand.png",
       "tag": "cave:floors"
     },
     {
@@ -1467,7 +1467,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/floor_crystal.png",
+      "sprite": "cave/floors/floor_crystal.png",
       "tag": "cave:floors"
     },
     {
@@ -1483,7 +1483,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/wall_top.png",
+      "sprite": "cave/walls/room_walls/wall_top.png",
       "tag": "cave:walls:room walls"
     },
     {
@@ -1499,7 +1499,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/wall_left.png",
+      "sprite": "cave/walls/room_walls/wall_left.png",
       "tag": "cave:walls:room walls"
     },
     {
@@ -1515,7 +1515,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/wall_right.png",
+      "sprite": "cave/walls/room_walls/wall_right.png",
       "tag": "cave:walls:room walls"
     },
     {
@@ -1531,7 +1531,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/wall_corner_tl.png",
+      "sprite": "cave/walls/junctions/wall_corner_tl.png",
       "tag": "cave:walls:junctions"
     },
     {
@@ -1547,7 +1547,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/wall_corner_tr.png",
+      "sprite": "cave/walls/junctions/wall_corner_tr.png",
       "tag": "cave:walls:junctions"
     },
     {
@@ -1563,7 +1563,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/wall_crack.png",
+      "sprite": "cave/walls/room_walls/wall_crack.png",
       "tag": "cave:walls:room walls"
     },
     {
@@ -1579,7 +1579,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/wall_crystals.png",
+      "sprite": "cave/walls/room_walls/wall_crystals.png",
       "tag": "cave:walls:room walls"
     },
     {
@@ -1595,7 +1595,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/wall_tunnel.png",
+      "sprite": "cave/walls/room_walls/wall_tunnel.png",
       "tag": "cave:walls:room walls"
     },
     {
@@ -1611,7 +1611,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/wall_webs.png",
+      "sprite": "cave/walls/room_walls/wall_webs.png",
       "tag": "cave:walls:room walls"
     },
     {
@@ -1627,7 +1627,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/wall_divider.png",
+      "sprite": "cave/walls/junctions/wall_divider.png",
       "tag": "cave:walls:junctions"
     },
     {
@@ -1643,7 +1643,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/wall_divider_top.png",
+      "sprite": "cave/walls/junctions/wall_divider_top.png",
       "tag": "cave:walls:junctions"
     },
     {
@@ -1659,7 +1659,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/wall_divider_end.png",
+      "sprite": "cave/walls/junctions/wall_divider_end.png",
       "tag": "cave:walls:junctions"
     },
     {
@@ -1675,7 +1675,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/wall_t_down.png",
+      "sprite": "cave/walls/junctions/wall_t_down.png",
       "tag": "cave:walls:junctions"
     },
     {
@@ -1691,7 +1691,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/wall_t_up.png",
+      "sprite": "cave/walls/junctions/wall_t_up.png",
       "tag": "cave:walls:junctions"
     },
     {
@@ -1707,7 +1707,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/door.png",
+      "sprite": "cave/doors_and_stairs/door.png",
       "tag": "cave:doors & stairs"
     },
     {
@@ -1723,7 +1723,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/stairs.png",
+      "sprite": "cave/doors_and_stairs/stairs.png",
       "tag": "cave:doors & stairs"
     },
     {
@@ -1739,7 +1739,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/stairs_up.png",
+      "sprite": "cave/doors_and_stairs/stairs_up.png",
       "tag": "cave:doors & stairs"
     },
     {
@@ -1755,7 +1755,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/ladder_down.png",
+      "sprite": "cave/doors_and_stairs/ladder_down.png",
       "tag": "cave:doors & stairs"
     },
     {
@@ -1771,7 +1771,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/ladder_up.png",
+      "sprite": "cave/doors_and_stairs/ladder_up.png",
       "tag": "cave:doors & stairs"
     },
     {
@@ -1787,7 +1787,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/pit.png",
+      "sprite": "cave/water_and_pits/pit.png",
       "tag": "cave:water & pits"
     },
     {
@@ -1803,7 +1803,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/pit_edge.png",
+      "sprite": "cave/water_and_pits/pit_edge.png",
       "tag": "cave:water & pits"
     },
     {
@@ -1819,9 +1819,9 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/pit_top.png",
+      "sprite": "cave/water_and_pits/pit_top.png",
       "tag": "cave:water & pits",
-      "background_sprite": "cave/floor_dirt.png"
+      "background_sprite": "cave/floors/floor_dirt.png"
     },
     {
       "boat": false,
@@ -1836,9 +1836,9 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/pit_bottom.png",
+      "sprite": "cave/water_and_pits/pit_bottom.png",
       "tag": "cave:water & pits",
-      "background_sprite": "cave/floor_dirt.png"
+      "background_sprite": "cave/floors/floor_dirt.png"
     },
     {
       "boat": false,
@@ -1853,9 +1853,9 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/pit_left.png",
+      "sprite": "cave/water_and_pits/pit_left.png",
       "tag": "cave:water & pits",
-      "background_sprite": "cave/floor_dirt.png"
+      "background_sprite": "cave/floors/floor_dirt.png"
     },
     {
       "boat": false,
@@ -1870,9 +1870,9 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/pit_right.png",
+      "sprite": "cave/water_and_pits/pit_right.png",
       "tag": "cave:water & pits",
-      "background_sprite": "cave/floor_dirt.png"
+      "background_sprite": "cave/floors/floor_dirt.png"
     },
     {
       "boat": false,
@@ -1887,9 +1887,9 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/pit_corner_tl.png",
+      "sprite": "cave/water_and_pits/pit_corner_tl.png",
       "tag": "cave:water & pits",
-      "background_sprite": "cave/floor_dirt.png"
+      "background_sprite": "cave/floors/floor_dirt.png"
     },
     {
       "boat": false,
@@ -1904,9 +1904,9 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/pit_corner_tr.png",
+      "sprite": "cave/water_and_pits/pit_corner_tr.png",
       "tag": "cave:water & pits",
-      "background_sprite": "cave/floor_dirt.png"
+      "background_sprite": "cave/floors/floor_dirt.png"
     },
     {
       "boat": false,
@@ -1921,9 +1921,9 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/pit_corner_bl.png",
+      "sprite": "cave/water_and_pits/pit_corner_bl.png",
       "tag": "cave:water & pits",
-      "background_sprite": "cave/floor_dirt.png"
+      "background_sprite": "cave/floors/floor_dirt.png"
     },
     {
       "boat": false,
@@ -1938,9 +1938,9 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/pit_corner_br.png",
+      "sprite": "cave/water_and_pits/pit_corner_br.png",
       "tag": "cave:water & pits",
-      "background_sprite": "cave/floor_dirt.png"
+      "background_sprite": "cave/floors/floor_dirt.png"
     },
     {
       "boat": false,
@@ -1955,7 +1955,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/pit_centre.png",
+      "sprite": "cave/water_and_pits/pit_centre.png",
       "tag": "cave:water & pits"
     },
     {
@@ -1971,7 +1971,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/stalagmite.png",
+      "sprite": "cave/features/stalagmite.png",
       "tag": "cave:features"
     },
     {
@@ -1987,7 +1987,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/rubble.png",
+      "sprite": "cave/features/rubble.png",
       "tag": "cave:features"
     },
     {
@@ -2099,7 +2099,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/fence_wood_straight_h.png",
+      "sprite": "town/fences/wood/fence_wood_straight_h.png",
       "tag": "town:fences:wood",
       "background_sprite": "map/grass.png"
     },
@@ -2116,7 +2116,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/fence_wood_straight_v.png",
+      "sprite": "town/fences/wood/fence_wood_straight_v.png",
       "tag": "town:fences:wood",
       "background_sprite": "map/grass.png"
     },
@@ -2133,7 +2133,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/fence_wood_bend_tl.png",
+      "sprite": "town/fences/wood/fence_wood_bend_tl.png",
       "tag": "town:fences:wood",
       "background_sprite": "map/grass.png"
     },
@@ -2150,7 +2150,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/fence_wood_bend_tr.png",
+      "sprite": "town/fences/wood/fence_wood_bend_tr.png",
       "tag": "town:fences:wood",
       "background_sprite": "map/grass.png"
     },
@@ -2167,7 +2167,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/fence_wood_bend_bl.png",
+      "sprite": "town/fences/wood/fence_wood_bend_bl.png",
       "tag": "town:fences:wood",
       "background_sprite": "map/grass.png"
     },
@@ -2184,7 +2184,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/fence_wood_bend_br.png",
+      "sprite": "town/fences/wood/fence_wood_bend_br.png",
       "tag": "town:fences:wood",
       "background_sprite": "map/grass.png"
     },
@@ -2201,7 +2201,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/fence_wood_gate_h.png",
+      "sprite": "town/fences/wood/fence_wood_gate_h.png",
       "tag": "town:fences:wood",
       "background_sprite": "map/grass.png"
     },
@@ -2218,7 +2218,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/fence_wood_gate_v.png",
+      "sprite": "town/fences/wood/fence_wood_gate_v.png",
       "tag": "town:fences:wood",
       "background_sprite": "map/grass.png"
     },
@@ -2235,7 +2235,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/fence_stone_straight_h.png",
+      "sprite": "town/fences/stone/fence_stone_straight_h.png",
       "tag": "town:fences:stone",
       "background_sprite": "map/grass.png"
     },
@@ -2252,7 +2252,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/fence_stone_straight_v.png",
+      "sprite": "town/fences/stone/fence_stone_straight_v.png",
       "tag": "town:fences:stone",
       "background_sprite": "map/grass.png"
     },
@@ -2269,7 +2269,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/fence_stone_bend_tl.png",
+      "sprite": "town/fences/stone/fence_stone_bend_tl.png",
       "tag": "town:fences:stone",
       "background_sprite": "map/grass.png"
     },
@@ -2286,7 +2286,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/fence_stone_bend_tr.png",
+      "sprite": "town/fences/stone/fence_stone_bend_tr.png",
       "tag": "town:fences:stone",
       "background_sprite": "map/grass.png"
     },
@@ -2303,7 +2303,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/fence_stone_bend_bl.png",
+      "sprite": "town/fences/stone/fence_stone_bend_bl.png",
       "tag": "town:fences:stone",
       "background_sprite": "map/grass.png"
     },
@@ -2320,7 +2320,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/fence_stone_bend_br.png",
+      "sprite": "town/fences/stone/fence_stone_bend_br.png",
       "tag": "town:fences:stone",
       "background_sprite": "map/grass.png"
     },
@@ -2337,7 +2337,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/fence_stone_gate_h.png",
+      "sprite": "town/fences/stone/fence_stone_gate_h.png",
       "tag": "town:fences:stone",
       "background_sprite": "map/grass.png"
     },
@@ -2354,7 +2354,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/fence_stone_gate_v.png",
+      "sprite": "town/fences/stone/fence_stone_gate_v.png",
       "tag": "town:fences:stone",
       "background_sprite": "map/grass.png"
     },
@@ -2371,7 +2371,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/fence_stone_archway.png",
+      "sprite": "town/fences/stone/fence_stone_archway.png",
       "tag": "town:fences:stone",
       "background_sprite": "map/grass.png"
     },
@@ -2388,7 +2388,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/fence_stone_portcullis.png",
+      "sprite": "town/fences/stone/fence_stone_portcullis.png",
       "tag": "town:fences:stone",
       "background_sprite": "map/grass.png"
     },
@@ -2405,7 +2405,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/fence_stone_bridge_r0c0.png",
+      "sprite": "town/fences/stone/bridge/fence_stone_bridge_r0c0.png",
       "tag": "town:fences:stone:bridge",
       "background_sprite": "map/grass.png"
     },
@@ -2422,7 +2422,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/fence_stone_bridge_r0c1.png",
+      "sprite": "town/fences/stone/bridge/fence_stone_bridge_r0c1.png",
       "tag": "town:fences:stone:bridge",
       "background_sprite": "map/grass.png"
     },
@@ -2439,7 +2439,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/tree_large_1.png",
+      "sprite": "town/greenery/trees/tree_large_1.png",
       "tag": "town:greenery:trees",
       "background_sprite": "map/grass.png"
     },
@@ -2456,7 +2456,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/tree_small_1.png",
+      "sprite": "town/greenery/trees/tree_small_1.png",
       "tag": "town:greenery:trees",
       "background_sprite": "map/grass.png"
     },
@@ -2473,7 +2473,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/flower_1.png",
+      "sprite": "town/greenery/flowers/flower_1.png",
       "tag": "town:greenery:flowers",
       "background_sprite": "map/grass.png"
     },
@@ -2490,7 +2490,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/flower_2.png",
+      "sprite": "town/greenery/flowers/flower_2.png",
       "tag": "town:greenery:flowers",
       "background_sprite": "map/grass.png"
     },
@@ -2507,7 +2507,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/bush_small.png",
+      "sprite": "town/greenery/bushes/bush_small.png",
       "tag": "town:greenery:bushes",
       "background_sprite": "map/grass.png"
     },
@@ -2524,7 +2524,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/bush_1.png",
+      "sprite": "town/greenery/bushes/bush_1.png",
       "tag": "town:greenery:bushes",
       "background_sprite": "map/grass.png"
     },
@@ -2558,7 +2558,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/house_stone_1_r0c0.png",
+      "sprite": "town/house/stone_1/house_stone_1_r0c0.png",
       "tag": "town:house:stone 1",
       "background_sprite": "map/grass.png"
     },
@@ -2575,7 +2575,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/house_stone_1_r0c1.png",
+      "sprite": "town/house/stone_1/house_stone_1_r0c1.png",
       "tag": "town:house:stone 1",
       "background_sprite": "map/grass.png"
     },
@@ -2592,7 +2592,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/house_stone_1_r1c0.png",
+      "sprite": "town/house/stone_1/house_stone_1_r1c0.png",
       "tag": "town:house:stone 1",
       "background_sprite": "map/grass.png"
     },
@@ -2609,7 +2609,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/house_stone_1_r1c1.png",
+      "sprite": "town/house/stone_1/house_stone_1_r1c1.png",
       "tag": "town:house:stone 1",
       "background_sprite": "map/grass.png"
     },
@@ -2626,7 +2626,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/house_timber_shop_r0c0.png",
+      "sprite": "town/house/timber_shop/house_timber_shop_r0c0.png",
       "tag": "town:house:timber shop",
       "background_sprite": "map/grass.png"
     },
@@ -2643,7 +2643,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/house_timber_shop_r0c1.png",
+      "sprite": "town/house/timber_shop/house_timber_shop_r0c1.png",
       "tag": "town:house:timber shop",
       "background_sprite": "map/grass.png"
     },
@@ -2660,7 +2660,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/house_timber_shop_r1c0.png",
+      "sprite": "town/house/timber_shop/house_timber_shop_r1c0.png",
       "tag": "town:house:timber shop",
       "background_sprite": "map/grass.png"
     },
@@ -2677,7 +2677,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/house_timber_shop_r1c1.png",
+      "sprite": "town/house/timber_shop/house_timber_shop_r1c1.png",
       "tag": "town:house:timber shop",
       "background_sprite": "map/grass.png"
     },
@@ -2695,7 +2695,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/tower_r0c0.png",
+      "sprite": "town/tower/large/tower_r0c0.png",
       "tag": "town:tower:large"
     },
     {
@@ -2712,7 +2712,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/tower_r1c0.png",
+      "sprite": "town/tower/large/tower_r1c0.png",
       "tag": "town:tower:large"
     },
     {
@@ -2728,7 +2728,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/market_stall.png",
+      "sprite": "town/market_stall/market_stall.png",
       "tag": "town:market stall",
       "background_sprite": "map/grass.png"
     },
@@ -2793,7 +2793,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/well_r0c0.png",
+      "sprite": "town/well/well_r0c0.png",
       "tag": "town:well",
       "background_sprite": "map/grass.png"
     },
@@ -2810,7 +2810,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/well_r1c0.png",
+      "sprite": "town/well/well_r1c0.png",
       "tag": "town:well",
       "background_sprite": "map/grass.png"
     },
@@ -2827,7 +2827,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/statue_r0c0.png",
+      "sprite": "town/statue/statue_r0c0.png",
       "tag": "town:statue",
       "background_sprite": "map/grass.png"
     },
@@ -2844,7 +2844,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/statue_r1c0.png",
+      "sprite": "town/statue/statue_r1c0.png",
       "tag": "town:statue",
       "background_sprite": "map/grass.png"
     },
@@ -2861,7 +2861,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/gravestone.png",
+      "sprite": "town/graveyard/gravestone.png",
       "tag": "town:graveyard",
       "background_sprite": "map/grass.png"
     },
@@ -2943,7 +2943,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/tower_small_r0c0.png",
+      "sprite": "town/tower/small/tower_small_r0c0.png",
       "tag": "town:tower:small"
     },
     {
@@ -2960,7 +2960,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/tower_small_r1c0.png",
+      "sprite": "town/tower/small/tower_small_r1c0.png",
       "tag": "town:tower:small"
     },
     {
@@ -2976,7 +2976,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/chapel_r0c0.png",
+      "sprite": "town/house/chapel/chapel_r0c0.png",
       "tag": "town:house:chapel",
       "background_sprite": "map/grass.png"
     },
@@ -2993,7 +2993,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/chapel_r0c1.png",
+      "sprite": "town/house/chapel/chapel_r0c1.png",
       "tag": "town:house:chapel",
       "background_sprite": "map/grass.png"
     },
@@ -3010,7 +3010,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/chapel_r1c0.png",
+      "sprite": "town/house/chapel/chapel_r1c0.png",
       "tag": "town:house:chapel",
       "background_sprite": "map/grass.png"
     },
@@ -3027,7 +3027,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/chapel_r1c1.png",
+      "sprite": "town/house/chapel/chapel_r1c1.png",
       "tag": "town:house:chapel",
       "background_sprite": "map/grass.png"
     },
@@ -3044,7 +3044,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/shrine_r0c0.png",
+      "sprite": "town/house/shrine/shrine_r0c0.png",
       "tag": "town:house:shrine",
       "background_sprite": "map/grass.png"
     },
@@ -3061,7 +3061,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/shrine_r0c1.png",
+      "sprite": "town/house/shrine/shrine_r0c1.png",
       "tag": "town:house:shrine",
       "background_sprite": "map/grass.png"
     },
@@ -3078,7 +3078,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/shrine_r1c0.png",
+      "sprite": "town/house/shrine/shrine_r1c0.png",
       "tag": "town:house:shrine",
       "background_sprite": "map/grass.png"
     },
@@ -3095,7 +3095,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/shrine_r1c1.png",
+      "sprite": "town/house/shrine/shrine_r1c1.png",
       "tag": "town:house:shrine",
       "background_sprite": "map/grass.png"
     },
@@ -3144,7 +3144,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "objects/cart_r0c0.png",
+      "sprite": "objects/cart/cart_r0c0.png",
       "tag": "objects:cart"
     },
     {
@@ -3160,7 +3160,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "objects/cart_r0c1.png",
+      "sprite": "objects/cart/cart_r0c1.png",
       "tag": "objects:cart"
     },
     {
@@ -3192,7 +3192,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "objects/lamp_post_r0c0.png",
+      "sprite": "objects/lamp_post/lamp_post_r0c0.png",
       "tag": "objects:lamp post"
     },
     {
@@ -3208,7 +3208,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "objects/lamp_post_r1c0.png",
+      "sprite": "objects/lamp_post/lamp_post_r1c0.png",
       "tag": "objects:lamp post"
     },
     {
@@ -3304,7 +3304,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/dock_gate_r0c0.png",
+      "sprite": "town/dock_gate/dock_gate_r0c0.png",
       "tag": "town:dock gate"
     },
     {
@@ -3320,7 +3320,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/dock_gate_r1c0.png",
+      "sprite": "town/dock_gate/dock_gate_r1c0.png",
       "tag": "town:dock gate"
     },
     {
@@ -3336,7 +3336,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/path_straight_v.png",
+      "sprite": "paths/dirt/path_straight_v.png",
       "tag": "paths:dirt",
       "background_sprite": "map/grass.png"
     },
@@ -3353,7 +3353,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/path_straight_h.png",
+      "sprite": "paths/dirt/path_straight_h.png",
       "tag": "paths:dirt",
       "background_sprite": "map/grass.png"
     },
@@ -3370,7 +3370,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/path_bend_tl.png",
+      "sprite": "paths/dirt/path_bend_tl.png",
       "tag": "paths:dirt",
       "background_sprite": "map/grass.png"
     },
@@ -3387,7 +3387,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/path_bend_tr.png",
+      "sprite": "paths/dirt/path_bend_tr.png",
       "tag": "paths:dirt",
       "background_sprite": "map/grass.png"
     },
@@ -3404,7 +3404,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/path_bend_bl.png",
+      "sprite": "paths/dirt/path_bend_bl.png",
       "tag": "paths:dirt",
       "background_sprite": "map/grass.png"
     },
@@ -3421,7 +3421,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/path_bend_br.png",
+      "sprite": "paths/dirt/path_bend_br.png",
       "tag": "paths:dirt",
       "background_sprite": "map/grass.png"
     },
@@ -3438,7 +3438,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/path_cross.png",
+      "sprite": "paths/dirt/path_cross.png",
       "tag": "paths:dirt",
       "background_sprite": "map/grass.png"
     },
@@ -3455,7 +3455,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/path_t_left.png",
+      "sprite": "paths/dirt/path_t_left.png",
       "tag": "paths:dirt",
       "background_sprite": "map/grass.png"
     },
@@ -3472,7 +3472,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/path_t_right.png",
+      "sprite": "paths/dirt/path_t_right.png",
       "tag": "paths:dirt",
       "background_sprite": "map/grass.png"
     },
@@ -3489,7 +3489,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/path_t_up.png",
+      "sprite": "paths/dirt/path_t_up.png",
       "tag": "paths:dirt",
       "background_sprite": "map/grass.png"
     },
@@ -3506,7 +3506,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/path_t_down.png",
+      "sprite": "paths/dirt/path_t_down.png",
       "tag": "paths:dirt",
       "background_sprite": "map/grass.png"
     },
@@ -3523,7 +3523,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/path_end_up.png",
+      "sprite": "paths/dirt/path_end_up.png",
       "tag": "paths:dirt",
       "background_sprite": "map/grass.png"
     },
@@ -3540,7 +3540,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/path_end_down.png",
+      "sprite": "paths/dirt/path_end_down.png",
       "tag": "paths:dirt",
       "background_sprite": "map/grass.png"
     },
@@ -3557,7 +3557,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/path_end_left.png",
+      "sprite": "paths/dirt/path_end_left.png",
       "tag": "paths:dirt",
       "background_sprite": "map/grass.png"
     },
@@ -3574,7 +3574,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/path_end_right.png",
+      "sprite": "paths/dirt/path_end_right.png",
       "tag": "paths:dirt",
       "background_sprite": "map/grass.png"
     },
@@ -3591,7 +3591,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/brick_path_straight_v.png",
+      "sprite": "paths/brick/brick_path_straight_v.png",
       "tag": "paths:brick",
       "background_sprite": "map/grass.png"
     },
@@ -3608,7 +3608,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/brick_path_straight_h.png",
+      "sprite": "paths/brick/brick_path_straight_h.png",
       "tag": "paths:brick",
       "background_sprite": "map/grass.png"
     },
@@ -3625,7 +3625,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/brick_path_bend_tl.png",
+      "sprite": "paths/brick/brick_path_bend_tl.png",
       "tag": "paths:brick",
       "background_sprite": "map/grass.png"
     },
@@ -3642,7 +3642,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/brick_path_bend_tr.png",
+      "sprite": "paths/brick/brick_path_bend_tr.png",
       "tag": "paths:brick",
       "background_sprite": "map/grass.png"
     },
@@ -3659,7 +3659,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/brick_path_bend_bl.png",
+      "sprite": "paths/brick/brick_path_bend_bl.png",
       "tag": "paths:brick",
       "background_sprite": "map/grass.png"
     },
@@ -3676,7 +3676,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/brick_path_bend_br.png",
+      "sprite": "paths/brick/brick_path_bend_br.png",
       "tag": "paths:brick",
       "background_sprite": "map/grass.png"
     },
@@ -3693,7 +3693,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/brick_path_cross.png",
+      "sprite": "paths/brick/brick_path_cross.png",
       "tag": "paths:brick",
       "background_sprite": "map/grass.png"
     },
@@ -3710,7 +3710,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/brick_path_t_left.png",
+      "sprite": "paths/brick/brick_path_t_left.png",
       "tag": "paths:brick",
       "background_sprite": "map/grass.png"
     },
@@ -3727,7 +3727,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/brick_path_t_right.png",
+      "sprite": "paths/brick/brick_path_t_right.png",
       "tag": "paths:brick",
       "background_sprite": "map/grass.png"
     },
@@ -3744,7 +3744,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/brick_path_t_up.png",
+      "sprite": "paths/brick/brick_path_t_up.png",
       "tag": "paths:brick",
       "background_sprite": "map/grass.png"
     },
@@ -3761,7 +3761,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/brick_path_t_down.png",
+      "sprite": "paths/brick/brick_path_t_down.png",
       "tag": "paths:brick",
       "background_sprite": "map/grass.png"
     },
@@ -3778,7 +3778,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/river_straight_v.png",
+      "sprite": "water/river/river_straight_v.png",
       "tag": "Water:River",
       "water": true,
       "background_sprite": "map/grass.png"
@@ -3796,7 +3796,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/river_straight_h.png",
+      "sprite": "water/river/river_straight_h.png",
       "tag": "Water:River",
       "water": true,
       "background_sprite": "map/grass.png"
@@ -3814,7 +3814,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/river_bend_tl.png",
+      "sprite": "water/river/river_bend_tl.png",
       "tag": "Water:River",
       "water": true,
       "background_sprite": "map/grass.png"
@@ -3832,7 +3832,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/river_bend_tr.png",
+      "sprite": "water/river/river_bend_tr.png",
       "tag": "Water:River",
       "water": true,
       "background_sprite": "map/grass.png"
@@ -3850,7 +3850,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/river_bend_bl.png",
+      "sprite": "water/river/river_bend_bl.png",
       "tag": "Water:River",
       "water": true,
       "background_sprite": "map/grass.png"
@@ -3868,7 +3868,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/river_bend_br.png",
+      "sprite": "water/river/river_bend_br.png",
       "tag": "Water:River",
       "water": true,
       "background_sprite": "map/grass.png"
@@ -3886,7 +3886,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/river_cross.png",
+      "sprite": "water/river/river_cross.png",
       "tag": "Water:River",
       "water": true,
       "background_sprite": "map/grass.png"
@@ -3904,7 +3904,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/river_t_left.png",
+      "sprite": "water/river/river_t_left.png",
       "tag": "Water:River",
       "water": true,
       "background_sprite": "map/grass.png"
@@ -3922,7 +3922,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/river_t_right.png",
+      "sprite": "water/river/river_t_right.png",
       "tag": "Water:River",
       "water": true,
       "background_sprite": "map/grass.png"
@@ -3940,7 +3940,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/river_t_up.png",
+      "sprite": "water/river/river_t_up.png",
       "tag": "Water:River",
       "water": true,
       "background_sprite": "map/grass.png"
@@ -3958,7 +3958,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/river_t_down.png",
+      "sprite": "water/river/river_t_down.png",
       "tag": "Water:River",
       "water": true,
       "background_sprite": "map/grass.png"
@@ -3976,7 +3976,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/lake_edge_top.png",
+      "sprite": "water/lake/lake_edge_top.png",
       "tag": "Water:Lake",
       "water": true,
       "background_sprite": "map/grass.png"
@@ -3994,7 +3994,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/lake_edge_bottom.png",
+      "sprite": "water/lake/lake_edge_bottom.png",
       "tag": "Water:Lake",
       "water": true,
       "background_sprite": "map/grass.png"
@@ -4012,7 +4012,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/lake_edge_left.png",
+      "sprite": "water/lake/lake_edge_left.png",
       "tag": "Water:Lake",
       "water": true,
       "background_sprite": "map/grass.png"
@@ -4030,7 +4030,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/lake_edge_right.png",
+      "sprite": "water/lake/lake_edge_right.png",
       "tag": "Water:Lake",
       "water": true,
       "background_sprite": "map/grass.png"
@@ -4048,7 +4048,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/lake_corner_tl.png",
+      "sprite": "water/lake/lake_corner_tl.png",
       "tag": "Water:Lake",
       "water": true,
       "background_sprite": "map/grass.png"
@@ -4066,7 +4066,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/lake_corner_tr.png",
+      "sprite": "water/lake/lake_corner_tr.png",
       "tag": "Water:Lake",
       "water": true,
       "background_sprite": "map/grass.png"
@@ -4084,7 +4084,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/lake_corner_bl.png",
+      "sprite": "water/lake/lake_corner_bl.png",
       "tag": "Water:Lake",
       "water": true,
       "background_sprite": "map/grass.png"
@@ -4102,7 +4102,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/lake_corner_br.png",
+      "sprite": "water/lake/lake_corner_br.png",
       "tag": "Water:Lake",
       "water": true,
       "background_sprite": "map/grass.png"
@@ -4120,7 +4120,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/lake_inner_tl.png",
+      "sprite": "water/lake/lake_inner_tl.png",
       "tag": "Water:Lake",
       "water": true,
       "background_sprite": "map/grass.png"
@@ -4138,7 +4138,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/lake_inner_tr.png",
+      "sprite": "water/lake/lake_inner_tr.png",
       "tag": "Water:Lake",
       "water": true,
       "background_sprite": "map/grass.png"
@@ -4156,7 +4156,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/lake_inner_bl.png",
+      "sprite": "water/lake/lake_inner_bl.png",
       "tag": "Water:Lake",
       "water": true,
       "background_sprite": "map/grass.png"
@@ -4174,7 +4174,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/lake_inner_br.png",
+      "sprite": "water/lake/lake_inner_br.png",
       "tag": "Water:Lake",
       "water": true,
       "background_sprite": "map/grass.png"
@@ -4192,7 +4192,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/lake_inlet_top.png",
+      "sprite": "water/lake/lake_inlet_top.png",
       "tag": "Water:Lake",
       "water": true,
       "background_sprite": "map/grass.png"
@@ -4210,7 +4210,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/lake_inlet_bottom.png",
+      "sprite": "water/lake/lake_inlet_bottom.png",
       "tag": "Water:Lake",
       "water": true,
       "background_sprite": "map/grass.png"
@@ -4228,7 +4228,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/lake_inlet_left.png",
+      "sprite": "water/lake/lake_inlet_left.png",
       "tag": "Water:Lake",
       "water": true,
       "background_sprite": "map/grass.png"
@@ -4246,7 +4246,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/lake_inlet_right.png",
+      "sprite": "water/lake/lake_inlet_right.png",
       "tag": "Water:Lake",
       "water": true,
       "background_sprite": "map/grass.png"
@@ -4264,7 +4264,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "overworld/keep.png",
+      "sprite": "map/settlements/keep.png",
       "tag": "map:settlements",
       "background_sprite": "map/grass.png"
     },
@@ -4281,7 +4281,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "overworld/shrine.png",
+      "sprite": "map/settlements/shrine.png",
       "tag": "map:settlements",
       "background_sprite": "map/grass.png"
     },
@@ -4298,7 +4298,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "overworld/ruins.png",
+      "sprite": "map/settlements/ruins.png",
       "tag": "map:settlements",
       "background_sprite": "map/grass.png"
     },
@@ -4315,7 +4315,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "overworld/house.png",
+      "sprite": "map/settlements/house.png",
       "tag": "map:settlements",
       "background_sprite": "map/grass.png"
     },
@@ -4332,7 +4332,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "overworld/village.png",
+      "sprite": "map/settlements/village.png",
       "tag": "map:settlements",
       "background_sprite": "map/grass.png"
     },
@@ -4349,7 +4349,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "overworld/town.png",
+      "sprite": "map/settlements/town.png",
       "tag": "map:settlements",
       "background_sprite": "map/grass.png"
     },
@@ -4366,7 +4366,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "overworld/port.png",
+      "sprite": "map/settlements/port.png",
       "tag": "map:settlements",
       "background_sprite": "map/grass.png"
     },
@@ -4383,7 +4383,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "overworld/farm.png",
+      "sprite": "map/settlements/farm.png",
       "tag": "map:settlements",
       "background_sprite": "map/grass.png"
     },
@@ -4400,7 +4400,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "overworld/windmill.png",
+      "sprite": "map/settlements/windmill.png",
       "tag": "map:settlements",
       "background_sprite": "map/grass.png"
     },
@@ -4417,7 +4417,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "overworld/watchtower.png",
+      "sprite": "map/settlements/watchtower.png",
       "tag": "map:settlements",
       "background_sprite": "map/grass.png"
     },
@@ -4434,7 +4434,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "overworld/lighthouse.png",
+      "sprite": "map/settlements/lighthouse.png",
       "tag": "map:settlements",
       "background_sprite": "map/grass.png"
     },
@@ -4451,7 +4451,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "overworld/mine.png",
+      "sprite": "map/settlements/mine.png",
       "tag": "map:settlements",
       "background_sprite": "map/grass.png"
     },
@@ -4468,7 +4468,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "overworld/cave_entrance.png",
+      "sprite": "map/settlements/cave_entrance.png",
       "tag": "map:settlements",
       "background_sprite": "map/grass.png"
     },
@@ -4485,7 +4485,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "overworld/bridge.png",
+      "sprite": "map/settlements/bridge.png",
       "tag": "map:settlements",
       "background_sprite": "map/grass.png"
     },
@@ -4502,7 +4502,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "overworld/tree_oak.png",
+      "sprite": "map/trees_and_forests/tree_oak.png",
       "tag": "map:trees & forests",
       "background_sprite": "map/grass.png"
     },
@@ -4519,7 +4519,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "overworld/tree_pine.png",
+      "sprite": "map/trees_and_forests/tree_pine.png",
       "tag": "map:trees & forests",
       "background_sprite": "map/grass.png"
     },
@@ -4536,7 +4536,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "overworld/tree_fir.png",
+      "sprite": "map/trees_and_forests/tree_fir.png",
       "tag": "map:trees & forests",
       "background_sprite": "map/grass.png"
     },
@@ -4553,7 +4553,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "overworld/tree_willow.png",
+      "sprite": "map/trees_and_forests/tree_willow.png",
       "tag": "map:trees & forests",
       "background_sprite": "map/grass.png"
     },
@@ -4570,7 +4570,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "overworld/forest.png",
+      "sprite": "map/trees_and_forests/forest.png",
       "tag": "map:trees & forests",
       "background_sprite": "map/grass.png"
     },
@@ -4587,7 +4587,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "overworld/pine_forest.png",
+      "sprite": "map/trees_and_forests/pine_forest.png",
       "tag": "map:trees & forests",
       "background_sprite": "map/grass.png"
     },
@@ -4604,7 +4604,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "overworld/dense_forest.png",
+      "sprite": "map/trees_and_forests/dense_forest.png",
       "tag": "map:trees & forests",
       "background_sprite": "map/grass.png"
     },
@@ -4621,7 +4621,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "overworld/hill_small.png",
+      "sprite": "map/hills_and_mountains/hill_small.png",
       "tag": "map:hills & mountains",
       "background_sprite": "map/grass.png"
     },
@@ -4638,7 +4638,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "overworld/hill_large.png",
+      "sprite": "map/hills_and_mountains/hill_large.png",
       "tag": "map:hills & mountains",
       "background_sprite": "map/grass.png"
     },
@@ -4655,7 +4655,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "overworld/hills.png",
+      "sprite": "map/hills_and_mountains/hills.png",
       "tag": "map:hills & mountains",
       "background_sprite": "map/grass.png"
     },
@@ -4672,7 +4672,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "overworld/mountain_small.png",
+      "sprite": "map/hills_and_mountains/mountain_small.png",
       "tag": "map:hills & mountains",
       "background_sprite": "map/grass.png"
     },
@@ -4689,7 +4689,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "overworld/mountain_high.png",
+      "sprite": "map/hills_and_mountains/mountain_high.png",
       "tag": "map:hills & mountains",
       "background_sprite": "map/grass.png"
     },
@@ -4706,7 +4706,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "overworld/mountain_range.png",
+      "sprite": "map/hills_and_mountains/mountain_range.png",
       "tag": "map:hills & mountains",
       "background_sprite": "map/grass.png"
     },
@@ -4723,7 +4723,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "overworld/cliff.png",
+      "sprite": "map/hills_and_mountains/cliff.png",
       "tag": "map:hills & mountains",
       "background_sprite": "map/grass.png"
     },
@@ -4740,7 +4740,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "overworld/cliffs.png",
+      "sprite": "map/hills_and_mountains/cliffs.png",
       "tag": "map:hills & mountains",
       "background_sprite": "map/grass.png"
     },
@@ -4757,7 +4757,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "overworld/rock_spires.png",
+      "sprite": "map/hills_and_mountains/rock_spires.png",
       "tag": "map:hills & mountains",
       "background_sprite": "map/grass.png"
     },
@@ -4774,7 +4774,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "overworld/volcano.png",
+      "sprite": "map/hills_and_mountains/volcano.png",
       "tag": "map:hills & mountains",
       "background_sprite": "map/grass.png"
     },
@@ -4791,7 +4791,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "overworld/lake.png",
+      "sprite": "map/water/lake.png",
       "tag": "map:water",
       "background_sprite": "map/grass.png",
       "water": true
@@ -4809,7 +4809,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "overworld/river.png",
+      "sprite": "map/water/river.png",
       "tag": "map:water",
       "background_sprite": "map/grass.png",
       "water": true
@@ -4827,7 +4827,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "overworld/waterfall.png",
+      "sprite": "map/water/waterfall.png",
       "tag": "map:water",
       "background_sprite": "map/grass.png",
       "water": true
@@ -4845,7 +4845,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "overworld/island.png",
+      "sprite": "map/water/island.png",
       "tag": "map:water",
       "background_sprite": "map/grass.png"
     },
@@ -4862,7 +4862,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "overworld/oasis.png",
+      "sprite": "map/water/oasis.png",
       "tag": "map:water",
       "background_sprite": "map/grass.png"
     },
@@ -4879,7 +4879,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "overworld/swamp.png",
+      "sprite": "map/water/swamp.png",
       "tag": "map:water",
       "background_sprite": "map/grass.png"
     },
@@ -4896,7 +4896,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "overworld/desert.png",
+      "sprite": "map/terrain/desert.png",
       "tag": "map:terrain",
       "background_sprite": "map/grass.png"
     },
@@ -4913,7 +4913,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "overworld/snow.png",
+      "sprite": "map/terrain/snow.png",
       "tag": "map:terrain",
       "background_sprite": "map/grass.png"
     },
@@ -4930,7 +4930,7 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "overworld/canyon.png",
+      "sprite": "map/terrain/canyon.png",
       "tag": "map:terrain",
       "background_sprite": "map/grass.png"
     }

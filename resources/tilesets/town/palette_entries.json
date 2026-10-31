@@ -12,7 +12,7 @@
     "counter": null,
     "encounter": null,
     "spawn": null,
-    "sprite": "town/tree_large_1.png",
+    "sprite": "town/greenery/trees/tree_large_1.png",
     "tag": "town:trees"
   },
   {
@@ -28,7 +28,7 @@
     "counter": null,
     "encounter": null,
     "spawn": null,
-    "sprite": "town/tree_small_1.png",
+    "sprite": "town/greenery/trees/tree_small_1.png",
     "tag": "town:trees"
   },
   {
@@ -44,7 +44,7 @@
     "counter": null,
     "encounter": null,
     "spawn": null,
-    "sprite": "town/flower_1.png",
+    "sprite": "town/greenery/flowers/flower_1.png",
     "tag": "town:flowers"
   },
   {
@@ -60,7 +60,7 @@
     "counter": null,
     "encounter": null,
     "spawn": null,
-    "sprite": "town/flower_2.png",
+    "sprite": "town/greenery/flowers/flower_2.png",
     "tag": "town:flowers"
   },
   {
@@ -108,7 +108,7 @@
     "counter": null,
     "encounter": null,
     "spawn": null,
-    "sprite": "town/bush_small.png",
+    "sprite": "town/greenery/bushes/bush_small.png",
     "tag": "town:bushes"
   },
   {
@@ -124,7 +124,7 @@
     "counter": null,
     "encounter": null,
     "spawn": null,
-    "sprite": "town/bush_1.png",
+    "sprite": "town/greenery/bushes/bush_1.png",
     "tag": "town:bushes"
   },
   {
@@ -188,7 +188,7 @@
     "counter": null,
     "encounter": null,
     "spawn": null,
-    "sprite": "town/house_stone_1_r0c0.png",
+    "sprite": "town/house/stone_1/house_stone_1_r0c0.png",
     "tag": "town:house stone 1"
   },
   {
@@ -204,7 +204,7 @@
     "counter": null,
     "encounter": null,
     "spawn": null,
-    "sprite": "town/house_stone_1_r0c1.png",
+    "sprite": "town/house/stone_1/house_stone_1_r0c1.png",
     "tag": "town:house stone 1"
   },
   {
@@ -220,7 +220,7 @@
     "counter": null,
     "encounter": null,
     "spawn": null,
-    "sprite": "town/house_stone_1_r1c0.png",
+    "sprite": "town/house/stone_1/house_stone_1_r1c0.png",
     "tag": "town:house stone 1"
   },
   {
@@ -236,7 +236,7 @@
     "counter": null,
     "encounter": null,
     "spawn": null,
-    "sprite": "town/house_stone_1_r1c1.png",
+    "sprite": "town/house/stone_1/house_stone_1_r1c1.png",
     "tag": "town:house stone 1"
   },
   {
@@ -252,7 +252,7 @@
     "counter": null,
     "encounter": null,
     "spawn": null,
-    "sprite": "town/house_timber_shop_r0c0.png",
+    "sprite": "town/house/timber_shop/house_timber_shop_r0c0.png",
     "tag": "town:house timber shop"
   },
   {
@@ -268,7 +268,7 @@
     "counter": null,
     "encounter": null,
     "spawn": null,
-    "sprite": "town/house_timber_shop_r0c1.png",
+    "sprite": "town/house/timber_shop/house_timber_shop_r0c1.png",
     "tag": "town:house timber shop"
   },
   {
@@ -284,7 +284,7 @@
     "counter": null,
     "encounter": null,
     "spawn": null,
-    "sprite": "town/house_timber_shop_r1c0.png",
+    "sprite": "town/house/timber_shop/house_timber_shop_r1c0.png",
     "tag": "town:house timber shop"
   },
   {
@@ -300,7 +300,7 @@
     "counter": null,
     "encounter": null,
     "spawn": null,
-    "sprite": "town/house_timber_shop_r1c1.png",
+    "sprite": "town/house/timber_shop/house_timber_shop_r1c1.png",
     "tag": "town:house timber shop"
   },
   {
@@ -316,7 +316,7 @@
     "counter": null,
     "encounter": null,
     "spawn": null,
-    "sprite": "town/tower_r0c0.png",
+    "sprite": "town/tower/large/tower_r0c0.png",
     "tag": "town:tower"
   },
   {
@@ -332,7 +332,7 @@
     "counter": null,
     "encounter": null,
     "spawn": null,
-    "sprite": "town/tower_r1c0.png",
+    "sprite": "town/tower/large/tower_r1c0.png",
     "tag": "town:tower"
   },
   {
@@ -396,7 +396,7 @@
     "counter": null,
     "encounter": null,
     "spawn": null,
-    "sprite": "town/well_r0c0.png",
+    "sprite": "town/well/well_r0c0.png",
     "tag": "town:well"
   },
   {
@@ -412,7 +412,7 @@
     "counter": null,
     "encounter": null,
     "spawn": null,
-    "sprite": "town/well_r1c0.png",
+    "sprite": "town/well/well_r1c0.png",
     "tag": "town:well"
   },
   {
@@ -428,7 +428,7 @@
     "counter": null,
     "encounter": null,
     "spawn": null,
-    "sprite": "town/statue_r0c0.png",
+    "sprite": "town/statue/statue_r0c0.png",
     "tag": "town:statue"
   },
   {
@@ -444,7 +444,7 @@
     "counter": null,
     "encounter": null,
     "spawn": null,
-    "sprite": "town/statue_r1c0.png",
+    "sprite": "town/statue/statue_r1c0.png",
     "tag": "town:statue"
   },
   {
@@ -524,7 +524,7 @@
     "counter": null,
     "encounter": null,
     "spawn": null,
-    "sprite": "town/tower_small_r0c0.png",
+    "sprite": "town/tower/small/tower_small_r0c0.png",
     "tag": "town:tower small"
   },
   {
@@ -540,7 +540,7 @@
     "counter": null,
     "encounter": null,
     "spawn": null,
-    "sprite": "town/tower_small_r1c0.png",
+    "sprite": "town/tower/small/tower_small_r1c0.png",
     "tag": "town:tower small"
   },
   {
@@ -556,7 +556,7 @@
     "counter": null,
     "encounter": null,
     "spawn": null,
-    "sprite": "town/chapel_r0c0.png",
+    "sprite": "town/house/chapel/chapel_r0c0.png",
     "tag": "town:chapel"
   },
   {
@@ -572,7 +572,7 @@
     "counter": null,
     "encounter": null,
     "spawn": null,
-    "sprite": "town/chapel_r0c1.png",
+    "sprite": "town/house/chapel/chapel_r0c1.png",
     "tag": "town:chapel"
   },
   {
@@ -588,7 +588,7 @@
     "counter": null,
     "encounter": null,
     "spawn": null,
-    "sprite": "town/chapel_r1c0.png",
+    "sprite": "town/house/chapel/chapel_r1c0.png",
     "tag": "town:chapel"
   },
   {
@@ -604,7 +604,7 @@
     "counter": null,
     "encounter": null,
     "spawn": null,
-    "sprite": "town/chapel_r1c1.png",
+    "sprite": "town/house/chapel/chapel_r1c1.png",
     "tag": "town:chapel"
   },
   {
@@ -652,7 +652,7 @@
     "counter": null,
     "encounter": null,
     "spawn": null,
-    "sprite": "objects/cart_r0c0.png",
+    "sprite": "objects/cart/cart_r0c0.png",
     "tag": "objects:cart"
   },
   {
@@ -668,7 +668,7 @@
     "counter": null,
     "encounter": null,
     "spawn": null,
-    "sprite": "objects/cart_r0c1.png",
+    "sprite": "objects/cart/cart_r0c1.png",
     "tag": "objects:cart"
   },
   {
@@ -700,7 +700,7 @@
     "counter": null,
     "encounter": null,
     "spawn": null,
-    "sprite": "objects/lamp_post_r0c0.png",
+    "sprite": "objects/lamp_post/lamp_post_r0c0.png",
     "tag": "objects:lamp post"
   },
   {
@@ -716,7 +716,7 @@
     "counter": null,
     "encounter": null,
     "spawn": null,
-    "sprite": "objects/lamp_post_r1c0.png",
+    "sprite": "objects/lamp_post/lamp_post_r1c0.png",
     "tag": "objects:lamp post"
   },
   {
@@ -829,7 +829,7 @@
     "counter": null,
     "encounter": null,
     "spawn": null,
-    "sprite": "town/dock_gate_r0c0.png",
+    "sprite": "town/dock_gate/dock_gate_r0c0.png",
     "tag": "town:water:dock gate"
   },
   {
@@ -845,7 +845,7 @@
     "counter": null,
     "encounter": null,
     "spawn": null,
-    "sprite": "town/dock_gate_r1c0.png",
+    "sprite": "town/dock_gate/dock_gate_r1c0.png",
     "tag": "town:water:dock gate"
   }
 ]

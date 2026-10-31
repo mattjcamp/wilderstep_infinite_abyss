@@ -34,7 +34,7 @@ v1 keyed records by stringified integer tile id; v2 flattens to an array with `t
 | `name` | string | yes | Display name (e.g. `"Grass"`, `"Stone Floor"`, `"Wall Torch"`) | TBD |
 | `walkable` | bool | yes | Whether the party can step on this tile | TBD |
 | `color` | `[int, int, int]` | yes | RGB fallback rectangle color when no sprite renders | TBD |
-| `sprite` | string | yes | Logical sprite key (e.g. `"overworld/grass"`); resolved to `/assets/<key>.png`. Empty string = render the fallback color. | TBD |
+| `sprite` | string | yes | Sprite path under the module's `sprites/` folder (e.g. `"map/grass.png"`, `"town/house/chapel/chapel_door.png"`). The folder mirrors the tile's `tag` hierarchy (`town:house:chapel` → `town/house/chapel/`); pre-reorg flat paths still resolve via `web/src/data_model/spriteAliases.json`. Empty string = render the fallback color. | TBD |
 | `context` | string | no | Editor-side bucket: `"overworld"`, `"town"`, `"dungeon"`, `"artifacts"`, `"spawns"`. Only `"artifacts"` is queried by v1 TS at runtime (for quest artifact placement); other values are organizational. | TBD |
 | `flags` | object | no | Lighting / transparency flags; see *flags* below | TBD |
 | `interaction_type` | string | no | Interaction discriminator: `"shop"`, `"sign"`, `"spawn"` | TBD |

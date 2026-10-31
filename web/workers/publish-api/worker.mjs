@@ -36,7 +36,11 @@ const HANDLE_RE = /^[a-z0-9][a-z0-9_-]{1,29}$/;
 const SLUG_RE = /^[a-z0-9][a-z0-9_-]{0,63}$/;
 const FILENAME_RE = /^[a-z][a-z0-9_]*\.json$/;
 const SPRITE_CATEGORY_RE = /^[a-z][a-z0-9_]*$/;
-const SPRITE_FILENAME_RE = /^[a-z0-9_][a-z0-9_-]*\.png$/i;
+// May include subfolders under the category (`house/chapel/door.png`)
+// so sprite folders can mirror the Tile Palette tag hierarchy. Every
+// segment starts with an alphanumeric/underscore and none may contain a
+// dot, so `..` traversal and dotfiles are impossible.
+const SPRITE_FILENAME_RE = /^(?:[a-z0-9_][a-z0-9_-]*\/){0,5}[a-z0-9_][a-z0-9_-]*\.png$/i;
 
 // ── Quotas (contract doc "Quotas") ─────────────────────────────────
 const MAX_JSON_BYTES = 1024 * 1024; // 1 MiB per JSON file
@@ -237,7 +241,11 @@ async function regenerateOwnerSpriteIndex(env, handle) {
     const page = await env.BUCKET.list({ prefix, cursor });
     for (const obj of page.objects) {
       const rest = obj.key.slice(prefix.length);
-      const [cat, file] = rest.split("/");
+      // First segment is the category; the rest (which may include
+      // subfolders, e.g. "house/chapel/door.png") is the filename.
+      const slash = rest.indexOf("/");
+      const cat = slash > 0 ? rest.slice(0, slash) : "";
+      const file = slash > 0 ? rest.slice(slash + 1) : "";
       if (!cat || !file || !file.toLowerCase().endsWith(".png")) continue;
       (categories[cat] ??= []).push(file);
     }
