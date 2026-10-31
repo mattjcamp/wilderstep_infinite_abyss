@@ -29813,7 +29813,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "shop/wall_corner_tl.png",
-            "tag": "shop"
+            "tag": "shop",
+            "background_sprite": "shop/floor_planks.png"
           },
           {
             "boat": false,
@@ -29830,7 +29831,7 @@
             "spawn": null,
             "sprite": "shop/window_single.png",
             "tag": "shop",
-            "background_sprite": "shop/wall_top.png"
+            "background_sprite": "shop/floor_planks.png"
           },
           {
             "boat": false,
@@ -29846,7 +29847,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "shop/wall_top.png",
-            "tag": "shop"
+            "tag": "shop",
+            "background_sprite": "shop/floor_planks.png"
           },
           {
             "boat": false,
@@ -29862,7 +29864,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "shop/wall_top.png",
-            "tag": "shop"
+            "tag": "shop",
+            "background_sprite": "shop/floor_planks.png"
           },
           {
             "boat": false,
@@ -29878,7 +29881,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "shop/fireplace.png",
-            "tag": "shop"
+            "tag": "shop",
+            "background_sprite": "shop/floor_planks.png"
           },
           {
             "boat": false,
@@ -29894,7 +29898,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "shop/wall_top.png",
-            "tag": "shop"
+            "tag": "shop",
+            "background_sprite": "shop/floor_planks.png"
           },
           {
             "boat": false,
@@ -29910,7 +29915,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "shop/wall_top.png",
-            "tag": "shop"
+            "tag": "shop",
+            "background_sprite": "shop/floor_planks.png"
           },
           {
             "boat": false,
@@ -29926,7 +29932,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "shop/wall_corner_tr.png",
-            "tag": "shop"
+            "tag": "shop",
+            "background_sprite": "shop/floor_planks.png"
           }
         ],
         [
@@ -30749,7 +30756,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "shop/wall_corner_bl.png",
-            "tag": "shop"
+            "tag": "shop",
+            "background_sprite": "shop/floor_planks.png"
           },
           {
             "boat": false,
@@ -30766,7 +30774,7 @@
             "spawn": null,
             "sprite": "shop/shop_door.png",
             "tag": "shop",
-            "background_sprite": "shop/wall_bottom.png",
+            "background_sprite": "shop/floor_planks.png",
             "link": {
               "map_id": "town_1",
               "x": 18,
@@ -30787,7 +30795,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "shop/wall_bottom.png",
-            "tag": "shop"
+            "tag": "shop",
+            "background_sprite": "shop/floor_planks.png"
           },
           {
             "boat": false,
@@ -30803,7 +30812,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "shop/wall_bottom.png",
-            "tag": "shop"
+            "tag": "shop",
+            "background_sprite": "shop/floor_planks.png"
           },
           {
             "boat": false,
@@ -30820,7 +30830,7 @@
             "spawn": null,
             "sprite": "shop/window_left.png",
             "tag": "shop",
-            "background_sprite": "shop/wall_bottom.png"
+            "background_sprite": "shop/floor_planks.png"
           },
           {
             "boat": false,
@@ -30837,7 +30847,7 @@
             "spawn": null,
             "sprite": "shop/window_right.png",
             "tag": "shop",
-            "background_sprite": "shop/wall_bottom.png"
+            "background_sprite": "shop/floor_planks.png"
           },
           {
             "boat": false,
@@ -30854,7 +30864,7 @@
             "spawn": null,
             "sprite": "shop/notice_board.png",
             "tag": "shop",
-            "background_sprite": "shop/wall_bottom.png",
+            "background_sprite": "shop/floor_planks.png",
             "link": {
               "map_id": "overview_1",
               "x": 13,
@@ -30875,7 +30885,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "shop/wall_corner_br.png",
-            "tag": "shop"
+            "tag": "shop",
+            "background_sprite": "shop/floor_planks.png"
           }
         ]
       ],
