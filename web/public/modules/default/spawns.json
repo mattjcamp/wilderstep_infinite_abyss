@@ -21,6 +21,24 @@
       "loot": [
         "camping_supplies"
       ]
+    },
+    {
+      "id": "ghosts",
+      "name": "Ghosts",
+      "description": "A horde of ghosts appears",
+      "spawn_monsters": [
+        "ghost",
+        "ghost",
+        "ghost"
+      ],
+      "spawn_chance": 5,
+      "spawn_radius": 5,
+      "max_spawned": 2,
+      "boss_monsters": [],
+      "xp_reward": 200,
+      "gold_reward": 200,
+      "loot": [],
+      "custom_map": null
     }
   ]
 }

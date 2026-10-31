@@ -18,7 +18,7 @@
       "wisdom": 8,
       "sprite": "person/dwarf_female_paladin.png",
       "equipped": {
-        "hands": "sword",
+        "hands": "dagger",
         "body": "leather"
       },
       "inventory": []
@@ -84,7 +84,7 @@
       "wisdom": 8,
       "sprite": "person/halfling_female_thief.png",
       "equipped": {
-        "hands": "short_bow",
+        "hands": "dagger",
         "body": "leather"
       },
       "inventory": []

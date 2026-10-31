@@ -14,7 +14,7 @@ import { join } from "node:path";
 const PUBLIC = join(__dirname, "../../public");
 const MODULES = join(PUBLIC, "modules");
 const SPRITE_RE =
-  /^(map|indoor|dungeon|cave|objects|town|person|monster|item|spells|actions)\/[^"]+\.png$/;
+  /^(map|indoor|dungeon|cave|overworld|objects|town|person|monster|item|spells|actions)\/[^"]+\.png$/;
 
 /** Folder a bare `icon` stem resolves into, by data file: spell icons
  *  live in `spells/`, everything else's (items, chests, …) in `item/`. */
