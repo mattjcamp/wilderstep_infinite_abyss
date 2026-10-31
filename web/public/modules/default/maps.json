@@ -30176,10 +30176,10 @@
           },
           {
             "boat": false,
-            "id": "shop_table_v_top",
-            "name": "Shop Table, Top End",
-            "walkable": false,
-            "obstructs": true,
+            "id": "shop_floor_planks_alt",
+            "name": "Shop Floor, Alt",
+            "walkable": true,
+            "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -30187,9 +30187,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_v_top.png",
-            "tag": "shop",
-            "background_sprite": "shop/floor_planks.png"
+            "sprite": "shop/floor_planks_alt.png",
+            "tag": "shop"
           },
           {
             "boat": false,
@@ -30293,8 +30292,8 @@
           },
           {
             "boat": false,
-            "id": "shop_floor_planks",
-            "name": "Shop Floor",
+            "id": "shop_floor_planks_alt",
+            "name": "Shop Floor, Alt",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -30304,16 +30303,15 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/floor_planks.png",
-            "tag": "shop",
-            "background_sprite": "shop/floor_planks.png"
+            "sprite": "shop/floor_planks_alt.png",
+            "tag": "shop"
           },
           {
             "boat": false,
-            "id": "shop_table_v_mid",
-            "name": "Shop Table, Middle (Vertical)",
-            "walkable": false,
-            "obstructs": true,
+            "id": "shop_floor_planks_alt",
+            "name": "Shop Floor, Alt",
+            "walkable": true,
+            "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -30321,9 +30319,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_v_mid.png",
-            "tag": "shop",
-            "background_sprite": "shop/floor_planks.png"
+            "sprite": "shop/floor_planks_alt.png",
+            "tag": "shop"
           },
           {
             "boat": false,
@@ -30411,8 +30408,8 @@
           },
           {
             "boat": false,
-            "id": "shop_floor_planks",
-            "name": "Shop Floor",
+            "id": "shop_floor_planks_alt",
+            "name": "Shop Floor, Alt",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -30422,7 +30419,23 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/floor_planks.png",
+            "sprite": "shop/floor_planks_alt.png",
+            "tag": "shop"
+          },
+          {
+            "boat": false,
+            "id": "shop_floor_planks_alt",
+            "name": "Shop Floor, Alt",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "shop/floor_planks_alt.png",
             "tag": "shop"
           },
           {
@@ -30440,23 +30453,6 @@
             "spawn": null,
             "sprite": "shop/floor_planks.png",
             "tag": "shop"
-          },
-          {
-            "boat": false,
-            "id": "shop_table_v_mid",
-            "name": "Shop Table, Middle (Vertical)",
-            "walkable": false,
-            "obstructs": true,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "shop/table_v_mid.png",
-            "tag": "shop",
-            "background_sprite": "shop/floor_planks.png"
           },
           {
             "boat": false,
@@ -30560,8 +30556,8 @@
           },
           {
             "boat": false,
-            "id": "shop_floor_planks",
-            "name": "Shop Floor",
+            "id": "shop_floor_planks_alt",
+            "name": "Shop Floor, Alt",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -30571,15 +30567,15 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/floor_planks.png",
+            "sprite": "shop/floor_planks_alt.png",
             "tag": "shop"
           },
           {
             "boat": false,
-            "id": "shop_table_v_bottom",
-            "name": "Shop Table, Bottom End",
-            "walkable": false,
-            "obstructs": true,
+            "id": "shop_floor_planks_alt",
+            "name": "Shop Floor, Alt",
+            "walkable": true,
+            "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -30587,9 +30583,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_v_bottom.png",
-            "tag": "shop",
-            "background_sprite": "shop/floor_planks.png"
+            "sprite": "shop/floor_planks_alt.png",
+            "tag": "shop"
           },
           {
             "boat": false,

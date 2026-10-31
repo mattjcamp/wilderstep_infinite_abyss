@@ -7,16 +7,6 @@
       "role": "core"
     },
     {
-      "id": "maps-mix-in",
-      "title": "Maps and Buildings",
-      "role": "library"
-    },
-    {
-      "id": "test-icons",
-      "title": "Dark Themed Sprites",
-      "role": "theme"
-    },
-    {
       "id": "test-4",
       "title": "Test 4",
       "role": "playable"
