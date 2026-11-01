@@ -39,6 +39,23 @@
       "gold_reward": 200,
       "loot": [],
       "custom_map": null
+    },
+    {
+      "id": "bats",
+      "name": "Giant Bats",
+      "description": "A swarm of Giant Bats appears in front of you",
+      "spawn_monsters": [
+        "giant_bat",
+        "giant_bat"
+      ],
+      "spawn_chance": 5,
+      "spawn_radius": 5,
+      "max_spawned": 1,
+      "boss_monsters": [],
+      "xp_reward": 100,
+      "gold_reward": 100,
+      "loot": [],
+      "custom_map": null
     }
   ]
 }

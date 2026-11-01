@@ -10,6 +10,11 @@
       "id": "the-crystal-skull",
       "title": "The Crystal Skull",
       "role": "playable"
+    },
+    {
+      "id": "test",
+      "title": "Test",
+      "role": "playable"
     }
   ]
 }
