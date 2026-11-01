@@ -58,6 +58,15 @@ export function QuestDialogOverlay({
 }: Props) {
   const complete =
     alreadyAccepted && stepCount > 0 && stepIdx >= stepCount;
+  // Rewards are granted when this completed-quest dialog closes; the
+  // line under Close thanks the party, mentioning the reward only when
+  // the quest actually carries one (xp, gold or items).
+  const rewards = (quest as { rewards?: Record<string, unknown> | null }).rewards;
+  const hasRewards =
+    !!rewards &&
+    Object.values(rewards).some((v) =>
+      Array.isArray(v) ? v.length > 0 : typeof v === "number" ? v > 0 : !!v,
+    );
 
   // Build the visible action list based on the dialog's three
   // states (offered / in-progress / complete). The labels match the
@@ -249,8 +258,9 @@ export function QuestDialogOverlay({
                   >
                     <div className="font-medium">Close</div>
                     <div className="text-xs text-emerald-100/75">
-                      Every objective is finished. Rewards arrive when
-                      the completion flow lands; for now, well done.
+                      {hasRewards
+                        ? "Thank you, please accept these modest tokens in appreciation."
+                        : "Thank you — the deed is done."}
                     </div>
                   </button>
                 ) : alreadyAccepted ? (

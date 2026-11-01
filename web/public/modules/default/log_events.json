@@ -9,15 +9,43 @@
       "entries": [
         {
           "steps": 0,
-          "text": "Smoke still curls from the wrecked wagons. Whoever did this left in a hurry."
+          "text": "Smoke still curls from the wrecked wagons. Whoever did this left in a hurry. We should look around and find some weapons... use the arrow keys or WASD to move. "
         },
         {
           "steps": 4,
-          "text": "Tip: use the arrow keys or WASD to move. Walk over items to pick them up."
+          "text": "Tip: Walk over items to pick them up."
         },
         {
           "steps": 10,
           "text": "Tip: press L to open the full Adventure Log, and H for help."
+        },
+        {
+          "steps": 7,
+          "text": "Tip: press P to access the Party Screen to equip items, view characters and send found items to individual characters. Go to a character screen to equip items, use abilities and view character details."
+        },
+        {
+          "steps": 15,
+          "text": "Tip: get more experience by discovering new areas, talking to new people, reading lore and defeating enemies on the battlefield"
+        },
+        {
+          "steps": 20,
+          "text": "Be careful, the sounds of beasts rustling around fills the air around you. Equip what weapons you have and try to find a way to get clear of these burning wagons. Try to find a settlement and get some help."
+        }
+      ]
+    },
+    {
+      "id": "town_tutorial",
+      "name": "Town Tutorial",
+      "map_id": "town_1",
+      "repeat": "once",
+      "entries": [
+        {
+          "steps": 1,
+          "text": "Welcome to your first visit to a town in Wilderstep. In towns you can find items to buy, villagers to meet, adventures to start and you can find comfort and healing."
+        },
+        {
+          "steps": 6,
+          "text": "To buy weapons, armor and other items go to the stalls located at the center of town. In these stalls, you can buy and sell items."
         }
       ]
     }

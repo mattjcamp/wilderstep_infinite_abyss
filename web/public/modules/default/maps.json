@@ -4317,8 +4317,8 @@
           },
           {
             "boat": false,
-            "id": "mountain",
-            "name": "Mountain",
+            "id": "overworld_rock_spires",
+            "name": "Rock Spires",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -4328,42 +4328,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/mountain.png",
-            "tag": "map",
-            "background_sprite": "map/grass.png"
-          },
-          {
-            "boat": false,
-            "id": "mountain",
-            "name": "Mountain",
-            "walkable": false,
-            "obstructs": true,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/mountain.png",
-            "tag": "map",
-            "background_sprite": "map/grass.png"
-          },
-          {
-            "boat": false,
-            "id": "tree",
-            "name": "Tree",
-            "walkable": true,
-            "obstructs": true,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "map/tree.png",
-            "tag": "map",
+            "sprite": "map/hills_and_mountains/rock_spires.png",
+            "tag": "map:hills & mountains",
             "background_sprite": "map/grass.png"
           },
           {
@@ -4453,9 +4419,9 @@
           },
           {
             "boat": false,
-            "id": "mountain",
-            "name": "Mountain",
-            "walkable": false,
+            "id": "tree",
+            "name": "Tree",
+            "walkable": true,
             "obstructs": true,
             "locked": false,
             "light_source": false,
@@ -4464,7 +4430,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/mountain.png",
+            "sprite": "map/tree.png",
             "tag": "map",
             "background_sprite": "map/grass.png"
           },
@@ -4483,6 +4449,40 @@
             "spawn": null,
             "sprite": "map/mountain.png",
             "tag": "map",
+            "background_sprite": "map/grass.png"
+          },
+          {
+            "boat": false,
+            "id": "overworld_hill_small",
+            "name": "Hill (Small)",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/hills_and_mountains/hill_small.png",
+            "tag": "map:hills & mountains",
+            "background_sprite": "map/grass.png"
+          },
+          {
+            "boat": false,
+            "id": "overworld_hill_small",
+            "name": "Hill (Small)",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "map/hills_and_mountains/hill_small.png",
+            "tag": "map:hills & mountains",
             "background_sprite": "map/grass.png"
           },
           {
@@ -4993,8 +4993,8 @@
           },
           {
             "boat": false,
-            "id": "mountain",
-            "name": "Mountain",
+            "id": "overworld_rock_spires",
+            "name": "Rock Spires",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -5004,8 +5004,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/mountain.png",
-            "tag": "map",
+            "sprite": "map/hills_and_mountains/rock_spires.png",
+            "tag": "map:hills & mountains",
             "background_sprite": "map/grass.png"
           },
           {
@@ -5129,10 +5129,10 @@
           },
           {
             "boat": false,
-            "id": "mountain",
-            "name": "Mountain",
-            "walkable": false,
-            "obstructs": true,
+            "id": "overworld_hill_small",
+            "name": "Hill (Small)",
+            "walkable": true,
+            "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -5140,8 +5140,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/mountain.png",
-            "tag": "map",
+            "sprite": "map/hills_and_mountains/hill_small.png",
+            "tag": "map:hills & mountains",
             "background_sprite": "map/grass.png"
           },
           {
@@ -5737,8 +5737,8 @@
           },
           {
             "boat": false,
-            "id": "mountain",
-            "name": "Mountain",
+            "id": "overworld_rock_spires",
+            "name": "Rock Spires",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -5748,8 +5748,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/mountain.png",
-            "tag": "map",
+            "sprite": "map/hills_and_mountains/rock_spires.png",
+            "tag": "map:hills & mountains",
             "background_sprite": "map/grass.png"
           },
           {
@@ -5788,10 +5788,10 @@
           },
           {
             "boat": false,
-            "id": "mountain",
-            "name": "Mountain",
-            "walkable": false,
-            "obstructs": true,
+            "id": "overworld_hill_small",
+            "name": "Hill (Small)",
+            "walkable": true,
+            "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -5799,16 +5799,16 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/mountain.png",
-            "tag": "map",
+            "sprite": "map/hills_and_mountains/hill_small.png",
+            "tag": "map:hills & mountains",
             "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
-            "id": "mountain",
-            "name": "Mountain",
-            "walkable": false,
-            "obstructs": true,
+            "id": "overworld_hill_small",
+            "name": "Hill (Small)",
+            "walkable": true,
+            "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -5816,16 +5816,16 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/mountain.png",
-            "tag": "map",
+            "sprite": "map/hills_and_mountains/hill_small.png",
+            "tag": "map:hills & mountains",
             "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
-            "id": "mountain",
-            "name": "Mountain",
-            "walkable": false,
-            "obstructs": true,
+            "id": "overworld_hill_small",
+            "name": "Hill (Small)",
+            "walkable": true,
+            "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -5833,8 +5833,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/mountain.png",
-            "tag": "map",
+            "sprite": "map/hills_and_mountains/hill_small.png",
+            "tag": "map:hills & mountains",
             "background_sprite": "map/grass.png"
           },
           {
@@ -6163,9 +6163,9 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
+            "id": "river_bend_tl",
+            "name": "River Bend (top-left)",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -6174,14 +6174,16 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "water/river/river_bend_tl.png",
+            "tag": "Water:River",
+            "water": true,
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
+            "id": "river_straight_h",
+            "name": "River Straight (horizontal)",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -6190,14 +6192,16 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "water/river/river_straight_h.png",
+            "tag": "Water:River",
+            "water": true,
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
+            "id": "river_straight_h",
+            "name": "River Straight (horizontal)",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -6206,14 +6210,16 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "water/river/river_straight_h.png",
+            "tag": "Water:River",
+            "water": true,
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
+            "id": "river_straight_h",
+            "name": "River Straight (horizontal)",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -6222,14 +6228,16 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "water/river/river_straight_h.png",
+            "tag": "Water:River",
+            "water": true,
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
+            "id": "river_bend_tr",
+            "name": "River Bend (top-right)",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -6238,8 +6246,10 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "water/river/river_bend_tr.png",
+            "tag": "Water:River",
+            "water": true,
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -6277,8 +6287,8 @@
         [
           {
             "boat": false,
-            "id": "mountain",
-            "name": "Mountain",
+            "id": "overworld_rock_spires",
+            "name": "Rock Spires",
             "walkable": false,
             "obstructs": true,
             "locked": false,
@@ -6288,8 +6298,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/mountain.png",
-            "tag": "map",
+            "sprite": "map/hills_and_mountains/rock_spires.png",
+            "tag": "map:hills & mountains",
             "background_sprite": "map/grass.png"
           },
           {
@@ -6442,10 +6452,10 @@
           },
           {
             "boat": false,
-            "id": "mountain",
-            "name": "Mountain",
-            "walkable": false,
-            "obstructs": true,
+            "id": "overworld_hill_small",
+            "name": "Hill (Small)",
+            "walkable": true,
+            "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -6453,16 +6463,16 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/mountain.png",
-            "tag": "map",
+            "sprite": "map/hills_and_mountains/hill_small.png",
+            "tag": "map:hills & mountains",
             "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
-            "id": "mountain",
-            "name": "Mountain",
-            "walkable": false,
-            "obstructs": true,
+            "id": "overworld_hill_small",
+            "name": "Hill (Small)",
+            "walkable": true,
+            "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -6470,16 +6480,16 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/mountain.png",
-            "tag": "map",
+            "sprite": "map/hills_and_mountains/hill_small.png",
+            "tag": "map:hills & mountains",
             "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
-            "id": "mountain",
-            "name": "Mountain",
-            "walkable": false,
-            "obstructs": true,
+            "id": "overworld_hill_small",
+            "name": "Hill (Small)",
+            "walkable": true,
+            "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -6487,8 +6497,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/mountain.png",
-            "tag": "map",
+            "sprite": "map/hills_and_mountains/hill_small.png",
+            "tag": "map:hills & mountains",
             "background_sprite": "map/grass.png"
           },
           {
@@ -6817,9 +6827,9 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
+            "id": "river_straight_v",
+            "name": "River Straight (vertical)",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -6828,8 +6838,10 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "water/river/river_straight_v.png",
+            "tag": "Water:River",
+            "water": true,
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -6881,9 +6893,9 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
+            "id": "river_straight_v",
+            "name": "River Straight (vertical)",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -6892,8 +6904,10 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "water/river/river_straight_v.png",
+            "tag": "Water:River",
+            "water": true,
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -7133,10 +7147,10 @@
           },
           {
             "boat": false,
-            "id": "mountain",
-            "name": "Mountain",
-            "walkable": false,
-            "obstructs": true,
+            "id": "overworld_hill_small",
+            "name": "Hill (Small)",
+            "walkable": true,
+            "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -7144,8 +7158,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/mountain.png",
-            "tag": "map",
+            "sprite": "map/hills_and_mountains/hill_small.png",
+            "tag": "map:hills & mountains",
             "background_sprite": "map/grass.png"
           },
           {
@@ -7496,9 +7510,9 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
+            "id": "river_straight_v",
+            "name": "River Straight (vertical)",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -7507,8 +7521,10 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "water/river/river_straight_v.png",
+            "tag": "Water:River",
+            "water": true,
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -7561,19 +7577,21 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
+            "boat_passable": true,
+            "id": "bridge",
+            "name": "Bridge",
             "walkable": true,
             "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
-            "animation": "none",
+            "animation": null,
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "map/bridge.png",
+            "tag": "map",
+            "background_sprite": "water/river/river_straight_v.png"
           },
           {
             "boat": false,
@@ -8153,9 +8171,9 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
+            "id": "river_straight_v",
+            "name": "River Straight (vertical)",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -8164,8 +8182,10 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "water/river/river_straight_v.png",
+            "tag": "Water:River",
+            "water": true,
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -8217,9 +8237,9 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
+            "id": "river_straight_v",
+            "name": "River Straight (vertical)",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -8228,8 +8248,10 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "water/river/river_straight_v.png",
+            "tag": "Water:River",
+            "water": true,
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -8808,9 +8830,9 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
+            "id": "river_bend_bl",
+            "name": "River Bend (bottom-left)",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -8819,14 +8841,16 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "water/river/river_bend_bl.png",
+            "tag": "Water:River",
+            "water": true,
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
+            "id": "river_straight_h",
+            "name": "River Straight (horizontal)",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -8835,14 +8859,16 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "water/river/river_straight_h.png",
+            "tag": "Water:River",
+            "water": true,
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
+            "id": "river_straight_h",
+            "name": "River Straight (horizontal)",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -8851,14 +8877,16 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "water/river/river_straight_h.png",
+            "tag": "Water:River",
+            "water": true,
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
+            "id": "river_straight_h",
+            "name": "River Straight (horizontal)",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -8867,14 +8895,16 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "water/river/river_straight_h.png",
+            "tag": "Water:River",
+            "water": true,
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
+            "id": "river_bend_br",
+            "name": "River Bend (bottom-right)",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -8883,8 +8913,10 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "water/river/river_bend_br.png",
+            "tag": "Water:River",
+            "water": true,
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -10156,8 +10188,8 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
+            "id": "overworld_hill_small",
+            "name": "Hill (Small)",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -10167,8 +10199,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "map/hills_and_mountains/hill_small.png",
+            "tag": "map:hills & mountains",
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -10805,8 +10838,8 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
+            "id": "overworld_hill_small",
+            "name": "Hill (Small)",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -10816,8 +10849,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "map/hills_and_mountains/hill_small.png",
+            "tag": "map:hills & mountains",
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -11434,8 +11468,8 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
+            "id": "overworld_hill_small",
+            "name": "Hill (Small)",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -11445,15 +11479,16 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "map/hills_and_mountains/hill_small.png",
+            "tag": "map:hills & mountains",
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
+            "id": "overworld_hills",
+            "name": "Hills",
             "walkable": true,
-            "obstructs": false,
+            "obstructs": true,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -11461,8 +11496,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "map/hills_and_mountains/hills.png",
+            "tag": "map:hills & mountains",
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -12098,10 +12134,10 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
+            "id": "overworld_hills",
+            "name": "Hills",
             "walkable": true,
-            "obstructs": false,
+            "obstructs": true,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -12109,15 +12145,16 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "map/hills_and_mountains/hills.png",
+            "tag": "map:hills & mountains",
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
+            "id": "overworld_hills",
+            "name": "Hills",
             "walkable": true,
-            "obstructs": false,
+            "obstructs": true,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -12125,8 +12162,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "map/hills_and_mountains/hills.png",
+            "tag": "map:hills & mountains",
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -12761,10 +12799,10 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
+            "id": "overworld_hills",
+            "name": "Hills",
             "walkable": true,
-            "obstructs": false,
+            "obstructs": true,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -12772,13 +12810,14 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "map/hills_and_mountains/hills.png",
+            "tag": "map:hills & mountains",
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
+            "id": "overworld_hill_small",
+            "name": "Hill (Small)",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -12788,8 +12827,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "map/hills_and_mountains/hill_small.png",
+            "tag": "map:hills & mountains",
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -13435,8 +13475,8 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
+            "id": "overworld_hill_small",
+            "name": "Hill (Small)",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -13446,8 +13486,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "map/hills_and_mountains/hill_small.png",
+            "tag": "map:hills & mountains",
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -14103,10 +14144,10 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
+            "id": "overworld_hills",
+            "name": "Hills",
             "walkable": true,
-            "obstructs": false,
+            "obstructs": true,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -14114,8 +14155,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "map/hills_and_mountains/hills.png",
+            "tag": "map:hills & mountains",
+            "background_sprite": "map/grass.png"
           }
         ],
         [
@@ -19526,8 +19568,8 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
+            "id": "overworld_windmill",
+            "name": "Windmill",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -19537,8 +19579,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "overview"
+            "sprite": "map/settlements/windmill.png",
+            "tag": "map:settlements",
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -19641,8 +19684,9 @@
             "background_sprite": "map/grass.png"
           },
           {
-            "id": "water",
-            "name": "Water",
+            "boat": false,
+            "id": "lake_inlet_bottom",
+            "name": "Lake River Inlet (bottom)",
             "walkable": false,
             "obstructs": false,
             "locked": false,
@@ -19652,9 +19696,10 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "water/water.png",
-            "tag": "Water",
-            "water": true
+            "sprite": "water/lake/lake_inlet_bottom.png",
+            "tag": "Water:Lake",
+            "water": true,
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -20212,7 +20257,7 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/grass.png",
-            "tag": "overview"
+            "tag": "map"
           },
           {
             "boat": false,
@@ -20326,7 +20371,7 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/grass.png",
-            "tag": "overview"
+            "tag": "map"
           },
           {
             "boat": false,
@@ -20876,7 +20921,7 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/grass.png",
-            "tag": "overview"
+            "tag": "map"
           },
           {
             "boat": false,
@@ -20892,7 +20937,7 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/grass.png",
-            "tag": "overview"
+            "tag": "map"
           },
           {
             "boat": false,
@@ -23783,10 +23828,10 @@
           },
           {
             "boat": false,
-            "id": "mountain",
-            "name": "Mountain",
-            "walkable": false,
-            "obstructs": true,
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -23794,9 +23839,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/mountain.png",
-            "tag": "map",
-            "background_sprite": "map/grass.png"
+            "sprite": "map/grass.png",
+            "tag": "map"
           },
           {
             "boat": false,
@@ -25768,10 +25812,10 @@
           },
           {
             "boat": false,
-            "id": "mountain",
-            "name": "Mountain",
-            "walkable": false,
-            "obstructs": true,
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
+            "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -25779,9 +25823,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/mountain.png",
-            "tag": "map",
-            "background_sprite": "map/grass.png"
+            "sprite": "map/grass.png",
+            "tag": "map"
           },
           {
             "boat": false,
@@ -26188,7 +26231,7 @@
             "water": true
           },
           {
-            "boat": false,
+            "boat": true,
             "id": "lake_edge_right",
             "name": "Lake Shore (right land)",
             "walkable": false,
@@ -26203,7 +26246,8 @@
             "sprite": "water/lake/lake_edge_right.png",
             "tag": "Water:Lake",
             "water": true,
-            "background_sprite": "map/grass.png"
+            "background_sprite": "map/grass.png",
+            "boat_sprite": "map/boat_small.png"
           },
           {
             "boat": false,
