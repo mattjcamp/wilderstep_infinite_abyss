@@ -5,6 +5,11 @@
       "id": "default",
       "title": "Default Module",
       "role": "core"
+    },
+    {
+      "id": "the-crystal-skull",
+      "title": "The Crystal Skull",
+      "role": "playable"
     }
   ]
 }

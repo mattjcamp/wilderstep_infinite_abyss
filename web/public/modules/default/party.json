@@ -1,8 +1,8 @@
 {
   "start_position": {
-    "map_id": "overview_1",
-    "col": 9,
-    "row": 9
+    "map_id": "destroyed_caravan",
+    "col": 1,
+    "row": 29
   },
   "avatar": "person/dwarf_male_fighter.png",
   "gold": 50,

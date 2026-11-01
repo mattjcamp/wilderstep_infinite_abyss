@@ -32,6 +32,12 @@ import {
 } from "@/data_model/spriteDraft";
 import { PixelEditor } from "./PixelEditor";
 import {
+  SpriteFolderTree,
+  TreeToggleAll,
+  useCollapsedFolders,
+} from "./SpriteFolderTree";
+import { allFolderPaths, buildSpriteTree } from "./spriteTree";
+import {
   BASE_SPRITE_MODULE,
   fetchSpriteCatalog,
   seededSpriteLayers,
@@ -75,6 +81,8 @@ export function SpriteView() {
    *  rendered by the browser refetches the draft. Avoids stale images
    *  without forcing a full reload. */
   const [thumbVersion, setThumbVersion] = useState(0);
+  /** Collapsed folders in the sprite tree, remembered per browser. */
+  const collapsed = useCollapsedFolders("wilderstep.spriteView.collapsed");
 
   const refreshDrafts = () => {
     setDraftedPaths(new Set(listSpriteDrafts(moduleId)));
@@ -128,6 +136,13 @@ export function SpriteView() {
     const fromBase = (origin[path] ?? BASE_SPRITE_MODULE) === BASE_SPRITE_MODULE;
     return coverage === "base" ? fromBase : !fromBase;
   };
+  // Folder tree straight from each sprite's folder under sprites/.
+  const fullTree = buildSpriteTree(categories);
+  const tree = buildSpriteTree(
+    categories,
+    (path) =>
+      (!needle || path.toLowerCase().includes(needle)) && matchesCoverage(path),
+  );
 
   return (
     <div className="p-4">
@@ -178,6 +193,10 @@ export function SpriteView() {
             onChange={(e) => setFilter(e.target.value)}
             placeholder="filter by name…"
             className="rounded border border-parchment/20 bg-ink/40 px-2 py-1 text-sm text-parchment placeholder:text-parchment/60 focus:border-parchment/60 focus:outline-none"
+          />
+          <TreeToggleAll
+            onExpand={() => collapsed.setMany(allFolderPaths(fullTree), false)}
+            onCollapse={() => collapsed.setMany(allFolderPaths(fullTree), true)}
           />
           <NewSpriteButton
             categories={Object.keys(categories)}
@@ -243,89 +262,56 @@ export function SpriteView() {
         />
       ) : null}
 
-      <div className="mt-6 space-y-6">
-        {spriteFolderGroups(categories).map(([cat, folder, files]) => {
-          const filtered = files.filter(
-            (f) =>
-              (!needle || f.toLowerCase().includes(needle)) &&
-              matchesCoverage(`${cat}/${f}`),
-          );
-          if (filtered.length === 0) return null;
-          return (
-            <section key={`${cat}/${folder}`}>
-              <h2 className="mb-2 text-[13px] uppercase tracking-wide text-parchment/60">
-                {[cat, ...(folder ? folder.split("/") : [])].join(" › ")} · {filtered.length}
-                {filtered.length !== files.length ? ` of ${files.length}` : ""}
-              </h2>
-              <ul className="grid grid-cols-[repeat(auto-fill,minmax(90px,1fr))] gap-2">
-                {filtered.map((file) => {
-                  const path = `${cat}/${file}`;
-                  const label = file.slice(file.lastIndexOf("/") + 1).replace(/\.png$/, "");
-                  const isDrafted = draftedPaths.has(path);
-                  const from = origin[path] ?? BASE_SPRITE_MODULE;
-                  return (
-                    <li key={file}>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setPanel({ kind: "preview", path })
-                        }
-                        className={[
-                          "flex w-full flex-col items-center gap-1 rounded border p-2 transition",
-                          isDrafted
-                            ? "border-amber-400/60 bg-amber-900/20 hover:border-amber-300"
-                            : "border-parchment/10 bg-ink/40 hover:border-parchment/40 hover:bg-ink/60",
-                        ].join(" ")}
-                      >
-                        <Thumbnail
-                          moduleId={moduleId}
-                          path={path}
-                          version={thumbVersion}
-                          alt={label}
-                        />
-                        <span className="w-full truncate text-center text-[13px] text-parchment/85">
-                          {label}
-                        </span>
-                        {overLayers.length > 0 && from !== BASE_SPRITE_MODULE ? (
-                          <span className="w-full truncate text-center text-[11px] text-emerald-300/90">
-                            {from}
-                          </span>
-                        ) : null}
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            </section>
-          );
-        })}
+      <div className="mt-6">
+        {tree.children.length === 0 ? (
+          <p className="text-sm text-parchment/60">No sprites match.</p>
+        ) : (
+          <SpriteFolderTree
+            root={tree}
+            totals={fullTree}
+            collapsed={collapsed}
+            forceOpen={needle.length > 0}
+            gridClassName="grid grid-cols-[repeat(auto-fill,minmax(90px,1fr))] gap-2"
+            renderSprite={(path) => {
+              const label = path
+                .slice(path.lastIndexOf("/") + 1)
+                .replace(/\.png$/, "");
+              const isDrafted = draftedPaths.has(path);
+              const from = origin[path] ?? BASE_SPRITE_MODULE;
+              return (
+                <button
+                  type="button"
+                  onClick={() => setPanel({ kind: "preview", path })}
+                  title={path}
+                  className={[
+                    "flex w-full flex-col items-center gap-1 rounded border p-2 transition",
+                    isDrafted
+                      ? "border-amber-400/60 bg-amber-900/20 hover:border-amber-300"
+                      : "border-parchment/10 bg-ink/40 hover:border-parchment/40 hover:bg-ink/60",
+                  ].join(" ")}
+                >
+                  <Thumbnail
+                    moduleId={moduleId}
+                    path={path}
+                    version={thumbVersion}
+                    alt={label}
+                  />
+                  <span className="w-full truncate text-center text-[13px] text-parchment/85">
+                    {label}
+                  </span>
+                  {overLayers.length > 0 && from !== BASE_SPRITE_MODULE ? (
+                    <span className="w-full truncate text-center text-[11px] text-emerald-300/90">
+                      {from}
+                    </span>
+                  ) : null}
+                </button>
+              );
+            }}
+          />
+        )}
       </div>
     </div>
   );
-}
-
-/** Split each category's files into one group per subfolder, so the
- *  sprite browser mirrors the folder (and Tile Palette tag) hierarchy:
- *  [category, "house/chapel" | "", files-with-their-subpath]. Groups
- *  keep the category order and sort subfolders after the root files. */
-export function spriteFolderGroups(
-  categories: Record<string, string[]>,
-): Array<[string, string, string[]]> {
-  const out: Array<[string, string, string[]]> = [];
-  for (const [cat, files] of Object.entries(categories)) {
-    const byFolder = new Map<string, string[]>();
-    for (const f of files) {
-      const slash = f.lastIndexOf("/");
-      const folder = slash >= 0 ? f.slice(0, slash) : "";
-      const list = byFolder.get(folder) ?? [];
-      list.push(f);
-      byFolder.set(folder, list);
-    }
-    for (const folder of [...byFolder.keys()].sort()) {
-      out.push([cat, folder, byFolder.get(folder)!]);
-    }
-  }
-  return out;
 }
 
 /** Thumbnail that prefers the localStorage draft over the on-disk

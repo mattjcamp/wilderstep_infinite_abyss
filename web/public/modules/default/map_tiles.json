@@ -312,6 +312,7 @@
     },
     {
       "boat": false,
+      "background_sprite": "shop/wall.png",
       "id": "shop_wall_top",
       "name": "Shop Wall, Top",
       "walkable": false,
@@ -324,11 +325,11 @@
       "encounter": null,
       "spawn": null,
       "sprite": "shop/wall_top.png",
-      "tag": "shop",
-      "background_sprite": "shop/floor_planks.png"
+      "tag": "shop"
     },
     {
       "boat": false,
+      "background_sprite": "shop/wall.png",
       "id": "shop_wall_bottom",
       "name": "Shop Wall, Bottom",
       "walkable": false,
@@ -341,8 +342,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "shop/wall_bottom.png",
-      "tag": "shop",
-      "background_sprite": "shop/floor_planks.png"
+      "tag": "shop"
     },
     {
       "boat": false,
@@ -460,22 +460,6 @@
       "encounter": null,
       "spawn": null,
       "sprite": "shop/floor_planks.png",
-      "tag": "shop"
-    },
-    {
-      "boat": false,
-      "id": "shop_floor_planks_alt",
-      "name": "Shop Floor, Alt",
-      "walkable": true,
-      "obstructs": false,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "shop/floor_planks_alt.png",
       "tag": "shop"
     },
     {
@@ -628,7 +612,7 @@
       "spawn": null,
       "sprite": "shop/window_left.png",
       "tag": "shop",
-      "background_sprite": "shop/floor_planks.png"
+      "background_sprite": "shop/wall_bottom.png"
     },
     {
       "boat": false,
@@ -645,7 +629,7 @@
       "spawn": null,
       "sprite": "shop/window_right.png",
       "tag": "shop",
-      "background_sprite": "shop/floor_planks.png"
+      "background_sprite": "shop/wall_bottom.png"
     },
     {
       "boat": false,
@@ -662,7 +646,7 @@
       "spawn": null,
       "sprite": "shop/window_single.png",
       "tag": "shop",
-      "background_sprite": "shop/floor_planks.png"
+      "background_sprite": "shop/wall_bottom.png"
     },
     {
       "boat": false,
@@ -713,7 +697,7 @@
       "spawn": null,
       "sprite": "shop/shop_door.png",
       "tag": "shop",
-      "background_sprite": "shop/floor_planks.png"
+      "background_sprite": "shop/wall_bottom.png"
     },
     {
       "boat": false,
@@ -921,6 +905,38 @@
       "encounter": null,
       "spawn": null,
       "sprite": "dungeon/walls/junctions/wall_corner_tr.png",
+      "tag": "dungeon:walls:junctions"
+    },
+    {
+      "boat": false,
+      "id": "dungeon_wall_corner_bl",
+      "name": "Dungeon Wall, Corner Bottom Left",
+      "walkable": false,
+      "obstructs": true,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeon/walls/junctions/wall_corner_bl.png",
+      "tag": "dungeon:walls:junctions"
+    },
+    {
+      "boat": false,
+      "id": "dungeon_wall_corner_br",
+      "name": "Dungeon Wall, Corner Bottom Right",
+      "walkable": false,
+      "obstructs": true,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeon/walls/junctions/wall_corner_br.png",
       "tag": "dungeon:walls:junctions"
     },
     {

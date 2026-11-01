@@ -18,8 +18,8 @@
       "wisdom": 8,
       "sprite": "person/dwarf_female_paladin.png",
       "equipped": {
-        "hands": "dagger",
-        "body": "leather"
+        "body": "cloth",
+        "hands": "dagger"
       },
       "inventory": []
     },
@@ -40,8 +40,8 @@
       "wisdom": 18,
       "sprite": "person/person_female_cleric.png",
       "equipped": {
-        "hands": "mace",
-        "body": "leather"
+        "hands": "club",
+        "body": "cloth"
       },
       "inventory": []
     },
@@ -85,7 +85,7 @@
       "sprite": "person/halfling_female_thief.png",
       "equipped": {
         "hands": "dagger",
-        "body": "leather"
+        "body": "cloth"
       },
       "inventory": []
     }

@@ -10,7 +10,7 @@
  *
  * Layout:
  *   [ thumb ] [ text input ] [ Pick… / Done ] [ ✕ clear ]
- *   (expands when open) ┌─ filter bar + sprite grid grouped by category ─┐
+ *   (expands when open) ┌─ filter bar + collapsible sprite folder tree ─┐
  *
  * Click a sprite tile → field value becomes the canonical form
  * (category/file.png for "path" fields, just the stem for "icon").
@@ -25,6 +25,12 @@ import {
   type SpriteFieldConfig,
 } from "./spriteFields";
 import { spriteUrl, fetchSpriteCatalog } from "@/data_model/spriteUrl";
+import {
+  SpriteFolderTree,
+  TreeToggleAll,
+  useCollapsedFolders,
+} from "./SpriteFolderTree";
+import { allFolderPaths, buildSpriteTree } from "./spriteTree";
 
 interface SpriteIndex {
   _comment?: string;
@@ -169,74 +175,79 @@ function SpriteGrid({
   currentValue: string;
   onPick: (category: string, filename: string) => void;
 }) {
-  const categories = Object.keys(index.categories);
-  // Reorder so the preferred category appears first.
-  const ordered = [
-    ...(categories.includes(preferredCategory) ? [preferredCategory] : []),
-    ...categories.filter((c) => c !== preferredCategory),
-  ];
+  const collapsed = useCollapsedFolders("wilderstep.spritePicker.collapsed");
+  const names = Object.keys(index.categories);
+  // Reorder so the preferred category appears first; below that the
+  // tree follows the sprites/ folder structure exactly.
+  const ordered: Record<string, string[]> = {};
+  for (const c of [
+    ...(names.includes(preferredCategory) ? [preferredCategory] : []),
+    ...names.filter((c) => c !== preferredCategory),
+  ]) {
+    ordered[c] = index.categories[c];
+  }
+  const fullTree = buildSpriteTree(ordered);
+  const tree = buildSpriteTree(
+    ordered,
+    (path) => !filter || path.toLowerCase().includes(filter),
+  );
 
   return (
-    <div className="max-h-96 overflow-auto pr-1">
-      <div className="space-y-3">
-        {ordered.map((cat) => {
-          const files = index.categories[cat];
-          const filtered = filter
-            ? files.filter((f) => f.toLowerCase().includes(filter))
-            : files;
-          if (filtered.length === 0) return null;
-          return (
-            <section key={cat}>
-              <h3 className="mb-1 text-xs uppercase tracking-wide text-parchment/65">
-                {cat} · {filtered.length}
-                {filtered.length !== files.length ? ` of ${files.length}` : ""}
-              </h3>
-              <ul className="grid grid-cols-[repeat(auto-fill,minmax(56px,1fr))] gap-1.5">
-                {filtered.map((file) => {
-                  const path = `${cat}/${file}`;
-                  // Leaf name only — files may sit in subfolders
-                  // ("house/chapel/door.png"); the full path is the tooltip.
-                  const stem = file
-                    .slice(file.lastIndexOf("/") + 1)
-                    .replace(/\.[a-z]+$/i, "");
-                  // Mark the current selection if either format matches.
-                  const isCurrent =
-                    currentValue === path ||
-                    currentValue === stem ||
-                    currentValue === `game/${path}` ||
-                    (currentValue.includes("/") &&
-                      currentValue.endsWith(`/${file}`));
-                  return (
-                    <li key={path}>
-                      <button
-                        type="button"
-                        onClick={() => onPick(cat, file)}
-                        className={`flex w-full flex-col items-center gap-0.5 rounded border p-1 transition ${
-                          isCurrent
-                            ? "border-ember/60 bg-ember/15"
-                            : "border-parchment/10 bg-ink/40 hover:border-parchment/40 hover:bg-ink/60"
-                        }`}
-                        title={`${cat}/${file}`}
-                      >
-                        <img
-                          src={spriteUrl(`${cat}/${file}`)}
-                          alt={file}
-                          width={40}
-                          height={40}
-                          style={{ imageRendering: "pixelated" }}
-                          className="h-10 w-10 object-contain"
-                        />
-                        <span className="w-full truncate text-xs text-parchment/80">
-                          {stem}
-                        </span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            </section>
-          );
-        })}
+    <div>
+      <div className="mb-1 flex justify-end">
+        <TreeToggleAll
+          onExpand={() => collapsed.setMany(allFolderPaths(fullTree), false)}
+          onCollapse={() => collapsed.setMany(allFolderPaths(fullTree), true)}
+        />
+      </div>
+      <div className="max-h-96 overflow-auto pr-1">
+        <SpriteFolderTree
+          root={tree}
+          totals={fullTree}
+          collapsed={collapsed}
+          forceOpen={filter.length > 0}
+          compact
+          gridClassName="grid grid-cols-[repeat(auto-fill,minmax(56px,1fr))] gap-1.5"
+          renderSprite={(path) => {
+            const slash = path.indexOf("/");
+            const cat = path.slice(0, slash);
+            const file = path.slice(slash + 1);
+            // Leaf name only — the full path is the tooltip.
+            const stem = file
+              .slice(file.lastIndexOf("/") + 1)
+              .replace(/\.[a-z]+$/i, "");
+            // Mark the current selection if either format matches.
+            const isCurrent =
+              currentValue === path ||
+              currentValue === stem ||
+              currentValue === `game/${path}` ||
+              (currentValue.includes("/") && currentValue.endsWith(`/${file}`));
+            return (
+              <button
+                type="button"
+                onClick={() => onPick(cat, file)}
+                className={`flex w-full flex-col items-center gap-0.5 rounded border p-1 transition ${
+                  isCurrent
+                    ? "border-ember/60 bg-ember/15"
+                    : "border-parchment/10 bg-ink/40 hover:border-parchment/40 hover:bg-ink/60"
+                }`}
+                title={path}
+              >
+                <img
+                  src={spriteUrl(path)}
+                  alt={file}
+                  width={40}
+                  height={40}
+                  style={{ imageRendering: "pixelated" }}
+                  className="h-10 w-10 object-contain"
+                />
+                <span className="w-full truncate text-xs text-parchment/80">
+                  {stem}
+                </span>
+              </button>
+            );
+          }}
+        />
       </div>
     </div>
   );

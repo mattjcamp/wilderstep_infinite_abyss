@@ -82,7 +82,7 @@
     "dungeon/wall_window.png": "dungeon/walls/room_walls/wall_window.png",
     "indoor/fireplace.png": "shop/fireplace.png",
     "indoor/floor_planks.png": "shop/floor_planks.png",
-    "indoor/floor_planks_alt.png": "shop/floor_planks_alt.png",
+    "indoor/floor_planks_alt.png": "shop/floor_planks.png",
     "indoor/notice_board.png": "shop/notice_board.png",
     "indoor/shop_door.png": "shop/shop_door.png",
     "indoor/table_h_left.png": "shop/table_h_left.png",

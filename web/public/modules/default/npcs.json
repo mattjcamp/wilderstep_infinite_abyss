@@ -113,6 +113,22 @@
       ],
       "behavior": "dance",
       "exploration_xp": 0
+    },
+    {
+      "id": "traveler",
+      "name": "Traveler",
+      "sprite": "person/person_female_villager_poor.png",
+      "counter": null,
+      "personal_history": "This is a fellow traveler, but she is wounded and doesn't have much longer to live.",
+      "dialogs": [
+        {
+          "id": "dialog_1",
+          "title": "Thank the Old Gods",
+          "text": "Oh thank the old gods.... Someone else survived those nasty Orcs. Damn the Orc King, our tribe is no more. Gather what you can from what is left of our caravan. Please seek out the Orc King and destroy him and his kin. Gasp..."
+        }
+      ],
+      "behavior": "still",
+      "exploration_xp": 100
     }
   ]
 }
