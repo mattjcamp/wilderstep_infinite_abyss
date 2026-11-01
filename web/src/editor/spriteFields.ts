@@ -67,6 +67,10 @@ const PER_MODEL: Record<string, Record<string, SpriteFieldConfig>> = {
   spells: {
     icon: { category: "spells", format: "stem" },
   },
+  // Ability icons (race + class) likewise — sprites/abilities/.
+  abilities: {
+    icon: { category: "abilities", format: "stem" },
+  },
 };
 
 /** Returns the picker config for a field, or null if the field isn't

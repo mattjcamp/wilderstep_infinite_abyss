@@ -44,6 +44,7 @@ The "Used?" column reflects the v2 TypeScript implementation under `web/`. The c
 |---|---|---|---|---|
 | `id` | string | yes | Stable identifier in snake_case (e.g. `"pick_locks"`, `"infravision"`, `"turn_undead"`). Granters (Race, Character Class, others) will reference Abilities by this id. | TBD |
 | `name` | string | yes | Display label (e.g. `"Pick Locks"`, `"Infravision"`, `"Turn Undead"`). | TBD |
+| `icon` | string | no | Icon stem in the `abilities/` sprite folder (`sprites/abilities/<icon>.png`) — shown beside the ability in the battle Abilities menu, on the character sheet, and as the record thumbnail in the editor. The Default module ships one per ability, named after the ability id: steel-rimmed for class abilities, emerald-rimmed for race abilities. | Yes |
 | `type` | string | yes | Origin discriminator. One of `"race"`, `"class"`, `"other"`. | TBD |
 | `description` | string | yes | UI / tooltip text — flavor + mechanics summary as shown on the character sheet. | TBD |
 | `duration` | string \| number | yes | Default lifetime. Numbers are step counts (overworld abilities like Galadriel's Light) or turns (combat). Strings: `"permanent"`, `"instant"`, `"until_save"`, or other context-specific values. Same conventions as Effect `duration`. | TBD |

@@ -14,12 +14,15 @@ import { join } from "node:path";
 const PUBLIC = join(__dirname, "../../public");
 const MODULES = join(PUBLIC, "modules");
 const SPRITE_RE =
-  /^(map|indoor|dungeon|cave|overworld|objects|town|person|monster|item|spells|actions)\/[^"]+\.png$/;
+  /^(map|indoor|dungeon|cave|overworld|objects|town|person|monster|item|spells|abilities|actions)\/[^"]+\.png$/;
 
 /** Folder a bare `icon` stem resolves into, by data file: spell icons
- *  live in `spells/`, everything else's (items, chests, …) in `item/`. */
+ *  live in `spells/`, ability icons in `abilities/`, everything else's
+ *  (items, chests, …) in `item/`. */
 function iconFolderFor(file: string): string {
-  return file === "spells.json" ? "spells" : "item";
+  if (file === "spells.json") return "spells";
+  if (file === "abilities.json") return "abilities";
+  return "item";
 }
 
 function collect(node: unknown, out: Set<string>, iconFolder: string, key = ""): void {

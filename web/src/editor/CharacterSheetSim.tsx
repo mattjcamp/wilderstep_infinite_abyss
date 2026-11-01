@@ -317,20 +317,13 @@ export function CharacterSheetSim({
     .filter((a): a is PartyAbilityRef => Boolean(a));
 
   // ── Resolve known spells ─────────────────────────────────────────
-  // A spell shows up on the character sheet's "Spells" list (with a
-  // Cast button) when ALL of:
+  // Every spell the caster knows shows on the sheet's "Spells" list:
   //   - the class's casting_type[] includes the spell's casting_type
   //   - character.level >= per-class override OR global min_level
-  //   - the spell's `usable_in` either omits the field OR contains
-  //     "party" — i.e. the spell can actually be cast from the party
-  //     screen. Spells that can ONLY be cast in a specific context
-  //     (Knock from the lock dialog, Long Shanks in combat, …) carry
-  //     a `usable_in` list that excludes "party"; rendering a Cast
-  //     button for those would just produce an "isn't wired up out
-  //     of combat" refusal, which is what the user reported for
-  //     Knock specifically. Empty / absent `usable_in` keeps the
-  //     legacy behaviour so a hand-rolled spell without the field
-  //     still surfaces — the filter is opt-out, not opt-in.
+  // Only spells castable from the party screen (spellUsableOnSheet —
+  // `usable_in` absent/empty or containing "party") get a Cast button;
+  // battle-only (and other context-only) spells are listed with a note
+  // saying where they can be cast instead.
   const knownSpells: PartySpellRef[] = (klass?.casting_type
     ? spells.filter((s) => {
         if (!s.casting_type) return false;
@@ -338,13 +331,6 @@ export function CharacterSheetSim({
         const gate =
           s.class_min_levels?.[klass.id] ?? s.min_level ?? 1;
         if ((character.level ?? 1) < gate) return false;
-        // usable_in gate: when the field is present + non-empty, it
-        // must include "party" for the sheet's Cast button to make
-        // sense. Absent / empty = unrestricted (legacy behaviour).
-        const usable = s.usable_in;
-        if (Array.isArray(usable) && usable.length > 0) {
-          if (!usable.includes("party")) return false;
-        }
         return true;
       })
     : []) as PartySpellRef[];
@@ -684,8 +670,7 @@ export function CharacterSheetSim({
           case "spells": {
             const s = d.knownSpells[idx];
             if (!s) break;
-            const usable = (s.usable_in ?? []).includes("party");
-            if (!usable) break;
+            if (!spellUsableOnSheet(s)) break;
             if (h.onCastSpell) h.onCastSpell(d.character.id, s.id);
             else
               h.setLastAction(
@@ -1537,8 +1522,9 @@ function AbilitySection({
                 ].join(" ")}
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm text-parchment/95">
-                    {a.name ?? a.id}
+                  <span className="flex items-center gap-2 text-sm text-parchment/95">
+                    <SpriteIcon icon={a.icon} category="abilities" />
+                    <span>{a.name ?? a.id}</span>
                   </span>
                   {usable ? (
                     cooldownLabel ? (
@@ -1586,6 +1572,50 @@ function AbilitySection({
   );
 }
 
+/** True when the spell can be cast from the party / character sheet:
+ *  `usable_in` absent or empty (unrestricted) or listing "party". */
+function spellUsableOnSheet(spell: PartySpellRef): boolean {
+  const u = spell.usable_in;
+  return !Array.isArray(u) || u.length === 0 || u.includes("party");
+}
+
+/** Where a sheet-uncastable spell CAN be cast, for its row note. */
+function spellContextNote(spell: PartySpellRef): string {
+  const u = (spell.usable_in ?? []).filter((c) => c !== "party");
+  if (u.length === 1 && u[0] === "battle") return "Battle only — cast it from the Cast menu during combat.";
+  return `Can only be cast in: ${u.join(", ")}.`;
+}
+
+/** Spell / ability icon (sprites/<category>/<icon>.png) at a crisp
+ *  28px. An empty, same-size frame stands in when there's no icon or
+ *  the file is missing, so names stay aligned down the list. */
+function SpriteIcon({
+  icon,
+  category,
+}: {
+  icon?: string;
+  category: "spells" | "abilities";
+}) {
+  const src = icon ? resolveSpritePath(icon, { category, format: "stem" }) : null;
+  const [broken, setBroken] = useState(false);
+  useEffect(() => setBroken(false), [src]);
+  return (
+    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded border border-parchment/15 bg-black/30">
+      {src && !broken ? (
+        <img
+          src={src}
+          alt=""
+          width={28}
+          height={28}
+          style={{ imageRendering: "pixelated" }}
+          className="h-7 w-7 object-contain"
+          onError={() => setBroken(true)}
+        />
+      ) : null}
+    </span>
+  );
+}
+
 function SpellRow({
   spell,
   onCast,
@@ -1601,7 +1631,7 @@ function SpellRow({
    *  button) parks the keyboard cursor here. */
   onFocus?: () => void;
 }) {
-  const usable = (spell.usable_in ?? []).includes("party");
+  const usable = spellUsableOnSheet(spell);
   return (
     <li
       onClick={onFocus}
@@ -1615,12 +1645,15 @@ function SpellRow({
       ].join(" ")}
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="text-sm text-parchment/95">
+        <span className="flex items-center gap-2 text-sm text-parchment/95">
+          <SpriteIcon icon={spell.icon} category="spells" />
+          <span>
           {spell.name ?? spell.id}
           <span className="ml-2 font-mono text-xs text-parchment/65">
             MP {spell.mp_cost ?? 0}
             {spell.casting_type ? ` · ${spell.casting_type}` : ""}
             {spell.min_level ? ` · L${spell.min_level}+` : ""}
+          </span>
           </span>
         </span>
         {usable ? (
@@ -1632,16 +1665,19 @@ function SpellRow({
             Cast
           </button>
         ) : (
-          <span className="text-xs uppercase tracking-wider text-parchment/55">
-            {(spell.usable_in ?? []).includes("battle")
-              ? "Combat"
-              : "—"}
+          <span className="shrink-0 rounded border border-sky-300/30 bg-sky-900/20 px-1.5 py-0.5 text-[11px] uppercase tracking-wider text-sky-200/80">
+            {(spell.usable_in ?? []).includes("battle") ? "Battle only" : "Restricted"}
           </span>
         )}
       </div>
       {spell.description ? (
         <p className="mt-0.5 text-xs text-parchment/80">
           {spell.description}
+        </p>
+      ) : null}
+      {!usable ? (
+        <p className="mt-0.5 text-xs italic text-sky-200/70">
+          {spellContextNote(spell)}
         </p>
       ) : null}
     </li>

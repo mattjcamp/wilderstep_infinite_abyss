@@ -68,6 +68,10 @@ export interface Ability {
   /** Per-ability config bag. `params.action` is the dispatch key
    *  for combat-active abilities. */
   params: AbilityParams | null;
+  /** Icon stem under sprites/abilities/ (e.g. "turn_undead" →
+   *  abilities/turn_undead.png). Shown in the combat Abilities picker
+   *  and on the character sheet, like Spell.icon. */
+  icon?: string;
 }
 
 interface RawAbility {
@@ -80,6 +84,7 @@ interface RawAbility {
   party_effect?: boolean;
   usable_in?: string[] | string;
   params?: AbilityParams | null;
+  icon?: string;
 }
 
 interface RawAbilitiesFile {

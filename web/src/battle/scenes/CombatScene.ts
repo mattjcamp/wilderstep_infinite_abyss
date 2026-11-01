@@ -437,6 +437,9 @@ const actionIconUrl = (id: ActionId): string => spriteUrl(`actions/${id}.png`);
  *  the spell names no icon. */
 const spellIconUrl = (spell: { icon?: string }): string | null =>
   spell.icon ? spriteUrl(`spells/${spell.icon}.png`) : null;
+/** Icon sprite for a race / class ability — `abilities/<icon>.png`. */
+const abilityIconUrl = (ability: { icon?: string }): string | null =>
+  ability.icon ? spriteUrl(`abilities/${ability.icon}.png`) : null;
 
 /** Icon sprite for an item — `item/<item.icon>.png`, or null. */
 const itemIconUrl = (item: { icon?: string | null } | null | undefined): string | null =>
@@ -1129,6 +1132,7 @@ export class CombatScene extends Phaser.Scene {
         ...PARTY_ACTIONS.map((a) => actionIconUrl(a.id)),
         BACK_ICON_URL(),
         ...this.spells.map((sp) => spellIconUrl(sp)),
+        ...this.abilities.map((ab) => abilityIconUrl(ab)),
         ...[...this.items.values()].map((it) => itemIconUrl(it)),
       ];
       for (const url of iconUrls) {
@@ -3964,7 +3968,12 @@ export class CombatScene extends Phaser.Scene {
    *  same shape as `refreshSpellPicker`. */
   private refreshAbilityPicker(): void {
     const lines = this.abilityOptions.map((a) => a.name);
-    this.renderPicker("PICK ABILITY", lines, this.pickerCursor);
+    this.renderPicker(
+      "PICK ABILITY",
+      lines,
+      this.pickerCursor,
+      this.abilityOptions.map((a) => abilityIconUrl(a)),
+    );
   }
 
   /** Route a picked ability to its resolver. Branches on

@@ -4,6 +4,7 @@
     {
       "id": "pick_locks",
       "name": "Pick Locks",
+      "icon": "pick_locks",
       "animation_id": null,
       "type": "class",
       "description": "Pick locked doors and chests — d20 + DEX mod vs DC 12, one lockpick consumed per attempt.",
@@ -16,6 +17,7 @@
     {
       "id": "detect_traps",
       "name": "Detect Traps",
+      "icon": "detect_traps",
       "animation_id": null,
       "type": "class",
       "description": "Hidden traps are revealed before the party steps on them.",
@@ -26,6 +28,7 @@
     {
       "id": "backstab",
       "name": "Backstab",
+      "icon": "backstab",
       "animation_id": null,
       "type": "class",
       "description": "Critical hits with daggers on a successful DEX save — the humble dagger becomes a devastating weapon.",
@@ -38,6 +41,7 @@
     {
       "id": "shadow_step",
       "name": "Shadow Step",
+      "icon": "shadow_step",
       "animation_id": null,
       "type": "class",
       "description": "Move after attacking — true hit-and-run play.",
@@ -47,6 +51,7 @@
     {
       "id": "turn_undead",
       "name": "Turn Undead",
+      "icon": "turn_undead",
       "animation_id": "turn_undead",
       "type": "class",
       "description": "Channel holy energy at every undead on the battlefield. Each one must make a Wisdom save (d20 + WIS mod vs DC 10 + caster's WIS mod) or be destroyed outright; those that succeed are still seared for 50% of their HP in radiant damage. Powerful undead (vampires, liches, …) add their turn resistance to the save and are never destroyed outright — on a failed save they are seared and TURNED, fleeing the holy light for 1d4 turns.",
@@ -68,6 +73,7 @@
     {
       "id": "dual_casting",
       "name": "Dual Casting",
+      "icon": "dual_casting",
       "animation_id": null,
       "type": "class",
       "description": "Access to both the priest and sorcerer spell catalogs — the only class with both.",
@@ -77,6 +83,7 @@
     {
       "id": "herbalism",
       "name": "Herbalism",
+      "icon": "herbalism",
       "animation_id": null,
       "type": "class",
       "description": "Nature lore spots reagents in the wild while travelling. Each step on a foraging tile (grass, forest, …) has a small chance to turn up a potion reagent. Alchemists in particular benefit from a doubled find rate.",
@@ -95,6 +102,7 @@
     {
       "id": "infravision",
       "name": "Infravision",
+      "icon": "infravision",
       "animation_id": null,
       "type": "race",
       "description": "Pierces darkness, revealing the world in shades of red. The bearer can see in absolute darkness without needing a torch.",
@@ -105,6 +113,7 @@
     {
       "id": "pickpocket",
       "name": "Pickpocket",
+      "icon": "pickpocket",
       "animation_id": null,
       "type": "race",
       "description": "Attempt to steal items from town NPCs. Once per NPC, with a chance of failure.",
@@ -117,6 +126,7 @@
     {
       "id": "tinker",
       "name": "Tinker",
+      "icon": "tinker",
       "animation_id": null,
       "type": "race",
       "description": "Once per in-game day, fashion a small trinket",
@@ -137,6 +147,7 @@
     {
       "id": "fast_learner",
       "name": "Fast Learner",
+      "icon": "fast_learner",
       "animation_id": null,
       "type": "race",
       "description": "Requires only 1125 XP per level instead of the standard 1500, leveling up roughly 25% faster than other races.",
@@ -148,6 +159,7 @@
     {
       "id": "nimble",
       "name": "Nimble",
+      "icon": "nimble",
       "animation_id": null,
       "type": "race",
       "description": "Allows extra movement",
@@ -160,6 +172,7 @@
     {
       "id": "brew_potion",
       "name": "Brew Potion",
+      "icon": "brew_potion",
       "animation_id": null,
       "type": "class",
       "description": "Combine regents using the guidance of a recipe to create a potion",
@@ -172,6 +185,7 @@
     {
       "id": "craft_arrows",
       "name": "Craft Arrows",
+      "icon": "craft_arrows",
       "animation_id": null,
       "type": "class",
       "description": "Allows the character to craft a bundle of arrows or bolts once per day.",
@@ -184,6 +198,7 @@
     {
       "id": "smite_undead",
       "name": "Smite Undead",
+      "icon": "smite_undead",
       "animation_id": null,
       "type": "class",
       "description": "Attacks against undead creatures deal double damage",
@@ -193,6 +208,7 @@
     {
       "id": "craft_fire_arrows",
       "name": "Craft Fire Arrows",
+      "icon": "craft_fire_arrows",
       "animation_id": null,
       "type": "class",
       "description": "Allows the character to craft a bundle of fire arrows or fire bolts once per day.",

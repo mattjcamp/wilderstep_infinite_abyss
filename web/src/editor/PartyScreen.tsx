@@ -152,6 +152,9 @@ export interface PartyClassRef {
 export interface PartyAbilityRef {
   id: string;
   name?: string;
+  /** Icon stem under sprites/abilities/ — shown beside the name on
+   *  the character sheet. */
+  icon?: string;
   type?: "race" | "class" | "other" | string;
   description?: string;
   duration?: number | string | null;
@@ -211,6 +214,9 @@ export interface PartyItemRef {
 export interface PartySpellRef {
   id: string;
   name?: string;
+  /** Icon stem under sprites/spells/ (e.g. "fireball" →
+   *  spells/fireball.png) — shown beside the name on the sheet. */
+  icon?: string;
   description?: string;
   casting_type?: string;
   min_level?: number;
