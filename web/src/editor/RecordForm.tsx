@@ -32,6 +32,11 @@ import { getMapFieldConfig } from "./mapFields";
 import { TagsPicker } from "./TagsPicker";
 import { normalizeTags } from "./recordTags";
 import { DialogsEditor } from "./DialogsEditor";
+import { LogEventEntriesEditor } from "./LogEventEntriesEditor";
+import {
+  LOG_EVENT_REPEAT_CHOICES,
+  normalizeLogEventEntries,
+} from "@/play/logEvents";
 import { npcDialogLinesForEditing } from "@/data_model/npcDialogs";
 import { IdListPicker } from "./IdListPicker";
 import { getIdListFieldConfig } from "./idListFields";
@@ -67,6 +72,7 @@ const CHOICE_FIELDS: Record<
   Record<string, ReadonlyArray<{ value: string; label: string }>>
 > = {
   npcs: { behavior: NPC_BEHAVIORS },
+  log_events: { repeat: LOG_EVENT_REPEAT_CHOICES },
 };
 
 function getChoiceField(
@@ -564,6 +570,35 @@ function FieldRow({
           <span className={labelClasses}>dialogs</span>
           <DialogsEditor
             lines={npcDialogLinesForEditing(parsed)}
+            onChange={(next) => onChange(JSON.stringify(next, null, 2))}
+          />
+        </div>
+      );
+    }
+  }
+  // Log Event `entries` — rows of (steps, text) instead of raw JSON.
+  // Unparseable JSON falls through to the textarea so it's recoverable.
+  if (spec.key === "entries" && modelKey === "log_events") {
+    let parsed: unknown = null;
+    let parseable = true;
+    try {
+      parsed = value.trim() === "" ? [] : JSON.parse(value);
+    } catch {
+      parseable = false;
+    }
+    if (parseable) {
+      const raw = Array.isArray(parsed) ? parsed : [];
+      // Keep blank-text rows while editing (normalize drops them).
+      const entries = raw.map((e) => {
+        const n = normalizeLogEventEntries([{ ...(e as object), text: "x" }])[0];
+        const text = (e as { text?: unknown })?.text;
+        return { steps: n?.steps ?? 0, text: typeof text === "string" ? text : "" };
+      });
+      return (
+        <div className="flex items-start gap-3">
+          <span className={labelClasses}>entries</span>
+          <LogEventEntriesEditor
+            entries={entries}
             onChange={(next) => onChange(JSON.stringify(next, null, 2))}
           />
         </div>

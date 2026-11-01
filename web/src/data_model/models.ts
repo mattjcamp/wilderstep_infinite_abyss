@@ -30,6 +30,7 @@ export type ModelKey =
   | "spawns"
   | "encounters"
   | "traps"
+  | "log_events"
   | "character_classes"
   | "races"
   | "map_tiles"
@@ -357,6 +358,24 @@ const DEFS: Record<ModelKey, ModelDef> = {
       { field: "effect", label: "Effect", format: asString },
     ],
   },
+  log_events: {
+    key: "log_events",
+    label: "Log Events",
+    fileName: "log_events.json",
+    collectionKey: "log_events",
+    docKey: "log_event",
+    blurb: "Lines that appear in the exploration log a set number of steps after entering a map",
+    columns: [
+      { field: "name", label: "Name" },
+      { field: "map_id", label: "Map" },
+      { field: "repeat", label: "Repeat", format: (v) => (v === "every_visit" ? "Every visit" : "Once") },
+      {
+        field: "entries",
+        label: "Lines",
+        format: (v) => (Array.isArray(v) ? `${v.length}` : ""),
+      },
+    ],
+  },
   character_classes: {
     key: "character_classes",
     label: "Character Classes",
@@ -508,6 +527,7 @@ const SINGULAR_LABELS: Record<ModelKey, string> = {
   spawns: "Spawn",
   encounters: "Encounter",
   traps: "Trap",
+  log_events: "Log Event",
   character_classes: "Character Class",
   races: "Race",
   map_tiles: "Map Tile",

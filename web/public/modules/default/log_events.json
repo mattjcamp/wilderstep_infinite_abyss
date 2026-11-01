@@ -1,0 +1,25 @@
+{
+  "_comment": "Log Events — authored lines that appear in the exploration log a set number of steps after the party enters a map (tutorials, descriptions that unfold as the party explores). map_id: the map. repeat: 'once' (each line shown a single time per save, default) or 'every_visit'. entries: [{ steps, text }] — steps counts moves on the map since arriving (0 = on arrival). See docs/data_dictionary/log_event.md.",
+  "log_events": [
+    {
+      "id": "destroyed_caravan_intro",
+      "name": "Destroyed Caravan — arrival",
+      "map_id": "destroyed_caravan",
+      "repeat": "once",
+      "entries": [
+        {
+          "steps": 0,
+          "text": "Smoke still curls from the wrecked wagons. Whoever did this left in a hurry."
+        },
+        {
+          "steps": 4,
+          "text": "Tip: use the arrow keys or WASD to move. Walk over items to pick them up."
+        },
+        {
+          "steps": 10,
+          "text": "Tip: press L to open the full Adventure Log, and H for help."
+        }
+      ]
+    }
+  ]
+}

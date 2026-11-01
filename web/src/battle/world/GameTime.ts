@@ -188,6 +188,12 @@ export function dateStr(c: GameClock): string {
   return `${monthAbbrev(c)} ${dayOfMonth(c)} ${dayAbbrev(c)}`;
 }
 
+/** Day of the adventure, counting the day the party set out as Day 1.
+ *  Rolls over at midnight (calendar days), not every 24h of play. */
+export function adventureDay(c: GameClock, start: GameClock): number {
+  return Math.max(1, dayIndex(c) - dayIndex(start) + 1);
+}
+
 export function fullStr(c: GameClock): string {
   return `${dateStr(c)} ${timeStr(c)}`;
 }

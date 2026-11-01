@@ -2,9 +2,16 @@
   "_comment": "Draft module created in the editor. Export this file and drop it into web/public/modules/the-crystal-skull/module.json.",
   "id": "the-crystal-skull",
   "title": "The Crystal Skull",
-  "description": "Darkness... Heat washes over your body and you slowly open your eyes. The smell of wood smoke mixed with burning flesh roils your stomach. The scene comes into focus before your eyes, but as soon as you can see you squeeze your eyes shot. You try to extinguish the images of your dead parents, sister and everyone else you have know. Bodies scattered among the wreckage of your caravan.  What happened here? You retch...",
-  "author": "",
+  "description": "Darkness... Heat washes over your body and you slowly open your eyes. The smell of wood smoke mixed with burning flesh roils your stomach. The scene comes into focus before your eyes, but as soon as you can see you squeeze your eyes shot. You try to extinguish the images of your dead parents, sister and everyone else you have ever known. Bodies scattered among the wreckage of your caravan.  What happened here? You retch...",
   "version": "0.1.0",
-  "role": "playable",
-  "extends": "default"
+  "extends": "default",
+  "settings": {
+    "exploration_xp": {
+      "map": 25,
+      "npc": 25
+    }
+  },
+  "soundtrack": [
+    "/audio/winds_of_destiny.mp3"
+  ]
 }

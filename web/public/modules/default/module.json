@@ -5,5 +5,11 @@
   "description": "The base module — canonical effects, classes, races, items, monsters, etc. Other modules extend this one and override records by id.",
   "author": "Matt",
   "version": "0.1.0",
-  "role": "core"
+  "role": "core",
+  "settings": {
+    "exploration_xp": {
+      "map": 25,
+      "npc": 25
+    }
+  }
 }

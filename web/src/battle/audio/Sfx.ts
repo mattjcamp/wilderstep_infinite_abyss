@@ -269,6 +269,15 @@ function genChirp(ac: AudioContext, out: AudioNode, t0: number): void {
   tone(ac, out, noteHz("A5"), t0 + 0.05, 0.07, 0.18, "square", 0.002, 0.04);
 }
 
+/** Exploration-log chime — a soft two-note bell (B5 → E6) with a faint
+ *  octave shimmer. Quiet on purpose: it plays on every notable log
+ *  line, so it has to sit under pickups, fanfares and the soundtrack. */
+function genLogChime(ac: AudioContext, out: AudioNode, t0: number): void {
+  tone(ac, out, noteHz("B5"), t0, 0.22, 0.09, "triangle", 0.004, 0.15);
+  tone(ac, out, noteHz("E6"), t0 + 0.07, 0.34, 0.08, "triangle", 0.004, 0.22);
+  tone(ac, out, noteHz("E7"), t0 + 0.07, 0.2, 0.025, "sine", 0.004, 0.15);
+}
+
 function genRestComplete(ac: AudioContext, out: AudioNode, t0: number): void {
   // "Camp rest complete" cue. Three beats:
   //   1. A low triangle bed (~G3) opening softly — settles the ear,
@@ -428,6 +437,8 @@ const GENERATORS: Record<string, Generator> = {
   defeat:             genDefeat,
   encounter:          genEncounter,
   chirp:              genChirp,
+  // Exploration log — a notable line just landed in the side panel.
+  log_chime:          genLogChime,
   level_up:           genLevelUp,
   // Item-driven
   rest_complete:      genRestComplete,

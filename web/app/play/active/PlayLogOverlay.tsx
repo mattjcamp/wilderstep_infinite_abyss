@@ -11,18 +11,30 @@
  * renders the whole list. Newest at the bottom — same convention
  * the bottom strip uses.
  *
+ * Lists only the notable lines (XP, quests, finds, fights, traps, lock
+ * attempts — see notableCategory); routine feedback such as monster
+ * spawns and map links stays in the in-canvas strip only.
+ *
  * Read-only. ESC and L close.
  */
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
+import { notableCategory } from "@/play/explorationLog";
 
 export function PlayLogOverlay({
-  messages,
+  messages: allMessages,
+  storyLines,
   onClose,
 }: {
   messages: ReadonlyArray<string>;
+  /** Authored Log Event lines — always listed. */
+  storyLines?: ReadonlySet<string>;
   onClose: () => void;
 }) {
+  const messages = useMemo(
+    () => allMessages.filter((m) => notableCategory(m, storyLines) !== null),
+    [allMessages, storyLines],
+  );
   // ESC and L close. Capture so the sim's movement keys don't fire
   // under the modal. Arrow keys are swallowed too — the body might
   // try to scroll otherwise.
@@ -87,13 +99,13 @@ export function PlayLogOverlay({
         </div>
         {messages.length === 0 ? (
           <p className="px-3 py-6 text-center text-sm text-parchment/55">
-            No log messages yet. Walk around and interact with the
-            world to see entries here.
+            Nothing notable yet — XP, quests, finds, fights and traps
+            will show up here.
           </p>
         ) : (
           <ol
             ref={listRef}
-            className="flex-1 overflow-auto px-3 py-2 font-mono text-xs leading-snug text-parchment/80"
+            className="flex-1 overflow-auto px-3 py-2 text-sm leading-snug text-parchment/85"
           >
             {messages.map((msg, i) => (
               <li

@@ -183,6 +183,9 @@ const EXTRA_FIELD_DEFAULTS: Partial<Record<ModelKey, Record<string, unknown>>> =
   // Character Classes: the portrait the character creator suggests for
   // this class (blank = no suggestion; the player picks one).
   character_classes: { default_sprite: "" },
+  // Log Events: map + repeat mode + the (steps, text) lines, so a new
+  // record shows the map picker and the lines editor straight away.
+  log_events: { id: "", name: "", map_id: "", repeat: "once", entries: [] },
   // Monsters and Encounters list every field the game reads, so the
   // form shows them all even when existing records are sparse (e.g.
   // a freshly started catalog). Values double as the defaults for a

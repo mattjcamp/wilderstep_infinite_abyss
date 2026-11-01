@@ -43,7 +43,9 @@ const FIELDS: Record<string, MapFieldConfig> = {
  *  sprite/animation helpers; per-model overrides aren't wired today. */
 export function getMapFieldConfig(
   fieldKey: string,
-  _modelKey?: string,
+  modelKey?: string,
 ): MapFieldConfig | null {
+  // Log Events pick any map (no tag gate) for the map they narrate.
+  if (modelKey === "log_events" && fieldKey === "map_id") return {};
   return FIELDS[fieldKey] ?? null;
 }

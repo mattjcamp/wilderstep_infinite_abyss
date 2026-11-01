@@ -34,7 +34,7 @@
 
 import { getModuleSource } from "@/data_model/sourceConfig";
 import { spriteUrl, seedSpriteRouting } from "@/data_model/spriteUrl";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { withBasePath } from "@/util/basePath";
@@ -51,6 +51,17 @@ import {
   type PlayQuestCelebrationKind,
 } from "./PlayQuestCelebration";
 import { PlayLogOverlay } from "./PlayLogOverlay";
+import { PlayExplorationPanel } from "./PlayExplorationPanel";
+import {
+  ensureMoonTextures,
+  moonTextureKey,
+} from "@/play/moonPhaseTexture";
+import { setActiveModule, loadModuleConfig } from "@/battle/world/Module";
+import {
+  dueLogEventLines,
+  normalizeLogEvents,
+  type LogEventRecord,
+} from "@/play/logEvents";
 import { PlaySaveMenuOverlay } from "./PlaySaveMenuOverlay";
 import { PlayCounterShopOverlay } from "./PlayCounterShopOverlay";
 import { PlayNpcDialogOverlay } from "./PlayNpcDialogOverlay";
@@ -138,11 +149,13 @@ import { Soundtrack } from "@/audio/SoundtrackPlayer";
 import {
   MINUTES_PER_STEP,
   advanceClock,
-  fullStr,
+  adventureDay,
+  clockFromDate,
+  lunarPhaseIndex,
+  timeStr,
   isDawn,
   isDay,
   isDusk,
-  lunarPhaseName,
   makeClock,
 } from "@/battle/world/GameTime";
 import { isWaterCell } from "@/sim/tileTags";
@@ -153,6 +166,13 @@ import { isWaterCell } from "@/sim/tileTags";
  *  keep enough history to actually review a session. 200 lines is
  *  a few KB of strings; cheap to hold in memory. */
 const MAX_LOG = 200;
+
+/** Bottom-bar clock readout: "DAY 3  ·  3:45PM" (the moon is an icon
+ *  painted beside it). Day counts from the adventure's first day. */
+function clockBarText(clockMinutes: number, startMinutes: number): string {
+  const now = { totalMinutes: clockMinutes };
+  return `DAY ${adventureDay(now, { totalMinutes: startMinutes })}  ·  ${timeStr(now)}`;
+}
 
 /** Pixel height of the in-canvas bottom log strip — mirrors v1's
  *  `LOG_HEIGHT` constant from SceneLog. Reserved by the camera's
@@ -863,6 +883,9 @@ interface LoadedCatalog {
    *  Cells reference records via `trap_id`; legacy boolean traps
    *  resolve to the default record (dart_trap). */
   traps: ReadonlyArray<TrapRecord>;
+  /** Authored Log Events (log_events.json) — lines that appear in the
+   *  exploration log N steps after the party enters a map. */
+  logEvents: ReadonlyArray<LogEventRecord>;
   /** Recipes catalog — read by the Alchemist's brew_potion
    *  picker so a player can pick a recipe to convert reagents
    *  into a finished potion. Shape mirrors recipes.json
@@ -1062,6 +1085,10 @@ export function PlayHost() {
    *  refreshing on every minute change. The renderer ref also
    *  shortcuts setLightingMode without a React render hop. */
   const clockRef = useRef(0);
+  /** Clock when the adventure began (save.startClockMinutes) — Day 1
+   *  on the bottom bar. Older saves lack it; it's resolved from the
+   *  module's start time on load (see the effect below). */
+  const startClockRef = useRef(0);
   const rendererRef = useRef<WorldRenderer | null>(null);
   /** Surface (overworld map id or dungeon floor) the CURRENTLY-mounted
    *  renderer was seeded for — `map:<id>` or `dungeon:<id>:<floor>`,
@@ -1776,6 +1803,92 @@ export function PlayHost() {
       Soundtrack.setPlaylist(catalog.moduleSoundtrack ?? []);
     }
   }, [state, reloadKey]);
+
+  // Adventure start — the bottom bar's "Day N" counts from it. New
+  // games record it on the save; older saves get it resolved once from
+  // the module's start time (the clock New Game would have seeded) and
+  // written back, so Day 1 is the day the party set out.
+  useEffect(() => {
+    if (state.kind !== "ok" || !state.save) return;
+    if (typeof state.save.startClockMinutes === "number") {
+      startClockRef.current = state.save.startClockMinutes;
+      return;
+    }
+    const moduleId = state.save.moduleId;
+    let cancelled = false;
+    (async () => {
+      setActiveModule(moduleId);
+      const cfg = await loadModuleConfig().catch(() => null);
+      if (cancelled) return;
+      const st = cfg?.settings.startTime;
+      const fromModule = st
+        ? clockFromDate({
+            year: st.year,
+            month: st.month,
+            day: st.day,
+            hour: st.hour,
+            minute: st.minute,
+          }).totalMinutes
+        : 0;
+      const start = Math.min(fromModule, clockRef.current);
+      startClockRef.current = start;
+      const cur = saveRef.current;
+      if (cur && typeof cur.startClockMinutes !== "number") {
+        const next: WorldSave = { ...cur, startClockMinutes: start };
+        saveRef.current = next;
+        saveWorld(next);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [state]);
+
+  // Log Events — authored lines that appear N steps after the party
+  // arrives on a map (see src/play/logEvents.ts). `logEventStepsRef`
+  // counts moves on the current map; it resets (and fires the step-0
+  // lines) whenever the map changes. Steps inside a dungeon don't
+  // count toward the surface map. "once" lines are recorded on the
+  // save so they never repeat.
+  const logEventStepsRef = useRef<{ mapId: string | null; steps: number }>({
+    mapId: null,
+    steps: 0,
+  });
+  /** Every authored Log Event line — the side-panel Log and the
+   *  Adventure Log always show these (they're the module's story). */
+  const storyLines = useMemo(() => {
+    const evs = state.kind === "ok" ? state.catalog?.logEvents ?? [] : [];
+    return new Set(evs.flatMap((e) => e.entries.map((x) => x.text)));
+  }, [state]);
+  const fireLogEvents = useCallback((mapId: string, steps: number) => {
+    const events = catalogRef.current?.logEvents ?? [];
+    if (events.length === 0) return;
+    const save = saveRef.current;
+    const shown = new Set(save?.logEventsShown ?? []);
+    const due = dueLogEventLines(events, mapId, steps, shown);
+    if (due.lines.length === 0) return;
+    if (save && due.shownKeys.length > 0) {
+      const nextSave: WorldSave = {
+        ...save,
+        logEventsShown: [...shown, ...due.shownKeys],
+      };
+      saveRef.current = nextSave;
+      saveWorld(nextSave);
+    }
+    setLogMessages((prev) => {
+      const next = [...prev, ...due.lines];
+      return next.length > MAX_LOG ? next.slice(next.length - MAX_LOG) : next;
+    });
+  }, []);
+  useEffect(() => {
+    const map = state.kind === "ok" ? state.catalog?.map : null;
+    const id = map?.id ?? null;
+    if (id === logEventStepsRef.current.mapId) return;
+    logEventStepsRef.current = { mapId: id, steps: 0 };
+    if (!id || dungeonStateRef.current) return;
+    // catalogRef is synced from state in an earlier effect this commit.
+    fireLogEvents(id, 0);
+  }, [state, reloadKey, fireLogEvents]);
 
   // Restful-map entry message. When the party arrives on a map that
   // heals (and isn't in a dungeon), drop one flavour line so the player
@@ -2523,6 +2636,8 @@ export function PlayHost() {
         /** Time/date readout drawn over `logBar`. Refreshed by
          *  `update()` when `clockRef.current` rolls over. */
         logText: Phaser.GameObjects.Text | null = null;
+        moonIcon: Phaser.GameObjects.Image | null = null;
+        lastStartShown = 0;
         /** Last clock value the log text was painted with — lets
          *  `update()` skip the setText call on frames where the
          *  minute hasn't changed. */
@@ -2634,6 +2749,7 @@ export function PlayHost() {
           // for React state to settle through to the scene closure.
           clockRef.current = save.clockMinutes;
           setClockMinutes(save.clockMinutes);
+          startClockRef.current = save.startClockMinutes ?? save.clockMinutes;
 
           this.world = new WorldRenderer({
             scene: this,
@@ -3233,9 +3349,7 @@ export function PlayHost() {
             .text(
               12,
               logY + 8,
-              fullStr({ totalMinutes: clockRef.current }) +
-                "  ·  " +
-                lunarPhaseName({ totalMinutes: clockRef.current }),
+              clockBarText(clockRef.current, startClockRef.current),
               {
                 fontFamily: "monospace",
                 fontSize: "13px",
@@ -3245,6 +3359,16 @@ export function PlayHost() {
             .setScrollFactor(0)
             .setDepth(1001);
           this.lastClockShown = clockRef.current;
+          this.lastStartShown = startClockRef.current;
+          // Moon-phase icon just right of the day / time readout.
+          ensureMoonTextures(this);
+          this.moonIcon = this.add
+            .image(0, 0, moonTextureKey(lunarPhaseIndex({ totalMinutes: clockRef.current })))
+            .setDisplaySize(16, 16)
+            .setOrigin(0, 0.5)
+            .setScrollFactor(0)
+            .setDepth(1001);
+          this.placeMoonIcon();
 
           // Painted Help & Tips screen — first of the inspector
           // overlays to live inside Phaser. The host's `helpTipsOpen`
@@ -3291,13 +3415,20 @@ export function PlayHost() {
             this.recenterCamera(false);
           }
           if (!this.logText) return;
-          if (clockRef.current !== this.lastClockShown) {
+          if (
+            clockRef.current !== this.lastClockShown ||
+            startClockRef.current !== this.lastStartShown
+          ) {
             this.lastClockShown = clockRef.current;
+            this.lastStartShown = startClockRef.current;
             this.logText.setText(
-              fullStr({ totalMinutes: clockRef.current }) +
-                "  ·  " +
-                lunarPhaseName({ totalMinutes: clockRef.current }),
+              clockBarText(clockRef.current, startClockRef.current),
             );
+            this.moonIcon?.setTexture(
+              moonTextureKey(lunarPhaseIndex({ totalMinutes: clockRef.current })),
+            );
+            this.moonIcon?.setDisplaySize(16, 16);
+            this.placeMoonIcon();
           }
         }
 
@@ -3315,10 +3446,21 @@ export function PlayHost() {
          *  bottom log / clock strip spans the full width at the bottom
          *  edge, and the painted Help / Quest Log screens centre on the
          *  new frame the next time they open. */
+        /** Sit the moon icon just right of the clock text, centred
+         *  on the bar. */
+        placeMoonIcon(): void {
+          if (!this.logText || !this.moonIcon) return;
+          this.moonIcon.setPosition(
+            this.logText.x + this.logText.width + 12,
+            PLAY_CANVAS_HEIGHT - PLAY_LOG_HEIGHT / 2,
+          );
+        }
+
         layoutScreenUi(): void {
           const logY = PLAY_CANVAS_HEIGHT - PLAY_LOG_HEIGHT;
           this.logBar?.setPosition(0, logY).setSize(PLAY_CANVAS_WIDTH, PLAY_LOG_HEIGHT);
           this.logText?.setY(logY + 8);
+          this.placeMoonIcon();
           helpScreenRef.current?.setCanvasSize(PLAY_CANVAS_WIDTH, PLAY_CANVAS_HEIGHT);
           questLogScreenRef.current?.setCanvasSize(PLAY_CANVAS_WIDTH, PLAY_CANVAS_HEIGHT);
         }
@@ -3977,6 +4119,15 @@ export function PlayHost() {
               // boundary (day → twilight → night → twilight → day);
               // identity-stable mode strings mean setLightingMode
               // is a no-op when nothing changed.
+              // Log Events: count this move on the current map.
+              if (!dungeonStateRef.current) {
+                const tracker = logEventStepsRef.current;
+                const curMapId = catalogRef.current?.map?.id ?? null;
+                if (curMapId && tracker.mapId === curMapId) {
+                  tracker.steps += 1;
+                  fireLogEvents(curMapId, tracker.steps);
+                }
+              }
               const beforeMode = lightingModeFromClock(clockRef.current);
               const advanced = makeClock(clockRef.current);
               advanceClock(advanced, MINUTES_PER_STEP);
@@ -4724,6 +4875,16 @@ export function PlayHost() {
               }
               saveWorld(nextSave);
               saveRef.current = nextSave;
+              {
+                const def = catalogItems.find((i) => i.id === ev.itemId);
+                const line = `Picked up ${def?.name ?? ev.itemId}.`;
+                setLogMessages((prev) => {
+                  const next = [...prev, line];
+                  return next.length > MAX_LOG
+                    ? next.slice(next.length - MAX_LOG)
+                    : next;
+                });
+              }
               // Tear down the sprite overlay — kernel already
               // cleared cell.item but the Phaser Image is still
               // sitting on the cell until we destroy it.
@@ -6011,7 +6172,19 @@ export function PlayHost() {
        *  Phaser's Scale.FIT + CENTER_BOTH handles the letterboxing
        *  inside the cell, so any aspect-ratio styling on the
        *  wrappers would just fight the game's own scaling. */}
-      <div className="relative min-h-0 overflow-hidden">
+      <div className="relative flex min-h-0 overflow-hidden">
+        {/* Left details panel (~20% width) — exploration only; the
+         *  battle scene gets the full width (hidden, not unmounted, so
+         *  the log keeps its timestamps). The world canvas's
+         *  ResizeObserver re-shapes the frame when it appears / goes. */}
+        <PlayExplorationPanel
+          messages={logMessages}
+          storyLines={storyLines}
+          clockMinutes={clockMinutes}
+          hidden={!!combat}
+          onOpenFullLog={() => setLogOpen(true)}
+        />
+        <div className="relative min-w-0 flex-1">
         {/* World canvas stays mounted under combat so re-rendering it
          *  on resolve doesn't require reloading + reseating sprites.
          *  We just hide it visually + gate movement via overlaysOpenRef.
@@ -6079,6 +6252,7 @@ export function PlayHost() {
           onResolved={onCombatResolved}
         />
       ) : null}
+        </div>
       </div>
 
       {/* (The old footer hint row under the canvas is gone — play is
@@ -6150,6 +6324,20 @@ export function PlayHost() {
           };
           saveRef.current = nextSave;
           saveWorld(nextSave);
+          {
+            const got = itemDisplay.map((d) =>
+              (d.qty ?? 1) > 1 ? `${d.qty}× ${d.name ?? d.id}` : (d.name ?? d.id),
+            );
+            if (goldGained > 0) got.unshift(`${goldGained} gold`);
+            const line =
+              got.length > 0
+                ? `Opened ${chest.name ?? chest.id}: ${got.join(", ")}.`
+                : `Opened ${chest.name ?? chest.id} — it's empty.`;
+            setLogMessages((prev) => {
+              const next = [...prev, line];
+              return next.length > MAX_LOG ? next.slice(next.length - MAX_LOG) : next;
+            });
+          }
           // Treasure cue. Fires whether the chest had loot or was
           // empty — the lid-opening sound is the right ack for the
           // player's commit either way, and an empty chest is rare
@@ -6538,6 +6726,7 @@ export function PlayHost() {
       {logOpen ? (
         <PlayLogOverlay
           messages={logMessages}
+          storyLines={storyLines}
           onClose={() => setLogOpen(false)}
         />
       ) : null}
@@ -6921,6 +7110,7 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
     npcsLayers,
     countersLayers,
     trapsLayers,
+    logEventsLayers,
   ] = await Promise.all([
     src.loadModelLayers(moduleId, "map_tiles"),
     src.loadModelLayers(moduleId, "maps"),
@@ -6940,6 +7130,7 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
     src.loadModelLayers(moduleId, "npcs").catch(() => null),
     src.loadModelLayers(moduleId, "counters").catch(() => null),
     src.loadModelLayers(moduleId, "traps").catch(() => null),
+    src.loadModelLayers(moduleId, "log_events").catch(() => null),
   ]);
 
   const paletteDoc = (mergeModel(
@@ -7137,6 +7328,11 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
     trapsLayers?.inherited ?? [],
     trapsLayers?.ownFile ?? null,
   ) ?? {}) as { traps?: TrapRecord[] };
+  const logEventsDoc = (mergeModel(
+    "log_events",
+    logEventsLayers?.inherited ?? [],
+    logEventsLayers?.ownFile ?? null,
+  ) ?? {}) as { log_events?: unknown };
 
   // Module manifest — pull the default soundtrack playlist, walking
   // the extends chain so a parent module's playlist propagates to
@@ -7196,6 +7392,7 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
     abilities: abilitiesDoc.abilities ?? [],
     recipes: recipesDoc.recipes ?? [],
     traps: trapsDoc.traps ?? [],
+    logEvents: normalizeLogEvents(logEventsDoc.log_events),
     moduleSoundtrack,
     sightRadius,
     explorationXp,

@@ -354,6 +354,10 @@ export interface WorldSave {
    *  `settings.start_time` on New Game; defaults to 0 when absent.
    *  Drives time-of-day lighting + moon phase + the HUD readout. */
   clockMinutes: number;
+  /** Game clock when the adventure began (New Game). The play screen's
+   *  "Day N" counts calendar days from here. Absent on older saves —
+   *  PlayHost resolves it from the module's start time and writes it. */
+  startClockMinutes?: number;
   party: SavedPartyState;
   /** Per-map mutation deltas keyed by map id. Maps the party has
    *  never visited are absent — `loadMapState` treats absence as
@@ -420,6 +424,10 @@ export interface WorldSave {
    *  unfortunately let them re-claim once — acceptable migration
    *  cost given how new the feature is). */
   turnedInQuests?: ReadonlyArray<string>;
+  /** Log Event lines already shown on this save, as
+   *  `<log event id>#<entry index>` (see play/logEvents.ts). Lines with
+   *  `repeat: "once"` are skipped once listed here. Absent = none. */
+  logEventsShown?: ReadonlyArray<string>;
   /** Per-counter live stock, keyed by counter id.
    *
    *  Counters now own a persistent inventory: items bought disappear

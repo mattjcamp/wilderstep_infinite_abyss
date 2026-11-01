@@ -412,6 +412,7 @@ async function assembleInitialSave(
     savedAt: new Date().toISOString(),
     moduleId,
     clockMinutes: initialClock.totalMinutes,
+    startClockMinutes: initialClock.totalMinutes,
     party: savedParty,
     maps: {},
     dungeons: {},

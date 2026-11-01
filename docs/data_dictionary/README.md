@@ -30,6 +30,7 @@ The v2 codebase is just being built. The **Used?** column is `TBD` everywhere fo
 | NPC | [npc.md](npc.md) | TBD |
 | Encounter | [encounter.md](encounter.md) | Named monster rosters for the random-encounter sampler, with area discriminator; ported from v1 |
 | Spawn | [spawn.md](spawn.md) | Monster-lair behavior bound to a map tile id; ported from v1 |
+| Log Event | [log_event.md](log_event.md) | Lines that appear in the exploration log a set number of steps after the party enters a map (tutorials, unfolding descriptions) |
 | Map Tile | [map_tile.md](map_tile.md) | The tile catalog — display, walkability, sprite, lighting flags, interaction metadata; ported from v1 |
 | Map | [map.md](map.md) | Unified model for authored maps (overworld, towns, buildings, detail screens, battle screens) |
 | Dungeon | [dungeon.md](dungeon.md) | Procedural multi-level dungeon — generator parameters (style, difficulty, size, torch_density, locked_doors) + ordered list of inline [Dungeon Level](dungeon_level.md) records (per-floor overrides) |
