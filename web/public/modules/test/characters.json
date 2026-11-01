@@ -1,0 +1,92 @@
+{
+  "characters": [
+    {
+      "id": "fighter",
+      "name": "Fighter",
+      "class": "fighter",
+      "race": "dwarf",
+      "gender": "Male",
+      "level": 5,
+      "exp": 15000,
+      "hp": 70,
+      "mp": 0,
+      "strength": 16,
+      "dexterity": 6,
+      "constitution": 17,
+      "intelligence": 7,
+      "wisdom": 8,
+      "sprite": "person/dwarf_female_paladin.png",
+      "equipped": {
+        "body": "cloth",
+        "hands": "dagger"
+      },
+      "inventory": []
+    },
+    {
+      "id": "cleric",
+      "name": "Cleric",
+      "class": "cleric",
+      "race": "elf",
+      "gender": "Female",
+      "level": 5,
+      "exp": 15000,
+      "hp": 27,
+      "mp": 54,
+      "strength": 9,
+      "dexterity": 10,
+      "constitution": 9,
+      "intelligence": 8,
+      "wisdom": 18,
+      "sprite": "person/person_female_cleric.png",
+      "equipped": {
+        "hands": "club",
+        "body": "cloth"
+      },
+      "inventory": []
+    },
+    {
+      "id": "wizard",
+      "name": "Wizard",
+      "class": "wizard",
+      "race": "gnome",
+      "gender": "Male",
+      "level": 5,
+      "exp": 15000,
+      "hp": 22,
+      "mp": 72,
+      "strength": 6,
+      "dexterity": 9,
+      "constitution": 11,
+      "intelligence": 20,
+      "wisdom": 8,
+      "sprite": "person/gnome_female_wizard.png",
+      "equipped": {
+        "hands": "dagger",
+        "body": "cloth"
+      },
+      "inventory": []
+    },
+    {
+      "id": "thief",
+      "name": "Thief",
+      "class": "thief",
+      "race": "halfling",
+      "gender": "Female",
+      "level": 5,
+      "exp": 15000,
+      "hp": 37,
+      "mp": 0,
+      "strength": 6,
+      "dexterity": 20,
+      "constitution": 13,
+      "intelligence": 7,
+      "wisdom": 8,
+      "sprite": "person/halfling_female_thief.png",
+      "equipped": {
+        "hands": "dagger",
+        "body": "cloth"
+      },
+      "inventory": []
+    }
+  ]
+}

@@ -1078,11 +1078,13 @@ function recordHasSpriteField(record: Record_, modelKey?: string): boolean {
   return false;
 }
 
-/** Renders a small sprite thumbnail for a row, resolved from the
- *  record's first known sprite field. Renders an empty slot when the
- *  record has no sprite field or the value doesn't resolve. Tracks
- *  broken-image state in React (not via direct DOM mutation) so the
- *  hidden flag clears when src changes to a working URL. */
+/** Renders a small sprite thumbnail for a row. The main image is the
+ *  record's first known sprite field OTHER than `background_sprite`;
+ *  when the record also has a `background_sprite` (map tiles drawn over
+ *  a floor / wall), it's drawn underneath, so the thumbnail looks like
+ *  the painted cell. Renders an empty slot when nothing resolves.
+ *  Tracks broken-image state in React (not via direct DOM mutation) so
+ *  the hidden flag clears when src changes to a working URL. */
 function RecordSpriteThumb({
   record,
   modelKey,
@@ -1092,22 +1094,43 @@ function RecordSpriteThumb({
 }) {
   let src: string | null = null;
   let alt = "";
+  let bgSrc: string | null = null;
   for (const [key, value] of Object.entries(record)) {
     const config = getSpriteFieldConfig(key, modelKey);
     if (!config) continue;
     if (typeof value !== "string" || !value.trim()) continue;
-    src = resolveSpritePath(value, config);
-    if (src) {
-      alt = value;
-      break;
+    if (key === "background_sprite") {
+      bgSrc = bgSrc ?? resolveSpritePath(value, config);
+      continue;
     }
+    if (src) continue;
+    src = resolveSpritePath(value, config);
+    if (src) alt = value;
+  }
+  // A tile with only a background still shows something.
+  if (!src && bgSrc) {
+    src = bgSrc;
+    bgSrc = null;
   }
   const [broken, setBroken] = useState(false);
+  const [bgBroken, setBgBroken] = useState(false);
   useEffect(() => {
     setBroken(false);
-  }, [src]);
+    setBgBroken(false);
+  }, [src, bgSrc]);
   return (
     <div className="relative h-8 w-8 shrink-0 rounded border border-parchment/10 bg-ink/80">
+      {bgSrc && !bgBroken ? (
+        <img
+          src={bgSrc}
+          alt=""
+          width={32}
+          height={32}
+          style={{ imageRendering: "pixelated" }}
+          className="absolute inset-0 h-8 w-8 object-contain"
+          onError={() => setBgBroken(true)}
+        />
+      ) : null}
       {src && !broken ? (
         <img
           src={src}
@@ -1115,7 +1138,7 @@ function RecordSpriteThumb({
           width={32}
           height={32}
           style={{ imageRendering: "pixelated" }}
-          className="h-8 w-8 object-contain"
+          className="relative h-8 w-8 object-contain"
           onError={() => setBroken(true)}
         />
       ) : null}
