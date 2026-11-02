@@ -7659,12 +7659,24 @@ function buildDungeonCatalog(
   const spriteByMonsterId = new Map(
     baseCatalog.monsters.map((m) => [m.id, m.sprite]),
   );
+  // Authored encounter descriptions, looked up by name off the LIVE
+  // catalog (the dungeon session only stores the encounter's name), so
+  // the encounter screen shows the editor text — even for floors that
+  // were generated before the description was written.
+  const encDescriptionByName = new Map<string, string>();
+  for (const e of baseCatalog.encounters) {
+    const d = (e as { description?: unknown }).description;
+    if (typeof d === "string" && d.trim() && !encDescriptionByName.has(e.name)) {
+      encDescriptionByName.set(e.name, d.trim());
+    }
+  }
   const dungeonEncs: SimEncounterRef[] = dungeonEncounterRefs(
     lvl,
     spriteByMonsterId,
   ).map((e) => ({
     id: e.id,
     name: e.name,
+    description: encDescriptionByName.get(e.name),
     monster_party_tile: e.monster_party_tile,
     monsters: e.monsters,
     // Preserve the per-entry tint so quest-target placements

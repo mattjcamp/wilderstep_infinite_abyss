@@ -1,11 +1,17 @@
-## Bugs
-- During a kill quest, I would lose a player so I would reload the browswer to start from the last location or I would end and come back to play later. When I did that the enemies didn't reappear and I could not find them to kill them and therefore complete the quest.
+## Things to Fix
+- The chests that we have now don't do anything and were probably meant to be quest items. Figure out a way to add chests with random drops to game.
+- One room in the crystal skull dungeon has a wall you can walk through
+- Double check the random dungeons populate with monsters, figure out random chest drops
+
 
 ## Flesh Out Core
-- Make a credible set of Demo adventures along with some roguelike elements to flesh out the map we already have.
+- Fine tune core demo adventure
+- Keep adding to the core demo
 
 ## Improve UI
-- Fine tune the overall user experience
+- Fine tune the party/character screen
+- Fine tune the conversation screens
+- Fine tune beginning character creation
 
 ## Lore
 - start brainstorming ideas about the first original, immersive world that I will create for this game:world type, political structures, economy, towns, gods, epic stories, lost civizations

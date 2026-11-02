@@ -5699,7 +5699,9 @@
             "spawn": null,
             "sprite": "map/settlements/cave_entrance.png",
             "tag": "map:settlements",
-            "background_sprite": "map/grass.png"
+            "background_sprite": "map/grass.png",
+            "dungeon": "hidden_grotto",
+            "show_link_placard": true
           },
           {
             "boat": false,

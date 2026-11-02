@@ -210,13 +210,18 @@ export function PlayEncounterOverlay({
             <p className="text-xs text-parchment/60">
               {total} {total === 1 ? "foe" : "foes"}
             </p>
-            {options.description ? (
-              <p className="mt-1 whitespace-pre-line text-sm leading-snug text-parchment/80">
-                {options.description}
-              </p>
-            ) : null}
           </div>
         </header>
+
+        {options.description?.trim() ? (
+          // The encounter's authored description is the scene-setting
+          // narration — read first, before the roster.
+          <div className="border-b border-parchment/15 bg-black/20 px-4 py-3">
+            <p className="whitespace-pre-line font-display text-[15px] italic leading-relaxed text-parchment/90">
+              {options.description.trim()}
+            </p>
+          </div>
+        ) : null}
 
         <ul className="flex-1 space-y-2 overflow-auto px-4 py-3">
           {roster.map((r) => (

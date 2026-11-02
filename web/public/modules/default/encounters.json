@@ -3,6 +3,7 @@
     {
       "id": "giant_rats",
       "name": "Giant Rats",
+      "description": "You can make out unnaturally large rats in the dank spot in front of you.",
       "area": "dungeon",
       "theme": "animal",
       "tags": [
@@ -40,6 +41,7 @@
     {
       "id": "goblins",
       "name": "Goblins",
+      "description": "The cruel laughter erupts around you as a band of goblins approaches.",
       "area": "dungeon",
       "theme": "humanoid",
       "tags": [
@@ -77,6 +79,7 @@
     {
       "id": "giant_bats",
       "name": "Giant Bats",
+      "description": "The air broils with the movement of some kind of large winged creature.",
       "area": "dungeon",
       "theme": "animal",
       "tags": [
@@ -114,6 +117,7 @@
     {
       "id": "orc_warband",
       "name": "Orc Warband",
+      "description": "Powerful Orcs stand in your way guarded by unnaturally large Dire Wolves.",
       "area": "dungeon",
       "theme": "humanoid",
       "tags": [
@@ -124,7 +128,9 @@
       "monster_party_tile": "monster/orc.png",
       "monsters": [
         "orc",
-        "orc"
+        "orc",
+        "orc",
+        "dire_wolf"
       ],
       "custom_map": "dungeon_battle_screen_1",
       "darkness": true
@@ -132,6 +138,7 @@
     {
       "id": "orcs_and_goblins",
       "name": "Orcs and Goblins",
+      "description": "A master Orc approaches with his Goblin underlings in tow.",
       "area": "dungeon",
       "theme": "humanoid",
       "tags": [
@@ -225,6 +232,7 @@
     {
       "id": "giant_spiders",
       "name": "Giant Spiders",
+      "description": "You hear scratching and imagine hundreds of insects crawling over you. You can make out two massive bulbous insects clawing at you.",
       "area": "dungeon",
       "theme": "animal",
       "tags": [
