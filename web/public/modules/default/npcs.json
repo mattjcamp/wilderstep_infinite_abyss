@@ -129,6 +129,38 @@
       ],
       "behavior": "still",
       "exploration_xp": 100
+    },
+    {
+      "id": "cybil",
+      "name": "Cybil",
+      "sprite": "person/person_female_villager_wealthy.png",
+      "counter": "healing",
+      "personal_history": "Cybil gained control of the Shrine of the Deep Ones by making a pack with the Voice of the Deep Ones. To seal her unholy pact, she was required to murder her entire family. The town folk shun Cybil now, but the Deep Ones require all to accept Cybil on there terms and force the town to live with their humiliation so she has continued to be allowed to stay in town. ",
+      "dialogs": [
+        {
+          "id": "dialog_1",
+          "title": "What do you want, worms?",
+          "text": "Why do you tread on our holy ground without my permission! If you require healing, be aware, the price is steep and goes far beyond any gold you have to offer."
+        }
+      ],
+      "behavior": "still",
+      "exploration_xp": 182
+    },
+    {
+      "id": "the_orc_kings_voice",
+      "name": "The Voice of the Orc King",
+      "sprite": "monster/orc.png",
+      "counter": null,
+      "personal_history": "The Voice is nothing but a voice",
+      "dialogs": [
+        {
+          "id": "dialog_1",
+          "title": "Detente?",
+          "text": "Our dear King will not meet with the likes of you, not here, not anywhere. You have one chance to leave this place, or we will extinguish you and your party ending your tribe."
+        }
+      ],
+      "behavior": "still",
+      "exploration_xp": 200
     }
   ]
 }

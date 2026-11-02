@@ -22,7 +22,7 @@
       "quest_giver": {
         "npc_name": "Gareth",
         "npc_sprite": "person/person_male_villager_wealthy.png",
-        "start_dialog": "Please fine adventures, the undead haunt our lands because the stupid Guild of Sorcerers has stolen the Crystal Skull and hid it deep in the mountains to the East. Please retrieve the Skull and give it back to the Deep Ones. ",
+        "start_dialog": "Please fine adventures, the undead haunt our lands because the stupid Guild of Sorcerers has stolen the Crystal Skull and hid it deep in the mountains to the East. Please retrieve the Skull and give it back to the Deep Ones. Once the Skull is back in the hands of our masters, our dead can rest again.",
         "end_dialog": "Glad to see you have return and now our deceased friends and family can rest with The Deep One"
       }
     },

@@ -126,8 +126,8 @@
         "orc",
         "orc"
       ],
-      "custom_map": null,
-      "darkness": false
+      "custom_map": "dungeon_battle_screen_1",
+      "darkness": true
     },
     {
       "id": "orcs_and_goblins",
@@ -145,8 +145,8 @@
         "goblin",
         "goblin"
       ],
-      "custom_map": null,
-      "darkness": false
+      "custom_map": "dungeon_battle_screen_1",
+      "darkness": true
     },
     {
       "id": "zombies",
