@@ -109,7 +109,7 @@ export function PlayNpcDialogOverlay({
     onAskToMove,
     onClose,
   ]);
-  /** Which action button the keyboard cursor is on. Up/Down wraps
+  /** Which action button the keyboard cursor is on. Left/Right wraps
    *  through it; Enter fires the highlighted action. Defaults to 0
    *  — the first non-Leave entry when one exists, otherwise Leave
    *  alone, which Enter activates as "close the dialog." That makes
@@ -123,9 +123,9 @@ export function PlayNpcDialogOverlay({
     setActionIndex((cur) => Math.min(cur, Math.max(0, actions.length - 1)));
   }, [actions.length]);
 
-  // ESC closes. Left/Right cycle dialog lines (read at your own
-  // pace); Up/Down cycle action buttons; Enter fires whichever
-  // action is highlighted. Capture-phase so the underlying sim
+  // ESC closes. Left/Right (A/D) cycle the action buttons; Up/Down
+  // (W/S) page dialog lines (read at your own pace); Enter fires
+  // whichever action is highlighted. Capture-phase so the underlying sim
   // doesn't react to the same arrows.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -141,35 +141,33 @@ export function PlayNpcDialogOverlay({
         toggleBackstory();
         return;
       }
-      if (e.key === "ArrowRight") {
+      // Left / Right (or A / D) walk the action buttons — they sit in
+      // one horizontal row, so the cursor moves the way the eye does.
+      // Up / Down (or W / S) page through the NPC's dialog lines when
+      // there's more than one. Letter keys match either case; plain
+      // "s" / "d" only (no modifiers) so browser shortcuts still work.
+      const k = e.metaKey || e.ctrlKey || e.altKey ? "" : e.key.toLowerCase();
+      const isLeft = e.key === "ArrowLeft" || k === "a";
+      const isRight = e.key === "ArrowRight" || k === "d";
+      const isUp = e.key === "ArrowUp" || k === "w";
+      const isDown = e.key === "ArrowDown" || k === "s";
+      if (isLeft || isRight) {
         e.stopPropagation();
         e.preventDefault();
-        if (total > 0 && view === "speech") setCursor((i) => (i + 1) % total);
+        if (actions.length > 0) {
+          const step = isRight ? 1 : -1;
+          setActionIndex(
+            (i) => (i + step + actions.length) % actions.length,
+          );
+        }
         return;
       }
-      if (e.key === "ArrowLeft") {
+      if (isUp || isDown) {
         e.stopPropagation();
         e.preventDefault();
         if (total > 0 && view === "speech") {
-          setCursor((i) => (i - 1 + total) % total);
-        }
-        return;
-      }
-      if (e.key === "ArrowDown") {
-        e.stopPropagation();
-        e.preventDefault();
-        if (actions.length > 0) {
-          setActionIndex((i) => (i + 1) % actions.length);
-        }
-        return;
-      }
-      if (e.key === "ArrowUp") {
-        e.stopPropagation();
-        e.preventDefault();
-        if (actions.length > 0) {
-          setActionIndex(
-            (i) => (i - 1 + actions.length) % actions.length,
-          );
+          const step = isDown ? 1 : -1;
+          setCursor((i) => (i + step + total) % total);
         }
         return;
       }
@@ -179,19 +177,6 @@ export function PlayNpcDialogOverlay({
         const a = actions[actionIndex];
         if (a) a.onClick();
         return;
-      }
-      if (
-        e.key === "w" ||
-        e.key === "a" ||
-        e.key === "s" ||
-        e.key === "d" ||
-        e.key === "W" ||
-        e.key === "A" ||
-        e.key === "S" ||
-        e.key === "D"
-      ) {
-        // Swallow movement keys while the modal is up.
-        e.stopPropagation();
       }
     };
     window.addEventListener("keydown", onKey, { capture: true });
@@ -278,17 +263,17 @@ export function PlayNpcDialogOverlay({
                     setCursor((i) => (i - 1 + total) % total)
                   }
                   className="rounded border border-parchment/20 px-2 py-1 text-xs text-parchment/70 hover:bg-ink/40"
-                  title="Previous line (←)"
+                  title="Previous line (↑ / W)"
                 >
-                  ← Prev
+                  ↑ Prev
                 </button>
                 <button
                   type="button"
                   onClick={() => setCursor((i) => (i + 1) % total)}
                   className="rounded border border-parchment/20 px-2 py-1 text-xs text-parchment/70 hover:bg-ink/40"
-                  title="Next line (→)"
+                  title="Next line (↓ / S)"
                 >
-                  Next →
+                  Next ↓
                 </button>
               </>
             ) : null}

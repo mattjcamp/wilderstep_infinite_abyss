@@ -1554,7 +1554,9 @@ function AbilitySection({
                     <span className="text-xs uppercase tracking-wider text-parchment/55">
                       {(a.usable_in ?? []).includes("battle")
                         ? "Combat"
-                        : "Passive"}
+                        : (a.usable_in ?? []).includes("npc")
+                          ? "In conversation"
+                          : "Passive"}
                     </span>
                   )}
                 </div>
@@ -1583,6 +1585,7 @@ function spellUsableOnSheet(spell: PartySpellRef): boolean {
 function spellContextNote(spell: PartySpellRef): string {
   const u = (spell.usable_in ?? []).filter((c) => c !== "party");
   if (u.length === 1 && u[0] === "battle") return "Battle only — cast it from the Cast menu during combat.";
+  if (u.length === 1 && u[0] === "lock") return "Cast it from the dialog when you reach a locked door.";
   return `Can only be cast in: ${u.join(", ")}.`;
 }
 

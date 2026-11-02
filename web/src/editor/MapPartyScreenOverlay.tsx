@@ -222,14 +222,21 @@ export function MapPartyScreenOverlay({
               (sim preview)
             </span>
           </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded border border-parchment/20 px-2 py-0.5 text-[13px] text-parchment/85 hover:bg-ink/40"
-            title="Close (P or ESC)"
-          >
-            Close
-          </button>
+          <div className="flex items-center gap-2">
+            {state.kind === "ok" ? (
+              <span className="text-xs text-amber-300" title="Party gold">
+                Gold: {state.party.gold ?? 0}
+              </span>
+            ) : null}
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded border border-parchment/20 px-2 py-0.5 text-[13px] text-parchment/85 hover:bg-ink/40"
+              title="Close (P or ESC)"
+            >
+              Close
+            </button>
+          </div>
         </div>
         <div className="p-3">
           {state.kind === "loading" ? (

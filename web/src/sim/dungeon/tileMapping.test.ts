@@ -42,7 +42,7 @@ describe("prototypeForTileId — TILE_TRAP", () => {
     expect(trap).not.toBeNull();
     expect(ruinsFloor).not.toBeNull();
     expect(trap!.paletteId).toBe(ruinsFloor!.paletteId);
-    expect(trap!.paletteId).toBe("floor");
+    expect(trap!.paletteId).toBe("dungeon_floor_flagstone");
     expect(trap!.trap).toBe(true);
   });
 
@@ -62,13 +62,13 @@ describe("prototypeForTileId — forest transition arches", () => {
   // redrawn. They must stay walkable and keep their stairs ids.
   it("maps the UP archway to the stairs-up sprite, walkable", () => {
     const up = prototypeForTileId(TILE_FOREST_ARCHWAY_UP, "forest");
-    expect(up!.paletteId).toBe("stairs_up");
+    expect(up!.paletteId).toBe("dungeon_stairs_up");
     expect(up!.walkable).toBe(true);
   });
 
   it("maps the DOWN archway to the stairs-down sprite, walkable", () => {
     const down = prototypeForTileId(TILE_FOREST_ARCHWAY_DOWN, "forest");
-    expect(down!.paletteId).toBe("stairs_down");
+    expect(down!.paletteId).toBe("dungeon_stairs");
     expect(down!.walkable).toBe(true);
   });
 
@@ -91,8 +91,8 @@ describe("dungeon art comes from the module palette", () => {
   });
 
   it("resolves a palette id through the module palette, empty when missing", () => {
-    const palette = new Map([["stairs_up", "map/my_stairs.png"]]);
-    expect(resolveDungeonSprite("stairs_up", palette)).toBe("map/my_stairs.png");
+    const palette = new Map([["dungeon_stairs_up", "map/my_stairs.png"]]);
+    expect(resolveDungeonSprite("dungeon_stairs_up", palette)).toBe("map/my_stairs.png");
     expect(resolveDungeonSprite("chest", palette)).toBe("");
     expect(dungeonSpriteKeys(palette)).toEqual(["map/my_stairs.png"]);
   });

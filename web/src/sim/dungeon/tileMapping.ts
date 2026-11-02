@@ -120,7 +120,7 @@ function proto(over: Partial<DungeonTilePrototype>): DungeonTilePrototype {
     light_source: false,
     light_range: 0,
     sprite: "",
-    paletteId: "floor",
+    paletteId: "dungeon_floor_flagstone",
     boat: false,
     locked: false,
     text: "",
@@ -149,13 +149,13 @@ export const CHEST_PALETTE_ID = "object_chest";
 const STAIRS_UP_PROTO = proto({
   id: "stairs_up",
   name: "Stairs Up",
-  paletteId: "stairs_up",
+  paletteId: "dungeon_stairs_up",
 });
 
 const STAIRS_DOWN_PROTO = proto({
   id: "stairs_down",
   name: "Stairs Down",
-  paletteId: "stairs_down",
+  paletteId: "dungeon_stairs",
 });
 
 const CHEST_PROTO = proto({
@@ -183,7 +183,7 @@ const TRAP_PROTO = proto({
   // here only matched the "ruins" style by coincidence.
   id: "dungeon_floor_trap",
   name: "Trap",
-  paletteId: "floor",
+  paletteId: "dungeon_floor_flagstone",
   trap: true,
 });
 
@@ -217,14 +217,14 @@ const WALL_TORCH_PROTO = proto({
   obstructs: true,
   light_source: true,
   light_range: 5,
-  paletteId: "wall_stone",
+  paletteId: "dungeon_wall_top",
   animation: "torch",
 });
 
 const DUNGEON_DOOR_PROTO = proto({
   id: "dungeon_door",
   name: "Dungeon Door",
-  paletteId: "door",
+  paletteId: "dungeon_door",
 });
 
 const LOCKED_DOOR_PROTO = proto({
@@ -235,14 +235,14 @@ const LOCKED_DOOR_PROTO = proto({
   walkable: false,
   obstructs: false,
   locked: true,
-  paletteId: "door_locked",
+  paletteId: "dungeon_door",
 });
 
 /** ── Style-default tiles (stone dungeon) ──────────────────────── */
 const DEFAULT_FLOOR_PROTO = proto({
   id: "dungeon_floor",
   name: "Dungeon Floor",
-  paletteId: "floor",
+  paletteId: "dungeon_floor_flagstone",
 });
 
 const DEFAULT_WALL_PROTO = proto({
@@ -250,7 +250,7 @@ const DEFAULT_WALL_PROTO = proto({
   name: "Dungeon Wall",
   walkable: false,
   obstructs: true,
-  paletteId: "wall_stone",
+  paletteId: "dungeon_wall_top",
 });
 
 /** ── Cave style tiles ─────────────────────────────────────────── */
@@ -299,7 +299,7 @@ const FOREST_ARCHWAY_UP_PROTO = proto({
   name: "Forest Archway",
   // Was a gold archway sprite; uses the stairs-up art since the
   // 2026-10 tile trim until a forest arch is redrawn.
-  paletteId: "stairs_up",
+  paletteId: "dungeon_stairs_up",
 });
 
 const FOREST_ARCHWAY_DOWN_PROTO = proto({
@@ -307,7 +307,7 @@ const FOREST_ARCHWAY_DOWN_PROTO = proto({
   name: "Forest Archway (Down)",
   // Was a blue archway sprite; uses the stairs-down art since the
   // 2026-10 tile trim until a forest arch is redrawn.
-  paletteId: "stairs_down",
+  paletteId: "dungeon_stairs",
 });
 
 /** ── Dungeon Tileset style ("dungeon") ─────────────────────────
@@ -553,10 +553,6 @@ export function prototypeForTileId(
 
 /** Every palette id the dungeon prototypes can borrow art from. */
 export const DUNGEON_PALETTE_IDS: readonly string[] = [
-  "floor",
-  "wall_stone",
-  "stairs_up",
-  "stairs_down",
   CHEST_PALETTE_ID,
   // Dungeon Tileset style — floor, furniture and every wall piece the
   // autotiler can pick.
@@ -592,8 +588,6 @@ export const DUNGEON_PALETTE_IDS: readonly string[] = [
   "cave_wall_t_down",
   "cave_wall_t_up",
   "cave_pit_centre",
-  "door",
-  "door_locked",
   "mountain",
   "grass",
   "tree",

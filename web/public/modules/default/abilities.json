@@ -119,7 +119,7 @@
       "description": "Attempt to steal items from town NPCs. Once per NPC, with a chance of failure.",
       "duration": "permanent",
       "usable_in": [
-        "party"
+        "npc"
       ],
       "params": null
     },

@@ -46,8 +46,6 @@ import {
   initialPartyNavState,
   reducePartyNav,
   ACTION_USE,
-  ACTION_SEND,
-  ACTION_EXAMINE,
   type PartyNavContext,
 } from "./partyScreenNav";
 import {
@@ -189,6 +187,10 @@ export interface PartyItemRef {
    *  decide whether to merge or push on add. Weapons / armor stay
    *  one-row-per-copy. */
   stackable?: boolean;
+  /** Equipment slots from items.json (`["hands"]` for weapons,
+   *  `["body"]` for armor). Non-empty = equipable; the Inventory
+   *  list sorts those first. */
+  slots?: string[];
   /** Catalog charges field — semantic is "per-USE effect" (e.g. a
    *  Torch burns 150 steps when lit; a Lockpick has 5 attempts).
    *  This is NOT inventory quantity; that lives on the inventory
@@ -332,7 +334,40 @@ type EffectRow = {
    *  effects without a duration counter (toggle-only effects like
    *  Infravision or Detect Traps). */
   durationSteps?: number;
+  /** Set on one-shot action rows — activating the row fires this
+   *  instead of toggling an effect:
+   *   - "item": Use the `party.inventory` row ("Light Torch", "Camp")
+   *   - "spell": a party-castable spell a roster member knows
+   *   - "ability": a race / class ability usable from the party
+   *     screen (`usable_in` includes "party") */
+  action?:
+    | { kind: "item"; inventoryIndex: number }
+    | { kind: "spell"; casterId: string; spellId: string }
+    | { kind: "ability"; memberId: string; ability: PartyAbilityRef };
+  /** Muted right-hand label — who casts / uses it, or a cooldown. */
+  note?: string;
 };
+
+/** True when the spell can be cast outside battle (`usable_in`
+ *  absent / empty, or listing "party"). Mirrors the character
+ *  sheet's rule for showing a Cast button. */
+function spellCastableFromParty(spell: PartySpellRef): boolean {
+  const u = spell.usable_in;
+  return !Array.isArray(u) || u.length === 0 || u.includes("party");
+}
+
+/** Inventory items that unlock an action in the Effects list while
+ *  the party holds at least one. The items themselves stay in the
+ *  Inventory (they can still be sold / sent / replaced). Matching is
+ *  on the item id (plus the legacy display-name ids older saves still
+ *  carry). */
+const EFFECT_ITEM_ACTIONS: ReadonlyArray<{
+  ids: readonly string[];
+  label: string;
+}> = [
+  { ids: ["torch", "Torch"], label: "Light Torch" },
+  { ids: ["camping_supplies", "Camping Supplies"], label: "Camp" },
+];
 
 /** Display-name fallback for synthesized effect rows (effects whose
  *  id appears in `party_effects` but isn't backed by an Ability
@@ -558,8 +593,114 @@ export function PartyScreen({
         durationSteps: dur && dur > 0 ? dur : undefined,
       });
     }
+
+    // Castable spells — one row per spell any roster member knows
+    // (class casting_type + level gate, same rule as the character
+    // sheet) that can be cast outside battle. When several members
+    // know it, the caster is whoever can afford it with the most MP
+    // left; the caster's name shows on the right.
+    const spellCasters = new Map<string, PartyCharacterRef[]>();
+    for (const m of members) {
+      const klass = classById.get(m.class);
+      const types = klass?.casting_type;
+      if (!types || types.length === 0) continue;
+      for (const sp of spells) {
+        if (!sp.casting_type || !types.includes(sp.casting_type)) continue;
+        const gate = sp.class_min_levels?.[m.class] ?? sp.min_level ?? 1;
+        if ((m.level ?? 1) < gate) continue;
+        if (!spellCastableFromParty(sp)) continue;
+        const list = spellCasters.get(sp.id) ?? [];
+        list.push(m);
+        spellCasters.set(sp.id, list);
+      }
+    }
+    for (const sp of spells) {
+      const casters = spellCasters.get(sp.id);
+      if (!casters) continue;
+      const cost = sp.mp_cost ?? 0;
+      const caster = [...casters].sort((a, b) => {
+        const aOk = (a.mp ?? 0) >= cost ? 1 : 0;
+        const bOk = (b.mp ?? 0) >= cost ? 1 : 0;
+        return bOk - aOk || (b.mp ?? 0) - (a.mp ?? 0);
+      })[0];
+      rows.push({
+        kind: "effect",
+        ability: {
+          id: `cast:${sp.id}`,
+          name: sp.name ?? sp.id,
+          description: sp.description,
+        },
+        available: true,
+        active: false,
+        action: { kind: "spell", casterId: caster.id, spellId: sp.id },
+        note: `${caster.name} · ${cost} MP`,
+      });
+    }
+
+    // Race / class abilities usable from the party screen. Toggle
+    // effects (`party_effect`) are already rows above, so skip them.
+    const seenAbilities = new Set(rows.map((r) => r.ability.id));
+    const abilityById = new Map(abilities.map((a) => [a.id, a]));
+    for (const m of members) {
+      const granted = [
+        ...(raceById.get(m.race)?.abilities ?? []),
+        ...(classById.get(m.class)?.abilities ?? [])
+          .filter((l) => (l.min_level ?? 1) <= (m.level ?? 1))
+          .map((l) => l.ability_id ?? l.id ?? ""),
+      ];
+      for (const id of granted) {
+        const a = abilityById.get(id);
+        if (!a || a.party_effect) continue;
+        if (!(a.usable_in ?? []).includes("party")) continue;
+        if (seenAbilities.has(a.id)) continue;
+        seenAbilities.add(a.id);
+        const cooldown = abilityCooldowns?.get(a.id);
+        rows.push({
+          kind: "effect",
+          ability: a,
+          available: true,
+          active: false,
+          action: { kind: "ability", memberId: m.id, ability: a },
+          note: cooldown ? `${m.name} · ${cooldown}` : m.name,
+        });
+      }
+    }
+
+    // Item actions — Torch / Camping Supplies in the inventory show
+    // up here as "Light Torch" / "Camp" rows. Activating one Uses the
+    // first matching inventory stack (same host path as the old
+    // stash Use button).
+    const inv = party.inventory ?? [];
+    for (const action of EFFECT_ITEM_ACTIONS) {
+      const firstIdx = inv.findIndex((e) => action.ids.includes(e.item));
+      if (firstIdx < 0) continue;
+      const cat = itemById.get(inv[firstIdx].item);
+      rows.push({
+        kind: "effect",
+        ability: {
+          id: `use:${action.ids[0]}`,
+          name: action.label,
+          description: cat?.description,
+        },
+        available: true,
+        active: false,
+        action: { kind: "item", inventoryIndex: firstIdx },
+      });
+    }
     return rows;
-  }, [abilities, unlocked, activeEffectIds, effectDurations]);
+  }, [
+    abilities,
+    unlocked,
+    activeEffectIds,
+    effectDurations,
+    party.inventory,
+    itemById,
+    members,
+    spells,
+    raceById,
+    classById,
+    abilityCooldowns,
+  ]);
 
   // ── Selection state — which left-list row is highlighted ─────────
   // Default to the first available effect so the right pane shows
@@ -584,24 +725,43 @@ export function PartyScreen({
   // keyboard mode) and act on the selected row with U/S/X — or click
   // straight on the row + action buttons in the detail panel.
   const stashEntries = party.inventory ?? [];
+  /** Display order for the Inventory list: equipable gear (weapons /
+   *  armor) first, then usable items (potions, scrolls…), then
+   *  everything else. Stable within each group. Maps display
+   *  position → index in `party.inventory`; `stashSelectedIndex` is a
+   *  display position, so translate through this before calling the
+   *  host's Use / Send callbacks (which expect inventory indices). */
+  const stashOrder = useMemo(() => {
+    const inv = party.inventory ?? [];
+    const rank = (item: string): number => {
+      const cat = itemById.get(item);
+      if (cat?.slots && cat.slots.length > 0) return 0;
+      if (cat?.usable) return 1;
+      return 2;
+    };
+    return inv
+      .map((e, i) => ({ i, r: rank(e.item) }))
+      .sort((a, b) => a.r - b.r || a.i - b.i)
+      .map((x) => x.i);
+  }, [party.inventory, itemById]);
   const [stashSelectedIndex, setStashSelectedIndex] = useState<number | null>(
-    stashEntries.length > 0 ? 0 : null,
+    stashOrder.length > 0 ? 0 : null,
   );
   /** When the stash shrinks (item used / sent away), the cursor may
    *  fall off the end. Clamp it on every render so the detail panel
    *  always points at a real row, and disappear it when the stash
    *  empties. */
   useEffect(() => {
-    if (stashEntries.length === 0) {
+    if (stashOrder.length === 0) {
       setStashSelectedIndex(null);
       return;
     }
     setStashSelectedIndex((cur) => {
       if (cur == null) return 0;
-      if (cur >= stashEntries.length) return stashEntries.length - 1;
+      if (cur >= stashOrder.length) return stashOrder.length - 1;
       return cur;
     });
-  }, [stashEntries.length]);
+  }, [stashOrder.length]);
 
   /** "send" — the player picked Send and is now waiting for a roster
    *  pick (1-N or click). "examine" — full description visible in the
@@ -657,12 +817,11 @@ export function PartyScreen({
   }, [stashSelectedIndex]);
 
   const selectedStashEntry =
-    stashSelectedIndex != null ? stashEntries[stashSelectedIndex] : null;
+    stashSelectedIndex != null
+      ? stashEntries[stashOrder[stashSelectedIndex]]
+      : null;
   const selectedStashCatalog = selectedStashEntry
     ? itemById.get(selectedStashEntry.item)
-    : null;
-  const selectedStashName = selectedStashEntry
-    ? itemNameById.get(selectedStashEntry.item) ?? selectedStashEntry.item
     : null;
   const canUseSelected =
     !!onUseStashItem && !!selectedStashCatalog?.usable;
@@ -680,25 +839,19 @@ export function PartyScreen({
   const triggerUse = useCallback(() => {
     if (stashSelectedIndex == null) return;
     if (!canUseSelected || !onUseStashItem) return;
-    onUseStashItem(stashSelectedIndex);
+    onUseStashItem(stashOrder[stashSelectedIndex]);
     setStashMode("none");
-  }, [canUseSelected, onUseStashItem, stashSelectedIndex]);
-
-  const beginSend = useCallback(() => {
-    if (stashSelectedIndex == null) return;
-    if (!canSendSelected) return;
-    setStashMode("send");
-  }, [canSendSelected, stashSelectedIndex]);
+  }, [canUseSelected, onUseStashItem, stashSelectedIndex, stashOrder]);
 
   const sendToMember = useCallback(
     (memberIndex: number) => {
       if (stashSelectedIndex == null) return;
       if (!onSendStashItem) return;
       if (memberIndex < 0 || memberIndex >= members.length) return;
-      onSendStashItem(stashSelectedIndex, memberIndex);
+      onSendStashItem(stashOrder[stashSelectedIndex], memberIndex);
       setStashMode("none");
     },
-    [onSendStashItem, stashSelectedIndex, members.length],
+    [onSendStashItem, stashSelectedIndex, stashOrder, members.length],
   );
 
   const toggleExamine = useCallback(() => {
@@ -736,10 +889,6 @@ export function PartyScreen({
     setDropTargetId(null);
   };
 
-  // Resync selection when the underlying list changes (e.g., roster
-  // edit added a Halfling and unlocked Pickpocket).
-  const selectedRow = effectRows.find((r) => r.ability.id === selectedId);
-
   // ── Toggle helper for the "active" preview set ───────────────────
   // Memoised — the keydown effect (below) lists it as a dependency,
   // and an inline arrow on every render would force the effect to
@@ -762,6 +911,22 @@ export function PartyScreen({
       }
     },
     [activeEffectIds, onActiveEffectsChange],
+  );
+
+  /** Activate an Effects row: one-shot actions (item / spell /
+   *  ability) fire their host callback; toggle effects flip. */
+  const activateEffectRow = useCallback(
+    (row: EffectRow) => {
+      const a = row.action;
+      if (!a) {
+        if (row.available) toggleActive(row.ability.id, true);
+        return;
+      }
+      if (a.kind === "item") onUseStashItem?.(a.inventoryIndex);
+      else if (a.kind === "spell") onCastSpell?.(a.casterId, a.spellId);
+      else onUseAbility?.(a.memberId, a.ability);
+    },
+    [toggleActive, onUseStashItem, onCastSpell, onUseAbility],
   );
 
   // ── Keyboard navigation — reducer-driven ────────────────────────
@@ -803,7 +968,7 @@ export function PartyScreen({
       }
       const navCtx: PartyNavContext = {
         effectCount: effectRows.length,
-        stashCount: stashEntries.length,
+        stashCount: stashOrder.length,
         memberCount: members.length,
         canUse: canUseSelected,
         canSend: canSendSelected,
@@ -871,7 +1036,7 @@ export function PartyScreen({
           // unreachable comment) so the switch is still exhaustive
           // against the union of action kinds.
           const row = effectRows[next.effectIndex];
-          if (row) toggleActive(row.ability.id, row.available);
+          if (row) activateEffectRow(row);
           break;
         }
         case "roster-drill-in": {
@@ -910,7 +1075,7 @@ export function PartyScreen({
     focusedMember,
     effectRows,
     effectIndex,
-    stashEntries.length,
+    stashOrder.length,
     stashSelectedIndex,
     members,
     members.length,
@@ -920,6 +1085,7 @@ export function PartyScreen({
     sendToMember,
     toggleExamine,
     toggleActive,
+    activateEffectRow,
     selectedId,
     actionIndex,
     sendIndex,
@@ -1069,6 +1235,71 @@ export function PartyScreen({
     if (focusZone === zone) return "border-ember/60 bg-ember/15";
     return "border-ember/30 bg-ember/5";
   };
+  // ── Collapsible sections ───────────────────────────────────────
+  // Each list (Effects / Inventory / Party) can be folded away from
+  // its header. Remembered per browser so the layout sticks between
+  // visits; storage failures just fall back to all-expanded.
+  type SectionKey = "effects" | "stash" | "roster";
+  const COLLAPSE_KEY = "wilderstep.partyScreen.collapsed";
+  const [collapsed, setCollapsed] = useState<Record<SectionKey, boolean>>({
+    effects: false,
+    stash: false,
+    roster: false,
+  });
+  // Load the remembered layout after mount (not in the initializer)
+  // so server and first client render agree.
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(COLLAPSE_KEY);
+      if (raw) setCollapsed((cur) => ({ ...cur, ...JSON.parse(raw) }));
+    } catch {
+      /* storage unavailable — stay expanded */
+    }
+  }, []);
+  const setSectionCollapsed = useCallback(
+    (key: SectionKey, value: boolean) => {
+      setCollapsed((cur) => {
+        if (cur[key] === value) return cur;
+        const next = { ...cur, [key]: value };
+        try {
+          window.localStorage.setItem(COLLAPSE_KEY, JSON.stringify(next));
+        } catch {
+          /* ignore */
+        }
+        return next;
+      });
+    },
+    [],
+  );
+  // Keyboard focus landing in a collapsed list re-opens it, so the
+  // cursor is never on a hidden row (send mode picks from the roster).
+  useEffect(() => {
+    if (focusZone === "effects") setSectionCollapsed("effects", false);
+    else if (focusZone === "stash") setSectionCollapsed("stash", false);
+    else if (focusZone === "roster" || focusZone === "send")
+      setSectionCollapsed("roster", false);
+  }, [focusZone, setSectionCollapsed]);
+  useEffect(() => {
+    if (stashMode === "send") setSectionCollapsed("roster", false);
+  }, [stashMode, setSectionCollapsed]);
+
+  const sectionHeader = (key: SectionKey, label: string) => (
+    <h3>
+      <button
+        type="button"
+        onClick={() => setSectionCollapsed(key, !collapsed[key])}
+        aria-expanded={!collapsed[key]}
+        className={sectionHeaderClass(key)}
+        title={collapsed[key] ? `Expand ${label}` : `Collapse ${label}`}
+      >
+        <span className="w-3 text-[10px] text-amber-300/80">
+          {collapsed[key] ? "▸" : "▾"}
+        </span>
+        {label}
+      </button>
+    </h3>
+  );
+
   const sectionHeaderClass = (zone: FocusZone): string => {
     const focused = focusZone === zone;
     // Focused header gets a colored left bar + brighter amber so the
@@ -1077,11 +1308,12 @@ export function PartyScreen({
     // chrome (the player report that started this fix said pressing
     // Enter "didn't toggle the effect" — the actual cause was that
     // focus had drifted to the stash without a clear visual cue).
+    // All three section headers share one font + color; keyboard
+    // focus is shown only by the left bar so the titles never look
+    // mismatched.
     return [
-      "text-[13px] uppercase tracking-wide pl-2 -ml-2",
-      focused
-        ? "border-l-2 border-amber-200 text-amber-200"
-        : "border-l-2 border-transparent text-amber-300/70",
+      "flex w-full items-center gap-1.5 pl-2 -ml-2 text-left text-[13px] uppercase tracking-wide text-amber-300 hover:text-amber-200",
+      focused ? "border-l-2 border-amber-200" : "border-l-2 border-transparent",
     ].join(" ");
   };
 
@@ -1118,21 +1350,14 @@ export function PartyScreen({
 
   return (
     <div className="flex flex-col gap-2 rounded-md border border-parchment/15 bg-ink/40 p-3 text-parchment/90">
-      {/* Title */}
-      <div className="border-b border-parchment/15 pb-1 text-center font-display text-lg uppercase tracking-[0.3em] text-amber-300">
-        Party
-      </div>
-
       {/* Two-pane body */}
       <div className="grid gap-3 md:grid-cols-2">
         {/* Left: effects + actions + stash */}
         <div className="space-y-2">
           {/* EFFECTS list */}
           <section>
-            <h3 className={sectionHeaderClass("effects")}>
-              {focusZone === "effects" ? "▸ " : ""}Effects
-            </h3>
-            <ul className="mt-1 space-y-0.5">
+            {sectionHeader("effects", "Effects")}
+            <ul className="mt-1 space-y-0.5" hidden={collapsed.effects}>
               {effectRows.length === 0 ? (
                 <li className="text-[13px] text-parchment/70">
                   (no party effects available — roster doesn&apos;t
@@ -1159,10 +1384,17 @@ export function PartyScreen({
                         // for why both paths converge here.
                         setSelectedId(row.ability.id);
                         setFocusZone("effects");
-                        if (row.available) {
-                          toggleActive(row.ability.id, true);
-                        }
+                        activateEffectRow(row);
                       }}
+                      title={
+                        row.action
+                          ? row.ability.description
+                          : [
+                              row.ability.description,
+                              `Duration: ${fmtDuration(row.ability.duration)}`,
+                              `Requires: ${requirementsFor(row.ability.id, races, classes)}`,
+                            ].filter(Boolean).join("\n")
+                      }
                       className={[
                         "flex w-full items-center gap-2 rounded border px-2 py-0.5 text-left text-sm text-parchment/90",
                         rowSelClass("effects", isSel),
@@ -1171,13 +1403,18 @@ export function PartyScreen({
                       {row.active ? (
                         <span className="text-amber-300">●</span>
                       ) : (
-                        <span className="text-parchment/60">○</span>
+                        <span className="text-parchment/60">+</span>
                       )}
                       <span>{row.ability.name ?? row.ability.id}</span>
                       {row.durationSteps !== undefined ? (
                         <span className="ml-auto font-mono text-xs text-parchment/75">
                           {row.durationSteps}{" "}
                           {row.durationSteps === 1 ? "step" : "steps"}
+                        </span>
+                      ) : null}
+                      {row.note ? (
+                        <span className="ml-auto truncate text-xs text-parchment/60">
+                          {row.note}
                         </span>
                       ) : null}
                     </button>
@@ -1187,7 +1424,7 @@ export function PartyScreen({
             </ul>
           </section>
 
-          {/* SHARED STASH — scrollable list. Up/Down navigates (and
+          {/* INVENTORY — scrollable list. Up/Down navigates (and
               spills back into Effects past the first row); Enter
               opens the Use / Send / Examine submenu. U / S / X still
               work as direct accelerators. Max-height keeps a long
@@ -1195,22 +1432,19 @@ export function PartyScreen({
               effect keeps the highlighted row in view as the cursor
               walks past the visible window. */}
           <section>
-            <h3 className={sectionHeaderClass("stash")}>
-              {focusZone === "stash" ? "▸ " : ""}Shared Stash{" "}
-              <span className="text-parchment/65">
-                ({stashEntries.length} items)
-              </span>
-            </h3>
+            {sectionHeader("stash", "Inventory")}
             <ul
+              hidden={collapsed.stash}
               ref={stashListRef}
               className="mt-1 max-h-48 space-y-0.5 overflow-y-auto pr-1 text-sm"
               role="listbox"
-              aria-label="Shared stash"
+              aria-label="Inventory"
             >
-              {stashEntries.length === 0 ? (
+              {stashOrder.length === 0 ? (
                 <li className="text-[13px] text-parchment/65">(empty)</li>
               ) : null}
-              {stashEntries.map((entry, i) => {
+              {stashOrder.map((invIdx, i) => {
+                const entry = stashEntries[invIdx];
                 const label =
                   itemNameById.get(entry.item) ?? entry.item;
                 const isSel = i === stashSelectedIndex;
@@ -1235,7 +1469,7 @@ export function PartyScreen({
                   ? (typeof entry.durability === "number" ? entry.durability : durMax)
                   : 0;
                 return (
-                  <li key={`${entry.item}-${i}`}>
+                  <li key={`${entry.item}-${invIdx}`}>
                     <button
                       type="button"
                       role="option"
@@ -1254,7 +1488,7 @@ export function PartyScreen({
                           onUseStashItem &&
                           cat?.usable
                         ) {
-                          onUseStashItem(i);
+                          onUseStashItem(invIdx);
                         } else {
                           setStashMode("examine");
                         }
@@ -1280,120 +1514,25 @@ export function PartyScreen({
                         {qty > 1 ? <span>({qty})</span> : null}
                       </span>
                     </button>
+                    {isSel && stashMode === "examine" ? (
+                      <p className="px-2 pb-1 pt-0.5 text-[13px] text-parchment/75">
+                        {cat?.description ?? "(no description in items.json)"}
+                      </p>
+                    ) : null}
                   </li>
                 );
               })}
             </ul>
           </section>
 
-          {/* STASH ITEM DETAIL — Use / Send / Examine actions for the
-              row currently highlighted in the stash. Hidden when the
-              stash is empty so we don't render an empty action panel. */}
-          {selectedStashEntry && selectedStashName ? (
-            <section className="rounded border border-parchment/15 bg-ink/30 p-2">
-              <h3 className="text-[13px] uppercase tracking-wide text-amber-300">
-                Stash Item
-              </h3>
-              <div className="mt-1 space-y-1 text-sm">
-                <div className="flex items-baseline justify-between gap-2">
-                  <span className="font-display text-parchment">
-                    {selectedStashName}
-                  </span>
-                  {selectedStashEntry.charges != null ? (
-                    <span className="text-xs text-parchment/75">
-                      ×{selectedStashEntry.charges}
-                    </span>
-                  ) : null}
-                </div>
-                {stashMode === "examine" ? (
-                  <p className="text-[13px] text-parchment/75">
-                    {selectedStashCatalog?.description ??
-                      "(no description in items.json)"}
-                  </p>
-                ) : null}
-                {stashMode === "send" ? (
-                  <p className="text-[13px] text-amber-300">
-                    Send to which character? ↑↓ to pick + Enter, or
-                    press 1–{members.length}, or click a roster card.
-                    Esc cancels.
-                  </p>
-                ) : null}
-                <div className="flex flex-wrap gap-1 pt-1">
-                  <ActionButton
-                    label="Use (U)"
-                    onClick={() => {
-                      setFocusZone("actions");
-                      setActionIndex(ACTION_USE);
-                      triggerUse();
-                    }}
-                    enabled={canUseSelected}
-                    focused={focusZone === "actions" && actionIndex === ACTION_USE}
-                    hint={
-                      !onUseStashItem
-                        ? "Host hasn't wired Use yet."
-                        : !selectedStashCatalog?.usable
-                          ? "This item isn't usable from the stash."
-                          : "Use this item for the party."
-                    }
-                  />
-                  <ActionButton
-                    label="Send to… (S)"
-                    onClick={() => {
-                      setFocusZone("actions");
-                      setActionIndex(ACTION_SEND);
-                      beginSend();
-                    }}
-                    enabled={canSendSelected && stashMode !== "send"}
-                    focused={
-                      (focusZone === "actions" && actionIndex === ACTION_SEND) ||
-                      stashMode === "send"
-                    }
-                    hint={
-                      !onSendStashItem
-                        ? "Host hasn't wired Send yet."
-                        : members.length === 0
-                          ? "No party members to receive it."
-                          : !itemIsSendable
-                            ? "This item is used for the whole party — it stays in the stash."
-                            : "Pick a character to receive this item."
-                    }
-                  />
-                  <ActionButton
-                    label={stashMode === "examine" ? "Hide (X)" : "Examine (X)"}
-                    onClick={() => {
-                      setFocusZone("actions");
-                      setActionIndex(ACTION_EXAMINE);
-                      toggleExamine();
-                    }}
-                    enabled={true}
-                    focused={
-                      focusZone === "actions" && actionIndex === ACTION_EXAMINE
-                    }
-                    hint="Show the catalog description."
-                  />
-                  {stashMode === "send" ? (
-                    <button
-                      type="button"
-                      onClick={() => setStashMode("none")}
-                      className="rounded border border-parchment/30 bg-ink/40 px-2 py-0.5 text-[13px] text-parchment/75 hover:bg-ink/60"
-                    >
-                      Cancel
-                    </button>
-                  ) : null}
-                </div>
-              </div>
-            </section>
-          ) : null}
         </div>
 
         {/* Right: roster + detail + gold */}
         <div className="space-y-2">
           {/* Roster */}
           <section>
-            <h3 className={sectionHeaderClass("roster")}>
-              {focusZone === "roster" ? "▸ " : ""}Party [1-{members.length}]
-            </h3>
-            <ul className="mt-1 space-y-1">
+            {sectionHeader("roster", "Party")}
+            <ul className="mt-1 space-y-1" hidden={collapsed.roster}>
               {members.length === 0 ? (
                 <li className="text-[13px] text-parchment/70">
                   (no roster — check party.json)
@@ -1409,7 +1548,6 @@ export function PartyScreen({
                   <RosterCard
                     key={m.id}
                     member={m}
-                    slotNumber={i + 1}
                     className_={classById.get(m.class)?.name ?? m.class}
                     raceName={raceById.get(m.race)?.name ?? m.race}
                     xpProgress={xpProgressInLevel(m, raceById.get(m.race))}
@@ -1471,54 +1609,6 @@ export function PartyScreen({
             </ul>
           </section>
 
-          {/* AVAILABLE EFFECT — detail of the selected row */}
-          <section className="rounded border border-parchment/15 bg-ink/30 p-2">
-            <h3 className="text-[13px] uppercase tracking-wide text-amber-300">
-              Available Effect
-            </h3>
-            {selectedRow ? (
-              <div className="mt-1 space-y-1 text-sm">
-                <div className="font-display text-parchment">
-                  {selectedRow.ability.name ?? selectedRow.ability.id}
-                </div>
-                <p className="text-[13px] text-parchment/75">
-                  {selectedRow.ability.description ?? "(no description)"}
-                </p>
-                <div className="text-xs text-parchment/75">
-                  Duration: {fmtDuration(selectedRow.ability.duration)}
-                </div>
-                <div className="text-xs text-parchment/75">
-                  Requires:{" "}
-                  {requirementsFor(
-                    selectedRow.ability.id,
-                    races,
-                    classes,
-                  )}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => toggleActive(selectedRow.ability.id, true)}
-                  className="mt-1 rounded border border-ember/60 bg-ember/30 px-2 py-0.5 text-[13px] text-parchment hover:bg-ember/50"
-                >
-                  {selectedRow.active
-                    ? "Remove from active"
-                    : "Add to active"}
-                </button>
-              </div>
-            ) : (
-              <p className="mt-1 text-[13px] text-parchment/65">
-                Select an effect on the left to see its details.
-              </p>
-            )}
-          </section>
-
-          {/* Gold + stash totals */}
-          <section className="flex items-center justify-between rounded border border-parchment/15 bg-ink/30 px-2 py-1 text-sm">
-            <span className="text-amber-300">GOLD: {party.gold ?? 0}</span>
-            <span className="text-parchment/75">
-              STASH: {party.inventory?.length ?? 0}
-            </span>
-          </section>
         </div>
       </div>
 
@@ -1540,57 +1630,10 @@ export function PartyScreen({
   );
 }
 
-/**
- * Tiny pill-style action button used in the Stash Item detail panel.
- * Greys out when `enabled` is false and forwards a tooltip describing
- * why — keeps the affordance visible even when the action isn't
- * applicable so the player can learn what unlocks it.
- */
-function ActionButton({
-  label,
-  onClick,
-  enabled,
-  hint,
-  focused = false,
-}: {
-  label: string;
-  onClick: () => void;
-  enabled: boolean;
-  hint: string;
-  /** When true the button is the keyboard-selected target — Enter
-   *  inside the actions zone will fire its `onClick`. Adds a brighter
-   *  outline so the cursor is visible without showing a browser-
-   *  default focus ring (which we can't always reach because the
-   *  reducer drives the cursor at the window level rather than
-   *  through the DOM focus tree). */
-  focused?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={!enabled}
-      title={hint}
-      className={[
-        "rounded border px-2 py-0.5 text-[13px]",
-        enabled
-          ? "border-ember/60 bg-ember/30 text-parchment hover:bg-ember/50"
-          : "cursor-not-allowed border-parchment/15 bg-ink/40 text-parchment/55",
-        focused
-          ? "ring-1 ring-amber-200 ring-offset-1 ring-offset-ink/60"
-          : "",
-      ].join(" ")}
-    >
-      {label}
-    </button>
-  );
-}
-
 // ── Roster card ────────────────────────────────────────────────────
 
 function RosterCard({
   member,
-  slotNumber,
   className_,
   raceName,
   xpProgress,
@@ -1608,7 +1651,6 @@ function RosterCard({
   onDragEnd,
 }: {
   member: PartyCharacterRef;
-  slotNumber: number;
   className_: string;
   raceName: string;
   /** XP progress within the current level — drives the amber bar's
@@ -1739,7 +1781,6 @@ function RosterCard({
       )}
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-2 text-sm">
-          <span className="text-amber-300">{slotNumber}</span>
           <span className="font-display text-parchment">{member.name}</span>
         </div>
         <div className="text-xs text-parchment/85">
@@ -1766,10 +1807,6 @@ function RosterCard({
             max={xpNeeded}
             color="bg-amber-400/60"
           />
-        </div>
-        <div className="mt-0.5 font-mono text-xs text-parchment/70">
-          LVL {member.level} · HP {hp}/{maxHp} · MP {mp}/{maxMp} · XP {xpInto}/
-          {xpNeeded}
         </div>
         {fallen || effects.length > 0 ? (
           <div className="mt-1 flex flex-wrap items-center gap-1">

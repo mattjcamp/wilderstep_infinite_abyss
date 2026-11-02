@@ -50,10 +50,10 @@ function customFloor(
 const palette = new Map<string, string>([
   // The ruins prototypes' own palette tiles (every dungeon cell now
   // resolves its art through the palette).
-  ["floor", "indoor/floor.png"],
-  ["wall_stone", "indoor/wall_stone.png"],
-  ["stairs_up", "indoor/stairs_up.png"],
-  ["stairs_down", "indoor/stairs_down.png"],
+  ["dungeon_floor_flagstone", "dungeon/floors/floor_flagstone.png"],
+  ["dungeon_wall_top", "dungeon/walls/room_walls/wall_top.png"],
+  ["dungeon_stairs_up", "dungeon/doors_and_stairs/stairs_up.png"],
+  ["dungeon_stairs", "dungeon/doors_and_stairs/stairs.png"],
   ["grass", "map/grass1.png"],
   ["mountain", "map/mountains.png"],
   ["portal1", "map/portal.png"],
@@ -100,7 +100,7 @@ describe("dungeonLevelToMap — custom style palette swap", () => {
     const wall = map.grid[0][0];
     // Sprites keep the default ruins prototype's art (non-empty), and
     // the floor/wall flags are still forced.
-    expect(floor.sprite).toBe("indoor/floor.png");
+    expect(floor.sprite).toBe("dungeon/floors/floor_flagstone.png");
     expect(floor.walkable).toBe(true);
     expect(wall.walkable).toBe(false);
     expect(wall.obstructs).toBe(true);

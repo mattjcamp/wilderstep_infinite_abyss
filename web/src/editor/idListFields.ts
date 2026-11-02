@@ -95,14 +95,14 @@ const PER_MODEL: Record<string, Record<string, IdListFieldConfig>> = {
   },
   spells: {
     usable_in: {
-      source: { kind: "static", options: ["battle", "party"] },
-      help: "Where the spell can be cast.",
+      source: { kind: "static", options: ["battle", "party", "lock"] },
+      help: "Where the spell can be cast. \"lock\" = only from the locked-door dialog (e.g. Knock).",
     },
   },
   abilities: {
     usable_in: {
-      source: { kind: "static", options: ["battle", "party"] },
-      help: "Where the ability can be used.",
+      source: { kind: "static", options: ["battle", "party", "npc"] },
+      help: "Where the ability can be used. \"npc\" = only from the NPC conversation dialog (e.g. Pickpocket → Steal).",
     },
   },
   character_classes: {

@@ -22,14 +22,14 @@
  *   ├──────────────┤
  *   │    STASH     │  ← Up/Down moves within the list
  *   │   (vertical) │     Up past first → focusZone="effects"
- *   │              │     Enter on row → focusZone="actions"
- *   │              │     U/S/X still work as direct accelerators
+ *   │              │     Enter on row → Use (or Examine if unusable)
+ *   │              │     U/S/X are the direct accelerators
  *   ├──────────────┤
  *   │  ACTIONS     │  ← Left/Right (and Up/Down) cycle Use/Send/Examine
  *   │  (horizontal)│     Enter activates; Esc → back to "stash"
  *   ├──────────────┤
  *   │  SEND        │  ← Up/Down or 1-N pick a roster slot
- *   │  (vertical)  │     Enter commits; Esc → back to "actions"
+ *   │  (vertical)  │     Enter commits; Esc → back to "stash"
  *   └──────────────┘
  *
  * The reducer doesn't *do* anything itself — it returns the next
@@ -347,13 +347,17 @@ function reduceStashKey(
     if (ctx.stashCount === 0 || s.stashIndex < 0) {
       return consumed(s);
     }
-    // Open the actions submenu. Default to the first enabled
-    // action so Enter twice doesn't bounce off a disabled Use.
-    return consumed({
-      ...s,
-      zone: "actions",
-      actionIndex: firstEnabledAction(ctx),
-    });
+    // No on-screen action panel any more (removed 2026-11) — Enter
+    // uses the item when it's usable, otherwise toggles the inline
+    // description. Send stays on its S accelerator.
+    if (ctx.canUse) {
+      return { state: s, action: { kind: "use" }, consumed: true };
+    }
+    return {
+      state: s,
+      action: { kind: "examine-toggle" },
+      consumed: true,
+    };
   }
   // Direct accelerators — preserved from the original behavior so
   // power users don't lose their muscle memory.
@@ -536,7 +540,7 @@ function reduceSendKey(
     };
   }
   if (key === "Escape") {
-    return consumed({ ...s, zone: "actions" });
+    return consumed({ ...s, zone: "stash" });
   }
   // Number-key shortcuts — 1..9 pick the matching roster slot
   // directly. Matches the original behavior so muscle memory is
@@ -654,14 +658,6 @@ function enterRoster(
     rosterIndex: idx,
     lastLeftZone: from,
   });
-}
-
-/** Pick the first action button that's currently enabled, falling
- *  back to Examine (always available) if neither Use nor Send is. */
-function firstEnabledAction(ctx: PartyNavContext): number {
-  if (ctx.canUse) return ACTION_USE;
-  if (ctx.canSend) return ACTION_SEND;
-  return ACTION_EXAMINE;
 }
 
 /** Step the action cursor by `delta` (+1 or -1), skipping over

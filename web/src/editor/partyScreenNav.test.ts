@@ -145,20 +145,16 @@ describe("Stash zone navigation", () => {
     expect(r.state.stashIndex).toBe(0);
   });
 
-  it("Enter opens the actions submenu, defaulting to Use", () => {
+  it("Enter on a usable item emits use and stays in the stash", () => {
     const r = key(stashState(), "Enter", ctx());
-    expect(r.state.zone).toBe("actions");
-    expect(r.state.actionIndex).toBe(ACTION_USE);
+    expect(r.action).toEqual({ kind: "use" });
+    expect(r.state.zone).toBe("stash");
   });
 
-  it("Enter on a non-usable item defaults to Send (next enabled)", () => {
+  it("Enter on a non-usable item toggles examine", () => {
     const r = key(stashState(), "Enter", ctx({ canUse: false }));
-    expect(r.state.actionIndex).toBe(ACTION_SEND);
-  });
-
-  it("Enter on a non-sendable, non-usable item defaults to Examine", () => {
-    const r = key(stashState(), "Enter", ctx({ canUse: false, canSend: false }));
-    expect(r.state.actionIndex).toBe(ACTION_EXAMINE);
+    expect(r.action).toEqual({ kind: "examine-toggle" });
+    expect(r.state.zone).toBe("stash");
   });
 
   it("U accelerator emits use without going through the submenu", () => {
@@ -298,9 +294,9 @@ describe("Send-to picker", () => {
     expect(r.consumed).toBe(false);
   });
 
-  it("Escape cancels send and returns to actions submenu", () => {
+  it("Escape cancels send and returns to the stash", () => {
     const r = key(sendState(1), "Escape", ctx());
-    expect(r.state.zone).toBe("actions");
+    expect(r.state.zone).toBe("stash");
   });
 
   it("Empty roster — Enter does nothing", () => {

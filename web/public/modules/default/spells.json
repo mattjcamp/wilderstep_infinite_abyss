@@ -78,7 +78,7 @@
       "mp_cost": 6,
       "range": 1,
       "targeting": "self",
-      "usable_in": [],
+      "usable_in": ["lock"],
       "duration": "instant",
       "action": "knock",
       "action_params": {

@@ -1819,6 +1819,14 @@ export function PlayPartyScreenOverlay({
             Party Screen
           </h2>
           <div className="flex items-center gap-2">
+            {state.kind === "ok" ? (
+              <span
+                className="text-xs text-amber-300"
+                title="Party gold"
+              >
+                Gold: {state.party.gold ?? 0}
+              </span>
+            ) : null}
             <button
               type="button"
               onClick={handleDropRuneStone}

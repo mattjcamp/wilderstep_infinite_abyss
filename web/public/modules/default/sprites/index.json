@@ -116,18 +116,6 @@
       "water_and_pits/pit_right.png",
       "water_and_pits/pit_top.png"
     ],
-    "indoor": [
-      "counter.png",
-      "door.png",
-      "door_locked.png",
-      "floor.png",
-      "stairs_down.png",
-      "stairs_up.png",
-      "table.png",
-      "wall_planks.png",
-      "wall_stone.png",
-      "window.png"
-    ],
     "item": [
       "arrows.png",
       "axe.png",
