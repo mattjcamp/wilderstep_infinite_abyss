@@ -223,7 +223,6 @@ export function CharacterSheetSim({
   items,
   abilities = [],
   spells = [],
-  onBack,
   onCastSpell,
   onUsePersonalItem,
   onReturnPersonalItem,
@@ -246,9 +245,6 @@ export function CharacterSheetSim({
    *  types and whose `min_level` is satisfied (`class_min_levels`
    *  override honoured if present). */
   spells?: ReadonlyArray<PartySpellRef>;
-  /** Optional Back button — shown when present. Lets the Party screen
-   *  drill-in / drill-out, while standalone hosts can omit it. */
-  onBack?: () => void;
   /** Fires when the player clicks Cast on a party-castable spell.
    *  The handler is responsible for any target picker (heals) or
    *  immediate apply (self-cast like Light), MP deduction, and save
@@ -370,10 +366,6 @@ export function CharacterSheetSim({
     setPersonalSelectedIndex(null);
     setEquippedSelectedSlot(null);
   }, [character.id]);
-  const selectPersonal = (i: number | null) => {
-    setPersonalSelectedIndex(i);
-    setEquippedSelectedSlot(null);
-  };
   const selectEquipped = (slot: string | null) => {
     setEquippedSelectedSlot(slot);
     setPersonalSelectedIndex(null);
@@ -467,7 +459,10 @@ export function CharacterSheetSim({
   const navCtx: CharSheetNavContext = useMemo(
     () => ({
       equippedCount: 2,
-      personalCount: personalItems.length,
+      // Personal Items section removed from the sheet (items are
+      // shared-stash only now) — report it empty so the cursor
+      // walks equipped → race → class → spells.
+      personalCount: 0,
       raceCount: raceAbilities.length,
       classCount: classAbilities.length,
       spellCount: knownSpells.length,
@@ -716,36 +711,6 @@ export function CharacterSheetSim({
       ref={sheetRef}
       className="flex flex-col gap-2 rounded-md border border-parchment/15 bg-ink/40 p-3 text-parchment/90"
     >
-      {/* Title bar — character name + class • race • level */}
-      <div className="flex items-center justify-between gap-2 border-b border-parchment/15 pb-1">
-        <div className="flex-1 text-center font-display text-base uppercase tracking-[0.25em] text-amber-300">
-          {character.name} <span className="text-parchment/60">—</span>{" "}
-          {className}
-          <span className="text-parchment/60"> • </span>
-          {raceName}
-          <span className="text-parchment/60"> • </span>
-          Lvl {level}
-          {fallen ? (
-            <span
-              className="ml-2 rounded border border-ember/60 bg-ember/25 px-1.5 py-px font-mono text-xs tracking-wider text-ember"
-              title="Fallen — needs Raise Dead at a temple."
-            >
-              FALLEN
-            </span>
-          ) : null}
-        </div>
-        {onBack ? (
-          <button
-            type="button"
-            onClick={onBack}
-            className="rounded border border-parchment/20 px-2 py-0.5 text-[13px] text-parchment/85 hover:bg-ink/40"
-            title="Back to Party screen"
-          >
-            ← Back
-          </button>
-        ) : null}
-      </div>
-
       {/* Two-pane body */}
       <div className="grid gap-3 md:grid-cols-2">
         {/* Left pane: identity + bars + combat + attributes */}
@@ -766,8 +731,16 @@ export function CharacterSheetSim({
               <span className="h-14 w-14 shrink-0 rounded border border-parchment/20 bg-ink/80" />
             )}
             <div className="min-w-0 flex-1">
-              <div className="font-display text-lg text-parchment">
+              <div className="flex items-center gap-2 font-display text-lg text-parchment">
                 {character.name}
+                {fallen ? (
+                  <span
+                    className="rounded border border-ember/60 bg-ember/25 px-1.5 py-px font-mono text-xs tracking-wider text-ember"
+                    title="Fallen — needs Raise Dead at a temple."
+                  >
+                    FALLEN
+                  </span>
+                ) : null}
               </div>
               <div className="text-[13px] text-parchment/80">
                 {className} <span className="text-parchment/60">•</span>{" "}
@@ -906,7 +879,7 @@ export function CharacterSheetSim({
           </section>
         </div>
 
-        {/* Right pane: equipped + personal items */}
+        {/* Right pane: equipped items, then race + class abilities */}
         <div className="space-y-3">
           <section>
             <h3 className="text-[13px] uppercase tracking-wide text-amber-300">
@@ -989,216 +962,52 @@ export function CharacterSheetSim({
                 ))}
               </div>
             ) : null}
-            {/* Unequip action — visible only when an equipped slot is
-                selected AND that slot actually holds an item. Clicking
-                fires the host handler with the slot key; the host
-                moves the item back into the personal inventory and
-                clears the slot. */}
-            {(() => {
-              if (!onUnequipSlot || !equippedSelectedSlot) return null;
-              const slotId =
-                equippedSelectedSlot === "hands" ? handsId : bodyId;
-              if (!slotId) return null;
-              return (
-                <div className="mt-2 flex gap-2 text-[13px]">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      onUnequipSlot(character.id, equippedSelectedSlot)
-                    }
-                    className="rounded border border-parchment/30 px-2 py-1 text-parchment/85 hover:bg-ink/50"
-                    title="Return the equipped item to this character's personal inventory."
-                  >
-                    Unequip
-                  </button>
-                </div>
-              );
-            })()}
           </section>
 
-          <section>
-            <h3 className="text-[13px] uppercase tracking-wide text-amber-300">
-              Personal Items
-            </h3>
-            {personalItems.length === 0 ? (
-              <p className="mt-1 text-sm text-parchment/65">(none)</p>
-            ) : (
-              <ul
-                className="mt-1 space-y-0.5 text-sm"
-                role="listbox"
-                aria-label="Personal items"
-              >
-                {personalItems.map((entry, i) => {
-                  const id =
-                    typeof entry.item === "string" ? entry.item : null;
-                  const def = id ? itemById.get(id) ?? null : null;
-                  const label = def?.name ?? id ?? "(unknown)";
-                  // Quantity badge mirrors the stash list: only show
-                  // a count when the catalog flags the item stackable
-                  // AND the stack has more than one copy. Non-
-                  // stackable items show as just the name.
-                  const qty =
-                    def?.stackable && typeof entry.charges === "number"
-                      ? entry.charges
-                      : 1;
-                  const qtyLabel = qty > 1 ? ` (${qty})` : "";
-                  // Durability bar — only for non-stackable gear whose
-                  // catalog defines a positive max. Reads the per-
-                  // instance value off the inventory entry (so a worn
-                  // sword shows partial wear), falling back to the
-                  // catalog max for a fresh item with no stored value.
-                  const durMax = def?.durability ?? 0;
-                  const showDur = !def?.stackable && durMax > 0;
-                  const durCur = showDur
-                    ? (typeof entry.durability === "number"
-                        ? entry.durability
-                        : durMax)
-                    : 0;
-                  const isSel = i === personalSelectedIndex;
-                  // When no host handlers are wired, fall back to
-                  // the original static `<li>` rendering — preserves
-                  // the editor preview's read-only behavior.
-                  const interactive =
-                    !!onUsePersonalItem || !!onReturnPersonalItem;
-                  if (!interactive) {
-                    return (
-                      <li
-                        key={`${id ?? "_"}-${i}`}
-                        className="flex items-center justify-between gap-2 text-parchment/85"
-                      >
-                        <span className="flex min-w-0 items-center gap-2">
-                          <ItemSprite icon={def?.icon} size={18} />
-                          <span className="truncate">
-                            {label}
-                            {qtyLabel}
-                          </span>
-                        </span>
-                        {showDur ? (
-                          <DurabilityBar current={durCur} max={durMax} />
-                        ) : null}
-                      </li>
-                    );
-                  }
-                  const isNavFocused =
-                    navState.zone === "personal" &&
-                    navState.personalIndex === i;
-                  return (
-                    <li key={`${id ?? "_"}-${i}`}>
-                      <button
-                        type="button"
-                        role="option"
-                        aria-selected={isSel}
-                        data-nav-focused={isNavFocused ? "true" : undefined}
-                        onClick={() => {
-                          selectPersonal(i);
-                          setNavState((cur) =>
-                            reduceCharSheetNav(
-                              cur,
-                              { kind: "set-personal", index: i },
-                              navCtx,
-                            ).state,
-                          );
-                        }}
-                        className={[
-                          "flex w-full items-center justify-between gap-2 rounded border px-2 py-0.5 text-left",
-                          isSel
-                            ? "border-ember/60 bg-ember/15 text-parchment"
-                            : "border-transparent text-parchment/85 hover:bg-ink/50",
-                        ].join(" ")}
-                        title={def?.description ?? "Click to select"}
-                      >
-                        <span className="flex min-w-0 items-center gap-2">
-                          <ItemSprite icon={def?.icon} size={18} />
-                          <span className="truncate">{label}</span>
-                        </span>
-                        <span className="ml-auto flex shrink-0 items-center gap-2 text-[13px] text-parchment/75">
-                          {showDur ? (
-                            <DurabilityBar current={durCur} max={durMax} />
-                          ) : null}
-                          {qty > 1 ? <span>({qty})</span> : null}
-                        </span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-            {/* Action row for the selected personal item. Only
-                visible when at least one host handler is wired AND
-                the cursor points at a real row. Buttons gate
-                individually: Use shows only when the item is
-                catalog-flagged usable. */}
-            {(() => {
-              if (personalSelectedIndex == null) return null;
-              const entry = personalItems[personalSelectedIndex];
-              if (!entry) return null;
-              const id =
-                typeof entry.item === "string" ? entry.item : null;
-              const def = id ? itemById.get(id) ?? null : null;
-              const canUse = !!onUsePersonalItem && !!def?.usable;
-              const canReturn = !!onReturnPersonalItem;
-              const equipTarget = equipSlotFor(def);
-              const canEquip =
-                !!onEquipPersonalItem && equipTarget !== null;
-              if (!canUse && !canReturn && !canEquip) return null;
-              return (
-                <div className="mt-2 flex gap-2 text-[13px]">
-                  {canUse ? (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        onUsePersonalItem?.(
-                          character.id,
-                          personalSelectedIndex,
-                        )
-                      }
-                      className="rounded border border-ember/60 bg-ember/20 px-2 py-1 text-parchment hover:bg-ember/40"
-                      title={`Use ${def?.name ?? id}.`}
-                    >
-                      Use
-                    </button>
-                  ) : null}
-                  {canEquip ? (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        onEquipPersonalItem?.(
-                          character.id,
-                          personalSelectedIndex,
-                        )
-                      }
-                      className="rounded border border-ember/60 bg-ember/20 px-2 py-1 text-parchment hover:bg-ember/40"
-                      title={`Equip in the ${equipTarget} slot. Any item currently equipped there moves back to the inventory.`}
-                    >
-                      Equip
-                    </button>
-                  ) : null}
-                  {canReturn ? (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        onReturnPersonalItem?.(
-                          character.id,
-                          personalSelectedIndex,
-                        )
-                      }
-                      className="rounded border border-parchment/30 px-2 py-1 text-parchment/85 hover:bg-ink/50"
-                      title="Move one back to the shared stash."
-                    >
-                      Return to stash
-                    </button>
-                  ) : null}
-                </div>
-              );
-            })()}
-          </section>
-
-          {!onUsePersonalItem && !onReturnPersonalItem ? (
-            <p className="text-xs text-parchment/65">
-              Read-only preview. The play-time sheet lets the player
-              Use or Return-to-stash personal items.
-            </p>
-          ) : null}
+          {/* Race + class abilities sit under the equipped list. */}
+          <div className="space-y-3">
+            <AbilitySection
+              title="Race Abilities"
+              rows={raceAbilities}
+              emptyHint={`${raceName} grants no listed abilities.`}
+              cooldowns={abilityCooldowns}
+              sectionFocused={navState.zone === "race-abilities"}
+              focusedIndex={navState.raceIndex}
+              onRowFocus={(i) =>
+                setNavState((s) =>
+                  reduceCharSheetNav(s, { kind: "set-race", index: i }, navCtx)
+                    .state,
+                )
+              }
+              onUse={(a) => {
+                // Real handler wins when the host provides one (live
+                // play overlay); editor preview falls through to the
+                // local "preview only" flash. The host decides whether
+                // to route to a picker, surface a "do this elsewhere"
+                // hint, or no-op.
+                if (onUseAbility) onUseAbility(character.id, a);
+                else setLastAction(`Used ${a.name ?? a.id} — preview only.`);
+              }}
+            />
+            <AbilitySection
+              title="Class Abilities"
+              rows={classAbilities}
+              emptyHint={`${className} grants no abilities at level ${level}.`}
+              cooldowns={abilityCooldowns}
+              sectionFocused={navState.zone === "class-abilities"}
+              focusedIndex={navState.classIndex}
+              onRowFocus={(i) =>
+                setNavState((s) =>
+                  reduceCharSheetNav(s, { kind: "set-class", index: i }, navCtx)
+                    .state,
+                )
+              }
+              onUse={(a) => {
+                if (onUseAbility) onUseAbility(character.id, a);
+                else setLastAction(`Used ${a.name ?? a.id} — preview only.`);
+              }}
+            />
+          </div>
         </div>
       </div>
 
@@ -1207,49 +1016,6 @@ export function CharacterSheetSim({
           character; rows whose `usable_in` includes "party" get a
           Use / Cast button that flashes a preview-only confirmation
           (no state mutation in this pass). */}
-      <div className="grid gap-3 md:grid-cols-2">
-        <AbilitySection
-          title="Race Abilities"
-          rows={raceAbilities}
-          emptyHint={`${raceName} grants no listed abilities.`}
-          cooldowns={abilityCooldowns}
-          sectionFocused={navState.zone === "race-abilities"}
-          focusedIndex={navState.raceIndex}
-          onRowFocus={(i) =>
-            setNavState((s) =>
-              reduceCharSheetNav(s, { kind: "set-race", index: i }, navCtx)
-                .state,
-            )
-          }
-          onUse={(a) => {
-            // Real handler wins when the host provides one (live
-            // play overlay); editor preview falls through to the
-            // local "preview only" flash. The host decides whether
-            // to route to a picker, surface a "do this elsewhere"
-            // hint, or no-op.
-            if (onUseAbility) onUseAbility(character.id, a);
-            else setLastAction(`Used ${a.name ?? a.id} — preview only.`);
-          }}
-        />
-        <AbilitySection
-          title="Class Abilities"
-          rows={classAbilities}
-          emptyHint={`${className} grants no abilities at level ${level}.`}
-          cooldowns={abilityCooldowns}
-          sectionFocused={navState.zone === "class-abilities"}
-          focusedIndex={navState.classIndex}
-          onRowFocus={(i) =>
-            setNavState((s) =>
-              reduceCharSheetNav(s, { kind: "set-class", index: i }, navCtx)
-                .state,
-            )
-          }
-          onUse={(a) => {
-            if (onUseAbility) onUseAbility(character.id, a);
-            else setLastAction(`Used ${a.name ?? a.id} — preview only.`);
-          }}
-        />
-      </div>
 
       <section>
         <h3
@@ -1317,10 +1083,9 @@ export function CharacterSheetSim({
         </p>
       ) : null}
 
-      {/* Bottom hint bar (cosmetic — keys aren't bound in this pass) */}
+      {/* Bottom hint bar — only keys the sheet actually binds. */}
       <div className="border-t border-parchment/15 pt-1 text-center font-mono text-xs uppercase tracking-wider text-parchment/65">
-        [↑↓] select · [Enter] equip / unequip · [R] return to stash · [1-4]
-        switch character · [ESC] back · [P] close
+        [↑↓] select · [Enter] unequip / use / cast · [ESC] back · [P] close
       </div>
     </div>
   );

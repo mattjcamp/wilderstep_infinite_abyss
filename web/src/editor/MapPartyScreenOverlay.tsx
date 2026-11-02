@@ -48,6 +48,13 @@ export function MapPartyScreenOverlay({
   onClose: () => void;
 }) {
   const [state, setState] = useState<LoadState>({ kind: "loading" });
+  /** Set while PartyScreen has a character sheet open — renders the
+   *  Back button beside the title. */
+  const [sheetBack, setSheetBack] = useState<(() => void) | null>(null);
+  const handleSheetBackChange = useCallback(
+    (back: (() => void) | null) => setSheetBack(() => back),
+    [],
+  );
   const [activeEffectIds, setActiveEffectIds] = useState<
     ReadonlyArray<string>
   >([]);
@@ -216,12 +223,24 @@ export function MapPartyScreenOverlay({
         className="max-h-[90vh] w-full max-w-3xl overflow-auto rounded-lg border border-parchment/20 bg-ink/95 shadow-2xl"
       >
         <div className="flex items-center justify-between border-b border-parchment/15 px-3 py-1.5">
-          <h2 className="font-display text-base text-parchment">
-            Party Screen{" "}
-            <span className="text-[13px] text-parchment/65">
-              (sim preview)
-            </span>
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="font-display text-base text-parchment">
+              Party Screen{" "}
+              <span className="text-[13px] text-parchment/65">
+                (sim preview)
+              </span>
+            </h2>
+            {sheetBack ? (
+              <button
+                type="button"
+                onClick={sheetBack}
+                className="rounded border border-parchment/20 px-2 py-0.5 text-[13px] text-parchment/85 hover:bg-ink/40"
+                title="Back to Party screen (ESC)"
+              >
+                ← Back
+              </button>
+            ) : null}
+          </div>
           <div className="flex items-center gap-2">
             {state.kind === "ok" ? (
               <span className="text-xs text-amber-300" title="Party gold">
@@ -245,6 +264,7 @@ export function MapPartyScreenOverlay({
             <p className="text-sm text-ember">{state.message}</p>
           ) : (
             <PartyScreen
+              onSheetBackChange={handleSheetBackChange}
               party={state.party}
               characters={state.characters}
               races={state.races}

@@ -41,6 +41,11 @@ import {
 } from "@/editor/PartyScreen";
 import type { WorldSave, SavedCharacterState } from "@/play/saveTypes";
 import { classAllowsItemType } from "@/battle/world/Classes";
+import {
+  applyEquipChoice,
+  type EquipItemDef,
+  type EquipSource,
+} from "@/play/equipFromInventory";
 import { applyCampRest } from "@/play/campRest";
 import {
   addToInventory,
@@ -250,6 +255,14 @@ export function PlayPartyScreenOverlay({
    *  the player gets feedback ("Aldric heals Brenna for 4 HP",
    *  "Not enough MP", etc.). Auto-clears after a short timeout. */
   const [castMessage, setCastMessage] = useState<string | null>(null);
+  /** Set while PartyScreen has a character sheet open — renders the
+   *  Back button beside the title. */
+  const [sheetBack, setSheetBack] = useState<(() => void) | null>(null);
+  const handleSheetBackChange = useCallback(
+    (back: (() => void) | null) => setSheetBack(() => back),
+    [],
+  );
+
   useEffect(() => {
     if (!castMessage) return;
     const t = setTimeout(() => setCastMessage(null), 3000);
@@ -968,10 +981,13 @@ export function PlayPartyScreenOverlay({
         }
         usedItemId = "camping_supplies";
       } else {
-        // Unknown / not-yet-wired usable. Bail without mutating —
-        // the catalog item.usable already gated this in the
-        // PartyScreen, so we know SOMETHING was supposed to happen
-        // but we don't want to silently eat a charge from a stack.
+        // Unknown / not-yet-wired usable (potions, herbs, …). Bail
+        // without eating a charge, but tell the player instead of
+        // silently doing nothing.
+        const def = state.items.find((it) => it.id === entry.item);
+        setCastMessage(
+          `${def?.name ?? entry.item} can't be used from the Party screen yet.`,
+        );
         return;
       }
 
@@ -1007,45 +1023,6 @@ export function PlayPartyScreenOverlay({
    *  receives a +1 merge (stacks combine on the destination side
    *  too). For non-stackable items the source row is spliced and the
    *  target gets a fresh row appended — same shape as before. */
-  const handleSendStashItem = useCallback(
-    (stashIndex: number, memberIndex: number) => {
-      if (state.kind !== "ok") return;
-      const cur = liveSave;
-      const inv = cur.party.inventory;
-      const roster = cur.party.roster;
-      if (stashIndex < 0 || stashIndex >= inv.length) return;
-      if (memberIndex < 0 || memberIndex >= roster.length) return;
-      const targetId = roster[memberIndex];
-      const targetSaved = cur.party.members.find((m) => m.id === targetId);
-      if (!targetSaved) return;
-
-      const entry = inv[stashIndex];
-      const nextInv = consumeOneFromInventory(inv, stashIndex, state.items);
-      // Carry per-instance durability through so a worn weapon sent
-      // from the stash to a character keeps its wear. No-op for
-      // stackables — addToInventory ignores the durability arg there.
-      const nextTargetInv = addToInventory(
-        targetSaved.inventory,
-        entry.item,
-        state.items,
-        1,
-        typeof entry.durability === "number" ? entry.durability : undefined,
-      );
-      const nextTarget: SavedCharacterState = {
-        ...targetSaved,
-        inventory: nextTargetInv,
-      };
-      const nextMembers = cur.party.members.map((m) =>
-        m.id === targetId ? nextTarget : m,
-      );
-      commit({
-        ...cur,
-        party: { ...cur.party, inventory: nextInv, members: nextMembers },
-      });
-    },
-    [state, liveSave, commit],
-  );
-
   /** "Use" applied to a character's PERSONAL inventory row. Mirrors
    *  handleUseStashItem but operates on member.inventory instead of
    *  party.inventory. The per-use effect is identical — Torch bumps
@@ -1363,6 +1340,50 @@ export function PlayPartyScreenOverlay({
       commit({
         ...cur,
         party: { ...cur.party, members: nextMembers },
+      });
+    },
+    [state, liveSave, commit],
+  );
+
+  /** Shared-inventory equipping (Party screen → Inventory → Enter).
+   *  The move itself (equip from inventory, unequip into it, or hand
+   *  gear to another member — durability travelling with the item)
+   *  lives in `applyEquipChoice`; this just supplies catalog lookups
+   *  and commits or reports the refusal. */
+  const handleEquipItem = useCallback(
+    (source: EquipSource, targetMemberId: string | null) => {
+      if (state.kind !== "ok") return;
+      const cur = liveSave;
+      const charDef = (id: string) =>
+        state.characters.find((c) => c.id === id);
+      const result = applyEquipChoice(
+        { inventory: cur.party.inventory, members: cur.party.members },
+        source,
+        targetMemberId,
+        {
+          items: state.items as ReadonlyArray<EquipItemDef>,
+          catalogEquipped: (id) =>
+            charDef(id)?.equipped as Record<string, string> | undefined,
+          allowableItemTypes: (id) => {
+            const cls = state.classes.find((c) => c.id === charDef(id)?.class);
+            return (cls as { allowable_item_types?: string[] } | undefined)
+              ?.allowable_item_types;
+          },
+          displayName: (id) => charDef(id)?.name ?? "This character",
+        },
+      );
+      if (!result) return;
+      if ("error" in result) {
+        setCastMessage(result.error);
+        return;
+      }
+      commit({
+        ...cur,
+        party: {
+          ...cur.party,
+          inventory: result.inventory,
+          members: result.members,
+        },
       });
     },
     [state, liveSave, commit],
@@ -1815,9 +1836,21 @@ export function PlayPartyScreenOverlay({
         className="max-h-[90vh] w-full max-w-3xl overflow-auto rounded-lg border border-parchment/20 bg-ink/95 shadow-2xl"
       >
         <div className="flex items-center justify-between border-b border-parchment/15 px-3 py-1.5">
-          <h2 className="font-display text-base text-parchment">
-            Party Screen
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="font-display text-base text-parchment">
+              Party Screen
+            </h2>
+            {sheetBack ? (
+              <button
+                type="button"
+                onClick={sheetBack}
+                className="rounded border border-parchment/20 px-2 py-0.5 text-xs text-parchment/80 hover:bg-ink/40"
+                title="Back to Party screen (ESC)"
+              >
+                ← Back
+              </button>
+            ) : null}
+          </div>
           <div className="flex items-center gap-2">
             {state.kind === "ok" ? (
               <span
@@ -1863,6 +1896,7 @@ export function PlayPartyScreenOverlay({
             <p className="text-sm text-ember">{state.message}</p>
           ) : (
             <PartyScreen
+              onSheetBackChange={handleSheetBackChange}
               party={state.party}
               characters={state.characters}
               races={state.races}
@@ -1874,11 +1908,11 @@ export function PlayPartyScreenOverlay({
               onActiveEffectsChange={handleActiveEffectsChange}
               onClose={onClose}
               onUseStashItem={handleUseStashItem}
-              onSendStashItem={handleSendStashItem}
               onUsePersonalItem={handleUsePersonalItem}
               onReturnPersonalItem={handleReturnPersonalItem}
               onEquipPersonalItem={handleEquipPersonalItem}
               onUnequipSlot={handleUnequipSlot}
+              onEquipItem={handleEquipItem}
               onCastSpell={handleCastSpell}
               onUseAbility={handleUseAbility}
               abilityCooldowns={(() => {

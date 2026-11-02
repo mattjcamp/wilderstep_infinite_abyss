@@ -114,14 +114,14 @@ describe("Personal zone", () => {
     expect(r.state.raceIndex).toBe(0);
   });
 
-  it("ArrowDown prefers class abilities when lastAbilityZone is class", () => {
+  it("ArrowDown always lands on race first (race is stacked above class)", () => {
     const s = {
       ...personalState(2),
       lastAbilityZone: "class-abilities" as const,
     };
     const r = key(s, "ArrowDown", ctx());
-    expect(r.state.zone).toBe("class-abilities");
-    expect(r.state.classIndex).toBe(0);
+    expect(r.state.zone).toBe("race-abilities");
+    expect(r.state.raceIndex).toBe(0);
   });
 
   it("ArrowDown falls through to spells when no abilities exist", () => {
@@ -169,8 +169,14 @@ describe("Race-abilities zone", () => {
     expect(r.state.raceIndex).toBe(1);
   });
 
-  it("ArrowDown at the last race row spills into spells", () => {
+  it("ArrowDown at the last race row drops into class abilities", () => {
     const r = key(raceState(1), "ArrowDown", ctx());
+    expect(r.state.zone).toBe("class-abilities");
+    expect(r.state.classIndex).toBe(0);
+  });
+
+  it("ArrowDown at the last race row spills into spells when no class abilities", () => {
+    const r = key(raceState(1), "ArrowDown", ctx({ classCount: 0 }));
     expect(r.state.zone).toBe("spells");
     expect(r.state.spellIndex).toBe(0);
   });
@@ -232,6 +238,12 @@ describe("Class-abilities zone", () => {
     };
   }
 
+  it("ArrowUp at index 0 climbs into the last race row", () => {
+    const r = key(classState(0), "ArrowUp", ctx());
+    expect(r.state.zone).toBe("race-abilities");
+    expect(r.state.raceIndex).toBe(1);
+  });
+
   it("ArrowLeft moves back to race abilities, preserving row index", () => {
     const r = key(classState(1), "ArrowLeft", ctx());
     expect(r.state.zone).toBe("race-abilities");
@@ -278,8 +290,8 @@ describe("Spells zone", () => {
     expect(r.state.spellIndex).toBe(3);
   });
 
-  it("ArrowUp at index 0 spills to abilities, lastAbilityZone aware (race)", () => {
-    const r = key(spellState(0), "ArrowUp", ctx());
+  it("ArrowUp at index 0 lands on the last race row when no class abilities", () => {
+    const r = key(spellState(0), "ArrowUp", ctx({ classCount: 0 }));
     expect(r.state.zone).toBe("race-abilities");
     expect(r.state.raceIndex).toBe(1); // last race row
   });

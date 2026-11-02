@@ -512,3 +512,49 @@ describe("Index clamping on stale state", () => {
     expect(r.state.effectIndex).toBe(0);
   });
 });
+
+describe("Equip picker", () => {
+  function stashSel(): PartyNavState {
+    return { ...initialPartyNavState(ctx()), zone: "stash", stashIndex: 0 };
+  }
+
+  it("Enter on equipable gear opens the picker at the start index", () => {
+    const r = key(stashSel(), "Enter", ctx({ canEquip: true, equipStartIndex: 2 }));
+    expect(r.state.zone).toBe("equip");
+    expect(r.state.equipIndex).toBe(2);
+    expect(r.action).toEqual({ kind: "none" });
+  });
+
+  it("Enter on non-gear still uses the item", () => {
+    const r = key(stashSel(), "Enter", ctx({ canEquip: false }));
+    expect(r.action).toEqual({ kind: "use" });
+  });
+
+  it("Up/Down move the picker cursor, clamped to the roster", () => {
+    const s = { ...stashSel(), zone: "equip" as const, equipIndex: 0 };
+    expect(key(s, "ArrowUp", ctx()).state.equipIndex).toBe(0);
+    const down = key(s, "ArrowDown", ctx());
+    expect(down.state.equipIndex).toBe(1);
+  });
+
+  it("Enter picks the highlighted member and returns to the stash", () => {
+    const s = { ...stashSel(), zone: "equip" as const, equipIndex: 1 };
+    const r = key(s, "Enter", ctx());
+    expect(r.action).toEqual({ kind: "equip", memberIndex: 1 });
+    expect(r.state.zone).toBe("stash");
+  });
+
+  it("Number keys pick directly", () => {
+    const s = { ...stashSel(), zone: "equip" as const, equipIndex: 0 };
+    const r = key(s, "3", ctx());
+    expect(r.action).toEqual({ kind: "equip", memberIndex: 2 });
+  });
+
+  it("Escape cancels back to the stash without acting", () => {
+    const s = { ...stashSel(), zone: "equip" as const, equipIndex: 1 };
+    const r = key(s, "Escape", ctx());
+    expect(r.state.zone).toBe("stash");
+    expect(r.action).toEqual({ kind: "none" });
+    expect(r.consumed).toBe(true);
+  });
+});

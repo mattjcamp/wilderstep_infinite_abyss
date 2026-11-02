@@ -45,6 +45,7 @@ export type PartyNavZone =
   | "stash"
   | "actions"
   | "send"
+  | "equip"
   | "roster";
 
 /** Zones that live in the left-hand column of the screen. Tracked
@@ -85,6 +86,10 @@ export interface PartyNavState {
    *  the roster so the back-trip lands on whichever list (effects,
    *  stash, or the actions submenu) the player came from. */
   lastLeftZone: PartyNavLeftZone;
+  /** Cursor in the equip picker (a roster index) while
+   *  `zone === "equip"`. Optional so older callers / fixtures that
+   *  predate the picker still type-check; treated as 0 when absent. */
+  equipIndex?: number;
 }
 
 /** Pure context the reducer needs to decide what's valid. The
@@ -102,6 +107,13 @@ export interface PartyNavContext {
    *  roster unlocks it)? Available rows respond to Enter; locked
    *  rows just sit there. */
   effectAvailable: boolean;
+  /** Can the selected inventory row be equipped (it has an equipment
+   *  slot and the host wired equipping)? When true, Enter on the row
+   *  opens the equip picker instead of Use / Examine. */
+  canEquip?: boolean;
+  /** Roster index the equip picker opens on — the current wearer for
+   *  an already-equipped row, else 0. */
+  equipStartIndex?: number;
 }
 
 /** Inputs the reducer accepts. `key` is the primary input —
@@ -146,6 +158,9 @@ export type PartyNavAction =
    *  component translates this into `setFocusedMemberId(m.id)`,
    *  which is what RosterCard.onOpen invokes today on click. */
   | { kind: "roster-drill-in"; memberIndex: number }
+  /** Equip picker: the player chose roster slot `memberIndex` for the
+   *  selected inventory row (choosing the current wearer unequips). */
+  | { kind: "equip"; memberIndex: number }
   /** Bubble Esc to the overlay so it closes the whole screen. The
    *  reducer fires this when Esc would have nothing else to do. */
   | { kind: "close" };
@@ -259,6 +274,8 @@ export function reducePartyNav(
       return reduceActionsKey(s, key, ctx);
     case "send":
       return reduceSendKey(s, key, ctx);
+    case "equip":
+      return reduceEquipKey(s, key, ctx);
     case "roster":
       return reduceRosterKey(s, key, ctx);
   }
@@ -346,6 +363,14 @@ function reduceStashKey(
   if (key === "Enter") {
     if (ctx.stashCount === 0 || s.stashIndex < 0) {
       return consumed(s);
+    }
+    // Equipable gear → open the equip picker (party avatars + names).
+    if (ctx.canEquip && ctx.memberCount > 0) {
+      return consumed({
+        ...s,
+        zone: "equip",
+        equipIndex: clamp(ctx.equipStartIndex ?? 0, 0, ctx.memberCount - 1),
+      });
     }
     // No on-screen action panel any more (removed 2026-11) — Enter
     // uses the item when it's usable, otherwise toggles the inline
@@ -551,6 +576,47 @@ function reduceSendKey(
     return {
       state: { ...s, zone: "stash" },
       action: { kind: "send", memberIndex: n - 1 },
+      consumed: true,
+    };
+  }
+  return passthrough(s);
+}
+
+function reduceEquipKey(
+  s: PartyNavState,
+  key: string,
+  ctx: PartyNavContext,
+): PartyNavResult {
+  const cur = s.equipIndex ?? 0;
+  if (isDownKey(key)) {
+    if (ctx.memberCount === 0) return consumed(s);
+    return consumed({
+      ...s,
+      equipIndex: Math.min(ctx.memberCount - 1, cur + 1),
+    });
+  }
+  if (isUpKey(key)) {
+    return consumed({ ...s, equipIndex: Math.max(0, cur - 1) });
+  }
+  if (key === "Enter") {
+    if (ctx.memberCount === 0) return consumed({ ...s, zone: "stash" });
+    return {
+      state: { ...s, zone: "stash" },
+      action: {
+        kind: "equip",
+        memberIndex: clamp(cur, 0, ctx.memberCount - 1),
+      },
+      consumed: true,
+    };
+  }
+  if (key === "Escape") {
+    return consumed({ ...s, zone: "stash" });
+  }
+  const n = parseDigit(key);
+  if (n != null && n >= 1 && n <= ctx.memberCount) {
+    return {
+      state: { ...s, zone: "stash" },
+      action: { kind: "equip", memberIndex: n - 1 },
       consumed: true,
     };
   }

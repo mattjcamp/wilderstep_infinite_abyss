@@ -607,11 +607,16 @@ export function equipItemFromInventory(
    *  wield a crossbow. Omit / pass null/empty for no class restriction
    *  (back-compat for callers without a class catalog, and tests). */
   allowableItemTypes?: ReadonlyArray<string> | null,
+  /** Inventory to equip from — the member's personal bag by default,
+   *  or the party's shared stash (combat Equip Item draws from the
+   *  party inventory). A displaced item goes back into this same
+   *  array, at the same index, so the list doesn't shuffle. */
+  source: InventoryItem[] = member.inventory,
 ): ActionResult {
-  if (itemIndex < 0 || itemIndex >= member.inventory.length) {
-    return { ok: false, message: "Item not found in personal inventory." };
+  if (itemIndex < 0 || itemIndex >= source.length) {
+    return { ok: false, message: "Item not found in inventory." };
   }
-  const inv = member.inventory[itemIndex];
+  const inv = source[itemIndex];
   const def = items.get(inv.item);
   if (!def) {
     return { ok: false, message: `Don't know how to equip ${inv.item}.` };
@@ -649,7 +654,7 @@ export function equipItemFromInventory(
     // the player's view stays stable. Carry its current durability
     // across so the swapped-out item doesn't reset to full wear.
     const displaced = entryForSlot(member, chosen, previous, items);
-    member.inventory[itemIndex] = displaced;
+    source[itemIndex] = displaced;
     writeSlot(member, chosen, inv.item);
     seedSlotFromEntry(member, chosen, inv.item, inv.durability, items);
     return {
@@ -659,7 +664,7 @@ export function equipItemFromInventory(
   }
 
   // Empty slot — just move the item.
-  member.inventory.splice(itemIndex, 1);
+  source.splice(itemIndex, 1);
   writeSlot(member, chosen, inv.item);
   seedSlotFromEntry(member, chosen, inv.item, inv.durability, items);
   return {

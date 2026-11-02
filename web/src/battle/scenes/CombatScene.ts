@@ -463,10 +463,10 @@ const PARTY_ACTIONS: ActionEntry[] = [
   // `isCombatUsable` so they never appear in this picker.
   { id: "use",     label: "Use Item",   hint: "Drink or use a consumable" },
   // "Equip" lets the active member swap weapons / armor mid-fight
-  // out of their personal inventory (the shared stash isn't reachable
-  // from combat — that mirrors how Throw and Use already work for
-  // *equippable* items: shared stash items show up only for
-  // throwables / consumables, not for gear). Consumes the turn.
+  // straight out of the party's shared inventory (items are shared-
+  // only now; any gear still sitting in a legacy personal bag is
+  // offered too so it isn't stranded). The displaced piece goes back
+  // into the inventory it came from. Consumes the turn.
   { id: "equip",   label: "Equip Item", hint: "Swap a weapon or armor" },
   { id: "end",     label: "End Turn",   hint: "Finish this turn  [SPACE]" },
 ];
@@ -802,12 +802,16 @@ export class CombatScene extends Phaser.Scene {
    */
   private useOptions: Array<{ item: Item; source: "personal" | "stash"; index: number }> = [];
   /**
-   * Equippable items in the active member's PERSONAL inventory.
-   * Personal-only because the shared stash isn't carried into combat
-   * by anyone — that's the same boundary Throw / Use draw for non-
-   * consumable gear. `index` is into `member.inventory`.
+   * Equippable items the active member can put on: gear in the
+   * party's shared inventory (`index` into partyData.inventory), plus
+   * any gear left in their legacy personal bag (`index` into
+   * member.inventory).
    */
-  private equipOptions: Array<{ item: Item; index: number }> = [];
+  private equipOptions: Array<{
+    item: Item;
+    source: "personal" | "stash";
+    index: number;
+  }> = [];
   private spellOptions: Spell[] = [];
   /** Combat-active class + race abilities the active member can use
    *  on this turn — populated when the player opens the Abilities
@@ -2157,8 +2161,8 @@ export class CombatScene extends Phaser.Scene {
         .setOrigin(0.5, 0),
     );
 
-    // Inventory — the active member's personal pack (placeholder
-    // presentation; refreshed with the turn header).
+    // Inventory — the party's shared gear, i.e. what Equip Item can
+    // put on (refreshed with the turn header).
     this.panel(INVENTORY_X, BOTTOM_Y, INVENTORY_W, BOTTOM_H);
     // Heading doubles as the hover readout: it shows an item's name
     // while the pointer is over that icon.
@@ -3496,19 +3500,25 @@ export class CombatScene extends Phaser.Scene {
   }
 
   /**
-   * Build the Equip-Item picker — equippable items in the active
-   * member's PERSONAL inventory only. Shared stash is excluded; that
-   * matches the design intent that combat-time gear swaps come from
-   * "what's on your belt", not from the wagon.
+   * Build the Equip-Item picker — gear (weapons / armor) in the
+   * party's shared inventory, the same list the bottom-right
+   * Inventory panel shows, plus any gear still in the member's
+   * legacy personal bag.
    */
   private openEquipPicker(): void {
     const member = this.memberForCurrent();
     if (!member) return;
     const opts: typeof this.equipOptions = [];
+    (gameState.partyData?.inventory ?? []).forEach((it, idx) => {
+      const def = this.items.get(it.item);
+      if (def && equippableSlots(def).length > 0) {
+        opts.push({ item: def, source: "stash", index: idx });
+      }
+    });
     member.inventory.forEach((it, idx) => {
       const def = this.items.get(it.item);
       if (def && equippableSlots(def).length > 0) {
-        opts.push({ item: def, index: idx });
+        opts.push({ item: def, source: "personal", index: idx });
       }
     });
     if (opts.length === 0) {
@@ -3548,11 +3558,20 @@ export class CombatScene extends Phaser.Scene {
       this.cancelSubMode();
       return;
     }
+    const source =
+      opt.source === "stash"
+        ? gameState.partyData?.inventory
+        : member.inventory;
+    if (!source) {
+      this.cancelSubMode();
+      return;
+    }
     const r = equipItemFromInventory(
       member,
       opt.index,
       this.items,
       this.classTemplates.get(member.class)?.allowable_item_types,
+      source,
     );
     if (!r.ok) {
       // Refusal — log and bounce back to the action menu without
@@ -6706,8 +6725,9 @@ export class CombatScene extends Phaser.Scene {
     }
   }
 
-  /** Placeholder inventory list for the active party member: item
-   *  names with charges, two columns. Enemies / summons show a dash. */
+  /** Inventory panel during a party member's turn: the party's shared
+   *  inventory filtered to gear (weapons / armor) — what Equip Item
+   *  can put on. Enemies / summons show a dash. */
   private refreshInventoryPanel(): void {
     for (const o of this.inventoryObjects) o.destroy();
     this.inventoryObjects = [];
@@ -6717,8 +6737,12 @@ export class CombatScene extends Phaser.Scene {
       this.inventoryText.setText("—");
       return;
     }
-    if (member.inventory.length === 0) {
-      this.inventoryText.setText("(empty)");
+    const entries = (gameState.partyData?.inventory ?? []).filter((it) => {
+      const def = this.items.get(it.item);
+      return !!def && equippableSlots(def).length > 0;
+    });
+    if (entries.length === 0) {
+      this.inventoryText.setText("(no spare gear)");
       return;
     }
     this.inventoryText.setText("");
@@ -6726,7 +6750,6 @@ export class CombatScene extends Phaser.Scene {
     // corner, the item's name in the heading on hover. Entries past
     // the grid's capacity collapse into a final "+N" cell.
     const cap = INV_COLS * INV_ROWS;
-    const entries = member.inventory;
     const overflow = entries.length > cap ? entries.length - (cap - 1) : 0;
     const shown = overflow > 0 ? entries.slice(0, cap - 1) : entries;
     const cols = Math.min(INV_COLS, entries.length > cap ? INV_COLS : entries.length);
@@ -7028,11 +7051,18 @@ export class CombatScene extends Phaser.Scene {
    * whose only slots are unsupported (head/etc.) are filtered out by
    * `equippableSlots` so they don't read as equippable here.
    */
+  /** True when Equip Item has something to offer: gear in the party's
+   *  shared inventory (or a legacy personal bag). Must match the
+   *  sources `openEquipPicker` lists, or the action stays hidden. */
   private memberHasEquippableItem(member: PartyMember): boolean {
-    return member.inventory.some((it) => {
+    const isGear = (it: { item: string }) => {
       const def = this.items.get(it.item);
       return !!def && equippableSlots(def).length > 0;
-    });
+    };
+    return (
+      (gameState.partyData?.inventory ?? []).some(isGear) ||
+      member.inventory.some(isGear)
+    );
   }
 
   private refreshHp(c: Combatant): void {

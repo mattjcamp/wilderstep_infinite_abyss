@@ -42,6 +42,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { xpProgressInLevel as levelingXpProgress } from "@/battle/world/Leveling";
+import type { EquipSource } from "@/play/equipFromInventory";
 import {
   initialPartyNavState,
   reducePartyNav,
@@ -211,6 +212,26 @@ export interface PartyItemRef {
    *  whole party from the stash and never carried by one member.
    *  Default (absent) is true. */
   sendable_to_character?: boolean;
+  /** Catalog stats surfaced by the Examine panel (all optional —
+   *  hosts pass the raw items.json records straight through). */
+  category?: string;
+  item_type?: string;
+  power?: number;
+  ranged?: boolean;
+  throwable?: boolean;
+  finesse?: boolean;
+  range?: number;
+  ammo?: string;
+  evasion?: number;
+  damage_type?: string;
+  bonus_damage?: string | number;
+  light_range?: number;
+  ignite?: boolean;
+  effect?: string;
+  quest_item?: boolean;
+  wielder_passives?: string[];
+  buy?: number;
+  sell?: number;
 }
 
 export interface PartySpellRef {
@@ -389,6 +410,28 @@ function prettifyEffectId(id: string): string {
     .join(" ");
 }
 
+/** Where an item being equipped / unequipped currently lives. */
+export type { EquipSource } from "@/play/equipFromInventory";
+
+/** One row of the Inventory list — either a shared-inventory entry or
+ *  a piece of gear a party member is wearing (shown with their
+ *  avatar). */
+type InvRow =
+  | {
+      kind: "stash";
+      invIdx: number;
+      item: string;
+      charges?: number;
+      durability?: number;
+    }
+  | {
+      kind: "equipped";
+      memberId: string;
+      slot: string;
+      item: string;
+      durability?: number;
+    };
+
 // ── Component ───────────────────────────────────────────────────────
 
 export function PartyScreen({
@@ -413,6 +456,8 @@ export function PartyScreen({
   onUnequipSlot,
   effectDurations,
   onClose,
+  onSheetBackChange,
+  onEquipItem,
 }: {
   party: PartyRecord;
   /** Full character records for the party's roster ids. Missing ids
@@ -510,6 +555,20 @@ export function PartyScreen({
    *  now. Hosts still own the modal's open/close state; this is
    *  just the keystroke routing. */
   onClose?: () => void;
+  /** Called whenever a character sheet opens (with a function that
+   *  returns to the two-pane Party view) or closes (with null). The
+   *  host renders its own Back button in the modal's top bar from
+   *  this — the sheet itself no longer has a title bar. */
+  onSheetBackChange?: (back: (() => void) | null) => void;
+  /** Equip / unequip straight from the Inventory list. `source` is
+   *  either a shared-inventory row or a member's equipped slot;
+   *  `targetMemberId` is who should wear it, or null to unequip back
+   *  into the inventory. Omit to make the Inventory read-only for
+   *  gear (editor preview). */
+  onEquipItem?: (
+    source: EquipSource,
+    targetMemberId: string | null,
+  ) => void;
 }) {
   // ── Resolve roster ──────────────────────────────────────────────
   const members = useMemo(() => {
@@ -724,14 +783,23 @@ export function PartyScreen({
   // can navigate with ArrowUp/Down (when the stash pane has the
   // keyboard mode) and act on the selected row with U/S/X — or click
   // straight on the row + action buttons in the detail panel.
-  const stashEntries = party.inventory ?? [];
-  /** Display order for the Inventory list: equipable gear (weapons /
-   *  armor) first, then usable items (potions, scrolls…), then
-   *  everything else. Stable within each group. Maps display
-   *  position → index in `party.inventory`; `stashSelectedIndex` is a
-   *  display position, so translate through this before calling the
-   *  host's Use / Send callbacks (which expect inventory indices). */
-  const stashOrder = useMemo(() => {
+  /** Inventory list rows, in display order: equipable gear (weapons /
+   *  armor), then usable items (potions, torches…), then everything
+   *  else. Within a group rows follow the items catalog order, so a
+   *  row's position depends only on WHAT the item is — not on where it
+   *  currently lives. Equipping / unequipping / swapping therefore
+   *  never moves rows around (the worn sword stays where the spare
+   *  sword was, a displaced club lands where the worn club was).
+   *  Copies of the same item: worn ones first (roster order), then
+   *  spares (inventory order). `stashSelectedIndex` is a position in
+   *  this list; stash rows carry their `party.inventory` index for
+   *  the host's Use / Send / Equip callbacks. */
+  const itemOrder = useMemo(() => {
+    const m = new Map<string, number>();
+    items.forEach((it, i) => m.set(it.id, i));
+    return m;
+  }, [items]);
+  const invRows = useMemo<InvRow[]>(() => {
     const inv = party.inventory ?? [];
     const rank = (item: string): number => {
       const cat = itemById.get(item);
@@ -739,29 +807,69 @@ export function PartyScreen({
       if (cat?.usable) return 1;
       return 2;
     };
-    return inv
-      .map((e, i) => ({ i, r: rank(e.item) }))
-      .sort((a, b) => a.r - b.r || a.i - b.i)
-      .map((x) => x.i);
-  }, [party.inventory, itemById]);
+    const rows: Array<{ row: InvRow; tie: number }> = [];
+    members.forEach((m, mi) => {
+      const eq = (m.equipped ?? {}) as Record<string, string>;
+      const ed = (m as { equipped_durability?: Record<string, number | null> })
+        .equipped_durability;
+      ["hands", "body"].forEach((slot, si) => {
+        const item = eq[slot];
+        if (!item) return;
+        const d = ed?.[slot];
+        rows.push({
+          row: {
+            kind: "equipped",
+            memberId: m.id,
+            slot,
+            item,
+            durability: typeof d === "number" ? d : undefined,
+          },
+          tie: mi * 2 + si,
+        });
+      });
+    });
+    inv.forEach((e, i) => {
+      rows.push({
+        row: {
+          kind: "stash",
+          invIdx: i,
+          item: e.item,
+          charges: typeof e.charges === "number" ? e.charges : undefined,
+          durability:
+            typeof e.durability === "number" ? e.durability : undefined,
+        },
+        tie: 1000 + i,
+      });
+    });
+    const catPos = (id: string) => itemOrder.get(id) ?? Number.MAX_SAFE_INTEGER;
+    return rows
+      .sort(
+        (a, b) =>
+          rank(a.row.item) - rank(b.row.item) ||
+          catPos(a.row.item) - catPos(b.row.item) ||
+          a.row.item.localeCompare(b.row.item) ||
+          a.tie - b.tie,
+      )
+      .map((x) => x.row);
+  }, [party.inventory, itemById, itemOrder, members]);
   const [stashSelectedIndex, setStashSelectedIndex] = useState<number | null>(
-    stashOrder.length > 0 ? 0 : null,
+    invRows.length > 0 ? 0 : null,
   );
   /** When the stash shrinks (item used / sent away), the cursor may
    *  fall off the end. Clamp it on every render so the detail panel
    *  always points at a real row, and disappear it when the stash
    *  empties. */
   useEffect(() => {
-    if (stashOrder.length === 0) {
+    if (invRows.length === 0) {
       setStashSelectedIndex(null);
       return;
     }
     setStashSelectedIndex((cur) => {
       if (cur == null) return 0;
-      if (cur >= stashOrder.length) return stashOrder.length - 1;
+      if (cur >= invRows.length) return invRows.length - 1;
       return cur;
     });
-  }, [stashOrder.length]);
+  }, [invRows.length]);
 
   /** "send" — the player picked Send and is now waiting for a roster
    *  pick (1-N or click). "examine" — full description visible in the
@@ -784,11 +892,20 @@ export function PartyScreen({
   // applies the reducer's output to, and pushes back. Doing it this
   // way means the existing mouse-driven flows + existing renderers
   // keep working unchanged.
-  type FocusZone = "effects" | "stash" | "actions" | "send" | "roster";
+  type FocusZone =
+    | "effects"
+    | "stash"
+    | "actions"
+    | "send"
+    | "equip"
+    | "roster";
   type LeftZone = "effects" | "stash" | "actions";
   const [focusZone, setFocusZone] = useState<FocusZone>("effects");
   const [actionIndex, setActionIndex] = useState<number>(ACTION_USE);
   const [sendIndex, setSendIndex] = useState<number>(0);
+  /** Cursor in the equip picker (roster index) while focusZone is
+   *  "equip". */
+  const [equipIndex, setEquipIndex] = useState<number>(0);
   /** Cursor in the roster (right pane) when the player has arrowed
    *  across the column boundary. Independent of `sendIndex` —
    *  pressing Enter on the focused card drills into the character
@@ -816,15 +933,32 @@ export function PartyScreen({
     setStashMode("none");
   }, [stashSelectedIndex]);
 
-  const selectedStashEntry =
-    stashSelectedIndex != null
-      ? stashEntries[stashOrder[stashSelectedIndex]]
-      : null;
-  const selectedStashCatalog = selectedStashEntry
-    ? itemById.get(selectedStashEntry.item)
+  const selectedInvRow =
+    stashSelectedIndex != null ? invRows[stashSelectedIndex] ?? null : null;
+  const selectedStashIdx =
+    selectedInvRow?.kind === "stash" ? selectedInvRow.invIdx : null;
+  const selectedStashCatalog = selectedInvRow
+    ? itemById.get(selectedInvRow.item)
     : null;
   const canUseSelected =
-    !!onUseStashItem && !!selectedStashCatalog?.usable;
+    selectedStashIdx != null &&
+    !!onUseStashItem &&
+    !!selectedStashCatalog?.usable;
+  /** Gear (has an equipment slot) can be equipped / unequipped from
+   *  the list when the host wired it. */
+  const canEquipSelected =
+    !!onEquipItem &&
+    members.length > 0 &&
+    !!selectedStashCatalog?.slots &&
+    selectedStashCatalog.slots.length > 0;
+  /** Picker opens on the current wearer for worn gear. */
+  const equipStartIndex =
+    selectedInvRow?.kind === "equipped"
+      ? Math.max(
+          0,
+          members.findIndex((m) => m.id === selectedInvRow.memberId),
+        )
+      : 0;
   // Send is blocked when the catalog flags the item party-only (e.g.
   // Camping Supplies — it has no meaning in one character's inventory
   // since the rest applies to the whole party). Absent flag defaults
@@ -832,26 +966,49 @@ export function PartyScreen({
   const itemIsSendable =
     selectedStashCatalog?.sendable_to_character !== false;
   const canSendSelected =
-    !!onSendStashItem && members.length > 0 && itemIsSendable;
+    selectedStashIdx != null &&
+    !!onSendStashItem &&
+    members.length > 0 &&
+    itemIsSendable;
 
   // Helpers wrapping the callbacks so the keyboard + click paths share
   // the same plumbing (and tests can assert on a single seam).
   const triggerUse = useCallback(() => {
-    if (stashSelectedIndex == null) return;
+    if (selectedStashIdx == null) return;
     if (!canUseSelected || !onUseStashItem) return;
-    onUseStashItem(stashOrder[stashSelectedIndex]);
+    onUseStashItem(selectedStashIdx);
     setStashMode("none");
-  }, [canUseSelected, onUseStashItem, stashSelectedIndex, stashOrder]);
+  }, [canUseSelected, onUseStashItem, selectedStashIdx]);
 
   const sendToMember = useCallback(
     (memberIndex: number) => {
-      if (stashSelectedIndex == null) return;
+      if (selectedStashIdx == null) return;
       if (!onSendStashItem) return;
       if (memberIndex < 0 || memberIndex >= members.length) return;
-      onSendStashItem(stashOrder[stashSelectedIndex], memberIndex);
+      onSendStashItem(selectedStashIdx, memberIndex);
       setStashMode("none");
     },
-    [onSendStashItem, stashSelectedIndex, stashOrder, members.length],
+    [onSendStashItem, selectedStashIdx, members.length],
+  );
+
+  /** Equip-picker choice for the selected Inventory row. Picking the
+   *  member already wearing it unequips it back into the inventory. */
+  const equipToMember = useCallback(
+    (memberIndex: number) => {
+      const row = selectedInvRow;
+      const target = members[memberIndex];
+      setFocusZone("stash");
+      if (!row || !target || !onEquipItem) return;
+      if (row.kind === "stash") {
+        onEquipItem({ kind: "stash", stashIndex: row.invIdx }, target.id);
+      } else {
+        onEquipItem(
+          { kind: "equipped", memberId: row.memberId, slot: row.slot },
+          target.id === row.memberId ? null : target.id,
+        );
+      }
+    },
+    [selectedInvRow, members, onEquipItem],
   );
 
   const toggleExamine = useCallback(() => {
@@ -966,12 +1123,22 @@ export function PartyScreen({
       ) {
         return;
       }
+      // While the Examine panel is open, Esc hides it (rather than
+      // closing the whole screen). X toggles it via the reducer.
+      if (e.key === "Escape" && stashMode === "examine") {
+        e.preventDefault();
+        e.stopPropagation();
+        setStashMode("none");
+        return;
+      }
       const navCtx: PartyNavContext = {
         effectCount: effectRows.length,
-        stashCount: stashOrder.length,
+        stashCount: invRows.length,
         memberCount: members.length,
         canUse: canUseSelected,
         canSend: canSendSelected,
+        canEquip: canEquipSelected,
+        equipStartIndex,
         effectAvailable:
           effectRows[effectIndex]?.available === true,
       };
@@ -984,6 +1151,7 @@ export function PartyScreen({
           sendIndex,
           rosterIndex,
           lastLeftZone,
+          equipIndex,
         },
         { kind: "key", key: e.key },
         navCtx,
@@ -1005,6 +1173,9 @@ export function PartyScreen({
       }
       if (next.actionIndex !== actionIndex) setActionIndex(next.actionIndex);
       if (next.sendIndex !== sendIndex) setSendIndex(next.sendIndex);
+      if ((next.equipIndex ?? 0) !== equipIndex) {
+        setEquipIndex(next.equipIndex ?? 0);
+      }
       if (next.rosterIndex !== rosterIndex) setRosterIndex(next.rosterIndex);
       if (next.lastLeftZone !== lastLeftZone) {
         setLastLeftZone(next.lastLeftZone);
@@ -1025,6 +1196,9 @@ export function PartyScreen({
           break;
         case "send":
           sendToMember(result.action.memberIndex);
+          break;
+        case "equip":
+          equipToMember(result.action.memberIndex);
           break;
         case "examine-toggle":
           toggleExamine();
@@ -1075,12 +1249,16 @@ export function PartyScreen({
     focusedMember,
     effectRows,
     effectIndex,
-    stashOrder.length,
+    invRows.length,
     stashSelectedIndex,
     members,
     members.length,
     canUseSelected,
     canSendSelected,
+    canEquipSelected,
+    equipStartIndex,
+    equipIndex,
+    equipToMember,
     triggerUse,
     sendToMember,
     toggleExamine,
@@ -1131,6 +1309,20 @@ export function PartyScreen({
   // effects (this one + the ref mirror) sit at slots 1 and 2 in the
   // window queue ahead of the overlay's slot 3, so Esc routes
   // through this handler first every time.
+  // Tell the host when a sheet is open so it can show Back in its
+  // top bar. Ref'd callback so a host passing an inline arrow doesn't
+  // re-fire this on every render.
+  const onSheetBackChangeRef = useRef(onSheetBackChange);
+  onSheetBackChangeRef.current = onSheetBackChange;
+  useEffect(() => {
+    onSheetBackChangeRef.current?.(
+      focusedMemberId != null ? () => setFocusedMemberId(null) : null,
+    );
+  }, [focusedMemberId]);
+  useEffect(
+    () => () => onSheetBackChangeRef.current?.(null),
+    [],
+  );
   const focusedMemberIdRef = useRef<string | null>(focusedMemberId);
   useEffect(() => {
     focusedMemberIdRef.current = focusedMemberId;
@@ -1178,6 +1370,15 @@ export function PartyScreen({
     );
     if (sel) sel.scrollIntoView({ block: "nearest" });
   }, [stashSelectedIndex]);
+  // When the equip picker opens (or its cursor moves), keep it in
+  // view inside the scrolling Inventory list.
+  useEffect(() => {
+    if (focusZone !== "equip") return;
+    const picker = stashListRef.current?.querySelector<HTMLElement>(
+      '[aria-label="Choose a party member"]',
+    );
+    picker?.scrollIntoView({ block: "nearest" });
+  }, [focusZone, equipIndex]);
 
   // Drive DOM focus onto the selected effect button whenever the
   // effects zone owns the keyboard cursor. Two effects fall out of
@@ -1275,7 +1476,8 @@ export function PartyScreen({
   // cursor is never on a hidden row (send mode picks from the roster).
   useEffect(() => {
     if (focusZone === "effects") setSectionCollapsed("effects", false);
-    else if (focusZone === "stash") setSectionCollapsed("stash", false);
+    else if (focusZone === "stash" || focusZone === "equip")
+      setSectionCollapsed("stash", false);
     else if (focusZone === "roster" || focusZone === "send")
       setSectionCollapsed("roster", false);
   }, [focusZone, setSectionCollapsed]);
@@ -1336,7 +1538,6 @@ export function PartyScreen({
         items={items as ReadonlyArray<SheetItemRef>}
         abilities={abilities}
         spells={spells}
-        onBack={() => setFocusedMemberId(null)}
         onCastSpell={onCastSpell}
         onUsePersonalItem={onUsePersonalItem}
         onReturnPersonalItem={onReturnPersonalItem}
@@ -1440,36 +1641,50 @@ export function PartyScreen({
               role="listbox"
               aria-label="Inventory"
             >
-              {stashOrder.length === 0 ? (
+              {invRows.length === 0 ? (
                 <li className="text-[13px] text-parchment/65">(empty)</li>
               ) : null}
-              {stashOrder.map((invIdx, i) => {
-                const entry = stashEntries[invIdx];
-                const label =
-                  itemNameById.get(entry.item) ?? entry.item;
+              {invRows.map((row, i) => {
+                const label = itemNameById.get(row.item) ?? row.item;
                 const isSel = i === stashSelectedIndex;
-                const cat = itemById.get(entry.item);
-                // Quantity badge — for stackable items, `entry.charges`
-                // is the number of physical items in this stack. We
-                // only render the badge when > 1 so a single Torch
-                // still reads as "Torch" (no noisy "(1)"). Non-
-                // stackable items don't carry a quantity at all — the
-                // catalog flag gates them out here.
+                const cat = itemById.get(row.item);
+                // Quantity badge — stackable stash rows only, and only
+                // when more than one (a single Torch reads "Torch").
                 const qty =
-                  cat?.stackable && typeof entry.charges === "number"
-                    ? entry.charges
+                  row.kind === "stash" &&
+                  cat?.stackable &&
+                  typeof row.charges === "number"
+                    ? row.charges
                     : 1;
-                // Durability bar — only show for non-stackable gear
-                // whose catalog defines a positive max. Current value
-                // falls back to max when the entry hasn't been worn
-                // yet (a fresh item reads as full bar).
+                // Durability bar — non-stackable gear whose catalog
+                // defines a positive max. A fresh item (no stored
+                // value) reads as a full bar.
                 const durMax = cat?.durability ?? 0;
                 const showDur = !cat?.stackable && durMax > 0;
-                const durCur = showDur
-                  ? (typeof entry.durability === "number" ? entry.durability : durMax)
-                  : 0;
+                const durCur = showDur ? row.durability ?? durMax : 0;
+                const wearer =
+                  row.kind === "equipped"
+                    ? members.find((m) => m.id === row.memberId) ?? null
+                    : null;
+                const isGear = !!cat?.slots && cat.slots.length > 0;
+                const pickerOpen = isSel && focusZone === "equip";
+                const openPicker = () => {
+                  setStashSelectedIndex(i);
+                  setEquipIndex(
+                    wearer
+                      ? Math.max(0, members.findIndex((m) => m.id === wearer.id))
+                      : 0,
+                  );
+                  setFocusZone("equip");
+                };
                 return (
-                  <li key={`${entry.item}-${invIdx}`}>
+                  <li
+                    key={
+                      row.kind === "stash"
+                        ? `s-${row.item}-${row.invIdx}`
+                        : `e-${row.memberId}-${row.slot}`
+                    }
+                  >
                     <button
                       type="button"
                       role="option"
@@ -1481,43 +1696,75 @@ export function PartyScreen({
                       onDoubleClick={() => {
                         setStashSelectedIndex(i);
                         setFocusZone("stash");
-                        // Double-click is a power-user shortcut: Use if
-                        // we can, otherwise just Examine. Sending always
-                        // needs an explicit recipient so we never auto-send.
-                        if (
+                        // Double-click mirrors Enter: gear opens the
+                        // equip picker; usables are Used; anything else
+                        // is Examined. Sending always needs an explicit
+                        // recipient so we never auto-send.
+                        if (isGear && onEquipItem && members.length > 0) {
+                          openPicker();
+                        } else if (
+                          row.kind === "stash" &&
                           onUseStashItem &&
                           cat?.usable
                         ) {
-                          onUseStashItem(invIdx);
+                          onUseStashItem(row.invIdx);
                         } else {
                           setStashMode("examine");
                         }
                       }}
                       className={[
-                        "flex w-full items-center justify-between gap-2 rounded border px-2 py-0.5 text-left",
+                        // Grid: sprite · name · wearer avatar · durability
+                        "grid w-full grid-cols-[18px_minmax(0,1fr)_20px_3rem] items-center gap-2 rounded border px-2 py-0.5 text-left",
                         isSel
-                          ? `${rowSelClass("stash", true)} text-parchment`
+                          ? `${rowSelClass(pickerOpen ? "equip" : "stash", true)} text-parchment`
                           : "border-transparent text-parchment/85 hover:bg-ink/50",
                       ].join(" ")}
-                      title={
-                        cat?.description ?? "Click to select · Enter for actions"
-                      }
+                      title={[
+                        cat?.description,
+                        wearer ? `Equipped by ${wearer.name}` : null,
+                        isGear && onEquipItem
+                          ? "Enter to equip / unequip"
+                          : null,
+                      ]
+                        .filter(Boolean)
+                        .join("\n")}
                     >
-                      <span className="flex min-w-0 items-center gap-2">
-                        <ItemSprite icon={cat?.icon} size={18} />
-                        <span className="truncate">{label}</span>
+                      <ItemSprite icon={cat?.icon} size={18} />
+                      <span className="truncate">
+                        {label}
+                        {qty > 1 ? (
+                          <span className="ml-1 text-[13px] text-parchment/65">
+                            ({qty})
+                          </span>
+                        ) : null}
                       </span>
-                      <span className="ml-auto flex shrink-0 items-center gap-2 text-[13px] text-parchment/75">
+                      <MemberAvatar member={wearer} size={20} />
+                      <span className="flex justify-end">
                         {showDur ? (
                           <DurabilityBar current={durCur} max={durMax} />
                         ) : null}
-                        {qty > 1 ? <span>({qty})</span> : null}
                       </span>
                     </button>
                     {isSel && stashMode === "examine" ? (
-                      <p className="px-2 pb-1 pt-0.5 text-[13px] text-parchment/75">
-                        {cat?.description ?? "(no description in items.json)"}
-                      </p>
+                      <ItemDetails
+                        item={cat ?? { id: row.item, name: label }}
+                        quantity={qty}
+                        durability={showDur ? { cur: durCur, max: durMax } : null}
+                        wearer={wearer}
+                        itemNameById={itemNameById}
+                      />
+                    ) : null}
+                    {pickerOpen ? (
+                      <EquipPicker
+                        members={members}
+                        cursor={equipIndex}
+                        wearerId={wearer?.id ?? null}
+                        slot={cat?.slots?.[0] ?? ""}
+                        itemNameById={itemNameById}
+                        onHover={setEquipIndex}
+                        onPick={equipToMember}
+                        onCancel={() => setFocusZone("stash")}
+                      />
                     ) : null}
                   </li>
                 );
@@ -1615,17 +1862,298 @@ export function PartyScreen({
       {/* Bottom hint bar. Reflects whichever mode is active so the
           player isn't hunting for which keys do what. */}
       <div className="border-t border-parchment/15 pt-1 text-center font-mono text-xs uppercase tracking-wider text-parchment/65">
-        {stashMode === "send"
-          ? `Press 1-${members.length} or click a roster card · ESC to cancel`
+        {focusZone === "equip"
+          ? `↑↓ pick · Enter equip (wearer = unequip) · 1-${members.length} pick · ESC cancel`
           : stashMode === "examine"
-            ? "X / ESC to close · Up/Down to scroll stash"
-            : (
-              <>
-                Up/Down scroll stash · U use · S send · X examine
-                {reorderEnabled ? " · Drag to reorder" : ""} · ESC to close
-              </>
-            )}
+            ? "X / ESC hide details · ↑↓ select"
+            : focusZone === "stash"
+              ? `↑↓ select · Enter ${
+                  canEquipSelected ? "equip" : canUseSelected ? "use" : "examine"
+                }${canUseSelected ? " · U use" : ""} · X examine · → party · ESC close`
+              : focusZone === "roster"
+                ? `↑↓ select · Enter open sheet${
+                    reorderEnabled ? " · drag to reorder" : ""
+                  } · ← back · ESC close`
+                : "↑↓ select · Enter activate · ↓ inventory · → party · ESC close"}
       </div>
+    </div>
+  );
+}
+
+// ── Inventory: Examine panel ────────────────────────────────────────
+
+function titleCase(id: string): string {
+  return id
+    .split(/[_\s]+/)
+    .filter(Boolean)
+    .map((w) => w[0].toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
+/** One-line "what is this for" summary, derived from the catalog. */
+function describeItemUse(
+  it: PartyItemRef,
+  itemNameById: ReadonlyMap<string, string>,
+): string {
+  const slots = it.slots ?? [];
+  if (slots.includes("hands")) {
+    const kind = it.ranged ? "Ranged weapon" : "Melee weapon";
+    const ammo = it.ammo
+      ? `, fires ${itemNameById.get(it.ammo) ?? titleCase(it.ammo)}`
+      : "";
+    const thrown = it.throwable ? ", can be thrown" : "";
+    return `${kind}${ammo}${thrown} — equip in hands.`;
+  }
+  if (slots.includes("body")) return "Armor — worn on the body.";
+  switch (it.effect) {
+    case "heal_hp":
+      return "Restores HP.";
+    case "heal_mp":
+      return "Restores MP.";
+    case "cure_poison":
+      return "Cures poison.";
+    case "buff_strength":
+      return "Temporarily boosts Strength.";
+    case "buff_ac":
+      return "Temporarily boosts armor.";
+    case "rest":
+      return "Lets the party rest — use Camp in Effects.";
+    case "combat_only":
+      return "Combat only — thrown at an enemy.";
+  }
+  if (it.item_type === "torch") {
+    return "Lights the way — use Light Torch in Effects.";
+  }
+  if (it.item_type === "ammo") return "Ammunition for ranged weapons.";
+  if (it.item_type === "reagent") return "Ingredient for crafting and brewing.";
+  if (it.item_type === "key") return "Opens a matching lock.";
+  if (it.item_type === "lockpick") return "Used when picking locks.";
+  if (it.quest_item || it.item_type === "quest_item") return "Quest item.";
+  if (it.throwable) return "Can be thrown in combat.";
+  return "";
+}
+
+/** Expanded Examine view for the selected Inventory row: large
+ *  sprite, what the item is for, its stats, and the description. */
+function ItemDetails({
+  item,
+  quantity,
+  durability,
+  wearer,
+  itemNameById,
+}: {
+  item: PartyItemRef;
+  quantity: number;
+  durability: { cur: number; max: number } | null;
+  wearer: PartyCharacterRef | null;
+  itemNameById: ReadonlyMap<string, string>;
+}) {
+  const stats: Array<[string, string]> = [];
+  if (typeof item.power === "number" && item.power > 0)
+    stats.push(["Power", String(item.power)]);
+  if (item.bonus_damage)
+    stats.push([
+      "Bonus damage",
+      `${item.bonus_damage}${item.damage_type ? ` ${item.damage_type}` : ""}`,
+    ]);
+  else if (item.damage_type)
+    stats.push(["Element", titleCase(item.damage_type)]);
+  if (typeof item.evasion === "number") stats.push(["Evasion", String(item.evasion)]);
+  if (typeof item.range === "number" && item.range > 0)
+    stats.push(["Range", `${item.range} tiles`]);
+  if (typeof item.light_range === "number" && item.light_range > 0)
+    stats.push(["Light radius", `${item.light_range} tiles`]);
+  if (durability) stats.push(["Durability", `${durability.cur} / ${durability.max}`]);
+  if (quantity > 1) stats.push(["Quantity", String(quantity)]);
+  if (typeof item.buy === "number" || typeof item.sell === "number")
+    stats.push([
+      "Value",
+      [
+        typeof item.buy === "number" ? `buy ${item.buy}g` : null,
+        typeof item.sell === "number" ? `sell ${item.sell}g` : null,
+      ]
+        .filter(Boolean)
+        .join(" · "),
+    ]);
+  const traits = [
+    item.finesse ? "Finesse" : null,
+    item.ignite ? "Ignites" : null,
+    ...(item.wielder_passives ?? []).map((p) => `Grants ${titleCase(p)}`),
+  ].filter((t): t is string => Boolean(t));
+  const use = describeItemUse(item, itemNameById);
+  const subtitle = [
+    item.category ? titleCase(item.category) : null,
+    item.item_type && item.item_type !== item.category
+      ? titleCase(item.item_type)
+      : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  return (
+    <div className="mx-2 mb-1 mt-0.5 rounded border border-parchment/20 bg-ink/70 p-2 text-[13px] text-parchment/85">
+      <div className="flex items-start gap-3">
+        <span className="shrink-0 rounded border border-parchment/20 bg-ink/80 p-1">
+          <ItemSprite icon={item.icon} size={48} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="font-display text-base text-parchment">
+            {item.name ?? item.id}
+          </div>
+          {subtitle ? (
+            <div className="text-xs text-parchment/60">{subtitle}</div>
+          ) : null}
+          {use ? <div className="mt-0.5 text-amber-200/90">{use}</div> : null}
+          {wearer ? (
+            <div className="mt-0.5 text-xs text-parchment/70">
+              Equipped by {wearer.name}
+            </div>
+          ) : null}
+        </div>
+      </div>
+      {stats.length > 0 ? (
+        <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 font-mono text-xs">
+          {stats.map(([k, v]) => (
+            <div key={k} className="contents">
+              <dt className="text-parchment/60">{k}</dt>
+              <dd className="text-parchment/90">{v}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
+      {traits.length > 0 ? (
+        <div className="mt-1.5 flex flex-wrap gap-1">
+          {traits.map((t) => (
+            <span
+              key={t}
+              className="rounded border border-amber-300/40 bg-amber-300/10 px-1.5 py-px text-[11px] text-amber-100/90"
+            >
+              {t}
+            </span>
+          ))}
+        </div>
+      ) : null}
+      <p className="mt-1.5 text-parchment/75">
+        {item.description ?? "(no description in items.json)"}
+      </p>
+    </div>
+  );
+}
+
+// ── Inventory: wearer avatar + equip picker ─────────────────────────
+
+/** Small party-member avatar (or an empty, same-size slot so the
+ *  Inventory grid stays aligned when nobody wears the item). */
+function MemberAvatar({
+  member,
+  size,
+}: {
+  member: PartyCharacterRef | null;
+  size: number;
+}) {
+  const src = member?.sprite
+    ? resolveSpritePath(member.sprite, SPRITE_CONFIG)
+    : null;
+  if (!member) return <span style={{ width: size, height: size }} />;
+  return src ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt={member.name}
+      title={`Equipped by ${member.name}`}
+      width={size}
+      height={size}
+      style={{ imageRendering: "pixelated", width: size, height: size }}
+      className="rounded-sm object-contain"
+    />
+  ) : (
+    <span
+      title={`Equipped by ${member.name}`}
+      style={{ width: size, height: size }}
+      className="flex items-center justify-center rounded-sm border border-parchment/25 text-[10px] text-parchment/80"
+    >
+      {member.name.slice(0, 1)}
+    </span>
+  );
+}
+
+/** Pop-down under an Inventory row: every party member's avatar +
+ *  name. Picking someone equips the item on them (their current item
+ *  in that slot goes back to the Inventory); picking the current
+ *  wearer unequips it. Keyboard is driven by the Party screen's nav
+ *  reducer ("equip" zone); this only renders + handles the mouse. */
+function EquipPicker({
+  members,
+  cursor,
+  wearerId,
+  slot,
+  itemNameById,
+  onHover,
+  onPick,
+  onCancel,
+}: {
+  members: ReadonlyArray<PartyCharacterRef>;
+  cursor: number;
+  wearerId: string | null;
+  slot: string;
+  itemNameById: ReadonlyMap<string, string>;
+  onHover: (i: number) => void;
+  onPick: (i: number) => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="mx-2 mb-1 mt-0.5 rounded border border-amber-300/40 bg-ink/80 p-1">
+      <div className="flex items-center justify-between px-1 text-[11px] uppercase tracking-wide text-amber-300/80">
+        <span>{wearerId ? "Move to / unequip" : "Equip on"}</span>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="text-parchment/60 hover:text-parchment"
+          title="Cancel (ESC)"
+        >
+          ✕
+        </button>
+      </div>
+      <ul role="listbox" aria-label="Choose a party member">
+        {members.map((m, i) => {
+          const isWearer = m.id === wearerId;
+          const current = (m.equipped as Record<string, string> | undefined)?.[
+            slot
+          ];
+          const note = isWearer
+            ? "unequip"
+            : current
+              ? `replaces ${itemNameById.get(current) ?? current}`
+              : "";
+          return (
+            <li key={m.id}>
+              <button
+                type="button"
+                role="option"
+                aria-selected={i === cursor}
+                onMouseEnter={() => onHover(i)}
+                onClick={() => onPick(i)}
+                className={[
+                  "flex w-full items-center gap-2 rounded border px-1.5 py-0.5 text-left text-sm",
+                  i === cursor
+                    ? "border-ember/60 bg-ember/15 text-parchment"
+                    : "border-transparent text-parchment/85 hover:bg-ink/50",
+                ].join(" ")}
+              >
+                <MemberAvatar member={m} size={20} />
+                <span className="truncate">{m.name}</span>
+                {isWearer ? (
+                  <span className="text-amber-300" title="Currently equipped">
+                    ✓
+                  </span>
+                ) : null}
+                <span className="ml-auto truncate text-xs text-parchment/60">
+                  {note}
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }

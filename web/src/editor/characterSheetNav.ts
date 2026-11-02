@@ -19,9 +19,10 @@
  *   │ Light                                 │
  *   └───────────────────────────────────────┘
  *
- * Vertical flow (Down): equipped → personal → race/class → spells.
- * Horizontal flow (Left/Right): swaps between Race and Class abilities,
- * which sit side-by-side in a two-column grid.
+ * Vertical flow (Down): equipped → race → class → spells. (Race and
+ * Class are stacked under Equipped since 2026-11; the personal zone
+ * stays in the reducer but the sheet reports it empty.) Left/Right
+ * still hop between Race and Class.
  *
  * Enter on a row emits a `trigger` action with the zone + index. The
  * component knows which catalog backs each zone and dispatches to the
@@ -293,6 +294,16 @@ function reduceRaceKey(
     if (s.raceIndex < ctx.raceCount - 1) {
       return consumed({ ...s, raceIndex: s.raceIndex + 1 });
     }
+    // Race sits directly above Class — Down off the last race row
+    // drops into the class list.
+    if (ctx.classCount > 0) {
+      return consumed({
+        ...s,
+        zone: "class-abilities",
+        classIndex: 0,
+        lastAbilityZone: "class-abilities",
+      });
+    }
     return spillDownFromAbilities(s, ctx);
   }
   if (isUpKey(key)) {
@@ -336,6 +347,15 @@ function reduceClassKey(
   if (isUpKey(key)) {
     if (s.classIndex > 0) {
       return consumed({ ...s, classIndex: s.classIndex - 1 });
+    }
+    // Up off the first class row climbs into the race list above.
+    if (ctx.raceCount > 0) {
+      return consumed({
+        ...s,
+        zone: "race-abilities",
+        raceIndex: ctx.raceCount - 1,
+        lastAbilityZone: "race-abilities",
+      });
     }
     return spillUpFromAbilities(s, ctx);
   }
@@ -404,10 +424,7 @@ function spillDownFromPersonal(
   s: CharSheetNavState,
   ctx: CharSheetNavContext,
 ): CharSheetNavResult {
-  // Prefer the side the player was last on if both are present.
-  if (s.lastAbilityZone === "class-abilities" && ctx.classCount > 0) {
-    return consumed({ ...s, zone: "class-abilities", classIndex: 0 });
-  }
+  // Race is the first list below Equipped.
   if (ctx.raceCount > 0) {
     return consumed({
       ...s,
@@ -477,11 +494,13 @@ function spillUpFromSpells(
   s: CharSheetNavState,
   ctx: CharSheetNavContext,
 ): CharSheetNavResult {
-  if (s.lastAbilityZone === "class-abilities" && ctx.classCount > 0) {
+  // Class is the list directly above Spells, then Race above it.
+  if (ctx.classCount > 0) {
     return consumed({
       ...s,
       zone: "class-abilities",
       classIndex: ctx.classCount - 1,
+      lastAbilityZone: "class-abilities",
     });
   }
   if (ctx.raceCount > 0) {
@@ -490,14 +509,6 @@ function spillUpFromSpells(
       zone: "race-abilities",
       raceIndex: ctx.raceCount - 1,
       lastAbilityZone: "race-abilities",
-    });
-  }
-  if (ctx.classCount > 0) {
-    return consumed({
-      ...s,
-      zone: "class-abilities",
-      classIndex: ctx.classCount - 1,
-      lastAbilityZone: "class-abilities",
     });
   }
   if (ctx.personalCount > 0) {
