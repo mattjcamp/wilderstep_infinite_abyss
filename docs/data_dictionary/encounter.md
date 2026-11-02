@@ -32,6 +32,7 @@ v1 nested encounters under three top-level area keys (`dungeon`, `house_basement
 | `id` | string | yes | Stable identifier in snake_case. Same-name encounters across areas get area-suffixed ids (e.g. `cellar_rats_dungeon` vs `cellar_rats_house_basement`) | TBD |
 | `area` | string | yes | Discriminator: `"dungeon"`, `"house_basement"`, or `"overworld"`. The sampler picks an area, then samples encounters from that bucket. | TBD |
 | `name` | string | yes | Display / lookup name; referenced by quest kill-step rows | TBD |
+| `description` | string | no | Flavour text shown under the encounter title on the play encounter screen. | Yes |
 | `level` | int (1–8) | yes | Difficulty band; the sampler filters by `[minLevel..maxLevel]` | TBD |
 | `weight` | int (> 0) | yes | Weighted-sample probability inside an eligible band | TBD |
 | `monster_party_tile` | string | yes | Sprite path shown for the lead monster on the overworld (e.g. `"monster/goblin.png"`). Empty string falls back to `monsters[0]`'s default sprite. | TBD |

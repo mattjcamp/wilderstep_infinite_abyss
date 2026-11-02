@@ -242,6 +242,12 @@ export interface SimMonsterRef {
   /** Sprite path like "monster/goblin.png" — the host renders this
    *  on every roamer tile and inside the encounter dialog. */
   sprite?: string;
+  /** Fields the play encounter screen reads (authored description,
+   *  talk eligibility, run-away DC). The kernel ignores them. */
+  description?: string;
+  humanoid?: boolean;
+  dexterity?: number;
+  difficulty?: string;
 }
 
 /** Minimal quests.json record the sim reads — just enough to drive
@@ -273,6 +279,8 @@ export interface SimQuestRef {
 export interface SimEncounterRef {
   id: string;
   name: string;
+  /** Authored flavour text shown on the play encounter screen. */
+  description?: string;
   /** Lead monster's sprite path the placed-encounter renderer draws
    *  as the entity icon. Already in "monster/foo.png" form. */
   monster_party_tile?: string;

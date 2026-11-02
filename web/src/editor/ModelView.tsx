@@ -75,6 +75,7 @@ type Record_ = Record<string, unknown>;
 const MONSTER_FIELDS: Record<string, unknown> = {
   id: "",
   name: "",
+  description: "",
   sprite: "",
   theme: "",
   difficulty: "normal",
@@ -128,6 +129,7 @@ const SPAWN_FIELDS: Record<string, unknown> = {
 const ENCOUNTER_FIELDS: Record<string, unknown> = {
   id: "",
   name: "",
+  description: "",
   area: "",
   theme: "",
   tags: [],

@@ -1276,6 +1276,71 @@ describe("MapSimulation — quest-driven placed encounters", () => {
     expect(states.get("rats")!.status).toBe("completed");
   });
 
+  it("resolveSpawnEncounter('fled', { calmSteps }) stops the pursuer re-engaging until calm wears off", () => {
+    const grid = makeGrid();
+    for (let r = 0; r < 5; r++) {
+      for (let c = 0; c < 5; c++) {
+        if ((c === 0 && r === 0) || (c === 1 && r === 0)) continue;
+        grid[r][c] = cell({ walkable: false });
+      }
+    }
+    const defs = parseQuestsFile({
+      quests: [
+        {
+          id: "rats",
+          name: "The Giant Rats",
+          steps: [
+            {
+              id: "s1",
+              name: "Kill the rats",
+              kind: "kill",
+              params: { encounter_id: "cellar_rats", count: 1 },
+              location_kind: "map",
+              map_id: "demo_map",
+            },
+          ],
+        },
+      ],
+    });
+    const states = new Map<string, QuestState>();
+    ensureQuestStates(defs, states);
+    states.get("rats")!.status = "active";
+    const sim = new MapSimulation({
+      grid,
+      party: makeParty({ start_position: { col: 0, row: 0 } }),
+      catalog: {
+        characters: [],
+        races: [],
+        effects: [],
+        encounters: [
+          { id: "cellar_rats", name: "Cellar Rats", description: "Squeaking.", monsters: ["giant_rat"] },
+        ],
+      },
+      classNameById: new Map(),
+      bridge: fakeBridge(),
+      questDefs: defs,
+      questStates: states,
+      currentLocation: { kind: "map", mapId: "demo_map" },
+    });
+    const events = captureEvents(sim);
+    sim.stepInDirection("right");
+    const first = events.find((e) => e.kind === "spawn_encountered");
+    if (first?.kind !== "spawn_encountered") throw new Error("expected encounter");
+    expect(first.options.description).toBe("Squeaking.");
+    sim.resolveSpawnEncounter("fled", { calmSteps: 2, message: "Got away!" });
+    expect(events.some((e) => e.kind === "log" && e.message === "Got away!")).toBe(true);
+
+    const encountersAfter = () =>
+      events.filter((e) => e.kind === "spawn_encountered").length;
+    sim.stepInDirection("left");
+    sim.stepInDirection("right");
+    expect(encountersAfter()).toBe(1);
+    // Calm spent — the next step re-engages.
+    sim.stepInDirection("left");
+    sim.stepInDirection("right");
+    expect(encountersAfter()).toBe(2);
+  });
+
   it("does not drop on the party's spawn cell", () => {
     // Tighten the walkable pool so the only available cell is the
     // party spawn — the helper should bail rather than drop on top

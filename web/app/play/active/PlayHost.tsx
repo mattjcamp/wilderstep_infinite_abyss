@@ -64,6 +64,11 @@ import {
 } from "@/play/logEvents";
 import { PlaySaveMenuOverlay } from "./PlaySaveMenuOverlay";
 import { PlayCounterShopOverlay } from "./PlayCounterShopOverlay";
+import { PlayEncounterOverlay } from "./PlayEncounterOverlay";
+import {
+  summarizeRoster,
+  type EncounterRoller,
+} from "@/play/encounterChoices";
 import { PlayNpcDialogOverlay } from "./PlayNpcDialogOverlay";
 import { normalizeNpcDialogs } from "@/data_model/npcDialogs";
 import { LinkPlacard } from "@/play/LinkPlacard";
@@ -973,6 +978,11 @@ export function PlayHost() {
    *  combat scene reports back via `onResolved`. While set the world
    *  Phaser game is unmounted and PlayCombatHost takes its place. */
   const [combat, setCombat] = useState<SpawnEncounterOptions | null>(null);
+  /** Pre-combat encounter screen (Fight / Run / Talk) — set on
+   *  `spawn_encountered`; Fight (or a failed Run / Talk) promotes it
+   *  to `combat`, a successful Run / Talk resolves it as "fled". */
+  const [encounterPrompt, setEncounterPrompt] =
+    useState<SpawnEncounterOptions | null>(null);
   /** Party screen toggle — opens with the `P` key, closes with `P`
    *  again (or ESC, or backdrop click). Mirrors the editor's
    *  `partyScreenOpen` flag. While true, movement keys are gated
@@ -1623,6 +1633,7 @@ export function PlayHost() {
       !!lockEncounter ||
       !!chestEncounter ||
       !!combat ||
+      !!encounterPrompt ||
       !!questOffer ||
       partyScreenOpen ||
       questLogOpen ||
@@ -1637,6 +1648,7 @@ export function PlayHost() {
     lockEncounter,
     chestEncounter,
     combat,
+    encounterPrompt,
     questOffer,
     partyScreenOpen,
     questLogOpen,
@@ -1735,7 +1747,7 @@ export function PlayHost() {
       ) {
         return;
       }
-      if (lockEncounter || combat || questOffer) return;
+      if (lockEncounter || combat || encounterPrompt || questOffer) return;
       // Already-open modal? The overlay's own listener handles the
       // close; just bail so we don't try to re-open it.
       if (partyScreenOpen || questLogOpen || helpTipsOpen || logOpen) {
@@ -1752,6 +1764,7 @@ export function PlayHost() {
   }, [
     lockEncounter,
     combat,
+    encounterPrompt,
     questOffer,
     partyScreenOpen,
     questLogOpen,
@@ -2304,7 +2317,7 @@ export function PlayHost() {
       if (e.key !== "s" && e.key !== "S") return;
       e.preventDefault();
       if (saveMenuOpen) return; // overlay's own listener closes
-      if (lockEncounter || chestEncounter || combat || questOffer) return;
+      if (lockEncounter || chestEncounter || combat || encounterPrompt || questOffer) return;
       if (partyScreenOpen || questLogOpen || helpTipsOpen || logOpen) return;
       if (counterShopId !== null || npcDialogId !== null) return;
       if (giverChatter !== null || placard !== null) return;
@@ -5162,7 +5175,9 @@ export function PlayHost() {
               // Phaser game stays mounted underneath (its keyboard
               // listener is gated by overlaysOpenRef), but the canvas
               // is hidden while PlayCombatHost takes the screen.
-              setCombat(ev.options);
+              // First stop: the encounter screen (Fight / Run / Talk),
+              // which promotes to combat via onEncounterFight.
+              setEncounterPrompt(ev.options);
               return;
             }
             if (ev.kind === "state") {
@@ -5942,6 +5957,64 @@ export function PlayHost() {
     router.push("/play/end");
   }, [router, saveCurrent, fireQuestCelebration]);
 
+  // Encounter screen wiring. Fight (or a failed Run / Talk) hands the
+  // encounter to combat; a successful Run / Talk releases the kernel's
+  // pending spawn as "fled" and calms the pursuer for a few steps so
+  // it doesn't re-engage on the very next move.
+  const onEncounterFight = useCallback(
+    (note?: string) => {
+      const opts = encounterPrompt;
+      if (!opts) return;
+      if (note) {
+        setLogMessages((prev) => {
+          const next = [...prev, note];
+          return next.length > MAX_LOG ? next.slice(next.length - MAX_LOG) : next;
+        });
+      }
+      setEncounterPrompt(null);
+      setCombat(opts);
+    },
+    [encounterPrompt],
+  );
+  const onEncounterEscape = useCallback(
+    (how: "run" | "talk", message: string) => {
+      simRef.current?.resolveSpawnEncounter("fled", {
+        calmSteps: how === "talk" ? 20 : 8,
+        message,
+      });
+      setEncounterPrompt(null);
+    },
+    [],
+  );
+  /** Alive party members with ability scores for the Run / Talk
+   *  rolls (catalog character first, custom record as fallback). */
+  const encounterRollers = useMemo<EncounterRoller[]>(() => {
+    if (!encounterPrompt) return [];
+    const cur = saveRef.current ?? state.save;
+    const charsById = new Map(
+      (state.catalog?.characters ?? []).map((c) => [c.id, c]),
+    );
+    const out: EncounterRoller[] = [];
+    for (const m of cur?.party.members ?? []) {
+      if (m.hp <= 0) continue;
+      const rec = (charsById.get(m.id) ??
+        (m.custom as Record<string, unknown> | null) ??
+        {}) as {
+        name?: string;
+        dexterity?: number;
+        intelligence?: number;
+        wisdom?: number;
+      };
+      out.push({
+        name: rec.name ?? m.id,
+        dexterity: rec.dexterity,
+        intelligence: rec.intelligence,
+        wisdom: rec.wisdom,
+      });
+    }
+    return out;
+  }, [encounterPrompt, state.save, state.catalog]);
+
   // Lock-dialog wiring — Pick Lock / Cast Knock both call back into
   // the kernel, which mutates the cell + emits a state event the
   // bridge has already processed by the time we re-render.
@@ -6257,6 +6330,20 @@ export function PlayHost() {
 
       {/* (The old footer hint row under the canvas is gone — play is
        *  edge-to-edge now; the controls live on the H help screen.) */}
+
+      {encounterPrompt && !combat ? (
+        <PlayEncounterOverlay
+          key={`${encounterPrompt.kind}:${encounterPrompt.roamerId ?? encounterPrompt.placedEncounterId ?? `${encounterPrompt.sourcePos.col},${encounterPrompt.sourcePos.row}`}`}
+          options={encounterPrompt}
+          roster={summarizeRoster(
+            encounterPrompt.monsters,
+            state.catalog?.monsters ?? [],
+          )}
+          members={encounterRollers}
+          onFight={onEncounterFight}
+          onEscape={onEncounterEscape}
+        />
+      ) : null}
 
       {lockEncounter ? (
         <LockDialogOverlay

@@ -879,6 +879,11 @@ export class MapSimulation {
   /** In-flight spawn encounter while the overlay is up. Cleared by
    *  `resolveSpawnEncounter`. */
   private pendingSpawn: SpawnEncounterOptions | null = null;
+  /** Roamers / placed encounters the party just escaped from or
+   *  talked down, keyed `r:<roamerId>` / `p:<placedId>` → world steps
+   *  left. While calm an entity backs away from the party instead of
+   *  pursuing and can't trigger a collision. Session-only (not saved). */
+  private readonly calmed = new Map<string, number>();
   /** Ground-tile fallback used by the destroy-lair path. */
   private readonly groundTile: SimCatalog["groundTile"];
   /** Per-step NPC wander toggle — see
@@ -1972,7 +1977,11 @@ export class MapSimulation {
       const isBlocked = (c: number, r: number) => occupied.has(`${c},${r}`);
       // Push-spell aura — same flee-over-pursue override the roamer
       // loop applies; placed encounters are "monsters" too.
-      const fled = this.repelFleeOrNull(placed, isWalkable, isBlocked);
+      const calmKey = `p:${placed.id}`;
+      const calm = this.tickCalm(calmKey);
+      const fled = calm
+        ? fleeStep(placed, this.pos, 1, isWalkable, isBlocked)
+        : this.repelFleeOrNull(placed, isWalkable, isBlocked);
       const next =
         fled ??
         (canPursue(
@@ -1998,13 +2007,13 @@ export class MapSimulation {
       placed.col = next.col;
       placed.row = next.row;
       occupied.add(`${next.col},${next.row}`);
-      if (!trigger && roamerCollidesWithParty(placed, this.pos)) {
+      if (!calm && !trigger && roamerCollidesWithParty(placed, this.pos)) {
         const enc = this.encounterCatalog.get(placed.encounterId);
         if (enc) {
           trigger = {
             kind: "placed",
             name: enc.name,
-            description: undefined,
+            description: enc.description,
             sourcePos: this.parseKey(placed.sourceKey) ?? {
               col: placed.col,
               row: placed.row,
@@ -2023,6 +2032,16 @@ export class MapSimulation {
       }
     }
     return trigger;
+  }
+
+  /** Consume one step of an entity's calm window. Returns true while
+   *  the entity is still calm this step (see `calmed`). */
+  private tickCalm(key: string): boolean {
+    const left = this.calmed.get(key);
+    if (left === undefined) return false;
+    if (left <= 1) this.calmed.delete(key);
+    else this.calmed.set(key, left - 1);
+    return true;
   }
 
   /** True while the priest's Push spell holds — monsters inside the
@@ -2206,7 +2225,11 @@ export class MapSimulation {
       // Push-spell aura: a repelled roamer flees instead of pursuing
       // (or wandering) — it can never close on the party while the
       // effect holds, since fleeStep only ever increases distance.
-      const fled = this.repelFleeOrNull(roamer, isWalkable, isBlocked);
+      const calmKey = `r:${roamer.id}`;
+      const calm = this.tickCalm(calmKey);
+      const fled = calm
+        ? fleeStep(roamer, this.pos, 1, isWalkable, isBlocked)
+        : this.repelFleeOrNull(roamer, isWalkable, isBlocked);
       const next =
         fled ??
         (canPursue(
@@ -2232,7 +2255,7 @@ export class MapSimulation {
       roamer.col = next.col;
       roamer.row = next.row;
       occupied.add(`${next.col},${next.row}`);
-      if (!trigger && roamerCollidesWithParty(roamer, this.pos)) {
+      if (!calm && !trigger && roamerCollidesWithParty(roamer, this.pos)) {
         // First collision wins — locate the lair the roamer came
         // from so the destroy-lair option survives even when the
         // player kills the roamer on its own tile. sourcePos falls
@@ -2731,15 +2754,35 @@ export class MapSimulation {
    *     teleport the party — host can wire in a step-back if it
    *     wants something fancier later.)
    *
+   * `opts.calmSteps` (fled only): the triggering roamer / placed
+   * encounter backs off and can't re-engage for that many world
+   * steps — used by a successful Run or Talk from the encounter
+   * screen so the party actually gets away. `opts.message` overrides
+   * the default "The party retreats." log line.
+   *
    * Returns true when the resolution applied (i.e. an encounter was
    * pending). Returns false if there was nothing to resolve.
    */
-  resolveSpawnEncounter(outcome: "won" | "fled"): boolean {
+  resolveSpawnEncounter(
+    outcome: "won" | "fled",
+    opts?: { calmSteps?: number; message?: string },
+  ): boolean {
     if (this.disposed || !this.pendingSpawn) return false;
     const enc = this.pendingSpawn;
     this.pendingSpawn = null;
     if (outcome === "fled") {
-      this.emit({ kind: "log", message: "The party retreats." });
+      const calmSteps = Math.max(0, Math.floor(opts?.calmSteps ?? 0));
+      if (calmSteps > 0) {
+        if (enc.kind === "roamer" && enc.roamerId) {
+          this.calmed.set(`r:${enc.roamerId}`, calmSteps);
+        } else if (enc.kind === "placed" && enc.placedEncounterId) {
+          this.calmed.set(`p:${enc.placedEncounterId}`, calmSteps);
+        }
+      }
+      this.emit({
+        kind: "log",
+        message: opts?.message ?? "The party retreats.",
+      });
       this.emit({ kind: "state" });
       return true;
     }
