@@ -106,6 +106,10 @@ export interface DungeonLevelRecord {
 export interface DungeonRecord {
   id: string;
   name: string;
+  /** XP for clearing this dungeon (every monster on every floor
+   *  defeated). Overrides the module's `settings.exploration_xp.dungeon`
+   *  (default 250); 0 turns the reward off. */
+  clear_xp?: number;
   description?: string;
   tags?: string[];
   style?: DungeonStyle;

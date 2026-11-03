@@ -12,9 +12,10 @@ import {
 
 describe("exploration XP settings", () => {
   it("defaults to small amounts", () => {
-    expect(DEFAULT_EXPLORATION_XP).toEqual({ map: 10, npc: 5 });
-    expect(withExplorationDefaults(undefined)).toEqual({ map: 10, npc: 5 });
-    expect(withExplorationDefaults({ npc: 0 })).toEqual({ map: 10, npc: 0 });
+    expect(DEFAULT_EXPLORATION_XP).toEqual({ map: 10, npc: 5, dungeon: 250 });
+    expect(withExplorationDefaults(undefined)).toEqual({ map: 10, npc: 5, dungeon: 250 });
+    expect(withExplorationDefaults({ npc: 0 })).toEqual({ map: 10, npc: 0, dungeon: 250 });
+    expect(withExplorationDefaults({ dungeon: 400 }).dungeon).toBe(400);
   });
 
   it("sanitises manifest values", () => {

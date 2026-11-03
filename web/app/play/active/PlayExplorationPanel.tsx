@@ -9,9 +9,11 @@
  * Log window — the notable events from the adventure log (XP, level-ups,
  * quests, finds, fights, traps, lock attempts — see notableCategory),
  * each with a coloured dot for its kind and stamped with the game
- * time it happened and grouped under a heading per in-game day. Sticks
- * to the newest line unless the player scrolls back, in which case a
- * "Latest ↓" button jumps back down.
+ * time it happened and grouped under a heading per in-game day. Newest
+ * first: each new line lands at the top and pushes older ones down;
+ * scroll down for history. While the player is scrolled down reading
+ * history the view holds still, and a "Latest ↑" button jumps back
+ * to the top.
  *
  * When a notable line lands, the panel plays a soft chime and the new
  * row glows in with a shimmer and sparkles (CSS in app/globals.css).
@@ -138,18 +140,27 @@ function ExplorationLog({
   if (mountSeq.current === null) mountSeq.current = seen.current.nextSeq;
   const meta = seen.current.meta;
 
-  // Follow the newest line unless the player has scrolled up.
+  // Newest line is at the top: stay pinned there unless the player
+  // has scrolled down into older entries.
   const listRef = useRef<HTMLDivElement | null>(null);
-  const [atBottom, setAtBottom] = useState(true);
+  const [atTop, setAtTop] = useState(true);
+  // Height before this update, so when the player is reading older
+  // entries a new line arriving above doesn't shove the text they're
+  // looking at — we shift scrollTop by however much was added on top.
+  // (Native scroll anchoring is turned off on the list so this is the
+  // one rule in every browser.)
+  const prevHeight = useRef(0);
   useLayoutEffect(() => {
     const el = listRef.current;
-    if (el && atBottom) el.scrollTop = el.scrollHeight;
-  }, [messages, atBottom]);
+    if (!el) return;
+    if (atTop) el.scrollTop = 0;
+    else el.scrollTop += el.scrollHeight - prevHeight.current;
+    prevHeight.current = el.scrollHeight;
+  }, [messages, atTop]);
   useEffect(() => {
     const el = listRef.current;
     if (!el) return;
-    const onScroll = () =>
-      setAtBottom(el.scrollHeight - el.scrollTop - el.clientHeight < 8);
+    const onScroll = () => setAtTop(el.scrollTop < 8);
     el.addEventListener("scroll", onScroll, { passive: true });
     return () => el.removeEventListener("scroll", onScroll);
   }, []);
@@ -171,9 +182,11 @@ function ExplorationLog({
     Sfx.play("log_chime");
   }, [newestSeq]);
 
+  // Render newest first — a day heading leads each day's group, and
+  // the most recent day comes first.
   const rows: ReactNode[] = [];
   let lastDay = "";
-  entries.forEach(({ msg, cat, at: minutes, seq }, i) => {
+  [...entries].reverse().forEach(({ msg, cat, at: minutes, seq }, i) => {
     const at = { totalMinutes: minutes };
     const day = dateStr(at);
     if (day !== lastDay) {
@@ -187,7 +200,7 @@ function ExplorationLog({
         </div>,
       );
     }
-    const newest = i === entries.length - 1;
+    const newest = i === 0;
     const fresh = seq >= (mountSeq.current ?? 0);
     rows.push(
       <div
@@ -251,7 +264,11 @@ function ExplorationLog({
       }
     >
       <div className="relative min-h-0 flex-1">
-        <div ref={listRef} className="absolute inset-0 overflow-y-auto">
+        <div
+          ref={listRef}
+          className="absolute inset-0 overflow-y-auto"
+          style={{ overflowAnchor: "none" }}
+        >
           {entries.length === 0 ? (
             <p className="px-2 py-4 text-center text-sm text-parchment/50">
               Nothing notable yet — XP, quests, finds, fights and traps
@@ -261,14 +278,14 @@ function ExplorationLog({
             rows
           )}
         </div>
-        {!atBottom ? (
+        {!atTop ? (
           <button
             type="button"
             {...noFocus}
-            onClick={() => setAtBottom(true)}
-            className="absolute bottom-2 right-3 z-20 rounded border border-parchment/30 bg-ink/95 px-2 py-0.5 text-xs text-parchment/85 shadow hover:bg-ink"
+            onClick={() => setAtTop(true)}
+            className="absolute right-3 top-2 z-20 rounded border border-parchment/30 bg-ink/95 px-2 py-0.5 text-xs text-parchment/85 shadow hover:bg-ink"
           >
-            Latest ↓
+            Latest ↑
           </button>
         ) : null}
       </div>

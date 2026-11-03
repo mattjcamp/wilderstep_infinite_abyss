@@ -123,6 +123,15 @@
           "col": 15,
           "row": 30,
           "description": "When you are ready, seek out the Orc King's tower. Be wary, and do not attempt this breach without a well rested and experienced group of hardy folk that you can trust with your life"
+        },
+        {
+          "id": "avengers_step_3",
+          "name": "Step 3 Kill the Orc King",
+          "kind": "kill",
+          "description": "Seek out the Orc King at the top of his tower and destroy him",
+          "encounter_id": "the_orc_king",
+          "location_kind": "map",
+          "map_id": "orc_kings_tower_3"
         }
       ],
       "quest_giver": {

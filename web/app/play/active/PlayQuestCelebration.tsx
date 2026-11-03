@@ -54,7 +54,10 @@ export type PlayQuestCelebrationKind =
   | "quest"
   | "pickpocket"
   | "tinker"
-  | "craft";
+  | "craft"
+  /** Every monster in a generated dungeon defeated — the big gold
+   *  placard + victory fanfare, same weight as a quest turn-in. */
+  | "dungeon-cleared";
 
 export interface PlayQuestCelebrationProps {
   /** "step"       = an intermediate kill/retrieve credit, quest still ongoing.
@@ -89,6 +92,7 @@ const TIMINGS = {
   step:         { fadeIn: 200, hold: 2100, fadeOut: 500 },
   "step-final": { fadeIn: 230, hold: 2700, fadeOut: 550 },
   quest:        { fadeIn: 260, hold: 3000, fadeOut: 600 },
+  "dungeon-cleared": { fadeIn: 260, hold: 3200, fadeOut: 600 },
   // Race-ability placards reuse the step footprint — the moment
   // isn't quite a quest payoff but it IS something the player chose
   // to do and should see acknowledged. Hold a little longer so the
@@ -134,7 +138,8 @@ export function PlayQuestCelebration({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kind]);
 
-  const isQuest = kind === "quest";
+  // Dungeon-cleared shares the quest turn-in's full-size gold styling.
+  const isQuest = kind === "quest" || kind === "dungeon-cleared";
   const isStepFinal = kind === "step-final";
   const isRaceAbility =
     kind === "pickpocket" || kind === "tinker" || kind === "craft";
@@ -163,7 +168,9 @@ export function PlayQuestCelebration({
               ? "Tinkered Up!"
               : kind === "craft"
                 ? "Crafted!"
-                : "Step Complete";
+                : kind === "dungeon-cleared"
+                  ? "Dungeon Cleared!"
+                  : "Step Complete";
 
   return (
     <div

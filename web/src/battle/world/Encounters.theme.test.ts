@@ -89,4 +89,46 @@ describe("sampleEncounter theme filter", () => {
     });
     expect(picked?.id).toBe("hi_undead");
   });
+
+  it("keeps the theme at an easier level when the band's themed match is too hard", () => {
+    // A "normal" humanoid dungeon's deeper floor: the only humanoid
+    // encounter in band is a Troll (hard) — it used to win the theme
+    // check, get pruned, and leave the room empty.
+    const t = {
+      dungeon: [
+        enc("orcs", "humanoid", { level: 2, monsters: ["orc"] }),
+        enc("troll", "humanoid", { level: 5, monsters: ["troll"] }),
+        enc("skeletons", "undead", { level: 3, monsters: ["skeleton"] }),
+      ],
+    };
+    const tier: Record<string, string> = { orc: "normal", troll: "hard", skeleton: "normal" };
+    const picked = sampleEncounter(t, "dungeon", {
+      rng: firstPick,
+      theme: "humanoid",
+      minLevel: 3,
+      maxLevel: 5,
+      allowedDifficulties: new Set(["normal"]),
+      monsterDifficulty: (id) => tier[id],
+    });
+    expect(picked?.id).toBe("orcs");
+  });
+
+  it("falls back to any theme in band only when the theme has nothing usable at all", () => {
+    const t = {
+      dungeon: [
+        enc("troll", "humanoid", { level: 5, monsters: ["troll"] }),
+        enc("skeletons", "undead", { level: 4, monsters: ["skeleton"] }),
+      ],
+    };
+    const tier: Record<string, string> = { troll: "hard", skeleton: "normal" };
+    const picked = sampleEncounter(t, "dungeon", {
+      rng: firstPick,
+      theme: "humanoid",
+      minLevel: 3,
+      maxLevel: 5,
+      allowedDifficulties: new Set(["normal"]),
+      monsterDifficulty: (id) => tier[id],
+    });
+    expect(picked?.id).toBe("skeletons");
+  });
 });

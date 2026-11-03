@@ -4,7 +4,7 @@
  *
  * Amounts come from the module manifest, resolved up the extends chain:
  *
- *   "settings": { "exploration_xp": { "map": 10, "npc": 5 } }
+ *   "settings": { "exploration_xp": { "map": 10, "npc": 5, "dungeon": 250 } }
  *
  * Either key may be omitted (→ {@link DEFAULT_EXPLORATION_XP}). Each map
  * and each NPC record may also carry its own `exploration_xp` number
@@ -26,6 +26,10 @@ export interface ExplorationXpSettings {
   map: number;
   /** XP for talking to a person (NPC or quest giver) for the first time. */
   npc: number;
+  /** XP for clearing a generated dungeon (dungeons.json) — every
+   *  monster on every floor defeated. A dungeon record's `clear_xp`
+   *  overrides it for that dungeon (0 = no reward). See dungeonClear.ts. */
+  dungeon: number;
 }
 
 /** Engine defaults — deliberately small. For scale: one goblin is
@@ -35,6 +39,7 @@ export interface ExplorationXpSettings {
 export const DEFAULT_EXPLORATION_XP: ExplorationXpSettings = {
   map: 10,
   npc: 5,
+  dungeon: 250,
 };
 
 function cleanAmount(v: unknown): number | undefined {
@@ -54,8 +59,10 @@ export function sanitizeExplorationXp(
   const out: Partial<ExplorationXpSettings> = {};
   const map = cleanAmount(src.map);
   const npc = cleanAmount(src.npc);
+  const dungeon = cleanAmount(src.dungeon);
   if (map !== undefined) out.map = map;
   if (npc !== undefined) out.npc = npc;
+  if (dungeon !== undefined) out.dungeon = dungeon;
   return Object.keys(out).length > 0 ? out : undefined;
 }
 
@@ -66,6 +73,7 @@ export function withExplorationDefaults(
   return {
     map: partial?.map ?? DEFAULT_EXPLORATION_XP.map,
     npc: partial?.npc ?? DEFAULT_EXPLORATION_XP.npc,
+    dungeon: partial?.dungeon ?? DEFAULT_EXPLORATION_XP.dungeon,
   };
 }
 

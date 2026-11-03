@@ -31,8 +31,12 @@ export function PlayLogOverlay({
   storyLines?: ReadonlySet<string>;
   onClose: () => void;
 }) {
+  // Newest first, matching the side-panel log.
   const messages = useMemo(
-    () => allMessages.filter((m) => notableCategory(m, storyLines) !== null),
+    () =>
+      allMessages
+        .filter((m) => notableCategory(m, storyLines) !== null)
+        .reverse(),
     [allMessages, storyLines],
   );
   // ESC and L close. Capture so the sim's movement keys don't fire
@@ -66,13 +70,12 @@ export function PlayLogOverlay({
       window.removeEventListener("keydown", onKey, { capture: true });
   }, [onClose]);
 
-  // Auto-scroll to the bottom on mount so the player sees the most
-  // recent line first. Hooks at render time rather than via a
-  // useEffect because the list is short — no flicker risk.
+  // The list is newest-first, so open at the top where the most
+  // recent line is.
   const listRef = useRef<HTMLOListElement | null>(null);
   useEffect(() => {
     const el = listRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
+    if (el) el.scrollTop = 0;
   }, [messages]);
 
   return (
@@ -109,7 +112,7 @@ export function PlayLogOverlay({
           >
             {messages.map((msg, i) => (
               <li
-                key={`${i}-${msg}`}
+                key={`${messages.length - i}-${msg}`}
                 className="border-b border-parchment/10 py-0.5 last:border-b-0"
               >
                 {msg}

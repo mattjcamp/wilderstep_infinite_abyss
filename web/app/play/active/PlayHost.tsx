@@ -582,6 +582,12 @@ import {
   questGiverMeetKey,
   seedDiscoveredMaps,
 } from "@/play/explorationXp";
+import {
+  dungeonClearProgress,
+  dungeonClearXp,
+  isDungeonCleared,
+  type ClearMonster,
+} from "@/play/dungeonClear";
 import { herbalismOnStep } from "@/play/herbalism";
 import {
   readPressurePlate,
@@ -1345,7 +1351,7 @@ export function PlayHost() {
       // than a milestone, and stays sonically distinct from
       // level_up which is the workhorse "step credited" chime.
       const sfx =
-        args.kind === "quest"
+        args.kind === "quest" || args.kind === "dungeon-cleared"
           ? "victory"
           : args.kind === "quest-accept"
             ? "magic_burst"
@@ -1393,7 +1399,7 @@ export function PlayHost() {
           // gets a wider one (68) so it stands out from the routine
           // steps without stealing the full turn-in's payoff (80).
           const burstRadius =
-            args.kind === "quest"
+            args.kind === "quest" || args.kind === "dungeon-cleared"
               ? 80
               : args.kind === "step-final"
                 ? 68
@@ -1409,6 +1415,63 @@ export function PlayHost() {
       }
     },
     [],
+  );
+
+  /** One-time "Dungeon Cleared!" bonus for a generated dungeon: once
+   *  every monster on every floor of this run is defeated, award the
+   *  clear XP (dungeon record `clear_xp`, else the module's
+   *  `exploration_xp.dungeon`, default 250) to every living member,
+   *  log it and fire the big celebration. Paid once per dungeon
+   *  instance (`party.clearedDungeons`). Cheap enough to call on every
+   *  kernel state tick while in a dungeon. */
+  const checkDungeonClear = useCallback(
+    (d: { dungeonId: string; instanceId: string }) => {
+      const save = saveRef.current;
+      const catalog = catalogRef.current;
+      if (!save || !catalog) return;
+      if ((save.party.clearedDungeons ?? []).includes(d.instanceId)) return;
+      const session = peekDungeonSession(d.instanceId);
+      if (!session) return;
+      const progress = dungeonClearProgress(
+        session.levels as unknown as ReadonlyArray<{
+          monsters: ReadonlyArray<ClearMonster>;
+        }>,
+        (i) => session.floors.get(i)?.defeatedEncounters,
+      );
+      if (!isDungeonCleared(progress)) return;
+      const record = catalog.dungeons.find((r) => r.id === d.dungeonId);
+      const name = record?.name ?? d.dungeonId;
+      const xp = dungeonClearXp(record?.clear_xp, catalog.explorationXp.dungeon);
+      const award = applyExplorationXp(
+        {
+          ...save,
+          party: {
+            ...save.party,
+            clearedDungeons: [...(save.party.clearedDungeons ?? []), d.instanceId],
+          },
+        },
+        catalog,
+        xp,
+      );
+      saveRef.current = award.save;
+      saveWorld(award.save);
+      setLogMessages((prev) => {
+        const next = [
+          ...prev,
+          xp > 0
+            ? `${name} is cleared! Every foe defeated — +${xp} XP.`
+            : `${name} is cleared! Every foe defeated.`,
+          ...award.levelUps.map((ev) => ev.message),
+        ];
+        return next.length > MAX_LOG ? next.slice(next.length - MAX_LOG) : next;
+      });
+      fireQuestCelebration({
+        kind: "dungeon-cleared",
+        title: name,
+        subtitle: xp > 0 ? `Every foe defeated · +${xp} XP` : "Every foe defeated",
+      });
+    },
+    [fireQuestCelebration],
   );
 
   /** Push the quest-relevance halo set into the renderer. Computed
@@ -5259,6 +5322,8 @@ export function PlayHost() {
                   if (lvl && live) {
                     lvl.exploredTiles = new Set(live);
                   }
+                  // Last monster down? Award the one-time clear bonus.
+                  checkDungeonClear(dungeonNow);
                 }
               }
               return;

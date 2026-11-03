@@ -245,9 +245,10 @@ export interface SampleOptions {
    * Optional encounter `theme` filter (e.g. "undead", "devil"). When
    * set and non-empty, only encounters whose `theme` matches are
    * eligible — a themed dungeon draws exclusively from its theme.
-   * Fallback: if NO encounter of that theme exists in the level band,
-   * the filter is skipped (the full eligible pool is used) rather than
-   * leaving rooms empty. Empty / unset → no theme restriction.
+   * Fallbacks (checked after the difficulty prune): the same theme at
+   * an easier level, then any theme in the band — so rooms are never
+   * left empty just because the theme ran out. Empty / unset → no
+   * theme restriction.
    */
   theme?: string;
 }
@@ -266,23 +267,26 @@ export function sampleEncounter(
   const minLv = opts.minLevel ?? 1;
   const maxLv = opts.maxLevel ?? 8;
   const rng = opts.rng ?? defaultRng;
-  let eligible = list.filter((e) => e.level >= minLv && e.level <= maxLv);
-
-  // Theme filter — a themed dungeon only draws from matching-theme
-  // encounters. Falls back to the unfiltered pool when the theme has
-  // no encounters in this band, so a themed dungeon never generates
-  // emptier than an unthemed one.
   const theme = opts.theme?.trim();
-  if (theme) {
-    const themed = eligible.filter((e) => e.theme === theme);
-    if (themed.length > 0) eligible = themed;
-  }
-
   const allow = opts.allowedDifficulties;
   const lookup = opts.monsterDifficulty;
-  if (allow && lookup) {
-    const pruned: EncounterTemplate[] = [];
-    for (const e of eligible) {
+
+  /** Candidates passing a level test + optional theme, with rosters
+   *  pruned to the allowed monster difficulties (encounters left with
+   *  no monsters drop out; a pruned lead is swapped for the first
+   *  survivor). */
+  const pool = (
+    levelOk: (lv: number) => boolean,
+    themed: boolean,
+  ): EncounterTemplate[] => {
+    const out: EncounterTemplate[] = [];
+    for (const e of list) {
+      if (!levelOk(e.level)) continue;
+      if (themed && e.theme !== theme) continue;
+      if (!allow || !lookup) {
+        out.push(e);
+        continue;
+      }
       const survivors = e.monsters.filter((id) => {
         const d = lookup(id);
         return d != null && allow.has(d);
@@ -291,9 +295,29 @@ export function sampleEncounter(
       const lead = survivors.includes(e.monsterPartyTile)
         ? e.monsterPartyTile
         : survivors[0];
-      pruned.push({ ...e, monsters: survivors, monsterPartyTile: lead });
+      out.push({ ...e, monsters: survivors, monsterPartyTile: lead });
     }
-    eligible = pruned;
+    return out;
+  };
+  const inBand = (lv: number) => lv >= minLv && lv <= maxLv;
+
+  // Fallbacks are judged AFTER the difficulty prune — judging them
+  // before it (as this used to) let a band whose only themed match
+  // was a too-hard encounter (a "normal" humanoid dungeon's lower
+  // floors: Troll, all "hard") win the theme check, get pruned to
+  // nothing, and leave every room on those floors empty.
+  //
+  //   1. the theme, in the level band
+  //   2. the theme, any easier level (≤ band) — a themed dungeon keeps
+  //      its identity on deep floors instead of turning into a zoo
+  //   3. any theme, in the level band — never emptier than unthemed
+  let eligible: EncounterTemplate[];
+  if (theme) {
+    eligible = pool(inBand, true);
+    if (eligible.length === 0) eligible = pool((lv) => lv <= maxLv, true);
+    if (eligible.length === 0) eligible = pool(inBand, false);
+  } else {
+    eligible = pool(inBand, false);
   }
 
   if (eligible.length === 0) return null;

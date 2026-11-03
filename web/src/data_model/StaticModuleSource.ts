@@ -496,6 +496,8 @@ export class StaticModuleSource implements ModuleSource {
       if (!found) continue;
       if (out.map === undefined && found.map !== undefined) out.map = found.map;
       if (out.npc === undefined && found.npc !== undefined) out.npc = found.npc;
+      if (out.dungeon === undefined && found.dungeon !== undefined)
+        out.dungeon = found.dungeon;
     }
     return withExplorationDefaults(out);
   }
