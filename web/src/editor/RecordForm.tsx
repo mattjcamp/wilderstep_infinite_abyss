@@ -42,6 +42,7 @@ import { IdListPicker } from "./IdListPicker";
 import { getIdListFieldConfig } from "./idListFields";
 import { InventoryEditor, type InventoryEntry } from "./InventoryEditor";
 import { getInventoryFieldConfig } from "./inventoryFields";
+import { ChestContentsEditor, isChestContents } from "./ChestContentsEditor";
 import { KeyMapEditor } from "./KeyMapEditor";
 import { getKeyMapFieldConfig } from "./keyMapFields";
 import { NPC_BEHAVIORS } from "@/sim/npcBehavior";
@@ -128,6 +129,9 @@ function inferKind(
   // render — and so submit re-parses the string back into an array —
   // even when the record's current value is null/empty.
   if (getInventoryFieldConfig(key, modelKey) !== null) return "json";
+  // A container item's default `contents` ({ gold, items }) — JSON so
+  // the ChestContentsEditor renders even before the field exists.
+  if (modelKey === "items" && key === "contents") return "json";
   // Key-map fields (reagents, stat_modifiers, equipped) likewise.
   if (getKeyMapFieldConfig(key, modelKey) !== null) return "json";
   // Params fields (effects/abilities/traps params, spell action
@@ -424,6 +428,30 @@ function FieldRow({
           </div>
         );
       }
+    }
+  }
+  // Container contents ({ gold, items: [{ id, qty }] }) on an item
+  // render a Gold field + the item picker instead of raw JSON. A value
+  // in some other shape falls through to the textarea.
+  if (modelKey === "items" && spec.key === "contents") {
+    let parsed: unknown = null;
+    try {
+      parsed = value.trim() === "" ? {} : JSON.parse(value);
+      if (parsed === null) parsed = {};
+    } catch {
+      parsed = undefined;
+    }
+    if (isChestContents(parsed)) {
+      return (
+        <div className="flex items-start gap-3">
+          <span className={labelClasses}>{spec.key}</span>
+          <ChestContentsEditor
+            value={parsed}
+            moduleId={moduleId}
+            onChange={(next) => onChange(JSON.stringify(next, null, 1))}
+          />
+        </div>
+      );
     }
   }
   // Inventory fields ({ item, charges }[]) render the InventoryEditor —

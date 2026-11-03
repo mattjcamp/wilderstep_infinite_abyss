@@ -998,12 +998,30 @@
       "description": "A sturdy wooden chest bound in iron. Whatever is inside, someone wanted it kept safe.",
       "icon": "chest",
       "item_type": "container",
-      "is_chest": true,
-      "contents": {},
+      "party_can_equip": false,
+      "character_can_equip": false,
       "buy": 0,
       "sell": 0,
-      "party_can_equip": false,
-      "character_can_equip": false
+      "is_chest": true,
+      "contents": {
+        "items": [
+          {
+            "id": "broad_axe"
+          },
+          {
+            "id": "arrows"
+          },
+          {
+            "id": "club"
+          },
+          {
+            "id": "elixir_of_warding"
+          },
+          {
+            "id": "halberd"
+          }
+        ]
+      }
     },
     {
       "id": "retrievable_chest",

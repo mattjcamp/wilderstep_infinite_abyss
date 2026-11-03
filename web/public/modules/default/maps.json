@@ -16330,7 +16330,19 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/grass.png",
-            "tag": "overview"
+            "tag": "overview",
+            "item": "treasure_chest",
+            "loot": {
+              "gold": 10,
+              "items": [
+                {
+                  "id": "broad_axe"
+                },
+                {
+                  "id": "crystal_skull"
+                }
+              ]
+            }
           },
           {
             "boat": false,
