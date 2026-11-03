@@ -376,6 +376,10 @@ export interface WorldSave {
    *  from re-offering an already-accepted quest. Absent on legacy
    *  saves; the loader treats absence as an empty list. */
   acceptedQuests?: ReadonlyArray<string>;
+  /** The in-world message log (newest last), so it survives reloads,
+   *  slot saves and export / import. Capped by the host (MAX_LOG).
+   *  Absent on older saves → starts empty. */
+  log?: ReadonlyArray<string>;
   /** Per-quest step progress, LEGACY linear form. Value is the index
    *  of the next incomplete step (0 = first step pending, N = all N
    *  steps done). This only ever expressed *sequential* completion and

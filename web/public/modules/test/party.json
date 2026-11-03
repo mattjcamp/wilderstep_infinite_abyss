@@ -9,8 +9,8 @@
   "roster": [
     "fighter",
     "cleric",
-    "thief",
-    "wizard"
+    "ranger",
+    "alchemist"
   ],
   "party_effects": [],
   "inventory": [

@@ -17,6 +17,7 @@ import {
   loadSlot,
   loadWorld,
   parseImportedSave,
+  saveLog,
   saveToSlot,
   saveWorld,
 } from "./save";
@@ -204,5 +205,36 @@ describe("storage key contract", () => {
     expect(SAVE_PREV_STORAGE_KEY).toBe("wsia.save.v1.prev");
     expect(SAVE_SLOT_STORAGE_PREFIX).toBe("wsia.save.v1.slot.");
     expect(SAVE_SLOT_COUNT).toBe(3);
+  });
+});
+
+describe("persistent message log", () => {
+  beforeEach(() => {
+    installWindowStub();
+  });
+  afterEach(removeWindowStub);
+
+  it("round-trips the log through saveWorld / loadWorld", () => {
+    saveWorld({ ...fixtureSave(), log: ["You enter the tower.", "A goblin attacks!"] });
+    expect(loadWorld()!.log).toEqual(["You enter the tower.", "A goblin attacks!"]);
+  });
+
+  it("saveLog updates only the log and leaves the death-screen backup alone", () => {
+    saveWorld(fixtureSave()); // first save — no backup yet
+    saveWorld({ ...fixtureSave(), clockMinutes: 99 }); // backup = first save
+    const backupBefore = (globalThis as unknown as { window: { localStorage: Storage } })
+      .window.localStorage.getItem(SAVE_PREV_STORAGE_KEY);
+    expect(saveLog(["line one", "line two"])).toBe(true);
+    const cur = loadWorld()!;
+    expect(cur.log).toEqual(["line one", "line two"]);
+    expect(cur.clockMinutes).toBe(99); // rest of the save untouched
+    const backupAfter = (globalThis as unknown as { window: { localStorage: Storage } })
+      .window.localStorage.getItem(SAVE_PREV_STORAGE_KEY);
+    expect(backupAfter).toBe(backupBefore);
+  });
+
+  it("saveLog is a no-op without a save", () => {
+    expect(saveLog(["x"])).toBe(false);
+    expect(loadWorld()).toBeNull();
   });
 });

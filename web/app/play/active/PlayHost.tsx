@@ -539,9 +539,22 @@ import {
   downloadSaveExport,
   listSlotSaves,
   loadWorld,
+  saveLog,
   saveToSlot,
-  saveWorld,
+  saveWorld as writeSave,
 } from "@/play/save";
+
+/** The log as of the latest render — every save PlayHost writes
+ *  carries it (see the `saveWorld` wrapper below), so a save built
+ *  from a snapshot that predates the newest messages still persists
+ *  the full log. Seeded from the save on load. */
+let liveLog: ReadonlyArray<string> = [];
+
+/** All PlayHost saves go through here so the message log rides along
+ *  with whatever else is being saved. */
+function saveWorld(save: WorldSave): boolean {
+  return writeSave({ ...save, log: liveLog });
+}
 import {
   addToInventory,
   consumeOneFromInventory,
@@ -1091,6 +1104,16 @@ export function PlayHost() {
    *  of the map, You descend into the dungeon, Approach Lair: …).
    *  Capped at MAX_LOG to keep render cheap. */
   const [logMessages, setLogMessages] = useState<string[]>([]);
+  // Persist the log as it grows: mirror it into `liveLog` (so every
+  // regular save carries it) and, shortly after the last message,
+  // write just the log into the stored save so it survives a reload
+  // even when nothing else was saved since.
+  useEffect(() => {
+    liveLog = logMessages;
+    if (saveRef.current) saveRef.current = { ...saveRef.current, log: logMessages };
+    const t = window.setTimeout(() => saveLog(logMessages), 400);
+    return () => window.clearTimeout(t);
+  }, [logMessages]);
   /** Live game clock — total minutes since the module's epoch.
    *  Initialised from the save on load, advanced MINUTES_PER_STEP per
    *  successful party move, and persisted by saveCurrent. Re-renders
@@ -1951,6 +1974,9 @@ export function PlayHost() {
         return;
       }
       saveRef.current = save;
+      // Restore the message log from the save (older saves: empty).
+      liveLog = save.log ? save.log.slice(-MAX_LOG) : [];
+      setLogMessages([...liveLog]);
       // Rehydrate dungeon state from the save before catalog
       // assembly — `currentDungeon` on the party means the player
       // saved (or last left) inside a dungeon, and the floor
@@ -6840,7 +6866,7 @@ export function PlayHost() {
           onSaveToSlot={(slot) => {
             const save = saveRef.current;
             if (!save) return false;
-            const ok = saveToSlot(slot, save);
+            const ok = saveToSlot(slot, { ...save, log: liveLog });
             if (ok) setSlotSaves(listSlotSaves());
             return ok;
           }}

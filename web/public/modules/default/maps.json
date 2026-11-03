@@ -16330,19 +16330,7 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/grass.png",
-            "tag": "overview",
-            "item": "treasure_chest",
-            "loot": {
-              "gold": 10,
-              "items": [
-                {
-                  "id": "broad_axe"
-                },
-                {
-                  "id": "crystal_skull"
-                }
-              ]
-            }
+            "tag": "map"
           },
           {
             "boat": false,
@@ -16410,20 +16398,19 @@
           },
           {
             "boat": false,
-            "boat_passable": true,
-            "id": "bridge",
+            "id": "overworld_bridge",
             "name": "Bridge",
             "walkable": true,
             "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
-            "animation": null,
+            "animation": "none",
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/bridge.png",
-            "tag": "map",
+            "sprite": "map/settlements/bridge.png",
+            "tag": "map:settlements",
             "background_sprite": "water/river/river_straight_v.png"
           },
           {
@@ -24396,20 +24383,19 @@
           },
           {
             "boat": false,
-            "boat_passable": true,
-            "id": "bridge",
+            "id": "overworld_bridge",
             "name": "Bridge",
             "walkable": true,
             "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
-            "animation": null,
+            "animation": "none",
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/bridge.png",
-            "tag": "map",
+            "sprite": "map/settlements/bridge.png",
+            "tag": "map:settlements",
             "background_sprite": "water/river/river_straight_v.png"
           },
           {
@@ -26170,9 +26156,10 @@
             "water": true
           },
           {
-            "id": "water",
-            "name": "Water",
-            "walkable": false,
+            "boat": false,
+            "id": "overworld_island",
+            "name": "Island",
+            "walkable": true,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -26181,9 +26168,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "water/water.png",
-            "tag": "Water",
-            "water": true
+            "sprite": "map/water/island.png",
+            "tag": "map:water",
+            "background_sprite": "water/water.png"
           },
           {
             "id": "water",
@@ -48538,19 +48525,20 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
-            "obstructs": false,
+            "id": "town_market_stall",
+            "name": "Town Market Stall",
+            "walkable": false,
+            "obstructs": true,
             "locked": false,
             "light_source": false,
             "light_range": 0,
             "animation": "none",
-            "counter": null,
+            "counter": "reagent",
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "town/market_stall/market_stall.png",
+            "tag": "town:market stall",
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -49526,7 +49514,33 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/grass.png",
-            "tag": "map"
+            "tag": "map",
+            "item": "treasure_chest",
+            "loot": {
+              "gold": 25,
+              "items": [
+                {
+                  "id": "brimite_ore",
+                  "qty": 5
+                },
+                {
+                  "id": "glowcap_mushroom",
+                  "qty": 5
+                },
+                {
+                  "id": "moonpetal",
+                  "qty": 5
+                },
+                {
+                  "id": "serpent_root",
+                  "qty": 5
+                },
+                {
+                  "id": "spring_water",
+                  "qty": 5
+                }
+              ]
+            }
           },
           {
             "boat": false,

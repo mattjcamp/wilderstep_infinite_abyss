@@ -96,6 +96,29 @@ export function saveWorld(save: WorldSave): boolean {
   }
 }
 
+/** Update ONLY the `log` field of the current save, in place.
+ *
+ *  The log changes far more often than anything else, so it's written
+ *  on its own instead of through `saveWorld` — which would roll the
+ *  current save into the backup slot every time and, after a party
+ *  wipe, overwrite the pre-fight backup the death screen restores
+ *  from. No-op (returns false) when there's no save yet. */
+export function saveLog(log: ReadonlyArray<string>): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    const raw = window.localStorage.getItem(SAVE_STORAGE_KEY);
+    if (raw == null) return false;
+    const current = JSON.parse(raw) as WorldSave;
+    window.localStorage.setItem(
+      SAVE_STORAGE_KEY,
+      JSON.stringify({ ...current, log: [...log] }),
+    );
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** Read the previous-save backup. Returns null when no backup exists
  *  (very first save of the run, or the slot was cleared). Same
  *  migration semantics as `loadWorld`. */

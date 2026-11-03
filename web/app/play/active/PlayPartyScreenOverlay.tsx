@@ -69,6 +69,7 @@ import {
   type RecipeRef,
 } from "@/play/potionCrafting";
 import { dayIndex, nextMorningMinutes } from "@/battle/world/GameTime";
+import { ItemSprite } from "@/editor/ItemSprite";
 
 /** Minimal counter shape — `id` to find the general store entry,
  *  `items` for the stock list the Tinker picker presents. Loaded
@@ -2280,16 +2281,40 @@ function BrewPicker({
     return `missing ${parts.join(", ")}`;
   }
 
-  /** Format a recipe's reagent list into a one-line summary —
-   *  "Moonpetal, Spring Water" — shown under the recipe name so
-   *  the player can read the cost without expanding a tooltip. */
-  function reagentSummary(reagents: Record<string, number>): string {
-    return Object.entries(reagents)
-      .map(([id, count]) => {
-        const name = itemById.get(id)?.name ?? id;
-        return count > 1 ? `${count}× ${name}` : name;
-      })
-      .join(", ");
+  /** The recipe's reagents as sprite + name chips ("2× Moonpetal"),
+   *  shown under the result so the cost reads at a glance. A reagent
+   *  the party is short on gets an amber outline. */
+  function reagentChips(
+    reagents: Record<string, number>,
+    shortages: Record<string, number>,
+    dim: boolean,
+  ) {
+    return (
+      <span className="mt-1 flex flex-wrap gap-1">
+        {Object.entries(reagents).map(([id, count]) => {
+          const def = itemById.get(id);
+          const missing = (shortages[id] ?? 0) > 0;
+          return (
+            <span
+              key={id}
+              className={[
+                "flex items-center gap-1 rounded border px-1.5 py-0.5 text-[11px]",
+                missing
+                  ? "border-amber-300/40 text-amber-200/80"
+                  : "border-parchment/15 text-parchment/75",
+              ].join(" ")}
+              title={def?.description ?? def?.name ?? id}
+            >
+              <span className={dim ? "opacity-60" : ""}>
+                <ItemSprite icon={def?.icon} size={16} />
+              </span>
+              {count > 1 ? `${count}× ` : ""}
+              {def?.name ?? id}
+            </span>
+          );
+        })}
+      </span>
+    );
   }
 
   return (
@@ -2345,17 +2370,19 @@ function BrewPicker({
                     ].join(" ")}
                     title={out?.description ?? recipe.result_item}
                   >
-                    <span className="flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <span
+                        className={`shrink-0 rounded border border-parchment/15 bg-ink/60 p-0.5 ${
+                          isReady ? "" : "opacity-60"
+                        }`}
+                      >
+                        <ItemSprite icon={out?.icon} size={32} />
+                      </span>
                       <span className="font-display">
-                        {recipe.name ?? recipe.id}
-                      </span>
-                      <span className="font-mono text-[11px] text-parchment/55">
-                        {recipe.result_item}
+                        {recipe.name ?? out?.name ?? recipe.id}
                       </span>
                     </span>
-                    <span className="mt-0.5 text-[11px] text-parchment/55">
-                      {reagentSummary(recipe.reagents)}
-                    </span>
+                    {reagentChips(recipe.reagents, shortages, !isReady)}
                     {!isReady ? (
                       <span className="mt-0.5 text-[11px] italic text-amber-300/70">
                         {shortageHint(shortages)}

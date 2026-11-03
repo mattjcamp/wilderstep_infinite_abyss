@@ -24,9 +24,17 @@
           "id": "hidden_grotto_l2",
           "name": "Level 2",
           "depth": 2
+        },
+        {
+          "id": "hidden_grotto_l3",
+          "name": "Level 3",
+          "depth": 3
         }
       ],
-      "theme": "humanoid"
+      "theme": "humanoid",
+      "loot": {
+        "chest_item": "treasure_chest"
+      }
     },
     {
       "id": "stone_halls",
@@ -51,8 +59,16 @@
           "id": "stone_halls_l2",
           "name": "Level 2",
           "depth": 2
+        },
+        {
+          "id": "stone_halls_l3",
+          "name": "Level 3",
+          "depth": 3
         }
-      ]
+      ],
+      "loot": {
+        "chest_item": "treasure_chest"
+      }
     }
   ]
 }

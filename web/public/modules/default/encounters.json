@@ -648,6 +648,29 @@
       ],
       "custom_map": "dungeon_battle_screen_1",
       "darkness": true
+    },
+    {
+      "id": "the_orc_king",
+      "name": "The Orc King",
+      "description": "The Orc King rises from his war-throne, lightning crawling along his axe. His war-priest begins to chant, and his hounds strain at their chains.",
+      "area": "orc_kings_tower",
+      "theme": "humanoid",
+      "tags": [
+        "Orcs"
+      ],
+      "level": 6,
+      "weight": 5,
+      "monster_party_tile": "monster/orc_king.png",
+      "monsters": [
+        "orc_king",
+        "orc",
+        "orc",
+        "dire_wolf",
+        "dire_wolf",
+        "orc_cleric"
+      ],
+      "custom_map": "dungeon_battle_screen_1",
+      "darkness": true
     }
   ]
 }

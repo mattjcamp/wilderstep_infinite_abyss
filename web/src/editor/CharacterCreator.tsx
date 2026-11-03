@@ -26,7 +26,12 @@
  * characters.json draft; game appends to the runtime roster).
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  parsePersonSprite,
+  titleCase,
+  type PersonSpriteInfo,
+} from "./personSpriteLabels";
 import {
   makeBlankCharacter,
   type CharacterRecord,
@@ -408,6 +413,10 @@ export function CharacterCreator({
 
       {step === 4 ? (
         <Step4Sprite
+          raceId={raceId}
+          gender={gender}
+          classId={classId}
+          races={races}
           sprite={sprite}
           onSpriteChange={(v) => {
             setSprite(v);
@@ -775,12 +784,24 @@ interface SpriteIndex {
   categories: Record<string, string[]>;
 }
 
+type SpriteTypeFilter = "all" | "class" | "townsfolk" | "animal";
+
 function Step4Sprite({
   sprite,
   onSpriteChange,
+  raceId,
+  gender,
+  classId,
+  races,
 }: {
   sprite: string;
   onSpriteChange: (path: string) => void;
+  /** Choices from steps 2–3 — the picker opens filtered to them and
+   *  badges the exact race + gender + class match as "Suggested". */
+  raceId: string;
+  gender: string;
+  classId: string;
+  races: ReadonlyArray<RaceRecord>;
 }) {
   const [index, setIndex] = useState<SpriteIndex | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -793,14 +814,89 @@ function Step4Sprite({
       );
   }, []);
 
-  const personSprites = useMemo(() => {
-    const files = index?.categories?.person ?? [];
-    return files.map((file) => ({
-      file,
-      path: `person/${file}`,
-      stem: file.replace(/\.[a-z]+$/i, ""),
-    }));
-  }, [index]);
+  const raceName = useCallback(
+    (id: string) => races.find((r) => r.id === id)?.name ?? titleCase(id),
+    [races],
+  );
+  const all = useMemo(
+    () =>
+      (index?.categories?.person ?? []).map((f) =>
+        parsePersonSprite(f, raceName),
+      ),
+    [index, raceName],
+  );
+  /** Races that actually have art, in the catalog's order. */
+  const spriteRaces = useMemo(() => {
+    const have = new Set(all.map((s) => s.race).filter(Boolean) as string[]);
+    const ordered = races.map((r) => r.id).filter((id) => have.has(id));
+    for (const id of have) if (!ordered.includes(id)) ordered.push(id);
+    return ordered;
+  }, [all, races]);
+
+  const myGender = gender.toLowerCase();
+  const [raceFilter, setRaceFilter] = useState<string>("mine");
+  const [genderFilter, setGenderFilter] = useState<string>(myGender);
+  const [typeFilter, setTypeFilter] = useState<SpriteTypeFilter>("all");
+  // "mine" resolves to the character's race once we know art exists
+  // for it; otherwise fall back to every race (e.g. no Elf sprites yet).
+  const raceHasArt = spriteRaces.includes(raceId);
+  const effectiveRace =
+    raceFilter === "mine" ? (raceHasArt ? raceId : "all") : raceFilter;
+
+  const isSuggested = (s: PersonSpriteInfo) =>
+    s.kind === "class" &&
+    s.race === raceId &&
+    s.gender === myGender &&
+    s.classId === classId;
+
+  const KIND_ORDER: Record<string, number> = {
+    class: 0,
+    commoner: 1,
+    villager: 2,
+    musician: 3,
+    animal: 4,
+    other: 5,
+  };
+  const shown = useMemo(() => {
+    const raceIdx = (r: string | null) =>
+      r == null ? 999 : spriteRaces.indexOf(r);
+    return all
+      .filter((s) => {
+        if (typeFilter === "animal") return s.kind === "animal";
+        if (typeFilter === "class" && s.kind !== "class") return false;
+        if (
+          typeFilter === "townsfolk" &&
+          !["commoner", "villager", "musician"].includes(s.kind)
+        )
+          return false;
+        if (s.kind === "animal" || s.kind === "other") return typeFilter === "all";
+        if (effectiveRace !== "all" && s.race !== effectiveRace) return false;
+        if (genderFilter !== "any" && s.gender !== genderFilter) return false;
+        return true;
+      })
+      .sort(
+        (a, b) =>
+          Number(isSuggested(b)) - Number(isSuggested(a)) ||
+          raceIdx(a.race) - raceIdx(b.race) ||
+          (a.gender ?? "").localeCompare(b.gender ?? "") ||
+          KIND_ORDER[a.kind] - KIND_ORDER[b.kind] ||
+          a.label.localeCompare(b.label),
+      );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [all, typeFilter, effectiveRace, genderFilter, spriteRaces, raceId, myGender, classId]);
+
+  const selectedInfo = sprite
+    ? all.find((s) => s.path === sprite) ??
+      parsePersonSprite(sprite.replace(/^person\//, ""), raceName)
+    : null;
+
+  const chip = (active: boolean) =>
+    [
+      "rounded-full border px-2.5 py-0.5 text-xs transition",
+      active
+        ? "border-amber-300/70 bg-amber-300/15 text-amber-100"
+        : "border-parchment/20 text-parchment/75 hover:border-parchment/45 hover:text-parchment",
+    ].join(" ");
 
   return (
     <section>
@@ -814,44 +910,137 @@ function Step4Sprite({
       ) : !index ? (
         <p className="text-sm text-parchment/75">Loading sprites…</p>
       ) : (
-        <div className="max-h-96 overflow-auto rounded border border-parchment/15 bg-ink/30 p-3">
-          <ul className="grid grid-cols-[repeat(auto-fill,minmax(64px,1fr))] gap-2">
-            {personSprites.map((s) => {
-              const selected = s.path === sprite;
-              return (
-                <li key={s.path}>
-                  <button
-                    type="button"
-                    onClick={() => onSpriteChange(s.path)}
-                    title={s.path}
-                    className={`flex w-full flex-col items-center gap-1 rounded border p-2 transition ${
-                      selected
-                        ? "border-ember/60 bg-ember/15"
-                        : "border-parchment/10 bg-ink/40 hover:border-parchment/40 hover:bg-ink/60"
-                    }`}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={spriteUrl(s.path)}
-                      alt={s.stem}
-                      width={48}
-                      height={48}
-                      style={{ imageRendering: "pixelated" }}
-                      className="h-12 w-12 object-contain"
-                    />
-                    <span className="w-full truncate text-xs text-parchment/80">
-                      {s.stem}
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
+        <>
+          <div className="mb-2 space-y-1.5">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="w-14 text-xs text-parchment/60">Race</span>
+              <button
+                type="button"
+                className={chip(effectiveRace === "all")}
+                onClick={() => setRaceFilter("all")}
+              >
+                All
+              </button>
+              {spriteRaces.map((r) => (
+                <button
+                  key={r}
+                  type="button"
+                  className={chip(effectiveRace === r)}
+                  onClick={() => setRaceFilter(r)}
+                >
+                  {raceName(r)}
+                </button>
+              ))}
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="w-14 text-xs text-parchment/60">Gender</span>
+              {(["any", "male", "female"] as const).map((g) => (
+                <button
+                  key={g}
+                  type="button"
+                  className={chip(genderFilter === g)}
+                  onClick={() => setGenderFilter(g)}
+                >
+                  {g === "any" ? "Any" : titleCase(g)}
+                </button>
+              ))}
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="w-14 text-xs text-parchment/60">Type</span>
+              {(
+                [
+                  ["all", "All"],
+                  ["class", "Classes"],
+                  ["townsfolk", "Townsfolk"],
+                  ["animal", "Animals"],
+                ] as const
+              ).map(([v, label]) => (
+                <button
+                  key={v}
+                  type="button"
+                  className={chip(typeFilter === v)}
+                  onClick={() => setTypeFilter(v)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {raceFilter === "mine" && !raceHasArt ? (
+              <p className="text-xs text-parchment/60">
+                No {raceName(raceId)} sprites yet — showing every race.
+              </p>
+            ) : null}
+          </div>
+
+          <div className="max-h-96 overflow-auto rounded border border-parchment/15 bg-ink/30 p-2">
+            {shown.length === 0 ? (
+              <p className="p-2 text-sm text-parchment/65">
+                No sprites match these filters.
+              </p>
+            ) : (
+              <ul className="grid grid-cols-[repeat(auto-fill,minmax(7.5rem,1fr))] gap-2">
+                {shown.map((s) => {
+                  const selected = s.path === sprite;
+                  const suggested = isSuggested(s);
+                  return (
+                    <li key={s.path}>
+                      <button
+                        type="button"
+                        onClick={() => onSpriteChange(s.path)}
+                        title={`${s.label}${s.sublabel ? ` — ${s.sublabel}` : ""}\n${s.path}`}
+                        className={`relative flex w-full flex-col items-center gap-1 rounded border px-1.5 pb-1.5 pt-2 text-center transition ${
+                          selected
+                            ? "border-ember/70 bg-ember/20"
+                            : "border-parchment/10 bg-ink/40 hover:border-parchment/40 hover:bg-ink/60"
+                        }`}
+                      >
+                        {suggested ? (
+                          <span className="absolute left-1 top-1 rounded bg-amber-300/20 px-1 text-[10px] uppercase tracking-wide text-amber-200">
+                            Suggested
+                          </span>
+                        ) : null}
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={spriteUrl(s.path)}
+                          alt={s.label}
+                          width={56}
+                          height={56}
+                          style={{ imageRendering: "pixelated" }}
+                          className="mt-1 h-14 w-14 object-contain"
+                        />
+                        <span className="w-full text-sm leading-tight text-parchment">
+                          {s.label}
+                        </span>
+                        {s.sublabel ? (
+                          <span className="w-full text-[11px] leading-tight text-parchment/65">
+                            {s.sublabel}
+                          </span>
+                        ) : null}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        </>
       )}
-      {sprite ? (
-        <p className="mt-2 text-[13px] text-parchment/75">
-          Selected: <code className="font-mono">{sprite}</code>
+      {selectedInfo ? (
+        <p className="mt-2 flex items-center gap-2 text-[13px] text-parchment/80">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={spriteUrl(selectedInfo.path)}
+            alt=""
+            width={24}
+            height={24}
+            style={{ imageRendering: "pixelated" }}
+            className="h-6 w-6 object-contain"
+          />
+          Selected:{" "}
+          <span className="text-parchment">
+            {selectedInfo.label}
+            {selectedInfo.sublabel ? ` — ${selectedInfo.sublabel}` : ""}
+          </span>
         </p>
       ) : (
         <p className="mt-2 text-[13px] text-parchment/65">

@@ -203,6 +203,127 @@
       "on_hit_effects": []
     },
     {
+      "id": "orc_king",
+      "name": "The Orc King",
+      "sprite": "monster/orc_king.png",
+      "theme": "humanoid",
+      "difficulty": "boss",
+      "tags": [
+        "Orcs"
+      ],
+      "hp": 90,
+      "ac": 16,
+      "attack_bonus": 7,
+      "damage_dice": 1,
+      "damage_sides": 12,
+      "damage_bonus": 4,
+      "move_range": 5,
+      "post_attack_move": 0,
+      "battle_scale": 1,
+      "xp_reward": 1000,
+      "gold_min": 150,
+      "gold_max": 300,
+      "strength": 19,
+      "dexterity": 12,
+      "constitution": 18,
+      "intelligence": 15,
+      "wisdom": 12,
+      "undead": false,
+      "humanoid": true,
+      "turn_resistance": 0,
+      "spells": [
+        {
+          "type": "lightning_bolt",
+          "name": "Lightning Bolt",
+          "range": 7,
+          "cast_chance": 15,
+          "damage_dice": 4,
+          "damage_sides": 6,
+          "damage_bonus": 2
+        },
+        {
+          "type": "magic_arrow",
+          "name": "Magic Arrow",
+          "range": 8,
+          "cast_chance": 20,
+          "damage_dice": 2,
+          "damage_sides": 8,
+          "damage_bonus": 2
+        },
+        {
+          "type": "magic_dart",
+          "name": "Magic Dart",
+          "range": 4,
+          "cast_chance": 25,
+          "damage_dice": 1,
+          "damage_sides": 6,
+          "damage_bonus": 2
+        }
+      ],
+      "passives": [],
+      "on_hit_effects": []
+    },
+    {
+      "id": "orc_cleric",
+      "name": "Orc War-Priest",
+      "sprite": "monster/orc_cleric.png",
+      "theme": "humanoid",
+      "difficulty": "hard",
+      "tags": [
+        "Orcs"
+      ],
+      "hp": 24,
+      "ac": 14,
+      "attack_bonus": 4,
+      "damage_dice": 1,
+      "damage_sides": 8,
+      "damage_bonus": 2,
+      "move_range": 5,
+      "post_attack_move": 0,
+      "battle_scale": 1,
+      "xp_reward": 90,
+      "gold_min": 10,
+      "gold_max": 30,
+      "strength": 14,
+      "dexterity": 10,
+      "constitution": 14,
+      "intelligence": 10,
+      "wisdom": 15,
+      "undead": false,
+      "humanoid": true,
+      "turn_resistance": 0,
+      "spells": [
+        {
+          "type": "heal_ally",
+          "name": "Major Heal",
+          "range": 10,
+          "cast_chance": 15,
+          "heal_dice": 4,
+          "heal_sides": 8,
+          "heal_bonus": 2
+        },
+        {
+          "type": "heal_ally",
+          "name": "Heal",
+          "range": 6,
+          "cast_chance": 35,
+          "heal_dice": 1,
+          "heal_sides": 6,
+          "heal_bonus": 2
+        },
+        {
+          "type": "heal_self",
+          "name": "Heal",
+          "cast_chance": 25,
+          "heal_dice": 1,
+          "heal_sides": 6,
+          "heal_bonus": 2
+        }
+      ],
+      "passives": [],
+      "on_hit_effects": []
+    },
+    {
       "id": "slime_mold",
       "name": "Slime Mold",
       "sprite": "monster/slime_mold.png",

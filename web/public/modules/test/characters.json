@@ -87,6 +87,44 @@
         "body": "cloth"
       },
       "inventory": []
+    },
+    {
+      "id": "ranger",
+      "name": "Ranger",
+      "class": "ranger",
+      "race": "human",
+      "gender": "Male",
+      "level": 1,
+      "exp": 0,
+      "hp": 10,
+      "mp": 3,
+      "strength": 8,
+      "dexterity": 8,
+      "constitution": 10,
+      "intelligence": 18,
+      "wisdom": 11,
+      "sprite": "person/person_female_ranger.png",
+      "equipped": {},
+      "inventory": []
+    },
+    {
+      "id": "alchemist",
+      "name": "Alchemist",
+      "class": "alchemist",
+      "race": "human",
+      "gender": "Female",
+      "level": 1,
+      "exp": 0,
+      "hp": 6,
+      "mp": 11,
+      "strength": 8,
+      "dexterity": 11,
+      "constitution": 11,
+      "intelligence": 17,
+      "wisdom": 8,
+      "sprite": "person/person_female_alchemist.png",
+      "equipped": {},
+      "inventory": []
     }
   ]
 }
