@@ -1430,6 +1430,34 @@ describe("MapSimulation.stepInDirection — treasure chest dispatch", () => {
     expect(events.find((e) => e.kind === "item_picked")).toBeUndefined();
   });
 
+  it("carries the cell's own loot stash on the event (overrides catalog contents)", () => {
+    const grid = makeGrid();
+    grid[0][1] = cell({
+      item: "rusty_chest",
+      loot: { gold: 7, items: [{ id: "sword" }, { id: "arrows", qty: 20 }] },
+    });
+    const sim = makeSim({ grid, items: [CHEST] });
+    const events = captureEvents(sim);
+    sim.stepInDirection("right");
+    const chest = events.find((e) => e.kind === "chest_encountered");
+    if (chest?.kind !== "chest_encountered") throw new Error("type narrow");
+    expect(chest.loot).toEqual({
+      gold: 7,
+      items: [{ id: "sword" }, { id: "arrows", qty: 20 }],
+    });
+  });
+
+  it("omits loot when the cell has no stash of its own", () => {
+    const grid = makeGrid();
+    grid[0][1] = cell({ item: "rusty_chest" });
+    const sim = makeSim({ grid, items: [CHEST] });
+    const events = captureEvents(sim);
+    sim.stepInDirection("right");
+    const chest = events.find((e) => e.kind === "chest_encountered");
+    if (chest?.kind !== "chest_encountered") throw new Error("type narrow");
+    expect(chest.loot).toBeUndefined();
+  });
+
   it("does NOT clear the cell's item field on bump (Leave keeps the chest)", () => {
     const grid = makeGrid();
     grid[0][1] = cell({ item: "rusty_chest" });

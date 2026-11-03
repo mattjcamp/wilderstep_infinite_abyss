@@ -1486,7 +1486,7 @@ export function PartyScreen({
   }, [stashMode, setSectionCollapsed]);
 
   const sectionHeader = (key: SectionKey, label: string) => (
-    <h3>
+    <h3 className="shrink-0">
       <button
         type="button"
         onClick={() => setSectionCollapsed(key, !collapsed[key])}
@@ -1553,12 +1553,27 @@ export function PartyScreen({
     <div className="flex flex-col gap-2 rounded-md border border-parchment/15 bg-ink/40 p-3 text-parchment/90">
       {/* Two-pane body */}
       <div className="grid gap-3 md:grid-cols-2">
-        {/* Left: effects + actions + stash */}
-        <div className="space-y-2">
+        {/* Left: Effects + Inventory share a fixed-height column (on
+            md+). Effects takes what it needs (scrolling if it would
+            crowd the Inventory out); Inventory fills the rest. When
+            one is collapsed the other gets the whole column. */}
+        <div className="flex flex-col gap-2 md:h-[60vh] md:min-h-[22rem]">
           {/* EFFECTS list */}
-          <section>
+          <section
+            className={[
+              "flex min-h-0 flex-col",
+              collapsed.effects
+                ? "shrink-0"
+                : collapsed.stash
+                  ? "flex-1"
+                  : "max-h-[50%] shrink",
+            ].join(" ")}
+          >
             {sectionHeader("effects", "Effects")}
-            <ul className="mt-1 space-y-0.5" hidden={collapsed.effects}>
+            <ul
+              className="mt-1 min-h-0 space-y-0.5 overflow-y-auto pr-1"
+              hidden={collapsed.effects}
+            >
               {effectRows.length === 0 ? (
                 <li className="text-[13px] text-parchment/70">
                   (no party effects available — roster doesn&apos;t
@@ -1632,12 +1647,17 @@ export function PartyScreen({
               stash from blowing past the modal; the auto-scroll
               effect keeps the highlighted row in view as the cursor
               walks past the visible window. */}
-          <section>
+          <section
+            className={[
+              "flex min-h-0 flex-col",
+              collapsed.stash ? "shrink-0" : "flex-1",
+            ].join(" ")}
+          >
             {sectionHeader("stash", "Inventory")}
             <ul
               hidden={collapsed.stash}
               ref={stashListRef}
-              className="mt-1 max-h-48 space-y-0.5 overflow-y-auto pr-1 text-sm"
+              className="mt-1 max-h-48 min-h-0 flex-1 space-y-0.5 overflow-y-auto pr-1 text-sm md:max-h-none"
               role="listbox"
               aria-label="Inventory"
             >

@@ -404,6 +404,250 @@
       ],
       "custom_map": null,
       "darkness": false
+    },
+    {
+      "id": "goblin_bunkroom",
+      "name": "Goblin Bunkroom",
+      "description": "Goblins tumble out of their bunks, snatching up knives and shrieking for the watch.",
+      "area": "orc_kings_tower",
+      "theme": "humanoid",
+      "tags": [
+        "Goblinoids"
+      ],
+      "level": 1,
+      "weight": 10,
+      "monster_party_tile": "monster/goblin.png",
+      "monsters": [
+        "goblin",
+        "goblin",
+        "goblin",
+        "goblin"
+      ],
+      "custom_map": "dungeon_battle_screen_1",
+      "darkness": true
+    },
+    {
+      "id": "goblin_scribes",
+      "name": "Goblin Scribes",
+      "description": "Ink-stained goblins look up from the Orc King's ledgers, then reach for their blades.",
+      "area": "orc_kings_tower",
+      "theme": "humanoid",
+      "tags": [
+        "Goblinoids"
+      ],
+      "level": 1,
+      "weight": 10,
+      "monster_party_tile": "monster/goblin.png",
+      "monsters": [
+        "goblin",
+        "goblin"
+      ],
+      "custom_map": "dungeon_battle_screen_1",
+      "darkness": true
+    },
+    {
+      "id": "shamans_acolytes",
+      "name": "Shaman's Acolytes",
+      "description": "Goblin acolytes guard their master's workbench, and the rats they feed on scraps guard it with them.",
+      "area": "orc_kings_tower",
+      "theme": "humanoid",
+      "tags": [
+        "Goblinoids"
+      ],
+      "level": 1,
+      "weight": 10,
+      "monster_party_tile": "monster/goblin.png",
+      "monsters": [
+        "goblin",
+        "goblin",
+        "giant_rat",
+        "giant_rat"
+      ],
+      "custom_map": "dungeon_battle_screen_1",
+      "darkness": true
+    },
+    {
+      "id": "orc_officers",
+      "name": "Orc Officers",
+      "description": "Two scarred orc officers rise from their cots, a goblin runner cowering behind them.",
+      "area": "orc_kings_tower",
+      "theme": "humanoid",
+      "tags": [
+        "Orcs"
+      ],
+      "level": 2,
+      "weight": 10,
+      "monster_party_tile": "monster/orc.png",
+      "monsters": [
+        "orc",
+        "orc",
+        "goblin"
+      ],
+      "custom_map": "dungeon_battle_screen_1",
+      "darkness": true
+    },
+    {
+      "id": "war_captain",
+      "name": "The War-Captain",
+      "description": "The war-captain sweeps the battle maps off his table and bellows for his hounds.",
+      "area": "orc_kings_tower",
+      "theme": "humanoid",
+      "tags": [
+        "Orcs"
+      ],
+      "level": 2,
+      "weight": 10,
+      "monster_party_tile": "monster/orc.png",
+      "monsters": [
+        "orc",
+        "orc",
+        "dire_wolf"
+      ],
+      "custom_map": "dungeon_battle_screen_1",
+      "darkness": true
+    },
+    {
+      "id": "kings_guard",
+      "name": "The King's Guard",
+      "description": "The Orc King's personal guard stand before his chambers. They do not intend to let you pass.",
+      "area": "orc_kings_tower",
+      "theme": "humanoid",
+      "tags": [
+        "Orcs"
+      ],
+      "level": 3,
+      "weight": 10,
+      "monster_party_tile": "monster/orc.png",
+      "monsters": [
+        "orc",
+        "orc",
+        "orc",
+        "dire_wolf"
+      ],
+      "custom_map": "dungeon_battle_screen_1",
+      "darkness": true
+    },
+    {
+      "id": "war_hounds",
+      "name": "War Hounds",
+      "description": "Three dire wolves in spiked iron collars lope down the hall, their handlers nowhere in sight.",
+      "area": "orc_kings_tower",
+      "theme": "humanoid",
+      "tags": [
+        "Beasts"
+      ],
+      "level": 3,
+      "weight": 10,
+      "monster_party_tile": "monster/dire_wolf.png",
+      "monsters": [
+        "dire_wolf",
+        "dire_wolf",
+        "dire_wolf"
+      ],
+      "custom_map": "dungeon_battle_screen_1",
+      "darkness": true
+    },
+    {
+      "id": "forge_guard",
+      "name": "Forge Guard",
+      "description": "Orc smiths drop their hammers for axes while goblin bellows-boys scatter for cover.",
+      "area": "orc_kings_tower",
+      "theme": "humanoid",
+      "tags": [
+        "Orcs"
+      ],
+      "level": 3,
+      "weight": 10,
+      "monster_party_tile": "monster/orc.png",
+      "monsters": [
+        "orc",
+        "orc",
+        "goblin",
+        "goblin"
+      ],
+      "custom_map": "dungeon_battle_screen_1",
+      "darkness": true
+    },
+    {
+      "id": "armory_troll",
+      "name": "The Armory Troll",
+      "description": "A hulking troll guards the Orc King's weapons, two goblin quartermasters scurrying at its heels.",
+      "area": "orc_kings_tower",
+      "theme": "humanoid",
+      "tags": [
+        "Giants"
+      ],
+      "level": 4,
+      "weight": 10,
+      "monster_party_tile": "monster/troll.png",
+      "monsters": [
+        "troll",
+        "goblin",
+        "goblin"
+      ],
+      "custom_map": "dungeon_battle_screen_1",
+      "darkness": true
+    },
+    {
+      "id": "storm_servant",
+      "name": "Storm Servant",
+      "description": "An orc warlock looks up from his charts. The air in the library begins to howl.",
+      "area": "orc_kings_tower",
+      "theme": "humanoid",
+      "tags": [
+        "Orcs"
+      ],
+      "level": 4,
+      "weight": 10,
+      "monster_party_tile": "monster/air_elemental.png",
+      "monsters": [
+        "air_elemental",
+        "orc"
+      ],
+      "custom_map": "dungeon_battle_screen_1",
+      "darkness": true
+    },
+    {
+      "id": "bound_flame",
+      "name": "Bound Flame",
+      "description": "Goblin acolytes chant over the summoning pit — and something burning climbs out of it.",
+      "area": "orc_kings_tower",
+      "theme": "humanoid",
+      "tags": [
+        "Goblinoids"
+      ],
+      "level": 4,
+      "weight": 10,
+      "monster_party_tile": "monster/fire_elemental.png",
+      "monsters": [
+        "fire_elemental",
+        "goblin",
+        "goblin"
+      ],
+      "custom_map": "dungeon_battle_screen_1",
+      "darkness": true
+    },
+    {
+      "id": "orc_honor_guard",
+      "name": "Orc Honor Guard",
+      "description": "The King's honor guard close ranks before the war-throne, war hounds straining at their chains.",
+      "area": "orc_kings_tower",
+      "theme": "humanoid",
+      "tags": [
+        "Orcs"
+      ],
+      "level": 4,
+      "weight": 10,
+      "monster_party_tile": "monster/orc.png",
+      "monsters": [
+        "orc",
+        "orc",
+        "orc",
+        "dire_wolf",
+        "dire_wolf"
+      ],
+      "custom_map": "dungeon_battle_screen_1",
+      "darkness": true
     }
   ]
 }

@@ -57,6 +57,7 @@ import {
   type QuestState,
 } from "@/battle/world/Quests";
 import type {
+  ChestContents,
   Direction,
   Position,
   SimCell,
@@ -568,7 +569,15 @@ export type SimEvent =
    *       player closed without opening from disappearing.
    *
    *  Cell `pos` is the chest's cell, not the party's. */
-  | { kind: "chest_encountered"; chestId: string; pos: Position }
+  | {
+      kind: "chest_encountered";
+      chestId: string;
+      pos: Position;
+      /** The cell's own stash (`SimCell.loot`) when the author set
+       *  one — the host gives this instead of the catalog record's
+       *  `contents`. Absent → use the catalog contents. */
+      loot?: ChestContents;
+    }
   /** Fired once per NPC (or quest giver) that drifted to a new cell
    *  on this turn's wander pass. The grid mutation (`npc` / `quest`
    *  field follows the entity) has already landed by the time this
@@ -1335,6 +1344,7 @@ export class MapSimulation {
         kind: "chest_encountered",
         chestId,
         pos: { col: targetCol, row: targetRow },
+        ...(target.loot ? { loot: target.loot } : {}),
       });
       this.emit({ kind: "log", message: "A treasure chest!" });
       return;

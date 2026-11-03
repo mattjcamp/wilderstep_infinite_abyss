@@ -87,6 +87,7 @@ import {
   type QuestPlacardTarget,
 } from "@/play/questPlacardTargets";
 import { SpritePicker } from "./SpritePicker";
+import { LootEditor, type LootStash } from "./LootEditor";
 import { EncounterPicker } from "./EncounterPicker";
 import { anchorCell, nextCellSelection } from "./cellSelection";
 import { groupByTags } from "./mapTags";
@@ -184,6 +185,10 @@ interface TileType {
    *  icon renders as an overlay sprite on the cell (layered graphic),
    *  and gameplay drops it when the party steps on the cell. */
   item: string;
+  /** Per-placement stash when `item` is a container (catalog
+   *  `is_chest: true`): the gold + items the party gets on opening
+   *  THIS cell's container. Absent → the catalog's default contents. */
+  loot?: LootStash | null;
   /** Quest id reference — placeholder; the quest model is not yet
    *  ported. Stored verbatim so future ports preserve author intent. */
   quest: string;
@@ -255,6 +260,10 @@ interface ItemRecord extends RefRecord {
   icon?: string;
   category?: string;
   item_type?: string;
+  /** Container type (Treasure Chest…) — bump opens it; the cell's
+   *  `loot` (edited in the inspector) is what's inside. */
+  is_chest?: boolean;
+  contents?: LootStash;
 }
 /** NPC record from npcs.json — only the fields the map editor needs.
  *  `sprite` follows the standard person/<file>.png path so we can
@@ -333,6 +342,8 @@ function cellMatchesPalette(cell: TileType, palette: TileType[]): boolean {
   if ((cell.encounter ?? "") !== (base.encounter ?? "")) return false;
   if ((cell.spawn ?? "") !== (base.spawn ?? "")) return false;
   if ((cell.item ?? "") !== (base.item ?? "")) return false;
+  if (JSON.stringify(cell.loot ?? null) !== JSON.stringify(base.loot ?? null))
+    return false;
   if ((cell.quest ?? "") !== (base.quest ?? "")) return false;
   if ((cell.dungeon ?? "") !== (base.dungeon ?? "")) return false;
   if ((cell.npc ?? "") !== (base.npc ?? "")) return false;
@@ -6024,9 +6035,33 @@ function Inspector({
               !!base && fieldDiffersFromPalette(instance, palette, "item")
             }
             canReset={!!base}
-            onChange={(v) => onUpdate({ item: v })}
-            onReset={() => onUpdate({ item: undefined })}
+            onChange={(v) =>
+              // Swapping to a non-container drops any stash the old
+              // container held, so stale loot doesn't ride along.
+              onUpdate(
+                items.find((i) => i.id === v)?.is_chest
+                  ? { item: v }
+                  : { item: v, loot: undefined },
+              )
+            }
+            onReset={() => onUpdate({ item: undefined, loot: undefined })}
           />
+
+          {(() => {
+            // Containers (Treasure Chest…) get a per-placement stash.
+            const container = items.find(
+              (i) => i.id === (instance.item ?? "") && i.is_chest,
+            );
+            if (!container) return null;
+            return (
+              <LootEditor
+                loot={instance.loot}
+                fallback={container.contents}
+                items={items}
+                onChange={(next) => onUpdate({ loot: next })}
+              />
+            );
+          })()}
 
           <SelectEditor
             label="NPC"

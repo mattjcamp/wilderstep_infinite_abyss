@@ -782,7 +782,7 @@ export function PlayCounterShopOverlay({
             >
               {focusZone === "stock" ? "▸ " : ""}Stock ({stock.length})
             </h3>
-            <ul className="min-h-0 flex-1 space-y-1 overflow-auto pr-1 text-sm">
+            <ul className="min-h-0 flex-1 space-y-1 overflow-auto p-1 text-sm">
               {stock.length === 0 ? (
                 <li className="text-xs text-parchment/45">(sold out)</li>
               ) : null}
@@ -862,7 +862,7 @@ export function PlayCounterShopOverlay({
             >
               {focusZone === "stash" ? "▸ " : ""}Your Stash ({inventory.length})
             </h3>
-            <ul className="min-h-0 flex-1 space-y-1 overflow-auto pr-1 text-sm">
+            <ul className="min-h-0 flex-1 space-y-1 overflow-auto p-1 text-sm">
               {inventory.length === 0 ? (
                 <li className="text-xs text-parchment/45">(empty)</li>
               ) : null}

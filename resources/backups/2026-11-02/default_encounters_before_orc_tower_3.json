@@ -1,0 +1,531 @@
+{
+  "encounters": [
+    {
+      "id": "giant_rats",
+      "name": "Giant Rats",
+      "description": "You can make out unnaturally large rats in the dank spot in front of you.",
+      "area": "dungeon",
+      "theme": "animal",
+      "tags": [
+        "Mutated Animals"
+      ],
+      "level": 1,
+      "weight": 30,
+      "monster_party_tile": "monster/giant_rat.png",
+      "monsters": [
+        "giant_rat",
+        "giant_rat",
+        "giant_rat"
+      ],
+      "custom_map": "default_battle_arena",
+      "darkness": false
+    },
+    {
+      "id": "skeletons",
+      "name": "Skeletons",
+      "area": "dungeon",
+      "theme": "undead",
+      "tags": [
+        "Undead"
+      ],
+      "level": 3,
+      "weight": 30,
+      "monster_party_tile": "monster/skeleton.png",
+      "monsters": [
+        "skeleton",
+        "skeleton"
+      ],
+      "custom_map": "default_battle_arena",
+      "darkness": false
+    },
+    {
+      "id": "goblins",
+      "name": "Goblins",
+      "description": "The cruel laughter erupts around you as a band of goblins approaches.",
+      "area": "dungeon",
+      "theme": "humanoid",
+      "tags": [
+        "Goblinoids"
+      ],
+      "level": 1,
+      "weight": 30,
+      "monster_party_tile": "monster/goblin.png",
+      "monsters": [
+        "goblin",
+        "goblin",
+        "goblin"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "dire_wolves",
+      "name": "Dire Wolves",
+      "area": "dungeon",
+      "theme": "animal",
+      "tags": [
+        "Beasts"
+      ],
+      "level": 3,
+      "weight": 20,
+      "monster_party_tile": "monster/dire_wolf.png",
+      "monsters": [
+        "dire_wolf",
+        "dire_wolf"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "giant_bats",
+      "name": "Giant Bats",
+      "description": "The air broils with the movement of some kind of large winged creature.",
+      "area": "dungeon",
+      "theme": "animal",
+      "tags": [
+        "Beasts"
+      ],
+      "level": 1,
+      "weight": 25,
+      "monster_party_tile": "monster/giant_bat.png",
+      "monsters": [
+        "giant_bat",
+        "giant_bat",
+        "giant_bat"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "slime_molds",
+      "name": "Slime Molds",
+      "area": "dungeon",
+      "theme": "cryptid",
+      "tags": [
+        "Oozes"
+      ],
+      "level": 1,
+      "weight": 15,
+      "monster_party_tile": "monster/slime_mold.png",
+      "monsters": [
+        "slime_mold",
+        "slime_mold"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "orc_warband",
+      "name": "Orc Warband",
+      "description": "Powerful Orcs stand in your way guarded by unnaturally large Dire Wolves.",
+      "area": "dungeon",
+      "theme": "humanoid",
+      "tags": [
+        "Orcs"
+      ],
+      "level": 2,
+      "weight": 25,
+      "monster_party_tile": "monster/orc.png",
+      "monsters": [
+        "orc",
+        "orc",
+        "orc",
+        "dire_wolf"
+      ],
+      "custom_map": "dungeon_battle_screen_1",
+      "darkness": true
+    },
+    {
+      "id": "orcs_and_goblins",
+      "name": "Orcs and Goblins",
+      "description": "A master Orc approaches with his Goblin underlings in tow.",
+      "area": "dungeon",
+      "theme": "humanoid",
+      "tags": [
+        "Orcs"
+      ],
+      "level": 2,
+      "weight": 20,
+      "monster_party_tile": "monster/orc.png",
+      "monsters": [
+        "orc",
+        "goblin",
+        "goblin"
+      ],
+      "custom_map": "dungeon_battle_screen_1",
+      "darkness": true
+    },
+    {
+      "id": "zombies",
+      "name": "Zombies",
+      "area": "dungeon",
+      "theme": "undead",
+      "tags": [
+        "Undead"
+      ],
+      "level": 2,
+      "weight": 25,
+      "monster_party_tile": "monster/zombie.png",
+      "monsters": [
+        "zombie",
+        "zombie",
+        "zombie"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "restless_dead",
+      "name": "Restless Dead",
+      "area": "dungeon",
+      "theme": "undead",
+      "tags": [
+        "Undead"
+      ],
+      "level": 3,
+      "weight": 20,
+      "monster_party_tile": "monster/zombie.png",
+      "monsters": [
+        "zombie",
+        "zombie",
+        "skeleton",
+        "skeleton"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "ghosts",
+      "name": "Ghosts",
+      "area": "dungeon",
+      "theme": "undead",
+      "tags": [
+        "Undead"
+      ],
+      "level": 3,
+      "weight": 20,
+      "monster_party_tile": "monster/ghost.png",
+      "monsters": [
+        "ghost",
+        "ghost"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "gelatinous_cube",
+      "name": "Gelatinous Cube",
+      "area": "dungeon",
+      "theme": "cryptid",
+      "tags": [
+        "Oozes"
+      ],
+      "level": 3,
+      "weight": 15,
+      "monster_party_tile": "monster/gelatinous_cube.png",
+      "monsters": [
+        "gelatinous_cube"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "giant_spiders",
+      "name": "Giant Spiders",
+      "description": "You hear scratching and imagine hundreds of insects crawling over you. You can make out two massive bulbous insects clawing at you.",
+      "area": "dungeon",
+      "theme": "animal",
+      "tags": [
+        "Beasts"
+      ],
+      "level": 3,
+      "weight": 20,
+      "monster_party_tile": "monster/giant_spider.png",
+      "monsters": [
+        "giant_spider",
+        "giant_spider"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "troll",
+      "name": "Troll",
+      "area": "dungeon",
+      "theme": "humanoid",
+      "tags": [
+        "Giants"
+      ],
+      "level": 5,
+      "weight": 15,
+      "monster_party_tile": "monster/troll.png",
+      "monsters": [
+        "troll"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "fire_elemental",
+      "name": "Fire Elemental",
+      "area": "dungeon",
+      "theme": "elemental",
+      "tags": [
+        "Elementals"
+      ],
+      "level": 5,
+      "weight": 10,
+      "monster_party_tile": "monster/fire_elemental.png",
+      "monsters": [
+        "fire_elemental"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "water_elemental",
+      "name": "Water Elemental",
+      "area": "dungeon",
+      "theme": "elemental",
+      "tags": [
+        "Elementals"
+      ],
+      "level": 5,
+      "weight": 10,
+      "monster_party_tile": "monster/water_elemental.png",
+      "monsters": [
+        "water_elemental"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "earth_elemental",
+      "name": "Earth Elemental",
+      "area": "dungeon",
+      "theme": "elemental",
+      "tags": [
+        "Elementals"
+      ],
+      "level": 5,
+      "weight": 10,
+      "monster_party_tile": "monster/earth_elemental.png",
+      "monsters": [
+        "earth_elemental"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "air_elemental",
+      "name": "Air Elemental",
+      "area": "dungeon",
+      "theme": "elemental",
+      "tags": [
+        "Elementals"
+      ],
+      "level": 5,
+      "weight": 10,
+      "monster_party_tile": "monster/air_elemental.png",
+      "monsters": [
+        "air_elemental"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "demon",
+      "name": "Demon",
+      "area": "dungeon",
+      "theme": "devil",
+      "tags": [
+        "Demons"
+      ],
+      "level": 6,
+      "weight": 15,
+      "monster_party_tile": "monster/demon.png",
+      "monsters": [
+        "demon"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "vampire",
+      "name": "Vampire",
+      "area": "dungeon",
+      "theme": "undead",
+      "tags": [
+        "Undead"
+      ],
+      "level": 7,
+      "weight": 10,
+      "monster_party_tile": "monster/vampire.png",
+      "monsters": [
+        "vampire",
+        "giant_bat",
+        "giant_bat"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "the_lich",
+      "name": "The Lich",
+      "area": "dungeon",
+      "theme": "undead",
+      "tags": [
+        "Undead"
+      ],
+      "level": 8,
+      "weight": 10,
+      "monster_party_tile": "monster/lich.png",
+      "monsters": [
+        "lich",
+        "skeleton",
+        "skeleton"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "red_dragon",
+      "name": "Red Dragon",
+      "area": "dungeon",
+      "theme": "magical",
+      "tags": [
+        "Dragons"
+      ],
+      "level": 8,
+      "weight": 5,
+      "monster_party_tile": "monster/red_dragon.png",
+      "monsters": [
+        "red_dragon"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "goblin_bunkroom",
+      "name": "Goblin Bunkroom",
+      "description": "Goblins tumble out of their bunks, snatching up knives and shrieking for the watch.",
+      "area": "orc_kings_tower",
+      "theme": "humanoid",
+      "tags": [
+        "Goblinoids"
+      ],
+      "level": 1,
+      "weight": 10,
+      "monster_party_tile": "monster/goblin.png",
+      "monsters": [
+        "goblin",
+        "goblin",
+        "goblin",
+        "goblin"
+      ],
+      "custom_map": "dungeon_battle_screen_1",
+      "darkness": true
+    },
+    {
+      "id": "goblin_scribes",
+      "name": "Goblin Scribes",
+      "description": "Ink-stained goblins look up from the Orc King's ledgers, then reach for their blades.",
+      "area": "orc_kings_tower",
+      "theme": "humanoid",
+      "tags": [
+        "Goblinoids"
+      ],
+      "level": 1,
+      "weight": 10,
+      "monster_party_tile": "monster/goblin.png",
+      "monsters": [
+        "goblin",
+        "goblin"
+      ],
+      "custom_map": "dungeon_battle_screen_1",
+      "darkness": true
+    },
+    {
+      "id": "shamans_acolytes",
+      "name": "Shaman's Acolytes",
+      "description": "Goblin acolytes guard their master's workbench, and the rats they feed on scraps guard it with them.",
+      "area": "orc_kings_tower",
+      "theme": "humanoid",
+      "tags": [
+        "Goblinoids"
+      ],
+      "level": 1,
+      "weight": 10,
+      "monster_party_tile": "monster/goblin.png",
+      "monsters": [
+        "goblin",
+        "goblin",
+        "giant_rat",
+        "giant_rat"
+      ],
+      "custom_map": "dungeon_battle_screen_1",
+      "darkness": true
+    },
+    {
+      "id": "orc_officers",
+      "name": "Orc Officers",
+      "description": "Two scarred orc officers rise from their cots, a goblin runner cowering behind them.",
+      "area": "orc_kings_tower",
+      "theme": "humanoid",
+      "tags": [
+        "Orcs"
+      ],
+      "level": 2,
+      "weight": 10,
+      "monster_party_tile": "monster/orc.png",
+      "monsters": [
+        "orc",
+        "orc",
+        "goblin"
+      ],
+      "custom_map": "dungeon_battle_screen_1",
+      "darkness": true
+    },
+    {
+      "id": "war_captain",
+      "name": "The War-Captain",
+      "description": "The war-captain sweeps the battle maps off his table and bellows for his hounds.",
+      "area": "orc_kings_tower",
+      "theme": "humanoid",
+      "tags": [
+        "Orcs"
+      ],
+      "level": 2,
+      "weight": 10,
+      "monster_party_tile": "monster/orc.png",
+      "monsters": [
+        "orc",
+        "orc",
+        "dire_wolf"
+      ],
+      "custom_map": "dungeon_battle_screen_1",
+      "darkness": true
+    },
+    {
+      "id": "kings_guard",
+      "name": "The King's Guard",
+      "description": "The Orc King's personal guard stand before his chambers. They do not intend to let you pass.",
+      "area": "orc_kings_tower",
+      "theme": "humanoid",
+      "tags": [
+        "Orcs"
+      ],
+      "level": 3,
+      "weight": 10,
+      "monster_party_tile": "monster/orc.png",
+      "monsters": [
+        "orc",
+        "orc",
+        "orc",
+        "dire_wolf"
+      ],
+      "custom_map": "dungeon_battle_screen_1",
+      "darkness": true
+    }
+  ]
+}

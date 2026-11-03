@@ -944,11 +944,17 @@ export function PlayHost() {
   /** Chest dialog state — set on `chest_encountered` (the sim emits
    *  this when the party bumps a cell whose `item` is flagged
    *  `is_chest: true` in the catalog). Cleared on Open / Leave.
-   *  Carries the catalog id + cell position; the rendered dialog
-   *  resolves the chest's `contents` from `state.catalog.items`. */
+   *  Carries the catalog id + cell position, plus the cell's own
+   *  `loot` stash when the author gave this placement one. The
+   *  rendered dialog uses that stash, falling back to the catalog
+   *  record's `contents`. */
   const [chestEncounter, setChestEncounter] = useState<{
     chestId: string;
     pos: { col: number; row: number };
+    loot?: {
+      gold?: number;
+      items?: ReadonlyArray<{ id: string; qty?: number }>;
+    };
   } | null>(null);
   /** Quest dialog state — set on `quest_encountered`, cleared on
    *  Accept / Decline / Close. The kernel re-fires this event every
@@ -4933,7 +4939,11 @@ export function PlayHost() {
               // `state.catalog.items` to look up the chest record
               // and pass its `contents` + display data to the
               // overlay. Keeps the event payload minimal.
-              setChestEncounter({ chestId: ev.chestId, pos: ev.pos });
+              setChestEncounter({
+                chestId: ev.chestId,
+                pos: ev.pos,
+                loot: ev.loot,
+              });
               return;
             }
             if (ev.kind === "quest_encountered") {
@@ -6367,11 +6377,14 @@ export function PlayHost() {
           setChestEncounter(null);
           return null;
         }
+        // This placement's own stash wins over the container type's
+        // default contents (one catalog chest, many different hoards).
+        const contents = chestEncounter.loot ?? chest.contents;
         // Pre-resolve per-item display data (name + icon stem) for
         // each line in the chest's contents so the dialog can paint
         // proper labels + sprites without itself reaching back into
         // the catalog.
-        const itemDisplay = (chest.contents?.items ?? []).map((row) => {
+        const itemDisplay = (contents?.items ?? []).map((row) => {
           const def = state.catalog!.items.find((i) => i.id === row.id);
           return {
             id: row.id,
@@ -6390,9 +6403,9 @@ export function PlayHost() {
             setChestEncounter(null);
             return;
           }
-          const goldGained = chest.contents?.gold ?? 0;
+          const goldGained = contents?.gold ?? 0;
           let nextInventory = save.party.inventory.map((e) => ({ ...e }));
-          for (const row of chest.contents?.items ?? []) {
+          for (const row of contents?.items ?? []) {
             const qty = row.qty ?? 1;
             nextInventory = addToInventory(
               nextInventory,
@@ -6457,7 +6470,7 @@ export function PlayHost() {
           <ChestDialogOverlay
             chestName={chest.name ?? chest.id}
             chestIcon={chest.icon}
-            contents={chest.contents}
+            contents={contents}
             itemDisplay={itemDisplay}
             onOpen={onOpen}
             onLeave={onLeave}

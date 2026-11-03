@@ -173,6 +173,12 @@ export interface SimCell {
    *  it on the interface makes the read sites typecheck without the
    *  per-call `as { item?: string }` boilerplate. */
   item?: string;
+  /** Per-placement stash for a container (`item` is a chest-type
+   *  catalog record). When set, opening the container gives THIS
+   *  gold + items instead of the catalog record's default
+   *  `contents`, so every placed chest can hold something
+   *  different. Absent / null → fall back to the catalog contents. */
+  loot?: ChestContents | null;
 }
 
 /** Minimal record describing the chest contents the host will hand
