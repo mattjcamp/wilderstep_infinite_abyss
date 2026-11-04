@@ -1,19 +1,8 @@
-## Things to Fix
-
-- Remove any remaining unneeded sprites and tiles
-- Remove any legacy dungeon generators
-- Fine tune/repair random dungeon. No monsters appeared after the first level (check if that got fixed)
-
 ## Flesh Out Core
 - Fine tune core demo adventure
-- Keep adding to the core demo
 
 ## Improve UI
-- Fine tune the party screen
-- Fine tune the character screen
-- Fine tune the conversation screens
 - Fine tune beginning character creation
-- Fine tune dungeon generator UI
 
 ## Lore
 - start brainstorming ideas about the first original, immersive world that I will create for this game:world type, political structures, economy, towns, gods, epic stories, lost civizations

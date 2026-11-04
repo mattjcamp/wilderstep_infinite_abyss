@@ -19,11 +19,18 @@
           "id": "hidden_grotto_l1",
           "name": "Level 1",
           "depth": 1
+        },
+        {
+          "id": "hidden_grotto_l2",
+          "name": "Level 2",
+          "depth": 2
         }
       ],
       "loot": {
         "chest_item": "treasure_chest"
-      }
+      },
+      "wall_decor": 0.5,
+      "pits": 0.5
     },
     {
       "id": "stone_halls",
@@ -43,43 +50,24 @@
           "id": "stone_halls_l1",
           "name": "Level 1",
           "depth": 1
+        },
+        {
+          "id": "stone_halls_l2",
+          "name": "Level 2",
+          "depth": 2
+        },
+        {
+          "id": "stone_halls_l3",
+          "name": "Level 3",
+          "depth": 3
         }
       ],
       "loot": {
         "chest_item": "treasure_chest"
-      }
-    },
-    {
-      "id": "test2",
-      "name": "Test2",
-      "description": "A test dungeon",
-      "tags": [],
-      "style": "dungeon",
-      "difficulty": "normal",
-      "size": {
-        "width": 32,
-        "height": 32
       },
-      "torch_density": 0.15,
-      "locked_doors": 0.25,
-      "levels": [
-        {
-          "id": "test2_l1",
-          "name": "Level 1",
-          "depth": 1,
-          "style": "dungeon"
-        },
-        {
-          "id": "test2_l2",
-          "name": "Level 2",
-          "depth": 2,
-          "pits": 0,
-          "style": "cavern"
-        }
-      ],
-      "pits": 1,
-      "wall_decor": 1,
-      "floor_variety": 0
+      "wall_decor": 0.5,
+      "pits": 0.5,
+      "doors": 0.5
     }
   ]
 }
