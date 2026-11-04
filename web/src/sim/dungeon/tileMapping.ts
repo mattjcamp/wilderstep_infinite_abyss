@@ -5,17 +5,16 @@
  * numeric tile ids (TILE_DFLOOR = 20, TILE_DWALL = 21, …). v2 paints
  * with string-keyed cells that carry their own sprite + walkability.
  * This module is the bridge: it returns a v2-shaped cell prototype
- * for any tile id the generator can emit, in any of the three
- * dungeon styles.
+ * for any tile id the generator can emit, in either dungeon style
+ * (`"dungeon"` → Dungeon Tileset, `"cavern"` → Cave Tileset).
  *
  * Each prototype carries the minimum fields the editor's `TileType`
  * and the simulator's `SimCell` both consume. Callers (the
  * dungeon-level → MapRecord converter) deep-copy the prototype per
  * cell and patch any per-cell extras (e.g. `link` on stairs).
  *
- * The mapping is hardcoded by *style* (cave / forest / default). When
- * a tile id has no style override (e.g. TILE_CHEST), the default
- * prototype is reused across all styles.
+ * Floor / walls / stairs / doors / torches / traps come from the
+ * style's tileset; chests and quest artifacts are shared.
  *
  * Prototypes never name a sprite file. Each names the `map_tiles`
  * palette id it borrows art from (`paletteId`); the converter looks
@@ -27,24 +26,19 @@
 import {
   TILE_DFLOOR,
   TILE_DDOOR,
-  TILE_DUNGEON,
-  TILE_FOREST,
-  TILE_FOREST_ARCHWAY_DOWN,
-  TILE_FOREST_ARCHWAY_UP,
-  TILE_GRASS,
   TILE_LOCKED_DOOR,
-  TILE_MOUNTAIN,
-  TILE_PATH,
-  TILE_SAND,
   TILE_STAIRS_DOWN,
   TILE_WALL_TORCH,
-  TILE_WATER,
 } from "@/battle/world/Tiles";
 import {
   TILE_ARTIFACT,
   TILE_CHEST,
   TILE_DWALL,
+  TILE_PILLAR,
+  TILE_PIT,
+  TILE_RUBBLE,
   TILE_STAIRS,
+  TILE_THRONE,
   TILE_TRAP,
 } from "@/battle/world/Dungeon";
 import type { DungeonStyle } from "@/battle/world/Dungeon";
@@ -94,7 +88,13 @@ export interface DungeonTilePrototype {
    *  trap goes off so a single tile is one-shot. */
   trap: boolean;
   flags?: Record<string, unknown>;
-  link?: { map_id: string; x: number; y: number } | null;
+  link?: { map_id: string; x: number; y: number; fall?: boolean } | null;
+  /** Pit / chasm cell. Monsters never step onto one, even when it's a
+   *  walkable drop-through for the party. */
+  pit?: boolean;
+  /** Room object (pillar, stalagmite, rubble, throne) — drawn over the
+   *  floor beneath it. */
+  object?: boolean;
   /** Optional overlay sprite drawn ON TOP of the cell's base
    *  sprite — used by "placed item" tiles (chests, etc.) so the
    *  floor underneath shows through the sprite's transparent
@@ -142,21 +142,9 @@ function proto(over: Partial<DungeonTilePrototype>): DungeonTilePrototype {
  *  in the 2026-10 tile trim; the Default palette ships "object_chest"). */
 export const CHEST_PALETTE_ID = "object_chest";
 
-/** ── Style-agnostic dungeon furniture ─────────────────────────────
- *  Stairs / chests / traps / torches look the same regardless of
- *  whether you're in a cave or a stone dungeon. */
-
-const STAIRS_UP_PROTO = proto({
-  id: "stairs_up",
-  name: "Stairs Up",
-  paletteId: "dungeon_stairs_up",
-});
-
-const STAIRS_DOWN_PROTO = proto({
-  id: "stairs_down",
-  name: "Stairs Down",
-  paletteId: "dungeon_stairs",
-});
+/** ── Shared dungeon furniture / bases ─────────────────────────────
+ *  Chests and artifacts look the same in every style; the trap and
+ *  torch prototypes are bases each tileset re-skins. */
 
 const CHEST_PROTO = proto({
   id: "chest",
@@ -175,28 +163,13 @@ const TRAP_PROTO = proto({
   // a red-X overlay through the bridge). The `trap: true` flag is
   // what the kernel's step handler reads to emit `trap_triggered`.
   //
-  // The `sprite` here is a fallback — the actual rendered sprite is
-  // re-stamped per dungeon style at lookup time in `prototypeForTileId`
-  // so a cave-style dungeon's trap reads as a cave floor (not a
-  // ruins-style stone-block floor that pops as an obviously-different
-  // gray square in the surrounding map). Hardcoding stone_floor.png
-  // here only matched the "ruins" style by coincidence.
+  // The `paletteId` here is a base — each tileset re-stamps it with
+  // its own floor so a trap reads as the surrounding floor.
   id: "dungeon_floor_trap",
   name: "Trap",
   paletteId: "dungeon_floor_flagstone",
   trap: true,
 });
-
-/** Resolve the style-appropriate floor sprite. Mirrors the floor
- *  resolution `prototypeForTileId` does for TILE_DFLOOR but is
- *  surfaced as a tiny helper because the trap prototype needs the
- *  same answer (so a trap reads as floor-on-the-current-style, not
- *  as a hardcoded stone block). */
-function floorPaletteIdFor(style: DungeonStyle): string {
-  if (style === "caves") return CAVE_FLOOR_PROTO.paletteId;
-  if (style === "forest") return FOREST_FLOOR_PROTO.paletteId;
-  return DEFAULT_FLOOR_PROTO.paletteId;
-}
 
 const ARTIFACT_PROTO = proto({
   id: "quest_artifact",
@@ -205,6 +178,33 @@ const ARTIFACT_PROTO = proto({
   // wired up in v2 yet.
   paletteId: CHEST_PALETTE_ID,
 });
+
+/** Pit / chasm base. Blocks movement but not sight (you can look
+ *  across a chasm). The converter's pit pass swaps in the right rim
+ *  piece per cell; `paletteId` here is the solid-centre fallback. */
+function pitProto(prefix: "dungeon" | "cave"): DungeonTilePrototype {
+  return proto({
+    id: `${prefix}_pit`,
+    name: prefix === "cave" ? "Cave Chasm" : "Dungeon Pit",
+    walkable: false,
+    obstructs: false,
+    pit: true,
+    paletteId: `${prefix}_pit_centre`,
+  });
+}
+const DT_PIT_PROTO = pitProto("dungeon");
+const CV_PIT_PROTO = pitProto("cave");
+
+/** Room objects. Pillars and stalagmites are tall — they block sight
+ *  like a column; rubble and the throne are low. */
+function objectProto(id: string, name: string, obstructs: boolean): DungeonTilePrototype {
+  return proto({ id, name, paletteId: id, walkable: false, obstructs, object: true });
+}
+const DT_PILLAR_PROTO = objectProto("dungeon_pillar", "Dungeon Pillar", true);
+const DT_RUBBLE_PROTO = objectProto("dungeon_rubble", "Dungeon Rubble", false);
+const DT_THRONE_PROTO = objectProto("dungeon_throne", "Dungeon Throne", false);
+const CV_STALAGMITE_PROTO = objectProto("cave_stalagmite", "Cave Stalagmite", true);
+const CV_RUBBLE_PROTO = objectProto("cave_rubble", "Cave Rubble", false);
 
 const WALL_TORCH_PROTO = proto({
   id: "wall_torch",
@@ -219,95 +219,6 @@ const WALL_TORCH_PROTO = proto({
   light_range: 5,
   paletteId: "dungeon_wall_top",
   animation: "torch",
-});
-
-const DUNGEON_DOOR_PROTO = proto({
-  id: "dungeon_door",
-  name: "Dungeon Door",
-  paletteId: "dungeon_door",
-});
-
-const LOCKED_DOOR_PROTO = proto({
-  id: "door_locked",
-  name: "Locked Door",
-  // Locked doors gate movement until picked / knocked. The simulator
-  // already handles `locked: true` and opens the Pick Lock dialog.
-  walkable: false,
-  obstructs: false,
-  locked: true,
-  paletteId: "dungeon_door",
-});
-
-/** ── Style-default tiles (stone dungeon) ──────────────────────── */
-const DEFAULT_FLOOR_PROTO = proto({
-  id: "dungeon_floor",
-  name: "Dungeon Floor",
-  paletteId: "dungeon_floor_flagstone",
-});
-
-const DEFAULT_WALL_PROTO = proto({
-  id: "dungeon_wall",
-  name: "Dungeon Wall",
-  walkable: false,
-  obstructs: true,
-  paletteId: "dungeon_wall_top",
-});
-
-/** ── Cave style tiles ─────────────────────────────────────────── */
-const CAVE_FLOOR_PROTO = proto({
-  id: "grass",
-  name: "Cave Floor",
-  tag: "terrain",
-  paletteId: "grass",
-});
-
-const CAVE_WALL_PROTO = proto({
-  id: "mountain",
-  name: "Cave Wall",
-  tag: "outdoor",
-  walkable: false,
-  obstructs: true,
-  paletteId: "mountain",
-});
-
-/** ── Forest style tiles ──────────────────────────────────────── */
-const FOREST_FLOOR_PROTO = proto({
-  id: "grass",
-  name: "Grass",
-  tag: "outdoor",
-  paletteId: "grass",
-});
-
-const FOREST_WALL_PROTO = proto({
-  id: "tree",
-  name: "Tree",
-  tag: "outdoor",
-  walkable: false,
-  obstructs: true,
-  paletteId: "tree",
-});
-
-const FOREST_PATH_PROTO = proto({
-  id: "grass",
-  name: "Grass",
-  tag: "terrain",
-  paletteId: "grass",
-});
-
-const FOREST_ARCHWAY_UP_PROTO = proto({
-  id: "stairs_up",
-  name: "Forest Archway",
-  // Was a gold archway sprite; uses the stairs-up art since the
-  // 2026-10 tile trim until a forest arch is redrawn.
-  paletteId: "dungeon_stairs_up",
-});
-
-const FOREST_ARCHWAY_DOWN_PROTO = proto({
-  id: "stairs_down",
-  name: "Forest Archway (Down)",
-  // Was a blue archway sprite; uses the stairs-down art since the
-  // 2026-10 tile trim until a forest arch is redrawn.
-  paletteId: "dungeon_stairs",
 });
 
 /** ── Dungeon Tileset style ("dungeon") ─────────────────────────
@@ -391,19 +302,12 @@ const CV_WALL_TORCH_PROTO = proto({ ...WALL_TORCH_PROTO, paletteId: "cave_wall_t
 function cavernTilesetProto(tileId: number): DungeonTilePrototype | null {
   switch (tileId) {
     case TILE_DFLOOR:
-    case TILE_PATH:
-    case TILE_GRASS:
-    case TILE_SAND:
       return CV_FLOOR_PROTO;
     case TILE_DWALL:
-    case TILE_MOUNTAIN:
-    case TILE_FOREST:
       return CV_WALL_PROTO;
     case TILE_STAIRS:
-    case TILE_FOREST_ARCHWAY_UP:
       return CV_STAIRS_UP_PROTO;
     case TILE_STAIRS_DOWN:
-    case TILE_FOREST_ARCHWAY_DOWN:
       return CV_STAIRS_DOWN_PROTO;
     case TILE_DDOOR:
       return CV_DOOR_PROTO;
@@ -413,6 +317,15 @@ function cavernTilesetProto(tileId: number): DungeonTilePrototype | null {
       return CV_WALL_TORCH_PROTO;
     case TILE_TRAP:
       return { ...TRAP_PROTO, paletteId: CAVE_TILESET_FLOOR_ID };
+    case TILE_PIT:
+      return CV_PIT_PROTO;
+    case TILE_PILLAR:
+      return CV_STALAGMITE_PROTO;
+    case TILE_RUBBLE:
+      return CV_RUBBLE_PROTO;
+    case TILE_THRONE:
+      // The Cave Tileset has no throne; the dungeon one stands in.
+      return DT_THRONE_PROTO;
   }
   return null;
 }
@@ -420,19 +333,12 @@ function cavernTilesetProto(tileId: number): DungeonTilePrototype | null {
 function dungeonTilesetProto(tileId: number): DungeonTilePrototype | null {
   switch (tileId) {
     case TILE_DFLOOR:
-    case TILE_PATH:
-    case TILE_GRASS:
-    case TILE_SAND:
       return DT_FLOOR_PROTO;
     case TILE_DWALL:
-    case TILE_MOUNTAIN:
-    case TILE_FOREST:
       return DT_WALL_PROTO;
     case TILE_STAIRS:
-    case TILE_FOREST_ARCHWAY_UP:
       return DT_STAIRS_UP_PROTO;
     case TILE_STAIRS_DOWN:
-    case TILE_FOREST_ARCHWAY_DOWN:
       return DT_STAIRS_DOWN_PROTO;
     case TILE_DDOOR:
       return DT_DOOR_PROTO;
@@ -442,114 +348,55 @@ function dungeonTilesetProto(tileId: number): DungeonTilePrototype | null {
       return DT_WALL_TORCH_PROTO;
     case TILE_TRAP:
       return { ...TRAP_PROTO, paletteId: DUNGEON_TILESET_FLOOR_ID };
+    case TILE_PIT:
+      return DT_PIT_PROTO;
+    case TILE_PILLAR:
+      return DT_PILLAR_PROTO;
+    case TILE_RUBBLE:
+      return DT_RUBBLE_PROTO;
+    case TILE_THRONE:
+      return DT_THRONE_PROTO;
   }
   return null;
 }
 
 /** Resolve a v1 numeric tile id to a v2 cell prototype. Returns null
  *  for tile ids the generator never emits OR cosmetic ids the
- *  simulator can safely skip (puddles / moss). Callers default to a
- *  plain-floor prototype on null. */
+ *  simulator can safely skip (puddles / moss). Callers fall back to a
+ *  wall prototype on null. */
 export function prototypeForTileId(
   tileId: number,
   style: DungeonStyle,
 ): DungeonTilePrototype | null {
-  // The Dungeon Tileset style has its own floor / walls / stairs /
-  // doors; chests + artifacts fall through to the shared furniture.
-  if (style === "dungeon") {
-    const p = dungeonTilesetProto(tileId);
-    if (p) return p;
-  }
-  if (style === "cavern") {
-    const p = cavernTilesetProto(tileId);
-    if (p) return p;
-  }
-  // Style-agnostic furniture takes precedence.
+  // Each tileset has its own floor / walls / stairs / doors; chests +
+  // artifacts fall through to the shared furniture.
+  const p =
+    style === "cavern" ? cavernTilesetProto(tileId) : dungeonTilesetProto(tileId);
+  if (p) return p;
   switch (tileId) {
-    case TILE_STAIRS:
-      return STAIRS_UP_PROTO;
-    case TILE_STAIRS_DOWN:
-      return STAIRS_DOWN_PROTO;
     case TILE_CHEST:
       return CHEST_PROTO;
-    case TILE_TRAP:
-      // Concealed: a trap reads as the style's plain floor so the
-      // player can't spot it without Detect Traps. The red-X reveal
-      // is drawn separately by WorldRenderer.setDetectedTraps on top
-      // of this base sprite, so swapping the base doesn't affect
-      // detection.
-      return { ...TRAP_PROTO, paletteId: floorPaletteIdFor(style) };
     case TILE_ARTIFACT:
       return ARTIFACT_PROTO;
-    case TILE_WALL_TORCH:
-      return WALL_TORCH_PROTO;
-    case TILE_DDOOR:
-      return DUNGEON_DOOR_PROTO;
-    case TILE_LOCKED_DOOR:
-      return LOCKED_DOOR_PROTO;
-    case TILE_FOREST_ARCHWAY_UP:
-      return FOREST_ARCHWAY_UP_PROTO;
-    case TILE_FOREST_ARCHWAY_DOWN:
-      return FOREST_ARCHWAY_DOWN_PROTO;
-  }
-  // Style-dependent floor / wall.
-  if (style === "caves") {
-    switch (tileId) {
-      case TILE_PATH:
-      case TILE_DFLOOR:
-        return CAVE_FLOOR_PROTO;
-      case TILE_MOUNTAIN:
-      case TILE_DWALL:
-        return CAVE_WALL_PROTO;
-    }
-  }
-  if (style === "forest") {
-    switch (tileId) {
-      case TILE_GRASS:
-      case TILE_DFLOOR:
-        return FOREST_FLOOR_PROTO;
-      case TILE_FOREST:
-      case TILE_DWALL:
-        return FOREST_WALL_PROTO;
-      case TILE_PATH:
-        return FOREST_PATH_PROTO;
-    }
-  }
-  // "ruins" (stone-block dungeon) — and the fallback for any style
-  // we haven't taught the mapper about yet.
-  switch (tileId) {
-    case TILE_DFLOOR:
-    case TILE_PATH:
-      return DEFAULT_FLOOR_PROTO;
-    case TILE_DWALL:
-    case TILE_MOUNTAIN:
-      return DEFAULT_WALL_PROTO;
-    case TILE_GRASS:
-      return FOREST_FLOOR_PROTO; // generic grass fallback
-    case TILE_WATER:
-      return proto({
-        id: "water",
-        name: "Water",
-        tag: "water",
-        water: true,
-        walkable: false,
-        paletteId: "water",
-      });
-    case TILE_SAND:
-      // Sand was merged into Grass in the palette.
-      return FOREST_FLOOR_PROTO;
-    case TILE_FOREST:
-      return FOREST_WALL_PROTO;
-    case TILE_DUNGEON:
-      return proto({
-        id: "cave_entrance",
-        name: "Cave Entrance",
-        paletteId: "cave_entrance",
-      });
   }
   // Cosmetic / unknown — caller can decide what to do.
   return null;
 }
+
+/** Pit rim pieces shared by both tilesets (prefixed `dungeon_` /
+ *  `cave_`). `pit` is the self-contained single-cell hole. */
+export const PIT_PIECES = [
+  "pit",
+  "pit_centre",
+  "pit_top",
+  "pit_bottom",
+  "pit_left",
+  "pit_right",
+  "pit_corner_tl",
+  "pit_corner_tr",
+  "pit_corner_bl",
+  "pit_corner_br",
+] as const;
 
 /** Every palette id the dungeon prototypes can borrow art from. */
 export const DUNGEON_PALETTE_IDS: readonly string[] = [
@@ -588,11 +435,27 @@ export const DUNGEON_PALETTE_IDS: readonly string[] = [
   "cave_wall_t_down",
   "cave_wall_t_up",
   "cave_pit_centre",
-  "mountain",
-  "grass",
-  "tree",
-  "water",
-  "cave_entrance",
+  // Floor variants, wall decorations and room objects.
+  "dungeon_floor_cobble",
+  "dungeon_floor_smooth",
+  "dungeon_floor_pebbles",
+  "dungeon_floor_brick",
+  "dungeon_floor_planks",
+  "dungeon_floor_grate",
+  "cave_floor_sand",
+  "cave_floor_slab",
+  "cave_floor_crystal",
+  "dungeon_wall_banner",
+  "dungeon_wall_window",
+  "cave_wall_crack",
+  "cave_wall_crystals",
+  "cave_wall_webs",
+  "dungeon_pillar",
+  "dungeon_rubble",
+  "dungeon_throne",
+  // Pit rims — every piece the pit pass can pick, both tilesets.
+  ...PIT_PIECES.map((p) => `dungeon_${p}`),
+  ...PIT_PIECES.map((p) => `cave_${p}`),
 ];
 
 /** Palette id → sprite lookup for a prototype's `paletteId`. Returns

@@ -31,7 +31,6 @@ import {
   type DungeonLevel,
 } from "@/battle/world/Dungeon";
 import { TILE_STAIRS_DOWN } from "@/battle/world/Dungeon";
-import { TILE_FOREST_ARCHWAY_UP, TILE_FOREST_ARCHWAY_DOWN } from "@/battle/world/Tiles";
 import { mergeModel } from "@/data_model/merge";
 import { getEditorModuleSource } from "@/data_model/sourceConfig";
 import {
@@ -136,6 +135,9 @@ export function DungeonSimMount({
    *  `party.infravision_active` field and signals the bridge.
    *  Cleared on teardown alongside `sceneRef`. */
   const simRef = useRef<MapSimulation | null>(null);
+  // Landing cell for the next floor mount when the party fell through
+  // a pit (stairs land on the floor's entry instead).
+  const fallLandingRef = useRef<{ col: number; row: number } | null>(null);
 
   // When `exited` flips and we have a returnTo target, navigate back
   // to the overworld map with sim mode re-engaged at the entrance
@@ -161,9 +163,9 @@ export function DungeonSimMount({
     monsters: SimMonsterRef[];
     classes: SimCharacterClass[];
     knockSpell: SimSpell | null;
-    /** `map_tiles` palette id → sprite path, used to render
-     *  custom-style floors/walls. Empty for non-custom dungeons. */
-    customTileSprites: ReadonlyMap<string, string>;
+    /** `map_tiles` palette id → sprite path, used to render every
+     *  dungeon cell's tileset sprite. */
+    paletteSprites: ReadonlyMap<string, string>;
   } | null>(null);
 
   // Load the sim catalogs once. The dungeon tester doesn't need
@@ -191,8 +193,8 @@ export function DungeonSimMount({
         // Non-fatal — without them only the Pick Lock row appears.
         src.loadModelLayers(moduleId, "character_classes").catch(() => null),
         src.loadModelLayers(moduleId, "spells").catch(() => null),
-        // Tile palette — only custom-style dungeons read it, but it's
-        // cheap and lets the converter resolve floor/wall sprites.
+        // Tile palette — the converter resolves every cell's sprite
+        // through it.
         src.loadModelLayers(moduleId, "map_tiles").catch(() => null),
       ]);
       if (cancelled) return;
@@ -253,9 +255,9 @@ export function DungeonSimMount({
             tileLayers.ownFile,
           ) as { map_tiles?: Array<{ id: string; sprite?: string }> } | null)
         : null;
-      const customTileSprites = new Map<string, string>();
+      const paletteSprites = new Map<string, string>();
       for (const t of tilesMerged?.map_tiles ?? []) {
-        if (t.id && t.sprite) customTileSprites.set(t.id, t.sprite);
+        if (t.id && t.sprite) paletteSprites.set(t.id, t.sprite);
       }
       setCatalog({
         party,
@@ -268,7 +270,7 @@ export function DungeonSimMount({
         })),
         classes: classesMerged?.character_classes ?? [],
         knockSpell,
-        customTileSprites,
+        paletteSprites,
       });
     })();
     return () => {
@@ -286,9 +288,9 @@ export function DungeonSimMount({
       dungeonId,
       floorIdx,
       totalFloors: levels.length,
-      customTileSprites: catalog?.customTileSprites,
+      paletteSprites: catalog?.paletteSprites,
     });
-  }, [levels, floorIdx, dungeonId, catalog?.customTileSprites]);
+  }, [levels, floorIdx, dungeonId, catalog?.paletteSprites]);
 
   // Encounter catalog for the active floor — each cell's `encounter`
   // id resolves to a synthetic SimEncounterRef built from the
@@ -329,7 +331,7 @@ export function DungeonSimMount({
       installHiDpiText(Phaser);
 
       const spriteKeys = new Set<string>(
-        dungeonSpriteKeys(catalog?.customTileSprites),
+        dungeonSpriteKeys(catalog?.paletteSprites),
       );
       // Add every cell's sprite (covers anything the prototype table
       // didn't pre-declare).
@@ -474,7 +476,8 @@ export function DungeonSimMount({
           // where they came in. Descending floors start on the
           // matching stairs-up tile too (the generator places one).
           const lvl = levels[floorIdx];
-          const startAt = { col: lvl.entryCol, row: lvl.entryRow };
+          const startAt = fallLandingRef.current ?? { col: lvl.entryCol, row: lvl.entryRow };
+          fallLandingRef.current = null;
           const grid = floorRecord!.grid as unknown as SimGrid;
           const partyForSim: SimParty = catalog.party ?? {
             start_position: { col: startAt.col, row: startAt.row },
@@ -582,7 +585,12 @@ export function DungeonSimMount({
               const match = target.match(/_f(\d+)__$/);
               if (match) {
                 const next = Number.parseInt(match[1], 10);
-                if (Number.isFinite(next)) setFloorIdx(next);
+                if (Number.isFinite(next)) {
+                  fallLandingRef.current = ev.link.fall
+                    ? { col: ev.link.x, row: ev.link.y }
+                    : null;
+                  setFloorIdx(next);
+                }
               }
             }
             if (ev.kind === "lock_encountered") {
@@ -722,7 +730,7 @@ export function DungeonSimMount({
         />
       ) : null}
       <UnusedTilesNote
-        unused={[TILE_STAIRS, TILE_STAIRS_DOWN, TILE_FOREST_ARCHWAY_UP, TILE_FOREST_ARCHWAY_DOWN]}
+        unused={[TILE_STAIRS, TILE_STAIRS_DOWN]}
       />
     </div>
   );

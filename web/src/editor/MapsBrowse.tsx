@@ -369,8 +369,8 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
           return null;
         }),
         src.loadModelLayers(moduleId, "monsters").catch(() => null),
-        // Tile palette — lets a baked custom-style dungeon resolve its
-        // floor/wall sprites. Non-fatal; non-custom bakes ignore it.
+        // Tile palette — lets a baked dungeon resolve its tileset
+        // sprites. Non-fatal.
         src.loadModelLayers(moduleId, "map_tiles").catch(() => null),
       ]);
       // Hydrate encounters: merge inherited+own, drop null entries,
@@ -410,8 +410,8 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
         return (id: string) => byId.get(id);
       })();
       const dungeonEncounterCount = encounters.dungeon?.length ?? 0;
-      // Build the palette id → sprite map for custom-style bakes.
-      const customTileSprites = new Map<string, string>();
+      // Build the palette id → sprite map the dungeon converter needs.
+      const paletteSprites = new Map<string, string>();
       if (tileLayers) {
         const merged = mergeModel(
           "map_tiles",
@@ -419,7 +419,7 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
           tileLayers.ownFile,
         ) as { map_tiles?: Array<{ id?: string; sprite?: string }> } | null;
         for (const t of merged?.map_tiles ?? []) {
-          if (t.id && t.sprite) customTileSprites.set(t.id, t.sprite);
+          if (t.id && t.sprite) paletteSprites.set(t.id, t.sprite);
         }
       }
       const result = bakeDungeon(record, {
@@ -427,7 +427,7 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
         existingMaps: state.maps,
         encounters,
         monsterDifficulty,
-        customTileSprites,
+        paletteSprites,
       });
       if (result.maps.length === 0) {
         window.alert(

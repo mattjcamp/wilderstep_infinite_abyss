@@ -3,6 +3,7 @@ import { autotileDungeonWalls, DUNGEON_TILESET_WALL_IDS as IDS } from "./dungeon
 import { dungeonLevelToMap } from "./dungeonLevelToMap";
 import { generateDungeonLevel } from "@/battle/world/Dungeon";
 import { DUNGEON_PALETTE_IDS } from "./tileMapping";
+import { STYLE_DEFAULTS } from "./types";
 
 type Cell = { id: string; name: string; sprite: string; walkable: boolean; background_sprite?: string };
 
@@ -101,7 +102,7 @@ describe("dungeon style — full generated floor", () => {
     });
     // Palette: every id the dungeon prototypes can borrow → a fake path.
     const palette = new Map(DUNGEON_PALETTE_IDS.map((id) => [id, `sprite/${id}.png`]));
-    const map = dungeonLevelToMap(level, { dungeonId: "d", floorIdx: 0, totalFloors: 2, customTileSprites: palette });
+    const map = dungeonLevelToMap(level, { dungeonId: "d", floorIdx: 0, totalFloors: 2, paletteSprites: palette });
     const ids = new Set<string>();
     let walls = 0;
     let floors = 0;
@@ -141,9 +142,12 @@ describe("cavern style — full generated floor", () => {
     const level = generateDungeonLevel({
       name: "F1", width: 40, height: 30, style: "cavern", difficulty: "normal",
       floorIdx: 0, placeStairsDown: true, lockProbability: 0.2, torchProbability: 0.1, seed,
+      // The cavern style defaults a Dungeon record resolves to.
+      objectProbability: STYLE_DEFAULTS.cavern.objects,
+      floorVariety: STYLE_DEFAULTS.cavern.floor_variety,
     });
     const palette = new Map(DUNGEON_PALETTE_IDS.map((id) => [id, `sprite/${id}.png`]));
-    const map = dungeonLevelToMap(level, { dungeonId: "c", floorIdx: 0, totalFloors: 2, customTileSprites: palette });
+    const map = dungeonLevelToMap(level, { dungeonId: "c", floorIdx: 0, totalFloors: 2, paletteSprites: palette });
     return { level, map };
   };
 

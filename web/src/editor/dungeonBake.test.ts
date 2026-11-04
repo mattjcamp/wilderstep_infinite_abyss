@@ -8,7 +8,7 @@ function makeRecord(over: Partial<DungeonRecord> = {}): DungeonRecord {
   return {
     id: "test_dungeon",
     name: "Test Dungeon",
-    style: "caves",
+    style: "dungeon",
     difficulty: "normal",
     size: { width: 24, height: 18 },
     torch_density: 0.15,

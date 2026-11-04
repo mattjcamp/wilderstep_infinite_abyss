@@ -9,7 +9,7 @@ import {
   TILE_STAIRS_DOWN,
   TILE_CHEST,
 } from "@/battle/world/Dungeon";
-import { TILE_FOREST_ARCHWAY_DOWN, TILE_DDOOR } from "@/battle/world/Tiles";
+import { TILE_DDOOR } from "@/battle/world/Tiles";
 
 /** First [col,row] of a tile id on a floor's grid, or null. */
 function findTile(
@@ -53,7 +53,7 @@ function makeRecord(over: Partial<DungeonRecord> = {}): DungeonRecord {
   return {
     id: "test_dungeon",
     name: "Test Dungeon",
-    style: "caves",
+    style: "dungeon",
     difficulty: "normal",
     size: { width: 30, height: 20 },
     torch_density: 0.15,
@@ -68,14 +68,14 @@ function makeRecord(over: Partial<DungeonRecord> = {}): DungeonRecord {
 describe("resolveLevelOptions", () => {
   it("returns the parent's values when the level overrides nothing", () => {
     const record = makeRecord({
-      style: "ruins",
+      style: "cavern",
       difficulty: "hard",
       size: { width: 40, height: 24 },
       torch_density: 0.5,
       locked_doors: 0.1,
     });
     const r = resolveLevelOptions(record, record.levels[0], 0);
-    expect(r.style).toBe("ruins");
+    expect(r.style).toBe("cavern");
     expect(r.difficulty).toBe("hard");
     expect(r.size).toEqual({ width: 40, height: 24 });
     expect(r.torch_density).toBe(0.5);
@@ -87,14 +87,14 @@ describe("resolveLevelOptions", () => {
 
   it("level overrides win over parent values", () => {
     const record = makeRecord({
-      style: "caves",
+      style: "dungeon",
       size: { width: 30, height: 20 },
       levels: [
         {
           id: "lvl_1",
           name: "Boss Floor",
           depth: 1,
-          style: "ruins",
+          style: "cavern",
           size: { width: 50, height: 50 },
           difficulty: "boss",
           torch_density: 0,
@@ -103,7 +103,7 @@ describe("resolveLevelOptions", () => {
       ],
     });
     const r = resolveLevelOptions(record, record.levels[0], 0);
-    expect(r.style).toBe("ruins");
+    expect(r.style).toBe("cavern");
     expect(r.size).toEqual({ width: 50, height: 50 });
     expect(r.difficulty).toBe("boss");
     expect(r.torch_density).toBe(0);
@@ -127,35 +127,63 @@ describe("resolveLevelOptions", () => {
     expect(r.locked_doors).toBe(DUNGEON_DEFAULTS.locked_doors);
   });
 
-  it("door frequency defaults to 1 and custom tiles to empty", () => {
+  it("retired legacy styles fall back to dungeon", () => {
+    for (const legacy of ["caves", "ruins", "forest", "custom", "bogus"]) {
+      const record = makeRecord({
+        style: legacy as DungeonRecord["style"],
+      });
+      expect(resolveLevelOptions(record, record.levels[0], 0).style).toBe(
+        "dungeon",
+      );
+    }
+    // A legacy Level override also normalizes, and cavern survives.
+    const rec = makeRecord({
+      style: "cavern",
+      levels: [{ id: "l", name: "L", depth: 1, style: "forest" as DungeonRecord["style"] }],
+    });
+    expect(resolveLevelOptions(rec, rec.levels[0], 0).style).toBe("dungeon");
+    const rec2 = makeRecord({ style: "cavern" });
+    expect(resolveLevelOptions(rec2, rec2.levels[0], 0).style).toBe("cavern");
+  });
+
+  it("clamps bad authored sizes to a playable floor (regression: -40 width hung the game)", () => {
+    const rec = makeRecord({
+      levels: [
+        { id: "a", name: "A", depth: 1, size: { width: -40, height: 16 } },
+        { id: "b", name: "B", depth: 2, size: { width: 0, height: 9999 } },
+        { id: "c", name: "C", depth: 3, size: { width: 20.6, height: 5 } },
+      ],
+    });
+    expect(resolveLevelOptions(rec, rec.levels[0], 0).size).toEqual({ width: 12, height: 16 });
+    expect(resolveLevelOptions(rec, rec.levels[1], 1).size).toEqual({ width: 12, height: 128 });
+    expect(resolveLevelOptions(rec, rec.levels[2], 2).size).toEqual({ width: 21, height: 12 });
+    const floors = generateDungeonFromRecord(rec, { seed: 3 });
+    for (const f of floors) {
+      expect(f.width).toBeGreaterThan(0);
+      expect(f.height).toBeGreaterThan(0);
+      expect(findTile(f, TILE_STAIRS)).not.toBeNull();
+    }
+  });
+
+  it("door frequency defaults to 1", () => {
     const record = makeRecord();
     const r = resolveLevelOptions(record, record.levels[0], 0);
     expect(r.doorFrequency).toBe(DUNGEON_DEFAULTS.doors);
     expect(r.doorFrequency).toBe(1);
-    expect(r.customFloor).toBe("");
-    expect(r.customWall).toBe("");
   });
 
-  it("edge_transitions defaults by style and honors overrides", () => {
-    // Forest defaults to edge placement; everything else to interior.
-    expect(
-      resolveLevelOptions(makeRecord({ style: "forest" }),
-        makeRecord({ style: "forest" }).levels[0], 0).edgeTransitions,
-    ).toBe(true);
-    expect(
-      resolveLevelOptions(makeRecord({ style: "ruins" }),
-        makeRecord({ style: "ruins" }).levels[0], 0).edgeTransitions,
-    ).toBe(false);
-    expect(
-      resolveLevelOptions(makeRecord({ style: "custom" }),
-        makeRecord({ style: "custom" }).levels[0], 0).edgeTransitions,
-    ).toBe(false);
-    // Parent override flips a non-forest style to edge…
-    const rec = makeRecord({ style: "ruins", edge_transitions: true });
+  it("edge_transitions defaults to interior rooms and honors overrides", () => {
+    for (const style of ["dungeon", "cavern"] as const) {
+      const rec = makeRecord({ style });
+      expect(resolveLevelOptions(rec, rec.levels[0], 0).edgeTransitions).toBe(
+        false,
+      );
+    }
+    // Parent override flips to edge…
+    const rec = makeRecord({ edge_transitions: true });
     expect(resolveLevelOptions(rec, rec.levels[0], 0).edgeTransitions).toBe(true);
-    // …and a Level override beats the parent (forest → interior here).
+    // …and a Level override beats the parent.
     const rec2 = makeRecord({
-      style: "forest",
       edge_transitions: true,
       levels: [{ id: "l", name: "L", depth: 1, edge_transitions: false }],
     });
@@ -164,26 +192,16 @@ describe("resolveLevelOptions", () => {
     );
   });
 
-  it("inherits door frequency + custom tiles from the parent, level overrides win", () => {
+  it("inherits door frequency from the parent, level overrides win", () => {
     const record = makeRecord({
       doors: 0.3,
-      style: "custom",
-      custom_floor: "grass",
-      custom_wall: "mountain",
       levels: [
-        {
-          id: "lvl_1",
-          name: "Level 1",
-          depth: 1,
-          doors: 0, // override
-          custom_wall: "water", // override only the wall
-        },
+        { id: "lvl_1", name: "Level 1", depth: 1, doors: 0 },
+        { id: "lvl_2", name: "Level 2", depth: 2 },
       ],
     });
-    const r = resolveLevelOptions(record, record.levels[0], 0);
-    expect(r.doorFrequency).toBe(0);
-    expect(r.customFloor).toBe("grass"); // inherited
-    expect(r.customWall).toBe("water"); // overridden
+    expect(resolveLevelOptions(record, record.levels[0], 0).doorFrequency).toBe(0);
+    expect(resolveLevelOptions(record, record.levels[1], 1).doorFrequency).toBe(0.3);
   });
 });
 
@@ -235,7 +253,7 @@ describe("generateDungeonFromRecord", () => {
   it("places no doors when doors frequency is 0, but does at the default", () => {
     // doors: 0 → an open layout with zero doorframes.
     const open = makeRecord({
-      style: "ruins",
+      style: "dungeon",
       size: { width: 40, height: 30 },
       doors: 0,
       levels: [{ id: "x", name: "X", depth: 1 }],
@@ -244,10 +262,10 @@ describe("generateDungeonFromRecord", () => {
     expect(countTile(openFloor, TILE_DDOOR)).toBe(0);
 
     // Same record at the default (doors omitted → 1) places doors. A
-    // rooms-and-corridors ruins floor of this size reliably has at
+    // rooms-and-corridors floor of this size reliably has at
     // least one room entrance.
     const doored = makeRecord({
-      style: "ruins",
+      style: "dungeon",
       size: { width: 40, height: 30 },
       levels: [{ id: "x", name: "X", depth: 1 }],
     });
@@ -256,11 +274,11 @@ describe("generateDungeonFromRecord", () => {
   });
 
   it("edge_transitions=true puts the transitions on the map perimeter", () => {
-    // A ruins dungeon would normally drop stairs in interior rooms;
+    // A dungeon would normally drop stairs in interior rooms;
     // forcing edge placement moves the up + down transitions to the
     // border band the edge-placer carves from.
     const record = makeRecord({
-      style: "ruins",
+      style: "dungeon",
       size: { width: 40, height: 30 },
       edge_transitions: true,
       levels: [
@@ -279,11 +297,11 @@ describe("generateDungeonFromRecord", () => {
     ).toBeLessThanOrEqual(1);
   });
 
-  it("edge_transitions=false (ruins default) keeps the entrance interior", () => {
+  it("edge_transitions=false (the default) keeps the entrance interior", () => {
     const record = makeRecord({
-      style: "ruins",
+      style: "dungeon",
       size: { width: 40, height: 30 },
-      // no edge_transitions → style default false
+      // no edge_transitions → default false
       levels: [{ id: "a", name: "A", depth: 1 }],
     });
     const [f0] = generateDungeonFromRecord(record, { seed: 9 });
@@ -333,24 +351,29 @@ describe("generateDungeonFromRecord", () => {
     );
   });
 
-  it("every non-bottom floor has a way DOWN — incl. small forest maps (regression)", () => {
-    // Regression: a forest descent archway is placed BEFORE doors,
+  it("every non-bottom floor has a way DOWN — incl. small edge-transition maps (regression)", () => {
+    // Regression: an edge-placed descent stair is placed BEFORE doors,
     // and its edge-carved trail looked like a corridor mouth to
-    // `placeDoors`, which overwrote the archway with a door — leaving
-    // small forest dungeons with no way to the next area. Sweep many
-    // seeds + sizes across both forest and a non-forest style and
-    // assert floor 0 of every 2-level dungeon carries a down-stair
-    // (TILE_STAIRS_DOWN or its forest archway equivalent).
-    const cases: Array<{ style: DungeonRecord["style"]; size: { width: number; height: number } }> = [
-      { style: "forest", size: { width: 30, height: 20 } }, // small
-      { style: "forest", size: { width: 40, height: 30 } }, // medium
-      { style: "caves", size: { width: 30, height: 20 } },
-      { style: "ruins", size: { width: 30, height: 20 } },
+    // `placeDoors`, which overwrote the stair with a door — leaving
+    // small dungeons with no way to the next area. Sweep many seeds +
+    // sizes across both styles and placements and assert floor 0 of
+    // every 2-level dungeon carries a down-stair.
+    const cases: Array<{
+      style: DungeonRecord["style"];
+      edge: boolean;
+      size: { width: number; height: number };
+    }> = [
+      { style: "dungeon", edge: true, size: { width: 30, height: 20 } }, // small
+      { style: "dungeon", edge: true, size: { width: 40, height: 30 } }, // medium
+      { style: "cavern", edge: true, size: { width: 30, height: 20 } },
+      { style: "dungeon", edge: false, size: { width: 30, height: 20 } },
+      { style: "cavern", edge: false, size: { width: 30, height: 20 } },
     ];
     for (const c of cases) {
       for (let seed = 1; seed <= 25; seed++) {
         const record = makeRecord({
           style: c.style,
+          edge_transitions: c.edge,
           size: c.size,
           torch_density: 0.1,
           locked_doors: 0,
@@ -360,12 +383,10 @@ describe("generateDungeonFromRecord", () => {
           ],
         });
         const [f0] = generateDungeonFromRecord(record, { seed });
-        const downs =
-          countTile(f0, TILE_STAIRS_DOWN) +
-          countTile(f0, TILE_FOREST_ARCHWAY_DOWN);
+        const downs = countTile(f0, TILE_STAIRS_DOWN);
         expect(
           downs,
-          `no down-stair: style=${c.style} ${c.size.width}x${c.size.height} seed=${seed}`,
+          `no down-stair: style=${c.style} edge=${c.edge} ${c.size.width}x${c.size.height} seed=${seed}`,
         ).toBeGreaterThanOrEqual(1);
       }
     }

@@ -34,11 +34,16 @@
 
 import {
   generateDungeonLevel,
+  normalizeDungeonStyle,
+  TILE_PIT,
   type DungeonLevel,
 } from "@/battle/world/Dungeon";
 import type { EncounterTemplate } from "@/battle/world/Encounters";
+import { TILE_DFLOOR } from "@/battle/world/Tiles";
 import {
+  clampDungeonSize,
   DUNGEON_DEFAULTS,
+  STYLE_DEFAULTS,
   type DungeonLevelRecord,
   type DungeonRecord,
   type ResolvedLevelOptions,
@@ -92,9 +97,11 @@ export function generateDungeonFromRecord(
 ): DungeonLevel[] {
   const totalFloors = record.levels?.length ?? 0;
   const out: DungeonLevel[] = [];
+  const pitFalls: boolean[] = [];
   for (let floorIdx = 0; floorIdx < totalFloors; floorIdx++) {
     const lvl = record.levels[floorIdx];
     const resolved = resolveLevelOptions(record, lvl, floorIdx);
+    pitFalls.push(resolved.pitFalls);
     const seed = (opts.seed + floorIdx) >>> 0;
     const raw = generateDungeonLevel({
       name: resolved.name,
@@ -118,14 +125,12 @@ export function generateDungeonFromRecord(
       doorProbability: resolved.doorFrequency,
       // Entrance/exit placement: edge of map vs interior rooms.
       edgeTransitions: resolved.edgeTransitions,
-      // Custom-style palette ids — recorded on the level for the
-      // converter to resolve to sprites; ignored for other styles.
-      customFloorId: resolved.style === "custom" ? resolved.customFloor : "",
-      customWallId: resolved.style === "custom" ? resolved.customWall : "",
-      customStairsUpId:
-        resolved.style === "custom" ? resolved.customStairsUp : "",
-      customStairsDownId:
-        resolved.style === "custom" ? resolved.customStairsDown : "",
+      // Pit frequency — 0 (the default) places none.
+      pitProbability: resolved.pitFrequency,
+      // Room clutter + the converter's cosmetic dials.
+      objectProbability: resolved.objectFrequency,
+      floorVariety: resolved.floorVariety,
+      wallDecor: resolved.wallDecor,
       // Encounters table + monster-difficulty lookup — when both
       // are present, the generator samples encounter rosters per
       // non-entrance room (the `encChance` roll inside
@@ -141,6 +146,56 @@ export function generateDungeonFromRecord(
       seed,
     });
     out.push(normaliseAuthoredHeight(raw, resolved.size.height));
+  }
+  // Pit falls: each pit on a floor that drops through gets a landing
+  // cell on the floor below (the bottom floor's pits stay solid).
+  for (let i = 0; i + 1 < out.length; i++) {
+    if (!pitFalls[i]) continue;
+    const landings = pitLandingsFor(out[i], out[i + 1]);
+    if (Object.keys(landings).length > 0) out[i].pitLandings = landings;
+  }
+  return out;
+}
+
+/**
+ * For every pit cell on `floor`, the open floor cell on `below` the
+ * party lands on when it falls in: the nearest plain floor cell to the
+ * same coordinates (Manhattan distance; ties → top-most, then
+ * left-most), never a monster's cell or the entry stairs. Deterministic,
+ * so a regenerated dungeon lands the party in the same place.
+ */
+export function pitLandingsFor(
+  floor: DungeonLevel,
+  below: DungeonLevel,
+): Record<string, [number, number]> {
+  const out: Record<string, [number, number]> = {};
+  const pits: Array<[number, number]> = [];
+  floor.tiles.forEach((row, r) =>
+    row.forEach((t, c) => {
+      if (t === TILE_PIT) pits.push([c, r]);
+    }),
+  );
+  if (pits.length === 0) return out;
+  const taken = new Set<string>(below.monsters.map((m) => `${m.col},${m.row}`));
+  taken.add(`${below.entryCol},${below.entryRow}`);
+  const candidates: Array<[number, number]> = [];
+  below.tiles.forEach((row, r) =>
+    row.forEach((t, c) => {
+      if (t === TILE_DFLOOR && !taken.has(`${c},${r}`)) candidates.push([c, r]);
+    }),
+  );
+  if (candidates.length === 0) return out;
+  for (const [pc, pr] of pits) {
+    let best = candidates[0];
+    let bestD = Infinity;
+    for (const cand of candidates) {
+      const d = Math.abs(cand[0] - pc) + Math.abs(cand[1] - pr);
+      if (d < bestD) {
+        bestD = d;
+        best = cand;
+      }
+    }
+    out[`${pc},${pr}`] = [best[0], best[1]];
   }
   return out;
 }
@@ -208,13 +263,22 @@ export function resolveLevelOptions(
   level: DungeonLevelRecord,
   floorIdx: number,
 ): ResolvedLevelOptions {
-  const style = level.style ?? parent.style ?? DUNGEON_DEFAULTS.style;
+  // Unknown / retired legacy styles ("caves", "ruins", "forest",
+  // "custom") on older records fall back to "dungeon".
+  const style = normalizeDungeonStyle(
+    level.style ?? parent.style ?? DUNGEON_DEFAULTS.style,
+  );
   const difficulty =
     level.difficulty ?? parent.difficulty ?? DUNGEON_DEFAULTS.difficulty;
   // Encounter theme: level override wins, else the parent's, else "" (no
   // restriction). Trimmed so a stray whitespace value reads as "any".
   const theme = (level.theme ?? parent.theme ?? DUNGEON_DEFAULTS.theme).trim();
-  const size = level.size ?? parent.size ?? DUNGEON_DEFAULTS.size;
+  // Clamped so a bad authored value (negative, zero, huge, fractional)
+  // still yields a playable floor instead of an undrawable map.
+  const size = clampDungeonSize(
+    level.size ?? parent.size,
+    DUNGEON_DEFAULTS.size,
+  );
   const torch_density =
     level.torch_density ?? parent.torch_density ?? DUNGEON_DEFAULTS.torch_density;
   const locked_doors =
@@ -234,24 +298,24 @@ export function resolveLevelOptions(
   const doorFrequency =
     level.doors ?? parent.doors ?? DUNGEON_DEFAULTS.doors;
   // Entrance/exit placement. Authored values (level→parent) win; absent
-  // falls back to the STYLE default — edge for forest, interior rooms
-  // for everything else — so untouched dungeons keep their look.
+  // → interior rooms.
   const edgeTransitions =
-    level.edge_transitions ?? parent.edge_transitions ?? (style === "forest");
-  // Custom palette ids — Level overrides parent. Only consulted when
-  // the resolved style is "custom"; empty otherwise.
-  const customFloor =
-    level.custom_floor ?? parent.custom_floor ?? DUNGEON_DEFAULTS.custom_floor;
-  const customWall =
-    level.custom_wall ?? parent.custom_wall ?? DUNGEON_DEFAULTS.custom_wall;
-  const customStairsUp =
-    level.custom_stairs_up ??
-    parent.custom_stairs_up ??
-    DUNGEON_DEFAULTS.custom_stairs_up;
-  const customStairsDown =
-    level.custom_stairs_down ??
-    parent.custom_stairs_down ??
-    DUNGEON_DEFAULTS.custom_stairs_down;
+    level.edge_transitions ?? parent.edge_transitions ?? false;
+  // Pit frequency inherits level→parent→default (0 = no pits).
+  const pitFrequency = level.pits ?? parent.pits ?? DUNGEON_DEFAULTS.pits;
+  const pitFalls =
+    level.pit_falls ?? parent.pit_falls ?? DUNGEON_DEFAULTS.pit_falls;
+  // Cosmetic dials: level → parent → the resolved style's default,
+  // clamped to 0–1.
+  const styleDefaults = STYLE_DEFAULTS[style];
+  const dial = (v: number | undefined, fb: number) =>
+    Math.min(1, Math.max(0, typeof v === "number" && Number.isFinite(v) ? v : fb));
+  const objectFrequency = dial(level.objects ?? parent.objects, styleDefaults.objects);
+  const floorVariety = dial(
+    level.floor_variety ?? parent.floor_variety,
+    styleDefaults.floor_variety,
+  );
+  const wallDecor = dial(level.wall_decor ?? parent.wall_decor, styleDefaults.wall_decor);
   return {
     name: level.name,
     id: level.id,
@@ -267,10 +331,11 @@ export function resolveLevelOptions(
     chestFrequency,
     doorFrequency,
     edgeTransitions,
-    customFloor,
-    customWall,
-    customStairsUp,
-    customStairsDown,
+    pitFrequency,
+    pitFalls,
+    objectFrequency,
+    floorVariety,
+    wallDecor,
   };
 }
 

@@ -29,8 +29,13 @@ export interface SimCell {
   /** True = tile emits light at light_range cells. */
   light_source: boolean;
   light_range: number;
-  /** Inter-map portal — null/undefined when this cell does not link. */
-  link?: { map_id: string; x: number; y: number } | null;
+  /** Inter-map portal — null/undefined when this cell does not link.
+   *  `fall` marks a dungeon pit drop-through: the host lands the party
+   *  at (x, y) on the floor below and applies fall damage. */
+  link?: { map_id: string; x: number; y: number; fall?: boolean } | null;
+  /** Pit / chasm cell — monsters never path onto it, even when it's a
+   *  walkable drop-through for the party. */
+  pit?: boolean;
   /** Pressure plate — null/undefined when this cell is not a plate.
    *  Stepping onto the cell TOGGLES the target cell's tile: the
    *  first press swaps `(map_id, col, row)` to the palette tile
@@ -323,7 +328,7 @@ export type StepResult =
       kind: "linked";
       col: number;
       row: number;
-      link: { map_id: string; x: number; y: number };
+      link: { map_id: string; x: number; y: number; fall?: boolean };
     };
 
 /** Position on the current map. */

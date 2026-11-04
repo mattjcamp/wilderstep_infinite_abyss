@@ -3,7 +3,7 @@ import { dungeonLevelToMap } from "./dungeonLevelToMap";
 import { TILE_CHEST, type DungeonLevel } from "@/battle/world/Dungeon";
 import { TILE_DFLOOR } from "@/battle/world/Tiles";
 
-/** Build a tiny 3×3 ruins floor with a single chest at (1,1) and the
+/** Build a tiny 3×3 dungeon floor with a single chest at (1,1) and the
  *  given `chestItem`. Only the fields the converter reads matter. */
 function chestFloor(chestItem: string): DungeonLevel {
   const F = TILE_DFLOOR;
@@ -21,7 +21,7 @@ function chestFloor(chestItem: string): DungeonLevel {
     tileProperties: {},
     entryCol: 0,
     entryRow: 0,
-    style: "ruins",
+    style: "dungeon",
     monsters: [],
     openedChests: new Set<string>(),
     triggeredTraps: new Set<string>(),
@@ -45,7 +45,7 @@ describe("dungeonLevelToMap — chest item binding", () => {
       dungeonId: "d",
       floorIdx: 0,
       totalFloors: 1,
-      customTileSprites: PALETTE,
+      paletteSprites: PALETTE,
     });
     const cell = map.grid[1][1];
     // The item binding is what routes the bump through the
@@ -63,7 +63,7 @@ describe("dungeonLevelToMap — chest item binding", () => {
       dungeonId: "d",
       floorIdx: 0,
       totalFloors: 1,
-      customTileSprites: PALETTE,
+      paletteSprites: PALETTE,
     });
     const cell = map.grid[1][1];
     expect(cell.item).toBe("");
@@ -77,7 +77,7 @@ describe("dungeonLevelToMap — chest item binding", () => {
       dungeonId: "d",
       floorIdx: 0,
       totalFloors: 1,
-      customTileSprites: PALETTE,
+      paletteSprites: PALETTE,
     });
     expect(map.grid[0][0].item).toBe("");
     expect(map.grid[1][1].item).toBe("iron_chest");

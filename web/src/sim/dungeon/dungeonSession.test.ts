@@ -23,7 +23,7 @@ function fakeLevel(name: string): DungeonLevel {
     tileProperties: {},
     entryCol: 0,
     entryRow: 0,
-    style: "ruins",
+    style: "dungeon",
     monsters: [],
     openedChests: new Set<string>(),
     triggeredTraps: new Set<string>(),

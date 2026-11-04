@@ -17,6 +17,9 @@
  *     sides → `dungeon_wall_divider`. Strips get the floor as their
  *     `background_sprite` so the transparent part reads as room.
  *   - Only a DIAGONAL floor (a room's outer corner) → face.
+ *   - Never two faces stacked: a wall directly above a face is the
+ *     wall's top surface, re-pieced from its sides — divider / strip
+ *     where floor is beside it, otherwise solid rock.
  *   - No floor around at all → solid rock (`dungeon_pit_centre`, a
  *     flat near-black), the classic roguelike void. Faces, corners
  *     and tees also get that black as their `background_sprite`, so
@@ -128,6 +131,21 @@ export function autotileDungeonWalls<C extends AutotileCell>(
         : w ? "right"
         : diag ? "faceTop"
         : "rock";
+    }
+  }
+
+  // Pass 1b — never stack two brick faces. In the 3/4 view a wall
+  // only shows its face once; a wall directly above another face is
+  // that wall's top surface (two rooms separated by a two-thick wall,
+  // or a thick wall ending beside open floor). Re-piece it from its
+  // side neighbours instead: floor on both sides → divider, on one
+  // side → that side's strip, none → solid rock. Bottom-up so each
+  // decision sees the final piece below it.
+  for (let r = h - 2; r >= 0; r--) {
+    for (let c = 0; c < grid[r].length; c++) {
+      if (piece[r][c] !== "faceTop" || piece[r + 1]?.[c] !== "faceTop") continue;
+      const e = open(r, c + 1), w = open(r, c - 1);
+      piece[r][c] = e && w ? "divider" : e ? "left" : w ? "right" : "rock";
     }
   }
 

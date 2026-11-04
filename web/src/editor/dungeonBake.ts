@@ -76,9 +76,8 @@ export interface BakeDungeonOptions extends GenerateFromRecordOptions {
    *  `maps[]` list from MapsBrowse. */
   existingMaps: ReadonlyArray<{ tags?: string[] }>;
   /** `map_tiles` palette id → sprite path. Forwarded to the converter
-   *  so a baked custom-style dungeon resolves its floor/wall sprites.
-   *  Omit for non-custom dungeons. */
-  customTileSprites?: ReadonlyMap<string, string>;
+   *  so the baked dungeon resolves its tileset sprites. */
+  paletteSprites?: ReadonlyMap<string, string>;
 }
 
 export interface BakeDungeonResult {
@@ -134,7 +133,7 @@ export function bakeDungeon(
       dungeonId: record.id,
       floorIdx: i,
       totalFloors,
-      customTileSprites: opts.customTileSprites,
+      paletteSprites: opts.paletteSprites,
     });
 
     // Rewrite stair links: synthetic neighbour-floor ids → real

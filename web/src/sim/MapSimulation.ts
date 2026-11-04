@@ -411,7 +411,7 @@ export type SimEvent =
       kind: "linked";
       from: Position;
       to: Position;
-      link: { map_id: string; x: number; y: number };
+      link: { map_id: string; x: number; y: number; fall?: boolean };
       /** True when the party crossed the portal while aboard a boat
        *  (the sail-onto-linked-water path). The host should mount the
        *  destination map with `initialOnBoat: true` + the matching
@@ -1982,7 +1982,8 @@ export class MapSimulation {
       // already adjacent) still triggers the encounter.
       const isWalkable = (c: number, r: number) => {
         const cell = cellAt(this.grid, c, r);
-        return cell !== null && cell.walkable;
+        // Monsters never step into a pit, even a drop-through one.
+        return cell !== null && cell.walkable && !cell.pit;
       };
       const isBlocked = (c: number, r: number) => occupied.has(`${c},${r}`);
       // Push-spell aura — same flee-over-pursue override the roamer
@@ -2188,7 +2189,7 @@ export class MapSimulation {
         existing: this.roamers,
         isWalkable: (c, r) => {
           const cell = cellAt(this.grid, c, r);
-          return cell !== null && cell.walkable;
+          return cell !== null && cell.walkable && !cell.pit;
         },
         rng: Math.random,
         spriteFor: (id) => this.monsterCatalog.get(id)?.sprite,
@@ -2229,7 +2230,8 @@ export class MapSimulation {
       // already adjacent) still triggers the encounter.
       const isWalkable = (c: number, r: number) => {
         const cell = cellAt(this.grid, c, r);
-        return cell !== null && cell.walkable;
+        // Monsters never step into a pit, even a drop-through one.
+        return cell !== null && cell.walkable && !cell.pit;
       };
       const isBlocked = (c: number, r: number) => occupied.has(`${c},${r}`);
       // Push-spell aura: a repelled roamer flees instead of pursuing
@@ -2423,7 +2425,7 @@ export class MapSimulation {
     ]);
     const isWalkable = (c: number, r: number) => {
       const cell = cellAt(this.grid, c, r);
-      return cell !== null && cell.walkable;
+      return cell !== null && cell.walkable && !cell.pit;
     };
     let moved = 0;
     const shove = (entity: { col: number; row: number }) => {

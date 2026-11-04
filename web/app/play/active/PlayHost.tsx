@@ -96,12 +96,12 @@ import {
   serialiseDungeonLevels,
   writeFloorMutations,
 } from "@/sim/dungeon/dungeonSession";
+import { applyPitFall } from "@/play/pitFall";
 import type { DungeonRecord } from "@/sim/dungeon/types";
 import type { DungeonLevel } from "@/battle/world/Dungeon";
 import {
   TILE_STAIRS_DOWN,
 } from "@/battle/world/Dungeon";
-import { TILE_FOREST_ARCHWAY_DOWN } from "@/battle/world/Tiles";
 import { dungeonSpriteKeys } from "@/sim/dungeon/tileMapping";
 import type { EncounterTemplate } from "@/battle/world/Encounters";
 import {
@@ -2057,7 +2057,27 @@ export function PlayHost() {
       const persistedRaw = cdInstanceId
         ? save.dungeons?.[cdInstanceId]
         : null;
-      if (cdRaw && cdInstanceId && persistedRaw && !dungeonStateRef.current) {
+      // A dungeon saved with an unusable floor (e.g. generated from a
+      // negative authored size before sizes were clamped) can't be
+      // drawn — restoring it leaves a blank screen. Drop it instead:
+      // the party resumes on the overworld at the dungeon entrance, and
+      // re-entering regenerates the floor from the (now clamped) record.
+      const persistedUsable =
+        !!persistedRaw &&
+        (persistedRaw.levels as ReadonlyArray<{ width?: number; height?: number }>).every(
+          (l) => (l.width ?? 0) > 0 && (l.height ?? 0) > 0,
+        );
+      if (cdRaw && cdInstanceId && persistedRaw && !persistedUsable) {
+        const { [cdInstanceId]: _broken, ...otherDungeons } = save.dungeons ?? {};
+        save = {
+          ...save,
+          party: { ...save.party, currentDungeon: undefined },
+          dungeons: otherDungeons,
+        };
+        saveWorld(save);
+        saveRef.current = save;
+        dungeonStateRef.current = null;
+      } else if (cdRaw && cdInstanceId && persistedRaw && !dungeonStateRef.current) {
         const hydratedLevels = hydrateDungeonLevels(
           persistedRaw.levels,
         ) as DungeonLevel[];
@@ -5697,7 +5717,7 @@ export function PlayHost() {
     /** Handle a link event from the kernel. Saves the current map's
      *  mutations + party position FIRST, then either teleports (same
      *  map) or bumps the reload key (cross-map). */
-    function handleLinked(link: { map_id: string; x: number; y: number }) {
+    function handleLinked(link: { map_id: string; x: number; y: number; fall?: boolean }) {
       const save = saveRef.current;
       if (!save) return;
       // ── Dungeon link handling ──────────────────────────────────────
@@ -5766,8 +5786,12 @@ export function PlayHost() {
             // dungeon, or an authored map that pre-dates this).
             const ascending = targetFloor < dungeonNow.floorIdx;
             const stairsDown = ascending ? findStairsDownCell(lvl) : null;
-            const landing =
-              stairsDown ?? { col: lvl.entryCol, row: lvl.entryRow };
+            // A pit drop-through carries its own landing cell (chosen
+            // by the generator: nearest open floor below the pit).
+            const fell = !!link.fall;
+            const landing = fell
+              ? { col: link.x, row: link.y }
+              : stairsDown ?? { col: lvl.entryCol, row: lvl.entryRow };
             dungeonStateRef.current = {
               ...dungeonNow,
               floorIdx: targetFloor,
@@ -5781,11 +5805,32 @@ export function PlayHost() {
             const snapshot = session
               ? snapshotDungeonForSave(session)
               : null;
+            // Falling hurts — every conscious member takes a little
+            // damage, never enough to knock them out.
+            const charNames = new Map(
+              (catalogRef.current?.characters ?? []).map((c) => [c.id, c.name]),
+            );
+            const fall = fell
+              ? applyPitFall(save.party.members, Math.random, (m) =>
+                  (m.custom as { name?: string } | null | undefined)?.name ??
+                  charNames.get(m.id) ??
+                  m.id,
+                )
+              : null;
+            if (fall && fall.lines.length > 0) {
+              setLogMessages((prev) => {
+                const nextLog = [...prev, ...fall.lines];
+                return nextLog.length > MAX_LOG
+                  ? nextLog.slice(nextLog.length - MAX_LOG)
+                  : nextLog;
+              });
+            }
             const next: WorldSave = {
               ...save,
               clockMinutes: clockRef.current,
               party: {
                 ...save.party,
+                members: fall ? fall.members : save.party.members,
                 currentDungeon: {
                   dungeonId: dungeonNow.dungeonId,
                   instanceId: dungeonNow.instanceId,
@@ -7667,10 +7712,9 @@ function resolveCustomArenaCells(
 
 /**
  * Locate the (col, row) of a level's "stairs-down" cell — either
- * the standard stone stairs or the forest archway equivalent.
+ * the standard stairs tile.
  * Returns null when the level doesn't carry one (e.g. the bottom
- * floor of a single-level dungeon, or one where the generator
- * placed the exit as an overworld archway). Used by the ascent
+ * floor of a single-level dungeon). Used by the ascent
  * branch in `handleLinked` so going up from floor N lands the
  * party on floor N-1's stairs-down — i.e. the spot they descended
  * from — rather than the floor's entrance.
@@ -7683,7 +7727,7 @@ function findStairsDownCell(
     if (!row) continue;
     for (let c = 0; c < row.length; c++) {
       const tid = row[c];
-      if (tid === TILE_STAIRS_DOWN || tid === TILE_FOREST_ARCHWAY_DOWN) {
+      if (tid === TILE_STAIRS_DOWN) {
         return { col: c, row: r };
       }
     }
@@ -7745,20 +7789,18 @@ function buildDungeonCatalog(
   dungeon: DungeonState,
 ): LoadedCatalog {
   const lvl = dungeon.levels[dungeon.floorIdx];
-  // Custom-style floors paint their walkable floor + wall cells from
-  // two `map_tiles` palette ids carried on the level (`customFloor` /
-  // `customWall`). The converter needs id → sprite to resolve them, so
-  // build that lookup from the module palette the loader already
-  // materialized. Harmless for non-custom styles (they ignore it).
-  const customTileSprites = new Map<string, string>();
+  // Every dungeon cell's art resolves through the module's `map_tiles`
+  // palette — build the id → sprite lookup the converter needs from the
+  // palette the loader already materialized.
+  const paletteSprites = new Map<string, string>();
   for (const tile of baseCatalog.palette) {
-    if (tile.id && tile.sprite) customTileSprites.set(tile.id, tile.sprite);
+    if (tile.id && tile.sprite) paletteSprites.set(tile.id, tile.sprite);
   }
   const dungeonMap = dungeonLevelToMap(lvl, {
     dungeonId: dungeon.dungeonId,
     floorIdx: dungeon.floorIdx,
     totalFloors: dungeon.levels.length,
-    customTileSprites,
+    paletteSprites,
   });
   const spriteByMonsterId = new Map(
     baseCatalog.monsters.map((m) => [m.id, m.sprite]),

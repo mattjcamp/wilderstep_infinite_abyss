@@ -14,8 +14,9 @@ import type {
   Difficulty as V1Difficulty,
 } from "@/battle/world/Dungeon";
 
-/** Visual / thematic family the generator uses to pick a tile
- *  palette and decor. Closed enum per docs/data_dictionary/dungeon.md. */
+/** Visual / thematic family the generator uses to pick a tileset —
+ *  `"dungeon"` or `"cavern"`. Closed enum per
+ *  docs/data_dictionary/dungeon.md. */
 export type DungeonStyle = V1DungeonStyle;
 
 /** Difficulty tier — shared with Monster's difficulty enum. */
@@ -73,24 +74,24 @@ export interface DungeonLevelRecord {
    *  doors always — so existing dungeons are unchanged). `0` = an open
    *  layout with no doorframes. */
   doors?: number;
+  /** 0–1 probability each room past the entrance gets a pit. Inherits
+   *  the parent's value when absent (which itself defaults to `0` — no
+   *  pits). */
+  pits?: number;
+  /** Pits drop the party to the floor below. Inherits; default `true`. */
+  pit_falls?: boolean;
+  /** 0–1 room clutter (pillars / stalagmites / rubble). Inherits;
+   *  default is the style's (see {@link STYLE_DEFAULTS}). */
+  objects?: number;
+  /** 0–1 share of floor using the tileset's alternate floors. */
+  floor_variety?: number;
+  /** 0–1 share of brick faces carrying a decoration. */
+  wall_decor?: number;
   /** When `true`, the floor's entrance + exit transitions are placed at
-   *  the map EDGE (carving a short trail inward, like the forest style);
-   *  when `false` they're dropped in the interior rooms (like caves /
-   *  ruins). Absent inherits the parent, which itself defaults to
-   *  edge-placement only for the `"forest"` style — so existing
-   *  dungeons are unchanged. */
+   *  the map EDGE (carving a short trail inward); when `false` they're
+   *  dropped in the interior rooms. Absent inherits the parent, which
+   *  itself defaults to interior rooms. */
   edge_transitions?: boolean;
-  /** `map_tiles` palette id for the walkable floor sprite. Only read
-   *  when the resolved `style` is `"custom"`. */
-  custom_floor?: string;
-  /** `map_tiles` palette id for the wall sprite (forced blocking +
-   *  sight-obstructing). Only read when `style` is `"custom"`. */
-  custom_wall?: string;
-  /** `map_tiles` palette id whose sprite renders the up / down floor
-   *  transitions ("stairs") in a `"custom"` dungeon — purely cosmetic,
-   *  the link + walkability are unchanged. Ignored for other styles. */
-  custom_stairs_up?: string;
-  custom_stairs_down?: string;
   /** Loot override — a Level inherits the parent's `loot` when this
    *  is absent. A partial object (e.g. only `chest_frequency`) merges
    *  field-by-field over the parent's. */
@@ -127,22 +128,31 @@ export interface DungeonRecord {
    *  `1` = doors always, preserving historical layouts). `0` = no
    *  doors. Applies to every style; Levels override per-floor. */
   doors?: number;
+  /** 0–1 probability each room past the entrance gets a pit (chasm).
+   *  Default `0` = no pits. Applies to every style; Levels override
+   *  per-floor. */
+  pits?: number;
+  /** When `true` (the default), stepping into a pit drops the party to
+   *  the floor below (light fall damage). `false` = solid chasms. Pits
+   *  on the bottom floor are always solid. */
+  pit_falls?: boolean;
+  /** 0–1 room clutter: pillars + rubble (dungeon), stalagmites +
+   *  rubble (cavern). At 1 about one open cell in ten gets an object.
+   *  Never blocks a route. Default: style's (cavern 0.5, dungeon 0). */
+  objects?: number;
+  /** 0–1 floor variety. Dungeon: the chance each room gets an
+   *  alternate floor (cobble, smooth, pebbles, brick, planks, grate).
+   *  Cavern: how much of the floor is gravel / rock / moss / sand /
+   *  slab / crystal patches. Default: style's (cavern 0.6, dungeon 0). */
+  floor_variety?: number;
+  /** 0–1 share of brick wall faces carrying a decoration — banners /
+   *  windows (dungeon), glowing cracks / crystal veins / webs (cavern).
+   *  Default 0. */
+  wall_decor?: number;
   /** Place entrance + exit transitions at the map edge (`true`) or in
    *  interior rooms (`false`). Applies to every style; Levels override
-   *  per-floor. Absent → the style default (edge only for `"forest"`),
-   *  so existing dungeons keep their current placement. */
+   *  per-floor. Absent → interior rooms. */
   edge_transitions?: boolean;
-  /** `map_tiles` palette id for the floor sprite when `style` is
-   *  `"custom"`. Ignored for other styles. */
-  custom_floor?: string;
-  /** `map_tiles` palette id for the wall sprite when `style` is
-   *  `"custom"`. Ignored for other styles. */
-  custom_wall?: string;
-  /** `map_tiles` palette ids for the up / down transition ("stairs")
-   *  sprites when `style` is `"custom"`. Cosmetic only. Levels override
-   *  per-floor. Ignored for other styles. */
-  custom_stairs_up?: string;
-  custom_stairs_down?: string;
   /** Default loot for every floor (Levels override per-floor). Absent
    *  → no procedural chests anywhere in the dungeon unless a Level
    *  sets its own `loot.chest_item`. */
@@ -190,26 +200,59 @@ export interface ResolvedLevelOptions {
    *  to {@link DUNGEON_DEFAULTS.doors} (`1`). */
   doorFrequency: number;
   /** Resolved entrance/exit placement: `true` = map edge, `false` =
-   *  interior rooms. The resolver fills the style-dependent default
-   *  (edge for `"forest"`, rooms otherwise). */
+   *  interior rooms (the default). */
   edgeTransitions: boolean;
-  /** `map_tiles` palette id for the floor sprite — only meaningful
-   *  when `style` is `"custom"`. Empty string otherwise. */
-  customFloor: string;
-  /** `map_tiles` palette id for the wall sprite — only meaningful when
-   *  `style` is `"custom"`. Empty string otherwise. */
-  customWall: string;
-  /** `map_tiles` palette ids for the up / down transition sprites —
-   *  only meaningful when `style` is `"custom"`. Empty otherwise. */
-  customStairsUp: string;
-  customStairsDown: string;
+  /** 0–1 chance each room past the entrance gets a pit. Defaults to
+   *  {@link DUNGEON_DEFAULTS.pits} (`0`). */
+  pitFrequency: number;
+  /** Whether pits drop through to the floor below. */
+  pitFalls: boolean;
+  /** Resolved 0–1 dials (level → parent → style default). */
+  objectFrequency: number;
+  floorVariety: number;
+  wallDecor: number;
+}
+
+/** Per-style defaults for the cosmetic dials, used when neither the
+ *  Level nor the Dungeon sets them. Caverns have always had patchy
+ *  floors and a scatter of stalagmites; these keep that look. */
+export const STYLE_DEFAULTS: Record<
+  DungeonStyle,
+  { objects: number; floor_variety: number; wall_decor: number }
+> = {
+  dungeon: { objects: 0, floor_variety: 0, wall_decor: 0 },
+  cavern: { objects: 0.5, floor_variety: 0.6, wall_decor: 0 },
+};
+
+/** Smallest / largest floor the generator will build. Below the
+ *  minimum there's no room for a usable rooms-and-corridors layout;
+ *  a non-positive size (a typo like `-40`) would produce a map the
+ *  play screen can't draw at all. */
+export const DUNGEON_SIZE_MIN = 12;
+export const DUNGEON_SIZE_MAX = 128;
+
+/** Coerce an authored size to whole numbers within
+ *  [DUNGEON_SIZE_MIN, DUNGEON_SIZE_MAX]. A missing / non-numeric side
+ *  falls back to `fallback`'s. */
+export function clampDungeonSize(
+  size: Partial<DungeonSize> | undefined,
+  fallback: DungeonSize,
+): DungeonSize {
+  const side = (v: unknown, fb: number): number => {
+    const n = typeof v === "number" && Number.isFinite(v) ? Math.round(v) : fb;
+    return Math.min(DUNGEON_SIZE_MAX, Math.max(DUNGEON_SIZE_MIN, n));
+  };
+  return {
+    width: side(size?.width, fallback.width),
+    height: side(size?.height, fallback.height),
+  };
 }
 
 /** Editor-default fallbacks used when a required parent field is
  *  missing on disk. Mirror `DungeonsBrowse.DEFAULTS` so newly-created
  *  records and older records degrade to the same baseline. */
 export const DUNGEON_DEFAULTS = {
-  style: "caves" as DungeonStyle,
+  style: "dungeon" as DungeonStyle,
   difficulty: "normal" as DungeonDifficulty,
   /** Encounter theme. Empty = any theme (no restriction). */
   theme: "",
@@ -218,15 +261,13 @@ export const DUNGEON_DEFAULTS = {
   locked_doors: 0.25,
   /** Door frequency defaults to `1` — every eligible room opening gets
    *  a door, the historical behaviour. Authors lower it per-dungeon for
-   *  open layouts (e.g. a doorless forest). */
+   *  open layouts. */
   doors: 1,
-  /** Custom-style palette ids. Empty by default; the editor requires
-   *  the author to pick real `map_tiles` ids when `style` is
-   *  `"custom"`. Empty transition ids keep the default stairs sprites. */
-  custom_floor: "",
-  custom_wall: "",
-  custom_stairs_up: "",
-  custom_stairs_down: "",
+  /** Pit frequency defaults to `0` — no pits — so existing dungeons
+   *  generate exactly as before. */
+  pits: 0,
+  /** Pits drop through to the floor below unless turned off. */
+  pit_falls: true,
   /** Loot defaults. `chest_item` is empty by design — chests are
    *  opt-in, so a brand-new dungeon places none until the author
    *  picks a chest item. `chest_frequency` is the fallback rate used

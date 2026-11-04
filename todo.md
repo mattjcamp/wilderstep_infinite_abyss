@@ -1,10 +1,8 @@
 ## Things to Fix
-- The chests that we have now don't do anything and were probably meant to be quest items. Figure out a way to add chests with random drops to game.
-- One room in the crystal skull dungeon has a wall you can walk through
-- Double check the random dungeons populate with monsters, figure out random chest drops
-- Fine tune random dungeons, add more incentives like extra exp for reaching the last floor. Brainstorm some big ideas for clearing a random dungeon. Make sure there are plenty of loot drops.
+
 - Remove any remaining unneeded sprites and tiles
 - Remove any legacy dungeon generators
+- Fine tune/repair random dungeon. No monsters appeared after the first level (check if that got fixed)
 
 ## Flesh Out Core
 - Fine tune core demo adventure

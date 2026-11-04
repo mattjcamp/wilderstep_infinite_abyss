@@ -6,7 +6,7 @@
  * Each cell of the input grid maps onto a `DungeonTilePrototype`
  * (see tileMapping.ts) which is deep-cloned and patched with
  * per-cell extras:
- *   - Stairs cells (up / down / forest archway) get a `link` field
+ *   - Stairs cells (up / down) get a `link` field
  *     pointing at a synthetic neighbour map id so the simulator's
  *     existing link traversal fires on step. The host wires the
  *     synthetic ids to the actual floor-swap behaviour.
@@ -20,29 +20,25 @@
  */
 
 import { autotileDungeonWalls } from "./dungeonAutotile";
-import {
-  TILE_FOREST_ARCHWAY_DOWN,
-  TILE_FOREST_ARCHWAY_UP,
-  TILE_WALL_TORCH,
-} from "@/battle/world/Tiles";
+import { TILE_WALL_TORCH } from "@/battle/world/Tiles";
 import {
   TILE_CHEST,
   TILE_DWALL,
   TILE_STAIRS,
   TILE_STAIRS_DOWN,
-  TILE_TRAP,
 } from "@/battle/world/Dungeon";
+import { TILE_DFLOOR } from "@/battle/world/Tiles";
 import {
-  TILE_DFLOOR,
-  TILE_PATH,
-  TILE_MOUNTAIN,
-} from "@/battle/world/Tiles";
-import type { DungeonLevel, DungeonStyle } from "@/battle/world/Dungeon";
+  normalizeDungeonStyle,
+  type DungeonLevel,
+  type DungeonStyle,
+} from "@/battle/world/Dungeon";
 import {
   prototypeForTileId,
   CHEST_PALETTE_ID,
   DUNGEON_TILESET_FLOOR_ID,
   CAVE_TILESET_FLOOR_ID,
+  PIT_PIECES,
   resolveDungeonSprite,
   type DungeonTilePrototype,
 } from "./tileMapping";
@@ -89,11 +85,9 @@ export interface DungeonLevelToMapOptions {
   totalFloors: number;
   /** `map_tiles` palette id → sprite path, built from the module's
    *  tile palette. Every cell's art resolves through it: each tile
-   *  prototype names a palette id (`paletteId`), and `style: "custom"`
-   *  floors additionally swap in the level's `customFloor` /
-   *  `customWall` / stairs palette ids. A missing id leaves that cell
-   *  without art (the renderer skips empty sprites). */
-  customTileSprites?: ReadonlyMap<string, string>;
+   *  prototype names a palette id (`paletteId`). A missing id leaves
+   *  that cell without art (the renderer skips empty sprites). */
+  paletteSprites?: ReadonlyMap<string, string>;
 }
 
 /** Convert one floor. The output grid is `[row][col]` to match the
@@ -103,31 +97,10 @@ export function dungeonLevelToMap(
   opts: DungeonLevelToMapOptions,
 ): DungeonMapRecord {
   const { dungeonId, floorIdx, totalFloors } = opts;
-  const style: DungeonStyle = level.style;
+  // Levels restored from older saves may carry a retired style name;
+  // those render with the default Dungeon Tileset.
+  const style: DungeonStyle = normalizeDungeonStyle(level.style);
   const grid: DungeonMapCell[][] = [];
-
-  // For custom-style floors, resolve the author's chosen palette ids to
-  // sprite paths once. The generator carved generic TILE_DFLOOR /
-  // TILE_DWALL, so every floor/wall cell below gets its sprite swapped
-  // to one of these and its walkability/sight flags FORCED (floor =
-  // walkable + transparent, wall = blocking + opaque) — that force is
-  // what guarantees a solvable, occlusion-correct layout regardless of
-  // the palette tile's own authored flags.
-  const isCustom = style === "custom";
-  const customFloorSprite = isCustom
-    ? opts.customTileSprites?.get(level.customFloor ?? "")
-    : undefined;
-  const customWallSprite = isCustom
-    ? opts.customTileSprites?.get(level.customWall ?? "")
-    : undefined;
-  // Cosmetic transition sprites — empty / unresolved keeps the default
-  // stairs art (the converter just doesn't override below).
-  const customStairsUpSprite = isCustom
-    ? opts.customTileSprites?.get(level.customStairsUp ?? "")
-    : undefined;
-  const customStairsDownSprite = isCustom
-    ? opts.customTileSprites?.get(level.customStairsDown ?? "")
-    : undefined;
 
   // The generator's tile grid carries a few "buffer" rows past the
   // declared height (see Dungeon.ts: `const BUFFER = 3;`). We respect
@@ -155,46 +128,10 @@ export function dungeonLevelToMap(
       // what the cell was supposed to be.
       const base: DungeonMapCell = proto
         ? cloneProto(proto)
-        : cloneProto(prototypeForTileId(0, style) ?? FALLBACK_WALL);
+        : cloneProto(prototypeForTileId(TILE_DWALL, style) ?? FALLBACK_WALL);
       // Art comes from the module's tile palette, never from a path
       // baked into the engine (see tileMapping.ts).
-      base.sprite = resolveDungeonSprite(base.paletteId, opts.customTileSprites);
-      // Custom-style palette swap. `lookupId` (not `tileId`) is used for
-      // the floor test so a chest cell — which renders on a floor base —
-      // also picks up the custom floor sprite under its chest overlay.
-      // Walls test `tileId` directly. Furniture (doors, stairs, chest
-      // overlay, traps) keeps its own sprite; the user opted to leave
-      // those alone. Flags are forced regardless of the palette tile's
-      // authored walkable/obstructs so the layout stays solvable.
-      if (isCustom) {
-        // Floor, chest-backdrop, AND concealed-trap cells all render on
-        // the custom floor sprite. A trap must look identical to the
-        // surrounding floor so it stays hidden until detected — the
-        // red-X reveal is drawn separately by WorldRenderer and keys off
-        // `trap` + detection state, which we preserve. This mirrors how
-        // `prototypeForTileId` paints a trap with the style's floor in
-        // caves/ruins/forest; for custom the "style floor" is the
-        // author's palette tile, which only the converter knows.
-        const isFloorBacked =
-          lookupId === TILE_DFLOOR ||
-          lookupId === TILE_PATH ||
-          lookupId === TILE_TRAP;
-        if (isFloorBacked) {
-          if (customFloorSprite) base.sprite = customFloorSprite;
-          base.walkable = true;
-          base.obstructs = false;
-        } else if (tileId === TILE_DWALL || tileId === TILE_MOUNTAIN) {
-          if (customWallSprite) base.sprite = customWallSprite;
-          base.walkable = false;
-          base.obstructs = true;
-        } else if (tileId === TILE_STAIRS && customStairsUpSprite) {
-          // Cosmetic only — `patchStairsLink` below still wires the
-          // up-link off `tileId`, and the cell stays walkable.
-          base.sprite = customStairsUpSprite;
-        } else if (tileId === TILE_STAIRS_DOWN && customStairsDownSprite) {
-          base.sprite = customStairsDownSprite;
-        }
-      }
+      base.sprite = resolveDungeonSprite(base.paletteId, opts.paletteSprites);
       // A trap that's already been triggered in this dungeon session
       // is just floor now — disarm the cell so it doesn't re-fire on
       // re-mount. The TRAP_PROTO already paints the floor sprite, so
@@ -210,8 +147,8 @@ export function dungeonLevelToMap(
         base.id = "chest";
         base.name = "Chest";
         base.placedItemSprite =
-          resolveDungeonSprite(CHEST_PALETTE_ID, opts.customTileSprites) ||
-          resolveDungeonSprite("chest", opts.customTileSprites);
+          resolveDungeonSprite(CHEST_PALETTE_ID, opts.paletteSprites) ||
+          resolveDungeonSprite("chest", opts.paletteSprites);
         // Bind the cell to the configured chest ITEM so the kernel's
         // bump pipeline fires `chest_encountered` (the item is
         // authored `is_chest: true`) and the party gets its real
@@ -249,12 +186,8 @@ export function dungeonLevelToMap(
     }
   }
 
-  // Tileset styles ("dungeon" / "cavern"): give every wall its
-  // directional piece from its neighbours. Runs after encounters are
-  // stamped so the cavern feature pass can keep clear of monsters.
-  if (style === "dungeon" || style === "cavern") {
-    applyTilesetStyle(grid, style, level, opts.customTileSprites, `${dungeonId}:${floorIdx}`);
-  }
+  // Tileset dressing — floors, pits, walls, decorations, backdrops.
+  applyTilesetStyle(grid, style, level, opts.paletteSprites, { dungeonId, floorIdx });
 
   return {
     id: floorMapId(dungeonId, floorIdx),
@@ -376,7 +309,7 @@ function patchStairsLink(
   totalFloors: number,
 ): void {
   // Up — exit to previous floor, or to overworld at floor 0.
-  if (tileId === TILE_STAIRS || tileId === TILE_FOREST_ARCHWAY_UP) {
+  if (tileId === TILE_STAIRS) {
     if (floorIdx === 0) {
       cell.link = { map_id: EXIT_TO_OVERWORLD_MAP_ID, x: 0, y: 0 };
     } else {
@@ -389,7 +322,7 @@ function patchStairsLink(
     return;
   }
   // Down — descend, or exit at the bottom of a multi-level dungeon.
-  if (tileId === TILE_STAIRS_DOWN || tileId === TILE_FOREST_ARCHWAY_DOWN) {
+  if (tileId === TILE_STAIRS_DOWN) {
     if (floorIdx >= totalFloors - 1) {
       cell.link = { map_id: EXIT_TO_OVERWORLD_MAP_ID, x: 0, y: 0 };
     } else {
@@ -403,9 +336,8 @@ function patchStairsLink(
   }
 }
 
-/** The generator's per-cell `tileProperties` overrides (today: forest
- *  tree-wall walkability flips) apply on top of the prototype's
- *  walkability default. Same field shape v1 used; we copy through. */
+/** The generator's per-cell `tileProperties` overrides apply on top of
+ *  the prototype's walkability default. Same field shape v1 used; we copy through. */
 function patchTileProperties(
   cell: DungeonMapCell,
   level: DungeonLevel,
@@ -450,6 +382,59 @@ function patchDecoration(
   }
 }
 
+/** Give every pit cell its rim piece from its 4 neighbours. Pits are
+ *  drawn as an overlay on the solid-black centre: a cell with open
+ *  floor to the north gets the top rim, north + west the top-left
+ *  corner, and so on; a fully enclosed cell is plain centre. A cell
+ *  open on two opposite sides (a 1-wide run) uses the self-contained
+ *  single-hole piece. The generator only carves rectangles ≥2×2 or
+ *  single cells, so that fallback is just a safety net. */
+function paintPits(
+  grid: DungeonMapCell[][],
+  prefix: "dungeon" | "cave",
+  sprites: ReadonlyMap<string, string> | undefined,
+): void {
+  const pitId = `${prefix}_pit`;
+  // Ids are only renamed after the scan, so every pit still reads as
+  // the generic `${prefix}_pit` here.
+  const isPit = (r: number, c: number) => grid[r]?.[c]?.id === pitId;
+  const centre = resolveDungeonSprite(`${prefix}_pit_centre`, sprites);
+  const pieces: Array<[number, number, string]> = [];
+  for (let r = 0; r < grid.length; r++) {
+    for (let c = 0; c < grid[r].length; c++) {
+      if (grid[r][c].id !== pitId) continue;
+      const n = !isPit(r - 1, c);
+      const s = !isPit(r + 1, c);
+      const w = !isPit(r, c - 1);
+      const e = !isPit(r, c + 1);
+      let piece: (typeof PIT_PIECES)[number];
+      if ((n && s) || (w && e)) piece = "pit";
+      else if (n && w) piece = "pit_corner_tl";
+      else if (n && e) piece = "pit_corner_tr";
+      else if (s && w) piece = "pit_corner_bl";
+      else if (s && e) piece = "pit_corner_br";
+      else if (n) piece = "pit_top";
+      else if (s) piece = "pit_bottom";
+      else if (w) piece = "pit_left";
+      else if (e) piece = "pit_right";
+      else piece = "pit_centre";
+      pieces.push([r, c, piece]);
+    }
+  }
+  // Paint after the scan so renamed ids don't confuse neighbour tests.
+  for (const [r, c, piece] of pieces) {
+    const cell = grid[r][c];
+    const paletteId = `${prefix}_${piece}`;
+    cell.id = paletteId;
+    cell.paletteId = paletteId;
+    cell.sprite = resolveDungeonSprite(paletteId, sprites) || centre;
+    // Rim pieces are transparent inside the lip — the black centre
+    // shows through as the drop.
+    if (piece !== "pit_centre" && centre) cell.background_sprite = centre;
+    else delete cell.background_sprite;
+  }
+}
+
 /** Small deterministic hash → [0, 1). Keeps tileset dressing (cave
  *  floor patches, stalagmites) stable for a given dungeon + floor, so
  *  re-entering a floor or re-baking it paints the same map. */
@@ -478,50 +463,138 @@ function patchNoise(seed: string, c: number, r: number, cell = 5): number {
   return a + (b - a) * sy;
 }
 
-/** Dungeon / Cave Tileset dressing + wall autotiling. */
+/** Floor variants per tileset. Dungeon variants are whole-room themes;
+ *  cavern variants are soft patches over the dirt. Weights skew the
+ *  pick toward the plainer floors. */
+const DUNGEON_ROOM_FLOORS: Array<[string, number]> = [
+  ["dungeon_floor_cobble", 3],
+  ["dungeon_floor_smooth", 3],
+  ["dungeon_floor_pebbles", 2],
+  ["dungeon_floor_brick", 2],
+  ["dungeon_floor_planks", 1],
+  ["dungeon_floor_grate", 1],
+];
+const CAVE_PATCH_FLOORS: Array<[string, number]> = [
+  ["cave_floor_gravel", 3],
+  ["cave_floor_rock", 3],
+  ["cave_floor_moss", 3],
+  ["cave_floor_sand", 2],
+  ["cave_floor_slab", 1],
+  ["cave_floor_crystal", 1],
+];
+/** Wall-face decorations per tileset — [palette id, weight, glows]. */
+const WALL_DECOR: Record<"dungeon" | "cave", Array<[string, number, boolean]>> = {
+  dungeon: [
+    ["dungeon_wall_banner", 2, false],
+    ["dungeon_wall_window", 1, false],
+  ],
+  cave: [
+    ["cave_wall_crack", 1, true],
+    ["cave_wall_crystals", 1, false],
+    ["cave_wall_webs", 1, false],
+  ],
+};
+
+/** Weighted pick from `list` with `u` in [0, 1). */
+function weighted<T extends [string, number, ...unknown[]]>(list: T[], u: number): T {
+  const total = list.reduce((sum, e) => sum + e[1], 0);
+  let x = u * total;
+  for (const e of list) {
+    x -= e[1];
+    if (x < 0) return e;
+  }
+  return list[list.length - 1];
+}
+
+/**
+ * Tileset dressing for both styles, in order:
+ *   1. Floor variety (`level.floorVariety`): dungeon rooms each roll
+ *      for an alternate floor; caverns get soft noise patches.
+ *   2. Pits get their rim pieces; pits with a landing below become
+ *      walkable drop-throughs linked to the next floor.
+ *   3. Walls are autotiled; thin strips take the floor beside them as
+ *      their backdrop so variant floors run right up to the wall.
+ *   4. Wall decorations (`level.wallDecor`) on plain brick faces.
+ *   5. Doors get the solid-rock backdrop; room objects get the floor
+ *      under them.
+ * Everything keyed off a stable hash of (dungeon, floor, cell), so a
+ * floor repaints identically every time it mounts.
+ */
 function applyTilesetStyle(
   grid: DungeonMapCell[][],
-  style: "dungeon" | "cavern",
+  style: DungeonStyle,
   level: DungeonLevel,
   sprites: ReadonlyMap<string, string> | undefined,
-  seed: string,
+  where: { dungeonId: string; floorIdx: number },
 ): void {
+  const seed = `${where.dungeonId}:${where.floorIdx}`;
   const cave = style === "cavern";
   const prefix = cave ? "cave" : "dungeon";
-  const floorId = cave ? CAVE_TILESET_FLOOR_ID : DUNGEON_TILESET_FLOOR_ID;
-  const floorSprite = resolveDungeonSprite(floorId, sprites);
+  const baseFloorId = cave ? CAVE_TILESET_FLOOR_ID : DUNGEON_TILESET_FLOOR_ID;
+  const floorSprite = resolveDungeonSprite(baseFloorId, sprites);
   const wallId = cave ? "cave_wall" : "dungeon_wall";
+  const variety = Math.min(1, Math.max(0, level.floorVariety ?? 0));
 
-  if (cave) {
-    // Floor patches — dirt with soft areas of gravel, bare rock and
-    // moss. Applied to every cell that renders on the floor (plain
-    // floor, concealed traps, chest bases) so a trap never shows up as
-    // a different-looking tile from the floor around it.
-    const variants: Array<[number, string]> = [
-      [0.42, CAVE_TILESET_FLOOR_ID],
-      [0.62, "cave_floor_gravel"],
-      [0.8, "cave_floor_rock"],
-      [1.01, "cave_floor_moss"],
-    ];
-    for (let r = 0; r < grid.length; r++) {
-      for (let c = 0; c < grid[r].length; c++) {
-        const cell = grid[r][c];
-        const floorBacked =
-          cell.id === CAVE_TILESET_FLOOR_ID || cell.trap || cell.id === "chest";
-        if (!floorBacked) continue;
-        const n = patchNoise(seed, c, r);
-        const id = variants.find(([t]) => n < t)![1];
-        const sprite = resolveDungeonSprite(id, sprites);
-        if (!sprite) continue;
-        cell.sprite = sprite;
-        if (cell.id === CAVE_TILESET_FLOOR_ID) {
-          cell.id = id;
-          cell.paletteId = id;
-        }
+  // ── 1. Floor variety ───────────────────────────────────────────
+  // `floorAt` is the floor palette id each open cell shows. Room
+  // objects and strip walls read it for their backdrop too.
+  const roomFloor: Array<string | null> = (level.rooms ?? []).map((_, i) => {
+    if (cave || variety <= 0) return null;
+    if (hash01(seed + ":room", i, 0) >= variety) return null;
+    return weighted(DUNGEON_ROOM_FLOORS, hash01(seed + ":roomfloor", i, 0))[0];
+  });
+  const floorAt = (c: number, r: number): string => {
+    if (cave) {
+      if (variety <= 0) return baseFloorId;
+      const n = patchNoise(seed, c, r);
+      if (n < 1 - variety) return baseFloorId;
+      // A second, coarser noise field picks WHICH patch floor, so each
+      // patch is one material with soft edges rather than a speckle.
+      return weighted(CAVE_PATCH_FLOORS, patchNoise(seed + ":kind", c, r, 7))[0];
+    }
+    const rooms = level.rooms ?? [];
+    for (let i = rooms.length - 1; i >= 0; i--) {
+      const rm = rooms[i];
+      if (c >= rm.x && c < rm.x + rm.w && r >= rm.y && r < rm.y + rm.h) {
+        return roomFloor[i] ?? baseFloorId;
+      }
+    }
+    return baseFloorId;
+  };
+  const floorSpriteAt = (c: number, r: number): string =>
+    resolveDungeonSprite(floorAt(c, r), sprites) || floorSprite;
+  for (let r = 0; r < grid.length; r++) {
+    for (let c = 0; c < grid[r].length; c++) {
+      const cell = grid[r][c];
+      // Plain floor, concealed traps and chest bases all render on the
+      // floor, so a trap never looks different from the floor around it.
+      const floorBacked = cell.id === baseFloorId || cell.trap || cell.id === "chest";
+      if (!floorBacked) continue;
+      const id = floorAt(c, r);
+      if (id === baseFloorId) continue;
+      const sprite = resolveDungeonSprite(id, sprites);
+      if (!sprite) continue;
+      cell.sprite = sprite;
+      if (cell.id === baseFloorId) {
+        cell.id = id;
+        cell.paletteId = id;
       }
     }
   }
 
+  // ── 2. Pits ────────────────────────────────────────────────────
+  paintPits(grid, prefix, sprites);
+  if (level.pitLandings) {
+    for (const [key, [lc, lr]] of Object.entries(level.pitLandings)) {
+      const [c, r] = key.split(",").map(Number);
+      const cell = grid[r]?.[c];
+      if (!cell?.pit) continue;
+      cell.walkable = true;
+      cell.link = { map_id: floorMapId(where.dungeonId, where.floorIdx + 1), x: lc, y: lr, fall: true };
+    }
+  }
+
+  // ── 3. Walls ───────────────────────────────────────────────────
   autotileDungeonWalls(grid, {
     isWall: (cell) => cell.id === wallId || cell.id === "wall_torch",
     sprites,
@@ -529,59 +602,61 @@ function applyTilesetStyle(
     keepId: (cell) => cell.id === "wall_torch",
     tileset: cave ? "cave" : "dungeon",
   });
+  // Strips are drawn over the floor beside them — use that cell's
+  // (possibly variant) floor rather than the base one.
+  const leftStrip = `${prefix}_wall_left`;
+  const rightStrip = `${prefix}_wall_right`;
+  for (let r = 0; r < grid.length; r++) {
+    for (let c = 0; c < grid[r].length; c++) {
+      const cell = grid[r][c];
+      if (cell.id === leftStrip) cell.background_sprite = floorSpriteAt(c + 1, r);
+      else if (cell.id === rightStrip) cell.background_sprite = floorSpriteAt(c - 1, r);
+    }
+  }
 
-  // Doors are drawn as part of the wall face — back them with the
-  // solid-rock black so their transparent corners match.
-  const rock = resolveDungeonSprite(`${prefix}_pit_centre`, sprites);
-  if (rock) {
-    for (const row of grid) {
-      for (const cell of row) {
-        if (cell.id === `${prefix}_door` || cell.id === "door_locked") {
-          cell.background_sprite = rock;
+  // ── 4. Wall decorations ────────────────────────────────────────
+  const decor = Math.min(1, Math.max(0, level.wallDecor ?? 0));
+  if (decor > 0) {
+    const face = `${prefix}_wall_top`;
+    const isDoorish = (cell: DungeonMapCell | undefined) =>
+      !!cell && (cell.id === `${prefix}_door` || cell.id === "door_locked");
+    const decorated = new Set<string>();
+    for (let r = 0; r < grid.length; r++) {
+      for (let c = 0; c < grid[r].length; c++) {
+        const cell = grid[r][c];
+        if (cell.id !== face) continue;
+        // Only faces looking onto open floor, never right beside a door
+        // or another decoration, and at most ~30% of faces at full dial.
+        const below = grid[r + 1]?.[c];
+        if (!below?.walkable) continue;
+        if (isDoorish(grid[r][c - 1]) || isDoorish(grid[r][c + 1])) continue;
+        if (decorated.has(`${c - 1},${r}`)) continue;
+        if (hash01(seed + ":decor", c, r) >= 0.3 * decor) continue;
+        const [id, , glows] = weighted(WALL_DECOR[cave ? "cave" : "dungeon"], hash01(seed + ":decorkind", c, r));
+        const sprite = resolveDungeonSprite(id, sprites);
+        if (!sprite) continue;
+        cell.id = id;
+        cell.paletteId = id;
+        cell.sprite = sprite;
+        if (glows) {
+          cell.light_source = true;
+          cell.light_range = 3;
         }
+        decorated.add(`${c},${r}`);
       }
     }
   }
 
-  if (!cave) return;
-  // Cave features — a sparse scatter of stalagmites and rubble. Only
-  // on a plain floor cell whose 8 neighbours are ALL plain floor, so a
-  // feature can never block a corridor, a doorway, stairs or a
-  // monster, and two features never touch. Never on the entry cell.
-  const plain = (cell: DungeonMapCell | undefined) =>
-    !!cell &&
-    cell.walkable &&
-    cell.id.startsWith("cave_floor_") &&
-    !cell.trap &&
-    !cell.encounter &&
-    !cell.item &&
-    !cell.link;
-  const stal = resolveDungeonSprite("cave_stalagmite", sprites);
-  const rubble = resolveDungeonSprite("cave_rubble", sprites);
-  for (let r = 1; r < grid.length - 1; r++) {
-    for (let c = 1; c < grid[r].length - 1; c++) {
+  // ── 5. Backdrops: doors on solid rock, objects on their floor ──
+  const rock = resolveDungeonSprite(`${prefix}_pit_centre`, sprites);
+  for (let r = 0; r < grid.length; r++) {
+    for (let c = 0; c < grid[r].length; c++) {
       const cell = grid[r][c];
-      if (!plain(cell)) continue;
-      if (c === level.entryCol && r === level.entryRow) continue;
-      let open = true;
-      for (let dr = -1; dr <= 1 && open; dr++) {
-        for (let dc = -1; dc <= 1; dc++) {
-          if ((dr || dc) && !plain(grid[r + dr]?.[c + dc])) { open = false; break; }
-        }
+      if (rock && (cell.id === `${prefix}_door` || cell.id === "door_locked")) {
+        cell.background_sprite = rock;
+      } else if (cell.object) {
+        cell.background_sprite = floorSpriteAt(c, r);
       }
-      if (!open) continue;
-      const roll = hash01(seed + ":feature", c, r);
-      if (roll >= 0.05) continue;
-      const isStal = roll < 0.035;
-      const sprite = isStal ? stal : rubble;
-      if (!sprite) continue;
-      cell.background_sprite = cell.sprite; // the floor under it
-      cell.sprite = sprite;
-      cell.id = isStal ? "cave_stalagmite" : "cave_rubble";
-      cell.name = isStal ? "Cave Stalagmite" : "Cave Rubble";
-      cell.walkable = false;
-      // Stalagmites block sight like a pillar; rubble is low.
-      cell.obstructs = isStal;
     }
   }
 }
