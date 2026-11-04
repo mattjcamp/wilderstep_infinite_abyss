@@ -40,6 +40,7 @@
  * non-keyboard fallback while the Phaser equivalent is built.
  */
 
+import { isPartyEffectActive } from "@/play/partyEffects";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { xpProgressInLevel as levelingXpProgress } from "@/battle/world/Leveling";
 import type { EquipSource } from "@/play/equipFromInventory";
@@ -611,13 +612,19 @@ export function PartyScreen({
   // omitted entirely — the player shouldn't see options they can't
   // use. The list is dynamic; there's no fixed slot count.
   const effectRows: EffectRow[] = useMemo(() => {
+    // A timed effect (one with a step counter — Light, Torch, Push's
+    // repel) is on only while its counter runs. The id can linger in
+    // `party_effects` after it burns out (the save reconciles on the
+    // next checkpoint), so the counter wins: at 0 the row reads as off.
+    const isActive = (id: string): boolean =>
+      isPartyEffectActive(id, activeEffectIds, effectDurations);
     const rows: EffectRow[] = abilities
       .filter((a) => a.party_effect === true && unlocked.has(a.id))
       .map((a) => ({
         kind: "effect" as const,
         ability: a,
         available: true,
-        active: activeEffectIds.includes(a.id),
+        active: isActive(a.id),
         durationSteps:
           effectDurations && effectDurations.get(a.id)
             ? effectDurations.get(a.id)
@@ -632,7 +639,9 @@ export function PartyScreen({
     // Effects list.
     const existingIds = new Set(rows.map((r) => r.ability.id));
     const extraIds = new Set<string>();
-    for (const id of activeEffectIds) if (!existingIds.has(id)) extraIds.add(id);
+    for (const id of activeEffectIds) {
+      if (!existingIds.has(id) && isActive(id)) extraIds.add(id);
+    }
     if (effectDurations) {
       for (const [id, steps] of effectDurations) {
         if (steps > 0 && !existingIds.has(id)) extraIds.add(id);
@@ -648,7 +657,7 @@ export function PartyScreen({
           party_effect: true,
         },
         available: true,
-        active: activeEffectIds.includes(id) || (dur ?? 0) > 0,
+        active: isActive(id),
         durationSteps: dur && dur > 0 ? dur : undefined,
       });
     }

@@ -54,7 +54,7 @@
       "name": "Test2",
       "description": "A test dungeon",
       "tags": [],
-      "style": "cavern",
+      "style": "dungeon",
       "difficulty": "normal",
       "size": {
         "width": 32,
@@ -66,15 +66,20 @@
         {
           "id": "test2_l1",
           "name": "Level 1",
-          "depth": 1
+          "depth": 1,
+          "style": "dungeon"
         },
         {
           "id": "test2_l2",
           "name": "Level 2",
-          "depth": 2
+          "depth": 2,
+          "pits": 0,
+          "style": "cavern"
         }
       ],
-      "pits": 1
+      "pits": 1,
+      "wall_decor": 1,
+      "floor_variety": 0
     }
   ]
 }

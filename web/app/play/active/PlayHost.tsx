@@ -97,6 +97,7 @@ import {
   writeFloorMutations,
 } from "@/sim/dungeon/dungeonSession";
 import { applyPitFall } from "@/play/pitFall";
+import { reconcilePartyEffects } from "@/play/partyEffects";
 import type { DungeonRecord } from "@/sim/dungeon/types";
 import type { DungeonLevel } from "@/battle/world/Dungeon";
 import {
@@ -2314,6 +2315,12 @@ export function PlayHost() {
           torch_steps: snap.party.torch_steps,
           magic_light_steps: snap.party.magic_light_steps ?? 0,
           repel_monsters_steps: snap.party.repel_monsters_steps ?? 0,
+          // Drop timed effects that burnt out underground too, so the
+          // Party screen doesn't keep showing them as on.
+          party_effects: reconcilePartyEffects(
+            save.party.party_effects ?? [],
+            snap.party,
+          ),
           currentDungeon: {
             dungeonId: dungeonNow.dungeonId,
             instanceId: dungeonNow.instanceId,
@@ -2360,25 +2367,10 @@ export function PlayHost() {
     // screen no longer renders the effect as active. Toggle-only
     // effects (Infravision) stay in lockstep with their own flag
     // since the user explicitly turns those off.
-    const partyEffects: string[] = [];
-    for (const id of save.party.party_effects ?? []) {
-      if (id === "magic_light" && (snap.party.magic_light_steps ?? 0) <= 0) {
-        continue; // Cleric's Light burnt out
-      }
-      if (
-        id === "repel_monsters" &&
-        (snap.party.repel_monsters_steps ?? 0) <= 0
-      ) {
-        continue; // Push's repelling force faded
-      }
-      if (id === "torch" && snap.party.torch_steps <= 0) {
-        continue; // Torch burnt out — drop from the Effects panel
-      }
-      if (id === "infravision" && !snap.party.infravision_active) {
-        continue; // disengaged — keep the two in lockstep
-      }
-      partyEffects.push(id);
-    }
+    const partyEffects = reconcilePartyEffects(
+      save.party.party_effects ?? [],
+      snap.party,
+    );
 
     const next: WorldSave = {
       ...save,
