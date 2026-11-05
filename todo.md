@@ -1,3 +1,9 @@
+## Demo
+- Flesh out demo a little bit more: add townspeople, home interiors
+
+# Ideas
+- Add Quest Complete reward of "teleporting to new map" to accommodate things like guild quests where you go to a new and maybe secret location
+
 ## Improve UI
 - Put updated graphics into manuals, markdown and github
 

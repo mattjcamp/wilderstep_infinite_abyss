@@ -14,12 +14,12 @@ An Ultima III  and D&D inspired top-down, turn-based RPG built with TypeScript a
 
 <table>
 <tr>
-<td align="center"><img src="docs/blog/v1/Screenshot 2026-05-29 at 9.01.40 PM.png" width="400" alt="Town exploration"></td>
-<td align="center"><img src="docs/blog/v1/Screenshot 2026-05-29 at 9.02.27 PM.png" width="400" alt="Overworld map"></td>
+<td align="center"><img src="docs/blog/v1/1.png" width="400" alt="Town exploration"></td>
+<td align="center"><img src="docs/blog/v1/2.png" width="400" alt="Overworld map"></td>
 </tr>
 <tr>
-<td align="center"><img src="docs/blog/v1/Screenshot 2026-05-29 at 9.03.21 PM.png" width="400" alt="Town exploration"></td>
-<td align="center"><img src="docs/blog/v1/Screenshot 2026-05-29 at 9.06.49 PM.png" width="400" alt="Overworld map"></td>
+<td align="center"><img src="docs/blog/v1/3.png" width="400" alt="Town exploration"></td>
+<td align="center"><img src="docs/blog/v1/4.png" width="400" alt="Overworld map"></td>
 </tr>
 </table>
 
