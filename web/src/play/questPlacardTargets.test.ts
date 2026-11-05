@@ -19,7 +19,7 @@ function step(over: Partial<QuestStep>): QuestStep {
     count: 1,
     itemId: "",
     positions: [],
-    rewards: { items: [], returnItems: [], tileAdds: [] },
+    rewards: { items: [], returnItems: [], tileAdds: [], travel: null },
     ...over,
   };
 }
@@ -32,7 +32,7 @@ function quest(id: string, name: string, steps: QuestStep[]): QuestDef {
     tags: [],
     steps,
     questGiver: { npcName: "", npcSprite: "", startDialog: "", endDialog: "" },
-    rewards: { xp: 0, gold: 0, items: [], tileAdds: [] },
+    rewards: { xp: 0, gold: 0, items: [], tileAdds: [], travel: null },
   };
 }
 

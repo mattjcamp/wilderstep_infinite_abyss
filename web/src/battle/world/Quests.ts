@@ -192,6 +192,26 @@ export interface RewardTileAddOp {
   tile_id: string;
 }
 
+/** A `travel` reward — the quest giver sends the party to a specific
+ *  cell on a map. The classic use is a hidden map with no links into
+ *  it: the only way in is to earn the trip ("Take this chart — it
+ *  leads to the Sunken Vault"). The host shows an announcement
+ *  placard (giver name, destination, optional {@link message}) and
+ *  moves the party when the player clicks Travel. The party arrives
+ *  on foot; if they were inside a generated dungeon it is exited
+ *  (state saved) first. Authors are responsible for giving the
+ *  destination map a way back out (a link tile, a later travel
+ *  reward, …). JSON key: `travel`. */
+export interface RewardTravel {
+  /** Destination map id (maps.json). */
+  map: string;
+  col: number;
+  row: number;
+  /** Optional line the giver says on the announcement placard. Empty
+   *  string = the placard's generic "sends you to …" copy only. */
+  message: string;
+}
+
 /** The v2 `rewards` envelope. */
 export interface QuestRewards {
   xp: number;
@@ -204,6 +224,9 @@ export interface QuestRewards {
    *  persisted into save.maps[mapId].tileOverrides so the mutation
    *  survives reload + re-entry. */
   tileAdds: RewardTileAddOp[];
+  /** Send the party to a map cell at turn-in, after the other
+   *  rewards land. Null when not authored. See {@link RewardTravel}. */
+  travel: RewardTravel | null;
 }
 
 /** A step-scoped rewards envelope. Mirrors {@link QuestRewards} but
@@ -240,6 +263,11 @@ export interface QuestStepRewards {
    *  survives reload + re-entry, and applied to the live grid when
    *  the player is on the affected map at completion time. */
   tileAdds: RewardTileAddOp[];
+  /** Send the party to a map cell the moment the step completes.
+   *  Pair with a `meet` step on the giver for a mid-quest "report
+   *  back and get sent somewhere" beat. Null when not authored. See
+   *  {@link RewardTravel}. */
+  travel: RewardTravel | null;
 }
 
 /** Builder for an empty {@link QuestStepRewards} payload. Used as the
@@ -247,7 +275,7 @@ export interface QuestStepRewards {
  *  callers can read `step.rewards.items` / `step.rewards.tileAdds`
  *  without an undefined guard. */
 function emptyStepRewards(): QuestStepRewards {
-  return { items: [], returnItems: [], tileAdds: [] };
+  return { items: [], returnItems: [], tileAdds: [], travel: null };
 }
 
 export interface QuestDef {
@@ -348,6 +376,15 @@ interface RawRewards {
   /** v2 quests.json: list of cells to paint with a named palette
    *  tile on quest turn-in. */
   tile_add?: RawRewardTileAddOp[];
+  travel?: RawRewardTravel | null;
+}
+
+/** Raw shape of a `travel` reward (quest- or step-scoped). */
+interface RawRewardTravel {
+  map?: string;
+  col?: number | string;
+  row?: number | string;
+  message?: string;
 }
 
 /** Raw shape of a step-level `rewards` block. Same key conventions
@@ -359,6 +396,7 @@ interface RawStepRewards {
    *  "Return Item" feature. See {@link QuestStepRewards.returnItems}. */
   return_items?: unknown;
   tile_add?: RawRewardTileAddOp[];
+  travel?: RawRewardTravel | null;
 }
 
 interface RawQuest {
@@ -422,6 +460,21 @@ function parseTileAdds(raw: unknown): RewardTileAddOp[] {
   return out;
 }
 
+/** Parse a `travel` reward. Returns null when absent or malformed
+ *  (missing map id, non-finite / negative coords) so a hand-edited
+ *  typo never crashes a load or sends the party somewhere broken. */
+export function parseTravel(raw: unknown): RewardTravel | null {
+  if (!raw || typeof raw !== "object") return null;
+  const o = raw as RawRewardTravel;
+  const map = typeof o.map === "string" ? o.map.trim() : "";
+  const col = coerceInt(o.col);
+  const row = coerceInt(o.row);
+  if (!map || col === undefined || row === undefined) return null;
+  if (col < 0 || row < 0) return null;
+  const message = typeof o.message === "string" ? o.message.trim() : "";
+  return { map, col, row, message };
+}
+
 /** Parse an authored `positions` array out of raw step JSON. Entries
  *  missing finite col/row coerce out silently — a hand-edited typo
  *  shouldn't crash the load — and the result is always a fresh,
@@ -453,7 +506,12 @@ function parseStepRewards(raw: RawStepRewards | null | undefined): QuestStepRewa
   const returnItems = Array.isArray(raw.return_items)
     ? raw.return_items.filter((s): s is string => typeof s === "string")
     : [];
-  return { items, returnItems, tileAdds: parseTileAdds(raw.tile_add) };
+  return {
+    items,
+    returnItems,
+    tileAdds: parseTileAdds(raw.tile_add),
+    travel: parseTravel(raw.travel),
+  };
 }
 
 function stepFromRaw(raw: RawQuestStep): QuestStep | null {
@@ -547,6 +605,7 @@ function fromRaw(raw: RawQuest): QuestDef | null {
       ? rewardsRaw.items.filter((s): s is string => typeof s === "string")
       : [],
     tileAdds,
+    travel: parseTravel(rewardsRaw?.travel),
   };
 
   return {
@@ -982,6 +1041,7 @@ function snapshotStepRewards(rewards: QuestStepRewards): QuestStepRewards {
     items: [...rewards.items],
     returnItems: [...rewards.returnItems],
     tileAdds: rewards.tileAdds.map((op) => ({ ...op })),
+    travel: rewards.travel ? { ...rewards.travel } : null,
   };
 }
 
@@ -1252,6 +1312,9 @@ export interface QuestRewardClaim {
   /** Cells the host must paint with the named palette tile on the
    *  named map. Empty when the quest didn't author any. */
   tileAdds: ReadonlyArray<RewardTileAddOp>;
+  /** Where the giver sends the party once the other rewards land.
+   *  Null when the quest didn't author a travel reward. */
+  travel: RewardTravel | null;
 }
 
 /**
@@ -1286,6 +1349,7 @@ export function claimQuestRewards(
     gold: def.rewards.gold,
     items: [...def.rewards.items],
     tileAdds: [...def.rewards.tileAdds],
+    travel: def.rewards.travel ? { ...def.rewards.travel } : null,
   };
 }
 

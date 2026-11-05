@@ -1,0 +1,209 @@
+{
+  "quests": [
+    {
+      "id": "the_crystal_skull",
+      "name": "The Crystal Skull",
+      "description": "Undead haunt the land, because the Deep Ones's crystal skull has been stone and hidden deep in the mountains to the East.",
+      "tags": [],
+      "steps": [
+        {
+          "id": "the_crystal_skull_step_2",
+          "name": "Step 2 Find the Crystal Skull",
+          "kind": "retrieve",
+          "item_id": "crystal_skull",
+          "location_kind": "map",
+          "map_id": "dungeon_2",
+          "col": 14,
+          "row": 8,
+          "description": "Find the Crystal Skull hidden in the wizards maze"
+        }
+      ],
+      "quest_giver": {
+        "npc_name": "Gareth",
+        "npc_sprite": "person/person_male_villager_wealthy.png",
+        "start_dialog": "Please fine adventures, the undead haunt our lands because the stupid Guild of Sorcerers has stolen the Crystal Skull and hid it deep in the mountains to the East. Please retrieve the Skull and give it back to the Deep Ones. Once the Skull is back in the hands of our masters, our dead can rest again.",
+        "end_dialog": "Glad to see you have return and now our deceased friends and family can rest with The Deep One"
+      },
+      "return_to_giver": true
+    },
+    {
+      "id": "the_wandering_corpse",
+      "name": "The Wandering Corpse",
+      "description": "The town's dead will not stay in their resting places, and it is up to you to put them to rest",
+      "tags": [],
+      "steps": [
+        {
+          "id": "the_wandering_corpse_step_1",
+          "name": "Step 1",
+          "kind": "kill",
+          "encounter_id": "restless_dead",
+          "count": 2,
+          "location_kind": "map",
+          "map_id": "town_1",
+          "description": "Put the Town's love ones... to rest"
+        },
+        {
+          "id": "the_wandering_corpse_step_2",
+          "name": "Step 2",
+          "kind": "kill",
+          "encounter_id": "ghosts",
+          "location_kind": "map",
+          "map_id": "town_1",
+          "positions": [
+            {
+              "col": 3,
+              "row": 2
+            }
+          ],
+          "description": "Send the last ghost back to the spirit world"
+        }
+      ],
+      "quest_giver": {
+        "npc_name": "Earnest",
+        "npc_sprite": "person/person_male_cleric.png",
+        "start_dialog": "The town's dead will not stay in their resting places, can you please channel their spirits and put them to rest?",
+        "end_dialog": "Thank you for your service to The Deep One"
+      },
+      "rewards": {
+        "xp": 200,
+        "gold": 200
+      },
+      "return_to_giver": true
+    },
+    {
+      "id": "the_giant_bats",
+      "name": "Bats in the Inn",
+      "description": "The inn has become infested with Giant Bats",
+      "tags": [],
+      "steps": [
+        {
+          "id": "the_giant_bats_step_1",
+          "name": "Step 1",
+          "kind": "kill",
+          "encounter_id": "giant_bats",
+          "location_kind": "map",
+          "map_id": "shop_4",
+          "count": 2,
+          "description": "Remove the bats from the Inn"
+        }
+      ],
+      "quest_giver": {
+        "npc_name": "Leanna",
+        "npc_sprite": "person/person_female_villager_wealthy.png",
+        "start_dialog": "Burp! Please sirs. madams. Ummm, gnomes? Doesn't matter.... But, please, I'm begging you! The Inn is infested by giant bats and I need to get my mead on. Can you please remove the pests. I will be eternally in your debt!",
+        "end_dialog": "Thanks for the peace"
+      },
+      "rewards": {
+        "xp": 50,
+        "gold": 50
+      },
+      "return_to_giver": true
+    },
+    {
+      "id": "avengers",
+      "name": "The Avengers",
+      "description": "Your family and people have been destroyed by the Orc King. You have nothing left, except a desire for revenge. You will be able to rest soon, but not until you have your revenge on the Orc King. Gather your strength. Build your arsenal. Destroy the Orc Kingdom.",
+      "tags": [],
+      "steps": [
+        {
+          "id": "avengers_step_1",
+          "name": "Step 1 Reach Willowbrook",
+          "kind": "discover",
+          "location_kind": "map",
+          "map_id": "town_1",
+          "description": "Reach the nearby town of Willowbrook to recover, gather your strength and gain enough energy to bring the fight to the Orc King. The path may not be direct, but after many adventures you will be ready to get your revenge.",
+          "col": 11,
+          "row": 22,
+          "rewards": {}
+        },
+        {
+          "id": "avengers_step_2",
+          "name": "Step 2 Enter the Orc King's Tower",
+          "kind": "discover",
+          "location_kind": "map",
+          "map_id": "orc_kings_tower",
+          "col": 15,
+          "row": 30,
+          "description": "When you are ready, seek out the Orc King's tower. Be wary, and do not attempt this breach without a well rested and experienced group of hardy folk that you can trust with your life"
+        },
+        {
+          "id": "avengers_step_3",
+          "name": "Step 3 Kill the Orc King",
+          "kind": "kill",
+          "description": "Seek out the Orc King at the top of his tower and destroy him",
+          "encounter_id": "the_orc_king",
+          "location_kind": "map",
+          "map_id": "orc_kings_tower_3"
+        }
+      ],
+      "quest_giver": {
+        "npc_name": "Dying Tribal Elder",
+        "npc_sprite": "person/person_female_villager_poor.png",
+        "start_dialog": "Oh thank the old gods.... Someone else survived those nasty Orcs. Damn the Orc King, our tribe is no more. Gather what you can from what is left of our caravan. Please seek out the Orc King and destroy him and his kin. Gasp...",
+        "end_dialog": "You have succeeded! The Orc Kingdom has been destroyed. Now a new world can begin. Sow your roots in the ruins and rebuild our tribe!"
+      },
+      "rewards": {
+        "xp": 500,
+        "gold": 500
+      },
+      "return_to_giver": true
+    },
+    {
+      "id": "clear_the_dungeon",
+      "name": "Clear out the dungeons",
+      "description": "We have caves and abandoned ruins scattered throughout our lands and they are a danger. Destroy any monsters lurking in these dark spaces.",
+      "tags": [],
+      "steps": [
+        {
+          "id": "clear_the_dungeon_step_1",
+          "name": "Step 1 Clear out any two dungeons",
+          "kind": "clear_dungeon",
+          "count": 2,
+          "description": "Clear out any two grottos or dungeons that you can find scattered throughout the map",
+          "rewards": {
+            "items": [
+              "camping_supplies",
+              "fire_arrows"
+            ]
+          }
+        }
+      ],
+      "quest_giver": {
+        "npc_name": "The Old Lady",
+        "npc_sprite": "person/dwarf_female_villager_normal.png",
+        "start_dialog": "Greetings, what a gang of youthful strong people. I could use a little bit of help. Now that I am getting up in years, I spend most of my time minding the children. Lately, too many children have been wandering into the grottos and ruins scattered all over the place here. Can you go into some of these spaces and clear out any dangerous monsters hiding in these pits? Make our lands safe for our children. Please! If you could just find any two dungeons to clear that would help me so much!",
+        "end_dialog": ""
+      }
+    },
+    {
+      "id": "teleport_quest",
+      "name": "Teleport Quest",
+      "description": "A demo to see how the teleport works",
+      "tags": [],
+      "steps": [
+        {
+          "id": "teleport_quest_step_1",
+          "name": "Step 1",
+          "kind": "kill",
+          "encounter_id": "giant_rats"
+        }
+      ],
+      "main_quest": true,
+      "return_to_giver": true,
+      "quest_giver": {
+        "npc_name": "Little Birdie",
+        "npc_sprite": "person/animal_bird.png",
+        "start_dialog": "",
+        "end_dialog": ""
+      },
+      "rewards": {
+        "travel": {
+          "map": "test_2",
+          "col": 0,
+          "row": 0,
+          "message": "Here you go!"
+        }
+      }
+    }
+  ]
+}

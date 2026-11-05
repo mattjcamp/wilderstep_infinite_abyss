@@ -64,6 +64,7 @@ describe("parseQuestsFile (v2 envelope)", () => {
       // tileAdds is the sole tile-mutation reward; defaults to empty
       // when the fixture doesn't author any.
       tileAdds: [],
+      travel: null,
     });
     expect(q.steps).toHaveLength(1);
     const s = q.steps[0];
@@ -146,7 +147,7 @@ describe("matchesLocation (v2 structured)", () => {
     col: 0,
     row: 0,
     positions: [],
-    rewards: { items: [], returnItems: [], tileAdds: [] },
+    rewards: { items: [], returnItems: [], tileAdds: [], travel: null },
   });
 
   it("empty location_kind matches anywhere", () => {
@@ -532,7 +533,12 @@ describe("step-level rewards", () => {
       ],
     });
     const step = defs[0].steps[0];
-    expect(step.rewards).toEqual({ items: [], returnItems: [], tileAdds: [] });
+    expect(step.rewards).toEqual({
+      items: [],
+      returnItems: [],
+      tileAdds: [],
+      travel: null,
+    });
   });
 
   it("parses a step's `return_items` (Return Item feature)", () => {
@@ -990,6 +996,7 @@ describe("step-level rewards", () => {
       items: [],
       returnItems: [],
       tileAdds: [],
+      travel: null,
     });
   });
 });
@@ -1215,5 +1222,112 @@ describe("clear_dungeon steps", () => {
     ensureQuestStates(defs, states);
     states.get("q")!.status = "active";
     expect(creditQuestClearDungeon(defs, states, "q", 0)).toBeNull();
+  });
+});
+
+describe("travel rewards", () => {
+  function questWith(rewards: unknown, stepRewards?: unknown) {
+    return parseQuestsFile({
+      quests: [
+        {
+          id: "chart",
+          name: "The Hermit's Chart",
+          steps: [
+            {
+              id: "s1",
+              name: "Report back",
+              kind: "meet",
+              npc_id: "hermit",
+              ...(stepRewards !== undefined ? { rewards: stepRewards } : {}),
+            },
+          ],
+          rewards,
+        },
+      ],
+    });
+  }
+
+  it("parses a quest-level travel reward", () => {
+    const defs = questWith({
+      xp: 10,
+      travel: {
+        map: "sunken_vault",
+        col: 4,
+        row: "9",
+        message: "  Take this chart.  ",
+      },
+    });
+    expect(defs[0].rewards.travel).toEqual({
+      map: "sunken_vault",
+      col: 4,
+      row: 9,
+      message: "Take this chart.",
+    });
+  });
+
+  it("parses a step-level travel reward and defaults message to empty", () => {
+    const defs = questWith({}, { travel: { map: "sunken_vault", col: 1, row: 2 } });
+    expect(defs[0].steps[0].rewards.travel).toEqual({
+      map: "sunken_vault",
+      col: 1,
+      row: 2,
+      message: "",
+    });
+  });
+
+  it("drops malformed travel blocks instead of crashing", () => {
+    for (const bad of [
+      null,
+      "sunken_vault",
+      { col: 1, row: 1 },
+      { map: "", col: 1, row: 1 },
+      { map: "x", col: "abc", row: 1 },
+      { map: "x", col: -1, row: 1 },
+    ]) {
+      expect(questWith({ travel: bad })[0].rewards.travel).toBeNull();
+    }
+    expect(questWith({})[0].rewards.travel).toBeNull();
+  });
+
+  it("claimQuestRewards carries a copy of the travel reward", () => {
+    const defs = questWith({
+      travel: { map: "sunken_vault", col: 4, row: 9, message: "Go." },
+    });
+    const states = new Map<string, QuestState>();
+    ensureQuestStates(defs, states);
+    states.get("chart")!.status = "completed";
+    const claim = claimQuestRewards(defs, states, "chart");
+    expect(claim!.travel).toEqual({
+      map: "sunken_vault",
+      col: 4,
+      row: 9,
+      message: "Go.",
+    });
+    // A copy — mutating the claim must not touch the def.
+    claim!.travel!.col = 99;
+    expect(defs[0].rewards.travel!.col).toBe(4);
+  });
+
+  it("claimQuestRewards returns travel: null when none is authored", () => {
+    const defs = questWith({ xp: 5 });
+    const states = new Map<string, QuestState>();
+    ensureQuestStates(defs, states);
+    states.get("chart")!.status = "completed";
+    expect(claimQuestRewards(defs, states, "chart")!.travel).toBeNull();
+  });
+
+  it("a meet credit snapshots the step's travel reward", () => {
+    const defs = questWith({}, { travel: { map: "sunken_vault", col: 1, row: 2 } });
+    const states = new Map<string, QuestState>();
+    ensureQuestStates(defs, states);
+    states.get("chart")!.status = "active";
+    const credit = creditQuestMeet(defs, states, "chart", 0);
+    expect(credit).not.toBeNull();
+    expect(credit!.stepRewards.travel).toEqual({
+      map: "sunken_vault",
+      col: 1,
+      row: 2,
+      message: "",
+    });
   });
 });

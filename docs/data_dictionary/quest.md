@@ -60,14 +60,40 @@ A bag of optional rewards applied atomically when the player accepts the `end_di
 | `items` | string[] | [Item](item.md) ids handed to the party. Duplicates drop multiple copies. |
 | `tile_remove` | object[] | Cells to clear. Each entry is `{ map, col, row }` — the cell at (col,row) on the named [Map](map.md) reverts to its baseline tile. Useful for removing a quest blocker (e.g. a locked door) on completion. |
 | `tile_add` | object[] | Cells to place a tile on. Each entry is `{ map, col, row, tile_id }` — sets the cell at (col,row) on the named [Map](map.md) to the given [Map Tile](map_tile.md) `id`. Useful for revealing a treasure, opening a passage, swapping a door type, etc. |
+| `travel` | object | The giver sends the party somewhere. `{ map, col, row, message? }` — after the other rewards land, an announcement placard names the giver and the destination [Map](map.md), shows the optional `message` (a line from the giver), and moves the party to (col,row) on that map when the player clicks **Travel**. See *Travel rewards* below. |
 
 If a `tile_remove` and a `tile_add` target the same cell on the same map, the runtime processes remove first then add — effectively a swap.
+
+## Travel rewards
+
+A `travel` reward is how a quest unlocks a place the party can't otherwise reach: author a map with **no link tiles leading into it**, and let the quest giver send the party there as a reward ("Take this chart — it leads to the Sunken Vault").
+
+```json
+"rewards": {
+  "xp": 50,
+  "travel": {
+    "map": "sunken_vault",
+    "col": 4,
+    "row": 9,
+    "message": "Take this chart. It leads to the Sunken Vault — no road goes there."
+  }
+}
+```
+
+- **When it fires.** At turn-in, after XP / gold / items / tile changes are applied, so the party arrives already paid. The same block is also allowed on a step's `rewards` (fires the moment that step completes) — see [Quest Step](quest_step.md#step-rewards).
+- **The player's side.** A gold "Quest Reward" placard names the destination (map `name` + `description`), quotes the `message` attributed to the quest giver, and has a single **Travel** button (Enter). There's no "stay" option — the trip is the reward. It waits until any open dialog, shop, or combat has closed.
+- **Survives reloads.** The pending trip is stored in the save (`pendingTravel`) until the player takes it, so closing the tab with the placard up re-shows it on the next load. A hidden map is never lost.
+- **How the party moves.** Exactly like walking through a link tile: the current map's state, fog of war, and the clock are saved, then the destination map loads. If the party is inside a generated dungeon it leaves it first (the dungeon's state is saved, as if they'd taken the top stairs out). The party always arrives on foot.
+- **Give the hidden map a way back.** The runtime doesn't add a return trip. Put a link tile on the destination map (or send them home with a later quest's `travel`). The quest editor warns when the chosen map has no link tiles leading out, and labels maps nothing links to as "hidden".
+- **Bad destinations.** An unknown map id, or a cell outside the map, is logged as an authoring error and the trip is dropped instead of loading a broken map. The editor flags both while you author.
+- **One at a time.** If a final step's `travel` and the quest's `travel` fire together, the quest-level one wins.
 
 ## Cross-references to other models
 
 - `quest_giver.npc_sprite` → sprite asset under a module's `sprites/person/` (base art: `web/public/modules/default/sprites/person/`).
 - `rewards.items[]` → [Item](item.md) ids.
 - `rewards.tile_remove[].map` / `rewards.tile_add[].map` → [Map](map.md) ids.
+- `rewards.travel.map` → [Map](map.md) id.
 - `rewards.tile_add[].tile_id` → [Map Tile](map_tile.md) `id`.
 - `steps[].params` may reference Monsters, Items, Maps, or NPCs by id depending on the step's `kind` — see [Quest Step](quest_step.md).
 - Future: referenced *by* [NPC](npc.md) records (NPCs that offer or react to specific quests) and [Map Tile](map_tile.md) cells with `quest: "<quest_id>"` for trigger tiles.
@@ -124,6 +150,6 @@ If a `tile_remove` and a `tile_add` target the same cell on the same map, the ru
 
 - **Steps are inline, not a separate catalog.** Same rationale as Dungeon Levels: no other record references steps by global id.
 - **Quest giver is one NPC for both stages.** If a future quest needs different speakers for offer vs. completion (e.g. you talk to NPC A to start, deliver to NPC B to finish), the natural evolution is `start_giver` / `end_giver` blocks or moving the dialogs onto the relevant `steps[]` entries.
-- **Rewards are applied atomically on completion.** All of `xp`, `gold`, `items`, `tile_remove`, `tile_add` fire together when the `end_dialog` is accepted. Partial-completion rewards (e.g. "the first step pays you 20 gold") aren't modelled — those'd be `rewards` on individual `steps[]` entries instead.
+- **Rewards are applied atomically on completion.** All of `xp`, `gold`, `items`, `tile_remove`, `tile_add` fire together when the `end_dialog` is accepted; a `travel` reward is announced right after and taken when the player clicks Travel. Partial-completion rewards (e.g. "the first step pays you 20 gold") aren't modelled — those'd be `rewards` on individual `steps[]` entries instead.
 - **`tile_add.tile_id` references a Map Tile id, not a tile-palette item.** It's whatever value the runtime cell-painter uses to identify a tile type in `map_tiles.json`.
 - **Stub schema.** Likely future additions: starter trigger gating (which level / quest needs to be complete first), repeatable vs. one-shot, alternative completion paths, fail conditions.

@@ -74,6 +74,7 @@ import {
 import { PlayNpcDialogOverlay } from "./PlayNpcDialogOverlay";
 import { normalizeNpcDialogs } from "@/data_model/npcDialogs";
 import { LinkPlacard } from "@/play/LinkPlacard";
+import { TravelPlacard } from "@/play/TravelPlacard";
 import {
   questsTargetingPlace,
   type QuestPlacardTarget,
@@ -126,6 +127,7 @@ import {
   type QuestDef,
   type QuestState,
   type QuestStepRewards,
+  type RewardTravel,
 } from "@/battle/world/Quests";
 import { overlayVisibleAt, tintForCell } from "@/sim/lighting";
 import { normalizeFogStyles } from "@/sim/fogStyle";
@@ -323,13 +325,23 @@ function applyStepRewardsToSave(
      *  the save is the source of truth. */
     skipItems?: boolean;
   },
-): { nextSave: WorldSave; summary: string; hadTileAdds: boolean } {
+): {
+  nextSave: WorldSave;
+  summary: string;
+  hadTileAdds: boolean;
+  /** The step's travel reward, if authored. NOT applied here — the
+   *  caller hands it to `queueRewardTravel`, which shows the
+   *  announcement placard and moves the party when the player clicks
+   *  Travel. */
+  travel: RewardTravel | null;
+} {
+  const travel = rewards.travel ? { ...rewards.travel } : null;
   if (
     rewards.items.length === 0 &&
     rewards.returnItems.length === 0 &&
     rewards.tileAdds.length === 0
   ) {
-    return { nextSave: save, summary: "", hadTileAdds: false };
+    return { nextSave: save, summary: "", hadTileAdds: false, travel };
   }
   const summaryParts: string[] = [];
 
@@ -432,7 +444,12 @@ function applyStepRewardsToSave(
     maps: nextMaps,
   };
   if (r && hadTileAdds) r.relight();
-  return { nextSave, summary: summaryParts.join(" · "), hadTileAdds };
+  return {
+    nextSave,
+    summary: summaryParts.join(" · "),
+    hadTileAdds,
+    travel,
+  };
 }
 
 /** Apply a kill step's item grants AND returns to the live
@@ -620,6 +637,7 @@ import {
   canPickpocket,
 } from "@/play/raceAbilities";
 import type {
+  PendingRewardTravel,
   SavedMapState,
   SavedPartyState,
   WorldSave,
@@ -1053,6 +1071,16 @@ export function PlayHost() {
     cleared?: boolean;
   } | null>(null);
   const pendingPlaceActionRef = useRef<(() => void) | null>(null);
+  /** A quest travel reward waiting on the player — mirrors
+   *  `save.pendingTravel`. The announcement placard renders once no
+   *  other dialog / combat is up; its Travel button calls
+   *  `travelHandlerRef`, which the world-mount effect registers once
+   *  the sim is live (null between scene swaps and during combat). */
+  const [pendingTravel, setPendingTravel] =
+    useState<PendingRewardTravel | null>(null);
+  const travelHandlerRef = useRef<
+    ((t: PendingRewardTravel) => void) | null
+  >(null);
   /** Main-quest finale — non-null while the full-screen celebration
    *  + adventure recap is up. Opened once, when the quest flagged
    *  `main_quest` is turned in; the player dismisses it to keep
@@ -1584,6 +1612,38 @@ export function PlayHost() {
     refreshQuestGlow();
   }, [refreshQuestGlow]);
 
+  /** Queue a quest "travel" reward: stamp it into the save (so a
+   *  reload can't lose the trip — the destination may have no other
+   *  way in) and raise the announcement placard. The party only moves
+   *  when the player clicks Travel (see `travelHandlerRef`). If two
+   *  travel rewards fire together (a final step's AND the quest's),
+   *  the later one — the quest-level turn-in — wins. */
+  const queueRewardTravel = useCallback(
+    (travel: RewardTravel | null, questId: string) => {
+      if (!travel) return;
+      const def = questDefsRef.current.find((d) => d.id === questId);
+      const pending: PendingRewardTravel = {
+        map: travel.map,
+        col: travel.col,
+        row: travel.row,
+        message: travel.message,
+        questId,
+        questName: def?.name ?? questId,
+        giverName: def?.questGiver?.npcName ?? "",
+      };
+      const save = saveRef.current;
+      if (save) {
+        const next: WorldSave = { ...save, pendingTravel: pending };
+        saveWorld(next);
+        saveRef.current = next;
+      }
+      setPendingTravel(pending);
+    },
+    [],
+  );
+  const queueRewardTravelRef = useRef(queueRewardTravel);
+  queueRewardTravelRef.current = queueRewardTravel;
+
   /** Grant a completed quest's rewards in place and mark it turned in.
    *  Shared by the giver turn-in (onQuestDecline) and the "discover"
    *  step's auto-turn-in — a discover objective finishes the quest
@@ -1711,6 +1771,9 @@ export function PlayHost() {
         subtitle:
           parts.length > 0 ? `Rewards: ${parts.join(", ")}` : "Rewards claimed",
       });
+      // Travel reward — announced (and taken) after the other rewards
+      // land, so the party arrives already paid.
+      queueRewardTravel(claim.travel, claim.questId);
       // The MAIN quest gets the full finale on top: a short beat so
       // the regular "Quest Complete" placard + burst land first, then
       // the full-screen celebration with the adventure recap (built
@@ -1743,7 +1806,7 @@ export function PlayHost() {
         }, 1800);
       }
     },
-    [fireQuestCelebration, refreshQuestGlow],
+    [fireQuestCelebration, refreshQuestGlow, queueRewardTravel],
   );
 
   /** A quest's last step just completed. Quests are turned in on the
@@ -1823,6 +1886,7 @@ export function PlayHost() {
           saveWorld(save);
           saveRef.current = save;
           if (applied.hadTileAdds) refreshQuestGlow();
+          queueRewardTravelRef.current(applied.travel, def.id);
           if (step.meetDialog.trim()) {
             lines.push({
               id: `meet_${def.id}_${step.id}`,
@@ -1937,6 +2001,7 @@ export function PlayHost() {
           saveWorld(save);
           saveRef.current = save;
           if (applied.hadTileAdds) refreshQuestGlow();
+          queueRewardTravelRef.current(applied.travel, def.id);
           const stepName =
             step.count > 1
               ? `${baseName} (${credit.clearsSoFar}/${step.count})`
@@ -2017,6 +2082,7 @@ export function PlayHost() {
       npcDialogId !== null ||
       giverChatter !== null ||
       placard !== null ||
+      pendingTravel !== null ||
       finale !== null;
   }, [
     lockEncounter,
@@ -2033,11 +2099,36 @@ export function PlayHost() {
     npcDialogId,
     giverChatter,
     placard,
+    pendingTravel,
     finale,
   ]);
   useEffect(() => {
     combatRef.current = combat;
   }, [combat]);
+  // Keep a queued travel reward in the save. `queueRewardTravel` also
+  // writes it directly, but some credit paths (item pickup, combat
+  // kill) commit a save built BEFORE the queue right afterwards; this
+  // runs after the handler finishes, so the stamp always survives.
+  // Clearing is explicit (the travel handler) — never here — so the
+  // mount-time restore can't race it.
+  useEffect(() => {
+    if (!pendingTravel) return;
+    const save = saveRef.current;
+    if (!save) return;
+    const cur = save.pendingTravel;
+    if (
+      cur &&
+      cur.map === pendingTravel.map &&
+      cur.col === pendingTravel.col &&
+      cur.row === pendingTravel.row &&
+      cur.questId === pendingTravel.questId
+    ) {
+      return;
+    }
+    const next: WorldSave = { ...save, pendingTravel };
+    saveWorld(next);
+    saveRef.current = next;
+  }, [pendingTravel]);
 
   /** Preview hook: `/play/active?finale` opens the main-quest finale
    *  straight away, built from the loaded save — for checking how the
@@ -4533,6 +4624,15 @@ export function PlayHost() {
             })(),
           });
           simRef.current = sim;
+          // Quest travel rewards: the placard's Travel button routes
+          // here. Registered now that the sim is live (cleared on
+          // teardown), and any trip left pending in the save — e.g.
+          // the player reloaded with the placard up — is re-raised.
+          travelHandlerRef.current = travelTo;
+          {
+            const pt = saveRef.current?.pendingTravel;
+            if (pt) setPendingTravel(pt);
+          }
 
           sim.subscribe((ev) => {
             if (ev.kind === "moved") {
@@ -4795,6 +4895,7 @@ export function PlayHost() {
                       saveWorld(nextSave);
                       saveRef.current = nextSave;
                       if (applied.hadTileAdds) refreshQuestGlow();
+                      queueRewardTravelRef.current(applied.travel, qId);
                       if (credit.questCompleted) {
                         // Last step — auto turn-in in place unless the
                         // quest asks for a return to the giver. Reads
@@ -5275,6 +5376,9 @@ export function PlayHost() {
                   nextSave = applied.nextSave;
                   stepRewardsSummary = applied.summary;
                   if (applied.hadTileAdds) refreshQuestGlow();
+                  // The pickup's save commits below; the persist
+                  // effect re-stamps pendingTravel after it lands.
+                  queueRewardTravelRef.current(applied.travel, matchedQuestId);
                   const def = questDefsRef.current.find(
                     (d) => d.id === matchedQuestId,
                   );
@@ -5542,6 +5646,10 @@ export function PlayHost() {
                   // the quest glow so a path opened by the reward
                   // re-tints correctly.
                   if (applied.hadTileAdds) refreshQuestGlow();
+                  // Placard waits for combat to close; the persist
+                  // effect stamps it into the save after the
+                  // post-combat sync has written.
+                  queueRewardTravelRef.current(applied.travel, ev.questId);
                 }
               }
               if (nextSave && nextSave !== save) {
@@ -6317,8 +6425,96 @@ export function PlayHost() {
       setReloadKey((k) => k + 1);
     }
 
+    /** Take a quest travel reward (the placard's Travel button). The
+     *  pending trip is cleared from the save first, then the party is
+     *  moved: out of a generated dungeon (its state saved, exactly
+     *  like walking out the top stairs) or across a map the same way
+     *  a link tile does — so the outgoing map's mutations, fog and
+     *  clock all persist. The party always arrives on foot. A
+     *  destination that doesn't exist / is out of bounds is an
+     *  authoring error: log it and drop the trip rather than strand
+     *  the save on a broken map. */
+    function travelTo(t: PendingRewardTravel) {
+      const save = saveRef.current;
+      if (!save) return;
+      const log = (line: string) =>
+        setLogMessages((prev) => {
+          const nextLog = [...prev, line];
+          return nextLog.length > MAX_LOG
+            ? nextLog.slice(nextLog.length - MAX_LOG)
+            : nextLog;
+        });
+      const cleared: WorldSave = { ...save, pendingTravel: null };
+      saveWorld(cleared);
+      saveRef.current = cleared;
+      const dest = catalogRef.current?.allMaps.find((m) => m.id === t.map);
+      if (!dest) {
+        log(
+          `The way to "${t.map}" could not be found — the quest's travel reward names a map this module doesn't have.`,
+        );
+        return;
+      }
+      if (t.col >= dest.width || t.row >= dest.height) {
+        log(
+          `The way to ${dest.name} could not be found — the travel reward's cell (${t.col}, ${t.row}) is outside the map.`,
+        );
+        return;
+      }
+      log(
+        t.giverName
+          ? `${t.giverName} sends the party to ${dest.name}.`
+          : `The party travels to ${dest.name}.`,
+      );
+
+      const dungeonNow = dungeonStateRef.current;
+      if (dungeonNow) {
+        // Leave the dungeon the way the top-floor stairs do — mirror
+        // its session into save.dungeons so a later visit resumes it —
+        // but land at the reward's destination, not the entrance.
+        const session = peekDungeonSession(dungeonNow.instanceId);
+        const snapshot = session ? snapshotDungeonForSave(session) : null;
+        const next: WorldSave = {
+          ...cleared,
+          clockMinutes: clockRef.current,
+          party: {
+            ...cleared.party,
+            currentMapId: t.map,
+            col: t.col,
+            row: t.row,
+            currentDungeon: undefined,
+            onBoat: false,
+            currentBoatSprite: null,
+          },
+          dungeons: snapshot
+            ? { ...cleared.dungeons, [dungeonNow.instanceId]: snapshot }
+            : cleared.dungeons,
+        };
+        saveWorld(next);
+        saveRef.current = next;
+        dungeonStateRef.current = null;
+        setReloadKey((k) => k + 1);
+        return;
+      }
+
+      handleLinked({ map_id: t.map, x: t.col, y: t.row });
+      // A link carries a voyage across; a quest trip doesn't — the
+      // party arrives on foot (the destination may not even have
+      // water). Same-map trips teleport in place and keep the sim's
+      // boat state.
+      const after = saveRef.current;
+      if (after && t.map !== cleared.party.currentMapId && after.party.onBoat) {
+        const onFoot: WorldSave = {
+          ...after,
+          party: { ...after.party, onBoat: false, currentBoatSprite: null },
+        };
+        saveWorld(onFoot);
+        saveRef.current = onFoot;
+      }
+    }
+
     return () => {
       cancelled = true;
+      travelHandlerRef.current = null;
       sim?.dispose();
       sim = null;
       simRef.current = null;
@@ -7576,6 +7772,41 @@ export function PlayHost() {
           }}
         />
       ) : null}
+
+      {/* Quest travel reward — waits until every other dialog, the
+          encounter prompt and combat have closed, so it lands after
+          the giver's last line rather than on top of it. */}
+      {pendingTravel &&
+      !combat &&
+      !encounterPrompt &&
+      !questOffer &&
+      !lockEncounter &&
+      !chestEncounter &&
+      npcDialogId === null &&
+      giverChatter === null &&
+      counterShopId === null &&
+      placard === null &&
+      finale === null ? (() => {
+        const dest = state.catalog?.allMaps.find(
+          (m) => m.id === pendingTravel.map,
+        );
+        return (
+          <TravelPlacard
+            questName={pendingTravel.questName}
+            giverName={pendingTravel.giverName}
+            destinationName={dest?.name ?? pendingTravel.map}
+            destinationDescription={dest?.description}
+            message={pendingTravel.message}
+            onTravel={() => {
+              const go = travelHandlerRef.current;
+              if (!go) return;
+              const t = pendingTravel;
+              setPendingTravel(null);
+              go(t);
+            }}
+          />
+        );
+      })() : null}
 
       {counterShopId && state.catalog && state.save ? (() => {
         const counter = state.catalog.counters.find(

@@ -28,7 +28,7 @@ Each entry in a parent Quest's `steps[]` is an object with the fields below.
 | `kind` | string | yes | Discriminator for what the step is. See *kind values* below. | TBD |
 | `description` | string | no | Player-facing detail / tooltip text | TBD |
 | `params` | object | no | Kind-specific parameters (encounter id to clear, item id to fetch, map cell to visit, …). Shape depends on `kind`. | TBD |
-| `rewards` | object | no | Per-step rewards applied **immediately** when the step completes (the moment its progress flag flips true). Same shape as the quest-level `rewards` block but narrowed to two keys — `items` and `tile_add`. XP and gold stay on the quest-level rewards so the big numerical payoff still arrives at turn-in. See *Step rewards* below. | yes |
+| `rewards` | object | no | Per-step rewards applied **immediately** when the step completes (the moment its progress flag flips true). Same shape as the quest-level `rewards` block but narrowed to `items`, `return_items`, `tile_add`, and `travel`. XP and gold stay on the quest-level rewards so the big numerical payoff still arrives at turn-in. See *Step rewards* below. | yes |
 | `positions` | object[] | no | For `kind: "kill"` only — author-anchored cells the spawn pass uses to place the step's encounter copies. Each entry is `{ "col": <int>, "row": <int> }` on the step's `map_id`. Consumed in order: `positions[0]` for the first copy, `positions[1]` for the second, and so on. Copies beyond `positions.length` (and any position whose cell isn't walkable at spawn time) fall back to random walkable selection. Empty / omitted = pure random placement. | yes |
 
 ## Step rewards
@@ -39,8 +39,9 @@ The optional `rewards` block lets a step grant items or mutate the world the mom
 |---|---|---|
 | `items` | string[] | Item catalog ids granted to the party on step completion. Merges into existing stacks via the same `addToInventory` path quest-level rewards use. |
 | `tile_add` | object[] | Cells on named maps to paint with a named palette tile. Each entry: `{ "map": "<map_id>", "col": <int>, "row": <int>, "tile_id": "<palette_tile_id>" }`. Recorded into `save.maps[<map_id>].tileOverrides` so the mutation survives reload + re-entry. If the affected cell is on the currently-mounted map the live grid + cell sprite update in the same frame the step completes. |
+| `travel` | object | Send the party to a map cell when the step completes: `{ "map": "<map_id>", "col": <int>, "row": <int>, "message": "<optional giver line>" }`. Same announcement placard and behaviour as the quest-level `travel` reward — see [Quest › Travel rewards](quest.md#travel-rewards). |
 
-Step rewards are **only** items and tile mutations. XP and gold are not authored at the step level — those stay on the quest-level rewards. Both fields are optional; absent JSON authors as `{ items: [], tile_add: [] }`.
+Step rewards are **only** items, tile mutations, and travel. XP and gold are not authored at the step level — those stay on the quest-level rewards. Both fields are optional; absent JSON authors as `{ items: [], tile_add: [] }`.
 
 ## Kill-step placement (`positions`)
 
@@ -64,6 +65,30 @@ Kill steps spawn `count` copies of the named encounter on the step's map. By def
 ```
 
 With this authoring, the three rat encounters appear at the three named cells when the quest is accepted. If only two positions are listed for a count of three, the first two copies land at the authored cells and the third picks a random walkable cell. If an authored cell isn't walkable at spawn time (a wall got painted over it after the quest was authored, or another spawn consumed it first) that copy quietly falls back to random selection too — defensive against the map evolving after the quest was authored.
+
+### "Report back and get sent somewhere" (meet + travel)
+
+Steps complete on the spot — there's no per-step turn-in — so a mid-quest hand-off to the giver is a `meet` step on the giver's NPC with a `travel` reward. The `meet_dialog` plays, then the travel placard appears:
+
+```json
+{
+  "id": "chart_step_2_report_back",
+  "name": "Report back to the cartographer",
+  "kind": "meet",
+  "npc_id": "cartographer",
+  "meet_dialog": "You found the compass! Then you're ready. Here — this chart shows the way.",
+  "rewards": {
+    "travel": {
+      "map": "sunken_vault",
+      "col": 4,
+      "row": 9,
+      "message": "Take this chart. It leads to the Sunken Vault — no road goes there."
+    }
+  }
+}
+```
+
+Later steps can then target the hidden map (`kill`, `retrieve`, `discover` on `sunken_vault`).
 
 ### Example step with rewards
 

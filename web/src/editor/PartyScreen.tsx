@@ -41,7 +41,14 @@
  */
 
 import { isPartyEffectActive } from "@/play/partyEffects";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { xpProgressInLevel as levelingXpProgress } from "@/battle/world/Leveling";
 import type { EquipSource } from "@/play/equipFromInventory";
 import {
@@ -65,6 +72,25 @@ export interface PartyInventoryEntry {
   item: string;
   charges?: number;
   durability?: number;
+}
+
+/** Editor-only authoring hooks. When the host passes these (the Party
+ *  editor does; the in-game P screen and the map simulator don't), the
+ *  screen grows inline controls: a remove button on each roster card
+ *  and an "add character" picker under the roster, plus remove /
+ *  quantity controls on each shared-stash row and an "add item"
+ *  picker under the inventory. Equipped rows stay read-only — gear
+ *  belongs to the character record. */
+export interface PartyScreenEditorHandlers {
+  onAddRosterMember: (characterId: string) => void;
+  /** Removes by id — also used for dangling roster ids that don't
+   *  resolve to a character. */
+  onRemoveRosterMember: (characterId: string) => void;
+  onAddStashItem: (itemId: string) => void;
+  /** `invIdx` is the row's index in `party.inventory`. */
+  onRemoveStashItem: (invIdx: number) => void;
+  /** Set a stash row's `charges` (quantity for stackable items). */
+  onSetStashCharges: (invIdx: number, charges: number) => void;
 }
 
 export interface PartyRecord {
@@ -447,6 +473,7 @@ export function PartyScreen({
   activeEffectIds,
   onActiveEffectsChange,
   onReorderRoster,
+  editor,
   onUseStashItem,
   onSendStashItem,
   onCastSpell,
@@ -486,6 +513,9 @@ export function PartyScreen({
    *  still works — mouse-down without a drag is a click, mouse-down +
    *  movement is a drag start. */
   onReorderRoster?: (newOrder: string[]) => void;
+  /** Editor-only authoring controls (add / remove characters and
+   *  stash items). Omit everywhere except the Party editor. */
+  editor?: PartyScreenEditorHandlers;
   /** Optional handler — when provided, the Use button appears on
    *  stash items the items catalog flags `usable`. The host wires it
    *  to the matching PartyActions helper (consumeTorch /
@@ -578,6 +608,12 @@ export function PartyScreen({
     return (party.roster ?? [])
       .map((id) => byId.get(id))
       .filter((m): m is PartyCharacterRef => Boolean(m));
+  }, [party.roster, characters]);
+  /** Roster ids with no matching character record. Hidden from the
+   *  game view; the editor lists them so they can be removed. */
+  const missingRosterIds = useMemo(() => {
+    const known = new Set(characters.map((c) => c.id));
+    return (party.roster ?? []).filter((id) => !known.has(id));
   }, [party.roster, characters]);
 
   const raceById = useMemo(
@@ -1130,6 +1166,7 @@ export function PartyScreen({
         target &&
         (target.tagName === "INPUT" ||
           target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
           target.isContentEditable)
       ) {
         return;
@@ -1349,6 +1386,7 @@ export function PartyScreen({
         target &&
         (target.tagName === "INPUT" ||
           target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
           target.isContentEditable)
       ) {
         return;
@@ -1675,7 +1713,9 @@ export function PartyScreen({
               aria-label="Inventory"
             >
               {invRows.length === 0 ? (
-                <li className="text-[13px] text-parchment/65">(empty)</li>
+                <li className="text-[13px] text-parchment/65">
+                  {editor ? "(empty — add items below)" : "(empty)"}
+                </li>
               ) : null}
               {invRows.map((row, i) => {
                 const label = itemNameById.get(row.item) ?? row.item;
@@ -1718,6 +1758,7 @@ export function PartyScreen({
                         : `e-${row.memberId}-${row.slot}`
                     }
                   >
+                    <div className="flex items-center gap-1">
                     <button
                       type="button"
                       role="option"
@@ -1778,6 +1819,27 @@ export function PartyScreen({
                         ) : null}
                       </span>
                     </button>
+                    {editor && row.kind === "stash" ? (
+                      <StashRowControls
+                        charges={row.charges}
+                        stackable={!!cat?.stackable}
+                        itemLabel={label}
+                        onSetCharges={(n) =>
+                          editor.onSetStashCharges(row.invIdx, n)
+                        }
+                        onRemove={() => editor.onRemoveStashItem(row.invIdx)}
+                      />
+                    ) : editor ? (
+                      // Equipped gear: keep the columns aligned and
+                      // say where to change it.
+                      <span
+                        className="w-[5.75rem] shrink-0 text-right text-[11px] text-parchment/45"
+                        title="Equipment lives on the character record — edit it in Characters."
+                      >
+                        equipped
+                      </span>
+                    ) : null}
+                    </div>
                     {isSel && stashMode === "examine" ? (
                       <ItemDetails
                         item={cat ?? { id: row.item, name: label }}
@@ -1802,6 +1864,18 @@ export function PartyScreen({
                   </li>
                 );
               })}
+              {/* Inside the list so it sits right under the last row
+                  instead of at the bottom of the stretched pane. */}
+              {editor ? (
+                <li>
+                  <AddPicker
+                    placeholder="+ Add item…"
+                    emptyText="No items in the catalog."
+                    groups={groupItems(items)}
+                    onPick={editor.onAddStashItem}
+                  />
+                </li>
+              ) : null}
             </ul>
           </section>
 
@@ -1815,7 +1889,9 @@ export function PartyScreen({
             <ul className="mt-1 space-y-1" hidden={collapsed.roster}>
               {members.length === 0 ? (
                 <li className="text-[13px] text-parchment/70">
-                  (no roster — check party.json)
+                  {editor
+                    ? "(no characters yet — add one below)"
+                    : "(no roster — check party.json)"}
                 </li>
               ) : null}
               {members.map((m, i) => {
@@ -1883,10 +1959,50 @@ export function PartyScreen({
                       setDragFromId(null);
                       setDropTargetId(null);
                     }}
+                    trailing={
+                      editor ? (
+                        <RemoveButton
+                          label={`Remove ${m.name} from the party`}
+                          onClick={() => editor.onRemoveRosterMember(m.id)}
+                        />
+                      ) : undefined
+                    }
                   />
                 );
               })}
+              {editor
+                ? missingRosterIds.map((id) => (
+                    <li
+                      key={`missing-${id}`}
+                      className="flex items-center gap-2 rounded border border-ember/40 bg-ember/10 px-2 py-1 text-xs text-parchment/85"
+                    >
+                      <span className="min-w-0 flex-1 truncate">
+                        Missing character{" "}
+                        <code className="font-mono">{id}</code> — not in
+                        characters.json
+                      </span>
+                      <RemoveButton
+                        label={`Remove ${id} from the roster`}
+                        onClick={() => editor.onRemoveRosterMember(id)}
+                      />
+                    </li>
+                  ))
+                : null}
             </ul>
+            {editor && !collapsed.roster ? (
+              <AddPicker
+                placeholder="+ Add character…"
+                emptyText="Every character is already in the party."
+                groups={groupCharacters(
+                  characters.filter(
+                    (c) => !(party.roster ?? []).includes(c.id),
+                  ),
+                  classById,
+                  raceById,
+                )}
+                onPick={editor.onAddRosterMember}
+              />
+            ) : null}
           </section>
 
         </div>
@@ -2210,6 +2326,7 @@ function RosterCard({
   onDragEnterCard,
   onDropOnCard,
   onDragEnd,
+  trailing,
 }: {
   member: PartyCharacterRef;
   className_: string;
@@ -2251,6 +2368,9 @@ function RosterCard({
   onDragEnterCard?: () => void;
   onDropOnCard?: () => void;
   onDragEnd?: () => void;
+  /** Extra controls at the card's right edge (the editor's remove
+   *  button). Clicks inside don't drill into the sheet. */
+  trailing?: ReactNode;
 }) {
   const thumb = member.sprite
     ? resolveSpritePath(member.sprite, SPRITE_CONFIG)
@@ -2398,8 +2518,189 @@ function RosterCard({
           </div>
         ) : null}
       </div>
+      {trailing ? (
+        <div
+          className="shrink-0 self-center"
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          {trailing}
+        </div>
+      ) : null}
     </li>
   );
+}
+
+// ── Editor-only controls ────────────────────────────────────────────
+
+function RemoveButton({
+  label,
+  onClick,
+}: {
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+      aria-label={label}
+      title={label}
+      className="flex h-6 w-6 items-center justify-center rounded border border-parchment/20 text-xs text-parchment/70 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
+    >
+      ✕
+    </button>
+  );
+}
+
+/** Quantity / charges field + remove button for one stash row. Shows
+ *  the number field when the item stacks or the row already carries a
+ *  `charges` value (e.g. a torch with uses left). */
+function StashRowControls({
+  charges,
+  stackable,
+  itemLabel,
+  onSetCharges,
+  onRemove,
+}: {
+  charges: number | undefined;
+  stackable: boolean;
+  itemLabel: string;
+  onSetCharges: (n: number) => void;
+  onRemove: () => void;
+}) {
+  const showCount = stackable || typeof charges === "number";
+  const [text, setText] = useState(String(charges ?? 1));
+  useEffect(() => setText(String(charges ?? 1)), [charges]);
+  const commit = () => {
+    const n = Math.max(1, Math.floor(Number(text)) || 1);
+    setText(String(n));
+    if (n !== charges) onSetCharges(n);
+  };
+  return (
+    <span className="flex w-[5.75rem] shrink-0 items-center justify-end gap-1">
+      {showCount ? (
+        <input
+          type="number"
+          min={1}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") commit();
+          }}
+          aria-label={`${stackable ? "Quantity" : "Charges"} of ${itemLabel}`}
+          title={stackable ? "Quantity" : "Charges / uses"}
+          className="w-14 rounded border border-parchment/20 bg-ink/50 px-1 py-0.5 text-right text-xs text-parchment/90"
+        />
+      ) : null}
+      <RemoveButton label={`Remove ${itemLabel}`} onClick={onRemove} />
+    </span>
+  );
+}
+
+interface PickerGroup {
+  label: string;
+  options: Array<{ value: string; label: string }>;
+}
+
+/** "Add …" control: choose from a dropdown, then click Add. Picking
+ *  alone never adds — arrow keys on a focused <select> change its value
+ *  in some browsers, which would otherwise add items by accident. The
+ *  choice stays selected after Add so repeated clicks add more of the
+ *  same (handy for stacking potions). */
+function AddPicker({
+  placeholder,
+  emptyText,
+  groups,
+  onPick,
+}: {
+  placeholder: string;
+  emptyText: string;
+  groups: PickerGroup[];
+  onPick: (value: string) => void;
+}) {
+  const [choice, setChoice] = useState("");
+  const total = groups.reduce((n, g) => n + g.options.length, 0);
+  const valid = groups.some((g) => g.options.some((o) => o.value === choice));
+  if (total === 0) {
+    return <p className="mt-1 text-xs text-parchment/55">{emptyText}</p>;
+  }
+  const label = placeholder.replace(/^\+\s*/, "").replace(/…$/, "");
+  return (
+    <div className="mt-1.5 flex items-center gap-1">
+      <select
+        value={valid ? choice : ""}
+        onChange={(e) => setChoice(e.target.value)}
+        aria-label={label}
+        className="min-w-0 flex-1 rounded border border-dashed border-parchment/25 bg-ink/40 px-2 py-1 text-sm text-parchment/80 hover:border-amber-300/50"
+      >
+        <option value="">{placeholder}</option>
+        {groups.map((g) => (
+          <optgroup key={g.label} label={g.label}>
+            {g.options.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </optgroup>
+        ))}
+      </select>
+      <button
+        type="button"
+        disabled={!valid}
+        onClick={() => {
+          if (!valid) return;
+          // A character drops out of the options once added, so the
+          // picker falls back to its placeholder on the next render;
+          // an item stays chosen for repeat adds.
+          onPick(choice);
+        }}
+        className="shrink-0 rounded border border-ember/50 bg-ember/20 px-2.5 py-1 text-xs text-parchment hover:bg-ember/40 disabled:cursor-not-allowed disabled:border-parchment/15 disabled:bg-transparent disabled:text-parchment/35"
+        title={valid ? `${label}` : "Choose something first"}
+      >
+        Add
+      </button>
+    </div>
+  );
+}
+
+/** Characters grouped by class, labelled "Name — Race, Lv N". */
+function groupCharacters(
+  chars: ReadonlyArray<PartyCharacterRef>,
+  classById: ReadonlyMap<string, PartyClassRef>,
+  raceById: ReadonlyMap<string, PartyRaceRef>,
+): PickerGroup[] {
+  const groups = new Map<string, PickerGroup>();
+  for (const c of chars) {
+    const cls = classById.get(c.class)?.name ?? titleCase(c.class || "other");
+    const g = groups.get(cls) ?? { label: cls, options: [] };
+    const race = raceById.get(c.race)?.name ?? c.race;
+    g.options.push({
+      value: c.id,
+      label: `${c.name} — ${race}, Lv ${c.level ?? 1}`,
+    });
+    groups.set(cls, g);
+  }
+  return [...groups.values()].sort((a, b) => a.label.localeCompare(b.label));
+}
+
+/** Items grouped by catalog category (Weapons, Potion, …). */
+function groupItems(items: ReadonlyArray<PartyItemRef>): PickerGroup[] {
+  const groups = new Map<string, PickerGroup>();
+  for (const it of items) {
+    const cat = titleCase(it.category || "other");
+    const g = groups.get(cat) ?? { label: cat, options: [] };
+    g.options.push({ value: it.id, label: it.name ?? it.id });
+    groups.set(cat, g);
+  }
+  for (const g of groups.values()) {
+    g.options.sort((a, b) => a.label.localeCompare(b.label));
+  }
+  return [...groups.values()].sort((a, b) => a.label.localeCompare(b.label));
 }
 
 function Bar({

@@ -158,6 +158,19 @@ interface StepRewards {
    *  so it can't unbalance later play. JSON key: `return_items`. */
   return_items?: string[];
   tile_add?: TileAddOp[];
+  /** Send the party to a map cell the moment the step completes. */
+  travel?: TravelReward;
+}
+
+/** A `travel` reward — the quest giver sends the party to (map, col,
+ *  row), typically a hidden map with no link tiles leading in. The
+ *  runtime shows an announcement placard (with the optional
+ *  `message`) and moves the party when the player clicks Travel. */
+interface TravelReward {
+  map: string;
+  col: number;
+  row: number;
+  message?: string;
 }
 
 interface QuestGiver {
@@ -186,6 +199,9 @@ interface Rewards {
   gold?: number;
   items?: string[];
   tile_add?: TileAddOp[];
+  /** Send the party to a map cell at turn-in, after the other
+   *  rewards land. */
+  travel?: TravelReward;
 }
 
 interface QuestRecord {
@@ -221,6 +237,15 @@ interface MapSummary {
   /** Organizational tags from maps.json — drive the picker's
    *  tag-grouped optgroups (same ordering as the maps browse tree). */
   tags?: string[];
+  /** Grid size — lets the Travel reward flag an out-of-bounds cell. */
+  width?: number;
+  height?: number;
+  /** How many OTHER maps have a link tile leading here. 0 = a hidden
+   *  map only a quest Travel reward can reach. */
+  linkedFrom?: number;
+  /** True when this map has at least one link tile leading off it —
+   *  i.e. a party sent here by a Travel reward has a way back out. */
+  hasExit?: boolean;
 }
 
 interface NpcSummary {
@@ -311,11 +336,40 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
         "maps",
         mapsLayers.inherited,
         mapsLayers.ownFile,
-      ) as { maps?: MapSummary[] } | null;
-      const maps = (mapsMerged?.maps ?? []).map((m) => ({
+      ) as {
+        maps?: Array<
+          MapSummary & {
+            grid?: Array<Array<{ link?: { map_id?: string } | null } | null>>;
+          }
+        >;
+      } | null;
+      // Link-graph facts for the Travel reward editor: which maps are
+      // reachable by a link tile from elsewhere, and which have a way
+      // out. Cheap — one pass over every cell of every map.
+      const rawMaps = mapsMerged?.maps ?? [];
+      const linkedFrom = new Map<string, Set<string>>();
+      const hasExit = new Set<string>();
+      for (const m of rawMaps) {
+        for (const row of m.grid ?? []) {
+          for (const cell of row ?? []) {
+            const target = cell?.link?.map_id;
+            if (!target) continue;
+            hasExit.add(m.id);
+            if (target === m.id) continue;
+            const from = linkedFrom.get(target) ?? new Set<string>();
+            from.add(m.id);
+            linkedFrom.set(target, from);
+          }
+        }
+      }
+      const maps = rawMaps.map((m) => ({
         id: m.id,
         name: m.name,
         tags: m.tags,
+        width: m.width,
+        height: m.height,
+        linkedFrom: linkedFrom.get(m.id)?.size ?? 0,
+        hasExit: hasExit.has(m.id),
       }));
 
       const dungeonsMerged = mergeModel(
@@ -1289,11 +1343,21 @@ function RewardsEditor({
             withTileId={true}
             onChange={(arr) => patch({ tile_add: arr as TileAddOp[] })}
           />
+
+          {/* travel — the giver sends the party somewhere, usually a
+              hidden map. Fires after the other rewards land. */}
+          <TravelEditor
+            travel={r.travel}
+            maps={maps}
+            when="at turn-in"
+            onChange={(t) => patch({ travel: t })}
+          />
         </div>
       ) : (
         <p className="mt-1 text-xs text-parchment/65">
           No rewards. Click <strong>+ Add</strong> to specify XP, gold,
-          items, or tile changes applied on completion.
+          items, tile changes, or a trip to another map applied on
+          completion.
         </p>
       )}
     </section>
@@ -1346,8 +1410,9 @@ function StepRewardsEditor({
       </legend>
       <div className="flex items-center justify-between">
         <p className="text-xs text-parchment/75">
-          Items granted, items reclaimed, and tile changes applied{" "}
-          <strong>immediately</strong> when this step completes — use to
+          Items granted, items reclaimed, tile changes, and a trip to
+          another map, applied <strong>immediately</strong> when this
+          step completes — use to
           gate the next step on a map change (build a bridge, open a
           passage), seed inventory the next step needs, or reclaim an
           overpowered quest item so it can&apos;t unbalance later play.
@@ -1403,6 +1468,14 @@ function StepRewardsEditor({
             maps={maps}
             withTileId={true}
             onChange={(arr) => patch({ tile_add: arr as TileAddOp[] })}
+          />
+          {/* travel — pair with a "meet" step on the quest giver for a
+              mid-quest "report back and get sent somewhere" beat. */}
+          <TravelEditor
+            travel={r.travel}
+            maps={maps}
+            when="when this step completes"
+            onChange={(t) => patch({ travel: t })}
           />
         </div>
       ) : null}
@@ -1627,6 +1700,162 @@ function ItemsList({
           })}
         </ul>
       )}
+    </div>
+  );
+}
+
+// ── Travel reward editor (quest- and step-level) ────────────────────
+//
+// One optional destination: map + cell + an optional line the giver
+// says on the announcement placard. Shows link-graph hints so the
+// author can see at a glance that (a) the destination really is
+// hidden — nothing links in, so this reward is the only way there —
+// and (b) it has a way back out, so the party isn't stranded.
+
+function TravelEditor({
+  travel,
+  maps,
+  when,
+  onChange,
+}: {
+  travel: TravelReward | undefined;
+  maps: MapSummary[];
+  /** Copy for when the trip fires ("at turn-in", "when this step
+   *  completes"). */
+  when: string;
+  onChange: (next: TravelReward | undefined) => void;
+}) {
+  if (!travel) {
+    return (
+      <div className="flex items-center justify-between">
+        <span className="text-xs uppercase tracking-wide text-parchment/75">
+          Travel (none)
+        </span>
+        <button
+          type="button"
+          onClick={() =>
+            onChange({ map: maps[0]?.id ?? "", col: 0, row: 0 })
+          }
+          className="rounded border border-ember/50 bg-ember/20 px-2 py-0.5 text-xs text-parchment hover:bg-ember/40"
+          title={`Send the party to a map ${when}.`}
+        >
+          + Add
+        </button>
+      </div>
+    );
+  }
+
+  const dest = maps.find((m) => m.id === travel.map);
+  const patch = (p: Partial<TravelReward>) => {
+    const next: TravelReward = { ...travel, ...p };
+    if (!next.message) delete next.message;
+    onChange(next);
+  };
+  const outOfBounds =
+    !!dest &&
+    typeof dest.width === "number" &&
+    typeof dest.height === "number" &&
+    (travel.col < 0 ||
+      travel.row < 0 ||
+      travel.col >= dest.width ||
+      travel.row >= dest.height);
+
+  return (
+    <div>
+      <div className="flex items-center justify-between">
+        <span className="text-xs uppercase tracking-wide text-parchment/75">
+          Travel
+        </span>
+        <button
+          type="button"
+          onClick={() => onChange(undefined)}
+          className="rounded border border-parchment/20 px-2 py-0.5 text-xs text-parchment/80 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
+        >
+          Remove
+        </button>
+      </div>
+      <p className="mt-1 text-xs text-parchment/65">
+        Sends the party to this cell {when}. The player sees an
+        announcement with the giver&apos;s message and a Travel button.
+      </p>
+      <div className="mt-1 grid items-center gap-1 sm:grid-cols-[1fr_auto_auto]">
+        <select
+          value={travel.map}
+          onChange={(e) => patch({ map: e.target.value })}
+          className="rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-[13px] text-parchment/90"
+          title="Destination map"
+        >
+          {!dest && travel.map ? (
+            <option value={travel.map}>(missing) {travel.map}</option>
+          ) : null}
+          {!travel.map ? <option value="">— choose a map —</option> : null}
+          {groupByTags(maps).map(([tag, ms]) => (
+            <optgroup key={tag} label={tag}>
+              {ms.map((m) => (
+                <option key={`${tag}::${m.id}`} value={m.id}>
+                  {m.name ?? m.id} ({m.id})
+                  {m.linkedFrom === 0 ? " — hidden" : ""}
+                </option>
+              ))}
+            </optgroup>
+          ))}
+        </select>
+        <input
+          type="number"
+          min={0}
+          value={travel.col}
+          onChange={(e) => patch({ col: Number(e.target.value) || 0 })}
+          placeholder="col"
+          className="w-16 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
+          title="Landing column"
+        />
+        <input
+          type="number"
+          min={0}
+          value={travel.row}
+          onChange={(e) => patch({ row: Number(e.target.value) || 0 })}
+          placeholder="row"
+          className="w-16 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
+          title="Landing row"
+        />
+      </div>
+      <textarea
+        value={travel.message ?? ""}
+        onChange={(e) => patch({ message: e.target.value })}
+        placeholder="Optional line from the giver, e.g. “Take this chart — it leads to the Sunken Vault.”"
+        rows={2}
+        className="mt-1 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
+      />
+      <div className="mt-1 space-y-0.5 text-xs">
+        {!travel.map ? (
+          <p className="text-amber-200/90">Choose a destination map.</p>
+        ) : !dest ? (
+          <p className="text-amber-200/90">
+            Unknown map id — not present in maps.json.
+          </p>
+        ) : (
+          <>
+            {outOfBounds ? (
+              <p className="text-amber-200/90">
+                ({travel.col}, {travel.row}) is outside {dest.name ?? dest.id}{" "}
+                ({dest.width}×{dest.height}).
+              </p>
+            ) : null}
+            {dest.linkedFrom === 0 ? (
+              <p className="text-parchment/65">
+                Nothing links to this map — this reward is the only way
+                in.
+              </p>
+            ) : null}
+            {dest.hasExit === false ? (
+              <p className="text-amber-200/90">
+                This map has no link tiles leading out — the party will
+                be stranded unless something else gets them back.
+              </p>
+            ) : null}
+          </>
+        )}
+      </div>
     </div>
   );
 }

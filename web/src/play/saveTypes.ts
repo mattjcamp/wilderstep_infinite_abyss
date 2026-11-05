@@ -345,6 +345,21 @@ export interface SavedDungeonSession {
 
 /** The complete save. Versioned + timestamped so we can show "last
  *  played 5 minutes ago" in the picker later, and migrate forward. */
+/** A queued quest travel reward — see {@link WorldSave.pendingTravel}. */
+export interface PendingRewardTravel {
+  /** Destination map id (maps.json). */
+  map: string;
+  col: number;
+  row: number;
+  /** Optional authored line from the giver ("" when none). */
+  message: string;
+  /** Quest that granted the trip, for the placard copy. */
+  questId: string;
+  questName: string;
+  /** Quest giver's display name ("" when the quest has none). */
+  giverName: string;
+}
+
 export interface WorldSave {
   schemaVersion: number;
   /** ISO timestamp of the most recent write. */
@@ -438,6 +453,13 @@ export interface WorldSave {
    *  `<log event id>#<entry index>` (see play/logEvents.ts). Lines with
    *  `repeat: "once"` are skipped once listed here. Absent = none. */
   logEventsShown?: ReadonlyArray<string>;
+  /** A quest "travel" reward the party has earned but not yet taken —
+   *  set when the reward fires, cleared when the player clicks Travel
+   *  on the announcement placard. Persisted so a reload (or closed
+   *  tab) re-shows the placard instead of losing the trip: the
+   *  destination is often a map with no other way in. Absent / null =
+   *  nothing pending. */
+  pendingTravel?: PendingRewardTravel | null;
   /** Per-counter live stock, keyed by counter id.
    *
    *  Counters now own a persistent inventory: items bought disappear

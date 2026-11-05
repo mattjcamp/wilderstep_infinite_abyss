@@ -4,9 +4,6 @@
 # Ideas
 - Add Quest Complete reward of "teleporting to new map" to accommodate things like guild quests where you go to a new and maybe secret location
 
-## Improve UI
-- Put updated graphics into manuals, markdown and github
-
 ## Lore
 - world name: Varnfell (the Varn were destroyed in a great cosmic struggle that created the world, Varnfell. "The Varn died, so that the world could be born)
 - races
