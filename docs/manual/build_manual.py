@@ -500,6 +500,31 @@ def _link_sub(m):
     return f'<link href="{href}" color="#6B2A1A">{text}</link>'
 
 
+# Symbol fallback font. The base-14 Times / Courier fonts only cover
+# Latin-1, so symbols the manual uses for in-game labels (✓ Cleared,
+# ⚜ Quest, ★ main quest, ⌘S, arrow keys) rendered as empty boxes.
+# DejaVu Sans (bundled in assets/fonts so Mac and Linux builds match)
+# covers them; `_inline` wraps just those characters in it.
+SYMBOL_FONT = "ManualSymbols"
+_SYMBOL_FONT_PATH = Path(__file__).resolve().parent / "assets" / "fonts" / "DejaVuSans.ttf"
+try:
+    from reportlab.pdfbase import pdfmetrics as _pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont as _TTFont
+    _pdfmetrics.registerFont(_TTFont(SYMBOL_FONT, str(_SYMBOL_FONT_PATH)))
+    _HAVE_SYMBOL_FONT = True
+except Exception:  # missing file → leave symbols as-is
+    _HAVE_SYMBOL_FONT = False
+# Arrows, technical symbols, geometric shapes, misc symbols, dingbats.
+# Dashes / quotes / ellipsis (U+2000–U+206F) render fine in Times.
+SYMBOL_RE = re.compile("([\u2190-\u2BFF]+)")
+
+
+def _symbol_fonts(s):
+    if not _HAVE_SYMBOL_FONT:
+        return s
+    return SYMBOL_RE.sub(r'<font name="%s">\1</font>' % SYMBOL_FONT, s)
+
+
 def _inline(text):
     """Convert markdown inline markup to reportlab paragraph mini-HTML."""
     # Drop raw <img> sprite tags — the markdown manual shows item/monster
@@ -517,7 +542,7 @@ def _inline(text):
     s = INLINE_RE_ITAL.sub(r"<i>\1</i>", s)
     s = INLINE_RE_CODE.sub(r'<font face="Courier-Bold">\1</font>', s)
     # Retain raw em-dashes / en-dashes as-is
-    return s
+    return _symbol_fonts(s)
 
 
 def _parse_table_block(lines, i):

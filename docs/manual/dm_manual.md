@@ -20,6 +20,8 @@ This manual is a living document. Right now it is deliberately sparse — the bo
   - [Modules: How Content Is Organized](#modules-how-content-is-organized)
   - [Inheritance: Building on the Default Module](#inheritance-building-on-the-default-module)
   - [The Building Blocks of an Adventure](#the-building-blocks-of-an-adventure)
+  - [Quest Steps at a Glance](#quest-steps-at-a-glance)
+  - [Dungeons: Generated or Hand-Painted](#dungeons-generated-or-hand-painted)
   - [The Author's Loop: Edit, Test, Publish](#the-authors-loop-edit-test-publish)
   - [Where to Go Next](#where-to-go-next)
 
@@ -36,9 +38,10 @@ You do not start from a blank page. Wilderstep ships with a complete, playable b
 An adventure in Wilderstep is assembled from a handful of content types, each of which you can author:
 
 - **Maps** — the overworld, towns, building interiors, and battle arenas players explore tile by tile.
+- **Dungeons** — multi-floor dungeons the game generates from a recipe you write, laid out fresh for every playthrough.
 - **Monsters** — the creatures that inhabit your world, with their stats, abilities, and on-hit effects.
 - **Encounters** — curated groups of monsters that appear as a single fight, whether triggered by a quest or rolled at random while exploring.
-- **Quests** — the threads that give players purpose: objectives, steps, and the rewards for completing them.
+- **Quests** — the threads that give players purpose: objectives, steps, and the rewards for completing them, including the **main quest** that ends your story.
 - **NPCs and dialog** — the people who populate your towns and give the world its voice.
 - **Items, shops, and treasure** — the gear players find, buy, and loot.
 - **The rules themselves** — races, classes, spells, abilities, and effects, all of which you can tune or extend.
@@ -93,22 +96,48 @@ A consequence worth internalizing early: because inheritance is resolved live at
 
 Each content type is browsed and edited the same way — a table of records you can open and modify — but each plays a distinct role in an adventure:
 
-- **Maps** are the stage. The overworld is the open world players cross; towns and interiors are the places they visit; arenas are the boards fights play out on. Maps reference the other content types — a town's shop points at items, a dungeon's rooms draw monsters from encounters.
+- **Maps** are the stage. The overworld is the open world players cross; towns and interiors are the places they visit; arenas are the boards fights play out on. Maps reference the other content types — a town's shop points at items, a dungeon entrance points at a dungeon. A road or entrance can show a **placard** before the party travels, naming the destination and flagging whether it's explored, quest-relevant, or (for dungeons) already cleared.
+- **Dungeons** are recipes rather than drawings: a style, a difficulty, a size, a list of floors, and loot settings. The game builds the actual halls when a party first walks in. See [Dungeons: Generated or Hand-Painted](#dungeons-generated-or-hand-painted).
 - **Monsters** are individual creatures: hit points, armor, attacks, and special traits like regeneration, resistances, or on-hit effects (the kind of thing that lets a creature swallow a hero whole).
 - **Encounters** bundle monsters into a fight. An encounter has a roster, a difficulty, and an *area* that determines which random-spawn pool it belongs to (dungeon, overworld, and so on). Encounters are used two ways: pinned to a quest step by id, or rolled at random from their area pool as players explore.
-- **Quests** give the adventure shape. A quest is a sequence of steps — defeat a named encounter, recover an item, reach a place — each with conditions for completion and rewards for finishing.
+- **Quests** give the adventure shape. A quest is a set of steps — defeat a named encounter, recover an item, reach a place, meet a person, clear dungeons — that players can usually complete in any order. A step can pay out immediately (an item, or a tile change such as a new bridge), while the quest's own experience, gold, and items arrive when the last step is done. By default a finished quest turns itself in on the spot; set **Return to giver** to make the party walk back for the reward. Flag one quest per module as the **main quest**: it's pinned atop the player's quest log, and completing it plays a celebration with a recap of the whole adventure before the player carries on exploring. See [Quest Steps at a Glance](#quest-steps-at-a-glance).
 - **NPCs and dialog** make the world feel inhabited: the townsfolk who hand out quests, sell goods, or simply have something to say.
-- **Items** are everything players wield, wear, drink, and carry — and the stock that fills your shops and the loot that fills your chests.
+- **Items** are everything players wield, wear, drink, and carry — and the stock that fills your shops and the loot that fills your chests. A shop (a **counter**) lists its stock as item ids, and repeating an id stocks more of it: four Leather and two Plate seeds that mix. Each shop then keeps its own stock for the rest of the playthrough, so what players buy is gone and what they sell stays on the counter.
 - **Races, classes, spells, abilities, and effects** are the rules layer. Most adventures inherit these unchanged, but they're fully yours to retune or expand when your story calls for a new kind of hero or a new kind of magic.
 
 You will rarely build all of these at once. A good first adventure leans heavily on what's inherited and adds just enough new content — a place, a foe, and a reason to go there — to feel like its own world.
+
+Players also earn a little experience simply for exploring: the first time they enter each map, the first time they talk to each person, and (much more) for clearing a generated dungeon. The module sets the amounts (`exploration_xp` in the module's settings), and any single map, person, or dungeon can override its own reward — or set it to `0` to turn it off.
+
+### Quest Steps at a Glance
+
+Each step has a **kind** that decides what completes it:
+
+| Kind | Completes when… | You set |
+|---|---|---|
+| **kill** | The party defeats the named encounter the given number of times. The game places the foes for you, at cells you choose or at random. | Encounter, count, location, optional positions |
+| **retrieve** | The party picks up a quest item the game places on a specific cell. | Item, map, cell |
+| **discover** | The party steps onto a specific cell. Nothing marks it, so players must explore to find it. | Map, cell |
+| **meet** | The party talks to a particular person, on any map. They can say a special line when it happens. | Person, optional line |
+| **reach** | The party arrives on a dungeon floor. Leave the floor blank and one step becomes "reach floor 1, 2, 3…" for every floor of that dungeon, which is handy for spelunking quests. | Dungeon, optional floor |
+| **clear_dungeon** | The party clears **any** generated dungeon (every foe on every floor) after accepting the quest. Hand-painted maps don't count. | How many dungeons |
+
+Accepted quests make their targets glow gold in the world, and their destinations get the gold quest treatment on place placards, so players are never left guessing where to go.
+
+### Dungeons: Generated or Hand-Painted
+
+You can build a dungeon two ways.
+
+**Generated dungeons** are written as a recipe in the Dungeons editor: a visual style, a difficulty and size, how many torches and locked doors to scatter, a list of floors (each with a name and depth), and loot settings that choose which chest item appears and how often. Place the dungeon's entrance on a map, and the first time a party walks in, the game lays out every floor and populates it from your **dungeon-area encounters**. Each entrance gets its own layout, fixed for the rest of that playthrough, and the dungeon remembers what the party did inside: explored floors, defeated foes, sprung traps, and opened chests. A new playthrough rolls new halls from the same recipe. When the party defeats every foe on every floor, the dungeon counts as **cleared**: it pays a one-time experience bonus (the dungeon's own `clear_xp`, or the module amount), marks its entrance placard **✓ Cleared**, and credits any `clear_dungeon` quest steps.
+
+**Hand-painted dungeons** are ordinary maps you draw tile by tile, for set pieces that need an exact layout. The **Generate Dungeon Maps** tool in the Maps editor gives you a head start: it runs the generator once and saves each floor as a regular, editable map with the stairs between floors and the encounters already wired (you connect the entrance and the bottom floor's stairs yourself), so you can polish it by hand. Remember that hand-painted maps are maps, not generated dungeons, so they don't count toward `clear_dungeon` steps or the clear bonus.
 
 ### The Author's Loop: Edit, Test, Publish
 
 Authoring in Wilderstep is iterative. The rhythm looks like this:
 
 1. **Edit.** Open a content type in the Editor and make a change — add a monster, place it in an encounter, write a quest step that hunts it. Your work-in-progress is held as a draft so you can experiment freely before committing.
-2. **Test.** Play your adventure to see the change in context. The Editor includes tools for trying out battles and dungeons in isolation, so you can check an encounter's balance or a map's flow without replaying your whole adventure to reach it.
+2. **Test.** Play your adventure to see the change in context. The Editor includes tools for trying out battles and dungeons in isolation, so you can check an encounter's balance or a map's flow without replaying your whole adventure to reach it. To preview the main-quest ending against your current save, open the play screen with `?finale` added to its address.
 3. **Publish.** When a change is ready, publish it. Publishing writes your module's records out as the live version and refreshes the catalog so the adventure — and your update to it — is available to play.
 
 Then you go back to step one. Most of building an adventure is small loops like this: a change, a playtest, a tweak.

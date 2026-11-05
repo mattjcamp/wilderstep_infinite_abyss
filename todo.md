@@ -1,7 +1,6 @@
-
-
 ## Improve UI
 - Fine tune beginning character creation
+- Put updated graphics into manuals
 
 ## Lore
 - world name
