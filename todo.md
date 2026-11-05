@@ -1,11 +1,17 @@
-## Flesh Out Core
-- Fine tune core demo adventure
+
 
 ## Improve UI
 - Fine tune beginning character creation
 
 ## Lore
-- start brainstorming ideas about the first original, immersive world that I will create for this game:world type, political structures, economy, towns, gods, epic stories, lost civizations
+- world name
+- races
+- gods
+- cults
+- guilds
+- major city-states
+- epics
+- lost civilizations
 
 # Notes
 

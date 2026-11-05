@@ -31,6 +31,19 @@
  *               `turned_in` immediately, so the party never has to walk
  *               back to the giver. Used for "find / reach X" narrative
  *               beats where the destination is hard to return from.
+ *   - `"meet"` — "meet person": credited by talking to (bumping) the
+ *               NPC named by the step's `npc_id` (npcs.json id), on any
+ *               map. An optional `meet_dialog` line is what that NPC
+ *               says when the meeting happens, shown ahead of their
+ *               usual chatter.
+ *   - `"clear_dungeon"` — credited when the party clears (defeats every
+ *               monster on every floor of) ANY procedurally generated
+ *               dungeon after the quest is accepted. Hand-painted
+ *               maps never count — only generated dungeon runs have a
+ *               "cleared" moment. `count` (default 1) is how many
+ *               clears the step needs; the running tally persists in
+ *               `save.questStepKills` like a kill step's. The host
+ *               credits it from the hook that pays the clear bonus.
  *   - `"reach"` — credited simply by arriving on a dungeon floor that
  *               matches the step's `dungeon_id` + `dungeon_level`. The
  *               basis of "spelunking" quests: author ONE reach step
@@ -51,6 +64,12 @@
  *               future schema addition (optional entrance map+cell on
  *               the step), not a behaviour the current model expresses.
  *
+ * **Return to giver (optional).** A quest's `return_to_giver` flag
+ * (default false) decides what happens when its last step completes.
+ * Off: the host turns the quest in on the spot — rewards granted, the
+ * "quest complete" celebration fires. On: the quest waits in
+ * "completed" until the party talks to the giver again.
+ *
  * **Location matching.** Use {@link matchesLocation} — it consumes a
  * {@link CombatLocation} (`{ kind, mapId | dungeonId, dungeonLevel? }`)
  * and a step's structured fields. The legacy string matcher was
@@ -66,7 +85,9 @@ export type QuestStepKind =
   | "collect"
   | "retrieve"
   | "reach"
-  | "discover";
+  | "discover"
+  | "meet"
+  | "clear_dungeon";
 
 /** Where a step plays out in the v2 structured form. Empty means
  *  "any location credits the step." */
@@ -109,12 +130,19 @@ export interface QuestStep {
   /** For `kind === "kill"` — the encounter id (encounters.json `id`)
    *  the step wants cleared. */
   encounterId: string;
-  /** For `kind === "kill"` (or any countable step) — how many
-   *  encounter clearings to credit. Defaults to 1 when absent. */
+  /** For `kind === "kill"` — how many encounter clearings to credit;
+   *  for `kind === "clear_dungeon"` — how many dungeons to clear.
+   *  Defaults to 1 when absent. */
   count: number;
   /** For `kind === "retrieve"` — item id to drop on the step's
    *  `(col, row)`. */
   itemId: string;
+  /** For `kind === "meet"` — the npcs.json id of the person the party
+   *  has to talk to. JSON key: `npc_id`. */
+  npcId: string;
+  /** For `kind === "meet"` — optional line the NPC says when the
+   *  meeting credits. JSON key: `meet_dialog`. Empty = none. */
+  meetDialog: string;
 
   /** For `kind === "kill"` — authored anchor cells the spawn pass
    *  uses for placement, in order. The kernel consumes
@@ -233,6 +261,11 @@ export interface QuestDef {
   steps: QuestStep[];
   questGiver: QuestGiver;
   rewards: QuestRewards;
+  /** When true, a quest whose steps are all done waits for the party
+   *  to return to the giver before rewards are granted. When false
+   *  (the default), it's turned in automatically the moment the last
+   *  step completes. JSON key: `return_to_giver`. */
+  returnToGiver: boolean;
 }
 
 export interface QuestState {
@@ -265,6 +298,9 @@ interface RawQuestStep {
   count?: number | string;
   /** First-class step attribute for retrieve steps. */
   item_id?: string;
+  /** First-class step attributes for meet steps. */
+  npc_id?: string;
+  meet_dialog?: string;
   /** Free-form params blob — preserved verbatim onto QuestStep.params
    *  for call sites that read kind-specific fields beyond what the
    *  parser projects. */
@@ -333,6 +369,7 @@ interface RawQuest {
   steps?: RawQuestStep[];
   quest_giver?: RawQuestGiver | null;
   rewards?: RawRewards | null;
+  return_to_giver?: boolean;
 }
 
 /** Top-level envelope. v2 quests.json wraps the list as
@@ -471,6 +508,8 @@ function stepFromRaw(raw: RawQuestStep): QuestStep | null {
     encounterId,
     count,
     itemId,
+    npcId: typeof raw.npc_id === "string" ? raw.npc_id : "",
+    meetDialog: typeof raw.meet_dialog === "string" ? raw.meet_dialog : "",
     positions: parsePositions(raw.positions),
     rewards: parseStepRewards(raw.rewards),
   };
@@ -518,6 +557,7 @@ function fromRaw(raw: RawQuest): QuestDef | null {
     steps,
     questGiver,
     rewards,
+    returnToGiver: raw.return_to_giver === true,
   };
 }
 
@@ -1064,6 +1104,117 @@ export function creditQuestDiscover(
     stepIdx,
     step,
     stepCompleted: true,
+    questCompleted,
+    stepRewards: snapshotStepRewards(step.rewards),
+  };
+}
+
+// ── Meet credit ────────────────────────────────────────────────
+
+/** Result of {@link creditQuestMeet} — same single-shot shape as
+ *  {@link QuestDiscoverCredit}. */
+export type QuestMeetCredit = QuestDiscoverCredit;
+
+/**
+ * Credit the party for meeting (talking to) a quest's target NPC.
+ * Returns null when the quest doesn't exist / isn't active / the step
+ * doesn't exist / the step isn't a `meet` kind / it's already done.
+ * Mirrors {@link creditQuestDiscover}: flips the step done and bumps
+ * the quest to "completed" when that was the last open step.
+ */
+export function creditQuestMeet(
+  defs: ReadonlyArray<QuestDef>,
+  states: ReadonlyMap<string, QuestState>,
+  questId: string,
+  stepIdx: number,
+): QuestMeetCredit | null {
+  const def = defs.find((d) => d.id === questId);
+  if (!def) return null;
+  const state = states.get(questId);
+  if (!state) return null;
+  if (state.status !== "active") return null;
+  const step = def.steps[stepIdx];
+  if (!step) return null;
+  if (step.kind !== "meet") return null;
+  if (state.stepProgress[stepIdx]) return null;
+  state.stepProgress[stepIdx] = true;
+  let questCompleted = false;
+  if (state.stepProgress.length > 0 && state.stepProgress.every((p) => p)) {
+    state.status = "completed";
+    questCompleted = true;
+  }
+  return {
+    questId,
+    stepIdx,
+    step,
+    stepCompleted: true,
+    questCompleted,
+    stepRewards: snapshotStepRewards(step.rewards),
+  };
+}
+
+// ── Clear-dungeon credit ───────────────────────────────────────
+
+/** Result of {@link creditQuestClearDungeon}. Unlike the single-shot
+ *  kinds, a clear_dungeon step can need several clears (`count`), so
+ *  a credit may just advance the tally without finishing the step. */
+export interface QuestClearDungeonCredit {
+  questId: string;
+  stepIdx: number;
+  step: QuestStep;
+  /** Dungeons cleared toward this step, including this one. */
+  clearsSoFar: number;
+  /** True once `clearsSoFar >= step.count` — the step just finished. */
+  stepCompleted: boolean;
+  /** True when finishing this step completed the whole quest. */
+  questCompleted: boolean;
+  /** The step's rewards — only meaningful when `stepCompleted`. */
+  stepRewards: QuestStepRewards;
+}
+
+/**
+ * Credit one dungeon clear toward a `clear_dungeon` step. `prevClears`
+ * is the persisted tally before this clear (the host keeps it in
+ * `save.questStepKills`). Returns null when the quest doesn't exist /
+ * isn't active / the step doesn't exist / isn't a `clear_dungeon`
+ * kind / is already done. Otherwise bumps the tally (mirrored into
+ * the in-session `stepKills`) and, once it reaches the step's `count`,
+ * flips the step done — and the quest to "completed" if that was the
+ * last open step.
+ */
+export function creditQuestClearDungeon(
+  defs: ReadonlyArray<QuestDef>,
+  states: ReadonlyMap<string, QuestState>,
+  questId: string,
+  stepIdx: number,
+  prevClears = 0,
+): QuestClearDungeonCredit | null {
+  const def = defs.find((d) => d.id === questId);
+  if (!def) return null;
+  const state = states.get(questId);
+  if (!state) return null;
+  if (state.status !== "active") return null;
+  const step = def.steps[stepIdx];
+  if (!step) return null;
+  if (step.kind !== "clear_dungeon") return null;
+  if (state.stepProgress[stepIdx]) return null;
+  const clearsSoFar = Math.max(prevClears, state.stepKills[stepIdx] ?? 0) + 1;
+  state.stepKills[stepIdx] = clearsSoFar;
+  const stepCompleted = clearsSoFar >= step.count;
+  let questCompleted = false;
+  if (stepCompleted) {
+    state.stepProgress[stepIdx] = true;
+    if (state.stepProgress.length > 0 && state.stepProgress.every((p) => p)) {
+      state.status = "completed";
+      questCompleted = true;
+    }
+  }
+  return {
+    questId,
+    stepIdx,
+    step,
+    clearsSoFar,
+    stepCompleted,
     questCompleted,
     stepRewards: snapshotStepRewards(step.rewards),
   };

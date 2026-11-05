@@ -75,6 +75,13 @@ const PER_MODEL: Record<string, Record<string, IdListFieldConfig>> = {
       help: "Items awarded when the boss falls.",
     },
   },
+  counters: {
+    items: {
+      source: { kind: "catalog", model: "items" },
+      allowDuplicates: true,
+      help: "Shop stock — repeat an item to stock more of it (four leather + two plate seeds that mix).",
+    },
+  },
   races: {
     abilities: {
       source: { kind: "catalog", model: "abilities" },

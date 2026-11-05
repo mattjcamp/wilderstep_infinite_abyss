@@ -50,6 +50,8 @@ import {
   stepFinalSubtitle,
   type PlayQuestCelebrationKind,
 } from "./PlayQuestCelebration";
+import { PlayMainQuestFinale } from "./PlayMainQuestFinale";
+import { computeAdventureRecap, type AdventureRecap } from "@/play/adventureRecap";
 import { PlayLogOverlay } from "./PlayLogOverlay";
 import { PlayExplorationPanel } from "./PlayExplorationPanel";
 import {
@@ -114,6 +116,8 @@ import {
 import {
   claimQuestRewards,
   creditQuestDiscover,
+  creditQuestMeet,
+  creditQuestClearDungeon,
   creditQuestRetrieve,
   ensureQuestStates,
   expandSpelunkingQuests,
@@ -1044,8 +1048,16 @@ export function PlayHost() {
     /** Active quests with an incomplete step at the destination —
      *  drives the placard's gold quest treatment. */
     questTargets?: QuestPlacardTarget[];
+    /** Dungeon entrances only — this instance has been cleared
+     *  (every foe on every floor defeated). */
+    cleared?: boolean;
   } | null>(null);
   const pendingPlaceActionRef = useRef<(() => void) | null>(null);
+  /** Main-quest finale — non-null while the full-screen celebration
+   *  + adventure recap is up. Opened once, when the quest flagged
+   *  `main_quest` is turned in; the player dismisses it to keep
+   *  playing. */
+  const [finale, setFinale] = useState<AdventureRecap | null>(null);
   /** When non-null, the play-side counter shop is open against this
    *  counter id. Set when the party walks into a counter tile or an
    *  NPC with a `counter` field. Cleared by the overlay's close
@@ -1091,6 +1103,14 @@ export function PlayHost() {
    *  NPC has a counter, exposes a Visit Counter button that hands
    *  off to the shop overlay. */
   const [npcDialogId, setNpcDialogId] = useState<string | null>(null);
+  /** Lines a "meet person" quest step adds to the front of the NPC's
+   *  dialog for the conversation that credited it. Keyed by NPC id
+   *  and replaced on every NPC encounter, so the line shows once —
+   *  bumping the same NPC later shows their normal chatter. */
+  const [npcMeetLines, setNpcMeetLines] = useState<{
+    npcId: string;
+    lines: ReadonlyArray<{ id: string; title?: string; text: string }>;
+  } | null>(null);
   /** Post-quest giver chatter — set when the party bumps a quest
    *  giver whose quest is already turned in. From that point the
    *  giver behaves like a normal NPC: the standard NPC dialog opens
@@ -1471,6 +1491,9 @@ export function PlayHost() {
         title: name,
         subtitle: xp > 0 ? `Every foe defeated · +${xp} XP` : "Every foe defeated",
       });
+      // Any accepted quest waiting on "clear a dungeon" credits now.
+      // Via ref — the credit callback is declared further down.
+      creditClearDungeonStepsRef.current?.(name);
     },
     [fireQuestCelebration],
   );
@@ -1688,9 +1711,266 @@ export function PlayHost() {
         subtitle:
           parts.length > 0 ? `Rewards: ${parts.join(", ")}` : "Rewards claimed",
       });
+      // The MAIN quest gets the full finale on top: a short beat so
+      // the regular "Quest Complete" placard + burst land first, then
+      // the full-screen celebration with the adventure recap (built
+      // from the post-reward save so this quest's XP / gold count).
+      const rawQuest = catalogRef.current?.quests.find(
+        (q) => q.id === claim.questId,
+      );
+      if (rawQuest?.main_quest === true) {
+        setTimeout(() => {
+          const s = saveRef.current;
+          if (!s) return;
+          setFinale(
+            computeAdventureRecap(
+              s,
+              claim.questName,
+              (catalogRef.current?.characters ?? []) as ReadonlyArray<{
+                id: string;
+                name?: string;
+              }>,
+            ),
+          );
+          Sfx.play("victory");
+          setLogMessages((prev) => {
+            const next = [
+              ...prev,
+              `The main quest is complete — ${claim.questName}! The world is yours to keep exploring.`,
+            ];
+            return next.length > MAX_LOG ? next.slice(next.length - MAX_LOG) : next;
+          });
+        }, 1800);
+      }
     },
     [fireQuestCelebration, refreshQuestGlow],
   );
+
+  /** A quest's last step just completed. Quests are turned in on the
+   *  spot unless they opt into `return_to_giver` — then this returns
+   *  false and the caller fires the "Return to {giver}" placard
+   *  instead. Every completion path (kill, retrieve, reach, discover,
+   *  meet) routes through here so the rule lives in one place.
+   *
+   *  Some credit paths (combat kills, spelunking reach) only update
+   *  the save, not the kernel QuestState, so the state is promoted to
+   *  "completed" here before `claimQuestRewards` (which requires it)
+   *  runs. Call AFTER the credit's save has been committed to
+   *  `saveRef` — the reward grant builds on that save. */
+  const finishCompletedQuest = useCallback(
+    (questId: string): boolean => {
+      const def = questDefsRef.current.find((d) => d.id === questId);
+      if (!def || def.returnToGiver) return false;
+      const qs = questStatesRef.current.get(questId);
+      if (qs && qs.status === "active") {
+        qs.stepProgress.fill(true);
+        qs.status = "completed";
+      }
+      grantQuestRewardsInPlace(questId);
+      return true;
+    },
+    [grantQuestRewardsInPlace],
+  );
+  // Ref mirror so the long-lived Phaser scene closure and narrowly-
+  // memoized callbacks always call the live version.
+  const finishCompletedQuestRef = useRef(finishCompletedQuest);
+  finishCompletedQuestRef.current = finishCompletedQuest;
+
+  /** "Meet person" quest steps — the party just talked to `npcId`.
+   *  Credits every open `meet` step (on accepted, not-yet-turned-in
+   *  quests) that targets this NPC: marks the step done, applies its
+   *  step rewards, persists, then fires the step placard — or, when
+   *  it was the quest's last step, finishes the quest (auto turn-in
+   *  unless `return_to_giver`). Returns any authored `meet_dialog`
+   *  lines for the NPC dialog to open with. */
+  const creditMeetSteps = useCallback(
+    (npcId: string, npcName: string) => {
+      const lines: Array<{ id: string; title?: string; text: string }> = [];
+      const first = saveRef.current;
+      if (!first) return lines;
+      const accepted = new Set(first.acceptedQuests ?? []);
+      const turnedIn = new Set(first.turnedInQuests ?? []);
+      const logLines: string[] = [];
+      for (const def of questDefsRef.current) {
+        if (!accepted.has(def.id) || turnedIn.has(def.id)) continue;
+        for (let i = 0; i < def.steps.length; i++) {
+          const step = def.steps[i];
+          if (step.kind !== "meet" || !step.npcId || step.npcId !== npcId) {
+            continue;
+          }
+          let save = saveRef.current;
+          if (!save) return lines;
+          if (isStepDone(save, def, i)) continue;
+          const credit = creditQuestMeet(
+            questDefsRef.current,
+            questStatesRef.current,
+            def.id,
+            i,
+          );
+          if (!credit) continue;
+          const res = markStepDone(save, def, step.id);
+          save = {
+            ...save,
+            questStepProgress: res.questStepProgress,
+            questStepsDone: res.questStepsDone,
+          };
+          const applied = applyStepRewardsToSave(save, credit.stepRewards, {
+            catalog: catalogRef.current,
+            renderer: rendererRef.current,
+            sim: simRef.current,
+          });
+          save = applied.nextSave;
+          saveWorld(save);
+          saveRef.current = save;
+          if (applied.hadTileAdds) refreshQuestGlow();
+          if (step.meetDialog.trim()) {
+            lines.push({
+              id: `meet_${def.id}_${step.id}`,
+              title: def.name,
+              text: step.meetDialog.trim(),
+            });
+          }
+          const stepName = step.name || `Meet ${npcName}`;
+          logLines.push(`Step complete: ${stepName}.`);
+          if (applied.summary) logLines.push(`Step reward: ${applied.summary}.`);
+          if (credit.questCompleted) {
+            if (!finishCompletedQuestRef.current(def.id)) {
+              fireQuestCelebration({
+                kind: "step-final",
+                title: def.name,
+                subtitle: stepFinalSubtitle(def.questGiver?.npcName, applied.summary),
+              });
+            }
+          } else {
+            fireQuestCelebration({
+              kind: "step",
+              title: def.name,
+              subtitle: applied.summary ? `${stepName} — ${applied.summary}` : stepName,
+            });
+          }
+        }
+      }
+      if (logLines.length > 0) {
+        setLogMessages((prev) => {
+          const next = [...prev, ...logLines];
+          return next.length > MAX_LOG ? next.slice(next.length - MAX_LOG) : next;
+        });
+      }
+      return lines;
+    },
+    [fireQuestCelebration, refreshQuestGlow],
+  );
+  const creditMeetStepsRef = useRef(creditMeetSteps);
+  creditMeetStepsRef.current = creditMeetSteps;
+
+  /** "Clear a dungeon" quest steps — the party just cleared a
+   *  generated dungeon (called from {@link checkDungeonClear}, which
+   *  only ever fires for generated dungeon runs, never hand-painted
+   *  maps). Credits every open `clear_dungeon` step on accepted,
+   *  not-yet-turned-in quests, exactly like {@link creditMeetSteps}:
+   *  mark done, apply step rewards, persist, then fire the step
+   *  placard — or finish the quest (auto turn-in unless
+   *  `return_to_giver`) when it was the last step. */
+  const creditClearDungeonSteps = useCallback(
+    (dungeonName: string) => {
+      const first = saveRef.current;
+      if (!first) return;
+      const accepted = new Set(first.acceptedQuests ?? []);
+      const turnedIn = new Set(first.turnedInQuests ?? []);
+      const logLines: string[] = [];
+      for (const def of questDefsRef.current) {
+        if (!accepted.has(def.id) || turnedIn.has(def.id)) continue;
+        for (let i = 0; i < def.steps.length; i++) {
+          const step = def.steps[i];
+          if (step.kind !== "clear_dungeon") continue;
+          let save = saveRef.current;
+          if (!save) return;
+          if (isStepDone(save, def, i)) continue;
+          // Running tally lives in `questStepKills` (the save's
+          // generic per-step counter) so partial progress on a
+          // "clear N dungeons" step survives reloads.
+          const prevClears = save.questStepKills?.[def.id]?.[step.id] ?? 0;
+          const credit = creditQuestClearDungeon(
+            questDefsRef.current,
+            questStatesRef.current,
+            def.id,
+            i,
+            prevClears,
+          );
+          if (!credit) continue;
+          save = {
+            ...save,
+            questStepKills: {
+              ...(save.questStepKills ?? {}),
+              [def.id]: {
+                ...(save.questStepKills?.[def.id] ?? {}),
+                [step.id]: credit.clearsSoFar,
+              },
+            },
+          };
+          const baseName = step.name || "Clear dungeons";
+          if (!credit.stepCompleted) {
+            // Partial progress — persist the tally and show N/count.
+            saveWorld(save);
+            saveRef.current = save;
+            const progressName = `${baseName} (${credit.clearsSoFar}/${step.count})`;
+            logLines.push(`${progressName}.`);
+            fireQuestCelebration({
+              kind: "step",
+              title: def.name,
+              subtitle: progressName,
+            });
+            continue;
+          }
+          const res = markStepDone(save, def, step.id);
+          save = {
+            ...save,
+            questStepProgress: res.questStepProgress,
+            questStepsDone: res.questStepsDone,
+          };
+          const applied = applyStepRewardsToSave(save, credit.stepRewards, {
+            catalog: catalogRef.current,
+            renderer: rendererRef.current,
+            sim: simRef.current,
+          });
+          save = applied.nextSave;
+          saveWorld(save);
+          saveRef.current = save;
+          if (applied.hadTileAdds) refreshQuestGlow();
+          const stepName =
+            step.count > 1
+              ? `${baseName} (${credit.clearsSoFar}/${step.count})`
+              : step.name || `Clear ${dungeonName}`;
+          logLines.push(`Step complete: ${stepName}.`);
+          if (applied.summary) logLines.push(`Step reward: ${applied.summary}.`);
+          if (credit.questCompleted) {
+            if (!finishCompletedQuestRef.current(def.id)) {
+              fireQuestCelebration({
+                kind: "step-final",
+                title: def.name,
+                subtitle: stepFinalSubtitle(def.questGiver?.npcName, applied.summary),
+              });
+            }
+          } else {
+            fireQuestCelebration({
+              kind: "step",
+              title: def.name,
+              subtitle: applied.summary ? `${stepName} — ${applied.summary}` : stepName,
+            });
+          }
+        }
+      }
+      if (logLines.length > 0) {
+        setLogMessages((prev) => {
+          const next = [...prev, ...logLines];
+          return next.length > MAX_LOG ? next.slice(next.length - MAX_LOG) : next;
+        });
+      }
+    },
+    [fireQuestCelebration, refreshQuestGlow],
+  );
+  const creditClearDungeonStepsRef = useRef(creditClearDungeonSteps);
+  creditClearDungeonStepsRef.current = creditClearDungeonSteps;
 
   /** One turn of passive HP/MP regen for "restful" maps (towns /
    *  taverns). No-op in dungeons, off-map, or when the current map
@@ -1736,7 +2016,8 @@ export function PlayHost() {
       counterShopId !== null ||
       npcDialogId !== null ||
       giverChatter !== null ||
-      placard !== null;
+      placard !== null ||
+      finale !== null;
   }, [
     lockEncounter,
     chestEncounter,
@@ -1752,6 +2033,7 @@ export function PlayHost() {
     npcDialogId,
     giverChatter,
     placard,
+    finale,
   ]);
   useEffect(() => {
     combatRef.current = combat;
@@ -3115,8 +3397,17 @@ export function PlayHost() {
           // both passes here run before mount so they're needed at
           // the host level too.
           {
-            const picked =
-              save.maps[catalog.map.id]?.pickedItemCells ?? [];
+            // In a dungeon the picked set lives on the floor's
+            // mutation state (per instance + floor), NOT in
+            // save.maps — reading save.maps here found nothing, so
+            // opened chests painted their overlay again while the
+            // kernel (which does read the floor state) had already
+            // emptied the cell: a chest picture you couldn't open.
+            const dNow = dungeonStateRef.current;
+            const picked: Iterable<string> = dNow
+              ? (peekDungeonSession(dNow.instanceId)?.floors.get(dNow.floorIdx)
+                  ?.pickedItemCells ?? [])
+              : (save.maps[catalog.map.id]?.pickedItemCells ?? []);
             for (const key of picked) {
               const [cs, rs] = key.split(",");
               const c = Number(cs);
@@ -4480,11 +4771,19 @@ export function PlayHost() {
                       saveRef.current = nextSave;
                       if (applied.hadTileAdds) refreshQuestGlow();
                       if (credit.questCompleted) {
-                        // Auto-turn-in in place — grants quest rewards
-                        // and fires the "quest complete" celebration,
-                        // no return to the giver. Reads the save we
-                        // just committed.
-                        grantQuestRewardsInPlace(qId);
+                        // Last step — auto turn-in in place unless the
+                        // quest asks for a return to the giver. Reads
+                        // the save we just committed.
+                        if (!finishCompletedQuestRef.current(qId)) {
+                          fireQuestCelebration({
+                            kind: "step-final",
+                            title: creditDef?.name ?? qId,
+                            subtitle: stepFinalSubtitle(
+                              creditDef?.questGiver?.npcName,
+                              applied.summary,
+                            ),
+                          });
+                        }
                       } else {
                         // Mid-quest discover step — routine step placard.
                         const subtitle =
@@ -4608,6 +4907,10 @@ export function PlayHost() {
                   name: dest?.name ?? ev.dungeonId,
                   description: dest?.description,
                   explored: !!saveRef.current?.dungeons?.[instanceId],
+                  // Same per-instance key checkDungeonClear records.
+                  cleared: (
+                    saveRef.current?.party.clearedDungeons ?? []
+                  ).includes(instanceId),
                   // Reach / spelunking / dungeon-kill steps make the
                   // entrance quest-relevant, whatever the floor.
                   questTargets: questsTargetingPlace(
@@ -4902,6 +5205,7 @@ export function PlayHost() {
               // step. fireQuestCelebration fires a step placard with
               // the quest name + step name.
               let stepRewardsSummary = "";
+              let autoFinishQuestId: string | null = null;
               if (matchedQuestId && matchedStepIdx >= 0) {
                 const credit = creditQuestRetrieve(
                   questDefsRef.current,
@@ -4959,14 +5263,20 @@ export function PlayHost() {
                   // bookkeeping, so they should both signal the
                   // hand-off the same way.
                   if (credit.questCompleted) {
-                    fireQuestCelebration({
-                      kind: "step-final",
-                      title: def?.name ?? matchedQuestId,
-                      subtitle: stepFinalSubtitle(
-                        def?.questGiver?.npcName,
-                        stepRewardsSummary,
-                      ),
-                    });
+                    if (def?.returnToGiver) {
+                      fireQuestCelebration({
+                        kind: "step-final",
+                        title: def?.name ?? matchedQuestId,
+                        subtitle: stepFinalSubtitle(
+                          def?.questGiver?.npcName,
+                          stepRewardsSummary,
+                        ),
+                      });
+                    } else {
+                      // Auto turn-in — deferred until the pickup's
+                      // save is committed below (the grant builds on it).
+                      autoFinishQuestId = matchedQuestId;
+                    }
                   } else {
                     const subtitle = stepRewardsSummary
                       ? credit.step.name
@@ -4995,6 +5305,9 @@ export function PlayHost() {
               }
               saveWorld(nextSave);
               saveRef.current = nextSave;
+              if (autoFinishQuestId) {
+                finishCompletedQuestRef.current(autoFinishQuestId);
+              }
               {
                 const def = catalogItems.find((i) => i.id === ev.itemId);
                 const line = `Picked up ${def?.name ?? ev.itemId}.`;
@@ -5232,12 +5545,15 @@ export function PlayHost() {
                   (d) => d.id === ev.questId,
                 );
                 const step = def?.steps[ev.stepIdx];
-                if (ev.questCompleted) {
-                  // Lead with the "Return to {giver}" prompt — the most
-                  // actionable thing the player can do — then append any
-                  // item changes from this closing step so a grant or a
-                  // "Return Item" reclaim still shows on the placard
-                  // (it's also echoed in the log strip below).
+                if (ev.questCompleted && finishCompletedQuestRef.current(ev.questId)) {
+                  // Auto turned in — the "quest complete" placard fired.
+                } else if (ev.questCompleted) {
+                  // Return-to-giver quest: lead with the "Return to
+                  // {giver}" prompt — the most actionable thing the
+                  // player can do — then append any item changes from
+                  // this closing step so a grant or a "Return Item"
+                  // reclaim still shows on the placard (it's also
+                  // echoed in the log strip below).
                   fireQuestCelebration({
                     kind: "step-final",
                     title: def?.name ?? ev.questId,
@@ -5388,6 +5704,14 @@ export function PlayHost() {
                 npc.name ?? npc.id,
                 npc.exploration_xp,
               );
+              // "Meet person" quest steps targeting this NPC credit
+              // on the conversation; their meet_dialog (if any) opens
+              // the dialog ahead of the NPC's usual chatter.
+              const meetLines = creditMeetStepsRef.current(
+                npc.id,
+                npc.name ?? npc.id,
+              );
+              setNpcMeetLines({ npcId: npc.id, lines: meetLines });
               setNpcDialogId(ev.npcId);
               return;
             }
@@ -5515,7 +5839,9 @@ export function PlayHost() {
       // arrival closed out the quest's last step.
       for (const c of credited) {
         const def = questDefsRef.current.find((d) => d.id === c.questId);
-        if (c.questCompleted) {
+        if (c.questCompleted && finishCompletedQuestRef.current(c.questId)) {
+          // Auto turned in — "quest complete" placard already fired.
+        } else if (c.questCompleted) {
           fireQuestCelebration({
             kind: "step-final",
             title: def?.name ?? c.questId,
@@ -6067,7 +6393,9 @@ export function PlayHost() {
             const def = questDefsRef.current.find(
               (d) => d.id === c.questId,
             );
-            if (c.questCompleted) {
+            if (c.questCompleted && finishCompletedQuestRef.current(c.questId)) {
+              // Auto turned in — "quest complete" placard already fired.
+            } else if (c.questCompleted) {
               fireQuestCelebration({
                 kind: "step-final",
                 title: def?.name ?? c.questName,
@@ -6942,6 +7270,14 @@ export function PlayHost() {
         />
       ) : null}
 
+      {/* Main-quest finale — full-screen celebration + recap. */}
+      {finale ? (
+        <PlayMainQuestFinale
+          recap={finale}
+          onDismiss={() => setFinale(null)}
+        />
+      ) : null}
+
       {/* Quest Log is painted inside the Phaser scene — see
           PaintedQuestLog and the questLogOpen sync effect that
           drives open(data) / close(). The boolean is still the
@@ -7019,7 +7355,10 @@ export function PlayHost() {
             // Tolerant read — a bare dialog object or string (instead
             // of the canonical array) still renders rather than
             // collapsing to the "regards you in silence" fallback.
-            dialogs={normalizeNpcDialogs(npc.dialogs)}
+            dialogs={[
+              ...(npcMeetLines?.npcId === npc.id ? npcMeetLines.lines : []),
+              ...normalizeNpcDialogs(npc.dialogs),
+            ]}
             backstory={
               typeof npc.personal_history === "string"
                 ? npc.personal_history
@@ -7199,6 +7538,7 @@ export function PlayHost() {
           description={placard.description}
           explored={placard.explored}
           questTargets={placard.questTargets}
+          cleared={placard.cleared}
           onConfirm={() => {
             const act = pendingPlaceActionRef.current;
             pendingPlaceActionRef.current = null;

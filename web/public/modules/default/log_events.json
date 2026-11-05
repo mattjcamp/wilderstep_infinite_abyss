@@ -9,26 +9,30 @@
       "entries": [
         {
           "steps": 0,
-          "text": "Smoke still curls from the wrecked wagons. Whoever did this left in a hurry. We should look around and find some weapons... use the arrow keys or WASD to move. "
-        },
-        {
-          "steps": 4,
-          "text": "Tip: Walk over items to pick them up."
+          "text": "Smoke still curls from the wrecked wagons. Whoever did this left in a hurry. We should look around and find something to defend ourselves with and look for any survivors... use the arrow keys or WASD to move. "
         },
         {
           "steps": 10,
-          "text": "Tip: press L to open the full Adventure Log, and H for help."
+          "text": "Tip: Walk over items to pick them up."
         },
         {
-          "steps": 7,
+          "steps": 5,
+          "text": "There is a lady over there wandering around, go talk to her. Tip: characters with a golden halo will have quests and lore for you."
+        },
+        {
+          "steps": 12,
           "text": "Tip: press P to access the Party Screen to equip items, view characters and send found items to individual characters. Go to a character screen to equip items, use abilities and view character details."
         },
         {
-          "steps": 15,
+          "steps": 20,
           "text": "Tip: get more experience by discovering new areas, talking to new people, reading lore and defeating enemies on the battlefield"
         },
         {
-          "steps": 20,
+          "steps": 25,
+          "text": "Tip: press H for help and to see what actions that you can take"
+        },
+        {
+          "steps": 27,
           "text": "Be careful, the sounds of beasts rustling around fills the air around you. Equip what weapons you have and try to find a way to get clear of these burning wagons. Try to find a settlement and get some help."
         }
       ]
@@ -46,6 +50,26 @@
         {
           "steps": 6,
           "text": "To buy weapons, armor and other items go to the stalls located at the center of town. In these stalls, you can buy and sell items."
+        },
+        {
+          "steps": 25,
+          "text": "Tip: If you are running low on hit points or magic, you can set up camp via the Party screen (Press P) if you have Camping Supplies in your inventory. Rumor has it that listening to some bards playing music will gradually heal you as well..."
+        }
+      ]
+    },
+    {
+      "id": "overview",
+      "name": "Overview Log",
+      "map_id": "overview_1",
+      "repeat": "once",
+      "entries": [
+        {
+          "steps": 100,
+          "text": "Tip: your log is saved in the background and you can press \"L\" at any time to read it"
+        },
+        {
+          "steps": 125,
+          "text": "Tip: your party gains experience by mostly by completing quests and destroying monsters, but you will also gain experience by meeting new people, reading lore, exploring and clearing certain dungeons"
         }
       ]
     }

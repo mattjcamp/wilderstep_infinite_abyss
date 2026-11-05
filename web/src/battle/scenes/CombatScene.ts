@@ -747,6 +747,11 @@ export class CombatScene extends Phaser.Scene {
     Phaser.GameObjects.Particles.ParticleEmitter
   >();
 
+  /** Most recent log entry, pinned to the top of the log box. */
+  private logLatestText!: Phaser.GameObjects.Text;
+  /** Rule separating the latest entry from the history below it. */
+  private logDivider!: Phaser.GameObjects.Rectangle;
+  /** Older entries, newest first, stacked under the divider. */
   private logText!: Phaser.GameObjects.Text;
   /** Box the battle log draws into (HUD column, below the party
    *  cards). Measured by drawHud, consumed by drawLog / refreshLog. */
@@ -2308,11 +2313,25 @@ export class CombatScene extends Phaser.Scene {
     // measured the space left over into `logArea`.
     const a = this.logArea;
     this.track(this.add.text(a.x, a.y, "LOG", FONT_HEAD()));
+    // Newest entry sits on top in gold; refreshLog positions the
+    // divider and history text beneath it once its height is known.
+    this.logLatestText = this.track(
+      this.add.text(a.x, a.y + 26, "", {
+        fontFamily: "monospace",
+        fontSize: "12px",
+        color: hex(C.gold),
+        lineSpacing: 2,
+        wordWrap: { width: a.w, useAdvancedWrap: true },
+      }),
+    );
+    this.logDivider = this.track(
+      this.add.rectangle(a.x, a.y + 26, a.w, 1, C.panelEdge).setOrigin(0, 0).setVisible(false),
+    );
     this.logText = this.track(
       this.add.text(a.x, a.y + 26, "", {
         fontFamily: "monospace",
         fontSize: "12px",
-        color: hex(C.body),
+        color: hex(C.dim),
         lineSpacing: 2,
         wordWrap: { width: a.w, useAdvancedWrap: true },
       }),
@@ -7141,12 +7160,48 @@ export class CombatScene extends Phaser.Scene {
     // Show as many of the newest lines as fit the HUD log box.
     // Long lines word-wrap in the narrow column, so measure the
     // rendered height and drop the oldest lines until it fits.
-    const maxH = this.logArea.h - 26;
-    let lines = this.combat.log.slice(-24);
-    this.logText.setText(lines.join("\n"));
-    while (lines.length > 1 && this.logText.height > maxH) {
-      lines = lines.slice(1);
-      this.logText.setText(lines.join("\n"));
+    //
+    // Layout (newest first, one block per combatant turn):
+    //   LOG
+    //   <lines from the most recent turn>   ← gold, in order
+    //   ─────────────────────────────────   ← divider
+    //   <previous turn's lines>             ← history, newest turn first
+    //   <turn before that>                  ← (lines within a turn keep
+    //   ...                                    their original order)
+    const a = this.logArea;
+    const top = a.y + 26;
+    const bottom = a.y + a.h;
+    const log = this.combat.log;
+    const starts = this.combat.logTurnStarts;
+
+    // Split the flat log into per-turn groups, dropping empty ones
+    // (the current actor may not have logged anything yet).
+    const turns: string[][] = [];
+    for (let i = 0; i < starts.length; i++) {
+      const group = log.slice(starts[i], i + 1 < starts.length ? starts[i + 1] : log.length);
+      if (group.length > 0) turns.push(group);
+    }
+    const latest = turns.pop() ?? [];
+    this.logLatestText.setPosition(a.x, top).setText(latest.join("\n"));
+
+    // History: older turns, newest turn first, capped at 24 lines.
+    let history: string[] = [];
+    for (let i = turns.length - 1; i >= 0 && history.length < 24; i--) {
+      history.push(...turns[i]);
+    }
+    history = history.slice(0, 24);
+
+    const SEP_PAD = 5;
+    const dividerY = top + this.logLatestText.height + SEP_PAD;
+    this.logDivider.setPosition(a.x, dividerY).setVisible(history.length > 0);
+    const histY = dividerY + 1 + SEP_PAD;
+    const maxH = bottom - histY;
+    this.logText.setPosition(a.x, histY).setText(history.join("\n"));
+    // History word-wraps in the narrow column; drop the oldest
+    // (bottom) lines until the stack fits the box.
+    while (history.length > 0 && this.logText.height > maxH) {
+      history = history.slice(0, -1);
+      this.logText.setText(history.join("\n"));
     }
   }
 

@@ -416,7 +416,9 @@ export interface WorldSave {
    *  `stepKills` at sim mount, so partial progress on a
    *  count-3-wolf-packs style step survives map changes and
    *  reloads. Absent in legacy saves — counters start at zero,
-   *  matching the old round-down behaviour. */
+   *  matching the old round-down behaviour. Also holds the
+   *  dungeons-cleared tally for `clear_dungeon` steps (same quest id
+   *  → step id → count shape). */
   questStepKills?: Record<string, Record<string, number>>;
   /** Quest ids the party has already turned in and claimed rewards
    *  for. Distinct from `acceptedQuests` (which only tracks "yes I

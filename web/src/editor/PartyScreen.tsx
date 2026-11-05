@@ -54,6 +54,7 @@ import {
   CharacterSheetSim,
   type SheetItemRef,
 } from "./CharacterSheetSim";
+import { isModalKeyLocked } from "@/play/modalKeyLock";
 import { DurabilityBar } from "./DurabilityBar";
 import { ItemSprite } from "./ItemSprite";
 import { resolveSpritePath } from "./spriteFields";
@@ -1123,6 +1124,7 @@ export function PartyScreen({
   useEffect(() => {
     if (focusedMember) return; // Sheet handles its own input.
     const onKey = (e: KeyboardEvent) => {
+      if (isModalKeyLocked()) return; // a picker modal owns the keys
       const target = e.target as HTMLElement | null;
       if (
         target &&
@@ -1339,6 +1341,8 @@ export function PartyScreen({
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
+      if (isModalKeyLocked()) return; // a picker modal owns the keys
+
       if (focusedMemberIdRef.current == null) return; // sheet not open
       const target = e.target as HTMLElement | null;
       if (

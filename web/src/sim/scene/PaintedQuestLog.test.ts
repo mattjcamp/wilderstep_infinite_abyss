@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   PaintedQuestLog,
   bucketQuests,
+  pinMainQuest,
   stepStatusFor,
   type PaintedQuestLogData,
   type PaintedQuestLogQuest,
@@ -29,6 +30,11 @@ interface FakeObject {
   setText: (s: string) => FakeObject;
   setPosition: (x: number, y: number) => FakeObject;
   setMask: (m: unknown) => FakeObject;
+  setVisible: (v: boolean) => FakeObject;
+  setCrop: (...args: number[]) => FakeObject;
+  setSize: (w: number, h: number) => FakeObject;
+  disableInteractive: () => FakeObject;
+  visible: boolean;
   on: (event: string, cb: (p?: unknown) => void) => FakeObject;
   destroy: () => void;
 }
@@ -59,6 +65,18 @@ function fakeObject(initialWidth = 100, initialHeight = 16): FakeObject {
       return obj;
     },
     setMask: () => obj,
+    visible: true,
+    setVisible: (v) => {
+      obj.visible = v;
+      return obj;
+    },
+    setCrop: () => obj,
+    setSize: (w, h) => {
+      obj.width = w;
+      obj.height = h;
+      return obj;
+    },
+    disableInteractive: () => obj,
     on: (event, cb) => {
       const list = listeners.get(event) ?? [];
       list.push(cb);
@@ -75,6 +93,7 @@ function fakeObject(initialWidth = 100, initialHeight = 16): FakeObject {
 interface FakeContainer extends FakeObject {
   children: FakeObject[];
   add: (child: FakeObject) => FakeContainer;
+  removeAll: (destroy?: boolean) => FakeContainer;
 }
 
 function fakeContainer(): FakeContainer {
@@ -85,6 +104,11 @@ function fakeContainer(): FakeContainer {
     children,
     add: (child) => {
       children.push(child);
+      return container;
+    },
+    removeAll: (destroy) => {
+      for (const c of children) if (destroy) c.destroyed = true;
+      children.length = 0;
       return container;
     },
     setPosition: (x, y) => {
@@ -167,13 +191,17 @@ function makeFakeScene(): FakeScene {
         lastContainer = c;
         return c;
       },
-      rectangle: (_x, _y, w, h) => {
+      rectangle: (x, y, w, h) => {
         const obj = fakeObject(w, h);
+        obj.x = x;
+        obj.y = y;
         created.push(obj);
         return obj;
       },
-      text: (_x, _y, str) => {
+      text: (x, y, str) => {
         const obj = fakeObject();
+        obj.x = x;
+        obj.y = y;
         // Pretend a single line of text is ~14px tall — close enough
         // for the painter's "row stacking" math without invoking the
         // real Phaser text measurement pipeline.
@@ -342,6 +370,8 @@ describe("PaintedQuestLog — lifecycle", () => {
     screen.open(
       dataOf({ accepted: ["rescue-cat"], progress: { "rescue-cat": 1 } }),
     );
+    // Non-main quests start collapsed — expand to see the checklist.
+    screen.toggleQuest("rescue-cat");
     const painted = scene.created
       .map((o) => (o as FakeObject & { str?: string }).str)
       .filter((s): s is string => typeof s === "string");
@@ -362,6 +392,8 @@ describe("PaintedQuestLog — lifecycle", () => {
     screen.open(
       dataOf({ accepted: ["rescue-cat"], progress: { "rescue-cat": 0 } }),
     );
+    // Non-main quests start collapsed — expand to see the checklist.
+    screen.toggleQuest("rescue-cat");
     const painted = scene.created
       .map((o) => (o as FakeObject & { str?: string }).str)
       .filter((s): s is string => typeof s === "string");
@@ -589,17 +621,58 @@ describe("PaintedQuestLog — scrolling", () => {
     screen.close();
   });
 
-  it("ArrowDown scrolls down via the keydown listener", () => {
-    const scene = makeFakeScene();
-    const screen = manyQuests(scene);
-    const ev = {
-      key: "ArrowDown",
+  function key(k: string) {
+    window.dispatchEvent({
+      key: k,
       type: "keydown",
       stopPropagation: vi.fn(),
       preventDefault: vi.fn(),
-    } as unknown as KeyboardEvent;
-    window.dispatchEvent(ev);
+    } as unknown as KeyboardEvent);
+  }
+
+  it("ArrowDown walks the cursor and scrolls to keep it in view", () => {
+    const scene = makeFakeScene();
+    const screen = manyQuests(scene);
+    for (let i = 0; i < 24; i++) key("ArrowDown");
+    expect(screen.getSelectedQuestId()).toBe("q-24");
     expect(screen.getScrollOffset()).toBeLessThan(0);
+    screen.close();
+  });
+
+  it("selects the first quest on open; arrows move, clamped at the ends", () => {
+    const scene = makeFakeScene();
+    const screen = manyQuests(scene);
+    expect(screen.getSelectedQuestId()).toBe("q-0");
+    key("ArrowUp");
+    expect(screen.getSelectedQuestId()).toBe("q-0");
+    key("ArrowDown");
+    key("ArrowDown");
+    expect(screen.getSelectedQuestId()).toBe("q-2");
+    key("ArrowUp");
+    expect(screen.getSelectedQuestId()).toBe("q-1");
+    for (let i = 0; i < 40; i++) key("ArrowDown");
+    expect(screen.getSelectedQuestId()).toBe("q-24");
+    for (let i = 0; i < 40; i++) key("ArrowUp");
+    expect(screen.getSelectedQuestId()).toBe("q-0");
+    expect(screen.getScrollOffset()).toBe(0);
+    screen.close();
+  });
+
+  it("Enter / Space toggle the selected quest; Right / Left expand / collapse", () => {
+    const scene = makeFakeScene();
+    const screen = manyQuests(scene);
+    key("ArrowDown");
+    expect(screen.isQuestExpanded("q-1")).toBe(false);
+    key("Enter");
+    expect(screen.isQuestExpanded("q-1")).toBe(true);
+    expect(screen.getSelectedQuestId()).toBe("q-1");
+    key(" ");
+    expect(screen.isQuestExpanded("q-1")).toBe(false);
+    key("ArrowRight");
+    key("ArrowRight");
+    expect(screen.isQuestExpanded("q-1")).toBe(true);
+    key("ArrowLeft");
+    expect(screen.isQuestExpanded("q-1")).toBe(false);
     screen.close();
   });
 
@@ -669,5 +742,88 @@ describe("stepStatusFor", () => {
     // the flag short-circuits everything to done.
     expect(stepStatusFor("active", true, false, false)).toBe("done");
     expect(stepStatusFor("active", true, false, true)).toBe("done");
+  });
+});
+
+describe("PaintedQuestLog — main quest + collapsing", () => {
+  const strings = (scene: FakeScene) =>
+    scene.created
+      .filter((o) => !o.destroyed)
+      .map((o) => (o as FakeObject & { str?: string }).str)
+      .filter((x): x is string => typeof x === "string");
+
+  const withMain = (): PaintedQuestLogData => ({
+    quests: QUESTS.map((q) => (q.id === "slay-orc" ? { ...q, main_quest: true } : q)),
+    acceptedQuests: ["rescue-cat", "slay-orc"],
+    questStepProgress: { "rescue-cat": 0, "slay-orc": 0 },
+    turnedInQuests: [],
+  });
+
+  it("pinMainQuest pulls the flagged active quest out of ACTIVE", () => {
+    const pinned = pinMainQuest(bucketQuests(withMain()));
+    expect(pinned.main?.quest.id).toBe("slay-orc");
+    expect(pinned.active.map((q) => q.id)).toEqual(["rescue-cat"]);
+  });
+
+  it("a turned-in main quest is not pinned", () => {
+    const d = { ...withMain(), turnedInQuests: ["slay-orc"] };
+    const pinned = pinMainQuest(bucketQuests(d));
+    expect(pinned.main).toBeNull();
+    expect(pinned.turnedIn.map((q) => q.id)).toEqual(["slay-orc"]);
+  });
+
+  it("paints a MAIN QUEST section above ACTIVE, expanded by default", () => {
+    const scene = makeFakeScene();
+    const screen = makeScreen(scene, () => {});
+    screen.open(withMain());
+    const s = strings(scene);
+    expect(s.indexOf("MAIN QUEST")).toBeGreaterThanOrEqual(0);
+    expect(s.indexOf("MAIN QUEST")).toBeLessThan(s.indexOf("ACTIVE"));
+    expect(screen.isQuestExpanded("slay-orc")).toBe(true);
+    expect(screen.isQuestExpanded("rescue-cat")).toBe(false);
+    // Main quest's step detail is visible; the collapsed quest's is not,
+    // but its current step name still shows.
+    expect(s.some((x) => x.includes("Track him through the woods."))).toBe(true);
+    expect(s.some((x) => x.includes("Somewhere in the orchard."))).toBe(false);
+    expect(s.some((x) => x.includes("Find the tree"))).toBe(true);
+  });
+
+  it("toggleQuest expands and collapses, and is remembered across reopen", () => {
+    const scene = makeFakeScene();
+    const screen = makeScreen(scene, () => {});
+    screen.open(withMain());
+    screen.toggleQuest("rescue-cat");
+    expect(strings(scene).some((x) => x.includes("Somewhere in the orchard."))).toBe(true);
+    screen.toggleQuest("slay-orc");
+    expect(strings(scene).some((x) => x.includes("Track him through the woods."))).toBe(false);
+    screen.close();
+    screen.open(withMain());
+    expect(screen.isQuestExpanded("rescue-cat")).toBe(true);
+    expect(screen.isQuestExpanded("slay-orc")).toBe(false);
+  });
+
+  it("hides content that falls below the viewport (no bleed)", () => {
+    const scene = makeFakeScene();
+    const ids = Array.from({ length: 30 }, (_, i) => `q-${i}`);
+    const quests: PaintedQuestLogQuest[] = ids.map((id, i) => ({
+      id,
+      name: `Quest ${i}`,
+      steps: [{ name: "Step 1" }],
+    }));
+    const screen = makeScreen(scene, () => {});
+    screen.open({
+      quests,
+      acceptedQuests: ids,
+      questStepProgress: {},
+      turnedInQuests: [],
+    });
+    const content = scene.lastContainer!;
+    // Text rows past the viewport bottom (534px) must be hidden. (The
+    // invisible title-row click targets are disabled instead.)
+    const below = content.children.filter(
+      (o) => o.y >= 534 && typeof (o as FakeObject & { str?: string }).str === "string",
+    );
+    expect(below.length).toBeGreaterThan(0);
+    expect(below.every((o) => !o.visible)).toBe(true);
   });
 });

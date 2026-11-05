@@ -30,7 +30,8 @@
         "chest_item": "treasure_chest"
       },
       "wall_decor": 0.5,
-      "pits": 0.5
+      "pits": 0.5,
+      "floor_variety": 0
     },
     {
       "id": "stone_halls",

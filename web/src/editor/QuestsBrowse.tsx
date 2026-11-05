@@ -64,7 +64,13 @@ const UNTAGGED = "(untagged)";
 // `discover` is the "find a place" kind: the party stands on a cell
 // (col, row) on the step's Map and the quest completes in place —
 // rewards granted immediately, no return to the giver.
-const KNOWN_KINDS = ["kill", "retrieve", "reach", "discover"] as const;
+// `meet` is "meet person": the party talks to (bumps) the NPC named by
+// `npc_id`, anywhere in the world; an optional `meet_dialog` is what
+// that NPC says when the meeting happens.
+// `clear_dungeon` credits when the party clears (every monster, every
+// floor) ANY generated dungeon after accepting — never hand-painted
+// maps. `count` = how many clears are needed (default 1).
+const KNOWN_KINDS = ["kill", "retrieve", "reach", "discover", "meet", "clear_dungeon"] as const;
 type StepKind = (typeof KNOWN_KINDS)[number] | string;
 
 interface QuestStep {
@@ -90,6 +96,10 @@ interface QuestStep {
    *  selection. Optional; omitting it or leaving it empty preserves
    *  the historical pure-random placement. JSON key: `positions`. */
   positions?: Array<{ col: number; row: number }>;
+  /** For `kind === "meet"` — npcs.json id of the person to talk to. */
+  npc_id?: string;
+  /** For `kind === "meet"` — optional line the NPC says when met. */
+  meet_dialog?: string;
   /** For `kind === "retrieve"` — the item the runtime stamps onto
    *  the target cell once the quest is accepted. JSON key:
    *  `item_id`. */
@@ -183,6 +193,14 @@ interface QuestRecord {
   name: string;
   description?: string;
   tags?: string[];
+  /** The module's main quest — pinned to the top of the player's
+   *  quest log and expanded by default. At most one per module; the
+   *  editor clears the flag on the others when one is set. */
+  main_quest?: boolean;
+  /** When true, the party has to go back to the quest giver to turn
+   *  the quest in. Absent / false (the default) → rewards are granted
+   *  the moment the last step completes. */
+  return_to_giver?: boolean;
   quest_giver?: QuestGiver;
   rewards?: Rewards;
   steps: QuestStep[];
@@ -203,6 +221,11 @@ interface MapSummary {
   /** Organizational tags from maps.json — drive the picker's
    *  tag-grouped optgroups (same ordering as the maps browse tree). */
   tags?: string[];
+}
+
+interface NpcSummary {
+  id: string;
+  name?: string;
 }
 
 interface DungeonSummary {
@@ -226,6 +249,7 @@ type LoadState =
       maps: MapSummary[];
       dungeons: DungeonSummary[];
       encounters: EncounterPickerEntry[];
+      npcs: NpcSummary[];
       ownFile: Record<string, unknown> | null;
       isDraft: boolean;
     }
@@ -248,6 +272,7 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
         mapsLayers,
         dungeonsLayers,
         encountersLayers,
+        npcsLayers,
       ] = await Promise.all([
           src.loadModelLayers(moduleId, "quests"),
           // Quests offered by `uses` libraries. Not part of the
@@ -257,6 +282,8 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
           src.loadModelLayers(moduleId, "maps"),
           src.loadModelLayers(moduleId, "dungeons"),
           src.loadModelLayers(moduleId, "encounters"),
+          // NPC catalog — backs the "meet" step's person picker.
+          src.loadModelLayers(moduleId, "npcs").catch(() => null),
         ]);
       const draft = await loadDraft<Record<string, unknown>>(moduleId, MODEL_KEY);
       const ownEffective =
@@ -320,6 +347,16 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
         monsters: e.monsters,
       }));
 
+      const npcsMerged = npcsLayers
+        ? (mergeModel("npcs", npcsLayers.inherited, npcsLayers.ownFile) as {
+            npcs?: Array<{ id: string; name?: string }>;
+          } | null)
+        : null;
+      const npcs = (npcsMerged?.npcs ?? []).map((n) => ({
+        id: n.id,
+        name: n.name,
+      }));
+
       setState({
         kind: "ok",
         quests,
@@ -328,6 +365,7 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
         maps,
         dungeons,
         encounters,
+        npcs,
         ownFile: ownEffective ?? null,
         isDraft: hasDraft(moduleId, MODEL_KEY),
       });
@@ -450,7 +488,22 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
   const onUpdateQuest = (id: string, patch: Partial<QuestRecord>) => {
     if (state.kind !== "ok") return;
     persist(
-      state.quests.map((q) => (q.id === id ? { ...q, ...patch } : q)),
+      state.quests.map((q) => {
+        if (q.id === id) {
+          const next = { ...q, ...patch };
+          // Keep the file clean — absent means "not main" / "no return".
+          if (next.main_quest !== true) delete next.main_quest;
+          if (next.return_to_giver !== true) delete next.return_to_giver;
+          return next;
+        }
+        // Only one main quest: setting it here clears it elsewhere.
+        if (patch.main_quest === true && q.main_quest) {
+          const rest = { ...q };
+          delete rest.main_quest;
+          return rest;
+        }
+        return q;
+      }),
     );
   };
 
@@ -711,6 +764,7 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
                       items={state.items}
                       maps={state.maps}
                       dungeons={state.dungeons}
+                      npcs={state.npcs}
                       encounters={state.encounters}
                       existingTags={allTags}
                       onUpdate={(patch) => onUpdateQuest(q.id, patch)}
@@ -790,6 +844,14 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
                     >
                       <div className="min-w-0 flex-1 text-sm text-parchment/85">
                         <div className="truncate">
+                          {q.main_quest ? (
+                            <span
+                              className="mr-1 text-ember"
+                              title="Main quest"
+                            >
+                              ★
+                            </span>
+                          ) : null}
                           <span className="font-display">{q.name}</span>
                           <span className="ml-2 font-mono text-[13px] text-parchment/65">
                             {q.id}
@@ -843,6 +905,7 @@ function QuestEditor({
   maps,
   dungeons,
   encounters,
+  npcs,
   existingTags,
   onUpdate,
   onAddStep,
@@ -854,6 +917,7 @@ function QuestEditor({
   maps: MapSummary[];
   dungeons: DungeonSummary[];
   encounters: EncounterPickerEntry[];
+  npcs: NpcSummary[];
   existingTags: string[];
   onUpdate: (patch: Partial<QuestRecord>) => void;
   onAddStep: () => void;
@@ -886,6 +950,40 @@ function QuestEditor({
           />
         </label>
       </div>
+      <label className="mt-3 flex items-start gap-2">
+        <input
+          type="checkbox"
+          checked={quest.main_quest === true}
+          onChange={(e) => onUpdate({ main_quest: e.target.checked })}
+          className="mt-0.5"
+        />
+        <span className="flex flex-col">
+          <span className="text-[13px] text-parchment/85">Main quest</span>
+          <span className="text-xs text-parchment/65">
+            Pinned to the top of the player&apos;s quest log and expanded by
+            default. Only one quest can be the main quest — checking this
+            clears it on any other.
+          </span>
+        </span>
+      </label>
+      <label className="mt-3 flex items-start gap-2">
+        <input
+          type="checkbox"
+          checked={quest.return_to_giver === true}
+          onChange={(e) => onUpdate({ return_to_giver: e.target.checked })}
+          className="mt-0.5"
+        />
+        <span className="flex flex-col">
+          <span className="text-[13px] text-parchment/85">
+            Return to quest giver
+          </span>
+          <span className="text-xs text-parchment/65">
+            When on, the party must go back to the quest giver to turn the
+            quest in and collect the rewards. Off (default): rewards are
+            granted the moment the last step completes.
+          </span>
+        </span>
+      </label>
       <div className="mt-3">
         <span className="text-xs uppercase tracking-wide text-parchment/65">
           Tags
@@ -928,6 +1026,7 @@ function QuestEditor({
               items={items}
               dungeons={dungeons}
               encounters={encounters}
+              npcs={npcs}
               onUpdate={(patch) => onUpdateStep(i, patch)}
               onDelete={() => onDeleteStep(i)}
             />
@@ -1681,6 +1780,7 @@ function StepRow({
   items,
   dungeons,
   encounters,
+  npcs,
   onUpdate,
   onDelete,
 }: {
@@ -1691,6 +1791,7 @@ function StepRow({
   items: ItemSummary[];
   dungeons: DungeonSummary[];
   encounters: EncounterPickerEntry[];
+  npcs: NpcSummary[];
   onUpdate: (patch: Partial<QuestStep>) => void;
   onDelete: () => void;
 }) {
@@ -1960,10 +2061,9 @@ function StepRow({
             </p>
           </fieldset>
         ) : step.kind === "discover" ? (
-          // Discover: the party stands on (col, row) of the step's Map
-          // and the quest completes in place — rewards granted on the
-          // spot, no return to the giver. No item, no encounter; the
-          // destination itself is the objective.
+          // Discover: the party stands on (col, row) of the step's Map.
+          // No item, no encounter; the destination itself is the
+          // objective.
           <fieldset className="sm:col-span-2 rounded border border-parchment/15 bg-ink/20 p-2">
             <legend className="px-1 text-xs uppercase tracking-wide text-parchment/75">
               Discover target
@@ -2001,10 +2101,86 @@ function StepRow({
             <p className="mt-1 text-xs text-parchment/65">
               The step credits when the party walks onto this cell on
               the step's <strong>Map</strong> (set in the Location block
-              below). When this completes the quest, rewards are granted
-              on the spot — no need to return to the quest giver. The
-              tile shows no marker, so the party discovers it by
-              exploring.
+              below). The tile shows no marker, so the party discovers it
+              by exploring.
+            </p>
+          </fieldset>
+        ) : step.kind === "meet" ? (
+          // Meet person: credits when the party talks to (bumps) this
+          // NPC, wherever they are. The optional meet line opens that
+          // conversation, ahead of the NPC's usual dialog.
+          <fieldset className="sm:col-span-2 rounded border border-parchment/15 bg-ink/20 p-2">
+            <legend className="px-1 text-xs uppercase tracking-wide text-parchment/75">
+              Meet person
+            </legend>
+            <label className="block">
+              <span className="text-xs uppercase tracking-wide text-parchment/65">
+                Person (NPC)
+              </span>
+              <select
+                value={step.npc_id ?? ""}
+                onChange={(e) =>
+                  onUpdate({ npc_id: e.target.value || undefined })
+                }
+                className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-[13px] text-parchment/90"
+              >
+                <option value="">(pick one…)</option>
+                {!npcs.some((n) => n.id === step.npc_id) && step.npc_id ? (
+                  <option value={step.npc_id}>(missing) {step.npc_id}</option>
+                ) : null}
+                {npcs.map((n) => (
+                  <option key={n.id} value={n.id}>
+                    {n.name ? `${n.name} (${n.id})` : n.id}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="mt-2 block">
+              <span className="text-xs uppercase tracking-wide text-parchment/65">
+                What they say when met (optional)
+              </span>
+              <textarea
+                value={step.meet_dialog ?? ""}
+                onChange={(e) =>
+                  onUpdate({ meet_dialog: e.target.value || undefined })
+                }
+                rows={2}
+                className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
+              />
+            </label>
+            <p className="mt-1 text-xs text-parchment/65">
+              The step completes when the party talks to this person on
+              any map. Setting a <strong>Map</strong> in the Location
+              block below is optional — it only flags that map&apos;s
+              entrances as relevant to the quest.
+            </p>
+          </fieldset>
+        ) : step.kind === "clear_dungeon" ? (
+          <fieldset className="sm:col-span-2 rounded border border-parchment/15 bg-ink/20 p-2">
+            <legend className="px-1 text-xs uppercase tracking-wide text-parchment/75">
+              Clear dungeons
+            </legend>
+            <label className="block">
+              <span className="text-xs uppercase tracking-wide text-parchment/65">
+                How many dungeons
+              </span>
+              <input
+                type="number"
+                min={1}
+                value={typeof step.count === "number" ? step.count : 1}
+                onChange={(e) => {
+                  const n = Math.max(1, Number(e.target.value) || 1);
+                  onUpdate({ count: n });
+                }}
+                className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-[13px] text-parchment/90"
+              />
+            </label>
+            <p className="mt-1 text-xs text-parchment/65">
+              Each time the party <strong>clears any generated
+              dungeon</strong> (every monster on every floor) after
+              accepting the quest, it counts toward this number.
+              Hand-painted maps don&apos;t count. Leave the Location
+              block empty.
             </p>
           </fieldset>
         ) : (

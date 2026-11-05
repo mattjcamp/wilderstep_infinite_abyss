@@ -30,6 +30,8 @@ The "Used?" column reflects the v2 TypeScript implementation under `web/`. The c
 | `id` | string | yes | Stable identifier in snake_case (e.g. `"the_lost_amulet"`) | TBD |
 | `name` | string | yes | Display name shown in the quest log | TBD |
 | `description` | string | no | Flavor text / quest-log summary | TBD |
+| `main_quest` | bool | no | Marks the module's main quest. The player's quest log pins it to a MAIN QUEST section at the top (while active or ready to turn in) and shows it expanded; other quests start collapsed. At most one per module — the editor clears the flag elsewhere when it's set. | Yes |
+| `return_to_giver` | bool | no | Default **false**: the quest is turned in automatically — rewards granted, "quest complete" fires — the moment its last step completes. When **true**, the completed quest waits until the party talks to the giver again (who then shows `end_dialog`). | Yes |
 | `tags` | string[] | no | Editor-side organizational labels (e.g. `["main_story"]`, `["side", "temple_arc"]`). Purely for grouping in the browse view — gameplay doesn't read them. | TBD |
 | `quest_giver` | object | no | The NPC the player talks to in order to *offer* the quest (start dialog) and to *complete* it (end dialog). See *quest_giver shape* below. | TBD |
 | `rewards` | object | no | What the party gets on completion. See *rewards shape* below. | TBD |

@@ -9,7 +9,7 @@
       "steps": [
         {
           "id": "the_crystal_skull_step_2",
-          "name": "Step 2",
+          "name": "Step 2 Find the Crystal Skull",
           "kind": "retrieve",
           "item_id": "crystal_skull",
           "location_kind": "map",
@@ -24,7 +24,8 @@
         "npc_sprite": "person/person_male_villager_wealthy.png",
         "start_dialog": "Please fine adventures, the undead haunt our lands because the stupid Guild of Sorcerers has stolen the Crystal Skull and hid it deep in the mountains to the East. Please retrieve the Skull and give it back to the Deep Ones. Once the Skull is back in the hands of our masters, our dead can rest again.",
         "end_dialog": "Glad to see you have return and now our deceased friends and family can rest with The Deep One"
-      }
+      },
+      "return_to_giver": true
     },
     {
       "id": "the_wandering_corpse",
@@ -67,7 +68,8 @@
       "rewards": {
         "xp": 200,
         "gold": 200
-      }
+      },
+      "return_to_giver": true
     },
     {
       "id": "the_giant_bats",
@@ -95,7 +97,8 @@
       "rewards": {
         "xp": 50,
         "gold": 50
-      }
+      },
+      "return_to_giver": true
     },
     {
       "id": "avengers",
@@ -143,6 +146,34 @@
       "rewards": {
         "xp": 500,
         "gold": 500
+      },
+      "return_to_giver": true
+    },
+    {
+      "id": "clear_the_dungeon",
+      "name": "Clear out the dungeons",
+      "description": "We have caves and abandoned ruins scattered throughout our lands and they are a danger. Destroy any monsters lurking in these dark spaces.",
+      "tags": [],
+      "steps": [
+        {
+          "id": "clear_the_dungeon_step_1",
+          "name": "Step 1 Clear out any two dungeons",
+          "kind": "clear_dungeon",
+          "count": 2,
+          "description": "Clear out any two grottos or dungeons that you can find scattered throughout the map",
+          "rewards": {
+            "items": [
+              "camping_supplies",
+              "fire_arrows"
+            ]
+          }
+        }
+      ],
+      "quest_giver": {
+        "npc_name": "The Old Lady",
+        "npc_sprite": "person/dwarf_female_villager_normal.png",
+        "start_dialog": "Greetings, what a gang of youthful strong people. I could use a little bit of help. Now that I am getting up in years, I spend most of my time minding the children. Lately, too many children have been wandering into the grottos and ruins scattered all over the place here. Can you go into some of these spaces and clear out any dangerous monsters hiding in these pits? Make our lands safe for our children. Please! If you could just find any two dungeons to clear that would help me so much!",
+        "end_dialog": ""
       }
     }
   ]

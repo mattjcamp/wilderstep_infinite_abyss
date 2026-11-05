@@ -270,6 +270,12 @@ export interface SimQuestRef {
   id: string;
   name: string;
   description?: string;
+  /** Authored flag: this is the module's main quest. The quest log
+   *  pins it to the top and starts it expanded. */
+  main_quest?: boolean;
+  /** When true the party must go back to the giver to turn the quest
+   *  in; absent / false → auto turn-in when the last step completes. */
+  return_to_giver?: boolean;
   /** NPC that offers (and later accepts) the quest. The overlay
    *  renders the sprite + name + start_dialog. */
   quest_giver?: {

@@ -159,6 +159,48 @@
         "stones",
         "stones"
       ]
+    },
+    {
+      "id": "ammo",
+      "name": "Ammunition",
+      "description": "A stall selling all an adventure would need to continue",
+      "items": [
+        "arrows",
+        "arrows",
+        "arrows",
+        "arrows",
+        "arrows",
+        "bolts",
+        "bolts",
+        "bolts",
+        "bolts",
+        "arrows",
+        "stones",
+        "stones",
+        "stones",
+        "stones",
+        "stones",
+        "fire_arrows",
+        "fire_arrows",
+        "fire_arrows",
+        "fire_arrows",
+        "fire_arrows",
+        "fire_oil",
+        "fire_oil",
+        "fire_oil",
+        "fire_oil",
+        "fire_oil",
+        "healing_potion",
+        "healing_potion",
+        "healing_potion",
+        "healing_potion",
+        "healing_herb",
+        "mana_potion",
+        "mana_potion",
+        "mana_potion",
+        "mana_potion",
+        "mana_potion"
+      ]
     }
   ]
 }

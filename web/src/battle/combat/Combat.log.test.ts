@@ -88,4 +88,20 @@ describe("battle log", () => {
     expect(combat.log[0]).toBe("Borin moves 1 tile.");
     expect(combat.log[1]).toMatch(/^Borin (hits|crits|misses) Goblin/);
   });
+
+  it("marks a turn boundary in logTurnStarts when a turn ends", () => {
+    const { combat } = fixture();
+    combat.tryMove("e");
+    combat.tryMove("e");
+    expect(combat.logTurnStarts).toEqual([0]);
+    combat.endTurn();
+    expect(combat.logTurnStarts).toEqual([0, 1]);
+  });
+
+  it("doesn't add an empty group when a turn logs nothing", () => {
+    const { combat } = fixture();
+    combat.endTurn();
+    combat.endTurn();
+    expect(combat.logTurnStarts).toEqual([0]);
+  });
 });

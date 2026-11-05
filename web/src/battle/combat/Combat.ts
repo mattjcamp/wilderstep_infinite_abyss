@@ -203,6 +203,12 @@ export class Combat {
    */
   private attackedThisTurn = false;
   readonly log: string[] = [];
+  /** Index into `log` where each turn's lines begin, ascending. The
+   *  battle log screen uses these to keep one combatant's turn
+   *  grouped together. Lines logged by `endTurn` for the actor whose
+   *  turn is ending stay in that actor's group; round-end ticks and
+   *  start-of-turn notices go with the incoming actor's turn. */
+  readonly logTurnStarts: number[] = [0];
   /** Running "X moves N tiles." line: consecutive steps by the same
    *  combatant update one line in place instead of adding a line per
    *  step. A new line starts once anything else is logged between. */
@@ -987,6 +993,11 @@ export class Combat {
       if (ending.turnedTurns === 0) {
         this.log.push(`${ending.name} shakes off the holy light!`);
       }
+    }
+    // Close the ending actor's log group. Skip when nothing was logged
+    // since the last boundary so a silent turn doesn't add an empty one.
+    if (this.logTurnStarts[this.logTurnStarts.length - 1] !== this.log.length) {
+      this.logTurnStarts.push(this.log.length);
     }
     for (let i = 0; i < this.combatants.length; i++) {
       this.cursor = (this.cursor + 1) % this.initiativeOrder.length;

@@ -27,6 +27,7 @@ export function LinkPlacard({
   description,
   explored,
   questTargets,
+  cleared = false,
   onConfirm,
   onCancel,
 }: {
@@ -44,6 +45,10 @@ export function LinkPlacard({
    *  the description. Optional so callers without quest state (or
    *  destinations with no quest relevance) render the plain placard. */
   questTargets?: ReadonlyArray<QuestPlacardTarget>;
+  /** Dungeon entrances: this instance has already been cleared (every
+   *  foe on every floor defeated). Adds a green ✓ Cleared chip and a
+   *  context line, like the quest treatment does for quests. */
+  cleared?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 }) {
@@ -109,7 +114,9 @@ export function LinkPlacard({
           "flex w-full max-w-md flex-col rounded-lg border bg-ink/95 shadow-2xl",
           questRelevant
             ? "border-amber-300/60 shadow-amber-300/20"
-            : "border-parchment/25",
+            : cleared
+              ? "border-emerald-300/50 shadow-emerald-300/10"
+              : "border-parchment/25",
         ].join(" ")}
       >
         <header className="flex items-center justify-between gap-3 border-b border-parchment/15 px-4 py-2.5">
@@ -121,6 +128,14 @@ export function LinkPlacard({
                 title="An active quest has an objective here."
               >
                 ⚜ Quest
+              </span>
+            ) : null}
+            {cleared ? (
+              <span
+                className="rounded border border-emerald-300/60 bg-emerald-300/15 px-2 py-0.5 text-[10px] uppercase tracking-wide text-emerald-200"
+                title="Your party has defeated every foe in this dungeon."
+              >
+                ✓ Cleared
               </span>
             ) : null}
             <span
@@ -151,6 +166,17 @@ export function LinkPlacard({
               The way leads onward into the unknown.
             </p>
           )}
+          {cleared ? (
+            <p className="mt-3 rounded border border-emerald-300/30 bg-emerald-300/5 px-3 py-2 text-xs leading-snug text-emerald-100/90">
+              <span className="font-semibold text-emerald-200">
+                ✓ Cleared
+              </span>
+              <span className="text-emerald-100/70">
+                {" "}
+                — every foe here has been defeated.
+              </span>
+            </p>
+          ) : null}
           {questRelevant ? (
             <div className="mt-3 rounded border border-amber-300/30 bg-amber-300/5 px-3 py-2">
               {questTargets!.map((t) => (

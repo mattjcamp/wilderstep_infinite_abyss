@@ -37,6 +37,7 @@
  *     the Characters editor (sim preview next to the editable sheet).
  */
 
+import { isModalKeyLocked } from "@/play/modalKeyLock";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { xpProgressInLevel as levelingXpProgress } from "@/battle/world/Leveling";
 import {
@@ -578,6 +579,7 @@ export function CharacterSheetSim({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (isModalKeyLocked()) return; // a picker modal owns the keys
       // Ignore typing into form fields (dev console, future rename).
       const target = e.target as HTMLElement | null;
       if (

@@ -93,9 +93,12 @@ Open-ended enum. Anticipated values:
 | `"kill"` | Clear a specific encounter the listed number of times | `{ "encounter_id": "...", "count": 1 }` |
 | `"retrieve"` | Pick up an item stamped on a specific `(map_id, col, row)` cell | top-level `item_id` / `col` / `row` |
 | `"reach"` | Credited simply by arriving on a dungeon floor — the basis of "spelunking" quests. See *Spelunking (`reach`) steps* below. | `dungeon_id` (+ runtime-filled `dungeon_level`) |
-| `"fetch"` | Obtain an item and bring it back | `{ "item_id": "...", "count": 1 }` |
-| `"visit"` | Step on a specific map cell | `{ "map_id": "...", "col": 0, "row": 0 }` |
-| `"talk"` | Talk to a specific NPC | `{ "npc_id": "..." }` |
+| `"discover"` | Step on a specific `(map_id, col, row)` cell — no marker, no item | top-level `map_id` / `col` / `row` |
+| `"meet"` | "Meet person" — talk to (bump) a specific NPC, on any map. The optional `meet_dialog` line is what the NPC says when the meeting credits, shown ahead of their usual dialog. An optional `map_id` only flags that map's entrances on the place placard. | top-level `npc_id` (npcs.json id), optional `meet_dialog` |
+| `"clear_dungeon"` | Clear **any** procedurally generated dungeon (every monster on every floor) after the quest is accepted. Hand-painted maps never count. Each clear counts once (at the same moment as the one-time "Dungeon Cleared!" bonus); the step completes when the tally reaches `count`. Progress persists in the save's `questStepKills`. | top-level `count` (default 1) |
+| `"fetch"` | *(legacy, unsupported)* Obtain an item and bring it back | `{ "item_id": "...", "count": 1 }` |
+| `"visit"` | *(legacy, unsupported — use `discover`)* Step on a specific map cell | `{ "map_id": "...", "col": 0, "row": 0 }` |
+| `"talk"` | *(legacy, unsupported — use `meet`)* Talk to a specific NPC | `{ "npc_id": "..." }` |
 
 Add new kinds as needed; the runtime branches on `kind` for completion-check logic.
 

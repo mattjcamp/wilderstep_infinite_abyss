@@ -25,8 +25,9 @@
  * carries. Pressing P / ESC / clicking the backdrop dismisses.
  */
 
+import { isModalKeyLocked, useModalKeyLock } from "@/play/modalKeyLock";
 import { getModuleSource } from "@/data_model/sourceConfig";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type MutableRefObject } from "react";
 import { mergeModel } from "@/data_model/merge";
 import { StaticModuleSource } from "@/data_model/StaticModuleSource";
 import {
@@ -1801,6 +1802,7 @@ export function PlayPartyScreenOverlay({
   // belt-and-braces).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (isModalKeyLocked()) return; // a picker modal owns the keys
       if (e.key === "p" || e.key === "P") {
         e.stopPropagation();
         e.preventDefault();
@@ -2077,6 +2079,7 @@ function TinkerPicker({
    *  spawning a near-duplicate component. */
   title?: string;
 }) {
+  useModalKeyLock();
   const itemById = new Map(items.map((i) => [i.id, i] as const));
   // Keyboard navigation: Up/Down move the highlight, Enter picks the
   // highlighted row, ESC cancels. Capture phase so the parent
@@ -2229,6 +2232,7 @@ function BrewPicker({
   // highlight skips them. Up/Down move, Enter brews the highlighted
   // recipe, ESC cancels. Ready rows render first, so their position
   // in the list equals their index in `ready`.
+  useModalKeyLock();
   const [focusIndex, setFocusIndex] = useState(0);
   const rootRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
@@ -2403,6 +2407,84 @@ function BrewPicker({
  *  a heal that needs a target. One row per roster member with their
  *  current/max HP and a click handler. Same dark-modal styling as the
  *  parent overlay. */
+/** Keyboard driver for the roster target pickers (heal / revive).
+ *  ↑/↓ (or W/S) move the highlight across PICKABLE rows only —
+ *  disabled rows (full HP, still alive) are skipped — Enter / Space
+ *  picks, Esc cancels. Holds the modal key lock so the Party screen
+ *  and character sheet underneath ignore these keys while it's open.
+ *  Returns the highlighted id + a setter for mouse hover. */
+function useTargetPickerNav(
+  pickable: ReadonlyArray<string>,
+  onPick: (id: string) => void,
+  onCancel: () => void,
+): [string | null, (id: string) => void, MutableRefObject<HTMLDivElement | null>] {
+  useModalKeyLock();
+  const [focused, setFocused] = useState<string | null>(pickable[0] ?? null);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  // Keep the highlight on a pickable row if the list changes.
+  const pickableKey = pickable.join("|");
+  useEffect(() => {
+    setFocused((cur) =>
+      cur && pickable.includes(cur) ? cur : (pickable[0] ?? null),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pickableKey]);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const k = e.key;
+      if (k === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        onCancel();
+        return;
+      }
+      const down = k === "ArrowDown" || k === "s" || k === "S";
+      const up = k === "ArrowUp" || k === "w" || k === "W";
+      if (down || up) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (pickable.length === 0) return;
+        const i = focused ? pickable.indexOf(focused) : -1;
+        const next =
+          i < 0
+            ? 0
+            : Math.max(0, Math.min(pickable.length - 1, i + (down ? 1 : -1)));
+        setFocused(pickable[next]);
+        return;
+      }
+      if (k === "Enter" || k === " ") {
+        e.preventDefault();
+        e.stopPropagation();
+        if (focused && pickable.includes(focused)) onPick(focused);
+        return;
+      }
+      if (
+        k === "ArrowLeft" ||
+        k === "ArrowRight" ||
+        k === "a" ||
+        k === "A" ||
+        k === "d" ||
+        k === "D"
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+    window.addEventListener("keydown", onKey, { capture: true });
+    return () =>
+      window.removeEventListener("keydown", onKey, { capture: true });
+  }, [pickable, focused, onPick, onCancel]);
+  useEffect(() => {
+    const el = rootRef.current?.querySelector<HTMLElement>(
+      '[data-nav-focused="true"]',
+    );
+    el?.scrollIntoView?.({ block: "nearest" });
+  }, [focused]);
+  return [focused, setFocused, rootRef];
+}
+
+const FOCUS_RING = "outline outline-2 outline-amber-200 outline-offset-1";
+
 function HealTargetPicker({
   casterId,
   spell,
@@ -2424,21 +2506,20 @@ function HealTargetPicker({
 }) {
   const memberById = new Map(members.map((m) => [m.id, m] as const));
   const characterById = new Map(characters.map((c) => [c.id, c] as const));
-  // ESC closes the picker. Capture phase so the parent overlay's
-  // close-on-ESC doesn't fire instead and drop the whole Party
-  // screen.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        e.stopPropagation();
-        onCancel();
-      }
-    };
-    window.addEventListener("keydown", onKey, { capture: true });
-    return () =>
-      window.removeEventListener("keydown", onKey, { capture: true });
-  }, [onCancel]);
+  // Same enable rule as the buttons below: anyone missing HP, plus
+  // the caster themselves.
+  const pickable = roster.filter((id) => {
+    const c = characterById.get(id);
+    const m = memberById.get(id);
+    if (!c || !m) return false;
+    const max = maxHpById.get(id) ?? m.hp;
+    return !(m.hp >= max && id !== casterId);
+  });
+  const [focusedId, setFocusedId, rootRef] = useTargetPickerNav(
+    pickable,
+    onPick,
+    onCancel,
+  );
 
   const casterName = characterById.get(casterId)?.name ?? casterId;
   return (
@@ -2447,6 +2528,7 @@ function HealTargetPicker({
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
     >
       <div
+        ref={rootRef}
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-sm rounded-lg border border-parchment/25 bg-ink/95 shadow-2xl"
       >
@@ -2474,7 +2556,14 @@ function HealTargetPicker({
                 <button
                   type="button"
                   onClick={() => onPick(id)}
-                  className="flex w-full items-center justify-between rounded border border-parchment/20 bg-ink/40 px-3 py-2 text-left text-sm text-parchment hover:bg-ink/60 disabled:cursor-not-allowed disabled:opacity-50"
+                  onMouseEnter={() => {
+                    if (!(atFull && id !== casterId)) setFocusedId(id);
+                  }}
+                  data-nav-focused={focusedId === id ? "true" : undefined}
+                  className={[
+                    "flex w-full items-center justify-between rounded border border-parchment/20 bg-ink/40 px-3 py-2 text-left text-sm text-parchment hover:bg-ink/60 disabled:cursor-not-allowed disabled:opacity-50",
+                    focusedId === id ? FOCUS_RING : "",
+                  ].join(" ")}
                   disabled={atFull && id !== casterId}
                   title={
                     atFull
@@ -2521,18 +2610,16 @@ function ReviveTargetPicker({
 }) {
   const memberById = new Map(members.map((m) => [m.id, m] as const));
   const characterById = new Map(characters.map((c) => [c.id, c] as const));
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        e.stopPropagation();
-        onCancel();
-      }
-    };
-    window.addEventListener("keydown", onKey, { capture: true });
-    return () =>
-      window.removeEventListener("keydown", onKey, { capture: true });
-  }, [onCancel]);
+  // Only downed members can be raised.
+  const pickable = roster.filter((id) => {
+    const m = memberById.get(id);
+    return !!characterById.get(id) && !!m && m.hp <= 0;
+  });
+  const [focusedId, setFocusedId, rootRef] = useTargetPickerNav(
+    pickable,
+    onPick,
+    onCancel,
+  );
 
   const casterName = characterById.get(casterId)?.name ?? casterId;
   const anyDead = roster.some((id) => (memberById.get(id)?.hp ?? 1) <= 0);
@@ -2542,6 +2629,7 @@ function ReviveTargetPicker({
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
     >
       <div
+        ref={rootRef}
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-sm rounded-lg border border-parchment/25 bg-ink/95 shadow-2xl"
       >
@@ -2574,7 +2662,14 @@ function ReviveTargetPicker({
                   <button
                     type="button"
                     onClick={() => onPick(id)}
-                    className="flex w-full items-center justify-between rounded border border-parchment/20 bg-ink/40 px-3 py-2 text-left text-sm text-parchment hover:bg-ink/60 disabled:cursor-not-allowed disabled:opacity-50"
+                    onMouseEnter={() => {
+                      if (dead) setFocusedId(id);
+                    }}
+                    data-nav-focused={focusedId === id ? "true" : undefined}
+                    className={[
+                      "flex w-full items-center justify-between rounded border border-parchment/20 bg-ink/40 px-3 py-2 text-left text-sm text-parchment hover:bg-ink/60 disabled:cursor-not-allowed disabled:opacity-50",
+                      focusedId === id ? FOCUS_RING : "",
+                    ].join(" ")}
                     disabled={!dead}
                     title={dead ? `Resurrect ${c.name}.` : `${c.name} is alive.`}
                   >

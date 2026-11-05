@@ -139,19 +139,21 @@ export function BeginningScreen({
   }, [moduleId]);
 
   // Seed the soundtrack as soon as the description screen mounts so
-  // the playlist is ready to go before the player commits. Walks the
-  // module's extends chain so a parent's default soundtrack still
-  // reaches a child module that doesn't override. Attempt an
+  // the music plays while the player reads. Uses the STARTING MAP's
+  // soundtrack (party.json start_position.map_id) so it's the same
+  // playlist PlayHost selects on arrival — SoundtrackPlayer treats an
+  // identical setPlaylist as a no-op, so the track carries straight
+  // through into the game without a restart. Falls back to the
+  // module default (walking the extends chain) when the starting map
+  // has no soundtrack of its own. Attempt an
   // optimistic play() too — most browsers will refuse autoplay before
   // a user gesture, but the keydown/click handler below also kicks
   // play(), so the gesture-driven attempt will succeed. The
   // SoundtrackPlayer is a module-scope singleton, so the playback
   // survives the route transition into /play/active.
   useEffect(() => {
-    const src = getModuleSource();
     let cancelled = false;
-    void src
-      .resolveModuleSoundtrack(moduleId)
+    void resolveStartingSoundtrack(moduleId)
       .then((list) => {
         if (cancelled) return;
         Soundtrack.setPlaylist(list);
@@ -281,6 +283,41 @@ export function BeginningScreen({
       </div>
     </main>
   );
+}
+
+/** Playlist for the map the party starts on: that map's own
+ *  `soundtrack` when it has one, otherwise the module default. Mirrors
+ *  PlayHost's selection for a fresh game (no dungeon, nothing playing
+ *  yet) so the music started here is the music the game expects. */
+async function resolveStartingSoundtrack(moduleId: string): Promise<string[]> {
+  const src = getModuleSource();
+  try {
+    const [partyLayers, mapsLayers] = await Promise.all([
+      src.loadModelLayers(moduleId, "party"),
+      src.loadModelLayers(moduleId, "maps"),
+    ]);
+    const party = (mergeModel(
+      "party",
+      partyLayers.inherited,
+      partyLayers.ownFile,
+    ) ?? {}) as ModulePartyDoc;
+    const mapsDoc = (mergeModel(
+      "maps",
+      mapsLayers.inherited,
+      mapsLayers.ownFile,
+    ) ?? {}) as { maps?: Array<{ id?: string; soundtrack?: unknown }> };
+    const startMapId = party.start_position?.map_id;
+    const startMap = (mapsDoc.maps ?? []).find((m) => m.id === startMapId);
+    const own = Array.isArray(startMap?.soundtrack)
+      ? (startMap.soundtrack as unknown[]).filter(
+          (u): u is string => typeof u === "string" && u.trim().length > 0,
+        )
+      : [];
+    if (own.length > 0) return own;
+  } catch {
+    // Fall through to the module default.
+  }
+  return src.resolveModuleSoundtrack(moduleId);
 }
 
 /** Build the WorldSave from the party draft + the module's static

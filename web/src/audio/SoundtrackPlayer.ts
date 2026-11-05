@@ -367,10 +367,14 @@ export function setPlaylist(urls: ReadonlyArray<string>): void {
 /** Begin playback. Idempotent: calling again while already playing
  *  is a no-op. With an empty playlist this is a no-op too. */
 export function play(): void {
-  if (_playing) return;
   if (_playlist.length === 0) return;
-  _playing = true;
   const el = audioEl();
+  // Already sounding → no-op. But if an earlier attempt was refused
+  // by the browser's autoplay policy, we're flagged as playing while
+  // the element sits paused — fall through and retry, so the next
+  // user-gesture play() actually starts the music.
+  if (_playing && (!el || !el.paused)) return;
+  _playing = true;
   if (!el) return;
   // Resume the in-flight track when one is loaded; otherwise pick a
   // fresh random one. `el.src` is set the first time startRandom

@@ -18,6 +18,19 @@
  *      content extents the offset clamps so you can't scroll into
  *      empty space.
  *
+ * Clipping: Phaser 4 dropped WebGL support for `setMask` +
+ * GeometryMask (it silently renders unmasked), which let entries
+ * bleed past the panel. Rather than a Mask filter (whose geometry has
+ * to be kept in sync with the camera zoom), every content object is
+ * registered as a "clip item" and `applyClip()` crops text / trims
+ * rectangles against the visible window on every scroll + repaint.
+ *
+ * Collapsing: each quest's title row toggles it open / closed. The
+ * main quest (`main_quest: true`) is pinned to a MAIN QUEST section
+ * and starts expanded; everything else starts collapsed to a title +
+ * current-step line so the full list scans at a glance. Toggles are
+ * remembered for the life of the painter (the play session).
+ *
  * What it does NOT do:
  *   - Accept / turn in quests. Those flows live in the in-world
  *     QuestDialog overlay; the log is read-only.
@@ -53,6 +66,11 @@ export interface PaintedQuestLogQuest {
   name: string;
   description?: string;
   steps?: QuestStep[];
+  /** Authored flag (quests.json `main_quest`). The main quest is
+   *  pinned to its own section at the top of the log and starts
+   *  expanded. One per module — if several are flagged, the first
+   *  one found wins. */
+  main_quest?: boolean;
 }
 
 export interface PaintedQuestLogData {
@@ -113,6 +131,8 @@ const COLOR_STEP_CURRENT = "#e8c97a";
 const COLOR_STEP_PENDING = "#7a7a82";
 const COLOR_ENTRY_BG = 0x1f1f33;
 const COLOR_ENTRY_BORDER = 0x3a3a4a;
+/** Border of the keyboard-selected entry. */
+const COLOR_ENTRY_SELECTED = 0xe8c97a;
 const FONT = "monospace";
 
 const PANEL_WIDTH = 720;
@@ -126,11 +146,22 @@ const SECTION_SPACING = 12;
 const SCROLL_STEP_WHEEL = 30;
 const SCROLL_STEP_KEY = 40;
 
-/** One quest entry's painted geometry. Captured during paint so the
- *  scroll bookkeeping (content height, clamp) knows where each entry
- *  lives without re-measuring. */
-interface PaintedEntryGeometry {
-  height: number;
+type EntryState = "active" | "rewards-pending" | "turned-in";
+
+/** A painted content object plus its natural (unclipped) geometry in
+ *  content-local coordinates. `applyClip()` hides, crops or trims each
+ *  one against the visible window. `hit` items are the invisible
+ *  click targets on quest title rows — only clickable while fully in
+ *  view, so a header scrolled under the panel edge can't be toggled
+ *  (and doesn't swallow clicks meant for the backdrop). */
+interface ClipItem {
+  obj: Phaser.GameObjects.GameObject;
+  kind: "text" | "rect" | "hit";
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  clickable?: boolean;
 }
 
 /** Painted Quest Log screen. One instance per Phaser scene. */
@@ -155,6 +186,26 @@ export class PaintedQuestLog {
   private contentHeight = 0;
   private viewportHeight = 0;
   private viewportY = 0;
+  /** Snapshot handed to `open()`. Kept so a collapse toggle can
+   *  repaint the content without the host re-supplying data. */
+  private data: PaintedQuestLogData | null = null;
+  /** Every painted content object, for `applyClip()`. */
+  private clipItems: ClipItem[] = [];
+  /** Player's explicit expand/collapse choices, keyed by quest id.
+   *  Survives close / reopen. Absent → default (main quest open,
+   *  everything else collapsed). */
+  private readonly expandedOverride = new Map<string, boolean>();
+  /** Id of the quest pinned in the MAIN QUEST section on the last
+   *  paint, so `toggleQuest` resolves its default state correctly. */
+  private mainQuestId: string | null = null;
+  /** Quest entries in paint (= on-screen) order with their content-
+   *  local geometry — the list the keyboard cursor walks. Rebuilt on
+   *  every paint. */
+  private entries: Array<{ id: string; y: number; h: number }> = [];
+  /** Keyboard cursor: the selected quest's id. Up/Down move it, Enter
+   *  / Space toggle it, Right / Left expand / collapse it. Null only
+   *  when the log is empty. */
+  private selectedId: string | null = null;
   /** Wheel listener — installed via `scene.input.on('wheel', ...)`
    *  on open, removed in close. Kept as a field so the exact
    *  reference can be detached. */
@@ -176,10 +227,12 @@ export class PaintedQuestLog {
    *  same event when the pointer IS over the canvas. */
   private domWheelListener: ((ev: WheelEvent) => void) | null = null;
   private keyListener: ((ev: KeyboardEvent) => void) | null = null;
-  /** Scrollbar thumb — painted only when the content overflows the
-   *  viewport, repositioned by `scrollBy`. Gives the player a visible
-   *  cue that the log scrolls (and how far through it they are). */
+  /** Scrollbar track + thumb + hint — created hidden on open and
+   *  shown by `updateScrollChrome` only while the content overflows
+   *  (which can change as quests are expanded / collapsed). */
+  private scrollTrack: Phaser.GameObjects.Rectangle | null = null;
   private scrollThumb: Phaser.GameObjects.Rectangle | null = null;
+  private scrollHint: Phaser.GameObjects.Text | null = null;
   private scrollThumbTravel = 0;
   private scrollThumbY = 0;
 
@@ -209,6 +262,7 @@ export class PaintedQuestLog {
    *  the Help screen). */
   open(data: PaintedQuestLogData): void {
     if (this.root) return;
+    this.data = data;
 
     const panelX = Math.floor((this.canvasWidth - PANEL_WIDTH) / 2);
     const panelY = Math.floor((this.canvasHeight - PANEL_HEIGHT) / 2);
@@ -258,17 +312,35 @@ export class PaintedQuestLog {
     const closeHint = this.scene.add
       .text(
         panelX + PANEL_WIDTH - PANEL_PADDING,
-        panelY + 12,
+        panelY + 8,
         "[Q / Esc to close]",
         {
           fontFamily: FONT,
-          fontSize: "15px",
+          fontSize: "14px",
           color: COLOR_DIM_TEXT,
         },
       )
       .setOrigin(1, 0)
       .setScrollFactor(0);
     root.add(closeHint);
+    // Scroll + collapse hint lives in the header (under the close
+    // hint) rather than at the panel's foot, where it used to sit on
+    // top of the last entry.
+    const scrollHint = this.scene.add
+      .text(
+        panelX + PANEL_WIDTH - PANEL_PADDING,
+        panelY + 25,
+        "[↑↓ select · Enter expand · click title · wheel to scroll]",
+        {
+          fontFamily: FONT,
+          fontSize: "12px",
+          color: COLOR_DIM_TEXT,
+        },
+      )
+      .setOrigin(1, 0)
+      .setScrollFactor(0);
+    root.add(scrollHint);
+    this.scrollHint = scrollHint;
     const headerRule = this.scene.add
       .rectangle(
         panelX + PANEL_PADDING,
@@ -283,15 +355,10 @@ export class PaintedQuestLog {
     root.add(headerRule);
 
     // Viewport — the rectangle inside the panel that the scrolling
-    // content is clipped to. Captured here so the mask geometry +
-    // scroll clamp share one source of truth.
+    // content is clipped to. Captured here so the clip + scroll
+    // clamp share one source of truth.
     this.viewportY = panelY + HEADER_HEIGHT;
     this.viewportHeight = PANEL_HEIGHT - HEADER_HEIGHT - PANEL_PADDING / 2;
-
-    // Bucket the quests three ways: in-progress (active steps left),
-    // complete-rewards-pending (all steps done, not turned in), and
-    // turned in. Matches the React version's grouping.
-    const buckets = bucketQuests(data);
 
     // Paint into a nested container so scroll is one `setPosition`
     // call. The container starts at `viewportY` with offset 0.
@@ -303,112 +370,24 @@ export class PaintedQuestLog {
     root.add(content);
     this.content = content;
 
-    let cursorY = 0;
-    if (
-      buckets.active.length === 0 &&
-      buckets.pending.length === 0 &&
-      buckets.turnedIn.length === 0 &&
-      data.acceptedQuests.length === 0
-    ) {
-      // Empty state. Paint into `content` so it still gets clipped
-      // by the mask (defensive — empty text never overflows but the
-      // future me will thank us).
-      const empty = this.scene.add
-        .text(
-          0,
-          cursorY,
-          "You haven't accepted any quests yet.\nLook for quest givers in towns and dungeons.",
-          {
-            fontFamily: FONT,
-            fontSize: "18px",
-            color: COLOR_DIM_TEXT,
-            wordWrap: { width: PANEL_WIDTH - PANEL_PADDING * 2 },
-          },
-        )
-        .setScrollFactor(0);
-      content.add(empty);
-      cursorY += empty.height + SECTION_SPACING;
-    } else {
-      cursorY = this.paintSection(
-        content,
-        cursorY,
-        "ACTIVE",
-        buckets.active,
-        data,
-        "active",
-      );
-      cursorY = this.paintSection(
-        content,
-        cursorY,
-        "READY TO TURN IN",
-        buckets.pending,
-        data,
-        "rewards-pending",
-      );
-      cursorY = this.paintSection(
-        content,
-        cursorY,
-        "COMPLETED",
-        buckets.turnedIn,
-        data,
-        "turned-in",
-      );
-    }
-    this.contentHeight = cursorY;
+    // Scrollbar on the panel's right edge — hidden until the content
+    // overflows (see updateScrollChrome).
+    const trackX = panelX + PANEL_WIDTH - 8;
+    const track = this.scene.add
+      .rectangle(trackX, this.viewportY, 3, this.viewportHeight, COLOR_PANEL_BORDER, 1)
+      .setOrigin(0, 0)
+      .setScrollFactor(0);
+    root.add(track);
+    this.scrollTrack = track;
+    this.scrollThumbY = this.viewportY;
+    const thumb = this.scene.add
+      .rectangle(trackX, this.viewportY, 3, 24, 0xe8c97a, 1)
+      .setOrigin(0, 0)
+      .setScrollFactor(0);
+    root.add(thumb);
+    this.scrollThumb = thumb;
 
-    // Clip the content to the viewport rectangle. A geometry mask
-    // built from an off-display Graphics is the right tool: it
-    // doesn't render the mask shape itself, just uses it as a stencil
-    // for the container.
-    const maskGraphics = this.scene.make.graphics({ x: 0, y: 0 });
-    maskGraphics.fillStyle(0xffffff);
-    maskGraphics.fillRect(
-      panelX + PANEL_PADDING / 2,
-      this.viewportY,
-      PANEL_WIDTH - PANEL_PADDING,
-      this.viewportHeight,
-    );
-    content.setMask(maskGraphics.createGeometryMask());
-
-    // Scroll affordances — only when the content actually overflows.
-    // A thin track + thumb on the panel's right edge shows that the
-    // log scrolls and how far through it the player is; the footer
-    // hint names the inputs. Without these the clipped entries were
-    // invisible-by-design and the scroll feature was undiscoverable.
-    if (this.contentHeight > this.viewportHeight) {
-      const trackX = panelX + PANEL_WIDTH - 8;
-      const track = this.scene.add
-        .rectangle(trackX, this.viewportY, 3, this.viewportHeight, COLOR_PANEL_BORDER, 1)
-        .setOrigin(0, 0)
-        .setScrollFactor(0);
-      root.add(track);
-      const thumbH = Math.max(
-        24,
-        Math.floor(this.viewportHeight * (this.viewportHeight / this.contentHeight)),
-      );
-      this.scrollThumbTravel = this.viewportHeight - thumbH;
-      this.scrollThumbY = this.viewportY;
-      const thumb = this.scene.add
-        .rectangle(trackX, this.viewportY, 3, thumbH, 0xe8c97a, 1)
-        .setOrigin(0, 0)
-        .setScrollFactor(0);
-      root.add(thumb);
-      this.scrollThumb = thumb;
-      const scrollHint = this.scene.add
-        .text(
-          panelX + PANEL_WIDTH - PANEL_PADDING,
-          panelY + PANEL_HEIGHT - 22,
-          "[wheel / ↑↓ / PgUp PgDn to scroll]",
-          {
-            fontFamily: FONT,
-            fontSize: "14px",
-            color: COLOR_DIM_TEXT,
-          },
-        )
-        .setOrigin(1, 0)
-        .setScrollFactor(0);
-      root.add(scrollHint);
-    }
+    this.paintContent();
 
     // Wheel + key listeners — the DOM wheel path is primary (works
     // wherever the cursor is); the Phaser listener is a fallback.
@@ -421,11 +400,18 @@ export class PaintedQuestLog {
     this.removeInputListeners();
     if (this.root) {
       // `destroy(true)` recursively destroys children, including the
-      // content container and its geometry mask.
+      // content container.
       this.root.destroy(true);
       this.root = null;
     }
     this.content = null;
+    this.data = null;
+    this.clipItems = [];
+    this.entries = [];
+    this.selectedId = null;
+    this.scrollTrack = null;
+    this.scrollThumb = null;
+    this.scrollHint = null;
     this.scrollOffset = 0;
     this.contentHeight = 0;
     this.viewportHeight = 0;
@@ -446,15 +432,203 @@ export class PaintedQuestLog {
     return this.contentHeight;
   }
 
+  /** Id of the keyboard-selected quest (null when the log is empty).
+   *  Exposed for tests. */
+  getSelectedQuestId(): string | null {
+    return this.selectedId;
+  }
+
+  /** Whether a quest's entry is currently expanded. */
+  isQuestExpanded(questId: string): boolean {
+    return this.isExpanded(questId, questId === this.mainQuestId);
+  }
+
+  /** Flip a quest between expanded and collapsed and repaint. Title
+   *  row clicks route here; exposed for tests. */
+  toggleQuest(questId: string): void {
+    this.setExpanded(questId, !this.isQuestExpanded(questId));
+  }
+
+  private setExpanded(questId: string, expanded: boolean): void {
+    this.selectedId = questId;
+    if (this.isQuestExpanded(questId) === expanded) return;
+    this.expandedOverride.set(questId, expanded);
+    if (this.root) {
+      this.paintContent();
+      this.scrollSelectedIntoView();
+    }
+  }
+
+  /** Move the keyboard cursor one entry up (-1) or down (+1). A long
+   *  expanded entry that runs past the viewport edge scrolls first, so
+   *  its whole body can be read with the arrows before the cursor
+   *  moves on. With no entries this is a plain scroll. */
+  private moveSelection(dir: -1 | 1): void {
+    if (this.entries.length === 0) {
+      this.scrollBy(dir * SCROLL_STEP_KEY);
+      return;
+    }
+    const idx = this.entries.findIndex((e) => e.id === this.selectedId);
+    const cur = idx >= 0 ? this.entries[idx] : null;
+    if (cur) {
+      const top = -this.scrollOffset;
+      const bottom = top + this.viewportHeight;
+      if (dir > 0 && cur.y + cur.h > bottom && cur.y < bottom) {
+        this.scrollBy(SCROLL_STEP_KEY);
+        return;
+      }
+      if (dir < 0 && cur.y < top && cur.y + cur.h > top) {
+        this.scrollBy(-SCROLL_STEP_KEY);
+        return;
+      }
+    }
+    const next =
+      idx < 0 ? 0 : Math.max(0, Math.min(this.entries.length - 1, idx + dir));
+    if (idx === next) {
+      // At the first/last entry — still nudge so the section header
+      // above the first entry / padding below the last can show.
+      this.scrollBy(dir * SCROLL_STEP_KEY);
+      return;
+    }
+    this.selectedId = this.entries[next].id;
+    this.paintContent();
+    this.scrollSelectedIntoView(dir);
+  }
+
+  /** Scroll the minimum needed to bring the selected entry into view.
+   *  Moving down an entry taller than the viewport aligns its top. */
+  private scrollSelectedIntoView(dir: -1 | 1 = 1): void {
+    const e = this.entries.find((x) => x.id === this.selectedId);
+    if (!e) return;
+    const top = -this.scrollOffset;
+    const bottom = top + this.viewportHeight;
+    // The first entry also reveals its section header above it.
+    const y0 = e === this.entries[0] ? 0 : e.y;
+    if (y0 < top) {
+      this.setScroll(-y0);
+    } else if (e.y + e.h > bottom) {
+      const alignBottom = e.y + e.h - this.viewportHeight;
+      this.setScroll(-(dir > 0 ? Math.min(e.y, alignBottom) : alignBottom));
+    }
+  }
+
+  private isExpanded(questId: string, isMain: boolean): boolean {
+    return this.expandedOverride.get(questId) ?? isMain;
+  }
+
   // ── Painting helpers ────────────────────────────────────────────
 
+  /** (Re)build every object in the scrolling content area from
+   *  `this.data`, then re-clamp the scroll, refresh the scrollbar and
+   *  re-apply the clip. Called on open and on every collapse toggle;
+   *  the scroll position is preserved where possible. */
+  private paintContent(): void {
+    const content = this.content;
+    const data = this.data;
+    if (!content || !data) return;
+    content.removeAll(true);
+    this.clipItems = [];
+    this.entries = [];
+
+    const buckets = pinMainQuest(bucketQuests(data));
+    this.mainQuestId = buckets.main?.quest.id ?? null;
+
+    let cursorY = 0;
+    if (
+      !buckets.main &&
+      buckets.active.length === 0 &&
+      buckets.pending.length === 0 &&
+      buckets.turnedIn.length === 0 &&
+      data.acceptedQuests.length === 0
+    ) {
+      const empty = this.scene.add
+        .text(
+          0,
+          cursorY,
+          "You haven't accepted any quests yet.\nLook for quest givers in towns and dungeons.",
+          {
+            fontFamily: FONT,
+            fontSize: "18px",
+            color: COLOR_DIM_TEXT,
+            wordWrap: { width: PANEL_WIDTH - PANEL_PADDING * 2 },
+          },
+        )
+        .setScrollFactor(0);
+      this.addClipped(empty, "text");
+      cursorY += empty.height + SECTION_SPACING;
+    } else {
+      if (buckets.main) {
+        cursorY = this.paintSection(
+          cursorY,
+          "MAIN QUEST",
+          [buckets.main.quest],
+          data,
+          buckets.main.state,
+          true,
+        );
+      }
+      cursorY = this.paintSection(cursorY, "ACTIVE", buckets.active, data, "active");
+      cursorY = this.paintSection(
+        cursorY,
+        "READY TO TURN IN",
+        buckets.pending,
+        data,
+        "rewards-pending",
+      );
+      cursorY = this.paintSection(
+        cursorY,
+        "COMPLETED",
+        buckets.turnedIn,
+        data,
+        "turned-in",
+      );
+    }
+    this.contentHeight = cursorY;
+    // Keep the cursor on a quest that's still listed; otherwise land
+    // on the first entry. If the selection changed, repaint once so
+    // the highlight shows (cheap — only happens on open / data drift).
+    if (!this.entries.some((e) => e.id === this.selectedId)) {
+      const first = this.entries[0]?.id ?? null;
+      if (first !== this.selectedId) {
+        this.selectedId = first;
+        if (first) {
+          this.paintContent();
+          return;
+        }
+      }
+    }
+    // Re-clamp + reposition (expanding near the bottom grows the
+    // content; collapsing can shrink it below the current offset).
+    this.setScroll(this.scrollOffset);
+  }
+
+  /** Add an object to the content container and register it for
+   *  clipping at its current (content-local) geometry. */
+  private addClipped(
+    obj: Phaser.GameObjects.Text | Phaser.GameObjects.Rectangle,
+    kind: ClipItem["kind"],
+  ): ClipItem {
+    this.content?.add(obj);
+    const item: ClipItem = {
+      obj,
+      kind,
+      x: obj.x,
+      y: obj.y,
+      w: obj.width,
+      h: obj.height,
+      clickable: kind === "hit" ? true : undefined,
+    };
+    this.clipItems.push(item);
+    return item;
+  }
+
   private paintSection(
-    content: Phaser.GameObjects.Container,
     startY: number,
     title: string,
     quests: ReadonlyArray<PaintedQuestLogQuest>,
     data: PaintedQuestLogData,
-    state: "active" | "rewards-pending" | "turned-in",
+    state: EntryState,
+    isMain = false,
   ): number {
     // Sections with no entries collapse entirely — same as the React
     // version's behavior. Keeps the empty Active or Completed buckets
@@ -469,35 +643,36 @@ export class PaintedQuestLog {
         fontStyle: "bold",
       })
       .setScrollFactor(0);
-    content.add(header);
+    this.addClipped(header, "text");
     let cursorY = startY + SECTION_HEADER_HEIGHT;
     for (const q of quests) {
-      const geom = this.paintEntry(
-        content,
+      const height = this.paintEntry(
         cursorY,
         q,
         doneSetForQuest(data, q),
         state,
+        isMain,
       );
-      cursorY += geom.height + ENTRY_SPACING;
+      cursorY += height + ENTRY_SPACING;
     }
     return cursorY + SECTION_SPACING - ENTRY_SPACING;
   }
 
+  /** Paint one quest entry and return its height. Collapsed entries
+   *  show the title row plus the current step's name; expanded ones
+   *  add the quest description and every step with its details. */
   private paintEntry(
-    content: Phaser.GameObjects.Container,
     startY: number,
     quest: PaintedQuestLogQuest,
     doneIds: ReadonlySet<string>,
-    state: "active" | "rewards-pending" | "turned-in",
-  ): PaintedEntryGeometry {
-    // Pre-paint pass: figure out which text rows the entry will have
-    // and how tall it ends up. Then paint the background rectangle
-    // at the computed height, then the text on top. Done in two
-    // passes because the rectangle has to be sized before the text
-    // is added — Phaser Text is variable-height once `wordWrap` and
-    // multi-line content are in play.
-    const innerWidth = PANEL_WIDTH - PANEL_PADDING * 2 - ENTRY_INNER_PADDING * 2;
+    state: EntryState,
+    isMain: boolean,
+  ): number {
+    // Text is measured before the background is sized, so collect the
+    // rows first and add them after the background (containers render
+    // in insertion order — bg must go in first to sit underneath).
+    const entryWidth = PANEL_WIDTH - PANEL_PADDING * 2;
+    const innerWidth = entryWidth - ENTRY_INNER_PADDING * 2;
     const steps = quest.steps ?? [];
     const stepId = (i: number): string => steps[i]?.id ?? `__idx_${i}`;
     const doneCount = steps.reduce(
@@ -507,74 +682,60 @@ export class PaintedQuestLog {
     const complete = steps.length > 0 && doneCount >= steps.length;
     const statusColor = statusColorFor(state, complete);
     const statusLabel = statusLabelFor(state, complete, doneCount, steps.length);
+    const expanded = this.isExpanded(quest.id, isMain);
 
     let rowY = startY + ENTRY_INNER_PADDING;
     const entryX = ENTRY_INNER_PADDING;
+    const rows: Phaser.GameObjects.Text[] = [];
 
-    // Name (left) + status tag (right). Painted first so subsequent
-    // rows can stack underneath.
-    const name = this.scene.add
-      .text(entryX, rowY, quest.name, {
-        fontFamily: FONT,
-        fontSize: "20px",
-        color: COLOR_BODY_TEXT,
-        fontStyle: "bold",
-      })
-      .setScrollFactor(0);
+    // Title row: disclosure glyph + (★ for the main quest) + name on
+    // the left, status tag on the right. The name wraps short of the
+    // tag so a long title can't run underneath it.
     const tag = this.scene.add
-      .text(PANEL_WIDTH - PANEL_PADDING * 2 - ENTRY_INNER_PADDING, rowY, statusLabel, {
+      .text(entryWidth - ENTRY_INNER_PADDING, rowY + 3, statusLabel, {
         fontFamily: FONT,
         fontSize: "15px",
         color: statusColor,
       })
       .setOrigin(1, 0)
       .setScrollFactor(0);
-    const nameHeight = Math.max(name.height, tag.height);
-    rowY += nameHeight + 2;
+    const titleText = `${expanded ? "▾" : "▸"} ${isMain ? "★ " : ""}${quest.name}`;
+    const name = this.scene.add
+      .text(entryX, rowY, titleText, {
+        fontFamily: FONT,
+        fontSize: "20px",
+        color: isMain ? COLOR_HEADER_TEXT : COLOR_BODY_TEXT,
+        fontStyle: "bold",
+        wordWrap: { width: Math.max(120, innerWidth - tag.width - 16) },
+      })
+      .setScrollFactor(0);
+    const titleHeight = Math.max(name.height, tag.height + 3);
+    rowY += titleHeight + 2;
 
-    let desc: Phaser.GameObjects.Text | null = null;
-    if (quest.description) {
-      desc = this.scene.add
-        .text(entryX, rowY, quest.description, {
-          fontFamily: FONT,
-          fontSize: "16px",
-          color: COLOR_DIM_TEXT,
-          wordWrap: { width: innerWidth },
-        })
-        .setScrollFactor(0);
-      rowY += desc.height + 2;
-    }
-    // Per-step list. Replaces the older "active step only" view —
-    // quests aren't always tackled in order (a Detect-Traps step
-    // might close while the party hasn't returned to the giver yet,
-    // a quest with parallel kill steps can have steps 1 and 3 done
-    // before step 2), and showing only the current pending step
-    // gave the player no way to track which others were finished.
-    //
-    // Step status:
-    //   i  < stepIdx                                   → done
-    //   i == stepIdx (and quest not yet complete)      → current
-    //   i  > stepIdx                                   → pending
-    //
-    // Turned-in + rewards-pending quests use `complete=true` which
-    // flips every row to "done" regardless of stepIdx (those quests
-    // have no remaining current step). Within the painted log we
-    // also indent the steps slightly; every step's description is
-    // painted beneath its row (current = body color, others dim) so
-    // scrolling the log reads as a full per-step briefing.
-    // The "current" step (for the description hint + arrow glyph) is
-    // the FIRST not-yet-done step. With out-of-order completion there
-    // isn't a single linear cursor, so "first incomplete" is the most
-    // useful single step to surface — it's what the player most likely
-    // still needs to find. Completed quests have no current step.
+    // "Current" = first step not yet done (out-of-order completion
+    // means there's no single linear cursor). Completed quests have
+    // no current step.
     const firstIncompleteIdx = complete
       ? -1
       : steps.findIndex((_s, i) => !doneIds.has(stepId(i)));
+    const stepIndent = entryX + 22;
+    const stepInnerWidth = innerWidth - 22;
 
-    const stepTexts: Phaser.GameObjects.Text[] = [];
-    if (steps.length > 0) {
-      const stepIndent = entryX + 6;
-      const stepInnerWidth = innerWidth - 6;
+    if (expanded) {
+      if (quest.description) {
+        const desc = this.scene.add
+          .text(entryX + 22, rowY, quest.description, {
+            fontFamily: FONT,
+            fontSize: "16px",
+            color: COLOR_DIM_TEXT,
+            wordWrap: { width: innerWidth - 22 },
+          })
+          .setScrollFactor(0);
+        rows.push(desc);
+        rowY += desc.height + 4;
+      }
+      // Full per-step checklist: every step with its description
+      // (current step's detail in body color, the rest dim).
       for (let i = 0; i < steps.length; i++) {
         const step = steps[i];
         const stepStatus = stepStatusFor(
@@ -583,34 +744,9 @@ export class PaintedQuestLog {
           doneIds.has(stepId(i)),
           i === firstIncompleteIdx,
         );
-        const glyph =
-          stepStatus === "done"
-            ? "✓"
-            : stepStatus === "current"
-              ? "→"
-              : "·";
-        const color =
-          stepStatus === "done"
-            ? COLOR_STEP_DONE
-            : stepStatus === "current"
-              ? COLOR_STEP_CURRENT
-              : COLOR_STEP_PENDING;
-        const stepName = step?.name ?? `Step ${i + 1}`;
-        const row = this.scene.add
-          .text(stepIndent, rowY, `${glyph} ${stepName}`, {
-            fontFamily: FONT,
-            fontSize: "16px",
-            color,
-            wordWrap: { width: stepInnerWidth },
-          })
-          .setScrollFactor(0);
-        stepTexts.push(row);
+        const row = this.paintStepRow(stepIndent, rowY, stepInnerWidth, step, i, stepStatus);
+        rows.push(row);
         rowY += row.height + 2;
-        // Every step surfaces its description so the player can
-        // scroll the log and read full details on each objective —
-        // done, current, and still-ahead alike. The current step's
-        // detail renders in body color so the active objective still
-        // pops; the rest stay dim so the checklist scans at a glance.
         if (step?.description) {
           const sub = this.scene.add
             .text(stepIndent + 14, rowY, step.description, {
@@ -622,60 +758,161 @@ export class PaintedQuestLog {
               wordWrap: { width: stepInnerWidth - 14 },
             })
             .setScrollFactor(0);
-          stepTexts.push(sub);
+          rows.push(sub);
           rowY += sub.height + 2;
         }
       }
+    } else if (firstIncompleteIdx >= 0 && state === "active") {
+      // Collapsed: just the step the player is working on, so the
+      // list stays scannable but still says what to do next.
+      const row = this.paintStepRow(
+        stepIndent,
+        rowY,
+        stepInnerWidth,
+        steps[firstIncompleteIdx],
+        firstIncompleteIdx,
+        "current",
+      );
+      rows.push(row);
+      rowY += row.height + 2;
     }
 
-    const totalHeight =
-      rowY - startY + ENTRY_INNER_PADDING - 2;
+    const totalHeight = rowY - startY + ENTRY_INNER_PADDING - 2;
 
-    // Now paint the background and add it FIRST in the container
-    // ordering so the text renders on top. Phaser containers render
-    // children in insertion order, so we add the rectangle then
-    // re-add the text in the right order.
     const bg = this.scene.add
-      .rectangle(
-        0,
-        startY,
-        PANEL_WIDTH - PANEL_PADDING * 2,
-        totalHeight,
-        COLOR_ENTRY_BG,
-        1,
-      )
+      .rectangle(0, startY, entryWidth, totalHeight, COLOR_ENTRY_BG, 1)
       .setOrigin(0, 0)
       .setScrollFactor(0)
-      .setStrokeStyle(1, COLOR_ENTRY_BORDER);
-    content.add(bg);
-    content.add(name);
-    content.add(tag);
-    if (desc) content.add(desc);
-    for (const t of stepTexts) content.add(t);
+      .setStrokeStyle(
+        quest.id === this.selectedId ? 2 : 1,
+        quest.id === this.selectedId
+          ? COLOR_ENTRY_SELECTED
+          : isMain
+            ? 0x8a7440
+            : COLOR_ENTRY_BORDER,
+      );
+    this.addClipped(bg, "rect");
+    this.entries.push({ id: quest.id, y: startY, h: totalHeight });
+    this.addClipped(name, "text");
+    this.addClipped(tag, "text");
+    for (const t of rows) this.addClipped(t, "text");
 
-    return { height: totalHeight };
+    // Invisible click target over the title row (no fill → nothing
+    // drawn). The repaint is deferred a tick so we don't destroy the
+    // object whose pointerdown Phaser is still dispatching.
+    const hit = this.scene.add
+      .rectangle(0, startY, entryWidth, titleHeight + ENTRY_INNER_PADDING * 2)
+      .setOrigin(0, 0)
+      .setScrollFactor(0)
+      .setInteractive({ useHandCursor: true });
+    const hitItem = this.addClipped(hit, "hit");
+    hit.on("pointerdown", () => {
+      if (!hitItem.clickable) return;
+      setTimeout(() => this.toggleQuest(quest.id), 0);
+    });
+
+    return totalHeight;
   }
 
-  // ── Scroll plumbing ─────────────────────────────────────────────
+  private paintStepRow(
+    x: number,
+    y: number,
+    width: number,
+    step: QuestStep | undefined,
+    i: number,
+    status: "done" | "current" | "pending",
+  ): Phaser.GameObjects.Text {
+    const glyph = status === "done" ? "✓" : status === "current" ? "→" : "·";
+    const color =
+      status === "done"
+        ? COLOR_STEP_DONE
+        : status === "current"
+          ? COLOR_STEP_CURRENT
+          : COLOR_STEP_PENDING;
+    const stepName = step?.name ?? `Step ${i + 1}`;
+    return this.scene.add
+      .text(x, y, `${glyph} ${stepName}`, {
+        fontFamily: FONT,
+        fontSize: "16px",
+        color,
+        wordWrap: { width },
+      })
+      .setScrollFactor(0);
+  }
+
+  // ── Scroll + clip plumbing ──────────────────────────────────────
 
   private scrollBy(deltaY: number): void {
+    this.setScroll(this.scrollOffset - deltaY);
+  }
+
+  /** Clamp + apply a scroll offset, then move the thumb and re-clip. */
+  private setScroll(offset: number): void {
     if (!this.content) return;
     const maxOffset = Math.max(0, this.contentHeight - this.viewportHeight);
-    this.scrollOffset = Math.max(
-      -maxOffset,
-      Math.min(0, this.scrollOffset - deltaY),
-    );
+    this.scrollOffset = Math.max(-maxOffset, Math.min(0, offset));
     this.content.setPosition(
       this.content.x,
       this.viewportY + this.scrollOffset,
     );
-    // Slide the scrollbar thumb proportionally to the scroll progress.
-    if (this.scrollThumb && maxOffset > 0) {
-      const progress = -this.scrollOffset / maxOffset;
-      this.scrollThumb.setPosition(
-        this.scrollThumb.x,
-        this.scrollThumbY + Math.round(progress * this.scrollThumbTravel),
-      );
+    this.updateScrollChrome();
+    this.applyClip();
+  }
+
+  /** Show / size / position the scrollbar for the current content. */
+  private updateScrollChrome(): void {
+    const overflow = this.contentHeight > this.viewportHeight;
+    this.scrollTrack?.setVisible(overflow);
+    this.scrollThumb?.setVisible(overflow);
+    if (!overflow || !this.scrollThumb) return;
+    const thumbH = Math.max(
+      24,
+      Math.floor(this.viewportHeight * (this.viewportHeight / this.contentHeight)),
+    );
+    this.scrollThumb.setSize(3, thumbH);
+    this.scrollThumbTravel = this.viewportHeight - thumbH;
+    const maxOffset = this.contentHeight - this.viewportHeight;
+    const progress = maxOffset > 0 ? -this.scrollOffset / maxOffset : 0;
+    this.scrollThumb.setPosition(
+      this.scrollThumb.x,
+      this.scrollThumbY + Math.round(progress * this.scrollThumbTravel),
+    );
+  }
+
+  /** Hide / crop / trim every content object against the visible
+   *  window `[-scrollOffset, -scrollOffset + viewportHeight]` (in
+   *  content-local y). This is what keeps entries inside the panel. */
+  private applyClip(): void {
+    const top = -this.scrollOffset;
+    const bottom = top + this.viewportHeight;
+    for (const it of this.clipItems) {
+      const y0 = it.y;
+      const y1 = it.y + it.h;
+      if (it.kind === "hit") {
+        const clickable = y0 >= top && y1 <= bottom;
+        if (clickable !== it.clickable) {
+          it.clickable = clickable;
+          const r = it.obj as Phaser.GameObjects.Rectangle;
+          if (clickable) r.setInteractive({ useHandCursor: true });
+          else r.disableInteractive();
+        }
+        continue;
+      }
+      const visible = y1 > top && y0 < bottom;
+      const vis = it.obj as unknown as Phaser.GameObjects.Components.Visible;
+      vis.setVisible(visible);
+      if (!visible) continue;
+      const c0 = Math.max(y0, top);
+      const c1 = Math.min(y1, bottom);
+      if (it.kind === "text") {
+        const t = it.obj as Phaser.GameObjects.Text;
+        if (c0 === y0 && c1 === y1) t.setCrop();
+        else t.setCrop(0, c0 - y0, it.w, c1 - c0);
+      } else {
+        const r = it.obj as Phaser.GameObjects.Rectangle;
+        r.setPosition(it.x, c0);
+        r.setSize(it.w, c1 - c0);
+      }
     }
   }
 
@@ -726,14 +963,26 @@ export class PaintedQuestLog {
         ev.stopPropagation();
         ev.preventDefault();
         this.requestClose();
-      } else if (ev.key === "ArrowUp") {
+      } else if (ev.key === "ArrowUp" || ev.key === "w" || ev.key === "W") {
         ev.stopPropagation();
         ev.preventDefault();
-        this.scrollBy(-SCROLL_STEP_KEY);
-      } else if (ev.key === "ArrowDown") {
+        this.moveSelection(-1);
+      } else if (ev.key === "ArrowDown" || ev.key === "s" || ev.key === "S") {
         ev.stopPropagation();
         ev.preventDefault();
-        this.scrollBy(SCROLL_STEP_KEY);
+        this.moveSelection(1);
+      } else if (ev.key === "Enter" || ev.key === " ") {
+        ev.stopPropagation();
+        ev.preventDefault();
+        if (this.selectedId) this.toggleQuest(this.selectedId);
+      } else if (ev.key === "ArrowRight" || ev.key === "d" || ev.key === "D") {
+        ev.stopPropagation();
+        ev.preventDefault();
+        if (this.selectedId) this.setExpanded(this.selectedId, true);
+      } else if (ev.key === "ArrowLeft" || ev.key === "a" || ev.key === "A") {
+        ev.stopPropagation();
+        ev.preventDefault();
+        if (this.selectedId) this.setExpanded(this.selectedId, false);
       } else if (ev.key === "PageUp") {
         ev.stopPropagation();
         ev.preventDefault();
@@ -750,22 +999,6 @@ export class PaintedQuestLog {
         ev.stopPropagation();
         ev.preventDefault();
         this.scrollBy(this.contentHeight);
-      } else if (
-        ev.key === "ArrowLeft" ||
-        ev.key === "ArrowRight" ||
-        ev.key === "w" ||
-        ev.key === "a" ||
-        ev.key === "s" ||
-        ev.key === "d" ||
-        ev.key === "W" ||
-        ev.key === "A" ||
-        ev.key === "S" ||
-        ev.key === "D"
-      ) {
-        // Eat unrelated movement keys so the world sim doesn't
-        // step under the modal. Belt-and-braces on top of
-        // `overlaysOpenRef`.
-        ev.stopPropagation();
       }
     };
     if (typeof window !== "undefined") {
@@ -830,6 +1063,42 @@ export function bucketQuests(data: PaintedQuestLogData): {
     else active.push(q);
   }
   return { active, pending, turnedIn };
+}
+
+/** Pull the main quest (`main_quest: true`) out of the active /
+ *  ready-to-turn-in buckets so the painter can pin it at the top.
+ *  Once turned in it stays in COMPLETED like any other quest. If
+ *  several quests are flagged, the first active one wins (then the
+ *  first pending one); the rest render in their normal sections. */
+export function pinMainQuest(b: {
+  active: PaintedQuestLogQuest[];
+  pending: PaintedQuestLogQuest[];
+  turnedIn: PaintedQuestLogQuest[];
+}): {
+  main: { quest: PaintedQuestLogQuest; state: EntryState } | null;
+  active: PaintedQuestLogQuest[];
+  pending: PaintedQuestLogQuest[];
+  turnedIn: PaintedQuestLogQuest[];
+} {
+  const ai = b.active.findIndex((q) => q.main_quest === true);
+  if (ai >= 0) {
+    return {
+      main: { quest: b.active[ai], state: "active" },
+      active: b.active.filter((_q, i) => i !== ai),
+      pending: b.pending,
+      turnedIn: b.turnedIn,
+    };
+  }
+  const pi = b.pending.findIndex((q) => q.main_quest === true);
+  if (pi >= 0) {
+    return {
+      main: { quest: b.pending[pi], state: "rewards-pending" },
+      active: b.active,
+      pending: b.pending.filter((_q, i) => i !== pi),
+      turnedIn: b.turnedIn,
+    };
+  }
+  return { main: null, ...b };
 }
 
 /** Resolve the set of completed step ids for one quest. Prefers the

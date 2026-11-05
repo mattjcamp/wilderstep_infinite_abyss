@@ -18,6 +18,7 @@ describe("getIdListFieldConfig — audit P1 coverage", () => {
     // (model, field, expected source kind, duplicates allowed)
     const expectations: Array<[string, string, string, boolean]> = [
       ["encounters", "monsters", "catalog", true],
+      ["counters", "items", "catalog", true],
       ["spawns", "spawn_monsters", "catalog", true],
       ["spawns", "boss_monsters", "catalog", true],
       ["spawns", "loot", "catalog", true],

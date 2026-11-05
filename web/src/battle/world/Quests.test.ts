@@ -5,6 +5,8 @@ import {
   claimQuestRewards,
   creditQuestDiscover,
   creditQuestKill,
+  creditQuestMeet,
+  creditQuestClearDungeon,
   creditQuestRetrieve,
   ensureQuestStates,
   expandSpelunkingQuests,
@@ -1097,5 +1099,121 @@ describe("expandSpelunkingQuests", () => {
     ];
     expandSpelunkingQuests(quests, dungeons);
     expect(quests[0].steps).toHaveLength(1);
+  });
+});
+
+describe("return_to_giver + meet steps", () => {
+  const raw = {
+    quests: [
+      {
+        id: "intro",
+        name: "Introductions",
+        steps: [
+          { id: "intro_1", name: "Meet the smith", kind: "meet", npc_id: "smith", meet_dialog: "So you're the one." },
+          { id: "intro_2", name: "Meet the mayor", kind: "meet", npc_id: "mayor" },
+        ],
+      },
+      { id: "errand", name: "Errand", return_to_giver: true, steps: [] },
+    ],
+  };
+
+  it("return_to_giver defaults to false and parses true", () => {
+    const defs = parseQuestsFile(raw);
+    expect(defs.find((d) => d.id === "intro")!.returnToGiver).toBe(false);
+    expect(defs.find((d) => d.id === "errand")!.returnToGiver).toBe(true);
+  });
+
+  it("parses npc_id + meet_dialog on meet steps", () => {
+    const step = parseQuestsFile(raw)[0].steps[0];
+    expect(step.kind).toBe("meet");
+    expect(step.npcId).toBe("smith");
+    expect(step.meetDialog).toBe("So you're the one.");
+    expect(parseQuestsFile(raw)[0].steps[1].meetDialog).toBe("");
+  });
+
+  it("creditQuestMeet credits once and completes on the last step", () => {
+    const defs = parseQuestsFile(raw);
+    const states = new Map<string, QuestState>();
+    ensureQuestStates(defs, states);
+    expect(creditQuestMeet(defs, states, "intro", 0)).toBeNull(); // not accepted yet
+    states.get("intro")!.status = "active";
+    const first = creditQuestMeet(defs, states, "intro", 0);
+    expect(first?.questCompleted).toBe(false);
+    expect(creditQuestMeet(defs, states, "intro", 0)).toBeNull(); // already done
+    const last = creditQuestMeet(defs, states, "intro", 1);
+    expect(last?.questCompleted).toBe(true);
+    expect(states.get("intro")!.status).toBe("completed");
+  });
+});
+
+describe("clear_dungeon steps", () => {
+  const raw = {
+    quests: [
+      {
+        id: "delve",
+        name: "Delver",
+        steps: [{ id: "delve_1", name: "Clear any dungeon", kind: "clear_dungeon" }],
+      },
+      {
+        id: "delve3",
+        name: "Deep Delver",
+        steps: [{ id: "delve3_1", name: "Clear three dungeons", kind: "clear_dungeon", count: 3 }],
+      },
+    ],
+  };
+
+  it("parses the kind and count (default 1)", () => {
+    const defs = parseQuestsFile(raw);
+    expect(defs[0].steps[0].kind).toBe("clear_dungeon");
+    expect(defs[0].steps[0].count).toBe(1);
+    expect(defs[1].steps[0].count).toBe(3);
+  });
+
+  it("credits once, only while active, and completes the quest", () => {
+    const defs = parseQuestsFile(raw);
+    const states = new Map<string, QuestState>();
+    ensureQuestStates(defs, states);
+    expect(creditQuestClearDungeon(defs, states, "delve", 0)).toBeNull(); // not accepted
+    states.get("delve")!.status = "active";
+    const credit = creditQuestClearDungeon(defs, states, "delve", 0);
+    expect(credit?.stepCompleted).toBe(true);
+    expect(credit?.questCompleted).toBe(true);
+    expect(states.get("delve")!.status).toBe("completed");
+    expect(creditQuestClearDungeon(defs, states, "delve", 0)).toBeNull();
+  });
+
+  it("needs `count` clears before the step completes", () => {
+    const defs = parseQuestsFile(raw);
+    const states = new Map<string, QuestState>();
+    ensureQuestStates(defs, states);
+    states.get("delve3")!.status = "active";
+    const c1 = creditQuestClearDungeon(defs, states, "delve3", 0, 0);
+    expect(c1).toMatchObject({ clearsSoFar: 1, stepCompleted: false, questCompleted: false });
+    const c2 = creditQuestClearDungeon(defs, states, "delve3", 0, 1);
+    expect(c2).toMatchObject({ clearsSoFar: 2, stepCompleted: false });
+    expect(states.get("delve3")!.status).toBe("active");
+    const c3 = creditQuestClearDungeon(defs, states, "delve3", 0, 2);
+    expect(c3).toMatchObject({ clearsSoFar: 3, stepCompleted: true, questCompleted: true });
+    expect(states.get("delve3")!.status).toBe("completed");
+  });
+
+  it("resumes from a persisted tally after reload", () => {
+    const defs = parseQuestsFile(raw);
+    const states = new Map<string, QuestState>();
+    ensureQuestStates(defs, states);
+    states.get("delve3")!.status = "active";
+    // Fresh in-session state, but the save says 2 already cleared.
+    const c = creditQuestClearDungeon(defs, states, "delve3", 0, 2);
+    expect(c).toMatchObject({ clearsSoFar: 3, stepCompleted: true });
+  });
+
+  it("ignores non-clear_dungeon steps", () => {
+    const defs = parseQuestsFile({
+      quests: [{ id: "q", name: "Q", steps: [{ id: "s", name: "S", kind: "meet", npc_id: "x" }] }],
+    });
+    const states = new Map<string, QuestState>();
+    ensureQuestStates(defs, states);
+    states.get("q")!.status = "active";
+    expect(creditQuestClearDungeon(defs, states, "q", 0)).toBeNull();
   });
 });
