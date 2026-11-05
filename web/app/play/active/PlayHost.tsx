@@ -2038,6 +2038,31 @@ export function PlayHost() {
   useEffect(() => {
     combatRef.current = combat;
   }, [combat]);
+
+  /** Preview hook: `/play/active?finale` opens the main-quest finale
+   *  straight away, built from the loaded save — for checking how the
+   *  ending screen reads without replaying the main quest. Fires once
+   *  per page load; the game itself is untouched. */
+  const finalePreviewedRef = useRef(false);
+  useEffect(() => {
+    if (finalePreviewedRef.current) return;
+    if (state.kind !== "ok" || !state.catalog || !state.save) return;
+    if (typeof window === "undefined") return;
+    if (!new URLSearchParams(window.location.search).has("finale")) return;
+    finalePreviewedRef.current = true;
+    const main = state.catalog.quests.find((q) => q.main_quest === true);
+    const save = saveRef.current ?? state.save;
+    setFinale(
+      computeAdventureRecap(
+        save,
+        main?.name ?? "The Main Quest",
+        (state.catalog.characters ?? []) as ReadonlyArray<{
+          id: string;
+          name?: string;
+        }>,
+      ),
+    );
+  }, [state]);
   // Sync the painted Help & Tips screen with its React state flag.
   // Pattern that future painted screens will copy: React owns the
   // boolean (so overlaysOpenRef + the inspector-key listener don't
