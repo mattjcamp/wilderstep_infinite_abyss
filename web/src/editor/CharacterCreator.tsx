@@ -26,7 +26,7 @@
  * characters.json draft; game appends to the runtime roster).
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   parsePersonSprite,
   titleCase,
@@ -37,6 +37,8 @@ import {
   type CharacterRecord,
 } from "./CharacterSheet";
 import { spriteUrl, fetchSpriteCatalog } from "@/data_model/spriteUrl";
+import { classStatWeights, keyStatsFor, rollStats } from "./statRoll";
+import { keyToDir, pickSpatial } from "./spatialNav";
 
 // ── Tunable creator rules (mirror v1 — see header comment above) ───
 
@@ -147,6 +149,9 @@ export interface ClassRecord {
    *  `"priest"`, or `"none"`. Used by the character sheet's Spells
    *  section to filter castable spells. */
   casting_type?: string[];
+  /** Movement per combat turn — the stat roll treats a fast class as
+   *  Dexterity-minded when it isn't one of the shipped classes. */
+  range?: number;
   /** Portrait the creator pre-selects when this class is picked
    *  (e.g. "person/fighter.png"). Blank/absent = no suggestion. */
   default_sprite?: string;
@@ -160,6 +165,17 @@ export interface AbilityRecord {
 }
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6;
+
+/** Heading for each wizard step — says what the player is choosing
+ *  rather than a generic "New Character". */
+const STEP_TITLES: Record<Step, string> = {
+  1: "Name Your Hero",
+  2: "Choose Your Race",
+  3: "Choose Your Class",
+  4: "Choose a Portrait",
+  5: "Roll Your Character",
+  6: "Review Your Hero",
+};
 
 // ── Helpers ───────────────────────────────────────────────────────
 
@@ -199,6 +215,7 @@ export function CharacterCreator({
   abilities,
   onComplete,
   onCancel,
+  showIdHint = false,
 }: {
   existingIds: Set<string>;
   races: RaceRecord[];
@@ -206,6 +223,10 @@ export function CharacterCreator({
   abilities: AbilityRecord[];
   onComplete: (character: CharacterRecord) => void;
   onCancel: () => void;
+  /** Show the authoring note about how the record id is derived from
+   *  the name. On in the editor's Characters page (authors care);
+   *  off for players forming a party, to whom ids mean nothing. */
+  showIdHint?: boolean;
 }) {
   const [step, setStep] = useState<Step>(1);
   const [name, setName] = useState("");
@@ -351,6 +372,88 @@ export function CharacterCreator({
     onComplete(character);
   };
 
+  // ── Keyboard navigation ──────────────────────────────────────────
+  // Arrow keys (and W/A/S/D outside the name field) move focus to the
+  // nearest control in that direction — card rows, the portrait grid,
+  // the stat −/+ rows, Back / Next — via spatialNav. Enter / Space
+  // press the focused button natively (select a race, raise a stat,
+  // Next…); Enter in the name field also means Next. Each new step
+  // starts focused on its current choice (the Create button on the
+  // final step).
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const focusables = (): HTMLElement[] => {
+    const root = rootRef.current;
+    if (!root) return [];
+    return Array.from(
+      root.querySelectorAll<HTMLElement>(
+        "button:not(:disabled), input:not(:disabled), select:not(:disabled)",
+      ),
+    ).filter((el) => {
+      const r = el.getBoundingClientRect();
+      return r.width > 0 && r.height > 0;
+    });
+  };
+  /** Focus an element and keep it clear of the site's sticky header. */
+  const focusEl = (el: HTMLElement) => {
+    el.focus({ preventScroll: true });
+    el.scrollIntoView({ block: "nearest" });
+    const header = document.querySelector<HTMLElement>("header.sticky");
+    const inset = (header?.getBoundingClientRect().bottom ?? 0) + 12;
+    const top = el.getBoundingClientRect().top;
+    if (top < inset) window.scrollBy({ top: top - inset });
+  };
+  /** Where focus lands on a step: the selected choice, else the first
+   *  control after Cancel. */
+  const focusStepStart = () => {
+    const root = rootRef.current;
+    if (!root) return;
+    const sel = root.querySelector<HTMLElement>('[data-cc-selected="true"]');
+    if (sel) return focusEl(sel);
+    const list = focusables();
+    const first = list.find((el) => !el.hasAttribute("data-cc-cancel"));
+    if (first) focusEl(first);
+  };
+  useEffect(() => {
+    // Wait a frame so the new step's DOM (and the sprite grid, which
+    // loads its catalog) is in place.
+    const t = setTimeout(focusStepStart, 30);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const root = rootRef.current;
+      if (!root || e.metaKey || e.ctrlKey || e.altKey) return;
+      const active = document.activeElement as HTMLElement | null;
+      const inside = !!active && root.contains(active);
+      // Only steer keys meant for the creator: focus is inside it, or
+      // nowhere in particular (body) — never another page's field.
+      if (!inside && active && active !== document.body) return;
+      const typing =
+        !!active &&
+        (active.tagName === "INPUT" || active.tagName === "TEXTAREA");
+      const dir = keyToDir(e.key, !typing);
+      if (!dir) return;
+      // In the name field ←/→ move the caret as usual.
+      if (typing && (dir === "left" || dir === "right")) return;
+      e.preventDefault();
+      if (!inside) {
+        focusStepStart();
+        return;
+      }
+      const list = focusables().filter((el) => el !== active);
+      const i = pickSpatial(
+        active!.getBoundingClientRect(),
+        list.map((el) => el.getBoundingClientRect()),
+        dir,
+      );
+      if (i >= 0) focusEl(list[i]);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Which classes are valid for the currently-selected race?
   const allowedClassIds = useMemo(
     () =>
@@ -363,23 +466,37 @@ export function CharacterCreator({
   );
 
   return (
-    <div className="rounded-md border border-parchment/15 bg-ink/30 p-6">
+    <div
+      ref={rootRef}
+      data-cc-root
+      className="rounded-md border border-parchment/15 bg-ink/30 p-6"
+    >
+      <style>{`
+        [data-cc-root] button:focus-visible,
+        [data-cc-root] input:focus-visible {
+          outline: 2px solid #fcd34d;
+          outline-offset: 2px;
+        }
+      `}</style>
       <header className="mb-4 flex items-baseline justify-between gap-3">
         <button
           type="button"
           onClick={onCancel}
+          data-cc-cancel
           className="text-sm text-parchment/75 hover:text-parchment/90"
         >
           ← Cancel
         </button>
         <h2 className="font-display text-2xl text-parchment">
-          New Character — Step {step} of 6
+          {STEP_TITLES[step]} — Step {step} of 6
         </h2>
         <span className="w-16" />
       </header>
 
       {step === 1 ? (
         <Step1Name
+          showIdHint={showIdHint}
+          onSubmit={onNext}
           name={name}
           onNameChange={(v) => {
             setName(v);
@@ -435,6 +552,19 @@ export function CharacterCreator({
           }
           pointsLeft={pointsLeft}
           onAdjust={adjust}
+          className={classById.get(classId)?.name ?? titleCase(classId)}
+          keyStats={keyStatsFor(
+            classStatWeights(classById.get(classId) ?? { id: classId }),
+          )}
+          onRoll={() => {
+            setStats(
+              rollStats(
+                classStatWeights(classById.get(classId) ?? { id: classId }),
+                { min: STAT_MIN, max: STAT_MAX, bonus: BONUS_POINTS },
+              ),
+            );
+            setError(null);
+          }}
         />
       ) : null}
 
@@ -494,6 +624,7 @@ export function CharacterCreator({
           <button
             type="button"
             onClick={onFinalize}
+            data-cc-selected="true"
             className="rounded border border-ember/60 bg-ember/40 px-3 py-1 text-sm text-parchment hover:bg-ember/60"
           >
             Create Character
@@ -509,9 +640,14 @@ export function CharacterCreator({
 function Step1Name({
   name,
   onNameChange,
+  onSubmit,
+  showIdHint,
 }: {
   name: string;
   onNameChange: (v: string) => void;
+  /** Enter in the name field — same as pressing Next. */
+  onSubmit: () => void;
+  showIdHint: boolean;
 }) {
   return (
     <section>
@@ -522,15 +658,23 @@ function Step1Name({
         type="text"
         value={name}
         onChange={(e) => onNameChange(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            onSubmit();
+          }
+        }}
         placeholder="Aldric"
         autoFocus
         className="w-full rounded border border-parchment/20 bg-ink/50 px-3 py-2 text-lg text-parchment/95 placeholder:text-parchment/60 focus:border-parchment/60 focus:outline-none"
       />
-      <p className="mt-2 text-[13px] text-parchment/65">
-        The id is derived from the name (snake_case, e.g. "Aldric Bren" →{" "}
-        <code>aldric_bren</code>). You can rename later in the
-        character sheet.
-      </p>
+      {showIdHint ? (
+        <p className="mt-2 text-[13px] text-parchment/65">
+          The id is derived from the name (snake_case, e.g. "Aldric Bren" →{" "}
+          <code>aldric_bren</code>). You can rename later in the
+          character sheet.
+        </p>
+      ) : null}
     </section>
   );
 }
@@ -565,6 +709,8 @@ function Step2RaceGender({
               key={r.id}
               type="button"
               onClick={() => onRaceChange(r.id)}
+              aria-pressed={r.id === raceId}
+              data-cc-selected={r.id === raceId ? "true" : undefined}
               className={`rounded border px-3 py-2 text-sm transition ${
                 r.id === raceId
                   ? "border-ember/60 bg-ember/20 text-parchment"
@@ -611,6 +757,7 @@ function Step2RaceGender({
               key={g}
               type="button"
               onClick={() => onGenderChange(g)}
+              aria-pressed={gender === g}
               className={`rounded border px-4 py-2 text-sm transition ${
                 gender === g
                   ? "border-ember/60 bg-ember/20 text-parchment"
@@ -698,6 +845,8 @@ function Step3Class({
                 type="button"
                 disabled={!allowed}
                 onClick={() => onClassChange(c.id)}
+                aria-pressed={c.id === classId}
+                data-cc-selected={c.id === classId ? "true" : undefined}
                 title={
                   allowed
                     ? undefined
@@ -917,6 +1066,7 @@ function Step4Sprite({
               <button
                 type="button"
                 className={chip(effectiveRace === "all")}
+                aria-pressed={effectiveRace === "all"}
                 onClick={() => setRaceFilter("all")}
               >
                 All
@@ -926,6 +1076,7 @@ function Step4Sprite({
                   key={r}
                   type="button"
                   className={chip(effectiveRace === r)}
+                  aria-pressed={effectiveRace === r}
                   onClick={() => setRaceFilter(r)}
                 >
                   {raceName(r)}
@@ -939,6 +1090,7 @@ function Step4Sprite({
                   key={g}
                   type="button"
                   className={chip(genderFilter === g)}
+                  aria-pressed={genderFilter === g}
                   onClick={() => setGenderFilter(g)}
                 >
                   {g === "any" ? "Any" : titleCase(g)}
@@ -959,6 +1111,7 @@ function Step4Sprite({
                   key={v}
                   type="button"
                   className={chip(typeFilter === v)}
+                  aria-pressed={typeFilter === v}
                   onClick={() => setTypeFilter(v)}
                 >
                   {label}
@@ -987,6 +1140,8 @@ function Step4Sprite({
                       <button
                         type="button"
                         onClick={() => onSpriteChange(s.path)}
+                        aria-pressed={selected}
+                        data-cc-selected={selected ? "true" : undefined}
                         title={`${s.label}${s.sublabel ? ` — ${s.sublabel}` : ""}\n${s.path}`}
                         className={`relative flex w-full flex-col items-center gap-1 rounded border px-1.5 pb-1.5 pt-2 text-center transition ${
                           selected
@@ -1053,43 +1208,170 @@ function Step4Sprite({
 
 // ── Step 5: Stats ─────────────────────────────────────────────────
 
+const STAT_FULL: Record<StatKey, string> = {
+  strength: "Strength",
+  dexterity: "Dexterity",
+  constitution: "Constitution",
+  intelligence: "Intelligence",
+  wisdom: "Wisdom",
+};
+
+/** Round "gem" stepper button. The glyph is drawn with bars rather
+ *  than a text character so it sits dead-centre at any font size:
+ *  − is a recessed steel button, + a raised ember-gold one. Both press
+ *  in on click and glow on hover; disabled dims and goes flat. */
+function StatStepButton({
+  kind,
+  disabled,
+  onClick,
+  label,
+}: {
+  kind: "dec" | "inc";
+  disabled: boolean;
+  onClick: () => void;
+  label: string;
+}) {
+  const inc = kind === "inc";
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      className={[
+        "relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 transition duration-100",
+        "active:translate-y-px active:scale-90 disabled:cursor-not-allowed disabled:opacity-25 disabled:shadow-none disabled:active:scale-100",
+        inc
+          ? "border-amber-300/70 bg-[radial-gradient(circle_at_35%_30%,#f2c46b,#c8553d_55%,#6e2418)] shadow-[0_2px_0_#3a120c,0_0_0_rgba(255,200,90,0)] hover:shadow-[0_2px_0_#3a120c,0_0_14px_rgba(255,200,90,0.55)] hover:brightness-110"
+          : "border-parchment/35 bg-[radial-gradient(circle_at_35%_30%,#5a5f74,#2c2f40_60%,#1b1c28)] shadow-[inset_0_2px_4px_rgba(0,0,0,0.6)] hover:border-parchment/60 hover:shadow-[inset_0_2px_4px_rgba(0,0,0,0.6),0_0_10px_rgba(220,220,240,0.25)]",
+      ].join(" ")}
+    >
+      <span
+        className={`absolute h-[3px] w-4 rounded-full ${
+          inc ? "bg-ink shadow-[0_1px_0_rgba(255,230,170,0.6)]" : "bg-parchment/85"
+        }`}
+      />
+      {inc ? (
+        <span className="absolute h-4 w-[3px] rounded-full bg-ink shadow-[1px_0_0_rgba(255,230,170,0.6)]" />
+      ) : null}
+    </button>
+  );
+}
+
+/** A small six-sided die, for the roll button. */
+function DieIcon({ spinning }: { spinning: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={`h-6 w-6 ${spinning ? "cc-die-spin" : ""}`}
+      aria-hidden
+    >
+      <rect x="3" y="3" width="18" height="18" rx="4" fill="#f6efd6" stroke="#1a1a2e" strokeWidth="1.5" />
+      {[
+        [8, 8],
+        [16, 8],
+        [12, 12],
+        [8, 16],
+        [16, 16],
+      ].map(([cx, cy]) => (
+        <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r="1.7" fill="#6e2418" />
+      ))}
+    </svg>
+  );
+}
+
 function Step5Stats({
   stats,
   raceMods,
   pointsLeft,
   onAdjust,
+  onRoll,
+  className,
+  keyStats,
 }: {
   stats: Record<StatKey, number>;
   raceMods: Partial<Record<StatKey, number>>;
   pointsLeft: number;
   onAdjust: (stat: StatKey, delta: number) => void;
+  /** Fill the sheet with a class-weighted random build. */
+  onRoll: () => void;
+  /** Chosen class's display name, for the roll caption. */
+  className: string;
+  /** Stats that matter most to the chosen class — marked with a star. */
+  keyStats: ReadonlyArray<StatKey>;
 }) {
+  // Bumped on every roll: re-keys the value cells so they replay the
+  // pop animation, and spins the die.
+  const [rollCount, setRollCount] = useState(0);
+  const [spinning, setSpinning] = useState(false);
+  useEffect(() => {
+    if (!spinning) return;
+    const t = setTimeout(() => setSpinning(false), 600);
+    return () => clearTimeout(t);
+  }, [spinning]);
+  const span = STAT_MAX - STAT_MIN;
+
   return (
     <section>
-      <h3 className="mb-2 text-[13px] uppercase tracking-wide text-parchment/75">
-        Distribute Stats
-      </h3>
-      <p className="mb-3 text-sm text-parchment/75">
-        Every attribute starts at <strong>{STAT_MIN}</strong>. You have{" "}
-        <strong>{BONUS_POINTS}</strong> bonus points to distribute (max{" "}
-        <strong>{STAT_MAX}</strong> per stat). Racial modifiers apply on
-        top.
-      </p>
-      <p className="mb-4 text-sm">
-        Points remaining:{" "}
-        <span
-          className={`font-mono text-lg ${
-            pointsLeft === 0
-              ? "text-parchment/95"
-              : pointsLeft < 0
-                ? "text-ember"
-                : "text-ember/90"
-          }`}
-        >
-          {pointsLeft}
+      <style>{`
+        @keyframes cc-pop { 0% { transform: scale(1.35); color: #f2c46b } 100% { transform: scale(1) } }
+        .cc-pop { animation: cc-pop 0.45s ease-out both; display: inline-block }
+        @keyframes cc-die { 0% { transform: rotate(0) scale(1) } 50% { transform: rotate(200deg) scale(1.2) } 100% { transform: rotate(360deg) scale(1) } }
+        .cc-die-spin { animation: cc-die 0.6s ease-out }
+        @media (prefers-reduced-motion: reduce) { .cc-pop, .cc-die-spin { animation: none } }
+      `}</style>
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-sm text-parchment/75">
+            These attributes determine how well your character performs in
+            the adventure. Use the Roll button to get starting stats and then
+            use the +/- buttons to fine tune your character.
+          </p>
+        </div>
+        <div className="flex shrink-0 flex-col items-start gap-1 sm:items-end">
+          <button
+            type="button"
+            onClick={() => {
+              onRoll();
+              setRollCount((n) => n + 1);
+              setSpinning(true);
+            }}
+            className="flex items-center gap-2 rounded-lg border-2 border-amber-300/60 bg-gradient-to-b from-ember/70 to-ember/30 px-4 py-2 font-display text-base text-parchment shadow-[0_2px_0_#3a120c] transition hover:brightness-110 hover:shadow-[0_2px_0_#3a120c,0_0_16px_rgba(255,200,90,0.45)] active:translate-y-px"
+          >
+            <DieIcon spinning={spinning} />
+            {rollCount > 0 ? "Roll again" : "Roll for me"}
+          </button>
+        </div>
+      </div>
+
+      {/* Points remaining — one gem per bonus point. */}
+      <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
+        <span>
+          Points remaining:{" "}
+          <span
+            className={`font-mono text-lg ${
+              pointsLeft === 0 ? "text-parchment/95" : "text-ember"
+            }`}
+          >
+            {pointsLeft}
+          </span>
+          <span className="ml-1 text-parchment/70">of {BONUS_POINTS}</span>
         </span>
-        <span className="ml-2 text-parchment/70">of {BONUS_POINTS}</span>
-      </p>
+        <span className="flex flex-wrap gap-1" aria-hidden>
+          {Array.from({ length: BONUS_POINTS }, (_, i) => (
+            <span
+              key={i}
+              className={`h-2.5 w-2.5 rotate-45 rounded-[2px] border transition-colors duration-200 ${
+                i < pointsLeft
+                  ? "border-amber-200/80 bg-amber-300 shadow-[0_0_6px_rgba(255,200,90,0.6)]"
+                  : "border-parchment/20 bg-transparent"
+              }`}
+            />
+          ))}
+        </span>
+      </div>
+
       <ul className="space-y-2">
         {STAT_KEYS.map((k) => {
           const base = stats[k];
@@ -1097,38 +1379,76 @@ function Step5Stats({
           const total = base + mod;
           const canInc = base < STAT_MAX && pointsLeft > 0;
           const canDec = base > STAT_MIN;
+          const key = keyStats.includes(k);
           return (
             <li
               key={k}
-              className="grid grid-cols-[80px_auto_60px_auto_120px] items-center gap-3 rounded border border-parchment/10 bg-ink/30 p-2"
+              className={`flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border p-3 ${
+                key
+                  ? "border-amber-300/30 bg-amber-300/[0.04]"
+                  : "border-parchment/10 bg-ink/30"
+              }`}
             >
-              <span className="text-sm font-mono uppercase text-parchment/80">
-                {STAT_LABELS[k]}
-              </span>
-              <button
-                type="button"
-                disabled={!canDec}
-                onClick={() => onAdjust(k, -1)}
-                className="rounded border border-parchment/25 px-3 py-1 text-sm text-parchment/85 hover:bg-ink/50 disabled:cursor-not-allowed disabled:opacity-30"
-              >
-                −
-              </button>
-              <span className="text-center font-mono text-2xl text-parchment">
-                {base}
-              </span>
-              <button
-                type="button"
-                disabled={!canInc}
-                onClick={() => onAdjust(k, +1)}
-                className="rounded border border-parchment/25 px-3 py-1 text-sm text-parchment/85 hover:bg-ink/50 disabled:cursor-not-allowed disabled:opacity-30"
-              >
-                +
-              </button>
-              <span className="text-right text-[13px] text-parchment/75">
+              <div className="w-28 shrink-0">
+                <div className="font-mono text-base uppercase text-parchment/90">
+                  {STAT_LABELS[k]}
+                  {key ? (
+                    <span
+                      className="ml-1.5 text-amber-300"
+                      title={`A key stat for a ${className}`}
+                    >
+                      ★
+                    </span>
+                  ) : null}
+                </div>
+                <div className="text-xs text-parchment/60">{STAT_FULL[k]}</div>
+              </div>
+              <div className="flex flex-1 items-center gap-3">
+                <StatStepButton
+                  kind="dec"
+                  disabled={!canDec}
+                  onClick={() => onAdjust(k, -1)}
+                  label={`Lower ${STAT_FULL[k]}`}
+                />
+                <div className="flex min-w-[7rem] flex-1 flex-col items-center gap-1">
+                  <span
+                    key={`${k}-${rollCount}`}
+                    className={`font-mono text-3xl leading-none text-parchment ${
+                      rollCount > 0 ? "cc-pop" : ""
+                    }`}
+                  >
+                    {base}
+                  </span>
+                  {/* Meter: one segment per point above the floor. */}
+                  <span className="flex w-full max-w-[12rem] gap-0.5" aria-hidden>
+                    {Array.from({ length: span }, (_, i) => (
+                      <span
+                        key={i}
+                        className={`h-1.5 flex-1 rounded-sm transition-colors duration-200 ${
+                          i < base - STAT_MIN
+                            ? i >= span - 3
+                              ? "bg-amber-300"
+                              : "bg-ember"
+                            : "bg-parchment/10"
+                        }`}
+                      />
+                    ))}
+                  </span>
+                </div>
+                <StatStepButton
+                  kind="inc"
+                  disabled={!canInc}
+                  onClick={() => onAdjust(k, +1)}
+                  label={`Raise ${STAT_FULL[k]}`}
+                />
+              </div>
+              <span className="w-full text-right text-[13px] text-parchment/75 sm:w-36">
                 {mod !== 0 ? (
                   <>
-                    + race {fmtMod(mod)} ={" "}
-                    <span className="text-parchment/90">{total}</span>
+                    race {fmtMod(mod)} →{" "}
+                    <span className="font-mono text-base text-parchment/95">
+                      {total}
+                    </span>
                   </>
                 ) : (
                   <span className="text-parchment/60">no racial mod</span>
@@ -1138,11 +1458,6 @@ function Step5Stats({
           );
         })}
       </ul>
-      <p className="mt-3 text-xs text-parchment/65">
-        Tip: maxing one stat costs 10 points, leaving 5 to scatter. A
-        flat spread of +3 per stat is the alternative — pick a real
-        primary or a generalist, but not both.
-      </p>
     </section>
   );
 }

@@ -80,9 +80,10 @@ def small_folk_parts(fn):
     got = {}
     real = msf.render
 
-    def spy(parts, trims=(), details=(), hair_dark_from=99, shadow=(17, 53, 46, 61)):
+    def spy(parts, trims=(), details=(), hair_dark_from=99, shadow=(17, 53, 46, 61),
+            hair=None):
         got.update(parts=parts, trims=trims, shadow=shadow)
-        return real(parts, trims, details, hair_dark_from, shadow)
+        return real(parts, trims, details, hair_dark_from, shadow, hair)
 
     msf.render = spy
     try:
@@ -104,13 +105,15 @@ BASES = {
     "dwarf_female": lambda: small_folk_parts(lambda: msf.dwarf(True)),
     "gnome_male": lambda: small_folk_parts(lambda: msf.gnome(False)),
     "gnome_female": lambda: small_folk_parts(lambda: msf.gnome(True)),
+    "elf_male": lambda: small_folk_parts(lambda: msf.elf(False)),
+    "elf_female": lambda: small_folk_parts(lambda: msf.elf(True)),
 }
 
 
 # ── Helpers ───────────────────────────────────────────────────────
 def shade_of(c):
     """Light / mid / shadow step (0, 1, 2) of a base pixel."""
-    for pal in (SKIN, HAIR):
+    for pal in (SKIN, HAIR, msf.ELF_HAIR):
         if c in pal:
             return pal.index(c)
     if c in CLOTH:

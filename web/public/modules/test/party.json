@@ -6,12 +6,7 @@
   },
   "avatar": "person/dwarf_male_fighter.png",
   "gold": 50,
-  "roster": [
-    "fighter",
-    "cleric",
-    "ranger",
-    "alchemist"
-  ],
+  "roster": [],
   "party_effects": [],
   "inventory": [
     {

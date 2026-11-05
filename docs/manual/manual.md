@@ -42,7 +42,7 @@ The module provides a starting roster of ready-made characters, and you can also
 
 Characters waiting on the sidelines sit in an **Available** pool; add any of them to fill your ranks, or remove a member to send them back. You can **reorder** the party by dragging members up and down, and order matters: the member in the first slot is your **lead** — the figure shown walking the world map, and the one who acts first in battle. A common setup puts a sturdy front-liner in the lead and keeps fragile spellcasters further back.
 
-When your party is ready, choose **Begin** to enter the world. A good first party mixes durability, damage, and a little magic — a Fighter or Paladin to absorb hits, a Cleric or Wizard for spells, and a Thief to handle locks and traps (a Ranger can spot traps too).
+When every slot in your party is filled, choose **Begin** to enter the world (hover over the button to see how many characters you still need). The whole screen also works from the keyboard: `↑` `↓` (or `W` `S`) move the highlight, `Enter` adds the highlighted character to the party or removes them from it, and `Shift` + `↑` `↓` changes a member's place in the marching order. A good first party mixes durability, damage, and a little magic — a Fighter or Paladin to absorb hits, a Cleric or Wizard for spells, and a Thief to handle locks and traps (a Ranger can spot traps too).
 
 ### Navigating the Map
 

@@ -1,11 +1,10 @@
 ## Improve UI
-- Fine tune beginning character creation
-- Put updated graphics into manuals
+- Put updated graphics into manuals, markdown and github
 
 ## Lore
-- world name
+- world name: Varnfell (the Varn were destroyed in a great cosmic struggle that created the world, Varnfell. "The Varn died, so that the world could be born)
 - races
-- gods
+- gods: The Varn (a race of dead gods)
 - cults
 - guilds
 - major city-states

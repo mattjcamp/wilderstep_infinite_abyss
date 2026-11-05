@@ -26,12 +26,13 @@ LIPS = (196, 104, 100, 255)
 EYE = OUTLINE
 CLEAR = (0, 0, 0, 0)
 
-SKIN_PARTS = ("head", "torso", "arm", "hand", "leg", "foot", "neck", "nose")
+SKIN_PARTS = ("head", "torso", "arm", "hand", "leg", "foot", "neck", "nose", "ear")
 HAIR_PARTS = ("hair", "beard")
 CLOTH_PARTS = ("shorts", "top")
 
 
-def render(parts, trims=(), details=(), hair_dark_from=99, shadow=(17, 53, 46, 61)):
+def render(parts, trims=(), details=(), hair_dark_from=99, shadow=(17, 53, 46, 61),
+           hair=None):
     """parts: [(name, x0, y0, x1, y1)]; later hair/beard entries win.
     details: [(x, y, colour)] painted after shading."""
     part = [[None] * N for _ in range(N)]
@@ -68,7 +69,7 @@ def render(parts, trims=(), details=(), hair_dark_from=99, shadow=(17, 53, 46, 6
                 if at(xx, y + 1) != name and name in SKIN_PARTS:
                     shade = max(shade, 1)
                 if name in HAIR_PARTS:
-                    c = HAIR[min(2, shade + (1 if y >= hair_dark_from else 0))]
+                    c = (hair or HAIR)[min(2, shade + (1 if y >= hair_dark_from else 0))]
                 elif name in CLOTH_PARTS:
                     c = CLOTH[1 if shade else 0]
                 elif name == "belt":
@@ -205,6 +206,59 @@ def gnome(female=False):
                   shadow=(19, 52, 44, 60))
 
 
+# ── Elf ───────────────────────────────────────────────────────────
+# Pale-gold hair so an elf reads apart from a human at a glance.
+ELF_HAIR = [(240, 222, 150, 255), (204, 176, 98, 255), (150, 120, 64, 255)]
+
+
+def elf(female=False):
+    """Human height but slimmer, with long straight hair and pointed
+    ears that poke out through it. Same ground row (27) as everyone."""
+    H = ELF_HAIR
+    p = [
+        ("ear", 10, 6, 11, 6), ("ear", 11, 7, 11, 7),       # pointed ears,
+        ("ear", 20, 6, 21, 6), ("ear", 20, 7, 20, 7),       # tips up and out
+        ("hair", 13, 3, 18, 5), ("hair", 12, 4, 19, 5),
+        ("head", 13, 6, 18, 9),
+        ("neck", 15, 10, 16, 10),
+        ("torso", 12, 11, 19, 12),                          # slim shoulders
+        ("torso", 12, 13, 19, 14),
+        ("torso", 13, 15, 18, 16),                          # narrow waist
+        ("shorts", 12, 17, 19, 19),
+        ("arm", 10, 12, 11, 15), ("arm", 20, 12, 21, 15),
+        ("arm", 9, 16, 10, 19), ("arm", 21, 16, 22, 19),
+        ("hand", 9, 20, 10, 21), ("hand", 21, 20, 22, 21),
+        ("leg", 12, 20, 14, 23), ("leg", 17, 20, 19, 23),   # long slim legs
+        ("leg", 12, 24, 13, 26), ("leg", 18, 24, 19, 26),
+        ("foot", 11, 27, 13, 27), ("foot", 18, 27, 20, 27),
+    ]
+    if female:
+        # long hair falling past the shoulders, and a simple top
+        p += [("hair", 12, 6, 12, 15), ("hair", 19, 6, 19, 15),
+              ("top", 13, 13, 18, 14)]
+    else:
+        # straight hair to the shoulders
+        p += [("hair", 12, 6, 12, 12), ("hair", 19, 6, 19, 12)]
+    trims = [(12, 4), (19, 4)]
+    d = [(14, 3, H[0]), (13, 4, H[0]), (14, 4, H[0]), (16, 4, H[0]),   # shine
+         (15, 5, H[1]), (17, 5, H[2]),                                  # fringe
+         (14, 7, EYE), (17, 7, EYE),
+         (14, 6, H[2]), (17, 6, H[2]),                                  # fine brows
+         (15, 9, LIPS if female else SKIN[1]), (16, 9, LIPS if female else SKIN[1]),
+         (10, 6, SKIN[0]), (21, 6, SKIN[1])]                            # ear tips
+    d += waistband(17, 12, 19)
+    d += [(15, 18, CLOTH[1]), (16, 18, CLOTH[1]), (15, 19, CLOTH[1]), (16, 19, CLOTH[1])]
+    d += [(13, 23, SKIN[1]), (18, 23, SKIN[1])]                         # knees
+    if female:
+        d += [(x, 14, CLOTH[1] if x > 16 else CLOTH[0]) for x in range(13, 19)]
+        d += [(12, 9, H[0]), (12, 12, H[1]), (19, 10, H[2])]            # strands
+    else:
+        d += [(13, 14, SKIN[1]), (14, 14, SKIN[1]), (17, 14, SKIN[1]), (18, 14, SKIN[1])]
+    d += [(15, 16, SKIN[1])]                                            # navel
+    return render(p, trims=trims, details=d, hair_dark_from=6,
+                  shadow=(17, 53, 46, 61), hair=H)
+
+
 BUILDS = {
     "halfling_male": lambda: halfling(False),
     "halfling_female": lambda: halfling(True),
@@ -212,6 +266,8 @@ BUILDS = {
     "dwarf_female": lambda: dwarf(True),
     "gnome_male": lambda: gnome(False),
     "gnome_female": lambda: gnome(True),
+    "elf_male": lambda: elf(False),
+    "elf_female": lambda: elf(True),
 }
 
 if __name__ == "__main__":

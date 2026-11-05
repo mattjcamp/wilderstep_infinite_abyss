@@ -386,6 +386,7 @@ export function CharactersBrowse({ moduleId }: { moduleId: string }) {
             abilities={state.abilities}
             onComplete={onCreate}
             onCancel={() => setCreating(false)}
+            showIdHint
           />
         </div>
       ) : null}

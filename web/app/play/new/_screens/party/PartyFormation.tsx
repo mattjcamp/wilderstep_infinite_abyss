@@ -19,8 +19,9 @@
  *
  * Party size is soft-capped at `max(rosterSize, 4)` — the module's
  * default party size, but never less than four so a one-character
- * tutorial module doesn't strand the player. Begin is disabled when
- * the party is empty.
+ * tutorial module doesn't strand the player. Begin stays disabled
+ * until every slot is filled (a hover popover says how many more are
+ * needed); players can always create characters to make up the rest.
  *
  * On "Begin", the assembled party (slot resolution + custom-character
  * records for any non-module slots) is stashed in sessionStorage so
@@ -31,7 +32,14 @@
 
 import { playBeginHref } from "@/play/playRoutes";
 import { getModuleSource } from "@/data_model/sourceConfig";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  clampPartyNav,
+  initialPartyNav,
+  samePartyNav,
+  stepPartyNav,
+  type PartyNavCursor,
+} from "@/play/partyFormationNav";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { withBasePath } from "@/util/basePath";
@@ -278,7 +286,7 @@ export function PartyFormation({ moduleId }: { moduleId: string }) {
   const onBegin = () => {
     if (state.kind !== "ok") return;
     if (typeof window === "undefined") return;
-    if (slots.length === 0) return;
+    if (slots.length < partyCap) return; // a full party is required
     const draft = { moduleId, slots };
     try {
       window.sessionStorage.setItem(
@@ -291,6 +299,130 @@ export function PartyFormation({ moduleId }: { moduleId: string }) {
     }
     router.push(playBeginHref(moduleId));
   };
+
+  // ── Keyboard control ────────────────────────────────────────────
+  // ↑/↓ or W/S (and ←/→ or A/D) walk one list of targets: Begin →
+  // Create → party rows → available rows. Enter / Space acts on the
+  // highlighted target: Begin begins, Create opens the creator, a
+  // party row is removed (deselect), an available row joins the party
+  // (select). Shift+↑/↓ (or Shift+W/S) moves a party member within the
+  // marching order. The highlight only shows once the keyboard is
+  // used, and hides again on mouse use, so mouse players never see a
+  // stray outline. Disabled while the character creator is open so
+  // typing a name (W, A, S, D…) works normally.
+  const navCounts = {
+    party: slots.length,
+    avail: availableModule.length + availableCustom.length,
+  };
+  const [navCursor, setNavCursor] = useState<PartyNavCursor | null>(null);
+  const [kbdActive, setKbdActive] = useState(false);
+  const liveCursor: PartyNavCursor = clampPartyNav(
+    navCursor ?? initialPartyNav(navCounts),
+    navCounts,
+  );
+  const navFocused = (section: PartyNavCursor["section"], index = 0) =>
+    kbdActive && samePartyNav(liveCursor, { section, index });
+
+  const navActRef = useRef<(e: KeyboardEvent) => void>(() => {});
+  navActRef.current = (e: KeyboardEvent) => {
+    if (state.kind !== "ok" || creating) return;
+    const t = e.target as HTMLElement | null;
+    if (
+      t &&
+      (t.tagName === "INPUT" ||
+        t.tagName === "TEXTAREA" ||
+        t.tagName === "SELECT" ||
+        t.isContentEditable)
+    ) {
+      return;
+    }
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    const k = e.key;
+    const up = k === "ArrowUp" || k === "w" || k === "W";
+    const down = k === "ArrowDown" || k === "s" || k === "S";
+    const back = k === "ArrowLeft" || k === "a" || k === "A";
+    const fwd = k === "ArrowRight" || k === "d" || k === "D";
+    const act = k === "Enter" || k === " ";
+    if (!(up || down || back || fwd || act)) return;
+    e.preventDefault();
+    if (!kbdActive) {
+      // First key press just reveals the highlight where it is, so a
+      // keystroke never acts on a target the player can't see yet.
+      setKbdActive(true);
+      return;
+    }
+    const cur = liveCursor;
+    if ((up || down) && e.shiftKey && cur.section === "party") {
+      const to = cur.index + (up ? -1 : 1);
+      if (to < 0 || to >= slots.length) return;
+      onReorder(cur.index, to);
+      setNavCursor({ section: "party", index: to });
+      return;
+    }
+    if (up || back) {
+      setNavCursor(stepPartyNav(cur, -1, navCounts));
+      return;
+    }
+    if (down || fwd) {
+      setNavCursor(stepPartyNav(cur, 1, navCounts));
+      return;
+    }
+    // Enter / Space
+    if (cur.section === "begin") {
+      onBegin();
+    } else if (cur.section === "create") {
+      setCreating(true);
+    } else if (cur.section === "party") {
+      onRemove(cur.index);
+      setNavCursor(cur);
+    } else {
+      const i = cur.index;
+      if (i < availableModule.length) onAddModule(availableModule[i].id);
+      else {
+        const rec = availableCustom[i - availableModule.length];
+        if (rec) onAddCustom(rec);
+      }
+      setNavCursor(cur);
+    }
+  };
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => navActRef.current(e);
+    const onMouse = () => setKbdActive(false);
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("mousedown", onMouse);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("mousedown", onMouse);
+    };
+  }, []);
+  // Keep the highlighted target on screen. Begin sits at the very top
+  // of the page, so it scrolls the page all the way up (title, intro
+  // and popover included). Everything else scrolls just enough, but
+  // must clear the site's sticky header: a plain `scrollIntoView`
+  // stops at the viewport edge, which is UNDER that header.
+  useEffect(() => {
+    if (!kbdActive) return;
+    if (liveCursor.section === "begin") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    const el = document.querySelector<HTMLElement>(
+      '[data-party-nav-focused="true"]',
+    );
+    if (!el) return;
+    const header = document.querySelector<HTMLElement>("header.sticky");
+    const topInset = (header?.getBoundingClientRect().bottom ?? 0) + 16;
+    const bottomInset = 16;
+    const r = el.getBoundingClientRect();
+    if (r.top < topInset) {
+      window.scrollBy({ top: r.top - topInset, behavior: "smooth" });
+    } else if (r.bottom > window.innerHeight - bottomInset) {
+      window.scrollBy({
+        top: r.bottom - (window.innerHeight - bottomInset),
+        behavior: "smooth",
+      });
+    }
+  }, [kbdActive, liveCursor.section, liveCursor.index]);
 
   if (state.kind === "loading") {
     return (
@@ -311,35 +443,63 @@ export function PartyFormation({ moduleId }: { moduleId: string }) {
   }
 
   const { catalog } = state;
+  const missing = partyCap - slots.length;
+  const beginBlockedReason: string | null = creating
+    ? "Finish creating your character first."
+    : missing > 0
+      ? `Add ${missing} more ${missing === 1 ? "character" : "characters"} to begin (${slots.length} / ${partyCap}).`
+      : null;
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 p-8">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="font-display text-3xl text-parchment">Form the Party</h1>
-          <p className="mt-1 text-sm text-parchment/65">
-            Build a roster of up to {partyCap}{" "}
-            {partyCap === 1 ? "adventurer" : "adventurers"}. Create your own,
-            pick from the module's heroes, and drag to set marching order — the
-            first slot leads on the world map and acts first in combat.
+          <h1 className="font-display text-4xl text-parchment">Form Thy Party</h1>
+          <p className="mt-1 text-base text-parchment/85">
+            It&apos;s time to build a group of adventurers to travel with. You
+            may choose from the list of available characters or you can create
+            your own. Keep in mind that races and classes all have different
+            abilities, strengths and weaknesses. Click &ldquo;Begin&rdquo; when
+            you are ready to venture forth.
+          </p>
+          <p className="mt-2 text-sm text-parchment/60">
+            Keyboard: ↑ ↓ (or W S) to move · Enter to add or remove ·
+            Shift + ↑ ↓ to change marching order
           </p>
         </div>
         {/* Begin lives up here (next to the create CTA below) so it's
             obvious from the first screenful — players were missing it
             when it only sat in the footer below a long roster list.
-            Same disabled rules + hint as before. */}
-        <div className="flex shrink-0 flex-col items-start gap-1 sm:items-end">
+            Disabled until every party slot is filled; the reason lives
+            in a hover popover rather than a permanent line of text.
+            The hover is on the WRAPPER — disabled buttons don't get
+            pointer events in every browser. */}
+        <div
+          data-party-nav-focused={navFocused("begin") ? "true" : undefined}
+          className={`group relative shrink-0 self-start rounded-md sm:self-auto ${
+            navFocused("begin") ? "ring-2 ring-amber-200 ring-offset-2 ring-offset-ink" : ""
+          }`}
+        >
           <button
             type="button"
             onClick={onBegin}
-            disabled={creating || slots.length === 0}
+            disabled={beginBlockedReason !== null}
+            aria-describedby={beginBlockedReason ? "begin-blocked-hint" : undefined}
             className="rounded-md border border-parchment/40 bg-ember/90 px-8 py-2 text-parchment shadow transition hover:bg-ember disabled:cursor-not-allowed disabled:opacity-40"
           >
             Begin →
           </button>
-          {slots.length === 0 ? (
-            <span className="text-xs text-amber-200/85">
-              Add at least one character to begin.
-            </span>
+          {beginBlockedReason ? (
+            <div
+              id="begin-blocked-hint"
+              role="tooltip"
+              className={`pointer-events-none absolute right-0 top-full z-20 ${
+                navFocused("begin") ? "visible opacity-100" : "invisible opacity-0"
+              } mt-2 w-max max-w-[16rem] rounded-md border border-amber-300/40 bg-ink px-3 py-2 text-sm text-amber-100 shadow-lg shadow-black/50 transition-opacity duration-150 group-hover:visible group-hover:opacity-100 sm:right-0 max-sm:left-0 max-sm:right-auto`}
+            >
+              {/* Arrow nub pointing up at the button. */}
+              <span className="absolute -top-1.5 right-6 h-3 w-3 rotate-45 border-l border-t border-amber-300/40 bg-ink max-sm:left-6 max-sm:right-auto" />
+              {beginBlockedReason}
+            </div>
           ) : null}
         </div>
       </header>
@@ -351,7 +511,7 @@ export function PartyFormation({ moduleId }: { moduleId: string }) {
           the player keeps the rest of the page in view. */}
       {creating ? (
         <section className="rounded-md border border-ember/60 bg-ember/10 p-4">
-          <h2 className="mb-3 font-display text-lg text-parchment">
+          <h2 className="mb-3 font-display text-xl text-parchment">
             Create a new character
           </h2>
           <CharacterCreator
@@ -367,17 +527,20 @@ export function PartyFormation({ moduleId }: { moduleId: string }) {
         <button
           type="button"
           onClick={() => setCreating(true)}
-          className="flex items-center justify-between gap-4 rounded-md border-2 border-dashed border-ember/60 bg-ember/10 p-4 text-left transition hover:border-ember hover:bg-ember/20"
+          data-party-nav-focused={navFocused("create") ? "true" : undefined}
+          className={`flex items-center justify-between gap-4 rounded-md border-2 border-dashed border-ember/60 bg-ember/10 p-4 text-left transition hover:border-ember hover:bg-ember/20 ${
+            navFocused("create") ? "ring-2 ring-amber-200 ring-offset-2 ring-offset-ink" : ""
+          }`}
         >
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-full border border-ember/60 bg-ember/20 text-2xl font-bold text-ember">
               +
             </div>
             <div>
-              <div className="font-display text-lg text-parchment">
+              <div className="font-display text-xl text-parchment">
                 Create a new character
               </div>
-              <div className="text-xs text-parchment/65">
+              <div className="text-sm text-parchment/85">
                 Roll your own hero —{" "}
                 {canAddMore
                   ? "they'll join the party automatically."
@@ -385,7 +548,7 @@ export function PartyFormation({ moduleId }: { moduleId: string }) {
               </div>
             </div>
           </div>
-          <span className="rounded border border-ember/60 px-3 py-1 text-xs uppercase tracking-wide text-ember">
+          <span className="rounded border border-ember/60 px-3 py-1 text-sm uppercase tracking-wide text-ember">
             Create
           </span>
         </button>
@@ -399,17 +562,17 @@ export function PartyFormation({ moduleId }: { moduleId: string }) {
           members fall back into the Available pool. */}
       <section>
         <div className="mb-2 flex items-baseline justify-between">
-          <h2 className="font-display text-xl text-parchment">
+          <h2 className="font-display text-2xl text-parchment">
             Your Party
           </h2>
-          <span className="text-xs text-parchment/55">
+          <span className="text-sm text-parchment/75">
             {slots.length} / {partyCap}
             {slots.length > 0 ? " · drag to reorder" : ""}
           </span>
         </div>
 
         {slots.length === 0 ? (
-          <div className="rounded-md border border-dashed border-parchment/20 bg-ink/30 p-6 text-center text-sm text-parchment/55">
+          <div className="rounded-md border border-dashed border-parchment/20 bg-ink/30 p-6 text-center text-base text-parchment/75">
             No characters in the party yet. Create one above, or add
             from Available Characters below.
           </div>
@@ -462,7 +625,12 @@ export function PartyFormation({ moduleId }: { moduleId: string }) {
                     setDragIdx(null);
                     setDragOverIdx(null);
                   }}
+                  data-party-nav-focused={
+                    navFocused("party", idx) ? "true" : undefined
+                  }
                   className={`rounded-md border bg-ink/40 p-4 transition ${
+                    navFocused("party", idx) ? "ring-2 ring-amber-200 ring-offset-2 ring-offset-ink" : ""
+                  } ${
                     isDragging
                       ? "border-ember/60 opacity-50"
                       : "border-parchment/20"
@@ -491,20 +659,25 @@ export function PartyFormation({ moduleId }: { moduleId: string }) {
       {(availableModule.length > 0 || availableCustom.length > 0) && (
         <section>
           <div className="mb-2 flex items-baseline justify-between">
-            <h2 className="font-display text-xl text-parchment">
+            <h2 className="font-display text-2xl text-parchment">
               Available Characters
             </h2>
             {!canAddMore ? (
-              <span className="text-xs text-amber-200/85">
+              <span className="text-sm text-amber-200/85">
                 Party full — remove a member to add another.
               </span>
             ) : null}
           </div>
           <ul className="flex flex-col gap-2">
-            {availableModule.map((c) => (
+            {availableModule.map((c, i) => (
               <li
                 key={`avail-m-${c.id}`}
-                className="rounded-md border border-parchment/15 bg-ink/30 p-4"
+                data-party-nav-focused={
+                  navFocused("avail", i) ? "true" : undefined
+                }
+                className={`rounded-md border border-parchment/15 bg-ink/30 p-4 ${
+                  navFocused("avail", i) ? "ring-2 ring-amber-200 ring-offset-2 ring-offset-ink" : ""
+                }`}
               >
                 <AvailableRow
                   character={c}
@@ -514,10 +687,17 @@ export function PartyFormation({ moduleId }: { moduleId: string }) {
                 />
               </li>
             ))}
-            {availableCustom.map((c) => (
+            {availableCustom.map((c, i) => (
               <li
                 key={`avail-c-${c.id}`}
-                className="rounded-md border border-parchment/15 bg-ink/30 p-4"
+                data-party-nav-focused={
+                  navFocused("avail", availableModule.length + i)
+                    ? "true"
+                    : undefined
+                }
+                className={`rounded-md border border-parchment/15 bg-ink/30 p-4 ${
+                  navFocused("avail", availableModule.length + i) ? "ring-2 ring-amber-200 ring-offset-2 ring-offset-ink" : ""
+                }`}
               >
                 <AvailableRow
                   character={c}
@@ -531,16 +711,6 @@ export function PartyFormation({ moduleId }: { moduleId: string }) {
         </section>
       )}
 
-      <footer className="mt-2 flex items-center justify-between gap-4">
-        <Link
-          href="/play/new"
-          className="text-sm text-parchment/55 underline hover:text-parchment/80"
-        >
-          Back to module picker
-        </Link>
-        {/* Begin now lives in the header so it's visible without
-            scrolling; a second copy here would be redundant. */}
-      </footer>
     </main>
   );
 }
@@ -568,16 +738,16 @@ function PartyMemberRow({
   if (!character) {
     return (
       <div className="flex items-center justify-between gap-3">
-        <div className="text-sm text-red-300">
+        <div className="text-base text-red-300">
           Slot {idx + 1}: missing character{" "}
-          <code className="text-xs">
+          <code className="text-sm">
             {slot.kind === "module" ? slot.characterId : "?"}
           </code>
         </div>
         <button
           type="button"
           onClick={onRemove}
-          className="rounded border border-parchment/20 px-3 py-1 text-xs text-parchment/65 hover:bg-ink/50"
+          className="rounded border border-parchment/20 px-3 py-1 text-sm text-parchment/85 hover:bg-ink/50"
         >
           Remove
         </button>
@@ -588,7 +758,7 @@ function PartyMemberRow({
   return (
     <div className="flex items-center gap-4">
       <div
-        className="cursor-grab select-none text-parchment/40"
+        className="cursor-grab select-none text-parchment/60"
         title="Drag to reorder"
         aria-hidden
       >
@@ -597,24 +767,24 @@ function PartyMemberRow({
       <SpritePortrait sprite={character.sprite} />
       <div className="flex-1">
         <div className="flex items-center gap-2">
-          <span className="font-display text-lg text-parchment">
+          <span className="font-display text-xl text-parchment">
             {character.name}
           </span>
           {idx === 0 ? (
-            <span className="rounded border border-ember/60 bg-ember/15 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-ember">
+            <span className="rounded border border-ember/60 bg-ember/15 px-1.5 py-0.5 text-xs uppercase tracking-wide text-ember">
               Lead
             </span>
           ) : null}
           {slot.kind === "custom" ? (
-            <span className="rounded border border-parchment/25 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-parchment/55">
+            <span className="rounded border border-parchment/25 px-1.5 py-0.5 text-xs uppercase tracking-wide text-parchment/75">
               New
             </span>
           ) : null}
         </div>
-        <div className="text-xs text-parchment/65">
+        <div className="text-sm text-parchment/85">
           Lv {character.level} {character.race} {character.class}
         </div>
-        <div className="mt-1 text-xs text-parchment/45">
+        <div className="mt-1 text-sm text-parchment/70">
           HP {character.hp} · MP {character.mp} · STR {character.strength} DEX{" "}
           {character.dexterity} CON {character.constitution} INT{" "}
           {character.intelligence} WIS {character.wisdom}
@@ -623,7 +793,7 @@ function PartyMemberRow({
       <button
         type="button"
         onClick={onRemove}
-        className="rounded border border-parchment/20 px-3 py-1 text-xs text-parchment/65 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
+        className="rounded border border-parchment/20 px-3 py-1 text-sm text-parchment/85 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
       >
         Remove
       </button>
@@ -652,19 +822,19 @@ function AvailableRow({
       <SpritePortrait sprite={character.sprite} />
       <div className="flex-1">
         <div className="flex items-center gap-2">
-          <span className="font-display text-lg text-parchment">
+          <span className="font-display text-xl text-parchment">
             {character.name}
           </span>
           {origin === "custom" ? (
-            <span className="rounded border border-parchment/25 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-parchment/55">
+            <span className="rounded border border-parchment/25 px-1.5 py-0.5 text-xs uppercase tracking-wide text-parchment/75">
               Custom
             </span>
           ) : null}
         </div>
-        <div className="text-xs text-parchment/65">
+        <div className="text-sm text-parchment/85">
           Lv {character.level} {character.race} {character.class}
         </div>
-        <div className="mt-1 text-xs text-parchment/45">
+        <div className="mt-1 text-sm text-parchment/70">
           HP {character.hp} · MP {character.mp} · STR {character.strength} DEX{" "}
           {character.dexterity} CON {character.constitution} INT{" "}
           {character.intelligence} WIS {character.wisdom}
@@ -674,7 +844,7 @@ function AvailableRow({
         type="button"
         onClick={onAdd}
         disabled={!canAdd}
-        className="rounded border border-ember/60 bg-ember/15 px-3 py-1 text-xs text-parchment hover:bg-ember/30 disabled:cursor-not-allowed disabled:opacity-40"
+        className="rounded border border-ember/60 bg-ember/15 px-3 py-1 text-sm text-parchment hover:bg-ember/30 disabled:cursor-not-allowed disabled:opacity-40"
       >
         Add to party
       </button>
