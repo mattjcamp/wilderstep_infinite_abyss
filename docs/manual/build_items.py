@@ -134,7 +134,7 @@ def type_label(item_type: str) -> str:
 
 
 # Sprite path relative to docs/manual/manual.md → repo web assets.
-SPRITE_REL = "../../web/public/sprites/item"
+SPRITE_REL = "../../web/public/modules/default/sprites/item"
 
 
 def icon_img(item: dict) -> str:

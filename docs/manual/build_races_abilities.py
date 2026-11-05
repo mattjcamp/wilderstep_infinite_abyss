@@ -99,6 +99,21 @@ def duration_cell(ability: dict) -> str:
     return _esc(str(dur))
 
 
+# Ability icons live in the module sprite folder (`sprites/abilities/<icon>.png`),
+# referenced relative to docs/manual so both the markdown and the PDF
+# renderer (which draws a leading "Icon" column as pictures) can find them.
+SPRITE_REL = "../../web/public/modules/default/sprites/abilities"
+
+
+def icon_img(ability: dict) -> str:
+    """An <img> tag for the ability's pixel icon, or blank when it has none."""
+    icon = ability.get("icon")
+    if not icon:
+        return ""
+    name = _esc(ability.get("name", ability.get("id", "")))
+    return f'<img src="{SPRITE_REL}/{icon}.png" width="28" alt="{name}">'
+
+
 def ability_name_map(abilities: list[dict]) -> dict[str, str]:
     return {a["id"]: a.get("name", a["id"]) for a in abilities}
 
@@ -119,15 +134,15 @@ def races_table(races: list[dict], names: dict[str, str]) -> str:
 
 def abilities_table(abilities: list[dict], ability_type: str) -> str:
     rows = [
-        "| Ability | Description | Where | Duration |",
-        "|---|---|---|---|",
+        "| Icon | Ability | Description | Where | Duration |",
+        "|---|---|---|---|---|",
     ]
     chosen = [a for a in abilities if a.get("type") == ability_type]
     for a in sorted(chosen, key=lambda a: a.get("name", a.get("id", "")).lower()):
         name = _esc(a.get("name", a["id"]))
         desc = _esc((a.get("description") or "").strip())
         rows.append(
-            f"| **{name}** | {desc} | {where_label(a)} | {duration_cell(a)} |"
+            f"| {icon_img(a)} | **{name}** | {desc} | {where_label(a)} | {duration_cell(a)} |"
         )
     return "\n".join(rows)
 

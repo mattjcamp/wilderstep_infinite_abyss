@@ -403,32 +403,32 @@ Abilities are named capabilities granted by Race or Class (or other sources). Th
 
 <!-- BEGIN GENERATED: class-abilities — run `python3 docs/manual/build_races_abilities.py` to refresh -->
 
-| Ability | Description | Where | Duration |
-|---|---|---|---|
-| **Backstab** | Critical hits with daggers on a successful DEX save — the humble dagger becomes a devastating weapon. | passive | permanent |
-| **Brew Potion** | Combine regents using the guidance of a recipe to create a potion | party |  |
-| **Craft Arrows** | Allows the character to craft a bundle of arrows or bolts once per day. | party |  |
-| **Craft Fire Arrows** | Allows the character to craft a bundle of fire arrows or fire bolts once per day. | party |  |
-| **Detect Traps** | Hidden traps are revealed before the party steps on them. | passive | permanent |
-| **Dual Casting** | Access to both the priest and sorcerer spell catalogs — the only class with both. | passive | permanent |
-| **Herbalism** | Nature lore spots reagents in the wild while travelling. Each step on a foraging tile (grass, forest, …) has a small chance to turn up a potion reagent. Alchemists in particular benefit from a doubled find rate. | passive | permanent |
-| **Pick Locks** | Pick locked doors and chests — d20 + DEX mod vs DC 12, one lockpick consumed per attempt. | passive | permanent |
-| **Shadow Step** | Move after attacking — true hit-and-run play. | passive | permanent |
-| **Smite Undead** | Attacks against undead creatures deal double damage | passive |  |
-| **Turn Undead** | Channel holy energy at every undead on the battlefield. Each one must make a Wisdom save (d20 + WIS mod vs DC 10 + caster's WIS mod) or be destroyed outright; those that succeed are still seared for 50% of their HP in radiant damage. Powerful undead (vampires, liches, …) add their turn resistance to the save and are never destroyed outright — on a failed save they are seared and TURNED, fleeing the holy light for 1d4 turns. | battle | instant |
+| Icon | Ability | Description | Where | Duration |
+|---|---|---|---|---|
+| <img src="../../web/public/modules/default/sprites/abilities/backstab.png" width="28" alt="Backstab"> | **Backstab** | Critical hits with daggers on a successful DEX save — the humble dagger becomes a devastating weapon. | passive | permanent |
+| <img src="../../web/public/modules/default/sprites/abilities/brew_potion.png" width="28" alt="Brew Potion"> | **Brew Potion** | Combine regents using the guidance of a recipe to create a potion | party |  |
+| <img src="../../web/public/modules/default/sprites/abilities/craft_arrows.png" width="28" alt="Craft Arrows"> | **Craft Arrows** | Allows the character to craft a bundle of arrows or bolts once per day. | party |  |
+| <img src="../../web/public/modules/default/sprites/abilities/craft_fire_arrows.png" width="28" alt="Craft Fire Arrows"> | **Craft Fire Arrows** | Allows the character to craft a bundle of fire arrows or fire bolts once per day. | party |  |
+| <img src="../../web/public/modules/default/sprites/abilities/detect_traps.png" width="28" alt="Detect Traps"> | **Detect Traps** | Hidden traps are revealed before the party steps on them. | passive | permanent |
+| <img src="../../web/public/modules/default/sprites/abilities/dual_casting.png" width="28" alt="Dual Casting"> | **Dual Casting** | Access to both the priest and sorcerer spell catalogs — the only class with both. | passive | permanent |
+| <img src="../../web/public/modules/default/sprites/abilities/herbalism.png" width="28" alt="Herbalism"> | **Herbalism** | Nature lore spots reagents in the wild while travelling. Each step on a foraging tile (grass, forest, …) has a small chance to turn up a potion reagent. Alchemists in particular benefit from a doubled find rate. | passive | permanent |
+| <img src="../../web/public/modules/default/sprites/abilities/pick_locks.png" width="28" alt="Pick Locks"> | **Pick Locks** | Pick locked doors and chests — d20 + DEX mod vs DC 12, one lockpick consumed per attempt. | passive | permanent |
+| <img src="../../web/public/modules/default/sprites/abilities/shadow_step.png" width="28" alt="Shadow Step"> | **Shadow Step** | Move after attacking — true hit-and-run play. | passive | permanent |
+| <img src="../../web/public/modules/default/sprites/abilities/smite_undead.png" width="28" alt="Smite Undead"> | **Smite Undead** | Attacks against undead creatures deal double damage | passive |  |
+| <img src="../../web/public/modules/default/sprites/abilities/turn_undead.png" width="28" alt="Turn Undead"> | **Turn Undead** | Channel holy energy at every undead on the battlefield. Each one must make a Wisdom save (d20 + WIS mod vs DC 10 + caster's WIS mod) or be destroyed outright; those that succeed are still seared for 50% of their HP in radiant damage. Powerful undead (vampires, liches, …) add their turn resistance to the save and are never destroyed outright — on a failed save they are seared and TURNED, fleeing the holy light for 1d4 turns. | battle | instant |
 <!-- END GENERATED: class-abilities -->
 
 ### Race Abilities
 
 <!-- BEGIN GENERATED: race-abilities — run `python3 docs/manual/build_races_abilities.py` to refresh -->
 
-| Ability | Description | Where | Duration |
-|---|---|---|---|
-| **Fast Learner** | Requires only 1125 XP per level instead of the standard 1500, leveling up roughly 25% faster than other races. | passive | permanent |
-| **Infravision** | Pierces darkness, revealing the world in shades of red. The bearer can see in absolute darkness without needing a torch. | passive | permanent |
-| **Nimble** | Allows extra movement | passive | permanent |
-| **Pickpocket** | Attempt to steal items from town NPCs. Once per NPC, with a chance of failure. | passive | permanent |
-| **Tinker** | Once per in-game day, fashion a small trinket | party | permanent |
+| Icon | Ability | Description | Where | Duration |
+|---|---|---|---|---|
+| <img src="../../web/public/modules/default/sprites/abilities/fast_learner.png" width="28" alt="Fast Learner"> | **Fast Learner** | Requires only 1125 XP per level instead of the standard 1500, leveling up roughly 25% faster than other races. | passive | permanent |
+| <img src="../../web/public/modules/default/sprites/abilities/infravision.png" width="28" alt="Infravision"> | **Infravision** | Pierces darkness, revealing the world in shades of red. The bearer can see in absolute darkness without needing a torch. | passive | permanent |
+| <img src="../../web/public/modules/default/sprites/abilities/nimble.png" width="28" alt="Nimble"> | **Nimble** | Allows extra movement | passive | permanent |
+| <img src="../../web/public/modules/default/sprites/abilities/pickpocket.png" width="28" alt="Pickpocket"> | **Pickpocket** | Attempt to steal items from town NPCs. Once per NPC, with a chance of failure. | passive | permanent |
+| <img src="../../web/public/modules/default/sprites/abilities/tinker.png" width="28" alt="Tinker"> | **Tinker** | Once per in-game day, fashion a small trinket | party | permanent |
 <!-- END GENERATED: race-abilities -->
 
 <!-- BEGIN GENERATED: spells — run `python3 docs/manual/build_spells.py` to refresh -->
@@ -440,41 +440,41 @@ Spells are MP-cost actions castable by classes that have a matching `casting_typ
 
 ### Priest Spells
 
-| Spell | MP | Min Lvl | Range | Damage / Roll | Description |
-|---|---:|---:|---:|---|---|
-| **Light** | 3 | 1 | 0 | — | Conjures a radiant orb of divine light at a chosen spot — anywhere on the battlefield. |
-| **Minor Heal** | 5 | 1 | 6 | 1d6 + WIS healed | Sends a gentle wave of healing energy toward an ally or the caster. |
-| **Cure Poison** | 5 | 2 | 99 | — | Draws the venom from an ally's body with a cleansing prayer, removing the poisoned condition. |
-| **Bless** | 10 | 3 | 0 | — | Invokes a divine blessing that empowers all allies, granting them greater accuracy in battle. |
-| **Curse** | 10 | 3 | 99 | — | Calls down a dark malediction on an enemy, weakening its defenses and dulling its attacks. |
-| **Major Heal** | 15 | 4 | 10 | 4d8 + WIS healed | Channels a powerful wave of restorative energy toward an ally, mending grievous wounds. |
-| **Push** | 14 | 5 | 0 | — | Emits a powerful wave of divine force that drives nearby monsters away from the party. |
-| **Mass Heal** | 25 | 6 | 0 | 3d10 + WIS healed | A burst of divine light radiates from the caster, restoring health to all nearby allies. |
-| **Restore** | 35 | 7 | 0 | 100% HP / 100% MP restored | A radiant pillar of divine power engulfs the party, fully restoring health to all allies and mana to everyone but the caster, purging all poisons from their bodies. |
-| **Daylight** | 20 | 8 | 0 | — | Floods the entire battlefield with brilliant daylight for the rest of the battle, banishing every shadow. |
-| **Divine Smite** | 60 | 9 | 6 | 10d10 + WIS radiant (×1.5 vs undead) | Calls down a searing column of holy radiance that scours a single enemy — and burns the undead half again as hard. |
-| **Resurrection** | 50 | 10 | 6 | 50% HP revived | Channels life back into a fallen companion, raising them from the dead at half their full strength. |
+| Icon | Spell | MP | Min Lvl | Range | Damage / Roll | Description |
+|---|---|---:|---:|---:|---|---|
+| <img src="../../web/public/modules/default/sprites/spells/light.png" width="28" alt="Light"> | **Light** | 3 | 1 | 0 | — | Conjures a radiant orb of divine light at a chosen spot — anywhere on the battlefield. |
+| <img src="../../web/public/modules/default/sprites/spells/heal.png" width="28" alt="Minor Heal"> | **Minor Heal** | 5 | 1 | 6 | 1d6 + WIS healed | Sends a gentle wave of healing energy toward an ally or the caster. |
+| <img src="../../web/public/modules/default/sprites/spells/cure_poison.png" width="28" alt="Cure Poison"> | **Cure Poison** | 5 | 2 | 99 | — | Draws the venom from an ally's body with a cleansing prayer, removing the poisoned condition. |
+| <img src="../../web/public/modules/default/sprites/spells/bless.png" width="28" alt="Bless"> | **Bless** | 10 | 3 | 0 | — | Invokes a divine blessing that empowers all allies, granting them greater accuracy in battle. |
+| <img src="../../web/public/modules/default/sprites/spells/curse.png" width="28" alt="Curse"> | **Curse** | 10 | 3 | 99 | — | Calls down a dark malediction on an enemy, weakening its defenses and dulling its attacks. |
+| <img src="../../web/public/modules/default/sprites/spells/major_heal.png" width="28" alt="Major Heal"> | **Major Heal** | 15 | 4 | 10 | 4d8 + WIS healed | Channels a powerful wave of restorative energy toward an ally, mending grievous wounds. |
+| <img src="../../web/public/modules/default/sprites/spells/push.png" width="28" alt="Push"> | **Push** | 14 | 5 | 0 | — | Emits a powerful wave of divine force that drives nearby monsters away from the party. |
+| <img src="../../web/public/modules/default/sprites/spells/mass_heal.png" width="28" alt="Mass Heal"> | **Mass Heal** | 25 | 6 | 0 | 3d10 + WIS healed | A burst of divine light radiates from the caster, restoring health to all nearby allies. |
+| <img src="../../web/public/modules/default/sprites/spells/restore.png" width="28" alt="Restore"> | **Restore** | 35 | 7 | 0 | 100% HP / 100% MP restored | A radiant pillar of divine power engulfs the party, fully restoring health to all allies and mana to everyone but the caster, purging all poisons from their bodies. |
+| <img src="../../web/public/modules/default/sprites/spells/daylight.png" width="28" alt="Daylight"> | **Daylight** | 20 | 8 | 0 | — | Floods the entire battlefield with brilliant daylight for the rest of the battle, banishing every shadow. |
+| <img src="../../web/public/modules/default/sprites/spells/divine_smite.png" width="28" alt="Divine Smite"> | **Divine Smite** | 60 | 9 | 6 | 10d10 + WIS radiant (×1.5 vs undead) | Calls down a searing column of holy radiance that scours a single enemy — and burns the undead half again as hard. |
+| <img src="../../web/public/modules/default/sprites/spells/resurrection.png" width="28" alt="Resurrection"> | **Resurrection** | 50 | 10 | 6 | 50% HP revived | Channels life back into a fallen companion, raising them from the dead at half their full strength. |
 
 
 ### Sorcerer Spells
 
-| Spell | MP | Min Lvl | Range | Damage / Roll | Description |
-|---|---:|---:|---:|---|---|
-| **Shield** | 4 | 1 | 5 | — | Conjures a faint magical barrier around an ally, slightly boosting their armor. |
-| **Sleep** | 5 | 1 | 99 | — | Lulls a weak-minded creature into a light magical slumber. |
-| **Magic Dart** | 6 | 1 | 4 | 1d6 + INT | Hurls an energy-charged dart in a straight line, stinging on impact. |
-| **Knock** | 6 | 2 | 1 | — | Sends a pulse of arcane force into a lock's mechanism, rattling tumblers and wards alike. Cast from the locked-door dialog when the party bumps a lock. |
-| **Long Shanks** | 6 | 2 | 99 | — | Enchants an ally's legs with unnatural speed, extending their movement range for 3 turns. May also be cast on yourself. |
-| **Magic Arrow** | 12 | 3 | 99 | 2d8 + INT | Conjures a piercing bolt of arcane energy that streaks toward a chosen foe. |
-| **Misty Step** | 8 | 4 | 6 | — | The caster vanishes in a swirl of silvery mist and reappears at a chosen location on the battlefield. |
-| **Invisibility** | 16 | 4 | 0 | — | The caster bends light around themselves, becoming invisible to enemies for 3 turns. |
-| **Charm Person** | 14 | 5 | 99 | — | Weaves an enchantment that bends the will of a humanoid creature, turning it against its allies for 3 turns. |
-| **Lightning Bolt** | 25 | 5 | 99 | 6d6 + INT lightning | Unleashes a searing bolt of lightning that streaks in a straight line, electrocuting everything in its path. |
-| **Animate Dead** | 20 | 6 | 99 | — | Raises a powerful skeleton warrior from the earth to fight for the caster. |
-| **Fireball** | 30 | 7 | 99 | 5d8 + INT fire | Hurls a massive ball of flame that detonates in a 3-tile radius, scorching everything — friend or foe — caught in the blast. |
-| **Recall** | 25 | 8 | 0 | — | Folds space around the whole party, drawing them back to their last rune stone — or, if none was placed, to where their journey began. |
-| **Meteor Shower** | 70 | 9 | 99 | 8d8 + INT fire | Calls a rain of blazing meteors down on every foe on the battlefield, scorching them all at once. |
-| **Void Orb** | 80 | 10 | 99 | 10d12 + INT void | Conjures a sphere of absolute void that collapses on a single enemy, unmaking them with devastating force. |
+| Icon | Spell | MP | Min Lvl | Range | Damage / Roll | Description |
+|---|---|---:|---:|---:|---|---|
+| <img src="../../web/public/modules/default/sprites/spells/shield.png" width="28" alt="Shield"> | **Shield** | 4 | 1 | 5 | — | Conjures a faint magical barrier around an ally, slightly boosting their armor. |
+| <img src="../../web/public/modules/default/sprites/spells/sleep.png" width="28" alt="Sleep"> | **Sleep** | 5 | 1 | 99 | — | Lulls a weak-minded creature into a light magical slumber. |
+| <img src="../../web/public/modules/default/sprites/spells/magic_dart.png" width="28" alt="Magic Dart"> | **Magic Dart** | 6 | 1 | 4 | 1d6 + INT | Hurls an energy-charged dart in a straight line, stinging on impact. |
+| <img src="../../web/public/modules/default/sprites/spells/knock.png" width="28" alt="Knock"> | **Knock** | 6 | 2 | 1 | — | Sends a pulse of arcane force into a lock's mechanism, rattling tumblers and wards alike. Cast from the locked-door dialog when the party bumps a lock. |
+| <img src="../../web/public/modules/default/sprites/spells/long_shanks.png" width="28" alt="Long Shanks"> | **Long Shanks** | 6 | 2 | 99 | — | Enchants an ally's legs with unnatural speed, extending their movement range for 3 turns. May also be cast on yourself. |
+| <img src="../../web/public/modules/default/sprites/spells/magic_arrow.png" width="28" alt="Magic Arrow"> | **Magic Arrow** | 12 | 3 | 99 | 2d8 + INT | Conjures a piercing bolt of arcane energy that streaks toward a chosen foe. |
+| <img src="../../web/public/modules/default/sprites/spells/misty_step.png" width="28" alt="Misty Step"> | **Misty Step** | 8 | 4 | 6 | — | The caster vanishes in a swirl of silvery mist and reappears at a chosen location on the battlefield. |
+| <img src="../../web/public/modules/default/sprites/spells/invisibility.png" width="28" alt="Invisibility"> | **Invisibility** | 16 | 4 | 0 | — | The caster bends light around themselves, becoming invisible to enemies for 3 turns. |
+| <img src="../../web/public/modules/default/sprites/spells/charm_person.png" width="28" alt="Charm Person"> | **Charm Person** | 14 | 5 | 99 | — | Weaves an enchantment that bends the will of a humanoid creature, turning it against its allies for 3 turns. |
+| <img src="../../web/public/modules/default/sprites/spells/lightning_bolt.png" width="28" alt="Lightning Bolt"> | **Lightning Bolt** | 25 | 5 | 99 | 6d6 + INT lightning | Unleashes a searing bolt of lightning that streaks in a straight line, electrocuting everything in its path. |
+| <img src="../../web/public/modules/default/sprites/spells/animate_dead.png" width="28" alt="Animate Dead"> | **Animate Dead** | 20 | 6 | 99 | — | Raises a powerful skeleton warrior from the earth to fight for the caster. |
+| <img src="../../web/public/modules/default/sprites/spells/fireball.png" width="28" alt="Fireball"> | **Fireball** | 30 | 7 | 99 | 5d8 + INT fire | Hurls a massive ball of flame that detonates in a 3-tile radius, scorching everything — friend or foe — caught in the blast. |
+| <img src="../../web/public/modules/default/sprites/spells/recall.png" width="28" alt="Recall"> | **Recall** | 25 | 8 | 0 | — | Folds space around the whole party, drawing them back to their last rune stone — or, if none was placed, to where their journey began. |
+| <img src="../../web/public/modules/default/sprites/spells/meteor_shower.png" width="28" alt="Meteor Shower"> | **Meteor Shower** | 70 | 9 | 99 | 8d8 + INT fire | Calls a rain of blazing meteors down on every foe on the battlefield, scorching them all at once. |
+| <img src="../../web/public/modules/default/sprites/spells/void_orb.png" width="28" alt="Void Orb"> | **Void Orb** | 80 | 10 | 99 | 10d12 + INT void | Conjures a sphere of absolute void that collapses on a single enemy, unmaking them with devastating force. |
 
 <!-- END GENERATED: spells -->
 
@@ -489,104 +489,104 @@ Items are grouped by category, one table each. **Weapons** list **Base Damage** 
 
 | Icon | Item | Type | Base Damage | Durability | Damage Bonus | Damage Type | Special | Buy |
 |:---:|---|---|---:|---:|---|---|---|---:|
-| <img src="../../web/public/sprites/item/club.png" width="28" alt="Club"> | **Club** | Club | 1d4-1 | 12 |  |  |  | 20 |
-| <img src="../../web/public/sprites/item/dagger.png" width="28" alt="Dagger"> | **Dagger** | Dagger | 1d4-1 | 20 |  |  | throwable | 20 |
-| <img src="../../web/public/sprites/item/mace.png" width="28" alt="Mace"> | **Mace** | Mace | 1d4 | 20 |  |  |  | 40 |
-| <img src="../../web/public/sprites/item/sword.png" width="28" alt="Sword"> | **Sword** | Sword | 1d6 | 20 |  |  |  | 40 |
-| <img src="../../web/public/sprites/item/spear.png" width="28" alt="Spear"> | **Spear** | Spear | 1d8 | 20 |  |  |  | 50 |
-| <img src="../../web/public/sprites/item/axe.png" width="28" alt="Broad Axe"> | **Broad Axe** | Axe | 1d8 | 20 |  |  |  | 0 |
-| <img src="../../web/public/sprites/item/sword.png" width="28" alt="Iron Sword"> | **Iron Sword** | Sword | 1d8 | 50 |  |  |  | 0 |
-| <img src="../../web/public/sprites/item/halberd.png" width="28" alt="Halberd"> | **Halberd** | Halberd | 1d10 | 20 |  |  |  | 0 |
-| <img src="../../web/public/sprites/item/sword.png" width="28" alt="Sun Sword"> | **Sun Sword** | Sword | 2d8 | 0 | 1d6 | fire |  | 0 |
-| <img src="../../web/public/sprites/item/rock.png" width="28" alt="Rock"> | **Rock** | Rock | 1d6+1 | 0 |  |  | ranged, throwable | 0 |
-| <img src="../../web/public/sprites/item/sling.png" width="28" alt="Sling"> | **Sling** | Sling | 1d6+2 | 20 |  |  | ranged, uses stones | 60 |
-| <img src="../../web/public/sprites/item/bow_short.png" width="28" alt="Short Bow"> | **Short Bow** | Short Bow | 1d6+4 | 30 |  |  | ranged, uses arrows | 60 |
-| <img src="../../web/public/sprites/item/bow_long.png" width="28" alt="Long Bow"> | **Long Bow** | Long Bow | 1d6+7 | 20 |  |  | ranged, uses arrows | 150 |
-| <img src="../../web/public/sprites/item/crossbow.png" width="28" alt="Crossbow"> | **Crossbow** | Crossbow | 1d6+9 | 20 |  |  | ranged, uses bolts | 250 |
-| <img src="../../web/public/sprites/item/bow_long.png" width="28" alt="Silver Bow"> | **Silver Bow** | Long Bow | 1d6+9 | 0 |  |  | ranged, uses arrows |  |
+| <img src="../../web/public/modules/default/sprites/item/club.png" width="28" alt="Club"> | **Club** | Club | 1d4-1 | 12 |  |  |  | 20 |
+| <img src="../../web/public/modules/default/sprites/item/dagger.png" width="28" alt="Dagger"> | **Dagger** | Dagger | 1d4-1 | 20 |  |  | throwable | 20 |
+| <img src="../../web/public/modules/default/sprites/item/mace.png" width="28" alt="Mace"> | **Mace** | Mace | 1d4 | 20 |  |  |  | 40 |
+| <img src="../../web/public/modules/default/sprites/item/sword.png" width="28" alt="Sword"> | **Sword** | Sword | 1d6 | 20 |  |  |  | 40 |
+| <img src="../../web/public/modules/default/sprites/item/spear.png" width="28" alt="Spear"> | **Spear** | Spear | 1d8 | 20 |  |  |  | 50 |
+| <img src="../../web/public/modules/default/sprites/item/axe.png" width="28" alt="Broad Axe"> | **Broad Axe** | Axe | 1d8 | 20 |  |  |  | 0 |
+| <img src="../../web/public/modules/default/sprites/item/sword.png" width="28" alt="Iron Sword"> | **Iron Sword** | Sword | 1d8 | 50 |  |  |  | 0 |
+| <img src="../../web/public/modules/default/sprites/item/halberd.png" width="28" alt="Halberd"> | **Halberd** | Halberd | 1d10 | 20 |  |  |  | 0 |
+| <img src="../../web/public/modules/default/sprites/item/sword.png" width="28" alt="Sun Sword"> | **Sun Sword** | Sword | 2d8 | 0 | 1d6 | fire |  | 0 |
+| <img src="../../web/public/modules/default/sprites/item/rock.png" width="28" alt="Rock"> | **Rock** | Rock | 1d6+1 | 0 |  |  | ranged, throwable | 0 |
+| <img src="../../web/public/modules/default/sprites/item/sling.png" width="28" alt="Sling"> | **Sling** | Sling | 1d6+2 | 20 |  |  | ranged, uses stones | 60 |
+| <img src="../../web/public/modules/default/sprites/item/bow_short.png" width="28" alt="Short Bow"> | **Short Bow** | Short Bow | 1d6+4 | 30 |  |  | ranged, uses arrows | 60 |
+| <img src="../../web/public/modules/default/sprites/item/bow_long.png" width="28" alt="Long Bow"> | **Long Bow** | Long Bow | 1d6+7 | 20 |  |  | ranged, uses arrows | 150 |
+| <img src="../../web/public/modules/default/sprites/item/crossbow.png" width="28" alt="Crossbow"> | **Crossbow** | Crossbow | 1d6+9 | 20 |  |  | ranged, uses bolts | 250 |
+| <img src="../../web/public/modules/default/sprites/item/bow_long.png" width="28" alt="Silver Bow"> | **Silver Bow** | Long Bow | 1d6+9 | 0 |  |  | ranged, uses arrows |  |
 
 
 ### Armor
 
 | Icon | Item | Type | Base AC | Durability | Buy | Sell |
 |:---:|---|---|---:|---:|---:|---:|
-| <img src="../../web/public/sprites/item/cloth.png" width="28" alt="Cloth"> | **Cloth** | Cloth | 11 | 0 | 20 | 10 |
-| <img src="../../web/public/sprites/item/leather.png" width="28" alt="Leather"> | **Leather** | Leather | 13 | 20 | 50 | 25 |
-| <img src="../../web/public/sprites/item/chain.png" width="28" alt="Chain"> | **Chain** | Chain | 14 | 50 | 120 | 60 |
-| <img src="../../web/public/sprites/item/plate.png" width="28" alt="Plate"> | **Plate** | Plate | 15 | 20 | 200 | 150 |
-| <img src="../../web/public/sprites/item/plate.png" width="28" alt="Stoneguard Plate"> | **Stoneguard Plate** | Plate | 18 | 0 | 0 | 0 |
+| <img src="../../web/public/modules/default/sprites/item/cloth.png" width="28" alt="Cloth"> | **Cloth** | Cloth | 11 | 0 | 20 | 10 |
+| <img src="../../web/public/modules/default/sprites/item/leather.png" width="28" alt="Leather"> | **Leather** | Leather | 13 | 20 | 50 | 25 |
+| <img src="../../web/public/modules/default/sprites/item/chain.png" width="28" alt="Chain"> | **Chain** | Chain | 14 | 50 | 120 | 60 |
+| <img src="../../web/public/modules/default/sprites/item/plate.png" width="28" alt="Plate"> | **Plate** | Plate | 15 | 20 | 200 | 150 |
+| <img src="../../web/public/modules/default/sprites/item/plate.png" width="28" alt="Stoneguard Plate"> | **Stoneguard Plate** | Plate | 18 | 0 | 0 | 0 |
 
 
 ### Ammo
 
 | Icon | Item | Type | Power | Effect | Charges | Stackable | Buy | Description |
 |:---:|---|---|---:|---|---:|:---:|---:|---|
-| <img src="../../web/public/sprites/item/arrows.png" width="28" alt="Arrows"> | **Arrows** | Ammo |  |  | 20 | ✓ | 5 | A bundle of arrows for bows. |
-| <img src="../../web/public/sprites/item/bolts.png" width="28" alt="Bolts"> | **Bolts** | Ammo |  |  | 20 | ✓ | 8 | Heavy crossbow bolts with iron tips. |
-| <img src="../../web/public/sprites/item/arrows.png" width="28" alt="Fire Arrows"> | **Fire Arrows** | Ammo | 3 |  | 20 | ✓ | 25 | A bundle of fire arrows. Fire arrows explode on impact and produce the same effect as a thrown torch — they light the tile they land on and damage anyone standing in it. |
-| <img src="../../web/public/sprites/item/bolts.png" width="28" alt="Fire Bolts"> | **Fire Bolts** | Ammo | 3 |  | 20 | ✓ | 30 | A bundle of fire bolts for crossbows. Tipped with the same alchemical compound as fire arrows — they explode on impact, lighting the tile they land on and damaging anyone standing in it. |
-| <img src="../../web/public/sprites/item/stones.png" width="28" alt="Stones"> | **Stones** | Ammo |  |  | 20 | ✓ | 3 | A pouch of smooth stones for slings. |
+| <img src="../../web/public/modules/default/sprites/item/arrows.png" width="28" alt="Arrows"> | **Arrows** | Ammo |  |  | 20 | ✓ | 5 | A bundle of arrows for bows. |
+| <img src="../../web/public/modules/default/sprites/item/bolts.png" width="28" alt="Bolts"> | **Bolts** | Ammo |  |  | 20 | ✓ | 8 | Heavy crossbow bolts with iron tips. |
+| <img src="../../web/public/modules/default/sprites/item/arrows.png" width="28" alt="Fire Arrows"> | **Fire Arrows** | Ammo | 3 |  | 20 | ✓ | 25 | A bundle of fire arrows. Fire arrows explode on impact and produce the same effect as a thrown torch — they light the tile they land on and damage anyone standing in it. |
+| <img src="../../web/public/modules/default/sprites/item/bolts.png" width="28" alt="Fire Bolts"> | **Fire Bolts** | Ammo | 3 |  | 20 | ✓ | 30 | A bundle of fire bolts for crossbows. Tipped with the same alchemical compound as fire arrows — they explode on impact, lighting the tile they land on and damaging anyone standing in it. |
+| <img src="../../web/public/modules/default/sprites/item/stones.png" width="28" alt="Stones"> | **Stones** | Ammo |  |  | 20 | ✓ | 3 | A pouch of smooth stones for slings. |
 
 
 ### Potions
 
 | Icon | Item | Type | Power | Effect | Charges | Stackable | Buy | Description |
 |:---:|---|---|---:|---|---:|:---:|---:|---|
-| <img src="../../web/public/sprites/item/potion_teal.png" width="28" alt="Antidote"> | **Antidote** | Antidote |  | cure_poison | 1 | ✓ | 10 | A bitter tincture that cures poison. |
-| <img src="../../web/public/sprites/item/potion_olive.png" width="28" alt="Lingering Venom"> | **Lingering Venom** | Poison Potion | 2 | combat_only |  |  | 70 | A potent toxin that persists far longer than ordinary poisons. |
-| <img src="../../web/public/sprites/item/potion_pink.png" width="28" alt="Paralytic Poison"> | **Paralytic Poison** | Poison Potion | 2 | combat_only |  |  | 75 | A nerve toxin that drains magical energy. Apply to a weapon or throw at enemies. |
-| <img src="../../web/public/sprites/item/potion_green.png" width="28" alt="Poison Vial"> | **Poison Vial** | Poison Potion | 2 | combat_only |  |  | 50 | A vial of toxic liquid. Apply to a weapon or throw at enemies to inflict poison damage. |
-| <img src="../../web/public/sprites/item/potion_murky.png" width="28" alt="Weakening Poison"> | **Weakening Poison** | Poison Potion | 2 | combat_only |  |  | 60 | A venom that saps fighting prowess. Apply to a weapon or throw at enemies. |
-| <img src="../../web/public/sprites/item/potion_orange.png" width="28" alt="Elixir of Strength"> | **Elixir of Strength** | Potion | 2 | buff_strength | 1 | ✓ | 60 | A thick crimson brew. Grants +2 STR for the next combat. |
-| <img src="../../web/public/sprites/item/potion_violet.png" width="28" alt="Elixir of Warding"> | **Elixir of Warding** | Potion | 2 | buff_ac | 1 | ✓ | 60 | A silver-tinged potion. Grants +2 AC for the next combat. |
-| <img src="../../web/public/sprites/item/potion.png" width="28" alt="Healing Potion"> | **Healing Potion** | Potion | 30 | heal_hp | 1 | ✓ | 40 | A ruby-red elixir that mends wounds. Restores a large amount of HP. |
-| <img src="../../web/public/sprites/item/potion_blue.png" width="28" alt="Mana Potion"> | **Mana Potion** | Potion | 10 | heal_mp | 1 | ✓ | 40 | A shimmering blue liquid that restores magic points. |
-| <img src="../../web/public/sprites/item/potion_yellow.png" width="28" alt="Fire Oil"> | **Fire Oil** | Throwable | 20 |  |  |  | 35 | A volatile oil that bursts into a small 3x3 gout of flame where it lands. Throw at an enemy or tile. |
+| <img src="../../web/public/modules/default/sprites/item/potion_teal.png" width="28" alt="Antidote"> | **Antidote** | Antidote |  | cure_poison | 1 | ✓ | 10 | A bitter tincture that cures poison. |
+| <img src="../../web/public/modules/default/sprites/item/potion_olive.png" width="28" alt="Lingering Venom"> | **Lingering Venom** | Poison Potion | 2 | combat_only |  |  | 70 | A potent toxin that persists far longer than ordinary poisons. |
+| <img src="../../web/public/modules/default/sprites/item/potion_pink.png" width="28" alt="Paralytic Poison"> | **Paralytic Poison** | Poison Potion | 2 | combat_only |  |  | 75 | A nerve toxin that drains magical energy. Apply to a weapon or throw at enemies. |
+| <img src="../../web/public/modules/default/sprites/item/potion_green.png" width="28" alt="Poison Vial"> | **Poison Vial** | Poison Potion | 2 | combat_only |  |  | 50 | A vial of toxic liquid. Apply to a weapon or throw at enemies to inflict poison damage. |
+| <img src="../../web/public/modules/default/sprites/item/potion_murky.png" width="28" alt="Weakening Poison"> | **Weakening Poison** | Poison Potion | 2 | combat_only |  |  | 60 | A venom that saps fighting prowess. Apply to a weapon or throw at enemies. |
+| <img src="../../web/public/modules/default/sprites/item/potion_orange.png" width="28" alt="Elixir of Strength"> | **Elixir of Strength** | Potion | 2 | buff_strength | 1 | ✓ | 60 | A thick crimson brew. Grants +2 STR for the next combat. |
+| <img src="../../web/public/modules/default/sprites/item/potion_violet.png" width="28" alt="Elixir of Warding"> | **Elixir of Warding** | Potion | 2 | buff_ac | 1 | ✓ | 60 | A silver-tinged potion. Grants +2 AC for the next combat. |
+| <img src="../../web/public/modules/default/sprites/item/potion.png" width="28" alt="Healing Potion"> | **Healing Potion** | Potion | 30 | heal_hp | 1 | ✓ | 40 | A ruby-red elixir that mends wounds. Restores a large amount of HP. |
+| <img src="../../web/public/modules/default/sprites/item/potion_blue.png" width="28" alt="Mana Potion"> | **Mana Potion** | Potion | 10 | heal_mp | 1 | ✓ | 40 | A shimmering blue liquid that restores magic points. |
+| <img src="../../web/public/modules/default/sprites/item/potion_yellow.png" width="28" alt="Fire Oil"> | **Fire Oil** | Throwable | 20 |  |  |  | 35 | A volatile oil that bursts into a small 3x3 gout of flame where it lands. Throw at an enemy or tile. |
 
 
 ### Scrolls
 
 | Icon | Item | Type | Power | Effect | Charges | Stackable | Buy | Description |
 |:---:|---|---|---:|---|---:|:---:|---:|---|
-| <img src="../../web/public/sprites/item/scroll.png" width="28" alt="Scroll of Fire"> | **Scroll of Fire** | Scroll |  |  |  |  |  | A single-use scroll containing a fire spell. |
+| <img src="../../web/public/modules/default/sprites/item/scroll.png" width="28" alt="Scroll of Fire"> | **Scroll of Fire** | Scroll |  |  |  |  |  | A single-use scroll containing a fire spell. |
 
 
 ### Reagents
 
 | Icon | Item | Type | Power | Effect | Charges | Stackable | Buy | Description |
 |:---:|---|---|---:|---|---:|:---:|---:|---|
-| <img src="../../web/public/sprites/item/reagent_brimite_ore.png" width="28" alt="Brimite Ore"> | **Brimite Ore** | Reagent |  |  | 1 | ✓ | 15 | A volatile mineral that smolders with inner heat. |
-| <img src="../../web/public/sprites/item/reagent_glowcap_mushroom.png" width="28" alt="Glowcap Mushroom"> | **Glowcap Mushroom** | Reagent |  |  | 1 | ✓ | 10 | A blue-capped fungus that pulses with arcane energy. |
-| <img src="../../web/public/sprites/item/reagent_moonpetal.png" width="28" alt="Moonpetal"> | **Moonpetal** | Reagent |  |  | 1 | ✓ | 12 | A luminous flower petal that glows faintly in the dark. Prized by alchemists. |
-| <img src="../../web/public/sprites/item/reagent_serpent_root.png" width="28" alt="Serpent Root"> | **Serpent Root** | Reagent |  |  | 1 | ✓ | 8 | A twisted root with potent cleansing properties. |
-| <img src="../../web/public/sprites/item/potion_clear.png" width="28" alt="Spring Water"> | **Spring Water** | Reagent |  |  | 1 | ✓ | 3 | Pure water from a mountain spring. Essential for brewing. |
+| <img src="../../web/public/modules/default/sprites/item/reagent_brimite_ore.png" width="28" alt="Brimite Ore"> | **Brimite Ore** | Reagent |  |  | 1 | ✓ | 15 | A volatile mineral that smolders with inner heat. |
+| <img src="../../web/public/modules/default/sprites/item/reagent_glowcap_mushroom.png" width="28" alt="Glowcap Mushroom"> | **Glowcap Mushroom** | Reagent |  |  | 1 | ✓ | 10 | A blue-capped fungus that pulses with arcane energy. |
+| <img src="../../web/public/modules/default/sprites/item/reagent_moonpetal.png" width="28" alt="Moonpetal"> | **Moonpetal** | Reagent |  |  | 1 | ✓ | 12 | A luminous flower petal that glows faintly in the dark. Prized by alchemists. |
+| <img src="../../web/public/modules/default/sprites/item/reagent_serpent_root.png" width="28" alt="Serpent Root"> | **Serpent Root** | Reagent |  |  | 1 | ✓ | 8 | A twisted root with potent cleansing properties. |
+| <img src="../../web/public/modules/default/sprites/item/potion_clear.png" width="28" alt="Spring Water"> | **Spring Water** | Reagent |  |  | 1 | ✓ | 3 | Pure water from a mountain spring. Essential for brewing. |
 
 
 ### General Items
 
 | Icon | Item | Type | Power | Effect | Charges | Stackable | Buy | Description |
 |:---:|---|---|---:|---|---:|:---:|---:|---|
-| <img src="../../web/public/sprites/item/camping_supplies.png" width="28" alt="Camping Supplies"> | **Camping Supplies** | Camping Supplies | 0 | rest | 3 | ✓ | 25 | A bedroll, flint, and dried rations. Lets the party rest safely in the wilderness. |
-| <img src="../../web/public/sprites/item/herb.png" width="28" alt="Healing Herb"> | **Healing Herb** | Herb | 15 | heal_hp | 1 | ✓ | 15 | A fragrant herb that restores a small amount of HP. |
-| <img src="../../web/public/sprites/item/key.png" width="28" alt="Iron Key"> | **Iron Key** | Key |  |  | 1 | ✓ | 10 | A heavy iron key that can unlock one locked door. |
-| <img src="../../web/public/sprites/item/lockpick_ring.png" width="28" alt="Lockpick"> | **Lockpick** | Lockpick |  |  | 5 | ✓ | 8 | A set of fine lockpicking tools. Consumed on each attempt. |
-| <img src="../../web/public/sprites/item/torch.png" width="28" alt="Torch"> | **Torch** | Torch | 3 |  | 1 | ✓ | 5 | A wooden torch. Lights the way in dark places. |
+| <img src="../../web/public/modules/default/sprites/item/camping_supplies.png" width="28" alt="Camping Supplies"> | **Camping Supplies** | Camping Supplies | 0 | rest | 3 | ✓ | 25 | A bedroll, flint, and dried rations. Lets the party rest safely in the wilderness. |
+| <img src="../../web/public/modules/default/sprites/item/herb.png" width="28" alt="Healing Herb"> | **Healing Herb** | Herb | 15 | heal_hp | 1 | ✓ | 15 | A fragrant herb that restores a small amount of HP. |
+| <img src="../../web/public/modules/default/sprites/item/key.png" width="28" alt="Iron Key"> | **Iron Key** | Key |  |  | 1 | ✓ | 10 | A heavy iron key that can unlock one locked door. |
+| <img src="../../web/public/modules/default/sprites/item/lockpick_ring.png" width="28" alt="Lockpick"> | **Lockpick** | Lockpick |  |  | 5 | ✓ | 8 | A set of fine lockpicking tools. Consumed on each attempt. |
+| <img src="../../web/public/modules/default/sprites/item/torch.png" width="28" alt="Torch"> | **Torch** | Torch | 3 |  | 1 | ✓ | 5 | A wooden torch. Lights the way in dark places. |
 
 
 ### Container
 
 | Icon | Item | Type | Power | Effect | Charges | Stackable | Buy | Description |
 |:---:|---|---|---:|---|---:|:---:|---:|---|
-| <img src="../../web/public/sprites/item/chest.png" width="28" alt="Treasure Chest"> | **Treasure Chest** | Container |  |  |  |  | 0 | A sturdy wooden chest bound in iron. Whatever is inside, someone wanted it kept safe. |
+| <img src="../../web/public/modules/default/sprites/item/chest.png" width="28" alt="Treasure Chest"> | **Treasure Chest** | Container |  |  |  |  | 0 | A sturdy wooden chest bound in iron. Whatever is inside, someone wanted it kept safe. |
 
 
 ### Quest Items
 
 | Icon | Item | Type | Power | Effect | Charges | Stackable | Buy | Description |
 |:---:|---|---|---:|---|---:|:---:|---:|---|
-| <img src="../../web/public/sprites/item/chest.png" width="28" alt="Chest"> | **Chest** | Chest | 0 |  |  |  | 0 | A lost chest |
-| <img src="../../web/public/sprites/item/key.png" width="28" alt="Silver Key"> | **Silver Key** | Quest Item |  |  |  |  |  | A gleaming silver key inscribed with arcane formulae. One of the 8 Keys of Shadow. |
-| <img src="../../web/public/sprites/item/crystal_skull.png" width="28" alt="The Crystal Skull"> | **The Crystal Skull** | Quest Item |  |  |  |  |  | A flawless skull carved from a single piece of clear crystal. Pale light gathers in its eye sockets, as if something is looking back. |
+| <img src="../../web/public/modules/default/sprites/item/chest.png" width="28" alt="Chest"> | **Chest** | Chest | 0 |  |  |  | 0 | A lost chest |
+| <img src="../../web/public/modules/default/sprites/item/key.png" width="28" alt="Silver Key"> | **Silver Key** | Quest Item |  |  |  |  |  | A gleaming silver key inscribed with arcane formulae. One of the 8 Keys of Shadow. |
+| <img src="../../web/public/modules/default/sprites/item/crystal_skull.png" width="28" alt="The Crystal Skull"> | **The Crystal Skull** | Quest Item |  |  |  |  |  | A flawless skull carved from a single piece of clear crystal. Pale light gathers in its eye sockets, as if something is looking back. |
 
 <!-- END GENERATED: items -->
 

@@ -114,6 +114,21 @@ def roll_label(spell: dict) -> str:
     return "—"
 
 
+# Spell icons live in the module sprite folder (`sprites/spells/<icon>.png`),
+# referenced relative to docs/manual so both the markdown and the PDF
+# renderer (which draws a leading "Icon" column as pictures) can find them.
+SPRITE_REL = "../../web/public/modules/default/sprites/spells"
+
+
+def icon_img(spell: dict) -> str:
+    """An <img> tag for the spell's pixel icon, or blank when it has none."""
+    icon = spell.get("icon")
+    if not icon:
+        return ""
+    name = cell(spell.get("name", spell.get("id", "")))
+    return f'<img src="{SPRITE_REL}/{icon}.png" width="28" alt="{name}">'
+
+
 # ── Bucketing + ordering ─────────────────────────────────────────────
 
 # Display labels + the order the casting catalogs appear in. A casting_type
@@ -130,8 +145,8 @@ def spell_table(spells: list[dict]) -> str:
     """One casting catalog's spells as a table, ordered by min level then
     MP cost so the list reads as a level-up progression."""
     rows = [
-        "| Spell | MP | Min Lvl | Range | Damage / Roll | Description |",
-        "|---|---:|---:|---:|---|---|",
+        "| Icon | Spell | MP | Min Lvl | Range | Damage / Roll | Description |",
+        "|---|---|---:|---:|---:|---|---|",
     ]
     spells = sorted(
         spells,
@@ -143,7 +158,7 @@ def spell_table(spells: list[dict]) -> str:
     )
     for s in spells:
         rows.append(
-            f"| **{cell(s.get('name', s.get('id')))}** "
+            f"| {icon_img(s)} | **{cell(s.get('name', s.get('id')))}** "
             f"| {num(s.get('mp_cost'))} | {num(s.get('min_level'))} "
             f"| {num(s.get('range'))} | {cell(roll_label(s))} "
             f"| {cell(s.get('description'))} |"

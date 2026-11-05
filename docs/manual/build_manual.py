@@ -779,6 +779,84 @@ def _class_page(blocks, name, portrait_path):
 
 # ── Main render loop ────────────────────────────────────────────────
 
+def _measured_widths(rows, avail):
+    """Column widths for an icon table (icon column already removed from
+    ``avail``), measured from the text rather than split evenly.
+
+    Each column gets at least the width of its longest single word (bold
+    for the header and for **names**), so nothing breaks mid-word. A
+    free-text "Description" column then soaks up all the spare width;
+    tables without one spread the spare width across columns in
+    proportion to their needs. If the minimums don't fit, they shrink
+    from the widest columns down (a Description still keeps ~24% of the row).
+    """
+    pad = 16  # reportlab's 6pt left + right cell padding, plus a little slack
+    heads = [c.strip().lower() for c in rows[0][1:]]
+    cell_font = TABLE_CELL.fontName
+
+    def word_w(word, header):
+        if header:
+            return pdfmetrics.stringWidth(word, BOLD_FONT, TABLE_HEAD.fontSize)
+        return max(pdfmetrics.stringWidth(word, f, TABLE_CELL.fontSize)
+                   for f in (cell_font, BOLD_FONT))
+
+    mins = []
+    for col in range(1, len(rows[0])):
+        widest = 0.0
+        for r_i, row in enumerate(rows):
+            if col >= len(row):
+                continue
+            txt = re.sub(r"<[^>]+>|[*_`]", "", row[col])
+            for w in txt.split():
+                widest = max(widest, word_w(w, r_i == 0))
+        mins.append(widest + pad)
+
+    if "description" in heads:
+        d = heads.index("description")
+        others = sum(m for i, m in enumerate(mins) if i != d)
+        desc_w = max(avail - others, avail * 0.24)
+        budget = avail - desc_w
+        rest = [m for i, m in enumerate(mins) if i != d]
+        if desc_w > avail * 0.45 and others:
+            # Plenty of room: don't let Description swallow the row —
+            # hand the surplus back to the other columns proportionally.
+            desc_w = avail * 0.45
+            grow = (avail - desc_w) / others
+            return [desc_w if i == d else m * grow for i, m in enumerate(mins)]
+        # The first column is the record's name — never trim it, so names
+        # like "Crystal" don't break mid-word; trim the other columns instead.
+        protected = 0 if d != 0 else None
+        trim = [m for i, m in enumerate(mins) if i not in (d, protected)]
+        keep = mins[protected] if protected is not None else 0
+        cap = _cap_to_budget(trim, max(budget - keep, 0))
+        return [
+            desc_w if i == d else m if i == protected else min(m, cap)
+            for i, m in enumerate(mins)
+        ]
+
+    total = sum(mins) or 1
+    if total > avail:
+        cap = _cap_to_budget(mins, avail)
+        return [min(m, cap) for m in mins]
+    return [avail * m / total for m in mins]
+
+
+def _cap_to_budget(widths, budget):
+    """Largest cap such that sum(min(w, cap)) <= budget. Trims only the
+    widest columns when space is short, so narrow ones (Buy, MP, Power)
+    keep their full width and their headers stay on one line."""
+    if sum(widths) <= budget:
+        return max(widths, default=0)
+    lo, hi = 0.0, max(widths)
+    for _ in range(40):
+        mid = (lo + hi) / 2
+        if sum(min(w, mid) for w in widths) <= budget:
+            lo = mid
+        else:
+            hi = mid
+    return lo
+
+
 def _data_table(rows, caption=None, title=None, col_widths=None):
     # The item / monster tables carry a leading sprite column of <img>
     # tags for the markdown manual (headed "Icon" for items, "Sprite"
@@ -824,7 +902,7 @@ def _data_table(rows, caption=None, title=None, col_widths=None):
         data = [header] + body_cells
         n = len(rows[0])
         if col_widths is None:
-            col_widths = [icon_w] + [(TEXT_WIDTH - icon_w) / (n - 1)] * (n - 1)
+            col_widths = [icon_w] + _measured_widths(rows, TEXT_WIDTH - icon_w)
     else:
         header = [Paragraph(_inline(c), TABLE_HEAD) for c in rows[0]]
         body_cells = []
