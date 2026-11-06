@@ -17,6 +17,8 @@
  * module picker.
  */
 
+import { playPartyHref } from "@/play/playRoutes";
+import { loadCurrentAdventureId } from "@/play/currentAdventure";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -50,7 +52,9 @@ export function EndScreen() {
 
   const onNewGame = () => {
     clearSave();
-    router.push("/play/new");
+    // Straight into a fresh party for the player's current adventure
+    // (the one the /play title screen is connected to).
+    router.push(playPartyHref(loadCurrentAdventureId()));
   };
 
   return (

@@ -1,8 +1,9 @@
 "use client";
 
 /**
- * BeginningScreen — full-bleed presentation of the module description
- * + a "Press any key to begin" prompt.
+ * BeginningScreen — full-bleed presentation of the module's opening
+ * (its `trailer`, falling back to `description` when no trailer has
+ * been written) + a "Press any key to begin" prompt.
  *
  * On commit:
  *   - reads the party draft from sessionStorage
@@ -70,13 +71,15 @@ export function BeginningScreen({
   moduleId,
   title: titleProp,
   description: descriptionProp,
+  trailer: trailerProp,
 }: {
   moduleId: string;
-  /** Module title/description. Optional — absent for remote-catalog
-   *  modules the build didn't know about; resolved client-side from
-   *  the configured source's list(). */
+  /** Module title/description/trailer. Optional — absent for
+   *  remote-catalog modules the build didn't know about; resolved
+   *  client-side from the configured source's list(). */
   title?: string;
   description?: string;
+  trailer?: string;
 }) {
   const router = useRouter();
   const [draft, setDraft] = useState<PartyDraft | null | "loading">(
@@ -95,9 +98,14 @@ export function BeginningScreen({
   const [meta, setMeta] = useState<{
     title: string;
     description: string;
+    trailer: string;
   } | null>(
     titleProp !== undefined
-      ? { title: titleProp, description: descriptionProp ?? "" }
+      ? {
+          title: titleProp,
+          description: descriptionProp ?? "",
+          trailer: trailerProp ?? "",
+        }
       : null,
   );
   useEffect(() => {
@@ -111,17 +119,24 @@ export function BeginningScreen({
         setMeta({
           title: m?.title ?? moduleId,
           description: m?.description ?? "",
+          trailer: m?.trailer ?? "",
         });
       })
       .catch(() => {
-        if (!cancelled) setMeta({ title: moduleId, description: "" });
+        if (!cancelled) {
+          setMeta({ title: moduleId, description: "", trailer: "" });
+        }
       });
     return () => {
       cancelled = true;
     };
   }, [meta, moduleId]);
   const title = meta?.title ?? moduleId;
-  const description = meta?.description ?? "";
+  // The opening text: the module's trailer (its dramatic beginning)
+  // when written, else its high-level description.
+  const opening = meta?.trailer?.trim()
+    ? meta.trailer
+    : meta?.description ?? "";
 
   // Pick up the draft on mount. sessionStorage is browser-only.
   useEffect(() => {
@@ -263,9 +278,9 @@ export function BeginningScreen({
     <main className="flex flex-1 flex-col items-center justify-center bg-ink p-8 text-center">
       <div className="max-w-2xl">
         <h1 className="font-display text-5xl text-parchment">{title}</h1>
-        {description ? (
+        {opening ? (
           <p className="mt-8 whitespace-pre-line text-lg leading-relaxed text-parchment/75">
-            {description}
+            {opening}
           </p>
         ) : null}
       </div>

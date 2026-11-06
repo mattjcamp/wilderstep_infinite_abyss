@@ -3,6 +3,13 @@
 /**
  * PlayLanding — title-screen client component.
  *
+ * The screen is "connected" to the player's current adventure (a
+ * playable module, default The Crystal Skull — see
+ * src/play/currentAdventure.ts): its title and description headline
+ * the screen, and New Game goes straight to party formation for it.
+ * "Choose a New Adventure" (under the save slots) opens the picker;
+ * whatever the player picks becomes the adventure shown here.
+ *
  * Detects saves on mount (localStorage is browser-only):
  *
  *   - "Return to Game" resumes the auto-save (the running game).
@@ -28,6 +35,12 @@ import {
   parseImportedSave,
 } from "@/play/save";
 import { Soundtrack } from "@/audio/SoundtrackPlayer";
+import { useCatalog } from "@/play/ModuleGrid";
+import { playPartyHref } from "@/play/playRoutes";
+import {
+  loadCurrentAdventureId,
+  resolveCurrentAdventure,
+} from "@/play/currentAdventure";
 import { enterFullscreen, exitFullscreen } from "@/util/fullscreen";
 import type { WorldSave } from "@/play/saveTypes";
 
@@ -50,8 +63,23 @@ export function PlayLanding() {
   const [slots, setSlots] = useState<ReadonlyArray<WorldSave | null>>([]);
   const [importError, setImportError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const catalog = useCatalog();
+  /** Remembered adventure id — read after mount (browser-only). */
+  const [preferredId, setPreferredId] = useState<string | null>(null);
+  const adventure =
+    catalog.kind === "ok" && preferredId !== null
+      ? resolveCurrentAdventure(catalog.modules, preferredId)
+      : null;
+  const adventureReady = catalog.kind !== "loading" && preferredId !== null;
+  /** Module id → title, so save rows read "The Crystal Skull" rather
+   *  than a raw id. */
+  const titleOf = (id: string): string =>
+    (catalog.kind === "ok"
+      ? catalog.modules.find((m) => m.id === id)?.title
+      : undefined) ?? id;
 
   useEffect(() => {
+    setPreferredId(loadCurrentAdventureId());
     setSave(loadWorld());
     setSlots(listSlotSaves());
     // Title screen sits OUTSIDE an active session — kill whatever
@@ -113,26 +141,61 @@ export function PlayLanding() {
 
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-10 p-8">
-      <header className="text-center">
-        <h1 className="font-display text-5xl text-parchment">
+      <header className="max-w-2xl text-center">
+        <p className="text-xs uppercase tracking-[0.3em] text-parchment/45">
           Wilderstep: Infinite Abyss
-        </h1>
-        <p className="mt-3 text-parchment/60">
-          The lantern flickers. The path ahead is yours to choose.
         </p>
+        {/* The current adventure headlines the screen. Fixed min-height
+            while it loads so the menu doesn't jump. */}
+        <div className="mt-3 min-h-[3.5rem]">
+          {!adventureReady ? null : adventure ? (
+            <>
+              <h1 className="font-display text-5xl text-parchment">
+                {adventure.title}
+              </h1>
+              {adventure.description ? (
+                <p className="mt-4 whitespace-pre-line leading-relaxed text-parchment/65">
+                  {adventure.description}
+                </p>
+              ) : null}
+            </>
+          ) : (
+            <>
+              <h1 className="font-display text-5xl text-parchment">
+                No adventure installed
+              </h1>
+              <p className="mt-4 text-parchment/60">
+                {catalog.kind === "error"
+                  ? "The adventure list couldn't be loaded."
+                  : "There are no playable adventures yet."}
+              </p>
+            </>
+          )}
+        </div>
       </header>
 
       <nav className="flex flex-col items-stretch gap-3 sm:min-w-[380px]">
         {/* Return to Game — only enabled when a save exists. While we
             * haven't checked yet ("loading"), render the button greyed
             * out so the layout doesn't shift after the effect runs. */}
-        <ReturnButton save={save} />
-        <Link
-          href="/play/new"
-          className="rounded-md border border-parchment/40 bg-ember/90 px-8 py-3 text-center text-lg text-parchment shadow transition hover:bg-ember"
-        >
-          New Game
-        </Link>
+        <ReturnButton save={save} titleOf={titleOf} />
+        {/* New Game — starts a party for the current adventure. */}
+        {adventure ? (
+          <Link
+            href={playPartyHref(adventure.id)}
+            className="rounded-md border border-parchment/40 bg-ember/90 px-8 py-3 text-center text-lg text-parchment shadow transition hover:bg-ember"
+          >
+            New Game
+          </Link>
+        ) : (
+          <button
+            type="button"
+            disabled
+            className="rounded-md border border-parchment/20 bg-ink/60 px-8 py-3 text-lg text-parchment/30"
+          >
+            New Game
+          </button>
+        )}
 
         {/* Manual save slots — written in-game with ⌘S. Occupied
             slots load; empty slots render greyed out. */}
@@ -163,13 +226,21 @@ export function PlayLanding() {
               >
                 <span>Slot {n}</span>
                 <span className="text-xs text-parchment/55">
-                  {slot.moduleId}
+                  {titleOf(slot.moduleId)}
                   {when ? ` · ${when}` : ""}
                 </span>
               </button>
             );
           })}
         </section>
+
+        {/* Change which adventure this screen is connected to. */}
+        <Link
+          href="/play/new"
+          className="rounded-md border border-amber-300/40 bg-ink/40 px-5 py-2 text-center text-parchment shadow transition hover:border-amber-300/70 hover:bg-ink/20"
+        >
+          Choose a New Adventure
+        </Link>
 
         {/* Export / Import — file-based saves that survive cleared
             browser data. Export downloads the current auto-save;
@@ -226,7 +297,13 @@ export function PlayLanding() {
   );
 }
 
-function ReturnButton({ save }: { save: WorldSave | null | "loading" }) {
+function ReturnButton({
+  save,
+  titleOf,
+}: {
+  save: WorldSave | null | "loading";
+  titleOf: (moduleId: string) => string;
+}) {
   if (save === "loading") {
     return (
       <button
@@ -260,7 +337,7 @@ function ReturnButton({ save }: { save: WorldSave | null | "loading" }) {
     >
       <div>Return to Game</div>
       <div className="mt-1 text-xs text-parchment/55">
-        {save.moduleId}
+        {titleOf(save.moduleId)}
         {when ? ` · ${when}` : null}
       </div>
     </Link>

@@ -22,7 +22,7 @@ function PartyFormationRoute() {
   const raw = useSearchParams().get("m");
   const moduleId = raw ? decodeModuleIdParam(raw) : "";
   useEffect(() => {
-    if (!moduleId) router.replace("/play/new");
+    if (!moduleId) router.replace("/play");
   }, [moduleId, router]);
   if (!moduleId) return null;
   return <PartyFormation moduleId={moduleId} />;

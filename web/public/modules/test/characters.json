@@ -17,8 +17,8 @@
       "wisdom": 8,
       "sprite": "person/dwarf_female_paladin.png",
       "equipped": {
-        "body": "cloth",
-        "hands": "dagger"
+        "body": "plate",
+        "hands": "iron_sword"
       },
       "inventory": []
     },
@@ -39,8 +39,8 @@
       "wisdom": 18,
       "sprite": "person/person_female_cleric.png",
       "equipped": {
-        "hands": "club",
-        "body": "cloth"
+        "hands": "mace",
+        "body": "chain"
       },
       "inventory": []
     },
@@ -84,7 +84,7 @@
       "sprite": "person/halfling_female_thief.png",
       "equipped": {
         "hands": "dagger",
-        "body": "cloth"
+        "body": "leather"
       },
       "inventory": []
     },
@@ -94,17 +94,20 @@
       "class": "ranger",
       "race": "human",
       "gender": "Male",
-      "level": 1,
-      "exp": 0,
-      "hp": 10,
-      "mp": 3,
+      "level": 5,
+      "exp": 15000,
+      "hp": 34,
+      "mp": 11,
       "strength": 8,
       "dexterity": 8,
       "constitution": 10,
       "intelligence": 18,
       "wisdom": 11,
       "sprite": "person/person_female_ranger.png",
-      "equipped": {},
+      "equipped": {
+        "hands": "long_bow",
+        "body": "leather"
+      },
       "inventory": []
     },
     {

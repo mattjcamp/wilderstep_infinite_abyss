@@ -19,7 +19,14 @@
 export interface ModuleSummary {
   id: string;
   title: string;
+  /** High-level summary of the module for players — what kind of
+   *  adventure it is. Shown on the module card / play picker. */
   description: string;
+  /** Playable modules: the dramatic opening shown full-screen on the
+   *  beginning screen when a new game starts ("Darkness… you open your
+   *  eyes…"). Absent / blank → the beginning screen falls back to
+   *  `description`. */
+  trailer?: string;
   author: string;
   version: string;
   /** Role this module plays in the catalog. Conventions:

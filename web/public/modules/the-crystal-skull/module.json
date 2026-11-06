@@ -2,8 +2,8 @@
   "_comment": "Draft module created in the editor. Export this file and drop it into web/public/modules/the-crystal-skull/module.json.",
   "id": "the-crystal-skull",
   "title": "The Crystal Skull",
-  "description": "Darkness... Heat washes over your body and you slowly open your eyes. The smell of wood smoke mixed with burning flesh roils your stomach. The scene comes into focus before your eyes, but as soon as you can see you squeeze your eyes shut. You try to extinguish the images of your dead parents, sister and everyone else you have ever known. Bodies scattered among the wreckage of your caravan.  What happened here? You retch...",
-  "version": "0.1.0",
+  "description": "Crystal Skull  is a short demo that comes  with the core Wilderstep game. You play an early level party that finds itself stranded in the wild after an Orc attack. This module takes about 2 to 3 hours to complete and covers levesl 1 through 3.",
+  "version": "1.0.0",
   "extends": "default",
   "settings": {
     "exploration_xp": {
@@ -13,5 +13,6 @@
   },
   "soundtrack": [
     "/audio/winds_of_destiny.mp3"
-  ]
+  ],
+  "trailer": "Darkness... Heat washes over your body and you slowly open your eyes. The smell of wood smoke mixed with burning flesh roils your stomach. The scene comes into focus before your eyes, but as soon as you can see you squeeze your eyes shut. You try to extinguish the images of your dead parents, sister and everyone else you have ever known. Bodies scattered among the wreckage of your caravan.  What happened here? You retch..."
 }

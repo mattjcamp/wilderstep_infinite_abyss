@@ -9,7 +9,10 @@
  *
  * Editable here:
  *   - title       — required, free text.
- *   - description — optional, multi-line prose.
+ *   - description — optional, multi-line prose: what the module is,
+ *                   at a high level (module card / play picker).
+ *   - trailer     — playable modules only: the dramatic opening shown
+ *                   on the beginning screen when a new game starts.
  *   - author      — optional.
  *   - version     — semver-style string (not validated).
  *   - role        — radio: playable / library. If the module is
@@ -40,6 +43,9 @@ import { DEFAULT_EXPLORATION_XP } from "@/play/explorationXp";
 export interface ModulePropertiesPatch {
   title: string;
   description: string;
+  /** Opening sequence for the beginning screen. Empty = drop the field
+   *  (the beginning screen falls back to `description`). */
+  trailer: string;
   author: string;
   version: string;
   role: string | undefined;
@@ -88,6 +94,7 @@ export function ModulePropertiesDialog({
 }) {
   const [title, setTitle] = useState(initial.title);
   const [description, setDescription] = useState(initial.description ?? "");
+  const [trailer, setTrailer] = useState(initial.trailer ?? "");
   const [author, setAuthor] = useState(initial.author ?? "");
   const [version, setVersion] = useState(initial.version ?? "");
   /** "" represents the conventional "omitted == playable" case so the
@@ -149,6 +156,7 @@ export function ModulePropertiesDialog({
   }, [
     title,
     description,
+    trailer,
     author,
     version,
     role,
@@ -170,6 +178,11 @@ export function ModulePropertiesDialog({
     onSave({
       title: trimmedTitle,
       description: description.trim(),
+      // Only playable modules show the trailer field; others keep
+      // whatever their manifest already had rather than losing it on
+      // an unrelated save.
+      trailer:
+        role === "playable" ? trailer.trim() : (initial.trailer ?? "").trim(),
       author: author.trim(),
       version: version.trim(),
       // Translate the UI's "playable" sentinel back to omitted, keeping
@@ -293,9 +306,31 @@ export function ModulePropertiesDialog({
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
               className="w-full min-w-0 rounded border border-parchment/20 bg-ink/40 px-2 py-1 text-sm text-parchment focus:border-parchment/45"
-              placeholder="Short summary shown on the module card and play picker."
+              placeholder="What this module is, at a high level — shown on the module card and play picker."
             />
           </label>
+
+          {/* Trailer (playable modules) -------------------------- */}
+          {role === "playable" ? (
+            <label className="flex flex-col gap-1">
+              <span className="text-[13px] text-parchment/85 font-mono">
+                trailer
+              </span>
+              <textarea
+                value={trailer}
+                onChange={(e) => setTrailer(e.target.value)}
+                rows={6}
+                className="w-full min-w-0 rounded border border-parchment/20 bg-ink/40 px-2 py-1 text-sm text-parchment focus:border-parchment/45"
+                placeholder="The dramatic opening players see when a new game begins."
+              />
+              <span className="text-xs text-parchment/65">
+                Shown full-screen on the beginning screen, under the
+                title, before the game starts. Blank lines start new
+                paragraphs. Leave empty to show the description there
+                instead.
+              </span>
+            </label>
+          ) : null}
 
           {/* Author + Version ----------------------------------- */}
           <div className="flex gap-3">

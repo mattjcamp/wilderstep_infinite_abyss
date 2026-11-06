@@ -32,6 +32,16 @@ The on-disk representation in a real module will collect many records of this ty
 | `id` | string | yes | Unique identifier for this record, scoped to its module | TBD |
 | `name` | string | yes | Human-readable display name | TBD |
 
+### Manifest text fields (`module.json`)
+
+These are live today, edited in the editor's **Module Properties** dialog.
+
+| Field | Type | Required | Description | Used? |
+|---|---|---|---|---|
+| `title` | string | yes | The module's display name — module cards, the play picker, and the beginning screen heading. | Yes |
+| `description` | string | no | What the module is, at a high level — a player-facing pitch shown on the module card and the play picker. | Yes |
+| `trailer` | string | no | **Playable modules.** The dramatic opening shown full-screen on the beginning screen (under the title, before "Press any key to begin") when a new game starts. Line breaks are kept. When absent or blank, the beginning screen shows `description` instead, so older modules keep working. The Module Properties dialog only shows this field for playable modules; other roles keep any value they already have. | Yes |
+
 ## Polymorphic discriminators
 
 TBD.

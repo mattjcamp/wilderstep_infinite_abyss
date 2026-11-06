@@ -156,6 +156,10 @@ function toSummary(
     id: meta.id ?? fallback.id,
     title: meta.title ?? fallback.title ?? fallback.id,
     description: meta.description ?? "",
+    trailer:
+      typeof meta.trailer === "string" && meta.trailer.trim()
+        ? meta.trailer
+        : undefined,
     author: meta.author ?? "",
     version: meta.version ?? "0.0.0",
     role: meta.role ?? fallback.role,

@@ -12,9 +12,11 @@
 import { useMemo, useState } from "react";
 import { useCatalog, ModuleGrid } from "@/play/ModuleGrid";
 import { filterModules } from "@/play/moduleFilter";
+import { useChooseAdventure } from "@/play/useChooseAdventure";
 
 export function ModulePickerList() {
   const state = useCatalog();
+  const { currentId, choose } = useChooseAdventure();
   const [search, setSearch] = useState("");
 
   const all = state.kind === "ok" ? state.modules : [];
@@ -32,7 +34,7 @@ export function ModulePickerList() {
       : "local modules";
 
   if (state.kind === "loading") {
-    return <p className="text-parchment/55">Loading modules…</p>;
+    return <p className="text-parchment/55">Loading adventures…</p>;
   }
   if (state.kind === "error") {
     return (
@@ -44,19 +46,25 @@ export function ModulePickerList() {
 
   return (
     <div className="flex w-full max-w-3xl flex-col items-center gap-3">
-      <p className="text-xs text-parchment/40">{sourceBadge}</p>
+      {/* Debug aid for hosted builds only — players on a local build
+          don't need to see where the list came from. */}
+      {process.env.NEXT_PUBLIC_MODULE_SOURCE === "remote" ? (
+        <p className="text-xs text-parchment/40">{sourceBadge}</p>
+      ) : null}
       {all.length > 0 ? (
         <input
           type="search"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search modules by title, author, or description…"
-          aria-label="Search modules"
+          placeholder="Search adventures by title, author, or description…"
+          aria-label="Search adventures"
           className="w-full rounded-md border border-parchment/20 bg-ink/40 px-3 py-2 text-sm text-parchment placeholder:text-parchment/35 focus:border-parchment/50 focus:outline-none"
         />
       ) : null}
       <ModuleGrid
         modules={visible}
+        currentId={currentId}
+        onChoose={choose}
         emptyMessage={
           all.length === 0 ? (
             <span>

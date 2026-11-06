@@ -15,10 +15,12 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCatalog, ModuleGrid } from "@/play/ModuleGrid";
 import { filterModules } from "@/play/moduleFilter";
+import { useChooseAdventure } from "@/play/useChooseAdventure";
 
 function AuthorModules() {
   const handle = (useSearchParams().get("h") ?? "").trim();
   const state = useCatalog();
+  const { currentId, choose } = useChooseAdventure();
   const all = state.kind === "ok" ? state.modules : [];
   const modules = filterModules(all, { handle });
 
@@ -45,6 +47,8 @@ function AuthorModules() {
         ) : (
           <ModuleGrid
             modules={modules}
+            currentId={currentId}
+            onChoose={choose}
             emptyMessage={<span>@{handle} has no public modules yet.</span>}
           />
         )}
@@ -54,7 +58,7 @@ function AuthorModules() {
         href="/play/new"
         className="mt-4 text-sm text-parchment/55 underline hover:text-parchment/80"
       >
-        ← All modules
+        ← All adventures
       </Link>
     </main>
   );

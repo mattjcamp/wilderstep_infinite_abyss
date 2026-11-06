@@ -534,6 +534,8 @@ export function ModulePicker() {
     next.title = patch.title;
     if (patch.description) next.description = patch.description;
     else delete next.description;
+    if (patch.trailer) next.trailer = patch.trailer;
+    else delete next.trailer;
     if (patch.author) next.author = patch.author;
     else delete next.author;
     if (patch.version) next.version = patch.version;

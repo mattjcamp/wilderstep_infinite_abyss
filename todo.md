@@ -1,5 +1,6 @@
 ## Fine Tune
 - Turn modules into standalone games that you can link to
+- Give The Crystal Skull another pass
 
 ## Lore
 - world name: Varnfell (the Varn were destroyed in a great cosmic struggle that created the world, Varnfell. "The Varn died, so that the world could be born)
