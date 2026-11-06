@@ -5,5 +5,8 @@
   "description": "This module is only used to test new game features. It comes equipped with a mid-level starting party. Adjust their stats in the editor as you need to test features.",
   "version": "1.0.0",
   "extends": "default",
-  "trailer": "This is the dramatic beginning of the Test module that we used to test new features.... Enjoy"
+  "trailer": "This is the dramatic beginning of the Test module that we used to test new features.... Enjoy",
+  "soundtrack": [
+    "/audio/Thunderstruck.mp3"
+  ]
 }

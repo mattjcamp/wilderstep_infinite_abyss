@@ -36,6 +36,8 @@ import {
 } from "@/play/save";
 import { Soundtrack } from "@/audio/SoundtrackPlayer";
 import { withBasePath } from "@/util/basePath";
+import { getModuleSource } from "@/data_model/sourceConfig";
+import { TitleWanderers } from "./TitleWanderers";
 import { useCatalog } from "@/play/ModuleGrid";
 import { playPartyHref } from "@/play/playRoutes";
 import {
@@ -56,6 +58,28 @@ const ART_MASK: React.CSSProperties = {
   maskImage: ART_MASK_IMAGE,
   maskComposite: "intersect",
 };
+
+/** Invisible backing in the page's own background color, feathered at
+ *  the edges. It changes nothing on its own; it just hides wanderers
+ *  passing behind the header and menu, so they fade out of view and
+ *  reappear on the other side. */
+const OCCLUDER_FEATHER =
+  "linear-gradient(to right, transparent, #000 40px, #000 calc(100% - 40px), transparent), " +
+  "linear-gradient(to bottom, transparent, #000 28px, #000 calc(100% - 28px), transparent)";
+function Occluder() {
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none absolute -inset-x-12 -inset-y-8 -z-10 bg-[#0f0f1a]"
+      style={{
+        WebkitMaskImage: OCCLUDER_FEATHER,
+        WebkitMaskComposite: "source-in",
+        maskImage: OCCLUDER_FEATHER,
+        maskComposite: "intersect",
+      }}
+    />
+  );
+}
 
 function formatWhen(iso: string | undefined): string | null {
   if (!iso) return null;
@@ -95,18 +119,69 @@ export function PlayLanding() {
     setPreferredId(loadCurrentAdventureId());
     setSave(loadWorld());
     setSlots(listSlotSaves());
-    // Title screen sits OUTSIDE an active session — kill whatever
-    // music a previous play-through (or the intro screen) left
-    // streaming on the singleton. Music starts again when the
-    // player commits a new module on the begin screen, or when the
-    // active host mounts.
-    Soundtrack.stop();
-    // Same for fullscreen: play mode runs fullscreen, the title screen
-    // goes back to a normal window.
+    // Music: the effect below swaps in the current adventure's
+    // soundtrack once it resolves, replacing whatever a previous
+    // play-through left streaming. Fullscreen: play mode runs
+    // fullscreen; the title screen goes back to a normal window.
     exitFullscreen();
   }, []);
 
   const activeSave = save === "loading" ? null : save;
+
+  // ── Title music: the current adventure's soundtrack (Module
+  // Properties → soundtrack; falls back up the extends chain, the same
+  // lookup the game uses). Browsers refuse audio before the player
+  // interacts with the page, so we try right away and again on the
+  // first click / key press. The track carries on into party
+  // formation and the beginning screen (same playlist = no restart).
+  const [hasMusic, setHasMusic] = useState(false);
+  const [muted, setMutedState] = useState(false);
+  useEffect(() => setMutedState(Soundtrack.isMuted()), []);
+  const adventureId = adventure?.id ?? null;
+  useEffect(() => {
+    if (!adventureReady) return;
+    if (!adventureId) {
+      Soundtrack.stop();
+      setHasMusic(false);
+      return;
+    }
+    let cancelled = false;
+    getModuleSource()
+      .resolveModuleSoundtrack(adventureId)
+      .then((list) => {
+        if (cancelled) return;
+        if (list.length === 0) {
+          Soundtrack.stop();
+          setHasMusic(false);
+          return;
+        }
+        setHasMusic(true);
+        Soundtrack.setPlaylist(list);
+        Soundtrack.play(); // best-effort — autoplay may refuse
+      })
+      .catch(() => {
+        /* silence is fine if the manifest can't be read */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [adventureReady, adventureId]);
+  useEffect(() => {
+    if (!hasMusic) return;
+    const kick = () => Soundtrack.play();
+    window.addEventListener("pointerdown", kick, { once: true });
+    window.addEventListener("keydown", kick, { once: true });
+    return () => {
+      window.removeEventListener("pointerdown", kick);
+      window.removeEventListener("keydown", kick);
+    };
+  }, [hasMusic]);
+  const toggleMuted = () => {
+    const next = !muted;
+    Soundtrack.setMuted(next);
+    setMutedState(next);
+    if (!next) Soundtrack.play();
+  };
 
   const onLoadSlot = (slotNumber: number) => {
     // Loading replaces the running auto-save — warn when one exists
@@ -153,8 +228,25 @@ export function PlayLanding() {
   };
 
   return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-10 p-8">
-      <header className="max-w-2xl text-center">
+    <main className="relative isolate flex flex-1 flex-col items-center justify-center gap-10 p-8">
+      {/* Music toggle — only when the adventure has a soundtrack. Shares
+          the persisted mute setting with the in-game help screen. */}
+      {hasMusic ? (
+        <button
+          type="button"
+          onClick={toggleMuted}
+          aria-pressed={!muted}
+          title={muted ? "Turn the music on" : "Turn the music off"}
+          className="absolute right-4 top-4 z-20 rounded-md border border-parchment/25 bg-ink/40 px-3 py-1 text-sm text-parchment/75 transition hover:bg-ink/20 hover:text-parchment"
+        >
+          {muted ? "♪ Music off" : "♪ Music on"}
+        </button>
+      ) : null}
+      {/* Background life: people, animals and monsters wandering past.
+          Drawn beneath the header and menu (z-0 vs z-10). */}
+      <TitleWanderers />
+      <header className="relative z-10 isolate max-w-2xl text-center">
+        <Occluder />
         {/* Title art — the manual's cover scene recolored as parchment
             line art (docs/manual/build_play_art.py). Purely decorative;
             the mask fades its edges into the page. */}
@@ -200,7 +292,8 @@ export function PlayLanding() {
         </div>
       </header>
 
-      <nav className="flex flex-col items-stretch gap-3 sm:min-w-[380px]">
+      <nav className="relative z-10 isolate flex flex-col items-stretch gap-3 sm:min-w-[380px]">
+        <Occluder />
         {/* Return to Game — only enabled when a save exists. While we
             * haven't checked yet ("loading"), render the button greyed
             * out so the layout doesn't shift after the effect runs. */}

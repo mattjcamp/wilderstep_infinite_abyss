@@ -1,5 +1,4 @@
 ## Fine Tune
-- Turn modules into standalone games that you can link to
 - Give The Crystal Skull another pass
 
 ## Lore

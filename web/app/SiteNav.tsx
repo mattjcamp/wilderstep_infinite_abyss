@@ -16,7 +16,9 @@
  */
 
 import Link from "next/link";
+import { useEffect } from "react";
 import { usePathname } from "next/navigation";
+import { Soundtrack } from "@/audio/SoundtrackPlayer";
 import { withBasePath } from "@/util/basePath";
 import { usePublishServer } from "@/editor/usePublishServer";
 import {
@@ -30,6 +32,13 @@ const linkClass =
 export function SiteNav() {
   const pathname = usePathname();
   const { available, reachable, authenticated, handle } = usePublishServer();
+
+  // Music belongs to the play screens (title, party formation, intro,
+  // the game). The player is a page-wide singleton, so stop it when the
+  // player navigates anywhere else (home, FAQ, the editor).
+  useEffect(() => {
+    if (pathname && !pathname.startsWith("/play")) Soundtrack.stop();
+  }, [pathname]);
 
   // Immersive full-screen gameplay gets no chrome.
   if (pathname?.startsWith("/play/active")) return null;
