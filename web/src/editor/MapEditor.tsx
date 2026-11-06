@@ -4269,8 +4269,9 @@ normalizeNpcBehavior(npc?.behavior) === "dance"
     } else {
       delete (updatedMap as Record<string, unknown>).fog_of_war;
     }
-    // Fog style: persist only non-default bands ("cloud" is the
-    // default), so maps on clouds everywhere carry no `fog_style` key.
+    // Fog style: persist only bands that differ from the band defaults
+    // (clouds / dark clouds / darkness), so a map left on the defaults
+    // carries no `fog_style` key.
     const fogStyle = normalizeFogStyles(next.fog_style);
     if (fogStyle) {
       (updatedMap as Record<string, unknown>).fog_style = fogStyle;

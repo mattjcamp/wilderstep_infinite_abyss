@@ -730,8 +730,8 @@ interface PlayMapRecord {
   /** Optional per-lighting-band cover style for unexplored cells —
    *  `{ day?, twilight?, night? }` each `"cloud" | "dark_cloud" |
    *  "darkness"`. Missing
-   *  bands default to `"cloud"`. Lets a map show clouds by day and
-   *  darkness at night. See `@/sim/fogStyle`. */
+   *  bands use the band default — clouds by day, dark clouds at
+   *  twilight, darkness at night. See `@/sim/fogStyle`. */
   fog_style?: unknown;
   /** One-time "discovered this map" XP override. Absent → the module's
    *  `settings.exploration_xp.map`; 0 → no reward. See

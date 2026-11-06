@@ -220,8 +220,8 @@ export interface WorldRendererConfig {
   fogEnabled?: boolean;
   /** Which cover style drapes unexplored cells in each lighting band
    *  ("cloud" | "dark_cloud" | "darkness"). Hosts pass the map's `fog_style` here.
-   *  Missing bands default to "cloud" — the original look — so an
-   *  absent value renders exactly as before. See `@/sim/fogStyle`. */
+   *  Missing bands use the band's default — clouds by day, dark clouds
+   *  at twilight, darkness at night. See `@/sim/fogStyle`. */
   fogStyleByMode?: FogStyleByMode;
   /** Hook fired after each relight pass — receives the shared
    *  LightingResult so callers can tint their own overlays in sync.
@@ -1280,7 +1280,7 @@ export class WorldRenderer {
     // whole cell footprint, so setAlpha(1) leaves no gaps.)
     //
     // Cover STYLE is authored per lighting band (map `fog_style`):
-    // "cloud" (default) is the tinted cloud described above;
+    // "cloud" (the day default) is the tinted cloud described above;
     // "dark_cloud" swaps in the storm-cloud texture, dimmed (less
     // aggressively than plain cloud) at twilight / night;
     // "darkness" swaps in the inky void texture and leaves it untinted,

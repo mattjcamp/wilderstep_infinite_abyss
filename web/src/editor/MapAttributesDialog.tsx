@@ -32,7 +32,7 @@ import { useEffect, useState } from "react";
 import { SoundtrackPicker } from "./SoundtrackPicker";
 import { TagsPicker } from "./TagsPicker";
 import {
-  DEFAULT_FOG_STYLE,
+  DEFAULT_FOG_STYLES,
   FOG_STYLE_LABELS,
   FOG_STYLES,
   type FogStyle,
@@ -65,8 +65,9 @@ interface MapAttributes {
    *  explored / unexplored (cloud) gating. */
   fog_of_war?: boolean;
   /** Per-lighting-band cover style for unexplored tiles ("cloud" |
-   *  "darkness"). Missing bands → "cloud". The dialog emits only the
-   *  non-default bands, or `undefined` when every band is "cloud". */
+   *  "dark_cloud" | "darkness"). Missing bands use the band default
+   *  (day clouds, twilight dark clouds, night darkness). The dialog
+   *  emits only bands that differ, or `undefined` when none do. */
   fog_style?: FogStyleByMode;
   /** Per-map background-music playlist override. Each entry is a
    *  file URL. Absent / empty array → fall back to the module
@@ -118,7 +119,7 @@ export function MapAttributesDialog({
     initial.fog_of_war !== false,
   );
   // Cover style per lighting band. Seeded from the record; any band it
-  // doesn't name shows the default ("cloud").
+  // doesn't name shows that band's default (see DEFAULT_FOG_STYLES).
   const [fogStyle, setFogStyle] = useState<Record<FogBand, FogStyle>>(() => ({
     day: resolveFogStyle(initial.fog_style, "day"),
     twilight: resolveFogStyle(initial.fog_style, "twilight"),
@@ -207,8 +208,8 @@ export function MapAttributesDialog({
       // author turned it OFF — keeps fogged maps shape-identical
       // (no `"fog_of_war": true` churn). `false` is stored verbatim.
       fog_of_war: fogOfWar ? undefined : false,
-      // Fog style: keep only bands that differ from the default so a
-      // map left on clouds everywhere carries no `fog_style` key. Kept
+      // Fog style: keep only bands that differ from the band defaults so
+      // a map left on the defaults carries no `fog_style` key. Kept
       // even while fog is off, so re-enabling fog restores the choice.
       fog_style: normalizeFogStyles(fogStyle),
       // Passive regen: persist only when enabled AND at least one rate
@@ -414,7 +415,7 @@ export function MapAttributesDialog({
                     {FOG_STYLES.map((style) => (
                       <option key={style} value={style}>
                         {FOG_STYLE_LABELS[style]}
-                        {style === DEFAULT_FOG_STYLE ? " (default)" : ""}
+                        {style === DEFAULT_FOG_STYLES[band] ? " (default)" : ""}
                       </option>
                     ))}
                   </select>

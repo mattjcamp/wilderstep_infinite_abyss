@@ -44,7 +44,11 @@ import {
   loadCurrentAdventureId,
   resolveCurrentAdventure,
 } from "@/play/currentAdventure";
-import { enterFullscreen, exitFullscreen } from "@/util/fullscreen";
+import {
+  enterFullscreen,
+  isFullscreen,
+  toggleFullscreen,
+} from "@/util/fullscreen";
 import type { WorldSave } from "@/play/saveTypes";
 
 /** Fades the title art's left/right edges and lower foreground into
@@ -80,6 +84,10 @@ function Occluder() {
     />
   );
 }
+
+/** sessionStorage flag: the player left fullscreen on purpose, so the
+ *  title screen stops auto-entering it until they press F again. */
+const WINDOWED_KEY = "wsia.play.windowed";
 
 function formatWhen(iso: string | undefined): string | null {
   if (!iso) return null;
@@ -121,9 +129,80 @@ export function PlayLanding() {
     setSlots(listSlotSaves());
     // Music: the effect below swaps in the current adventure's
     // soundtrack once it resolves, replacing whatever a previous
-    // play-through left streaming. Fullscreen: play mode runs
-    // fullscreen; the title screen goes back to a normal window.
-    exitFullscreen();
+    // play-through left streaming. Fullscreen: see the effect below.
+  }, []);
+
+  // ── Fullscreen: the title screen runs fullscreen like the game, and F
+  // toggles it. Browsers only allow fullscreen from a user gesture, so
+  // we try on arrival (works when the player clicked their way here)
+  // and otherwise on the first click / key press. If the player leaves
+  // fullscreen (F, or holding Esc), we respect that for the rest of the
+  // browser session instead of forcing them back in; F re-enters.
+  useEffect(() => {
+    const windowedByChoice = () => {
+      try {
+        return sessionStorage.getItem(WINDOWED_KEY) === "1";
+      } catch {
+        return false;
+      }
+    };
+    const rememberWindowed = (windowed: boolean) => {
+      try {
+        if (windowed) sessionStorage.setItem(WINDOWED_KEY, "1");
+        else sessionStorage.removeItem(WINDOWED_KEY);
+      } catch {
+        /* storage unavailable — only affects the auto-enter */
+      }
+    };
+    const isTyping = (t: EventTarget | null) => {
+      const el = t as HTMLElement | null;
+      return (
+        !!el &&
+        (el.tagName === "INPUT" ||
+          el.tagName === "TEXTAREA" ||
+          el.tagName === "SELECT" ||
+          el.isContentEditable)
+      );
+    };
+
+    if (!windowedByChoice()) enterFullscreen();
+
+    // First-gesture fallback (direct load / refresh).
+    const autoEnter = (e: Event) => {
+      // F is handled by the toggle below.
+      if (e instanceof KeyboardEvent && e.key.toLowerCase() === "f") return;
+      if (!windowedByChoice()) enterFullscreen();
+      window.removeEventListener("pointerdown", autoEnter);
+      window.removeEventListener("keydown", autoEnter);
+    };
+    window.addEventListener("pointerdown", autoEnter);
+    window.addEventListener("keydown", autoEnter);
+
+    // F toggles, as in the game.
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() !== "f") return;
+      if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
+      if (isTyping(e.target)) return;
+      e.preventDefault();
+      rememberWindowed(isFullscreen());
+      toggleFullscreen();
+    };
+    window.addEventListener("keydown", onKey);
+
+    // Leaving fullscreen any other way (Esc) also counts as a choice.
+    const onChange = () => {
+      if (!isFullscreen()) rememberWindowed(true);
+    };
+    document.addEventListener("fullscreenchange", onChange);
+    document.addEventListener("webkitfullscreenchange", onChange);
+
+    return () => {
+      window.removeEventListener("pointerdown", autoEnter);
+      window.removeEventListener("keydown", autoEnter);
+      window.removeEventListener("keydown", onKey);
+      document.removeEventListener("fullscreenchange", onChange);
+      document.removeEventListener("webkitfullscreenchange", onChange);
+    };
   }, []);
 
   const activeSave = save === "loading" ? null : save;
@@ -405,12 +484,31 @@ export function PlayLanding() {
           <p className="text-center text-xs text-red-300">{importError}</p>
         ) : null}
 
-        <Link
-          href="/"
-          className="mt-2 text-center text-sm text-parchment/55 underline hover:text-parchment/80"
+        {/* Player's Manual as a "book" — same treatment as the home
+            page: its cover page with a spine + drop shadow, opening the
+            PDF in a new tab. Static assets aren't auto-basePath'd the
+            way <Link> is, so prefix by hand. */}
+        <a
+          href={withBasePath("/manual.pdf")}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group mt-4 flex flex-col items-center gap-3 self-center"
+          title="Open the Player's Manual (PDF)"
         >
-          Back to landing
-        </Link>
+          <span className="relative block w-32 overflow-hidden rounded-l-sm rounded-r-md shadow-xl shadow-black/50 ring-1 ring-parchment/15 transition duration-200 group-hover:-translate-y-1 group-hover:shadow-2xl">
+            {/* book spine */}
+            <span className="pointer-events-none absolute inset-y-0 left-0 z-10 w-2 bg-gradient-to-r from-black/45 via-black/15 to-transparent" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={withBasePath("/manual-cover.png")}
+              alt="Player's Manual"
+              className="block w-full"
+            />
+          </span>
+          <span className="text-sm uppercase tracking-wide text-parchment/65 transition group-hover:text-parchment">
+            Player&apos;s Manual
+          </span>
+        </a>
       </nav>
     </main>
   );

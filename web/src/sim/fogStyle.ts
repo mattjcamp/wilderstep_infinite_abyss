@@ -19,8 +19,9 @@
  *                  by the lighting band: unexplored ground simply reads
  *                  as "lost in the dark" at any hour.
  *
- * Any band absent from the record falls back to {@link DEFAULT_FOG_STYLE}
- * ("cloud"), so existing maps render identically. The band is the
+ * Any band absent from the record falls back to that band's default in
+ * {@link DEFAULT_FOG_STYLES}: clouds by day, dark clouds at twilight,
+ * darkness at night. The band is the
  * renderer's EFFECTIVE lighting mode — the world clock, or the map's
  * `lighting` override when one is authored (a "darkness"-lit map always
  * resolves the `night` style; dungeons always run at `night`).
@@ -47,7 +48,12 @@ export const FOG_STYLE_LABELS: Record<FogStyle, string> = {
   darkness: "Darkness",
 };
 
-export const DEFAULT_FOG_STYLE: FogStyle = "cloud";
+/** Cover style per band when the map doesn't author one. */
+export const DEFAULT_FOG_STYLES: Readonly<Record<LightingMode, FogStyle>> = {
+  day: "cloud",
+  twilight: "dark_cloud",
+  night: "darkness",
+};
 
 export const LIGHTING_MODES: readonly LightingMode[] = [
   "day",
@@ -59,18 +65,21 @@ export function isFogStyle(v: unknown): v is FogStyle {
   return v === "cloud" || v === "dark_cloud" || v === "darkness";
 }
 
-/** Which cover style applies in `mode`. */
+/** Which cover style applies in `mode`: the authored one, else the
+ *  band's default. */
 export function resolveFogStyle(
   styles: FogStyleByMode | null | undefined,
   mode: LightingMode,
 ): FogStyle {
   const v = styles?.[mode];
-  return isFogStyle(v) ? v : DEFAULT_FOG_STYLE;
+  return isFogStyle(v) ? v : DEFAULT_FOG_STYLES[mode];
 }
 
 /** Sanitise a raw `fog_style` value from a map record (hand-edited
  *  JSON, older modules, etc.). Drops unknown bands / values AND
- *  entries equal to the default, so the persisted shape stays minimal.
+ *  entries equal to that band's default, so the persisted shape stays
+ *  minimal (and an explicit choice that differs — e.g. clouds at
+ *  night — is kept).
  *  Returns `undefined` when nothing non-default remains — callers use
  *  that to omit the field entirely. */
 export function normalizeFogStyles(raw: unknown): FogStyleByMode | undefined {
@@ -79,7 +88,7 @@ export function normalizeFogStyles(raw: unknown): FogStyleByMode | undefined {
   const out: FogStyleByMode = {};
   for (const mode of LIGHTING_MODES) {
     const v = src[mode];
-    if (isFogStyle(v) && v !== DEFAULT_FOG_STYLE) out[mode] = v;
+    if (isFogStyle(v) && v !== DEFAULT_FOG_STYLES[mode]) out[mode] = v;
   }
   return Object.keys(out).length > 0 ? out : undefined;
 }
