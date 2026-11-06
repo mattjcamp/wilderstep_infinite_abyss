@@ -11,6 +11,96 @@
       "paragraphs": [
         "Our world has many cults in it."
       ]
+    },
+    {
+      "id": "the_deep_ones",
+      "name": "Hymns to the Deep Ones",
+      "tags": [
+        "Religion",
+        "The Deep Ones"
+      ],
+      "xp": 25,
+      "paragraphs": [
+        "Before the old gods fell silent, the Deep Ones were the least of them: patient powers of dark water and buried stone, honored by miners and well-diggers and few others. When the high gods went quiet, one by one, the Deep Ones remained. Now they are the only gods left.",
+        "Their shrines are small and low, built where the ground breathes cold air. The faithful do not ask the Deep Ones for rain or a good harvest. They ask them to keep the dead where the dead belong: below, and still.",
+        "Sing low, for they listen from beneath. Lay your dead facing down, toward the dark, and the dark will keep them.",
+        "(Copied from a shrine-keeper's hymnal. The pages are soft with handling.)"
+      ]
+    },
+    {
+      "id": "the_watcher_in_crystal",
+      "name": "The Watcher in Crystal",
+      "tags": [
+        "Legends",
+        "The Deep Ones",
+        "The Crystal Skull"
+      ],
+      "xp": 25,
+      "paragraphs": [
+        "The greatest treasure of the Deep Ones' shrine was the Crystal Skull, carved from a single flawless crystal. Those who tended it swore that pale light gathered in its eyes, as if something on the other side were looking out.",
+        "The keepers called it the Watcher. While it watched, they said, the dead slept soundly, for the Deep Ones could see through it and hold them down.",
+        "Then the Watcher was stolen. Rumor names a wizard who wanted its sight for himself, and the mountains to the east, where he is said to have built a maze to hide it. Since that night the graves have not been quiet.",
+        "If the Skull is found and returned to the shrine, the keepers believe, the dead will lie still again."
+      ]
+    },
+    {
+      "id": "chronicle_of_willowbrook",
+      "name": "Chronicle of Willowbrook",
+      "tags": [
+        "History",
+        "Willowbrook"
+      ],
+      "xp": 25,
+      "paragraphs": [
+        "Willowbrook was founded by farming families who cleared the first fields at the forest's edge, where a slow brook runs under the willows. For three generations it was a quiet place: barley and sheep, a mill, and a market day.",
+        "The walls came later. When orc raiders began to come down out of the hills, the town raised a stockade, then a wall of stone, and its gates now close every night at dusk.",
+        "The inn is older than the walls. Travelers call it the best place between the forest and the mountains to hear news, find work, or lose a week's wages. Its cellars are older still, and no one is quite sure how far down they go.",
+        "Lately the town has a new trouble: its own dead. The graves have been disturbed, and some nights the watch will not walk past the burying ground."
+      ]
+    },
+    {
+      "id": "the_orc_kings_rise",
+      "name": "The Orc King's Rise",
+      "tags": [
+        "History",
+        "The Orc Wars"
+      ],
+      "xp": 25,
+      "paragraphs": [
+        "The orc clans of the hills were once too busy fighting each other to trouble the lowlands. That changed when one chieftain broke the others, took their banners, and named himself King.",
+        "He raised a tower bristling with iron spikes and rarely leaves it. His commands come down through a single herald, known only as the Voice of the Orc King. Those who have heard the Voice do not like to speak of it.",
+        "Since the King's rise the raids have become a war. Farms burn, roads empty, and caravans that once traveled freely now travel armed, and still they do not always arrive."
+      ]
+    },
+    {
+      "id": "eight_keys_of_shadow",
+      "name": "On the Eight Keys of Shadow",
+      "tags": [
+        "Legends",
+        "Arcana"
+      ],
+      "xp": 25,
+      "paragraphs": [
+        "Scholars agree on little about the Keys of Shadow except their number: eight. Each is inscribed with arcane formulae that no living wizard claims to have fully read.",
+        "The Silver Key is the one most often described: gleaming, cold to the touch, its writing running around the bow in a script that seems to shift when you look away. Of the other seven there are only rumors.",
+        "What the Keys open is the subject of most of the arguments. A vault, say some; a door; a prison. The oldest texts say only that the Eight were made to be kept apart."
+      ]
+    },
+    {
+      "id": "caravan_masters_ledger",
+      "name": "The Caravan Master's Ledger",
+      "tags": [
+        "Letters & Journals",
+        "The Orc Wars"
+      ],
+      "xp": 25,
+      "paragraphs": [
+        "Day 9. Eleven wagons, forty-two souls, salt and cloth bound for Willowbrook. Roads dry, spirits good. Paid the outrider his second week.",
+        "Day 11. Smoke to the north at dusk. Doubled the watch. The children think it is a game.",
+        "Day 12. The outrider did not come back. Found his horse at noon, saddle empty. Turning off the high road; we will make the forest's edge by tomorrow night if the oxen hold.",
+        "Day 13. Drums all night. If anyone finds this, tell them in Willowbrook that we tried —",
+        "(The rest of the page is blank.)"
+      ]
     }
   ]
 }

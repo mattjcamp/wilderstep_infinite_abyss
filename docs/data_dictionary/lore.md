@@ -23,7 +23,7 @@ A piece of world writing the party can find and read: a history, a letter, a leg
 | Where | How to author | What the player does |
 |---|---|---|
 | **Map object** | In the Map Editor, set a cell's **Lore** to the record's id (a bookshelf, plaque, gravestone, statue…). | Bumps the cell; the party stays put and the reading screen opens. Works on walkable and non-walkable tiles. |
-| **Readable item** | Give an Item a `lore` field with the record's id (a book, a scroll, a letter). | Uses it from the Party screen (shared stash or a character's pack). The item is **not** consumed and can be read again. |
+| **Readable item** | Give an Item a `lore` field with the record's id (a book, a scroll, a letter). Books live in the `books` item category, one item per lore record (e.g. `book_chronicle_willowbrook` → `chronicle_of_willowbrook`). | Uses it from the Party screen (shared stash or a character's pack). The item is **not** consumed and can be read again. |
 
 The reading screen shows the title, tags and paragraphs, and on a first read a "+N XP" note. The read is saved (`party.readLore` in the save) the moment the screen opens.
 

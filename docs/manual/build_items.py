@@ -206,6 +206,18 @@ def general_table(items: list[dict]) -> str:
     return "\n".join(rows)
 
 
+def books_table(items: list[dict]) -> str:
+    """Books: readable lore. Just the cover, title and description — the
+    consumable columns (power, charges, …) don't apply."""
+    rows = ["| Icon | Book | Description |", "|---|---|---|"]
+    for it in sorted(items, key=lambda i: i.get("name", i.get("id", "")).lower()):
+        rows.append(
+            f"| {icon_img(it)} | **{cell(it.get('name', it.get('id')))}** "
+            f"| {cell(it.get('description'))} |"
+        )
+    return "\n".join(rows)
+
+
 # One table per item `category`. Weapons use the Base-Damage layout,
 # armor the Base-AC layout, and everything else the general
 # consumable/utility layout. Display labels + the order sections appear
@@ -218,12 +230,13 @@ CATEGORY_LABELS = {
     "ammo": "Ammo",
     "potion": "Potions",
     "scroll": "Scrolls",
+    "books": "Books",
     "reagent": "Reagents",
     "quest": "Quest Items",
     "general": "General Items",
 }
 CATEGORY_ORDER = ["weapons", "armors", "ammo", "potion", "scroll",
-                  "reagent", "quest", "general"]
+                  "books", "reagent", "quest", "general"]
 
 
 def table_for(category: str) -> callable:
@@ -231,6 +244,8 @@ def table_for(category: str) -> callable:
         return weapon_table
     if category == "armors":
         return armor_table
+    if category == "books":
+        return books_table
     return general_table
 
 
@@ -252,6 +267,8 @@ def build_section(items: list[dict]) -> str:
         "melee weapons first, then all ranged, each ordered weakest to "
         "strongest. **Armor** lists **Base AC**, the Armor Class a typical "
         "adventurer has while wearing it, ordered least to most protective. "
+        "**Books** are readable: use one from the Party screen to read it, "
+        "and the first read earns experience and adds it to your Journal (`J`). "
         "The remaining tables cover consumables, ammunition, reagents, quest "
         "items, and the like; their **Type** column names the exact kind."
     )

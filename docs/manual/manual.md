@@ -489,7 +489,7 @@ Spells are MP-cost actions castable by classes that have a matching `casting_typ
 
 ## Items
 
-Items are grouped by category, one table each. **Weapons** list **Base Damage** — the dice the weapon rolls before the wielder's Strength/Dexterity modifier and any magical Damage Bonus — with all melee weapons first, then all ranged, each ordered weakest to strongest. **Armor** lists **Base AC**, the Armor Class a typical adventurer has while wearing it, ordered least to most protective. The remaining tables cover consumables, ammunition, reagents, quest items, and the like; their **Type** column names the exact kind.
+Items are grouped by category, one table each. **Weapons** list **Base Damage** — the dice the weapon rolls before the wielder's Strength/Dexterity modifier and any magical Damage Bonus — with all melee weapons first, then all ranged, each ordered weakest to strongest. **Armor** lists **Base AC**, the Armor Class a typical adventurer has while wearing it, ordered least to most protective. **Books** are readable: use one from the Party screen to read it, and the first read earns experience and adds it to your Journal (`J`). The remaining tables cover consumables, ammunition, reagents, quest items, and the like; their **Type** column names the exact kind.
 
 
 ### Weapons
@@ -558,6 +558,18 @@ Items are grouped by category, one table each. **Weapons** list **Base Damage** 
 | <img src="../../web/public/modules/default/sprites/item/scroll.png" width="28" alt="Scroll of Fire"> | **Scroll of Fire** | Scroll |  |  |  |  |  | A single-use scroll containing a fire spell. |
 
 
+### Books
+
+| Icon | Book | Description |
+|---|---|---|
+| <img src="../../web/public/modules/default/sprites/item/book_green.png" width="28" alt="Chronicle of Willowbrook"> | **Chronicle of Willowbrook** | A town history bound in green cloth, written by many hands. |
+| <img src="../../web/public/modules/default/sprites/item/book_teal.png" width="28" alt="Hymns to the Deep Ones"> | **Hymns to the Deep Ones** | A shrine-keeper's hymnal, its teal cover worn smooth by praying hands. |
+| <img src="../../web/public/modules/default/sprites/item/book_purple.png" width="28" alt="On the Eight Keys of Shadow"> | **On the Eight Keys of Shadow** | A scholar's treatise on the Keys of Shadow, heavy with annotations. |
+| <img src="../../web/public/modules/default/sprites/item/book_brown.png" width="28" alt="The Caravan Master's Ledger"> | **The Caravan Master's Ledger** | A water-stained ledger. The last entries are written in a hurried hand. |
+| <img src="../../web/public/modules/default/sprites/item/book_black.png" width="28" alt="The Orc King's Rise"> | **The Orc King's Rise** | A black-bound account of how the hill clans came to have a king. |
+| <img src="../../web/public/modules/default/sprites/item/book_blue.png" width="28" alt="The Watcher in Crystal"> | **The Watcher in Crystal** | A slim blue volume about the Crystal Skull and why the dead no longer rest. |
+
+
 ### Reagents
 
 | Icon | Item | Type | Power | Effect | Charges | Stackable | Buy | Description |
@@ -573,7 +585,6 @@ Items are grouped by category, one table each. **Weapons** list **Base Damage** 
 
 | Icon | Item | Type | Power | Effect | Charges | Stackable | Buy | Description |
 |:---:|---|---|---:|---|---:|:---:|---:|---|
-| <img src="../../web/public/modules/default/sprites/item/book.png" width="28" alt="Book"> | **Book** | Book |  |  |  |  |  | A leather-bound book with gilded corners. |
 | <img src="../../web/public/modules/default/sprites/item/camping_supplies.png" width="28" alt="Camping Supplies"> | **Camping Supplies** | Camping Supplies | 0 | rest | 3 | ✓ | 25 | A bedroll, flint, and dried rations. Lets the party rest safely in the wilderness. |
 | <img src="../../web/public/modules/default/sprites/item/herb.png" width="28" alt="Healing Herb"> | **Healing Herb** | Herb | 15 | heal_hp | 1 | ✓ | 15 | A fragrant herb that restores a small amount of HP. |
 | <img src="../../web/public/modules/default/sprites/item/key.png" width="28" alt="Iron Key"> | **Iron Key** | Key |  |  | 1 | ✓ | 10 | A heavy iron key that can unlock one locked door. |

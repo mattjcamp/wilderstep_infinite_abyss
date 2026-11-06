@@ -113184,7 +113184,7 @@
             "spawn": null,
             "sprite": "map/grass.png",
             "tag": "map",
-            "item": "scroll_of_fire"
+            "item": "book_hymns_deep_ones"
           },
           {
             "boat": false,
