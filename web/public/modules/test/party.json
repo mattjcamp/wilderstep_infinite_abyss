@@ -4,14 +4,9 @@
     "col": 1,
     "row": 1
   },
-  "avatar": "person/animal_cat.png",
+  "avatar": "",
   "gold": 50,
-  "roster": [
-    "fighter",
-    "ranger",
-    "cleric",
-    "alchemist"
-  ],
+  "roster": [],
   "party_effects": [],
   "inventory": [
     {
