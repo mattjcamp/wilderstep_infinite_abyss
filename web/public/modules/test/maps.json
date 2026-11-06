@@ -111456,7 +111456,6 @@
     {
       "id": "test_1",
       "name": "Test One",
-      "description": "",
       "tags": [
         "Test"
       ],
@@ -114579,6 +114578,9 @@
             "tag": "map"
           }
         ]
+      ],
+      "soundtrack": [
+        "/audio/Mamma Mia.mp3"
       ]
     },
     {
