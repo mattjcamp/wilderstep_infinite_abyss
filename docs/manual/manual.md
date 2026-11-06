@@ -573,6 +573,7 @@ Items are grouped by category, one table each. **Weapons** list **Base Damage** 
 
 | Icon | Item | Type | Power | Effect | Charges | Stackable | Buy | Description |
 |:---:|---|---|---:|---|---:|:---:|---:|---|
+| <img src="../../web/public/modules/default/sprites/item/book.png" width="28" alt="Book"> | **Book** | Book |  |  |  |  |  | A leather-bound book with gilded corners. |
 | <img src="../../web/public/modules/default/sprites/item/camping_supplies.png" width="28" alt="Camping Supplies"> | **Camping Supplies** | Camping Supplies | 0 | rest | 3 | ✓ | 25 | A bedroll, flint, and dried rations. Lets the party rest safely in the wilderness. |
 | <img src="../../web/public/modules/default/sprites/item/herb.png" width="28" alt="Healing Herb"> | **Healing Herb** | Herb | 15 | heal_hp | 1 | ✓ | 15 | A fragrant herb that restores a small amount of HP. |
 | <img src="../../web/public/modules/default/sprites/item/key.png" width="28" alt="Iron Key"> | **Iron Key** | Key |  |  | 1 | ✓ | 10 | A heavy iron key that can unlock one locked door. |

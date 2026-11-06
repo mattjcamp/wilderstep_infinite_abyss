@@ -824,6 +824,24 @@
       "sell": null
     },
     {
+      "id": "book",
+      "category": "general",
+      "name": "Book",
+      "animation_id": null,
+      "description": "A leather-bound book with gilded corners.",
+      "icon": "book",
+      "item_type": "book",
+      "power": null,
+      "ranged": false,
+      "throwable": false,
+      "slots": null,
+      "durability": null,
+      "party_can_equip": false,
+      "character_can_equip": false,
+      "buy": null,
+      "sell": null
+    },
+    {
       "id": "serpent_root",
       "category": "reagent",
       "name": "Serpent Root",
