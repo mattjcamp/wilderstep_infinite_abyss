@@ -35,6 +35,7 @@ import {
   parseImportedSave,
 } from "@/play/save";
 import { Soundtrack } from "@/audio/SoundtrackPlayer";
+import { withBasePath } from "@/util/basePath";
 import { useCatalog } from "@/play/ModuleGrid";
 import { playPartyHref } from "@/play/playRoutes";
 import {
@@ -43,6 +44,18 @@ import {
 } from "@/play/currentAdventure";
 import { enterFullscreen, exitFullscreen } from "@/util/fullscreen";
 import type { WorldSave } from "@/play/saveTypes";
+
+/** Fades the title art's left/right edges and lower foreground into
+ *  the page so it has no hard rectangle. */
+const ART_MASK_IMAGE =
+  "linear-gradient(to bottom, #000 60%, transparent 98%), " +
+  "linear-gradient(to right, transparent 0%, #000 12%, #000 88%, transparent 100%)";
+const ART_MASK: React.CSSProperties = {
+  WebkitMaskImage: ART_MASK_IMAGE,
+  WebkitMaskComposite: "source-in",
+  maskImage: ART_MASK_IMAGE,
+  maskComposite: "intersect",
+};
 
 function formatWhen(iso: string | undefined): string | null {
   if (!iso) return null;
@@ -142,6 +155,19 @@ export function PlayLanding() {
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-10 p-8">
       <header className="max-w-2xl text-center">
+        {/* Title art — the manual's cover scene recolored as parchment
+            line art (docs/manual/build_play_art.py). Purely decorative;
+            the mask fades its edges into the page. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={withBasePath("/play-art/hero_lines.png")}
+          alt=""
+          aria-hidden="true"
+          width={1626}
+          height={584}
+          className="mx-auto mb-4 block h-auto w-full max-w-2xl opacity-85"
+          style={ART_MASK}
+        />
         <p className="text-xs uppercase tracking-[0.3em] text-parchment/45">
           Wilderstep: Infinite Abyss
         </p>
