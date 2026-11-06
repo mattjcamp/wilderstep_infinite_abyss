@@ -123570,8 +123570,8 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
+            "id": "overworld_farm",
+            "name": "Farm",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -123581,8 +123581,14 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "map/settlements/farm.png",
+            "tag": "map:settlements",
+            "background_sprite": "map/grass.png",
+            "link": {
+              "map_id": "town_1",
+              "x": 11,
+              "y": 23
+            }
           },
           {
             "boat": false,

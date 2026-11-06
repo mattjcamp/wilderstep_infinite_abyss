@@ -1,9 +1,3 @@
-## Demo
-- Flesh out demo a little bit more: add townspeople, home interiors
-
-# Ideas
-- Add Quest Complete reward of "teleporting to new map" to accommodate things like guild quests where you go to a new and maybe secret location
-
 ## Lore
 - world name: Varnfell (the Varn were destroyed in a great cosmic struggle that created the world, Varnfell. "The Varn died, so that the world could be born)
 - races

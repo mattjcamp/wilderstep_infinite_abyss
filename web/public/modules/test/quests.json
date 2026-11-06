@@ -188,7 +188,6 @@
           "encounter_id": "giant_rats"
         }
       ],
-      "main_quest": true,
       "return_to_giver": true,
       "quest_giver": {
         "npc_name": "Little Birdie",

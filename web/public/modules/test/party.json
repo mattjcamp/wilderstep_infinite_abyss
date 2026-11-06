@@ -1,12 +1,17 @@
 {
   "start_position": {
-    "map_id": "overview_1",
-    "col": 9,
-    "row": 17
+    "map_id": "test_1",
+    "col": 1,
+    "row": 1
   },
-  "avatar": "person/dwarf_male_fighter.png",
+  "avatar": "person/animal_cat.png",
   "gold": 50,
-  "roster": [],
+  "roster": [
+    "fighter",
+    "ranger",
+    "cleric",
+    "alchemist"
+  ],
   "party_effects": [],
   "inventory": [
     {

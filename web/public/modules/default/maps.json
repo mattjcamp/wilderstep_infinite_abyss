@@ -42212,7 +42212,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/grass.png",
-            "tag": "map"
+            "tag": "map",
+            "npc": "cercie"
           },
           {
             "boat": false,
@@ -44719,7 +44720,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/grass.png",
-            "tag": "map"
+            "tag": "map",
+            "npc": "reds"
           },
           {
             "boat": false,

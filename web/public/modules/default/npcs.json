@@ -161,6 +161,38 @@
       ],
       "behavior": "still",
       "exploration_xp": 200
+    },
+    {
+      "id": "reds",
+      "name": "Reds",
+      "sprite": "person/animal_dog.png",
+      "counter": null,
+      "personal_history": "Wolf",
+      "dialogs": [
+        {
+          "id": "dialog_1",
+          "title": "Bark",
+          "text": "Wolf"
+        }
+      ],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "cercie",
+      "name": "Cercie",
+      "sprite": "person/person_female_villager_normal.png",
+      "counter": null,
+      "personal_history": "Cercie is a dreamer",
+      "dialogs": [
+        {
+          "id": "dialog_1",
+          "title": "Hey",
+          "text": "Hi there... Are you an adventure? I want to go on adventures... Skills? I have skills, I can write poetry and dance!"
+        }
+      ],
+      "behavior": "wander",
+      "exploration_xp": 25
     }
   ]
 }
