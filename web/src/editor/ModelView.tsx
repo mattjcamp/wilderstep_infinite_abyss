@@ -158,6 +158,9 @@ const ENCOUNTER_FIELDS: Record<string, unknown> = {
  * default at create time via blankFromTemplate.
  */
 const EXTRA_FIELD_DEFAULTS: Partial<Record<ModelKey, Record<string, unknown>>> = {
+  // Items: `lore` makes an item readable (a book, scroll or letter) —
+  // blank on every item until an author picks a Lore record.
+  items: { lore: "" },
   // Tile Palette: `boat` marks a tile that should render as a boat
   // by default when painted onto a map (water-spanning movement,
   // boarding mechanics). One tile in the default module already
@@ -181,6 +184,7 @@ const EXTRA_FIELD_DEFAULTS: Partial<Record<ModelKey, Record<string, unknown>>> =
     quest: "",
     dungeon: "",
     trap_id: "",
+    lore: "",
   },
   // Character Classes: the portrait the character creator suggests for
   // this class (blank = no suggestion; the player picks one).
@@ -188,6 +192,9 @@ const EXTRA_FIELD_DEFAULTS: Partial<Record<ModelKey, Record<string, unknown>>> =
   // Log Events: map + repeat mode + the (steps, text) lines, so a new
   // record shows the map picker and the lines editor straight away.
   log_events: { id: "", name: "", map_id: "", repeat: "once", entries: [] },
+  // Lore: title, player-facing tags, first-read XP (default 25) and the
+  // paragraph editor, so a new record is ready to write.
+  lore: { id: "", name: "", tags: [], xp: 25, paragraphs: [] },
   // Monsters and Encounters list every field the game reads, so the
   // form shows them all even when existing records are sparse (e.g.
   // a freshly started catalog). Values double as the defaults for a

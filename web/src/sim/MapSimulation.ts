@@ -457,6 +457,10 @@ export type SimEvent =
    *  host opens the CounterShopOverlay directly (no NPC dialog in
    *  between). Party stays put, same as the NPC bump model. */
   | { kind: "counter_encountered"; counterId: string; pos: Position }
+  /** Fired when the party bumps a cell whose `lore` field is set — a
+   *  readable map object. The host opens the reading screen (and
+   *  credits a first read). Party stays put, same as a counter. */
+  | { kind: "lore_encountered"; loreId: string; pos: Position }
   /** Fired when the party steps onto a boat tile from land. The
    *  party-boat sprite shown by the host follows the party from this
    *  point on; the boat cell itself no longer renders a "loose" boat
@@ -1266,6 +1270,18 @@ export class MapSimulation {
       this.emit({
         kind: "counter_encountered",
         counterId: target.counter,
+        pos: { col: targetCol, row: targetRow },
+      });
+      return;
+    }
+
+    // 1.6. Lore bump — a readable map object (bookshelf, plaque,
+    // gravestone). Same "party stops on bump, host opens overlay"
+    // pattern as a counter, so it works on walkable and solid tiles.
+    if (target?.lore) {
+      this.emit({
+        kind: "lore_encountered",
+        loreId: target.lore,
         pos: { col: targetCol, row: targetRow },
       });
       return;

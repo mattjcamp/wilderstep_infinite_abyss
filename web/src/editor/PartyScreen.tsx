@@ -203,6 +203,8 @@ export interface PartyAbilityRef {
 
 export interface PartyItemRef {
   id: string;
+  /** Lore id — the item is a readable book / scroll / letter. */
+  lore?: string;
   name?: string;
   /** Flavor / mechanical description shown in the Examine pane. */
   description?: string;
@@ -2070,6 +2072,7 @@ function describeItemUse(
     case "combat_only":
       return "Combat only — thrown at an enemy.";
   }
+  if (it.lore) return "Readable — use it to read it.";
   if (it.item_type === "torch") {
     return "Lights the way — use Light Torch in Effects.";
   }

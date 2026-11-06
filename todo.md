@@ -1,10 +1,10 @@
 ## Fine Tune
 - Give The Crystal Skull another pass
 
-## Lore
-- world name: Varnfell (the Varn were destroyed in a great cosmic struggle that created the world, Varnfell. "The Varn died, so that the world could be born)
+## Varnfell Lore
 - races
-- gods: The Varn (a race of dead gods)
+- gods: 
+    The Varn: The beginning of Time started in a great war between the The Varn and The Dark. By the end of the last battle of time, The Varn had destroyed The Dark and themselves in the process. The Varn collapsed into the World that you see around you. We live in the corpse of a dead god, this is why we call this world is called "Varnfell".
 - cults
 - guilds
 - major city-states

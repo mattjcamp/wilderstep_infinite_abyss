@@ -63,6 +63,7 @@ You explore the world on a grid, moving **one tile per step** using the controls
 | `P` | Party screen — roster, gold, shared stash, active effects |
 | `Q` | Quest log — active and completed quests |
 | `L` | Adventure log — the full back-buffer of in-world messages |
+| `J` | Journal — the lore you have discovered |
 | `H` | Help & tips (and the soundtrack mute / volume controls) |
 | `Z` | Zoom the view: 100% / 50% / 25% (map and combat) |
 | `F` | Toggle fullscreen |
@@ -167,6 +168,12 @@ Objectives come in several kinds:
 Steps can usually be finished in any order, and progress updates automatically. Each completed step is marked with a brief celebration and may hand out something on the spot — an item you'll need next, or a change to the world such as a new bridge. When the last objective is done, most quests **complete right where you stand** and pay their reward (experience, gold, or items) immediately. Some ask you to **return to the quest giver** first; those wait under *Ready to Turn In* until you do.
 
 Completing the **main quest** brings a special celebration and a recap of your whole adventure: quests completed, encounters won, dungeons cleared, experience earned, places discovered, and your party's levels. Choose **Continue adventuring** and the world is still yours to explore.
+
+### Lore and the Journal
+
+The world remembers its own history, and some of it is written down. Bookshelves, plaques, gravestones and inscriptions can be **read**: walk into one and its text opens on the page (you stay where you are). Some items are readable too: a book, a scroll or a letter in the Party screen (`P`) has a **Use** option that reads it, and reading never uses the item up.
+
+The **first** time you read a piece of lore, every living member of the party earns experience (usually 25), and the lore is added to your **Journal**. Press `J` to open it: everything you've read is listed newest first, with **tags** like *History* or *Legends* you can click to show related lore, and a search box. Pick an entry to read it again; `↑` `↓` move between entries, and `J` or `Esc` closes the journal.
 
 ### Exploring Dungeons
 

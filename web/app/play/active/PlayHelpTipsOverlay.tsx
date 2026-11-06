@@ -26,6 +26,7 @@ const INSPECTOR_SHORTCUTS: ShortcutRow[] = [
   { key: "P", description: "Party screen — roster, gold, shared stash, party effects" },
   { key: "Q", description: "Quest log — active quests, what's left to do, completed ones" },
   { key: "L", description: "Adventure log — full back-buffer of in-world messages" },
+  { key: "J", description: "Journal — the lore you have discovered" },
   { key: "H", description: "This help screen" },
 ];
 

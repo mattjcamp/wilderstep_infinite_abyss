@@ -37,6 +37,7 @@ export type ModelKey =
   | "maps"
   | "dungeons"
   | "quests"
+  | "lore"
   | "animations"
   | "npcs";
 
@@ -481,6 +482,33 @@ const DEFS: Record<ModelKey, ModelDef> = {
       },
     ],
   },
+  lore: {
+    key: "lore",
+    label: "Lore",
+    fileName: "lore.json",
+    collectionKey: "lore",
+    docKey: "lore",
+    blurb:
+      "Histories, letters and legends the party reads from map objects or books — first read grants XP; listed in the J journal",
+    columns: [
+      { field: "name", label: "Title" },
+      {
+        field: "tags",
+        label: "Tags",
+        format: (v) => (Array.isArray(v) ? v.join(", ") : ""),
+      },
+      {
+        field: "paragraphs",
+        label: "Paragraphs",
+        format: (v) => (Array.isArray(v) ? `${v.length}` : ""),
+      },
+      {
+        field: "xp",
+        label: "XP",
+        format: (v) => (typeof v === "number" ? `${v}` : "25"),
+      },
+    ],
+  },
   animations: {
     key: "animations",
     label: "Animations",
@@ -534,6 +562,7 @@ const SINGULAR_LABELS: Record<ModelKey, string> = {
   maps: "Map",
   dungeons: "Dungeon",
   quests: "Quest",
+  lore: "Lore",
   animations: "Animation",
   npcs: "NPC",
 };

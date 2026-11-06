@@ -91,6 +91,8 @@ import { LootEditor, type LootStash } from "./LootEditor";
 import { EncounterPicker } from "./EncounterPicker";
 import { anchorCell, nextCellSelection } from "./cellSelection";
 import { groupByTags } from "./mapTags";
+import { PlayLoreOverlay } from "@/play/LoreOverlay";
+import { normalizeLore, type LoreRecord } from "@/play/lore";
 import { groupItemsByCategory } from "./itemTags";
 import { LockDialogOverlay } from "./LockDialogOverlay";
 import { MapAttributesDialog } from "./MapAttributesDialog";
@@ -205,6 +207,10 @@ interface TileType {
    *  permanently. Traps are hidden from the player unless Detect
    *  Traps is active. */
   trap_id?: string;
+  /** Lore id from lore.json — makes the cell a readable object
+   *  (bookshelf, plaque, gravestone). In play, bumping it opens the
+   *  reading screen; the first read grants XP + a journal entry. */
+  lore?: string;
   sprite: string;
   /** Optional purely-visual background sprite drawn BEHIND `sprite`
    *  and lit the same way. A foreground tile with transparent pixels
@@ -348,6 +354,7 @@ function cellMatchesPalette(cell: TileType, palette: TileType[]): boolean {
   if ((cell.dungeon ?? "") !== (base.dungeon ?? "")) return false;
   if ((cell.npc ?? "") !== (base.npc ?? "")) return false;
   if ((cell.trap_id ?? "") !== (base.trap_id ?? "")) return false;
+  if ((cell.lore ?? "") !== (base.lore ?? "")) return false;
   if (cell.sprite !== base.sprite) return false;
   if (JSON.stringify(cell.link ?? null) !== JSON.stringify(base.link ?? null))
     return false;
@@ -426,6 +433,9 @@ type LoadState =
       /** Every trap in the module's traps.json — feeds the cell
        *  inspector's Trap dropdown. */
       availableTraps: Array<{ id: string; name: string }>;
+      availableLore: Array<{ id: string; name: string }>;
+      /** Full lore records — the sim's reading-screen preview. */
+      simLore: LoreRecord[];
       /** Simulation-only catalog. Loaded alongside the painting data
        *  so the scene can pre-load party sprites in its single
        *  preload() pass. Null when a load failed; sim mode is still
@@ -516,6 +526,8 @@ export function MapEditor({
    *  inside the NPC dialog; closing it returns the player to the
    *  dialog. */
   const [shopCounterId, setShopCounterId] = useState<string | null>(null);
+  /** Lore id bumped in simulation — previews the reading screen. */
+  const [simLoreId, setSimLoreId] = useState<string | null>(null);
   /** Quest dialog state — set when the sim emits `quest_encountered`,
    *  cleared on Accept / Decline / Close. The kernel re-fires this
    *  event every time the party bumps the quest-giver tile (no
@@ -593,10 +605,12 @@ export function MapEditor({
       !!spawnEncounter ||
       !!questEncounter ||
       !!giverChatter ||
+      !!simLoreId ||
       !!placard;
   }, [
     npcEncounterId,
     shopCounterId,
+    simLoreId,
     partyScreenOpen,
     lockEncounter,
     spawnEncounter,
@@ -769,8 +783,9 @@ export function MapEditor({
       if (lockEncounter) setLockEncounter(null);
       if (questEncounter) setQuestEncounter(null);
       if (giverChatter) setGiverChatter(null);
+      if (simLoreId) setSimLoreId(null);
     }
-  }, [simMode, npcEncounterId, shopCounterId, lockEncounter, questEncounter, giverChatter]);
+  }, [simMode, npcEncounterId, shopCounterId, lockEncounter, questEncounter, giverChatter, simLoreId]);
   useEffect(() => {
     if (simMode !== "active" && partyScreenOpen) {
       setPartyScreenOpen(false);
@@ -1084,6 +1099,7 @@ export function MapEditor({
           spellsLayers,
           monstersLayers,
           trapsLayers,
+          loreLayers,
         ] = await Promise.all([
           src.loadModelLayers(moduleId, "map_tiles"),
           src.loadModelLayers(moduleId, "maps"),
@@ -1119,6 +1135,7 @@ export function MapEditor({
           // Non-fatal — modules without traps.json just show an
           // empty dropdown.
           src.loadModelLayers(moduleId, "traps").catch(() => null),
+          src.loadModelLayers(moduleId, "lore").catch(() => null),
         ]);
         if (cancelled) return;
 
@@ -1394,6 +1411,19 @@ export function MapEditor({
         const availableTraps = (trapsMerged?.traps ?? [])
           .map((t) => ({ id: t.id, name: t.name ?? t.id }))
           .sort((a, b) => a.name.localeCompare(b.name));
+        // Lore picker for the cell inspector.
+        const loreMerged =
+          loreLayers &&
+          (mergeModel(
+            "lore",
+            loreLayers.inherited,
+            loreLayers.ownFile,
+          ) as { lore?: Array<{ id: string; name?: string }> } | null);
+        const simLore = normalizeLore(loreMerged?.lore ?? []);
+        const availableLore = (loreMerged?.lore ?? [])
+          .filter((l) => l && typeof l.id === "string")
+          .map((l) => ({ id: l.id, name: l.name ?? l.id }))
+          .sort((a, b) => a.name.localeCompare(b.name));
 
         setState({
           kind: "ok",
@@ -1410,6 +1440,8 @@ export function MapEditor({
           availableDungeons,
           availableQuests,
           availableTraps,
+          availableLore,
+          simLore,
           simParty: partyMerged ?? null,
           simCharacters: charactersMerged?.characters ?? [],
           simRaces: racesMerged?.races ?? [],
@@ -3786,6 +3818,11 @@ normalizeNpcBehavior(npc?.behavior) === "dance"
         // modal.
         setLockEncounter(ev.options);
       }
+      if (ev.kind === "lore_encountered") {
+        // Readable map object — preview the reading screen. (XP and
+        // the journal are play-only; the sim doesn't track reads.)
+        setSimLoreId(ev.loreId);
+      }
       if (ev.kind === "counter_encountered") {
         // Tile-planted shop counter — open the CounterShopOverlay
         // directly. The existing shopCounterId state path (used by
@@ -5070,6 +5107,7 @@ normalizeNpcBehavior(npc?.behavior) === "dance"
             availableDungeons={state.availableDungeons}
             availableQuests={state.availableQuests}
             availableTraps={state.availableTraps}
+            availableLore={state.availableLore}
             onUpdate={(patch) => {
               if (selection.length === 0) return;
               // Apply the field change to EVERY selected cell. With a
@@ -5197,6 +5235,30 @@ normalizeNpcBehavior(npc?.behavior) === "dance"
               }}
             />
           )
+        : null}
+      {/* Lore reading-screen preview (sim). */}
+      {simLoreId
+        ? (() => {
+            const lore = state.simLore.find((l) => l.id === simLoreId);
+            return (
+              <PlayLoreOverlay
+                lore={
+                  lore ?? {
+                    id: simLoreId,
+                    name: simLoreId,
+                    tags: [],
+                    xp: 0,
+                    paragraphs: [
+                      `No Lore record "${simLoreId}" — check the cell's Lore setting.`,
+                    ],
+                  }
+                }
+                firstRead={false}
+                xp={0}
+                onClose={() => setSimLoreId(null)}
+              />
+            );
+          })()
         : null}
       {/* Counter shop overlay — opens from inside the NPC dialog. */}
       {shopCounterId
@@ -5661,6 +5723,7 @@ function Inspector({
   availableDungeons,
   availableQuests,
   availableTraps,
+  availableLore,
   onUpdate,
 }: {
   moduleId: string;
@@ -5691,6 +5754,8 @@ function Inspector({
   availableQuests: QuestRecord[];
   /** Every trap in the module's traps.json — fed to the Trap dropdown. */
   availableTraps: Array<{ id: string; name: string }>;
+  /** Every Lore record in the module — fed to the Lore dropdown. */
+  availableLore: Array<{ id: string; name: string }>;
   onUpdate: (patch: Partial<TileType>) => void;
 }) {
   const modified =
@@ -6198,6 +6263,35 @@ function Inspector({
             canReset={!!base}
             onChange={(v) => onUpdate({ trap_id: v })}
             onReset={() => onUpdate({ trap_id: undefined })}
+          />
+
+          <SelectEditor
+            label="Lore"
+            help="Lore from lore.json. Empty for none. Makes this cell a readable object (bookshelf, plaque, gravestone): in play, bumping it opens the reading screen — the party stays put. The first read adds it to the journal (J) and grants its XP."
+            value={instance.lore ?? ""}
+            paletteValue={base?.lore ?? instance.lore ?? ""}
+            options={[
+              { value: "", label: "(none)" },
+              ...availableLore.map((l) => ({
+                value: l.id,
+                label: l.name !== l.id ? `${l.name} — ${l.id}` : l.id,
+              })),
+              ...(instance.lore &&
+              !availableLore.some((l) => l.id === instance.lore)
+                ? [
+                    {
+                      value: instance.lore,
+                      label: `(missing) ${instance.lore}`,
+                    },
+                  ]
+                : []),
+            ]}
+            isModified={
+              !!base && fieldDiffersFromPalette(instance, palette, "lore")
+            }
+            canReset={!!base}
+            onChange={(v) => onUpdate({ lore: v })}
+            onReset={() => onUpdate({ lore: undefined })}
           />
 
           <LinkEditor

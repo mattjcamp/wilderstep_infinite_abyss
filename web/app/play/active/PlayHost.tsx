@@ -53,6 +53,14 @@ import {
 import { PlayMainQuestFinale } from "./PlayMainQuestFinale";
 import { computeAdventureRecap, type AdventureRecap } from "@/play/adventureRecap";
 import { PlayLogOverlay } from "./PlayLogOverlay";
+import { PlayLoreOverlay } from "@/play/LoreOverlay";
+import { PlayJournalOverlay } from "./PlayJournalOverlay";
+import {
+  journalEntries,
+  markLoreRead,
+  normalizeLore,
+  type LoreRecord,
+} from "@/play/lore";
 import { PlayExplorationPanel } from "./PlayExplorationPanel";
 import {
   ensureMoonTextures,
@@ -933,6 +941,9 @@ interface LoadedCatalog {
   /** Authored Log Events (log_events.json) — lines that appear in the
    *  exploration log N steps after the party enters a map. */
   logEvents: ReadonlyArray<LogEventRecord>;
+  /** Lore catalog (lore.json) — read from map objects (`cell.lore`)
+   *  and readable items (`item.lore`); listed in the J journal. */
+  lore: ReadonlyArray<LoreRecord>;
   /** Recipes catalog — read by the Alchemist's brew_potion
    *  picker so a player can pick a recipe to convert reagents
    *  into a finished potion. Shape mirrors recipes.json
@@ -1043,6 +1054,15 @@ export function PlayHost() {
   const [questLogOpen, setQuestLogOpen] = useState(false);
   const [helpTipsOpen, setHelpTipsOpen] = useState(false);
   const [logOpen, setLogOpen] = useState(false);
+  /** Journal (J) — the lore the party has read. */
+  const [journalOpen, setJournalOpen] = useState(false);
+  /** Lore reading screen — set when the party bumps a lore map object
+   *  or reads a book from the Party screen. */
+  const [loreReading, setLoreReading] = useState<{
+    lore: LoreRecord;
+    firstRead: boolean;
+    xp: number;
+  } | null>(null);
   /** Save menu (⌘S / Ctrl-S). Opening snapshots the live sim via
    *  `saveCurrent` first, so slot writes capture the exact moment
    *  the player hit save. `slotSaves` holds the three manual slots'
@@ -1375,6 +1395,56 @@ export function PlayHost() {
     },
     [],
   );
+
+  /** Open the reading screen for `loreId`. The first read adds it to
+   *  the journal (`party.readLore`) and pays its XP (default 25) to
+   *  every living member, with level-ups — written to the save before
+   *  the page even renders, so closing the tab can't lose it. Unknown
+   *  ids (a typo, a removed record) just log and do nothing. */
+  const openLore = useCallback((loreId: string) => {
+    const save = saveRef.current;
+    const catalog = catalogRef.current;
+    if (!save || !catalog) return;
+    const lore = catalog.lore.find((l) => l.id === loreId);
+    if (!lore) {
+      setLogMessages((prev) => {
+        const next = [...prev, "The writing here is too faded to read."];
+        return next.length > MAX_LOG ? next.slice(next.length - MAX_LOG) : next;
+      });
+      return;
+    }
+    const mark = markLoreRead(save.party.readLore, lore.id);
+    let xp = 0;
+    if (mark.firstTime) {
+      xp = lore.xp;
+      const award = applyExplorationXp(
+        { ...save, party: { ...save.party, readLore: mark.next } },
+        catalog,
+        xp,
+      );
+      saveRef.current = award.save;
+      saveWorld(award.save);
+      try {
+        Sfx.play("level_up");
+      } catch {
+        /* audio not ready */
+      }
+      setLogMessages((prev) => {
+        const next = [
+          ...prev,
+          xp > 0
+            ? `New lore: ${lore.name} — +${xp} XP.`
+            : `New lore: ${lore.name}.`,
+          ...award.levelUps.map((ev) => ev.message),
+        ];
+        return next.length > MAX_LOG ? next.slice(next.length - MAX_LOG) : next;
+      });
+    }
+    setLoreReading({ lore, firstRead: mark.firstTime, xp });
+  }, []);
+  // Ref mirror for the long-lived Phaser event closure.
+  const openLoreRef = useRef(openLore);
+  openLoreRef.current = openLore;
 
   const fireQuestCelebration = useCallback(
     (args: {
@@ -2083,6 +2153,8 @@ export function PlayHost() {
       giverChatter !== null ||
       placard !== null ||
       pendingTravel !== null ||
+      journalOpen ||
+      loreReading !== null ||
       finale !== null;
   }, [
     lockEncounter,
@@ -2100,6 +2172,8 @@ export function PlayHost() {
     giverChatter,
     placard,
     pendingTravel,
+    journalOpen,
+    loreReading,
     finale,
   ]);
   useEffect(() => {
@@ -2225,7 +2299,8 @@ export function PlayHost() {
         key !== "p" &&
         key !== "q" &&
         key !== "l" &&
-        key !== "h"
+        key !== "h" &&
+        key !== "j"
       ) {
         return;
       }
@@ -2241,7 +2316,14 @@ export function PlayHost() {
       if (lockEncounter || combat || encounterPrompt || questOffer) return;
       // Already-open modal? The overlay's own listener handles the
       // close; just bail so we don't try to re-open it.
-      if (partyScreenOpen || questLogOpen || helpTipsOpen || logOpen) {
+      if (
+        partyScreenOpen ||
+        questLogOpen ||
+        helpTipsOpen ||
+        logOpen ||
+        journalOpen ||
+        loreReading
+      ) {
         return;
       }
       e.preventDefault();
@@ -2249,6 +2331,7 @@ export function PlayHost() {
       else if (key === "q") setQuestLogOpen(true);
       else if (key === "l") setLogOpen(true);
       else if (key === "h") setHelpTipsOpen(true);
+      else if (key === "j") setJournalOpen(true);
     };
     window.addEventListener("keydown", onInspectorKey);
     return () => window.removeEventListener("keydown", onInspectorKey);
@@ -2261,6 +2344,8 @@ export function PlayHost() {
     questLogOpen,
     helpTipsOpen,
     logOpen,
+    journalOpen,
+    loreReading,
   ]);
   useEffect(() => {
     catalogRef.current = state.catalog ?? null;
@@ -2824,6 +2909,7 @@ export function PlayHost() {
       if (saveMenuOpen) return; // overlay's own listener closes
       if (lockEncounter || chestEncounter || combat || encounterPrompt || questOffer) return;
       if (partyScreenOpen || questLogOpen || helpTipsOpen || logOpen) return;
+      if (journalOpen || loreReading) return;
       if (counterShopId !== null || npcDialogId !== null) return;
       if (giverChatter !== null || placard !== null) return;
       // Snapshot the live sim into saveRef + the auto-save slot so
@@ -2844,6 +2930,8 @@ export function PlayHost() {
     questLogOpen,
     helpTipsOpen,
     logOpen,
+    journalOpen,
+    loreReading,
     counterShopId,
     npcDialogId,
     giverChatter,
@@ -5789,6 +5877,11 @@ export function PlayHost() {
               }
               return;
             }
+            if (ev.kind === "lore_encountered") {
+              // Readable map object (bookshelf, plaque, gravestone).
+              openLoreRef.current(ev.loreId);
+              return;
+            }
             if (ev.kind === "counter_encountered") {
               // Tile-side counter — open the shop on the counter id
               // the cell carried. Catalog mismatch (e.g. typoed
@@ -7404,6 +7497,10 @@ export function PlayHost() {
               /* scene disposed / audio not ready — skip */
             }
           }}
+          onReadLore={(loreId) => {
+            setPartyScreenOpen(false);
+            openLore(loreId);
+          }}
           onItemUse={(itemId) => {
             // Mirror of onSpellCast for usable items. Same party-cell
             // pixel math, same try/catch so a disposed scene or
@@ -7513,6 +7610,25 @@ export function PlayHost() {
           messages={logMessages}
           storyLines={storyLines}
           onClose={() => setLogOpen(false)}
+        />
+      ) : null}
+
+      {/* Lore reading screen + the J journal. */}
+      {loreReading ? (
+        <PlayLoreOverlay
+          lore={loreReading.lore}
+          firstRead={loreReading.firstRead}
+          xp={loreReading.xp}
+          onClose={() => setLoreReading(null)}
+        />
+      ) : null}
+      {journalOpen ? (
+        <PlayJournalOverlay
+          entries={journalEntries(
+            state.catalog?.lore ?? [],
+            (saveRef.current ?? state.save)?.party.readLore,
+          )}
+          onClose={() => setJournalOpen(false)}
         />
       ) : null}
 
@@ -7935,6 +8051,7 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
     countersLayers,
     trapsLayers,
     logEventsLayers,
+    loreLayers,
   ] = await Promise.all([
     src.loadModelLayers(moduleId, "map_tiles"),
     src.loadModelLayers(moduleId, "maps"),
@@ -7955,6 +8072,7 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
     src.loadModelLayers(moduleId, "counters").catch(() => null),
     src.loadModelLayers(moduleId, "traps").catch(() => null),
     src.loadModelLayers(moduleId, "log_events").catch(() => null),
+    src.loadModelLayers(moduleId, "lore").catch(() => null),
   ]);
 
   const paletteDoc = (mergeModel(
@@ -8157,6 +8275,11 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
     logEventsLayers?.inherited ?? [],
     logEventsLayers?.ownFile ?? null,
   ) ?? {}) as { log_events?: unknown };
+  const loreDoc = (mergeModel(
+    "lore",
+    loreLayers?.inherited ?? [],
+    loreLayers?.ownFile ?? null,
+  ) ?? {}) as { lore?: unknown };
 
   // Module manifest — pull the default soundtrack playlist, walking
   // the extends chain so a parent module's playlist propagates to
@@ -8217,6 +8340,7 @@ async function loadCatalog(save: WorldSave): Promise<LoadedCatalog> {
     recipes: recipesDoc.recipes ?? [],
     traps: trapsDoc.traps ?? [],
     logEvents: normalizeLogEvents(logEventsDoc.log_events),
+    lore: normalizeLore(loreDoc.lore),
     moduleSoundtrack,
     sightRadius,
     explorationXp,

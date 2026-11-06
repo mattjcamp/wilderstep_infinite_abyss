@@ -1,0 +1,16 @@
+{
+  "_comment": "Lore — histories, letters, legends and inscriptions the party can read. id, name (title), tags (player-facing; the J journal filters by them), xp (each living party member's reward for the FIRST read; default 25, 0 = none), paragraphs (array of strings, read in order). Discovered by bumping a map cell with `lore: \"<id>\"` or using an item with `lore: \"<id>\"`. See docs/data_dictionary/lore.md.",
+  "lore": [
+    {
+      "id": "test_1",
+      "name": "Test One",
+      "tags": [
+        "Cults"
+      ],
+      "xp": 25,
+      "paragraphs": [
+        "Our world has many cults in it."
+      ]
+    }
+  ]
+}

@@ -63,6 +63,7 @@ Each record minimally has `id`, `name`, `category`. The rest of the fields are p
 | `ignite` | bool | no | When `true`, using this item in combat (thrown torch, fire arrow on hit) **ignites the landing cell** — the cell becomes a fire tile that damages anyone standing on it via `applyFireDamageOnEntry` and adds a light source to the arena's static-light pool. Honoured by both `throwable` items (Torch) and `ammo` items (Fire Arrows). See *Fire-cell items* below. | wired |
 | `light_range` | number | no | Light radius (Chebyshev tiles) the ignited cell emits. Only consulted when `ignite: true`. Defaults to 3 if absent. Torch carries 5; Fire Arrows carry 3 (smaller pool to differentiate). | wired |
 | `targeting` | string | no | Ranged-weapon aiming mode. `"directional"` (short bow, long bow, sling) makes the Range action ask for a cardinal direction; absent / any other value uses the precision target picker (crossbow, silver bow). Fire-Arrow shots on a precision weapon override into tile-pick mode so the player can light any cell in range. | wired |
+| `lore` | string | no | Makes the item **readable**: a [Lore](lore.md) id. Using the item from the Party screen (shared stash or a character's pack) opens the reading screen; the item is not consumed. The first read adds the lore to the journal and grants its XP. | Yes |
 
 ## Polymorphic discriminators
 

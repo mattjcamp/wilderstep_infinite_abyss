@@ -113183,7 +113183,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/grass.png",
-            "tag": "map"
+            "tag": "map",
+            "item": "scroll_of_fire"
           },
           {
             "boat": false,

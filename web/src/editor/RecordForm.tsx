@@ -33,6 +33,8 @@ import { TagsPicker } from "./TagsPicker";
 import { normalizeTags } from "./recordTags";
 import { DialogsEditor } from "./DialogsEditor";
 import { LogEventEntriesEditor } from "./LogEventEntriesEditor";
+import { LoreParagraphsEditor } from "./LoreParagraphsEditor";
+import { LorePicker } from "./LorePicker";
 import {
   LOG_EVENT_REPEAT_CHOICES,
   normalizeLogEventEntries,
@@ -52,7 +54,7 @@ import { getParamsFieldConfig } from "./paramsFields";
 /** Models whose records carry a free-form `tags: string[]` for editor
  *  organization. The form injects the field (even when a record hasn't
  *  set it yet) and renders the chip-style TagsPicker for it. */
-const TAGGED_MODELS = new Set(["encounters", "monsters"]);
+const TAGGED_MODELS = new Set(["encounters", "monsters", "lore"]);
 
 /** Optional numeric fields injected per model even when a record
  *  hasn't set them, so authors can discover + fill them from the form.
@@ -119,6 +121,10 @@ function inferKind(
   // Counter-typed fields are strings too (Counter id). The CounterPicker
   // handles a null/"" value as "(none)".
   if (getCounterFieldConfig(key, modelKey) !== null) return "string";
+  // An item's `lore` is a Lore id string (LorePicker handles "").
+  if ((modelKey === "items" || modelKey === "map_tiles") && key === "lore") {
+    return "string";
+  }
   // Map-typed fields (e.g., spawn.custom_map, encounter.custom_map)
   // are Map id strings. The MapPicker handles null/"" as "(none)".
   if (getMapFieldConfig(key, modelKey) !== null) return "string";
@@ -633,6 +639,31 @@ function FieldRow({
       );
     }
   }
+  // Lore `paragraphs` — one textarea per paragraph instead of raw JSON.
+  // Unparseable JSON falls through to the textarea so it's recoverable.
+  if (spec.key === "paragraphs" && modelKey === "lore") {
+    let parsed: unknown = null;
+    let parseable = true;
+    try {
+      parsed = value.trim() === "" ? [] : JSON.parse(value);
+    } catch {
+      parseable = false;
+    }
+    if (parseable) {
+      const paragraphs = Array.isArray(parsed)
+        ? parsed.map((p) => (typeof p === "string" ? p : ""))
+        : [];
+      return (
+        <div className="flex items-start gap-3">
+          <span className={labelClasses}>paragraphs</span>
+          <LoreParagraphsEditor
+            paragraphs={paragraphs}
+            onChange={(next) => onChange(JSON.stringify(next, null, 2))}
+          />
+        </div>
+      );
+    }
+  }
   // A `tags` field renders the chip-style TagsPicker instead of a raw
   // JSON textarea. The on-disk value stays a JSON string[] so the
   // submit-time `inputToValue("json", …)` round-trips it unchanged.
@@ -656,7 +687,9 @@ function FieldRow({
             onChange={(next) => onChange(JSON.stringify(next))}
           />
           <p className="mt-1 text-xs text-parchment/60">
-            Editor-only labels for grouping. Gameplay ignores them.
+            {modelKey === "lore"
+              ? "Shown to players — the journal (J) filters lore by these tags."
+              : "Editor-only labels for grouping. Gameplay ignores them."}
           </p>
         </div>
       </div>
@@ -759,6 +792,31 @@ function FieldRow({
         <div className="flex-1">
           <AnimationPicker value={value} onChange={onChange} />
           {error ? <p className="mt-1 text-[13px] text-ember">{error}</p> : null}
+        </div>
+      </div>
+    );
+  }
+
+  // An item's `lore` — pick the Lore record that makes it readable.
+  if (spec.key === "lore" && (modelKey === "items" || modelKey === "map_tiles")) {
+    return (
+      <div className="flex items-start gap-3">
+        <label htmlFor={spec.key} className={labelClasses}>
+          {spec.key}
+          <span className="block text-xs text-parchment/60">readable</span>
+        </label>
+        <div className="flex-1">
+          {modelKey === "items" ? (
+            <LorePicker value={value} moduleId={moduleId} onChange={onChange} />
+          ) : (
+            <LorePicker
+              value={value}
+              moduleId={moduleId}
+              onChange={onChange}
+              noneLabel="(none)"
+              help="Cells painted with this tile become readable: bumping one opens this Lore. Usually set per cell in the Map Editor instead."
+            />
+          )}
         </div>
       </div>
     );

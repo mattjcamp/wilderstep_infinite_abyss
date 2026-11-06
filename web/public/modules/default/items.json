@@ -805,6 +805,7 @@
       "range": 4
     },
     {
+      "lore": "test_1",
       "id": "scroll_of_fire",
       "category": "scroll",
       "name": "Scroll of Fire",

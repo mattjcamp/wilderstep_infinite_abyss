@@ -79,6 +79,11 @@ export interface SimCell {
    *  CounterShopOverlay without needing an NPC to broker the
    *  conversation. Empty / undefined = no counter on this cell. */
   counter?: string;
+  /** Lore id from lore.json — a readable map object (bookshelf,
+   *  plaque, gravestone). Bumping the cell emits lore_encountered so
+   *  the host opens the reading screen; the party stays put. Empty /
+   *  undefined = nothing to read here. */
+  lore?: string;
   /** True = this cell is a boat the party can board. Stepping onto it
    *  from land mounts the party; the sim then lets them sail across
    *  water tiles (`water: true`) until they step onto walkable land again,

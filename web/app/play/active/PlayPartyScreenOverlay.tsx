@@ -185,6 +185,7 @@ export function PlayPartyScreenOverlay({
   onMutateSave,
   onSpellCast,
   onItemUse,
+  onReadLore,
   onRaceAbilityFlash,
 }: {
   moduleId: string;
@@ -214,6 +215,9 @@ export function PlayPartyScreenOverlay({
    *  Items that have nothing visual to play (Torch, etc.) can just
    *  not be dispatched in the host. */
   onItemUse?: (itemId: string) => void;
+  /** Use on a readable item (catalog `lore` id): the host closes this
+   *  screen and opens the reading screen. The item isn't consumed. */
+  onReadLore?: (loreId: string) => void;
   /** Fires AFTER a race-active ability resolves successfully (today:
    *  Tinker). The host uses this to play SFX + a Phaser-side visual
    *  on the party tile AND to render a celebration placard so the
@@ -343,12 +347,18 @@ export function PlayPartyScreenOverlay({
             abilitiesLayers.inherited,
             abilitiesLayers.ownFile,
           ) as { abilities?: PartyAbilityRef[] } | null)?.abilities ?? [];
-        const items =
+        const items = (
           (mergeModel(
             "items",
             itemsLayers.inherited,
             itemsLayers.ownFile,
-          ) as { items?: PartyItemRef[] } | null)?.items ?? [];
+          ) as { items?: PartyItemRef[] } | null)?.items ?? []
+          ).map((i) =>
+            // Readable items (a `lore` id) get a Use button here — it
+            // opens the reading screen. Only this screen's copy is
+            // flagged, so books don't become usable in combat.
+            typeof i.lore === "string" && i.lore ? { ...i, usable: true } : i,
+          );
         const spells =
           (mergeModel(
             "spells",
@@ -919,6 +929,13 @@ export function PlayPartyScreenOverlay({
       if (stashIndex < 0 || stashIndex >= inv.length) return;
       const entry = inv[stashIndex];
 
+      // Readable book / scroll — read it, don't consume it.
+      const readable = state.items.find((i) => i.id === entry.item)?.lore;
+      if (readable) {
+        onReadLore?.(readable);
+        return;
+      }
+
       let torchSteps = cur.party.torch_steps;
       let nextMembers: ReadonlyArray<SavedCharacterState> = cur.party.members;
       // Camping through the night skips the clock to first light
@@ -1016,7 +1033,7 @@ export function PlayPartyScreenOverlay({
       // state (no flash of effect on a use we then rolled back).
       if (usedItemId) onItemUse?.(usedItemId);
     },
-    [state, liveSave, commit, onItemUse],
+    [state, liveSave, commit, onItemUse, onReadLore],
   );
 
   /** "Send" — move ONE physical item from the shared stash into the
@@ -1040,6 +1057,13 @@ export function PlayPartyScreenOverlay({
       const inv = member.inventory;
       if (itemIndex < 0 || itemIndex >= inv.length) return;
       const entry = inv[itemIndex];
+
+      // Readable book / scroll — read it, don't consume it.
+      const readable = state.items.find((i) => i.id === entry.item)?.lore;
+      if (readable) {
+        onReadLore?.(readable);
+        return;
+      }
 
       let torchSteps = cur.party.torch_steps;
       const nextPartyEffects = new Set(cur.party.party_effects ?? []);
@@ -1122,7 +1146,7 @@ export function PlayPartyScreenOverlay({
       });
       if (usedItemId) onItemUse?.(usedItemId);
     },
-    [state, liveSave, commit, onItemUse],
+    [state, liveSave, commit, onItemUse, onReadLore],
   );
 
   /** Move ONE physical item from a character's personal inventory

@@ -257,6 +257,32 @@ describe("MapSimulation.stepInDirection — NPC + counter dispatch", () => {
     expect(counter.counterId).toBe("general");
     expect(sim.snapshot().pos).toEqual({ col: 0, row: 0 });
   });
+
+  it("emits `lore_encountered` and does not move when bumping lore", () => {
+    const grid = makeGrid();
+    // Walkable floor with a book on it — still a bump, not a step.
+    grid[0][1] = cell({ lore: "fall_of_kel_marrow" });
+    const sim = makeSim({ grid });
+    const events = captureEvents(sim);
+    sim.stepInDirection("right");
+    const lore = events.find((e) => e.kind === "lore_encountered");
+    expect(lore).toBeDefined();
+    if (lore?.kind !== "lore_encountered") throw new Error("type narrow");
+    expect(lore.loreId).toBe("fall_of_kel_marrow");
+    expect(lore.pos).toEqual({ col: 1, row: 0 });
+    expect(sim.snapshot().pos).toEqual({ col: 0, row: 0 });
+    expect(events.find((e) => e.kind === "moved")).toBeUndefined();
+  });
+
+  it("bumping a solid lore tile (plaque on a wall) also reads it", () => {
+    const grid = makeGrid();
+    grid[0][1] = cell({ lore: "plaque", walkable: false });
+    const sim = makeSim({ grid });
+    const events = captureEvents(sim);
+    sim.stepInDirection("right");
+    expect(events.find((e) => e.kind === "lore_encountered")).toBeDefined();
+    expect(events.find((e) => e.kind === "blocked")).toBeUndefined();
+  });
 });
 
 describe("MapSimulation.stepInDirection — locked tiles", () => {

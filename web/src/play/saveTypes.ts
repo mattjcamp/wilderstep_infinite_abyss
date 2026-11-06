@@ -185,6 +185,10 @@ export interface SavedPartyState {
    *  keys (see `npcMeetKey` / `questGiverMeetKey`). Drives the one-time
    *  "first conversation" XP reward. Absent → nobody met yet. */
   metNpcs?: ReadonlyArray<string>;
+  /** Lore ids the party has read, in discovery order. Drives the J
+   *  journal and the one-time "first read" XP (see `play/lore.ts`).
+   *  Absent → nothing read yet. */
+  readLore?: ReadonlyArray<string>;
   /** Generated-dungeon instance ids (dungeonInstanceKey) the party has
    *  fully cleared and been rewarded for — so each dungeon pays its
    *  clear bonus once. Absent on older saves → none. */
