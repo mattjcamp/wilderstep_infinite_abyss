@@ -634,9 +634,12 @@ export function MapEditor({
   //  at the logical TILE_SIZE (32) per tile, so the CSS scale applied
   //  is `zoom * NATIVE_SCALE`.
   const ZOOM_STEPS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2] as const;
-  const DEFAULT_ZOOM_IDX = 3; // = 1.0 = native
+  const DEFAULT_ZOOM_IDX = 3; // = 1.0 = native (the "reset" target)
+  /** Zoom a map opens at. The editor remounts per map (keyed by mapId),
+   *  so every map starts here: 50% shows more of the map at once. */
+  const OPEN_ZOOM_IDX = 1; // = 0.5
   const NATIVE_SCALE = NATIVE_TILE_CSS_PX / TILE_SIZE;
-  const [zoomIdx, setZoomIdx] = useState<number>(DEFAULT_ZOOM_IDX);
+  const [zoomIdx, setZoomIdx] = useState<number>(OPEN_ZOOM_IDX);
   const zoom = ZOOM_STEPS[zoomIdx];
   /** CSS scale actually applied to the logical-size canvas. */
   const displayZoom = zoom * NATIVE_SCALE;
