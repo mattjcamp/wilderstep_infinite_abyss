@@ -1,0 +1,33 @@
+town_hallowmere_overview: 202 wall cells without a door -> forest border / hedges
+town_hallowmere_overview: house town_house_timber_shop at cols (27, 28) rows 3-4 -> hut1_4
+town_hallowmere_overview: house town_house_timber_shop at cols (31, 32) rows 4-5 -> hut1_5
+town_hallowmere_overview: house town_house_timber_shop at cols (34, 35) rows 4-5 -> hut_6
+town_hallowmere_overview: 7 wall cells without a door -> hedges
+town_hallowmere_overview: house town_house_timber_shop at cols (25, 26) rows 6-7 -> hut1_3
+town_hallowmere_overview: house town_house_timber_shop at cols (21, 22) rows 9-10 -> hut1
+town_hallowmere_overview: house town_house_timber_shop at cols (31, 32) rows 10-11 -> hut_7
+town_hallowmere_overview: house town_house_timber_shop at cols (34, 35) rows 12-13 -> hut_8
+town_hallowmere_overview: 26 wall cells without a door -> hedges
+town_hallowmere_overview: house town_house_timber_shop at cols (26, 27) rows 13-14 -> hut1_2
+town_hallowmere_overview: house town_shrine at cols (7, 8) rows 26-27 -> shrine_of_the_deep_ones
+town_hallowmere_overview: house town_house_stone_1 at cols (30, 31) rows 28-29 -> otto_inn_1
+town_hallowmere_overview: house town_house_stone_1 at cols (3, 4) rows 34-35 -> stone_house_6
+town_hallowmere_overview: house town_chapel at cols (19, 20) rows 35-36 -> hallowmere_town_hall_1
+town_hallowmere_overview: house town_house_timber_shop at cols (11, 12) rows 35-36 -> armory_4
+town_hallowmere_overview: house town_house_stone_1 at cols (3, 4) rows 37-38 -> stone_house_5
+town_hallowmere_overview: house town_house_timber_shop at cols (11, 12) rows 38-39 -> armory_3
+town_hallowmere_overview: 2 wall cells without a door -> hedges
+town_hallowmere_overview: 2 wall cells without a door -> hedges
+town_hallowmere_overview: house town_house_stone_1 at cols (3, 4) rows 40-41 -> stone_house_3
+town_hallowmere_overview: house town_house_timber_shop at cols (11, 12) rows 41-42 -> armory_2
+town_hallowmere_overview: house town_house_timber_shop at cols (35, 36) rows 42-43 -> hallowmere_farmhouse_level_1
+town_hallowmere_overview: house town_house_stone_1 at cols (3, 4) rows 43-44 -> stone_house_2
+town_hallowmere_overview: house town_house_timber_shop at cols (11, 12) rows 44-45 -> armory_1
+town_hallowmere_overview: house town_house_stone_1 at cols (33, 34) rows 47-48 -> wood_house_6
+town_hallowmere_overview: house town_house_timber_shop at cols (32, 33) rows 49-50 -> wood_house_4
+town_hallowmere_overview: house town_house_stone_1 at cols (33, 34) rows 51-52 -> wood_house_5
+town_hallowmere_overview: house town_house_timber_shop at cols (32, 33) rows 53-54 -> wood_house_2
+town_hallowmere_overview: house town_house_stone_1 at cols (33, 34) rows 55-56 -> wood_house_3
+town_hallowmere_overview: house town_house_timber_shop at cols (3, 4) rows 55-56 -> dragos_dive
+town_hallowmere_overview: house town_house_stone_1 at cols (11, 12) rows 54-55 -> stone_house_1
+town_hallowmere_overview: house town_house_timber_shop at cols (16, 17) rows 54-55 -> wood_house_1

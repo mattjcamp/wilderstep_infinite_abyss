@@ -15,6 +15,11 @@
       "id": "test",
       "title": "Test",
       "role": "playable"
+    },
+    {
+      "id": "varnfell",
+      "title": "Varnfell",
+      "role": "library"
     }
   ]
 }

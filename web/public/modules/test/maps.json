@@ -111654,7 +111654,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/grass.png",
-            "tag": "map"
+            "tag": "map",
+            "quest": "meet_the_cat"
           },
           {
             "boat": false,
@@ -114579,9 +114580,6 @@
             "tag": "map"
           }
         ]
-      ],
-      "soundtrack": [
-        "/audio/Mamma Mia.mp3"
       ]
     },
     {
@@ -116121,7 +116119,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "dungeon/floors/floor_pebbles.png",
-            "tag": "dungeon:floors"
+            "tag": "dungeon:floors",
+            "npc": "magic_cat"
           },
           {
             "boat": false,
@@ -116969,7 +116968,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "dungeon/floors/floor_pebbles.png",
-            "tag": "dungeon:floors"
+            "tag": "dungeon:floors",
+            "item": "book_chronicle_willowbrook"
           },
           {
             "boat": false,
@@ -116985,7 +116985,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "dungeon/floors/floor_pebbles.png",
-            "tag": "dungeon:floors"
+            "tag": "dungeon:floors",
+            "item": "book_hymns_deep_ones"
           },
           {
             "boat": false,
@@ -117001,7 +117002,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "dungeon/floors/floor_pebbles.png",
-            "tag": "dungeon:floors"
+            "tag": "dungeon:floors",
+            "item": "book_eight_keys"
           },
           {
             "boat": false,
@@ -117017,7 +117019,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "dungeon/floors/floor_pebbles.png",
-            "tag": "dungeon:floors"
+            "tag": "dungeon:floors",
+            "item": "book_caravan_ledger"
           },
           {
             "boat": false,
@@ -117033,7 +117036,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "dungeon/floors/floor_pebbles.png",
-            "tag": "dungeon:floors"
+            "tag": "dungeon:floors",
+            "item": "book_orc_kings_rise"
           },
           {
             "boat": false,
@@ -117049,7 +117053,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "dungeon/floors/floor_pebbles.png",
-            "tag": "dungeon:floors"
+            "tag": "dungeon:floors",
+            "item": "book_watcher_in_crystal"
           },
           {
             "boat": false,

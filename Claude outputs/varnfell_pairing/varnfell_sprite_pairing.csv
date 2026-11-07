@@ -1,0 +1,117 @@
+old_sprite,context,new_sprite,background,autotile,confidence,note
+grass1,all,map/grass.png,,,high,
+grass2,all,map/grass.png,,,high,Old second grass variant; new set has one grass.
+grass1_snowy,all,map/terrain/snow.png,grass,,low,No plain snow ground in new art; snow.png is a decoration on grass.
+sand,all,cave/floors/floor_sand.png,,,medium,No outdoor sand/beach fill; the sandy cave floor is the closest texture.
+path,overworld,paths/dirt/*,grass,yes,high,Road; pick straight/bend/T/cross/end piece from neighbouring path cells.
+path,town,paths/dirt/*,grass,yes,high,Town streets; same autotiling.
+path,interior,cave/floors/floor_dirt.png,,,medium,"Old black ""path"" was used as an earthen floor indoors and in caves."
+water,all,water/water.png,,,high,Shoreline lake edge/corner pieces could be a later pass.
+swamp,all,map/water/swamp.png,grass,,high,
+poison_swamp,overworld,map/hills_and_mountains/volcano.png,grass,,low,"Tile is named ""Red Lava""; no lava fill in new art."
+poison_swamp,interior,shop/fireplace.png,floor,,low,Used as a single hearth fire in huts.
+lava_vent,overworld,map/hills_and_mountains/volcano.png,grass,,low,"Tile is named ""Yellow Lava""; no lava fill in new art."
+lava_vent,interior,shop/fireplace.png,floor,,medium,Forges in the armories.
+forest2,all,map/trees_and_forests/forest.png,grass,,high,
+forest_maple01,all,map/trees_and_forests/forest.png,grass,,high,
+forest_maple02,all,map/trees_and_forests/forest.png,grass,,high,
+forest_maple03,all,map/trees_and_forests/forest.png,grass,,high,
+forest_mixed01,all,map/trees_and_forests/forest.png,grass,,high,
+forest_mixed02,all,map/trees_and_forests/dense_forest.png,grass,,medium,Dense variant for visual variety.
+forest_mixed03,all,map/trees_and_forests/dense_forest.png,grass,,medium,
+forest_canopy02,all,map/trees_and_forests/dense_forest.png,grass,,high,
+jungle_big,all,map/trees_and_forests/dense_forest.png,grass,,medium,No jungle art.
+island_jungle,all,map/water/island.png,water,,high,Palm island in water.
+forest_pine01,all,map/trees_and_forests/pine_forest.png,grass,,high,
+forest_pine02,all,map/trees_and_forests/pine_forest.png,grass,,high,
+forest_pine04,all,map/trees_and_forests/pine_forest.png,grass,,high,
+forest_pine05,all,map/trees_and_forests/pine_forest.png,grass,,high,
+forest_pine06,all,map/trees_and_forests/pine_forest.png,grass,,high,
+tree_pine01,all,map/trees_and_forests/tree_pine.png,grass,,high,
+tree_pine02,all,map/trees_and_forests/tree_pine.png,grass,,high,
+tree_pine07,all,map/trees_and_forests/tree_fir.png,grass,,high,
+tree_pine08,all,map/trees_and_forests/tree_fir.png,grass,,high,
+tree_pine10,all,map/trees_and_forests/tree_pine.png,grass,,high,
+tree_pine11,all,map/trees_and_forests/tree_pine.png,grass,,high,
+tree_pine12,all,map/trees_and_forests/pine_forest.png,grass,,high,Old 12 is a small cluster.
+tree_maple01,overworld,map/trees_and_forests/tree_oak.png,grass,,high,
+tree_maple01,interior,town/greenery/trees/tree_small_1.png,floor,,medium,Indoor trees in the Shrine of the Deep Ones.
+L2_TreeMaple01,all,town/greenery/trees/tree_large_1.png,grass,,high,Town trees.
+apple_tree,all,map/trees_and_forests/tree_oak.png,grass,,medium,No fruit-tree art.
+berrybush,all,town/greenery/bushes/bush_1.png,grass,,high,
+mountain_desert01,all,map/mountain.png,grass,,high,"Main mountain fill; matches the palette ""mountain"" tile."
+mountain_desert02,all,map/hills_and_mountains/mountain_small.png,grass,,medium,
+mountain_desert03,all,map/hills_and_mountains/hill_large.png,grass,,medium,
+mountain_desert04,all,map/hills_and_mountains/hills.png,grass,,medium,
+mountain_desert05,all,map/hills_and_mountains/mountain_range.png,grass,,medium,
+mountain_desert06,all,map/hills_and_mountains/cliffs.png,grass,,medium,
+mountain_rocky02,all,map/hills_and_mountains/rock_spires.png,grass,,medium,
+mountain_rocky03,all,map/hills_and_mountains/mountain_high.png,grass,,medium,
+mountain_rocky04,all,map/hills_and_mountains/cliff.png,grass,,medium,
+mountain_snowy01,all,map/hills_and_mountains/mountain_high.png,grass,,high,Snow-capped.
+mountain_snowy02,all,map/hills_and_mountains/mountain_range.png,grass,,high,
+mountain_snowy03,all,map/hills_and_mountains/mountain_high.png,grass,,high,
+mountains,interior,cave/walls/*,,yes,high,"""Cave Wall"" in the grottos; pick top/left/right/corner from neighbours."
+village,all,map/settlements/village.png,grass,,high,
+L2_Tower,all,map/settlements/watchtower.png,grass,,high,
+ruined_tower,all,map/settlements/keep.png,grass,,medium,"Tile is named ""Castle""."
+dome,all,map/settlements/shrine.png,grass,,medium,Domed temple.
+shrine,all,map/settlements/shrine.png,grass,,high,
+dungeon_entrance_1,all,map/settlements/cave_entrance.png,grass,,high,
+dungeon_entrance_2,all,map/settlements/cave_entrance.png,grass,,high,
+graveyard,all,town/graveyard/gravestone.png,grass,,high,
+bridge_copy,all,map/bridge.png,water,,high,
+ship_frigate,all,map/ship.png,water,,high,
+shop_sign,all,objects/signpost.png,grass,,medium,Hanging signs outside Hallowmere shops.
+floor_brown,all,shop/floor_planks.png,,,high,
+floor_gray,all,dungeon/floors/floor_smooth.png,,,medium,
+floor_gray,map:shrine_of_the_deep_ones,shrine/floor_plain.png,,,high,
+town_floor,all,dungeon/floors/floor_flagstone.png,,,high,
+town_floor,map:shrine_of_the_deep_ones,shrine/floor.png,,,high,Patterned floor.
+wall_planks_dark,interior,shop/wall*,,yes,high,Wood family.
+wall_planks,interior,shop/wall*,,yes,high,Wood family.
+wall_planks_light,interior,shop/wall*,,yes,high,Wood family.
+brick_wall_brown,interior,shop/wall*,,yes,medium,No brick art; huts and inn treated as wood family.
+wall_masonry_dark,all,dungeon/walls/*,,yes,high,Stone family.
+wall_masonry,interior,dungeon/walls/*,,yes,high,Stone family.
+wall_masonry_light,all,dungeon/walls/*,,yes,high,Stone family.
+wall_fieldstone_dark,interior,dungeon/walls/*,,yes,medium,Stone family. Cellars could use cave/walls instead.
+wall_fieldstone_light,interior,dungeon/walls/*,,yes,medium,Stone family.
+stone_wall,interior,dungeon/walls/*,,yes,high,Stone family.
+wall_light,interior,dungeon/walls/*,,yes,medium,Town hall.
+wall_light,map:shrine_of_the_deep_ones,shrine/wall*,,yes,high,Shrine family.
+brick_wall_red,interior,dungeon/walls/*,,yes,low,Red brick accents (hearths and inn walls); no brick art.
+wall_planks_dark,town,town/fences/wood/*,grass,yes,low,Town perimeter; also used for building blocks (see summary).
+wall_planks,town,town/fences/wood/*,grass,yes,low,Building blocks (see summary).
+wall_fieldstone_light,town,town/fences/stone/*,grass,yes,low,Building blocks (see summary).
+wall_masonry,town,town/fences/stone/*,grass,yes,low,Building blocks (see summary).
+stone_wall,town,town/fences/stone/*,grass,yes,low,Graveyard wall.
+dungeon_door,all,<family> door,,,high,shop/shop_door | dungeon door | shrine/shrine_door | cave door — matches the adjacent wall.
+door_a,all,<family> door,,,high,
+door_a_boulder,all,<family> door,,,high,
+door_a_braced,all,<family> door,,,high,
+door_a_pillar,all,<family> door,,,high,
+door_b,all,<family> door,,,high,
+door_b_rough,all,<family> door,,,high,
+locked_door,all,dungeon/doors_and_stairs/door.png,,,high,The cell's locked flag is kept.
+doorway_dark,all,dungeon/walls/room_walls/wall_archway.png,,,medium,Open doorway.
+doorway_dark_marble,all,dungeon/walls/room_walls/wall_archway.png,,,medium,
+gate,all,dungeon/walls/room_walls/wall_portcullis.png,,,high,
+building_alchemist,all,shop/shop_door.png,grass,,low,Shop fronts on the town map; no signed-door art.
+building_armory,all,shop/shop_door.png,grass,,low,
+building_inn,all,shop/shop_door.png,grass,,low,
+building_outfitter,all,shop/shop_door.png,grass,,low,
+building_weaponsmith,all,shop/shop_door.png,grass,,low,
+building_temple_boulder,all,shrine/shrine_door.png,grass,,low,
+building_templar_hall_boulder,all,shrine/shrine_door.png,grass,,low,
+window,all,<family> window,,,high,shop/window_single | dungeon wall_window | shrine/window_single — matches the adjacent wall.
+stairs_down,all,<family> stairs down,,,high,dungeon or cave doors_and_stairs/stairs
+stairs_up,all,<family> stairs up,,,high,dungeon or cave doors_and_stairs/stairs_up
+stairs_entrance_rough,all,cave/doors_and_stairs/stairs.png,floor,,medium,
+stairs_entrance_braced,all,dungeon/doors_and_stairs/stairs.png,floor,,medium,
+table,all,<family> table_*,floor,yes,high,"Pick h_left/mid/right, v_top/mid/bottom or single from neighbouring tables."
+counter,all,shop/table_single.png,floor,,medium,Shop counters (counter field kept).
+altar,all,shrine/table_single.png,floor,,low,No altar art.
+chest_tile,all,objects/chest.png,floor,,high,
+rubble_collapse,all,dungeon/features/rubble.png,floor,,high,
+rubble_collapse_pillar,all,dungeon/features/pillar.png,floor,,high,

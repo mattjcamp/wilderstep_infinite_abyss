@@ -203,6 +203,28 @@
           "message": "Here you go!"
         }
       }
+    },
+    {
+      "id": "meet_the_cat",
+      "name": "Meet the Cat",
+      "description": "Find and meet the magic can",
+      "tags": [],
+      "steps": [
+        {
+          "id": "meet_the_cat_step_1",
+          "name": "Step 1",
+          "kind": "meet",
+          "npc_id": "magic_cat",
+          "meet_dialog": "I smell like farts"
+        }
+      ],
+      "main_quest": true,
+      "quest_giver": {
+        "npc_name": "Old Man",
+        "npc_sprite": "person/dwarf_male_wizard.png",
+        "start_dialog": "Your journey is life is to meet the magic cat",
+        "end_dialog": ""
+      }
     }
   ]
 }

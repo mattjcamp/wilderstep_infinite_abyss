@@ -1,0 +1,14 @@
+{
+  "npcs": [
+    {
+      "id": "magic_cat",
+      "name": "Magic Cat",
+      "sprite": "person/animal_cat.png",
+      "counter": null,
+      "personal_history": null,
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 0
+    }
+  ]
+}
