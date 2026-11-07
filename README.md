@@ -44,3 +44,7 @@ An Ultima III  and D&D inspired top-down, turn-based RPG built with TypeScript a
 Some sprite graphics have been used under various open source licenses. Many of these are standins until I commission my own artwork. Here are the various license requirements.
 
 "All tiles except 'Xerathul's Revenge' tiles have been drawn by David E. Gervais, and are published under the Creative Commons licence. You are free to copy, distribute and transmit those tiles as long as you credit David Gervais as their creator."
+
+### Soundtrack
+
+- Purchased AlkaKrab full collection on itch.io: https://itch.io/dashboard

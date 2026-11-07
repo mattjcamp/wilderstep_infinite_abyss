@@ -28,6 +28,9 @@
  *     the editor to tame tracks that are too loud. It's PRESERVED
  *     across reindex runs so dropping a new file never wipes the
  *     volume levelling you've already dialled in.
+ *   - `tags` (editor-only organizational labels) are PRESERVED;
+ *     tracks without any (new files included) get the default
+ *     ["Ambient"] so every track lands in a tag group.
  *   - The `_comment` field is preserved/re-injected so future readers
  *     know how the file is structured.
  *
@@ -50,8 +53,12 @@ const INDEX_PATH = path.join(AUDIO_ROOT, "index.json");
 
 const AUDIO_EXT_RE = /\.(mp3|ogg|wav|m4a)$/i;
 
+/** Tag given to tracks that have none — keep in sync with
+ *  DEFAULT_TRACK_TAG in src/audio/trackTags.ts. */
+const DEFAULT_TAG = "Ambient";
+
 const COMMENT =
-  "Listing of every audio file under /public/audio/. Hand-maintained for now — Next.js static export can't directory-list at runtime, so the editor's SoundtrackPicker reads this file to know what tracks are available. Run `npm run reindex-audio` after dropping a file in this folder to regenerate it. Each `path` is what gets stored on a module / map / dungeon's soundtrack list and is what the SoundtrackPlayer hands to <audio>.src; `name` is the display label in the picker; optional `gain` (0-1) attenuates a track that's too loud relative to the rest of the soundtrack.";
+  "Listing of every audio file under /public/audio/. Hand-maintained for now — Next.js static export can't directory-list at runtime, so the editor's SoundtrackPicker reads this file to know what tracks are available. Run `npm run reindex-audio` after dropping a file in this folder to regenerate it. Each `path` is what gets stored on a module / map / dungeon's soundtrack list and is what the SoundtrackPlayer hands to <audio>.src; `name` is the display label in the picker; optional `gain` (0-1) attenuates a track that's too loud relative to the rest of the soundtrack; `tags` are editor-only labels (default [\"Ambient\"]) that organize the Soundtrack editor and the soundtrack pickers.";
 
 /** Title-case a filename-derived label: "dont_fear_the_reaper" →
  *  "Dont Fear The Reaper". Custom names in the existing index win over
@@ -97,6 +104,13 @@ function existingMetaByPath(current) {
       if (Number.isFinite(t.gain)) {
         meta.gain = Math.max(0, Math.min(1, Number(t.gain)));
       }
+      if (Array.isArray(t.tags)) {
+        const tags = t.tags
+          .filter((x) => typeof x === "string")
+          .map((x) => x.trim())
+          .filter((x, i, a) => x && a.indexOf(x) === i);
+        if (tags.length > 0) meta.tags = tags;
+      }
       map.set(t.path, meta);
     }
   }
@@ -118,6 +132,7 @@ async function main() {
     // Carry a non-default gain forward; omit the default (1) so
     // untouched tracks stay clean.
     if (prev.gain != null && prev.gain !== 1) track.gain = prev.gain;
+    track.tags = prev.tags ?? [DEFAULT_TAG];
     return track;
   });
 

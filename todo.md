@@ -1,5 +1,6 @@
 ## Fine Tune
 - Give The Crystal Skull another pass
+- Note that we have new music available, fine tune
 
 ## Varnfell Lore
 - races

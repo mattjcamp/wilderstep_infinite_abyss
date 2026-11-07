@@ -1,231 +1,376 @@
 {
-  "_comment": "Listing of every audio file under /public/audio/. Hand-maintained for now — Next.js static export can't directory-list at runtime, so the editor's SoundtrackPicker reads this file to know what tracks are available. Run `npm run reindex-audio` after dropping a file in this folder to regenerate it. Each `path` is what gets stored on a module / map / dungeon's soundtrack list and is what the SoundtrackPlayer hands to <audio>.src; `name` is the display label in the picker; optional `gain` (0-1) attenuates a track that's too loud relative to the rest of the soundtrack.",
+  "_comment": "Listing of every audio file under /public/audio/. Hand-maintained for now — Next.js static export can't directory-list at runtime, so the editor's SoundtrackPicker reads this file to know what tracks are available. Run `npm run reindex-audio` after dropping a file in this folder to regenerate it. Each `path` is what gets stored on a module / map / dungeon's soundtrack list and is what the SoundtrackPlayer hands to <audio>.src; `name` is the display label in the picker; optional `gain` (0-1) attenuates a track that's too loud relative to the rest of the soundtrack; `tags` are editor-only labels (default [\"Ambient\"]) that organize the Soundtrack editor and the soundtrack pickers.",
   "tracks": [
     {
       "path": "/audio/All Of My Love.mp3",
       "name": "All Of My Love",
-      "gain": 0.059
+      "gain": 0.059,
+      "tags": [
+        "Inn"
+      ]
     },
     {
       "path": "/audio/Aurelian Overture.mp3",
-      "name": "Aurelian Overture"
+      "name": "Aurelian Overture",
+      "tags": [
+        "Ambient"
+      ]
     },
     {
       "path": "/audio/Chiquitita.mp3",
       "name": "Chiquitita",
-      "gain": 0.186
+      "gain": 0.186,
+      "tags": [
+        "Inn"
+      ]
     },
     {
       "path": "/audio/Chronicle of the Crystal Thrones.mp3",
       "name": "Chronicle Of The Crystal Thrones",
-      "gain": 0.741
+      "gain": 0.741,
+      "tags": [
+        "Ambient"
+      ]
     },
     {
       "path": "/audio/Crimson Skies.mp3",
       "name": "Crimson Skies",
-      "gain": 0.881
+      "gain": 0.881,
+      "tags": [
+        "Ambient"
+      ]
     },
     {
       "path": "/audio/Dancing Queen.mp3",
       "name": "Dancing Queen",
-      "gain": 0.292
+      "gain": 0.292,
+      "tags": [
+        "Inn"
+      ]
     },
     {
       "path": "/audio/Dungeons of Desolation.mp3",
       "name": "Dungeons Of Desolation",
-      "gain": 0.661
+      "gain": 0.661,
+      "tags": [
+        "Ambient"
+      ]
     },
     {
       "path": "/audio/Gimme Gimme Gimme.mp3",
       "name": "Gimme Gimme Gimme",
-      "gain": 0.172
+      "gain": 0.172,
+      "tags": [
+        "Inn"
+      ]
     },
     {
       "path": "/audio/HALLELUJAH.mp3",
       "name": "HALLELUJAH",
-      "gain": 0.135
+      "gain": 0.135,
+      "tags": [
+        "Inn"
+      ]
     },
     {
       "path": "/audio/Haddaway - What Is Love (Medieval Style ｜ Bardcore).mp3",
       "name": "Haddaway What Is Love (Medieval Style ｜ Bardcore)",
-      "gain": 0.188
+      "gain": 0.188,
+      "tags": [
+        "Inn"
+      ]
     },
     {
       "path": "/audio/Lay All Your Love On Me.mp3",
       "name": "Lay All Your Love On Me",
-      "gain": 0.153
+      "gain": 0.153,
+      "tags": [
+        "Inn"
+      ]
     },
     {
       "path": "/audio/Lost in the Labyrinth.mp3",
       "name": "Lost In The Labyrinth",
-      "gain": 0.759
+      "gain": 0.759,
+      "tags": [
+        "Ambient"
+      ]
     },
     {
       "path": "/audio/Mamma Mia.mp3",
       "name": "Mamma Mia",
-      "gain": 0.245
+      "gain": 0.245,
+      "tags": [
+        "Ambient"
+      ]
     },
     {
       "path": "/audio/Money, Money, Money.mp3",
       "name": "Money, Money, Money",
-      "gain": 0.092
+      "gain": 0.092,
+      "tags": [
+        "Inn"
+      ]
     },
     {
       "path": "/audio/Mysteries of the Moonstone Citadel.mp3",
       "name": "Mysteries Of The Moonstone Citadel",
-      "gain": 0.646
+      "gain": 0.646,
+      "tags": [
+        "Ambient"
+      ]
     },
     {
       "path": "/audio/No Quarter.mp3",
       "name": "No Quarter",
-      "gain": 0.243
+      "gain": 0.243,
+      "tags": [
+        "Inn"
+      ]
     },
     {
       "path": "/audio/Rammstein.mp3",
       "name": "Rammstein",
-      "gain": 0.079
+      "gain": 0.079,
+      "tags": [
+        "Ambient"
+      ]
     },
     {
       "path": "/audio/September.mp3",
       "name": "September",
-      "gain": 0.078
+      "gain": 0.078,
+      "tags": [
+        "Ambient"
+      ]
     },
     {
       "path": "/audio/Sound of Silence.mp3",
       "name": "Sound Of Silence",
-      "gain": 0.08
+      "gain": 0.08,
+      "tags": [
+        "Inn"
+      ]
     },
     {
       "path": "/audio/Stairway To Heaven.mp3",
       "name": "Stairway To Heaven",
-      "gain": 0.168
+      "gain": 0.168,
+      "tags": [
+        "Inn"
+      ]
     },
     {
       "path": "/audio/Stayin' Alive.mp3",
       "name": "Stayin' Alive",
-      "gain": 0.226
+      "gain": 0.226,
+      "tags": [
+        "Inn"
+      ]
     },
     {
       "path": "/audio/Super Trouper.mp3",
       "name": "Super Trouper",
-      "gain": 0.155
+      "gain": 0.155,
+      "tags": [
+        "Inn"
+      ]
     },
     {
       "path": "/audio/Sweet Child O' Mine.mp3",
       "name": "Sweet Child O' Mine",
-      "gain": 0.062
+      "gain": 0.062,
+      "tags": [
+        "Ambient"
+      ]
     },
     {
       "path": "/audio/Taketh A Chance On Me.mp3",
       "name": "Taketh A Chance On Me",
-      "gain": 0.09
+      "gain": 0.09,
+      "tags": [
+        "Inn"
+      ]
     },
     {
       "path": "/audio/Taketh On Me.mp3",
       "name": "Taketh On Me",
-      "gain": 0.091
+      "gain": 0.091,
+      "tags": [
+        "Ambient"
+      ]
     },
     {
       "path": "/audio/The Phoenix's Flight.mp3",
       "name": "The Phoenix's Flight",
-      "gain": 0.692
+      "gain": 0.692,
+      "tags": [
+        "Ambient"
+      ]
     },
     {
       "path": "/audio/The Red Moon.mp3",
       "name": "The Red Moon",
-      "gain": 0.692
+      "gain": 0.692,
+      "tags": [
+        "Ambient"
+      ]
     },
     {
       "path": "/audio/Thunderstruck.mp3",
       "name": "Thunderstruck",
-      "gain": 0.158
+      "gain": 0.158,
+      "tags": [
+        "Inn"
+      ]
     },
     {
       "path": "/audio/Twin Peaks Theme.mp3",
       "name": "Twin Peaks Theme",
-      "gain": 0.097
+      "gain": 0.097,
+      "tags": [
+        "Ambient"
+      ]
     },
     {
       "path": "/audio/Whirlwind Waltz.mp3",
       "name": "Whirlwind Waltz",
-      "gain": 0.733
+      "gain": 0.733,
+      "tags": [
+        "Ambient"
+      ]
     },
     {
       "path": "/audio/Winds of Destiny.mp3",
       "name": "Winds Of Destiny",
-      "gain": 0.638
+      "gain": 0.638,
+      "tags": [
+        "Ambient"
+      ]
     },
     {
       "path": "/audio/Wish You Were Here.mp3",
       "name": "Wish You Were Here",
-      "gain": 0.119
+      "gain": 0.119,
+      "tags": [
+        "Ambient"
+      ]
     },
     {
       "path": "/audio/africa.mp3",
       "name": "Africa",
-      "gain": 0.058
+      "gain": 0.058,
+      "tags": [
+        "Inn"
+      ]
     },
     {
       "path": "/audio/aurelian_overture.mp3",
-      "name": "Aurelian Overture"
+      "name": "Aurelian Overture",
+      "tags": [
+        "Ambient"
+      ]
     },
     {
       "path": "/audio/bards_ballad.mp3",
-      "name": "Bard's Ballad"
+      "name": "Bard's Ballad",
+      "tags": [
+        "Ambient"
+      ]
     },
     {
       "path": "/audio/chromatics_shadow.mp3",
       "name": "Chromatics Shadow",
-      "gain": 0.066
+      "gain": 0.066,
+      "tags": [
+        "Inn"
+      ]
     },
     {
       "path": "/audio/creep.mp3",
       "name": "Creep",
-      "gain": 0.057
+      "gain": 0.057,
+      "tags": [
+        "Ambient"
+      ]
+    },
+    {
+      "path": "/audio/crystal_skull_title.wav",
+      "name": "Crystal Skull Title",
+      "tags": [
+        "Title"
+      ]
     },
     {
       "path": "/audio/dont_fear_the_reaper.mp3",
       "name": "Don't Fear the Reaper",
-      "gain": 0.049
+      "gain": 0.049,
+      "tags": [
+        "Inn"
+      ]
     },
     {
       "path": "/audio/fear_of_the_dark.mp3",
       "name": "Fear of the Dark",
-      "gain": 0.075
+      "gain": 0.075,
+      "tags": [
+        "Ambient"
+      ]
     },
     {
       "path": "/audio/hallowed_be_thy_name.mp3",
       "name": "Hallowed Be Thy Name",
-      "gain": 0.039
+      "gain": 0.039,
+      "tags": [
+        "Inn"
+      ]
     },
     {
       "path": "/audio/lost_in_the_labyrinth.mp3",
-      "name": "Lost in the Labyrinth"
+      "name": "Lost in the Labyrinth",
+      "tags": [
+        "Ambient"
+      ]
     },
     {
       "path": "/audio/one.mp3",
       "name": "One",
-      "gain": 0.08
+      "gain": 0.08,
+      "tags": [
+        "Inn"
+      ]
     },
     {
       "path": "/audio/scepter_of_the_celestial_guardian.mp3",
       "name": "Scepter of the Celestial Guardian",
-      "gain": 0.767
+      "gain": 0.767,
+      "tags": [
+        "Ambient"
+      ]
     },
     {
       "path": "/audio/the_trooper.mp3",
       "name": "The Trooper",
-      "gain": 0.053
+      "gain": 0.053,
+      "tags": [
+        "Inn"
+      ]
     },
     {
       "path": "/audio/the_unforgiven.mp3",
       "name": "The Unforgiven",
-      "gain": 0.064
+      "gain": 0.064,
+      "tags": [
+        "Ambient"
+      ]
     },
     {
       "path": "/audio/winds_of_destiny.mp3",
       "name": "Winds of Destiny",
-      "gain": 0.871
+      "gain": 0.871,
+      "tags": [
+        "Ambient"
+      ]
     }
   ]
 }

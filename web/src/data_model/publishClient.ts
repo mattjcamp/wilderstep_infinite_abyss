@@ -59,10 +59,16 @@ export type PublishItem =
   // server validates each entry (path under /audio/, gain clamped to
   // [0,1]) and rewrites the file. `gain` is a playback multiplier —
   // 1 (or absent) means full volume, lower values attenuate a track
-  // that's too loud relative to the rest of the soundtrack.
+  // that's too loud relative to the rest of the soundtrack. `tags` are
+  // editor-only organizational labels (default ["Ambient"]).
   | {
       kind: "audio-index";
-      tracks: Array<{ path: string; name?: string; gain?: number }>;
+      tracks: Array<{
+        path: string;
+        name?: string;
+        gain?: number;
+        tags?: string[];
+      }>;
     };
 
 export interface PublishItemResult {

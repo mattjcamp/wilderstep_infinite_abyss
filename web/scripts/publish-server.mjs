@@ -83,7 +83,7 @@ const SPRITE_INDEX_COMMENT =
 const AUDIO_PATH_RE =
   /^\/audio\/[^/.\x00-\x1f][^/\x00-\x1f]*\.(mp3|ogg|wav|m4a)$/i;
 const AUDIO_INDEX_COMMENT =
-  "Listing of every audio file under /public/audio/. Hand-maintained for now — Next.js static export can't directory-list at runtime, so the editor's SoundtrackPicker reads this file to know what tracks are available. Run `npm run reindex-audio` after dropping a file in this folder to regenerate it. Each `path` is what gets stored on a module / map / dungeon's soundtrack list and is what the SoundtrackPlayer hands to <audio>.src; `name` is the display label in the picker; optional `gain` (0-1) attenuates a track that's too loud relative to the rest of the soundtrack.";
+  "Listing of every audio file under /public/audio/. Hand-maintained for now — Next.js static export can't directory-list at runtime, so the editor's SoundtrackPicker reads this file to know what tracks are available. Run `npm run reindex-audio` after dropping a file in this folder to regenerate it. Each `path` is what gets stored on a module / map / dungeon's soundtrack list and is what the SoundtrackPlayer hands to <audio>.src; `name` is the display label in the picker; optional `gain` (0-1) attenuates a track that's too loud relative to the rest of the soundtrack; `tags` are editor-only labels (default [\"Ambient\"]) that organize the Soundtrack editor and the soundtrack pickers.";
 
 function corsHeaders(req) {
   const base = {
@@ -187,6 +187,18 @@ function sanitizeAudioTracks(tracks) {
       // Omit the default so untouched tracks don't carry noise.
       if (clamped !== 1) entry.gain = clamped;
     }
+    // Editor-only organizational tags: trimmed, de-duplicated strings
+    // (max 40 chars each); a track always keeps at least one, falling
+    // back to the default "Ambient".
+    const tags = [];
+    if (Array.isArray(t.tags)) {
+      for (const raw of t.tags) {
+        if (typeof raw !== "string") continue;
+        const tag = raw.trim().slice(0, 40);
+        if (tag && !tags.includes(tag)) tags.push(tag);
+      }
+    }
+    entry.tags = tags.length > 0 ? tags : ["Ambient"];
     byPath.set(entry.path, entry);
   }
   return Array.from(byPath.values());

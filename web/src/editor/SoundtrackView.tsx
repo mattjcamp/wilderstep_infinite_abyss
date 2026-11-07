@@ -22,6 +22,12 @@
  * local publish-server (started by `npm run dev:all`); without it the
  * sliders still preview but can't persist.
  *
+ * Tags: each track carries one or more organizational tags (default
+ * "Ambient" — see src/audio/trackTags.ts). The tag bar filters the
+ * list; each card's "edit tags" toggle opens the shared TagsPicker.
+ * Tags are saved alongside gain and drive the grouping in the
+ * SoundtrackPicker.
+ *
  * Only one track plays at a time: starting playback on one card pauses
  * any other that was playing.
  */
@@ -30,12 +36,20 @@ import { useEffect, useRef, useState } from "react";
 import { withBasePath } from "@/util/basePath";
 import { publishItems } from "@/data_model/publishClient";
 import { usePublishServer } from "./usePublishServer";
+import { TagsPicker } from "./TagsPicker";
+import { TagFilterBar } from "./TagFilterBar";
+import { invalidateSoundtrackCatalog } from "./SoundtrackPicker";
+import { allTrackTags, trackTagsOf } from "@/audio/trackTags";
 
 interface AudioTrack {
   path: string;
   name?: string;
   gain?: number;
+  tags?: string[];
 }
+
+const sameTags = (a: string[] | undefined, b: string[] | undefined) =>
+  JSON.stringify(a ?? []) === JSON.stringify(b ?? []);
 
 interface AudioIndex {
   _comment?: string;
@@ -73,6 +87,12 @@ export function SoundtrackView() {
   // changes (and reset cleanly after a save).
   const [savedGains, setSavedGains] = useState<Record<string, number>>({});
   const [saveState, setSaveState] = useState<SaveState>({ kind: "idle" });
+  // Working + last-saved tags, keyed by track path (always ≥ 1 tag).
+  const [tags, setTags] = useState<Record<string, string[]>>({});
+  const [savedTags, setSavedTags] = useState<Record<string, string[]>>({});
+  // Tag filter (null = all tags) and which card's tag editor is open.
+  const [tagFilter, setTagFilter] = useState<string | null>(null);
+  const [editingTags, setEditingTags] = useState<string | null>(null);
   const { available } = usePublishServer();
 
   // Live handles to the per-card <audio> elements so a slider drag
@@ -82,7 +102,7 @@ export function SoundtrackView() {
 
   useEffect(() => {
     setState({ kind: "loading" });
-    fetch(withBasePath("/audio/index.json"))
+    fetch(withBasePath("/audio/index.json"), { cache: "no-store" })
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
@@ -95,9 +115,15 @@ export function SoundtrackView() {
             )
           : [];
         const seeded: Record<string, number> = {};
-        for (const t of tracks) seeded[t.path] = gainOf(t);
+        const seededTags: Record<string, string[]> = {};
+        for (const t of tracks) {
+          seeded[t.path] = gainOf(t);
+          seededTags[t.path] = trackTagsOf(t.tags);
+        }
         setGains(seeded);
         setSavedGains(seeded);
+        setTags(seededTags);
+        setSavedTags(seededTags);
         setState({ kind: "ok", tracks });
       })
       .catch((e: unknown) =>
@@ -132,17 +158,31 @@ export function SoundtrackView() {
           .replace(/_/g, " ");
 
   const allTracks = state.tracks;
-  const tracks = needle
-    ? allTracks.filter(
-        (t) =>
-          labelFor(t).toLowerCase().includes(needle) ||
-          t.path.toLowerCase().includes(needle),
-      )
-    : allTracks;
+  const tagsOf = (path: string) => tags[path] ?? trackTagsOf(undefined);
+  const knownTags = allTrackTags(allTracks.map((t) => ({ tags: tagsOf(t.path) })));
+  const activeTag = tagFilter && knownTags.includes(tagFilter) ? tagFilter : null;
+  const tracks = allTracks.filter(
+    (t) =>
+      (!activeTag || tagsOf(t.path).includes(activeTag)) &&
+      (!needle ||
+        labelFor(t).toLowerCase().includes(needle) ||
+        t.path.toLowerCase().includes(needle)),
+  );
+  const tagCount = (tag: string) =>
+    allTracks.filter((t) => tagsOf(t.path).includes(tag)).length;
 
   const dirty = allTracks.some(
-    (t) => (gains[t.path] ?? 1) !== (savedGains[t.path] ?? 1),
+    (t) =>
+      (gains[t.path] ?? 1) !== (savedGains[t.path] ?? 1) ||
+      !sameTags(tags[t.path], savedTags[t.path]),
   );
+
+  const setTrackTags = (path: string, next: string[]) => {
+    // A track always keeps at least one tag; removing the last one
+    // drops it back to the default.
+    setTags((t) => ({ ...t, [path]: trackTagsOf(next) }));
+    if (saveState.kind !== "idle") setSaveState({ kind: "idle" });
+  };
 
   const onPlay = (el: HTMLAudioElement, path: string) => {
     if (playingRef.current && playingRef.current !== el) {
@@ -163,6 +203,7 @@ export function SoundtrackView() {
 
   const resetGains = () => {
     setGains(savedGains);
+    setTags(savedTags);
     for (const [path, el] of audioRefs.current) {
       el.volume = clamp01(savedGains[path] ?? 1);
     }
@@ -177,12 +218,16 @@ export function SoundtrackView() {
         const out: AudioTrack = { path: t.path };
         if (t.name) out.name = t.name;
         if (g !== 1) out.gain = g;
+        out.tags = tagsOf(t.path);
         return out;
       });
       const res = await publishItems([{ kind: "audio-index", tracks: payload }]);
       const failed = res.results.find((r) => !r.ok);
       if (failed) throw new Error(failed.error ?? "publish failed");
+      // Pickers opened later in this session should see the new tags.
+      invalidateSoundtrackCatalog();
       setSavedGains({ ...gains });
+      setSavedTags({ ...tags });
       setSaveState({ kind: "saved" });
     } catch (e: unknown) {
       setSaveState({
@@ -201,7 +246,7 @@ export function SoundtrackView() {
           </h1>
           <p className="mt-1 text-sm text-parchment/80">
             {tracks.length}
-            {needle ? ` of ${allTracks.length}` : ""} track
+            {needle || activeTag ? ` of ${allTracks.length}` : ""} track
             {allTracks.length === 1 ? "" : "s"} · served from{" "}
             <code className="text-parchment/80">/audio/</code>
           </p>
@@ -214,6 +259,18 @@ export function SoundtrackView() {
           className="rounded border border-parchment/20 bg-ink/40 px-2 py-1 text-sm text-parchment placeholder:text-parchment/60 focus:border-parchment/60 focus:outline-none"
         />
       </header>
+
+      {allTracks.length > 0 && (
+        <div className="mt-4">
+          <TagFilterBar
+            tags={knownTags}
+            active={activeTag}
+            total={allTracks.length}
+            countFor={tagCount}
+            onPick={setTagFilter}
+          />
+        </div>
+      )}
 
       <SaveBar
         available={available}
@@ -264,6 +321,41 @@ export function SoundtrackView() {
                       {basename(path)}
                     </span>
                   </button>
+
+                  <div className="mt-2 flex flex-wrap items-center gap-1">
+                    {tagsOf(path).map((tag) => (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => setTagFilter(tag)}
+                        title={`Show only "${tag}" tracks`}
+                        className={`rounded px-2 py-0.5 font-mono text-[12px] hover:bg-ember/50 ${
+                          sameTags(tags[path], savedTags[path])
+                            ? "bg-ember/25 text-parchment/95"
+                            : "bg-ember/40 text-parchment"
+                        }`}
+                      >
+                        {tag}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setEditingTags((p) => (p === path ? null : path))
+                      }
+                      className="ml-1 rounded border border-parchment/20 px-1.5 py-0.5 text-[12px] text-parchment/75 hover:bg-ink/40"
+                      aria-expanded={editingTags === path}
+                    >
+                      {editingTags === path ? "done" : "edit tags"}
+                    </button>
+                  </div>
+                  {editingTags === path && (
+                    <TagsPicker
+                      tags={tagsOf(path)}
+                      existing={knownTags}
+                      onChange={(next) => setTrackTags(path, next)}
+                    />
+                  )}
 
                   <div className="mt-2 flex items-center gap-2">
                     <span
@@ -341,7 +433,9 @@ function SaveBar({
     <div className="mt-4 flex flex-wrap items-center gap-3 rounded border border-parchment/10 bg-ink/30 px-3 py-2 text-sm">
       <span className="text-parchment/80">
         Drag a track&apos;s <span className="text-parchment/80">vol</span> slider
-        to level it against the rest of the soundtrack.
+        to level it against the rest of the soundtrack, or use{" "}
+        <span className="text-parchment/80">edit tags</span> to file it for
+        the soundtrack pickers.
       </span>
       <div className="ml-auto flex items-center gap-2">
         {saveState.kind === "saved" && !dirty && (
@@ -368,7 +462,7 @@ function SaveBar({
             disabled={!dirty || saveState.kind === "saving"}
             className="rounded border border-ember/50 bg-ember/10 px-3 py-1 text-[13px] text-parchment hover:bg-ember/20 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            {saveState.kind === "saving" ? "Saving…" : "Save volumes"}
+            {saveState.kind === "saving" ? "Saving…" : "Save changes"}
           </button>
         ) : (
           <span className="text-[13px] text-parchment/60">

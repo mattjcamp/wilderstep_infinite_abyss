@@ -22,12 +22,23 @@
  * same form share a single request). The picker tolerates a missing
  * index — the available list just renders empty + an explanation.
  *
+ * Tags: the available-tracks panel is organized by the tags set in the
+ * Soundtrack editor (default "Ambient"). A chip row filters to one tag;
+ * with "All" chosen and no text filter, the list is grouped under a
+ * heading per tag (a track with several tags shows under each).
+ *
  * The picker does NOT persist anything itself — it calls `onChange`
  * with the new ordered list of paths and the host commits.
  */
 
 import { useEffect, useRef, useState } from "react";
 import { withBasePath } from "@/util/basePath";
+import {
+  allTrackTags,
+  groupTracksByTag,
+  trackTagsOf,
+} from "@/audio/trackTags";
+import { TagFilterBar } from "./TagFilterBar";
 
 /** Shape of /audio/index.json. */
 interface AudioIndex {
@@ -42,6 +53,8 @@ interface AudioTrack {
   /** Human-readable display name for the picker. Falls back to the
    *  basename when omitted. */
   name?: string;
+  /** Organizational tags (always at least one; defaults to "Ambient"). */
+  tags: string[];
 }
 
 type CatalogState =
@@ -60,7 +73,7 @@ async function loadAudioCatalog(): Promise<AudioTrack[]> {
   if (_inflight) return _inflight;
   _inflight = (async () => {
     const url = withBasePath("/audio/index.json");
-    const res = await fetch(url);
+    const res = await fetch(url, { cache: "no-store" });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const file = (await res.json()) as AudioIndex;
     const list = Array.isArray(file.tracks) ? file.tracks : [];
@@ -75,6 +88,7 @@ async function loadAudioCatalog(): Promise<AudioTrack[]> {
           typeof t.name === "string" && t.name.length > 0
             ? t.name
             : basenameOf(t.path),
+        tags: trackTagsOf((t as { tags?: unknown }).tags),
       });
     }
     _cached = cleaned;
@@ -90,6 +104,13 @@ async function loadAudioCatalog(): Promise<AudioTrack[]> {
 /** Test-only escape hatch — clears the module-scope cache between
  *  unit tests so each spec sees a fresh fetch. */
 export function __resetSoundtrackCatalogCacheForTests(): void {
+  invalidateSoundtrackCatalog();
+}
+
+/** Drop the cached catalog so the next picker to mount re-reads
+ *  /audio/index.json — called after the Soundtrack editor saves new
+ *  tags or volumes. */
+export function invalidateSoundtrackCatalog(): void {
   _cached = null;
   _inflight = null;
 }
@@ -119,6 +140,8 @@ export function SoundtrackPicker({
   const [state, setState] = useState<CatalogState>({ kind: "idle" });
   const [addOpen, setAddOpen] = useState<boolean>(false);
   const [filter, setFilter] = useState<string>("");
+  /** Tag chip selection in the add panel; null = all tags. */
+  const [tagFilter, setTagFilter] = useState<string | null>(null);
   /** Single shared <audio> element used by all preview buttons.
    *  Starting playback on one row pauses any other that was playing.
    *  Lives in a ref so it survives re-renders + cleans up on
@@ -211,17 +234,59 @@ export function SoundtrackPicker({
 
   const needle = filter.trim().toLowerCase();
   const selectedSet = new Set(value);
-  const available =
+  // Tracks not yet in the playlist: the pool the tag chips count over.
+  const unpicked =
     state.kind === "ok"
-      ? state.tracks.filter((t) => {
-          if (selectedSet.has(t.path)) return false;
-          if (!needle) return true;
-          return (
-            (t.name ?? "").toLowerCase().includes(needle) ||
-            t.path.toLowerCase().includes(needle)
-          );
-        })
+      ? state.tracks.filter((t) => !selectedSet.has(t.path))
       : [];
+  const catalogTags = state.kind === "ok" ? allTrackTags(state.tracks) : [];
+  const activeTag =
+    tagFilter && catalogTags.includes(tagFilter) ? tagFilter : null;
+  const available = unpicked.filter((t) => {
+    if (activeTag && !t.tags.includes(activeTag)) return false;
+    if (!needle) return true;
+    return (
+      (t.name ?? "").toLowerCase().includes(needle) ||
+      t.path.toLowerCase().includes(needle)
+    );
+  });
+  // Group under tag headings only when browsing everything.
+  const grouped = !activeTag && !needle ? groupTracksByTag(available) : null;
+
+  const renderAvailableRow = (t: AudioTrack, keyPrefix: string) => {
+    const isPlaying = previewSrc === t.path;
+    return (
+      <li
+        key={`${keyPrefix}${t.path}`}
+        className="flex items-center gap-2 rounded border border-transparent px-1.5 py-0.5 text-parchment/85 hover:border-parchment/10 hover:bg-ink/40"
+      >
+        <span
+          className="flex-1 truncate"
+          title={`${t.path}\nTags: ${t.tags.join(", ")}`}
+        >
+          {t.name}
+        </span>
+        <button
+          type="button"
+          onClick={() => togglePreview(t.path)}
+          className="rounded border border-parchment/20 bg-ink/40 px-1.5 py-0.5 text-xs text-parchment/80 hover:bg-ink/60"
+          title={isPlaying ? "Stop preview" : "Preview"}
+          aria-label={isPlaying ? "Stop preview" : "Preview"}
+        >
+          {isPlaying ? "■" : "▶"}
+        </button>
+        <button
+          type="button"
+          onClick={() => addTrack(t.path)}
+          className="rounded border border-ember/50 bg-ember/20 px-1.5 py-0.5 text-xs text-parchment hover:bg-ember/40"
+          title="Add to playlist"
+          aria-label="Add to playlist"
+        >
+          +
+        </button>
+      </li>
+    );
+  };
 
   return (
     <div className="flex flex-col gap-2">
@@ -321,6 +386,18 @@ export function SoundtrackPicker({
           ) : null}
           {state.kind === "ok" ? (
             <>
+              <div className="mb-1.5">
+                <TagFilterBar
+                  tags={catalogTags}
+                  active={activeTag}
+                  total={unpicked.length}
+                  countFor={(tag) =>
+                    unpicked.filter((t) => t.tags.includes(tag)).length
+                  }
+                  onPick={setTagFilter}
+                  label=""
+                />
+              </div>
               <input
                 type="text"
                 value={filter}
@@ -332,43 +409,29 @@ export function SoundtrackPicker({
                 <p className="text-xs text-parchment/70">
                   {state.tracks.length === 0
                     ? "No tracks in /audio/index.json yet — drop files in /public/audio/ and list them there."
-                    : needle
+                    : needle || activeTag
                       ? "No tracks match the filter."
                       : "Every available track is already in the playlist."}
                 </p>
-              ) : (
-                <ul className="max-h-44 space-y-1 overflow-y-auto pr-1 text-sm">
-                  {available.map((t) => {
-                    const isPlaying = previewSrc === t.path;
-                    return (
-                      <li
-                        key={t.path}
-                        className="flex items-center gap-2 rounded border border-transparent px-1.5 py-0.5 text-parchment/85 hover:border-parchment/10 hover:bg-ink/40"
-                      >
-                        <span className="flex-1 truncate" title={t.path}>
-                          {t.name}
+              ) : grouped ? (
+                <div className="max-h-64 space-y-2 overflow-y-auto pr-1 text-sm">
+                  {grouped.map(([tag, list]) => (
+                    <section key={tag}>
+                      <h4 className="sticky top-0 bg-ink/90 px-1.5 py-0.5 text-[12px] uppercase tracking-wide text-parchment/60">
+                        {tag}
+                        <span className="ml-1 normal-case text-parchment/45">
+                          {list.length}
                         </span>
-                        <button
-                          type="button"
-                          onClick={() => togglePreview(t.path)}
-                          className="rounded border border-parchment/20 bg-ink/40 px-1.5 py-0.5 text-xs text-parchment/80 hover:bg-ink/60"
-                          title={isPlaying ? "Stop preview" : "Preview"}
-                          aria-label={isPlaying ? "Stop preview" : "Preview"}
-                        >
-                          {isPlaying ? "■" : "▶"}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => addTrack(t.path)}
-                          className="rounded border border-ember/50 bg-ember/20 px-1.5 py-0.5 text-xs text-parchment hover:bg-ember/40"
-                          title="Add to playlist"
-                          aria-label="Add to playlist"
-                        >
-                          +
-                        </button>
-                      </li>
-                    );
-                  })}
+                      </h4>
+                      <ul className="space-y-1">
+                        {list.map((t) => renderAvailableRow(t, `${tag}:`))}
+                      </ul>
+                    </section>
+                  ))}
+                </div>
+              ) : (
+                <ul className="max-h-64 space-y-1 overflow-y-auto pr-1 text-sm">
+                  {available.map((t) => renderAvailableRow(t, ""))}
                 </ul>
               )}
             </>
