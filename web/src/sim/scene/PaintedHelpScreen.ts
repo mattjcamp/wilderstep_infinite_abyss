@@ -92,6 +92,7 @@ const INSPECTOR_SHORTCUTS: ShortcutRow[] = [
   { key: "P", description: "Party screen — roster, gold, shared stash" },
   { key: "Q", description: "Quest log — active and completed quests" },
   { key: "L", description: "Adventure log — full message back-buffer" },
+  { key: "J", description: "Lore Journal — the lore you have discovered" },
   { key: "H", description: "This help screen" },
   { key: "⌘S / Ctrl-S", description: "Save menu — 3 slots + export to file" },
 ];
@@ -110,6 +111,7 @@ const TIPS: string[] = [
   "Boats stay where you leave them — step on to sail, step ashore to leave.",
   "Talk to NPCs by walking into them.",
   "Defeated lairs and placed encounters never respawn.",
+  "Press J to open your Lore Journal and reread the lore you have discovered.",
 ];
 
 /* v1-flavored palette. The bottom log strip already uses #161629 /
@@ -134,7 +136,7 @@ const FONT = "monospace";
 /* Layout constants — fixed pixel measurements, sized for the 960×720
  * play canvas. Tweaking these is how the menu's proportions move. */
 const PANEL_WIDTH = 720;
-const PANEL_HEIGHT = 600;
+const PANEL_HEIGHT = 640; // room for every section on the 720-tall canvas
 const PANEL_PADDING = 20;
 const SECTION_GAP = 14;
 const ROW_HEIGHT = 18;
