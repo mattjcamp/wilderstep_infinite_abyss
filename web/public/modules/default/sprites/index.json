@@ -469,7 +469,10 @@
       "wall_top.png",
       "window_left.png",
       "window_right.png",
-      "window_single.png"
+      "window_single.png",
+      "window_top_left.png",
+      "window_top_right.png",
+      "window_top_single.png"
     ],
     "shrine": [
       "fireplace.png",
@@ -561,6 +564,8 @@
       "house/chapel/chapel_r0c1.png",
       "house/chapel/chapel_r1c0.png",
       "house/chapel/chapel_r1c1.png",
+      "house/shabby/house_shabby_r0c0.png",
+      "house/shabby/house_shabby_r0c1.png",
       "house/shrine/shrine_r0c0.png",
       "house/shrine/shrine_r0c1.png",
       "house/shrine/shrine_r1c0.png",
