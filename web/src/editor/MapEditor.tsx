@@ -128,6 +128,7 @@ import type {
 import { usePublishServer } from "./usePublishServer";
 import { spriteUrl } from "@/data_model/spriteUrl";
 import { isWaterCell } from "@/sim/tileTags";
+import { inheritedBackground } from "./paintBackground";
 
 const TILE_SIZE = 32;
 const MODEL_KEY = "maps";
@@ -1799,6 +1800,44 @@ export function MapEditor({
           }
         }
 
+        /** Per-sprite "fully opaque?" cache for paint-time background
+         *  inheritance (see ./paintBackground). `undefined` until the
+         *  texture has loaded. */
+        opacityCache = new Map<string, boolean>();
+
+        spriteIsOpaque(key: string): boolean | undefined {
+          const hit = this.opacityCache.get(key);
+          if (hit !== undefined) return hit;
+          if (!key || !this.textures.exists(key)) return undefined;
+          const src = this.textures.get(key).getSourceImage() as
+            | HTMLImageElement
+            | HTMLCanvasElement;
+          const w = src.width;
+          const h = src.height;
+          if (!w || !h) return undefined;
+          let opaque = false;
+          try {
+            const canvas = document.createElement("canvas");
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext("2d");
+            if (!ctx) return undefined;
+            ctx.drawImage(src, 0, 0);
+            const data = ctx.getImageData(0, 0, w, h).data;
+            opaque = true;
+            for (let i = 3; i < data.length; i += 4) {
+              if (data[i] < 255) {
+                opaque = false;
+                break;
+              }
+            }
+          } catch {
+            return undefined;
+          }
+          this.opacityCache.set(key, opaque);
+          return opaque;
+        }
+
         /** Make sure `key`'s texture is loaded, then run `onReady`.
          *  Lets a tile whose sprite was created mid-session (and so
          *  wasn't in the mount-time preload set) render the moment it's
@@ -3133,7 +3172,7 @@ normalizeNpcBehavior(npc?.behavior) === "dance"
             return;
           const brush = brushRef.current;
           if (!brush) return;
-          const brushTile = paletteById.get(brush);
+          let brushTile: TileType | undefined = paletteById.get(brush);
           if (!brushTile) return;
           const existing = gridRef.current[r][c];
           // Boats moor ON water: painting a boat tile onto a water cell
@@ -3161,6 +3200,16 @@ normalizeNpcBehavior(npc?.behavior) === "dance"
             );
             persistRef.current();
             return;
+          }
+          // Painting over a tile carries it down as the new cell's
+          // background (a chair placed on carpet keeps the carpet
+          // showing through) — see ./paintBackground for the rules.
+          {
+            const bg = inheritedBackground(existing, brushTile, (k) =>
+              this.spriteIsOpaque(k),
+            );
+            brushTile = { ...brushTile, background_sprite: bg };
+            if (bg === undefined) delete brushTile.background_sprite;
           }
           // Skip if the cell already equals the brush tile field-for-
           // field (drag-over of already-painted cells is a hot path).
@@ -3280,8 +3329,8 @@ normalizeNpcBehavior(npc?.behavior) === "dance"
           const rr = Math.max(0, Math.min(mapRecord.height - 1, r));
           const brush = brushRef.current;
           if (!brush) return;
-          const brushTile = paletteById.get(brush);
-          if (!brushTile) return;
+          const baseBrush = paletteById.get(brush);
+          if (!baseBrush) return;
           const c0 = Math.min(start.col, cc);
           const c1 = Math.max(start.col, cc);
           const r0 = Math.min(start.row, rr);
@@ -3291,6 +3340,12 @@ normalizeNpcBehavior(npc?.behavior) === "dance"
           for (let row = r0; row <= r1; row++) {
             for (let col = c0; col <= c1; col++) {
               const existing = gridRef.current[row][col];
+              // Same paint-time background inheritance as paintAt.
+              const bg = inheritedBackground(existing, baseBrush, (k) =>
+                this.spriteIsOpaque(k),
+              );
+              const brushTile: TileType = { ...baseBrush, background_sprite: bg };
+              if (bg === undefined) delete brushTile.background_sprite;
               if (
                 existing &&
                 existing.id === brushTile.id &&
