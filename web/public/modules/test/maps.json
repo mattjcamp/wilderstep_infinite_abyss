@@ -30924,7 +30924,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/notice_board.png",
+            "sprite": "objects/shop_notice_board.png",
             "tag": "shop",
             "background_sprite": "shop/wall_top.png"
           },
@@ -441321,7 +441321,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "manor/walls/room_walls/wall_archway.png",
+            "sprite": "manor/doors_and_stairs/wall_archway.png",
             "tag": "manor:walls:room walls",
             "background_sprite": "manor/floors/floor_checker.png"
           },
@@ -441389,7 +441389,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "manor/walls/room_walls/wall_archway.png",
+            "sprite": "manor/doors_and_stairs/wall_archway.png",
             "tag": "manor:walls:room walls",
             "background_sprite": "manor/floors/floor_marble.png"
           },
@@ -441440,7 +441440,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "manor/walls/room_walls/wall_archway.png",
+            "sprite": "manor/doors_and_stairs/wall_archway.png",
             "tag": "manor:walls:room walls",
             "background_sprite": "manor/floors/floor_marble.png"
           },
@@ -441491,7 +441491,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "manor/walls/room_walls/wall_archway.png",
+            "sprite": "manor/doors_and_stairs/wall_archway.png",
             "tag": "manor:walls:room walls",
             "background_sprite": "manor/floors/floor_marble.png"
           },
@@ -441542,7 +441542,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "manor/walls/room_walls/wall_archway.png",
+            "sprite": "manor/doors_and_stairs/wall_archway.png",
             "tag": "manor:walls:room walls",
             "background_sprite": "manor/floors/floor_marble.png"
           },
@@ -441921,7 +441921,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "manor/walls/room_walls/wall_archway.png",
+            "sprite": "manor/doors_and_stairs/wall_archway.png",
             "tag": "manor:walls:room walls",
             "background_sprite": "manor/floors/floor_marble.png"
           },
@@ -442040,7 +442040,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "manor/walls/room_walls/wall_archway.png",
+            "sprite": "manor/doors_and_stairs/wall_archway.png",
             "tag": "manor:walls:room walls",
             "background_sprite": "manor/floors/floor_marble.png"
           },
@@ -442057,7 +442057,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "manor/walls/room_walls/wall_archway.png",
+            "sprite": "manor/doors_and_stairs/wall_archway.png",
             "tag": "manor:walls:room walls",
             "background_sprite": "manor/floors/floor_marble.png"
           },
@@ -442159,7 +442159,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "manor/walls/room_walls/wall_archway.png",
+            "sprite": "manor/doors_and_stairs/wall_archway.png",
             "tag": "manor:walls:room walls",
             "background_sprite": "manor/floors/floor_marble.png"
           },
@@ -442176,7 +442176,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/notice_board.png",
+            "sprite": "objects/shop_notice_board.png",
             "tag": "shop",
             "background_sprite": "manor/walls/room_walls/wall_top.png"
           },
@@ -445344,7 +445344,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "manor/walls/room_walls/wall_gate.png",
+            "sprite": "manor/doors_and_stairs/wall_gate.png",
             "tag": "manor:walls:room walls",
             "link": {
               "map_id": "town_hallowmere_overview",
@@ -445365,7 +445365,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "manor/walls/room_walls/wall_gate.png",
+            "sprite": "manor/doors_and_stairs/wall_gate.png",
             "tag": "manor:walls:room walls",
             "link": {
               "map_id": "town_hallowmere_overview",
@@ -455351,7 +455351,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "manor/walls/room_walls/wall_archway.png",
+            "sprite": "manor/doors_and_stairs/wall_archway.png",
             "tag": "manor:walls:room walls"
           },
           {
@@ -455495,7 +455495,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "manor/walls/room_walls/wall_archway.png",
+            "sprite": "manor/doors_and_stairs/wall_archway.png",
             "tag": "manor:walls:room walls"
           },
           {

@@ -30925,7 +30925,7 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/notice_board.png",
+            "sprite": "objects/shop_notice_board.png",
             "tag": "shop",
             "background_sprite": "shop/wall_top.png"
           },
