@@ -63,6 +63,12 @@ import { publishItems } from "@/data_model/publishClient";
 import { RecordForm } from "./RecordForm";
 import { normalizeTags } from "./recordTags";
 import {
+  SPRITE_TAG_CATEGORIES,
+  parseCategoryTag,
+  spriteTags,
+  type SpriteTag,
+} from "@/data_model/spriteTags";
+import {
   getSpriteFieldConfig,
   resolveSpritePath,
 } from "./spriteFields";
@@ -278,6 +284,11 @@ export function ModelView({
    *  tag. "" = no filter. Combined with the free-text query + sort. */
   const [difficultyFilter, setDifficultyFilter] = useState<string>("");
   const [tagFilter, setTagFilter] = useState<string>("");
+  /** NPCs only: one dropdown per tag category (Race, Gender, Role,
+   *  Detail) — category → selected value, "" = any. */
+  const [categoryFilters, setCategoryFilters] = useState<
+    Record<string, string>
+  >({});
 
   // Load layers + library catalog in parallel. `loadDraft` is async
   // (gzip), so the whole load runs inside an async IIFE rather than
@@ -603,6 +614,21 @@ export function ModelView({
   // intentionally keep using the FULL `derived.records` so filtering the
   // view never changes autocomplete suggestions or library de-duping.
   const isEncounters = modelKey === "encounters";
+  const isNpcs = modelKey === "npcs";
+  // NPC tag categories actually present (from sprites + manual tags),
+  // in category order with values sorted — feeds the category dropdowns.
+  const npcCategoryValues: [string, string[]][] = isNpcs
+    ? SPRITE_TAG_CATEGORIES.map((cat): [string, string[]] => {
+        const vals = new Set<string>();
+        for (const r of derived.records) {
+          for (const t of npcCategoryTags(r)) {
+            if (t.category === cat) vals.add(t.value);
+          }
+        }
+        return [cat, [...vals].sort()];
+      }).filter(([, vals]) => vals.length > 0)
+    : [];
+  const anyCategoryFilter = Object.values(categoryFilters).some(Boolean);
   // Difficulty tiers actually present in the data (encounters only),
   // kept in Easy→Deadly order so the dropdown reads naturally.
   const availableDifficulties: string[] = isEncounters
@@ -623,6 +649,14 @@ export function ModelView({
     }
     if (tagFilter) {
       rows = rows.filter((r) => recordHasTag(r, tagFilter));
+    }
+    if (isNpcs) {
+      for (const [cat, val] of Object.entries(categoryFilters)) {
+        if (!val) continue;
+        rows = rows.filter((r) =>
+          npcCategoryTags(r).some((t) => t.category === cat && t.value === val),
+        );
+      }
     }
     if (sortField) {
       const dir = sortDir === "asc" ? 1 : -1;
@@ -769,13 +803,13 @@ export function ModelView({
           ) : null}
 
           {def.collectionKey !== null && derived.records.length > 0 ? (
-            <div className="mt-4 flex items-center gap-3">
+            <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2">
               <input
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder={`Filter ${def.label.toLowerCase()}…`}
-                className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-sm text-parchment placeholder:text-parchment/50 focus:border-parchment/60 focus:outline-none"
+                className="min-w-[12rem] flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-sm text-parchment placeholder:text-parchment/50 focus:border-parchment/60 focus:outline-none"
               />
               {availableDifficulties.length > 0 ? (
                 <select
@@ -815,7 +849,45 @@ export function ModelView({
                   ))}
                 </select>
               ) : null}
-              {query.trim() || difficultyFilter || tagFilter ? (
+              {npcCategoryValues.map(([cat, vals]) => {
+                const v = categoryFilters[cat] ?? "";
+                return (
+                  <select
+                    key={cat}
+                    value={v}
+                    onChange={(e) =>
+                      setCategoryFilters((prev) => ({
+                        ...prev,
+                        [cat]: e.target.value,
+                      }))
+                    }
+                    title={`Filter by ${cat.toLowerCase()} (from the sprite's file name)`}
+                    className={`shrink-0 rounded border bg-ink/50 px-2 py-1 text-sm focus:outline-none ${
+                      v
+                        ? "border-ember/50 text-parchment"
+                        : "border-parchment/20 text-parchment/85"
+                    }`}
+                  >
+                    <option value="">Any {cat.toLowerCase()}</option>
+                    {vals.map((x) => (
+                      <option key={x} value={x}>
+                        {x}
+                      </option>
+                    ))}
+                  </select>
+                );
+              })}
+              {anyCategoryFilter ? (
+                <button
+                  type="button"
+                  onClick={() => setCategoryFilters({})}
+                  className="shrink-0 rounded border border-parchment/20 px-2 py-1 text-[13px] text-parchment/80 hover:bg-ink/40 hover:text-parchment/90"
+                  title="Clear the race / gender / role / detail filters"
+                >
+                  Clear tags
+                </button>
+              ) : null}
+              {query.trim() || difficultyFilter || tagFilter || anyCategoryFilter ? (
                 <span className="shrink-0 text-[13px] text-parchment/65">
                   {visibleRecords.length} of {derived.records.length}
                 </span>
@@ -1477,6 +1549,22 @@ function isGroupedModel(modelKey: string | undefined): boolean {
     modelKey === "abilities" ||
     modelKey === "spells"
   );
+}
+
+/** An NPC's categorized tags: derived from its sprite's file name,
+ *  plus any hand-added "Category: Value" editor tags. */
+function npcCategoryTags(r: Record_): SpriteTag[] {
+  const out = spriteTags(typeof r["sprite"] === "string" ? r["sprite"] : "");
+  for (const t of normalizeTags(r["tags"])) {
+    const parsed = parseCategoryTag(t);
+    if (
+      parsed &&
+      !out.some((o) => o.category === parsed.category && o.value === parsed.value)
+    ) {
+      out.push(parsed);
+    }
+  }
+  return out;
 }
 
 /** True when a record carries `tag` — checks the `tags` array (when

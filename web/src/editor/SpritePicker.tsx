@@ -31,6 +31,11 @@ import {
   useCollapsedFolders,
 } from "./SpriteFolderTree";
 import { allFolderPaths, buildSpriteTree } from "./spriteTree";
+import {
+  SPRITE_TAG_CATEGORIES,
+  spriteDisplayName,
+  spriteTags,
+} from "@/data_model/spriteTags";
 
 interface SpriteIndex {
   _comment?: string;
@@ -96,6 +101,9 @@ export function SpritePicker({
             />
           ) : null}
         </div>
+        {thumbSrc ? (
+          <CurrentSpriteName value={value} />
+        ) : null}
         <input
           type="text"
           value={value}
@@ -162,6 +170,22 @@ export function SpritePicker({
   );
 }
 
+/** Readable name of the currently chosen sprite ("Villager (Noble)" /
+ *  "Elf · Male") so the author can tell what's picked without decoding
+ *  the path in the text box. Hidden for names with no descriptors. */
+function CurrentSpriteName({ value }: { value: string }) {
+  if (spriteTags(value).length === 0) return null;
+  const { label, sublabel } = spriteDisplayName(value);
+  return (
+    <div className="shrink-0 leading-tight" title={value}>
+      <div className="text-[13px] text-parchment/90">{label}</div>
+      {sublabel ? (
+        <div className="text-xs text-parchment/60">{sublabel}</div>
+      ) : null}
+    </div>
+  );
+}
+
 function SpriteGrid({
   index,
   filter,
@@ -176,6 +200,11 @@ function SpriteGrid({
   onPick: (category: string, filename: string) => void;
 }) {
   const collapsed = useCollapsedFolders("wilderstep.spritePicker.collapsed");
+  /** Selected tag values per category ("Race" → {"Elf","Dwarf"}).
+   *  OR within a category, AND across categories. */
+  const [tagSel, setTagSel] = useState<Record<string, string[]>>({});
+  /** Sprite under the pointer — shown in full in the detail bar. */
+  const [hovered, setHovered] = useState<string | null>(null);
   const names = Object.keys(index.categories);
   // Reorder so the preferred category appears first; below that the
   // tree follows the sprites/ folder structure exactly.
@@ -186,36 +215,126 @@ function SpriteGrid({
   ]) {
     ordered[c] = index.categories[c];
   }
+
+  // Tag values available per category across every sprite.
+  const available: [string, string[]][] = (() => {
+    const by = new Map<string, Set<string>>();
+    for (const [cat, files] of Object.entries(ordered)) {
+      for (const f of files) {
+        for (const t of spriteTags(`${cat}/${f}`)) {
+          if (!by.has(t.category)) by.set(t.category, new Set());
+          by.get(t.category)!.add(t.value);
+        }
+      }
+    }
+    return SPRITE_TAG_CATEGORIES.filter((c) => by.has(c)).map(
+      (c): [string, string[]] => [c, [...by.get(c)!].sort()],
+    );
+  })();
+  const activeTags = Object.entries(tagSel).filter(([, v]) => v.length > 0);
+  const matchesTags = (path: string) => {
+    if (activeTags.length === 0) return true;
+    const tags = spriteTags(path);
+    return activeTags.every(([cat, vals]) =>
+      tags.some((t) => t.category === cat && vals.includes(t.value)),
+    );
+  };
+  const matchesText = (path: string) => {
+    if (!filter) return true;
+    const { label, sublabel } = spriteDisplayName(path);
+    return `${path} ${label} ${sublabel}`.toLowerCase().includes(filter);
+  };
+  const toggleTag = (cat: string, val: string) =>
+    setTagSel((prev) => {
+      const cur = prev[cat] ?? [];
+      return {
+        ...prev,
+        [cat]: cur.includes(val) ? cur.filter((x) => x !== val) : [...cur, val],
+      };
+    });
+
   const fullTree = buildSpriteTree(ordered);
   const tree = buildSpriteTree(
     ordered,
-    (path) => !filter || path.toLowerCase().includes(filter),
+    (path) => matchesText(path) && matchesTags(path),
   );
+  const hoveredName = hovered ? spriteDisplayName(hovered) : null;
 
   return (
     <div>
-      <div className="mb-1 flex justify-end">
+      {available.length > 0 ? (
+        <div className="mb-2 space-y-1 rounded border border-parchment/10 bg-ink/30 p-2">
+          {available.map(([cat, vals]) => (
+            <div key={cat} className="flex flex-wrap items-center gap-1">
+              <span className="w-14 shrink-0 text-xs uppercase tracking-wide text-parchment/60">
+                {cat}
+              </span>
+              {vals.map((v) => {
+                const on = (tagSel[cat] ?? []).includes(v);
+                return (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => toggleTag(cat, v)}
+                    aria-pressed={on}
+                    className={`rounded border px-1.5 py-0.5 text-xs transition ${
+                      on
+                        ? "border-ember/60 bg-ember/25 text-parchment"
+                        : "border-parchment/15 text-parchment/75 hover:border-parchment/40 hover:text-parchment"
+                    }`}
+                  >
+                    {v}
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+          {activeTags.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => setTagSel({})}
+              className="text-xs text-parchment/70 underline hover:text-parchment"
+            >
+              Clear tag filters
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <div className="min-w-0 truncate text-xs text-parchment/80" aria-live="polite">
+          {hovered && hoveredName ? (
+            <>
+              <span className="text-parchment">{hoveredName.label}</span>
+              {hoveredName.sublabel ? (
+                <span className="text-parchment/60"> · {hoveredName.sublabel}</span>
+              ) : null}
+              <span className="ml-2 font-mono text-parchment/50">{hovered}</span>
+            </>
+          ) : (
+            <span className="text-parchment/45">Hover a sprite to see its full name</span>
+          )}
+        </div>
         <TreeToggleAll
           onExpand={() => collapsed.setMany(allFolderPaths(fullTree), false)}
           onCollapse={() => collapsed.setMany(allFolderPaths(fullTree), true)}
         />
       </div>
-      <div className="max-h-96 overflow-auto pr-1">
+      <div className="max-h-[28rem] overflow-auto pr-1" onMouseLeave={() => setHovered(null)}>
         <SpriteFolderTree
           root={tree}
           totals={fullTree}
           collapsed={collapsed}
-          forceOpen={filter.length > 0}
+          forceOpen={filter.length > 0 || activeTags.length > 0}
           compact
-          gridClassName="grid grid-cols-[repeat(auto-fill,minmax(56px,1fr))] gap-1.5"
+          gridClassName="grid grid-cols-[repeat(auto-fill,minmax(96px,1fr))] gap-1.5"
           renderSprite={(path) => {
             const slash = path.indexOf("/");
             const cat = path.slice(0, slash);
             const file = path.slice(slash + 1);
-            // Leaf name only — the full path is the tooltip.
             const stem = file
               .slice(file.lastIndexOf("/") + 1)
               .replace(/\.[a-z]+$/i, "");
+            const { label, sublabel } = spriteDisplayName(path);
             // Mark the current selection if either format matches.
             const isCurrent =
               currentValue === path ||
@@ -226,7 +345,9 @@ function SpriteGrid({
               <button
                 type="button"
                 onClick={() => onPick(cat, file)}
-                className={`flex w-full flex-col items-center gap-0.5 rounded border p-1 transition ${
+                onMouseEnter={() => setHovered(path)}
+                onFocus={() => setHovered(path)}
+                className={`flex h-full w-full flex-col items-center gap-0.5 rounded border p-1 transition ${
                   isCurrent
                     ? "border-ember/60 bg-ember/15"
                     : "border-parchment/10 bg-ink/40 hover:border-parchment/40 hover:bg-ink/60"
@@ -241,9 +362,14 @@ function SpriteGrid({
                   style={{ imageRendering: "pixelated" }}
                   className="h-10 w-10 object-contain"
                 />
-                <span className="w-full truncate text-xs text-parchment/80">
-                  {stem}
+                <span className="line-clamp-2 w-full break-words text-center text-xs leading-tight text-parchment/85">
+                  {label}
                 </span>
+                {sublabel ? (
+                  <span className="w-full truncate text-center text-[11px] leading-tight text-parchment/55">
+                    {sublabel}
+                  </span>
+                ) : null}
               </button>
             );
           }}

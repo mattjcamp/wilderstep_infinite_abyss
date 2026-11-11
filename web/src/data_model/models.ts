@@ -16,6 +16,7 @@
  */
 
 import { baseDamageLabel, baseAcLabel, type ItemStatLike } from "./itemStats";
+import { spriteTags } from "./spriteTags";
 
 export type ModelKey =
   | "abilities"
@@ -531,12 +532,26 @@ const DEFS: Record<ModelKey, ModelDef> = {
     blurb: "Non-player characters — name, sprite, backstory, and a list of dialogs",
     columns: [      { field: "name", label: "Name" },
       { field: "sprite", label: "Sprite" },
+      // Race · Gender · Role · Detail derived from the sprite's file
+      // name, plus any hand-added editor tags.
+      { field: "tags", label: "Tags", compute: npcTagsCell },
       { field: "dialogs", label: "Dialogs", format: countItems },
     ],
   },
 };
 
 export const MODELS = DEFS;
+
+/** NPC "Tags" cell: sprite-derived descriptors, then any manual tags. */
+function npcTagsCell(r: Record<string, unknown>): string {
+  const derived = spriteTags(typeof r.sprite === "string" ? r.sprite : "").map(
+    (t) => t.value,
+  );
+  const own = Array.isArray(r.tags)
+    ? r.tags.filter((t): t is string => typeof t === "string")
+    : [];
+  return [...derived, ...own].join(" · ");
+}
 
 /** Singular display label per model — drives uniform shell copy
  *  ("+ New Effect", `Delete effect "sleep"?`). Kept as an explicit

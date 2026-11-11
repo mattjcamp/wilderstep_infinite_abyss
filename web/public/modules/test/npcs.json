@@ -9,6 +9,106 @@
       "dialogs": [],
       "behavior": "wander",
       "exploration_xp": 0
+    },
+    {
+      "id": "bird",
+      "name": "Birdie",
+      "sprite": "person/animal_bird.png",
+      "counter": null,
+      "personal_history": "The birds are a lie",
+      "dialogs": [
+        {
+          "id": "dialog_1",
+          "title": "Chirp",
+          "text": "Chirp"
+        }
+      ],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "cat_orange",
+      "name": "Somie",
+      "sprite": "person/animal_cat.png",
+      "counter": null,
+      "personal_history": "Meow",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "villager_halfling",
+      "name": "Villager",
+      "sprite": "person/halfling_female.png",
+      "counter": null,
+      "personal_history": "A halfling villager who resettled here from the countryside",
+      "dialogs": [
+        {
+          "id": "dialog_1",
+          "title": "Hello!",
+          "text": "Hi there, any news of my kin in the countryside?"
+        }
+      ],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "female_villager",
+      "name": "Villager",
+      "sprite": "person/person_female_villager_normal.png",
+      "counter": null,
+      "personal_history": "A common women",
+      "dialogs": [
+        {
+          "id": "dialog_1",
+          "title": "Hello",
+          "text": "Hi there, brave travelers"
+        }
+      ],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "male_villager",
+      "name": "Villager",
+      "sprite": "person/person_male_villager_normal.png",
+      "counter": null,
+      "personal_history": "A commoner has no history",
+      "dialogs": [
+        {
+          "id": "dialog_1",
+          "title": "Hello",
+          "text": "Hail proud adventurer"
+        }
+      ],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "villager_male_noble",
+      "name": "Noble",
+      "sprite": "person/person_male_villager_noble.png",
+      "counter": null,
+      "personal_history": "A well heeled nobleman",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "villager_female_noble",
+      "name": "Noble Woman",
+      "sprite": "person/person_female_villager_noble.png",
+      "counter": null,
+      "personal_history": "A wealthy townswomen",
+      "dialogs": [
+        {
+          "id": "dialog_1",
+          "title": "Hello",
+          "text": "Hello stranger"
+        }
+      ],
+      "behavior": "wander",
+      "exploration_xp": 25
     }
   ]
 }

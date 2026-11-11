@@ -1179,6 +1179,9 @@ export function PlayHost() {
    *  of the map, You descend into the dungeon, Approach Lair: …).
    *  Capped at MAX_LOG to keep render cheap. */
   const [logMessages, setLogMessages] = useState<string[]>([]);
+  /** True once the log has been restored from the save — later reloads
+   *  (area transitions) keep the in-memory log. See the load effect. */
+  const logRestoredRef = useRef(false);
   // Persist the log as it grows: mirror it into `liveLog` (so every
   // regular save carries it) and, shortly after the last message,
   // write just the log into the stored save so it survives a reload
@@ -2521,9 +2524,19 @@ export function PlayHost() {
         return;
       }
       saveRef.current = save;
-      // Restore the message log from the save (older saves: empty).
-      liveLog = save.log ? save.log.slice(-MAX_LOG) : [];
-      setLogMessages([...liveLog]);
+      // Restore the message log from the save (older saves: empty) —
+      // on the FIRST load only. Every later run of this effect is an
+      // in-session transition (map link, dungeon floor, recall…) whose
+      // save was written before React flushed the newest log lines, so
+      // re-restoring would drop them and hand the side-panel Log a
+      // rewound buffer it reads as all-new lines: every line re-stamped
+      // to "now" and a chime on every area entry. The in-memory log is
+      // already current, so keep it.
+      if (!logRestoredRef.current) {
+        logRestoredRef.current = true;
+        liveLog = save.log ? save.log.slice(-MAX_LOG) : [];
+        setLogMessages([...liveLog]);
+      }
       // Rehydrate dungeon state from the save before catalog
       // assembly — `currentDungeon` on the party means the player
       // saved (or last left) inside a dungeon, and the floor

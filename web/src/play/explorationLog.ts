@@ -39,9 +39,27 @@ export function carryLog<T>(
 ): T[] {
   if (prev === next) return [...prevMeta];
   const shift = trimmedShift(prev, next);
-  if (shift === null) return next.map(() => fresh());
-  const kept = prevMeta.slice(shift);
-  return next.map((_, i) => (i < kept.length ? kept[i] : fresh()));
+  if (shift !== null && (shift < prev.length || prev.length === 0)) {
+    const kept = prevMeta.slice(shift);
+    return next.map((_, i) => (i < kept.length ? kept[i] : fresh()));
+  }
+  // No clean "trimmed + appended" fit — e.g. the buffer was rewound to
+  // an older copy (missing its newest lines) and then appended to.
+  // Keep the meta of the longest run of `next`'s head that already
+  // appeared in `prev`, so old lines aren't treated as new (re-stamped,
+  // re-chimed); only what follows that run is fresh.
+  let bestS = -1;
+  let bestLen = 0;
+  for (let s = 0; s < prev.length; s++) {
+    let len = 0;
+    while (s + len < prev.length && len < next.length && prev[s + len] === next[len]) len++;
+    if (len > bestLen) {
+      bestLen = len;
+      bestS = s;
+    }
+  }
+  if (bestLen === 0) return next.map(() => fresh());
+  return next.map((_, i) => (i < bestLen ? prevMeta[bestS + i] : fresh()));
 }
 
 /** Stamps for `next`, carrying over the stamps of lines already seen in

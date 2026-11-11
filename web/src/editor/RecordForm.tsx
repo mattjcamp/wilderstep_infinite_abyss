@@ -54,7 +54,7 @@ import { getParamsFieldConfig } from "./paramsFields";
 /** Models whose records carry a free-form `tags: string[]` for editor
  *  organization. The form injects the field (even when a record hasn't
  *  set it yet) and renders the chip-style TagsPicker for it. */
-const TAGGED_MODELS = new Set(["encounters", "monsters", "lore"]);
+const TAGGED_MODELS = new Set(["encounters", "monsters", "lore", "npcs"]);
 
 /** Optional numeric fields injected per model even when a record
  *  hasn't set them, so authors can discover + fill them from the form.
@@ -689,6 +689,8 @@ function FieldRow({
           <p className="mt-1 text-xs text-parchment/60">
             {modelKey === "lore"
               ? "Shown to players — the journal (J) filters lore by these tags."
+              : modelKey === "npcs"
+                ? "Race, Gender, Role and Detail tags come from the sprite's file name automatically. Add extras here — use \"Category: Value\" (e.g. \"Role: Guard\") to join a category filter. Editor-only."
               : "Editor-only labels for grouping. Gameplay ignores them."}
           </p>
         </div>

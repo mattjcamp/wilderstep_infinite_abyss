@@ -62,3 +62,14 @@ describe("pickups and story lines", () => {
     expect(notableCategory("Smoke still curls from the wagons.")).toBeNull();
   });
 });
+
+describe("stampLog — rewound buffer (area transition)", () => {
+  it("keeps stamps when the log is restored without its newest line", () => {
+    expect(stampLog(["a", "b", "c", "d"], [1, 2, 3, 4], ["a", "b", "c"], 9)).toEqual([1, 2, 3]);
+  });
+  it("keeps old stamps and stamps only the truly new line after a rewind", () => {
+    expect(
+      stampLog(["a", "b", "c", "d"], [1, 2, 3, 4], ["a", "b", "c", "XP"], 9),
+    ).toEqual([1, 2, 3, 9]);
+  });
+});
