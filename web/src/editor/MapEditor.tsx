@@ -129,6 +129,7 @@ import { usePublishServer } from "./usePublishServer";
 import { spriteUrl } from "@/data_model/spriteUrl";
 import { isWaterCell } from "@/sim/tileTags";
 import { inheritedBackground } from "./paintBackground";
+import { emptyCell, isErased } from "./eraseCell";
 
 const TILE_SIZE = 32;
 const MODEL_KEY = "maps";
@@ -830,14 +831,16 @@ export function MapEditor({
    *  "fill"  → click/drag draws a rectangle preview; on release every
    *            cell inside the rect is painted with the active brush
    *            in a single batched persist.
+   *  "erase" → click/drag removes the tile under the cursor, leaving
+   *            an empty cell (black square — see ./eraseCell).
    *  "pan"  → click/drag scrolls the canvas viewport. Useful on
    *           laptops with no middle mouse button.
    *  "inspect" → click/drag only selects (so you can read attributes
    *  without modifying the map). */
-  const [tool, setTool] = useState<"paint" | "inspect" | "pan" | "fill">(
+  const [tool, setTool] = useState<"paint" | "inspect" | "pan" | "fill" | "erase">(
     "inspect",
   );
-  const toolRef = useRef<"paint" | "inspect" | "pan" | "fill">("inspect");
+  const toolRef = useRef<"paint" | "inspect" | "pan" | "fill" | "erase">("inspect");
   useEffect(() => {
     toolRef.current = tool;
   }, [tool]);
@@ -1865,6 +1868,20 @@ export function MapEditor({
           if (!this.load.isLoading()) this.load.start();
         }
 
+        /** Point a cell's base image at `sprite`, or hide it when the
+         *  cell has no sprite (an erased cell) so the black backdrop
+         *  shows. Loads the texture on demand if it wasn't preloaded. */
+        showCellSprite(c: number, r: number, sprite?: string): void {
+          const img = this.cells.get(`${c},${r}`);
+          if (!img) return;
+          if (!sprite) {
+            img.setVisible(false);
+            return;
+          }
+          img.setVisible(true);
+          this.ensureTexture(sprite, () => swapTexture(img, sprite));
+        }
+
         /** Create / update / remove the optional background image for a
          *  cell so it matches `bgSprite`. Drawn at depth -10 (under the
          *  base tile). Loads the texture on demand if it wasn't
@@ -1915,11 +1932,14 @@ export function MapEditor({
               const cell = gridRef.current[r][c];
               // Cells are materialized — each one carries its own sprite.
               // Fall back to first palette tile only as a last resort.
-              const texKey = cell?.sprite || palette[0]?.sprite || "";
+              // An erased cell (empty sprite) stays hidden so the black
+              // backdrop shows through.
+              const texKey = cell ? cell.sprite || "" : palette[0]?.sprite || "";
               const img = this.add
-                .image(c * TILE_SIZE, r * TILE_SIZE, texKey)
+                .image(c * TILE_SIZE, r * TILE_SIZE, texKey || "__DEFAULT")
                 .setOrigin(0)
-                .setDisplaySize(TILE_SIZE, TILE_SIZE);
+                .setDisplaySize(TILE_SIZE, TILE_SIZE)
+                .setVisible(!!texKey);
               this.cells.set(`${c},${r}`, img);
               this.syncBackgroundCell(c, r, cell?.background_sprite);
             }
@@ -1962,7 +1982,8 @@ export function MapEditor({
               if (toolRef.current === "fill") {
                 this.fillStart(p);
               } else {
-                if (toolRef.current === "paint") strokeRef.current = new Map();
+                if (toolRef.current === "paint" || toolRef.current === "erase")
+                  strokeRef.current = new Map();
                 this.paintAt(p, true);
               }
             },
@@ -2071,19 +2092,12 @@ export function MapEditor({
               );
             },
             refreshCell: (col, row, spriteKey) => {
-              const img = this.cells.get(`${col},${row}`);
-              if (!img) return;
-              if (!this.textures.exists(spriteKey)) return;
-              swapTexture(img, spriteKey);
+              this.showCellSprite(col, row, spriteKey);
             },
             restoreCell: (col, row) => {
               const cell = gridRef.current[row]?.[col];
               if (!cell) return;
-              const img = this.cells.get(`${col},${row}`);
-              if (img && cell.sprite) {
-                const sprite = cell.sprite;
-                this.ensureTexture(sprite, () => swapTexture(img, sprite));
-              }
+              this.showCellSprite(col, row, cell.sprite);
               this.syncBackgroundCell(col, row, cell.background_sprite);
             },
             refreshAnimations: () => {
@@ -3170,6 +3184,21 @@ normalizeNpcBehavior(npc?.behavior) === "dance"
             toolRef.current === "fill"
           )
             return;
+          // Eraser: replace the cell with an empty one (no tile, no
+          // background, no link/NPC/item…) — a black square.
+          if (toolRef.current === "erase") {
+            const prev = gridRef.current[r][c];
+            if (isErased(prev as unknown as Record<string, unknown>)) return;
+            const stroke = strokeRef.current;
+            if (prev && stroke && !stroke.has(`${c},${r}`)) {
+              stroke.set(`${c},${r}`, { ...prev });
+            }
+            gridRef.current[r][c] = emptyCell() as unknown as TileType;
+            this.showCellSprite(c, r, "");
+            this.syncBackgroundCell(c, r, undefined);
+            persistRef.current();
+            return;
+          }
           const brush = brushRef.current;
           if (!brush) return;
           let brushTile: TileType | undefined = paletteById.get(brush);
@@ -3256,16 +3285,9 @@ normalizeNpcBehavior(npc?.behavior) === "dance"
             stroke.set(`${c},${r}`, { ...existing });
           }
           gridRef.current[r][c] = fresh;
-          const img = this.cells.get(`${c},${r}`);
-          if (img && fresh.sprite) {
-            // Load the texture on demand if it wasn't preloaded — e.g.
-            // a sprite the author just created this session — so the
-            // painted cell shows it immediately rather than staying on
-            // its previous texture until a reload.
-            this.ensureTexture(fresh.sprite, () =>
-              swapTexture(img, fresh.sprite),
-            );
-          }
+          // Loads the texture on demand if it wasn't preloaded (e.g. a
+          // sprite created this session) and un-hides an erased cell.
+          this.showCellSprite(c, r, fresh.sprite);
           this.syncBackgroundCell(c, r, fresh.background_sprite);
           persistRef.current();
         }
@@ -3382,15 +3404,8 @@ normalizeNpcBehavior(npc?.behavior) === "dance"
               const fresh: TileType = { ...brushTile };
               if (existing) undoEntry.set(`${col},${row}`, { ...existing });
               gridRef.current[row][col] = fresh;
-              const img = this.cells.get(`${col},${row}`);
               this.syncBackgroundCell(col, row, fresh.background_sprite);
-              if (img && fresh.sprite) {
-                // Load on demand if not yet preloaded (a mid-session
-                // sprite) so the filled cells render immediately.
-                this.ensureTexture(fresh.sprite, () =>
-                  swapTexture(img, fresh.sprite),
-                );
-              }
+              this.showCellSprite(col, row, fresh.sprite);
               changed = true;
             }
           }
@@ -4149,7 +4164,7 @@ normalizeNpcBehavior(npc?.behavior) === "dance"
     gridRef.current = nextGrid;
     const nextMap: MapRecord = { ...state.mapRecord, grid: nextGrid };
     setState({ ...state, mapRecord: nextMap });
-    if (spriteChanged && next.sprite) {
+    if (spriteChanged) {
       sceneApiRef.current?.refreshCell(col, row, next.sprite);
     }
     queueMicrotask(() => persistRef.current());
@@ -4819,6 +4834,18 @@ normalizeNpcBehavior(npc?.behavior) === "dance"
           </button>
           <button
             type="button"
+            onClick={() => setTool("erase")}
+            className={`border-l border-parchment/15 px-2 py-0.5 text-[13px] transition ${
+              tool === "erase"
+                ? "bg-ember/30 text-parchment"
+                : "bg-ink/40 text-parchment/80 hover:bg-ink/60"
+            }`}
+            title="Click/drag removes tiles, leaving an empty black square (not walkable)."
+          >
+            🧽 Erase
+          </button>
+          <button
+            type="button"
             onClick={() => setTool("pan")}
             className={`border-l border-parchment/15 px-2 py-0.5 text-[13px] transition ${
               tool === "pan"
@@ -5064,7 +5091,7 @@ normalizeNpcBehavior(npc?.behavior) === "dance"
                 ? "crosshair"
                 : tool === "pan" || spaceHeld
                   ? "grab"
-                  : tool === "fill"
+                  : tool === "fill" || tool === "erase"
                     ? "crosshair"
                     : undefined,
           }}

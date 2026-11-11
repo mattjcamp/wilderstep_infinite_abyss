@@ -1,0 +1,20 @@
+{
+  "map_tiles": [
+    {
+      "boat": false,
+      "id": "dungeon_wall_portcullis",
+      "name": "Dungeon Portcullis",
+      "walkable": true,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeon/walls/room_walls/wall_portcullis.png",
+      "tag": "dungeon:walls:room walls"
+    }
+  ]
+}

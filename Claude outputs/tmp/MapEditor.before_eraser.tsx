@@ -1,0 +1,7242 @@
+"use client";
+
+/**
+ * Phase 2a map editor — Phaser-based canvas painting with a Tile
+ * Palette side panel and a grid-lines toggle. Bare workflow:
+ *
+ *   - Loads palette + map via the existing draft-aware source.
+ *   - Mounts a Phaser scene that renders one Image per cell using
+ *     palette sprites loaded as textures keyed by tile id.
+ *   - Click + drag on the canvas to paint with the active brush.
+ *   - Paint events update React's ownDraft (saved to localStorage)
+ *     and the scene patches the affected cell in-place via
+ *     setTexture — no full re-render.
+ *
+ * Phaser is dynamically-imported so its ~1MB bundle only loads when
+ * the editor mounts; the rest of the app stays light.
+ *
+ * Bridges between React and Phaser:
+ *   - brushRef.current — the active brush tile id (React state mirrored
+ *     into a ref the scene's pointer handler reads).
+ *   - gridRef.current — the live grid (2D array of tile ids); the scene
+ *     mutates it on paint, React reads it to persist.
+ *   - persistRef.current — function the scene calls after a paint to
+ *     save the draft. Wrapped in a ref so the scene always sees the
+ *     latest closure.
+ *
+ * Future phases add: cell inspector, links, paint tools (bucket /
+ * rectangle), zoom/pan, walkable overlay, undo/redo.
+ */
+
+import { shortTileLabels } from "./tileLabels";
+import { multiTileLayout } from "./multiTileLayout";
+import {
+  editorMapHref,
+  editorModelHref,
+  editorDungeonSimHref,
+} from "./moduleRoutes";
+import {
+  deleteRecordConfirmMessage,
+  discardDraftConfirmMessage,
+} from "./editorShell";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { getEditorModuleSource } from "@/data_model/sourceConfig";
+import {
+  discardDraft,
+  hasDraft,
+  loadDraft,
+  saveDraft,
+} from "@/data_model/draft";
+import { mergeModel } from "@/data_model/merge";
+import { loadSpriteDraft } from "@/data_model/spriteDraft";
+import { publishItems } from "@/data_model/publishClient";
+import { MapSimulation, type SceneBridge } from "@/sim/MapSimulation";
+import {
+  ensureQuestStates,
+  parseQuestsFile,
+  type QuestState,
+} from "@/battle/world/Quests";
+import {
+  computeLighting,
+  emitterVisibleAt,
+  tintForCell,
+} from "@/sim/lighting";
+import { SimPanel } from "@/sim/SimPanel";
+import { computeQuestGlowCells } from "@/sim/questGlow";
+import { MAP_BACKDROP_COLOR } from "@/sim/scene/WorldRenderer";
+import {
+  RENDER_SCALE,
+  applyRenderScale,
+  installHiDpiText,
+  swapTexture,
+  NATIVE_TILE_CSS_PX,
+} from "@/util/renderScale";
+import { ANIMATION_CONFIGS } from "@/sim/tileAnimations";
+import { normalizeNpcBehavior, startNpcDance } from "@/sim/npcBehavior";
+import type { AnimationKind } from "@/sim/tileAnimations";
+import { MapPartyScreenOverlay } from "./MapPartyScreenOverlay";
+import { NpcDialogOverlay } from "./NpcDialogOverlay";
+import { QuestDialogOverlay } from "./QuestDialogOverlay";
+import type { SimQuestRef } from "@/sim/types";
+import { CounterShopOverlay } from "./CounterShopOverlay";
+import { LinkPlacard } from "@/play/LinkPlacard";
+import {
+  questsTargetingPlace,
+  type QuestPlacardTarget,
+} from "@/play/questPlacardTargets";
+import { SpritePicker } from "./SpritePicker";
+import { LootEditor, type LootStash } from "./LootEditor";
+import { EncounterPicker } from "./EncounterPicker";
+import { anchorCell, nextCellSelection } from "./cellSelection";
+import { groupByTags } from "./mapTags";
+import { PlayLoreOverlay } from "@/play/LoreOverlay";
+import { normalizeLore, type LoreRecord } from "@/play/lore";
+import { groupItemsByCategory } from "./itemTags";
+import { LockDialogOverlay } from "./LockDialogOverlay";
+import { MapAttributesDialog } from "./MapAttributesDialog";
+import { MapResizeDialog } from "./MapResizeDialog";
+import {
+  dominantGroundTileId,
+  resizeMapRecord,
+  sanitizeFillCell,
+  shiftPartyStart,
+  shiftRefsIntoMap,
+  type PartyFileLike,
+  type ResizeEdges,
+  type ResizeMapRecord,
+} from "./resizeMap";
+import { SpawnEncounterOverlay } from "./SpawnEncounterOverlay";
+import type {
+  LockEncounterOptions,
+  SpawnEncounterOptions,
+} from "@/sim/MapSimulation";
+import type { SimSpawn } from "@/sim/spawn";
+import { type FogStyleByMode, normalizeFogStyles } from "@/sim/fogStyle";
+import type {
+  SimCharacter,
+  SimCharacterClass,
+  SimEffect,
+  SimGrid,
+  SimLightSource,
+  SimMonsterRef,
+  SimParty,
+  SimRace,
+  SimSpell,
+} from "@/sim/types";
+import { usePublishServer } from "./usePublishServer";
+import { spriteUrl } from "@/data_model/spriteUrl";
+import { isWaterCell } from "@/sim/tileTags";
+import { inheritedBackground } from "./paintBackground";
+
+const TILE_SIZE = 32;
+const MODEL_KEY = "maps";
+
+interface TileType {
+  id: string;
+  name: string;
+  /** Optional grouping label used by the Map Editor's palette panel
+   *  to organize tiles into collapsible folders. Empty string =
+   *  untagged (lands in the "(untagged)" bucket). Purely an editor
+   *  organizational hint — gameplay never reads it. */
+  tag: string;
+  walkable: boolean;
+  /** True = tile blocks light effects and ranged-weapon line-of-sight.
+   *  Walls/mountains obstruct; water and short obstacles typically don't. */
+  obstructs: boolean;
+  /** True = this tile IS a boat. Stepping onto it lets the party move
+   *  through water tiles (the tile effectively becomes the vessel).
+   *  Not "passable by boat" — that distinction is a tile being water,
+   *  which is conveyed by the tile's other gameplay attributes. */
+  boat: boolean;
+  /** Sprite of a boat moored ON this cell (cells only — never set on
+   *  palette tiles). Painting a boat palette tile onto a water cell
+   *  sets this instead of replacing the water, so a river piece stays
+   *  a river piece; the boat is drawn on top like an NPC. */
+  boat_sprite?: string;
+  /** True = a boat can sail UNDER this tile (bridge semantics). The
+   *  tile stays walkable on foot; the sim treats it like water for
+   *  the boat-classification branch, and the play renderer paints a
+   *  "bridge top" overlay above the party boat sprite so the vessel
+   *  reads as passing beneath the structure. Default false. */
+  boat_passable: boolean;
+  /** True = passage/interaction is gated until unlocked (key, scripted
+   *  unlock, etc.). Pairs with link or interactive tile types. */
+  locked: boolean;
+  /** True = the tile emits light. */
+  light_source: boolean;
+  /** Light emission radius in cells. Only meaningful when
+   *  light_source is true. */
+  light_range: number;
+  /** Narrative text shown in-game when the party steps on a cell
+   *  painted with this tile. Empty string = silent. Drives signs,
+   *  scripted callouts, and similar v1-style on-step messages. */
+  text: string;
+  /** Visual animation overlay played on cells painted with this tile.
+   *  "none" disables. Configs live in ANIMATION_CONFIGS in MapEditor. */
+  animation: "none" | "torch" | "fire" | "fairy" | "smoke";
+  /** Counter (shop/service) id from counters.json that this tile
+   *  fronts. Empty string means none. */
+  counter: string;
+  /** Encounter id from encounters.json. Empty string means none.
+   *  The encounter's monster_party_tile renders as an overlay on the cell. */
+  encounter: string;
+  /** Spawn id from spawns.json (monster-lair behavior). Empty for none. */
+  spawn: string;
+  /** Item id from items.json. Empty for none. When set, the item's
+   *  icon renders as an overlay sprite on the cell (layered graphic),
+   *  and gameplay drops it when the party steps on the cell. */
+  item: string;
+  /** Per-placement stash when `item` is a container (catalog
+   *  `is_chest: true`): the gold + items the party gets on opening
+   *  THIS cell's container. Absent → the catalog's default contents. */
+  loot?: LootStash | null;
+  /** Quest id reference — placeholder; the quest model is not yet
+   *  ported. Stored verbatim so future ports preserve author intent. */
+  quest: string;
+  /** Dungeon id reference — placeholder; the dungeon model is not yet
+   *  ported. Stored verbatim so future ports preserve author intent. */
+  dungeon: string;
+  /** NPC id from npcs.json. Empty string means none. When set, the
+   *  NPC's sprite renders as an overlay on the cell so designers can
+   *  see at a glance where each villager / quest-giver stands. */
+  npc: string;
+  /** Trap id from traps.json. Empty / absent means none. In play,
+   *  stepping onto the cell fires the trap once (damage / status
+   *  effect / teleport per the record's trap_type) and disarms it
+   *  permanently. Traps are hidden from the player unless Detect
+   *  Traps is active. */
+  trap_id?: string;
+  /** Lore id from lore.json — makes the cell a readable object
+   *  (bookshelf, plaque, gravestone). In play, bumping it opens the
+   *  reading screen; the first read grants XP + a journal entry. */
+  lore?: string;
+  sprite: string;
+  /** Optional purely-visual background sprite drawn BEHIND `sprite`
+   *  and lit the same way. A foreground tile with transparent pixels
+   *  reveals it, so one tower/tree foreground can sit on any terrain
+   *  background without baking a combined tile per terrain. Absent →
+   *  the dark canvas shows through. No gameplay meaning. */
+  background_sprite?: string;
+  flags?: Record<string, unknown>;
+  link?: { map_id: string; x: number; y: number } | null;
+  /** When true on a link or dungeon-entrance tile, the play host
+   *  shows a confirm placard (destination name + description +
+   *  explored badge) before traversing/entering, instead of crossing
+   *  immediately. Opt-in so only the tiles authors choose (dungeon
+   *  mouths, region portals) announce themselves. */
+  show_link_placard?: boolean;
+  /** Pressure plate — stepping onto this cell in play TOGGLES the
+   *  target cell `(map_id, col, row)` to the palette tile `tile_id`
+   *  (persisted as a tile override); the next step restores the
+   *  authored tile. The target may be on this map (renders live) or
+   *  any other map (applies on next visit). Null / absent = not a
+   *  plate. */
+  pressure_plate?: {
+    map_id: string;
+    col: number;
+    row: number;
+    tile_id: string;
+  } | null;
+}
+
+interface RefRecord {
+  id: string;
+  name?: string;
+  [k: string]: unknown;
+}
+interface EncounterRecord extends RefRecord {
+  monster_party_tile?: string;
+  /** Monster ids in this encounter's roster — read by the quest-glow
+   *  detector so a cell whose encounter contains a quest-relevant
+   *  monster gets the same halo as a directly-referenced encounter. */
+  monsters?: string[];
+  /** Surfaced in the shared EncounterPicker — theme drives the grouped
+   *  headers, level the difficulty ordering. Declared explicitly (vs.
+   *  the RefRecord index signature) so the record is assignable to the
+   *  picker's typed entry. */
+  theme?: string;
+  area?: string;
+  level?: number;
+  weight?: number;
+}
+/** Item record from items.json — `icon` is a bare sprite name that
+ *  resolves to `item/${icon}.png` for overlay rendering. */
+interface ItemRecord extends RefRecord {
+  icon?: string;
+  category?: string;
+  item_type?: string;
+  /** Container type (Treasure Chest…) — bump opens it; the cell's
+   *  `loot` (edited in the inspector) is what's inside. */
+  is_chest?: boolean;
+  contents?: LootStash;
+}
+/** NPC record from npcs.json — only the fields the map editor needs.
+ *  `sprite` follows the standard person/<file>.png path so we can
+ *  resolve a preview thumbnail and render the on-map overlay. */
+interface NpcRecord extends RefRecord {
+  sprite?: string;
+  /** "wander" (default) | "dance" | "still" — see sim/npcBehavior. */
+  behavior?: string;
+}
+/** Quest record from quests.json — only the bits the cell inspector
+ *  dropdown and the quest-glow / quest-giver renderer actually read.
+ *  Full schema is in docs/data_dictionary/quest.md. */
+interface QuestRecord {
+  id: string;
+  name?: string;
+  quest_giver?: {
+    npc_name?: string;
+    npc_sprite?: string;
+    start_dialog?: string;
+    end_dialog?: string;
+  };
+  steps?: Array<{
+    id?: string;
+    kind?: string;
+    params?: Record<string, unknown> | null;
+  }>;
+}
+
+// Per-tile animation configs + AnimationKind live in
+// `sim/tileAnimations.ts` (imported above). Keeping a local
+// note so the next person searching for "ANIMATION_CONFIGS"
+// here finds the new location.
+
+interface MapRecord {
+  id: string;
+  name: string;
+  description?: string;
+  tags?: string[];
+  width: number;
+  height: number;
+  /** Each cell is a full TileType instance — id, name, walkable,
+   *  sprite, link, etc. all materialized inline. There is no separate
+   *  overrides array; the cell IS its data. Painting a cell deep-
+   *  copies the brush palette entry into it. */
+  grid: TileType[][];
+  [k: string]: unknown;
+}
+
+/** Comparing a painted cell to its palette-of-origin (matched by id)
+ *  tells us whether the cell has been customized since paint. Used
+ *  for the "modified" pill in the inspector. */
+function cellMatchesPalette(cell: TileType, palette: TileType[]): boolean {
+  const base = palette.find((t) => t.id === cell.id);
+  if (!base) return true; // Orphan id — no palette to compare; treat as "fresh."
+  // `name` and `tag` are deliberately NOT compared. Both are copied onto
+  // each cell when it's painted, so they go stale whenever the palette
+  // is reorganised (tags renamed "terrain" → "walkable", etc.) or a
+  // dungeon bake relabels tiles ("Mountain" → "Cave Wall"). Comparing
+  // them marked almost every cell on those maps as overridden — a
+  // full-map mesh of dots after the first paint stroke. Neither changes
+  // how the tile plays, with one exception: being water drives NPC
+  // wandering, so a water / not-water mismatch still counts.
+  if (isWaterCell(cell) !== isWaterCell(base)) return false;
+  if (cell.walkable !== base.walkable) return false;
+  if (cell.obstructs !== base.obstructs) return false;
+  if ((cell.boat ?? false) !== (base.boat ?? false)) return false;
+  if ((cell.boat_passable ?? false) !== (base.boat_passable ?? false))
+    return false;
+  if ((cell.text ?? "") !== (base.text ?? "")) return false;
+  if ((cell.locked ?? false) !== (base.locked ?? false)) return false;
+  if ((cell.light_source ?? false) !== (base.light_source ?? false))
+    return false;
+  if ((cell.light_range ?? 0) !== (base.light_range ?? 0)) return false;
+  if ((cell.animation ?? "none") !== (base.animation ?? "none")) return false;
+  if ((cell.counter ?? "") !== (base.counter ?? "")) return false;
+  if ((cell.encounter ?? "") !== (base.encounter ?? "")) return false;
+  if ((cell.spawn ?? "") !== (base.spawn ?? "")) return false;
+  if ((cell.item ?? "") !== (base.item ?? "")) return false;
+  if (JSON.stringify(cell.loot ?? null) !== JSON.stringify(base.loot ?? null))
+    return false;
+  if ((cell.quest ?? "") !== (base.quest ?? "")) return false;
+  if ((cell.dungeon ?? "") !== (base.dungeon ?? "")) return false;
+  if ((cell.npc ?? "") !== (base.npc ?? "")) return false;
+  if ((cell.trap_id ?? "") !== (base.trap_id ?? "")) return false;
+  if ((cell.lore ?? "") !== (base.lore ?? "")) return false;
+  if (cell.sprite !== base.sprite) return false;
+  if (JSON.stringify(cell.link ?? null) !== JSON.stringify(base.link ?? null))
+    return false;
+  if (
+    JSON.stringify(cell.pressure_plate ?? null) !==
+    JSON.stringify(base.pressure_plate ?? null)
+  )
+    return false;
+  if (
+    (cell.show_link_placard ?? false) !== (base.show_link_placard ?? false)
+  )
+    return false;
+  if (
+    (cell.background_sprite ?? "") !== (base.background_sprite ?? "")
+  )
+    return false;
+  return true;
+}
+
+// Quest-relevance halo computation lives in @/sim/questGlow so the
+// play runtime can compute the same set. The editor passes no
+// acceptedQuests filter, which keeps the authoring view's "glow
+// everything quest-relevant" behaviour intact.
+
+function fieldDiffersFromPalette(
+  cell: TileType,
+  palette: TileType[],
+  field: keyof TileType,
+): boolean {
+  const base = palette.find((t) => t.id === cell.id);
+  if (!base) return false;
+  if (field === "link") {
+    return (
+      JSON.stringify(cell.link ?? null) !==
+      JSON.stringify(base.link ?? null)
+    );
+  }
+  if (field === "pressure_plate") {
+    return (
+      JSON.stringify(cell.pressure_plate ?? null) !==
+      JSON.stringify(base.pressure_plate ?? null)
+    );
+  }
+  return cell[field] !== base[field];
+}
+
+type LoadState =
+  | { kind: "loading" }
+  | {
+      kind: "ok";
+      palette: TileType[];
+      counters: RefRecord[];
+      encounters: EncounterRecord[];
+      spawns: RefRecord[];
+      items: ItemRecord[];
+      npcs: NpcRecord[];
+      mapRecord: MapRecord;
+      /** The whole maps.json shape for this module's own file (draft-
+       *  aware) — needed so we can write back the modified map. */
+      ownFile: Record<string, unknown> | null;
+      isDraft: boolean;
+      /** Every map in the module (resolved view, including inherited
+       *  + draft). Used by the cell-inspector's Link picker so authors
+       *  can dropdown to a target map rather than typing the id by
+       *  hand. Just `{id, name}` pairs — the full record isn't
+       *  needed here. */
+      availableMaps: Array<{ id: string; name: string; tags?: string[] }>;
+      /** Every dungeon and quest in the module — feeds the cell
+       *  inspector's Dungeon / Quest dropdowns so authors pick from
+       *  the catalog instead of typing ids by hand. Quests carry the
+       *  full record (not just id+name) because the map editor also
+       *  reads quest_giver + steps for the on-map quest-giver sprite
+       *  + golden-glow rendering. */
+      availableDungeons: Array<{ id: string; name: string }>;
+      availableQuests: QuestRecord[];
+      /** Every trap in the module's traps.json — feeds the cell
+       *  inspector's Trap dropdown. */
+      availableTraps: Array<{ id: string; name: string }>;
+      availableLore: Array<{ id: string; name: string }>;
+      /** Full lore records — the sim's reading-screen preview. */
+      simLore: LoreRecord[];
+      /** Simulation-only catalog. Loaded alongside the painting data
+       *  so the scene can pre-load party sprites in its single
+       *  preload() pass. Null when a load failed; sim mode is still
+       *  reachable but the panel falls back to placeholders. */
+      simParty: SimParty | null;
+      simCharacters: SimCharacter[];
+      simRaces: SimRace[];
+      simEffects: SimEffect[];
+      simClasses: SimCharacterClass[];
+      /** Knock-spell record (or null when the module hasn't defined
+       *  one). Threaded into the MapSimulation catalog so the Pick
+       *  Lock / Cast Knock dialog can offer the Knock row when the
+       *  party has an eligible caster. */
+      simKnockSpell: SimSpell | null;
+      /** Resolved spawns.json catalog — passed straight to the sim
+       *  so the per-step spawn loop can find lairs by cell.spawn id. */
+      simSpawns: SimSpawn[];
+      /** Resolved monsters.json catalog — gives the spawn loop sprite
+       *  paths for roamers and lets the encounter overlay show
+       *  roster thumbnails. */
+      simMonsters: SimMonsterRef[];
+    }
+  | { kind: "error"; message: string };
+
+/** How many Paint strokes / Fill rectangles the Map Editor can undo. */
+const UNDO_LIMIT = 100;
+
+export function MapEditor({
+  moduleId,
+  mapId,
+}: {
+  moduleId: string;
+  mapId: string;
+}) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { available: publishAvailable } = usePublishServer();
+  const [state, setState] = useState<LoadState>({ kind: "loading" });
+  const [activeBrush, setActiveBrush] = useState<string | null>(null);
+  const [gridLinesOn, setGridLinesOn] = useState(false);
+  /** Simulation mode state machine.
+   *   - "off"     → Inspector visible, paint/inspect/pan tools work.
+   *   - "placing" → user clicked Simulate; the next walkable click on
+   *                 the canvas drops the party there and transitions
+   *                 to "active". Painting is suppressed while placing.
+   *   - "active"  → SimPanel visible, party sprite on the map, WASD /
+   *                 arrows drive movement, paint is suppressed.
+   *  Link traversal (URL `?sim=1&entryCol=X&entryRow=Y`) skips
+   *  "placing" and lands directly in "active" at the destination cell. */
+  const [simMode, setSimMode] = useState<"off" | "placing" | "active">(
+    "off",
+  );
+  /** Mirror in a ref so the Phaser scene's pointer handler — which
+   *  reads from refs only — can branch on the current sim state. */
+  const simModeRef = useRef<"off" | "placing" | "active">("off");
+  useEffect(() => {
+    simModeRef.current = simMode;
+  }, [simMode]);
+  /** Live MapSimulation instance while simMode === "active". Held as
+   *  a ref because we never want it to drive React renders — it
+   *  pushes updates through events. */
+  const simRef = useRef<MapSimulation | null>(null);
+  /** The Sim panel needs the instance to subscribe; we mirror simRef
+   *  into state purely for the SimPanel prop. Updated when sim mounts
+   *  or unmounts. */
+  const [simInstance, setSimInstance] = useState<MapSimulation | null>(null);
+  /** True while the P-key party screen overlay is open. Bound only
+   *  during simMode === "active" so editing the map normally doesn't
+   *  trip the modal. The overlay self-owns its own ESC handling and
+   *  closes via this setter. */
+  const [partyScreenOpen, setPartyScreenOpen] = useState(false);
+  /** NPC currently being interacted with (id from npcs.json). Null when
+   *  no dialog overlay is open. Set by the sim's npc_encountered
+   *  event; cleared when the player closes the dialog. */
+  const [npcEncounterId, setNpcEncounterId] = useState<string | null>(null);
+  /** Lock-dialog state — set when the sim emits `lock_encountered`,
+   *  cleared on dismiss / successful unlock. Keeps the option snapshot
+   *  so the overlay renders without re-querying the sim. */
+  const [lockEncounter, setLockEncounter] = useState<LockEncounterOptions | null>(null);
+  /** Spawn-encounter dialog state — set when the sim emits
+   *  `spawn_encountered` (party stepped on a lair, or a roamer
+   *  caught up). Cleared once the player resolves it via the
+   *  overlay's Win/Flee buttons. */
+  const [spawnEncounter, setSpawnEncounter] =
+    useState<SpawnEncounterOptions | null>(null);
+  /** Counter currently being shopped (id from counters.json). Null when
+   *  the shop overlay is closed. The shop overlay is launched from
+   *  inside the NPC dialog; closing it returns the player to the
+   *  dialog. */
+  const [shopCounterId, setShopCounterId] = useState<string | null>(null);
+  /** Lore id bumped in simulation — previews the reading screen. */
+  const [simLoreId, setSimLoreId] = useState<string | null>(null);
+  /** Quest dialog state — set when the sim emits `quest_encountered`,
+   *  cleared on Accept / Decline / Close. The kernel re-fires this
+   *  event every time the party bumps the quest-giver tile (no
+   *  status-based filtering), so the host computes the dialog mode
+   *  here:
+   *
+   *   - `status: "available"` → offer (Accept / Decline)
+   *   - `status: "active"`    → in-progress (Close — shows the active step)
+   *   - `status: "completed"` → handoff (Close — flips to "turned_in")
+   *   - `status: "turned_in"` → suppressed entirely (handler bails)
+   *
+   *  All view inputs are computed at event time so the render block
+   *  stays a pure function of state. */
+  const [questEncounter, setQuestEncounter] = useState<{
+    questId: string;
+    quest: SimQuestRef;
+    /** True when status has moved past "available". */
+    alreadyAccepted: boolean;
+    /** True when status === "completed" — the giver hands off rewards. */
+    complete: boolean;
+    /** Index of the next pending step, or `stepCount` when every step
+     *  has flipped to true. Matches the overlay's `stepIdx` semantic. */
+    stepIdx: number;
+    stepCount: number;
+    activeStepName?: string;
+    activeStepDescription?: string;
+  } | null>(null);
+  /** Confirm placard for a flagged link / dungeon tile in sim mode.
+   *  Lets the author test the `show_link_placard` attribute: the sim
+   *  holds, this placard pops, and confirming runs the same traversal
+   *  / dungeon route the immediate path would. The action to run on
+   *  confirm is stashed in `pendingPlaceActionRef`. */
+  const [placard, setPlacard] = useState<{
+    placeKind: "link" | "dungeon";
+    name: string;
+    description?: string;
+    explored: boolean;
+    /** Active quests with an incomplete step at the destination —
+     *  lets authors test the placard's gold quest treatment in sim. */
+    questTargets?: QuestPlacardTarget[];
+  } | null>(null);
+  const pendingPlaceActionRef = useRef<(() => void) | null>(null);
+  /** Mirrors npcEncounterId/shopCounterId in a ref so the sim's
+   *  keyboard listener can gate movement without re-binding on every
+   *  state change. */
+  const overlaysOpenRef = useRef(false);
+  /** Sandbox quest-state map. Holds `{status, stepProgress, stepKills,
+   *  guardianDefeated}` per quest id for the duration of the editor
+   *  session. The sim reads this on construction (so active kill
+   *  steps targeting the current map drop their encounters); the
+   *  QuestDialogOverlay's Accept handler flips `status` to "active"
+   *  and calls `sim.refreshQuestPlacements()` so newly-active steps
+   *  drop their encounters mid-session.
+   *
+   *  Persists across sim toggles within the same MapEditor mount so
+   *  acceptance survives a Simulate → off → Simulate cycle. Reset on
+   *  map change because the editor remounts entirely there. */
+  const questStatesRef = useRef<Map<string, QuestState>>(new Map());
+  /** Post-quest giver chatter — set when the party bumps a quest
+   *  giver whose quest is already turned in. The giver behaves like
+   *  a normal NPC: name + sprite + one line (`post_dialog`, else a
+   *  generic thank-you). Mirrors the play host's behaviour so
+   *  authors can test it in sim. */
+  const [giverChatter, setGiverChatter] = useState<{
+    name: string;
+    sprite?: string;
+    text: string;
+  } | null>(null);
+  useEffect(() => {
+    overlaysOpenRef.current =
+      !!npcEncounterId ||
+      !!shopCounterId ||
+      partyScreenOpen ||
+      !!lockEncounter ||
+      !!spawnEncounter ||
+      !!questEncounter ||
+      !!giverChatter ||
+      !!simLoreId ||
+      !!placard;
+  }, [
+    npcEncounterId,
+    shopCounterId,
+    simLoreId,
+    partyScreenOpen,
+    lockEncounter,
+    spawnEncounter,
+    questEncounter,
+    giverChatter,
+    placard,
+  ]);
+  /** Callback the Phaser scene invokes when the user clicks a tile
+   *  during "placing" — held in a ref so the scene closure stays
+   *  stable while React re-renders. */
+  const onSimPlaceRef = useRef<(col: number, row: number) => void>(
+    () => {},
+  );
+  /** Discrete zoom presets. Index into ZOOM_STEPS; the canvas is
+   *  CSS-scaled by this factor so the outer overflow-auto container
+   *  produces matching scrollbars for pan. Phaser pointer events still
+   *  resolve to correct game coordinates because getBoundingClientRect
+   *  returns post-transform dimensions. */
+  //  100% = standard size: each tile on screen is NATIVE_TILE_CSS_PX
+  //  (48) CSS px, the same size as in play. The canvas itself is laid out
+  //  at the logical TILE_SIZE (32) per tile, so the CSS scale applied
+  //  is `zoom * NATIVE_SCALE`.
+  const ZOOM_STEPS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2] as const;
+  const DEFAULT_ZOOM_IDX = 3; // = 1.0 = native (the "reset" target)
+  /** Zoom a map opens at. The editor remounts per map (keyed by mapId),
+   *  so every map starts here: 50% shows more of the map at once. */
+  const OPEN_ZOOM_IDX = 1; // = 0.5
+  const NATIVE_SCALE = NATIVE_TILE_CSS_PX / TILE_SIZE;
+  const [zoomIdx, setZoomIdx] = useState<number>(OPEN_ZOOM_IDX);
+  const zoom = ZOOM_STEPS[zoomIdx];
+  /** CSS scale actually applied to the logical-size canvas. */
+  const displayZoom = zoom * NATIVE_SCALE;
+  /** Ref to the scrollable canvas viewport so middle-mouse-drag and
+   *  Space+drag panning can mutate scrollLeft/scrollTop directly
+   *  without React re-renders. */
+  const canvasScrollRef = useRef<HTMLDivElement | null>(null);
+  /** Latest zoom factor, readable from long-lived closures (the sim
+   *  bridge is built once per sim mount and would otherwise capture a
+   *  stale zoom). */
+  const zoomRef = useRef<number>(displayZoom);
+  zoomRef.current = displayZoom;
+  /** Last cell the simulated party was shown at, or null right after a
+   *  sim mounts (i.e. on arrival at a new map). Drives the follow
+   *  camera: null / a multi-cell jump → center on the party; a normal
+   *  one-step move → nudge the viewport only when the party nears an
+   *  edge. */
+  const partyViewRef = useRef<{ col: number; row: number } | null>(null);
+  /** Keep the party cell at (col, row) visible during simulation by
+   *  scrolling the canvas panel. Without this, arriving on a larger map
+   *  (or walking off-screen) leaves the party outside the visible area.
+   *  Deliberately scrolls ONLY the canvas panel (not scrollIntoView,
+   *  which would also shift overflow-hidden ancestors and push the
+   *  toolbar off-screen). */
+  const followParty = useCallback((col: number, row: number) => {
+    const prev = partyViewRef.current;
+    partyViewRef.current = { col, row };
+    const jumped =
+      !prev || Math.abs(prev.col - col) > 2 || Math.abs(prev.row - row) > 2;
+    // Defer a tick so a just-mounted map has laid out before we measure.
+    // (setTimeout rather than requestAnimationFrame: rAF is paused in
+    // background tabs, which would silently drop the scroll.)
+    window.setTimeout(() => {
+      const el = canvasScrollRef.current;
+      const canvas = containerRef.current;
+      if (!el || !canvas) return;
+      const cellPx = TILE_SIZE * zoomRef.current;
+      const elRect = el.getBoundingClientRect();
+      const cRect = canvas.getBoundingClientRect();
+      // Cell's top-left in the scroll panel's content coordinates.
+      const cellX = cRect.left - elRect.left + el.scrollLeft + col * cellPx;
+      const cellY = cRect.top - elRect.top + el.scrollTop + row * cellPx;
+      const viewW = el.clientWidth;
+      const viewH = el.clientHeight;
+      let left: number;
+      let top: number;
+      if (jumped) {
+        left = cellX + cellPx / 2 - viewW / 2;
+        top = cellY + cellPx / 2 - viewH / 2;
+      } else {
+        // Follow-cam: scroll only once the party is within ~4 tiles of
+        // an edge, then just enough to restore that margin.
+        const mX = Math.min(cellPx * 4, viewW / 3);
+        const mY = Math.min(cellPx * 4, viewH / 3);
+        left = el.scrollLeft;
+        top = el.scrollTop;
+        if (cellX < left + mX) left = cellX - mX;
+        else if (cellX + cellPx > left + viewW - mX) left = cellX + cellPx - viewW + mX;
+        if (cellY < top + mY) top = cellY - mY;
+        else if (cellY + cellPx > top + viewH - mY) top = cellY + cellPx - viewH + mY;
+      }
+      // Assign directly (clamped by the browser) — no smooth scrolling,
+      // so rapid key repeats can't leave the camera lagging behind.
+      el.scrollLeft = left;
+      el.scrollTop = top;
+    }, 0);
+  }, []);
+  /** True while the user holds Space — enables drag-to-pan and
+   *  swaps the cursor to "grab" so the gesture is discoverable. */
+  const [spaceHeld, setSpaceHeld] = useState(false);
+  // Track Space at the window level so it works no matter which
+  // editor element has focus. Ignore the keydown if the user is
+  // typing in an input/textarea so cell-text editing isn't blocked.
+  useEffect(() => {
+    const isTyping = (t: EventTarget | null) => {
+      if (!(t instanceof HTMLElement)) return false;
+      const tag = t.tagName;
+      return (
+        tag === "INPUT" ||
+        tag === "TEXTAREA" ||
+        tag === "SELECT" ||
+        t.isContentEditable
+      );
+    };
+    const isSpace = (e: KeyboardEvent) =>
+      e.code === "Space" || e.key === " " || e.key === "Spacebar";
+    const onDown = (e: KeyboardEvent) => {
+      if (!isSpace(e)) return;
+      if (isTyping(e.target)) return;
+      // Suppress on EVERY Space keydown — including auto-repeats —
+      // otherwise the browser's default "Space = page down" scrolls
+      // the canvas viewport while the user is trying to pan.
+      e.preventDefault();
+      if (!e.repeat) setSpaceHeld(true);
+    };
+    const onUp = (e: KeyboardEvent) => {
+      if (!isSpace(e)) return;
+      setSpaceHeld(false);
+    };
+    // Capture phase so we beat any inner scroll handler that would
+    // otherwise consume the event before we get to preventDefault.
+    window.addEventListener("keydown", onDown, { capture: true });
+    window.addEventListener("keyup", onUp, { capture: true });
+    return () => {
+      window.removeEventListener("keydown", onDown, { capture: true });
+      window.removeEventListener("keyup", onUp, { capture: true });
+    };
+  }, []);
+
+  // P toggles the in-game Party screen — but ONLY while the simulation
+  // is active. Outside sim, pressing P shouldn't pop the modal (and
+  // shouldn't fight cell-text inputs). When the overlay is open, the
+  // overlay itself owns the P / ESC handling for dismissal so we
+  // intentionally bail out here.
+  useEffect(() => {
+    const isTyping = (t: EventTarget | null) => {
+      if (!(t instanceof HTMLElement)) return false;
+      const tag = t.tagName;
+      return (
+        tag === "INPUT" ||
+        tag === "TEXTAREA" ||
+        tag === "SELECT" ||
+        t.isContentEditable
+      );
+    };
+    const onPartyKey = (e: KeyboardEvent) => {
+      if (simModeRef.current !== "active") return;
+      if (partyScreenOpen) return;
+      if (e.key !== "p" && e.key !== "P") return;
+      if (isTyping(e.target)) return;
+      e.preventDefault();
+      setPartyScreenOpen(true);
+    };
+    window.addEventListener("keydown", onPartyKey);
+    return () => window.removeEventListener("keydown", onPartyKey);
+  }, [partyScreenOpen]);
+
+  // If the user leaves simulation while any overlay is still open,
+  // dismiss them so they don't linger over the inspector pane.
+  useEffect(() => {
+    if (simMode !== "active") {
+      if (npcEncounterId) setNpcEncounterId(null);
+      if (shopCounterId) setShopCounterId(null);
+      if (lockEncounter) setLockEncounter(null);
+      if (questEncounter) setQuestEncounter(null);
+      if (giverChatter) setGiverChatter(null);
+      if (simLoreId) setSimLoreId(null);
+    }
+  }, [simMode, npcEncounterId, shopCounterId, lockEncounter, questEncounter, giverChatter, simLoreId]);
+  useEffect(() => {
+    if (simMode !== "active" && partyScreenOpen) {
+      setPartyScreenOpen(false);
+    }
+  }, [simMode, partyScreenOpen]);
+  const [publishing, setPublishing] = useState(false);
+  /** Set true once a saveDraft call has thrown QuotaExceededError for
+   *  this module's maps.json — typically because the file has grown
+   *  past the ~5MB browser localStorage cap (very common after a
+   *  dungeon bake). When set, the toolbar surfaces a warning chip
+   *  telling the user to Publish to persist their in-memory edits.
+   *  Paint edits still apply to the React + Phaser state so the
+   *  editor remains usable; they just won't survive a reload until
+   *  the user clicks Publish. */
+  const [draftQuotaExceeded, setDraftQuotaExceeded] = useState(false);
+  /** When true, the Map Properties modal is mounted. The dialog edits
+   *  the top-level Map record metadata (name, description, tags) —
+   *  the per-cell painting flow is unaffected. */
+  const [editingMapAttrs, setEditingMapAttrs] = useState(false);
+  const [resizingMap, setResizingMap] = useState(false);
+
+  /** Ordered list of currently-selected cells. A plain click replaces
+   *  it with a single cell; Cmd/Ctrl-click (in Inspect mode) toggles a
+   *  cell in or out. The LAST entry is the "anchor" — the cell whose
+   *  attribute values the inspector displays. Editing a field applies
+   *  the change to EVERY cell in this list at once. */
+  const [selection, setSelection] = useState<
+    Array<{ col: number; row: number }>
+  >([]);
+  /** The anchor cell — last in the selection, or null when nothing is
+   *  selected. Drives the inspector's displayed values + the existing
+   *  single-cell-derived memos. */
+  const selectedCell = useMemo<{ col: number; row: number } | null>(
+    () => anchorCell(selection),
+    [selection],
+  );
+  /** "paint" → click/drag paints the active brush and selects the cell.
+   *  "fill"  → click/drag draws a rectangle preview; on release every
+   *            cell inside the rect is painted with the active brush
+   *            in a single batched persist.
+   *  "pan"  → click/drag scrolls the canvas viewport. Useful on
+   *           laptops with no middle mouse button.
+   *  "inspect" → click/drag only selects (so you can read attributes
+   *  without modifying the map). */
+  const [tool, setTool] = useState<"paint" | "inspect" | "pan" | "fill">(
+    "inspect",
+  );
+  const toolRef = useRef<"paint" | "inspect" | "pan" | "fill">("inspect");
+  useEffect(() => {
+    toolRef.current = tool;
+  }, [tool]);
+
+  /** Ambient lighting simulation. Day = full bright. Twilight = dim
+   *  ambient with light sources lifting nearby cells. Night = near-
+   *  black ambient, same lighting rules. */
+  const [lightingMode, setLightingMode] = useState<
+    "day" | "twilight" | "night"
+  >("day");
+  /** Mirror of lightingMode in a ref so the sim's relight callback
+   *  can trigger a pass without re-binding the closure each render. */
+  const lightingModeRef = useRef<"day" | "twilight" | "night">("day");
+  useEffect(() => {
+    lightingModeRef.current = lightingMode;
+  }, [lightingMode]);
+  /** Mirror of the map's `fog_of_war` flag (default on). Held in a ref
+   *  so the sim relight closure — built once at scene-create time —
+   *  reads the live value. Synced from the loaded map record below.
+   *  When false the editor's sim-mode preview reveals the whole map,
+   *  matching how the play scene renders a fog-off map. */
+  const fogEnabledRef = useRef<boolean>(true);
+  /** Which palette-tag sections are currently collapsed in the side
+   *  panel. Tags are expanded by default; entries here are the
+   *  exceptions. */
+  const [collapsedTags, setCollapsedTags] = useState<Set<string>>(
+    () => new Set(),
+  );
+  /** Seed the Tile Palette side panel to ALL collapsed once the palette
+   *  loads, so it opens as a compact, drill-down index instead of a wall
+   *  of expanded tags. The ref guards it to a one-shot — the author's
+   *  manual expand/collapse persists afterwards. */
+  const seededPaletteCollapseRef = useRef(false);
+  useEffect(() => {
+    if (state.kind !== "ok" || seededPaletteCollapseRef.current) return;
+    if (state.palette.length === 0) return;
+    seededPaletteCollapseRef.current = true;
+    setCollapsedTags(collectTileTagPaths(state.palette));
+  }, [state]);
+
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  // Refs that bridge React state into the Phaser scene's closure.
+  const brushRef = useRef<string | null>(null);
+  /** Start cell of an in-progress Fill rectangle drag. Set on pointer-
+   *  down while the Fill tool is active, cleared on pointer-up after
+   *  the rectangle commits. Null at all other times. */
+  const fillStartRef = useRef<{ col: number; row: number } | null>(null);
+  /** The live grid the scene mutates on paint. Each cell is a full
+   *  TileType instance — paint replaces it with a deep-copy of the
+   *  brush palette entry. */
+  const gridRef = useRef<TileType[][]>([]);
+  const paletteRef = useRef<TileType[]>([]);
+  const persistRef = useRef<() => void>(() => {});
+  /** Undo history for tile placements (Paint strokes + Fill
+   *  rectangles). Each entry maps "col,row" → the cell as it was
+   *  BEFORE that edit, so undoing one entry restores every cell the
+   *  stroke touched. Newest entry last; capped at UNDO_LIMIT. Cleared
+   *  when a different map loads or the map is resized (old
+   *  coordinates would point at the wrong cells). */
+  const undoStackRef = useRef<Array<Map<string, TileType>>>([]);
+  /** The Paint stroke in progress (pointerdown → pointerup). Cells are
+   *  recorded the first time the stroke changes them. */
+  const strokeRef = useRef<Map<string, TileType> | null>(null);
+  /** Mirrors undoStackRef.current.length so the Undo button can
+   *  enable / disable itself. */
+  const [undoCount, setUndoCount] = useState(0);
+  const pushUndoRef = useRef<(entry: Map<string, TileType>) => void>(() => {});
+  pushUndoRef.current = (entry) => {
+    if (entry.size === 0) return;
+    const stack = undoStackRef.current;
+    stack.push(entry);
+    if (stack.length > UNDO_LIMIT) stack.splice(0, stack.length - UNDO_LIMIT);
+    setUndoCount(stack.length);
+  };
+  const clearUndo = () => {
+    undoStackRef.current = [];
+    strokeRef.current = null;
+    setUndoCount(0);
+  };
+  /** Scene calls this on every cell the pointer touches so the React
+   *  inspector tracks the latest interaction. `opts.additive` (set when
+   *  the user Cmd/Ctrl-clicks in Inspect mode) extends the selection
+   *  instead of replacing it; `opts.drag` distinguishes a press from a
+   *  drag-over so additive drags only ADD cells (no flicker) while an
+   *  additive single click toggles. */
+  const onCellTouchedRef = useRef<
+    (
+      col: number,
+      row: number,
+      opts?: { additive?: boolean; drag?: boolean },
+    ) => void
+  >(() => {});
+  const sceneApiRef = useRef<{
+    setGridLinesVisible: (on: boolean) => void;
+    setSelected: (cell: { col: number; row: number } | null) => void;
+    /** Highlight every cell in a multi-selection. The LAST entry is the
+     *  anchor and is stroked solid; the rest get a lighter outline +
+     *  translucent fill so the active cell still reads. Empty array
+     *  clears the highlight. */
+    setSelectionCells: (
+      cells: ReadonlyArray<{ col: number; row: number }>,
+    ) => void;
+    /** Update a single cell's rendered texture from its sprite path. */
+    refreshCell: (col: number, row: number, spriteKey: string) => void;
+    /** Redraw a cell (base sprite + background layer) from whatever
+     *  gridRef currently holds there. Used by Undo. */
+    restoreCell: (col: number, row: number) => void;
+    /** Re-tint every cell based on the lighting mode + current grid. */
+    relight: (mode: "day" | "twilight" | "night") => void;
+    /** Sync per-cell particle emitters to the current grid's animation values. */
+    refreshAnimations: () => void;
+    /** Sync per-cell encounter-sprite overlays from each cell's encounter field. */
+    refreshEncounterOverlays: () => void;
+    /** Sync per-cell item-sprite overlays from each cell's item field. */
+    refreshItemOverlays: () => void;
+    /** Play the "collected!" pickup effect at (col, row): the item's
+     *  overlay sprite floats up + fades while a golden glow + sparkles
+     *  bloom, paired with a chime. Called from the sim's `item_picked`
+     *  event. No-op if the cell has no overlay sprite. */
+    playItemPickup: (col: number, row: number) => void;
+    /** Sync per-cell NPC-sprite overlays from each cell's npc field. */
+    refreshNpcOverlays: () => void;
+    /** Sync moored-boat overlays: from each cell's `boat_sprite` while
+     *  painting, from the sim's live boat positions while simulating. */
+    refreshBoatOverlays: () => void;
+    /** Sync the quest-giver sprite overlay (cells with `quest` set
+     *  render the quest's quest_giver.npc_sprite) AND the soft
+     *  golden glow drawn behind quest-relevant cells (givers,
+     *  encounters tied to kill steps, items tied to fetch steps). */
+    refreshQuestOverlays: () => void;
+    /** Show / move the simulation party sprite. Sprite path is the
+     *  full key passed to the scene's preload (so the texture is
+     *  already cached). Position is in grid coords. */
+    setPartyAt: (col: number, row: number, sprite: string) => void;
+    /** Hide the party sprite entirely. Called on sim teardown. */
+    clearParty: () => void;
+    /** Override the party-light source the relight pass folds in.
+     *  Null disables the extra source. */
+    setPartyLight: (source: SimLightSource | null) => void;
+    /** Sync the "loose" boats sitting on the world map. Each entry
+     *  carries the boat's sprite; boats are drawn as overlays on top
+     *  of their cell, never by repainting it. */
+    setBoatPositions: (
+      positions: ReadonlyArray<{
+        col: number;
+        row: number;
+        sprite: string;
+      }>,
+    ) => void;
+    /** Show / move the boat sprite that follows the party while
+     *  they're aboard. The scene also hides partySprite while the
+     *  boat is showing (the party is "inside" the boat). `sprite`
+     *  is the boat's render key — passed on board, omitted on sail. */
+    setPartyBoatAt: (
+      col: number,
+      row: number,
+      visible: boolean,
+      sprite?: string,
+    ) => void;
+    /** Briefly show `text` floating up over the cell at (col, row).
+     *  Used when the party steps onto a tile whose `text` field is
+     *  set. Rises and fades over ~1.4s. Self-cleaning. */
+    floatText: (col: number, row: number, text: string) => void;
+    /** Sync per-roamer sprites with the live set from the simulator.
+     *  Roamers render at near-full cell size with a depth just below
+     *  the party (so the party sprite reads on top when they collide). */
+    setRoamerPositions: (
+      positions: ReadonlyArray<{
+        id: string;
+        col: number;
+        row: number;
+        sprite: string;
+      }>,
+    ) => void;
+    /** Swap the cell at (col, row) to a different sprite/walkable.
+     *  Used by the destroy-lair path so a defeated Monster Spawn
+     *  reverts to plain ground visually in-session. */
+    setCellSprite: (
+      col: number,
+      row: number,
+      sprite: string,
+      walkable: boolean,
+    ) => void;
+    /** Sync sprites for the live placed-encounter entities. Same
+     *  shape and depth as roamers — they're just sourced from
+     *  encounter cells instead of spawns. */
+    setPlacedEncounterPositions: (
+      positions: ReadonlyArray<{
+        id: string;
+        col: number;
+        row: number;
+        sprite: string;
+      }>,
+    ) => void;
+    /** Tell the scene to suppress the static cell-encounter overlay
+     *  for these "col,row" keys. Pairs with the placed-encounter
+     *  renderer so a roaming entity doesn't double up with the
+     *  painted sprite. Cleared (empty set) when sim mode ends. */
+    setSuppressedEncounterCells: (cells: ReadonlySet<string>) => void;
+  } | null>(null);
+  /** The party-light source the simulation contributes. Read by the
+   *  scene's relight on every pass — when sim mode is off this stays
+   *  null and behavior is identical to the painting view. */
+  const partyLightRef = useRef<SimLightSource | null>(null);
+  /** True when at least one active party member's race carries the
+   *  `infravision` ability AND the player has currently engaged
+   *  it. The ability part is computed once on catalog load; the
+   *  activation half is pushed in through the
+   *  `setPartyInfravisionActive` bridge callback every time the
+   *  user toggles it via the SimPanel button. The relight pass
+   *  reads the combined value through the closure. */
+  const partyInfravisionActiveRef = useRef<boolean>(false);
+  /** Separately tracked: does the party even have the ability? UI
+   *  controls (the SimPanel toggle) gate on this so a non-Dwarf
+   *  party doesn't show an Activate Infravision button at all. */
+  const partyHasInfravisionRef = useRef<boolean>(false);
+  /** Editor-local fog-of-war memory. Grown by the relight pass from
+   *  the lighting helper's `currentlyVisible` output so authors
+   *  playtesting their map in sim mode see the same dim "remembered"
+   *  band the live /play runtime renders. Reset to a fresh Set
+   *  whenever sim mode toggles off (see the `clearParty` branch
+   *  below), since the author hasn't actually "explored" anything
+   *  in their painting view. Not persisted — the editor never
+   *  writes back to the save layer. */
+  const visitedCellsRef = useRef<Set<string>>(new Set());
+
+  // Selection follows the cursor. A plain interaction replaces the
+  // selection with the single touched cell; an additive interaction
+  // (Cmd/Ctrl-click in Inspect mode) extends it.
+  useEffect(() => {
+    onCellTouchedRef.current = (col, row, opts) => {
+      setSelection((prev) => nextCellSelection(prev, { col, row }, opts));
+    };
+  }, []);
+
+  // Mirror React state into refs so Phaser sees fresh values.
+  useEffect(() => {
+    brushRef.current = activeBrush;
+  }, [activeBrush]);
+
+  // ── Initial load ────────────────────────────────────────────────
+  useEffect(() => {
+    let cancelled = false;
+    setState({ kind: "loading" });
+    (async () => {
+      try {
+        const src = getEditorModuleSource();
+        const [
+          paletteLayers,
+          mapsLayers,
+          countersLayers,
+          encountersLayers,
+          spawnsLayers,
+          itemsLayers,
+          partyLayers,
+          charactersLayers,
+          racesLayers,
+          effectsLayers,
+          classesLayers,
+          dungeonsLayers,
+          questsLayers,
+          npcsLayers,
+          spellsLayers,
+          monstersLayers,
+          trapsLayers,
+          loreLayers,
+        ] = await Promise.all([
+          src.loadModelLayers(moduleId, "map_tiles"),
+          src.loadModelLayers(moduleId, "maps"),
+          src.loadModelLayers(moduleId, "counters"),
+          src.loadModelLayers(moduleId, "encounters"),
+          src.loadModelLayers(moduleId, "spawns"),
+          src.loadModelLayers(moduleId, "items"),
+          // Sim-only catalog. Failures here are non-fatal — the editor
+          // still functions for painting; sim mode just degrades.
+          src.loadModelLayers(moduleId, "party").catch(() => null),
+          src.loadModelLayers(moduleId, "characters").catch(() => null),
+          src.loadModelLayers(moduleId, "races").catch(() => null),
+          src.loadModelLayers(moduleId, "effects").catch(() => null),
+          src.loadModelLayers(moduleId, "character_classes").catch(() => null),
+          // Cell-inspector pickers for the dungeon/quest fields.
+          // Same non-fatal pattern — empty list if the module hasn't
+          // populated these yet.
+          src.loadModelLayers(moduleId, "dungeons").catch(() => null),
+          src.loadModelLayers(moduleId, "quests").catch(() => null),
+          // NPC catalog for the cell inspector's NPC picker + the
+          // on-map NPC-sprite overlay. Non-fatal too.
+          src.loadModelLayers(moduleId, "npcs").catch(() => null),
+          // Spells catalog — only the Knock spell is consumed by the
+          // simulator today (Pick Lock / Cast Knock dialog). Non-fatal
+          // so a module without spells still boots into sim mode.
+          src.loadModelLayers(moduleId, "spells").catch(() => null),
+          // Monsters catalog — read by the spawn subsystem so the
+          // roamer renderer + encounter overlay can resolve a
+          // monster id to a sprite + display name. Non-fatal so
+          // modules without monsters.json still mount.
+          src.loadModelLayers(moduleId, "monsters").catch(() => null),
+          // Traps catalog for the cell inspector's Trap picker.
+          // Non-fatal — modules without traps.json just show an
+          // empty dropdown.
+          src.loadModelLayers(moduleId, "traps").catch(() => null),
+          src.loadModelLayers(moduleId, "lore").catch(() => null),
+        ]);
+        if (cancelled) return;
+
+        // Resolve palette (tile types are catalog-only, no drafts needed
+        // for this read — the picker side panel just shows what's defined).
+        const paletteMerged = mergeModel(
+          "map_tiles",
+          paletteLayers.inherited,
+          paletteLayers.ownFile,
+        ) as { map_tiles?: TileType[] } | null;
+        const palette = paletteMerged?.map_tiles ?? [];
+
+        const countersMerged = mergeModel(
+          "counters",
+          countersLayers.inherited,
+          countersLayers.ownFile,
+        ) as { counters?: RefRecord[] } | null;
+        const counters = countersMerged?.counters ?? [];
+
+        const encountersMerged = mergeModel(
+          "encounters",
+          encountersLayers.inherited,
+          encountersLayers.ownFile,
+        ) as { encounters?: EncounterRecord[] } | null;
+        const encounters = encountersMerged?.encounters ?? [];
+
+        const spawnsMerged = mergeModel(
+          "spawns",
+          spawnsLayers.inherited,
+          spawnsLayers.ownFile,
+        ) as { spawns?: RefRecord[] } | null;
+        const spawns = spawnsMerged?.spawns ?? [];
+        // Build the typed SimSpawn list the simulator consumes. We
+        // backfill the few fields v1 docs allow to be optional with
+        // the same defaults the v1 reference loader applied — so a
+        // partially-authored Spawn record still drives a sensible
+        // loop instead of throwing.
+        const simSpawns: SimSpawn[] = spawns.map((s) => {
+          const rec = s as RefRecord & {
+            description?: string;
+            spawn_monsters?: string[];
+            spawn_chance?: number;
+            spawn_radius?: number;
+            max_spawned?: number;
+            boss_monsters?: string[];
+            xp_reward?: number;
+            gold_reward?: number;
+            loot?: string[];
+          };
+          return {
+            id: rec.id,
+            name: (rec.name as string) ?? "Monster Spawn",
+            description: rec.description ?? "",
+            spawn_monsters: rec.spawn_monsters ?? [],
+            spawn_chance:
+              typeof rec.spawn_chance === "number" ? rec.spawn_chance : 20,
+            spawn_radius:
+              typeof rec.spawn_radius === "number" ? rec.spawn_radius : 3,
+            max_spawned:
+              typeof rec.max_spawned === "number" ? rec.max_spawned : 2,
+            boss_monsters: rec.boss_monsters ?? [],
+            xp_reward:
+              typeof rec.xp_reward === "number" ? rec.xp_reward : 50,
+            gold_reward:
+              typeof rec.gold_reward === "number" ? rec.gold_reward : 25,
+            loot: rec.loot ?? [],
+          };
+        });
+
+        const itemsMerged = mergeModel(
+          "items",
+          itemsLayers.inherited,
+          itemsLayers.ownFile,
+        ) as { items?: ItemRecord[] } | null;
+        const items = itemsMerged?.items ?? [];
+
+        const npcsMerged =
+          npcsLayers &&
+          (mergeModel(
+            "npcs",
+            npcsLayers.inherited,
+            npcsLayers.ownFile,
+          ) as { npcs?: NpcRecord[] } | null);
+        const npcs = npcsMerged?.npcs ?? [];
+
+        // Resolve maps with draft applied so a half-painted map survives reloads.
+        const draft = await loadDraft<Record<string, unknown>>(moduleId, MODEL_KEY);
+        const ownEffective =
+          draft ?? (mapsLayers.ownFile as Record<string, unknown> | null);
+        const mapsMerged = mergeModel(
+          "maps",
+          mapsLayers.inherited,
+          ownEffective,
+        ) as { maps?: MapRecord[] } | null;
+        const allMaps = mapsMerged?.maps ?? [];
+        const found = allMaps.find((m) => m.id === mapId);
+        if (!found) {
+          setState({
+            kind: "error",
+            message: `Map "${mapId}" not found in module "${moduleId}".`,
+          });
+          return;
+        }
+        // Auto-migrate string cells → full instances on load, so old
+        // data files still open. For object cells missing fields (new
+        // attributes added to the palette after the cell was painted),
+        // backfill from the palette entry that shares the cell's id.
+        // Cell values win where present; palette fills the gaps.
+        const paletteById = new Map(palette.map((t) => [t.id, t]));
+        const materialized: TileType[][] = found.grid.map((row) =>
+          row.map((cell) => {
+            if (typeof cell === "string") {
+              const tpl = paletteById.get(cell);
+              return tpl
+                ? { ...tpl }
+                : ({
+                    id: cell,
+                    name: cell,
+                    tag: "",
+                    walkable: true,
+                    obstructs: false,
+                    boat: false,
+                    boat_passable: false,
+                    locked: false,
+                    light_source: false,
+                    light_range: 0,
+                    text: "",
+                    animation: "none",
+                    counter: "",
+                    encounter: "",
+                    spawn: "",
+                    item: "",
+                    quest: "",
+                    dungeon: "",
+                    npc: "",
+                    sprite: "",
+                  } as TileType);
+            }
+            const obj = cell as TileType;
+            const tpl = paletteById.get(obj.id);
+            return tpl ? { ...tpl, ...obj } : { ...obj };
+          }),
+        );
+        const mapRecord: MapRecord = {
+          ...found,
+          grid: materialized,
+        };
+        // Drop any leftover sparse overrides from older data revisions.
+        delete (mapRecord as Record<string, unknown>).cells;
+        gridRef.current = materialized;
+        clearUndo();
+        paletteRef.current = palette;
+        // Seed the brush with the first walkable tile, falling back to first tile.
+        const firstBrush =
+          palette.find((t) => t.walkable)?.id ?? palette[0]?.id ?? null;
+        setActiveBrush(firstBrush);
+        // Sim-catalog merges. The sim only reads a small subset of
+        // each record; we resolve them through the same mergeModel
+        // pipeline so module extends/uses chains work identically.
+        const partyMerged =
+          partyLayers &&
+          (mergeModel(
+            "party",
+            partyLayers.inherited,
+            partyLayers.ownFile,
+          ) as SimParty | null);
+        const charactersMerged =
+          charactersLayers &&
+          (mergeModel(
+            "characters",
+            charactersLayers.inherited,
+            charactersLayers.ownFile,
+          ) as { characters?: SimCharacter[] } | null);
+        const racesMerged =
+          racesLayers &&
+          (mergeModel(
+            "races",
+            racesLayers.inherited,
+            racesLayers.ownFile,
+          ) as { races?: SimRace[] } | null);
+        const effectsMerged =
+          effectsLayers &&
+          (mergeModel(
+            "effects",
+            effectsLayers.inherited,
+            effectsLayers.ownFile,
+          ) as { effects?: SimEffect[] } | null);
+        const classesMerged =
+          classesLayers &&
+          (mergeModel(
+            "character_classes",
+            classesLayers.inherited,
+            classesLayers.ownFile,
+          ) as {
+            character_classes?: SimCharacterClass[];
+          } | null);
+        // Spells catalog — the sim only needs the Knock spell today
+        // (lock-unlock dialog). We pull the full list through mergeModel
+        // and then pluck the entry whose id matches; missing → null,
+        // which suppresses the Cast Knock row in the dialog.
+        const spellsMerged =
+          spellsLayers &&
+          (mergeModel(
+            "spells",
+            spellsLayers.inherited,
+            spellsLayers.ownFile,
+          ) as { spells?: SimSpell[] } | null);
+        const knockSpell: SimSpell | null =
+          spellsMerged?.spells?.find((s) => s.id === "knock") ?? null;
+
+        // Monsters catalog — the spawn subsystem needs ids + names +
+        // sprite paths. We only pluck those three fields out of the
+        // (much larger) monsters.json record so the sim type stays
+        // narrow. monsters.json paths are already in the "monster/foo.png"
+        // shape battle's loader resolves.
+        const monstersMerged =
+          monstersLayers &&
+          (mergeModel(
+            "monsters",
+            monstersLayers.inherited,
+            monstersLayers.ownFile,
+          ) as {
+            monsters?: Array<{ id: string; name?: string; sprite?: string }>;
+          } | null);
+        const simMonsters: SimMonsterRef[] =
+          (monstersMerged?.monsters ?? []).map((m) => ({
+            id: m.id,
+            name: m.name ?? m.id,
+            sprite: m.sprite ?? "",
+          }));
+
+        // Build the picker list once at load. The full record set is
+        // resolved by mergeModel above (allMaps); we strip to
+        // id+name+tags — tags so the Link editor can group its picker
+        // by tag the same way the maps browse tree does.
+        const availableMaps = allMaps
+          .map((m) => ({ id: m.id, name: m.name ?? m.id, tags: m.tags }))
+          .sort((a, b) => a.name.localeCompare(b.name));
+
+        // Same shape for the dungeons / quests pickers in the cell
+        // inspector. Failures upstream become empty lists.
+        const dungeonsMerged =
+          dungeonsLayers &&
+          (mergeModel(
+            "dungeons",
+            dungeonsLayers.inherited,
+            dungeonsLayers.ownFile,
+          ) as { dungeons?: Array<{ id: string; name?: string }> } | null);
+        const availableDungeons = (dungeonsMerged?.dungeons ?? [])
+          .map((d) => ({ id: d.id, name: d.name ?? d.id }))
+          .sort((a, b) => a.name.localeCompare(b.name));
+        const questsMerged =
+          questsLayers &&
+          (mergeModel(
+            "quests",
+            questsLayers.inherited,
+            questsLayers.ownFile,
+          ) as { quests?: QuestRecord[] } | null);
+        const availableQuests = (questsMerged?.quests ?? [])
+          .slice()
+          .sort((a, b) =>
+            (a.name ?? a.id).localeCompare(b.name ?? b.id),
+          );
+        // Traps picker for the cell inspector — id + name is all the
+        // dropdown needs.
+        const trapsMerged =
+          trapsLayers &&
+          (mergeModel(
+            "traps",
+            trapsLayers.inherited,
+            trapsLayers.ownFile,
+          ) as { traps?: Array<{ id: string; name?: string }> } | null);
+        const availableTraps = (trapsMerged?.traps ?? [])
+          .map((t) => ({ id: t.id, name: t.name ?? t.id }))
+          .sort((a, b) => a.name.localeCompare(b.name));
+        // Lore picker for the cell inspector.
+        const loreMerged =
+          loreLayers &&
+          (mergeModel(
+            "lore",
+            loreLayers.inherited,
+            loreLayers.ownFile,
+          ) as { lore?: Array<{ id: string; name?: string }> } | null);
+        const simLore = normalizeLore(loreMerged?.lore ?? []);
+        const availableLore = (loreMerged?.lore ?? [])
+          .filter((l) => l && typeof l.id === "string")
+          .map((l) => ({ id: l.id, name: l.name ?? l.id }))
+          .sort((a, b) => a.name.localeCompare(b.name));
+
+        setState({
+          kind: "ok",
+          palette,
+          counters,
+          encounters,
+          spawns,
+          items,
+          npcs,
+          mapRecord,
+          ownFile: ownEffective ?? null,
+          isDraft: hasDraft(moduleId, MODEL_KEY),
+          availableMaps,
+          availableDungeons,
+          availableQuests,
+          availableTraps,
+          availableLore,
+          simLore,
+          simParty: partyMerged ?? null,
+          simCharacters: charactersMerged?.characters ?? [],
+          simRaces: racesMerged?.races ?? [],
+          simEffects: effectsMerged?.effects ?? [],
+          simClasses: classesMerged?.character_classes ?? [],
+          simKnockSpell: knockSpell,
+          simSpawns,
+          simMonsters,
+        });
+      } catch (e) {
+        if (cancelled) return;
+        setState({
+          kind: "error",
+          message: e instanceof Error ? e.message : String(e),
+        });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [moduleId, mapId]);
+
+  // ── Persist grid edits into the draft ────────────────────────────
+  // Defined as a callback that captures `state` via a ref so the scene
+  // always invokes the latest version (state.ownFile changes after each save).
+  //
+  // `saveDraft` is async (gzip compression — see data_model/draft.ts),
+  // so the closure itself returns a promise. The brush-stroke caller
+  // doesn't await it; React state is updated synchronously up front so
+  // the stroke is visible regardless of how long the localStorage
+  // flush takes, and the quota-error warning toggle moves into the
+  // promise's `.catch`. The synchronous `setState` is the UI source
+  // of truth — the persist is purely for navigation survival.
+  useEffect(() => {
+    persistRef.current = () => {
+      if (state.kind !== "ok") return;
+      const baseFile: Record<string, unknown> = state.ownFile
+        ? { ...state.ownFile }
+        : { maps: [] };
+      const list = Array.isArray(baseFile.maps)
+        ? [...(baseFile.maps as MapRecord[])]
+        : [];
+      const idx = list.findIndex((m) => m.id === mapId);
+      const updatedMap: MapRecord = {
+        ...state.mapRecord,
+        grid: gridRef.current.map((row) => row.map((cell) => ({ ...cell }))),
+      };
+      // Defensively drop any vestigial overrides field.
+      delete (updatedMap as Record<string, unknown>).cells;
+      if (idx >= 0) list[idx] = updatedMap;
+      else list.push(updatedMap);
+      baseFile.maps = list;
+      // Synchronous UI update first — paint visibility shouldn't
+      // depend on the storage flush completing.
+      setState({
+        ...state,
+        mapRecord: updatedMap,
+        ownFile: baseFile,
+        isDraft: true,
+      });
+      // Best-effort write to localStorage. Paint fires this on every
+      // brush stroke, so we explicitly do NOT fall back to publishing
+      // straight to disk here — that would issue an HTTP POST per
+      // stroke for what may be a multi-megabyte file. Instead, catch
+      // the quota error (now via promise rejection), set the warning
+      // flag so the toolbar prompts the user to Publish, and let the
+      // in-memory state above carry the stroke until Publish lands.
+      saveDraft(moduleId, MODEL_KEY, baseFile).then(
+        () => {
+          if (draftQuotaExceeded) setDraftQuotaExceeded(false);
+        },
+        (e) => {
+          if (!draftQuotaExceeded) {
+            // eslint-disable-next-line no-console
+            console.warn(
+              "Map draft exceeded browser storage quota — edits will live in memory only until you Publish.",
+              e,
+            );
+            setDraftQuotaExceeded(true);
+          }
+        },
+      );
+    };
+  }, [state, moduleId, mapId, draftQuotaExceeded]);
+
+  // Sync the fog-of-war ref from the map record (default on; only an
+  // explicit `false` disables it) so the sim-mode preview matches how
+  // the play scene renders this map. Relight so a fog toggle saved via
+  // the Map Properties dialog reflects immediately.
+  useEffect(() => {
+    if (state.kind !== "ok") return;
+    fogEnabledRef.current =
+      (state.mapRecord as Record<string, unknown>).fog_of_war !== false;
+    sceneApiRef.current?.relight(lightingModeRef.current);
+  }, [state]);
+
+  // ── Mount Phaser ────────────────────────────────────────────────
+  useEffect(() => {
+    if (state.kind !== "ok") return;
+    if (!containerRef.current) return;
+
+    let game: import("phaser").Game | null = null;
+    let cancelled = false;
+
+    (async () => {
+      // Phaser, the pickup VFX helper, and the SFX module are all
+      // browser-only (Phaser touches `navigator`, Sfx touches Web
+      // Audio), so they load here inside the client-only effect rather
+      // than at module top level — Next.js prerenders this page's
+      // shell on the server and a load-time `navigator` access crashes
+      // the build.
+      const [Phaser, { itemPickup }, { Sfx }] = await Promise.all([
+        import("phaser"),
+        import("@/vfx/Vfx"),
+        import("@/battle/audio/Sfx"),
+      ]);
+      if (cancelled || !containerRef.current) return;
+      installHiDpiText(Phaser);
+
+      const {
+        palette,
+        mapRecord,
+        encounters,
+        items,
+        npcs,
+        availableQuests,
+        simParty,
+        simCharacters,
+        simRaces,
+        simMonsters,
+      } = state;
+      const paletteById = new Map(palette.map((t) => [t.id, t]));
+      const encountersById = new Map(encounters.map((e) => [e.id, e]));
+      const itemsById = new Map(items.map((i) => [i.id, i]));
+      const npcsById = new Map(npcs.map((n) => [n.id, n]));
+      const questsById = new Map(availableQuests.map((q) => [q.id, q]));
+      // Map id → sprite for the roamer renderer. Sprites are
+      // already in the "monster/foo.png" shape the preload pipeline
+      // consumes, so they slot straight into spriteKeys below.
+      const monstersById = new Map(simMonsters.map((m) => [m.id, m]));
+      // Compute partyHasInfravision once now that the catalog is
+      // in hand. Walks roster → character.race → race.abilities.
+      // The flag is read by relight via the ref so subsequent
+      // re-renders pick up changes after a fresh module load.
+      {
+        const racesById = new Map(simRaces.map((r) => [r.id, r]));
+        const charactersById = new Map(
+          simCharacters.map((c) => [c.id, c]),
+        );
+        partyHasInfravisionRef.current = (simParty?.roster ?? []).some(
+          (id) => {
+            const c = charactersById.get(id);
+            if (!c) return false;
+            const r = racesById.get(c.race);
+            if (!r) return false;
+            return (r.abilities ?? []).includes("infravision");
+          },
+        );
+      }
+
+      // Gather every unique sprite path used by the palette + the
+      // current grid + every encounter's monster_party_tile + every
+      // item's icon so we can render placed-sprite overlays on cells
+      // that reference one.
+      const spriteKeys = new Set<string>();
+      for (const t of palette) {
+        if (t.sprite) spriteKeys.add(t.sprite);
+        if (t.background_sprite) spriteKeys.add(t.background_sprite);
+      }
+      for (const row of gridRef.current) {
+        for (const cell of row) {
+          if (cell?.sprite) spriteKeys.add(cell.sprite);
+          if (cell?.background_sprite) spriteKeys.add(cell.background_sprite);
+          if (cell?.boat_sprite) spriteKeys.add(cell.boat_sprite);
+        }
+      }
+      for (const e of encounters) {
+        const s = e.monster_party_tile;
+        if (s && s.includes("/")) spriteKeys.add(s);
+      }
+      for (const i of items) {
+        if (i.icon) spriteKeys.add(`item/${i.icon}.png`);
+      }
+      // Quest-giver NPC sprites — preload so the on-map overlay is
+      // ready as soon as a cell with `tile.quest` becomes visible.
+      for (const q of availableQuests) {
+        const sprite = q.quest_giver?.npc_sprite;
+        if (sprite && sprite.includes("/")) spriteKeys.add(sprite);
+      }
+      // NPC sprites from the npcs catalog — same rationale as
+      // quest-giver sprites. Tolerate bare-stem sprite paths
+      // (e.g. "cleric1") by defaulting to the person/ folder.
+      const resolveNpcSpriteKey = (raw: string | undefined): string => {
+        if (!raw) return "";
+        if (raw.includes("/")) return raw;
+        return `person/${/\.[a-z]+$/i.test(raw) ? raw : `${raw}.png`}`;
+      };
+      for (const n of npcs) {
+        const key = resolveNpcSpriteKey(n.sprite);
+        if (key) spriteKeys.add(key);
+      }
+      // Resolve a "swap to water" sprite for cells that lose their
+      // boat. Pick the first water-tagged tile in the palette (the
+      // designer's chosen canonical water); a palette with no water
+      // tile leaves it empty. Pre-add it to the sprite keys so boards
+      // never miss the texture.
+      const WATER_SPRITE_KEY =
+        palette.find((t) => isWaterCell(t))?.sprite ?? "";
+      if (WATER_SPRITE_KEY) spriteKeys.add(WATER_SPRITE_KEY);
+      // Sim-mode sprites: party avatar + every active member's
+      // portrait. Pre-load defensively so toggling sim on doesn't
+      // need a second loader pass.
+      if (simParty?.avatar) spriteKeys.add(simParty.avatar);
+      for (const ch of simCharacters) {
+        if (ch.sprite) spriteKeys.add(ch.sprite);
+      }
+      // Monster sprites — the spawn loop renders one Phaser Image per
+      // roamer using these textures. Preloading them up front means
+      // a freshly-spawned monster appears immediately without the
+      // mid-step loader hop.
+      for (const m of simMonsters) {
+        if (m.sprite) spriteKeys.add(m.sprite);
+      }
+
+      class MapScene extends Phaser.Scene {
+        cells: Map<string, Phaser.GameObjects.Image> = new Map();
+        /** Optional per-cell background sprite, drawn under the base
+         *  tile (depth below 0) so a transparent foreground reveals
+         *  it. Only present for cells whose `background_sprite` is set. */
+        backgroundCells: Map<string, Phaser.GameObjects.Image> = new Map();
+        /** Sprite keys with a runtime (post-preload) load in flight, so
+         *  `ensureTexture` doesn't queue the same image twice while a
+         *  freshly-created sprite is loading. */
+        loadingTextures: Set<string> = new Set();
+        gridGraphics: Phaser.GameObjects.Graphics | null = null;
+        selectionGraphics: Phaser.GameObjects.Graphics | null = null;
+        /** Animation emitters keyed by "col,row". Each is a Phaser
+         *  particle emitter; null when a cell has no animation. */
+        emitters: Map<
+          string,
+          Phaser.GameObjects.Particles.ParticleEmitter
+        > = new Map();
+        /** Current animation key per cell so refresh can skip no-ops. */
+        emitterKinds: Map<string, AnimationKind> = new Map();
+        /** Encounter overlay sprites keyed by "col,row". */
+        encounterOverlays: Map<string, Phaser.GameObjects.Image> = new Map();
+        /** Current encounter id per cell so refresh can skip no-ops. */
+        encounterOverlayIds: Map<string, string> = new Map();
+        /** Item overlay sprites keyed by "col,row". */
+        itemOverlays: Map<string, Phaser.GameObjects.Image> = new Map();
+        /** Current item id per cell so refresh can skip no-ops. */
+        itemOverlayIds: Map<string, string> = new Map();
+        /** NPC overlay sprites keyed by "col,row" — the NPC's portrait
+         *  rendered on cells with `tile.npc` set. */
+        npcOverlays: Map<string, Phaser.GameObjects.Image> = new Map();
+        /** Current NPC id per cell so refresh can skip no-ops. */
+        npcOverlayIds: Map<string, string> = new Map();
+        /** Sim-mode party sprite (single Image, depth-300 above
+         *  everything else). Null while sim mode is off. */
+        partySprite: Phaser.GameObjects.Image | null = null;
+        /** Last known party cell — captured every `setPartyAt` so
+         *  the relight pass (shared with the dungeon scene) can
+         *  root the party-vision pool and gate torch LOS. Null when
+         *  sim mode is off; the shared helper interprets `null` as
+         *  "painting view, no LOS gating". */
+        partyCol: number | null = null;
+        partyRow: number | null = null;
+        /** Live roamer sprites keyed by SimRoamer.id. Mutated by
+         *  setRoamerPositions — entries that disappear from the
+         *  incoming list are destroyed, new ids spawn a fresh Image,
+         *  surviving ids tween/snap to their new position. */
+        roamerSprites: Map<string, Phaser.GameObjects.Image> = new Map();
+        /** Live placed-encounter sprites keyed by SimPlacedEncounter.id.
+         *  Same diff'd-update pattern as roamers; they share the same
+         *  depth band (250) so they layer naturally with each other. */
+        placedEncounterSprites: Map<
+          string,
+          Phaser.GameObjects.Image
+        > = new Map();
+        /** Cell keys whose static encounter overlay should currently
+         *  stay hidden. Driven by the sim subsystem — every cell
+         *  with a live placed-encounter entity (plus every cell whose
+         *  entity has been defeated) lands here while sim mode is
+         *  on. Cleared back to an empty Set on sim teardown. */
+        suppressedEncounterCells: Set<string> = new Set();
+        /** Boat overlay sprites keyed by "col,row" — drawn on top of
+         *  the cell (its water / river sprite is never touched). */
+        boatOverlays: Map<string, Phaser.GameObjects.Image> = new Map();
+        /** While the sim runs: its live loose-boat positions ("col,row"
+         *  → sprite), which replace the authored `boat_sprite` cells as
+         *  the source for boatOverlays. Null in the painting view. */
+        simBoats: Map<string, string> | null = null;
+        /** Boat sprite that follows the party while they're aboard.
+         *  Single Image, depth just below the party sprite so the
+         *  party rides the boat — except partySprite is hidden while
+         *  this is visible, so visually the boat IS the party. Null
+         *  when the party is on land. */
+        partyBoatSprite: Phaser.GameObjects.Image | null = null;
+        /** Quest-giver overlay sprites keyed by "col,row" — the
+         *  NPC sprite from a quest's quest_giver, rendered on cells
+         *  with `tile.quest` set. Diff'd against questGiverIds the
+         *  same way encounter/item overlays are. */
+        questGiverOverlays: Map<string, Phaser.GameObjects.Image> = new Map();
+        questGiverIds: Map<string, string> = new Map();
+        /** Single Graphics layer that draws the soft golden halo
+         *  behind quest-relevant cells. Recomputed wholesale on
+         *  refresh — cheap enough that diffing per cell isn't
+         *  worth the complexity. */
+        questGlowGraphics: Phaser.GameObjects.Graphics | null = null;
+        /** Preview rectangle drawn while the user drags with the Fill
+         *  tool. Cleared on pointer up when the rectangle commits.
+         *  Depth 199 — above cells/overrides/grid/halo but below the
+         *  selection highlight (200). */
+        fillPreviewGraphics: Phaser.GameObjects.Graphics | null = null;
+
+        preload() {
+          // Resilience: if a sprite fails to load — most commonly a
+          // draft data URL that can't decode — fall back to the
+          // on-disk PNG so the canvas still shows the published sprite.
+          // Without this, a broken draft renders fine in the palette
+          // (which reads the on-disk file via a plain <img>) but leaves
+          // the map cell blank. Retry each key from disk at most once
+          // so a genuinely-missing file can't loop forever.
+          const retriedFromDisk = new Set<string>();
+          this.load.on(
+            "loaderror",
+            (file: Phaser.Loader.File) => {
+              const key = file?.key;
+              if (
+                !key ||
+                retriedFromDisk.has(key) ||
+                this.textures.exists(key)
+              ) {
+                return;
+              }
+              retriedFromDisk.add(key);
+              this.loadingTextures.delete(key);
+              this.load.image(key, spriteUrl(key));
+              if (!this.load.isLoading()) this.load.start();
+            },
+          );
+          // Sprite drafts (from the in-browser pixel editor) override
+          // the on-disk PNG. Authors painting in /editor/<m>/sprites
+          // see their edits land in this scene's textures via the
+          // data URL on the next remount.
+          for (const sprite of spriteKeys) {
+            const draft = loadSpriteDraft(moduleId, sprite);
+            this.load.image(
+              sprite,
+              draft ?? spriteUrl(sprite),
+            );
+          }
+        }
+
+        /** Per-sprite "fully opaque?" cache for paint-time background
+         *  inheritance (see ./paintBackground). `undefined` until the
+         *  texture has loaded. */
+        opacityCache = new Map<string, boolean>();
+
+        spriteIsOpaque(key: string): boolean | undefined {
+          const hit = this.opacityCache.get(key);
+          if (hit !== undefined) return hit;
+          if (!key || !this.textures.exists(key)) return undefined;
+          const src = this.textures.get(key).getSourceImage() as
+            | HTMLImageElement
+            | HTMLCanvasElement;
+          const w = src.width;
+          const h = src.height;
+          if (!w || !h) return undefined;
+          let opaque = false;
+          try {
+            const canvas = document.createElement("canvas");
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext("2d");
+            if (!ctx) return undefined;
+            ctx.drawImage(src, 0, 0);
+            const data = ctx.getImageData(0, 0, w, h).data;
+            opaque = true;
+            for (let i = 3; i < data.length; i += 4) {
+              if (data[i] < 255) {
+                opaque = false;
+                break;
+              }
+            }
+          } catch {
+            return undefined;
+          }
+          this.opacityCache.set(key, opaque);
+          return opaque;
+        }
+
+        /** Make sure `key`'s texture is loaded, then run `onReady`.
+         *  Lets a tile whose sprite was created mid-session (and so
+         *  wasn't in the mount-time preload set) render the moment it's
+         *  painted, instead of staying blank until the editor reloads.
+         *  Draft-first with the same on-disk fallback as preload
+         *  (the `loaderror` handler above covers the retry). No-op for
+         *  empty keys or textures already present. */
+        ensureTexture(key: string, onReady: () => void): void {
+          if (!key) return;
+          if (this.textures.exists(key)) {
+            onReady();
+            return;
+          }
+          // Fire onReady when this specific image finishes loading.
+          this.load.once(`filecomplete-image-${key}`, () => {
+            if (this.textures.exists(key)) onReady();
+          });
+          if (this.loadingTextures.has(key)) return; // already queued
+          this.loadingTextures.add(key);
+          this.load.once(`filecomplete-image-${key}`, () =>
+            this.loadingTextures.delete(key),
+          );
+          const draft = loadSpriteDraft(moduleId, key);
+          this.load.image(key, draft ?? spriteUrl(key));
+          if (!this.load.isLoading()) this.load.start();
+        }
+
+        /** Create / update / remove the optional background image for a
+         *  cell so it matches `bgSprite`. Drawn at depth -10 (under the
+         *  base tile). Loads the texture on demand if it wasn't
+         *  preloaded. Passing an empty/undefined sprite removes it. */
+        syncBackgroundCell(c: number, r: number, bgSprite?: string): void {
+          const key = `${c},${r}`;
+          const existing = this.backgroundCells.get(key);
+          if (bgSprite) {
+            if (existing) {
+              this.ensureTexture(bgSprite, () =>
+                swapTexture(existing, bgSprite),
+              );
+            } else {
+              const bg = this.add
+                .image(c * TILE_SIZE, r * TILE_SIZE, bgSprite)
+                .setOrigin(0)
+                .setDisplaySize(TILE_SIZE, TILE_SIZE)
+                .setDepth(-10);
+              this.backgroundCells.set(key, bg);
+              this.ensureTexture(bgSprite, () => swapTexture(bg, bgSprite));
+            }
+          } else if (existing) {
+            existing.destroy();
+            this.backgroundCells.delete(key);
+          }
+        }
+
+        create() {
+          // Same render path as the game: a RENDER_SCALE× backbuffer
+          // with the camera zoomed to match, so 64×64 art draws 1:1
+          // instead of being shrunk to 32 px (see @/util/renderScale).
+          applyRenderScale(this);
+          // Black backdrop under the map so transparent tile pixels read
+          // as black, matching the game (see WorldRenderer).
+          this.add
+            .rectangle(
+              0,
+              0,
+              mapRecord.width * TILE_SIZE,
+              mapRecord.height * TILE_SIZE,
+              MAP_BACKDROP_COLOR,
+              1,
+            )
+            .setOrigin(0)
+            .setDepth(-15);
+          for (let r = 0; r < mapRecord.height; r++) {
+            for (let c = 0; c < mapRecord.width; c++) {
+              const cell = gridRef.current[r][c];
+              // Cells are materialized — each one carries its own sprite.
+              // Fall back to first palette tile only as a last resort.
+              const texKey = cell?.sprite || palette[0]?.sprite || "";
+              const img = this.add
+                .image(c * TILE_SIZE, r * TILE_SIZE, texKey)
+                .setOrigin(0)
+                .setDisplaySize(TILE_SIZE, TILE_SIZE);
+              this.cells.set(`${c},${r}`, img);
+              this.syncBackgroundCell(c, r, cell?.background_sprite);
+            }
+          }
+          // Draw the grid lines once into a Graphics layer, then toggle
+          // visibility on/off via setVisible — Phaser 4's clear+redraw
+          // path was unreliable for us. Bright parchment-tinted color
+          // so the lines actually stand out against the tiles.
+          this.gridGraphics = this.add.graphics();
+          this.gridGraphics.lineStyle(1, 0xece0c4, 0.45);
+          for (let c = 0; c <= mapRecord.width; c++) {
+            this.gridGraphics.lineBetween(
+              c * TILE_SIZE,
+              0,
+              c * TILE_SIZE,
+              mapRecord.height * TILE_SIZE,
+            );
+          }
+          for (let r = 0; r <= mapRecord.height; r++) {
+            this.gridGraphics.lineBetween(
+              0,
+              r * TILE_SIZE,
+              mapRecord.width * TILE_SIZE,
+              r * TILE_SIZE,
+            );
+          }
+          this.gridGraphics.setVisible(gridLinesOn);
+          // Keep the grid on top of all cells.
+          this.gridGraphics.setDepth(100);
+
+          this.input.on(
+            "pointerdown",
+            (p: Phaser.Input.Pointer) => {
+              // A stroke whose pointerup we never saw (e.g. released
+              // outside the window) is committed before starting anew.
+              if (strokeRef.current) {
+                pushUndoRef.current(strokeRef.current);
+                strokeRef.current = null;
+              }
+              if (toolRef.current === "fill") {
+                this.fillStart(p);
+              } else {
+                if (toolRef.current === "paint") strokeRef.current = new Map();
+                this.paintAt(p, true);
+              }
+            },
+          );
+          this.input.on("pointermove", (p: Phaser.Input.Pointer) => {
+            if (!p.isDown) return;
+            if (toolRef.current === "fill") {
+              this.fillDrag(p);
+            } else {
+              this.paintAt(p, false);
+            }
+          });
+          // Pointer-up commits a Fill drag. Use both pointerup (release
+          // over the canvas) and pointerupoutside (release after the
+          // pointer left the canvas mid-drag) so a swift drag off the
+          // edge still finalizes the rect.
+          const onPointerUp = (p: Phaser.Input.Pointer) => {
+            if (toolRef.current === "fill") this.fillCommit(p);
+            // Close the Paint stroke — the whole drag is one undo step.
+            if (strokeRef.current) {
+              pushUndoRef.current(strokeRef.current);
+              strokeRef.current = null;
+            }
+          };
+          this.input.on("pointerup", onPointerUp);
+          this.input.on("pointerupoutside", onPointerUp);
+
+          // Generate the white particle source texture used for all
+          // animations (tinted per-emitter for color variation).
+          if (!this.textures.exists("__particle")) {
+            const g = this.add.graphics();
+            g.fillStyle(0xffffff, 1);
+            g.fillCircle(8, 8, 8);
+            g.generateTexture("__particle", 16, 16);
+            g.destroy();
+          }
+
+          // Quest-relevance halo — a single Graphics layer drawn
+          // BELOW the item/encounter overlays so the halo sits
+          // behind the sprite. Depth 65 places it above the base
+          // cell (no explicit depth) and below items (70) /
+          // encounters (80).
+          this.questGlowGraphics = this.add.graphics();
+          this.questGlowGraphics.setDepth(65);
+
+          // Selection highlight — drawn on top of everything.
+          this.selectionGraphics = this.add.graphics();
+          this.selectionGraphics.setDepth(200);
+
+          // Fill-tool preview rectangle — sits just below the
+          // selection so the active cell's highlight still reads.
+          this.fillPreviewGraphics = this.add.graphics();
+          this.fillPreviewGraphics.setDepth(199);
+
+          // Expose a small API the React side can call.
+          sceneApiRef.current = {
+            setGridLinesVisible: (on) => {
+              this.gridGraphics?.setVisible(on);
+            },
+            setSelected: (cell) => {
+              if (!this.selectionGraphics) return;
+              this.selectionGraphics.clear();
+              if (!cell) return;
+              this.selectionGraphics.lineStyle(2, 0xffb84d, 1);
+              this.selectionGraphics.strokeRect(
+                cell.col * TILE_SIZE,
+                cell.row * TILE_SIZE,
+                TILE_SIZE,
+                TILE_SIZE,
+              );
+            },
+            setSelectionCells: (cells) => {
+              if (!this.selectionGraphics) return;
+              this.selectionGraphics.clear();
+              if (cells.length === 0) return;
+              const anchorIdx = cells.length - 1;
+              // Non-anchor cells: translucent fill + thin outline.
+              if (cells.length > 1) {
+                this.selectionGraphics.fillStyle(0xffb84d, 0.18);
+                this.selectionGraphics.lineStyle(1, 0xffb84d, 0.75);
+                for (let i = 0; i < cells.length; i++) {
+                  if (i === anchorIdx) continue;
+                  const { col, row } = cells[i];
+                  this.selectionGraphics.fillRect(
+                    col * TILE_SIZE,
+                    row * TILE_SIZE,
+                    TILE_SIZE,
+                    TILE_SIZE,
+                  );
+                  this.selectionGraphics.strokeRect(
+                    col * TILE_SIZE,
+                    row * TILE_SIZE,
+                    TILE_SIZE,
+                    TILE_SIZE,
+                  );
+                }
+              }
+              // Anchor: solid 2px outline (same as the single-select look).
+              const anchor = cells[anchorIdx];
+              this.selectionGraphics.lineStyle(2, 0xffb84d, 1);
+              this.selectionGraphics.strokeRect(
+                anchor.col * TILE_SIZE,
+                anchor.row * TILE_SIZE,
+                TILE_SIZE,
+                TILE_SIZE,
+              );
+            },
+            refreshCell: (col, row, spriteKey) => {
+              const img = this.cells.get(`${col},${row}`);
+              if (!img) return;
+              if (!this.textures.exists(spriteKey)) return;
+              swapTexture(img, spriteKey);
+            },
+            restoreCell: (col, row) => {
+              const cell = gridRef.current[row]?.[col];
+              if (!cell) return;
+              const img = this.cells.get(`${col},${row}`);
+              if (img && cell.sprite) {
+                const sprite = cell.sprite;
+                this.ensureTexture(sprite, () => swapTexture(img, sprite));
+              }
+              this.syncBackgroundCell(col, row, cell.background_sprite);
+            },
+            refreshAnimations: () => {
+              // Assigned for real below — placeholder so the API object
+              // matches the type until create() finishes wiring it.
+            },
+            refreshEncounterOverlays: () => {
+              // Assigned for real below — placeholder so the API object
+              // matches the type until create() finishes wiring it.
+            },
+            refreshItemOverlays: () => {
+              // Assigned for real below — placeholder so the API object
+              // matches the type until create() finishes wiring it.
+            },
+            playItemPickup: () => {
+              // Assigned for real below — placeholder so the API object
+              // matches the type until create() finishes wiring it.
+            },
+            refreshNpcOverlays: () => {
+              // Assigned for real below — placeholder so the API object
+              // matches the type until create() finishes wiring it.
+            },
+            refreshBoatOverlays: () => {
+              // Assigned for real below.
+            },
+            refreshQuestOverlays: () => {
+              // Assigned for real below.
+            },
+            setPartyAt: () => {
+              // Assigned for real below — placeholder so the API object
+              // matches the type until create() finishes wiring it.
+            },
+            setBoatPositions: () => {
+              // Assigned for real below.
+            },
+            setPartyBoatAt: () => {
+              // Assigned for real below.
+            },
+            clearParty: () => {
+              // Assigned for real below.
+            },
+            setPartyLight: () => {
+              // Assigned for real below.
+            },
+            floatText: () => {
+              // Assigned for real below.
+            },
+            setRoamerPositions: () => {
+              // Assigned for real below.
+            },
+            setCellSprite: () => {
+              // Assigned for real below.
+            },
+            setPlacedEncounterPositions: () => {
+              // Assigned for real below.
+            },
+            setSuppressedEncounterCells: () => {
+              // Assigned for real below.
+            },
+            relight: (mode) => {
+              // All lighting math lives in `sim/lighting.ts` and is
+              // shared with the dungeon scene. We just consume the
+              // result and apply tints to cells + overlays.
+              // Painting view (sim off) → partyCol/Row are null →
+              // helper falls back to "no party, no LOS gate" so
+              // overworld twilight/night still reads sensibly even
+              // before the user enters sim mode.
+              const party =
+                this.partyCol !== null && this.partyRow !== null
+                  ? { col: this.partyCol, row: this.partyRow }
+                  : null;
+              const result = computeLighting({
+                grid: gridRef.current as unknown as SimGrid,
+                party,
+                partyLight: partyLightRef.current,
+                // Combined check — the ability has to be present
+                // AND the player has to have engaged it. Either
+                // alone disables the red band.
+                partyInfravisionActive:
+                  partyHasInfravisionRef.current &&
+                  partyInfravisionActiveRef.current,
+                mode,
+                // Fog-of-war — only when sim mode is on (party is
+                // on the map) AND fog is enabled for this map. Painting
+                // view (no party) or a fog-off map passes `null` so
+                // every cell renders at its native band with no
+                // exploration gating. The visited set grows below from
+                // `result.currentlyVisible`.
+                rememberedCells:
+                  party && fogEnabledRef.current
+                    ? visitedCellsRef.current
+                    : null,
+              });
+              // Grow the in-memory visited set on every relight.
+              // Skipped in painting view (sim mode is the only
+              // legitimate way to map a cell) and when fog is off
+              // (nothing to remember).
+              if (party && fogEnabledRef.current) {
+                for (const key of result.currentlyVisible) {
+                  visitedCellsRef.current.add(key);
+                }
+              }
+              // Phaser dispatch — `tintForCell` returns the tint
+              // value; we always use multiply mode. v2 tile sprites
+              // lean heavily on "mostly black with coloured detail
+              // pixels" (grass = green specks on near-black bg).
+              // Multiply preserves that look — the black stays
+              // black and only the detail pixels read as red under
+              // infravision, which lands closer to heat vision
+              // than a uniform red fill that loses every detail.
+              const applyTint = (
+                img: Phaser.GameObjects.Image,
+                col: number,
+                row: number,
+              ) => {
+                const t = tintForCell(result, col, row);
+                if (t.mode === "clear") img.clearTint();
+                else img.setTint(t.value);
+              };
+              // Cells.
+              for (const [key] of result.cells) {
+                const img = this.cells.get(key);
+                if (!img) continue;
+                const [cs, rs] = key.split(",");
+                applyTint(img, Number(cs), Number(rs));
+              }
+              // Background cells get the same per-cell tint as their
+              // foreground so the layer behind a transparent tile
+              // lights identically.
+              for (const [key, bgImg] of this.backgroundCells) {
+                const [cs, rs] = key.split(",");
+                applyTint(bgImg, Number(cs), Number(rs));
+              }
+              // Placed overlays share their cell's render band so
+              // a goblin in red infravision territory reads as red,
+              // an item on a torchlit tile reads in grayscale.
+              // Quest-glow / boat sprite / fill-preview stay
+              // un-tinted — they're UI affordances, not part of the
+              // diegetic world.
+              for (const [key, img] of this.encounterOverlays) {
+                const [cs, rs] = key.split(",");
+                applyTint(img, Number(cs), Number(rs));
+              }
+              for (const [key, img] of this.itemOverlays) {
+                const [cs, rs] = key.split(",");
+                applyTint(img, Number(cs), Number(rs));
+              }
+              for (const [key, img] of this.npcOverlays) {
+                const [cs, rs] = key.split(",");
+                applyTint(img, Number(cs), Number(rs));
+              }
+              for (const [key, img] of this.boatOverlays) {
+                const [cs, rs] = key.split(",");
+                applyTint(img, Number(cs), Number(rs));
+              }
+              for (const [key, img] of this.questGiverOverlays) {
+                const [cs, rs] = key.split(",");
+                applyTint(img, Number(cs), Number(rs));
+              }
+              // Emitter visibility — particle animations (fairy
+              // lights, smoke, fire on non-light-source cells)
+              // render independent of the cell tint, so without
+              // gating they'd float bright through dark areas the
+              // party can't see. The shared rule hides emitters on
+              // cells at ambient brightness OR infravision-red.
+              //
+              // Painting view (no party on the map) keeps every
+              // emitter visible — authors need to see what they
+              // painted while iterating, even in night mode.
+              if (party !== null) {
+                for (const [key, emitter] of this.emitters) {
+                  const [cs, rs] = key.split(",");
+                  emitter.setVisible(
+                    emitterVisibleAt(result, Number(cs), Number(rs)),
+                  );
+                }
+              } else {
+                for (const emitter of this.emitters.values()) {
+                  emitter.setVisible(true);
+                }
+              }
+              // Loose boats are overlays tinted with the loop above.
+              // The partyBoatSprite is a separate Image; clear its
+              // tint in Day, leave alone otherwise (it follows the
+              // party and the party owns the light pool around it).
+              if (mode === "day" && this.partyBoatSprite) {
+                this.partyBoatSprite.clearTint();
+              }
+            },
+          };
+          // Add the animation-refresh API so React can sync emitters
+          // whenever cells change. Keep the existing relight API call
+          // and the initial day-mode tint application below.
+          const sceneSelf = this;
+          if (sceneApiRef.current) {
+            sceneApiRef.current.setPartyAt = (col, row, spritePath) => {
+              // Capture the party's cell BEFORE drawing the sprite —
+              // the shared lighting helper reads partyCol/Row to
+              // root the 1-tile vision pool and gate torch LOS.
+              // The bridge wires a relight call after every step,
+              // so this stays current.
+              sceneSelf.partyCol = col;
+              sceneSelf.partyRow = row;
+              // Lazy-create the sprite the first time the sim shows.
+              // Anchored center for natural alignment with the cell.
+              const px = col * TILE_SIZE + TILE_SIZE / 2;
+              const py = row * TILE_SIZE + TILE_SIZE / 2;
+              if (!sceneSelf.partySprite) {
+                if (!spritePath || !sceneSelf.textures.exists(spritePath)) {
+                  // Texture wasn't preloaded (empty path, mismatched
+                  // file name, or party.json without a usable avatar).
+                  // Warn so the user can fix the module's avatar
+                  // value, then render a fallback marker so the user
+                  // can still see where the party is on the map.
+                  // eslint-disable-next-line no-console
+                  console.warn(
+                    `[sim] missing party sprite "${spritePath}" — ` +
+                      `falling back to a marker. Check party.avatar ` +
+                      `in this module's party.json.`,
+                  );
+                  // Generate a one-off ember circle the first time
+                  // we need a fallback, then reuse it.
+                  const MARKER_KEY = "__party_marker";
+                  if (!sceneSelf.textures.exists(MARKER_KEY)) {
+                    const g = sceneSelf.add.graphics();
+                    g.fillStyle(0xffb84d, 1);
+                    g.fillCircle(16, 16, 13);
+                    g.lineStyle(2, 0x4a1c00, 1);
+                    g.strokeCircle(16, 16, 13);
+                    g.generateTexture(MARKER_KEY, 32, 32);
+                    g.destroy();
+                  }
+                  sceneSelf.partySprite = sceneSelf.add
+                    .image(px, py, MARKER_KEY)
+                    .setOrigin(0.5)
+                    .setDisplaySize(TILE_SIZE, TILE_SIZE)
+                    .setDepth(300);
+                  return;
+                }
+                sceneSelf.partySprite = sceneSelf.add
+                  .image(px, py, spritePath)
+                  .setOrigin(0.5)
+                  .setDisplaySize(TILE_SIZE, TILE_SIZE)
+                  // Above grid lines (100), override markers (150),
+                  // emitters (160), selection (200), and the encounter/
+                  // item overlays (70-80).
+                  .setDepth(300);
+              } else {
+                sceneSelf.partySprite.setPosition(px, py);
+                if (
+                  spritePath &&
+                  sceneSelf.textures.exists(spritePath) &&
+                  sceneSelf.partySprite.texture.key !== spritePath
+                ) {
+                  swapTexture(sceneSelf.partySprite, spritePath);
+                }
+              }
+            };
+            sceneApiRef.current.clearParty = () => {
+              if (sceneSelf.partySprite) {
+                sceneSelf.partySprite.destroy();
+                sceneSelf.partySprite = null;
+              }
+              // Also drop the party-boat sprite if the sim shut down
+              // while the party was aboard.
+              if (sceneSelf.partyBoatSprite) {
+                sceneSelf.tweens.killTweensOf(sceneSelf.partyBoatSprite);
+                sceneSelf.partyBoatSprite.destroy();
+                sceneSelf.partyBoatSprite = null;
+              }
+              // Sim is leaving — the painting view's relight pass
+              // should run without a party (no LOS gating). Null
+              // out the tracked position so the shared lighting
+              // helper picks up the right branch.
+              sceneSelf.partyCol = null;
+              sceneSelf.partyRow = null;
+              // Boats go back to where the author moored them.
+              sceneSelf.simBoats = null;
+              sceneApiRef.current?.refreshBoatOverlays();
+            };
+            // Floater for tile.text. Spawned about two tiles above
+            // the cell so the party sprite doesn't sit on top of the
+            // text — without that offset the label kept getting eaten
+            // by the avatar in the first half-second when the player
+            // most wants to read it. Depth 320 sits above the party
+            // sprite (300) and any grid / encounter overlays.
+            //
+            // Lifecycle: hold for a moment at full opacity so the
+            // player has a chance to start reading, THEN rise + fade.
+            // Total visible time is ~3.4s (700ms hold + 2700ms drift),
+            // and the wordWrap is generous so multi-sentence text
+            // entries don't shoot off the canvas edge.
+            sceneApiRef.current.floatText = (col, row, text) => {
+              const trimmed = (text ?? "").trim();
+              if (!trimmed) return;
+              const px = col * TILE_SIZE + TILE_SIZE / 2;
+              // Lift the label ~2 tiles above the cell centre so the
+              // party sprite (centred on the cell) doesn't overlap
+              // it. The origin is bottom-centred (0.5, 1) so the
+              // anchor sits at the top of the gap.
+              const py = row * TILE_SIZE + TILE_SIZE / 2 - TILE_SIZE * 2;
+              const FONT = {
+                fontFamily: '"Press Start 2P", monospace',
+                fontSize: "10px",
+                color: "#fff2c8",
+                stroke: "#1a0e00",
+                strokeThickness: 3,
+                align: "center" as const,
+                wordWrap: { width: TILE_SIZE * 8, useAdvancedWrap: true },
+              };
+              const label = sceneSelf.add
+                .text(px, py, trimmed, FONT)
+                .setOrigin(0.5, 1)
+                .setDepth(320);
+              // Drop shadow for legibility over light tiles — second
+              // text under the main one, slightly offset and dim.
+              const shadow = sceneSelf.add
+                .text(px + 1, py + 2, trimmed, {
+                  ...FONT,
+                  color: "#000000",
+                  stroke: "#000000",
+                  strokeThickness: 0,
+                })
+                .setOrigin(0.5, 1)
+                .setAlpha(0.35)
+                .setDepth(319);
+              const rise = 32;
+              const holdMs = 700;
+              const driftMs = 2700;
+              // First tween: hold in place at full opacity so the
+              // player can start reading before motion kicks in.
+              sceneSelf.tweens.add({
+                targets: [label, shadow],
+                alpha: { from: 1, to: 1 },
+                duration: holdMs,
+                onComplete: () => {
+                  // Second tween: rise + fade. We destroy both pieces
+                  // when the drift finishes so the scene stays clean
+                  // even if the party walks across a string of
+                  // text-bearing cells.
+                  sceneSelf.tweens.add({
+                    targets: [label, shadow],
+                    y: `-=${rise}`,
+                    alpha: 0,
+                    duration: driftMs,
+                    ease: "Sine.easeOut",
+                    onComplete: () => {
+                      label.destroy();
+                      shadow.destroy();
+                    },
+                  });
+                },
+              });
+            };
+            // ── Boat helpers ───────────────────────────────────────────
+            // Boats are overlay sprites on top of their cell; the
+            // cell's own sprite (open water, a river piece) is never
+            // repainted, so boarding / leaving can't damage the map.
+            //
+            //   1. applyBoatBob — perpetual sin-wave y tween so the
+            //      partyBoatSprite rocks gently on the water.
+            //   2. setBoatPositions — diffs the sim's loose boats
+            //      against the boat overlays on screen.
+            //   3. setPartyBoatAt — lazily creates the partyBoatSprite
+            //      while aboard; hides the partySprite at the same
+            //      time so the party visually IS the boat.
+            const WATER_SPRITE = WATER_SPRITE_KEY;
+            const applyBoatBob = (img: Phaser.GameObjects.Image) => {
+              img.setData("baseY", img.y);
+              sceneSelf.tweens.add({
+                targets: img,
+                y: img.y - 2,
+                duration: 900,
+                yoyo: true,
+                repeat: -1,
+                ease: "Sine.easeInOut",
+              });
+            };
+            const repositionWithBob = (
+              img: Phaser.GameObjects.Image,
+              col: number,
+              row: number,
+            ) => {
+              sceneSelf.tweens.killTweensOf(img);
+              img.setPosition(
+                col * TILE_SIZE + TILE_SIZE / 2,
+                row * TILE_SIZE + TILE_SIZE / 2,
+              );
+              applyBoatBob(img);
+            };
+            // Draw boat overlays for the given "col,row" → sprite set,
+            // diffing against what's on screen. Boats sit on top of
+            // their cell (depth 74, just under NPCs) and never change
+            // the cell's own sprite.
+            const syncBoatOverlays = (wanted: Map<string, string>) => {
+              for (const [key, img] of sceneSelf.boatOverlays) {
+                if (wanted.get(key) === img.texture.key) continue;
+                img.destroy();
+                sceneSelf.boatOverlays.delete(key);
+              }
+              for (const [key, sprite] of wanted) {
+                if (sceneSelf.boatOverlays.has(key)) continue;
+                if (!sprite || !sceneSelf.textures.exists(sprite)) continue;
+                const [c, r] = key.split(",").map(Number);
+                // Legacy boat tile (the boat replaced the water cell):
+                // show water in the cell under the overlay.
+                const baseImg = sceneSelf.cells.get(key);
+                if (
+                  baseImg &&
+                  baseImg.texture.key === sprite &&
+                  WATER_SPRITE &&
+                  sceneSelf.textures.exists(WATER_SPRITE)
+                ) {
+                  swapTexture(baseImg, WATER_SPRITE);
+                }
+                const img = sceneSelf.add
+                  .image(
+                    c * TILE_SIZE + TILE_SIZE / 2,
+                    r * TILE_SIZE + TILE_SIZE / 2,
+                    sprite,
+                  )
+                  .setOrigin(0.5)
+                  .setDisplaySize(TILE_SIZE, TILE_SIZE)
+                  .setDepth(74);
+                if (baseImg && baseImg.isTinted) {
+                  img.setTint(baseImg.tintTopLeft);
+                }
+                sceneSelf.boatOverlays.set(key, img);
+              }
+            };
+            sceneApiRef.current.refreshBoatOverlays = () => {
+              if (sceneSelf.simBoats) {
+                syncBoatOverlays(sceneSelf.simBoats);
+                return;
+              }
+              const wanted = new Map<string, string>();
+              for (let r = 0; r < mapRecord.height; r++) {
+                for (let c = 0; c < mapRecord.width; c++) {
+                  const boat = gridRef.current[r]?.[c]?.boat_sprite;
+                  if (boat) wanted.set(`${c},${r}`, boat);
+                }
+              }
+              syncBoatOverlays(wanted);
+            };
+            sceneApiRef.current.setBoatPositions = (positions) => {
+              sceneSelf.simBoats = new Map(
+                positions.map((p) => [`${p.col},${p.row}`, p.sprite]),
+              );
+              syncBoatOverlays(sceneSelf.simBoats);
+            };
+            sceneApiRef.current.setPartyBoatAt = (
+              col,
+              row,
+              visible,
+              sprite,
+            ) => {
+              if (!visible) {
+                if (sceneSelf.partyBoatSprite) {
+                  sceneSelf.tweens.killTweensOf(sceneSelf.partyBoatSprite);
+                  sceneSelf.partyBoatSprite.destroy();
+                  sceneSelf.partyBoatSprite = null;
+                }
+                // Party is on land again — restore its sprite.
+                if (sceneSelf.partySprite) {
+                  sceneSelf.partySprite.setVisible(true);
+                }
+                return;
+              }
+              // Resolve the sprite to render. Prefer the caller's
+              // explicit arg (board); fall back to the live texture
+              // (sail) since the boat already has one.
+              const resolved =
+                sprite ?? sceneSelf.partyBoatSprite?.texture.key ?? "";
+              if (!resolved || !sceneSelf.textures.exists(resolved)) return;
+              if (!sceneSelf.partyBoatSprite) {
+                sceneSelf.partyBoatSprite = sceneSelf.add
+                  .image(
+                    col * TILE_SIZE + TILE_SIZE / 2,
+                    row * TILE_SIZE + TILE_SIZE / 2,
+                    resolved,
+                  )
+                  .setOrigin(0.5)
+                  .setDisplaySize(TILE_SIZE, TILE_SIZE)
+                  // Above floors / items / encounters / NPCs (≤ 80),
+                  // at the same depth band the party uses so the boat
+                  // visually "is" the party while the partySprite is
+                  // hidden.
+                  .setDepth(300);
+                applyBoatBob(sceneSelf.partyBoatSprite);
+              } else {
+                if (
+                  sprite &&
+                  sceneSelf.partyBoatSprite.texture.key !== sprite
+                ) {
+                  swapTexture(sceneSelf.partyBoatSprite, sprite);
+                }
+                repositionWithBob(sceneSelf.partyBoatSprite, col, row);
+              }
+              // Hide the party sprite — the boat IS the party.
+              if (sceneSelf.partySprite) {
+                sceneSelf.partySprite.setVisible(false);
+              }
+            };
+            sceneApiRef.current.setPartyLight = (source) => {
+              partyLightRef.current = source;
+              // Caller is expected to call relight() right after for
+              // an instant visual update, but we set the ref here so
+              // even a stale relight picks up the new source.
+            };
+            // Roamer rendering — one Image per live SimRoamer. Diffs
+            // against the previously-drawn set: drop sprites for ids
+            // that vanished, snap surviving ids to their new cell,
+            // create fresh ones for new entries.
+            sceneApiRef.current.setRoamerPositions = (positions) => {
+              const wanted = new Map(positions.map((p) => [p.id, p]));
+              // Drop sprites for ids that left the list.
+              for (const [id, img] of sceneSelf.roamerSprites) {
+                if (wanted.has(id)) continue;
+                img.destroy();
+                sceneSelf.roamerSprites.delete(id);
+              }
+              // Update / create the wanted entries.
+              for (const [id, p] of wanted) {
+                const px = p.col * TILE_SIZE + TILE_SIZE / 2;
+                const py = p.row * TILE_SIZE + TILE_SIZE / 2;
+                let img = sceneSelf.roamerSprites.get(id);
+                if (!img) {
+                  // Fall back to a roamer-marker dot when the
+                  // monster's sprite didn't preload (missing
+                  // sprite path, typo). The roamer still moves;
+                  // the user sees "something" is chasing them.
+                  const ROAMER_MARKER_KEY = "__roamer_marker";
+                  const texKey =
+                    p.sprite && sceneSelf.textures.exists(p.sprite)
+                      ? p.sprite
+                      : ROAMER_MARKER_KEY;
+                  if (
+                    texKey === ROAMER_MARKER_KEY &&
+                    !sceneSelf.textures.exists(texKey)
+                  ) {
+                    const g = sceneSelf.add.graphics();
+                    g.fillStyle(0xb84d4d, 1);
+                    g.fillCircle(16, 16, 12);
+                    g.lineStyle(2, 0x4a1c00, 1);
+                    g.strokeCircle(16, 16, 12);
+                    g.generateTexture(texKey, 32, 32);
+                    g.destroy();
+                  }
+                  img = sceneSelf.add
+                    .image(px, py, texKey)
+                    .setOrigin(0.5)
+                    .setDisplaySize(TILE_SIZE * 0.95, TILE_SIZE * 0.95)
+                    // Below the party sprite (300) so a collision
+                    // visually reads "party on top of monster," but
+                    // above encounter overlays (80) and NPCs (75).
+                    .setDepth(250);
+                  sceneSelf.roamerSprites.set(id, img);
+                } else {
+                  img.setPosition(px, py);
+                  if (
+                    p.sprite &&
+                    sceneSelf.textures.exists(p.sprite) &&
+                    img.texture.key !== p.sprite
+                  ) {
+                    swapTexture(img, p.sprite);
+                  }
+                }
+              }
+            };
+            // Destroy-lair texture swap. Replaces the base cell
+            // image's texture with the supplied sprite and clears
+            // its tint so the freshly-revealed grass doesn't keep
+            // the spawn-tile lighting. Also re-runs the encounter /
+            // animation passes — destroying a spawn cell may have
+            // cleared overlay state the diffs need to see.
+            sceneApiRef.current.setCellSprite = (col, row, sprite) => {
+              const key = `${col},${row}`;
+              const img = sceneSelf.cells.get(key);
+              if (!img) return;
+              if (sprite && sceneSelf.textures.exists(sprite)) {
+                swapTexture(img, sprite);
+              }
+              // The animation/encounter/etc. overlays on this cell
+              // (if any) are tied to the cell's other fields; the
+              // destroy path also cleared the spawn id off the cell,
+              // so the next refresh pass will pick that up. No
+              // explicit refresh here — callers run them on a state
+              // tick anyway.
+            };
+            // Placed-encounter rendering — same diff'd-update pattern
+            // as roamers. Distinct map so suppression bookkeeping
+            // doesn't have to differentiate; both render at depth 250.
+            sceneApiRef.current.setPlacedEncounterPositions = (positions) => {
+              const wanted = new Map(positions.map((p) => [p.id, p]));
+              for (const [id, img] of sceneSelf.placedEncounterSprites) {
+                if (wanted.has(id)) continue;
+                img.destroy();
+                sceneSelf.placedEncounterSprites.delete(id);
+              }
+              for (const [id, p] of wanted) {
+                const px = p.col * TILE_SIZE + TILE_SIZE / 2;
+                const py = p.row * TILE_SIZE + TILE_SIZE / 2;
+                let img = sceneSelf.placedEncounterSprites.get(id);
+                if (!img) {
+                  // Encounter sprites come from monster_party_tile —
+                  // already a "monster/foo.png" path. Fall back to a
+                  // marker dot when the texture didn't preload.
+                  const ENC_MARKER_KEY = "__placed_encounter_marker";
+                  const texKey =
+                    p.sprite && sceneSelf.textures.exists(p.sprite)
+                      ? p.sprite
+                      : ENC_MARKER_KEY;
+                  if (
+                    texKey === ENC_MARKER_KEY &&
+                    !sceneSelf.textures.exists(texKey)
+                  ) {
+                    const g = sceneSelf.add.graphics();
+                    g.fillStyle(0xc66666, 1);
+                    g.fillCircle(16, 16, 12);
+                    g.lineStyle(2, 0x4a1c00, 1);
+                    g.strokeCircle(16, 16, 12);
+                    g.generateTexture(texKey, 32, 32);
+                    g.destroy();
+                  }
+                  img = sceneSelf.add
+                    .image(px, py, texKey)
+                    .setOrigin(0.5)
+                    .setDisplaySize(TILE_SIZE * 0.95, TILE_SIZE * 0.95)
+                    // Same depth band as roamers — both are "monsters
+                    // pursuing the party."
+                    .setDepth(250);
+                  sceneSelf.placedEncounterSprites.set(id, img);
+                } else {
+                  img.setPosition(px, py);
+                  if (
+                    p.sprite &&
+                    sceneSelf.textures.exists(p.sprite) &&
+                    img.texture.key !== p.sprite
+                  ) {
+                    swapTexture(img, p.sprite);
+                  }
+                }
+              }
+            };
+            // Suppression set for the static cell-encounter overlay.
+            // Updating the set destroys any existing overlay for the
+            // newly-suppressed cells; calling refreshEncounterOverlays
+            // afterwards is a no-op for those (the diff sees no change).
+            // Cells that LEAVE the suppression set get re-rendered
+            // through a fresh refresh pass, which we also trigger so
+            // sim teardown restores the painted overlays without the
+            // caller doing it explicitly.
+            sceneApiRef.current.setSuppressedEncounterCells = (cells) => {
+              const next = new Set(cells);
+              const prev = sceneSelf.suppressedEncounterCells;
+              // Drop overlays for cells that just got suppressed.
+              for (const key of next) {
+                if (prev.has(key)) continue;
+                const existing = sceneSelf.encounterOverlays.get(key);
+                if (existing) {
+                  existing.destroy();
+                  sceneSelf.encounterOverlays.delete(key);
+                  sceneSelf.encounterOverlayIds.delete(key);
+                }
+              }
+              sceneSelf.suppressedEncounterCells = next;
+              // Cells that just LEFT the suppression set need their
+              // overlays brought back — refreshEncounterOverlays
+              // sees a missing overlay for a still-set encounter id
+              // and recreates it. Safe to call on every change since
+              // it's diff'd internally.
+              sceneApiRef.current?.refreshEncounterOverlays();
+            };
+          }
+          if (sceneApiRef.current) {
+            sceneApiRef.current.refreshEncounterOverlays = () => {
+              for (let r = 0; r < mapRecord.height; r++) {
+                for (let c = 0; c < mapRecord.width; c++) {
+                  const cell = gridRef.current[r]?.[c];
+                  const encId = cell?.encounter ?? "";
+                  const key = `${c},${r}`;
+                  // Sim-mode override: cells whose static overlay is
+                  // suppressed (because a live placed encounter is
+                  // standing in for it) don't get painted here. Treat
+                  // them as "no encounter" from this pass's POV — any
+                  // existing overlay is torn down, no new one created.
+                  const suppressed =
+                    sceneSelf.suppressedEncounterCells.has(key);
+                  const effectiveId = suppressed ? "" : encId;
+                  const currentId =
+                    sceneSelf.encounterOverlayIds.get(key) ?? "";
+                  if (effectiveId === currentId) continue;
+                  // Remove the existing overlay (if any).
+                  const existing = sceneSelf.encounterOverlays.get(key);
+                  if (existing) {
+                    existing.destroy();
+                    sceneSelf.encounterOverlays.delete(key);
+                    sceneSelf.encounterOverlayIds.delete(key);
+                  }
+                  if (!effectiveId) continue;
+                  const enc = encountersById.get(effectiveId);
+                  const sprite = enc?.monster_party_tile;
+                  if (
+                    !sprite ||
+                    !sprite.includes("/") ||
+                    !sceneSelf.textures.exists(sprite)
+                  ) {
+                    // No sprite or texture wasn't preloaded — track the
+                    // id so we don't repeatedly retry, but don't draw.
+                    sceneSelf.encounterOverlayIds.set(key, effectiveId);
+                    continue;
+                  }
+                  const img = sceneSelf.add
+                    .image(
+                      c * TILE_SIZE + TILE_SIZE / 2,
+                      r * TILE_SIZE + TILE_SIZE / 2,
+                      sprite,
+                    )
+                    .setOrigin(0.5)
+                    .setDisplaySize(TILE_SIZE, TILE_SIZE)
+                    .setDepth(80);
+                  // Match the base cell's current lighting tint so the
+                  // overlay doesn't pop bright in a dim/dark cell until
+                  // the next relight pass.
+                  const baseImg = sceneSelf.cells.get(key);
+                  if (baseImg && baseImg.isTinted) {
+                    img.setTint(baseImg.tintTopLeft);
+                  }
+                  sceneSelf.encounterOverlays.set(key, img);
+                  sceneSelf.encounterOverlayIds.set(key, effectiveId);
+                }
+              }
+            };
+            sceneApiRef.current.refreshItemOverlays = () => {
+              for (let r = 0; r < mapRecord.height; r++) {
+                for (let c = 0; c < mapRecord.width; c++) {
+                  const cell = gridRef.current[r]?.[c];
+                  const itemId = cell?.item ?? "";
+                  const key = `${c},${r}`;
+                  const currentId =
+                    sceneSelf.itemOverlayIds.get(key) ?? "";
+                  if (itemId === currentId) continue;
+                  // Remove the existing overlay (if any).
+                  const existing = sceneSelf.itemOverlays.get(key);
+                  if (existing) {
+                    existing.destroy();
+                    sceneSelf.itemOverlays.delete(key);
+                    sceneSelf.itemOverlayIds.delete(key);
+                  }
+                  if (!itemId) continue;
+                  const item = itemsById.get(itemId);
+                  const icon = item?.icon;
+                  const sprite = icon ? `item/${icon}.png` : "";
+                  if (!sprite || !sceneSelf.textures.exists(sprite)) {
+                    // No icon or texture wasn't preloaded — track the
+                    // id so we don't repeatedly retry, but don't draw.
+                    sceneSelf.itemOverlayIds.set(key, itemId);
+                    continue;
+                  }
+                  const img = sceneSelf.add
+                    .image(
+                      c * TILE_SIZE + TILE_SIZE / 2,
+                      r * TILE_SIZE + TILE_SIZE / 2,
+                      sprite,
+                    )
+                    .setOrigin(0.5)
+                    // Items render slightly smaller than the cell so the
+                    // floor tile is still visible around them — the
+                    // "item dropped on the floor" look from v1.
+                    .setDisplaySize(TILE_SIZE * 0.7, TILE_SIZE * 0.7)
+                    // Above the base cell, below encounter overlays so
+                    // a monster sprite covers a dropped item if both
+                    // happen to share a tile.
+                    .setDepth(70);
+                  // Match the base cell's current lighting tint so a
+                  // newly-dropped item doesn't pop bright in a dim/dark
+                  // cell until the next relight pass.
+                  const baseImg = sceneSelf.cells.get(key);
+                  if (baseImg && baseImg.isTinted) {
+                    img.setTint(baseImg.tintTopLeft);
+                  }
+                  sceneSelf.itemOverlays.set(key, img);
+                  sceneSelf.itemOverlayIds.set(key, itemId);
+                }
+              }
+            };
+            sceneApiRef.current.playItemPickup = (col, row) => {
+              const key = `${col},${row}`;
+              const cx = col * TILE_SIZE + TILE_SIZE / 2;
+              const cy = row * TILE_SIZE + TILE_SIZE / 2;
+              // Golden glow + sparkles, lifted above the party sprite
+              // (depth 300) so the cue reads on top of the party that's
+              // standing on the cell.
+              itemPickup(sceneSelf, { x: cx, y: cy }, { depth: 305 });
+              // Float the actual item sprite up + fade. Detach it from
+              // the overlay maps first so the next refresh pass treats
+              // the cell as empty and doesn't double-destroy the sprite
+              // mid-tween; the tween owns it from here.
+              const sprite = sceneSelf.itemOverlays.get(key);
+              if (sprite) {
+                sceneSelf.itemOverlays.delete(key);
+                sceneSelf.itemOverlayIds.delete(key);
+                // Clear any ambient lighting tint so the collected item
+                // brightens to full colour as it lifts, and raise it
+                // above the party sprite.
+                sprite.clearTint();
+                sprite.setDepth(310);
+                sceneSelf.tweens.add({
+                  targets: sprite,
+                  y: cy - TILE_SIZE * 0.9,
+                  alpha: 0,
+                  scaleX: sprite.scaleX * 1.35,
+                  scaleY: sprite.scaleY * 1.35,
+                  duration: 520,
+                  ease: "Quad.Out",
+                  onComplete: () => sprite.destroy(),
+                });
+              }
+              // Bright "obtained" chime.
+              Sfx.play("buy");
+            };
+            sceneApiRef.current.refreshNpcOverlays = () => {
+              // Same diff'd-overlay pattern as items/encounters: walk
+              // every cell, compare its current npc id to the one we
+              // last rendered, and only mutate the scene where it
+              // changed. NPC sprites render slightly above items but
+              // below encounters so a tile carrying both a dropped
+              // item and a stationed NPC reads "person standing on
+              // the dropped thing."
+              for (let r = 0; r < mapRecord.height; r++) {
+                for (let c = 0; c < mapRecord.width; c++) {
+                  const cell = gridRef.current[r]?.[c];
+                  const npcId = cell?.npc ?? "";
+                  const key = `${c},${r}`;
+                  const currentId =
+                    sceneSelf.npcOverlayIds.get(key) ?? "";
+                  if (npcId === currentId) continue;
+                  // Remove any existing overlay first.
+                  const existing = sceneSelf.npcOverlays.get(key);
+                  if (existing) {
+                    sceneSelf.tweens.killTweensOf(existing);
+                    existing.destroy();
+                    sceneSelf.npcOverlays.delete(key);
+                    sceneSelf.npcOverlayIds.delete(key);
+                  }
+                  if (!npcId) continue;
+                  const npc = npcsById.get(npcId);
+                  const spriteKey = resolveNpcSpriteKey(npc?.sprite);
+                  if (!spriteKey || !sceneSelf.textures.exists(spriteKey)) {
+                    // No sprite (or texture didn't preload) — record
+                    // the id so we don't retry every refresh.
+                    sceneSelf.npcOverlayIds.set(key, npcId);
+                    continue;
+                  }
+                  const img = sceneSelf.add
+                    .image(
+                      c * TILE_SIZE + TILE_SIZE / 2,
+                      r * TILE_SIZE + TILE_SIZE / 2,
+                      spriteKey,
+                    )
+                    .setOrigin(0.5)
+                    // Cover most of the cell — NPCs are people, not
+                    // dropped objects; they should read at roughly
+                    // the same scale as a party member would.
+                    .setDisplaySize(TILE_SIZE * 0.95, TILE_SIZE * 0.95)
+                    // Above items (70) and below encounter monsters
+                    // (80) so a wandering monster overrides a
+                    // stationary NPC if they happen to share a tile.
+                    .setDepth(75);
+                  const baseImg = sceneSelf.cells.get(key);
+                  if (baseImg && baseImg.isTinted) {
+                    img.setTint(baseImg.tintTopLeft);
+                  }
+                  // Preview the "dance" behavior right in the editor
+                  // so authors see the sway where they placed it.
+                  // (killTweensOf above stops it when the overlay goes.)
+                  if (
+normalizeNpcBehavior(npc?.behavior) === "dance"
+                  ) {
+                    startNpcDance(sceneSelf.tweens, img);
+                  }
+                  sceneSelf.npcOverlays.set(key, img);
+                  sceneSelf.npcOverlayIds.set(key, npcId);
+                }
+              }
+            };
+            sceneApiRef.current.refreshQuestOverlays = () => {
+              // ── Quest-giver sprite overlay ────────────────────────
+              // Diff'd against questGiverIds so unchanged cells skip
+              // sprite re-creation. Mirrors the encounter/item layer.
+              for (let r = 0; r < mapRecord.height; r++) {
+                for (let c = 0; c < mapRecord.width; c++) {
+                  const cell = gridRef.current[r]?.[c];
+                  const questId = cell?.quest ?? "";
+                  const key = `${c},${r}`;
+                  const currentId =
+                    sceneSelf.questGiverIds.get(key) ?? "";
+                  if (questId === currentId) continue;
+                  const existing = sceneSelf.questGiverOverlays.get(key);
+                  if (existing) {
+                    existing.destroy();
+                    sceneSelf.questGiverOverlays.delete(key);
+                    sceneSelf.questGiverIds.delete(key);
+                  }
+                  if (!questId) continue;
+                  const quest = questsById.get(questId);
+                  const sprite = quest?.quest_giver?.npc_sprite;
+                  if (
+                    !sprite ||
+                    !sprite.includes("/") ||
+                    !sceneSelf.textures.exists(sprite)
+                  ) {
+                    sceneSelf.questGiverIds.set(key, questId);
+                    continue;
+                  }
+                  const img = sceneSelf.add
+                    .image(
+                      c * TILE_SIZE + TILE_SIZE / 2,
+                      r * TILE_SIZE + TILE_SIZE / 2,
+                      sprite,
+                    )
+                    .setOrigin(0.5)
+                    .setDisplaySize(TILE_SIZE, TILE_SIZE)
+                    // Above items (70) and encounters (80) so the
+                    // quest-giver sits on top of any monster sprite
+                    // sharing the cell.
+                    .setDepth(85);
+                  const baseImg = sceneSelf.cells.get(key);
+                  if (baseImg && baseImg.isTinted) {
+                    img.setTint(baseImg.tintTopLeft);
+                  }
+                  sceneSelf.questGiverOverlays.set(key, img);
+                  sceneSelf.questGiverIds.set(key, questId);
+                }
+              }
+              // ── Golden quest-relevance halo ───────────────────────
+              // Computed wholesale each refresh — cheap, since the
+              // total set is small and Graphics redraw is fast.
+              // Per-cell brightness comes from the base cell's
+              // current tint (relight has already painted it). Untinted
+              // cells (Day mode) get full brightness; tinted cells get
+              // a halo whose RGB is multiplied by the same brightness
+              // applied to the scene, so the halo dims uniformly with
+              // the rest of the world.
+              const g = sceneSelf.questGlowGraphics;
+              if (!g) return;
+              g.clear();
+              const glowCells = computeQuestGlowCells(
+                gridRef.current,
+                availableQuests,
+              );
+              const BASE_R = 0xff;
+              const BASE_G = 0xd7;
+              const BASE_B = 0x50;
+              const HALO_ALPHA = 0.22;
+              for (const key of glowCells) {
+                const [csStr, rsStr] = key.split(",");
+                const cs = Number(csStr);
+                const rs = Number(rsStr);
+                if (!Number.isFinite(cs) || !Number.isFinite(rs)) continue;
+                // Read brightness from the base sprite's current tint.
+                // relight applies a grayscale tint where all three
+                // channels are equal, so the low byte is the brightness
+                // level 0..255.
+                let brightness = 1;
+                const baseImg = sceneSelf.cells.get(key);
+                if (baseImg && baseImg.isTinted) {
+                  brightness = (baseImg.tintTopLeft & 0xff) / 255;
+                }
+                const r = Math.round(BASE_R * brightness);
+                const gg = Math.round(BASE_G * brightness);
+                const b = Math.round(BASE_B * brightness);
+                const color = (r << 16) | (gg << 8) | b;
+                g.fillStyle(color, HALO_ALPHA);
+                const cx = cs * TILE_SIZE + TILE_SIZE / 2;
+                const cy = rs * TILE_SIZE + TILE_SIZE / 2;
+                // Slightly wider than the cell so the halo bleeds
+                // past the sprite edges.
+                g.fillCircle(cx, cy, TILE_SIZE * 0.72);
+              }
+            };
+            sceneApiRef.current.refreshAnimations = () => {
+              for (let r = 0; r < mapRecord.height; r++) {
+                for (let c = 0; c < mapRecord.width; c++) {
+                  const cell = gridRef.current[r]?.[c];
+                  const kind = (cell?.animation ?? "none") as
+                    | "none"
+                    | AnimationKind;
+                  const key = `${c},${r}`;
+                  const currentKind = sceneSelf.emitterKinds.get(key);
+                  if (kind === "none") {
+                    if (currentKind) {
+                      sceneSelf.emitters.get(key)?.destroy();
+                      sceneSelf.emitters.delete(key);
+                      sceneSelf.emitterKinds.delete(key);
+                    }
+                    continue;
+                  }
+                  if (currentKind === kind) continue;
+                  // Replace existing emitter (different kind, or none).
+                  sceneSelf.emitters.get(key)?.destroy();
+                  const cfg = ANIMATION_CONFIGS[kind as AnimationKind];
+                  const x = c * TILE_SIZE + TILE_SIZE / 2;
+                  const y = r * TILE_SIZE + TILE_SIZE / 2;
+                  const emitter = sceneSelf.add.particles(
+                    x,
+                    y,
+                    "__particle",
+                    cfg as unknown as Phaser.Types.GameObjects.Particles.ParticleEmitterConfig,
+                  );
+                  // Above grid lines, below selection.
+                  emitter.setDepth(160);
+                  sceneSelf.emitters.set(key, emitter);
+                  sceneSelf.emitterKinds.set(key, kind as AnimationKind);
+                }
+              }
+            };
+          }
+
+          // Initial light pass — picks up Day default until React
+          // pushes the current mode in via the lighting useEffect.
+          sceneApiRef.current.relight("day");
+          // Initial animation pass — seeds emitters for any cells
+          // whose data carries animation values on load.
+          sceneApiRef.current.refreshAnimations();
+          // Initial encounter-overlay pass — seeds sprites for cells
+          // whose encounter is set at load time.
+          sceneApiRef.current.refreshEncounterOverlays();
+          // Initial item-overlay pass — seeds sprites for cells whose
+          // item is set at load time.
+          sceneApiRef.current.refreshItemOverlays();
+          // Initial NPC-overlay pass — seeds sprites for cells whose
+          // npc is set at load time.
+          sceneApiRef.current.refreshNpcOverlays();
+          sceneApiRef.current.refreshBoatOverlays();
+          // Initial quest-overlay pass — seeds quest-giver sprites
+          // for any cell with `quest` set, and draws the golden glow
+          // behind quest-relevant cells (givers + matching encounters
+          // + matching items).
+          sceneApiRef.current.refreshQuestOverlays();
+        }
+
+        paintAt(p: Phaser.Input.Pointer, fromDown: boolean) {
+          const c = Math.floor(p.worldX / TILE_SIZE);
+          const r = Math.floor(p.worldY / TILE_SIZE);
+          if (
+            c < 0 ||
+            r < 0 ||
+            c >= mapRecord.width ||
+            r >= mapRecord.height
+          )
+            return;
+          // Simulation modes intercept the canvas click. "placing"
+          // routes the click into the spawn picker; "active" swallows
+          // the click entirely (movement is keyboard-driven, mouse
+          // clicks shouldn't repaint cells underneath the party).
+          if (simModeRef.current === "placing") {
+            onSimPlaceRef.current(c, r);
+            return;
+          }
+          if (simModeRef.current === "active") return;
+          // Cmd (macOS) / Ctrl (Windows/Linux) extends the selection,
+          // but only in Inspect mode — additive selection is for bulk
+          // attribute edits, not painting. The native modifier lives on
+          // the pointer's source DOM event.
+          const ev = p.event as
+            | { metaKey?: boolean; ctrlKey?: boolean }
+            | undefined;
+          const additive =
+            toolRef.current === "inspect" &&
+            !!ev &&
+            (ev.metaKey === true || ev.ctrlKey === true);
+          // Selection always follows the cursor — both tools update it.
+          onCellTouchedRef.current(c, r, { additive, drag: !fromDown });
+          // Inspect + Pan + Fill never paint via this path; just
+          // selecting is the whole job here. Pan-mode drags are
+          // normally swallowed by the React-layer capture handler
+          // before Phaser sees them, but guard anyway so a stray
+          // click can't repaint a cell unexpectedly. Fill uses its
+          // own pointerdown/move/up handlers below.
+          if (
+            toolRef.current === "inspect" ||
+            toolRef.current === "pan" ||
+            toolRef.current === "fill"
+          )
+            return;
+          const brush = brushRef.current;
+          if (!brush) return;
+          let brushTile: TileType | undefined = paletteById.get(brush);
+          if (!brushTile) return;
+          const existing = gridRef.current[r][c];
+          // Boats moor ON water: painting a boat tile onto a water cell
+          // (open sea, a river piece) keeps the cell and places the
+          // boat on top of it. Painting any other tile over the cell
+          // replaces it as usual, which also removes the boat.
+          if (
+            brushTile.boat &&
+            brushTile.sprite &&
+            existing &&
+            !existing.boat &&
+            isWaterCell(existing)
+          ) {
+            if (existing.boat_sprite === brushTile.sprite) return;
+            const stroke = strokeRef.current;
+            if (stroke && !stroke.has(`${c},${r}`)) {
+              stroke.set(`${c},${r}`, { ...existing });
+            }
+            gridRef.current[r][c] = {
+              ...existing,
+              boat_sprite: brushTile.sprite,
+            };
+            this.ensureTexture(brushTile.sprite, () =>
+              sceneApiRef.current?.refreshBoatOverlays(),
+            );
+            persistRef.current();
+            return;
+          }
+          // Painting over a tile carries it down as the new cell's
+          // background (a chair placed on carpet keeps the carpet
+          // showing through) — see ./paintBackground for the rules.
+          {
+            const bg = inheritedBackground(existing, brushTile, (k) =>
+              this.spriteIsOpaque(k),
+            );
+            brushTile = { ...brushTile, background_sprite: bg };
+            if (bg === undefined) delete brushTile.background_sprite;
+          }
+          // Skip if the cell already equals the brush tile field-for-
+          // field (drag-over of already-painted cells is a hot path).
+          if (
+            existing &&
+            existing.id === brushTile.id &&
+            existing.name === brushTile.name &&
+            (existing.tag ?? "") === (brushTile.tag ?? "") &&
+            existing.walkable === brushTile.walkable &&
+            existing.obstructs === brushTile.obstructs &&
+            (existing.boat ?? false) === (brushTile.boat ?? false) &&
+            (existing.text ?? "") === (brushTile.text ?? "") &&
+            (existing.locked ?? false) === (brushTile.locked ?? false) &&
+            (existing.light_source ?? false) ===
+              (brushTile.light_source ?? false) &&
+            (existing.light_range ?? 0) === (brushTile.light_range ?? 0) &&
+            (existing.animation ?? "none") ===
+              (brushTile.animation ?? "none") &&
+            (existing.counter ?? "") === (brushTile.counter ?? "") &&
+            (existing.encounter ?? "") === (brushTile.encounter ?? "") &&
+            (existing.spawn ?? "") === (brushTile.spawn ?? "") &&
+            (existing.item ?? "") === (brushTile.item ?? "") &&
+            (existing.quest ?? "") === (brushTile.quest ?? "") &&
+            (existing.dungeon ?? "") === (brushTile.dungeon ?? "") &&
+            (existing.npc ?? "") === (brushTile.npc ?? "") &&
+            existing.sprite === brushTile.sprite &&
+            (existing.background_sprite ?? "") ===
+              (brushTile.background_sprite ?? "") &&
+            JSON.stringify(existing.link ?? null) ===
+              JSON.stringify(brushTile.link ?? null) &&
+            (existing.show_link_placard ?? false) ===
+              (brushTile.show_link_placard ?? false) &&
+            // A moored boat is part of the cell: painting the same
+            // water over it removes the boat.
+            !existing.boat_sprite
+          ) {
+            return;
+          }
+          // Paint = fresh deep-copy of the palette entry. Every field
+          // materializes inline; the cell is its own data from here.
+          const fresh: TileType = { ...brushTile };
+          const stroke = strokeRef.current;
+          if (existing && stroke && !stroke.has(`${c},${r}`)) {
+            stroke.set(`${c},${r}`, { ...existing });
+          }
+          gridRef.current[r][c] = fresh;
+          const img = this.cells.get(`${c},${r}`);
+          if (img && fresh.sprite) {
+            // Load the texture on demand if it wasn't preloaded — e.g.
+            // a sprite the author just created this session — so the
+            // painted cell shows it immediately rather than staying on
+            // its previous texture until a reload.
+            this.ensureTexture(fresh.sprite, () =>
+              swapTexture(img, fresh.sprite),
+            );
+          }
+          this.syncBackgroundCell(c, r, fresh.background_sprite);
+          persistRef.current();
+        }
+
+        /** Fill tool — pointerdown. Remember the starting cell and
+         *  draw a single-cell preview rect. Simulation-mode hooks
+         *  match paintAt so the fill tool can't accidentally hijack
+         *  a sim placement or click. */
+        fillStart(p: Phaser.Input.Pointer) {
+          const c = Math.floor(p.worldX / TILE_SIZE);
+          const r = Math.floor(p.worldY / TILE_SIZE);
+          if (
+            c < 0 ||
+            r < 0 ||
+            c >= mapRecord.width ||
+            r >= mapRecord.height
+          )
+            return;
+          if (simModeRef.current === "placing") {
+            onSimPlaceRef.current(c, r);
+            return;
+          }
+          if (simModeRef.current === "active") return;
+          onCellTouchedRef.current(c, r);
+          fillStartRef.current = { col: c, row: r };
+          this.drawFillPreview(c, r, c, r);
+        }
+
+        /** Fill tool — pointermove while the button is held. Updates
+         *  the preview rectangle's far corner to the cursor cell
+         *  (clamped to the map). */
+        fillDrag(p: Phaser.Input.Pointer) {
+          const start = fillStartRef.current;
+          if (!start) return;
+          const c = Math.floor(p.worldX / TILE_SIZE);
+          const r = Math.floor(p.worldY / TILE_SIZE);
+          const cc = Math.max(0, Math.min(mapRecord.width - 1, c));
+          const rr = Math.max(0, Math.min(mapRecord.height - 1, r));
+          onCellTouchedRef.current(cc, rr);
+          this.drawFillPreview(start.col, start.row, cc, rr);
+        }
+
+        /** Fill tool — pointerup. Commits every cell inside the
+         *  rectangle defined by the press point and the release
+         *  point. Identical cells short-circuit so only changed
+         *  cells get reassigned + their texture refreshed, then
+         *  persistRef fires once for the whole batch. */
+        fillCommit(p: Phaser.Input.Pointer) {
+          const start = fillStartRef.current;
+          fillStartRef.current = null;
+          if (this.fillPreviewGraphics) this.fillPreviewGraphics.clear();
+          if (!start) return;
+          if (
+            simModeRef.current === "placing" ||
+            simModeRef.current === "active"
+          )
+            return;
+          const c = Math.floor(p.worldX / TILE_SIZE);
+          const r = Math.floor(p.worldY / TILE_SIZE);
+          const cc = Math.max(0, Math.min(mapRecord.width - 1, c));
+          const rr = Math.max(0, Math.min(mapRecord.height - 1, r));
+          const brush = brushRef.current;
+          if (!brush) return;
+          const baseBrush = paletteById.get(brush);
+          if (!baseBrush) return;
+          const c0 = Math.min(start.col, cc);
+          const c1 = Math.max(start.col, cc);
+          const r0 = Math.min(start.row, rr);
+          const r1 = Math.max(start.row, rr);
+          let changed = false;
+          const undoEntry = new Map<string, TileType>();
+          for (let row = r0; row <= r1; row++) {
+            for (let col = c0; col <= c1; col++) {
+              const existing = gridRef.current[row][col];
+              // Same paint-time background inheritance as paintAt.
+              const bg = inheritedBackground(existing, baseBrush, (k) =>
+                this.spriteIsOpaque(k),
+              );
+              const brushTile: TileType = { ...baseBrush, background_sprite: bg };
+              if (bg === undefined) delete brushTile.background_sprite;
+              if (
+                existing &&
+                existing.id === brushTile.id &&
+                existing.name === brushTile.name &&
+                (existing.tag ?? "") === (brushTile.tag ?? "") &&
+                existing.walkable === brushTile.walkable &&
+                existing.obstructs === brushTile.obstructs &&
+                (existing.boat ?? false) === (brushTile.boat ?? false) &&
+                (existing.text ?? "") === (brushTile.text ?? "") &&
+                (existing.locked ?? false) === (brushTile.locked ?? false) &&
+                (existing.light_source ?? false) ===
+                  (brushTile.light_source ?? false) &&
+                (existing.light_range ?? 0) ===
+                  (brushTile.light_range ?? 0) &&
+                (existing.animation ?? "none") ===
+                  (brushTile.animation ?? "none") &&
+                (existing.counter ?? "") === (brushTile.counter ?? "") &&
+                (existing.encounter ?? "") ===
+                  (brushTile.encounter ?? "") &&
+                (existing.spawn ?? "") === (brushTile.spawn ?? "") &&
+                (existing.item ?? "") === (brushTile.item ?? "") &&
+                (existing.quest ?? "") === (brushTile.quest ?? "") &&
+                (existing.dungeon ?? "") === (brushTile.dungeon ?? "") &&
+                existing.sprite === brushTile.sprite &&
+                (existing.background_sprite ?? "") ===
+                  (brushTile.background_sprite ?? "") &&
+                (existing.show_link_placard ?? false) ===
+                  (brushTile.show_link_placard ?? false) &&
+                JSON.stringify(existing.link ?? null) ===
+                  JSON.stringify(brushTile.link ?? null)
+              ) {
+                continue;
+              }
+              const fresh: TileType = { ...brushTile };
+              if (existing) undoEntry.set(`${col},${row}`, { ...existing });
+              gridRef.current[row][col] = fresh;
+              const img = this.cells.get(`${col},${row}`);
+              this.syncBackgroundCell(col, row, fresh.background_sprite);
+              if (img && fresh.sprite) {
+                // Load on demand if not yet preloaded (a mid-session
+                // sprite) so the filled cells render immediately.
+                this.ensureTexture(fresh.sprite, () =>
+                  swapTexture(img, fresh.sprite),
+                );
+              }
+              changed = true;
+            }
+          }
+          onCellTouchedRef.current(cc, rr);
+          if (changed) {
+            pushUndoRef.current(undoEntry);
+            persistRef.current();
+          }
+        }
+
+        /** Render the Fill-tool's preview rectangle between two cell
+         *  coords. The rect is normalized — caller can pass corners
+         *  in any order. */
+        drawFillPreview(
+          c0In: number,
+          r0In: number,
+          c1In: number,
+          r1In: number,
+        ) {
+          if (!this.fillPreviewGraphics) return;
+          const c0 = Math.min(c0In, c1In);
+          const c1 = Math.max(c0In, c1In);
+          const r0 = Math.min(r0In, r1In);
+          const r1 = Math.max(r0In, r1In);
+          this.fillPreviewGraphics.clear();
+          this.fillPreviewGraphics.fillStyle(0xffb84d, 0.18);
+          this.fillPreviewGraphics.fillRect(
+            c0 * TILE_SIZE,
+            r0 * TILE_SIZE,
+            (c1 - c0 + 1) * TILE_SIZE,
+            (r1 - r0 + 1) * TILE_SIZE,
+          );
+          this.fillPreviewGraphics.lineStyle(2, 0xffb84d, 0.9);
+          this.fillPreviewGraphics.strokeRect(
+            c0 * TILE_SIZE,
+            r0 * TILE_SIZE,
+            (c1 - c0 + 1) * TILE_SIZE,
+            (r1 - r0 + 1) * TILE_SIZE,
+          );
+        }
+      }
+
+      game = new Phaser.Game({
+        type: Phaser.AUTO,
+        // Hi-res backbuffer shown at the logical CSS size, and
+        // nearest-neighbour sampling — matches the game so tiles look
+        // the same (no blurred, darkened art).
+        width: mapRecord.width * TILE_SIZE * RENDER_SCALE,
+        height: mapRecord.height * TILE_SIZE * RENDER_SCALE,
+        scale: { zoom: 1 / RENDER_SCALE },
+        pixelArt: true,
+        parent: containerRef.current,
+        scene: MapScene,
+        backgroundColor: "#0a0908",
+        // No banner spam in dev console.
+        banner: false,
+      } as Phaser.Types.Core.GameConfig);
+    })();
+
+    return () => {
+      cancelled = true;
+      if (game) {
+        game.destroy(true);
+        game = null;
+      }
+      sceneApiRef.current = null;
+    };
+    // Only rebuild the scene when the map identity OR dimensions
+    // change — paint updates patch the existing scene in-place, but a
+    // resize needs a fresh canvas (Phaser's game width/height are
+    // fixed at creation).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    state.kind === "ok" ? state.mapRecord.id : null,
+    state.kind === "ok" ? state.mapRecord.width : 0,
+    state.kind === "ok" ? state.mapRecord.height : 0,
+  ]);
+
+  // ── Simulation mode lifecycle ───────────────────────────────────
+  /** Pending spawn position for the next sim mount. Set by either:
+   *   - the URL-query auto-entry (link traversal landed us here), or
+   *   - the click-to-place handler (user picked a tile on this map).
+   *  Consumed by the lifecycle effect on sim mount, then cleared so
+   *  a subsequent exit-then-restart doesn't reuse a stale coord. */
+  const spawnAtRef = useRef<{ col: number; row: number } | null>(null);
+  /** Pending boat-borne arrival hint for the next sim mount. Set by
+   *  the URL-query auto-entry when `?boat=1` is present (a sail-onto-
+   *  link traversal from another map). Consumed by the lifecycle
+   *  effect alongside `spawnAtRef` and cleared so a subsequent
+   *  exit-then-restart doesn't seed the party aboard a phantom boat. */
+  const spawnOnBoatRef = useRef<{ sprite: string | null } | null>(null);
+  // Honor `?sim=1` on initial render — drop straight into "active"
+  // sim mode at the entry coord. This is how link traversal lands:
+  // we push to the new map URL with these params, and the new
+  // MapEditor picks them up here. We router.replace() the params
+  // away on read so a browser refresh doesn't re-trigger the
+  // auto-entry.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const sim = searchParams?.get("sim");
+    if (sim !== "1") return;
+    const colStr = searchParams.get("entryCol");
+    const rowStr = searchParams.get("entryRow");
+    const col = colStr != null ? Number(colStr) : NaN;
+    const row = rowStr != null ? Number(rowStr) : NaN;
+    if (Number.isFinite(col) && Number.isFinite(row)) {
+      spawnAtRef.current = { col, row };
+    }
+    // Boat-borne arrival — the sender adds `boat=1` (+ optional
+    // `boatSprite=<key>`) when the party crossed the link aboard.
+    // We capture both here so the sim mount can pipe them through
+    // to `initialOnBoat` / `initialCurrentBoatSprite`.
+    if (searchParams.get("boat") === "1") {
+      spawnOnBoatRef.current = {
+        sprite: searchParams.get("boatSprite"),
+      };
+    }
+    // Link arrivals skip "placing" — we already know the entry cell.
+    setSimMode("active");
+    // Strip the query so this only fires once per navigation.
+    router.replace(editorMapHref(moduleId, mapId), { scroll: false });
+    // Run-once on mount: searchParams is stable enough here that
+    // re-triggering on its identity change would be a bug.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Keep onSimPlaceRef pointed at a fresh closure with the latest
+  // grid — when the user clicks a tile while "placing", we validate
+  // walkability and transition to "active" with the chosen spawn.
+  useEffect(() => {
+    onSimPlaceRef.current = (col, row) => {
+      if (state.kind !== "ok") return;
+      const cell = state.mapRecord.grid[row]?.[col];
+      if (!cell) return;
+      if (!cell.walkable) {
+        // Click landed on a wall / water / impassable tile. We just
+        // ignore it — the user can click somewhere else. The cursor
+        // stays in "placing" so the gesture is repeatable without
+        // re-clicking the toolbar button.
+        return;
+      }
+      spawnAtRef.current = { col, row };
+      setSimMode("active");
+    };
+  }, [state]);
+
+  const onLinkTraversed = useCallback(
+    (
+      link: { map_id: string; x: number; y: number },
+      // Boat-borne traversal — when the party sailed onto the link
+      // tile, the source sim hands us its boat state so the
+      // destination map can mount with the same vessel under the
+      // party. Optional: ordinary on-foot links omit it.
+      boat?: { onBoat: boolean; boatSprite: string | null },
+    ) => {
+      // Same-map portals (e.g. a teleporter pair on one map) can't
+      // route through the URL: Next's App Router treats a push to the
+      // current pathname with new query params as same-route, so
+      // MapEditor doesn't remount and the lifecycle effect that
+      // consumes the entry-coord query never re-fires. The party
+      // would visually stay on the source cell while the address bar
+      // updated. Instead, teleport the party in the running sim — the
+      // sim is already correctly wired to this map, so there's
+      // nothing to rebuild.
+      const currentMapId = state.kind === "ok" ? state.mapRecord.id : mapId;
+      if (link.map_id === currentMapId) {
+        simRef.current?.teleport(link.x, link.y);
+        return;
+      }
+      // Cross-map: route through the URL so the new MapEditor mount
+      // picks the entry coord up via searchParams and seeds spawnAt.
+      // For a boat-borne traversal we also ferry the on-boat flag +
+      // boat sprite via the query so the destination sim spawns
+      // already aboard the same vessel.
+      const params = new URLSearchParams({
+        sim: "1",
+        entryCol: String(link.x),
+        entryRow: String(link.y),
+      });
+      if (boat?.onBoat) {
+        params.set("boat", "1");
+        if (boat.boatSprite) params.set("boatSprite", boat.boatSprite);
+      }
+      const url = editorMapHref(
+        moduleId,
+        link.map_id,
+        Object.fromEntries(params.entries()),
+      );
+      router.push(url);
+    },
+    [moduleId, router, state, mapId],
+  );
+
+  useEffect(() => {
+    if (simMode !== "active" || state.kind !== "ok") {
+      // Tear down any existing sim when leaving "active" (toggling
+      // off, or transitioning back to "placing" — though placing only
+      // appears on the way IN, we still defensively dispose).
+      if (simRef.current) {
+        simRef.current.dispose();
+        simRef.current = null;
+        setSimInstance(null);
+      }
+      return;
+    }
+    // Fresh sim mount (new map or restart) — the first party
+    // placement should center the viewport on the party.
+    partyViewRef.current = null;
+    // Build a SimGrid view of the painted grid. Each TileType
+    // already carries the SimCell shape, so a shallow cast is safe.
+    const grid = state.mapRecord.grid as unknown as SimGrid;
+
+    const bridge: SceneBridge = {
+      setPartyAt: (col, row) => {
+        const sprite = state.simParty?.avatar ?? "";
+        sceneApiRef.current?.setPartyAt(col, row, sprite);
+        followParty(col, row);
+      },
+      clearParty: () => {
+        sceneApiRef.current?.clearParty();
+        // Sim mode just toggled off — wipe the editor-local
+        // fog-of-war so the next sim session starts fresh. Painting
+        // view doesn't care about the set (the relight skips fog
+        // entirely without a party), but resetting here keeps state
+        // tidy and stops a stale set from leaking into a different
+        // map the author switches to.
+        visitedCellsRef.current = new Set();
+      },
+      setPartyLight: (source) => {
+        sceneApiRef.current?.setPartyLight(source);
+      },
+      relight: () => {
+        sceneApiRef.current?.relight(lightingModeRef.current);
+      },
+      setBoatPositions: (positions) => {
+        sceneApiRef.current?.setBoatPositions(positions);
+      },
+      setPartyBoatAt: (col, row, visible, sprite) => {
+        sceneApiRef.current?.setPartyBoatAt(col, row, visible, sprite);
+        if (visible) followParty(col, row);
+      },
+      floatText: (col, row, text) => {
+        sceneApiRef.current?.floatText(col, row, text);
+      },
+      setRoamerPositions: (positions) => {
+        sceneApiRef.current?.setRoamerPositions(positions);
+      },
+      setCellSprite: (col, row, sprite, walkable) => {
+        sceneApiRef.current?.setCellSprite(col, row, sprite, walkable);
+      },
+      setPlacedEncounterPositions: (positions) => {
+        sceneApiRef.current?.setPlacedEncounterPositions(positions);
+      },
+      setSuppressedEncounterCells: (cells) => {
+        sceneApiRef.current?.setSuppressedEncounterCells(cells);
+      },
+      setPartyInfravisionActive: (active) => {
+        // Sim is the source of truth — when it tells us the
+        // activation flag flipped, store it in the ref the
+        // relight pass reads and trigger a relight so the next
+        // frame reflects the change. The SimPanel button calls
+        // `sim.setInfravisionActive` which routes through here.
+        partyInfravisionActiveRef.current = active;
+        sceneApiRef.current?.relight(lightingModeRef.current);
+      },
+      onKey: (handler) => {
+        // Window-scoped listener. Ignore the keystroke if the user is
+        // typing in an input/textarea so cell-text editing isn't
+        // blocked when sim mode is on for a quick test.
+        const isTyping = (t: EventTarget | null) => {
+          if (!(t instanceof HTMLElement)) return false;
+          const tag = t.tagName;
+          return (
+            tag === "INPUT" ||
+            tag === "TEXTAREA" ||
+            tag === "SELECT" ||
+            t.isContentEditable
+          );
+        };
+        const listener = (e: KeyboardEvent) => {
+          if (isTyping(e.target)) return;
+          // Pause sim movement while a modal overlay (NPC dialog,
+          // shop, party screen) is open — otherwise the party would
+          // keep stepping in the background while the player reads.
+          if (overlaysOpenRef.current) return;
+          handler(e.key);
+        };
+        window.addEventListener("keydown", listener);
+        return () => window.removeEventListener("keydown", listener);
+      },
+    };
+
+    const classNameById = new Map<string, string>(
+      state.simClasses.map((c) => [c.id, c.name]),
+    );
+    // Synthesize a minimal Party if the module had none — sim still
+    // runs (so the user can walk an empty placeholder around) but
+    // with no light/effect data and a hardcoded center spawn.
+    const party: SimParty = state.simParty ?? {
+      start_position: {
+        col: Math.floor(state.mapRecord.width / 2),
+        row: Math.floor(state.mapRecord.height / 2),
+      },
+      avatar: "",
+      roster: [],
+      torch_steps: 0,
+    };
+
+    // Pick a ground tile the destroy-lair path can revert a defeated
+    // spawn cell to. Prefer a tile tagged "grass"; fall back to the
+    // first walkable, non-special palette entry. Failure to find one
+    // is non-fatal — the destroy path still clears the cell's spawn
+    // id, the visual just won't change.
+    const groundPaletteEntry =
+      state.palette.find((t) => t.tag === "grass") ??
+      state.palette.find(
+        (t) => t.walkable && !t.boat && !t.locked && !t.light_source,
+      ) ??
+      null;
+    const groundTile = groundPaletteEntry
+      ? {
+          id: groundPaletteEntry.id,
+          sprite: groundPaletteEntry.sprite,
+          walkable: groundPaletteEntry.walkable,
+        }
+      : undefined;
+
+    // Parse the editor's QuestRecord[] through the v2 loader so the
+    // sim receives runtime QuestDef[]s (kind, encounterId, count,
+    // locationKind, etc.). parseQuestsFile is tolerant — empty list
+    // → empty result, the sim's quest-placement pass no-ops.
+    const questDefsForSim = parseQuestsFile({ quests: state.availableQuests });
+    // Top up the sandbox state map so every loaded quest has a state
+    // entry ("available" by default). Idempotent — re-running this
+    // on a sim re-mount preserves any state mutations
+    // (markQuestAccepted, etc.) from the previous session.
+    ensureQuestStates(questDefsForSim, questStatesRef.current);
+
+    const sim = new MapSimulation({
+      grid,
+      party,
+      catalog: {
+        characters: state.simCharacters,
+        races: state.simRaces,
+        effects: state.simEffects,
+        // Threaded through for the Pick Lock / Cast Knock dialog —
+        // findKnockCaster reads classes' `casting_type[]` to match
+        // members against the spell's catalog.
+        characterClasses: state.simClasses,
+        knockSpell: state.simKnockSpell,
+        // Monster-lair subsystem catalogs. Both can be empty for
+        // modules that haven't authored either — the spawn loop
+        // just stays dormant in that case.
+        spawns: state.simSpawns,
+        monsters: state.simMonsters,
+        // Encounter catalog feeds the placed-encounter pursuit loop.
+        // Each cell with `tile.encounter` set spawns one roaming
+        // entity whose collision opens this encounter's roster.
+        encounters: state.encounters.map((e) => ({
+          id: e.id,
+          name: (e.name as string) ?? e.id,
+          monster_party_tile: e.monster_party_tile,
+          monsters: e.monsters ?? [],
+        })),
+        groundTile,
+      },
+      classNameById,
+      bridge,
+      startAt: spawnAtRef.current ?? undefined,
+      // Boat-borne arrival from a sail-onto-link traversal. The
+      // sim's constructor treats `initialOnBoat` + `startAt` as a
+      // trusted spawn (water tiles are accepted, walkability check
+      // bypassed) so the destination map renders the party aboard
+      // the same vessel that carried them through the portal.
+      initialOnBoat: spawnOnBoatRef.current !== null,
+      initialCurrentBoatSprite: spawnOnBoatRef.current?.sprite ?? null,
+      // Quest-driven encounter placement. Hand the sim the parsed
+      // quest defs + the sandbox state map; on construction it runs
+      // `activeKillStepsAt({ kind: "map", mapId })` and drops each
+      // active step's encounter onto a random walkable cell. See the
+      // questStatesRef declaration above for the "available vs
+      // active" caveat.
+      questDefs: questDefsForSim,
+      questStates: questStatesRef.current,
+      currentLocation: { kind: "map", mapId: state.mapRecord.id },
+    });
+    // Consume the one-shot spawn coord so a subsequent exit + Simulate
+    // returns the user to the "placing" picker rather than reusing
+    // the previous spot. Boat-borne arrival hint is one-shot for the
+    // same reason: a re-entry on foot should NOT mount aboard.
+    spawnAtRef.current = null;
+    spawnOnBoatRef.current = null;
+
+    const unsubscribe = sim.subscribe((ev) => {
+      if (ev.kind === "linked") {
+        onLinkTraversed(ev.link, {
+          onBoat: ev.onBoat,
+          boatSprite: ev.boatSprite,
+        });
+      }
+      if (ev.kind === "item_picked") {
+        // Party walked onto a cell carrying an item. The kernel has
+        // already cleared the cell + recorded the pickup; we just play
+        // the "collected!" effect (item floats up + golden glow +
+        // sparkles + chime) at the tile it was on.
+        sceneApiRef.current?.playItemPickup(ev.pos.col, ev.pos.row);
+      }
+      if (ev.kind === "place_encountered") {
+        // Flagged link / dungeon tile — pop the confirm placard so the
+        // author can test the show_link_placard attribute in sim. On
+        // confirm we run the SAME transition the immediate path would
+        // (link traversal / dungeon route); cancel just dismisses.
+        // The sandbox has no persistent save, so "explored" is always
+        // false here.
+        if (ev.placeKind === "link") {
+          const link = ev.link;
+          const name =
+            (state.kind === "ok"
+              ? state.availableMaps.find((m) => m.id === link.map_id)?.name
+              : undefined) ?? link.map_id;
+          pendingPlaceActionRef.current = () =>
+            onLinkTraversed(link, { onBoat: false, boatSprite: null });
+          setPlacard({
+            placeKind: "link",
+            name,
+            explored: false,
+            // Quest treatment in sim too, so authors can verify the
+            // gold badge / context lines against their quest data.
+            questTargets:
+              state.kind === "ok"
+                ? questsTargetingPlace(
+                    parseQuestsFile({ quests: state.availableQuests }),
+                    questStatesRef.current,
+                    { placeKind: "link", mapId: link.map_id },
+                  )
+                : [],
+          });
+        } else {
+          const dungeonId = ev.dungeonId;
+          const returnPos = ev.returnPos;
+          const name =
+            (state.kind === "ok"
+              ? state.availableDungeons.find((d) => d.id === dungeonId)?.name
+              : undefined) ?? dungeonId;
+          pendingPlaceActionRef.current = () => {
+            const params = new URLSearchParams({
+              id: dungeonId,
+              return: state.kind === "ok" ? state.mapRecord.id : mapId,
+              col: String(returnPos.col),
+              row: String(returnPos.row),
+            });
+            router.push(
+              editorDungeonSimHref(
+                moduleId,
+                Object.fromEntries(params.entries()),
+              ),
+            );
+          };
+          setPlacard({
+            placeKind: "dungeon",
+            name,
+            explored: false,
+            questTargets:
+              state.kind === "ok"
+                ? questsTargetingPlace(
+                    parseQuestsFile({ quests: state.availableQuests }),
+                    questStatesRef.current,
+                    { placeKind: "dungeon", dungeonId },
+                  )
+                : [],
+          });
+        }
+      }
+      if (ev.kind === "npc_encountered") {
+        // Open the NPC dialog overlay. Movement is gated via
+        // overlaysOpenRef so the party doesn't keep stepping while
+        // the player reads.
+        setNpcEncounterId(ev.npcId);
+      }
+      if (ev.kind === "lock_encountered") {
+        // Pop the Pick Lock / Cast Knock / Leave dialog. The same
+        // overlaysOpenRef gate freezes keyboard movement under the
+        // modal.
+        setLockEncounter(ev.options);
+      }
+      if (ev.kind === "lore_encountered") {
+        // Readable map object — preview the reading screen. (XP and
+        // the journal are play-only; the sim doesn't track reads.)
+        setSimLoreId(ev.loreId);
+      }
+      if (ev.kind === "counter_encountered") {
+        // Tile-planted shop counter — open the CounterShopOverlay
+        // directly. The existing shopCounterId state path (used by
+        // the NPC-broker route) is reused, so closing the overlay
+        // cleanly returns the player to keyboard movement.
+        setShopCounterId(ev.counterId);
+      }
+      if (ev.kind === "spawn_encountered") {
+        // Monster Spawn fight — boss or roamer. The overlay pops with
+        // Win/Flee buttons; movement is gated through overlaysOpenRef
+        // until resolveSpawnEncounter lands the outcome.
+        setSpawnEncounter(ev.options);
+      }
+      if (ev.kind === "spawn_destroyed") {
+        // No special UI today — the cell visual is already swapped by
+        // setCellSprite and the inspector picks up the change on its
+        // next render. Just log the event for the user.
+      }
+      if (ev.kind === "quest_encountered") {
+        // Quest tile bumped — the kernel re-fires every time, so we
+        // pick the dialog mode here based on current state.
+        const qstate = questStatesRef.current.get(ev.questId);
+        // "turned_in" → quest is done and rewards have been handed
+        // off. The giver becomes a normal NPC — open the standard
+        // NPC dialog with their `post_dialog` (or a generic
+        // thank-you) instead of the quest overlay. Mirrors the
+        // play host so authors can test the behaviour in sim.
+        if (qstate?.status === "turned_in") {
+          const giver = ev.quest.quest_giver;
+          setGiverChatter({
+            name: giver?.npc_name ?? "Quest Giver",
+            sprite: giver?.npc_sprite,
+            text:
+              giver?.post_dialog ??
+              "Good to see you again, friend. I won't forget what you did for me.",
+          });
+          return;
+        }
+        const def = questDefsForSim.find((d) => d.id === ev.questId);
+        const stepCount = def?.steps.length ?? 0;
+        const progress = qstate?.stepProgress ?? [];
+        // First incomplete step, or stepCount when every step is
+        // done (matches QuestDialogOverlay's `stepIdx` semantic).
+        let pendingIdx = progress.findIndex((p) => !p);
+        if (pendingIdx === -1) pendingIdx = stepCount;
+        const activeStep = pendingIdx < stepCount ? def?.steps[pendingIdx] : null;
+        setQuestEncounter({
+          questId: ev.questId,
+          quest: ev.quest,
+          alreadyAccepted:
+            qstate?.status === "active" ||
+            qstate?.status === "completed",
+          complete: qstate?.status === "completed",
+          stepIdx: pendingIdx,
+          stepCount,
+          activeStepName: activeStep?.name || activeStep?.description || undefined,
+          activeStepDescription:
+            activeStep && activeStep.name ? activeStep.description : undefined,
+        });
+      }
+      // Note: quest_kill_credited is emitted by the sim but the host
+      // doesn't act on it directly — the structured info is reserved
+      // for a future banner / quest-log subsystem. For now the
+      // accompanying `log` event carries the player-facing message
+      // and the next quest-giver bump rebuilds the dialog with
+      // fresh state.
+      if (ev.kind === "dungeon_entered") {
+        // Dungeon entrance — route to the dedicated dungeon sim
+        // page with the dungeon id + the return cell, so exiting
+        // drops the party back here at the entrance. The dungeon
+        // sim handles the procedural generation + the simulation
+        // for the entire underground run.
+        const params = new URLSearchParams({
+          id: ev.dungeonId,
+          return: state.kind === "ok" ? state.mapRecord.id : mapId,
+          col: String(ev.returnPos.col),
+          row: String(ev.returnPos.row),
+        });
+        router.push(
+          editorDungeonSimHref(
+            moduleId,
+            Object.fromEntries(params.entries()),
+          ),
+        );
+      }
+    });
+
+    simRef.current = sim;
+    setSimInstance(sim);
+
+    return () => {
+      unsubscribe();
+      sim.dispose();
+      if (simRef.current === sim) {
+        simRef.current = null;
+        setSimInstance(null);
+      }
+    };
+    // Map identity is the primary lifetime key — when the user
+    // traverses a link the route remounts MapEditor entirely, so this
+    // effect re-runs cleanly. simMode is the user toggle. State is
+    // intentionally omitted: we don't want to rebuild the sim on
+    // every paint while sim is active.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    // Re-run when sim transitions in/out of "active" (the only state
+    // that mounts a sim) and when the user navigates to a new map.
+    simMode === "active",
+    state.kind === "ok" ? state.mapRecord.id : null,
+    onLinkTraversed,
+  ]);
+
+  // Zooming mid-simulation rescales the canvas around its top-left, so
+  // the party can drift off-screen. Re-center on the party after a zoom.
+  useEffect(() => {
+    if (simMode !== "active") return;
+    const at = partyViewRef.current;
+    if (!at) return;
+    partyViewRef.current = null; // force a center, not an edge nudge
+    followParty(at.col, at.row);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [zoom]);
+
+  // Propagate grid-lines toggle to the running scene.
+  useEffect(() => {
+    sceneApiRef.current?.setGridLinesVisible(gridLinesOn);
+  }, [gridLinesOn]);
+
+  // Propagate selection highlight to the running scene — every cell in
+  // the multi-selection, with the anchor emphasized.
+  useEffect(() => {
+    sceneApiRef.current?.setSelectionCells(selection);
+  }, [selection]);
+
+  // Recompute lighting whenever the mode changes or the grid does.
+  // The relight pass is cheap (one pass over cells × light sources)
+  // and idempotent, so over-calling it is fine.
+  useEffect(() => {
+    sceneApiRef.current?.relight(lightingMode);
+  }, [lightingMode, state]);
+
+  // Sync animation emitters with the grid. refreshAnimations only
+  // replaces emitters whose `animation` value actually changed.
+  useEffect(() => {
+    sceneApiRef.current?.refreshAnimations();
+  }, [state]);
+
+  // Sync encounter overlay sprites with the grid. refreshEncounterOverlays
+  // is similarly diff-based — unchanged cells are skipped.
+  useEffect(() => {
+    sceneApiRef.current?.refreshEncounterOverlays();
+  }, [state]);
+
+  // Sync item overlay sprites with the grid. Same diff-based refresh
+  // pattern — items dropped on the floor render as a smaller sprite
+  // above the base tile but below encounter overlays.
+  useEffect(() => {
+    sceneApiRef.current?.refreshItemOverlays();
+  }, [state]);
+
+  // Sync NPC overlay sprites with the grid. NPCs render at near-full
+  // tile size and sit between items (70) and encounters (80) on the
+  // depth stack.
+  useEffect(() => {
+    sceneApiRef.current?.refreshNpcOverlays();
+  }, [state]);
+
+  // Moored boats (`boat_sprite`) render as overlays on their water cell.
+  useEffect(() => {
+    sceneApiRef.current?.refreshBoatOverlays();
+  }, [state]);
+
+  // Sync the quest-giver overlay + golden glow with the grid. Runs
+  // whenever the grid, the quest/encounter catalogs, OR the lighting
+  // mode changes. The dep on lightingMode matters because the halo
+  // dims using each cell's current tint — when the user toggles
+  // Day/Twilight/Night, the halo needs a fresh draw after relight
+  // has finished its tint pass. React fires effects in declaration
+  // order, so this useEffect (declared after the relight effect)
+  // sees the freshly-tinted cells.
+  useEffect(() => {
+    sceneApiRef.current?.refreshQuestOverlays();
+  }, [state, lightingMode]);
+
+  // ── Undo (tile placements) ──────────────────────────────────────
+  /** Revert the most recent Paint stroke or Fill rectangle: put every
+   *  touched cell back to what it held before, redraw those cells, and
+   *  persist the draft (which also re-syncs NPC / item / boat / quest
+   *  overlays through the state-keyed effects above). */
+  const undoLastEdit = () => {
+    if (simModeRef.current === "active") return;
+    const entry = undoStackRef.current.pop();
+    setUndoCount(undoStackRef.current.length);
+    if (!entry) return;
+    for (const [key, prev] of entry) {
+      const [col, row] = key.split(",").map(Number);
+      if (!gridRef.current[row]?.[col]) continue;
+      gridRef.current[row][col] = { ...prev };
+      sceneApiRef.current?.restoreCell(col, row);
+    }
+    persistRef.current();
+  };
+  const undoLastEditRef = useRef(undoLastEdit);
+  undoLastEditRef.current = undoLastEdit;
+
+  // Cmd+Z (macOS) / Ctrl+Z — same shortcut as the sprite editor.
+  // Ignored while typing in a field so text inputs keep their own undo.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey) || e.shiftKey || e.altKey) return;
+      if (e.key !== "z" && e.key !== "Z") return;
+      const t = e.target as HTMLElement | null;
+      if (
+        t &&
+        (t.tagName === "INPUT" ||
+          t.tagName === "TEXTAREA" ||
+          t.tagName === "SELECT" ||
+          t.isContentEditable)
+      )
+        return;
+      e.preventDefault();
+      undoLastEditRef.current();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  // ── Cell mutators (driven by the Inspector) ─────────────────────
+  /** Apply a field patch directly to the cell at (col, row). The cell
+   *  is its own data — no separate overrides array. `undefined` in the
+   *  patch means "reset this field to the palette default" (looked up
+   *  by the cell's current id). */
+  const setCellFields = (
+    col: number,
+    row: number,
+    patch: Partial<TileType>,
+  ) => {
+    if (state.kind !== "ok") return;
+    const current = state.mapRecord.grid[row]?.[col];
+    if (!current) return;
+    const base = state.palette.find((t) => t.id === current.id);
+    const next: TileType = { ...current };
+    const nextAsAny = next as unknown as Record<string, unknown>;
+    const baseAsAny = base as unknown as Record<string, unknown> | null;
+    let spriteChanged = false;
+    for (const k of Object.keys(patch) as Array<keyof TileType>) {
+      const v = patch[k];
+      if (v === undefined) {
+        // Reset → restore from palette base.
+        if (baseAsAny && k in baseAsAny) {
+          nextAsAny[k] = baseAsAny[k];
+        } else {
+          delete nextAsAny[k];
+        }
+      } else {
+        nextAsAny[k] = v;
+      }
+      if (k === "sprite") spriteChanged = true;
+    }
+    // Mutate the live grid + state.
+    const nextGrid = state.mapRecord.grid.map((rowCells, ri) =>
+      ri === row
+        ? rowCells.map((c, ci) => (ci === col ? next : c))
+        : rowCells,
+    );
+    gridRef.current = nextGrid;
+    const nextMap: MapRecord = { ...state.mapRecord, grid: nextGrid };
+    setState({ ...state, mapRecord: nextMap });
+    if (spriteChanged && next.sprite) {
+      sceneApiRef.current?.refreshCell(col, row, next.sprite);
+    }
+    queueMicrotask(() => persistRef.current());
+  };
+
+  /** Batch version of {@link setCellFields}: apply the same patch to
+   *  every cell in `cells` in one pass — a single grid rebuild, one
+   *  setState, one persist. Each cell resolves `undefined` (Reset)
+   *  against ITS OWN palette-of-origin, so a bulk Reset restores each
+   *  tile to its respective base. Used by the inspector when more than
+   *  one cell is selected. */
+  const setCellsFields = (
+    cells: ReadonlyArray<{ col: number; row: number }>,
+    patch: Partial<TileType>,
+  ) => {
+    if (state.kind !== "ok") return;
+    if (cells.length <= 1) {
+      const only = cells[0];
+      if (only) setCellFields(only.col, only.row, patch);
+      return;
+    }
+    const paletteById = new Map(state.palette.map((t) => [t.id, t]));
+    // Dedup by "col,row" so a malformed selection can't double-apply.
+    const seen = new Set<string>();
+    const targets = cells.filter((c) => {
+      const k = `${c.col},${c.row}`;
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+    // Build next cells keyed by position so the grid rebuild is O(1) per cell.
+    const replacements = new Map<string, TileType>();
+    const spriteRefreshes: Array<{ col: number; row: number; sprite: string }> =
+      [];
+    for (const { col, row } of targets) {
+      const current = state.mapRecord.grid[row]?.[col];
+      if (!current) continue;
+      const base = paletteById.get(current.id) ?? null;
+      const next: TileType = { ...current };
+      const nextAsAny = next as unknown as Record<string, unknown>;
+      const baseAsAny = base as unknown as Record<string, unknown> | null;
+      let spriteChanged = false;
+      for (const k of Object.keys(patch) as Array<keyof TileType>) {
+        const v = patch[k];
+        if (v === undefined) {
+          if (baseAsAny && k in baseAsAny) {
+            nextAsAny[k] = baseAsAny[k];
+          } else {
+            delete nextAsAny[k];
+          }
+        } else {
+          nextAsAny[k] = v;
+        }
+        if (k === "sprite") spriteChanged = true;
+      }
+      replacements.set(`${col},${row}`, next);
+      if (spriteChanged && next.sprite) {
+        spriteRefreshes.push({ col, row, sprite: next.sprite });
+      }
+    }
+    if (replacements.size === 0) return;
+    const nextGrid = state.mapRecord.grid.map((rowCells, ri) =>
+      rowCells.map((c, ci) => replacements.get(`${ci},${ri}`) ?? c),
+    );
+    gridRef.current = nextGrid;
+    const nextMap: MapRecord = { ...state.mapRecord, grid: nextGrid };
+    setState({ ...state, mapRecord: nextMap });
+    for (const { col, row, sprite } of spriteRefreshes) {
+      sceneApiRef.current?.refreshCell(col, row, sprite);
+    }
+    queueMicrotask(() => persistRef.current());
+  };
+
+  // ── Mutators outside paint flow ─────────────────────────────────
+  /**
+   * Persist a full updated maps.json baseFile. Tries the local draft
+   * first; on QuotaExceededError, falls back to writing straight to
+   * disk via the publish server (and clears any pre-existing draft)
+   * so single-shot operations like Delete map or Save properties
+   * keep working once the module has outgrown the ~5MB browser cap.
+   * Returns `{ publishedDirectly }` so callers can react (e.g. clear
+   * the local quota-warning flag once we've persisted to disk).
+   */
+  const persistMapsFileWithFallback = async (
+    baseFile: Record<string, unknown>,
+  ): Promise<{ publishedDirectly: boolean }> => {
+    try {
+      await saveDraft(moduleId, MODEL_KEY, baseFile);
+      return { publishedDirectly: false };
+    } catch (storageErr) {
+      if (publishAvailable !== true) {
+        throw new Error(
+          `Couldn't save to browser draft: ${
+            storageErr instanceof Error
+              ? storageErr.message
+              : String(storageErr)
+          }. Start the publish server to save directly to disk.`,
+        );
+      }
+      const res = await publishItems([
+        {
+          kind: "model",
+          moduleId,
+          modelKey: MODEL_KEY,
+          fileName: "maps.json",
+          content: baseFile,
+        },
+      ]);
+      const r0 = res.results[0];
+      if (!r0 || !r0.ok) {
+        throw new Error(
+          `Couldn't save to browser draft (${
+            storageErr instanceof Error
+              ? storageErr.message
+              : String(storageErr)
+          }) and direct publish also failed: ${r0?.error ?? "unknown error"}.`,
+        );
+      }
+      // Clear any pre-existing draft so the next load picks up the
+      // freshly-published file.
+      discardDraft(moduleId, MODEL_KEY);
+      return { publishedDirectly: true };
+    }
+  };
+
+  /** Delete the current map from the module's maps file. Writes the
+   *  pruned file as a draft + navigates back to the maps browse view.
+   *  The user can still Publish or Discard afterward. */
+  const onDeleteMap = async () => {
+    if (typeof window === "undefined") return;
+    if (state.kind !== "ok") return;
+    const ok = window.confirm(
+      deleteRecordConfirmMessage({
+        kind: "map",
+        name: `${state.mapRecord.id} (${state.mapRecord.name})`,
+        fileName: "maps.json",
+      }),
+    );
+    if (!ok) return;
+    const baseFile: Record<string, unknown> = state.ownFile
+      ? { ...state.ownFile }
+      : { maps: [] };
+    const list = Array.isArray(baseFile.maps)
+      ? (baseFile.maps as MapRecord[]).filter((m) => m.id !== mapId)
+      : [];
+    baseFile.maps = list;
+    try {
+      await persistMapsFileWithFallback(baseFile);
+    } catch (e) {
+      window.alert(
+        `Couldn't delete map: ${e instanceof Error ? e.message : String(e)}`,
+      );
+      return;
+    }
+    router.push(editorModelHref(moduleId, "maps"));
+  };
+
+  /** Commit edits from the Map Properties dialog into the draft.
+   *  Mirrors persistRef.current() but writes top-level metadata
+   *  (name, description, tags) rather than the painted grid. Grid
+   *  + every other field is preserved by spreading the existing
+   *  mapRecord first. Undefined values from the dialog (e.g. blank
+   *  description) explicitly clear the field in the saved file. */
+  const onSaveMapAttrs = async (next: {
+    name: string;
+    description?: string;
+    tags?: string[];
+    lighting?: "day" | "twilight" | "darkness" | "world_time";
+    soundtrack?: string[];
+    fog_of_war?: boolean;
+    fog_style?: FogStyleByMode;
+    passive_regen?: { hp: number; mp: number };
+    exploration_xp?: number;
+  }) => {
+    if (state.kind !== "ok") return;
+    const updatedMap: MapRecord = {
+      ...state.mapRecord,
+      name: next.name,
+    };
+    if (next.description !== undefined) {
+      updatedMap.description = next.description;
+    } else {
+      delete (updatedMap as Record<string, unknown>).description;
+    }
+    if (next.tags !== undefined) {
+      updatedMap.tags = next.tags;
+    } else {
+      delete (updatedMap as Record<string, unknown>).tags;
+    }
+    // Lighting override: only persist the three explicit bands. The
+    // dialog folds "world_time" → undefined before calling us, but
+    // defend against that here too so a future caller that passes
+    // "world_time" explicitly also clears the field cleanly.
+    if (next.lighting && next.lighting !== "world_time") {
+      (updatedMap as Record<string, unknown>).lighting = next.lighting;
+    } else {
+      delete (updatedMap as Record<string, unknown>).lighting;
+    }
+    // Soundtrack: persist only when non-empty so quiet maps stay
+    // shape-clean rather than carrying an empty `"soundtrack": []`.
+    if (next.soundtrack && next.soundtrack.length > 0) {
+      (updatedMap as Record<string, unknown>).soundtrack = next.soundtrack;
+    } else {
+      delete (updatedMap as Record<string, unknown>).soundtrack;
+    }
+    // Fog-of-war: default is ON, so only persist the field when it's
+    // explicitly OFF. The dialog folds the default (true) → undefined
+    // before calling us; defend against a stray `true` here too so
+    // fogged maps never carry a redundant `"fog_of_war": true`.
+    if (next.fog_of_war === false) {
+      (updatedMap as Record<string, unknown>).fog_of_war = false;
+    } else {
+      delete (updatedMap as Record<string, unknown>).fog_of_war;
+    }
+    // Fog style: persist only bands that differ from the band defaults
+    // (clouds / dark clouds / darkness), so a map left on the defaults
+    // carries no `fog_style` key.
+    const fogStyle = normalizeFogStyles(next.fog_style);
+    if (fogStyle) {
+      (updatedMap as Record<string, unknown>).fog_style = fogStyle;
+    } else {
+      delete (updatedMap as Record<string, unknown>).fog_style;
+    }
+    // Exploration XP override: persist only when set (blank = use the
+    // module amount); 0 is a real value meaning "no reward here".
+    if (typeof next.exploration_xp === "number") {
+      (updatedMap as Record<string, unknown>).exploration_xp =
+        next.exploration_xp;
+    } else {
+      delete (updatedMap as Record<string, unknown>).exploration_xp;
+    }
+    // Passive regen: persist only when it actually heals, so non-restful
+    // maps stay shape-clean (no `passive_regen` key at all).
+    if (
+      next.passive_regen &&
+      (next.passive_regen.hp > 0 || next.passive_regen.mp > 0)
+    ) {
+      (updatedMap as Record<string, unknown>).passive_regen =
+        next.passive_regen;
+    } else {
+      delete (updatedMap as Record<string, unknown>).passive_regen;
+    }
+
+    const baseFile: Record<string, unknown> = state.ownFile
+      ? { ...state.ownFile }
+      : { maps: [] };
+    const list = Array.isArray(baseFile.maps)
+      ? [...(baseFile.maps as MapRecord[])]
+      : [];
+    const idx = list.findIndex((m) => m.id === mapId);
+    if (idx >= 0) list[idx] = updatedMap;
+    else list.push(updatedMap);
+    baseFile.maps = list;
+    let result: { publishedDirectly: boolean };
+    try {
+      result = await persistMapsFileWithFallback(baseFile);
+    } catch (e) {
+      window.alert(
+        `Couldn't save map properties: ${
+          e instanceof Error ? e.message : String(e)
+        }`,
+      );
+      return;
+    }
+    setState({
+      ...state,
+      mapRecord: updatedMap,
+      ownFile: baseFile,
+      isDraft: !result.publishedDirectly,
+    });
+    if (result.publishedDirectly && draftQuotaExceeded) {
+      setDraftQuotaExceeded(false);
+    }
+    setEditingMapAttrs(false);
+  };
+
+  /** Resolve the tile that fills cells created by a resize: the map's
+   *  dominant walkable ("ground") tile, preferring the pristine
+   *  palette entry over a painted cell — painted cells can carry
+   *  per-cell customizations (an NPC, a link, on-step text) that must
+   *  not be stamped across hundreds of new cells; sanitizeFillCell
+   *  scrubs those when we do have to fall back to one. Last resorts:
+   *  first walkable palette tile, then palette[0] (mirrors how the
+   *  New Map form seeds a fresh grid). */
+  const resolveResizeFill = (): { cell: TileType; name: string } | null => {
+    if (state.kind !== "ok") return null;
+    const domId = dominantGroundTileId(
+      gridRef.current as unknown as ResizeMapRecord["grid"],
+    );
+    if (domId) {
+      const pal = state.palette.find((t) => t.id === domId);
+      if (pal) return { cell: pal, name: pal.name || pal.id };
+      for (const row of gridRef.current) {
+        for (const c of row) {
+          if (c.id === domId) {
+            const cell = sanitizeFillCell(
+              c as unknown as ResizeMapRecord["grid"][number][number],
+            ) as unknown as TileType;
+            return { cell, name: cell.name || cell.id };
+          }
+        }
+      }
+    }
+    const fallback = state.palette.find((t) => t.walkable) ?? state.palette[0];
+    return fallback
+      ? { cell: fallback, name: fallback.name || fallback.id }
+      : null;
+  };
+
+  /** Apply a resize from the dialog. Grows the grid (fill = dominant
+   *  ground tile), and — when space is added on the top/left — shifts
+   *  every stored coordinate pointing INTO this map: links + pressure
+   *  plates across all maps (inherited maps with such refs are
+   *  materialized into the module's own file, where they already win
+   *  the merge), and party.json's start_position via its own draft.
+   *  Persists through the same draft/publish fallback as every other
+   *  map edit, then swaps the live grid + state so the scene remounts
+   *  at the new dimensions (the mount effect keys on width/height). */
+  const onResizeMap = async (edges: ResizeEdges) => {
+    if (state.kind !== "ok") return;
+    const fill = resolveResizeFill();
+    if (!fill) {
+      window.alert(
+        "Can't resize: the module has no tile palette to fill new cells with.",
+      );
+      return;
+    }
+    const currentMap: MapRecord = {
+      ...state.mapRecord,
+      grid: gridRef.current,
+    };
+    let resized: MapRecord;
+    try {
+      resized = resizeMapRecord(
+        currentMap as unknown as ResizeMapRecord,
+        edges,
+        fill.cell as unknown as ResizeMapRecord["grid"][number][number],
+      ) as unknown as MapRecord;
+    } catch (e) {
+      window.alert(
+        `Couldn't resize map: ${e instanceof Error ? e.message : String(e)}`,
+      );
+      return;
+    }
+
+    const baseFile: Record<string, unknown> = state.ownFile
+      ? { ...state.ownFile }
+      : { maps: [] };
+    let list: MapRecord[] = Array.isArray(baseFile.maps)
+      ? [...(baseFile.maps as MapRecord[])]
+      : [];
+    const idx = list.findIndex((m) => m.id === mapId);
+    if (idx >= 0) list[idx] = resized;
+    else list.push(resized);
+
+    const dCol = edges.left;
+    const dRow = edges.top;
+    if (dCol > 0 || dRow > 0) {
+      // Inherited maps can hold links/plates into this map too. Pull
+      // the merged view, and materialize any inherited map whose refs
+      // need shifting into the own file (copy-on-write — own records
+      // win the merge by id, so the shifted copy takes effect).
+      try {
+        const src = getEditorModuleSource();
+        const layers = await src.loadModelLayers(moduleId, "maps");
+        const merged = mergeModel("maps", layers.inherited, {
+          maps: list,
+        }) as { maps?: MapRecord[] } | null;
+        const ownIds = new Set(list.map((m) => m.id));
+        const inheritedOnly = (merged?.maps ?? []).filter(
+          (m) => !ownIds.has(m.id),
+        );
+        // Probe pass: identity survives shiftRefsIntoMap only for maps
+        // with no matching refs, so a changed element marks a map that
+        // needs materializing. Push the ORIGINAL (unshifted) copy —
+        // the single shift pass over the full list below does the
+        // actual coordinate math exactly once for everyone.
+        const [probed] = shiftRefsIntoMap(
+          inheritedOnly as unknown as ResizeMapRecord[],
+          mapId,
+          dCol,
+          dRow,
+        );
+        for (let i = 0; i < inheritedOnly.length; i++) {
+          if (probed[i] !== (inheritedOnly[i] as unknown)) {
+            list.push(inheritedOnly[i]);
+          }
+        }
+      } catch {
+        // Merged-view fetch failed (offline source hiccup) — own-file
+        // refs below still shift; inherited ones may need manual
+        // fixing. Better a partial fix-up than a failed resize.
+      }
+      const [shiftedList] = shiftRefsIntoMap(
+        list as unknown as ResizeMapRecord[],
+        mapId,
+        dCol,
+        dRow,
+      );
+      list = shiftedList as unknown as MapRecord[];
+    }
+    baseFile.maps = list;
+    const updated =
+      (list.find((m) => m.id === mapId) as MapRecord | undefined) ?? resized;
+
+    try {
+      await persistMapsFileWithFallback(baseFile);
+    } catch (e) {
+      window.alert(
+        `Couldn't save resized map: ${
+          e instanceof Error ? e.message : String(e)
+        }`,
+      );
+      return;
+    }
+
+    // Party start position rides in party.json — its own model file,
+    // so it gets its own draft write. Copy-on-write: when the module
+    // has no own party file, the overlay we create carries just the
+    // shifted start_position and field-merges over the inherited one.
+    if (dCol > 0 || dRow > 0) {
+      try {
+        const src = getEditorModuleSource();
+        const layers = await src.loadModelLayers(moduleId, "party");
+        const draft = await loadDraft<PartyFileLike>(moduleId, "party");
+        const own =
+          draft ?? (layers.ownFile as PartyFileLike | null) ?? null;
+        const mergedParty = mergeModel(
+          "party",
+          layers.inherited,
+          own,
+        ) as PartyFileLike | null;
+        const sp = mergedParty?.start_position;
+        if (sp && sp.map_id === mapId) {
+          const base: PartyFileLike = own ?? {};
+          const withStart: PartyFileLike = {
+            ...base,
+            start_position: sp,
+          };
+          const [shifted, changed] = shiftPartyStart(
+            withStart,
+            mapId,
+            dCol,
+            dRow,
+          );
+          if (changed) await saveDraft(moduleId, "party", shifted);
+        }
+      } catch (e) {
+        // Non-fatal: the map itself resized fine. Surface the miss so
+        // the author can fix the start position by hand.
+        // eslint-disable-next-line no-console
+        console.warn(
+          "Map resized, but the party start position couldn't be updated:",
+          e,
+        );
+      }
+    }
+
+    // Swap the live grid + selection before the state write so every
+    // effect that fires off the new state sees consistent data. The
+    // scene mount effect keys on width/height and rebuilds the canvas.
+    gridRef.current = updated.grid;
+    clearUndo();
+    // Old selection coordinates may point at different cells after a
+    // top/left grow — clear rather than translate; re-selecting is
+    // one click.
+    setSelection([]);
+    setState({
+      ...state,
+      mapRecord: updated,
+      ownFile: baseFile,
+      isDraft: hasDraft(moduleId, MODEL_KEY),
+    });
+    setResizingMap(false);
+  };
+
+  const onDiscardDraft = () => {
+    if (typeof window === "undefined") return;
+    if (!hasDraft(moduleId, MODEL_KEY)) return;
+    if (
+      !window.confirm(discardDraftConfirmMessage("maps.json"))
+    )
+      return;
+    discardDraft(moduleId, MODEL_KEY);
+    window.location.reload();
+  };
+
+  const onPublish = async () => {
+    if (state.kind !== "ok" || !state.ownFile) return;
+    setPublishing(true);
+    try {
+      const res = await publishItems([
+        {
+          kind: "model",
+          moduleId,
+          modelKey: MODEL_KEY,
+          fileName: "maps.json",
+          content: state.ownFile,
+        },
+      ]);
+      const r = res.results[0];
+      if (!r.ok) {
+        window.alert(`Publish failed: ${r.error}`);
+        return;
+      }
+      discardDraft(moduleId, MODEL_KEY);
+      setState({ ...state, isDraft: false });
+      if (draftQuotaExceeded) setDraftQuotaExceeded(false);
+    } catch (e) {
+      window.alert(
+        `Publish error: ${e instanceof Error ? e.message : String(e)}`,
+      );
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  // ── Derived ─────────────────────────────────────────────────────
+  const activeBrushTile = useMemo(() => {
+    if (state.kind !== "ok" || !activeBrush) return null;
+    return state.palette.find((t) => t.id === activeBrush) ?? null;
+  }, [state, activeBrush]);
+
+  /** The tile instance at the selected cell — the cell IS the data. */
+  const selectedInstance = useMemo<TileType | null>(() => {
+    if (state.kind !== "ok" || !selectedCell) return null;
+    return (
+      state.mapRecord.grid[selectedCell.row]?.[selectedCell.col] ?? null
+    );
+  }, [state, selectedCell]);
+  /** Palette-of-origin for the selected cell — what `Reset` would
+   *  restore each field to. Found by id. May be null if the cell's
+   *  id no longer exists in the palette. */
+  const selectedBase = useMemo<TileType | null>(() => {
+    if (state.kind !== "ok" || !selectedInstance) return null;
+    return state.palette.find((t) => t.id === selectedInstance.id) ?? null;
+  }, [state, selectedInstance]);
+
+  // ── Render ──────────────────────────────────────────────────────
+  if (state.kind === "loading") {
+    return <p className="p-4 text-parchment/80">Loading map…</p>;
+  }
+  if (state.kind === "error") {
+    return (
+      <div className="p-4">
+        <p className="text-ember">Failed to load map editor.</p>
+        <p className="mt-2 font-mono text-sm text-parchment/80">
+          {state.message}
+        </p>
+      </div>
+    );
+  }
+
+  const { palette, mapRecord, isDraft } = state;
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      {/* Toolbar */}
+      <div className="flex flex-wrap items-center gap-3 border-b border-parchment/10 bg-ink/30 px-4 py-2 text-sm">
+        {/* Clicking the name opens the Map Properties dialog — the
+            description (if any) surfaces as a tooltip so authors get
+            a hint without giving up toolbar real estate. */}
+        <button
+          type="button"
+          onClick={() => setEditingMapAttrs(true)}
+          title={
+            typeof mapRecord.description === "string" &&
+            mapRecord.description.trim().length > 0
+              ? mapRecord.description
+              : "Edit map properties (name, description, tags)"
+          }
+          className="rounded font-display text-xl text-parchment hover:text-ember focus:outline-none focus:text-ember"
+        >
+          {mapRecord.name}
+        </button>
+        <span className="text-parchment/70">
+          {mapRecord.width}×{mapRecord.height}
+        </span>
+        {/* Tags as clickable chips — each jumps to the Maps browser
+            with that tag group expanded + scrolled into view, so the
+            author can hop straight to related maps. */}
+        {Array.isArray(mapRecord.tags) && mapRecord.tags.length > 0 ? (
+          <span className="flex flex-wrap items-center gap-1 text-parchment/65">
+            <span>tags:</span>
+            {mapRecord.tags.map((t) => (
+              <Link
+                key={t}
+                href={editorModelHref(moduleId, "maps", { tag: t })}
+                title={`Browse maps tagged "${t}".`}
+                className="rounded border border-parchment/20 bg-ink/40 px-1.5 py-0.5 text-[12px] text-parchment/80 hover:border-parchment/50 hover:bg-ink/60 hover:text-parchment"
+              >
+                {t}
+              </Link>
+            ))}
+          </span>
+        ) : null}
+        <button
+          type="button"
+          onClick={() => setEditingMapAttrs(true)}
+          className="rounded border border-parchment/20 px-2 py-0.5 text-[13px] text-parchment/85 hover:bg-ink/40"
+          title="Edit map properties (name, description, tags)."
+        >
+          Properties
+        </button>
+        <button
+          type="button"
+          onClick={() => setResizingMap(true)}
+          className="rounded border border-parchment/20 px-2 py-0.5 text-[13px] text-parchment/85 hover:bg-ink/40"
+          title="Grow the map — add rows/columns on any edge."
+        >
+          Resize
+        </button>
+        <button
+          type="button"
+          onClick={() => undoLastEdit()}
+          disabled={undoCount === 0 || simMode === "active"}
+          className="rounded border border-parchment/20 px-2 py-0.5 text-[13px] text-parchment/85 hover:bg-ink/40 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
+          title={
+            undoCount > 0
+              ? `Undo the last tile placement (⌘Z / Ctrl+Z) — ${undoCount} step${undoCount === 1 ? "" : "s"} available`
+              : "Nothing to undo yet (⌘Z / Ctrl+Z)"
+          }
+        >
+          ↶ Undo
+        </button>
+        <span className="text-parchment/60">·</span>
+        <div
+          role="group"
+          aria-label="Tool"
+          className="flex overflow-hidden rounded border border-parchment/20"
+        >
+          <button
+            type="button"
+            onClick={() => setTool("paint")}
+            className={`px-2 py-0.5 text-[13px] transition ${
+              tool === "paint"
+                ? "bg-ember/30 text-parchment"
+                : "bg-ink/40 text-parchment/80 hover:bg-ink/60"
+            }`}
+            title="Click/drag paints with the active brush + selects the cell."
+          >
+            🖌 Paint
+          </button>
+          <button
+            type="button"
+            onClick={() => setTool("inspect")}
+            className={`border-l border-parchment/15 px-2 py-0.5 text-[13px] transition ${
+              tool === "inspect"
+                ? "bg-ember/30 text-parchment"
+                : "bg-ink/40 text-parchment/80 hover:bg-ink/60"
+            }`}
+            title="Click/drag only selects — no painting. Read attributes without changing the map."
+          >
+            🔍 Inspect
+          </button>
+          <button
+            type="button"
+            onClick={() => setTool("fill")}
+            className={`border-l border-parchment/15 px-2 py-0.5 text-[13px] transition ${
+              tool === "fill"
+                ? "bg-ember/30 text-parchment"
+                : "bg-ink/40 text-parchment/80 hover:bg-ink/60"
+            }`}
+            title="Click and drag to fill a rectangle with the active brush."
+          >
+            🪣 Fill
+          </button>
+          <button
+            type="button"
+            onClick={() => setTool("pan")}
+            className={`border-l border-parchment/15 px-2 py-0.5 text-[13px] transition ${
+              tool === "pan"
+                ? "bg-ember/30 text-parchment"
+                : "bg-ink/40 text-parchment/80 hover:bg-ink/60"
+            }`}
+            title="Click/drag scrolls the map. No mouse needed — great on a trackpad."
+          >
+            ✋ Pan
+          </button>
+        </div>
+        <div
+          role="group"
+          aria-label="Lighting"
+          className="flex overflow-hidden rounded border border-parchment/20"
+        >
+          <button
+            type="button"
+            onClick={() => setLightingMode("day")}
+            className={`px-2 py-0.5 text-[13px] transition ${
+              lightingMode === "day"
+                ? "bg-ember/30 text-parchment"
+                : "bg-ink/40 text-parchment/80 hover:bg-ink/60"
+            }`}
+            title="Full daylight — no darkness overlay."
+          >
+            ☀ Day
+          </button>
+          <button
+            type="button"
+            onClick={() => setLightingMode("twilight")}
+            className={`border-l border-parchment/15 px-2 py-0.5 text-[13px] transition ${
+              lightingMode === "twilight"
+                ? "bg-ember/30 text-parchment"
+                : "bg-ink/40 text-parchment/80 hover:bg-ink/60"
+            }`}
+            title="Dim ambient light — light_source tiles brighten cells within their light_range."
+          >
+            🌆 Twilight
+          </button>
+          <button
+            type="button"
+            onClick={() => setLightingMode("night")}
+            className={`border-l border-parchment/15 px-2 py-0.5 text-[13px] transition ${
+              lightingMode === "night"
+                ? "bg-ember/30 text-parchment"
+                : "bg-ink/40 text-parchment/80 hover:bg-ink/60"
+            }`}
+            title="Near-darkness — only light sources illuminate."
+          >
+            🌙 Night
+          </button>
+        </div>
+        <label className="flex items-center gap-2 text-parchment/75">
+          <input
+            type="checkbox"
+            checked={gridLinesOn}
+            onChange={(e) => setGridLinesOn(e.target.checked)}
+            className="h-3.5 w-3.5"
+          />
+          Grid lines
+        </label>
+        <button
+          type="button"
+          onClick={() =>
+            setSimMode((v) => (v === "off" ? "placing" : "off"))
+          }
+          className={`rounded border px-2 py-0.5 text-[13px] transition ${
+            simMode === "active"
+              ? "border-ember/60 bg-ember/30 text-parchment"
+              : simMode === "placing"
+                ? "border-ember/60 bg-ember/15 text-parchment animate-pulse"
+                : "border-parchment/20 bg-ink/40 text-parchment/85 hover:bg-ink/60"
+          }`}
+          title={
+            simMode === "off"
+              ? "Drop the Party onto this map and walk it around. Tests movement, lighting, party effects, and tile links."
+              : simMode === "placing"
+                ? "Click a walkable tile to place the party. Click Simulate again to cancel."
+                : "Exit simulation."
+          }
+        >
+          {simMode === "active"
+            ? "▣ Simulating"
+            : simMode === "placing"
+              ? "○ Click a tile…"
+              : "▶ Simulate"}
+        </button>
+        <div
+          className="flex items-center gap-1"
+          title="Zoom — also pinch on trackpad or Ctrl/⌘ + wheel. Pan: two-finger scroll, Space + drag, or middle-mouse drag."
+        >
+          <span className="text-[13px] text-parchment/65">Zoom</span>
+          <button
+            type="button"
+            disabled={zoomIdx <= 0}
+            onClick={() => setZoomIdx((i) => Math.max(0, i - 1))}
+            className="rounded border border-parchment/20 px-2 py-0.5 text-[13px] text-parchment/85 hover:bg-ink/40 disabled:opacity-40 disabled:hover:bg-transparent"
+          >
+            −
+          </button>
+          <button
+            type="button"
+            onClick={() => setZoomIdx(DEFAULT_ZOOM_IDX)}
+            className="min-w-[3.25rem] rounded border border-parchment/20 px-2 py-0.5 text-center font-mono text-[13px] text-parchment/75 hover:bg-ink/40"
+            title="Reset to 100%"
+          >
+            {Math.round(zoom * 100)}%
+          </button>
+          <button
+            type="button"
+            disabled={zoomIdx >= ZOOM_STEPS.length - 1}
+            onClick={() =>
+              setZoomIdx((i) => Math.min(ZOOM_STEPS.length - 1, i + 1))
+            }
+            className="rounded border border-parchment/20 px-2 py-0.5 text-[13px] text-parchment/85 hover:bg-ink/40 disabled:opacity-40 disabled:hover:bg-transparent"
+          >
+            +
+          </button>
+        </div>
+        <span className="ml-auto flex items-center gap-2">
+          {activeBrushTile ? (
+            <span className="text-[13px] text-parchment/75">
+              brush:{" "}
+              <span className="text-parchment/90">{activeBrushTile.name}</span>
+            </span>
+          ) : (
+            <span className="text-[13px] text-ember/80">no brush</span>
+          )}
+          {isDraft ? (
+            <span className="rounded bg-ember/30 px-2 py-0.5 text-[13px] text-parchment/90">
+              draft
+            </span>
+          ) : null}
+          {draftQuotaExceeded ? (
+            <span
+              className="rounded border border-ember/60 bg-ember/20 px-2 py-0.5 text-[13px] text-ember"
+              title="This module's maps.json is too large to keep in browser local storage. Your latest edits live in memory only — click Publish to write them straight to disk."
+            >
+              draft full — Publish to save
+            </span>
+          ) : null}
+          {isDraft ? (
+            <button
+              type="button"
+              onClick={onDiscardDraft}
+              className="rounded border border-parchment/20 px-2 py-0.5 text-[13px] text-parchment/85 hover:bg-ink/40"
+            >
+              Discard
+            </button>
+          ) : null}
+          {isDraft && publishAvailable === true ? (
+            <button
+              type="button"
+              onClick={onPublish}
+              disabled={publishing}
+              className="rounded border border-ember/60 bg-ember/30 px-2 py-0.5 text-[13px] text-parchment hover:bg-ember/50 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {publishing ? "Publishing…" : "Publish"}
+            </button>
+          ) : null}
+          <button
+            type="button"
+            onClick={onDeleteMap}
+            className="rounded border border-parchment/20 px-2 py-0.5 text-[13px] text-parchment/80 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
+            title="Delete this map from the module's maps file."
+          >
+            Delete map
+          </button>
+        </span>
+      </div>
+
+      {/* Body: palette + canvas */}
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        <aside className="w-52 shrink-0 overflow-auto border-r border-parchment/10 bg-ink/20 p-3">
+          {(() => {
+            // Every node path in the tag tree (Shop, Shop›Alchemist,
+            // Shop›Alchemist›Boulder, …) so the toggle can flip the whole
+            // nested tree, not just the leaves. Mirrors PaletteByTag's
+            // grouping.
+            const allTags = collectTileTagPaths(palette);
+            // If anything is still expanded, the toggle collapses all;
+            // once everything's collapsed, it flips to expand-all.
+            const allCollapsed =
+              allTags.size > 0 && collapsedTags.size >= allTags.size;
+            return (
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <p className="text-[13px] uppercase tracking-wide text-parchment/65">
+                  Tile Palette
+                </p>
+                {allTags.size > 1 ? (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setCollapsedTags(allCollapsed ? new Set() : allTags)
+                    }
+                    className="rounded border border-parchment/15 px-1.5 py-0.5 text-xs uppercase tracking-wide text-parchment/80 hover:bg-ink/50 hover:text-parchment/90"
+                    title={
+                      allCollapsed
+                        ? "Expand all tag sections"
+                        : "Collapse all tag sections"
+                    }
+                  >
+                    {allCollapsed ? "Expand all" : "Collapse all"}
+                  </button>
+                ) : null}
+              </div>
+            );
+          })()}
+          {palette.length === 0 ? (
+            <p className="text-[13px] text-parchment/75">
+              No tile types yet — add some in the Tile Palette editor.
+            </p>
+          ) : (
+            <PaletteByTag
+              moduleId={moduleId}
+              palette={palette}
+              activeBrush={activeBrush}
+              collapsed={collapsedTags}
+              onToggleTag={(tag) =>
+                setCollapsedTags((prev) => {
+                  const next = new Set(prev);
+                  if (next.has(tag)) next.delete(tag);
+                  else next.add(tag);
+                  return next;
+                })
+              }
+              onPickBrush={setActiveBrush}
+            />
+          )}
+        </aside>
+
+        <div
+          ref={canvasScrollRef}
+          className="flex min-h-0 min-w-0 flex-1 items-start justify-start overflow-auto bg-ink/40 p-4"
+          style={{
+            // Contain scroll so two-finger trackpad swipes at the
+            // map's edge don't trigger the browser's back/forward
+            // navigation gesture.
+            overscrollBehavior: "contain",
+            cursor:
+              simMode === "placing"
+                ? "crosshair"
+                : tool === "pan" || spaceHeld
+                  ? "grab"
+                  : tool === "fill"
+                    ? "crosshair"
+                    : undefined,
+          }}
+          onWheel={(e) => {
+            // Ctrl/⌘ + wheel = zoom. Bare wheel keeps native scroll.
+            // Trackpad pinch on macOS also surfaces as ctrlKey+wheel,
+            // so pinch-to-zoom works out of the box.
+            if (!(e.ctrlKey || e.metaKey)) return;
+            e.preventDefault();
+            setZoomIdx((idx) => {
+              const step = e.deltaY > 0 ? -1 : 1;
+              return Math.max(
+                0,
+                Math.min(ZOOM_STEPS.length - 1, idx + step),
+              );
+            });
+          }}
+          onMouseDownCapture={(e) => {
+            // Drag-to-pan paths:
+            //  - Pan tool active + left button (trackpad-friendly)
+            //  - Space held + left button (Photoshop/Figma convention)
+            //  - Middle mouse button (external-mouse convention)
+            // Capture phase so we beat Phaser to the event; otherwise
+            // paint would fire on the first cell underneath the cursor.
+            const isPanToolDrag = tool === "pan" && e.button === 0;
+            const isSpaceDrag = spaceHeld && e.button === 0;
+            const isMiddleDrag = e.button === 1;
+            if (!isPanToolDrag && !isSpaceDrag && !isMiddleDrag) return;
+            e.preventDefault();
+            e.stopPropagation();
+            const el = canvasScrollRef.current;
+            if (!el) return;
+            const startX = e.clientX;
+            const startY = e.clientY;
+            const startLeft = el.scrollLeft;
+            const startTop = el.scrollTop;
+            const prevCursor = el.style.cursor;
+            el.style.cursor = "grabbing";
+            const onMove = (ev: MouseEvent) => {
+              el.scrollLeft = startLeft - (ev.clientX - startX);
+              el.scrollTop = startTop - (ev.clientY - startY);
+            };
+            const onUp = () => {
+              el.style.cursor = prevCursor;
+              window.removeEventListener("mousemove", onMove);
+              window.removeEventListener("mouseup", onUp);
+            };
+            window.addEventListener("mousemove", onMove);
+            window.addEventListener("mouseup", onUp);
+          }}
+        >
+          {/* Outer wrapper is sized to the SCALED dimensions so the
+              parent's overflow-auto produces scrollbars that match the
+              visible canvas. The inner container keeps its intrinsic
+              size and is CSS-transformed; Phaser pointer events still
+              resolve to correct game-space coords. */}
+          <div
+            style={{
+              width: mapRecord.width * TILE_SIZE * displayZoom,
+              height: mapRecord.height * TILE_SIZE * displayZoom,
+            }}
+          >
+
+            <div
+              ref={containerRef}
+              className="rounded border border-parchment/20 shadow-lg"
+              style={{
+                width: mapRecord.width * TILE_SIZE,
+                height: mapRecord.height * TILE_SIZE,
+                transformOrigin: "0 0",
+                transform: `scale(${displayZoom})`,
+              }}
+            />
+          </div>
+        </div>
+
+        {simMode === "active" && simInstance ? (
+          <SimPanel
+            sim={simInstance}
+            onExitSim={() => setSimMode("off")}
+          />
+        ) : simMode === "placing" ? (
+          <SimPlacingPanel onCancel={() => setSimMode("off")} />
+        ) : (
+          <Inspector
+            moduleId={moduleId}
+            selectedCell={selectedCell}
+            selectionCount={selection.length}
+            instance={selectedInstance}
+            base={selectedBase}
+            palette={state.palette}
+            counters={state.counters}
+            encounters={state.encounters}
+            spawns={state.spawns}
+            items={state.items}
+            npcs={state.npcs}
+            availableMaps={state.availableMaps}
+            availableDungeons={state.availableDungeons}
+            availableQuests={state.availableQuests}
+            availableTraps={state.availableTraps}
+            availableLore={state.availableLore}
+            onUpdate={(patch) => {
+              if (selection.length === 0) return;
+              // Apply the field change to EVERY selected cell. With a
+              // single cell this is identical to the old single-cell
+              // path; with many it bulk-edits in one persist.
+              setCellsFields(selection, patch);
+            }}
+          />
+        )}
+      </div>
+      {/* In-game party screen (P during sim). Mounted at the editor
+          root so the fixed-positioned overlay sits above the canvas
+          AND the side panels. */}
+      {partyScreenOpen ? (
+        <MapPartyScreenOverlay
+          moduleId={moduleId}
+          onClose={() => setPartyScreenOpen(false)}
+        />
+      ) : null}
+      {/* NPC dialog overlay — opens when the party steps onto a cell
+          whose `npc` is set. Hidden behind the shop overlay if the
+          player taps Shop. */}
+      {npcEncounterId && !shopCounterId
+        ? (() => {
+            const npc = state.npcs.find((n) => n.id === npcEncounterId);
+            if (!npc) return null;
+            return (
+              <NpcDialogOverlay
+                npc={npc as Parameters<typeof NpcDialogOverlay>[0]["npc"]}
+                onOpenShop={(counterId) => setShopCounterId(counterId)}
+                onClose={() => setNpcEncounterId(null)}
+              />
+            );
+          })()
+        : null}
+      {/* Post-quest giver chatter — the giver of a turned-in quest
+          behaves like a normal NPC: standard dialog overlay with a
+          synthetic record (no shop, no backstory), one line of
+          gratitude. */}
+      {giverChatter
+        ? (
+            <NpcDialogOverlay
+              npc={{
+                id: "quest_giver_chatter",
+                name: giverChatter.name,
+                sprite: giverChatter.sprite,
+                dialogs: [
+                  { id: "post_quest", text: giverChatter.text },
+                ],
+              }}
+              onOpenShop={() => undefined}
+              onClose={() => setGiverChatter(null)}
+            />
+          )
+        : null}
+      {/* Lock dialog overlay — opens when the party bumps a locked
+          cell during simulation. Three actions: Pick Lock, Cast Knock,
+          Leave. Rolls + grid mutation happen in the sim; we just close
+          the overlay when the user dismisses or succeeds. */}
+      {lockEncounter
+        ? (
+            <LockDialogOverlay
+              options={lockEncounter}
+              onPickLock={() => simRef.current?.attemptPickLock() ?? null}
+              onCastKnock={() => simRef.current?.attemptKnock() ?? null}
+              onClose={() => {
+                simRef.current?.dismissLock();
+                setLockEncounter(null);
+              }}
+            />
+          )
+        : null}
+      {/* Quest dialog — three views driven by the QuestState status:
+          - "available"  → offer (Accept flips to active, refreshes
+                           placements so kill-step encounters appear)
+          - "active"     → in-progress reminder (Close)
+          - "completed"  → handoff (Close flips status to turned_in)
+          The "turned_in" case is filtered upstream in the
+          quest_encountered handler. */}
+      {questEncounter
+        ? (
+            <QuestDialogOverlay
+              quest={questEncounter.quest}
+              alreadyAccepted={questEncounter.alreadyAccepted}
+              stepIdx={questEncounter.stepIdx}
+              stepCount={questEncounter.stepCount}
+              activeStepName={questEncounter.activeStepName}
+              activeStepDescription={questEncounter.activeStepDescription}
+              onAccept={() => {
+                const id = questEncounter.questId;
+                simRef.current?.markQuestAccepted(id);
+                const qs = questStatesRef.current.get(id);
+                if (qs) qs.status = "active";
+                simRef.current?.refreshQuestPlacements();
+                setQuestEncounter(null);
+              }}
+              onDecline={() => {
+                // The overlay routes both "Decline" (offer view) and
+                // "Close" (in-progress / complete view) through
+                // onDecline. We only need to do extra work in the
+                // complete view — flip to "turned_in" so the dialog
+                // stops re-opening.
+                if (questEncounter.complete) {
+                  const qs = questStatesRef.current.get(questEncounter.questId);
+                  if (qs) qs.status = "turned_in";
+                }
+                setQuestEncounter(null);
+              }}
+            />
+          )
+        : null}
+      {/* Spawn-encounter overlay — opens when the party steps onto a
+          Monster Spawn lair OR is caught by a roamer. The overlay's
+          Win button resolves the encounter through the sim, which
+          either destroys the lair (boss fights) or removes the
+          roamer (roamer fights). */}
+      {spawnEncounter
+        ? (
+            <SpawnEncounterOverlay
+              options={spawnEncounter}
+              monsters={state.simMonsters}
+              onResolve={(outcome) => {
+                simRef.current?.resolveSpawnEncounter(outcome);
+                setSpawnEncounter(null);
+              }}
+            />
+          )
+        : null}
+      {/* Lore reading-screen preview (sim). */}
+      {simLoreId
+        ? (() => {
+            const lore = state.simLore.find((l) => l.id === simLoreId);
+            return (
+              <PlayLoreOverlay
+                lore={
+                  lore ?? {
+                    id: simLoreId,
+                    name: simLoreId,
+                    tags: [],
+                    xp: 0,
+                    paragraphs: [
+                      `No Lore record "${simLoreId}" — check the cell's Lore setting.`,
+                    ],
+                  }
+                }
+                firstRead={false}
+                xp={0}
+                onClose={() => setSimLoreId(null)}
+              />
+            );
+          })()
+        : null}
+      {/* Counter shop overlay — opens from inside the NPC dialog. */}
+      {shopCounterId
+        ? (() => {
+            const counter = state.counters.find(
+              (c) => c.id === shopCounterId,
+            );
+            if (!counter || !state.simParty) {
+              // Counter missing OR no party loaded — bounce back to
+              // the NPC dialog rather than rendering a broken shop.
+              setShopCounterId(null);
+              return null;
+            }
+            return (
+              <CounterShopOverlay
+                counter={counter as Parameters<typeof CounterShopOverlay>[0]["counter"]}
+                party={state.simParty}
+                items={state.items as Parameters<typeof CounterShopOverlay>[0]["items"]}
+                onClose={() => setShopCounterId(null)}
+              />
+            );
+          })()
+        : null}
+      {/* Place placard — confirm prompt for a flagged link / dungeon
+          tile, so authors can test the show_link_placard attribute in
+          sim. Confirm runs the stashed transition; cancel dismisses. */}
+      {placard ? (
+        <LinkPlacard
+          placeKind={placard.placeKind}
+          name={placard.name}
+          description={placard.description}
+          explored={placard.explored}
+          questTargets={placard.questTargets}
+          onConfirm={() => {
+            const act = pendingPlaceActionRef.current;
+            pendingPlaceActionRef.current = null;
+            setPlacard(null);
+            act?.();
+          }}
+          onCancel={() => {
+            pendingPlaceActionRef.current = null;
+            setPlacard(null);
+          }}
+        />
+      ) : null}
+      {/* Map Properties dialog — edits the Map record's metadata
+          (name / description / tags). Other maps in this module's
+          own file contribute their tags as suggestions so authors
+          stay consistent across the catalog. */}
+      {editingMapAttrs
+        ? (() => {
+            const otherMaps =
+              state.ownFile && Array.isArray(state.ownFile.maps)
+                ? (state.ownFile.maps as MapRecord[])
+                : [];
+            const tagSet = new Set<string>();
+            for (const m of otherMaps) {
+              if (Array.isArray(m.tags)) {
+                for (const t of m.tags) {
+                  if (typeof t === "string" && t.trim()) tagSet.add(t);
+                }
+              }
+            }
+            const existingTags = [...tagSet].sort();
+            return (
+              <MapAttributesDialog
+                mapId={mapRecord.id}
+                initial={{
+                  name: mapRecord.name,
+                  description:
+                    typeof mapRecord.description === "string"
+                      ? mapRecord.description
+                      : undefined,
+                  tags: Array.isArray(mapRecord.tags)
+                    ? mapRecord.tags
+                    : undefined,
+                  lighting: ((): "day" | "twilight" | "darkness" | "world_time" => {
+                    const v = (mapRecord as Record<string, unknown>).lighting;
+                    return v === "day" || v === "twilight" || v === "darkness"
+                      ? v
+                      : "world_time";
+                  })(),
+                  soundtrack: ((): string[] | undefined => {
+                    const v = (mapRecord as Record<string, unknown>).soundtrack;
+                    if (!Array.isArray(v)) return undefined;
+                    const list = v.filter(
+                      (s): s is string => typeof s === "string" && s.length > 0,
+                    );
+                    return list.length > 0 ? list : undefined;
+                  })(),
+                  // Default on — only an explicit `false` disables it.
+                  fog_of_war:
+                    (mapRecord as Record<string, unknown>).fog_of_war !== false,
+                  exploration_xp: ((): number | undefined => {
+                    const v = (mapRecord as Record<string, unknown>)
+                      .exploration_xp;
+                    return typeof v === "number" && v >= 0 ? v : undefined;
+                  })(),
+                  fog_style: normalizeFogStyles(
+                    (mapRecord as Record<string, unknown>).fog_style,
+                  ),
+                  passive_regen: ((): { hp: number; mp: number } | undefined => {
+                    const v = (mapRecord as Record<string, unknown>)
+                      .passive_regen as
+                      | { hp?: unknown; mp?: unknown }
+                      | undefined;
+                    if (!v || typeof v !== "object") return undefined;
+                    const hp = typeof v.hp === "number" ? v.hp : 0;
+                    const mp = typeof v.mp === "number" ? v.mp : 0;
+                    return hp > 0 || mp > 0 ? { hp, mp } : undefined;
+                  })(),
+                }}
+                existingTags={existingTags}
+                onSave={onSaveMapAttrs}
+                onClose={() => setEditingMapAttrs(false)}
+              />
+            );
+          })()
+        : null}
+      {resizingMap
+        ? (() => {
+            const fill = resolveResizeFill();
+            return (
+              <MapResizeDialog
+                mapId={mapRecord.id}
+                width={mapRecord.width}
+                height={mapRecord.height}
+                fillTileName={fill ? fill.name : null}
+                onResize={(edges) => {
+                  void onResizeMap(edges);
+                }}
+                onClose={() => setResizingMap(false)}
+              />
+            );
+          })()
+        : null}
+    </div>
+  );
+}
+
+/** Stand-in panel rendered while sim mode is in its "placing" step.
+ *  Replaces the Inspector during the gesture so the right rail still
+ *  has useful content (and a Cancel button) instead of going blank. */
+function SimPlacingPanel({ onCancel }: { onCancel: () => void }) {
+  return (
+    <aside className="flex w-72 shrink-0 flex-col gap-3 overflow-auto border-l border-parchment/10 bg-ink/30 p-3 text-sm text-parchment/85">
+      <header className="flex items-center justify-between gap-2">
+        <h2 className="font-display text-base text-parchment">Place Party</h2>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="rounded border border-parchment/20 px-2 py-0.5 text-[13px] text-parchment/85 hover:bg-ink/40"
+          title="Cancel and return to the Inspector."
+        >
+          Cancel
+        </button>
+      </header>
+      <p className="text-[13px] text-parchment/85">
+        Click a <span className="text-parchment">walkable</span> tile on
+        the map to drop the party there. Clicks on walls, water, or
+        other impassable tiles are ignored.
+      </p>
+      <p className="text-[13px] text-parchment/75">
+        Once placed, use <span className="font-mono">WASD</span> or the
+        arrow keys to move. Stepping on a tile with a link traverses to
+        the target map.
+      </p>
+    </aside>
+  );
+}
+
+/** Right-side inspector panel — shows attributes for the cell the
+ *  user last clicked, and lets the author override any of them on a
+ *  per-cell basis. Edits go into the map's sparse `cells` array; a
+ *  cell with no override entry uses palette defaults. Reset clears
+ *  the override for that field; clearing all fields removes the
+ *  override entry entirely. */
+
+/** Group + collapse the Tile Palette side panel by tag. Each section
+ *  is a clickable header (toggles collapsed/expanded) and a body of
+ *  tiles. Untagged tiles bucket as "(untagged)" at the end. */
+/** Resolve a sprite thumbnail's <img> src the SAME way the map canvas
+ *  + game do: prefer the in-browser draft (pixel-editor edits) over the
+ *  on-disk PNG. Keeps the palette / inspector thumbnails in lockstep
+ *  with what's actually painted, so an unpublished draft can't silently
+ *  show one image in the palette and another on the map. */
+function spriteThumbSrc(moduleId: string, sprite: string): string {
+  if (!sprite) return "";
+  return loadSpriteDraft(moduleId, sprite) ?? spriteUrl(sprite);
+}
+
+/** Bucket label for tiles with no tag. */
+const UNTAGGED_TILES = "(untagged)";
+
+/** A node in the tile-tag tree. Tags nest on ":" — a tag like
+ *  "shop: Alchemist: Boulder" becomes Shop › Alchemist › Boulder. A node
+ *  can hold both child nodes AND tiles that sit directly at its level. */
+interface TileTagNode {
+  /** This segment's label (e.g. "Alchemist"). */
+  label: string;
+  /** Full "a: b: c" path — the stable collapse key. */
+  path: string;
+  tiles: TileType[];
+  children: TileTagNode[];
+}
+
+/** Build the sorted tile-tag tree from a palette. Splits each tag on ":"
+ *  and files the tile under the resulting path; untagged tiles fall into
+ *  a trailing "(untagged)" group. */
+function buildTileTagTree(palette: TileType[]): TileTagNode[] {
+  const root: TileTagNode = { label: "", path: "", tiles: [], children: [] };
+  const byPath = new Map<string, TileTagNode>();
+  for (const t of palette) {
+    const raw = t.tag && t.tag.trim() ? t.tag : UNTAGGED_TILES;
+    const segs = raw.split(":").map((s) => s.trim()).filter(Boolean);
+    let parent = root;
+    let path = "";
+    for (const seg of segs.length > 0 ? segs : [UNTAGGED_TILES]) {
+      path = path ? `${path}: ${seg}` : seg;
+      let node = byPath.get(path);
+      if (!node) {
+        node = { label: seg, path, tiles: [], children: [] };
+        byPath.set(path, node);
+        parent.children.push(node);
+      }
+      parent = node;
+    }
+    parent.tiles.push(t);
+  }
+  const sort = (nodes: TileTagNode[]): void => {
+    nodes.sort((a, b) => {
+      if (a.label === UNTAGGED_TILES) return 1;
+      if (b.label === UNTAGGED_TILES) return -1;
+      return a.label.localeCompare(b.label);
+    });
+    for (const n of nodes) sort(n.children);
+  };
+  sort(root.children);
+  return root.children;
+}
+
+/** Total tiles in a node's subtree (drives the count badge). */
+function tileTagNodeCount(node: TileTagNode): number {
+  let n = node.tiles.length;
+  for (const c of node.children) n += tileTagNodeCount(c);
+  return n;
+}
+
+/** Every node path in a palette's tag tree — used by the "Collapse all"
+ *  toggle so it can flip the whole tree, not just the leaves. */
+function collectTileTagPaths(palette: TileType[]): Set<string> {
+  const out = new Set<string>();
+  const walk = (nodes: TileTagNode[]): void => {
+    for (const n of nodes) {
+      out.add(n.path);
+      walk(n.children);
+    }
+  };
+  walk(buildTileTagTree(palette));
+  return out;
+}
+
+/** Recursive, collapsible rendering of a tile-tag tree. Leaf tiles are
+ *  rendered by the caller's `renderTiles` so the brush palette and the
+ *  replace-picker share the grouping while keeping their own row styles. */
+function TileTagSections({
+  nodes,
+  depth,
+  collapsed,
+  onToggle,
+  renderTiles,
+}: {
+  nodes: TileTagNode[];
+  depth: number;
+  collapsed: ReadonlySet<string>;
+  onToggle: (path: string) => void;
+  renderTiles: (tiles: TileType[]) => ReactNode;
+}) {
+  return (
+    <div className="space-y-1">
+      {nodes.map((node) => {
+        const isCollapsed = collapsed.has(node.path);
+        return (
+          <section
+            key={node.path}
+            className="rounded border border-parchment/10 bg-ink/30"
+          >
+            <button
+              type="button"
+              onClick={() => onToggle(node.path)}
+              style={{ paddingLeft: 8 + depth * 12 }}
+              className="flex w-full items-center justify-between gap-2 py-1 pr-2 text-left text-[13px] uppercase tracking-wide text-parchment/80 hover:bg-ink/50"
+            >
+              <span className="flex items-center gap-1">
+                <span className="text-parchment/75">
+                  {isCollapsed ? "▸" : "▾"}
+                </span>
+                {node.label}
+              </span>
+              <span className="text-parchment/65 normal-case tracking-normal">
+                {tileTagNodeCount(node)}
+              </span>
+            </button>
+            {!isCollapsed ? (
+              <div className="pb-1">
+                {node.children.length > 0 ? (
+                  <div className="pl-1.5">
+                    <TileTagSections
+                      nodes={node.children}
+                      depth={depth + 1}
+                      collapsed={collapsed}
+                      onToggle={onToggle}
+                      renderTiles={renderTiles}
+                    />
+                  </div>
+                ) : null}
+                {node.tiles.length > 0 ? renderTiles(node.tiles) : null}
+              </div>
+            ) : null}
+          </section>
+        );
+      })}
+    </div>
+  );
+}
+
+function PaletteByTag({
+  moduleId,
+  palette,
+  activeBrush,
+  collapsed,
+  onToggleTag,
+  onPickBrush,
+}: {
+  moduleId: string;
+  palette: TileType[];
+  activeBrush: string | null;
+  collapsed: Set<string>;
+  onToggleTag: (tag: string) => void;
+  onPickBrush: (id: string) => void;
+}) {
+  const tree = buildTileTagTree(palette);
+  return (
+    <TileTagSections
+      nodes={tree}
+      depth={0}
+      collapsed={collapsed}
+      onToggle={onToggleTag}
+      renderTiles={(tiles) => {
+        // Multi-tile pieces (a building split into parts) show as the
+        // assembled picture: each part sits at its row/col, so you can
+        // see what goes where and click the part you want.
+        const layout = multiTileLayout(tiles);
+        if (layout) {
+          return (
+            <div className="px-1 pb-2">
+              <div
+                className="mx-auto grid w-fit gap-px rounded border border-parchment/10 bg-ink/60 p-1"
+                style={{ gridTemplateColumns: `repeat(${layout.cols}, 48px)` }}
+              >
+                {layout.cells.map((t, i) =>
+                  t ? (
+                    <button
+                      key={t.id}
+                      type="button"
+                      title={t.name || t.id}
+                      onClick={() => onPickBrush(t.id)}
+                      className={`h-12 w-12 rounded-sm ${
+                        activeBrush === t.id
+                          ? "outline outline-2 outline-ember"
+                          : "hover:outline hover:outline-1 hover:outline-parchment/60"
+                      }`}
+                    >
+                      <img
+                        src={spriteThumbSrc(moduleId, t.sprite)}
+                        alt={t.name || t.id}
+                        width={48}
+                        height={48}
+                        style={{ imageRendering: "pixelated" }}
+                        className="h-12 w-12"
+                      />
+                    </button>
+                  ) : (
+                    <span key={`empty-${i}`} className="h-12 w-12" />
+                  ),
+                )}
+              </div>
+              {(() => {
+                const active = tiles.find((t) => t.id === activeBrush);
+                return (
+                  <p className="mt-1 text-center text-xs text-parchment/70">
+                    {active ? active.name : "Click a part to paint it"}
+                  </p>
+                );
+              })()}
+            </div>
+          );
+        }
+        // Drop the words every tile in the group shares ("Dungeon
+        // Wall, …") so the part that tells them apart fits; the shared
+        // words are shown once above the list, the full name on hover.
+        const { prefix, labels } = shortTileLabels(
+          tiles.map((t) => t.name || t.id),
+        );
+        return (
+        <ul className="space-y-1 px-1 pb-1">
+          {prefix ? (
+            <li className="px-1 text-[11px] uppercase tracking-wide text-parchment/50">
+              {prefix}
+            </li>
+          ) : null}
+          {tiles.map((t, i) => {
+            const active = activeBrush === t.id;
+            return (
+              <li key={t.id}>
+                <button
+                  type="button"
+                  title={t.name || t.id}
+                  onClick={() => onPickBrush(t.id)}
+                  className={`flex w-full items-center gap-2 rounded border px-2 py-1 text-left text-sm transition ${
+                    active
+                      ? "border-ember/60 bg-ember/20 text-parchment"
+                      : "border-parchment/10 bg-ink/40 text-parchment/85 hover:border-parchment/40 hover:bg-ink/60"
+                  }`}
+                >
+                  <img
+                    src={spriteThumbSrc(moduleId, t.sprite)}
+                    alt=""
+                    width={24}
+                    height={24}
+                    style={{ imageRendering: "pixelated" }}
+                    className="h-6 w-6 shrink-0 object-contain"
+                  />
+                  <span className="line-clamp-2 flex-1 break-words leading-tight">
+                    {labels[i]}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+        );
+      }}
+    />
+  );
+}
+
+
+function Inspector({
+  moduleId,
+  selectedCell,
+  selectionCount,
+  instance,
+  base,
+  palette,
+  counters,
+  encounters,
+  spawns,
+  items,
+  npcs,
+  availableMaps,
+  availableDungeons,
+  availableQuests,
+  availableTraps,
+  availableLore,
+  onUpdate,
+}: {
+  moduleId: string;
+  selectedCell: { col: number; row: number } | null;
+  /** How many cells are currently selected. >1 means edits apply to
+   *  the whole set; the inspector shows the anchor cell's values. */
+  selectionCount: number;
+  /** The tile data living at the selected cell. The cell IS this data. */
+  instance: TileType | null;
+  /** The Tile Palette entry that shares this cell's id — used to
+   *  decide whether each field has been modified, and as the source
+   *  for "Reset" actions. May be null if no palette entry has this id
+   *  (orphan cell). */
+  base: TileType | null;
+  palette: TileType[];
+  counters: RefRecord[];
+  encounters: EncounterRecord[];
+  spawns: RefRecord[];
+  items: ItemRecord[];
+  npcs: NpcRecord[];
+  /** Every map in the module — fed to the Link editor's map_id picker
+   *  (tags drive that picker's optgroup grouping). */
+  availableMaps: Array<{ id: string; name: string; tags?: string[] }>;
+  /** Every dungeon and quest in the module — fed to the cell-inspector's
+   *  Dungeon and Quest dropdowns. Quests carry the full record (used
+   *  by the on-map quest-giver sprite + glow logic). */
+  availableDungeons: Array<{ id: string; name: string }>;
+  availableQuests: QuestRecord[];
+  /** Every trap in the module's traps.json — fed to the Trap dropdown. */
+  availableTraps: Array<{ id: string; name: string }>;
+  /** Every Lore record in the module — fed to the Lore dropdown. */
+  availableLore: Array<{ id: string; name: string }>;
+  onUpdate: (patch: Partial<TileType>) => void;
+}) {
+  const modified =
+    !!instance && !!base && !cellMatchesPalette(instance, palette);
+  return (
+    <aside className="w-72 shrink-0 overflow-auto border-l border-parchment/10 bg-ink/20 p-3">
+      <p className="mb-2 text-[13px] uppercase tracking-wide text-parchment/65">
+        Cell Inspector
+        {selectionCount > 1 ? (
+          <span className="ml-2 rounded bg-parchment/15 px-1.5 py-0.5 text-xs normal-case tracking-normal text-parchment/90">
+            {selectionCount} cells
+          </span>
+        ) : null}
+        {modified ? (
+          <span className="ml-2 rounded bg-ember/30 px-1.5 py-0.5 text-xs normal-case tracking-normal text-parchment/90">
+            modified
+          </span>
+        ) : null}
+      </p>
+      {!selectedCell || !instance ? (
+        <p className="text-[13px] text-parchment/75">
+          Click any cell on the map to inspect or customize its attributes.
+          ⌘-click (Ctrl on Windows) in Inspect mode to select several cells
+          and edit their attributes together.
+        </p>
+      ) : (
+        <div className="space-y-3">
+          {selectionCount > 1 ? (
+            <div className="rounded border border-parchment/20 bg-parchment/5 px-2 py-1.5 text-xs leading-snug text-parchment/80">
+              Editing <span className="text-parchment">{selectionCount} cells</span>{" "}
+              at once. Fields show the last-clicked cell; changing one applies
+              it to every selected cell.
+            </div>
+          ) : null}
+          <div>
+            <p className="text-xs uppercase tracking-wide text-parchment/60">
+              {selectionCount > 1 ? "Anchor cell" : "Position"}
+            </p>
+            <p className="font-mono text-sm text-parchment/90">
+              col {selectedCell.col}, row {selectedCell.row}
+            </p>
+          </div>
+
+          <div className="flex items-start gap-3">
+            <img
+              src={spriteThumbSrc(moduleId, instance.sprite)}
+              alt=""
+              width={48}
+              height={48}
+              style={{ imageRendering: "pixelated" }}
+              className="h-12 w-12 shrink-0 rounded border border-parchment/20 bg-ink/80 object-contain"
+            />
+            <div className="min-w-0 flex-1">
+              <p className="font-display text-base text-parchment">
+                {instance.name}
+              </p>
+              <p className="truncate font-mono text-[13px] text-parchment/75">
+                {instance.id}
+              </p>
+            </div>
+          </div>
+
+          <InspectorRow
+            label="Background"
+            isModified={
+              !!base &&
+              fieldDiffersFromPalette(instance, palette, "background_sprite")
+            }
+            canReset={!!base}
+            onReset={() => onUpdate({ background_sprite: undefined })}
+          >
+            <SpritePicker
+              value={instance.background_sprite ?? ""}
+              config={{ category: "map", format: "path" }}
+              onChange={(v) =>
+                onUpdate({ background_sprite: v ? v : undefined })
+              }
+            />
+            <p className="mt-1 text-xs leading-snug text-parchment/65">
+              Optional terrain drawn behind this tile; the tile&apos;s
+              transparent pixels reveal it. Blank = the dark canvas
+              (the default).
+            </p>
+          </InspectorRow>
+
+          <WalkableEditor
+            value={instance.walkable}
+            paletteValue={base?.walkable ?? instance.walkable}
+            isModified={
+              !!base && fieldDiffersFromPalette(instance, palette, "walkable")
+            }
+            canReset={!!base}
+            onChange={(v) => onUpdate({ walkable: v })}
+            onReset={() => onUpdate({ walkable: undefined })}
+          />
+
+          <BoolEditor
+            label="Obstructs"
+            help="Blocks light effects and ranged-weapon line-of-sight."
+            value={instance.obstructs ?? false}
+            paletteValue={base?.obstructs ?? instance.obstructs ?? false}
+            isModified={
+              !!base && fieldDiffersFromPalette(instance, palette, "obstructs")
+            }
+            canReset={!!base}
+            onChange={(v) => onUpdate({ obstructs: v })}
+            onReset={() => onUpdate({ obstructs: undefined })}
+          />
+
+          <BoolEditor
+            label="Boat"
+            help="True = this tile IS a boat. Stepping onto it lets the party move through water tiles (the tile becomes the vessel)."
+            value={instance.boat ?? false}
+            paletteValue={base?.boat ?? instance.boat ?? false}
+            isModified={
+              !!base && fieldDiffersFromPalette(instance, palette, "boat")
+            }
+            canReset={!!base}
+            onChange={(v) => onUpdate({ boat: v })}
+            onReset={() => onUpdate({ boat: undefined })}
+          />
+
+          {instance.boat_sprite ? (
+            <div className="flex items-center justify-between gap-2 text-xs">
+              <span title="A boat moored on this water cell. Paint a boat tile onto water to moor one; the water underneath is kept.">
+                Moored boat: {instance.boat_sprite}
+              </span>
+              <button
+                type="button"
+                className="border border-parchment/30 px-2 py-0.5 hover:bg-parchment/10"
+                onClick={() => onUpdate({ boat_sprite: undefined })}
+              >
+                Remove
+              </button>
+            </div>
+          ) : null}
+
+          <BoolEditor
+            label="Boat passable"
+            help="True = a boat can sail UNDER this tile (bridge semantics). The tile stays walkable on foot; the play scene paints a bridge-top overlay above the boat so the vessel reads as passing beneath."
+            value={instance.boat_passable ?? false}
+            paletteValue={
+              base?.boat_passable ?? instance.boat_passable ?? false
+            }
+            isModified={
+              !!base &&
+              fieldDiffersFromPalette(instance, palette, "boat_passable")
+            }
+            canReset={!!base}
+            onChange={(v) => onUpdate({ boat_passable: v })}
+            onReset={() => onUpdate({ boat_passable: undefined })}
+          />
+
+          <BoolEditor
+            label="Locked"
+            help="Gates passage/interaction until unlocked (key, scripted, etc.)."
+            value={instance.locked ?? false}
+            paletteValue={base?.locked ?? instance.locked ?? false}
+            isModified={
+              !!base && fieldDiffersFromPalette(instance, palette, "locked")
+            }
+            canReset={!!base}
+            onChange={(v) => onUpdate({ locked: v })}
+            onReset={() => onUpdate({ locked: undefined })}
+          />
+
+          <BoolEditor
+            label="Show place placard"
+            help="On a Link or Dungeon tile: show a confirm placard (destination name + description + explored badge) before crossing, instead of entering immediately. Opt-in per tile."
+            value={instance.show_link_placard ?? false}
+            paletteValue={
+              base?.show_link_placard ?? instance.show_link_placard ?? false
+            }
+            isModified={
+              !!base &&
+              fieldDiffersFromPalette(instance, palette, "show_link_placard")
+            }
+            canReset={!!base}
+            onChange={(v) => onUpdate({ show_link_placard: v })}
+            onReset={() => onUpdate({ show_link_placard: undefined })}
+          />
+
+          <BoolEditor
+            label="Light source"
+            help="True = this tile emits light. Pair with Light range."
+            value={instance.light_source ?? false}
+            paletteValue={
+              base?.light_source ?? instance.light_source ?? false
+            }
+            isModified={
+              !!base &&
+              fieldDiffersFromPalette(instance, palette, "light_source")
+            }
+            canReset={!!base}
+            onChange={(v) => onUpdate({ light_source: v })}
+            onReset={() => onUpdate({ light_source: undefined })}
+          />
+
+          <NumberEditor
+            label="Light range"
+            help="Light radius in cells. Only meaningful when Light source is true."
+            value={instance.light_range ?? 0}
+            paletteValue={base?.light_range ?? instance.light_range ?? 0}
+            isModified={
+              !!base &&
+              fieldDiffersFromPalette(instance, palette, "light_range")
+            }
+            canReset={!!base}
+            onChange={(v) => onUpdate({ light_range: v })}
+            onReset={() => onUpdate({ light_range: undefined })}
+          />
+
+          <StringEditor
+            label="Text"
+            help="Narrative text called out in-game when the party steps on this cell. Leave blank for none."
+            value={instance.text ?? ""}
+            paletteValue={base?.text ?? instance.text ?? ""}
+            isModified={
+              !!base && fieldDiffersFromPalette(instance, palette, "text")
+            }
+            canReset={!!base}
+            placeholder="(no on-step text)"
+            onChange={(v) => onUpdate({ text: v })}
+            onReset={() => onUpdate({ text: undefined })}
+          />
+
+          <SelectEditor
+            label="Animation"
+            help="Visual effect overlay rendered on this cell."
+            value={instance.animation ?? "none"}
+            paletteValue={base?.animation ?? instance.animation ?? "none"}
+            options={[
+              { value: "none", label: "(none)" },
+              { value: "torch", label: "Torch" },
+              { value: "fire", label: "Fire" },
+              { value: "fairy", label: "Fairy lights" },
+              { value: "smoke", label: "Smoke" },
+            ]}
+            isModified={
+              !!base && fieldDiffersFromPalette(instance, palette, "animation")
+            }
+            canReset={!!base}
+            onChange={(v) =>
+              onUpdate({ animation: v as TileType["animation"] })
+            }
+            onReset={() => onUpdate({ animation: undefined })}
+          />
+
+          <SelectEditor
+            label="Counter"
+            help="Shop/service counter from counters.json. Empty for none."
+            value={instance.counter ?? ""}
+            paletteValue={base?.counter ?? instance.counter ?? ""}
+            options={[
+              { value: "", label: "(none)" },
+              ...counters.map((c) => ({
+                value: c.id,
+                label: c.name ? `${c.name} — ${c.id}` : c.id,
+              })),
+            ]}
+            isModified={
+              !!base && fieldDiffersFromPalette(instance, palette, "counter")
+            }
+            canReset={!!base}
+            onChange={(v) => onUpdate({ counter: v })}
+            onReset={() => onUpdate({ counter: undefined })}
+          />
+
+          {/* Shared, graphical encounter picker (sprite + theme-grouped,
+              difficulty-ordered) — the same component the Quest editor's
+              kill step uses. Wrapped in InspectorRow so the per-cell
+              palette-override + reset affordance is preserved. */}
+          <InspectorRow
+            label="Encounter"
+            isModified={
+              !!base && fieldDiffersFromPalette(instance, palette, "encounter")
+            }
+            canReset={!!base}
+            onReset={() => onUpdate({ encounter: undefined })}
+          >
+            <EncounterPicker
+              value={instance.encounter ?? ""}
+              encounters={encounters}
+              onChange={(v) => onUpdate({ encounter: v })}
+            />
+            <p className="mt-0.5 text-xs text-parchment/60">
+              palette:{" "}
+              {(() => {
+                const pid = base?.encounter ?? "";
+                if (!pid) return "(none)";
+                const found = encounters.find((e) => e.id === pid);
+                return found?.name ? `${found.name} — ${pid}` : pid;
+              })()}
+            </p>
+            <p className="mt-1 text-xs text-parchment/65">
+              Random encounter from encounters.json. Empty for none. The
+              encounter&apos;s sprite renders on the cell.
+            </p>
+          </InspectorRow>
+
+          <SelectEditor
+            label="Spawn"
+            help="Spawn template from spawns.json (monster-lair behavior). Empty for none."
+            value={instance.spawn ?? ""}
+            paletteValue={base?.spawn ?? instance.spawn ?? ""}
+            options={[
+              { value: "", label: "(none)" },
+              ...spawns.map((s) => ({
+                value: s.id,
+                label: s.name ? `${s.name} — ${s.id}` : s.id,
+              })),
+            ]}
+            isModified={
+              !!base && fieldDiffersFromPalette(instance, palette, "spawn")
+            }
+            canReset={!!base}
+            onChange={(v) => onUpdate({ spawn: v })}
+            onReset={() => onUpdate({ spawn: undefined })}
+          />
+
+          <SelectEditor
+            label="Item"
+            help="Item from items.json placed on this tile. The item's icon layers over the floor, and gameplay drops it when the party steps on the cell. Empty for none."
+            value={instance.item ?? ""}
+            paletteValue={base?.item ?? instance.item ?? ""}
+            options={[{ value: "", label: "(none)" }]}
+            optionGroups={groupItemsByCategory(items).map((g) => ({
+              label: g.label,
+              options: g.items.map((i) => ({
+                value: i.id,
+                label: i.name ? `${i.name} — ${i.id}` : i.id,
+              })),
+            }))}
+            previewSrc={(() => {
+              const id = instance.item ?? "";
+              if (!id) return null;
+              const found = items.find((i) => i.id === id);
+              const icon = found?.icon;
+              if (!icon) return null;
+              return spriteUrl(`item/${icon}.png`);
+            })()}
+            isModified={
+              !!base && fieldDiffersFromPalette(instance, palette, "item")
+            }
+            canReset={!!base}
+            onChange={(v) =>
+              // Swapping to a non-container drops any stash the old
+              // container held, so stale loot doesn't ride along.
+              onUpdate(
+                items.find((i) => i.id === v)?.is_chest
+                  ? { item: v }
+                  : { item: v, loot: undefined },
+              )
+            }
+            onReset={() => onUpdate({ item: undefined, loot: undefined })}
+          />
+
+          {(() => {
+            // Containers (Treasure Chest…) get a per-placement stash.
+            const container = items.find(
+              (i) => i.id === (instance.item ?? "") && i.is_chest,
+            );
+            if (!container) return null;
+            return (
+              <LootEditor
+                loot={instance.loot}
+                fallback={container.contents}
+                items={items}
+                onChange={(next) => onUpdate({ loot: next })}
+              />
+            );
+          })()}
+
+          <SelectEditor
+            label="NPC"
+            help="NPC from npcs.json. Empty for none. The NPC's sprite renders as an overlay on the cell so you can place villagers / shopkeepers / quest-givers visually."
+            value={instance.npc ?? ""}
+            paletteValue={base?.npc ?? instance.npc ?? ""}
+            options={[
+              { value: "", label: "(none)" },
+              ...npcs.map((n) => ({
+                value: n.id,
+                label: n.name ? `${n.name} — ${n.id}` : n.id,
+              })),
+              // Preserve a value pointing at an NPC not in the catalog
+              // (forward reference / library record) so it round-trips
+              // through save / load.
+              ...(instance.npc &&
+              !npcs.some((n) => n.id === instance.npc)
+                ? [
+                    {
+                      value: instance.npc,
+                      label: `(missing) ${instance.npc}`,
+                    },
+                  ]
+                : []),
+            ]}
+            previewSrc={(() => {
+              const id = instance.npc ?? "";
+              if (!id) return null;
+              const found = npcs.find((n) => n.id === id);
+              const sprite = found?.sprite;
+              if (!sprite) return null;
+              // NPC sprites are stored as folder-relative paths
+              // (e.g. "person/cleric1.png"). Match the resolver the
+              // SpritePicker uses elsewhere — slash-bearing paths go
+              // under /sprites/, bare stems fall back to the default
+              // person folder.
+              return sprite.includes("/")
+                ? spriteUrl(sprite)
+                : spriteUrl(`person/${sprite}`);
+            })()}
+            isModified={
+              !!base && fieldDiffersFromPalette(instance, palette, "npc")
+            }
+            canReset={!!base}
+            onChange={(v) => onUpdate({ npc: v })}
+            onReset={() => onUpdate({ npc: undefined })}
+          />
+
+          <SelectEditor
+            label="Quest"
+            help="Quest from quests.json. Empty for none. A cell carrying a Quest id is a trigger tile for that quest."
+            value={instance.quest ?? ""}
+            paletteValue={base?.quest ?? instance.quest ?? ""}
+            options={[
+              { value: "", label: "(none)" },
+              ...availableQuests.map((q) => ({
+                value: q.id,
+                label: q.name ? `${q.name} — ${q.id}` : q.id,
+              })),
+              // Preserve a value pointing at a quest not in the catalog
+              // (forward reference / library record) so it round-trips.
+              ...(instance.quest &&
+              !availableQuests.some((q) => q.id === instance.quest)
+                ? [
+                    {
+                      value: instance.quest,
+                      label: `(missing) ${instance.quest}`,
+                    },
+                  ]
+                : []),
+            ]}
+            isModified={
+              !!base && fieldDiffersFromPalette(instance, palette, "quest")
+            }
+            canReset={!!base}
+            onChange={(v) => onUpdate({ quest: v })}
+            onReset={() => onUpdate({ quest: undefined })}
+          />
+
+          <SelectEditor
+            label="Dungeon"
+            help="Dungeon from dungeons.json. Empty for none. A cell carrying a Dungeon id is an entrance trigger — stepping on it generates and enters the dungeon's first level."
+            value={instance.dungeon ?? ""}
+            paletteValue={base?.dungeon ?? instance.dungeon ?? ""}
+            options={[
+              { value: "", label: "(none)" },
+              ...availableDungeons.map((d) => ({
+                value: d.id,
+                label: d.name ? `${d.name} — ${d.id}` : d.id,
+              })),
+              ...(instance.dungeon &&
+              !availableDungeons.some((d) => d.id === instance.dungeon)
+                ? [
+                    {
+                      value: instance.dungeon,
+                      label: `(missing) ${instance.dungeon}`,
+                    },
+                  ]
+                : []),
+            ]}
+            isModified={
+              !!base && fieldDiffersFromPalette(instance, palette, "dungeon")
+            }
+            canReset={!!base}
+            onChange={(v) => onUpdate({ dungeon: v })}
+            onReset={() => onUpdate({ dungeon: undefined })}
+          />
+
+          <SelectEditor
+            label="Trap"
+            help="Trap from traps.json. Empty for none. In play, stepping onto this cell fires the trap once (damage, status effect, or teleport per the record) and disarms it permanently. Hidden from the player unless Detect Traps is active."
+            value={instance.trap_id ?? ""}
+            paletteValue={base?.trap_id ?? instance.trap_id ?? ""}
+            options={[
+              { value: "", label: "(none)" },
+              ...availableTraps.map((t) => ({
+                value: t.id,
+                label: t.name !== t.id ? `${t.name} — ${t.id}` : t.id,
+              })),
+              ...(instance.trap_id &&
+              !availableTraps.some((t) => t.id === instance.trap_id)
+                ? [
+                    {
+                      value: instance.trap_id,
+                      label: `(missing) ${instance.trap_id}`,
+                    },
+                  ]
+                : []),
+            ]}
+            isModified={
+              !!base && fieldDiffersFromPalette(instance, palette, "trap_id")
+            }
+            canReset={!!base}
+            onChange={(v) => onUpdate({ trap_id: v })}
+            onReset={() => onUpdate({ trap_id: undefined })}
+          />
+
+          <SelectEditor
+            label="Lore"
+            help="Lore from lore.json. Empty for none. Makes this cell a readable object (bookshelf, plaque, gravestone): in play, bumping it opens the reading screen — the party stays put. The first read adds it to the journal (J) and grants its XP."
+            value={instance.lore ?? ""}
+            paletteValue={base?.lore ?? instance.lore ?? ""}
+            options={[
+              { value: "", label: "(none)" },
+              ...availableLore.map((l) => ({
+                value: l.id,
+                label: l.name !== l.id ? `${l.name} — ${l.id}` : l.id,
+              })),
+              ...(instance.lore &&
+              !availableLore.some((l) => l.id === instance.lore)
+                ? [
+                    {
+                      value: instance.lore,
+                      label: `(missing) ${instance.lore}`,
+                    },
+                  ]
+                : []),
+            ]}
+            isModified={
+              !!base && fieldDiffersFromPalette(instance, palette, "lore")
+            }
+            canReset={!!base}
+            onChange={(v) => onUpdate({ lore: v })}
+            onReset={() => onUpdate({ lore: undefined })}
+          />
+
+          <LinkEditor
+            value={instance.link ?? null}
+            paletteValue={base?.link ?? null}
+            isModified={
+              !!base && fieldDiffersFromPalette(instance, palette, "link")
+            }
+            canReset={!!base}
+            availableMaps={availableMaps}
+            onChange={(v) => onUpdate({ link: v })}
+            onReset={() => onUpdate({ link: undefined })}
+          />
+
+          <PressurePlateEditor
+            moduleId={moduleId}
+            value={instance.pressure_plate ?? null}
+            paletteValue={base?.pressure_plate ?? null}
+            isModified={
+              !!base &&
+              fieldDiffersFromPalette(instance, palette, "pressure_plate")
+            }
+            canReset={!!base}
+            availableMaps={availableMaps}
+            palette={palette}
+            onChange={(v) => onUpdate({ pressure_plate: v })}
+            onReset={() => onUpdate({ pressure_plate: undefined })}
+          />
+
+          {!base ? (
+            <p className="rounded border border-ember/40 bg-ember/15 p-2 text-xs text-parchment/75">
+              No Tile Palette entry with id <code>{instance.id}</code> —
+              this cell is an orphan. Reset is disabled until a matching
+              palette entry exists.
+            </p>
+          ) : null}
+
+          <p className="border-t border-parchment/10 pt-2 text-xs text-parchment/65">
+            Each cell is its own data — edits modify the cell directly.
+            Painting a cell over copies the brush palette entry fresh.
+            Reset restores a single field from the palette entry that
+            shares this cell&apos;s id.
+          </p>
+        </div>
+      )}
+    </aside>
+  );
+}
+
+function InspectorRow({
+  label,
+  isModified,
+  canReset,
+  onReset,
+  children,
+}: {
+  label: string;
+  isModified?: boolean;
+  canReset?: boolean;
+  onReset?: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <div className="flex items-center justify-between">
+        <p className="text-xs uppercase tracking-wide text-parchment/60">
+          {label}
+          {isModified ? (
+            <span className="ml-1.5 rounded bg-ember/25 px-1 py-0.5 text-[9px] text-parchment/85">
+              modified
+            </span>
+          ) : null}
+        </p>
+        {isModified && canReset && onReset ? (
+          <button
+            type="button"
+            onClick={onReset}
+            className="text-xs text-parchment/75 hover:text-parchment/85"
+            title="Restore this field from the Tile Palette entry that shares this cell's id."
+          >
+            reset
+          </button>
+        ) : null}
+      </div>
+      <div className="mt-0.5 text-sm">{children}</div>
+    </div>
+  );
+}
+
+function WalkableEditor({
+  value,
+  paletteValue,
+  isModified,
+  canReset,
+  onChange,
+  onReset,
+}: {
+  value: boolean;
+  paletteValue: boolean;
+  isModified: boolean;
+  canReset: boolean;
+  onChange: (v: boolean) => void;
+  onReset: () => void;
+}) {
+  return (
+    <BoolEditor
+      label="Walkable"
+      value={value}
+      paletteValue={paletteValue}
+      isModified={isModified}
+      canReset={canReset}
+      onChange={onChange}
+      onReset={onReset}
+    />
+  );
+}
+
+/** Generic number attribute editor — number input + palette default
+ *  annotation + reset. */
+function NumberEditor({
+  label,
+  help,
+  value,
+  paletteValue,
+  isModified,
+  canReset,
+  onChange,
+  onReset,
+}: {
+  label: string;
+  help?: string;
+  value: number;
+  paletteValue: number;
+  isModified: boolean;
+  canReset: boolean;
+  onChange: (v: number) => void;
+  onReset: () => void;
+}) {
+  return (
+    <InspectorRow
+      label={label}
+      isModified={isModified}
+      canReset={canReset}
+      onReset={onReset}
+    >
+      <div className="flex items-center gap-2">
+        <input
+          type="number"
+          value={value}
+          onChange={(e) => {
+            const n = Number(e.target.value);
+            onChange(Number.isFinite(n) ? n : 0);
+          }}
+          className="w-20 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-sm text-parchment/90 focus:border-parchment/60 focus:outline-none"
+        />
+        <span className="text-xs text-parchment/60">
+          palette: {paletteValue}
+        </span>
+      </div>
+      {help ? (
+        <p className="mt-1 text-xs text-parchment/65">{help}</p>
+      ) : null}
+    </InspectorRow>
+  );
+}
+
+/** Generic string attribute editor — single-line input + palette
+ *  default annotation + reset. Used for `effect` (effect id) today;
+ *  future cross-reference fields can pivot to a dropdown without
+ *  changing the call sites. */
+function StringEditor({
+  label,
+  help,
+  value,
+  paletteValue,
+  isModified,
+  canReset,
+  placeholder,
+  onChange,
+  onReset,
+}: {
+  label: string;
+  help?: string;
+  value: string;
+  paletteValue: string;
+  isModified: boolean;
+  canReset: boolean;
+  placeholder?: string;
+  onChange: (v: string) => void;
+  onReset: () => void;
+}) {
+  return (
+    <InspectorRow
+      label={label}
+      isModified={isModified}
+      canReset={canReset}
+      onReset={onReset}
+    >
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-[13px] text-parchment/90 placeholder:text-parchment/50 focus:border-parchment/60 focus:outline-none"
+      />
+      {paletteValue ? (
+        <p className="mt-0.5 text-xs text-parchment/60">
+          palette: <span className="font-mono">{paletteValue}</span>
+        </p>
+      ) : null}
+      {help ? (
+        <p className="mt-1 text-xs text-parchment/65">{help}</p>
+      ) : null}
+    </InspectorRow>
+  );
+}
+
+/** Generic enum/select attribute editor — dropdown + palette default
+ *  annotation + reset. Used for `animation` and any future enumerated
+ *  per-cell field. */
+function SelectEditor({
+  label,
+  help,
+  value,
+  paletteValue,
+  options,
+  optionGroups,
+  previewSrc,
+  isModified,
+  canReset,
+  onChange,
+  onReset,
+}: {
+  label: string;
+  help?: string;
+  value: string;
+  paletteValue: string;
+  /** Top-level (ungrouped) options — e.g. the leading "(none)". */
+  options: Array<{ value: string; label: string }>;
+  /** Optional "Category › Type" optgroups, rendered after `options`.
+   *  When present, the grouped options also feed the palette-label
+   *  lookup below. */
+  optionGroups?: Array<{
+    label: string;
+    options: Array<{ value: string; label: string }>;
+  }>;
+  /** Optional sprite path to show as a thumbnail next to the select.
+   *  Used by Encounter to surface the encounter's monster_party_tile. */
+  previewSrc?: string | null;
+  isModified: boolean;
+  canReset: boolean;
+  onChange: (v: string) => void;
+  onReset: () => void;
+}) {
+  // Flattened view of every option (ungrouped + grouped) so the
+  // palette-default label resolves regardless of where the option lives.
+  const allOptions = [
+    ...options,
+    ...(optionGroups?.flatMap((g) => g.options) ?? []),
+  ];
+  return (
+    <InspectorRow
+      label={label}
+      isModified={isModified}
+      canReset={canReset}
+      onReset={onReset}
+    >
+      <div className="flex items-start gap-2">
+        <select
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-sm text-parchment/90 focus:border-parchment/60 focus:outline-none"
+        >
+          {options.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+          {optionGroups?.map((g) => (
+            <optgroup key={g.label} label={g.label}>
+              {g.options.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </optgroup>
+          ))}
+        </select>
+        {previewSrc ? (
+          <img
+            src={previewSrc}
+            alt=""
+            width={32}
+            height={32}
+            style={{ imageRendering: "pixelated" }}
+            className="h-8 w-8 shrink-0 rounded border border-parchment/20 bg-ink/80 object-contain"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).style.visibility =
+                "hidden";
+            }}
+          />
+        ) : null}
+      </div>
+      <p className="mt-0.5 text-xs text-parchment/60">
+        palette: {allOptions.find((o) => o.value === paletteValue)?.label ?? paletteValue}
+      </p>
+      {help ? (
+        <p className="mt-1 text-xs text-parchment/65">{help}</p>
+      ) : null}
+    </InspectorRow>
+  );
+}
+
+/** Generic boolean attribute editor — checkbox + palette default
+ *  annotation + reset. Used for walkable, obstructs, and any future
+ *  boolean per-cell field. */
+function BoolEditor({
+  label,
+  help,
+  value,
+  paletteValue,
+  isModified,
+  canReset,
+  onChange,
+  onReset,
+}: {
+  label: string;
+  help?: string;
+  value: boolean;
+  paletteValue: boolean;
+  isModified: boolean;
+  canReset: boolean;
+  onChange: (v: boolean) => void;
+  onReset: () => void;
+}) {
+  return (
+    <InspectorRow
+      label={label}
+      isModified={isModified}
+      canReset={canReset}
+      onReset={onReset}
+    >
+      <label
+        className="flex items-center gap-2 text-parchment/90"
+        title={help}
+      >
+        <input
+          type="checkbox"
+          checked={value}
+          onChange={(e) => onChange(e.target.checked)}
+          className="h-4 w-4"
+        />
+        <span>{value ? "yes" : "no"}</span>
+        <span className="text-xs text-parchment/60">
+          palette: {paletteValue ? "yes" : "no"}
+        </span>
+      </label>
+      {help ? (
+        <p className="mt-1 text-xs text-parchment/65">{help}</p>
+      ) : null}
+    </InspectorRow>
+  );
+}
+
+/** Inline palette-tile picker — the closed row shows the selected
+ *  tile's sprite thumbnail + name so authors can see at a glance
+ *  what a plate will paint; "Pick…" expands a filter bar and a
+ *  tag-grouped tile list (same grouping as the Tile Palette side
+ *  panel) with a thumbnail per tile. Expand-in-place pattern matches
+ *  SpritePicker — no floating popover to clip against the narrow
+ *  inspector column. Each row also badges non-walkable tiles
+ *  ("solid"), since the whole point of most plates is toggling a
+ *  door between its walkable and blocking forms. */
+function PaletteTilePicker({
+  moduleId,
+  value,
+  palette,
+  onChange,
+}: {
+  moduleId: string;
+  /** Currently selected palette tile id ("" = none yet). */
+  value: string;
+  palette: TileType[];
+  onChange: (tileId: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [filter, setFilter] = useState("");
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
+  // Open this picker with every tag section collapsed (one-shot seed) so
+  // it reads as a compact index; the author expands what they need.
+  const seededRef = useRef(false);
+  useEffect(() => {
+    if (seededRef.current || palette.length === 0) return;
+    seededRef.current = true;
+    setCollapsed(collectTileTagPaths(palette));
+  }, [palette]);
+  const selected = palette.find((t) => t.id === value) ?? null;
+
+  const q = filter.trim().toLowerCase();
+  const matches = q
+    ? palette.filter(
+        (t) =>
+          t.id.toLowerCase().includes(q) ||
+          (t.name ?? "").toLowerCase().includes(q) ||
+          (t.tag ?? "").toLowerCase().includes(q),
+      )
+    : palette;
+  const tree = buildTileTagTree(matches);
+  const toggle = (path: string) =>
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(path)) next.delete(path);
+      else next.add(path);
+      return next;
+    });
+
+  return (
+    <div className="mt-0.5 space-y-1">
+      <div className="flex items-center gap-2">
+        {selected ? (
+          <img
+            src={spriteThumbSrc(moduleId, selected.sprite)}
+            alt=""
+            width={24}
+            height={24}
+            style={{ imageRendering: "pixelated" }}
+            className="h-6 w-6 shrink-0 rounded border border-parchment/20 bg-ink/80 object-contain"
+          />
+        ) : (
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded border border-parchment/15 bg-ink/60 text-xs text-parchment/40">
+            ?
+          </span>
+        )}
+        <span className="min-w-0 flex-1 truncate text-[13px] text-parchment/90">
+          {selected ? (
+            <>
+              {selected.name || selected.id}{" "}
+              <span className="font-mono text-parchment/60">
+                ({selected.id})
+              </span>
+            </>
+          ) : value ? (
+            <span className="font-mono text-ember/80">{value}</span>
+          ) : (
+            <span className="text-parchment/55">— choose a tile —</span>
+          )}
+        </span>
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          className="rounded border border-parchment/30 px-2 py-0.5 text-xs text-parchment/85 hover:bg-ink/40"
+          title={
+            open
+              ? "Close the tile picker."
+              : "Pick the replacement tile from the palette (grouped by tag, with sprite previews)."
+          }
+        >
+          {open ? "Done" : "Pick…"}
+        </button>
+      </div>
+      {open ? (
+        <div className="rounded border border-parchment/15 bg-ink/40 p-1.5">
+          <input
+            type="text"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            placeholder="Filter by name, id, or tag…"
+            className="w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90 placeholder:text-parchment/50 focus:border-parchment/60 focus:outline-none"
+          />
+          <div className="mt-1.5 max-h-56 space-y-1.5 overflow-auto pr-1">
+            <TileTagSections
+              nodes={tree}
+              depth={0}
+              collapsed={collapsed}
+              onToggle={toggle}
+              renderTiles={(tiles) => (
+                <ul className="mt-0.5 space-y-0.5 px-1 pb-1">
+                  {tiles.map((t) => {
+                    const active = t.id === value;
+                    return (
+                      <li key={t.id}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onChange(t.id);
+                            setOpen(false);
+                          }}
+                          className={`flex w-full items-center gap-2 rounded border px-2 py-1 text-left text-[13px] transition ${
+                            active
+                              ? "border-ember/60 bg-ember/20 text-parchment"
+                              : "border-parchment/10 bg-ink/40 text-parchment/85 hover:border-parchment/40 hover:bg-ink/60"
+                          }`}
+                        >
+                          <img
+                            src={spriteThumbSrc(moduleId, t.sprite)}
+                            alt=""
+                            width={24}
+                            height={24}
+                            style={{ imageRendering: "pixelated" }}
+                            className="h-6 w-6 shrink-0 object-contain"
+                          />
+                          <span className="min-w-0 flex-1 truncate">
+                            {t.name || t.id}{" "}
+                            <span className="font-mono text-parchment/55">
+                              ({t.id})
+                            </span>
+                          </span>
+                          {!t.walkable ? (
+                            <span
+                              className="shrink-0 rounded bg-parchment/10 px-1 py-0.5 text-[9px] uppercase tracking-wide text-parchment/65"
+                              title="Not walkable — painting this blocks the target cell."
+                            >
+                              solid
+                            </span>
+                          ) : null}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            />
+            {matches.length === 0 ? (
+              <p className="px-1 py-2 text-center text-xs text-parchment/55">
+                No palette tiles match &ldquo;{filter}&rdquo;.
+              </p>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/** Pressure-plate attribute editor. Mirrors LinkEditor's layout —
+ *  target map picker (grouped by tag, with a custom-id fallback for
+ *  forward references) + target col/row + the replacement palette
+ *  tile. In play, stepping on the cell toggles the target between
+ *  the chosen tile and its authored original. */
+function PressurePlateEditor({
+  moduleId,
+  value,
+  paletteValue,
+  isModified,
+  canReset,
+  availableMaps,
+  palette,
+  onChange,
+  onReset,
+}: {
+  /** Needed to resolve sprite thumbnails (draft-aware) in the
+   *  replace-tile picker. */
+  moduleId: string;
+  value: { map_id: string; col: number; row: number; tile_id: string } | null;
+  paletteValue: {
+    map_id: string;
+    col: number;
+    row: number;
+    tile_id: string;
+  } | null;
+  isModified: boolean;
+  canReset: boolean;
+  availableMaps: Array<{ id: string; name: string; tags?: string[] }>;
+  /** Tile Palette — feeds the replace-tile picker. */
+  palette: TileType[];
+  onChange: (
+    v: { map_id: string; col: number; row: number; tile_id: string } | null,
+  ) => void;
+  onReset: () => void;
+}) {
+  const hasPlate = value !== null;
+  const mapIsOrphan =
+    !!value &&
+    !!value.map_id &&
+    !availableMaps.some((m) => m.id === value.map_id);
+  const [customMode, setCustomMode] = useState<boolean>(false);
+  const useCustom = customMode || mapIsOrphan;
+  const tileIsOrphan =
+    !!value && !!value.tile_id && !palette.some((t) => t.id === value.tile_id);
+  return (
+    <InspectorRow
+      label="Pressure Plate"
+      isModified={isModified}
+      canReset={canReset}
+      onReset={onReset}
+    >
+      {hasPlate ? (
+        <div className="space-y-1">
+          <label className="block">
+            <span className="flex items-center justify-between">
+              <span className="text-xs text-parchment/65">target map</span>
+              <button
+                type="button"
+                onClick={() => setCustomMode((c) => !c)}
+                className="text-xs uppercase tracking-wide text-parchment/65 hover:text-parchment/80"
+                title={
+                  useCustom
+                    ? "Switch back to picking from the maps list."
+                    : "Switch to a free-form text field to type a custom or future map id."
+                }
+              >
+                {useCustom ? "Pick from list" : "Custom id"}
+              </button>
+            </span>
+            {useCustom ? (
+              <input
+                type="text"
+                value={value.map_id}
+                onChange={(e) =>
+                  onChange({ ...value, map_id: e.target.value })
+                }
+                placeholder="target-map"
+                className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-[13px] text-parchment/90 focus:border-parchment/60 focus:outline-none"
+              />
+            ) : (
+              <select
+                value={value.map_id}
+                onChange={(e) =>
+                  onChange({ ...value, map_id: e.target.value })
+                }
+                className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-[13px] text-parchment/90 focus:border-parchment/60 focus:outline-none"
+              >
+                {!value.map_id ? (
+                  <option value="">— choose a map —</option>
+                ) : null}
+                {groupByTags(availableMaps).map(([tag, maps]) => (
+                  <optgroup key={tag} label={tag}>
+                    {maps.map((m) => (
+                      <option key={`${tag}::${m.id}`} value={m.id}>
+                        {m.name} ({m.id})
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+            )}
+            {mapIsOrphan ? (
+              <span className="mt-0.5 block text-xs text-ember/80">
+                Map id <code>{value.map_id}</code> isn&apos;t in this
+                module yet — value preserved so the plate still
+                round-trips.
+              </span>
+            ) : null}
+          </label>
+          <div className="flex gap-2">
+            <label className="flex-1">
+              <span className="text-xs text-parchment/65">col</span>
+              <input
+                type="number"
+                value={value.col}
+                onChange={(e) =>
+                  onChange({ ...value, col: Number(e.target.value) || 0 })
+                }
+                className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90 focus:border-parchment/60 focus:outline-none"
+              />
+            </label>
+            <label className="flex-1">
+              <span className="text-xs text-parchment/65">row</span>
+              <input
+                type="number"
+                value={value.row}
+                onChange={(e) =>
+                  onChange({ ...value, row: Number(e.target.value) || 0 })
+                }
+                className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90 focus:border-parchment/60 focus:outline-none"
+              />
+            </label>
+          </div>
+          <div>
+            <span className="text-xs text-parchment/65">replace tile</span>
+            <PaletteTilePicker
+              moduleId={moduleId}
+              value={value.tile_id}
+              palette={palette}
+              onChange={(tileId) => onChange({ ...value, tile_id: tileId })}
+            />
+            {tileIsOrphan ? (
+              <span className="mt-0.5 block text-xs text-ember/80">
+                Tile id <code>{value.tile_id}</code> isn&apos;t in the
+                palette — the plate will no-op in play until it exists.
+              </span>
+            ) : null}
+          </div>
+          <p className="text-xs text-parchment/65">
+            Stepping on this cell swaps the target to the chosen tile;
+            stepping again restores the original. Persists in the save.
+          </p>
+          <button
+            type="button"
+            onClick={() => onChange(null)}
+            className="rounded border border-parchment/20 px-2 py-0.5 text-xs text-parchment/80 hover:bg-ink/40"
+            title="Remove the pressure plate from this cell (still an override — the palette tile keeps its plate, but this cell explicitly has none)."
+          >
+            Remove plate
+          </button>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2">
+          <span className="text-parchment/60">—</span>
+          <button
+            type="button"
+            onClick={() =>
+              onChange({
+                map_id: paletteValue?.map_id ?? "",
+                col: paletteValue?.col ?? 0,
+                row: paletteValue?.row ?? 0,
+                tile_id: paletteValue?.tile_id ?? "",
+              })
+            }
+            className="rounded border border-parchment/30 px-2 py-0.5 text-xs text-parchment/85 hover:bg-ink/40"
+          >
+            + Add pressure plate
+          </button>
+          {paletteValue ? (
+            <span className="text-xs text-parchment/60">
+              (palette: {paletteValue.map_id} {paletteValue.col},
+              {paletteValue.row} → {paletteValue.tile_id})
+            </span>
+          ) : null}
+        </div>
+      )}
+    </InspectorRow>
+  );
+}
+
+function LinkEditor({
+  value,
+  paletteValue,
+  isModified,
+  canReset,
+  availableMaps,
+  onChange,
+  onReset,
+}: {
+  value: { map_id: string; x: number; y: number } | null;
+  paletteValue: { map_id: string; x: number; y: number } | null;
+  isModified: boolean;
+  canReset: boolean;
+  /** All maps in the module — feeds the map_id dropdown, grouped by
+   *  tag (same pinned ordering as the maps browse tree). */
+  availableMaps: Array<{ id: string; name: string; tags?: string[] }>;
+  onChange: (
+    v: { map_id: string; x: number; y: number } | null,
+  ) => void;
+  onReset: () => void;
+}) {
+  const hasLink = value !== null;
+  // True when the current map_id doesn't appear in the picker — either
+  // a forward reference to a map that doesn't exist yet, or the
+  // target has been deleted since this link was authored. Either way
+  // we surface the existing string instead of silently dropping it.
+  const valueIsOrphan =
+    !!value &&
+    !!value.map_id &&
+    !availableMaps.some((m) => m.id === value.map_id);
+  /** When true, the user opted into the text-input fallback so they
+   *  can type a custom / future map id. Engaged automatically when
+   *  the current value is already an orphan. */
+  const [customMode, setCustomMode] = useState<boolean>(false);
+  const useCustom = customMode || valueIsOrphan;
+  return (
+    <InspectorRow
+      label="Link"
+      isModified={isModified}
+      canReset={canReset}
+      onReset={onReset}
+    >
+      {hasLink ? (
+        <div className="space-y-1">
+          <label className="block">
+            <span className="flex items-center justify-between">
+              <span className="text-xs text-parchment/65">map_id</span>
+              <button
+                type="button"
+                onClick={() => setCustomMode((c) => !c)}
+                className="text-xs uppercase tracking-wide text-parchment/65 hover:text-parchment/80"
+                title={
+                  useCustom
+                    ? "Switch back to picking from the maps list."
+                    : "Switch to a free-form text field to type a custom or future map id."
+                }
+              >
+                {useCustom ? "Pick from list" : "Custom id"}
+              </button>
+            </span>
+            {useCustom ? (
+              <input
+                type="text"
+                value={value.map_id}
+                onChange={(e) =>
+                  onChange({ ...value, map_id: e.target.value })
+                }
+                placeholder="target-map"
+                className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-[13px] text-parchment/90 focus:border-parchment/60 focus:outline-none"
+              />
+            ) : (
+              <select
+                value={value.map_id}
+                onChange={(e) =>
+                  onChange({ ...value, map_id: e.target.value })
+                }
+                className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-[13px] text-parchment/90 focus:border-parchment/60 focus:outline-none"
+              >
+                {!value.map_id ? (
+                  <option value="">— choose a map —</option>
+                ) : null}
+                {/* Grouped by tag (pinned order: overview, town,
+                    buildings, outside, then alphabetical, untagged
+                    last) — same shape as the maps browse tree. A map
+                    with several tags appears under each, so it's
+                    findable under whichever tag the author thinks of
+                    first; picking any copy writes the same id. */}
+                {groupByTags(availableMaps).map(([tag, maps]) => (
+                  <optgroup key={tag} label={tag}>
+                    {maps.map((m) => (
+                      <option key={`${tag}::${m.id}`} value={m.id}>
+                        {m.name} ({m.id})
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+            )}
+            {valueIsOrphan ? (
+              <span className="mt-0.5 block text-xs text-ember/80">
+                Map id <code>{value.map_id}</code> isn&apos;t in this
+                module yet — value preserved so the link still
+                round-trips.
+              </span>
+            ) : null}
+          </label>
+          <div className="flex gap-2">
+            <label className="flex-1">
+              <span className="text-xs text-parchment/65">x (col)</span>
+              <input
+                type="number"
+                value={value.x}
+                onChange={(e) =>
+                  onChange({ ...value, x: Number(e.target.value) || 0 })
+                }
+                className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90 focus:border-parchment/60 focus:outline-none"
+              />
+            </label>
+            <label className="flex-1">
+              <span className="text-xs text-parchment/65">y (row)</span>
+              <input
+                type="number"
+                value={value.y}
+                onChange={(e) =>
+                  onChange({ ...value, y: Number(e.target.value) || 0 })
+                }
+                className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90 focus:border-parchment/60 focus:outline-none"
+              />
+            </label>
+          </div>
+          <button
+            type="button"
+            onClick={() => onChange(null)}
+            className="rounded border border-parchment/20 px-2 py-0.5 text-xs text-parchment/80 hover:bg-ink/40"
+            title="Remove the link from this cell (still an override — the palette tile keeps its link, but this cell explicitly has none)."
+          >
+            Remove link
+          </button>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2">
+          <span className="text-parchment/60">—</span>
+          <button
+            type="button"
+            onClick={() =>
+              onChange({
+                map_id: paletteValue?.map_id ?? "",
+                x: paletteValue?.x ?? 0,
+                y: paletteValue?.y ?? 0,
+              })
+            }
+            className="rounded border border-parchment/30 px-2 py-0.5 text-xs text-parchment/85 hover:bg-ink/40"
+          >
+            + Add link
+          </button>
+          {paletteValue ? (
+            <span className="text-xs text-parchment/60">
+              (palette: {paletteValue.map_id})
+            </span>
+          ) : null}
+        </div>
+      )}
+    </InspectorRow>
+  );
+}
