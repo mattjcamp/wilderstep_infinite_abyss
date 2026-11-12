@@ -66615,7 +66615,7 @@
       ],
       "lighting": "darkness",
       "soundtrack": [
-        "/audio/crystal_skull_title.wav"
+        "/audio/crystal_skull_title.mp3"
       ],
       "fog_style": {
         "day": "darkness",

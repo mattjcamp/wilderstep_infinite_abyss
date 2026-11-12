@@ -117,8 +117,26 @@ function existingMetaByPath(current) {
   return map;
 }
 
+/** Cloudflare Pages rejects any single file over 25 MiB — and one
+ *  oversized file fails the WHOLE deploy, so nothing new goes live. */
+const PAGES_MAX_BYTES = 25 * 1024 * 1024;
+
+async function warnOversized(files) {
+  for (const name of files) {
+    const { size } = await fs.stat(path.join(AUDIO_ROOT, name));
+    if (size > PAGES_MAX_BYTES) {
+      console.warn(
+        `reindex-audio: WARNING — ${name} is ${(size / 1048576).toFixed(1)} MB. ` +
+          "Cloudflare Pages rejects files over 25 MB and the whole deploy fails. " +
+          "Convert it to MP3/OGG (e.g. ffmpeg -i in.wav -q:a 2 out.mp3).",
+      );
+    }
+  }
+}
+
 async function main() {
   const files = await listAudioFiles();
+  await warnOversized(files);
   const current = await readCurrentIndex();
   const preserved = existingMetaByPath(current);
 
