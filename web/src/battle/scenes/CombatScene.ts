@@ -118,6 +118,7 @@ import {
   flashTarget,
   castGlow,
   projectileLine,
+  spriteProjectile,
   radialBurst,
   breathOfFire,
   healingSparkles,
@@ -3129,7 +3130,7 @@ export class CombatScene extends Phaser.Scene {
         x: this.tileX(target.col),
         y: this.tileY(target.row),
       };
-      await projectileLine(this, start, endPx, VFX_COLOURS.ember, 240);
+      await this.shootAmmo(start, endPx, ammoDef, weapon, !!ammoDef?.ignite);
       const ammoName = ammoDef?.name ?? ammoId;
       // If a creature occupies the picked tile, the shot is a real
       // attack: full d20 roll vs AC (same resolution as the enemy-
@@ -4431,10 +4432,12 @@ export class CombatScene extends Phaser.Scene {
           const fx = resolveProjectileEffect({ effect_type: shotVisual });
           await fx(this, this.bodyXY(me), this.bodyXY(target));
         } else {
-          await this.flyProjectile(
-            me,
-            target,
-            ignites ? VFX_COLOURS.ember : VFX_COLOURS.white,
+          await this.shootAmmo(
+            this.bodyXY(me),
+            this.bodyXY(target),
+            ammoDef,
+            action.weapon,
+            ignites,
           );
         }
         await this.animateHit(target, result);
@@ -5280,13 +5283,7 @@ export class CombatScene extends Phaser.Scene {
         const fx = resolveProjectileEffect({ effect_type: dirShotVisual });
         await fx(this, start, endPx);
       } else {
-        await projectileLine(
-          this,
-          start,
-          endPx,
-          ignites ? VFX_COLOURS.ember : VFX_COLOURS.white,
-          220,
-        );
+        await this.shootAmmo(start, endPx, ammoDef, weapon, ignites);
       }
 
       if (trace.hitId) {
@@ -6278,6 +6275,48 @@ export class CombatScene extends Phaser.Scene {
   private castGlowFor(c: Combatant, color: number): void {
     const body = this.bodies.get(c.id);
     if (body) castGlow(this, body, color);
+  }
+
+  /** Texture key of the ammo's own sprite when it's an arrow or a
+   *  crossbow bolt (the item icon — preloaded with every item icon),
+   *  else null (stones, unknown ammo → the plain streak). Falls back
+   *  to the weapon's `ammo` catalog entry when no specific ammo was
+   *  picked. */
+  private ammoProjectileTexture(ammoDef: Item | null, weapon: Item | null): string | null {
+    const def =
+      ammoDef ?? (weapon?.ammo ? this.items.get(weapon.ammo) ?? null : null);
+    if (!def) return null;
+    const tag = `${def.icon ?? ""} ${def.id ?? ""}`.toLowerCase();
+    if (!/arrow|bolt/.test(tag)) return null;
+    const key = itemIconUrl(def);
+    return key && this.textures.exists(key) ? key : null;
+  }
+
+  /** A bow / crossbow shot: the arrow or bolt sprite itself flies to
+   *  the target (with an ember trail for igniting ammo). Ammo without
+   *  a shaft sprite keeps the colored streak. */
+  private shootAmmo(
+    from: { x: number; y: number },
+    to: { x: number; y: number },
+    ammoDef: Item | null,
+    weapon: Item | null,
+    ignites: boolean,
+  ): Promise<void> {
+    const tex = this.ammoProjectileTexture(ammoDef, weapon);
+    if (tex) {
+      return spriteProjectile(this, from, to, tex, {
+        trailColor: ignites ? VFX_COLOURS.ember : undefined,
+        // Native icon size — one arena tile.
+        size: TILE,
+      });
+    }
+    return projectileLine(
+      this,
+      from,
+      to,
+      ignites ? VFX_COLOURS.ember : VFX_COLOURS.white,
+      240,
+    );
   }
 
   /** Fly a projectile arc from `from` → `to` in screen coords. */

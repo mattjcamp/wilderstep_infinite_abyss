@@ -30,8 +30,10 @@
  * `characters.json` (see `loadParty`).
  */
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { CombatResolved } from "@/battle/scenes/CombatScene";
 import type { ArenaCellInfo } from "@/battle/world/Maps";
+import { exitFullscreen, toggleFullscreen } from "@/util/fullscreen";
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH, RENDER_SCALE, installHiDpiText } from "@/util/renderScale";
 
 /** sessionStorage guard so a genuinely-missing chunk reloads at most
@@ -87,6 +89,8 @@ export function BattleSimMount({
   arenaCells,
   darkness,
   partyInfravisionActive,
+  onRunAgain,
+  onExit,
 }: {
   moduleId: string;
   monsterIds?: readonly string[];
@@ -100,8 +104,43 @@ export function BattleSimMount({
    *  ability paints in-LOS dark cells red and makes them targetable.
    *  Inert when `darkness` is false. */
   partyInfravisionActive?: boolean;
+  /** "Run Again" — the launcher remounts a fresh fight. */
+  onRunAgain: () => void;
+  /** Leave the simulation and return to the launcher. */
+  onExit: () => void;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  // Outcome once the scene resolves — same `onResolved` hand-off the
+  // play host uses, so the fight ends the way it does in game (rewards
+  // dialog, then the host takes over) instead of the scene trying to
+  // jump to a v1 world scene that doesn't exist here.
+  const [result, setResult] = useState<CombatResolved | null>(null);
+
+  // Like PlayCombatHost: no page scroll under the full-screen battle
+  // (Phaser needs the raw arrow / space keys, so we can't
+  // preventDefault them — removing the scrollable page instead).
+  useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+    const prevHtml = html.style.overflow;
+    const prevBody = body.style.overflow;
+    html.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    return () => {
+      html.style.overflow = prevHtml;
+      body.style.overflow = prevBody;
+    };
+  }, []);
+
+  // F toggles browser fullscreen, as in game.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
+      if (e.key === "f" || e.key === "F") toggleFullscreen();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -160,8 +199,12 @@ export function BattleSimMount({
         parent: containerRef.current,
         backgroundColor: "#0c0c14",
         pixelArt: true,
-        // Hi-res backbuffer, shown at the logical 1280×720 CSS size.
-        scale: { zoom: 1 / RENDER_SCALE },
+        // Same scaling as the in-game battle (PlayCombatHost): the
+        // 1280×720 frame letterboxes to fill the screen.
+        scale: {
+          mode: Phaser.Scale.FIT,
+          autoCenter: Phaser.Scale.CENTER_BOTH,
+        },
         scene: [],
         callbacks: {
           postBoot: (g) => {
@@ -195,6 +238,7 @@ export function BattleSimMount({
                   : undefined,
                 darkness: !!darkness,
                 partyInfravisionActive: !!partyInfravisionActive,
+                onResolved: (r: CombatResolved) => setResult(r),
               },
             );
           },
@@ -222,10 +266,75 @@ export function BattleSimMount({
   }, []);
 
   return (
-    <div
-      ref={containerRef}
-      className="rounded border border-parchment/20 bg-ink/80 shadow-xl"
-      style={{ display: "inline-block" }}
-    />
+    // Full-screen stage over the editor, like the battle in game.
+    <div className="fixed inset-0 z-50 bg-[#0c0c14]">
+      <div ref={containerRef} className="absolute inset-0 overflow-hidden" />
+
+      {/* Simulation controls — small, top-right, out of the HUD's way. */}
+      <div className="absolute right-2 top-2 z-10 flex items-center gap-2 text-xs">
+        <span className="hidden text-parchment/40 sm:inline">F: fullscreen</span>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.currentTarget.blur();
+            onRunAgain();
+          }}
+          className="rounded border border-parchment/25 bg-ink/70 px-2 py-1 text-parchment/80 hover:bg-ink"
+          title="Restart this fight from the beginning"
+        >
+          ↻ Restart
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            exitFullscreen();
+            onExit();
+          }}
+          className="rounded border border-parchment/25 bg-ink/70 px-2 py-1 text-parchment/80 hover:bg-ink"
+          title="Leave the simulation"
+        >
+          ✕ Exit Simulation
+        </button>
+      </div>
+
+      {result ? (
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-sm rounded-lg border border-parchment/25 bg-ink/95 p-5 text-center shadow-2xl">
+            <h2
+              className={`font-display text-3xl ${
+                result.winner === "party" ? "text-amber-200" : "text-ember"
+              }`}
+            >
+              {result.winner === "party" ? "Victory" : "Defeat"}
+            </h2>
+            <p className="mt-2 text-sm text-parchment/75">
+              {result.winner === "party"
+                ? `The party would earn ${result.xp} XP and ${result.gold} gold.`
+                : "The party was wiped out. In game this ends the adventure."}
+            </p>
+            <div className="mt-4 flex justify-center gap-2">
+              <button
+                type="button"
+                autoFocus
+                onClick={onRunAgain}
+                className="rounded border border-ember/60 bg-ember/30 px-3 py-1 text-sm text-parchment hover:bg-ember/50"
+              >
+                Run Again
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  exitFullscreen();
+                  onExit();
+                }}
+                className="rounded border border-parchment/25 px-3 py-1 text-sm text-parchment/85 hover:bg-ink/40"
+              >
+                Back to Simulator
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </div>
   );
 }

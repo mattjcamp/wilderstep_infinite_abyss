@@ -125,6 +125,88 @@ export function projectileLine(
 }
 
 /**
+ * Sprite projectile — flies an actual image (an arrow, a crossbow bolt)
+ * from `from` to `to` along the same gentle upward arc as
+ * {@link projectileLine}, turning the sprite to follow the arc's
+ * tangent so the head always leads. Falls back to the plain streak
+ * when `textureKey` isn't loaded.
+ *
+ * `spriteAngle` is the direction the art itself points, in radians
+ * (the item icons draw the shaft tip up-left, i.e. −3π/4). `trailColor`
+ * drops small fading embers behind it (fire arrows / bolts). Duration
+ * scales with distance (clamped) so the shot reads at any range.
+ */
+export function spriteProjectile(
+  scene: Phaser.Scene,
+  from: Pt, to: Pt,
+  textureKey: string,
+  opts: {
+    durationMs?: number;
+    size?: number;
+    spriteAngle?: number;
+    trailColor?: number;
+  } = {},
+): Promise<void> {
+  if (!scene.textures.exists(textureKey)) {
+    return projectileLine(scene, from, to, opts.trailColor ?? COLOURS.white, 240);
+  }
+  const dist = distBetween(from.x, from.y, to.x, to.y);
+  const duration = opts.durationMs ?? Math.max(220, Math.min(420, dist * 1.1));
+  const spriteAngle = opts.spriteAngle ?? -0.75 * Math.PI;
+  const size = opts.size ?? 40;
+  // Quadratic bezier with the control point lifted so the shot bows
+  // upward like the streak does.
+  const apex = Math.min(28, dist * 0.18) * 2;
+  const cx = (from.x + to.x) / 2;
+  const cy = (from.y + to.y) / 2 - apex;
+  const at = (t: number) => {
+    const u = 1 - t;
+    return {
+      x: u * u * from.x + 2 * u * t * cx + t * t * to.x,
+      y: u * u * from.y + 2 * u * t * cy + t * t * to.y,
+      // Derivative — the direction of travel at t.
+      dx: 2 * u * (cx - from.x) + 2 * t * (to.x - cx),
+      dy: 2 * u * (cy - from.y) + 2 * t * (to.y - cy),
+    };
+  };
+  return new Promise((resolve) => {
+    const img = scene.add.image(from.x, from.y, textureKey).setDepth(60);
+    img.setDisplaySize(size, size);
+    const p0 = at(0);
+    img.rotation = Math.atan2(p0.dy, p0.dx) - spriteAngle;
+    let lastTrail = 0;
+    scene.tweens.addCounter({
+      from: 0,
+      to: 1,
+      duration,
+      onUpdate: (tw) => {
+        const t = tw.getValue() ?? 0;
+        const p = at(t);
+        img.setPosition(p.x, p.y);
+        img.rotation = Math.atan2(p.dy, p.dx) - spriteAngle;
+        if (opts.trailColor !== undefined && t - lastTrail > 0.06) {
+          lastTrail = t;
+          const ember = scene.add
+            .rectangle(p.x, p.y, 4, 4, opts.trailColor, 1)
+            .setDepth(59);
+          scene.tweens.add({
+            targets: ember,
+            alpha: 0,
+            scale: 0.3,
+            duration: 260,
+            onComplete: () => ember.destroy(),
+          });
+        }
+      },
+      onComplete: () => {
+        img.destroy();
+        resolve();
+      },
+    });
+  });
+}
+
+/**
  * Lightning bolt: a jagged poly-line drawn instantly, then faded out.
  * `segments` randomises the kink count for non-determinism between
  * casts.

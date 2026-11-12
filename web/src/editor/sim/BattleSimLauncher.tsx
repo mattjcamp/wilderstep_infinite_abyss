@@ -17,9 +17,13 @@ import { setActiveModule } from "@/battle/world/Module";
 import { seedBattleCachesFromCatalog } from "@/play/seedBattleCaches";
 import { ARENA_COLS, ARENA_ROWS } from "@/battle/combat/Arena";
 import { spriteUrl } from "@/data_model/spriteUrl";
+import { enterFullscreen } from "@/util/fullscreen";
 
 export function BattleSimLauncher({ moduleId }: { moduleId: string }) {
   const [started, setStarted] = useState(false);
+  /** Bumped by the full-screen sim's Restart / Run Again — part of
+   *  the mount key, so each bump boots a fresh fight. */
+  const [runId, setRunId] = useState(0);
   const [encounters, setEncounters] = useState<EncounterTemplate[]>([]);
   const [monsters, setMonsters] = useState<Map<string, MonsterSpec>>(
     () => new Map(),
@@ -348,13 +352,17 @@ export function BattleSimLauncher({ moduleId }: { moduleId: string }) {
           ref={startBtnRef}
           type="button"
           onClick={() => {
-            setStarted((v) => !v);
+            // The click is the user gesture the Fullscreen API needs —
+            // the sim then runs full screen like the in-game battle.
+            enterFullscreen();
+            setRunId((n) => n + 1);
+            setStarted(true);
             startBtnRef.current?.blur();
           }}
           disabled={!selected}
           className="mt-[18px] rounded border border-ember/60 bg-ember/30 px-4 py-1 text-sm text-parchment hover:bg-ember/50 disabled:opacity-50"
         >
-          {started ? "Restart Battle" : "Start Battle"}
+          Start Battle
         </button>
 
         {selected && (
@@ -384,12 +392,14 @@ export function BattleSimLauncher({ moduleId }: { moduleId: string }) {
         // arena. `selectedMap?.id ?? ""` keeps the key stable when no
         // map is picked.
         <BattleSimMount
-          key={`${started}:${selected.id}:${selectedMap?.id ?? ""}:${darkness ? "dark" : "light"}:${partyInfravisionActive ? "ir" : "noir"}`}
+          key={`${runId}:${selected.id}:${selectedMap?.id ?? ""}:${darkness ? "dark" : "light"}:${partyInfravisionActive ? "ir" : "noir"}`}
           moduleId={moduleId}
           monsterIds={selected.monsters}
           arenaCells={arenaCells}
           darkness={darkness}
           partyInfravisionActive={partyInfravisionActive}
+          onRunAgain={() => setRunId((n) => n + 1)}
+          onExit={() => setStarted(false)}
         />
       ) : (
         <p className="text-sm text-parchment/65">

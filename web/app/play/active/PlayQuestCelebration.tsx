@@ -179,15 +179,24 @@ export function PlayQuestCelebration({
   }, [kind]);
   const moveTickRef = useRef(moveTick);
   moveTickRef.current = moveTick;
-  // Sticky dismissal: the first move after arming fades it out.
+  // Sticky dismissal: the first move after arming starts the fade.
   useEffect(() => {
     if (!sticky || !armed || phase === "exit") return;
     if (moveTick === mountTickRef.current) return;
     setPhase("exit");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [moveTick, armed]);
+  // ...and the dismissal is timed off the exit phase ALONE. It must not
+  // live in the move effect above: a party that keeps walking bumps
+  // `moveTick` during the fade, which would cancel the timer and leave
+  // an invisible card stuck at the head of the queue — blocking every
+  // placard behind it (e.g. the main quest's New Quest card).
+  useEffect(() => {
+    if (!sticky || phase !== "exit") return;
     const t3 = window.setTimeout(() => onDismiss(), t.fadeOut);
     return () => clearTimeout(t3);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [moveTick, armed]);
+  }, [phase]);
 
   useEffect(() => {
     if (sticky) return;
