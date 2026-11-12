@@ -58,6 +58,8 @@ import { PlayLogOverlay } from "./PlayLogOverlay";
 import { PlayLoreOverlay } from "@/play/LoreOverlay";
 import { PlayJournalOverlay } from "./PlayJournalOverlay";
 import { PlayNoticeBoardOverlay } from "@/play/NoticeBoardOverlay";
+import { PlayCampRestOverlay } from "@/play/CampRestOverlay";
+import type { CampRestReport } from "@/play/campRest";
 import {
   journalEntries,
   markLoreRead,
@@ -1073,6 +1075,9 @@ export function PlayHost() {
    *  cell). The overlay lists the quests posted there that are still
    *  available; taking one starts it. */
   const [noticeBoard, setNoticeBoard] = useState<string | null>(null);
+  /** Camp dialog — set after a Camping Supplies rest; lists the HP /
+   *  MP each member got back. */
+  const [campReport, setCampReport] = useState<CampRestReport | null>(null);
   /** Save menu (⌘S / Ctrl-S). Opening snapshots the live sim via
    *  `saveCurrent` first, so slot writes capture the exact moment
    *  the player hit save. `slotSaves` holds the three manual slots'
@@ -2176,6 +2181,7 @@ export function PlayHost() {
       journalOpen ||
       loreReading !== null ||
       noticeBoard !== null ||
+      campReport !== null ||
       finale !== null;
   }, [
     lockEncounter,
@@ -2196,6 +2202,7 @@ export function PlayHost() {
     journalOpen,
     loreReading,
     noticeBoard,
+    campReport,
     finale,
   ]);
   useEffect(() => {
@@ -2346,7 +2353,8 @@ export function PlayHost() {
         logOpen ||
         journalOpen ||
         loreReading ||
-        noticeBoard
+        noticeBoard ||
+        campReport
       ) {
         return;
       }
@@ -2371,6 +2379,7 @@ export function PlayHost() {
     journalOpen,
     loreReading,
     noticeBoard,
+    campReport,
   ]);
   useEffect(() => {
     catalogRef.current = state.catalog ?? null;
@@ -2957,7 +2966,7 @@ export function PlayHost() {
       if (saveMenuOpen) return; // overlay's own listener closes
       if (lockEncounter || chestEncounter || combat || encounterPrompt || questOffer) return;
       if (partyScreenOpen || questLogOpen || helpTipsOpen || logOpen) return;
-      if (journalOpen || loreReading || noticeBoard) return;
+      if (journalOpen || loreReading || noticeBoard || campReport) return;
       if (counterShopId !== null || npcDialogId !== null) return;
       if (giverChatter !== null || placard !== null) return;
       // Snapshot the live sim into saveRef + the auto-save slot so
@@ -2981,6 +2990,7 @@ export function PlayHost() {
     journalOpen,
     loreReading,
     noticeBoard,
+    campReport,
     counterShopId,
     npcDialogId,
     giverChatter,
@@ -7667,7 +7677,21 @@ export function PlayHost() {
             setPartyScreenOpen(false);
             openLore(loreId);
           }}
-          onItemUse={(itemId) => {
+          onItemUse={(itemId, detail) => {
+            // Camping: close the Party screen and show the camp
+            // dialog (campfire + HP / MP restored per member). The
+            // campfire burst on the map plays when it's dismissed,
+            // so the player actually sees it.
+            if (itemId === "camping_supplies" && detail?.campReport) {
+              setPartyScreenOpen(false);
+              setCampReport(detail.campReport);
+              try {
+                Sfx.play("rest_complete");
+              } catch {
+                /* audio not ready */
+              }
+              return;
+            }
             // Mirror of onSpellCast for usable items. Same party-cell
             // pixel math, same try/catch so a disposed scene or
             // unready audio context can't bubble up. Today only
@@ -7793,6 +7817,26 @@ export function PlayHost() {
             const loreId = loreReading.lore.id;
             setLoreReading(null);
             runQuestTriggers({ kind: "read_lore", loreId });
+          }}
+        />
+      ) : null}
+      {campReport ? (
+        <PlayCampRestOverlay
+          report={campReport}
+          onClose={() => {
+            setCampReport(null);
+            const r = rendererRef.current;
+            const sim = simRef.current;
+            if (!r || !sim) return;
+            const pos = sim.snapshot().pos;
+            try {
+              void campfireRest(r.scene, {
+                x: pos.col * TILE_SIZE + TILE_SIZE / 2,
+                y: pos.row * TILE_SIZE + TILE_SIZE / 2,
+              });
+            } catch {
+              /* scene disposed — skip */
+            }
           }}
         />
       ) : null}

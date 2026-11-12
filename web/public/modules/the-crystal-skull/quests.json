@@ -87,17 +87,63 @@
           "description": "Remove the bats from the Inn"
         }
       ],
-      "quest_giver": {
-        "npc_name": "Leanna",
-        "npc_sprite": "person/person_female_villager_wealthy.png",
-        "start_dialog": "Burp! Please sirs. madams. Ummm, gnomes? Doesn't matter.... But, please, I'm begging you! The Inn is infested by giant bats and I need to get my mead on. Can you please remove the pests. I will be eternally in your debt!",
-        "end_dialog": "Thanks for the peace"
-      },
       "rewards": {
         "xp": 50,
         "gold": 50
       },
-      "return_to_giver": true
+      "boards": [
+        "willowbrook_notice_board"
+      ]
+    },
+    {
+      "id": "avengers",
+      "name": "The Avengers",
+      "description": "Your family and people have been destroyed by the Orc King. You have nothing left, except a desire for revenge. You will be able to rest soon, but not until you have your revenge on the Orc King. Gather your strength. Build your arsenal. Destroy the Orc Kingdom.",
+      "tags": [],
+      "steps": [
+        {
+          "id": "avengers_step_1",
+          "name": "Step 1 Reach Willowbrook",
+          "kind": "discover",
+          "location_kind": "map",
+          "map_id": "town_1",
+          "description": "Reach the nearby town of Willowbrook to recover, gather your strength and gain enough energy to bring the fight to the Orc King. The path may not be direct, but after many adventures you will be ready to get your revenge.",
+          "col": 11,
+          "row": 22,
+          "rewards": {}
+        },
+        {
+          "id": "avengers_step_2",
+          "name": "Step 2 Enter the Orc King's Tower",
+          "kind": "discover",
+          "location_kind": "map",
+          "map_id": "orc_kings_tower",
+          "col": 15,
+          "row": 30,
+          "description": "When you are ready, seek out the Orc King's tower. Be wary, and do not attempt this breach without a well rested and experienced group of hardy folk that you can trust with your life"
+        },
+        {
+          "id": "avengers_step_3",
+          "name": "Step 3 Kill the Orc King",
+          "kind": "kill",
+          "description": "Seek out the Orc King at the top of his tower and destroy him",
+          "encounter_id": "the_orc_king",
+          "location_kind": "map",
+          "map_id": "orc_kings_tower_3"
+        }
+      ],
+      "rewards": {
+        "xp": 500,
+        "gold": 500
+      },
+      "main_quest": true,
+      "start_triggers": [
+        {
+          "kind": "leave_map",
+          "map_id": "destroyed_caravan",
+          "message": "Now that you have found your way out of the destruction, you have found a purpose.... The time to avenge your tribe and kill The Orc King will come soon, but first you must seek out help in the nearby town of Willowbrook. Press Q to see more information on this quest."
+        }
+      ]
     },
     {
       "id": "clear_the_dungeon",

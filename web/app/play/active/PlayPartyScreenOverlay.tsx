@@ -47,7 +47,7 @@ import {
   type EquipItemDef,
   type EquipSource,
 } from "@/play/equipFromInventory";
-import { applyCampRest } from "@/play/campRest";
+import { applyCampRest, campRestReport, type CampRestReport } from "@/play/campRest";
 import {
   addToInventory,
   consumeOneFromInventory,
@@ -214,7 +214,7 @@ export function PlayPartyScreenOverlay({
    *  + SFX (e.g. camping_supplies → campfireRest + rest_complete).
    *  Items that have nothing visual to play (Torch, etc.) can just
    *  not be dispatched in the host. */
-  onItemUse?: (itemId: string) => void;
+  onItemUse?: (itemId: string, detail?: { campReport?: CampRestReport }) => void;
   /** Use on a readable item (catalog `lore` id): the host closes this
    *  screen and opens the reading screen. The item isn't consumed. */
   onReadLore?: (loreId: string) => void;
@@ -914,6 +914,22 @@ export function PlayPartyScreenOverlay({
     [state, liveSave, commit],
   );
 
+  /** Camp dialog report for a rest: per-member HP / MP restored,
+   *  with each member's display name + sprite from the roster. */
+  const buildCampReport = useCallback(
+    (
+      before: ReadonlyArray<SavedCharacterState>,
+      after: ReadonlyArray<SavedCharacterState>,
+      sleptToMorning: boolean,
+    ): CampRestReport =>
+      campRestReport(before, after, sleptToMorning, (id) => {
+        if (state.kind !== "ok") return undefined;
+        const c = state.characters.find((x) => x.id === id);
+        return c ? { name: c.name, sprite: c.sprite } : undefined;
+      }),
+    [state],
+  );
+
   /** "Use" a stash entry — decrements the stack by ONE physical item
    *  via the shared inventory-stacking helper and applies the per-use
    *  effect from the catalog (Torch: bump torch_steps by the item's
@@ -949,6 +965,8 @@ export function PlayPartyScreenOverlay({
       // host can paint the right VFX + play the right SFX. Stays
       // null when the branch has nothing to play (e.g. Torch).
       let usedItemId: string | null = null;
+      // Camp dialog report — set by the Camping Supplies branch.
+      let campReport: CampRestReport | undefined;
 
       if (entry.item === "Torch" || entry.item === "torch") {
         // Torch burn duration. The items.json catalog DOES carry a
@@ -988,6 +1006,7 @@ export function PlayPartyScreenOverlay({
         const morning = nextMorningMinutes({
           totalMinutes: cur.clockMinutes ?? 0,
         });
+        campReport = buildCampReport(cur.party.members, rest.nextMembers, morning !== null);
         if (morning !== null) {
           nextClockMinutes = morning;
           setCastMessage(
@@ -1031,9 +1050,9 @@ export function PlayPartyScreenOverlay({
       // Fire the item-use VFX/SFX hook AFTER commit so the host's
       // animation always lines up with a successfully-committed
       // state (no flash of effect on a use we then rolled back).
-      if (usedItemId) onItemUse?.(usedItemId);
+      if (usedItemId) onItemUse?.(usedItemId, { campReport });
     },
-    [state, liveSave, commit, onItemUse, onReadLore],
+    [state, liveSave, commit, onItemUse, onReadLore, buildCampReport],
   );
 
   /** "Send" — move ONE physical item from the shared stash into the
@@ -1075,6 +1094,7 @@ export function PlayPartyScreenOverlay({
       // (6 AM); every other use leaves time untouched.
       let nextClockMinutes = cur.clockMinutes;
       let usedItemId: string | null = null;
+      let campReport: CampRestReport | undefined;
 
       if (entry.item === "Torch" || entry.item === "torch") {
         torchSteps = Math.max(torchSteps, 0) + TORCH_DEFAULT_STEPS_LOCAL;
@@ -1103,6 +1123,7 @@ export function PlayPartyScreenOverlay({
         const morning = nextMorningMinutes({
           totalMinutes: cur.clockMinutes ?? 0,
         });
+        campReport = buildCampReport(cur.party.members, rest.nextMembers, morning !== null);
         if (morning !== null) {
           nextClockMinutes = morning;
           setCastMessage(
@@ -1144,9 +1165,9 @@ export function PlayPartyScreenOverlay({
           members: nextMembers,
         },
       });
-      if (usedItemId) onItemUse?.(usedItemId);
+      if (usedItemId) onItemUse?.(usedItemId, { campReport });
     },
-    [state, liveSave, commit, onItemUse, onReadLore],
+    [state, liveSave, commit, onItemUse, onReadLore, buildCampReport],
   );
 
   /** Move ONE physical item from a character's personal inventory

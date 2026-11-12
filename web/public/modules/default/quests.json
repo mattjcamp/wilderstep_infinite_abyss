@@ -88,17 +88,13 @@
           "description": "Remove the bats from the Inn"
         }
       ],
-      "quest_giver": {
-        "npc_name": "Leanna",
-        "npc_sprite": "person/person_female_villager_wealthy.png",
-        "start_dialog": "Burp! Please sirs. madams. Ummm, gnomes? Doesn't matter.... But, please, I'm begging you! The Inn is infested by giant bats and I need to get my mead on. Can you please remove the pests. I will be eternally in your debt!",
-        "end_dialog": "Thanks for the peace"
-      },
       "rewards": {
         "xp": 50,
         "gold": 50
       },
-      "return_to_giver": true
+      "boards": [
+        "willowbrook_notice_board"
+      ]
     },
     {
       "id": "avengers",
@@ -146,7 +142,7 @@
         {
           "kind": "leave_map",
           "map_id": "destroyed_caravan",
-          "message": "Now that you have found your way out of the destruction, you have found a purpose.... It is time to avenge your tribe and kill The Orc King"
+          "message": "Now that you have found your way out of the destruction, you have found a purpose.... The time to avenge your tribe and kill The Orc King will come soon, but first you must seek out help in the nearby town of Willowbrook. Press Q to see more information on this quest."
         }
       ]
     },

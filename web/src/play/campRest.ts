@@ -101,3 +101,56 @@ export function partyNeedsRest(
     return hpLow || mpLow;
   });
 }
+
+/** One roster line on the camp dialog. */
+export interface CampRestLine {
+  id: string;
+  name: string;
+  sprite?: string;
+  hpGained: number;
+  mpGained: number;
+  hp: number;
+  maxHp?: number;
+  mp: number;
+  maxMp?: number;
+  /** Down (hp <= 0) — the rest doesn't raise them. */
+  fallen: boolean;
+}
+
+/** What the camp dialog shows: per-member HP / MP restored, and
+ *  whether the party slept through to first light. */
+export interface CampRestReport {
+  lines: CampRestLine[];
+  sleptToMorning: boolean;
+}
+
+/** Build the camp dialog's report by diffing the roster before and
+ *  after {@link applyCampRest}. Pure; members match by id, in the
+ *  `after` order. */
+export function campRestReport(
+  before: ReadonlyArray<SavedCharacterState>,
+  after: ReadonlyArray<SavedCharacterState>,
+  sleptToMorning: boolean,
+  info: (id: string) => { name?: string; sprite?: string } | undefined,
+): CampRestReport {
+  const prev = new Map(before.map((m) => [m.id, m]));
+  return {
+    sleptToMorning,
+    lines: after.map((m) => {
+      const b = prev.get(m.id) ?? m;
+      const meta = info(m.id);
+      return {
+        id: m.id,
+        name: meta?.name || m.id,
+        sprite: meta?.sprite,
+        hpGained: Math.max(0, m.hp - b.hp),
+        mpGained: Math.max(0, (m.mp ?? 0) - (b.mp ?? 0)),
+        hp: m.hp,
+        maxHp: m.max_hp,
+        mp: m.mp ?? 0,
+        maxMp: m.max_mp,
+        fallen: m.hp <= 0,
+      };
+    }),
+  };
+}

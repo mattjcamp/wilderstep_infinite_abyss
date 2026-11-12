@@ -17,19 +17,19 @@
         },
         {
           "steps": 20,
-          "text": "Tip: press P to access the Party Screen to equip items, view characters and send found items to individual characters. Go to a character screen to equip items, use abilities and view character details."
+          "text": "Tip: Press P to access the Party Screen to equip items, view characters and send found items to individual characters. Go to a character screen to equip items, use abilities and view character details."
         },
         {
           "steps": 30,
-          "text": "Tip: get more experience by discovering new areas, talking to new people, reading lore and defeating enemies on the battlefield"
+          "text": "Be careful, the sounds of beasts rustling around fills the air around you. Equip what weapons you have and try to find a way to get clear of these burning wagons. Try to find a settlement and get some help."
         },
         {
           "steps": 40,
-          "text": "Tip: press H for help and to see what actions that you can take"
+          "text": "Tip: Get more experience by discovering new areas, talking to new people, reading lore and defeating enemies on the battlefield"
         },
         {
-          "steps": 50,
-          "text": "Be careful, the sounds of beasts rustling around fills the air around you. Equip what weapons you have and try to find a way to get clear of these burning wagons. Try to find a settlement and get some help."
+          "steps": 40,
+          "text": "Tip: Press H for help and to see what actions that you can take"
         }
       ]
     },
@@ -44,7 +44,11 @@
           "text": "Welcome to your first visit to a town in Wilderstep. In towns you can find items to buy, villagers to meet, adventures to start and you can find comfort and healing."
         },
         {
-          "steps": 6,
+          "steps": 3,
+          "text": "You can see a notice board to your left with a list of jobs posted, completing some of these may improve your standing in town"
+        },
+        {
+          "steps": 15,
           "text": "To buy weapons, armor and other items go to the stalls located at the center of town. In these stalls, you can buy and sell items."
         },
         {
@@ -61,11 +65,11 @@
       "entries": [
         {
           "steps": 100,
-          "text": "Tip: your log is saved in the background and you can press \"L\" at any time to read it"
+          "text": "Tip: Your log is saved in the background and you can press \"L\" at any time to read it"
         },
         {
           "steps": 125,
-          "text": "Tip: your party gains experience by mostly by completing quests and destroying monsters, but you will also gain experience by meeting new people, reading lore, exploring and clearing certain dungeons"
+          "text": "Tip: Your party gains experience by mostly by completing quests and destroying monsters, but you will also gain experience by meeting new people, reading lore, exploring and clearing certain dungeons"
         }
       ]
     }

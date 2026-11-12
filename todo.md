@@ -1,5 +1,5 @@
 ## Fine Tune
-- Make the Main Quest automatically assigned
+
 - Make Tips call out in a way that drawls more attention (as oppposed to just sitting in the log, make the player dismiss them)
 
 - Give The Crystal Skull another pass
