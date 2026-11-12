@@ -51,3 +51,40 @@ describe("parsePersonSprite", () => {
     expect(info.sublabel).toBe("Hobbit · Male");
   });
 });
+
+import { recommendedPersonSprite } from "./personSpriteLabels";
+
+describe("recommendedPersonSprite", () => {
+  const files = [
+    "animal_goat.png",
+    "dwarf_male.png",
+    "dwarf_male_fighter.png",
+    "elf_female_ranger.png",
+    "person_female.png",
+    "person_female_wizard.png",
+    "gnome_female_wizard.png",
+  ];
+  it("prefers the exact race + gender + class sprite", () => {
+    expect(
+      recommendedPersonSprite(files, { raceId: "gnome", gender: "Female", classId: "wizard" }),
+    ).toBe("person/gnome_female_wizard.png");
+  });
+  it("falls back to the class + gender in another race, Human first", () => {
+    expect(
+      recommendedPersonSprite(files, { raceId: "elf", gender: "Female", classId: "wizard" }),
+    ).toBe("person/person_female_wizard.png");
+  });
+  it("then the class default, then a race + gender commoner", () => {
+    expect(
+      recommendedPersonSprite(files, {
+        raceId: "dwarf", gender: "Male", classId: "thief", classDefault: "person/x.png",
+      }),
+    ).toBe("person/x.png");
+    expect(
+      recommendedPersonSprite(files, { raceId: "dwarf", gender: "Male", classId: "thief" }),
+    ).toBe("person/dwarf_male.png");
+  });
+  it("returns empty when there is no art", () => {
+    expect(recommendedPersonSprite([], { raceId: "elf", gender: "Male", classId: "ranger" })).toBe("");
+  });
+});

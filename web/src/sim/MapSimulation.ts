@@ -461,6 +461,10 @@ export type SimEvent =
    *  readable map object. The host opens the reading screen (and
    *  credits a first read). Party stays put, same as a counter. */
   | { kind: "lore_encountered"; loreId: string; pos: Position }
+  /** Fired when the party bumps a cell whose `board` field is set — a
+   *  notice board. The host lists the quests posted there and lets
+   *  the player pick. Party stays put, same as lore. */
+  | { kind: "board_encountered"; boardId: string; pos: Position }
   /** Fired when the party steps onto a boat tile from land. The
    *  party-boat sprite shown by the host follows the party from this
    *  point on; the boat cell itself no longer renders a "loose" boat
@@ -1282,6 +1286,17 @@ export class MapSimulation {
       this.emit({
         kind: "lore_encountered",
         loreId: target.lore,
+        pos: { col: targetCol, row: targetRow },
+      });
+      return;
+    }
+
+    // 1.7. Notice board bump — quests posted for the taking. Same
+    // "party stops on bump, host opens overlay" pattern as lore.
+    if (target?.board) {
+      this.emit({
+        kind: "board_encountered",
+        boardId: target.board,
         pos: { col: targetCol, row: targetRow },
       });
       return;

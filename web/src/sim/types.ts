@@ -84,6 +84,11 @@ export interface SimCell {
    *  the host opens the reading screen; the party stays put. Empty /
    *  undefined = nothing to read here. */
   lore?: string;
+  /** Notice-board id — a board quests are posted on (quests.json
+   *  `boards: [...]`). Bumping the cell emits board_encountered so the
+   *  host opens the notice board; the party stays put. Empty /
+   *  undefined = no board here. */
+  board?: string;
   /** True = this cell is a boat the party can board. Stepping onto it
    *  from land mounts the party; the sim then lets them sail across
    *  water tiles (`water: true`) until they step onto walkable land again,

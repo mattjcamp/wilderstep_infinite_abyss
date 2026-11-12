@@ -5,18 +5,22 @@
  * (or the quest itself, for a step reward) is sending the party to a
  * map that is usually unreachable any other way. Names the giver and
  * destination, shows the giver's authored `message` (if any) and the
- * destination's description, and offers a single Travel button.
+ * destination's description, and offers Travel and (when the host
+ * passes `onLater`) "Later".
  *
- * There is deliberately no "Stay": the trip is the reward, and a
- * hidden map may have no other way in. The pending trip is persisted
- * in the save (`WorldSave.pendingTravel`) so a reload re-shows this
- * placard instead of losing the destination.
+ * "Later" never loses the trip: the pending trip stays persisted in the
+ * save (`WorldSave.pendingTravel`, flagged `deferred`), and the host
+ * keeps a "Travel to …" button on screen (and re-opens this placard
+ * when the party talks to the quest giver) until the party goes. A
+ * hidden map may have no other way in, so the trip is never dropped.
  *
- * Keyboard: Enter / E travels. Movement keys and Esc are swallowed in
- * the capture phase so the party can't wander off under the placard.
+ * Keyboard: arrows / WASD move between Later and Travel (Travel starts
+ * highlighted), Enter / E / Space presses the highlighted one, Esc / L
+ * chooses Later. Captured so the party can't wander off under the
+ * placard.
  */
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export function TravelPlacard({
   questName,
@@ -25,6 +29,7 @@ export function TravelPlacard({
   destinationDescription,
   message,
   onTravel,
+  onLater,
 }: {
   questName: string;
   /** Who is sending the party. Empty → the copy falls back to "You
@@ -35,42 +40,61 @@ export function TravelPlacard({
   /** Optional authored line from the quest giver. */
   message: string;
   onTravel: () => void;
+  /** "Come back later" — close the placard and keep the trip. Omit to
+   *  show Travel only. */
+  onLater?: () => void;
 }) {
+  // Buttons the arrow keys move between, in on-screen order (Later
+  // sits left of Travel). Travel starts focused so Enter still means
+  // "go" — same idiom as the quest dialog, where Accept starts focused.
+  const actions: ReadonlyArray<"later" | "travel"> = onLater
+    ? ["later", "travel"]
+    : ["travel"];
+  const [focused, setFocused] = useState<number>(actions.length - 1);
   useEffect(() => {
+    setFocused((i) => Math.min(i, actions.length - 1));
+  }, [actions.length]);
+
+  useEffect(() => {
+    const fire = (a: "later" | "travel" | undefined) => {
+      if (a === "later") onLater?.();
+      else onTravel();
+    };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Enter" || e.key === "e" || e.key === "E") {
+      const k = e.key;
+      const stop = () => {
         e.preventDefault();
         e.stopPropagation();
-        onTravel();
+      };
+      if (k === "Enter" || k === "e" || k === "E" || k === " " || k === "Spacebar") {
+        stop();
+        fire(actions[focused]);
         return;
       }
-      if (
-        [
-          "Escape",
-          "ArrowUp",
-          "ArrowDown",
-          "ArrowLeft",
-          "ArrowRight",
-          "w",
-          "a",
-          "s",
-          "d",
-          "W",
-          "A",
-          "S",
-          "D",
-          " ",
-          "Spacebar",
-        ].includes(e.key)
-      ) {
-        e.preventDefault();
-        e.stopPropagation();
+      if (onLater && (k === "Escape" || k === "l" || k === "L")) {
+        stop();
+        onLater();
+        return;
       }
+      // Arrows / WASD step between the buttons (wrapping).
+      const back = ["ArrowLeft", "ArrowUp", "a", "A", "w", "W"].includes(k);
+      const fwd = ["ArrowRight", "ArrowDown", "d", "D", "s", "S"].includes(k);
+      if (back || fwd) {
+        stop();
+        const n = actions.length;
+        setFocused((i) => (i + (fwd ? 1 : -1) + n) % n);
+        return;
+      }
+      if (k === "Escape") stop();
     };
     window.addEventListener("keydown", onKey, { capture: true });
     return () =>
       window.removeEventListener("keydown", onKey, { capture: true });
-  }, [onTravel]);
+  }, [actions, focused, onTravel, onLater]);
+
+  const focusRing = "outline outline-2 outline-amber-200 outline-offset-1";
+  const laterIdx = actions.indexOf("later");
+  const travelIdx = actions.indexOf("travel");
 
   const sender = giverName.trim();
   const lead = sender
@@ -121,15 +145,34 @@ export function TravelPlacard({
           <span className="text-xs text-parchment/55">
             The journey begins when you are ready.
           </span>
+          <div className="flex items-center gap-2">
+          {onLater ? (
+            <button
+              type="button"
+              onClick={onLater}
+              onMouseEnter={() => setFocused(laterIdx)}
+              className={[
+                "rounded border border-parchment/25 px-3 py-1 text-xs text-parchment/85 hover:bg-ink/40",
+                focused === laterIdx ? focusRing : "",
+              ].join(" ")}
+              title="Not yet — come back later (Esc)"
+            >
+              Later
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={onTravel}
-            autoFocus
-            className="rounded border border-ember/60 bg-ember/20 px-3 py-1 text-xs text-parchment hover:bg-ember/35"
+            onMouseEnter={() => setFocused(travelIdx)}
+            className={[
+              "rounded border border-ember/60 bg-ember/20 px-3 py-1 text-xs text-parchment hover:bg-ember/35",
+              focused === travelIdx ? focusRing : "",
+            ].join(" ")}
             title="Travel (Enter)"
           >
             Travel
           </button>
+          </div>
         </footer>
       </div>
     </div>

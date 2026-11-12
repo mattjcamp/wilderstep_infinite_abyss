@@ -123461,9 +123461,9 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
-            "walkable": true,
+            "id": "object_notice_board",
+            "name": "Notice Board",
+            "walkable": false,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -123472,8 +123472,10 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "objects/notice_board.png",
+            "tag": "objects",
+            "background_sprite": "map/grass.png",
+            "board": "notice_board"
           },
           {
             "boat": false,

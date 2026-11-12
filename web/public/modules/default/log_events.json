@@ -16,23 +16,19 @@
           "text": "Tip: Walk over items to pick them up."
         },
         {
-          "steps": 5,
-          "text": "There is a lady over there wandering around, go talk to her. Tip: characters with a golden halo will have quests and lore for you."
-        },
-        {
-          "steps": 12,
+          "steps": 20,
           "text": "Tip: press P to access the Party Screen to equip items, view characters and send found items to individual characters. Go to a character screen to equip items, use abilities and view character details."
         },
         {
-          "steps": 20,
+          "steps": 30,
           "text": "Tip: get more experience by discovering new areas, talking to new people, reading lore and defeating enemies on the battlefield"
         },
         {
-          "steps": 25,
+          "steps": 40,
           "text": "Tip: press H for help and to see what actions that you can take"
         },
         {
-          "steps": 27,
+          "steps": 50,
           "text": "Be careful, the sounds of beasts rustling around fills the air around you. Equip what weapons you have and try to find a way to get clear of these burning wagons. Try to find a settlement and get some help."
         }
       ]

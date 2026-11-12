@@ -31,6 +31,8 @@ Edited under **Module data → Log Events** in the editor.
 
 ## Runtime notes
 
+- **On screen, not just in the log.** Lines due at the same moment also appear together on a large card at the top-center of the play screen, and the card stays up until the party moves (moves in the first 1.2 seconds don't count, so a held arrow key can't skip it). The card's heading is the map's name — or **Tip** when every line starts with `Tip:` (the prefix is dropped on the card, kept in the log). Cards queue behind any other placard, e.g. a New Quest notification.
+
 - The step counter restarts whenever the party arrives on a map, so with `"once"` a line the party walked off the map before reaching shows on a later visit, counted from that arrival.
 - Waiting in place doesn't count as a step, and steps taken inside a dungeon don't count toward the surface map.
 - Lines already shown are recorded on the save in `logEventsShown` as `<id>#<entry index>`, so reordering entries in a published module can re-show or skip lines on existing saves.

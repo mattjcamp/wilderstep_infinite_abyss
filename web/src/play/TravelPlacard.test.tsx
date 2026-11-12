@@ -47,4 +47,9 @@ describe("TravelPlacard", () => {
     expect(html).not.toContain("blockquote");
     expect(html).not.toContain("—");
   });
+
+  it("offers Later only when the host passes onLater", () => {
+    expect(render()).not.toContain(">Later<");
+    expect(render({ onLater: () => {} })).toContain(">Later<");
+  });
 });

@@ -213,6 +213,10 @@ interface TileType {
    *  (bookshelf, plaque, gravestone). In play, bumping it opens the
    *  reading screen; the first read grants XP + a journal entry. */
   lore?: string;
+  /** Notice-board id — quests list the boards they're posted on
+   *  (quests.json `boards`). In play, bumping the cell opens the
+   *  board so the player can pick from the untaken quests. */
+  board?: string;
   sprite: string;
   /** Optional purely-visual background sprite drawn BEHIND `sprite`
    *  and lit the same way. A foreground tile with transparent pixels
@@ -357,6 +361,7 @@ function cellMatchesPalette(cell: TileType, palette: TileType[]): boolean {
   if ((cell.npc ?? "") !== (base.npc ?? "")) return false;
   if ((cell.trap_id ?? "") !== (base.trap_id ?? "")) return false;
   if ((cell.lore ?? "") !== (base.lore ?? "")) return false;
+  if ((cell.board ?? "") !== (base.board ?? "")) return false;
   if (cell.sprite !== base.sprite) return false;
   if (JSON.stringify(cell.link ?? null) !== JSON.stringify(base.link ?? null))
     return false;
@@ -3891,6 +3896,8 @@ normalizeNpcBehavior(npc?.behavior) === "dance"
         // modal.
         setLockEncounter(ev.options);
       }
+      // `board_encountered` (notice board) is play-only — quest state
+      // doesn't exist in the sandbox, so the bump just stops the party.
       if (ev.kind === "lore_encountered") {
         // Readable map object — preview the reading screen. (XP and
         // the journal are play-only; the sim doesn't track reads.)
@@ -6377,6 +6384,20 @@ function Inspector({
             canReset={!!base}
             onChange={(v) => onUpdate({ lore: v })}
             onReset={() => onUpdate({ lore: undefined })}
+          />
+
+          <StringEditor
+            label="Board"
+            help="Notice-board id. Makes this cell a notice board: in play, bumping it lists every untaken quest whose 'Posted on notice boards' includes this id, and the player picks which to take. Several cells (or maps) can share one board id."
+            value={instance.board ?? ""}
+            paletteValue={base?.board ?? instance.board ?? ""}
+            isModified={
+              !!base && fieldDiffersFromPalette(instance, palette, "board")
+            }
+            canReset={!!base}
+            placeholder="(not a notice board)"
+            onChange={(v) => onUpdate({ board: v.trim() || undefined })}
+            onReset={() => onUpdate({ board: undefined })}
           />
 
           <LinkEditor

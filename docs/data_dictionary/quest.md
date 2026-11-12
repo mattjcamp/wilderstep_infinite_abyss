@@ -32,6 +32,8 @@ The "Used?" column reflects the v2 TypeScript implementation under `web/`. The c
 | `description` | string | no | Flavor text / quest-log summary | TBD |
 | `main_quest` | bool | no | Marks the module's main quest. The player's quest log pins it to a MAIN QUEST section at the top (while active or ready to turn in) and shows it expanded; other quests start collapsed. At most one per module — the editor clears the flag elsewhere when it's set. | Yes |
 | `return_to_giver` | bool | no | Default **false**: the quest is turned in automatically — rewards granted, "quest complete" fires — the moment its last step completes. When **true**, the completed quest waits until the party talks to the giver again (who then shows `end_dialog`). | Yes |
+| `start_triggers` | object[] | no | Events that start the quest automatically, with no giver conversation. See *Automatic start triggers* below. | Yes |
+| `boards` | string[] | no | Notice-board ids the quest is posted on. See *Notice boards* below. | Yes |
 | `tags` | string[] | no | Editor-side organizational labels (e.g. `["main_story"]`, `["side", "temple_arc"]`). Purely for grouping in the browse view — gameplay doesn't read them. | TBD |
 | `quest_giver` | object | no | The NPC the player talks to in order to *offer* the quest (start dialog) and to *complete* it (end dialog). See *quest_giver shape* below. | TBD |
 | `rewards` | object | no | What the party gets on completion. See *rewards shape* below. | TBD |
@@ -81,12 +83,54 @@ A `travel` reward is how a quest unlocks a place the party can't otherwise reach
 ```
 
 - **When it fires.** At turn-in, after XP / gold / items / tile changes are applied, so the party arrives already paid. The same block is also allowed on a step's `rewards` (fires the moment that step completes) — see [Quest Step](quest_step.md#step-rewards).
-- **The player's side.** A gold "Quest Reward" placard names the destination (map `name` + `description`), quotes the `message` attributed to the quest giver, and has a single **Travel** button (Enter). There's no "stay" option — the trip is the reward. It waits until any open dialog, shop, or combat has closed.
-- **Survives reloads.** The pending trip is stored in the save (`pendingTravel`) until the player takes it, so closing the tab with the placard up re-shows it on the next load. A hidden map is never lost.
+- **The player's side.** A gold "Quest Reward" placard names the destination (map `name` + `description`), quotes the `message` attributed to the quest giver, and offers **Travel** (Enter) and **Later** (Esc). It waits until any open dialog, shop, or combat has closed.
+- **Coming back later.** **Later** puts the placard down without losing the trip: a gold **⚜ Travel to …** button stays at the bottom of the play screen until the party goes, and for a turn-in reward, talking to the quest giver offers the trip again. The trip is never dropped, so a hidden map is always still reachable. A newer travel reward replaces a put-off one.
+- **Survives reloads.** The pending trip is stored in the save (`pendingTravel`, with `deferred: true` once the player chose Later) until the player takes it, so closing the tab with the placard up re-shows it on the next load, and a put-off trip keeps its Travel button. A hidden map is never lost.
 - **How the party moves.** Exactly like walking through a link tile: the current map's state, fog of war, and the clock are saved, then the destination map loads. If the party is inside a generated dungeon it leaves it first (the dungeon's state is saved, as if they'd taken the top stairs out). The party always arrives on foot.
 - **Give the hidden map a way back.** The runtime doesn't add a return trip. Put a link tile on the destination map (or send them home with a later quest's `travel`). The quest editor warns when the chosen map has no link tiles leading out, and labels maps nothing links to as "hidden".
 - **Bad destinations.** An unknown map id, or a cell outside the map, is logged as an authoring error and the trip is dropped instead of loading a broken map. The editor flags both while you author.
 - **One at a time.** If a final step's `travel` and the quest's `travel` fire together, the quest-level one wins.
+
+## How a quest starts
+
+A quest can begin three ways; any combination may be authored on one quest, and whichever happens first starts it. A started quest is never restarted.
+
+1. **Quest giver** — a map cell with `quest: "<id>"`. Bumping it opens the offer dialog (Accept / Decline).
+2. **Automatic** — an event in `start_triggers` happens. No dialog: the quest starts and the player is notified.
+3. **Notice board** — the quest is listed on a board in `boards`, and the player picks it.
+
+Quests started the second or third way don't need a `quest_giver`. If `return_to_giver` is on, though, they do — otherwise there's no one to turn the quest in to (the editor warns).
+
+## Automatic start triggers
+
+```json
+"start_triggers": [
+  { "kind": "game_start", "message": "A dream of drowned bells wakes you." },
+  { "kind": "enter_map",  "map_id": "hallowmere" },
+  { "kind": "leave_map",  "map_id": "hallowmere" },
+  { "kind": "read_lore",  "lore_id": "letter_from_the_abbot",
+    "message": "The abbot begs for help at the ruined shrine." }
+]
+```
+
+| `kind` | Needs | Fires when |
+|---|---|---|
+| `game_start` | — | A new game begins. Also fires the first time an existing save is loaded after this quest was added to the module. |
+| `enter_map` | `map_id` | The party arrives on the map — through a link, a quest `travel`, or by walking out of a generated dungeon onto it. Loading a save that's already on the map counts too. |
+| `leave_map` | `map_id` | The party departs the map — through a link, a quest `travel`, or by going down into a generated dungeon. |
+| `read_lore` | `lore_id` | The party reads that [Lore](lore.md) — a map object or a book item. Any read counts, not only the first. The quest starts when the reading screen closes. |
+
+`message` (optional) is the line on the **New Quest** notification and in the log; without it the notification shows the first step. Floor changes inside a generated dungeon don't fire map triggers. A trigger with an unknown `kind`, or missing the id its kind needs, is ignored.
+
+## Notice boards
+
+A notice board is a map cell with `board: "<board_id>"` (Map Editor → Board). A quest is posted on it by listing the same id in `boards`:
+
+```json
+"boards": ["hallowmere_board"]
+```
+
+Bumping the board opens a list of every quest posted there that the party hasn't taken yet — name, description, "Posted by" (the `quest_giver.npc_name`, if any), the first step, and XP / gold. **Take** (or Enter) starts the quest with the usual New Quest notification; the board stays open so more can be taken. Taken quests drop off the board. One quest may be posted on several boards, and several cells may share one board id.
 
 ## Cross-references to other models
 
@@ -96,6 +140,8 @@ A `travel` reward is how a quest unlocks a place the party can't otherwise reach
 - `rewards.travel.map` → [Map](map.md) id.
 - `rewards.tile_add[].tile_id` → [Map Tile](map_tile.md) `id`.
 - `steps[].params` may reference Monsters, Items, Maps, or NPCs by id depending on the step's `kind` — see [Quest Step](quest_step.md).
+- `start_triggers[].map_id` → [Map](map.md) id; `start_triggers[].lore_id` → [Lore](lore.md) id.
+- `boards[]` → map cell `board` ids ([Map](map.md)).
 - Future: referenced *by* [NPC](npc.md) records (NPCs that offer or react to specific quests) and [Map Tile](map_tile.md) cells with `quest: "<quest_id>"` for trigger tiles.
 
 ## Example record

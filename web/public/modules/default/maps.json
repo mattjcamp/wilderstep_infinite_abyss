@@ -74864,7 +74864,7 @@
             "spawn": null,
             "sprite": "map/grass.png",
             "tag": "map",
-            "quest": "avengers"
+            "quest": ""
           },
           {
             "boat": false,

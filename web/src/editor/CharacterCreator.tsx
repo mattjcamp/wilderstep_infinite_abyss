@@ -10,6 +10,8 @@
  *   3. Class          — class grid filtered by race-class gate
  *                       (Wizard only for magic-attuned races) + lore
  *   4. Sprite         — pick a person sprite from /sprites/person/
+ *                       (required; the recommended sprite for the
+ *                       race + gender + class is pre-selected)
  *   5. Stats          — every attribute starts at the floor (8) and
  *                       the player distributes 15 bonus points up to
  *                       a per-stat ceiling of 18. Racial mods add on
@@ -29,6 +31,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   parsePersonSprite,
+  recommendedPersonSprite,
   titleCase,
   type PersonSpriteInfo,
 } from "./personSpriteLabels";
@@ -256,15 +259,39 @@ export function CharacterCreator({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [raceId]);
 
-  // Suggest a class-matching sprite when class changes, unless the
-  // player has explicitly chosen one.
+  // Person sprite file names (sprites/person/), loaded up front so the
+  // recommended sprite is already selected when the player reaches the
+  // Sprite step. null = still loading.
+  const [personFiles, setPersonFiles] = useState<string[] | null>(null);
   useEffect(() => {
-    if (!spriteTouched) {
-      const suggested = classes.find((c) => c.id === classId)?.default_sprite;
-      setSprite(typeof suggested === "string" ? suggested.trim() : "");
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [classId]);
+    let cancelled = false;
+    fetchSpriteCatalog()
+      .then((idx) => {
+        if (!cancelled) setPersonFiles(idx.categories?.person ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setPersonFiles([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  /** Best sprite for the current race + gender + class — pre-selected
+   *  and badged "Suggested" on the Sprite step. */
+  const recommendedSprite = useMemo(() => {
+    const classDefault = classes.find((c) => c.id === classId)?.default_sprite;
+    return recommendedPersonSprite(personFiles ?? [], {
+      raceId,
+      gender,
+      classId,
+      classDefault: typeof classDefault === "string" ? classDefault : "",
+    });
+  }, [personFiles, raceId, gender, classId, classes]);
+  // Keep the selection on the recommendation as race / gender / class
+  // change, until the player picks a sprite themselves.
+  useEffect(() => {
+    if (!spriteTouched) setSprite(recommendedSprite);
+  }, [recommendedSprite, spriteTouched]);
 
   const abilitiesById = useMemo(
     () => new Map(abilities.map((a) => [a.id, a])),
@@ -306,6 +333,10 @@ export function CharacterCreator({
         return;
       }
     }
+    if (step === 4 && !sprite) {
+      setError("Pick a sprite for your character.");
+      return;
+    }
     if (step === 5 && pointsLeft !== 0) {
       setError(
         `Distribute all ${BONUS_POINTS} bonus points (${
@@ -328,6 +359,11 @@ export function CharacterCreator({
     if (!trimmedName) {
       setStep(1);
       setError("Enter a name.");
+      return;
+    }
+    if (!sprite) {
+      setStep(4);
+      setError("Pick a sprite for your character.");
       return;
     }
     if (pointsLeft !== 0) {
@@ -403,14 +439,20 @@ export function CharacterCreator({
     if (top < inset) window.scrollBy({ top: top - inset });
   };
   /** Where focus lands on a step: the selected choice, else the first
-   *  control after Cancel. */
+   *  control after Cancel and the Back / Next row. */
   const focusStepStart = () => {
     const root = rootRef.current;
     if (!root) return;
     const sel = root.querySelector<HTMLElement>('[data-cc-selected="true"]');
     if (sel) return focusEl(sel);
     const list = focusables();
-    const first = list.find((el) => !el.hasAttribute("data-cc-cancel"));
+    // Skip Cancel and the Back / Next row (now above the step's
+    // content) so a step without a selection starts on its first
+    // real control — e.g. the name field.
+    const nav = root.querySelector("[data-cc-nav]");
+    const first = list.find(
+      (el) => !el.hasAttribute("data-cc-cancel") && !nav?.contains(el),
+    );
     if (first) focusEl(first);
   };
   useEffect(() => {
@@ -493,6 +535,46 @@ export function CharacterCreator({
         <span className="w-16" />
       </header>
 
+      {/* Back / Next sit at the top, right under the step title, so
+          they're easy to find without scrolling past long card lists. */}
+      <div data-cc-nav className="mb-4 flex items-center justify-between">
+        {step > 1 ? (
+          <button
+            type="button"
+            onClick={onBack}
+            className="rounded border border-parchment/20 px-3 py-1 text-sm text-parchment/85 hover:bg-ink/40"
+          >
+            ← Back
+          </button>
+        ) : (
+          <span />
+        )}
+        {step < 6 ? (
+          <button
+            type="button"
+            onClick={onNext}
+            className="rounded border border-ember/60 bg-ember/30 px-3 py-1 text-sm text-parchment hover:bg-ember/50"
+          >
+            Next →
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={onFinalize}
+            data-cc-selected="true"
+            className="rounded border border-ember/60 bg-ember/40 px-3 py-1 text-sm text-parchment hover:bg-ember/60"
+          >
+            Create Character
+          </button>
+        )}
+      </div>
+      {error ? (
+        <p className="mb-4 rounded border border-ember/40 bg-ember/15 p-2 text-sm text-ember/90">
+          {error}
+        </p>
+      ) : null}
+
+
       {step === 1 ? (
         <Step1Name
           showIdHint={showIdHint}
@@ -535,9 +617,13 @@ export function CharacterCreator({
           classId={classId}
           races={races}
           sprite={sprite}
+          recommended={recommendedSprite}
           onSpriteChange={(v) => {
             setSprite(v);
-            setSpriteTouched(true);
+            // Picking the suggestion keeps it following race / gender /
+            // class changes; any other pick sticks.
+            setSpriteTouched(v !== recommendedSprite);
+            setError(null);
           }}
         />
       ) : null}
@@ -594,43 +680,6 @@ export function CharacterCreator({
         />
       ) : null}
 
-      {error ? (
-        <p className="mt-4 rounded border border-ember/40 bg-ember/15 p-2 text-sm text-ember/90">
-          {error}
-        </p>
-      ) : null}
-
-      <div className="mt-6 flex items-center justify-between">
-        {step > 1 ? (
-          <button
-            type="button"
-            onClick={onBack}
-            className="rounded border border-parchment/20 px-3 py-1 text-sm text-parchment/85 hover:bg-ink/40"
-          >
-            ← Back
-          </button>
-        ) : (
-          <span />
-        )}
-        {step < 6 ? (
-          <button
-            type="button"
-            onClick={onNext}
-            className="rounded border border-ember/60 bg-ember/30 px-3 py-1 text-sm text-parchment hover:bg-ember/50"
-          >
-            Next →
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={onFinalize}
-            data-cc-selected="true"
-            className="rounded border border-ember/60 bg-ember/40 px-3 py-1 text-sm text-parchment hover:bg-ember/60"
-          >
-            Create Character
-          </button>
-        )}
-      </div>
     </div>
   );
 }
@@ -937,6 +986,7 @@ type SpriteTypeFilter = "all" | "class" | "townsfolk" | "animal";
 
 function Step4Sprite({
   sprite,
+  recommended,
   onSpriteChange,
   raceId,
   gender,
@@ -944,6 +994,8 @@ function Step4Sprite({
   races,
 }: {
   sprite: string;
+  /** The recommended sprite path (pre-selected; badged "Suggested"). */
+  recommended: string;
   onSpriteChange: (path: string) => void;
   /** Choices from steps 2–3 — the picker opens filtered to them and
    *  badges the exact race + gender + class match as "Suggested". */
@@ -992,11 +1044,7 @@ function Step4Sprite({
   const effectiveRace =
     raceFilter === "mine" ? (raceHasArt ? raceId : "all") : raceFilter;
 
-  const isSuggested = (s: PersonSpriteInfo) =>
-    s.kind === "class" &&
-    s.race === raceId &&
-    s.gender === myGender &&
-    s.classId === classId;
+  const isSuggested = (s: PersonSpriteInfo) => s.path === recommended;
 
   const KIND_ORDER: Record<string, number> = {
     class: 0,
@@ -1032,7 +1080,7 @@ function Step4Sprite({
           a.label.localeCompare(b.label),
       );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [all, typeFilter, effectiveRace, genderFilter, spriteRaces, raceId, myGender, classId]);
+  }, [all, typeFilter, effectiveRace, genderFilter, spriteRaces, recommended]);
 
   const selectedInfo = sprite
     ? all.find((s) => s.path === sprite) ??
@@ -1198,10 +1246,19 @@ function Step4Sprite({
           </span>
         </p>
       ) : (
-        <p className="mt-2 text-[13px] text-parchment/65">
-          Pick a sprite for your character (you can change it later).
+        <p className="mt-2 text-[13px] text-amber-200/90">
+          Pick a sprite for your character — one is required to continue.
         </p>
       )}
+      {selectedInfo && recommended && sprite !== recommended ? (
+        <button
+          type="button"
+          onClick={() => onSpriteChange(recommended)}
+          className="mt-1 text-xs text-parchment/70 underline hover:text-parchment"
+        >
+          Use the suggested sprite
+        </button>
+      ) : null}
     </section>
   );
 }

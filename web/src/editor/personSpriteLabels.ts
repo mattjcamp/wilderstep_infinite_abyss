@@ -102,3 +102,53 @@ export function parsePersonSprite(
   const role = rest.join("_");
   return { ...common, kind: "class", classId: role, label: titleCase(role) };
 }
+
+/**
+ * The sprite the character creator pre-selects (and badges
+ * "Suggested") for a race + gender + class. `files` are the file
+ * names under sprites/person/; returns a "person/<file>" path, or the
+ * class's authored `default_sprite`, or "" when there's no art at all.
+ *
+ * Best match first:
+ *   1. exact race + gender + class   (elf_female_ranger)
+ *   2. same class + gender, any race (Human first)
+ *   3. the class's `default_sprite`
+ *   4. race + gender commoner, then any race + gender sprite
+ *   5. any person sprite of that gender, then any non-animal sprite
+ */
+export function recommendedPersonSprite(
+  files: ReadonlyArray<string>,
+  opts: {
+    raceId: string;
+    gender: string;
+    classId: string;
+    classDefault?: string;
+  },
+): string {
+  const gender = opts.gender.toLowerCase();
+  const all = files.map((f) => parsePersonSprite(f));
+  const pick = (pred: (s: PersonSpriteInfo) => boolean) =>
+    all.find(pred)?.path;
+  const byHumanFirst = [...all].sort(
+    (a, b) => Number(b.race === "human") - Number(a.race === "human"),
+  );
+  const classDefault = (opts.classDefault ?? "").trim();
+  return (
+    pick(
+      (s) =>
+        s.kind === "class" &&
+        s.race === opts.raceId &&
+        s.gender === gender &&
+        s.classId === opts.classId,
+    ) ??
+    byHumanFirst.find(
+      (s) => s.kind === "class" && s.gender === gender && s.classId === opts.classId,
+    )?.path ??
+    (classDefault || undefined) ??
+    pick((s) => s.kind === "commoner" && s.race === opts.raceId && s.gender === gender) ??
+    pick((s) => s.race === opts.raceId && s.gender === gender) ??
+    pick((s) => s.gender === gender) ??
+    pick((s) => s.kind !== "animal") ??
+    ""
+  );
+}

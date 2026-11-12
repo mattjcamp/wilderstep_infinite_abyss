@@ -294,6 +294,134 @@ export interface QuestDef {
    *  (the default), it's turned in automatically the moment the last
    *  step completes. JSON key: `return_to_giver`. */
   returnToGiver: boolean;
+  /** Events that start (auto-accept) this quest without a giver
+   *  conversation. Empty = the quest only starts from its giver tile
+   *  or a notice board. JSON key: `start_triggers`. */
+  startTriggers: QuestStartTrigger[];
+  /** Notice-board ids (map cell `board`) this quest is posted on.
+   *  Reading the board lists every still-available quest posted
+   *  there and lets the player pick which to take. JSON key: `boards`. */
+  boards: string[];
+}
+
+// ── Automatic start triggers ───────────────────────────────────
+
+/** Kinds of event that can auto-start a quest.
+ *   - `game_start` — a new game begins (and, for quests added to a
+ *                    module after a save was made, the next load).
+ *   - `enter_map`  — the party arrives on `map_id`.
+ *   - `leave_map`  — the party departs `map_id` (through a link,
+ *                    dungeon entrance, or travel).
+ *   - `read_lore`  — the party reads lore record `lore_id` (a map
+ *                    object or a book item), first read or not. */
+export type QuestStartTriggerKind =
+  | "game_start"
+  | "enter_map"
+  | "leave_map"
+  | "read_lore";
+
+export interface QuestStartTrigger {
+  kind: QuestStartTriggerKind;
+  /** Target map for `enter_map` / `leave_map`. JSON key: `map_id`. */
+  mapId: string;
+  /** Target lore record for `read_lore`. JSON key: `lore_id`. */
+  loreId: string;
+  /** Optional line shown on the "new quest" notification (a voice
+   *  in the party's head, the gist of the book). Empty = the quest
+   *  description is shown instead. */
+  message: string;
+}
+
+/** A runtime event the host reports to {@link questsStartedBy}. */
+export type QuestTriggerEvent =
+  | { kind: "game_start" }
+  | { kind: "enter_map"; mapId: string }
+  | { kind: "leave_map"; mapId: string }
+  | { kind: "read_lore"; loreId: string };
+
+const TRIGGER_KINDS: ReadonlySet<string> = new Set([
+  "game_start",
+  "enter_map",
+  "leave_map",
+  "read_lore",
+]);
+
+/** Parse `start_triggers`. Unknown kinds and triggers missing their
+ *  required id are dropped so a bad hand edit never auto-starts a
+ *  quest on every map change. */
+export function parseStartTriggers(raw: unknown): QuestStartTrigger[] {
+  if (!Array.isArray(raw)) return [];
+  const out: QuestStartTrigger[] = [];
+  for (const r of raw) {
+    if (!r || typeof r !== "object") continue;
+    const o = r as Record<string, unknown>;
+    const kind = typeof o.kind === "string" ? o.kind : "";
+    if (!TRIGGER_KINDS.has(kind)) continue;
+    const mapId = typeof o.map_id === "string" ? o.map_id.trim() : "";
+    const loreId = typeof o.lore_id === "string" ? o.lore_id.trim() : "";
+    if ((kind === "enter_map" || kind === "leave_map") && !mapId) continue;
+    if (kind === "read_lore" && !loreId) continue;
+    out.push({
+      kind: kind as QuestStartTriggerKind,
+      mapId,
+      loreId,
+      message: typeof o.message === "string" ? o.message.trim() : "",
+    });
+  }
+  return out;
+}
+
+function triggerMatches(t: QuestStartTrigger, ev: QuestTriggerEvent): boolean {
+  if (t.kind !== ev.kind) return false;
+  switch (ev.kind) {
+    case "game_start":
+      return true;
+    case "enter_map":
+    case "leave_map":
+      return t.mapId === ev.mapId;
+    case "read_lore":
+      return t.loreId === ev.loreId;
+  }
+}
+
+/** One quest an event auto-started, with the trigger that did it. */
+export interface QuestAutoStart {
+  def: QuestDef;
+  trigger: QuestStartTrigger;
+}
+
+/**
+ * Every quest that `ev` starts: still `available` (never accepted) and
+ * carrying a matching trigger. Pure — the caller flips status (via
+ * {@link acceptQuest}) and persists. Module order is preserved so
+ * several quests started by one event announce in authored order.
+ */
+export function questsStartedBy(
+  defs: ReadonlyArray<QuestDef>,
+  states: ReadonlyMap<string, QuestState>,
+  ev: QuestTriggerEvent,
+): QuestAutoStart[] {
+  const out: QuestAutoStart[] = [];
+  for (const def of defs) {
+    if (states.get(def.id)?.status !== "available") continue;
+    const trigger = def.startTriggers.find((t) => triggerMatches(t, ev));
+    if (trigger) out.push({ def, trigger });
+  }
+  return out;
+}
+
+/** Quests posted on notice board `boardId` that the party can still
+ *  take (status `available`), in module order. */
+export function questsOnBoard(
+  defs: ReadonlyArray<QuestDef>,
+  states: ReadonlyMap<string, QuestState>,
+  boardId: string,
+): QuestDef[] {
+  if (!boardId) return [];
+  return defs.filter(
+    (d) =>
+      d.boards.includes(boardId) && states.get(d.id)?.status === "available",
+  );
 }
 
 export interface QuestState {
@@ -408,6 +536,11 @@ interface RawQuest {
   quest_giver?: RawQuestGiver | null;
   rewards?: RawRewards | null;
   return_to_giver?: boolean;
+  /** Automatic-start triggers — see {@link QuestStartTrigger}. */
+  start_triggers?: unknown;
+  /** Notice-board ids this quest is posted on — see
+   *  {@link QuestDef.boards}. */
+  boards?: unknown;
 }
 
 /** Top-level envelope. v2 quests.json wraps the list as
@@ -617,6 +750,8 @@ function fromRaw(raw: RawQuest): QuestDef | null {
     questGiver,
     rewards,
     returnToGiver: raw.return_to_giver === true,
+    startTriggers: parseStartTriggers(raw.start_triggers),
+    boards: coerceStringArray(raw.boards),
   };
 }
 

@@ -137,17 +137,18 @@
           "map_id": "orc_kings_tower_3"
         }
       ],
-      "quest_giver": {
-        "npc_name": "Dying Tribal Elder",
-        "npc_sprite": "person/person_female_villager_poor.png",
-        "start_dialog": "Oh thank the old gods.... Someone else survived those nasty Orcs. Damn the Orc King, our tribe is no more. Gather what you can from what is left of our caravan. Please seek out the Orc King and destroy him and his kin. Gasp...",
-        "end_dialog": "You have succeeded! The Orc Kingdom has been destroyed. Now a new world can begin. Sow your roots in the ruins and rebuild our tribe!"
-      },
       "rewards": {
         "xp": 500,
         "gold": 500
       },
-      "return_to_giver": true
+      "main_quest": true,
+      "start_triggers": [
+        {
+          "kind": "leave_map",
+          "map_id": "destroyed_caravan",
+          "message": "Now that you have found your way out of the destruction, you have found a purpose.... It is time to avenge your tribe and kill The Orc King"
+        }
+      ]
     },
     {
       "id": "clear_the_dungeon",

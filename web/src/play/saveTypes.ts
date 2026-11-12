@@ -362,6 +362,11 @@ export interface PendingRewardTravel {
   questName: string;
   /** Quest giver's display name ("" when the quest has none). */
   giverName: string;
+  /** True once the player chose "Later" on the travel placard. The
+   *  trip stays saved but the placard stays down; a "Travel to …"
+   *  button on the play screen (or bumping the quest giver) brings it
+   *  back. Absent / false = the placard shows. */
+  deferred?: boolean;
 }
 
 export interface WorldSave {

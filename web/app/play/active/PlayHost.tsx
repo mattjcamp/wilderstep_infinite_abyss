@@ -46,6 +46,8 @@ import { QuestDialogOverlay } from "@/editor/QuestDialogOverlay";
 import { PlayPartyScreenOverlay } from "./PlayPartyScreenOverlay";
 import {
   PlayQuestCelebration,
+  isStickyCelebration,
+  logEventCard,
   returnToGiverSubtitle,
   stepFinalSubtitle,
   type PlayQuestCelebrationKind,
@@ -55,6 +57,7 @@ import { computeAdventureRecap, type AdventureRecap } from "@/play/adventureReca
 import { PlayLogOverlay } from "./PlayLogOverlay";
 import { PlayLoreOverlay } from "@/play/LoreOverlay";
 import { PlayJournalOverlay } from "./PlayJournalOverlay";
+import { PlayNoticeBoardOverlay } from "@/play/NoticeBoardOverlay";
 import {
   journalEntries,
   markLoreRead,
@@ -131,7 +134,10 @@ import {
   ensureQuestStates,
   expandSpelunkingQuests,
   parseQuestsFile,
+  questsOnBoard,
+  questsStartedBy,
   type CombatLocation,
+  type QuestTriggerEvent,
   type QuestDef,
   type QuestState,
   type QuestStepRewards,
@@ -1063,6 +1069,10 @@ export function PlayHost() {
     firstRead: boolean;
     xp: number;
   } | null>(null);
+  /** Notice board — the board id the party is reading (a `board` map
+   *  cell). The overlay lists the quests posted there that are still
+   *  available; taking one starts it. */
+  const [noticeBoard, setNoticeBoard] = useState<string | null>(null);
   /** Save menu (⌘S / Ctrl-S). Opening snapshots the live sim via
    *  `saveCurrent` first, so slot writes capture the exact moment
    *  the player hit save. `slotSaves` holds the three manual slots'
@@ -1146,6 +1156,13 @@ export function PlayHost() {
       subtitle?: string;
     }>
   >([]);
+  /** Bumped on each party move while a sticky ("quest-new" /
+   *  "log-event") placard
+   *  heads the queue — that placard fades on the first move. The
+   *  ref mirrors the head's kind for the long-lived sim listener. */
+  const [celebrationMoveTick, setCelebrationMoveTick] = useState(0);
+  const celebrationHeadKindRef = useRef<PlayQuestCelebrationKind | null>(null);
+  celebrationHeadKindRef.current = questCelebrations[0]?.kind ?? null;
   /** NPC currently being talked to. Set when the party bumps an NPC
    *  cell; the dialog modal renders the NPC's chatter and, when the
    *  NPC has a counter, exposes a Visit Counter button that hands
@@ -1475,7 +1492,7 @@ export function PlayHost() {
       const sfx =
         args.kind === "quest" || args.kind === "dungeon-cleared"
           ? "victory"
-          : args.kind === "quest-accept"
+          : args.kind === "quest-accept" || args.kind === "quest-new"
             ? "magic_burst"
             : args.kind === "pickpocket"
               ? "lock_pick_success"
@@ -1495,7 +1512,7 @@ export function PlayHost() {
         const snap = sim.snapshot();
         const x = snap.pos.col * TILE_SIZE + TILE_SIZE / 2;
         const y = snap.pos.row * TILE_SIZE + TILE_SIZE / 2;
-        if (args.kind === "quest-accept") {
+        if (args.kind === "quest-accept" || args.kind === "quest-new") {
           // Accept gets a sky-blue treatment instead of the gold of
           // the completion family — a soft expanding ring (glowAura)
           // as the primary cue plus a smaller, lighter radial burst
@@ -2155,9 +2172,10 @@ export function PlayHost() {
       npcDialogId !== null ||
       giverChatter !== null ||
       placard !== null ||
-      pendingTravel !== null ||
+      (pendingTravel !== null && !pendingTravel.deferred) ||
       journalOpen ||
       loreReading !== null ||
+      noticeBoard !== null ||
       finale !== null;
   }, [
     lockEncounter,
@@ -2177,6 +2195,7 @@ export function PlayHost() {
     pendingTravel,
     journalOpen,
     loreReading,
+    noticeBoard,
     finale,
   ]);
   useEffect(() => {
@@ -2198,7 +2217,8 @@ export function PlayHost() {
       cur.map === pendingTravel.map &&
       cur.col === pendingTravel.col &&
       cur.row === pendingTravel.row &&
-      cur.questId === pendingTravel.questId
+      cur.questId === pendingTravel.questId &&
+      !!cur.deferred === !!pendingTravel.deferred
     ) {
       return;
     }
@@ -2325,7 +2345,8 @@ export function PlayHost() {
         helpTipsOpen ||
         logOpen ||
         journalOpen ||
-        loreReading
+        loreReading ||
+        noticeBoard
       ) {
         return;
       }
@@ -2349,6 +2370,7 @@ export function PlayHost() {
     logOpen,
     journalOpen,
     loreReading,
+    noticeBoard,
   ]);
   useEffect(() => {
     catalogRef.current = state.catalog ?? null;
@@ -2471,6 +2493,19 @@ export function PlayHost() {
       const next = [...prev, ...due.lines];
       return next.length > MAX_LOG ? next.slice(next.length - MAX_LOG) : next;
     });
+    // Authored lines also go front and center: one big card for the
+    // lines due at this moment, held until the party moves. Queued
+    // behind any other placard. No sound / burst — it's narration.
+    const card = logEventCard(due.lines, catalogRef.current?.map?.name ?? "");
+    setQuestCelebrations((prev) => [
+      ...prev,
+      {
+        key: `log-event-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        kind: "log-event",
+        title: card.title,
+        subtitle: card.subtitle,
+      },
+    ]);
   }, []);
   useEffect(() => {
     const map = state.kind === "ok" ? state.catalog?.map : null;
@@ -2922,7 +2957,7 @@ export function PlayHost() {
       if (saveMenuOpen) return; // overlay's own listener closes
       if (lockEncounter || chestEncounter || combat || encounterPrompt || questOffer) return;
       if (partyScreenOpen || questLogOpen || helpTipsOpen || logOpen) return;
-      if (journalOpen || loreReading) return;
+      if (journalOpen || loreReading || noticeBoard) return;
       if (counterShopId !== null || npcDialogId !== null) return;
       if (giverChatter !== null || placard !== null) return;
       // Snapshot the live sim into saveRef + the auto-save slot so
@@ -2945,6 +2980,7 @@ export function PlayHost() {
     logOpen,
     journalOpen,
     loreReading,
+    noticeBoard,
     counterShopId,
     npcDialogId,
     giverChatter,
@@ -4734,9 +4770,34 @@ export function PlayHost() {
             const pt = saveRef.current?.pendingTravel;
             if (pt) setPendingTravel(pt);
           }
+          // Automatic quest starts (`start_triggers`). Every mount is a
+          // chance for one: `game_start` quests begin on the first
+          // mount of a new game (or the first load after a module adds
+          // one), and a change of overworld / town map reports
+          // `leave_map` for the old map then `enter_map` for the new.
+          // Entering a generated dungeon counts as leaving the map;
+          // walking back out counts as entering it again. Only quests
+          // still "available" can start, so re-firing on reload is
+          // harmless. Effects are deferred a beat — the renderer and
+          // item overlays aren't up yet at this point in the mount.
+          {
+            const run = runQuestTriggersRef.current;
+            const curMap = dungeonNow ? null : save.party.currentMapId;
+            const prevMap = lastTriggerMapRef.current;
+            if (prevMap === undefined) run({ kind: "game_start" }, { deferFx: true });
+            if (prevMap !== curMap) {
+              if (prevMap) run({ kind: "leave_map", mapId: prevMap }, { deferFx: true });
+              if (curMap) run({ kind: "enter_map", mapId: curMap }, { deferFx: true });
+            }
+            lastTriggerMapRef.current = curMap;
+          }
 
           sim.subscribe((ev) => {
             if (ev.kind === "moved") {
+              // A sticky "New Quest" placard waits for the party to move.
+              if (isStickyCelebration(celebrationHeadKindRef.current)) {
+                setCelebrationMoveTick((t) => t + 1);
+              }
               // First-move soundtrack kick. Browsers refuse
               // autoplay until the page has seen a user gesture,
               // so the setPlaylist call in the load effect can't
@@ -5608,6 +5669,21 @@ export function PlayHost() {
               // authored `post_dialog` (or a generic thank-you)
               // instead of the quest overlay — and never silence,
               // which read as the giver ignoring the player.
+              // A turn-in trip this quest granted and the player put
+              // off ("Later") — talking to the giver offers it again.
+              // (Mid-quest trips leave the giver's dialog alone; the
+              // on-screen Travel button covers those.)
+              {
+                const pt = saveRef.current?.pendingTravel;
+                if (
+                  pt?.deferred &&
+                  pt.questId === ev.questId &&
+                  qstate?.status === "turned_in"
+                ) {
+                  setPendingTravel({ ...pt, deferred: false });
+                  return;
+                }
+              }
               if (qstate?.status === "turned_in") {
                 const giver = ev.quest.quest_giver;
                 setGiverChatter({
@@ -5888,6 +5964,11 @@ export function PlayHost() {
                   checkDungeonClear(dungeonNow);
                 }
               }
+              return;
+            }
+            if (ev.kind === "board_encountered") {
+              // Notice board — list the quests posted here.
+              setNoticeBoard(ev.boardId);
               return;
             }
             if (ev.kind === "lore_encountered") {
@@ -6861,6 +6942,110 @@ export function PlayHost() {
     setLockEncounter(null);
   }, []);
 
+  /** Start a quest: mark it accepted on the kernel (so a giver tile
+   *  stops re-offering), flip the QuestState to "active", ask the sim
+   *  to drop any newly-eligible kill-step encounters onto the live
+   *  map, persist the accepted-set into the save, and fire the
+   *  "New Quest" celebration placard + sky-blue glow burst.
+   *
+   *  Shared by every way a quest begins — the giver dialog's Accept,
+   *  a notice-board pick, and automatic `start_triggers`. The
+   *  celebration is gated on the quest being newly accepted, so a
+   *  re-bump of the giver tile (which re-opens the brief) is silent.
+   *  `deferFx` holds the glow / retrieve-item / celebration pass for a
+   *  beat — used when a trigger fires during a map mount, before the
+   *  renderer and item overlays exist. Returns true when newly
+   *  accepted. */
+  const beginQuest = useCallback(
+    (
+      id: string,
+      opts: {
+        subtitle?: string;
+        logLine?: string;
+        deferFx?: boolean;
+        /** Placard variant — "quest-new" (big, waits for the party
+         *  to move) for automatic starts; "quest-accept" otherwise. */
+        celebration?: "quest-accept" | "quest-new";
+      } = {},
+    ): boolean => {
+      const sim = simRef.current;
+      const qs = questStatesRef.current.get(id);
+      const wasAvailable = qs?.status === "available";
+      const simNew = sim?.markQuestAccepted(id) ?? false;
+      if (qs && qs.status === "available") qs.status = "active";
+      sim?.refreshQuestPlacements();
+      const save = saveRef.current;
+      const prev = save?.acceptedQuests ?? [];
+      const newlyAccepted = simNew || (wasAvailable && !prev.includes(id));
+      if (!newlyAccepted) return false;
+      if (save && !prev.includes(id)) {
+        const nextSave: WorldSave = { ...save, acceptedQuests: [...prev, id] };
+        saveWorld(nextSave);
+        saveRef.current = nextSave;
+      }
+      if (opts.logLine) {
+        const line = opts.logLine;
+        setLogMessages((p) => {
+          const next = [...p, line];
+          return next.length > MAX_LOG ? next.slice(next.length - MAX_LOG) : next;
+        });
+      }
+      const def = questDefsRef.current.find((d) => d.id === id);
+      const fx = () => {
+        // Newly-accepted quest may have kill-step / fetch-step targets
+        // already painted on the current map — light them up, and
+        // stamp any retrieve-step items onto this map (the helper
+        // re-runs the glow so the halo wraps the new icon).
+        refreshQuestGlow();
+        refreshRetrievePlacements();
+        fireQuestCelebration({
+          kind: opts.celebration ?? "quest-accept",
+          title: def?.name ?? id,
+          subtitle: opts.subtitle,
+        });
+      };
+      if (opts.deferFx) window.setTimeout(fx, 450);
+      else fx();
+      return true;
+    },
+    [fireQuestCelebration, refreshQuestGlow, refreshRetrievePlacements],
+  );
+
+  /** Fire automatic quest starts (`start_triggers`) for one event.
+   *  Every still-available quest with a matching trigger begins
+   *  immediately — no dialog — and the player is told with the "New
+   *  Quest" placard (subtitle: the trigger's `message`, else the
+   *  first step) plus a log line. */
+  const runQuestTriggers = useCallback(
+    (ev: QuestTriggerEvent, opts: { deferFx?: boolean } = {}) => {
+      const hits = questsStartedBy(
+        questDefsRef.current,
+        questStatesRef.current,
+        ev,
+      );
+      for (const { def, trigger } of hits) {
+        const subtitle = trigger.message || firstStepLabel(def);
+        beginQuest(def.id, {
+          subtitle,
+          logLine: trigger.message
+            ? `New quest: ${def.name} — ${trigger.message}`
+            : `New quest: ${def.name}.`,
+          deferFx: opts.deferFx,
+          celebration: "quest-new",
+        });
+      }
+    },
+    [beginQuest],
+  );
+  const runQuestTriggersRef = useRef(runQuestTriggers);
+  runQuestTriggersRef.current = runQuestTriggers;
+  /** The overworld / town map the party was last mounted on (null
+   *  inside a generated dungeon or before the first mount). The map
+   *  mount compares against it to report `leave_map` / `enter_map`
+   *  quest triggers. Survives remounts — it's a component ref, and
+   *  map changes only bump `reloadKey`. */
+  const lastTriggerMapRef = useRef<string | null | undefined>(undefined);
+
   /** Quest accept — mark the quest accepted on the kernel (so the
    *  trigger tile stops re-offering), flip the QuestState's status
    *  to "active", ask the sim to drop any newly-eligible kill-step
@@ -6873,63 +7058,31 @@ export function PlayHost() {
   const onQuestAccept = useCallback(() => {
     setQuestOffer((current) => {
       if (!current) return null;
-      const sim = simRef.current;
       const id = current.questId;
-      const newlyAccepted = sim?.markQuestAccepted(id) ?? false;
-      const qs = questStatesRef.current.get(id);
-      if (qs && qs.status === "available") qs.status = "active";
-      sim?.refreshQuestPlacements();
-      if (newlyAccepted) {
-        const save = saveRef.current;
-        if (save) {
-          const prev = save.acceptedQuests ?? [];
-          if (!prev.includes(id)) {
-            const nextSave: WorldSave = {
-              ...save,
-              acceptedQuests: [...prev, id],
-            };
-            saveWorld(nextSave);
-            saveRef.current = nextSave;
-          }
-        }
-        // Newly-accepted quest may have kill-step / fetch-step targets
-        // already painted on the current map. Re-run the glow pass so
-        // those cells light up immediately.
-        refreshQuestGlow();
-        // The accepted quest may also carry retrieve steps targeting
-        // cells on the current map. Stamp their items + create the
-        // overlay sprites so the player sees them right away
-        // (followed by another glow pass inside the helper so the
-        // gold halo wraps the new icon).
-        refreshRetrievePlacements();
-        // Celebration — placard + sky-blue glow burst + magic_burst
-        // chime at the party tile. Gated on `newlyAccepted` so a
-        // re-bump of the giver tile (already-accepted quest re-opens
-        // the dialog so the player can re-read the brief) doesn't
-        // re-fire the cue. Subtitle pulls the FIRST step's name so
-        // the player gets an "and your first task is…" prompt as
-        // the placard fades. Falls back to the quest description
-        // when steps aren't authored.
-        const def = questDefsRef.current.find((d) => d.id === id);
-        const firstStep = def?.steps[0];
-        const stepLabel =
-          firstStep?.name ||
-          firstStep?.description ||
-          def?.description ||
-          undefined;
-        fireQuestCelebration({
-          kind: "quest-accept",
-          title: def?.name ?? id,
-          subtitle: stepLabel,
-        });
-      }
+      // Subtitle pulls the FIRST step's name so the player gets an
+      // "and your first task is…" prompt as the placard fades. Falls
+      // back to the quest description when steps aren't authored.
+      const def = questDefsRef.current.find((d) => d.id === id);
+      beginQuest(id, { subtitle: firstStepLabel(def) });
       return null;
     });
-  }, [
-    fireQuestCelebration,
-    refreshQuestGlow,
-    refreshRetrievePlacements,
-  ]);
+  }, [beginQuest]);
+
+  /** Notice board "Take" — start the quest (New Quest placard + log
+   *  line) and re-render the board so the notice drops off the list.
+   *  The board stays open for further picks. */
+  const [, setBoardTick] = useState(0);
+  const onBoardTake = useCallback(
+    (questId: string) => {
+      const def = questDefsRef.current.find((d) => d.id === questId);
+      beginQuest(questId, {
+        subtitle: firstStepLabel(def),
+        logLine: `You take the notice: ${def?.name ?? questId}.`,
+      });
+      setBoardTick((t) => t + 1);
+    },
+    [beginQuest],
+  );
 
   /** Quest decline / close — routes both "Decline" (offer view) and
    *  "Close" (in-progress / complete view) through the same handler.
@@ -7595,6 +7748,7 @@ export function PlayHost() {
           kind={questCelebrations[0].kind}
           title={questCelebrations[0].title}
           subtitle={questCelebrations[0].subtitle}
+          moveTick={celebrationMoveTick}
           onDismiss={() =>
             setQuestCelebrations((prev) => prev.slice(1))
           }
@@ -7632,7 +7786,34 @@ export function PlayHost() {
           lore={loreReading.lore}
           firstRead={loreReading.firstRead}
           xp={loreReading.xp}
-          onClose={() => setLoreReading(null)}
+          onClose={() => {
+            // A quest started by this reading (`read_lore` trigger)
+            // announces once the page is closed, so the New Quest
+            // placard isn't hidden behind the reading screen.
+            const loreId = loreReading.lore.id;
+            setLoreReading(null);
+            runQuestTriggers({ kind: "read_lore", loreId });
+          }}
+        />
+      ) : null}
+      {noticeBoard !== null ? (
+        <PlayNoticeBoardOverlay
+          title="Notice Board"
+          entries={questsOnBoard(
+            questDefsRef.current,
+            questStatesRef.current,
+            noticeBoard,
+          ).map((d) => ({
+            questId: d.id,
+            name: d.name,
+            description: d.description,
+            postedBy: d.questGiver.npcName,
+            firstStep: d.steps[0]?.name || d.steps[0]?.description || "",
+            xp: d.rewards.xp,
+            gold: d.rewards.gold,
+          }))}
+          onTake={onBoardTake}
+          onClose={() => setNoticeBoard(null)}
         />
       ) : null}
       {journalOpen ? (
@@ -7906,6 +8087,7 @@ export function PlayHost() {
           encounter prompt and combat have closed, so it lands after
           the giver's last line rather than on top of it. */}
       {pendingTravel &&
+      !pendingTravel.deferred &&
       !combat &&
       !encounterPrompt &&
       !questOffer &&
@@ -7933,9 +8115,54 @@ export function PlayHost() {
               setPendingTravel(null);
               go(t);
             }}
+            onLater={() => {
+              // Keep the trip (saved, flagged deferred) and put the
+              // placard down. The "Travel to …" button below — or
+              // talking to the giver — brings it back.
+              const destName = dest?.name ?? pendingTravel.map;
+              setPendingTravel({ ...pendingTravel, deferred: true });
+              const giver =
+                questStatesRef.current.get(pendingTravel.questId)?.status ===
+                "turned_in"
+                  ? pendingTravel.giverName.trim()
+                  : "";
+              const line = giver
+                ? `The way to ${destName} will wait. When you're ready, use the Travel button or talk to ${giver}.`
+                : `The way to ${destName} will wait. When you're ready, use the Travel button.`;
+              setLogMessages((prev) => {
+                const next = [...prev, line];
+                return next.length > MAX_LOG ? next.slice(next.length - MAX_LOG) : next;
+              });
+            }}
           />
         );
       })() : null}
+
+      {/* A trip the player put off ("Later") — a standing button to
+          bring the travel placard back. Hidden while anything modal is
+          up so it never competes with a dialog. */}
+      {pendingTravel?.deferred &&
+      !combat &&
+      !encounterPrompt &&
+      !questOffer &&
+      !lockEncounter &&
+      !chestEncounter &&
+      npcDialogId === null &&
+      giverChatter === null &&
+      counterShopId === null &&
+      placard === null &&
+      finale === null ? (
+        <button
+          type="button"
+          onClick={() => setPendingTravel({ ...pendingTravel, deferred: false })}
+          className="fixed bottom-4 left-1/2 z-30 -translate-x-1/2 rounded-full border border-amber-300/60 bg-ink/90 px-4 py-1.5 text-sm text-amber-100 shadow-lg shadow-amber-300/20 hover:bg-amber-300/15"
+          title={`Quest reward from “${pendingTravel.questName}” — travel when you're ready.`}
+        >
+          ⚜ Travel to{" "}
+          {state.catalog?.allMaps.find((m) => m.id === pendingTravel.map)?.name ??
+            pendingTravel.map}
+        </button>
+      ) : null}
 
       {counterShopId && state.catalog && state.save ? (() => {
         const counter = state.catalog.counters.find(
@@ -8753,3 +8980,11 @@ function creditReachStep(
 // import expressive in the source even though we don't reference it
 // after the loader pulls it through type widening above.
 type _SavedCharacterStateBridge = CharacterRecord;
+
+/** "And your first task is…" line for a quest's New Quest placard:
+ *  the first step's name (or description), else the quest's
+ *  description. */
+function firstStepLabel(def: QuestDef | undefined): string | undefined {
+  const first = def?.steps[0];
+  return first?.name || first?.description || def?.description || undefined;
+}

@@ -32,7 +32,7 @@
  * (e.g. on parent state change) without re-firing audio.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /** All placard variants. Exported so the host's celebration-queue
  *  state type stays in lockstep with the component's prop shape.
@@ -49,6 +49,16 @@ import { useEffect, useState } from "react";
  *  starting work or finishing it. */
 export type PlayQuestCelebrationKind =
   | "quest-accept"
+  /** A quest that started on its own (`start_triggers` — entering a
+   *  map, reading a book, a new game). The player didn't choose it,
+   *  so it gets the big sky-blue placard and STAYS UP until the party
+   *  moves (see {@link PlayQuestCelebrationProps.moveTick}). */
+  | "quest-new"
+  /** An authored Log Event line (log_events.json) — narration or a
+   *  tip. Same big sticky card as "quest-new" (waits for the party to
+   *  move) in a parchment palette; `title` is the small heading (the
+   *  map name, or "Tip"), `subtitle` the text itself. */
+  | "log-event"
   | "step"
   | "step-final"
   | "quest"
@@ -75,6 +85,38 @@ export interface PlayQuestCelebrationProps {
    *  shift it off the queue. The host is responsible for clearing
    *  timers if it tears the component down early. */
   onDismiss: () => void;
+  /** Counter the host bumps each time the party moves. Only read by
+   *  the sticky `"quest-new"` placard: once it has been fully on
+   *  screen for {@link STICKY_MIN_MS}, the next change starts its
+   *  fade-out. */
+  moveTick?: number;
+}
+
+/** A sticky placard ignores movement for this long after it's fully
+ *  visible, so a player still holding an arrow key from walking
+ *  through a door doesn't dismiss it before reading it. */
+export const STICKY_MIN_MS = 1200;
+
+/** Variants that stay on screen until the party moves instead of
+ *  fading on a timer. */
+export function isStickyCelebration(kind: PlayQuestCelebrationKind | null | undefined): boolean {
+  return kind === "quest-new" || kind === "log-event";
+}
+
+/** Heading + body for a Log Event card from the lines due at one
+ *  moment. All-tips → "Tip" heading with the "Tip:" prefixes dropped;
+ *  otherwise the map name heads the card. Lines join with blank lines. */
+export function logEventCard(
+  lines: ReadonlyArray<string>,
+  mapName: string,
+): { title: string; subtitle: string } {
+  const trimmed = lines.map((l) => l.trim()).filter(Boolean);
+  const tip = /^tip:\s*/i;
+  const allTips = trimmed.length > 0 && trimmed.every((l) => tip.test(l));
+  return {
+    title: allTips ? "Tip" : mapName,
+    subtitle: (allTips ? trimmed.map((l) => l.replace(tip, "")) : trimmed).join("\n\n"),
+  };
 }
 
 // Tuned so a step placard reads quickly but doesn't linger past a
@@ -89,6 +131,9 @@ const TIMINGS = {
   // and orient before the placard fades. Same fade-in/out feel as
   // the rest of the family so the family-resemblance is preserved.
   "quest-accept": { fadeIn: 220, hold: 2500, fadeOut: 540 },
+  // Sticky — `hold` is unused; the placard waits for the party to move.
+  "quest-new":    { fadeIn: 280, hold: 0, fadeOut: 500 },
+  "log-event":    { fadeIn: 280, hold: 0, fadeOut: 500 },
   step:         { fadeIn: 200, hold: 2100, fadeOut: 500 },
   "step-final": { fadeIn: 230, hold: 2700, fadeOut: 550 },
   quest:        { fadeIn: 260, hold: 3000, fadeOut: 600 },
@@ -109,11 +154,43 @@ export function PlayQuestCelebration({
   title,
   subtitle,
   onDismiss,
+  moveTick = 0,
 }: PlayQuestCelebrationProps) {
   const [phase, setPhase] = useState<"enter" | "hold" | "exit">("enter");
   const t = TIMINGS[kind];
+  const sticky = isStickyCelebration(kind);
+  // Move count at mount + when the placard became dismissable, so
+  // only moves made AFTER it's been readable for a beat count.
+  const mountTickRef = useRef(moveTick);
+  const [armed, setArmed] = useState(false);
 
   useEffect(() => {
+    if (!sticky) return;
+    const t1 = window.setTimeout(() => setPhase("hold"), t.fadeIn);
+    const t2 = window.setTimeout(() => {
+      mountTickRef.current = moveTickRef.current;
+      setArmed(true);
+    }, t.fadeIn + STICKY_MIN_MS);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [kind]);
+  const moveTickRef = useRef(moveTick);
+  moveTickRef.current = moveTick;
+  // Sticky dismissal: the first move after arming fades it out.
+  useEffect(() => {
+    if (!sticky || !armed || phase === "exit") return;
+    if (moveTick === mountTickRef.current) return;
+    setPhase("exit");
+    const t3 = window.setTimeout(() => onDismiss(), t.fadeOut);
+    return () => clearTimeout(t3);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [moveTick, armed]);
+
+  useEffect(() => {
+    if (sticky) return;
     // Schedule the three transitions back-to-back. Each timer is
     // captured so the cleanup below can clear them when the parent
     // tears the component down (map swap, page nav, etc.) before the
@@ -147,6 +224,7 @@ export function PlayQuestCelebration({
   // instead of the gold used by every completion variant — so the
   // player reads "starting" rather than "finishing" at a glance.
   const isAccept = kind === "quest-accept";
+  const isNew = kind === "quest-new";
   const opacity = phase === "enter" || phase === "exit" ? 0 : 1;
   const translateY = phase === "enter" ? -8 : 0;
   const fadeDur =
@@ -156,7 +234,9 @@ export function PlayQuestCelebration({
   // visual weight. Kept in one switch so adding a future variant is
   // a single touch point.
   const label =
-    kind === "quest-accept"
+    kind === "quest-new"
+      ? "New Quest"
+      : kind === "quest-accept"
       ? "Quest Accepted"
       : kind === "quest"
         ? "Quest Complete"
@@ -171,6 +251,87 @@ export function PlayQuestCelebration({
                 : kind === "dungeon-cleared"
                   ? "Dungeon Cleared!"
                   : "Step Complete";
+
+  if (kind === "log-event") {
+    // Authored narration / tip — parchment card, big readable text,
+    // waits for the party to move. Heading is small; the line is the
+    // star.
+    return (
+      <div
+        aria-live="polite"
+        className="pointer-events-none fixed inset-x-0 top-16 z-40 flex justify-center px-4"
+      >
+        <div
+          style={{
+            opacity,
+            transform: `translateY(${translateY}px)`,
+            transition: `opacity ${fadeDur}ms ease-out, transform ${fadeDur}ms ease-out`,
+            boxShadow:
+              "0 0 24px 4px rgba(240, 220, 170, 0.28), 0 0 0 1px rgba(240, 220, 170, 0.45) inset",
+          }}
+          className="w-full max-w-2xl rounded-lg border-2 border-parchment/40 bg-ink/95 px-8 py-6 text-center shadow-2xl"
+        >
+          {title ? (
+            <div className="font-display text-sm uppercase tracking-[0.22em] text-amber-200/85">
+              {title}
+            </div>
+          ) : null}
+          {subtitle ? (
+            <div className="mt-3 whitespace-pre-line text-xl leading-relaxed text-parchment">
+              {subtitle}
+            </div>
+          ) : null}
+          <div
+            className="mt-4 text-xs uppercase tracking-[0.18em] text-parchment/50"
+            style={{ opacity: armed ? 1 : 0, transition: "opacity 300ms" }}
+          >
+            Move to continue
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isNew) {
+    // Big sky-blue card for a quest that started on its own: larger
+    // type, room for a full sentence of `message`, and a "move to
+    // continue" hint since it waits for the party to move.
+    return (
+      <div
+        aria-live="polite"
+        className="pointer-events-none fixed inset-x-0 top-16 z-40 flex justify-center px-4"
+      >
+        <div
+          style={{
+            opacity,
+            transform: `translateY(${translateY}px)`,
+            transition: `opacity ${fadeDur}ms ease-out, transform ${fadeDur}ms ease-out`,
+            boxShadow:
+              "0 0 28px 6px rgba(150, 200, 255, 0.45), 0 0 0 1px rgba(150, 200, 255, 0.6) inset",
+          }}
+          className="w-full max-w-xl rounded-lg border-2 border-sky-300/60 bg-ink/95 px-8 py-6 text-center shadow-2xl"
+        >
+          <div className="font-display text-sm uppercase tracking-[0.22em] text-sky-300">
+            {label}
+          </div>
+          <div className="mt-2 font-display text-4xl leading-tight text-parchment">
+            {title}
+          </div>
+          {subtitle ? (
+            <div className="mt-3 text-lg leading-relaxed text-sky-100/90">
+              {subtitle}
+            </div>
+          ) : null}
+          <div
+            className="mt-4 text-xs uppercase tracking-[0.18em] text-parchment/50"
+            style={{ opacity: armed ? 1 : 0, transition: "opacity 300ms" }}
+          >
+            Move to continue
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

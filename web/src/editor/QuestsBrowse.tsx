@@ -17,6 +17,7 @@
  * Same draft / publish / export flow as the rest of the editor.
  */
 
+import { LorePicker } from "./LorePicker";
 import {
   DraftBanner,
   deleteRecordConfirmMessage,
@@ -204,6 +205,22 @@ interface Rewards {
   travel?: TravelReward;
 }
 
+type StartTriggerKind = "game_start" | "enter_map" | "leave_map" | "read_lore";
+
+interface StartTrigger {
+  kind: StartTriggerKind;
+  map_id?: string;
+  lore_id?: string;
+  message?: string;
+}
+
+const START_TRIGGER_LABELS: Record<StartTriggerKind, string> = {
+  game_start: "New game starts",
+  enter_map: "Party enters map",
+  leave_map: "Party leaves map",
+  read_lore: "Party reads lore",
+};
+
 interface QuestRecord {
   id: string;
   name: string;
@@ -217,6 +234,10 @@ interface QuestRecord {
    *  the quest in. Absent / false (the default) → rewards are granted
    *  the moment the last step completes. */
   return_to_giver?: boolean;
+  /** Events that start the quest automatically (no giver dialog). */
+  start_triggers?: StartTrigger[];
+  /** Notice-board ids (map cell `board`) the quest is posted on. */
+  boards?: string[];
   quest_giver?: QuestGiver;
   rewards?: Rewards;
   steps: QuestStep[];
@@ -548,6 +569,8 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
           // Keep the file clean — absent means "not main" / "no return".
           if (next.main_quest !== true) delete next.main_quest;
           if (next.return_to_giver !== true) delete next.return_to_giver;
+          if (!next.start_triggers?.length) delete next.start_triggers;
+          if (!next.boards?.length) delete next.boards;
           return next;
         }
         // Only one main quest: setting it here clears it elsewhere.
@@ -814,6 +837,7 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
                   </div>
                   {expanded.has(q.id) ? (
                     <QuestEditor
+                      moduleId={moduleId}
                       quest={q}
                       items={state.items}
                       maps={state.maps}
@@ -954,6 +978,7 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
 // ── Inline editor for a single quest (metadata + steps list) ────────
 
 function QuestEditor({
+  moduleId,
   quest,
   items,
   maps,
@@ -966,6 +991,7 @@ function QuestEditor({
   onUpdateStep,
   onDeleteStep,
 }: {
+  moduleId: string;
   quest: QuestRecord;
   items: ItemSummary[];
   maps: MapSummary[];
@@ -1052,6 +1078,20 @@ function QuestEditor({
       <QuestGiverEditor
         giver={quest.quest_giver}
         onUpdate={(giver) => onUpdate({ quest_giver: giver })}
+      />
+
+      <StartTriggersEditor
+        moduleId={moduleId}
+        triggers={quest.start_triggers ?? []}
+        maps={maps}
+        returnToGiver={quest.return_to_giver === true}
+        hasGiver={!!quest.quest_giver?.npc_name}
+        onChange={(start_triggers) => onUpdate({ start_triggers })}
+      />
+
+      <BoardsEditor
+        boards={quest.boards ?? []}
+        onChange={(boards) => onUpdate({ boards })}
       />
 
       <RewardsEditor
@@ -2647,5 +2687,216 @@ function NewQuestForm({
         </button>
       </div>
     </form>
+  );
+}
+
+/** "How else does this quest start?" — automatic start triggers.
+ *  Each row is one event; the first matching event while the quest
+ *  is still untaken starts it and shows the player a New Quest
+ *  notification (the row's message, else the first step). */
+function StartTriggersEditor({
+  moduleId,
+  triggers,
+  maps,
+  returnToGiver,
+  hasGiver,
+  onChange,
+}: {
+  moduleId: string;
+  triggers: StartTrigger[];
+  maps: MapSummary[];
+  returnToGiver: boolean;
+  hasGiver: boolean;
+  onChange: (next: StartTrigger[]) => void;
+}) {
+  const updateAt = (i: number, patch: Partial<StartTrigger>) => {
+    onChange(
+      triggers.map((t, j) => {
+        if (j !== i) return t;
+        const next: StartTrigger = { ...t, ...patch };
+        // Keep only the id field the kind uses, and drop empties.
+        if (next.kind !== "enter_map" && next.kind !== "leave_map") delete next.map_id;
+        if (next.kind !== "read_lore") delete next.lore_id;
+        if (!next.message) delete next.message;
+        return next;
+      }),
+    );
+  };
+  return (
+    <div className="mt-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-[13px] uppercase tracking-wide text-parchment/75">
+          Starts automatically when ({triggers.length})
+        </h3>
+        <button
+          type="button"
+          onClick={() => onChange([...triggers, { kind: "enter_map", map_id: "" }])}
+          className="rounded border border-parchment/25 px-2 py-0.5 text-xs text-parchment/85 hover:bg-ink/40"
+        >
+          + Add Trigger
+        </button>
+      </div>
+      <p className="mt-1 text-xs text-parchment/65">
+        Starts the quest with no giver conversation — the player gets a
+        &ldquo;New Quest&rdquo; notification. Any one trigger is enough;
+        a quest the party already has is never restarted.
+      </p>
+      {triggers.length > 0 && returnToGiver && !hasGiver ? (
+        <p className="mt-1 text-xs text-amber-300/90">
+          ⚠ &ldquo;Return to quest giver&rdquo; is on but no giver is set
+          — the party would have no one to turn this quest in to.
+        </p>
+      ) : null}
+      <ul className="mt-2 space-y-2">
+        {triggers.map((t, i) => {
+          const mapKnown = maps.some((m) => m.id === t.map_id);
+          return (
+            <li
+              key={i}
+              className="rounded border border-parchment/15 bg-ink/30 px-2 py-2"
+            >
+              <div className="grid items-center gap-1 sm:grid-cols-[auto_1fr_auto]">
+                <select
+                  value={t.kind}
+                  onChange={(e) =>
+                    updateAt(i, { kind: e.target.value as StartTriggerKind })
+                  }
+                  className="rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
+                  title="Event"
+                >
+                  {(Object.keys(START_TRIGGER_LABELS) as StartTriggerKind[]).map(
+                    (k) => (
+                      <option key={k} value={k}>
+                        {START_TRIGGER_LABELS[k]}
+                      </option>
+                    ),
+                  )}
+                </select>
+                <div className="min-w-0">
+                  {t.kind === "enter_map" || t.kind === "leave_map" ? (
+                    <select
+                      value={t.map_id ?? ""}
+                      onChange={(e) => updateAt(i, { map_id: e.target.value })}
+                      className="w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-[13px] text-parchment/90"
+                      title="Map"
+                    >
+                      {!mapKnown && t.map_id ? (
+                        <option value={t.map_id}>(missing) {t.map_id}</option>
+                      ) : null}
+                      {!t.map_id ? <option value="">— choose a map —</option> : null}
+                      {groupByTags(maps).map(([tag, ms]) => (
+                        <optgroup key={tag} label={tag}>
+                          {ms.map((m) => (
+                            <option key={`${tag}::${m.id}`} value={m.id}>
+                              {m.name ?? m.id} ({m.id})
+                            </option>
+                          ))}
+                        </optgroup>
+                      ))}
+                    </select>
+                  ) : t.kind === "read_lore" ? (
+                    <LorePicker
+                      value={t.lore_id ?? ""}
+                      moduleId={moduleId}
+                      noneLabel="— choose lore —"
+                      help="A bookshelf, plaque or book item carrying this lore. Any read counts, first or not."
+                      onChange={(lore_id) => updateAt(i, { lore_id })}
+                    />
+                  ) : (
+                    <span className="text-xs text-parchment/65">
+                      Fires when a new game begins (and on the first load
+                      of an existing save after this quest is added).
+                    </span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onChange(triggers.filter((_, j) => j !== i))}
+                  className="rounded border border-parchment/20 px-2 py-0.5 text-xs text-parchment/70 hover:bg-ink/40"
+                  title="Remove this trigger"
+                >
+                  ✕
+                </button>
+              </div>
+              <input
+                type="text"
+                value={t.message ?? ""}
+                onChange={(e) => updateAt(i, { message: e.target.value })}
+                placeholder="Notification line (optional) — e.g. “The letter speaks of a ruined shrine to the north.”"
+                className="mt-1 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
+              />
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+/** Notice boards this quest is posted on. A board is any map cell
+ *  whose Board field holds the same id (set in the Map Editor). */
+function BoardsEditor({
+  boards,
+  onChange,
+}: {
+  boards: string[];
+  onChange: (next: string[]) => void;
+}) {
+  const [draft, setDraft] = useState("");
+  const add = () => {
+    const id = draft.trim();
+    if (!id || boards.includes(id)) return;
+    onChange([...boards, id]);
+    setDraft("");
+  };
+  return (
+    <div className="mt-4">
+      <h3 className="text-[13px] uppercase tracking-wide text-parchment/75">
+        Posted on notice boards
+      </h3>
+      <p className="mt-1 text-xs text-parchment/65">
+        Board ids (a map cell&apos;s <strong>Board</strong> field in the Map
+        Editor). Bumping the board lists every untaken quest posted there and
+        lets the player pick. The quest giver, if any, is shown as the poster.
+      </p>
+      <div className="mt-1 flex flex-wrap items-center gap-1.5">
+        {boards.map((b) => (
+          <span
+            key={b}
+            className="inline-flex items-center gap-1 rounded border border-amber-300/40 bg-amber-300/10 px-2 py-0.5 font-mono text-xs text-amber-100"
+          >
+            {b}
+            <button
+              type="button"
+              onClick={() => onChange(boards.filter((x) => x !== b))}
+              className="text-amber-200/70 hover:text-amber-100"
+              title="Remove from this board"
+            >
+              ✕
+            </button>
+          </span>
+        ))}
+        <input
+          type="text"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              add();
+            }
+          }}
+          placeholder="board id, e.g. hallowmere_board"
+          className="w-56 rounded border border-parchment/20 bg-ink/50 px-2 py-0.5 font-mono text-xs text-parchment/90"
+        />
+        <button
+          type="button"
+          onClick={add}
+          className="rounded border border-parchment/25 px-2 py-0.5 text-xs text-parchment/85 hover:bg-ink/40"
+        >
+          + Post
+        </button>
+      </div>
+    </div>
   );
 }

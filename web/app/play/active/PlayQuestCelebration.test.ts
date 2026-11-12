@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
+  isStickyCelebration,
+  logEventCard,
   returnToGiverSubtitle,
   stepFinalSubtitle,
 } from "./PlayQuestCelebration";
@@ -62,5 +64,32 @@ describe("stepFinalSubtitle", () => {
     expect(stepFinalSubtitle("", "−Skeleton Key")).toBe(
       "Return to the quest giver · −Skeleton Key",
     );
+  });
+});
+
+describe("logEventCard", () => {
+  it("heads narration with the map name and joins lines", () => {
+    expect(logEventCard(["Smoke rises.", "  Tracks lead north. "], "Caravan")).toEqual({
+      title: "Caravan",
+      subtitle: "Smoke rises.\n\nTracks lead north.",
+    });
+  });
+  it("uses a Tip heading and drops the prefix when every line is a tip", () => {
+    expect(logEventCard(["Tip: Walk over items.", "tip:press H"], "Caravan")).toEqual({
+      title: "Tip",
+      subtitle: "Walk over items.\n\npress H",
+    });
+  });
+  it("keeps Tip prefixes when mixed with narration", () => {
+    expect(logEventCard(["Smoke.", "Tip: move"], "Caravan").title).toBe("Caravan");
+  });
+});
+
+describe("isStickyCelebration", () => {
+  it("is true only for the wait-for-move variants", () => {
+    expect(isStickyCelebration("quest-new")).toBe(true);
+    expect(isStickyCelebration("log-event")).toBe(true);
+    expect(isStickyCelebration("quest-accept")).toBe(false);
+    expect(isStickyCelebration(null)).toBe(false);
   });
 });

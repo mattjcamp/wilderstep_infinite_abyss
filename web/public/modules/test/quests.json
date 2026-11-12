@@ -224,7 +224,10 @@
         "npc_sprite": "person/dwarf_male_wizard.png",
         "start_dialog": "Your journey is life is to meet the magic cat",
         "end_dialog": ""
-      }
+      },
+      "boards": [
+        "notice_board"
+      ]
     }
   ]
 }

@@ -6,7 +6,12 @@
   },
   "avatar": "person/dwarf_male_fighter.png",
   "gold": 50,
-  "roster": [],
+  "roster": [
+    "cameron",
+    "goldmoon",
+    "tanis",
+    "raistlen"
+  ],
   "party_effects": [],
   "inventory": [
     {
