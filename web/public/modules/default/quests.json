@@ -142,7 +142,7 @@
         {
           "kind": "leave_map",
           "map_id": "destroyed_caravan",
-          "message": "Now that you have found your way out of the destruction, you have found a purpose.... The time to avenge your tribe and kill The Orc King will come soon, but first you must seek out help in the nearby town of Willowbrook. Press Q to see more information on this quest."
+          "message": "Now that you have made your way out of the destruction, you have found a purpose.... The time to avenge your tribe and kill The Orc King will come soon, but first you must seek out help in the nearby town of Willowbrook. Press Q to see more information on this quest."
         }
       ]
     },

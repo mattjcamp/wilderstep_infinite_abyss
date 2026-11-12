@@ -66615,12 +66615,11 @@
       ],
       "lighting": "darkness",
       "soundtrack": [
-        "/audio/Winds of Destiny.mp3"
+        "/audio/crystal_skull_title.wav"
       ],
       "fog_style": {
         "day": "darkness",
-        "twilight": "darkness",
-        "night": "darkness"
+        "twilight": "darkness"
       },
       "description": "Fires and dead bodies are scattered around broken down wagons. Here and there you see broken Orc weapons and corpses along with piles of human bodies."
     },

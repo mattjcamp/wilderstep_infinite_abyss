@@ -186,6 +186,20 @@ export function PlayQuestCelebration({
     setPhase("exit");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [moveTick, armed]);
+  // Log Event cards also close on ANY key press once armed (same
+  // grace period as moving, so a key still held from walking can't skip
+  // it). The key isn't swallowed — pressing P still opens the Party
+  // screen. Modifier-only presses and auto-repeats don't count.
+  useEffect(() => {
+    if (kind !== "log-event" || !armed || phase === "exit") return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.repeat) return;
+      if (["Shift", "Control", "Alt", "Meta", "CapsLock"].includes(e.key)) return;
+      setPhase("exit");
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [kind, armed, phase]);
   // ...and the dismissal is timed off the exit phase ALONE. It must not
   // live in the move effect above: a party that keeps walking bumps
   // `moveTick` during the fade, which would cancel the timer and leave
@@ -294,7 +308,7 @@ export function PlayQuestCelebration({
             className="mt-4 text-xs uppercase tracking-[0.18em] text-parchment/50"
             style={{ opacity: armed ? 1 : 0, transition: "opacity 300ms" }}
           >
-            Move to continue
+            Move or press any key to continue
           </div>
         </div>
       </div>
