@@ -14,11 +14,17 @@
  * here runs the same transition the immediate path would; cancelling
  * leaves the party where they are.
  *
- * Keyboard: Enter / E confirm, Esc / backdrop cancel. Capture phase so
- * the world movement keys underneath don't fire while it's open.
+ * Generated-dungeon stairs use it too (`placeKind: "stairs-up"` /
+ * `"stairs-down"`): it says which way the stairs go and where they
+ * lead, and asks before the party climbs.
+ *
+ * Keyboard: arrows / WASD move between Stay and the confirm button (the
+ * confirm button starts highlighted), Enter / E / Space presses the
+ * highlighted one, Esc / backdrop cancels. Capture phase so the world
+ * movement keys underneath don't fire while it's open.
  */
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { QuestPlacardTarget } from "./questPlacardTargets";
 
 export function LinkPlacard({
@@ -31,7 +37,7 @@ export function LinkPlacard({
   onConfirm,
   onCancel,
 }: {
-  placeKind: "link" | "dungeon";
+  placeKind: "link" | "dungeon" | "stairs-up" | "stairs-down";
   name: string;
   description?: string;
   /** True when the party has visited this destination before. Drives
@@ -52,53 +58,58 @@ export function LinkPlacard({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  // 0 = Stay, 1 = confirm. Confirm starts highlighted so Enter still
+  // means "go", as before.
+  const [focused, setFocused] = useState(1);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Enter" || e.key === "e" || e.key === "E") {
+      const k = e.key;
+      const stop = () => {
         e.preventDefault();
         e.stopPropagation();
-        onConfirm();
+      };
+      if (k === "Enter" || k === "e" || k === "E" || k === " " || k === "Spacebar") {
+        stop();
+        if (focused === 1) onConfirm();
+        else onCancel();
         return;
       }
-      if (e.key === "Escape") {
-        e.preventDefault();
-        e.stopPropagation();
+      if (k === "Escape") {
+        stop();
         onCancel();
         return;
       }
-      // Swallow movement keys so the party doesn't step under the
-      // placard.
       if (
-        [
-          "ArrowUp",
-          "ArrowDown",
-          "ArrowLeft",
-          "ArrowRight",
-          "w",
-          "a",
-          "s",
-          "d",
-          "W",
-          "A",
-          "S",
-          "D",
-          " ",
-          "Spacebar",
-        ].includes(e.key)
+        ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "w", "a", "s", "d", "W", "A", "S", "D"].includes(k)
       ) {
-        e.stopPropagation();
+        // Two buttons — any direction flips the highlight.
+        stop();
+        setFocused((f) => (f === 1 ? 0 : 1));
       }
     };
     window.addEventListener("keydown", onKey, { capture: true });
     return () =>
       window.removeEventListener("keydown", onKey, { capture: true });
-  }, [onConfirm, onCancel]);
+  }, [focused, onConfirm, onCancel]);
+  const focusRing = "outline outline-2 outline-amber-200 outline-offset-1";
+  const isStairs = placeKind === "stairs-up" || placeKind === "stairs-down";
 
-  const confirmLabel = placeKind === "dungeon" ? "Descend" : "Travel";
+  const confirmLabel =
+    placeKind === "stairs-up"
+      ? "Climb Up"
+      : placeKind === "stairs-down"
+        ? "Climb Down"
+        : placeKind === "dungeon"
+          ? "Descend"
+          : "Travel";
   const prompt =
-    placeKind === "dungeon"
-      ? "Descend into this dungeon?"
-      : "Travel to this place?";
+    placeKind === "stairs-up"
+      ? "Climb up the stairs?"
+      : placeKind === "stairs-down"
+        ? "Climb down the stairs?"
+        : placeKind === "dungeon"
+          ? "Descend into this dungeon?"
+          : "Travel to this place?";
   // Quest treatment — the frame and header pick up gold accents when
   // any active quest has an incomplete step at this destination.
   const questRelevant = (questTargets?.length ?? 0) > 0;
@@ -138,6 +149,14 @@ export function LinkPlacard({
                 ✓ Cleared
               </span>
             ) : null}
+            {isStairs ? (
+              <span
+                className="rounded border border-parchment/25 px-2 py-0.5 text-[10px] uppercase tracking-wide text-parchment/70"
+                title={placeKind === "stairs-up" ? "These stairs lead up." : "These stairs lead down."}
+              >
+                {placeKind === "stairs-up" ? "▲ Up" : "▼ Down"}
+              </span>
+            ) : (
             <span
               className={[
                 "rounded border px-2 py-0.5 text-[10px] uppercase tracking-wide",
@@ -153,6 +172,7 @@ export function LinkPlacard({
             >
               {explored ? "Explored" : "Unexplored"}
             </span>
+            )}
           </div>
         </header>
 
@@ -200,7 +220,11 @@ export function LinkPlacard({
             <button
               type="button"
               onClick={onCancel}
-              className="rounded border border-parchment/20 px-3 py-1 text-xs text-parchment/80 hover:bg-ink/50"
+              onMouseEnter={() => setFocused(0)}
+              className={[
+                "rounded border border-parchment/20 px-3 py-1 text-xs text-parchment/80 hover:bg-ink/50",
+                focused === 0 ? focusRing : "",
+              ].join(" ")}
               title="Stay where you are (Esc)"
             >
               Stay
@@ -208,8 +232,12 @@ export function LinkPlacard({
             <button
               type="button"
               onClick={onConfirm}
-              className="rounded border border-ember/60 bg-ember/20 px-3 py-1 text-xs text-parchment hover:bg-ember/35"
-              title="Enter (Enter)"
+              onMouseEnter={() => setFocused(1)}
+              className={[
+                "rounded border border-ember/60 bg-ember/20 px-3 py-1 text-xs text-parchment hover:bg-ember/35",
+                focused === 1 ? focusRing : "",
+              ].join(" ")}
+              title={`${confirmLabel} (Enter)`}
             >
               {confirmLabel}
             </button>

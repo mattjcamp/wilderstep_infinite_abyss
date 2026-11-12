@@ -308,6 +308,11 @@ function patchStairsLink(
   floorIdx: number,
   totalFloors: number,
 ): void {
+  // Stairs ask before moving the party (placard: up / down, where to).
+  if (tileId === TILE_STAIRS || tileId === TILE_STAIRS_DOWN) {
+    cell.stairs = tileId === TILE_STAIRS ? "up" : "down";
+    cell.show_link_placard = true;
+  }
   // Up — exit to previous floor, or to overworld at floor 0.
   if (tileId === TILE_STAIRS) {
     if (floorIdx === 0) {

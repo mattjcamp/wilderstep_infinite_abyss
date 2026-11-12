@@ -39,6 +39,8 @@ import {
   type SceneBridge,
 } from "@/sim/MapSimulation";
 import { LockDialogOverlay } from "@/editor/LockDialogOverlay";
+import { LinkPlacard } from "@/play/LinkPlacard";
+import { stairsPlacardText, type StairsPlacardText } from "@/play/stairsPlacard";
 import {
   dungeonEncounterRefs,
   dungeonLevelToMap,
@@ -117,10 +119,41 @@ export function DungeonSimMount({
   /** Mirrors any open dialog into a ref so the keyboard bridge can
    *  gate movement without re-binding the listener on every state
    *  change. Same pattern MapEditor uses. */
+  /** Follow a dungeon link (stairs or a pit): leave at the top /
+   *  bottom, else switch floors. Shared by the immediate `linked`
+   *  path (pits) and the stairs placard's confirm. Kept in a ref so
+   *  the long-lived sim subscription always calls the latest. */
+  const takeLink = (link: { map_id: string; x: number; y: number; fall?: boolean }) => {
+    const target = link.map_id;
+    if (target === EXIT_TO_OVERWORLD_MAP_ID) {
+      setExited(true);
+      return;
+    }
+    // Parse out the floor index from the synthetic id —
+    // shape is `__dungeon_<id>_f<n>__`.
+    const match = target.match(/_f(\d+)__$/);
+    if (match) {
+      const next = Number.parseInt(match[1], 10);
+      if (Number.isFinite(next)) {
+        fallLandingRef.current = link.fall ? { col: link.x, row: link.y } : null;
+        setFloorIdx(next);
+      }
+    }
+  };
+  const takeLinkRef = useRef(takeLink);
+  takeLinkRef.current = takeLink;
+  /** Stairs placard — the party stepped onto a staircase; it asks
+   *  before changing floors, same as in game. */
+  const [stairsPlacard, setStairsPlacard] = useState<
+    | (StairsPlacardText & {
+        link: { map_id: string; x: number; y: number; fall?: boolean };
+      })
+    | null
+  >(null);
   const overlaysOpenRef = useRef(false);
   useEffect(() => {
-    overlaysOpenRef.current = !!lockEncounter;
-  }, [lockEncounter]);
+    overlaysOpenRef.current = !!lockEncounter || !!stairsPlacard;
+  }, [lockEncounter, stairsPlacard]);
   /** Active Phaser scene — captured on create() so the React side
    *  can push prop updates (lighting mode toggles, infravision
    *  activation) without rebuilding the whole game. Cleared in
@@ -575,23 +608,19 @@ export function DungeonSimMount({
           simRef.current = sim;
           sim.subscribe((ev) => {
             if (ev.kind === "linked") {
-              const target = ev.link.map_id;
-              if (target === EXIT_TO_OVERWORLD_MAP_ID) {
-                setExited(true);
-                return;
-              }
-              // Parse out the floor index from the synthetic id —
-              // shape is `__dungeon_<id>_f<n>__`.
-              const match = target.match(/_f(\d+)__$/);
-              if (match) {
-                const next = Number.parseInt(match[1], 10);
-                if (Number.isFinite(next)) {
-                  fallLandingRef.current = ev.link.fall
-                    ? { col: ev.link.x, row: ev.link.y }
-                    : null;
-                  setFloorIdx(next);
-                }
-              }
+              takeLinkRef.current(ev.link);
+            }
+            if (ev.kind === "place_encountered" && ev.placeKind === "link" && ev.stairs) {
+              setStairsPlacard({
+                ...stairsPlacardText({
+                  stairs: ev.stairs,
+                  linkMapId: ev.link.map_id,
+                  dungeonName: dungeonId,
+                  totalFloors: levels.length,
+                  floorName: (i) => levels[i]?.name,
+                }),
+                link: ev.link,
+              });
             }
             if (ev.kind === "lock_encountered") {
               // Party bumped a locked door — pop the Pick Lock /
@@ -718,6 +747,20 @@ export function DungeonSimMount({
           generator placed). Same overlay component the map
           editor uses; the sim drives the dice rolls + cell
           unlock through the simRef callbacks. */}
+      {stairsPlacard ? (
+        <LinkPlacard
+          placeKind={stairsPlacard.placeKind}
+          name={stairsPlacard.name}
+          description={stairsPlacard.description}
+          explored
+          onConfirm={() => {
+            const link = stairsPlacard.link;
+            setStairsPlacard(null);
+            takeLink(link);
+          }}
+          onCancel={() => setStairsPlacard(null)}
+        />
+      ) : null}
       {lockEncounter ? (
         <LockDialogOverlay
           options={lockEncounter}

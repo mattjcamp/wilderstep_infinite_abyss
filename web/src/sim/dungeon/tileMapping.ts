@@ -89,6 +89,11 @@ export interface DungeonTilePrototype {
   trap: boolean;
   flags?: Record<string, unknown>;
   link?: { map_id: string; x: number; y: number; fall?: boolean } | null;
+  /** Staircase direction on generated-dungeon stairs cells. Paired
+   *  with `show_link_placard` so stepping onto them asks first
+   *  ("Climb up / down?") instead of changing floors on contact. */
+  stairs?: "up" | "down";
+  show_link_placard?: boolean;
   /** Pit / chasm cell. Monsters never step onto one, even when it's a
    *  walkable drop-through for the party. */
   pit?: boolean;

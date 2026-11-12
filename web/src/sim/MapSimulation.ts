@@ -438,6 +438,8 @@ export type SimEvent =
       placeKind: "link";
       pos: Position;
       link: { map_id: string; x: number; y: number };
+      /** Set when the link is a generated-dungeon staircase. */
+      stairs?: "up" | "down";
     }
   | {
       kind: "place_encountered";
@@ -1483,8 +1485,14 @@ export class MapSimulation {
         placeKind: "link",
         pos: { col: targetCol, row: targetRow },
         link: target.link,
+        stairs: target.stairs,
       });
-      this.emit({ kind: "log", message: "A path leads onward from here." });
+      this.emit({
+        kind: "log",
+        message: target.stairs
+          ? `Stairs lead ${target.stairs} from here.`
+          : "A path leads onward from here.",
+      });
       return;
     }
 

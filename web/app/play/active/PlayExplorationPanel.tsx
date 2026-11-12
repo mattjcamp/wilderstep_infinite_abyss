@@ -9,7 +9,8 @@
  * Log window — the notable events from the adventure log (XP, level-ups,
  * quests, finds, fights, traps, lock attempts — see notableCategory),
  * each with a coloured dot for its kind and stamped with the game
- * time it happened and grouped under a heading per in-game day. Newest
+ * time it happened and grouped under a "Day N" heading (days since the
+ * adventure began, matching the bottom bar's readout). Newest
  * first: each new line lands at the top and pushes older ones down;
  * scroll down for history. While the player is scrolled down reading
  * history the view holds still, and a "Latest ↑" button jumps back
@@ -24,7 +25,7 @@
  */
 
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { dateStr, timeStr } from "@/battle/world/GameTime";
+import { adventureDay, timeStr } from "@/battle/world/GameTime";
 import { Sfx } from "@/battle/audio/Sfx";
 import {
   carryLog,
@@ -54,6 +55,7 @@ export function PlayExplorationPanel({
   messages,
   storyLines,
   clockMinutes,
+  startClockMinutes,
   hidden = false,
   onOpenFullLog,
 }: {
@@ -63,6 +65,9 @@ export function PlayExplorationPanel({
   /** Authored Log Event lines — always shown (see notableCategory). */
   storyLines?: ReadonlySet<string>;
   clockMinutes: number;
+  /** Game time the adventure began — Day 1 (same origin as the
+   *  bottom bar's "DAY N"). */
+  startClockMinutes: number;
   onOpenFullLog: () => void;
 }) {
   return (
@@ -73,8 +78,12 @@ export function PlayExplorationPanel({
         messages={messages}
         storyLines={storyLines}
         clockMinutes={clockMinutes}
+        startClockMinutes={startClockMinutes}
         onOpenFullLog={onOpenFullLog}
       />
+      <p className="shrink-0 px-1 text-right text-xs text-parchment/55">
+        Press <span className="font-mono text-parchment/80">H</span> for Help
+      </p>
     </aside>
   );
 }
@@ -112,11 +121,13 @@ function ExplorationLog({
   messages,
   storyLines,
   clockMinutes,
+  startClockMinutes,
   onOpenFullLog,
 }: {
   messages: ReadonlyArray<string>;
   storyLines?: ReadonlySet<string>;
   clockMinutes: number;
+  startClockMinutes: number;
   onOpenFullLog: () => void;
 }) {
   // Per-line metadata carried across updates (see explorationLog.ts):
@@ -188,7 +199,7 @@ function ExplorationLog({
   let lastDay = "";
   [...entries].reverse().forEach(({ msg, cat, at: minutes, seq }, i) => {
     const at = { totalMinutes: minutes };
-    const day = dateStr(at);
+    const day = `Day ${adventureDay(at, { totalMinutes: startClockMinutes })}`;
     if (day !== lastDay) {
       lastDay = day;
       rows.push(

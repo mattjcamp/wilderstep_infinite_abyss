@@ -26,10 +26,13 @@
  * rectangles against the visible window on every scroll + repaint.
  *
  * Collapsing: each quest's title row toggles it open / closed. The
- * main quest (`main_quest: true`) is pinned to a MAIN QUEST section
- * and starts expanded; everything else starts collapsed to a title +
- * current-step line so the full list scans at a glance. Toggles are
- * remembered for the life of the painter (the play session).
+ * main quest (`main_quest: true`) is pinned to a MAIN QUEST section.
+ * Only the most recently taken quest that's still in progress (active
+ * or ready to turn in) starts expanded; everything else — the main
+ * quest included, unless it IS the newest — starts collapsed to a
+ * title + current-step line so the full list scans at a glance. Once
+ * the player expands or collapses a quest, that choice wins for the
+ * life of the painter (the play session).
  *
  * What it does NOT do:
  *   - Accept / turn in quests. Those flows live in the in-world
@@ -192,12 +195,16 @@ export class PaintedQuestLog {
   /** Every painted content object, for `applyClip()`. */
   private clipItems: ClipItem[] = [];
   /** Player's explicit expand/collapse choices, keyed by quest id.
-   *  Survives close / reopen. Absent → default (main quest open,
-   *  everything else collapsed). */
+   *  Survives close / reopen. Absent → default (the most recent
+   *  in-progress quest open, everything else collapsed). */
   private readonly expandedOverride = new Map<string, boolean>();
   /** Id of the quest pinned in the MAIN QUEST section on the last
    *  paint, so `toggleQuest` resolves its default state correctly. */
   private mainQuestId: string | null = null;
+  /** The quest that's expanded by default — the most recently taken
+   *  quest still in progress (see {@link mostRecentOpenQuestId}).
+   *  Recomputed on every paint. */
+  private defaultExpandedId: string | null = null;
   /** Quest entries in paint (= on-screen) order with their content-
    *  local geometry — the list the keyboard cursor walks. Rebuilt on
    *  every paint. */
@@ -440,7 +447,7 @@ export class PaintedQuestLog {
 
   /** Whether a quest's entry is currently expanded. */
   isQuestExpanded(questId: string): boolean {
-    return this.isExpanded(questId, questId === this.mainQuestId);
+    return this.isExpanded(questId);
   }
 
   /** Flip a quest between expanded and collapsed and repaint. Title
@@ -512,8 +519,10 @@ export class PaintedQuestLog {
     }
   }
 
-  private isExpanded(questId: string, isMain: boolean): boolean {
-    return this.expandedOverride.get(questId) ?? isMain;
+  private isExpanded(questId: string): boolean {
+    return (
+      this.expandedOverride.get(questId) ?? questId === this.defaultExpandedId
+    );
   }
 
   // ── Painting helpers ────────────────────────────────────────────
@@ -532,6 +541,7 @@ export class PaintedQuestLog {
 
     const buckets = pinMainQuest(bucketQuests(data));
     this.mainQuestId = buckets.main?.quest.id ?? null;
+    this.defaultExpandedId = mostRecentOpenQuestId(data);
 
     let cursorY = 0;
     if (
@@ -682,7 +692,7 @@ export class PaintedQuestLog {
     const complete = steps.length > 0 && doneCount >= steps.length;
     const statusColor = statusColorFor(state, complete);
     const statusLabel = statusLabelFor(state, complete, doneCount, steps.length);
-    const expanded = this.isExpanded(quest.id, isMain);
+    const expanded = this.isExpanded(quest.id);
 
     let rowY = startY + ENTRY_INNER_PADDING;
     const entryX = ENTRY_INNER_PADDING;
@@ -1063,6 +1073,20 @@ export function bucketQuests(data: PaintedQuestLogData): {
     else active.push(q);
   }
   return { active, pending, turnedIn };
+}
+
+/** The most recently taken quest that's still in progress — active or
+ *  waiting to be turned in — i.e. the last such id in `acceptedQuests`
+ *  (which is kept in acceptance order). The quest log opens with only
+ *  this one expanded. Null when nothing is in progress. */
+export function mostRecentOpenQuestId(data: PaintedQuestLogData): string | null {
+  const known = new Set(data.quests.map((q) => q.id));
+  const turnedIn = new Set(data.turnedInQuests);
+  for (let i = data.acceptedQuests.length - 1; i >= 0; i--) {
+    const id = data.acceptedQuests[i];
+    if (known.has(id) && !turnedIn.has(id)) return id;
+  }
+  return null;
 }
 
 /** Pull the main quest (`main_quest: true`) out of the active /

@@ -69,6 +69,10 @@ export interface SimCell {
    *  (dungeon mouths, region portals) announce themselves. Absent /
    *  false → traverse or enter immediately, the original behaviour. */
   show_link_placard?: boolean;
+  /** Generated-dungeon staircase direction (see dungeonLevelToMap).
+   *  Carried on `place_encountered` so the host's placard can say
+   *  whether the party is climbing up or down. */
+  stairs?: "up" | "down";
   /** NPC id from npcs.json — when the party steps onto this cell, the
    *  sim emits an npc_encountered event so the host can open a dialog
    *  overlay. Empty / undefined when no NPC stands here. */

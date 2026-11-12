@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   PaintedQuestLog,
   bucketQuests,
+  mostRecentOpenQuestId,
   pinMainQuest,
   stepStatusFor,
   type PaintedQuestLogData,
@@ -772,7 +773,7 @@ describe("PaintedQuestLog — main quest + collapsing", () => {
     expect(pinned.turnedIn.map((q) => q.id)).toEqual(["slay-orc"]);
   });
 
-  it("paints a MAIN QUEST section above ACTIVE, expanded by default", () => {
+  it("paints a MAIN QUEST section above ACTIVE (newest quest expanded)", () => {
     const scene = makeFakeScene();
     const screen = makeScreen(scene, () => {});
     screen.open(withMain());
@@ -786,6 +787,29 @@ describe("PaintedQuestLog — main quest + collapsing", () => {
     expect(s.some((x) => x.includes("Track him through the woods."))).toBe(true);
     expect(s.some((x) => x.includes("Somewhere in the orchard."))).toBe(false);
     expect(s.some((x) => x.includes("Find the tree"))).toBe(true);
+  });
+
+  it("expands only the most recently taken in-progress quest by default", () => {
+    const scene = makeFakeScene();
+    const screen = makeScreen(scene, () => {});
+    // Main quest taken FIRST, side quest most recently → the side
+    // quest is open and the main quest starts collapsed.
+    screen.open({ ...withMain(), acceptedQuests: ["slay-orc", "rescue-cat"] });
+    expect(screen.isQuestExpanded("rescue-cat")).toBe(true);
+    expect(screen.isQuestExpanded("slay-orc")).toBe(false);
+    screen.close();
+  });
+
+  it("mostRecentOpenQuestId skips turned-in and unknown quests", () => {
+    const d = withMain();
+    expect(mostRecentOpenQuestId(d)).toBe("slay-orc");
+    expect(mostRecentOpenQuestId({ ...d, turnedInQuests: ["slay-orc"] })).toBe("rescue-cat");
+    expect(
+      mostRecentOpenQuestId({ ...d, acceptedQuests: [...d.acceptedQuests, "gone"] }),
+    ).toBe("slay-orc");
+    expect(
+      mostRecentOpenQuestId({ ...d, turnedInQuests: ["slay-orc", "rescue-cat"] }),
+    ).toBeNull();
   });
 
   it("toggleQuest expands and collapses, and is remembered across reopen", () => {

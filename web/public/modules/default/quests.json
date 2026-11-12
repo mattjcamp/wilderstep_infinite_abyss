@@ -63,7 +63,7 @@
         "npc_name": "Earnest",
         "npc_sprite": "person/person_male_cleric.png",
         "start_dialog": "The town's dead will not stay in their resting places, can you please channel their spirits and put them to rest?",
-        "end_dialog": "Thank you for your service to The Deep One"
+        "end_dialog": "Thank you for your service to The Deep Ones"
       },
       "rewards": {
         "xp": 200,
@@ -172,6 +172,16 @@
         "start_dialog": "Greetings, what a gang of youthful strong people. I could use a little bit of help. Now that I am getting up in years, I spend most of my time minding the children. Lately, too many children have been wandering into the grottos and ruins scattered all over the place here. Can you go into some of these spaces and clear out any dangerous monsters hiding in these pits? Make our lands safe for our children. Please! If you could just find any two dungeons to clear that would help me so much!",
         "end_dialog": ""
       }
+    },
+    {
+      "id": "the_north_grotto",
+      "name": "The Grotto in the North",
+      "description": "Caves in the mountains to the north are giving refuge to all sorts of unsavory characters and making the roads less safe. There is an outstanding bounty on anyone able to clear out these dens and help us make Willowbrook safer",
+      "tags": [],
+      "steps": [],
+      "boards": [
+        "willowbrook_notice_board"
+      ]
     }
   ]
 }

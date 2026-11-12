@@ -1,4 +1,5 @@
 ## Fine Tune
+- Remove the "chests" that are quest items but don't do anything and you can't sell them
 - Give The Crystal Skull another pass
 
 ## Varnfell Lore

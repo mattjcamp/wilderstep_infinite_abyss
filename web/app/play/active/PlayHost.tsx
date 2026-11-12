@@ -59,6 +59,7 @@ import { PlayLoreOverlay } from "@/play/LoreOverlay";
 import { PlayJournalOverlay } from "./PlayJournalOverlay";
 import { PlayNoticeBoardOverlay } from "@/play/NoticeBoardOverlay";
 import { PlayCampRestOverlay } from "@/play/CampRestOverlay";
+import { stairsPlacardText } from "@/play/stairsPlacard";
 import type { CampRestReport } from "@/play/campRest";
 import {
   journalEntries,
@@ -1094,7 +1095,7 @@ export function PlayHost() {
    *  `pendingPlaceActionRef` so the Confirm button can run the same
    *  handler the immediate path would. */
   const [placard, setPlacard] = useState<{
-    placeKind: "link" | "dungeon";
+    placeKind: "link" | "dungeon" | "stairs-up" | "stairs-down";
     name: string;
     description?: string;
     explored: boolean;
@@ -5162,7 +5163,30 @@ export function PlayHost() {
               // instead of crossing. Resolve the destination's display
               // info here (host owns the catalogs + save) and stash the
               // real transition so the placard's Confirm can run it.
-              if (ev.placeKind === "link") {
+              if (ev.placeKind === "link" && ev.stairs && dungeonStateRef.current) {
+                // Generated-dungeon stairs — say which way they go and
+                // where they lead, and only climb on confirm. Stay
+                // leaves the party where it stood.
+                const dNow = dungeonStateRef.current;
+                const rec = catalog.dungeons.find((d) => d.id === dNow.dungeonId) as
+                  | { name?: string }
+                  | undefined;
+                const text = stairsPlacardText({
+                  stairs: ev.stairs,
+                  linkMapId: ev.link.map_id,
+                  dungeonName: rec?.name ?? dNow.dungeonId,
+                  totalFloors: dNow.levels.length,
+                  floorName: (i) => dNow.levels[i]?.name,
+                });
+                const link = ev.link;
+                pendingPlaceActionRef.current = () => handleLinked(link);
+                setPlacard({
+                  placeKind: text.placeKind,
+                  name: text.name,
+                  description: text.description,
+                  explored: true,
+                });
+              } else if (ev.placeKind === "link") {
                 const dest = catalog.allMaps.find(
                   (m) => m.id === ev.link.map_id,
                 );
@@ -7210,6 +7234,7 @@ export function PlayHost() {
           messages={logMessages}
           storyLines={storyLines}
           clockMinutes={clockMinutes}
+          startClockMinutes={startClockRef.current}
           hidden={!!combat}
           onOpenFullLog={() => setLogOpen(true)}
         />
