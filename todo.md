@@ -1,3 +1,12 @@
+## FX, Animations, Spells, Items, Monster Effects Etc
+I think we can make the organizatio of special effects and spells simpler and clearer. Right now we have:
+- FX: defines the visual effect
+- Animation: includes the FX and also audio effects
+- Spells, Items, Monsters, Effects, Traps and probably other things use Animations.
+Does this sound right?
+
+We should: 1) combine FX and Animations into one entity. 2) Have other entities like Spells and Monster Attacks (or any effect) reference the new FX entity. 3.) The FX editor should retain the ability to demo the effect including any sound associated with it.
+
 ## Fine Tune
 - Audit and test how monster special abilities work
 - Expose Monster Abilities as an editor
