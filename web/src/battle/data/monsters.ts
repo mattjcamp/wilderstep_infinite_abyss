@@ -102,6 +102,9 @@ export type MonsterSpellType =
 export interface MonsterSpell {
   type: MonsterSpellType;
   name: string;
+  /** FX record (fx.json) played when the spell is cast. Unset → a
+   *  per-type default (see CombatScene MONSTER_SPELL_FX). */
+  fx_id?: string | null;
   cast_chance: number;
   range?: number;
   damage_dice?: number;
@@ -135,6 +138,7 @@ export type MonsterOnHit =
 interface RawMonsterSpell {
   type?: string;
   name?: string;
+  fx_id?: string | null;
   cast_chance?: number;
   range?: number;
   damage_dice?: number;

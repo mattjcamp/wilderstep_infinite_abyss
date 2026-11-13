@@ -42,7 +42,7 @@
  * on the first combat boot, not every encounter.
  */
 
-import { setFxOverrides } from "@/vfx/fxCatalog";
+import { setFxRecords } from "@/vfx/fxCatalog";
 import { getEditorModuleSource, getModuleSource } from "@/data_model/sourceConfig";
 import { mergeModel } from "@/data_model/merge";
 import type { ModelKey } from "@/data_model/models";
@@ -439,9 +439,9 @@ async function seedCombatCatalogs(
     loadMergedModel(src, moduleId, "character_classes"),
     loadMergedModel(src, moduleId, "fx"),
   ]);
-  // FX tuning (fx.json) → the visual-effects catalog. Always reset so a
+  // FX records (fx.json) → the FX catalog. Always reset so a
   // module without an fx.json plays the built-in defaults.
-  setFxOverrides(fx ?? []);
+  setFxRecords(fx ?? []);
 
   // Seed the URL-taking loaders via blob URLs. Each promise settles
   // independently — a malformed catalog won't block the others.

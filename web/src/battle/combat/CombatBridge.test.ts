@@ -270,7 +270,7 @@ function ability(id: string, params: Record<string, unknown> | null): Ability {
   return {
     id,
     name: id,
-    animation_id: null,
+    fx_id: null,
     type: "race",
     description: "",
     duration: "permanent",

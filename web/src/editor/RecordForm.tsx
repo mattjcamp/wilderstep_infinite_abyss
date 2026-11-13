@@ -23,8 +23,8 @@
 import { useMemo, useState } from "react";
 import { SpritePicker } from "./SpritePicker";
 import { getSpriteFieldConfig } from "./spriteFields";
-import { AnimationPicker } from "./AnimationPicker";
-import { getAnimationFieldConfig } from "./animationFields";
+import { FxPicker } from "./FxPicker";
+import { getFxFieldConfig } from "./fxFields";
 import { CounterPicker } from "./CounterPicker";
 import { getCounterFieldConfig } from "./counterFields";
 import { MapPicker } from "./MapPicker";
@@ -115,9 +115,9 @@ function inferKind(
   // render even when the field is currently null/empty (e.g., a
   // freshly-added `avatar` on Party).
   if (getSpriteFieldConfig(key, modelKey) !== null) return "string";
-  // Animation-typed fields are likewise always strings (Animation id).
-  // The picker renders an empty-state when the value is null/"".
-  if (getAnimationFieldConfig(key, modelKey) !== null) return "string";
+  // FX-typed fields are likewise always strings (FX id). The picker
+  // renders an empty-state when the value is null/"".
+  if (getFxFieldConfig(key, modelKey) !== null) return "string";
   // Counter-typed fields are strings too (Counter id). The CounterPicker
   // handles a null/"" value as "(none)".
   if (getCounterFieldConfig(key, modelKey) !== null) return "string";
@@ -775,24 +775,24 @@ function FieldRow({
     );
   }
 
-  // Animation-typed string fields get the AnimationPicker. Same shape
-  // as sprite fields, but it reads from the module's animations.json
+  // FX-typed string fields get the FxPicker. Same shape as sprite
+  // fields, but it reads from the module's fx.json
   // catalog instead of the sprite index.
-  const animationConfig =
+  const fxConfig =
     spec.kind === "string"
-      ? getAnimationFieldConfig(spec.key, modelKey)
+      ? getFxFieldConfig(spec.key, modelKey)
       : null;
-  if (animationConfig) {
+  if (fxConfig) {
     return (
       <div className="flex items-start gap-3">
         <label htmlFor={spec.key} className={labelClasses}>
           {spec.key}
           <span className="block text-xs text-parchment/60">
-            animation
+            FX
           </span>
         </label>
         <div className="flex-1">
-          <AnimationPicker value={value} onChange={onChange} />
+          <FxPicker value={value} onChange={onChange} moduleId={moduleId} />
           {error ? <p className="mt-1 text-[13px] text-ember">{error}</p> : null}
         </div>
       </div>

@@ -48,7 +48,7 @@ function makeCatalog(): Ability[] {
     {
       id: "turn_undead",
       name: "Turn Undead",
-      animation_id: "turn_undead",
+      fx_id: "turn_undead",
       type: "class",
       description: "Channel holy energy.",
       duration: "instant",
@@ -63,7 +63,7 @@ function makeCatalog(): Ability[] {
     {
       id: "backstab",
       name: "Backstab",
-      animation_id: null,
+      fx_id: null,
       type: "class",
       description: "Dagger crit gate.",
       duration: "permanent",
@@ -73,7 +73,7 @@ function makeCatalog(): Ability[] {
     {
       id: "dual_casting",
       name: "Dual Casting",
-      animation_id: null,
+      fx_id: null,
       type: "class",
       description: "Two catalogs.",
       duration: "permanent",
@@ -83,7 +83,7 @@ function makeCatalog(): Ability[] {
     {
       id: "herbalism",
       name: "Herbalism",
-      animation_id: null,
+      fx_id: null,
       type: "class",
       description: "Spot reagents.",
       duration: "permanent",
@@ -93,7 +93,7 @@ function makeCatalog(): Ability[] {
     {
       id: "infravision",
       name: "Infravision",
-      animation_id: null,
+      fx_id: null,
       type: "race",
       description: "See in the dark.",
       duration: "permanent",
@@ -103,7 +103,7 @@ function makeCatalog(): Ability[] {
     {
       id: "tinker",
       name: "Tinker",
-      animation_id: null,
+      fx_id: null,
       type: "race",
       description: "Craft once per day.",
       duration: "permanent",
@@ -201,7 +201,7 @@ describe("abilityIsCombatActive", () => {
     const broken: Ability = {
       id: "half_wired",
       name: "Half Wired",
-      animation_id: null,
+      fx_id: null,
       type: "class",
       description: "",
       duration: "instant",
@@ -215,7 +215,7 @@ describe("abilityIsCombatActive", () => {
     const noParams: Ability = {
       id: "no_params",
       name: "No Params",
-      animation_id: null,
+      fx_id: null,
       type: "class",
       description: "",
       duration: "instant",

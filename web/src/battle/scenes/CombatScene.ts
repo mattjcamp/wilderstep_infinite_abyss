@@ -132,7 +132,7 @@ import {
 import { resolveProjectileEffect } from "@/vfx/effectRegistry";
 import { cureStatus, MAP_STEPS_PER_ROUND } from "@/battle/combat/effects/statusEffects";
 import { StatusAuraLayer } from "./statusAuras";
-import { playFx } from "@/vfx/fxCatalog";
+import { ensureFxRecords, fxVisualKey, getFxRecord } from "@/vfx/fxCatalog";
 import { setEffectCatalogDefaults } from "@/battle/combat/effects/EffectRuntime";
 import { loadEffects } from "@/battle/world/Effects";
 import {
@@ -140,10 +140,6 @@ import {
   clearStepAnim,
   DEFAULT_STEP_ANIM,
 } from "@/vfx/stepAnim";
-import {
-  loadAnimations,
-  getAnimationById,
-} from "@/vfx/animationsCatalog";
 import { Sfx } from "../audio/Sfx";
 import type { Combatant, AttackResult } from "../types";
 import type { PartyMember } from "../world/Party";
@@ -543,10 +539,10 @@ type PendingAction =
   | { kind: "range-direction"; weapon: Item; ammoId?: string };
 
 /** Map a weapon's `damage_type` to a themed ranged-shot visual:
- *  the projectile-effect key, the impact-burst tint, and the impact
- *  SFX. Keyed off `damage_type` (not `animation_id`) because the item
+ *  the FX id (fx.json — so FX-editor tuning applies), the impact-burst tint, and the impact
+ *  SFX. Keyed off `damage_type` (not `fx_id`) because the item
  *  editor preserves `damage_type` across a save while it strips
- *  `animation_id` — so an elemental relic stays themed even after the
+ *  `fx_id` — so an elemental relic stays themed even after the
  *  user re-saves items.json from the editor. Damage types with no
  *  entry fall through to the plain arrow streak. */
 function elementalShotFx(
@@ -554,11 +550,11 @@ function elementalShotFx(
 ): { visual: string; color: number; sfx: string } | null {
   switch (damageType) {
     case "lightning":
-      return { visual: "lightning_bolt", color: VFX_COLOURS.lightning, sfx: "explosion" };
+      return { visual: "lightning_strike", color: VFX_COLOURS.lightning, sfx: "explosion" };
     case "meteor":
       return { visual: "meteor_strike", color: VFX_COLOURS.fire, sfx: "explosion" };
     case "fire":
-      return { visual: "fire_projectile", color: VFX_COLOURS.fire, sfx: "explosion" };
+      return { visual: "fireball_burst", color: VFX_COLOURS.fire, sfx: "explosion" };
     case "arcane":
       return { visual: "magic_dart", color: VFX_COLOURS.arcane, sfx: "chirp" };
     case "ice":
@@ -570,6 +566,19 @@ function elementalShotFx(
       return null;
   }
 }
+
+/** Default FX for a monster spell with no `fx_id` of its own. Types
+ *  missing here (sleep, poison) play no FX — just the hit flash. */
+const MONSTER_SPELL_FX: Partial<Record<string, string>> = {
+  breath_fire: "dragon_breath",
+  fireball: "hellfire",
+  lightning_bolt: "lightning_strike",
+  magic_dart: "magic_dart",
+  magic_arrow: "magic_arrow",
+  curse: "curse_aura",
+  heal_self: "heal_sparkles",
+  heal_ally: "heal_sparkles",
+};
 
 /** How far (Chebyshev tiles) a targeted spell reaches: its `range`,
  *  or 6 when unset / 0. Shared by the gold reach grid and the target
@@ -3707,13 +3716,13 @@ export class CombatScene extends Phaser.Scene {
 
     const me = this.combat.current;
 
-    // Animation-driven dispatch. Catalog is preloaded eagerly at the
-    // top of any cast path so getAnimationById resolves synchronously.
-    await loadAnimations();
-    const animation = getAnimationById(spell.animation_id);
+    // FX-driven dispatch (fx.json). Records are ensured at the top of
+    // any cast path so getFxRecord resolves synchronously.
+    await ensureFxRecords();
+    const animation = getFxRecord(spell.fx_id);
     const castSfx = animation?.cast_sfx ?? "";
     const hitSfx = animation?.hit_sfx ?? "";
-    const animVisual = (animation?.visual ?? "").trim();
+    const animVisual = fxVisualKey(animation);
     const hasVisual = animVisual !== "" && animVisual !== "none";
     /** Play the animation's visual at a target's body position. Each
      *  branch below calls this with the appropriate target instead of
@@ -4102,7 +4111,7 @@ export class CombatScene extends Phaser.Scene {
    *  The resolution itself delegates to `resolveTurnUndead` (pure
    *  helper in CombatActions.ts); this method handles the scene-side
    *  bookkeeping — log lines, per-target VFX timing, the cast/hit
-   *  SFX from the ability's animation_id, and end-of-turn cleanup. */
+   *  SFX from the ability's fx_id, and end-of-turn cleanup. */
   private async runTurnUndead(
     member: PartyMember,
     ability: Ability,
@@ -4141,11 +4150,11 @@ export class CombatScene extends Phaser.Scene {
     // Animation-driven dispatch. Same call shape as the spell path
     // uses so the audio/visual catalog stays the single source for
     // both pipelines.
-    await loadAnimations();
-    const animation = getAnimationById(ability.animation_id);
+    await ensureFxRecords();
+    const animation = getFxRecord(ability.fx_id);
     const castSfx = animation?.cast_sfx ?? "";
     const hitSfx = animation?.hit_sfx ?? "";
-    const animVisual = (animation?.visual ?? "").trim();
+    const animVisual = fxVisualKey(animation);
     const hasVisual = animVisual !== "" && animVisual !== "none";
     const playVisualAt = async (point: { x: number; y: number }) => {
       if (!hasVisual) return;
@@ -4483,18 +4492,18 @@ export class CombatScene extends Phaser.Scene {
         );
         // Elemental projectile visual for a relic ranged weapon.
         // Resolution priority:
-        //   1. An explicit `animation_id` on the weapon (authored
+        //   1. An explicit `fx_id` on the weapon (authored
         //      override) — its `visual` key wins when present.
         //   2. The weapon's `damage_type`, mapped to a themed visual.
         //      This is the DURABLE path: the item editor doesn't carry
-        //      `animation_id` (it round-trips to null on save), but it
+        //      `fx_id` (it round-trips to null on save), but it
         //      DOES preserve `damage_type`, so a lightning crossbow
         //      stays lightning-themed even after a re-save.
         // Fire-arrow shots keep their ember trail + ignite path so the
         // two visuals don't fight over the projectile.
-        await loadAnimations();
-        const weaponAnim = getAnimationById(action.weapon.animation_id);
-        const animVisual = (weaponAnim?.visual ?? "").trim();
+        await ensureFxRecords();
+        const weaponAnim = getFxRecord(action.weapon.fx_id);
+        const animVisual = fxVisualKey(weaponAnim);
         const elemental = elementalShotFx(
           (action.weapon.damage_type ?? "").toLowerCase(),
         );
@@ -4607,15 +4616,15 @@ export class CombatScene extends Phaser.Scene {
         if (member && member.max_mp > 0) {
           member.mp = Math.max(0, (member.mp) - spell.mp_cost);
         }
-        // Animation-driven dispatch. spell.animation_id picks the
+        // Animation-driven dispatch. spell.fx_id picks the
         // cast SFX, the visual key, and the impact SFX as a bundle;
         // every per-effect branch below just runs the visual for
         // that spell, no hand-coded helpers.
-        await loadAnimations();
-        const animation = getAnimationById(spell.animation_id);
+        await ensureFxRecords();
+        const animation = getFxRecord(spell.fx_id);
         const castSfx = animation?.cast_sfx ?? "";
         const hitSfx = animation?.hit_sfx ?? "";
-        const animVisual = (animation?.visual ?? "").trim();
+        const animVisual = fxVisualKey(animation);
         const hasVisual = animVisual !== "" && animVisual !== "none";
         /** Resolve and run the animation's visual. For projectile
          *  visuals the (from, to) line is meaningful; for point-only
@@ -5222,12 +5231,12 @@ export class CombatScene extends Phaser.Scene {
     // dispatch. Cached after first call so this is a no-op on every
     // subsequent cast. Wrapped in await so the first cast doesn't
     // race the fetch and silently fall back to the legacy visual.
-    await loadAnimations();
+    await ensureFxRecords();
 
-    // Resolve the animation. Every spell carries an animation_id
+    // Resolve the animation. Every spell carries an fx_id
     // post-migration; the catalog has the cast SFX, the visual key,
     // and the impact SFX bundled together.
-    const animation = getAnimationById(spell.animation_id);
+    const animation = getFxRecord(spell.fx_id);
     const castSfx = animation?.cast_sfx ?? "";
     const hitSfx = animation?.hit_sfx ?? "";
 
@@ -5243,7 +5252,7 @@ export class CombatScene extends Phaser.Scene {
         x: this.tileX(endCol),
         y: this.tileY(endRow),
       };
-      const animVisual = (animation?.visual ?? "").trim();
+      const animVisual = fxVisualKey(animation);
       if (animVisual && animVisual !== "none") {
         const projectile = resolveProjectileEffect({
           effect_type: animVisual,
@@ -5375,14 +5384,14 @@ export class CombatScene extends Phaser.Scene {
         y: this.tileY(trace.endRow),
       };
       // Elemental relic visual on the directional shot — same
-      // resolution as the precision branch: a weapon's `animation_id`
+      // resolution as the precision branch: a weapon's `fx_id`
       // override wins, else its `damage_type` maps to a themed visual
       // (Starfall Sling's "meteor" → falling-star meteor strike). Fire
       // arrows keep their ember streak + ignite path. Plain weapons
       // fall back to the white projectile streak.
-      await loadAnimations();
-      const dirWeaponAnim = getAnimationById(weapon.animation_id);
-      const dirAnimVisual = (dirWeaponAnim?.visual ?? "").trim();
+      await ensureFxRecords();
+      const dirWeaponAnim = getFxRecord(weapon.fx_id);
+      const dirAnimVisual = fxVisualKey(dirWeaponAnim);
       const dirElemental = elementalShotFx(
         (weapon.damage_type ?? "").toLowerCase(),
       );
@@ -5575,8 +5584,8 @@ export class CombatScene extends Phaser.Scene {
     // resolve their own visuals through the animation (since each
     // has different from/to semantics — AOE projectile, teleport
     // arrival burst, summon spawn burst).
-    await loadAnimations();
-    const animation = getAnimationById(spell.animation_id);
+    await ensureFxRecords();
+    const animation = getFxRecord(spell.fx_id);
     if (animation?.cast_sfx) Sfx.play(animation.cast_sfx);
     this.castGlowFor(me, this.colorForSpell(spell.effect_type));
     try {
@@ -5780,8 +5789,8 @@ export class CombatScene extends Phaser.Scene {
       x: this.tileX(caster.position.col),
       y: this.tileY(caster.position.row),
     };
-    const animation = getAnimationById(spell.animation_id);
-    const animVisual = (animation?.visual ?? "").trim();
+    const animation = getFxRecord(spell.fx_id);
+    const animVisual = fxVisualKey(animation);
     if (animVisual && animVisual !== "none") {
       const fn = resolveProjectileEffect({ effect_type: animVisual });
       await fn(this, casterAt, burstAt);
@@ -5839,8 +5848,8 @@ export class CombatScene extends Phaser.Scene {
     const ring = this.selRings.get(caster.id);
     const x = this.tileX(dest.col);
     const y = this.tileY(dest.row);
-    const animation = getAnimationById(spell.animation_id);
-    const animVisual = (animation?.visual ?? "").trim();
+    const animation = getFxRecord(spell.fx_id);
+    const animVisual = fxVisualKey(animation);
     const playBurstAt = (point: { x: number; y: number }) => {
       if (!animVisual || animVisual === "none") return;
       const fn = resolveProjectileEffect({ effect_type: animVisual });
@@ -5954,8 +5963,8 @@ export class CombatScene extends Phaser.Scene {
     // "Claws its way out of the ground" VFX — runs the spell's
     // animation visual at the spawn tile, then scales the body up so
     // the entry reads as a summoning rather than a warp-in.
-    const animation = getAnimationById(spell.animation_id);
-    const animVisual = (animation?.visual ?? "").trim();
+    const animation = getFxRecord(spell.fx_id);
+    const animVisual = fxVisualKey(animation);
     if (animVisual && animVisual !== "none") {
       const fn = resolveProjectileEffect({ effect_type: animVisual });
       void fn(this, { x, y }, { x, y });
@@ -6243,24 +6252,27 @@ export class CombatScene extends Phaser.Scene {
           const result = this.combat.castMonsterSpell(intent.spellIndex, intent.targetId);
           this.combat.movePoints = 0;
           const target = this.combat.byId(result.targetId);
-          if (spellDef?.type === "breath_fire") {
-            // Dragon-style breath weapon — cone of fire from the
-            // caster's mouth to the target. Telegraph with a brief
-            // fire glow on the caster, then play the cone, then a
-            // sharp screen shake to sell the impact. Awaiting the
-            // breath ensures the HP flash from animateHit lands
-            // AFTER the flames arrive, not on top of them.
-            this.castGlowFor(caster, VFX_COLOURS.fire);
-            // Through the FX catalog so the module's FX tuning applies.
-            await playFx("breath_of_fire", this, this.bodyXY(caster), this.bodyXY(target));
-            screenShake(this, 0.007, 220);
-          } else if (spellDef?.type === "fireball" && target.id !== caster.id) {
-            // Demon's Hellfire / Lich's Fireball — a roiling ball of
-            // flame hurled at the target, erupting on impact.
-            this.castGlowFor(caster, VFX_COLOURS.fire);
-            Sfx.play("explosion");
-            await playFx("hellfire", this, this.bodyXY(caster), this.bodyXY(target));
-            screenShake(this, 0.006, 200);
+          // The spell's FX (fx.json): its own `fx_id`, else the
+          // per-type default — so a Lich's Lightning Bolt plays the
+          // same "Lightning Strike" FX as the party's spell. Spells
+          // aimed at the caster (self-heal) play on the caster.
+          await ensureFxRecords();
+          const fxRec = getFxRecord(
+            spellDef?.fx_id || (spellDef ? MONSTER_SPELL_FX[spellDef.type] : ""),
+          );
+          if (fxRec) {
+            const fire = spellDef?.type === "breath_fire" || spellDef?.type === "fireball";
+            if (fire) this.castGlowFor(caster, VFX_COLOURS.fire);
+            if (fxRec.cast_sfx) Sfx.play(fxRec.cast_sfx);
+            const key = fxVisualKey(fxRec);
+            if (key) {
+              const from = this.bodyXY(caster);
+              const to = this.bodyXY(target);
+              await resolveProjectileEffect({ effect_type: key })(this, from, to);
+            }
+            if (fxRec.hit_sfx) Sfx.play(fxRec.hit_sfx);
+            if (spellDef?.type === "breath_fire") screenShake(this, 0.007, 220);
+            else if (spellDef?.type === "fireball") screenShake(this, 0.006, 200);
           }
           await this.animateHit(target, {
             attackerId: this.combat.current.id, targetId: target.id,

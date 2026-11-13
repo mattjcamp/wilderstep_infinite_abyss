@@ -4,7 +4,7 @@
     {
       "id": "ac_buff",
       "name": "Shielded",
-      "animation_id": null,
+      "fx_id": null,
       "description": "A faint magical barrier improves the recipient's armor.",
       "duration": 3,
       "params": {
@@ -14,7 +14,7 @@
     {
       "id": "sleep",
       "name": "Asleep",
-      "animation_id": null,
+      "fx_id": null,
       "description": "Lulled into a magical slumber; cannot act until shaken loose or the spell fades.",
       "duration": 2,
       "params": null
@@ -22,7 +22,7 @@
     {
       "id": "range_buff",
       "name": "Long Shanks",
-      "animation_id": null,
+      "fx_id": null,
       "description": "The recipient's stride is magically lengthened, extending movement range.",
       "duration": 3,
       "params": {
@@ -32,7 +32,7 @@
     {
       "id": "invisibility",
       "name": "Invisible",
-      "animation_id": null,
+      "fx_id": null,
       "description": "Cannot be seen or targeted directly until the magic fades or the bearer attacks.",
       "duration": 3,
       "params": null
@@ -40,7 +40,7 @@
     {
       "id": "charm",
       "name": "Charmed",
-      "animation_id": null,
+      "fx_id": null,
       "description": "Loyalty is magically redirected toward the source for the duration.",
       "duration": 3,
       "params": null
@@ -48,7 +48,7 @@
     {
       "id": "magic_light",
       "name": "Light",
-      "animation_id": null,
+      "fx_id": null,
       "description": "A soft magical glow illuminates the area around the bearer.",
       "duration": 100,
       "params": null
@@ -56,7 +56,7 @@
     {
       "id": "bless",
       "name": "Blessed",
-      "animation_id": null,
+      "fx_id": null,
       "description": "Divine favor grants a bonus to attack rolls.",
       "duration": 4,
       "params": {
@@ -66,7 +66,7 @@
     {
       "id": "curse",
       "name": "Cursed",
-      "animation_id": null,
+      "fx_id": null,
       "description": "A magical curse weakens the target's defense and accuracy.",
       "duration": 4,
       "params": {
@@ -77,7 +77,7 @@
     {
       "id": "repel_monsters",
       "name": "Repelled",
-      "animation_id": null,
+      "fx_id": null,
       "description": "Nearby monsters are pushed back from the bearer each turn.",
       "duration": 10,
       "params": {
@@ -88,7 +88,7 @@
     {
       "id": "drain",
       "name": "Drained",
-      "animation_id": null,
+      "fx_id": null,
       "description": "Life force is transferred from the target to the attacker on a successful hit.",
       "duration": "instant",
       "params": {
@@ -98,7 +98,7 @@
     {
       "id": "poisoned",
       "name": "Poisoned",
-      "animation_id": null,
+      "fx_id": null,
       "description": "A toxin courses through the target, dealing damage each turn until it wears off.",
       "duration": 5,
       "params": {
@@ -108,7 +108,7 @@
     {
       "id": "slowed",
       "name": "Slowed",
-      "animation_id": null,
+      "fx_id": null,
       "description": "Reactions are sluggish; effective movement is reduced.",
       "duration": 2,
       "params": null
@@ -116,7 +116,7 @@
     {
       "id": "consumed",
       "name": "Consumed",
-      "animation_id": null,
+      "fx_id": null,
       "description": "Swallowed whole; the target takes damage each turn until they break free.",
       "duration": "until_save",
       "params": {
@@ -126,7 +126,7 @@
     {
       "id": "regen",
       "name": "Regenerating",
-      "animation_id": null,
+      "fx_id": null,
       "description": "Restores hit points each round.",
       "duration": "permanent",
       "params": {
@@ -136,7 +136,7 @@
     {
       "id": "fire_resistance",
       "name": "Fire Resistance",
-      "animation_id": null,
+      "fx_id": null,
       "description": "Halves damage from fire-based spells and attacks.",
       "duration": "permanent",
       "params": null
@@ -144,7 +144,7 @@
     {
       "id": "poison_immunity",
       "name": "Poison Immunity",
-      "animation_id": null,
+      "fx_id": null,
       "description": "Immune to poison damage and the Poisoned status.",
       "duration": "permanent",
       "params": null
@@ -152,7 +152,7 @@
     {
       "id": "sun_sword_aura",
       "name": "Sun Sword Aura",
-      "animation_id": null,
+      "fx_id": null,
       "description": "Warm golden light surrounds the wielder. Bathes the party in soft illumination and wards the wielder from fire.",
       "duration": "permanent",
       "params": null

@@ -2,7 +2,7 @@
  * Counter-field config — which record fields the editor treats as
  * references into the Counter catalog (web/public/modules/default/counters.json).
  *
- * Pattern mirrors spriteFields / animationFields: a thin lookup
+ * Pattern mirrors spriteFields / fxFields: a thin lookup
  * function that the RecordForm consults when picking which input
  * widget to render. NPCs are the first model to carry a counter
  * reference (so an NPC can sell items from a Counter's stock), but
@@ -28,7 +28,7 @@ const FIELDS: Record<string, CounterFieldConfig> = {
 
 /** Returns the picker config for a field, or null if the field isn't
  *  a counter field. modelKey is accepted for symmetry with the
- *  sprite/animation helpers; per-model overrides aren't wired today. */
+ *  sprite/FX helpers; per-model overrides aren't wired today. */
 export function getCounterFieldConfig(
   fieldKey: string,
   _modelKey?: string,

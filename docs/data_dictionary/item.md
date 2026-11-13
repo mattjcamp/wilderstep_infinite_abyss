@@ -38,6 +38,7 @@ Each record minimally has `id`, `name`, `category`. The rest of the fields are p
 | `category` | string | yes | Top-level grouping. `"weapons"` and `"armors"` are the combat-gear buckets; the rest organize everything else and are an open, evolving set — current values include `"ammo"`, `"potion"`, `"reagent"`, `"quest"`, `"scroll"`, `"books"` (readable items — each carries a `lore` id), and `"general"` (catch-all). The manual's Items generator renders one table per category, so adding a new category surfaces automatically. | TBD |
 | `description` | string | no | Tooltip / UI text. | TBD |
 | `icon` | string | no | Render glyph hint (e.g. `"sword"`, `"potion"`, `"herb"`, `"key"`). | TBD |
+| `fx_id` | string | no | [FX](fx.md) played when this item is used / fires (e.g. a lightning crossbow's bolt) — picked from a dropdown of the module's FX records. | Yes |
 | `item_type` | string | no | Finer-grained sub-discriminator. See *item_type values* below. | TBD |
 | `power` | number | no | Weapon damage (weapons) or consumable potency (general, e.g. heal amount). | TBD |
 | `ranged` | bool | no | Weapon attacks at range. | TBD |

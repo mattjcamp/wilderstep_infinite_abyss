@@ -39,7 +39,6 @@ export type ModelKey =
   | "dungeons"
   | "quests"
   | "lore"
-  | "animations"
   | "fx"
   | "npcs";
 
@@ -511,19 +510,6 @@ const DEFS: Record<ModelKey, ModelDef> = {
       },
     ],
   },
-  animations: {
-    key: "animations",
-    label: "Animations",
-    fileName: "animations.json",
-    collectionKey: "animations",
-    docKey: "animation",
-    blurb: "Visual + audio bundles that spells / abilities / items / effects reference by id",
-    columns: [      { field: "name", label: "Name" },
-      { field: "visual", label: "Visual" },
-      { field: "cast_sfx", label: "Cast SFX" },
-      { field: "hit_sfx", label: "Hit SFX" },
-    ],
-  },
   fx: {
     key: "fx",
     label: "FX",
@@ -531,15 +517,12 @@ const DEFS: Record<ModelKey, ModelDef> = {
     collectionKey: "fx",
     docKey: "fx",
     blurb:
-      "Tune the built-in visual effects (Hellfire, Lightning Bolt, Healing Sparkles…) — colours, sizes, timing — with a live preview",
+      "Named effects — a visual (Hellfire, Lightning Bolt, Healing Sparkles…), its tuning, and its cast / hit sounds — with a live preview. Spells, items, effects, abilities and monster spells pick one by fx_id",
     columns: [
-      { field: "id", label: "FX" },
-      {
-        field: "params",
-        label: "Tuned",
-        format: (v) =>
-          v && typeof v === "object" ? `${Object.keys(v as object).length}` : "0",
-      },
+      { field: "name", label: "Name" },
+      { field: "visual", label: "Visual" },
+      { field: "cast_sfx", label: "Cast SFX" },
+      { field: "hit_sfx", label: "Hit SFX" },
     ],
   },
   npcs: {
@@ -597,7 +580,6 @@ const SINGULAR_LABELS: Record<ModelKey, string> = {
   dungeons: "Dungeon",
   quests: "Quest",
   lore: "Lore",
-  animations: "Animation",
   fx: "FX",
   npcs: "NPC",
 };

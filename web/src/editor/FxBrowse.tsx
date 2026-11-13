@@ -1,65 +1,69 @@
 "use client";
 
 /**
- * FX editor — /editor/model?k=fx. Lists every built-in visual effect
- * from the FX catalog (src/vfx/fxCatalog.ts), plays the selected one
- * on a live preview stage, and lets the author tune whatever that
- * effect exposes (colours, size, timing, particle counts). The preview
- * reflects every change immediately.
+ * FX editor — /editor/model?k=fx. One page for every named effect the
+ * game plays: pick an FX to watch it (with its sounds), then edit its
+ * name, the built-in visual it draws, that visual's tuning (colours,
+ * sizes, timing, particle counts) and its cast / hit sounds.
  *
- * Saved as `fx.json` — overrides only, by FX id:
- *   { "fx": [ { "id": "hellfire", "params": { "core": "#ffffff" } } ] }
- * A param equal to its default isn't stored, and an FX with nothing
- * tuned drops out of the file. Same draft / export / publish flow as
- * the other editors. Battles load the module's fx.json, so a published
- * tweak changes the effect in game.
+ * Saved as `fx.json` — module-inheritable, a child module's record
+ * replaces its parent's by id:
+ *   { "fx": [ { "id": "lightning_strike", "name": "Lightning Strike",
+ *               "visual": "lightning_bolt", "params": { "width": 5 },
+ *               "cast_sfx": "fireball", "hit_sfx": "explosion" } ] }
+ * `params` stores only values that differ from the visual's defaults.
+ * Spells / items / effects / abilities / monster spells point at a
+ * record by `fx_id`. Same draft / export / publish flow as the other
+ * editors.
  */
 
 import { useEffect, useMemo, useState } from "react";
-import {
-  DraftBanner,
-  discardDraftConfirmMessage,
-} from "./editorShell";
-import {
-  discardDraft,
-  downloadJson,
-  hasDraft,
-  loadDraft,
-  saveDraft,
-} from "@/data_model/draft";
+import { DraftBanner, discardDraftConfirmMessage } from "./editorShell";
+import { discardDraft, downloadJson, hasDraft, loadDraft, saveDraft } from "@/data_model/draft";
 import { mergeModel } from "@/data_model/merge";
+import type { ModelKey } from "@/data_model/models";
 import { publishItems } from "@/data_model/publishClient";
 import { getEditorModuleSource } from "@/data_model/sourceConfig";
 import { usePublishServer } from "./usePublishServer";
 import { FxPreview } from "./FxPreview";
+import { clearFxPickerCache } from "./FxPicker";
+import { SFX_NAMES } from "@/battle/audio/Sfx";
 import {
   FX_DEFS,
   cleanFxParams,
   fxDefaults,
-  type FxDef,
+  fxRecordParams,
+  fxVisualDef,
   type FxParamDef,
   type FxParams,
+  type FxRecord,
 } from "@/vfx/fxCatalog";
 
 const MODEL_KEY = "fx";
 const FILE_NAME = "fx.json";
+const FILE_COMMENT =
+  "FX catalog — every named effect the game can play. Each record picks one built-in visual (`visual`, or 'none' for sound-only), tunes it (`params`, only values that differ from the visual's defaults), and names the sounds played at the start (`cast_sfx`) and on impact (`hit_sfx`). Spells, items, effects, abilities and monster spells point at a record by `fx_id`. Edited in the editor's FX page. See docs/data_dictionary/fx.md.";
 
-interface FxRecord {
-  id: string;
-  params?: Record<string, unknown>;
-}
+/** Models whose records reference FX, for the "Used by" line. */
+const USER_MODELS: Array<{ key: ModelKey; label: string }> = [
+  { key: "spells", label: "Spell" },
+  { key: "items", label: "Item" },
+  { key: "effects", label: "Effect" },
+  { key: "abilities", label: "Ability" },
+  { key: "monsters", label: "Monster" },
+];
 
 type LoadState =
   | { kind: "loading" }
   | {
       kind: "ok";
-      /** Inherited (parent modules) overrides by id. */
-      inherited: Map<string, FxParams>;
+      /** Parent modules' merged records, by id. */
+      inherited: Map<string, FxRecord>;
       /** This module's own records (draft or published). */
       own: FxRecord[];
       ownFile: Record<string, unknown> | null;
       isDraft: boolean;
-      /** Animations that use each visual, for the "Used by" line. */
+      /** FX id → "Spell: Lightning Bolt", "Monster: Lich — Lightning Bolt", … */
       usedBy: Map<string, string[]>;
     }
   | { kind: "error"; message: string };
@@ -71,47 +75,61 @@ function recordsOf(file: unknown): FxRecord[] {
     : [];
 }
 
-/** Built-in uses that don't go through animations.json. */
-const BUILT_IN_USES: Record<string, string[]> = {
-  hellfire: ["Demon — Hellfire", "Lich — Fireball"],
-  breath_of_fire: ["Dragon — Fire Breath"],
-  projectile_line: ["Any projectile spell without its own visual"],
-};
+function listOf(file: unknown, key: string): Array<Record<string, unknown>> {
+  const list = (file as Record<string, unknown> | null)?.[key];
+  return Array.isArray(list) ? (list as Array<Record<string, unknown>>) : [];
+}
+
+function slug(s: string): string {
+  return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "") || "fx";
+}
 
 export function FxBrowse({ moduleId }: { moduleId: string }) {
   const { available: publishAvailable } = usePublishServer();
   const [state, setState] = useState<LoadState>({ kind: "loading" });
-  const [selectedId, setSelectedId] = useState<string>(FX_DEFS[0].id);
+  const [selectedId, setSelectedId] = useState<string>("");
   const [playKey, setPlayKey] = useState(0);
-  const [loop, setLoop] = useState(true);
+  const [loop, setLoop] = useState(false);
+  const [sound, setSound] = useState(true);
+  const [filter, setFilter] = useState("");
   const [publishing, setPublishing] = useState(false);
 
   const refresh = async () => {
     try {
       const src = getEditorModuleSource();
-      const [layers, animLayers] = await Promise.all([
-        src.loadModelLayers(moduleId, MODEL_KEY),
-        src.loadModelLayers(moduleId, "animations").catch(() => null),
-      ]);
+      const layers = await src.loadModelLayers(moduleId, MODEL_KEY);
       const draft = await loadDraft<Record<string, unknown>>(moduleId, MODEL_KEY);
       const ownFile = draft ?? (layers.ownFile as Record<string, unknown> | null);
-      const inherited = new Map<string, FxParams>();
-      for (const r of recordsOf(mergeModel("fx", null, layers.inherited))) {
-        const def = FX_DEFS.find((d) => d.id === r.id);
-        if (def) inherited.set(r.id, cleanFxParams(def, r.params));
+      const inherited = new Map<string, FxRecord>();
+      for (const r of recordsOf(mergeModel(MODEL_KEY, null, layers.inherited))) {
+        inherited.set(r.id, r);
       }
       const usedBy = new Map<string, string[]>();
-      const anims = animLayers
-        ? ((mergeModel("animations", animLayers.inherited, animLayers.ownFile) as {
-            animations?: Array<{ name?: string; id?: string; visual?: string }>;
-          } | null)?.animations ?? [])
-        : [];
-      for (const a of anims) {
-        if (!a?.visual) continue;
-        const list = usedBy.get(a.visual) ?? [];
-        list.push(`Animation: ${a.name ?? a.id}`);
-        usedBy.set(a.visual, list);
-      }
+      const add = (id: unknown, label: string) => {
+        if (typeof id !== "string" || !id) return;
+        const list = usedBy.get(id) ?? [];
+        list.push(label);
+        usedBy.set(id, list);
+      };
+      await Promise.all(
+        USER_MODELS.map(async ({ key, label }) => {
+          try {
+            const l = await src.loadModelLayers(moduleId, key);
+            const merged = mergeModel(key, l.inherited, l.ownFile);
+            for (const rec of listOf(merged, key)) {
+              const name = String(rec.name ?? rec.id ?? "?");
+              add(rec.fx_id, `${label}: ${name}`);
+              if (key === "monsters") {
+                for (const sp of (rec.spells as Array<Record<string, unknown>> | undefined) ?? []) {
+                  add(sp?.fx_id, `${label}: ${name} — ${String(sp?.name ?? sp?.type ?? "spell")}`);
+                }
+              }
+            }
+          } catch {
+            /* a model without a file just contributes nothing */
+          }
+        }),
+      );
       setState({
         kind: "ok",
         inherited,
@@ -130,69 +148,115 @@ export function FxBrowse({ moduleId }: { moduleId: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [moduleId]);
 
-  const def = FX_DEFS.find((d) => d.id === selectedId) ?? FX_DEFS[0];
+  /** Effective records: inherited, with own records replacing by id. */
+  const records = useMemo<FxRecord[]>(() => {
+    if (state.kind !== "ok") return [];
+    const map = new Map(state.inherited);
+    for (const r of state.own) map.set(r.id, r);
+    return Array.from(map.values()).sort((a, b) =>
+      (a.name ?? a.id).localeCompare(b.name ?? b.id),
+    );
+  }, [state]);
 
-  /** Effective params for an FX: defaults ⊕ inherited ⊕ own. */
-  const effective = (d: FxDef): FxParams => {
-    if (state.kind !== "ok") return fxDefaults(d);
-    const own = state.own.find((r) => r.id === d.id);
-    return {
-      ...fxDefaults(d),
-      ...(state.inherited.get(d.id) ?? {}),
-      ...cleanFxParams(d, own?.params),
-    };
-  };
-  const params = useMemo(
-    () => effective(def),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [def, state],
+  const current = records.find((r) => r.id === selectedId) ?? records[0] ?? null;
+  const def = fxVisualDef(current);
+  const params = useMemo<FxParams>(
+    () => (current ? fxRecordParams(current) : {}),
+    [current],
   );
 
-  const isTuned = (d: FxDef): boolean => {
-    const eff = effective(d);
-    const defs = fxDefaults(d);
-    return d.params.some((p) => eff[p.key] !== defs[p.key]);
-  };
+  const ownIds = new Set(state.kind === "ok" ? state.own.map((r) => r.id) : []);
+  const isOwn = (id: string) => ownIds.has(id);
+  const isInherited = (id: string) => state.kind === "ok" && state.inherited.has(id);
 
-  /** Write one FX's full effective params back, storing only the
-   *  values that differ from the defaults. */
-  const writeParams = (d: FxDef, next: FxParams) => {
+  // ── Writing ──────────────────────────────────────────────────────
+  const writeOwn = (own: FxRecord[]) => {
     if (state.kind !== "ok") return;
-    const defs = fxDefaults(d);
-    const diff: Record<string, unknown> = {};
-    for (const p of d.params) {
-      if (next[p.key] !== undefined && next[p.key] !== defs[p.key]) diff[p.key] = next[p.key];
-    }
-    const others = state.own.filter((r) => r.id !== d.id);
-    const own = Object.keys(diff).length > 0 ? [...others, { id: d.id, params: diff }] : others;
-    // Keep the file in catalog order so diffs stay tidy.
-    own.sort(
-      (a, b) =>
-        FX_DEFS.findIndex((x) => x.id === a.id) - FX_DEFS.findIndex((x) => x.id === b.id),
-    );
     const ownFile: Record<string, unknown> = {
-      ...(state.ownFile ?? {
-        _comment:
-          "FX tuning — overrides for the built-in visual effects, by FX id. Only changed params are stored. Edited in the editor's FX page. See docs/data_dictionary/fx.md.",
-      }),
+      ...(state.ownFile ?? { _comment: FILE_COMMENT }),
       fx: own,
     };
     void saveDraft(moduleId, MODEL_KEY, ownFile);
+    clearFxPickerCache();
     setState({ ...state, own, ownFile, isDraft: true });
   };
 
-  const setParam = (key: string, value: string | number) =>
-    writeParams(def, { ...params, [key]: value });
-  const resetParam = (p: FxParamDef) => {
-    const inheritedVal = state.kind === "ok" ? state.inherited.get(def.id)?.[p.key] : undefined;
-    writeParams(def, { ...params, [p.key]: inheritedVal ?? p.default });
+  /** Replace (or add) one record in this module's own file. */
+  const putRecord = (rec: FxRecord, replaceId = rec.id) => {
+    if (state.kind !== "ok") return;
+    const i = state.own.findIndex((r) => r.id === replaceId);
+    const own = [...state.own];
+    if (i >= 0) own[i] = rec;
+    else own.push(rec);
+    writeOwn(own);
   };
-  const resetAll = () => writeParams(def, { ...fxDefaults(def), ...(state.kind === "ok" ? state.inherited.get(def.id) ?? {} : {}) });
+
+  const update = (patch: Partial<FxRecord>) => {
+    if (!current) return;
+    putRecord({ ...current, ...patch });
+    setPlayKey((k) => k + 1);
+  };
+
+  /** Store only the params that differ from the visual's defaults. */
+  const writeParams = (next: FxParams) => {
+    if (!current || !def) return;
+    const defs = fxDefaults(def);
+    const diff: Record<string, unknown> = {};
+    for (const p of def.params) {
+      if (next[p.key] !== undefined && next[p.key] !== defs[p.key]) diff[p.key] = next[p.key];
+    }
+    putRecord({ ...current, params: diff });
+  };
+
+  const uniqueId = (base: string) => {
+    let id = slug(base);
+    const taken = new Set(records.map((r) => r.id));
+    for (let n = 2; taken.has(id); n++) id = `${slug(base)}_${n}`;
+    return id;
+  };
+
+  const onNew = () => {
+    const name = window.prompt("Name for the new FX:", "New FX");
+    if (!name) return;
+    const rec: FxRecord = {
+      id: uniqueId(name),
+      name,
+      description: "",
+      visual: "projectile_line",
+      params: {},
+      cast_sfx: "",
+      hit_sfx: "",
+    };
+    putRecord(rec);
+    setSelectedId(rec.id);
+    setPlayKey((k) => k + 1);
+  };
+
+  const onDuplicate = () => {
+    if (!current) return;
+    const name = window.prompt("Name for the copy:", `${current.name ?? current.id} copy`);
+    if (!name) return;
+    const rec: FxRecord = { ...current, id: uniqueId(name), name, params: { ...(current.params ?? {}) } };
+    putRecord(rec);
+    setSelectedId(rec.id);
+  };
+
+  const onDelete = () => {
+    if (!current || state.kind !== "ok" || !isOwn(current.id)) return;
+    const reverts = isInherited(current.id);
+    const uses = state.usedBy.get(current.id)?.length ?? 0;
+    const msg = reverts
+      ? `Revert "${current.name ?? current.id}" to the parent module's version?`
+      : `Delete "${current.name ?? current.id}"?${uses ? ` ${uses} record(s) still use it and will play nothing.` : ""}`;
+    if (!window.confirm(msg)) return;
+    writeOwn(state.own.filter((r) => r.id !== current.id));
+  };
 
   const onDiscardDraft = () => {
     if (!hasDraft(moduleId, MODEL_KEY)) return;
     if (!window.confirm(discardDraftConfirmMessage(FILE_NAME))) return;
     discardDraft(moduleId, MODEL_KEY);
+    clearFxPickerCache();
     void refresh();
   };
   const onExport = () => {
@@ -212,6 +276,7 @@ export function FxBrowse({ moduleId }: { moduleId: string }) {
         return;
       }
       discardDraft(moduleId, MODEL_KEY);
+      clearFxPickerCache();
       await refresh();
     } catch (e) {
       window.alert(`Publish error: ${e instanceof Error ? e.message : String(e)}`);
@@ -230,7 +295,14 @@ export function FxBrowse({ moduleId }: { moduleId: string }) {
     );
   }
 
-  const uses = [...(BUILT_IN_USES[def.id] ?? []), ...(state.usedBy.get(def.id) ?? [])];
+  const shown = records.filter((r) => {
+    const q = filter.trim().toLowerCase();
+    if (!q) return true;
+    return `${r.name ?? ""} ${r.id} ${r.visual ?? ""}`.toLowerCase().includes(q);
+  });
+  const uses = current ? state.usedBy.get(current.id) ?? [] : [];
+  const btn =
+    "rounded border border-parchment/30 px-3 py-1 text-sm text-parchment/90 hover:bg-ink/40 disabled:cursor-not-allowed disabled:opacity-40";
 
   return (
     <div className="p-4">
@@ -238,27 +310,18 @@ export function FxBrowse({ moduleId }: { moduleId: string }) {
         <div>
           <h1 className="font-display text-3xl text-parchment">FX</h1>
           <p className="mt-1 max-w-2xl text-sm text-parchment/70">
-            The built-in visual effects. Pick one to watch it play, then tune whatever it
-            exposes — the preview updates as you change it. Animations pick which FX a spell
-            uses; this page changes how the FX itself looks.
+            Every named effect: the visual it draws, how that visual is tuned, and the sounds
+            that go with it. Spells, items, effects, abilities and monster spells pick an FX
+            from a dropdown — change it here and it changes everywhere it&apos;s used.
           </p>
         </div>
         <div className="flex items-center gap-2">
           {state.isDraft ? (
-            <button
-              type="button"
-              onClick={onDiscardDraft}
-              className="rounded border border-parchment/20 px-3 py-1 text-sm text-parchment/85 hover:bg-ink/40"
-            >
+            <button type="button" onClick={onDiscardDraft} className={btn}>
               Discard
             </button>
           ) : null}
-          <button
-            type="button"
-            onClick={onExport}
-            disabled={!state.ownFile}
-            className="rounded border border-parchment/30 px-3 py-1 text-sm text-parchment/90 hover:bg-ink/40 disabled:cursor-not-allowed disabled:opacity-40"
-          >
+          <button type="button" onClick={onExport} disabled={!state.ownFile} className={btn}>
             ⬇ Export
           </button>
           {state.isDraft && publishAvailable === true ? (
@@ -275,95 +338,236 @@ export function FxBrowse({ moduleId }: { moduleId: string }) {
       </header>
       {state.isDraft ? <DraftBanner /> : null}
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-[240px_1fr]">
+      <div className="mt-4 grid gap-4 lg:grid-cols-[260px_1fr]">
         {/* FX list */}
-        <ul className="space-y-1">
-          {FX_DEFS.map((d) => {
-            const active = d.id === def.id;
-            return (
-              <li key={d.id}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedId(d.id);
-                    setPlayKey((k) => k + 1);
-                  }}
-                  className={`flex w-full items-center justify-between gap-2 rounded border px-2 py-1.5 text-left text-sm ${
-                    active
-                      ? "border-ember/60 bg-ember/15 text-parchment"
-                      : "border-parchment/15 bg-ink/30 text-parchment/85 hover:bg-ink/50"
-                  }`}
-                >
-                  <span className="truncate">{d.name}</span>
-                  <span className="flex shrink-0 items-center gap-1.5">
-                    {isTuned(d) ? (
-                      <span className="h-2 w-2 rounded-full bg-amber-300" title="Tuned in this module" />
-                    ) : null}
-                    <span className="text-[10px] uppercase tracking-wide text-parchment/45">
-                      {d.kind === "projectile" ? "proj" : "burst"}
-                    </span>
-                  </span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-
-        {/* Preview + params */}
-        <section className="min-w-0">
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h2 className="font-display text-2xl text-parchment">
-              {def.name} <span className="font-mono text-sm text-parchment/50">{def.id}</span>
-            </h2>
-            <div className="flex items-center gap-3 text-sm">
-              <label className="flex items-center gap-1.5 text-parchment/80">
-                <input type="checkbox" checked={loop} onChange={(e) => setLoop(e.target.checked)} />
-                Loop
-              </label>
-              <button
-                type="button"
-                onClick={() => setPlayKey((k) => k + 1)}
-                className="rounded border border-parchment/30 px-3 py-1 text-parchment/90 hover:bg-ink/40"
-              >
-                ▶ Replay
-              </button>
-            </div>
-          </div>
-          <p className="mt-1 text-sm text-parchment/70">{def.description}</p>
-          {uses.length > 0 ? (
-            <p className="mt-1 text-xs text-parchment/55">Used by: {uses.join(" · ")}</p>
-          ) : null}
-
-          <div className="mt-3">
-            <FxPreview def={def} params={params} playKey={playKey} loop={loop} />
-          </div>
-
-          <div className="mt-4 flex items-center justify-between">
-            <h3 className="text-[13px] uppercase tracking-wide text-parchment/75">Settings</h3>
-            <button
-              type="button"
-              onClick={resetAll}
-              disabled={!isTuned(def)}
-              className="rounded border border-parchment/20 px-2 py-0.5 text-xs text-parchment/80 hover:bg-ink/40 disabled:opacity-40"
-            >
-              Reset all to default
+        <div>
+          <div className="mb-2 flex gap-2">
+            <input
+              type="search"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              placeholder="Filter…"
+              className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-sm text-parchment"
+            />
+            <button type="button" onClick={onNew} className={btn} title="Create a new FX">
+              + New
             </button>
           </div>
-          <div className="mt-2 grid gap-3 sm:grid-cols-2">
-            {def.params.map((p) => (
-              <ParamRow
-                key={p.key}
-                p={p}
-                value={params[p.key]}
-                changed={params[p.key] !== p.default}
-                onChange={(v) => setParam(p.key, v)}
-                onReset={() => resetParam(p)}
+          <ul className="max-h-[70vh] space-y-1 overflow-auto pr-1">
+            {shown.map((r) => {
+              const active = current?.id === r.id;
+              const vis = fxVisualDef(r);
+              return (
+                <li key={r.id}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedId(r.id);
+                      setPlayKey((k) => k + 1);
+                    }}
+                    className={`flex w-full items-center justify-between gap-2 rounded border px-2 py-1.5 text-left text-sm ${
+                      active
+                        ? "border-ember/60 bg-ember/15 text-parchment"
+                        : "border-parchment/15 bg-ink/30 text-parchment/85 hover:bg-ink/50"
+                    }`}
+                  >
+                    <span className="truncate">{r.name ?? r.id}</span>
+                    <span className="flex shrink-0 items-center gap-1.5">
+                      {isOwn(r.id) && isInherited(r.id) ? (
+                        <span className="h-2 w-2 rounded-full bg-amber-300" title="Changed in this module" />
+                      ) : null}
+                      <span className="text-[10px] uppercase tracking-wide text-parchment/45">
+                        {vis ? (vis.kind === "projectile" ? "proj" : "burst") : "sound"}
+                      </span>
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+
+        {/* Selected FX */}
+        {current ? (
+          <section className="min-w-0">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <h2 className="font-display text-2xl text-parchment">
+                {current.name ?? current.id}{" "}
+                <span className="font-mono text-sm text-parchment/50">{current.id}</span>
+              </h2>
+              <div className="flex flex-wrap items-center gap-3 text-sm">
+                <label className="flex items-center gap-1.5 text-parchment/80">
+                  <input type="checkbox" checked={sound} onChange={(e) => setSound(e.target.checked)} />
+                  Sound
+                </label>
+                <label className="flex items-center gap-1.5 text-parchment/80">
+                  <input type="checkbox" checked={loop} onChange={(e) => setLoop(e.target.checked)} />
+                  Loop
+                </label>
+                <button type="button" onClick={() => setPlayKey((k) => k + 1)} className={btn}>
+                  ▶ Play
+                </button>
+                <button type="button" onClick={onDuplicate} className={btn}>
+                  Duplicate
+                </button>
+                <button
+                  type="button"
+                  onClick={onDelete}
+                  disabled={!isOwn(current.id)}
+                  className={btn}
+                  title={isOwn(current.id) ? "" : "Inherited from a parent module"}
+                >
+                  {isInherited(current.id) ? "Revert" : "Delete"}
+                </button>
+              </div>
+            </div>
+            {uses.length > 0 ? (
+              <p className="mt-1 text-xs text-parchment/55">Used by: {uses.join(" · ")}</p>
+            ) : (
+              <p className="mt-1 text-xs text-parchment/45">Not used by any record yet.</p>
+            )}
+
+            <div className="mt-3">
+              <FxPreview
+                def={def}
+                params={params}
+                playKey={playKey}
+                loop={loop}
+                sound={sound}
+                castSfx={current.cast_sfx ?? ""}
+                hitSfx={current.hit_sfx ?? ""}
               />
-            ))}
-          </div>
-        </section>
+            </div>
+
+            {/* Identity + sounds */}
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <TextRow label="Name" value={current.name ?? ""} onChange={(v) => update({ name: v })} />
+              <SelectRow
+                label="Visual"
+                value={(current.visual ?? current.id) || "none"}
+                options={[
+                  { value: "none", label: "None (sound only)" },
+                  ...FX_DEFS.map((d) => ({ value: d.id, label: `${d.name} (${d.id})` })),
+                ]}
+                help={def?.description}
+                onChange={(v) => update({ visual: v, params: {} })}
+              />
+              <SelectRow
+                label="Cast sound"
+                value={current.cast_sfx ?? ""}
+                options={[{ value: "", label: "(silent)" }, ...SFX_NAMES.map((n) => ({ value: n, label: n }))]}
+                onChange={(v) => update({ cast_sfx: v })}
+              />
+              <SelectRow
+                label="Hit sound"
+                value={current.hit_sfx ?? ""}
+                options={[{ value: "", label: "(silent)" }, ...SFX_NAMES.map((n) => ({ value: n, label: n }))]}
+                onChange={(v) => update({ hit_sfx: v })}
+              />
+              <div className="sm:col-span-2">
+                <TextRow
+                  label="Description"
+                  value={current.description ?? ""}
+                  multiline
+                  onChange={(v) => putRecord({ ...current, description: v })}
+                />
+              </div>
+            </div>
+
+            {def ? (
+              <>
+                <div className="mt-4 flex items-center justify-between">
+                  <h3 className="text-[13px] uppercase tracking-wide text-parchment/75">
+                    Visual settings
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => writeParams(fxDefaults(def))}
+                    disabled={Object.keys(cleanFxParams(def, current.params)).length === 0}
+                    className="rounded border border-parchment/20 px-2 py-0.5 text-xs text-parchment/80 hover:bg-ink/40 disabled:opacity-40"
+                  >
+                    Reset all to default
+                  </button>
+                </div>
+                <div className="mt-2 grid gap-3 sm:grid-cols-2">
+                  {def.params.map((p) => (
+                    <ParamRow
+                      key={p.key}
+                      p={p}
+                      value={params[p.key]}
+                      changed={params[p.key] !== p.default}
+                      onChange={(v) => writeParams({ ...params, [p.key]: v })}
+                      onReset={() => writeParams({ ...params, [p.key]: p.default })}
+                    />
+                  ))}
+                </div>
+              </>
+            ) : null}
+          </section>
+        ) : (
+          <p className="text-parchment/70">No FX yet — click + New.</p>
+        )}
       </div>
     </div>
+  );
+}
+
+function TextRow({
+  label,
+  value,
+  onChange,
+  multiline = false,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  multiline?: boolean;
+}) {
+  const cls =
+    "mt-1 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-sm text-parchment/90";
+  return (
+    <label className="block rounded border border-parchment/15 bg-ink/30 px-3 py-2">
+      <span className="text-sm text-parchment/85">{label}</span>
+      {multiline ? (
+        <textarea rows={2} value={value} onChange={(e) => onChange(e.target.value)} className={cls} />
+      ) : (
+        <input type="text" value={value} onChange={(e) => onChange(e.target.value)} className={cls} />
+      )}
+    </label>
+  );
+}
+
+function SelectRow({
+  label,
+  value,
+  options,
+  onChange,
+  help,
+}: {
+  label: string;
+  value: string;
+  options: Array<{ value: string; label: string }>;
+  onChange: (v: string) => void;
+  help?: string;
+}) {
+  const known = options.some((o) => o.value === value);
+  return (
+    <label className="block rounded border border-parchment/15 bg-ink/30 px-3 py-2">
+      <span className="text-sm text-parchment/85">{label}</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="mt-1 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-sm text-parchment/90"
+      >
+        {known ? null : <option value={value}>{value} ⚠ unknown</option>}
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+      {help ? <p className="mt-1 text-xs text-parchment/55">{help}</p> : null}
+    </label>
   );
 }
 

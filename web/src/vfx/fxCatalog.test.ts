@@ -20,6 +20,9 @@ import {
   numToHex,
   playFx,
   setFxOverrides,
+  setFxRecords,
+  getFxRecord,
+  fxVisualKey,
 } from "./fxCatalog";
 
 const scene = {} as never;
@@ -72,5 +75,26 @@ describe("fxCatalog", () => {
     const call = (Vfx.magicDart as unknown as ReturnType<typeof vi.fn>).mock.calls.at(-1)!;
     expect(call[3]).toBe(0x123456);
     expect(call[4]).toBe(999);
+  });
+
+  it("FX records pick a visual, carry their own tuning and sounds", () => {
+    setFxRecords({
+      fx: [
+        { id: "lich_bolt", name: "Lich Bolt", visual: "lightning_bolt", params: { width: 9 }, cast_sfx: "fireball", hit_sfx: "explosion" },
+        { id: "chime", name: "Chime", visual: "none", cast_sfx: "level_up" },
+      ],
+    });
+    expect(getFxRecord("lich_bolt")?.hit_sfx).toBe("explosion");
+    expect(fxParams("lich_bolt").width).toBe(9);
+    // The bare visual keeps its own defaults.
+    expect(fxParams("lightning_bolt").width).not.toBe(9);
+    expect(fxVisualKey(getFxRecord("lich_bolt"))).toBe("lich_bolt");
+    expect(fxVisualKey(getFxRecord("chime"))).toBe("");
+    // A built-in visual with no record still resolves.
+    expect(getFxRecord("hellfire")?.visual).toBe("hellfire");
+    expect(getFxRecord("missing")).toBeNull();
+    void playFx("lich_bolt", scene, A, B);
+    expect((Vfx.lightningZigzag as unknown as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(0);
+    setFxRecords([]);
   });
 });

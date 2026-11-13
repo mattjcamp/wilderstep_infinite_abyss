@@ -1,38 +1,26 @@
 "use client";
 
 /**
- * Animation picker — embedded into RecordForm fields whose key matches
- * a known animation-field (Spell/Ability/Item/Effect.animation_id). The
- * picker lists every entry from the module's animations.json catalog
- * and writes the selected `id` back through onChange.
+ * FX picker — embedded into RecordForm fields that reference an FX
+ * record (`fx_id` on spells / abilities / items / effects). Lists every
+ * FX in the module's merged fx.json (including an unpublished FX-page
+ * draft) and writes the selected `id` back through onChange.
  *
  * Layout:
- *   [ ▸ Animation name (visual · cast/hit sfx) ] [ ▶ play ] [ ✕ clear ]
+ *   [ ▸ FX name (visual · cast/hit sfx) ] [ ▶ play ] [ ✕ clear ]
  *   (expands when open) ┌─ shared preview canvas ─┐
  *                       ┌─ scrollable list, each row with a ▶ ─┐
  *
- * Click an animation row → field value becomes that animation's id.
- * Empty value = "(none)". The text input is intentionally hidden
- * because animation ids should only come from the catalog — there's
- * no legacy free-text path to preserve here.
- *
- * Preview pipeline:
- *   - Phaser is lazy-imported the first time the picker is opened.
- *   - One PreviewScene is mounted into a 240×80 canvas at the top
- *     of the open picker; it holds a "caster" dot on the left and a
- *     "target" dot on the right.
- *   - Click a row's ▶ (or the header's ▶) → the scene resolves the
- *     animation's `visual` through the VFX registry, runs it from
- *     caster→target coords, and plays cast_sfx → hit_sfx.
- *   - The canvas survives close/reopen so designers can flip
- *     through the catalog without re-paying the Phaser load.
- *
- * The catalog is fetched once and cached at module scope so multiple
- * pickers on the same form (or rapid edits) share a single request.
+ * Preview: Phaser is lazy-imported the first time the picker opens;
+ * ▶ plays the record's visual (with its tuning) from caster to target
+ * and its cast_sfx → hit_sfx.
  */
 
 import { useEffect, useRef, useState } from "react";
-import { withBasePath } from "@/util/basePath";
+import type { FxRecord } from "@/vfx/fxCatalog";
+import { mergeModel } from "@/data_model/merge";
+import { loadDraft } from "@/data_model/draft";
+import { getEditorModuleSource } from "@/data_model/sourceConfig";
 // NOTE: `@/vfx/effectRegistry` transitively pulls in `phaser`, which
 // touches `navigator` at module load and crashes Next.js static
 // prerendering of any page that imports this picker. `@/battle/audio/Sfx`
@@ -40,56 +28,52 @@ import { withBasePath } from "@/util/basePath";
 // lazy-`import()`-ed inside the preview effect below, which only ever
 // runs in the browser.
 
-interface AnimationRecord {
-  id: string;
-  name: string;
-  description?: string;
-  visual?: string;
-  cast_sfx?: string;
-  hit_sfx?: string;
-}
-
-interface AnimationsFile {
-  _comment?: string;
-  animations: AnimationRecord[];
-}
-
 type CatalogState =
   | { kind: "idle" }
   | { kind: "loading" }
-  | { kind: "ok"; animations: AnimationRecord[] }
+  | { kind: "ok"; records: FxRecord[] }
   | { kind: "error"; message: string };
 
-// Module-scope cache so every picker on the page shares one fetch.
-// The catalog is small and changes only when the underlying file
-// changes (which the editor would reload anyway); no invalidation.
-let _cached: AnimationRecord[] | null = null;
-let _inflight: Promise<AnimationRecord[]> | null = null;
+// Per-module cache so every picker on the page shares one load.
+const _cached = new Map<string, FxRecord[]>();
+const _inflight = new Map<string, Promise<FxRecord[]>>();
 
-async function loadCatalog(): Promise<AnimationRecord[]> {
-  if (_cached) return _cached;
-  if (_inflight) return _inflight;
-  _inflight = (async () => {
-    const url = withBasePath("/modules/default/animations.json");
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const file = (await res.json()) as AnimationsFile;
-    const list = Array.isArray(file.animations) ? file.animations : [];
-    _cached = list;
+function recordsOf(file: unknown): FxRecord[] {
+  const list = (file as { fx?: unknown } | null)?.fx;
+  return Array.isArray(list)
+    ? list.filter((r): r is FxRecord => !!r && typeof (r as FxRecord).id === "string")
+    : [];
+}
+
+/** The module's merged fx.json (parents ⊕ own file, or own draft). */
+async function loadCatalog(moduleId: string): Promise<FxRecord[]> {
+  const hit = _cached.get(moduleId);
+  if (hit) return hit;
+  const pending = _inflight.get(moduleId);
+  if (pending) return pending;
+  const p = (async () => {
+    const layers = await getEditorModuleSource().loadModelLayers(moduleId, "fx");
+    const draft = await loadDraft<Record<string, unknown>>(moduleId, "fx").catch(() => null);
+    const merged = mergeModel("fx", layers.inherited, draft ?? layers.ownFile);
+    const list = recordsOf(merged).sort((a, b) =>
+      (a.name ?? a.id).localeCompare(b.name ?? b.id),
+    );
+    _cached.set(moduleId, list);
     return list;
   })();
+  _inflight.set(moduleId, p);
   try {
-    return await _inflight;
+    return await p;
   } finally {
-    _inflight = null;
+    _inflight.delete(moduleId);
   }
 }
 
-/** Test-only escape hatch: clear the catalog cache between runs so
- *  one test's stubbed fetch doesn't bleed into the next. */
-export function __resetAnimationCatalogCacheForTests(): void {
-  _cached = null;
-  _inflight = null;
+/** Drop cached catalogs (the FX page calls this after a save so open
+ *  pickers see new records; tests use it too). */
+export function clearFxPickerCache(): void {
+  _cached.clear();
+  _inflight.clear();
 }
 
 // ── Preview canvas geometry ─────────────────────────────────────────
@@ -101,12 +85,14 @@ const PREVIEW_HEIGHT = 80;
 const PREVIEW_FROM = { x: 28, y: PREVIEW_HEIGHT / 2 };
 const PREVIEW_TO = { x: PREVIEW_WIDTH - 28, y: PREVIEW_HEIGHT / 2 };
 
-export function AnimationPicker({
+export function FxPicker({
   value,
   onChange,
+  moduleId = "default",
 }: {
   value: string;
   onChange: (value: string) => void;
+  moduleId?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [state, setState] = useState<CatalogState>({ kind: "idle" });
@@ -114,21 +100,21 @@ export function AnimationPicker({
   useEffect(() => {
     if (state.kind !== "idle") return;
     setState({ kind: "loading" });
-    loadCatalog()
-      .then((animations) => setState({ kind: "ok", animations }))
+    loadCatalog(moduleId)
+      .then((records) => setState({ kind: "ok", records }))
       .catch((e: unknown) =>
         setState({
           kind: "error",
           message: e instanceof Error ? e.message : String(e),
         }),
       );
-  }, [state.kind]);
+  }, [state.kind, moduleId]);
 
   // Resolve the current value to a record so we can show a friendly
   // summary in the closed-state button.
   const current =
     state.kind === "ok"
-      ? state.animations.find((a) => a.id === value) ?? null
+      ? state.records.find((a) => a.id === value) ?? null
       : null;
 
   // ── Phaser preview ────────────────────────────────────────────────
@@ -138,8 +124,8 @@ export function AnimationPicker({
   // doesn't re-pay the bundle load.
   const previewMountRef = useRef<HTMLDivElement | null>(null);
   const gameRef = useRef<unknown>(null);
-  const playRef = useRef<((a: AnimationRecord) => void) | null>(null);
-  const pendingPlayRef = useRef<AnimationRecord | null>(null);
+  const playRef = useRef<((a: FxRecord) => void) | null>(null);
+  const pendingPlayRef = useRef<FxRecord | null>(null);
   const [hasOpened, setHasOpened] = useState(false);
   const [previewState, setPreviewState] = useState<
     "idle" | "loading" | "ready" | "error"
@@ -167,16 +153,16 @@ export function AnimationPicker({
         // so they're imported here rather than at module top level —
         // otherwise Next.js's static prerender crashes with
         // `ReferenceError: navigator is not defined`.
-        const [Phaser, { resolveProjectileEffect }, { Sfx }] =
+        const [Phaser, { fxVisualDef, fxRecordParams }, { Sfx }] =
           await Promise.all([
             import("phaser"),
-            import("@/vfx/effectRegistry"),
+            import("@/vfx/fxCatalog"),
             import("@/battle/audio/Sfx"),
           ]);
         if (cancelled) return;
         class PreviewScene extends Phaser.Scene {
           constructor() {
-            super({ key: "animation-preview" });
+            super({ key: "fx-preview" });
           }
           create() {
             // Background gridline so the empty canvas reads as "preview
@@ -194,10 +180,9 @@ export function AnimationPicker({
             playRef.current = async (a) => {
               try {
                 if (a.cast_sfx) Sfx.play(a.cast_sfx);
-                const vis = (a.visual ?? "").trim();
-                if (vis && vis !== "none") {
-                  const fn = resolveProjectileEffect({ effect_type: vis });
-                  await fn(this, PREVIEW_FROM, PREVIEW_TO);
+                const def = fxVisualDef(a);
+                if (def) {
+                  await def.play(this, PREVIEW_FROM, PREVIEW_TO, fxRecordParams(a));
                 } else {
                   // Audio-only animations still need *some* gap before
                   // the hit_sfx so cast and hit don't stack into one
@@ -256,7 +241,7 @@ export function AnimationPicker({
     };
   }, [hasOpened]);
 
-  const requestPlay = (a: AnimationRecord) => {
+  const requestPlay = (a: FxRecord) => {
     setPreviewingId(a.id);
     if (playRef.current) {
       playRef.current(a);
@@ -275,11 +260,10 @@ export function AnimationPicker({
       // raw id with a warning marker so the designer notices.
       return `${value} ⚠`;
     }
-    const parts: string[] = [current.name];
+    const parts: string[] = [current.name ?? current.id];
     const tail: string[] = [];
-    if (current.visual && current.visual !== "none") {
-      tail.push(current.visual);
-    }
+    const vis = current.visual ?? current.id;
+    if (vis && vis !== "none") tail.push(vis);
     if (current.cast_sfx) tail.push(`cast:${current.cast_sfx}`);
     if (current.hit_sfx) tail.push(`hit:${current.hit_sfx}`);
     if (tail.length > 0) parts.push(`(${tail.join(" · ")})`);
@@ -309,7 +293,7 @@ export function AnimationPicker({
               requestPlay(current);
             }}
             className="rounded border border-parchment/20 px-2 py-1 text-[13px] text-parchment/85 hover:bg-ink/40"
-            title={`Preview "${current.name}".`}
+            title={`Preview "${current.name ?? current.id}".`}
           >
             ▶
           </button>
@@ -319,7 +303,7 @@ export function AnimationPicker({
             type="button"
             onClick={() => onChange("")}
             className="rounded border border-parchment/20 px-2 py-1 text-[13px] text-parchment/85 hover:bg-ink/40"
-            title="Clear the animation reference."
+            title="Clear the FX reference."
           >
             ✕
           </button>
@@ -357,11 +341,11 @@ export function AnimationPicker({
       {open ? (
         <div className="mt-1 max-h-64 overflow-auto rounded border border-parchment/15 bg-ink/60 p-2">
           {state.kind === "loading" ? (
-            <p className="text-[13px] text-parchment/70">Loading animations…</p>
+            <p className="text-[13px] text-parchment/70">Loading FX…</p>
           ) : null}
           {state.kind === "error" ? (
             <p className="text-[13px] text-ember">
-              Couldn&apos;t load animations.json: {state.message}
+              Couldn&apos;t load fx.json: {state.message}
             </p>
           ) : null}
           {state.kind === "ok" ? (
@@ -381,13 +365,14 @@ export function AnimationPicker({
                 >
                   <span className="font-mono text-parchment/70">(none)</span>{" "}
                   <span className="text-parchment/65">
-                    — no animation assigned
+                    — no FX
                   </span>
                 </button>
               </li>
-              {state.animations.map((a) => {
+              {state.records.map((a) => {
                 const tail: string[] = [];
-                if (a.visual && a.visual !== "none") tail.push(a.visual);
+                const vis = a.visual ?? a.id;
+                if (vis && vis !== "none") tail.push(vis);
                 if (a.cast_sfx) tail.push(`cast:${a.cast_sfx}`);
                 if (a.hit_sfx) tail.push(`hit:${a.hit_sfx}`);
                 const isActive = a.id === value;
@@ -409,7 +394,7 @@ export function AnimationPicker({
                       }`}
                     >
                       <div className="flex items-baseline justify-between gap-2">
-                        <span className="font-medium">{a.name}</span>
+                        <span className="font-medium">{a.name ?? a.id}</span>
                         <span className="font-mono text-xs text-parchment/65">
                           {a.id}
                         </span>
@@ -436,7 +421,7 @@ export function AnimationPicker({
                           ? "border-ember/60 bg-ember/30 text-parchment"
                           : "border-parchment/20 text-parchment/85 hover:bg-ink/40"
                       }`}
-                      title={`Preview "${a.name}".`}
+                      title={`Preview "${a.name ?? a.id}".`}
                     >
                       ▶
                     </button>

@@ -45,10 +45,10 @@ export interface Ability {
    *  of `races.json.abilities[]`) and the abilities.json key. */
   id: string;
   name: string;
-  /** Animation catalog id — when set, the combat dispatcher resolves
-   *  the matching record from animations.json to pull `cast_sfx`,
+  /** FX id (fx.json) — when set, the combat dispatcher resolves
+   *  the matching FX record to pull `cast_sfx`,
    *  `hit_sfx`, and `visual` for the per-target VFX pass. */
-  animation_id: string | null;
+  fx_id: string | null;
   /** Granter category. `"class"` for class-granted abilities,
    *  `"race"` for race-granted. Used by the character sheet to
    *  group display. */
@@ -77,7 +77,7 @@ export interface Ability {
 interface RawAbility {
   id?: string;
   name?: string;
-  animation_id?: string | null;
+  fx_id?: string | null;
   type?: string;
   description?: string;
   duration?: Ability["duration"];
@@ -103,7 +103,7 @@ export function abilityFromRaw(r: RawAbility): Ability | null {
   const type: Ability["type"] = r.type === "race" ? "race" : "class";
   return {
     description: "",
-    animation_id: null,
+    fx_id: null,
     duration: "permanent",
     params: null,
     ...r,

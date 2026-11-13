@@ -56,7 +56,7 @@ The "Used?" column reflects the v2 TypeScript implementation under `web/`. The c
 
 A polymorphic object discriminated by `type`. Stays inline (not yet linked to [Spell](spell.md) ids) because several monster spell types (`breath_fire`, `heal_self`, `heal_ally`, `poison`) don't have player-castable Spell records.
 
-Common fields: `type` (string), `name` (string), `cast_chance` (int 0–100), `range` (int, omitted on `heal_self`).
+Common fields: `type` (string), `name` (string), `cast_chance` (int 0–100), `range` (int, omitted on `heal_self`). Optional `fx_id` (string) names the [FX](fx.md) played on cast; when unset a per-type default plays (`breath_fire` → Dragon Breath, `fireball` → Hellfire, `lightning_bolt` → Lightning Strike, `magic_dart` / `magic_arrow` → the same-named FX, `curse` → Curse Aura, `heal_self` / `heal_ally` → Healing Sparkles; `sleep` and `poison` play none).
 
 Variant types and extras: `sleep` (`save_dc`, `duration`, `max_target_hp`), `curse` (`duration`, `ac_penalty`, `attack_penalty`), `poison` (`save_dc`, `damage_per_turn`, `duration`), `magic_dart` / `magic_arrow` / `lightning_bolt` / `fireball` / `breath_fire` (damage dice + optional `save_dc`), `heal_self` / `heal_ally` (heal dice).
 

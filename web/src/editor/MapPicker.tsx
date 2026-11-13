@@ -6,7 +6,7 @@
  * Lists every entry from the module's maps.json catalog and writes
  * the selected `id` back through onChange.
  *
- * Layout mirrors the CounterPicker / AnimationPicker exactly so the
+ * Layout mirrors the CounterPicker / FxPicker exactly so the
  * editor reads consistently from one reference-typed field to the
  * next:
  *

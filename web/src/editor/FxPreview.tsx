@@ -8,10 +8,14 @@
  *
  * The parent bumps `playKey` (or changes `params`) to replay. With
  * `loop` on, the effect replays on its own after a short pause.
+ * `castSfx` / `hitSfx` play at the start and on impact — on the first
+ * play of each trigger only, so a looping preview doesn't drone. A
+ * null `def` is a sound-only FX.
  */
 
 import { useEffect, useRef } from "react";
 import type { FxDef, FxParams } from "@/vfx/fxCatalog";
+import { Sfx } from "@/battle/audio/Sfx";
 import { spriteUrl } from "@/data_model/spriteUrl";
 
 const W = 640;
@@ -30,11 +34,17 @@ export function FxPreview({
   params,
   playKey,
   loop,
+  castSfx = "",
+  hitSfx = "",
+  sound = true,
 }: {
-  def: FxDef;
+  def: FxDef | null;
   params: FxParams;
   playKey: number;
   loop: boolean;
+  castSfx?: string;
+  hitSfx?: string;
+  sound?: boolean;
 }) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const stageRef = useRef<StageApi | null>(null);
@@ -106,15 +116,21 @@ export function FxPreview({
   useEffect(() => {
     let stop = false;
     let timer: ReturnType<typeof setTimeout> | null = null;
+    let first = true;
     const run = async () => {
       await readyRef.current;
       if (stop || !stageRef.current) return;
+      const withSound = sound && first;
+      first = false;
       try {
-        await stageRef.current.play(def, params);
+        if (withSound && castSfx) Sfx.play(castSfx);
+        if (def) await stageRef.current.play(def, params);
+        else await new Promise<void>((r) => setTimeout(r, 180));
+        if (withSound && hitSfx && !stop) Sfx.play(hitSfx);
       } catch {
         /* stage torn down mid-play */
       }
-      if (!stop && loop) timer = setTimeout(run, 700);
+      if (!stop && loop && def) timer = setTimeout(run, 700);
     };
     // Small debounce so dragging a slider doesn't stack dozens of plays.
     timer = setTimeout(run, 120);
@@ -122,7 +138,7 @@ export function FxPreview({
       stop = true;
       if (timer) clearTimeout(timer);
     };
-  }, [def, params, playKey, loop]);
+  }, [def, params, playKey, loop, castSfx, hitSfx, sound]);
 
   return (
     <div

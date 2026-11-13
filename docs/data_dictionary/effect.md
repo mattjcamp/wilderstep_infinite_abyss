@@ -55,6 +55,7 @@ Each record:
 | `id` | string | yes | Stable identifier referenced by classes, races, spells, items, monsters, and party effect slots | TBD |
 | `name` | string | yes | Display label | TBD |
 | `description` | string | yes | Tooltip / UI text | TBD |
+| `fx_id` | string | no | [FX](fx.md) played when this effect is applied — picked from a dropdown of the module's FX records. | Yes |
 | `duration` | string \| number | yes | Default lifetime if the applier doesn't override. Numbers are step counts (overworld effects) or turns (combat effects). Strings: `"permanent"`, `"instant"`, `"until_save"`, or other context-specific values. | TBD |
 | `params` | object \| null | no | Bag of effect-specific default parameters whose shape depends on the runtime handler for this `id`. Appliers (spells, items, monsters) may override individual keys at apply time. | TBD |
 

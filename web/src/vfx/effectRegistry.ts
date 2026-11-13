@@ -25,7 +25,7 @@
  */
 
 import type Phaser from "phaser";
-import { FX_DEFS, playFx } from "./fxCatalog";
+import { FX_DEFS, fxVisualKey, getFxRecord, playFx } from "./fxCatalog";
 
 /** Screen-space pixel coordinate. */
 export interface Pt {
@@ -87,15 +87,21 @@ export function registerProjectileEffect(
 /** Look up the effect for a spell-like input. Returns the registered
  *  renderer if one exists, otherwise the default bowed projectile.
  *
- *  Callers in v1 combat now pass `{ effect_type: animation.visual }`
- *  exclusively — the resolver looks up the visual key registered
- *  under that name. The shape stays SpellLike (rather than just
+ *  Callers pass an FX id (`{ effect_type: fx.id }`): a built-in
+ *  visual id hits the registry, any other FX record id falls through
+ *  to that record's visual + tuning. The shape stays SpellLike (rather than just
  *  taking a string) so the API can grow extra fields without
  *  changing every call site. */
 export function resolveProjectileEffect(spell: SpellLike): ProjectileEffectFn {
-  if (spell.effect_type) {
-    const entry = PROJECTILE_REGISTRY.get(spell.effect_type);
+  const key = spell.effect_type;
+  if (key) {
+    const entry = PROJECTILE_REGISTRY.get(key);
     if (entry) return entry;
+    // An FX record id (fx.json) — "lightning_strike", "lich_bolt", … —
+    // plays its own visual with its own tuning.
+    if (fxVisualKey(getFxRecord(key))) {
+      return (scene, from, to, cfg) => playFx(key, scene, from, to, cfg ?? {});
+    }
   }
   return DEFAULT_PROJECTILE;
 }

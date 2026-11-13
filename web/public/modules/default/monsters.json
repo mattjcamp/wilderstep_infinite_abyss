@@ -235,6 +235,7 @@
         {
           "type": "lightning_bolt",
           "name": "Lightning Bolt",
+          "fx_id": "lightning_strike",
           "range": 7,
           "cast_chance": 15,
           "damage_dice": 4,
@@ -244,6 +245,7 @@
         {
           "type": "magic_arrow",
           "name": "Magic Arrow",
+          "fx_id": "magic_arrow",
           "range": 8,
           "cast_chance": 20,
           "damage_dice": 2,
@@ -253,6 +255,7 @@
         {
           "type": "magic_dart",
           "name": "Magic Dart",
+          "fx_id": "magic_dart",
           "range": 4,
           "cast_chance": 25,
           "damage_dice": 1,
@@ -296,6 +299,7 @@
         {
           "type": "heal_ally",
           "name": "Major Heal",
+          "fx_id": "heal_sparkles",
           "range": 10,
           "cast_chance": 15,
           "heal_dice": 4,
@@ -305,6 +309,7 @@
         {
           "type": "heal_ally",
           "name": "Heal",
+          "fx_id": "heal_sparkles",
           "range": 6,
           "cast_chance": 35,
           "heal_dice": 1,
@@ -314,6 +319,7 @@
         {
           "type": "heal_self",
           "name": "Heal",
+          "fx_id": "heal_sparkles",
           "cast_chance": 25,
           "heal_dice": 1,
           "heal_sides": 6,
@@ -447,6 +453,7 @@
         {
           "type": "curse",
           "name": "Haunting Wail",
+          "fx_id": "curse_aura",
           "range": 5,
           "cast_chance": 20,
           "duration": 3,
@@ -546,6 +553,7 @@
         {
           "type": "curse",
           "name": "Hex",
+          "fx_id": "curse_aura",
           "range": 8,
           "cast_chance": 25,
           "duration": 4,
@@ -555,6 +563,7 @@
         {
           "type": "lightning_bolt",
           "name": "Lightning Bolt",
+          "fx_id": "lightning_strike",
           "range": 7,
           "cast_chance": 20,
           "damage_dice": 4,
@@ -564,6 +573,7 @@
         {
           "type": "fireball",
           "name": "Fireball",
+          "fx_id": "hellfire",
           "range": 7,
           "cast_chance": 20,
           "damage_dice": 4,
@@ -762,6 +772,7 @@
         {
           "type": "fireball",
           "name": "Hellfire",
+          "fx_id": "hellfire",
           "range": 6,
           "cast_chance": 20,
           "damage_dice": 3,
@@ -813,6 +824,7 @@
         {
           "type": "breath_fire",
           "name": "Flame Burst",
+          "fx_id": "dragon_breath",
           "range": 3,
           "cast_chance": 30,
           "damage_dice": 2,
@@ -948,6 +960,7 @@
         {
           "type": "lightning_bolt",
           "name": "Thunder Gust",
+          "fx_id": "lightning_strike",
           "range": 6,
           "cast_chance": 25,
           "damage_dice": 2,
@@ -995,6 +1008,7 @@
         {
           "type": "breath_fire",
           "name": "Fire Breath",
+          "fx_id": "dragon_breath",
           "range": 6,
           "cast_chance": 40,
           "damage_dice": 6,

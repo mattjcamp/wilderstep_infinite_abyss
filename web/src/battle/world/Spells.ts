@@ -90,10 +90,10 @@ export interface Spell {
    *  `"party"` (out of combat). */
   usable_in: string[];
   icon?: string;
-  /** Reference into the Animation catalog (modules/default/animations.json).
+  /** FX id — a record in the module's fx.json.
    *  Combat dispatches the cast SFX, projectile/aura visual, and
    *  impact SFX through this id. */
-  animation_id?: string | null;
+  fx_id?: string | null;
 
   // ── Legacy / derived fields (computed at load) ───────────────
   // These mirror v1's spell shape so CombatScene's effect_type-based
@@ -122,7 +122,7 @@ interface RawSpell {
   targeting?: string;
   usable_in?: string[] | string;
   icon?: string;
-  animation_id?: string | null;
+  fx_id?: string | null;
 }
 
 let _cache: Spell[] | null = null;

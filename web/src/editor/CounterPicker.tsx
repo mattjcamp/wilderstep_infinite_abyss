@@ -6,7 +6,7 @@
  * the module's counters.json catalog and writes the selected `id`
  * back through onChange.
  *
- * Layout mirrors the AnimationPicker exactly so the editor reads
+ * Layout mirrors the FxPicker exactly so the editor reads
  * consistently from one reference-typed field to the next:
  *
  *   [ ▸ Counter name (kind · N items) ] [ ✕ clear ]

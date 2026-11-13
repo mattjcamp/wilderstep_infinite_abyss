@@ -389,37 +389,134 @@ export function cleanFxParams(def: FxDef, raw: unknown): FxParams {
   return out;
 }
 
-// ── Module overrides (fx.json) ───────────────────────────────────────
+// ── FX records (fx.json) ─────────────────────────────────────────────
+//
+// An FX record is what the rest of the game references by `fx_id`: one
+// named effect = a built-in visual (above) + its tuning + the sounds
+// that go with it. Several records can share a visual ("Lightning
+// Strike" and "Lich Bolt" both draw `lightning_bolt`, tuned
+// differently).
+//
+//   { "id": "lightning_strike", "name": "Lightning Strike",
+//     "visual": "lightning_bolt", "params": { "width": 5 },
+//     "cast_sfx": "fireball", "hit_sfx": "explosion" }
+//
+// `visual` defaults to the record's own id, so an old tuning-only
+// record (`{ id: "hellfire", params }`) still works. `visual: "none"`
+// is a sound-only FX. A built-in visual id with no record of its own
+// still resolves (to its defaults, silent), so code that names a
+// visual directly keeps working.
 
-const OVERRIDES = new Map<string, FxParams>();
+export interface FxRecord {
+  id: string;
+  name?: string;
+  description?: string;
+  /** Built-in visual id (FX_DEFS) or "none". Defaults to `id`. */
+  visual?: string;
+  params?: Record<string, unknown>;
+  /** Sfx name played when the effect starts. "" = silent. */
+  cast_sfx?: string;
+  /** Sfx name played on impact. "" = silent. */
+  hit_sfx?: string;
+}
 
-/** Install a module's fx.json records (`[{ id, params }]`). Unknown
- *  ids and bad values are dropped. Replaces any previous overrides. */
-export function setFxOverrides(records: unknown): void {
-  OVERRIDES.clear();
-  const list = Array.isArray(records)
-    ? records
-    : records && typeof records === "object" && Array.isArray((records as { fx?: unknown }).fx)
-      ? ((records as { fx: unknown[] }).fx)
+const RECORDS = new Map<string, FxRecord>();
+let _seeded = false;
+let _inflight: Promise<void> | null = null;
+
+function recordsFrom(raw: unknown): FxRecord[] {
+  const list = Array.isArray(raw)
+    ? raw
+    : raw && typeof raw === "object" && Array.isArray((raw as { fx?: unknown }).fx)
+      ? (raw as { fx: unknown[] }).fx
       : [];
-  for (const rec of list) {
-    if (!rec || typeof rec !== "object") continue;
-    const id = (rec as { id?: unknown }).id;
-    if (typeof id !== "string") continue;
-    const def = getFxDef(id);
-    if (!def) continue;
-    OVERRIDES.set(id, cleanFxParams(def, (rec as { params?: unknown }).params));
-  }
+  return list.filter(
+    (r): r is FxRecord => !!r && typeof r === "object" && typeof (r as FxRecord).id === "string",
+  );
 }
 
-/** Defaults ⊕ module overrides for one FX. */
-export function fxParams(id: string): FxParams {
+/** Install a module's merged fx.json (`{ fx: [...] }` or the bare
+ *  array). Replaces whatever was installed before. */
+export function setFxRecords(raw: unknown): void {
+  RECORDS.clear();
+  for (const r of recordsFrom(raw)) RECORDS.set(r.id, r);
+  _seeded = true;
+}
+
+/** @deprecated old name — fx.json used to hold tuning only. */
+export const setFxOverrides = setFxRecords;
+
+/** Make sure some FX records are installed. Play mode seeds them from
+ *  the module chain (seedBattleCaches); anything that skips that (the
+ *  editor's battle simulator) falls back to the default module's
+ *  fx.json. Never throws. */
+export async function ensureFxRecords(
+  url = "/modules/default/fx.json",
+): Promise<void> {
+  if (_seeded) return;
+  if (_inflight) return _inflight;
+  _inflight = (async () => {
+    try {
+      const { withBasePath } = await import("@/util/basePath");
+      const res = await fetch(withBasePath(url));
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!_seeded) setFxRecords(await res.json());
+    } catch {
+      // eslint-disable-next-line no-console
+      console.warn(`[fxCatalog] failed to load ${url}`);
+      _seeded = true;
+    } finally {
+      _inflight = null;
+    }
+  })();
+  return _inflight;
+}
+
+/** Look up an FX by id. Falls back to a bare record for a built-in
+ *  visual id that has no record of its own. Null for empty / unknown. */
+export function getFxRecord(id: string | null | undefined): FxRecord | null {
+  if (!id) return null;
+  const rec = RECORDS.get(id);
+  if (rec) return rec;
   const def = getFxDef(id);
-  if (!def) return {};
-  return { ...fxDefaults(def), ...(OVERRIDES.get(id) ?? {}) };
+  if (def) return { id, name: def.name, visual: id, cast_sfx: "", hit_sfx: "" };
+  return null;
 }
 
-/** Play an FX with the module's tuning, plus any per-call knobs. */
+/** Every installed FX record. */
+export function listFxRecords(): FxRecord[] {
+  return Array.from(RECORDS.values());
+}
+
+/** The built-in visual a record draws (null = sound-only / unknown). */
+export function fxVisualDef(rec: FxRecord | null | undefined): FxDef | null {
+  if (!rec) return null;
+  const v = (rec.visual ?? rec.id ?? "").trim();
+  if (!v || v === "none") return null;
+  return getFxDef(v) ?? null;
+}
+
+/** Key to hand the projectile registry for a record: its id when it
+ *  has a visual, "" when it is sound-only or missing. */
+export function fxVisualKey(rec: FxRecord | null | undefined): string {
+  return rec && fxVisualDef(rec) ? rec.id : "";
+}
+
+/** Defaults ⊕ record params for a record, against its visual. */
+export function fxRecordParams(rec: FxRecord): FxParams {
+  const def = fxVisualDef(rec);
+  if (!def) return {};
+  return { ...fxDefaults(def), ...cleanFxParams(def, rec.params) };
+}
+
+/** Defaults ⊕ the installed record's params for one FX id. */
+export function fxParams(id: string): FxParams {
+  const rec = getFxRecord(id);
+  return rec ? fxRecordParams(rec) : {};
+}
+
+/** Play an FX (by record id or built-in visual id) with its tuning,
+ *  plus any per-call knobs. Visual only — sounds are the caller's. */
 export function playFx(
   id: string,
   scene: Phaser.Scene,
@@ -427,13 +524,21 @@ export function playFx(
   to: Pt,
   call: FxCallConfig = {},
 ): Promise<void> {
-  const def = getFxDef(id);
-  if (!def) return Promise.resolve();
-  const p = fxParams(id);
+  const rec = getFxRecord(id);
+  const def = fxVisualDef(rec);
+  if (!rec || !def) return Promise.resolve();
+  const p = fxRecordParams(rec);
   if (call.color !== undefined && def.colorKey) p[def.colorKey] = numToHex(call.color);
   if (call.durationMs !== undefined && def.durationKey) p[def.durationKey] = call.durationMs;
   if (call.segments !== undefined && def.params.some((x) => x.key === "segments")) {
     p.segments = call.segments;
   }
   return def.play(scene, from, to, p);
+}
+
+/** Test-only — forget installed records. */
+export function __resetFxRecordsForTests(): void {
+  RECORDS.clear();
+  _seeded = false;
+  _inflight = null;
 }
