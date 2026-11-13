@@ -42,6 +42,7 @@
  * on the first combat boot, not every encounter.
  */
 
+import { setFxOverrides } from "@/vfx/fxCatalog";
 import { getEditorModuleSource, getModuleSource } from "@/data_model/sourceConfig";
 import { mergeModel } from "@/data_model/merge";
 import type { ModelKey } from "@/data_model/models";
@@ -241,6 +242,13 @@ function buildPartyFromSave(
         }
       : raw;
     const member = memberFromRaw(withSaved);
+    // Lingering statuses (poison) walk into battle with the member.
+    if (override?.effects?.length) {
+      const carried = override.effects
+        .filter((e) => e.id === "poisoned" && typeof e.duration === "number" && e.duration > 0)
+        .map((e) => ({ id: e.id, duration: e.duration as number }));
+      if (carried.length > 0) member.status_effects = carried;
+    }
     // Seed the runtime equipped_durability tracker from the saved
     // map. `memberFromRaw` initialises both slots to null (lazy-init
     // to max on first hit); the saved snapshot wins when present so
@@ -418,6 +426,7 @@ async function seedCombatCatalogs(
     counters,
     characters,
     characterClasses,
+    fx,
   ] = await Promise.all([
     loadMergedModel(src, moduleId, "items"),
     loadMergedModel(src, moduleId, "spells"),
@@ -428,7 +437,11 @@ async function seedCombatCatalogs(
     loadMergedModel(src, moduleId, "counters"),
     loadMergedModel(src, moduleId, "characters"),
     loadMergedModel(src, moduleId, "character_classes"),
+    loadMergedModel(src, moduleId, "fx"),
   ]);
+  // FX tuning (fx.json) → the visual-effects catalog. Always reset so a
+  // module without an fx.json plays the built-in defaults.
+  setFxOverrides(fx ?? []);
 
   // Seed the URL-taking loaders via blob URLs. Each promise settles
   // independently — a malformed catalog won't block the others.

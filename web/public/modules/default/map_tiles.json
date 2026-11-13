@@ -5368,6 +5368,8 @@
     },
     {
       "boat": false,
+      "background_sprite": "map/grass.png",
+      "show_link_placard": true,
       "id": "overworld_cave_entrance",
       "name": "Cave Entrance",
       "walkable": true,
@@ -5380,8 +5382,7 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/settlements/cave_entrance.png",
-      "tag": "map:settlements",
-      "background_sprite": "map/grass.png"
+      "tag": "map:settlements"
     },
     {
       "boat": false,

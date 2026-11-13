@@ -178,7 +178,13 @@
       "name": "The Grotto in the North",
       "description": "Caves in the mountains to the north are giving refuge to all sorts of unsavory characters and making the roads less safe. There is an outstanding bounty on anyone able to clear out these dens and help us make Willowbrook safer",
       "tags": [],
-      "steps": [],
+      "steps": [
+        {
+          "id": "the_north_grotto_step_1",
+          "name": "Step 1 Clear Out the Grotto up North",
+          "kind": "clear_dungeon"
+        }
+      ],
       "boards": [
         "willowbrook_notice_board"
       ]

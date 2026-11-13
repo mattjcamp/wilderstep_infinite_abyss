@@ -12,6 +12,7 @@
  * we port the class JSON files we can layer richer maths on top.
  */
 
+import { CARRIED_STATUSES, MAP_STEPS_PER_ROUND } from "./effects/statusEffects";
 import type { Combatant, DamageRoll } from "../types";
 import type { MonsterPassive } from "../data/monsters";
 import type { PartyMember, Party, EquipmentSlots } from "../world/Party";
@@ -508,6 +509,19 @@ export function syncCombatHpBack(
                                    .map((c) => [c.name, c]));
   for (const m of party.roster) {
     const c = byName.get(m.name);
-    if (c) m.hp = c.hp;
+    if (!c) continue;
+    m.hp = c.hp;
+    // Lingering statuses (poison) leave the battle with the member,
+    // remaining rounds converted to map steps. Anything else (sleep,
+    // charm, slowed, buffs) ends with the fight.
+    const carried: Array<{ id: string; duration: number }> = [];
+    if (c.hp > 0) {
+      for (const e of c.effects ?? []) {
+        if (!CARRIED_STATUSES.has(e.effectId)) continue;
+        const rounds = typeof e.state.turnsLeft === "number" ? e.state.turnsLeft : 1;
+        carried.push({ id: e.effectId, duration: Math.max(1, rounds) * MAP_STEPS_PER_ROUND });
+      }
+    }
+    m.status_effects = carried;
   }
 }

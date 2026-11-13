@@ -40,6 +40,7 @@ export type ModelKey =
   | "quests"
   | "lore"
   | "animations"
+  | "fx"
   | "npcs";
 
 export interface ColumnDef {
@@ -523,6 +524,24 @@ const DEFS: Record<ModelKey, ModelDef> = {
       { field: "hit_sfx", label: "Hit SFX" },
     ],
   },
+  fx: {
+    key: "fx",
+    label: "FX",
+    fileName: "fx.json",
+    collectionKey: "fx",
+    docKey: "fx",
+    blurb:
+      "Tune the built-in visual effects (Hellfire, Lightning Bolt, Healing Sparkles…) — colours, sizes, timing — with a live preview",
+    columns: [
+      { field: "id", label: "FX" },
+      {
+        field: "params",
+        label: "Tuned",
+        format: (v) =>
+          v && typeof v === "object" ? `${Object.keys(v as object).length}` : "0",
+      },
+    ],
+  },
   npcs: {
     key: "npcs",
     label: "NPCs",
@@ -579,6 +598,7 @@ const SINGULAR_LABELS: Record<ModelKey, string> = {
   quests: "Quest",
   lore: "Lore",
   animations: "Animation",
+  fx: "FX",
   npcs: "NPC",
 };
 

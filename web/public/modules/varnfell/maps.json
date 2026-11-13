@@ -129155,6 +129155,8 @@
           },
           {
             "boat": false,
+            "background_sprite": "map/grass.png",
+            "show_link_placard": true,
             "id": "overworld_cave_entrance",
             "name": "Cave Entrance",
             "walkable": true,
@@ -129168,7 +129170,7 @@
             "spawn": null,
             "sprite": "map/settlements/cave_entrance.png",
             "tag": "map:settlements",
-            "background_sprite": "map/grass.png"
+            "dungeon": "deep_caves"
           },
           {
             "boat": false,
@@ -140060,6 +140062,8 @@
           },
           {
             "boat": false,
+            "background_sprite": "map/grass.png",
+            "show_link_placard": true,
             "id": "overworld_cave_entrance",
             "name": "Cave Entrance",
             "walkable": true,
@@ -140072,8 +140076,7 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/settlements/cave_entrance.png",
-            "tag": "map:settlements",
-            "background_sprite": "map/grass.png"
+            "tag": "map:settlements"
           },
           {
             "boat": false,
@@ -142123,6 +142126,8 @@
           },
           {
             "boat": false,
+            "background_sprite": "map/grass.png",
+            "show_link_placard": true,
             "id": "overworld_cave_entrance",
             "name": "Cave Entrance",
             "walkable": true,
@@ -142136,7 +142141,7 @@
             "spawn": null,
             "sprite": "map/settlements/cave_entrance.png",
             "tag": "map:settlements",
-            "background_sprite": "map/grass.png"
+            "dungeon": "hidden_grotto"
           },
           {
             "boat": false,
@@ -156675,6 +156680,8 @@
           },
           {
             "boat": false,
+            "background_sprite": "map/grass.png",
+            "show_link_placard": true,
             "id": "overworld_cave_entrance",
             "name": "Cave Entrance",
             "walkable": true,
@@ -156687,8 +156694,7 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/settlements/cave_entrance.png",
-            "tag": "map:settlements",
-            "background_sprite": "map/grass.png"
+            "tag": "map:settlements"
           },
           {
             "boat": false,
@@ -193624,10 +193630,10 @@
           },
           {
             "boat": false,
-            "id": "overworld_hills",
-            "name": "Hills",
+            "id": "overworld_ruins",
+            "name": "Ruins",
             "walkable": true,
-            "obstructs": true,
+            "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -193635,8 +193641,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/hills_and_mountains/hills.png",
-            "tag": "map:hills & mountains",
+            "sprite": "map/settlements/ruins.png",
+            "tag": "map:settlements",
             "background_sprite": "map/grass.png"
           },
           {
@@ -196937,6 +196943,8 @@
           },
           {
             "boat": false,
+            "background_sprite": "map/grass.png",
+            "show_link_placard": true,
             "id": "overworld_cave_entrance",
             "name": "Cave Entrance",
             "walkable": true,
@@ -196950,7 +196958,7 @@
             "spawn": null,
             "sprite": "map/settlements/cave_entrance.png",
             "tag": "map:settlements",
-            "background_sprite": "map/grass.png"
+            "dungeon": "hidden_grotto"
           },
           {
             "boat": false,
@@ -198444,6 +198452,8 @@
           },
           {
             "boat": false,
+            "background_sprite": "map/grass.png",
+            "show_link_placard": true,
             "id": "overworld_cave_entrance",
             "name": "Cave Entrance",
             "walkable": true,
@@ -198457,7 +198467,7 @@
             "spawn": null,
             "sprite": "map/settlements/cave_entrance.png",
             "tag": "map:settlements",
-            "background_sprite": "map/grass.png"
+            "dungeon": "hidden_grotto"
           },
           {
             "boat": false,
@@ -200196,6 +200206,8 @@
           },
           {
             "boat": false,
+            "background_sprite": "map/grass.png",
+            "show_link_placard": true,
             "id": "overworld_cave_entrance",
             "name": "Cave Entrance",
             "walkable": true,
@@ -200209,7 +200221,7 @@
             "spawn": null,
             "sprite": "map/settlements/cave_entrance.png",
             "tag": "map:settlements",
-            "background_sprite": "map/grass.png"
+            "dungeon": "hidden_grotto"
           },
           {
             "boat": false,
@@ -219820,9 +219832,9 @@
           },
           {
             "boat": false,
-            "id": "town_gravestone",
-            "name": "Town Gravestone",
-            "walkable": false,
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -219831,8 +219843,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/graveyard/gravestone.png",
-            "tag": "town:graveyard",
+            "sprite": "map/grass.png",
+            "tag": "map",
             "background_sprite": "map/grass.png"
           },
           {
@@ -219929,7 +219941,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/grass.png",
-            "tag": "map"
+            "tag": "map",
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -221489,9 +221502,9 @@
           },
           {
             "boat": false,
-            "id": "town_gravestone",
-            "name": "Town Gravestone",
-            "walkable": false,
+            "id": "grass",
+            "name": "Grass",
+            "walkable": true,
             "obstructs": false,
             "locked": false,
             "light_source": false,
@@ -221500,8 +221513,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/graveyard/gravestone.png",
-            "tag": "town:graveyard",
+            "sprite": "map/grass.png",
+            "tag": "map",
             "background_sprite": "map/grass.png"
           },
           {
@@ -221737,10 +221750,10 @@
           },
           {
             "boat": false,
-            "id": "overworld_tree_oak",
-            "name": "Tree (Oak)",
+            "id": "overworld_ruins",
+            "name": "Ruins",
             "walkable": true,
-            "obstructs": true,
+            "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -221748,8 +221761,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/trees_and_forests/tree_oak.png",
-            "tag": "map:trees & forests",
+            "sprite": "map/settlements/ruins.png",
+            "tag": "map:settlements",
             "background_sprite": "map/grass.png"
           },
           {
@@ -223117,19 +223130,19 @@
           },
           {
             "boat": false,
-            "id": "overworld_shrine",
-            "name": "Shrine",
+            "id": "grass",
+            "name": "Grass",
             "walkable": true,
             "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
             "animation": "none",
-            "counter": "healing",
+            "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/settlements/shrine.png",
-            "tag": "map:settlements",
+            "sprite": "map/grass.png",
+            "tag": "map",
             "background_sprite": "map/grass.png"
           },
           {
@@ -223182,8 +223195,8 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
+            "id": "overworld_farm",
+            "name": "Farm",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -223193,8 +223206,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "map/settlements/farm.png",
+            "tag": "map:settlements",
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -223226,7 +223240,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/grass.png",
-            "tag": "map"
+            "tag": "map",
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -226498,8 +226513,8 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
+            "id": "overworld_windmill",
+            "name": "Windmill",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -226509,8 +226524,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "map/settlements/windmill.png",
+            "tag": "map:settlements",
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -234571,8 +234587,8 @@
           },
           {
             "boat": false,
-            "id": "grass",
-            "name": "Grass",
+            "id": "overworld_ruins",
+            "name": "Ruins",
             "walkable": true,
             "obstructs": false,
             "locked": false,
@@ -234582,8 +234598,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/grass.png",
-            "tag": "map"
+            "sprite": "map/settlements/ruins.png",
+            "tag": "map:settlements",
+            "background_sprite": "map/grass.png"
           },
           {
             "boat": false,
@@ -237930,6 +237947,8 @@
           },
           {
             "boat": false,
+            "background_sprite": "map/grass.png",
+            "show_link_placard": true,
             "id": "overworld_cave_entrance",
             "name": "Cave Entrance",
             "walkable": true,
@@ -237943,7 +237962,7 @@
             "spawn": null,
             "sprite": "map/settlements/cave_entrance.png",
             "tag": "map:settlements",
-            "background_sprite": "map/grass.png"
+            "dungeon": "hidden_grotto"
           },
           {
             "boat": false,
@@ -242955,10 +242974,10 @@
           },
           {
             "boat": false,
-            "id": "overworld_dense_forest",
-            "name": "Dense Forest",
+            "id": "overworld_ruins",
+            "name": "Ruins",
             "walkable": true,
-            "obstructs": true,
+            "obstructs": false,
             "locked": false,
             "light_source": false,
             "light_range": 0,
@@ -242966,8 +242985,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "map/trees_and_forests/dense_forest.png",
-            "tag": "map:trees & forests",
+            "sprite": "map/settlements/ruins.png",
+            "tag": "map:settlements",
             "background_sprite": "map/grass.png"
           },
           {

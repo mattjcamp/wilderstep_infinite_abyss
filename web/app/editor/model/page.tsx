@@ -17,6 +17,7 @@ import { MapsBrowse } from "@/editor/MapsBrowse";
 import { ModelView } from "@/editor/ModelView";
 import { PartyBrowse } from "@/editor/PartyBrowse";
 import { QuestsBrowse } from "@/editor/QuestsBrowse";
+import { FxBrowse } from "@/editor/FxBrowse";
 import { getModel, type ModelKey } from "@/data_model/models";
 import { EditorShell, useEditorModuleId } from "@/editor/editorShell";
 import { editorModuleHref } from "@/editor/moduleRoutes";
@@ -66,6 +67,8 @@ function ModelContent({
         <DungeonsBrowse moduleId={moduleId} />
       ) : modelKey === "quests" ? (
         <QuestsBrowse moduleId={moduleId} />
+      ) : modelKey === "fx" ? (
+        <FxBrowse moduleId={moduleId} />
       ) : modelKey === "characters" ? (
         <CharactersBrowse moduleId={moduleId} />
       ) : modelKey === "party" ? (

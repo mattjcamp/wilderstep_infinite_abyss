@@ -966,15 +966,23 @@ export function useCombatItem(
       };
     }
     case "cure_poison": {
-      // Poison status isn't modelled on Combatant in the web port yet
-      // (mirroring the gap on PartyMember). Refuse without consuming
-      // the item so the player isn't billed for a no-op. When the
-      // status engine lands this branch can scan + clear flags.
+      // Antidote — strip the Poisoned status. Refused (item kept) when
+      // the user isn't poisoned.
+      const before = caster.effects?.length ?? 0;
+      caster.effects = (caster.effects ?? []).filter((e) => e.effectId !== "poisoned");
+      if (caster.effects.length === before) {
+        return {
+          ok: false,
+          effect,
+          message: `${caster.name} isn't poisoned.`,
+          endsTurn: false,
+        };
+      }
       return {
-        ok: false,
+        ok: true,
         effect,
-        message: `${caster.name} isn't poisoned.`,
-        endsTurn: false,
+        message: `${caster.name} uses ${item.name} and is cured of poison.`,
+        endsTurn: true,
       };
     }
     case "buff_strength": {

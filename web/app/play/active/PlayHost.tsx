@@ -60,6 +60,8 @@ import { PlayJournalOverlay } from "./PlayJournalOverlay";
 import { PlayNoticeBoardOverlay } from "@/play/NoticeBoardOverlay";
 import { PlayCampRestOverlay } from "@/play/CampRestOverlay";
 import { stairsPlacardText } from "@/play/stairsPlacard";
+import { tickPoisonOnStep } from "@/play/memberEffects";
+import { MAP_STEPS_PER_ROUND } from "@/battle/combat/effects/statusEffects";
 import type { CampRestReport } from "@/play/campRest";
 import {
   journalEntries,
@@ -4828,6 +4830,9 @@ export function PlayHost() {
               // boundary (day → twilight → night → twilight → day);
               // identity-stable mode strings mean setLightingMode
               // is a no-op when nothing changed.
+              // Poison works on the map too: count down each poisoned
+              // member's steps and bite every round's worth.
+              tickMemberPoisonRef.current();
               // Log Events: count this move on the current map.
               if (!dungeonStateRef.current) {
                 const tracker = logEventStepsRef.current;
@@ -5360,9 +5365,18 @@ export function PlayHost() {
                     if (!h) return m;
                     let effects = m.effects;
                     if (h.effect && !effects.some((e) => e.id === h.effect)) {
+                      const dur = durById.get(h.effect) ?? 3;
                       effects = [
                         ...effects,
-                        { id: h.effect, duration: durById.get(h.effect) ?? 3 },
+                        {
+                          id: h.effect,
+                          // Poison counts down in map STEPS (one
+                          // battle round = MAP_STEPS_PER_ROUND).
+                          duration:
+                            h.effect === "poisoned" && typeof dur === "number"
+                              ? dur * MAP_STEPS_PER_ROUND
+                              : dur,
+                        },
                       ];
                     }
                     return {
@@ -7071,6 +7085,39 @@ export function PlayHost() {
     },
     [beginQuest],
   );
+  /** One step of lingering poison on the map (see memberEffects.ts):
+   *  counts down poisoned members' steps, bites every round's worth,
+   *  logs each change, and saves only when someone is poisoned. */
+  const tickMemberPoison = useCallback(() => {
+    const save = saveRef.current;
+    if (!save) return;
+    const cat = catalogRef.current;
+    const charNames = new Map((cat?.characters ?? []).map((c) => [c.id, c.name]));
+    const poisonRec = (cat?.effects ?? []).find((e) => e.id === "poisoned") as
+      | { params?: { damage_per_turn?: unknown } | null }
+      | undefined;
+    const dmg = poisonRec?.params?.damage_per_turn;
+    const r = tickPoisonOnStep(save.party.members, {
+      damagePerTick: typeof dmg === "number" ? dmg : 2,
+      nameOf: (m) =>
+        (m.custom as { name?: string } | null | undefined)?.name ??
+        charNames.get(m.id) ??
+        m.id,
+    });
+    if (!r.changed) return;
+    const next: WorldSave = { ...save, party: { ...save.party, members: r.members } };
+    saveRef.current = next;
+    saveWorld(next);
+    if (r.lines.length > 0) {
+      const lines = r.lines;
+      setLogMessages((prev) => {
+        const out = [...prev, ...lines];
+        return out.length > MAX_LOG ? out.slice(out.length - MAX_LOG) : out;
+      });
+    }
+  }, []);
+  const tickMemberPoisonRef = useRef(tickMemberPoison);
+  tickMemberPoisonRef.current = tickMemberPoison;
   const runQuestTriggersRef = useRef(runQuestTriggers);
   runQuestTriggersRef.current = runQuestTriggers;
   /** The overworld / town map the party was last mounted on (null

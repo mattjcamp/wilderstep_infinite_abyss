@@ -88,11 +88,17 @@ function applyMemberDeltas(
     inventory: postMember.inventory.map(toSavedInventoryEntry),
     equipped: nextEquipped,
     equipped_durability: nextEd,
-    // Effects ride on the save but the v1 PartyMember doesn't expose
-    // per-member effects directly; party_effects is on the Party. We
-    // leave the saved effects list as-is for now — combat doesn't
-    // commonly apply long-duration per-member effects, and the v2
-    // effects pipeline isn't fully wired through combat yet.
+    // Lingering statuses (poison) come back from the fight — gained,
+    // cured, or with fewer steps left. Other saved effects (from
+    // traps etc.) are left as they were.
+    ...(postMember.status_effects
+      ? {
+          effects: [
+            ...saved.effects.filter((e) => e.id !== "poisoned"),
+            ...postMember.status_effects,
+          ],
+        }
+      : {}),
   };
 }
 

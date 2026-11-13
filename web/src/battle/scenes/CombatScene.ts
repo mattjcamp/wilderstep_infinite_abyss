@@ -120,7 +120,6 @@ import {
   projectileLine,
   spriteProjectile,
   radialBurst,
-  breathOfFire,
   healingSparkles,
   glowAura,
   screenShake,
@@ -131,6 +130,11 @@ import {
   VFX_COLOURS,
 } from "@/vfx/Vfx";
 import { resolveProjectileEffect } from "@/vfx/effectRegistry";
+import { cureStatus, MAP_STEPS_PER_ROUND } from "@/battle/combat/effects/statusEffects";
+import { StatusAuraLayer } from "./statusAuras";
+import { playFx } from "@/vfx/fxCatalog";
+import { setEffectCatalogDefaults } from "@/battle/combat/effects/EffectRuntime";
+import { loadEffects } from "@/battle/world/Effects";
 import {
   beginStep,
   clearStepAnim,
@@ -567,6 +571,13 @@ function elementalShotFx(
   }
 }
 
+/** How far (Chebyshev tiles) a targeted spell reaches: its `range`,
+ *  or 6 when unset / 0. Shared by the gold reach grid and the target
+ *  list so what's highlighted is exactly what can be picked. */
+function spellTargetRange(spell: { range?: number }): number {
+  return typeof spell.range === "number" && spell.range > 0 ? spell.range : 6;
+}
+
 /** Radius (tiles) of the Magic-Light pool a light-themed bow casts
  *  where its arrow lands. Reads the weapon's optional `light_range`
  *  (same field fire arrows use), defaulting to 5 — the Cleric's
@@ -678,6 +689,8 @@ export class CombatScene extends Phaser.Scene {
   private roamerId: string | null = null;
 
   private bodies = new Map<string, Phaser.GameObjects.Image | Phaser.GameObjects.Rectangle>();
+  /** Status-effect visuals layer (poison haze, sleep Zs, …). */
+  private statusAuras: StatusAuraLayer | null = null;
   /** Native-resolution arena view (see installArenaCamera). The main
    *  camera draws the header / HUD / log at the frame's usual size;
    *  `arenaCam` draws only the arena, zoomed so a tile is NATIVE_TILE_CSS_PX CSS px
@@ -1124,6 +1137,13 @@ export class CombatScene extends Phaser.Scene {
       // Spawn-tile fights use catalog names; warm the loader so
       // makeMonsterByName resolves stats / sprites correctly.
       await loadMonsters();
+      // effects.json → per-effect defaults (Poisoned's damage and
+      // duration, Asleep's turns, …) for the effect runtime.
+      try {
+        setEffectCatalogDefaults(await loadEffects());
+      } catch {
+        // No catalog — handlers fall back to their built-in defaults.
+      }
       // Make sure every monster sprite the catalog knows about is
       // queued — spawn lists can include creatures we didn't preload
       // in the static manifest.
@@ -1233,6 +1253,21 @@ export class CombatScene extends Phaser.Scene {
     // trees, hedges, etc.) — without this, monsters can spawn on top
     // of impassable terrain that they then can't step off of.
     this.combat = new Combat(party, enemies, undefined, blockedPredicate);
+    // Poison the party walked in with (carried from the map) keeps
+    // ticking here — remaining steps converted back to rounds.
+    for (const m of gameState.partyData?.roster ?? []) {
+      const c = party.find((p) => p.name === m.name);
+      if (!c || c.hp <= 0) continue;
+      for (const st of m.status_effects ?? []) {
+        if (st.id !== "poisoned") continue;
+        this.combat.applyEffect(c.id, "poisoned", {
+          params: {
+            duration: Math.max(1, Math.ceil(st.duration / MAP_STEPS_PER_ROUND)),
+            carried: true,
+          },
+        });
+      }
+    }
 
     // Plumb arena-map flags into combat so tryMove + AI step refuse
     // unwalkable cells and Range / damage-spell targeting filters
@@ -1271,6 +1306,10 @@ export class CombatScene extends Phaser.Scene {
     this.drawHud();
     this.drawLog();
     this.drawCombatants();
+    // Per-effect looks (green poison haze, sleep Zs, …) drawn over the
+    // bodies every frame — see statusAuras.ts.
+    try { this.statusAuras?.destroy(); } catch { /* already gone */ }
+    this.statusAuras = new StatusAuraLayer(this);
     this.installInput();
 
     this.refreshAll();
@@ -3819,6 +3858,13 @@ export class CombatScene extends Phaser.Scene {
             // post-battle roster reflects the heal.
             allyMember.hp = ally.hp;
           }
+          // Cure listed statuses (Restore: poison).
+          const cures = Array.isArray(ev.cure_effects) ? (ev.cure_effects as unknown[]) : [];
+          for (const id of cures) {
+            if (typeof id === "string") {
+              cureStatus((l) => this.combat.log.push(l), ally, id);
+            }
+          }
           const allyPos = this.bodyXY(ally);
           this.time.delayedCall(i * 70, () => void playVisualAt(allyPos));
           i += 1;
@@ -4247,10 +4293,11 @@ export class CombatScene extends Phaser.Scene {
       return `${this.combat.current.name}: no enemies within ${max} tiles — ${action.item.name} can't reach. Move closer first.`;
     }
     if (action.kind === "cast") {
+      const reach = spellTargetRange(action.spell);
       if (side === "party") {
-        return `${this.combat.current.name}: no valid ally targets for ${action.spell.name}.`;
+        return `${this.combat.current.name}: no allies within ${reach} tiles for ${action.spell.name}. Move closer first.`;
       }
-      return `${this.combat.current.name}: no valid enemy targets for ${action.spell.name}.`;
+      return `${this.combat.current.name}: no enemies within ${reach} tiles for ${action.spell.name} (or none in sight). Move closer first.`;
     }
     return `${this.combat.current.name}: no targets available.`;
   }
@@ -4306,6 +4353,18 @@ export class CombatScene extends Phaser.Scene {
           this.combat.hasLineOfSight(me.position, t.position),
         );
       }
+      // Range: only targets inside the spell's reach (Chebyshev, the
+      // same rule — and the same fallback — the gold reach grid
+      // paints). The caster themself (distance 0) is always in
+      // range, so a self-heal still works.
+      const reach = spellTargetRange(spell);
+      list = list.filter(
+        (t) =>
+          Math.max(
+            Math.abs(t.position.col - me.position.col),
+            Math.abs(t.position.row - me.position.row),
+          ) <= reach,
+      );
     }
     // Final visibility gate — only fires in darkness mode (the helper
     // is a no-op otherwise). Drops any target whose cell sits in
@@ -4344,6 +4403,26 @@ export class CombatScene extends Phaser.Scene {
         await this.flyProjectile(me, target, VFX_COLOURS.ember);
         await this.animateHit(target, result);
         this.refreshHp(target);
+        // Poison / paralytic / weakening throwables leave a status.
+        const applied = action.item.applies_effect;
+        if (result.hit && target.hp > 0 && applied?.effect_id) {
+          const { effect_id: effId, ...overrides } = applied;
+          if (effId === "curse") {
+            // Curse is a stat debuff, not a runtime handler.
+            const buffs = this.combat.applySpellBuffs(
+              target.id, "curse", overrides, overrides.duration as number | undefined,
+            );
+            if (buffs.length > 0) {
+              this.combat.log.push(`${target.name} is weakened — worse attacks and defense.`);
+            }
+          } else {
+            this.combat.applyEffect(target.id, effId, {
+              sourceId: me.id,
+              params: overrides,
+            });
+          }
+          this.flashConsumeEvents();
+        }
         // Ignite the landing cell when the thrown item declares
         // `ignite: true` — e.g. a lit torch. Drops a fire light
         // source there + a fire particle emitter + adds the cell
@@ -4613,28 +4692,50 @@ export class CombatScene extends Phaser.Scene {
             `${me.name} casts ${spell.name} on ${target.name} — +${value} move for ${turns} turns.`
           );
         } else {
-          // Status / debuff effects we don't have full mechanics for
-          // yet (sleep / charm / cure_poison / restore — these need
-          // status models the buff engine doesn't cover). Even
-          // without status persistence, the SAVE is now real: a
-          // monster with high INT/WIS resists Sleep/Charm/Curse,
-          // a low-INT zombie folds. The visible feedback (animation
-          // + log line) reflects what happened.
+          // Status effects — Sleep / Charm land as real effects
+          // (statusEffects.ts) unless the target saves; Cure Poison
+          // strips the poison. The effect handler writes the
+          // "falls asleep" / "is charmed" log line; this writes the cast.
           const isAlly = target.side === me.side;
           const ev = spell.effect_value ?? {};
           const hasSave =
             typeof ev.save_dc_stat === "string" || typeof ev.save_dc_base === "number";
-          if (hasSave && !isAlly) {
-            const save = rollSpellSave(me, target, spell, defaultRng);
-            if (save.saved) {
-              this.combat.log.push(
-                `${me.name} casts ${spell.name} on ${target.name}, but it resists.`,
-              );
-            } else {
-              this.combat.log.push(
-                `${me.name} casts ${spell.name} on ${target.name} — ` +
-                `${describeStatusCast(me, target, spell)}`,
-              );
+          if (spell.action === "cure_effect" || e === "cure_poison") {
+            const cureId =
+              typeof ev.effect_id === "string" ? ev.effect_id : "poisoned";
+            this.combat.log.push(`${me.name} casts ${spell.name} on ${target.name}.`);
+            if (!cureStatus((l) => this.combat.log.push(l), target, cureId)) {
+              this.combat.log.push(`${target.name} has nothing to cure.`);
+            }
+          } else if (
+            e === "sleep" &&
+            typeof ev.max_target_hp === "number" &&
+            target.maxHp > ev.max_target_hp
+          ) {
+            this.combat.log.push(
+              `${me.name} casts ${spell.name} on ${target.name}, but it is too mighty to sleep.`,
+            );
+          } else if (
+            (e === "sleep" || e === "charm" || e === "slowed" || e === "poisoned") &&
+            hasSave &&
+            !isAlly &&
+            this.logSpellSave(me, target, spell)
+          ) {
+            // Resisted — logSpellSave wrote the cast + "resists" lines.
+          } else if (e === "sleep" || e === "charm" || e === "slowed" || e === "poisoned") {
+            // With a save, logSpellSave already wrote the cast line and
+            // "fails to resist"; without one, write the cast line here.
+            if (!(hasSave && !isAlly)) {
+              this.combat.log.push(`${me.name} casts ${spell.name} on ${target.name}.`);
+            }
+            const params: Record<string, unknown> = { ...ev };
+            if (typeof spell.duration === "number") params.duration = spell.duration;
+            const applied = this.combat.applyEffect(target.id, e, {
+              sourceId: me.id,
+              params,
+            });
+            if (!applied && e === "charm") {
+              this.combat.log.push(`${target.name} can't be charmed.`);
             }
           } else {
             this.combat.log.push(
@@ -4856,9 +4957,12 @@ export class CombatScene extends Phaser.Scene {
    */
   private startTilePicking(spell: Spell): void {
     const me = this.combat.current;
+    // Two tiles north of the caster — or as far as the spell reaches,
+    // so the reticle never starts outside the spell's range.
+    const lift = Math.min(2, spellTargetRange(spell));
     const start = {
       col: Math.max(1, Math.min(ARENA_COLS - 2, me.position.col)),
-      row: Math.max(1, Math.min(ARENA_ROWS - 2, me.position.row - 2)),
+      row: Math.max(1, Math.min(ARENA_ROWS - 2, me.position.row - lift)),
     };
     this.tileCursorPos = start;
     this.pendingAction = { kind: "tile", spell };
@@ -4867,6 +4971,8 @@ export class CombatScene extends Phaser.Scene {
     this.refreshTileCursor();
     // Hint at bottom of right HUD.
     this.renderTilePickerHint(spell);
+    // Gold reach grid (spells with a real range) / clear the move grid.
+    this.drawActionHints();
   }
 
   /** Move the tile cursor by (dc, dr), clamped to the open arena and
@@ -4887,12 +4993,17 @@ export class CombatScene extends Phaser.Scene {
     const pending = this.pendingAction;
     if (
       this.mode === "pick-tile" &&
-      (pending?.kind === "throw-tile" || pending?.kind === "range-tile")
+      (pending?.kind === "throw-tile" ||
+        pending?.kind === "range-tile" ||
+        pending?.kind === "tile")
     ) {
       const caster = this.combat.current.position;
-      const sourceItem =
-        pending.kind === "throw-tile" ? pending.item : pending.weapon;
-      const range = maxRangeFor(sourceItem);
+      // Tile spells (Misty Step, Fireball, Animate Dead…) cap the
+      // reticle at the spell's range, same rule as targeted spells.
+      const range =
+        pending.kind === "tile"
+          ? spellTargetRange(pending.spell)
+          : maxRangeFor(pending.kind === "throw-tile" ? pending.item : pending.weapon);
       const cheb = Math.max(
         Math.abs(next.col - caster.col),
         Math.abs(next.row - caster.row),
@@ -5018,7 +5129,7 @@ export class CombatScene extends Phaser.Scene {
 
   /** Bottom-of-HUD prompt explaining the direction controls. */
   private renderDirectionPickerHint(spell: Spell): void {
-    const range = typeof spell.range === "number" ? spell.range : 99;
+    const range = spellTargetRange(spell);
     const lines = [
       `Casting: ${spell.name}`,
       `Range: ${range} tiles`,
@@ -5066,7 +5177,8 @@ export class CombatScene extends Phaser.Scene {
     this.clearMoveHints();
 
     const [dCol, dRow] = DIR_DELTAS[dir];
-    const range = typeof spell.range === "number" ? spell.range : 99;
+    // Same reach the gold direction grid paints.
+    const range = spellTargetRange(spell);
     // Directional bolts honour BOTH the perimeter wall AND arena-map
     // obstructs. magic_dart / lightning_bolt aren't routed through
     // `currentTargetList` (they pick a direction, not a target from a
@@ -6051,6 +6163,9 @@ export class CombatScene extends Phaser.Scene {
         if (bar) { bar.bg.setVisible(true); bar.bar.setVisible(true); }
         const label = target.hp > 0 ? "ESCAPED!" : "RECOVERED";
         this.floatLabel(body.x, body.y - 16, label, "#7be2a8");
+      } else if (ev.kind === "status") {
+        // Generic status feedback: "-2 poison", "Zzz", "CHARMED", …
+        if (body.visible) this.floatLabel(body.x, body.y - 16, ev.text, ev.color);
       } else if (ev.kind === "released") {
         // Consumer died with the victim still inside — engine has
         // already placed them on a free tile.
@@ -6136,12 +6251,16 @@ export class CombatScene extends Phaser.Scene {
             // breath ensures the HP flash from animateHit lands
             // AFTER the flames arrive, not on top of them.
             this.castGlowFor(caster, VFX_COLOURS.fire);
-            await breathOfFire(
-              this,
-              this.bodyXY(caster),
-              this.bodyXY(target),
-            );
+            // Through the FX catalog so the module's FX tuning applies.
+            await playFx("breath_of_fire", this, this.bodyXY(caster), this.bodyXY(target));
             screenShake(this, 0.007, 220);
+          } else if (spellDef?.type === "fireball" && target.id !== caster.id) {
+            // Demon's Hellfire / Lich's Fireball — a roiling ball of
+            // flame hurled at the target, erupting on impact.
+            this.castGlowFor(caster, VFX_COLOURS.fire);
+            Sfx.play("explosion");
+            await playFx("hellfire", this, this.bodyXY(caster), this.bodyXY(target));
+            screenShake(this, 0.006, 200);
           }
           await this.animateHit(target, {
             attackerId: this.combat.current.id, targetId: target.id,
@@ -6317,6 +6436,27 @@ export class CombatScene extends Phaser.Scene {
       ignites ? VFX_COLOURS.ember : VFX_COLOURS.white,
       240,
     );
+  }
+
+  /**
+   * Roll a status spell's saving throw and log it plainly:
+   *   "Mira casts Sleep on Orc." then either
+   *   "Orc resists the Sleep! (INT save 14+1=15 vs DC 10)" or
+   *   "Orc fails to resist the Sleep. (INT save 4+1=5 vs DC 10)".
+   * Returns true when the target resisted.
+   */
+  private logSpellSave(me: Combatant, target: Combatant, spell: Spell): boolean {
+    const r = rollSpellSave(me, target, spell, defaultRng);
+    const stat = String(r.saveStat).slice(0, 3).toUpperCase();
+    const sign = r.bonus >= 0 ? "+" : "-";
+    const detail = `${stat} save ${r.roll}${sign}${Math.abs(r.bonus)}=${r.total} vs DC ${r.dc}`;
+    this.combat.log.push(`${me.name} casts ${spell.name} on ${target.name}.`);
+    this.combat.log.push(
+      r.saved
+        ? `${target.name} resists the ${spell.name}! (${detail})`
+        : `${target.name} fails to resist the ${spell.name}. (${detail})`,
+    );
+    return r.saved;
   }
 
   /** Fly a projectile arc from `from` → `to` in screen coords. */
@@ -7322,7 +7462,7 @@ export class CombatScene extends Phaser.Scene {
       // fallback. LOS gating mirrors the picker's filter — projectile
       // spells need a clear line, heals / buffs reach through cover.
       const spell = pending.spell;
-      const range = typeof spell.range === "number" && spell.range > 0 ? spell.range : 6;
+      const range = spellTargetRange(spell);
       const e = spell.effect_type;
       const projectile =
         e === "damage" ||
@@ -7333,7 +7473,7 @@ export class CombatScene extends Phaser.Scene {
       color = C.rangeHint;
     } else if (this.mode === "pick-direction" && pending?.kind === "direction") {
       const spell = pending.spell;
-      const range = typeof spell.range === "number" && spell.range > 0 ? spell.range : 6;
+      const range = spellTargetRange(spell);
       cells = this.directionalReachCells(me, range);
       color = C.rangeHint;
     } else if (this.mode === "pick-direction" && pending?.kind === "range-direction") {
@@ -7346,6 +7486,16 @@ export class CombatScene extends Phaser.Scene {
       // the player throws a torch into shadow exactly so the shadow
       // lifts.
       cells = this.throwTileReachCells(me, maxRangeFor(pending.item));
+      color = C.rangeHint;
+    } else if (
+      this.mode === "pick-tile" &&
+      pending?.kind === "tile" &&
+      spellTargetRange(pending.spell) < Math.max(ARENA_COLS, ARENA_ROWS)
+    ) {
+      // Tile spells with a real reach (Misty Step's 6) paint it, so the
+      // player sees where the reticle can go. Arena-wide spells
+      // (Fireball's 99) skip the grid — it would just cover the floor.
+      cells = this.throwTileReachCells(me, spellTargetRange(pending.spell));
       color = C.rangeHint;
     } else if (this.mode === "pick-tile" && pending?.kind === "range-tile") {
       // Range-tile: same any-open-cell rule the throw-tile picker
@@ -7368,7 +7518,9 @@ export class CombatScene extends Phaser.Scene {
     // reach overlay needs to be visible in.
     const hintDepth =
       this.mode === "pick-tile" &&
-      (pending?.kind === "throw-tile" || pending?.kind === "range-tile")
+      (pending?.kind === "throw-tile" ||
+        pending?.kind === "range-tile" ||
+        pending?.kind === "tile")
         ? 22
         : 0;
     for (const c of cells) {
@@ -8406,6 +8558,13 @@ export class CombatScene extends Phaser.Scene {
 
   update(): void {
     this.pulseActiveHighlight();
+    try {
+      if (this.statusAuras && this.combat) {
+        this.statusAuras.draw(this.time.now, this.combat.combatants, this.bodies);
+      }
+    } catch {
+      // Combat not set up yet (async create) / scene shutting down.
+    }
     const cam = this.arenaCam;
     if (!cam) return;
     let f: { x: number; y: number } | null = null;

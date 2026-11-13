@@ -7,9 +7,9 @@
       "class": "fighter",
       "race": "human",
       "gender": "Male",
-      "level": 1,
-      "exp": 0,
-      "hp": 16,
+      "level": 10,
+      "exp": 67500,
+      "hp": 115,
       "mp": 0,
       "strength": 13,
       "dexterity": 10,
@@ -17,7 +17,10 @@
       "intelligence": 8,
       "wisdom": 11,
       "sprite": "person/person_male_fighter.png",
-      "equipped": {},
+      "equipped": {
+        "hands": "sword",
+        "body": "plate"
+      },
       "inventory": []
     },
     {
@@ -26,17 +29,20 @@
       "class": "cleric",
       "race": "elf",
       "gender": "Male",
-      "level": 1,
-      "exp": 0,
-      "hp": 7,
-      "mp": 14,
+      "level": 10,
+      "exp": 67500,
+      "hp": 52,
+      "mp": 104,
       "strength": 7,
       "dexterity": 10,
       "constitution": 9,
       "intelligence": 9,
       "wisdom": 19,
       "sprite": "person/elf_male_cleric.png",
-      "equipped": {},
+      "equipped": {
+        "hands": "mace",
+        "body": "chain"
+      },
       "inventory": []
     },
     {
@@ -45,17 +51,20 @@
       "class": "wizard",
       "race": "human",
       "gender": "Male",
-      "level": 1,
-      "exp": 0,
-      "hp": 5,
-      "mp": 19,
+      "level": 10,
+      "exp": 67500,
+      "hp": 32,
+      "mp": 127,
       "strength": 8,
       "dexterity": 11,
       "constitution": 9,
       "intelligence": 18,
       "wisdom": 9,
       "sprite": "person/person_male_wizard.png",
-      "equipped": {},
+      "equipped": {
+        "hands": "dagger",
+        "body": "cloth"
+      },
       "inventory": []
     },
     {
@@ -64,17 +73,20 @@
       "class": "ranger",
       "race": "human",
       "gender": "Male",
-      "level": 1,
-      "exp": 0,
-      "hp": 10,
-      "mp": 4,
+      "level": 10,
+      "exp": 67500,
+      "hp": 64,
+      "mp": 31,
       "strength": 9,
       "dexterity": 14,
       "constitution": 11,
       "intelligence": 9,
       "wisdom": 12,
       "sprite": "person/person_male_ranger.png",
-      "equipped": {},
+      "equipped": {
+        "hands": "long_bow",
+        "body": "leather"
+      },
       "inventory": []
     }
   ]

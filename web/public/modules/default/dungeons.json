@@ -13,7 +13,7 @@
         "height": 32
       },
       "torch_density": 0.15,
-      "locked_doors": 0.25,
+      "locked_doors": 0.1,
       "levels": [
         {
           "id": "hidden_grotto_l1",
@@ -24,14 +24,27 @@
           "id": "hidden_grotto_l2",
           "name": "Level 2",
           "depth": 2
+        },
+        {
+          "id": "hidden_grotto_l3",
+          "name": "Level 3",
+          "depth": 3
+        },
+        {
+          "id": "hidden_grotto_l4",
+          "name": "Level 4",
+          "depth": 4
         }
       ],
       "loot": {
-        "chest_item": "treasure_chest"
+        "chest_item": "treasure_chest",
+        "chest_frequency": 0.3
       },
       "wall_decor": 0.5,
-      "pits": 0.5,
-      "floor_variety": 0
+      "pits": 0.3,
+      "floor_variety": 0,
+      "doors": 0.1,
+      "pit_falls": true
     },
     {
       "id": "stone_halls",

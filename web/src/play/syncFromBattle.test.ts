@@ -121,6 +121,23 @@ describe("applyCombatResultToSave — XP/level propagation", () => {
     expect(next.party.members[0].hp).toBe(11);
   });
 
+  it("carries poison out of battle, and clears it when cured", () => {
+    const save = makeSave([
+      savedMember({ id: "hero", effects: [{ id: "poisoned", duration: 40 }, { id: "curse", duration: 3 }] }),
+    ]);
+    gameState.partyData = kernelParty([
+      kernelMember({ id: "hero", status_effects: [{ id: "poisoned", duration: 20 }] }),
+    ]);
+    let next = applyCombatResultToSave(save);
+    expect(next.party.members[0].effects).toEqual([
+      { id: "curse", duration: 3 },
+      { id: "poisoned", duration: 20 },
+    ]);
+    gameState.partyData = kernelParty([kernelMember({ id: "hero", status_effects: [] })]);
+    next = applyCombatResultToSave(save);
+    expect(next.party.members[0].effects).toEqual([{ id: "curse", duration: 3 }]);
+  });
+
   it("propagates exp even when no level-up happened (mid-level gain)", () => {
     const save = makeSave([
       savedMember({ id: "hero", level: 3, exp: 200, hp: 10 }),

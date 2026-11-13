@@ -1,6 +1,8 @@
 ## Fine Tune
-- Remove the "chests" that are quest items but don't do anything and you can't sell them
-- Give The Crystal Skull another pass
+- Audit and test how monster special abilities work
+- Expose Monster Abilities as an editor
+- The Lick Lighting Bolt should look like the spell lighting bolt
+
 
 ## Varnfell Lore
 - races

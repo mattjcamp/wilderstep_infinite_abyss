@@ -47,6 +47,7 @@ import type {
 import type { MonsterSpell } from "../data/monsters";
 import {
   applyEffect,
+  isImmuneTo,
   runControlledTurn,
   turnControllingEffect,
   tickRoundEffects,
@@ -65,6 +66,8 @@ import {
 // Side-effect import: registers the passive handlers (regen,
 // fire_resistance, poison_immunity) onto the effect registry.
 import "./effects/passiveEffects";
+// Side-effect import: registers poisoned / sleep / charm / slowed.
+import { slowedMovePoints } from "./effects/statusEffects";
 // Numeric buffs/debuffs now live in the unified effects list. These
 // helpers back the engine's public buff API; importing also registers
 // the `stat_modifier` handler that ticks buff durations.
@@ -1149,12 +1152,18 @@ export class Combat {
       }
       // heal_ally — pick the lowest-HP wounded same-side ally.
       if (spell.type === "heal_ally") {
-        const allies = this.alive(actor.side).filter((c) => c.id !== actor.id && c.hp < c.maxHp);
+        // Only wounded allies inside the spell's range count — the
+        // most hurt of THOSE gets healed (a badly hurt ally out of
+        // reach no longer blocks healing one that's close).
+        const allies = this.alive(actor.side).filter(
+          (c) =>
+            c.id !== actor.id &&
+            c.hp < c.maxHp &&
+            (spell.range == null || chebyshev(actor.position, c.position) <= spell.range),
+        );
         if (allies.length === 0) continue;
         allies.sort((a, b) => a.hp - b.hp);
-        const ally = allies[0];
-        if (spell.range != null && chebyshev(actor.position, ally.position) > spell.range) continue;
-        return { kind: "spell", spellIndex: i, targetId: ally.id };
+        return { kind: "spell", spellIndex: i, targetId: allies[0].id };
       }
       // sleep — refuses targets above max_target_hp; closest enemy in range.
       if (spell.type === "sleep") {
@@ -1223,15 +1232,21 @@ export class Combat {
       } else {
         damage = this.rollMonsterSpellDamage(spell, target);
         if (damage > 0) target.hp = Math.max(0, target.hp - damage);
-        const dealtMsg = damage > 0
-          ? `${target.name} takes ${damage} damage`
-          : `${target.name} resists`;
-        this.log.push(`${actor.name} casts ${spell.name}! ${dealtMsg}.`);
+        // Pure-status spells (Venom Bite, Web, Hex…) carry no damage
+        // dice — say who they were cast AT and let the save line that
+        // follows report the outcome. (This used to print "X resists."
+        // for every no-damage spell, even right before the status
+        // landed.)
+        this.log.push(
+          damage > 0
+            ? `${actor.name} casts ${spell.name} at ${target.name}! ${target.name} takes ${damage} damage.`
+            : `${actor.name} casts ${spell.name} at ${target.name}!`,
+        );
         if (target.hp === 0) {
           releaseConsumedBy(this.effectHost, this.combatants, target.id);
+        } else {
+          this.applyMonsterSpellStatus(actor, spell, target);
         }
-        // Sleep / curse currently log only — the duration ticker for
-        // monster-cast statuses is a follow-up.
       }
     }
     const tid = target?.id ?? actor.id;
@@ -1242,6 +1257,83 @@ export class Combat {
       heal,
       killed: target ? target.hp === 0 : false,
     };
+  }
+
+  /**
+   * The lingering half of a monster status spell, after any damage:
+   * Spore Cloud / Venom Bite poison, Web / Dark Slumber / Hypnotic Gaze
+   * put the target to sleep, Haunting Wail / Hex curse. Poison and
+   * sleep allow a save against the spell's `save_dc` (CON for poison,
+   * WIS for sleep); curse always lands (it's a debuff, already gated
+   * by the cast-chance roll).
+   */
+  private applyMonsterSpellStatus(
+    actor: Combatant,
+    spell: MonsterSpellLike & {
+      type: string;
+      name: string;
+      save_dc?: number;
+      duration?: number;
+      damage_per_turn?: number;
+      ac_penalty?: number;
+      attack_penalty?: number;
+    },
+    target: Combatant,
+  ): void {
+    // Saving throw: d20 + the stat's modifier vs the spell's save_dc.
+    // Meeting the DC resists. The log spells out both outcomes with the
+    // roll, so "resists" is never followed by the status landing.
+    const save = (statName: "CON" | "WIS", stat: number | undefined): boolean => {
+      const dc = spell.save_dc;
+      if (typeof dc !== "number") return false; // no save allowed
+      const mod = Math.floor(((stat ?? 10) - 10) / 2);
+      const roll = Math.floor(this.rng() * 20) + 1;
+      const total = roll + mod;
+      const sign = mod >= 0 ? "+" : "-";
+      const detail = `${statName} save ${roll}${sign}${Math.abs(mod)}=${total} vs DC ${dc}`;
+      const ok = total >= dc;
+      this.log.push(
+        ok
+          ? `${target.name} resists the ${spell.name}! (${detail})`
+          : `${target.name} fails to resist the ${spell.name}. (${detail})`,
+      );
+      if (ok) {
+        this.pendingConsumeEvents.push({
+          targetId: target.id,
+          kind: "status",
+          text: "RESISTED",
+          color: "#dcdcc8",
+        });
+      }
+      return ok;
+    };
+    const params: Record<string, unknown> = {};
+    if (typeof spell.duration === "number") params.duration = spell.duration;
+    if (spell.type === "poison") {
+      if (typeof spell.damage_per_turn === "number") params.damage_per_turn = spell.damage_per_turn;
+      // Immune creatures don't roll — applyEffect logs "immune to poison".
+      if (!isImmuneTo(target, "poisoned") && save("CON", target.constitution)) return;
+      applyEffect(this.effectHost, target, "poisoned", { sourceId: actor.id, params });
+    } else if (spell.type === "sleep") {
+      if (save("WIS", target.wisdom)) return;
+      applyEffect(this.effectHost, target, "sleep", { sourceId: actor.id, params });
+    } else if (spell.type === "curse") {
+      const buffs = this.applySpellBuffs(
+        target.id,
+        "curse",
+        { ac_penalty: spell.ac_penalty, attack_penalty: spell.attack_penalty },
+        spell.duration,
+      );
+      if (buffs.length > 0) {
+        this.log.push(`${target.name} is cursed — weaker attacks and defense.`);
+        this.pendingConsumeEvents.push({
+          targetId: target.id,
+          kind: "status",
+          text: "CURSED",
+          color: "#c58bff",
+        });
+      }
+    }
   }
 
   /** Sum dice + bonus for a damage spell, then fold the total through
@@ -1309,6 +1401,12 @@ export class Combat {
         const healed = attacker.hp - before;
         if (healed > 0) {
           this.log.push(`${attacker.name} drains ${healed} HP from ${target.name}.`);
+          this.pendingConsumeEvents.push({
+            targetId: attacker.id,
+            kind: "status",
+            text: `+${healed} drained`,
+            color: "#e05a6d",
+          });
         }
       } else if (eff.type === "consume") {
         applyEffect(this.effectHost, target, "consumed", {
@@ -1334,7 +1432,10 @@ export class Combat {
     // bonus, and any currently-stacked buffs sum into one budget.
     const racial = this.current.extraMoveRange ?? 0;
     const bonus = sumBuffKind(this.current, "range_bonus");
-    this.movePoints = this.current.baseMoveRange + racial + bonus;
+    this.movePoints = slowedMovePoints(
+      this.current,
+      this.current.baseMoveRange + racial + bonus,
+    );
     // Fresh turn — the actor hasn't swung yet, so the bump-attack
     // gate reopens. Paired with the lock in `tryMove`'s bump branch.
     this.attackedThisTurn = false;

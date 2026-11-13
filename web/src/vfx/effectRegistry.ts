@@ -25,18 +25,7 @@
  */
 
 import type Phaser from "phaser";
-import {
-  lightningZigzag,
-  meteorStrike,
-  magicDart,
-  magicArrow,
-  voidOrb,
-  projectileLine,
-  healingSparkles,
-  glowAura,
-  radialBurst,
-  VFX_COLOURS,
-} from "./Vfx";
+import { FX_DEFS, playFx } from "./fxCatalog";
 
 /** Screen-space pixel coordinate. */
 export interface Pt {
@@ -78,13 +67,7 @@ export interface SpellLike {
  *  gentle bowed arcane line. Matches the pre-registry fallback in
  *  CombatScene so unmigrated spells render identically. */
 const DEFAULT_PROJECTILE: ProjectileEffectFn = (scene, from, to, cfg) =>
-  projectileLine(
-    scene,
-    from,
-    to,
-    cfg?.color ?? VFX_COLOURS.arcane,
-    cfg?.durationMs ?? 220,
-  );
+  playFx("projectile_line", scene, from, to, cfg ?? {});
 
 /** The registry itself. Mutable so feature code can `registerProjectileEffect`
  *  new entries at module load without editing this file. */
@@ -132,129 +115,16 @@ export function __resetProjectileRegistryForTests(): void {
 }
 
 // ── Built-in effects ────────────────────────────────────────────────
-// Seeded at module load so any importer sees the standard library.
+// Seeded at module load from the FX catalog (fxCatalog.ts): one entry
+// per FX, each played with the module's fx.json tuning merged over the
+// catalog defaults, plus any per-call knobs (colour / duration /
+// segments) the caller passes.
 function seedDefaults(): void {
-  // Jagged poly-line drawn instantly, then alpha-faded. The lightning
-  // bolt v1 already had — same visual, now data-driven.
-  registerProjectileEffect("lightning_bolt", (scene, from, to, cfg) =>
-    lightningZigzag(scene, from, to, cfg?.segments ?? 6),
-  );
-
-  // Falling star — descends from above the target into a fiery burst.
-  // Used by `damage_type: "meteor"` ranged weapons (Starfall Sling).
-  registerProjectileEffect("meteor_strike", (scene, from, to, cfg) =>
-    meteorStrike(
-      scene,
-      from,
-      to,
-      cfg?.color ?? VFX_COLOURS.fire,
-      cfg?.durationMs ?? 360,
-    ),
-  );
-
-  // Fast arcane orb with sparkle trail + bright impact pop. Pre-rename
-  // "Magic Dart" — the `id: "fireball"` legacy alias also maps here
-  // via resolveProjectileEffect.
-  registerProjectileEffect("magic_dart", (scene, from, to, cfg) =>
-    magicDart(
-      scene,
-      from,
-      to,
-      cfg?.color ?? VFX_COLOURS.arcane,
-      cfg?.durationMs ?? 240,
-    ),
-  );
-
-  // Glowing multi-coloured sphere that churns through a void palette
-  // in flight, then implodes + erupts on impact. Used by Void Orb.
-  registerProjectileEffect("void_orb", (scene, from, to, cfg) =>
-    voidOrb(
-      scene,
-      from,
-      to,
-      cfg?.color ?? VFX_COLOURS.curse,
-      cfg?.durationMs ?? 520,
-    ),
-  );
-
-  // Glowing shaft + sparkle trail + fragmented impact. Used by Magic
-  // Arrow / similar aimed-magic spells.
-  registerProjectileEffect("magic_arrow", (scene, from, to, cfg) =>
-    magicArrow(
-      scene,
-      from,
-      to,
-      cfg?.color ?? VFX_COLOURS.lightning,
-      cfg?.durationMs ?? 280,
-    ),
-  );
-
-  // Generic bowed line — registered explicitly so an animation can
-  // ask for it by name instead of relying on the unknown-key
-  // fallback. Behavior is identical to the default fallback.
-  registerProjectileEffect("projectile_line", (scene, from, to, cfg) =>
-    projectileLine(
-      scene,
-      from,
-      to,
-      cfg?.color ?? VFX_COLOURS.arcane,
-      cfg?.durationMs ?? 220,
-    ),
-  );
-
-  // Fire-tinted bowed line — same shape as projectile_line but
-  // burning orange. Pairs with fire-themed cast/hit SFX for spells
-  // like fireball.
-  registerProjectileEffect("fire_projectile", (scene, from, to, cfg) =>
-    projectileLine(
-      scene,
-      from,
-      to,
-      cfg?.color ?? VFX_COLOURS.fire,
-      cfg?.durationMs ?? 280,
-    ),
-  );
-
-  // ── Point-effects (caster→target line ignored) ──────────────────
-  // These visuals only need a target location. We accept the
-  // projectile signature for uniformity — `from` is unused. Cast
-  // paths that don't naturally have a "from" pass `to` for both.
-
-  // Rising green sparkles below the target — heals.
-  registerProjectileEffect("heal_sparkles", (scene, _from, to) =>
-    healingSparkles(scene, to),
-  );
-
-  // Soft expanding gold ring — generic positive buff aura. Used for
-  // bless, shield, long_shanks, invisibility, light.
-  registerProjectileEffect("buff_aura", (scene, _from, to, cfg) =>
-    glowAura(scene, to, cfg?.color ?? VFX_COLOURS.buff),
-  );
-
-  // Soft expanding purple ring — negative effect aura. Used for
-  // curse and similar debuffs.
-  registerProjectileEffect("curse_aura", (scene, _from, to) =>
-    glowAura(scene, to, VFX_COLOURS.curse),
-  );
-
-  // Expanding orb + ring + scatter dots — generic arcane burst.
-  // Used for status applies on enemies (sleep, charm), teleport
-  // arrival, summons.
-  registerProjectileEffect("radial_burst", (scene, _from, to, cfg) =>
-    radialBurst(
-      scene,
-      to,
-      cfg?.color ?? VFX_COLOURS.arcane,
-      VFX_COLOURS.white,
-      30,
-    ),
-  );
-
-  // Fire-tinted radial — used as the AOE on-impact for fireball-
-  // style spells (the projectile is separate).
-  registerProjectileEffect("explosion_burst", (scene, _from, to) =>
-    radialBurst(scene, to, VFX_COLOURS.fire, VFX_COLOURS.ember, 64),
-  );
+  for (const def of FX_DEFS) {
+    registerProjectileEffect(def.id, (scene, from, to, cfg) =>
+      playFx(def.id, scene, from, to, cfg ?? {}),
+    );
+  }
 }
 
 seedDefaults();

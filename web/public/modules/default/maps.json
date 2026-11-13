@@ -31753,7 +31753,19 @@
             "sprite": "dungeon/walls/room_walls/wall_right.png",
             "tag": "dungeon:walls:room walls",
             "background_sprite": "dungeon/floors/floor_cobble.png",
-            "item": "retrievable_chest"
+            "item": "treasure_chest",
+            "loot": {
+              "gold": 25,
+              "items": [
+                {
+                  "id": "fire_arrows",
+                  "qty": 10
+                },
+                {
+                  "id": "long_bow"
+                }
+              ]
+            }
           }
         ],
         [
@@ -34660,7 +34672,7 @@
             "spawn": null,
             "sprite": "dungeon/floors/floor_flagstone.png",
             "tag": "dungeon:floors",
-            "item": "fire_arrows"
+            "item": "chain"
           },
           {
             "boat": false,
@@ -52359,8 +52371,7 @@
             "spawn": null,
             "sprite": "dungeon/walls/room_walls/wall_right.png",
             "tag": "dungeon:walls:room walls",
-            "background_sprite": "dungeon/floors/floor_pebbles.png",
-            "item": "retrievable_chest"
+            "background_sprite": "dungeon/floors/floor_pebbles.png"
           }
         ],
         [

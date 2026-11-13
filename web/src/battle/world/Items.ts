@@ -164,6 +164,14 @@ export interface Item {
    */
   ignite?: boolean;
   /**
+   * Status a thrown item leaves on the creature it hits (poison vials,
+   * paralytic poison, …). `effect_id` names an effects.json record
+   * ("poisoned", "slowed", "sleep", "curse"); every other key overrides
+   * that record's params (`duration`, `damage_per_turn`, `ac_penalty`…).
+   * Only applied on a hit to a living target.
+   */
+  applies_effect?: { effect_id: string; [key: string]: unknown } | null;
+  /**
    * Light radius (tiles, Chebyshev) the ignited cell emits while
    * burning. Only consulted when `ignite: true`. Defaults to 3 when
    * omitted, matching the v1 torch radius.

@@ -215,25 +215,27 @@ export function lightningZigzag(
   scene: Phaser.Scene,
   from: Pt, to: Pt,
   segments = 6,
+  opts: { color?: number; width?: number; jitter?: number; fadeMs?: number } = {},
 ): Promise<void> {
+  const jitter = opts.jitter ?? 14;
   return new Promise((resolve) => {
     const g = scene.add.graphics().setDepth(70);
-    g.lineStyle(3, COLOURS.lightning, 1);
+    g.lineStyle(opts.width ?? 3, opts.color ?? COLOURS.lightning, 1);
     g.beginPath();
     g.moveTo(from.x, from.y);
     for (let i = 1; i < segments; i++) {
       const t = i / segments;
       const x = lerp(from.x, to.x, t);
       const y = lerp(from.y, to.y, t);
-      const jx = (Math.random() - 0.5) * 14;
-      const jy = (Math.random() - 0.5) * 14;
+      const jx = (Math.random() - 0.5) * jitter;
+      const jy = (Math.random() - 0.5) * jitter;
       g.lineTo(x + jx, y + jy);
     }
     g.lineTo(to.x, to.y);
     g.strokePath();
     scene.tweens.add({
       targets: g, alpha: 0,
-      duration: 280,
+      duration: opts.fadeMs ?? 280,
       onComplete: () => { g.destroy(); resolve(); },
     });
   });
@@ -635,10 +637,12 @@ export function breathOfFire(
   scene: Phaser.Scene,
   from: Pt,
   to: Pt,
-  opts: { width?: number; durationMs?: number } = {},
+  opts: { width?: number; durationMs?: number; fire?: number; ember?: number } = {},
 ): Promise<void> {
   const width = opts.width ?? TILE * 1.4;
   const durationMs = opts.durationMs ?? 520;
+  const FIRE_C = opts.fire ?? COLOURS.fire;
+  const EMBER_C = opts.ember ?? COLOURS.ember;
   return new Promise((resolve) => {
     const dx = to.x - from.x;
     const dy = to.y - from.y;
@@ -667,7 +671,7 @@ export function breathOfFire(
       // cone axis, height perpendicular. Color alternates between
       // the deep fire orange and the brighter ember yellow so the
       // overlap reads as turbulence rather than a flat fill.
-      const colour = i % 2 === 0 ? COLOURS.fire : COLOURS.ember;
+      const colour = i % 2 === 0 ? FIRE_C : EMBER_C;
       const tongue = scene.add
         .ellipse(startX, startY, 4, 10, colour, 0.85)
         .setDepth(58);
@@ -695,7 +699,7 @@ export function breathOfFire(
     // continuously alive rather than a single flash.
     const EMBER_COUNT = 22;
     const interval = durationMs / EMBER_COUNT;
-    const emberColors = [COLOURS.fire, COLOURS.ember, COLOURS.white];
+    const emberColors = [FIRE_C, EMBER_C, COLOURS.white];
     for (let i = 0; i < EMBER_COUNT; i++) {
       scene.time.delayedCall(i * interval * 0.6, () => {
         // Small per-ember randomisation makes the stream feel
@@ -733,13 +737,225 @@ export function breathOfFire(
     // keeps it inside the target tile.
     const impactDelay = Math.round(durationMs * 0.7);
     scene.time.delayedCall(impactDelay, () => {
-      void radialBurst(scene, to, COLOURS.fire, COLOURS.ember, 36);
+      void radialBurst(scene, to, FIRE_C, EMBER_C, 36);
     });
 
     // Resolve slightly after the impact + ember tail so an
     // awaiting caller doesn't move on while flames are still
     // visible.
     scene.time.delayedCall(durationMs + 260, () => resolve());
+  });
+}
+
+/**
+ * Hellfire / monster Fireball — a roiling ball of flame hurled from
+ * `from` to `to`, then a fiery eruption on the target:
+ *
+ *   1. The BALL: dark-red shell, orange body and white-hot core, each
+ *      flickering in size every frame, flying on a low arc with flames
+ *      licking off it, bright embers drifting up and faint smoke.
+ *   2. The ERUPTION: a white-hot flash and a billowing cloud of red /
+ *      orange / gold fire blobs.
+ *   3. FLAME TONGUES rising from the target's feet, sparks thrown up
+ *      and falling back, and smoke drifting up after the blast.
+ *
+ * Resolves once the blast has landed so the caller can apply the HP
+ * flash after the flames arrive.
+ */
+export function hellfire(
+  scene: Phaser.Scene,
+  from: Pt,
+  to: Pt,
+  opts: {
+    flightMs?: number;
+    /** Size multiplier for the ball and the eruption (1 = default). */
+    size?: number;
+    outer?: number;
+    body?: number;
+    ember?: number;
+    core?: number;
+    smoke?: number;
+  } = {},
+): Promise<void> {
+  const DEEP = opts.outer ?? 0xc0260f;   // hellfire red
+  const FIRE = opts.body ?? COLOURS.fire;
+  const EMBER = opts.ember ?? COLOURS.ember;
+  const CORE = opts.core ?? 0xfff1c2;
+  const SMOKE = opts.smoke ?? 0x2b2124;
+  const K = Math.max(0.3, opts.size ?? 1);
+  const FLAME = [DEEP, FIRE, FIRE, EMBER];
+  const pick = () => FLAME[Math.floor(Math.random() * FLAME.length)];
+  const dist = distBetween(from.x, from.y, to.x, to.y);
+  const flight = opts.flightMs ?? Math.max(340, Math.min(640, dist * 1.6));
+  // Low arc — control point lifted above the midpoint.
+  const cx = (from.x + to.x) / 2;
+  const cy = (from.y + to.y) / 2 - Math.min(36, dist * 0.22);
+  const at = (t: number): Pt => {
+    const u = 1 - t;
+    return {
+      x: u * u * from.x + 2 * u * t * cx + t * t * to.x,
+      y: u * u * from.y + 2 * u * t * cy + t * t * to.y,
+    };
+  };
+
+  return new Promise((resolve) => {
+    const shell = scene.add.circle(from.x, from.y, 12 * K, DEEP, 0.6).setDepth(60);
+    const body = scene.add.circle(from.x, from.y, 8.5 * K, FIRE, 0.95).setDepth(61);
+    const core = scene.add.circle(from.x, from.y, 4.5 * K, CORE, 1).setDepth(62);
+    let lastShed = -1;
+    scene.tweens.addCounter({
+      from: 0,
+      to: 1,
+      duration: flight,
+      ease: "Sine.In",
+      onUpdate: (tw) => {
+        const t = tw.getValue() ?? 0;
+        const p = at(t);
+        // Flicker: each layer breathes at its own random rate.
+        shell.setPosition(p.x, p.y).setRadius((10.5 + Math.random() * 4) * K);
+        body
+          .setPosition(p.x + (Math.random() - 0.5) * 2, p.y + (Math.random() - 0.5) * 2)
+          .setRadius((7.5 + Math.random() * 2.5) * K);
+        core.setPosition(p.x, p.y).setRadius((3.5 + Math.random() * 1.8) * K);
+        if (t - lastShed < 0.02) return;
+        lastShed = t;
+        // Flames licking off the ball, streaming back and up.
+        for (let k = 0; k < 2; k++) {
+          const lick = scene.add
+            .ellipse(
+              p.x + (Math.random() - 0.5) * 10,
+              p.y + (Math.random() - 0.5) * 10,
+              6 + Math.random() * 4,
+              9 + Math.random() * 6,
+              pick(),
+              0.85,
+            )
+            .setDepth(59);
+          scene.tweens.add({
+            targets: lick,
+            y: lick.y - 8 - Math.random() * 10,
+            scaleX: 0.3,
+            scaleY: 0.5,
+            alpha: 0,
+            duration: 260 + Math.random() * 200,
+            onComplete: () => lick.destroy(),
+          });
+        }
+        // Bright embers drifting up out of the trail.
+        const ember = scene.add
+          .circle(p.x, p.y, 1.2 + Math.random() * 1.4, Math.random() < 0.6 ? EMBER : CORE, 1)
+          .setDepth(59);
+        scene.tweens.add({
+          targets: ember,
+          x: ember.x + (Math.random() - 0.5) * 10,
+          y: ember.y - 12 - Math.random() * 14,
+          alpha: 0,
+          duration: 420 + Math.random() * 260,
+          onComplete: () => ember.destroy(),
+        });
+        // A little dark smoke, kept faint.
+        if (Math.random() < 0.25) {
+          const puff = scene.add.circle(p.x, p.y, 4, SMOKE, 0.28).setDepth(58);
+          scene.tweens.add({
+            targets: puff,
+            y: puff.y - 12,
+            radius: 9,
+            alpha: 0,
+            duration: 560,
+            onComplete: () => puff.destroy(),
+          });
+        }
+      },
+      onComplete: () => {
+        shell.destroy();
+        body.destroy();
+        core.destroy();
+        // ── Eruption: a white-hot flash, then a billowing fire cloud ─
+        const flash = scene.add.circle(to.x, to.y, 8, CORE, 1).setDepth(64);
+        scene.tweens.add({
+          targets: flash,
+          radius: 26 * K,
+          alpha: 0,
+          duration: 200,
+          onComplete: () => flash.destroy(),
+        });
+        for (let i = 0; i < 9; i++) {
+          const a = Math.random() * Math.PI * 2;
+          const d = Math.random() * TILE * 0.45 * K;
+          const blob = scene.add
+            .circle(to.x + Math.cos(a) * d * 0.4, to.y + Math.sin(a) * d * 0.4, 5 + Math.random() * 4, pick(), 0.9)
+            .setDepth(62);
+          scene.tweens.add({
+            targets: blob,
+            x: to.x + Math.cos(a) * d,
+            y: to.y + Math.sin(a) * d - TILE * 0.25,
+            radius: (11 + Math.random() * 7) * K,
+            alpha: 0,
+            delay: Math.random() * 80,
+            duration: 380 + Math.random() * 220,
+            ease: "Quad.Out",
+            onComplete: () => blob.destroy(),
+          });
+        }
+        // ── Flame tongues rising from the target's feet ──────────
+        const TONGUES = 10;
+        for (let i = 0; i < TONGUES; i++) {
+          const ox = (i / (TONGUES - 1) - 0.5) * TILE * 1.1 * K;
+          const tongue = scene.add
+            .ellipse(to.x + ox, to.y + TILE * 0.4, 6, 10, pick(), 0.95)
+            .setDepth(61);
+          scene.tweens.add({
+            targets: tongue,
+            y: to.y - TILE * K * (0.25 + Math.random() * 0.6),
+            scaleY: 2.4 + Math.random() * 1.4,
+            scaleX: 0.55,
+            alpha: 0,
+            delay: 40 + Math.random() * 220,
+            duration: 520 + Math.random() * 260,
+            ease: "Quad.Out",
+            onComplete: () => tongue.destroy(),
+          });
+        }
+        // Sparks thrown up and falling back.
+        for (let i = 0; i < 14; i++) {
+          const spark = scene.add
+            .circle(to.x, to.y, 1.4 + Math.random(), Math.random() < 0.5 ? EMBER : CORE, 1)
+            .setDepth(63);
+          const vx = (Math.random() - 0.5) * TILE * 1.6;
+          const peak = TILE * (0.6 + Math.random() * 0.7);
+          scene.tweens.add({
+            targets: spark,
+            x: to.x + vx,
+            duration: 620,
+            onComplete: () => spark.destroy(),
+          });
+          scene.tweens.add({
+            targets: spark,
+            y: to.y - peak,
+            duration: 300,
+            ease: "Quad.Out",
+            yoyo: true,
+          });
+          scene.tweens.add({ targets: spark, alpha: 0, delay: 360, duration: 260 });
+        }
+        // Smoke drifting up after the blast.
+        for (let i = 0; i < 4; i++) {
+          const puff = scene.add
+            .circle(to.x + (Math.random() - 0.5) * 14, to.y - 4, 5, SMOKE, 0.35)
+            .setDepth(57);
+          scene.tweens.add({
+            targets: puff,
+            y: to.y - TILE * (0.9 + Math.random() * 0.5),
+            radius: 11 + Math.random() * 4,
+            alpha: 0,
+            delay: 260 + i * 80,
+            duration: 760,
+            onComplete: () => puff.destroy(),
+          });
+        }
+        scene.time.delayedCall(480, () => resolve());
+      },
+    });
   });
 }
 
@@ -751,9 +967,10 @@ export function healingSparkles(
   scene: Phaser.Scene,
   at: Pt,
   count = 8,
+  opts: { color?: number; accent?: number } = {},
 ): Promise<void> {
   return new Promise((resolve) => {
-    const colors = [COLOURS.heal, 0xb4f5be, 0xeaffe0];
+    const colors = [opts.color ?? COLOURS.heal, opts.accent ?? 0xb4f5be, 0xeaffe0];
     for (let i = 0; i < count; i++) {
       const ox = (Math.random() - 0.5) * TILE;
       const sx = at.x + ox;
@@ -949,14 +1166,15 @@ export function glowAura(
   scene: Phaser.Scene,
   at: Pt,
   color = COLOURS.buff,
+  opts: { radius?: number; durationMs?: number; width?: number } = {},
 ): Promise<void> {
   return new Promise((resolve) => {
     const ring = scene.add.circle(at.x, at.y, 10, color, 0).setDepth(45);
-    ring.setStrokeStyle(2, color, 0.9);
+    ring.setStrokeStyle(opts.width ?? 2, color, 0.9);
     scene.tweens.add({
       targets: ring,
-      radius: 28, alpha: 0,
-      duration: 520,
+      radius: opts.radius ?? 28, alpha: 0,
+      duration: opts.durationMs ?? 520,
       onComplete: () => { ring.destroy(); resolve(); },
     });
   });

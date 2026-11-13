@@ -93,6 +93,10 @@ export interface PartyMember {
   wisdom: number;
   /** Currently-equipped item ids, keyed by v2 slot. */
   equipped: EquipmentSlots;
+  /** Lingering statuses carried between the map and battle (today:
+   *  Poisoned). `duration` is in MAP STEPS — battle converts with
+   *  `MAP_STEPS_PER_ROUND`. Optional; absent = nothing carried. */
+  status_effects?: Array<{ id: string; duration: number }>;
   /** Per-slot remaining durability for the items currently equipped.
    *  `null` means the slot's item is indestructible (or there's nothing
    *  equipped). When an item is unequipped, its current value moves

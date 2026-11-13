@@ -1,8 +1,8 @@
 {
   "start_position": {
-    "map_id": "test_1",
-    "col": 1,
-    "row": 0
+    "map_id": "varnfell",
+    "col": 4,
+    "row": 74
   },
   "avatar": "person/person_female_ranger.png",
   "gold": 50,

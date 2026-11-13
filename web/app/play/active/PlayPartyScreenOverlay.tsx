@@ -48,6 +48,7 @@ import {
   type EquipSource,
 } from "@/play/equipFromInventory";
 import { applyCampRest, campRestReport, type CampRestReport } from "@/play/campRest";
+import { curePoison } from "@/play/memberEffects";
 import {
   addToInventory,
   consumeOneFromInventory,
@@ -1018,6 +1019,23 @@ export function PlayPartyScreenOverlay({
           );
         }
         usedItemId = "camping_supplies";
+      } else if (
+        state.items.find((it) => it.id === entry.item)?.effect === "cure_poison"
+      ) {
+        // Antidote from the shared stash — cures the first poisoned
+        // conscious member. Not consumed when nobody is poisoned.
+        const idx = cur.party.members.findIndex(
+          (m) => m.hp > 0 && (m.effects ?? []).some((e) => e.id === "poisoned"),
+        );
+        if (idx < 0) {
+          setCastMessage("No one in the party is poisoned.");
+          return;
+        }
+        const cured = curePoison(cur.party.members[idx])!;
+        nextMembers = cur.party.members.map((m, i) => (i === idx ? cured : m));
+        const who =
+          state.characters.find((c) => c.id === cured.id)?.name ?? cured.id;
+        setCastMessage(`${who} drinks the antidote and is cured of poison.`);
       } else {
         // Unknown / not-yet-wired usable (potions, herbs, …). Bail
         // without eating a charge, but tell the player instead of
@@ -1135,6 +1153,19 @@ export function PlayPartyScreenOverlay({
           );
         }
         usedItemId = "camping_supplies";
+      } else if (
+        state.items.find((it) => it.id === entry.item)?.effect === "cure_poison"
+      ) {
+        // Antidote from this member's own pack — cures them.
+        const cured = curePoison(member);
+        if (!cured) {
+          setCastMessage(`${state.characters.find((c) => c.id === memberId)?.name ?? "They"} isn't poisoned.`);
+          return;
+        }
+        restedMembers = cur.party.members.map((m) => (m.id === memberId ? cured : m));
+        setCastMessage(
+          `${state.characters.find((c) => c.id === memberId)?.name ?? memberId} drinks the antidote and is cured of poison.`,
+        );
       } else {
         // Unknown / not-yet-wired usable. Bail without mutating —
         // don't silently eat a charge for a no-op.

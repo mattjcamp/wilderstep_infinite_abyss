@@ -703,7 +703,12 @@
       "sell": 35,
       "usable": true,
       "effect": "combat_only",
-      "range": 4
+      "range": 4,
+      "applies_effect": {
+        "effect_id": "poisoned",
+        "duration": 6,
+        "damage_per_turn": 1
+      }
     },
     {
       "id": "lockpick",
@@ -781,7 +786,11 @@
       "sell": 35,
       "usable": true,
       "effect": "combat_only",
-      "range": 4
+      "range": 4,
+      "applies_effect": {
+        "effect_id": "slowed",
+        "duration": 3
+      }
     },
     {
       "id": "poison_vial",
@@ -802,7 +811,12 @@
       "sell": 25,
       "usable": true,
       "effect": "combat_only",
-      "range": 4
+      "range": 4,
+      "applies_effect": {
+        "effect_id": "poisoned",
+        "duration": 3,
+        "damage_per_turn": 2
+      }
     },
     {
       "lore": "test_1",
@@ -1059,7 +1073,13 @@
       "sell": 30,
       "usable": true,
       "effect": "combat_only",
-      "range": 4
+      "range": 4,
+      "applies_effect": {
+        "effect_id": "curse",
+        "duration": 3,
+        "ac_penalty": 2,
+        "attack_penalty": 2
+      }
     },
     {
       "id": "fire_arrows",

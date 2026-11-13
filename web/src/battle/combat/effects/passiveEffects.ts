@@ -33,7 +33,10 @@ registerEffectHandler({
     const before = bearer.hp;
     bearer.hp = Math.min(bearer.maxHp, bearer.hp + amount);
     const healed = bearer.hp - before;
-    if (healed > 0) host.log(`${bearer.name} regenerates ${healed} HP.`);
+    if (healed > 0) {
+      host.log(`${bearer.name} regenerates ${healed} HP.`);
+      host.emitEvent({ targetId: bearer.id, kind: "status", text: `+${healed} regen`, color: "#7be2a8" });
+    }
   },
 });
 
@@ -46,14 +49,14 @@ registerEffectHandler({
     if (kind !== "fire") return amount;
     const halved = Math.max(1, Math.floor(amount / 2));
     host.log(`${bearer.name}'s fire resistance halves ${amount} → ${halved}.`);
+    host.emitEvent({ targetId: bearer.id, kind: "status", text: "RESISTS FIRE", color: "#ffb35c" });
     return halved;
   },
 });
 
 // Poison Immunity — declarative trait that refuses the Poisoned status.
-// "poisoned" isn't applied as a runtime effect yet (it's parsed but not
-// wired), so this is the immunity gate waiting for it: `applyEffect`
-// already honours `blocks`.
+// `applyEffect` honours `blocks`, so poison spells, venom on-hits and
+// poison throwables all bounce off.
 registerEffectHandler({
   id: "poison_immunity",
   blocks: ["poisoned"],

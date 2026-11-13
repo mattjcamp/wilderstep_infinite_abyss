@@ -78,7 +78,9 @@
       "mp_cost": 6,
       "range": 1,
       "targeting": "self",
-      "usable_in": ["lock"],
+      "usable_in": [
+        "lock"
+      ],
       "duration": "instant",
       "action": "knock",
       "action_params": {
@@ -299,7 +301,7 @@
       "casting_type": "priest",
       "min_level": 1,
       "mp_cost": 5,
-      "range": 6,
+      "range": 3,
       "targeting": "select_ally_or_self",
       "usable_in": [
         "battle",

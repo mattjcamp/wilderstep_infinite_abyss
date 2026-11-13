@@ -43,7 +43,11 @@ export type ConsumeEvent =
   | { targetId: string; kind: "applied"; consumerId: string }
   | { targetId: string; kind: "tick"; damage: number }
   | { targetId: string; kind: "saved" }
-  | { targetId: string; kind: "released" };
+  | { targetId: string; kind: "released" }
+  /** Generic status feedback — a short floating label over the
+   *  bearer ("POISON -2", "Zzz", "AWAKE!", "CHARMED"). Any handler can
+   *  emit it; the scene floats `text` in `color` (CSS hex). */
+  | { targetId: string; kind: "status"; text: string; color: string };
 
 /** Per-effect parameter bag — `effects.json` defaults overlaid with the
  *  applier's overrides (save_dc, damage_per_turn, …). Free-form: each
@@ -125,6 +129,26 @@ export interface EffectHandler {
 }
 
 const REGISTRY = new Map<string, EffectHandler>();
+
+/** effects.json defaults by id — `duration` plus the `params` block.
+ *  `applyEffect` lays these UNDER the applier's overrides, so a record
+ *  retuned in the editor (Poisoned: 3 damage for 6 turns) takes effect
+ *  without a code change. Empty until the scene seeds it. */
+const CATALOG_DEFAULTS = new Map<string, EffectParams>();
+
+/** Seed per-effect defaults from the effects catalog (effects.json).
+ *  A numeric `duration` lands as `params.duration`. */
+export function setEffectCatalogDefaults(
+  effects: ReadonlyArray<{ id: string; duration?: unknown; params?: Record<string, unknown> | null }>,
+): void {
+  CATALOG_DEFAULTS.clear();
+  for (const e of effects) {
+    if (!e?.id) continue;
+    const params: EffectParams = { ...(e.params ?? {}) };
+    if (typeof e.duration === "number") params.duration = e.duration;
+    CATALOG_DEFAULTS.set(e.id, params);
+  }
+}
 
 /** Register a handler for its `id`. Handlers self-register at import
  *  time; `Combat` imports the handler modules so registration runs. */
@@ -218,12 +242,14 @@ export function applyEffect(
   // An immunity trait (e.g. poison_immunity blocks "poisoned") refuses
   // the effect outright.
   if (isImmuneTo(bearer, effectId)) {
-    host.log(`${bearer.name} is immune to ${effectId}.`);
+    const label = effectId === "poisoned" ? "poison" : effectId;
+    host.log(`${bearer.name} is immune to ${label}.`);
+    host.emitEvent({ targetId: bearer.id, kind: "status", text: "IMMUNE", color: "#dcdcc8" });
     return null;
   }
   const effect: ActiveEffect = {
     effectId,
-    params: opts.params ?? {},
+    params: { ...(CATALOG_DEFAULTS.get(effectId) ?? {}), ...(opts.params ?? {}) },
     sourceId: opts.sourceId,
     state: {},
   };

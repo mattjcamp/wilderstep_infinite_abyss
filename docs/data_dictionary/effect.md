@@ -78,6 +78,39 @@ Each record:
 
 This is a snapshot, not a closed list. New effects can define new param keys; runtime handlers read what they expect.
 
+## In battle: what each effect does, looks like and logs
+
+Every change is written to the battle log (applied, each tick, wearing off) and floats a short label over the character. While an effect is active the character shows its look on the arena (drawn by `web/src/battle/scenes/statusAuras.ts`). `duration` / `params` here are the defaults; a spell, monster spell or item can override them.
+
+| Effect | In battle | Look | Applied by |
+|---|---|---|---|
+| `poisoned` | Loses `damage_per_turn` HP at the end of every round for `duration` rounds. Blocked by `poison_immunity`. **Carries out of battle** (see below). | Green haze + rising bubbles | Monster spells Spore Cloud / Venom Bite (CON save vs `save_dc`), Poison Vial / Lingering Venom (`applies_effect` on the item) |
+| `sleep` (Asleep) | Skips the bearer's turns for `duration` of their own turns; any damage wakes them at their next turn. | Blue "Z"s drifting up | Sleep spell (INT save, `max_target_hp`), monster Web / Dark Slumber / Hypnotic Gaze (WIS save) |
+| `charm` (Charmed) | Fights for the caster's side (AI-controlled) for `duration` rounds, then returns to its own side. | Pink hearts circling | Charm Person (INT save) |
+| `slowed` | Movement halved (min 1) for `duration` rounds. | Grey ring + drag marks at the feet | Paralytic Poison |
+| `ac_buff` (Shielded) | +AC | Pale-blue bubble | Shield, Elixir of Warding |
+| `bless` (Blessed) | +attack | Golden halo | Bless |
+| `curse` (Cursed) | −attack / −AC | Violet wisps | Curse, monster Haunting Wail / Hex, Weakening Poison |
+| `range_buff` (Long Shanks) | +movement | Green chevrons under the feet | Long Shanks |
+| `invisibility` | +AC (hard to hit) | Sprite turns see-through + shimmer | Invisibility |
+| `regen` | Heals `amount` each round | Green "+" motes; "+N regen" label | Monster trait |
+| `fire_resistance` | Halves fire damage | "RESISTS FIRE" label when it triggers | Monster trait, Sun Sword |
+| `poison_immunity` | Blocks Poisoned | "IMMUNE" label when it triggers | Monster trait |
+| `drain` | Attacker heals on a hit | "+N drained" label on the attacker | Monster on-hit |
+| `consumed` | Swallowed whole (existing) | Hidden inside the swallower | Man Eater on-hit |
+
+Cures: **Cure Poison** (spell), **Restore** (`cure_effects`), **Antidote** (in battle or from the Party screen), and the temple's Cure Poisons.
+
+`magic_light`, `repel_monsters` and `sun_sword_aura` are exploration (map) effects and don't appear in battle.
+
+### Poison on the map
+
+A poisoned character keeps the poison after the fight. On the map its remaining duration counts in **steps** — one battle round = 10 steps (`MAP_STEPS_PER_ROUND`). Every 10 steps it bites for `damage_per_turn` HP with an exploration-log line ("Pip suffers from poison (-2 HP)."), but on the map it never drops anyone below 1 HP. "Pip is no longer poisoned." when it runs out. Walking into a fight while poisoned carries the remaining poison back into battle.
+
+### Items that inflict a status: `applies_effect`
+
+A throwable item can carry `"applies_effect": { "effect_id": "poisoned", "duration": 3, "damage_per_turn": 2 }`. On a hit to a living target the effect is applied; every key besides `effect_id` overrides the effect's defaults. `effect_id: "curse"` applies the curse debuff (`ac_penalty`, `attack_penalty`, `duration`).
+
 ## Cross-references to other models
 
 - [Spell](spell.md) — `effect_type` (or equivalent) reference Effect `id`s for spell-applied statuses

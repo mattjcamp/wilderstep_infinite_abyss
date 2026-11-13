@@ -23,7 +23,7 @@ describe("effectRegistry", () => {
   it("seeds the standard set on load", () => {
     // Every visual a registered animation can ask for must exist
     // here. If a new animation references a new visual, register it
-    // in effectRegistry.ts at the same time.
+    // in the FX catalog (fxCatalog.ts) at the same time.
     const expected = [
       "lightning_bolt",
       "meteor_strike",
@@ -37,6 +37,8 @@ describe("effectRegistry", () => {
       "curse_aura",
       "radial_burst",
       "explosion_burst",
+      "hellfire",
+      "breath_of_fire",
     ];
     expect(listRegisteredProjectileEffects().sort()).toEqual(expected.sort());
   });
