@@ -1,16 +1,16 @@
 {
   "start_position": {
-    "map_id": "varnfell",
+    "map_id": "test_1",
     "col": 4,
-    "row": 74
+    "row": 4
   },
   "avatar": "person/person_female_ranger.png",
   "gold": 50,
   "roster": [
     "fighter",
     "ranger",
-    "alchemist",
-    "thief"
+    "wizard",
+    "cleric"
   ],
   "party_effects": [],
   "inventory": [

@@ -37,6 +37,7 @@
  *     the Characters editor (sim preview next to the editable sheet).
  */
 
+import { StatusAvatarDots, StatusPills } from "./StatusPills";
 import { isModalKeyLocked } from "@/play/modalKeyLock";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { xpProgressInLevel as levelingXpProgress } from "@/battle/world/Leveling";
@@ -719,19 +720,22 @@ export function CharacterSheetSim({
         <div className="space-y-3">
           {/* Identity row */}
           <div className="flex items-start gap-3">
-            {portrait ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={portrait}
-                alt=""
-                width={56}
-                height={56}
-                style={{ imageRendering: "pixelated" }}
-                className="h-14 w-14 shrink-0 rounded border border-parchment/20 bg-ink/80 object-contain"
-              />
-            ) : (
-              <span className="h-14 w-14 shrink-0 rounded border border-parchment/20 bg-ink/80" />
-            )}
+            <span className="relative shrink-0">
+              {portrait ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={portrait}
+                  alt=""
+                  width={56}
+                  height={56}
+                  style={{ imageRendering: "pixelated" }}
+                  className="block h-14 w-14 rounded border border-parchment/20 bg-ink/80 object-contain"
+                />
+              ) : (
+                <span className="block h-14 w-14 rounded border border-parchment/20 bg-ink/80" />
+              )}
+              <StatusAvatarDots effects={characterEffects} />
+            </span>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 font-display text-lg text-parchment">
                 {character.name}
@@ -787,23 +791,9 @@ export function CharacterSheetSim({
               <h3 className="text-[13px] uppercase tracking-wide text-amber-300">
                 Conditions
               </h3>
-              <ul className="mt-1 flex flex-wrap gap-1">
-                {characterEffects.map((e) => (
-                  <li
-                    key={e.id}
-                    className="rounded border border-parchment/25 bg-ink/50 px-1.5 py-0.5 font-mono text-xs uppercase tracking-wider text-parchment/85"
-                  >
-                    {e.id.replace(/_/g, " ")}
-                    {typeof e.duration === "number" ? (
-                      <span className="ml-1 text-parchment/75">
-                        {e.duration}
-                      </span>
-                    ) : e.duration === "permanent" ? (
-                      <span className="ml-1 text-parchment/75">∞</span>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
+              <div className="mt-1 flex flex-wrap gap-1">
+                <StatusPills effects={characterEffects} size="md" />
+              </div>
             </section>
           ) : null}
 

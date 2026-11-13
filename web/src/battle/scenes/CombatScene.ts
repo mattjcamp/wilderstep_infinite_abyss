@@ -132,6 +132,12 @@ import {
 import { resolveProjectileEffect } from "@/vfx/effectRegistry";
 import { cureStatus, MAP_STEPS_PER_ROUND } from "@/battle/combat/effects/statusEffects";
 import { StatusAuraLayer } from "./statusAuras";
+import {
+  badgeChipText,
+  describeStatus,
+  statusBadgesFor,
+  type StatusBadge,
+} from "@/battle/combat/effects/statusDisplay";
 import { ensureFxRecords, fxVisualKey, getFxRecord } from "@/vfx/fxCatalog";
 import { setEffectCatalogDefaults } from "@/battle/combat/effects/EffectRuntime";
 import { loadEffects } from "@/battle/world/Effects";
@@ -366,6 +372,9 @@ const SUBMENU_VISIBLE = SUBMENU_COLS * SUBMENU_ROWS;
 const BACK_ICON_URL = (): string => spriteUrl("actions/back.png");
 /** Portrait size inside the 10% panel (square, leaves room for the name). */
 const PORTRAIT_SIZE = 84;
+/** Right-HUD combatant list: cards visible at once, and card height. */
+const ROSTER_ROWS = 4;
+const ROSTER_CARD_H = 60;
 /** Active-combatant highlight animation: halo layers around the ring /
  *  portrait frame and the pulse period. */
 const GLOW_LAYERS = 2;
@@ -786,6 +795,23 @@ export class CombatScene extends Phaser.Scene {
   /** Box the battle log draws into (HUD column, below the party
    *  cards). Measured by drawHud, consumed by drawLog / refreshLog. */
   private logArea = { x: 0, y: 0, w: 0, h: 0 };
+  /** Status chips (PSN 3, CRS 2…) on the HUD party cards and under
+   *  the portrait — rebuilt only when `statusBadgeSig` changes. */
+  private statusBadgeObjs: Phaser.GameObjects.GameObject[] = [];
+  private statusBadgeSig = "";
+  /** Where each party card's chip row starts / may end. */
+  private partyCardBadgeSlots = new Map<string, { x: number; y: number; maxX: number }>();
+  /** Right-HUD combatant list (party, summons, enemies): every object
+   *  of the currently visible cards, the first visible index, the
+   *  list's box, and what it was last drawn for. */
+  private rosterObjs: Phaser.GameObjects.GameObject[] = [];
+  private rosterScroll = 0;
+  private rosterArea = { x: 0, y: 0, w: 0, h: 0 };
+  private rosterSig = "";
+  private rosterTurn = -1;
+  private rosterWheel: ((p: Phaser.Input.Pointer, o: unknown, dx: number, dy: number) => void) | null = null;
+  /** Last turn whose statuses were reported to the log. */
+  private statusReportTurn = -1;
   /** Bottom-left portrait panel: frame, current image, name. */
   private portraitFrame!: Phaser.GameObjects.Rectangle;
   private portraitImage: Phaser.GameObjects.GameObject | null = null;
@@ -2132,6 +2158,12 @@ export class CombatScene extends Phaser.Scene {
       card?.mpText?.destroy();
     }
     this.partyCards.clear();
+    this.partyCardBadgeSlots.clear();
+    for (const o of this.rosterObjs) o?.destroy();
+    this.rosterObjs = [];
+    for (const o of this.statusBadgeObjs) o?.destroy();
+    this.statusBadgeObjs = [];
+    this.statusBadgeSig = "";
     for (const t of this.actionIcons) t?.destroy();
     this.actionIcons.length = 0;
     for (const h of this.actionRowHandles) h?.destroy();
@@ -2140,16 +2172,45 @@ export class CombatScene extends Phaser.Scene {
     this.panel(HUD_X, HUD_Y, HUD_W, HUD_H);
     let cy = HUD_Y + 12;
 
-    // PARTY header + mini cards
-    this.track(this.add.text(HUD_X + 14, cy, "PARTY", FONT_HEAD()));
+    // COMBATANTS header + a scrolling list of mini cards — the party
+    // (and summons) first, then the enemies. ROSTER_ROWS cards show at
+    // once; the wheel or the ▲ ▼ buttons scroll, and the list follows
+    // whoever is acting (see refreshRoster).
+    this.track(this.add.text(HUD_X + 14, cy, "COMBATANTS", FONT_HEAD()));
+    const arrowStyle = { fontFamily: "monospace", fontSize: "14px", color: hex(C.dim) };
+    const up = this.track(
+      this.add.text(HUD_X + HUD_W - 52, cy, "▲", arrowStyle).setInteractive({ useHandCursor: true }),
+    );
+    const down = this.track(
+      this.add.text(HUD_X + HUD_W - 30, cy, "▼", arrowStyle).setInteractive({ useHandCursor: true }),
+    );
+    up.on("pointerdown", () => this.scrollRoster(-1));
+    down.on("pointerdown", () => this.scrollRoster(1));
     cy += 24;
-    const cardH = 60;
-    const cardW = HUD_W - 24;
-    const partySide = this.combat.combatants.filter((c) => c.side === "party");
-    for (const c of partySide) {
-      this.drawPartyCard(c, HUD_X + 12, cy, cardW, cardH);
-      cy += cardH + 4;
-    }
+    this.rosterArea = {
+      x: HUD_X + 12,
+      y: cy,
+      w: HUD_W - 24,
+      h: ROSTER_ROWS * (ROSTER_CARD_H + 4) - 4,
+    };
+    this.rosterSig = "";
+    this.rosterTurn = -1;
+    this.rosterScroll = 0;
+    if (this.rosterWheel) this.input.off("wheel", this.rosterWheel);
+    this.rosterWheel = (p, _o, _dx, dy) => {
+      if (this.inspectorOpen) return;
+      const w = this.cameras.main.getWorldPoint(p.x, p.y);
+      const a = this.rosterArea;
+      if (w.x < a.x || w.x > a.x + a.w || w.y < a.y || w.y > a.y + a.h) return;
+      this.scrollRoster(dy > 0 ? 1 : -1);
+    };
+    this.input.on("wheel", this.rosterWheel);
+    this.events.once("shutdown", () => {
+      if (this.rosterWheel) this.input.off("wheel", this.rosterWheel);
+      this.rosterWheel = null;
+    });
+    this.refreshRoster();
+    cy += this.rosterArea.h;
 
     cy += 8;
     this.track(
@@ -2295,30 +2356,44 @@ export class CombatScene extends Phaser.Scene {
     }
   }
 
-  private drawPartyCard(
+  private drawCombatantCard(
     c: Combatant, x: number, y: number, w: number, h: number,
   ): void {
-    // Card frame.
-    this.track(
+    const firstObj = this.rosterObjs.length;
+    const enemy = c.side === "enemies";
+    const dead = c.hp <= 0;
+    const active = this.combat.current?.id === c.id;
+    // Card frame — the acting combatant's card is outlined in the
+    // cursor colour; enemies get a dark-red tint.
+    this.rosterTrack(
       this.add
-        .rectangle(x, y, w, h, 0x1c1c2a, 1)
+        .rectangle(x, y, w, h, enemy ? 0x2a1a1f : 0x1c1c2a, 1)
         .setOrigin(0)
-        .setStrokeStyle(1, C.panelEdge),
+        .setStrokeStyle(active ? 2 : 1, active ? C.cursor : C.panelEdge),
     );
     // Avatar
     const avatar = 44;
     if (c.sprite && this.textures.exists(c.sprite)) {
       const img = this.add.image(x + 8, y + 8, c.sprite).setOrigin(0);
       img.setDisplaySize(avatar, avatar);
-      this.track(img);
+      this.rosterTrack(img);
     } else {
       const colorHex = Phaser.Display.Color.GetColor(...c.color);
-      this.track(
+      this.rosterTrack(
         this.add.rectangle(x + 8, y + 8, avatar, avatar, colorHex).setOrigin(0),
       );
     }
     const tx = x + avatar + 16;
-    this.track(this.add.text(tx, y + 4, c.name, FONT_BODY()));
+    const nameText = this.rosterTrack(
+      this.add.text(tx, y + 4, c.name, FONT_BODY(enemy ? C.accent : C.body)),
+    );
+    // Status chips sit on the name row, between the name and the HP
+    // readout (right-aligned at the card's edge).
+    this.partyCardBadgeSlots.set(c.id, {
+      x: tx + nameText.width + 8,
+      y: y + 6,
+      maxX: x + w - 62,
+    });
 
     // HP bar (always present). Inner fill width = barW - 2 to leave a
     // 1px panel-edge frame on either side. Stored as fullBarW so
@@ -2326,7 +2401,7 @@ export class CombatScene extends Phaser.Scene {
     const barW = w - (tx - x) - 12;
     const fullBarW = barW - 2;
     const hpBarY = y + 22;
-    this.track(
+    this.rosterTrack(
       this.add.rectangle(tx, hpBarY, barW, 8, 0x1c1c2a, 1).setOrigin(0)
         .setStrokeStyle(1, C.panelEdge),
     );
@@ -2345,7 +2420,7 @@ export class CombatScene extends Phaser.Scene {
     const member = this.memberByCombatantId(c.id);
     if (member && member.max_mp > 0) {
       const mpBarY = y + 44;
-      this.track(
+      this.rosterTrack(
         this.add.rectangle(tx, mpBarY, barW, 8, 0x1c1c2a, 1).setOrigin(0)
           .setStrokeStyle(1, C.panelEdge),
       );
@@ -2361,7 +2436,80 @@ export class CombatScene extends Phaser.Scene {
     // hpBar / hpText / mpBar / mpText are tracked via partyCards
     // (their map already gets defensively destroyed in init()), so
     // they don't need to go on staticDecor.
+    this.rosterObjs.push(hpBar, hpText);
+    if (mpBar) this.rosterObjs.push(mpBar);
+    if (mpText) this.rosterObjs.push(mpText);
     this.partyCards.set(c.id, { hpBar, hpText, mpBar, mpText, fullBarW });
+    // Defeated: dim the whole card.
+    if (dead) for (const o of this.rosterObjs.slice(firstObj)) (o as unknown as { setAlpha?: (a: number) => void }).setAlpha?.(0.4);
+  }
+
+  private rosterTrack<T extends Phaser.GameObjects.GameObject>(obj: T): T {
+    this.rosterObjs.push(obj);
+    return obj;
+  }
+
+  /** Party side (members + summons) first, then enemies. */
+  private rosterOrder(): Combatant[] {
+    const all = this.combat.combatants;
+    return [...all.filter((c) => c.side !== "enemies"), ...all.filter((c) => c.side === "enemies")];
+  }
+
+  private scrollRoster(dir: number): void {
+    const max = Math.max(0, this.rosterOrder().length - ROSTER_ROWS);
+    const next = Math.min(max, Math.max(0, this.rosterScroll + dir));
+    if (next === this.rosterScroll) return;
+    this.rosterScroll = next;
+    this.rosterSig = "";
+    this.refreshRoster(false);
+  }
+
+  /** Redraw the visible combatant cards when the roster, the scroll
+   *  position or the turn changed. On a new turn the list scrolls so
+   *  the acting combatant is in view (`follow`). */
+  private refreshRoster(follow = true): void {
+    if (!this.combat || this.rosterArea.h === 0) return;
+    const list = this.rosterOrder();
+    const turn = this.combat.turnNumber;
+    if (follow && turn !== this.rosterTurn) {
+      this.rosterTurn = turn;
+      const idx = list.findIndex((c) => c.id === this.combat.current?.id);
+      if (idx >= 0 && (idx < this.rosterScroll || idx >= this.rosterScroll + ROSTER_ROWS)) {
+        this.rosterScroll = Math.max(0, Math.min(idx, list.length - ROSTER_ROWS));
+      }
+    }
+    this.rosterScroll = Math.min(this.rosterScroll, Math.max(0, list.length - ROSTER_ROWS));
+    const sig = JSON.stringify([
+      this.rosterScroll,
+      turn,
+      list.map((c) => `${c.id}:${c.hp > 0 ? 1 : 0}`),
+    ]);
+    if (sig === this.rosterSig) return;
+    this.rosterSig = sig;
+    for (const o of this.rosterObjs) o.destroy();
+    this.rosterObjs = [];
+    this.partyCards.clear();
+    this.partyCardBadgeSlots.clear();
+    this.statusBadgeSig = "";
+    const a = this.rosterArea;
+    const shown = list.slice(this.rosterScroll, this.rosterScroll + ROSTER_ROWS);
+    shown.forEach((c, i) => {
+      this.drawCombatantCard(c, a.x, a.y + i * (ROSTER_CARD_H + 4), a.w, ROSTER_CARD_H);
+      this.syncCardBars(c);
+    });
+    // "1–4 of 9" beside the ▲ ▼ buttons when the list scrolls.
+    if (list.length > ROSTER_ROWS) {
+      this.rosterObjs.push(
+        this.add
+          .text(
+            HUD_X + HUD_W - 58,
+            a.y - 21,
+            `${this.rosterScroll + 1}–${this.rosterScroll + shown.length} of ${list.length}`,
+            { fontFamily: "monospace", fontSize: "11px", color: hex(C.dim) },
+          )
+          .setOrigin(1, 0),
+      );
+    }
   }
 
   private drawLog(): void {
@@ -6912,6 +7060,114 @@ export class CombatScene extends Phaser.Scene {
     this.refreshDarkness();
   }
 
+  /** Once per turn: when the combatant now acting carries statuses,
+   *  say so in the log — "Gimli is affected by: Poisoned (3 turns),
+   *  Cursed −3 AC, −3 ATK (2 turns)." */
+  private reportActiveStatuses(): void {
+    const turn = this.combat.turnNumber;
+    if (turn === this.statusReportTurn) return;
+    this.statusReportTurn = turn;
+    const c = this.combat.current;
+    if (!c || c.hp <= 0) return;
+    const badges = statusBadgesFor(c);
+    if (badges.length === 0) return;
+    this.combat.log.push(
+      `${c.name} is affected by: ${badges.map(describeStatus).join(", ")}.`,
+    );
+    this.refreshLog();
+  }
+
+  /** Draw a row of status chips starting at (x, y), left to right,
+   *  stopping before `maxX` (a "+N" chip notes any that don't fit).
+   *  `center` lays the row out centred on x instead. */
+  private drawStatusChips(
+    badges: StatusBadge[],
+    x: number,
+    y: number,
+    maxX: number,
+    center = false,
+  ): void {
+    if (badges.length === 0) return;
+    const style = {
+      fontFamily: "monospace",
+      fontSize: "11px",
+      fontStyle: "bold",
+      color: "#ffffff",
+    };
+    const padX = 4;
+    const gap = 3;
+    const h = 15;
+    // Measure the labels first (so a centred row can be placed as a
+    // whole); they're brought above their backgrounds below.
+    const texts = badges.map((b) =>
+      this.add.text(0, 0, badgeChipText(b), { ...style, color: b.color }),
+    );
+    const widths = texts.map((t) => Math.ceil(t.width) + padX * 2);
+    // Centred rows extend both ways from x, so they get twice the room.
+    const avail = center ? (maxX - x) * 2 : maxX - x;
+    const rowW = (n: number) => widths.slice(0, n).reduce((a, w) => a + w + gap, -gap);
+    let fit = badges.length;
+    while (fit > 0 && rowW(fit) + (fit < badges.length ? 24 : 0) > avail) fit -= 1;
+    const shownW = rowW(fit) + (fit < badges.length ? 24 : 0);
+    let cx = center ? Math.round(x - shownW / 2) : x;
+    for (let i = 0; i < badges.length; i++) {
+      const t = texts[i];
+      if (i >= fit) {
+        t.destroy();
+        continue;
+      }
+      const col = Phaser.Display.Color.HexStringToColor(badges[i].color).color;
+      const bg = this.add
+        .rectangle(cx, y, widths[i], h, col, 0.18)
+        .setOrigin(0)
+        .setStrokeStyle(1, col, 0.9);
+      t.setPosition(cx + padX, y + 1);
+      // The label was created before its background; lift it above.
+      this.children.bringToTop(t);
+      this.statusBadgeObjs.push(bg, t);
+      cx += widths[i] + gap;
+    }
+    if (fit < badges.length) {
+      const more = this.add.text(cx, y + 1, `+${badges.length - fit}`, {
+        ...style,
+        color: "#dcd2a8",
+      });
+      this.statusBadgeObjs.push(more);
+    }
+  }
+
+  /** Rebuild the HUD status chips when anything they show changed. */
+  private refreshStatusBadges(): void {
+    const cur = this.combat.current;
+    const rows: Array<{ id: string; badges: StatusBadge[] }> = [];
+    for (const id of this.partyCardBadgeSlots.keys()) {
+      const c = this.combat.combatants.find((x) => x.id === id);
+      rows.push({ id, badges: c && c.hp > 0 ? statusBadgesFor(c) : [] });
+    }
+    const curBadges = cur && cur.hp > 0 ? statusBadgesFor(cur) : [];
+    const sig = JSON.stringify([
+      rows.map((r) => [r.id, r.badges.map(badgeChipText)]),
+      cur?.id,
+      curBadges.map(badgeChipText),
+    ]);
+    if (sig === this.statusBadgeSig) return;
+    this.statusBadgeSig = sig;
+    for (const o of this.statusBadgeObjs) o.destroy();
+    this.statusBadgeObjs = [];
+    for (const r of rows) {
+      const slot = this.partyCardBadgeSlots.get(r.id);
+      if (slot) this.drawStatusChips(r.badges, slot.x, slot.y, slot.maxX);
+    }
+    // Portrait: one centred row under the name.
+    this.drawStatusChips(
+      curBadges,
+      PORTRAIT_X + PORTRAIT_W / 2,
+      BOTTOM_Y + 12 + PORTRAIT_SIZE + 27,
+      PORTRAIT_X + PORTRAIT_W - 4,
+      true,
+    );
+  }
+
   /** Portrait of the active combatant (party, summon or enemy). */
   private refreshPortrait(): void {
     const c = this.combat.current;
@@ -7054,6 +7310,7 @@ export class CombatScene extends Phaser.Scene {
   private refreshTurnHeader(): void {
     this.refreshPortrait();
     this.refreshInventoryPanel();
+    this.reportActiveStatuses();
     // Whose turn it is reads from the portrait panel; a swallowed
     // combatant's "rolling escape save" note shows in the action
     // hint line (see showActionInfo).
@@ -7285,8 +7542,10 @@ export class CombatScene extends Phaser.Scene {
     );
   }
 
-  private refreshHp(c: Combatant): void {
-    if (c.side === "party") {
+  /** Update a roster card's HP / MP bars (no-op when the combatant's
+   *  card isn't on screen). */
+  private syncCardBars(c: Combatant): void {
+    {
       const card = this.partyCards.get(c.id);
       if (card) {
         const pct = Math.max(0, c.hp / Math.max(1, c.maxHp));
@@ -7304,6 +7563,10 @@ export class CombatScene extends Phaser.Scene {
         }
       }
     }
+  }
+
+  private refreshHp(c: Combatant): void {
+    this.syncCardBars(c);
     if (c.side === "enemies") {
       // Update the floating HP bar above the monster sprite. Hidden
       // entirely once the creature drops to 0 HP so the corpse doesn't
@@ -8251,6 +8514,11 @@ export class CombatScene extends Phaser.Scene {
     // Effects: active buffs/debuffs, plus the turned / swallowed states
     // and always-on monster passives.
     const parts: string[] = [];
+    for (const b of statusBadgesFor(c)) {
+      // Buffs keep their compact inspector format; turned is below.
+      if (b.key.startsWith("stat_modifier:") || b.key === "turned") continue;
+      parts.push(describeStatus(b));
+    }
     for (const b of this.combat.buffsFor(c.id)) {
       parts.push(this.formatBuff(b));
     }
@@ -8583,6 +8851,8 @@ export class CombatScene extends Phaser.Scene {
     try {
       if (this.statusAuras && this.combat) {
         this.statusAuras.draw(this.time.now, this.combat.combatants, this.bodies);
+        this.refreshRoster();
+        this.refreshStatusBadges();
       }
     } catch {
       // Combat not set up yet (async create) / scene shutting down.

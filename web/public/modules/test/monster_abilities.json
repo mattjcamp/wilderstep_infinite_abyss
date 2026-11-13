@@ -1,0 +1,16 @@
+{
+  "monster_abilities": [
+    {
+      "id": "lightning_bolt",
+      "name": "Lightning Bolt",
+      "description": "A crackling bolt of lightning at one target.",
+      "effect_type": "damage",
+      "damage_type": "lightning",
+      "fx_id": "lightning_strike",
+      "range": 7,
+      "damage_dice": 4,
+      "damage_sides": 6,
+      "damage_bonus": 10
+    }
+  ]
+}

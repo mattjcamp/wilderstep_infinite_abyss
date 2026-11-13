@@ -985,6 +985,12 @@ export class Combat {
 
   // ── Turn control ─────────────────────────────────────────────────
 
+  /** Turns advanced so far — changes every time the turn passes, so
+   *  the scene can tell a new turn from a re-render. */
+  get turnNumber(): number {
+    return this.turnsAdvanced;
+  }
+
   /** Move the turn cursor to the next alive combatant and refill points. */
   endTurn(): void {
     if (this.isOver) return;

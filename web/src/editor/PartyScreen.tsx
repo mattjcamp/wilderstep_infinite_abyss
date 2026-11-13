@@ -40,6 +40,7 @@
  * non-keyboard fallback while the Phaser equivalent is built.
  */
 
+import { StatusAvatarDots, StatusPills } from "./StatusPills";
 import { isPartyEffectActive } from "@/play/partyEffects";
 import {
   useCallback,
@@ -2450,19 +2451,22 @@ function RosterCard({
             : undefined)
       }
     >
-      {thumb ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={thumb}
-          alt=""
-          width={32}
-          height={32}
-          style={{ imageRendering: "pixelated" }}
-          className="h-8 w-8 shrink-0 rounded border border-parchment/20 bg-ink/80 object-contain"
-        />
-      ) : (
-        <span className="h-8 w-8 shrink-0 rounded border border-parchment/20 bg-ink/80" />
-      )}
+      <span className="relative shrink-0">
+        {thumb ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={thumb}
+            alt=""
+            width={32}
+            height={32}
+            style={{ imageRendering: "pixelated" }}
+            className="block h-8 w-8 rounded border border-parchment/20 bg-ink/80 object-contain"
+          />
+        ) : (
+          <span className="block h-8 w-8 rounded border border-parchment/20 bg-ink/80" />
+        )}
+        <StatusAvatarDots effects={effects} />
+      </span>
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-2 text-sm">
           <span className="font-display text-parchment">{member.name}</span>
@@ -2502,22 +2506,7 @@ function RosterCard({
                 Fallen
               </span>
             ) : null}
-            {effects.map((e) => (
-              <span
-                key={e.id}
-                className="rounded border border-parchment/25 bg-ink/50 px-1.5 py-px font-mono text-[9px] uppercase tracking-wider text-parchment/75"
-                title={`${prettifyEffectId(e.id)}${
-                  typeof e.duration === "number"
-                    ? ` — ${e.duration} steps left`
-                    : e.duration === "permanent"
-                      ? " — permanent"
-                      : ""
-                }`}
-              >
-                {prettifyEffectId(e.id)}
-                {typeof e.duration === "number" ? ` ${e.duration}` : ""}
-              </span>
-            ))}
+            <StatusPills effects={effects} />
           </div>
         ) : null}
       </div>
