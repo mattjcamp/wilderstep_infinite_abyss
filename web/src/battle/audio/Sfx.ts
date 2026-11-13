@@ -182,9 +182,197 @@ function genFireball(ac: AudioContext, out: AudioNode, t0: number): void {
   sweep(ac, out, 150, 600, t0, 0.25, 0.25, "square");
 }
 
+/** Filtered noise source (white or brown), not yet started. The
+ *  caller wires `out` onward and schedules gain. */
+function noiseSource(
+  ac: AudioContext,
+  duration: number,
+  brown = false,
+): AudioBufferSourceNode {
+  const n = Math.max(1, Math.floor(ac.sampleRate * duration));
+  const buf = ac.createBuffer(1, n, ac.sampleRate);
+  const data = buf.getChannelData(0);
+  let last = 0;
+  for (let i = 0; i < n; i++) {
+    const w = Math.random() * 2 - 1;
+    if (brown) {
+      // Leaky integrator → brown-ish noise: deep, rumbly, no hiss.
+      last = (last + 0.02 * w) / 1.02;
+      data[i] = last * 3.5;
+    } else {
+      data[i] = w;
+    }
+  }
+  const src = ac.createBufferSource();
+  src.buffer = buf;
+  return src;
+}
+
+function genFlamethrower(ac: AudioContext, out: AudioNode, t0: number): void {
+  // A gout of flame, ~0.9s:
+  //   1. Ignition "whoomp" — a low-passed noise thump plus a triangle
+  //      pitch drop, the gas catching.
+  //   2. The roar — brown noise through a wide band-pass that drifts
+  //      upward as the jet opens, with a fast random tremolo for the
+  //      turbulent flutter of a flame jet.
+  //   3. A layer of hiss — white noise, high-passed and quiet, for
+  //      the pressurised spray.
+  //   4. Crackles — tiny random high clicks scattered over the body.
+  const dur = 0.9;
+
+  // 1. Ignition.
+  {
+    const src = noiseSource(ac, 0.18);
+    const lp = ac.createBiquadFilter();
+    lp.type = "lowpass";
+    lp.frequency.setValueAtTime(900, t0);
+    lp.frequency.exponentialRampToValueAtTime(200, t0 + 0.18);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(0.45, t0 + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.18);
+    src.connect(lp).connect(g).connect(out);
+    src.start(t0);
+    src.stop(t0 + 0.2);
+    sweep(ac, out, 140, 55, t0, 0.16, 0.30, "triangle");
+  }
+
+  // 2. Roar.
+  {
+    const src = noiseSource(ac, dur, true);
+    const bp = ac.createBiquadFilter();
+    bp.type = "bandpass";
+    bp.Q.value = 0.7;
+    bp.frequency.setValueAtTime(350, t0);
+    bp.frequency.exponentialRampToValueAtTime(900, t0 + 0.35);
+    bp.frequency.exponentialRampToValueAtTime(600, t0 + dur);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(0.75, t0 + 0.06);
+    // Turbulent flutter: jitter the level every ~25ms.
+    for (let t = 0.08; t < dur - 0.25; t += 0.025) {
+      g.gain.linearRampToValueAtTime(0.5 + Math.random() * 0.35, t0 + t);
+    }
+    g.gain.linearRampToValueAtTime(0.6, t0 + dur - 0.25);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    src.connect(bp).connect(g).connect(out);
+    src.start(t0);
+    src.stop(t0 + dur + 0.02);
+  }
+
+  // 3. Hiss.
+  {
+    const src = noiseSource(ac, dur);
+    const hp = ac.createBiquadFilter();
+    hp.type = "highpass";
+    hp.frequency.value = 2500;
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(0.06, t0 + 0.1);
+    g.gain.setValueAtTime(0.06, t0 + dur - 0.3);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    src.connect(hp).connect(g).connect(out);
+    src.start(t0);
+    src.stop(t0 + dur + 0.02);
+  }
+
+  // 4. Crackles.
+  for (let i = 0; i < 14; i++) {
+    const at = t0 + 0.08 + Math.random() * (dur - 0.3);
+    const src = noiseSource(ac, 0.012);
+    const hp = ac.createBiquadFilter();
+    hp.type = "highpass";
+    hp.frequency.value = 1800 + Math.random() * 2500;
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, at);
+    g.gain.exponentialRampToValueAtTime(0.12 + Math.random() * 0.12, at + 0.001);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + 0.012);
+    src.connect(hp).connect(g).connect(out);
+    src.start(at);
+    src.stop(at + 0.02);
+  }
+}
+
 function genExplosion(ac: AudioContext, out: AudioNode, t0: number): void {
   noise(ac, out, t0, 0.15, 0.40, 0.002, 0.10);
   sweep(ac, out, 300, 50, t0, 0.20, 0.35, "triangle");
+}
+
+function genFireExplosion(ac: AudioContext, out: AudioNode, t0: number): void {
+  // A fireball going off, ~1.1s — a deep boom rather than the short
+  // "explosion" crack (which reads as a punch):
+  //   1. Blast — a very short, bright noise crack for the initial pop.
+  //   2. Boom — a sine sub-bass dropping 95Hz → 32Hz with a long decay,
+  //      the weight you feel more than hear.
+  //   3. Fireball bloom — brown noise through a low-pass that opens
+  //      wide then closes slowly: the "whoof" of flame expanding and
+  //      rolling away.
+  //   4. Debris crackle — sparse high clicks in the tail as embers
+  //      scatter.
+  const dur = 1.1;
+
+  // 1. Blast.
+  {
+    const src = noiseSource(ac, 0.05);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(0.35, t0 + 0.002);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.05);
+    src.connect(g).connect(out);
+    src.start(t0);
+    src.stop(t0 + 0.06);
+  }
+
+  // 2. Boom.
+  {
+    const osc = ac.createOscillator();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(95, t0);
+    osc.frequency.exponentialRampToValueAtTime(32, t0 + 0.7);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(0.5, t0 + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.8);
+    osc.connect(g).connect(out);
+    osc.start(t0);
+    osc.stop(t0 + 0.82);
+  }
+
+  // 3. Bloom.
+  {
+    const src = noiseSource(ac, dur, true);
+    const lp = ac.createBiquadFilter();
+    lp.type = "lowpass";
+    lp.Q.value = 0.5;
+    lp.frequency.setValueAtTime(2400, t0);
+    lp.frequency.exponentialRampToValueAtTime(700, t0 + 0.25);
+    lp.frequency.exponentialRampToValueAtTime(180, t0 + dur);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(0.55, t0 + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.22, t0 + 0.35);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    src.connect(lp).connect(g).connect(out);
+    src.start(t0);
+    src.stop(t0 + dur + 0.02);
+  }
+
+  // 4. Debris crackle.
+  for (let i = 0; i < 10; i++) {
+    const at = t0 + 0.12 + Math.random() * 0.7;
+    const src = noiseSource(ac, 0.01);
+    const hp = ac.createBiquadFilter();
+    hp.type = "highpass";
+    hp.frequency.value = 2000 + Math.random() * 3000;
+    const g = ac.createGain();
+    const v = (0.08 + Math.random() * 0.1) * (1 - (at - t0) / dur);
+    g.gain.setValueAtTime(0.0001, at);
+    g.gain.exponentialRampToValueAtTime(Math.max(0.002, v), at + 0.001);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + 0.01);
+    src.connect(hp).connect(g).connect(out);
+    src.start(at);
+    src.stop(at + 0.015);
+  }
 }
 
 function genHeal(ac: AudioContext, out: AudioNode, t0: number): void {
@@ -426,6 +614,8 @@ const GENERATORS: Record<string, Generator> = {
   player_hurt:        genPlayerHurt,
   // Spell-driven (names match spells.json sfx / hit_sfx)
   fireball:           genFireball,
+  flamethrower:       genFlamethrower,
+  fire_explosion:     genFireExplosion,
   explosion:          genExplosion,
   heal:               genHeal,
   shield:             genShield,

@@ -26,6 +26,7 @@ export type ModelKey =
   | "items"
   | "counters"
   | "monsters"
+  | "monster_abilities"
   | "characters"
   | "party"
   | "spawns"
@@ -269,6 +270,33 @@ const DEFS: Record<ModelKey, ModelDef> = {
         label: "Tags",
         format: (v) => (Array.isArray(v) ? v.join(", ") : ""),
       },
+    ],
+  },
+  monster_abilities: {
+    key: "monster_abilities",
+    label: "Monster Abilities",
+    fileName: "monster_abilities.json",
+    collectionKey: "monster_abilities",
+    docKey: "monster_ability",
+    blurb:
+      "Special attacks monsters use in combat — breath weapons, spells, bites, heals. Monsters pick them in their `abilities` list with a cast chance",
+    columns: [
+      { field: "name", label: "Name" },
+      { field: "effect_type", label: "Behavior", format: asString },
+      {
+        field: "damage_dice",
+        label: "Dice",
+        compute: (rec) => {
+          const n = rec["damage_dice"] ?? rec["heal_dice"];
+          const d = rec["damage_sides"] ?? rec["heal_sides"];
+          const b = rec["damage_bonus"] ?? rec["heal_bonus"];
+          if (typeof n !== "number" || typeof d !== "number") return "";
+          const bonus = typeof b === "number" && b !== 0 ? (b > 0 ? `+${b}` : `${b}`) : "";
+          return `${rec["heal_dice"] !== undefined ? "heal " : ""}${n}d${d}${bonus}`;
+        },
+      },
+      { field: "range", label: "Range", format: (v) => (typeof v === "number" ? `${v}` : "") },
+      { field: "fx_id", label: "FX", format: asString },
     ],
   },
   characters: {
@@ -567,6 +595,7 @@ const SINGULAR_LABELS: Record<ModelKey, string> = {
   items: "Item",
   counters: "Counter",
   monsters: "Monster",
+  monster_abilities: "Monster Ability",
   characters: "Character",
   party: "Party",
   spawns: "Spawn",

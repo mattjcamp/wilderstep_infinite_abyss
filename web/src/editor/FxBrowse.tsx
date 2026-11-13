@@ -12,7 +12,7 @@
  *               "visual": "lightning_bolt", "params": { "width": 5 },
  *               "cast_sfx": "fireball", "hit_sfx": "explosion" } ] }
  * `params` stores only values that differ from the visual's defaults.
- * Spells / items / effects / abilities / monster spells point at a
+ * Spells / items / effects / abilities / monster abilities point at a
  * record by `fx_id`. Same draft / export / publish flow as the other
  * editors.
  */
@@ -42,7 +42,7 @@ import {
 const MODEL_KEY = "fx";
 const FILE_NAME = "fx.json";
 const FILE_COMMENT =
-  "FX catalog — every named effect the game can play. Each record picks one built-in visual (`visual`, or 'none' for sound-only), tunes it (`params`, only values that differ from the visual's defaults), and names the sounds played at the start (`cast_sfx`) and on impact (`hit_sfx`). Spells, items, effects, abilities and monster spells point at a record by `fx_id`. Edited in the editor's FX page. See docs/data_dictionary/fx.md.";
+  "FX catalog — every named effect the game can play. Each record picks one built-in visual (`visual`, or 'none' for sound-only), tunes it (`params`, only values that differ from the visual's defaults), and names the sounds played at the start (`cast_sfx`) and on impact (`hit_sfx`). Spells, items, effects, abilities and monster abilities point at a record by `fx_id`. Edited in the editor's FX page. See docs/data_dictionary/fx.md.";
 
 /** Models whose records reference FX, for the "Used by" line. */
 const USER_MODELS: Array<{ key: ModelKey; label: string }> = [
@@ -50,7 +50,7 @@ const USER_MODELS: Array<{ key: ModelKey; label: string }> = [
   { key: "items", label: "Item" },
   { key: "effects", label: "Effect" },
   { key: "abilities", label: "Ability" },
-  { key: "monsters", label: "Monster" },
+  { key: "monster_abilities", label: "Monster ability" },
 ];
 
 type LoadState =
@@ -63,7 +63,7 @@ type LoadState =
       own: FxRecord[];
       ownFile: Record<string, unknown> | null;
       isDraft: boolean;
-      /** FX id → "Spell: Lightning Bolt", "Monster: Lich — Lightning Bolt", … */
+      /** FX id → "Spell: Lightning Bolt", "Monster ability: Fire Breath", … */
       usedBy: Map<string, string[]>;
     }
   | { kind: "error"; message: string };
@@ -119,11 +119,6 @@ export function FxBrowse({ moduleId }: { moduleId: string }) {
             for (const rec of listOf(merged, key)) {
               const name = String(rec.name ?? rec.id ?? "?");
               add(rec.fx_id, `${label}: ${name}`);
-              if (key === "monsters") {
-                for (const sp of (rec.spells as Array<Record<string, unknown>> | undefined) ?? []) {
-                  add(sp?.fx_id, `${label}: ${name} — ${String(sp?.name ?? sp?.type ?? "spell")}`);
-                }
-              }
             }
           } catch {
             /* a model without a file just contributes nothing */
@@ -311,7 +306,7 @@ export function FxBrowse({ moduleId }: { moduleId: string }) {
           <h1 className="font-display text-3xl text-parchment">FX</h1>
           <p className="mt-1 max-w-2xl text-sm text-parchment/70">
             Every named effect: the visual it draws, how that visual is tuned, and the sounds
-            that go with it. Spells, items, effects, abilities and monster spells pick an FX
+            that go with it. Spells, items, effects, abilities and monster abilities pick an FX
             from a dropdown — change it here and it changes everywhere it&apos;s used.
           </p>
         </div>

@@ -8,7 +8,16 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { specFromRaw } from "./monsters";
+import { setMonsterAbilities, specFromRaw } from "./monsters";
+
+setMonsterAbilities(
+  JSON.parse(
+    fs.readFileSync(
+      path.join(__dirname, "../../../public/modules/default/monster_abilities.json"),
+      "utf8",
+    ),
+  ),
+);
 
 const raw = JSON.parse(
   fs.readFileSync(
@@ -22,11 +31,12 @@ describe("Orc King encounter monsters", () => {
   it("the Orc King casts sorcerer spells up to level 5", () => {
     const king = spec("orc_king");
     expect(king).not.toBeNull();
-    expect(king!.spells?.map((s) => s.type)).toEqual([
-      "lightning_bolt",
-      "magic_arrow",
-      "magic_dart",
+    expect(king!.spells?.map((s) => s.name)).toEqual([
+      "Lightning Bolt",
+      "Magic Arrow",
+      "Magic Dart",
     ]);
+    expect(king!.spells?.every((s) => s.type === "damage")).toBe(true);
     const orc = spec("orc")!;
     expect(king!.hp).toBeGreaterThan(orc.hp * 4);
   });

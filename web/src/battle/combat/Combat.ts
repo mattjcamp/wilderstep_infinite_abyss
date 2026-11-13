@@ -81,6 +81,9 @@ export type { ConsumeEvent };
 type MonsterSpellLike = Pick<
   MonsterSpell,
   | "type"
+  | "damage_type"
+  | "save_dc"
+  | "name"
   | "damage_dice"
   | "damage_sides"
   | "damage_bonus"
@@ -1173,8 +1176,8 @@ export class Combat {
         if (!target) continue;
         return { kind: "spell", spellIndex: i, targetId: target.id };
       }
-      // Everything else (breath_fire, magic_dart, magic_arrow, fireball,
-      // lightning_bolt, poison, curse) targets the nearest enemy in range.
+      // Everything else (damage, poison, curse) targets the nearest
+      // enemy in range.
       const target = nearestInRange(actor, enemies, spell.range);
       if (!target) continue;
       return { kind: "spell", spellIndex: i, targetId: target.id };
@@ -1231,17 +1234,30 @@ export class Combat {
         this.log.push(`${actor.name} fizzles ${spell.name} — no target.`);
       } else {
         damage = this.rollMonsterSpellDamage(spell, target);
+        // Damage abilities with a save_dc (breath, fireball…) let the
+        // target make a DEX save — success halves the damage.
+        const saveLine =
+          damage > 0 && spell.type === "damage" && typeof spell.save_dc === "number"
+            ? this.dexSaveForHalf(spell.name, spell.save_dc, target)
+            : null;
+        if (saveLine?.saved) damage = Math.max(1, Math.floor(damage / 2));
         if (damage > 0) target.hp = Math.max(0, target.hp - damage);
         // Pure-status spells (Venom Bite, Web, Hex…) carry no damage
         // dice — say who they were cast AT and let the save line that
         // follows report the outcome. (This used to print "X resists."
         // for every no-damage spell, even right before the status
         // landed.)
-        this.log.push(
-          damage > 0
-            ? `${actor.name} casts ${spell.name} at ${target.name}! ${target.name} takes ${damage} damage.`
-            : `${actor.name} casts ${spell.name} at ${target.name}!`,
-        );
+        if (saveLine) {
+          this.log.push(`${actor.name} casts ${spell.name} at ${target.name}!`);
+          this.log.push(saveLine.text);
+          this.log.push(`${target.name} takes ${damage} damage.`);
+        } else {
+          this.log.push(
+            damage > 0
+              ? `${actor.name} casts ${spell.name} at ${target.name}! ${target.name} takes ${damage} damage.`
+              : `${actor.name} casts ${spell.name} at ${target.name}!`,
+          );
+        }
         if (target.hp === 0) {
           releaseConsumedBy(this.effectHost, this.combatants, target.id);
         } else {
@@ -1336,6 +1352,38 @@ export class Combat {
     }
   }
 
+  /** DEX save (d20 + DEX modifier) vs `dc` against a damage ability.
+   *  Meeting the DC halves the damage. Returns the log line. */
+  private dexSaveForHalf(
+    spellName: string,
+    dc: number,
+    target: Combatant,
+  ): { saved: boolean; text: string } {
+    const mod =
+      typeof target.dexterity === "number"
+        ? Math.floor((target.dexterity - 10) / 2)
+        : target.dexMod ?? 0;
+    const roll = Math.floor(this.rng() * 20) + 1;
+    const total = roll + mod;
+    const sign = mod >= 0 ? "+" : "-";
+    const detail = `DEX save ${roll}${sign}${Math.abs(mod)}=${total} vs DC ${dc}`;
+    const saved = total >= dc;
+    if (saved) {
+      this.pendingConsumeEvents.push({
+        targetId: target.id,
+        kind: "status",
+        text: "HALF",
+        color: "#dcdcc8",
+      });
+    }
+    return {
+      saved,
+      text: saved
+        ? `${target.name} dodges half the ${spellName}! (${detail})`
+        : `${target.name} takes the full ${spellName}. (${detail})`,
+    };
+  }
+
   /** Sum dice + bonus for a damage spell, then fold the total through
    *  the target's incoming-damage modifiers (e.g. a `fire_resistance`
    *  trait halving fire-typed damage). */
@@ -1351,10 +1399,7 @@ export class Combat {
     for (let i = 0; i < dice; i++) {
       total += Math.floor(this.rng() * sides) + 1;
     }
-    const kind =
-      spell.type === "breath_fire" || spell.type === "fireball"
-        ? "fire"
-        : "physical";
+    const kind = spell.damage_type || "physical";
     total = applyIncomingDamageMods(this.effectHost, target, total, kind);
     return Math.max(1, total);
   }

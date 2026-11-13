@@ -29,7 +29,7 @@
       "undead": false,
       "humanoid": false,
       "turn_resistance": 0,
-      "spells": [],
+      "abilities": [],
       "passives": [],
       "on_hit_effects": []
     },
@@ -62,7 +62,7 @@
       "undead": true,
       "humanoid": false,
       "turn_resistance": 0,
-      "spells": [],
+      "abilities": [],
       "passives": [
         {
           "effect_id": "poison_immunity"
@@ -99,7 +99,7 @@
       "undead": false,
       "humanoid": true,
       "turn_resistance": 0,
-      "spells": [],
+      "abilities": [],
       "passives": [],
       "on_hit_effects": []
     },
@@ -132,7 +132,7 @@
       "undead": false,
       "humanoid": false,
       "turn_resistance": 0,
-      "spells": [],
+      "abilities": [],
       "passives": [],
       "on_hit_effects": []
     },
@@ -165,7 +165,7 @@
       "undead": false,
       "humanoid": false,
       "turn_resistance": 0,
-      "spells": [],
+      "abilities": [],
       "passives": [],
       "on_hit_effects": []
     },
@@ -198,7 +198,7 @@
       "undead": false,
       "humanoid": true,
       "turn_resistance": 0,
-      "spells": [],
+      "abilities": [],
       "passives": [],
       "on_hit_effects": []
     },
@@ -231,36 +231,19 @@
       "undead": false,
       "humanoid": true,
       "turn_resistance": 0,
-      "spells": [
+      "abilities": [
         {
-          "type": "lightning_bolt",
-          "name": "Lightning Bolt",
-          "fx_id": "lightning_strike",
-          "range": 7,
+          "ability_id": "lightning_bolt",
           "cast_chance": 15,
-          "damage_dice": 4,
-          "damage_sides": 6,
           "damage_bonus": 2
         },
         {
-          "type": "magic_arrow",
-          "name": "Magic Arrow",
-          "fx_id": "magic_arrow",
-          "range": 8,
-          "cast_chance": 20,
-          "damage_dice": 2,
-          "damage_sides": 8,
-          "damage_bonus": 2
+          "ability_id": "magic_arrow",
+          "cast_chance": 20
         },
         {
-          "type": "magic_dart",
-          "name": "Magic Dart",
-          "fx_id": "magic_dart",
-          "range": 4,
-          "cast_chance": 25,
-          "damage_dice": 1,
-          "damage_sides": 6,
-          "damage_bonus": 2
+          "ability_id": "magic_dart",
+          "cast_chance": 25
         }
       ],
       "passives": [],
@@ -295,35 +278,18 @@
       "undead": false,
       "humanoid": true,
       "turn_resistance": 0,
-      "spells": [
+      "abilities": [
         {
-          "type": "heal_ally",
-          "name": "Major Heal",
-          "fx_id": "heal_sparkles",
-          "range": 10,
-          "cast_chance": 15,
-          "heal_dice": 4,
-          "heal_sides": 8,
-          "heal_bonus": 2
+          "ability_id": "major_heal",
+          "cast_chance": 15
         },
         {
-          "type": "heal_ally",
-          "name": "Heal",
-          "fx_id": "heal_sparkles",
-          "range": 6,
-          "cast_chance": 35,
-          "heal_dice": 1,
-          "heal_sides": 6,
-          "heal_bonus": 2
+          "ability_id": "heal",
+          "cast_chance": 35
         },
         {
-          "type": "heal_self",
-          "name": "Heal",
-          "fx_id": "heal_sparkles",
-          "cast_chance": 25,
-          "heal_dice": 1,
-          "heal_sides": 6,
-          "heal_bonus": 2
+          "ability_id": "self_heal",
+          "cast_chance": 25
         }
       ],
       "passives": [],
@@ -358,15 +324,10 @@
       "undead": false,
       "humanoid": false,
       "turn_resistance": 0,
-      "spells": [
+      "abilities": [
         {
-          "type": "poison",
-          "name": "Spore Cloud",
-          "range": 3,
-          "cast_chance": 30,
-          "save_dc": 11,
-          "damage_per_turn": 2,
-          "duration": 3
+          "ability_id": "spore_cloud",
+          "cast_chance": 30
         }
       ],
       "passives": [
@@ -405,7 +366,7 @@
       "undead": false,
       "humanoid": false,
       "turn_resistance": 0,
-      "spells": [],
+      "abilities": [],
       "passives": [
         {
           "effect_id": "poison_immunity"
@@ -449,16 +410,10 @@
       "undead": true,
       "humanoid": false,
       "turn_resistance": 0,
-      "spells": [
+      "abilities": [
         {
-          "type": "curse",
-          "name": "Haunting Wail",
-          "fx_id": "curse_aura",
-          "range": 5,
-          "cast_chance": 20,
-          "duration": 3,
-          "ac_penalty": 2,
-          "attack_penalty": 2
+          "ability_id": "haunting_wail",
+          "cast_chance": 20
         }
       ],
       "passives": [
@@ -503,7 +458,7 @@
       "undead": true,
       "humanoid": false,
       "turn_resistance": 0,
-      "spells": [],
+      "abilities": [],
       "passives": [
         {
           "effect_id": "poison_immunity"
@@ -540,46 +495,22 @@
       "undead": true,
       "humanoid": true,
       "turn_resistance": 6,
-      "spells": [
+      "abilities": [
         {
-          "type": "sleep",
-          "name": "Dark Slumber",
-          "range": 8,
-          "cast_chance": 30,
-          "save_dc": 16,
-          "duration": 3,
-          "max_target_hp": 70
+          "ability_id": "dark_slumber",
+          "cast_chance": 30
         },
         {
-          "type": "curse",
-          "name": "Hex",
-          "fx_id": "curse_aura",
-          "range": 8,
-          "cast_chance": 25,
-          "duration": 4,
-          "ac_penalty": 3,
-          "attack_penalty": 3
+          "ability_id": "hex",
+          "cast_chance": 25
         },
         {
-          "type": "lightning_bolt",
-          "name": "Lightning Bolt",
-          "fx_id": "lightning_strike",
-          "range": 7,
-          "cast_chance": 20,
-          "damage_dice": 4,
-          "damage_sides": 6,
-          "damage_bonus": 0
+          "ability_id": "lightning_bolt",
+          "cast_chance": 20
         },
         {
-          "type": "fireball",
-          "name": "Fireball",
-          "fx_id": "hellfire",
-          "range": 7,
-          "cast_chance": 20,
-          "damage_dice": 4,
-          "damage_sides": 6,
-          "damage_bonus": 0,
-          "save_dc": 15
+          "ability_id": "fireball",
+          "cast_chance": 20
         }
       ],
       "passives": [
@@ -624,24 +555,14 @@
       "undead": false,
       "humanoid": false,
       "turn_resistance": 0,
-      "spells": [
+      "abilities": [
         {
-          "type": "sleep",
-          "name": "Web",
-          "range": 5,
-          "cast_chance": 25,
-          "save_dc": 12,
-          "duration": 2,
-          "max_target_hp": 40
+          "ability_id": "web",
+          "cast_chance": 25
         },
         {
-          "type": "poison",
-          "name": "Venom Bite",
-          "range": 1,
-          "cast_chance": 30,
-          "save_dc": 12,
-          "damage_per_turn": 3,
-          "duration": 3
+          "ability_id": "venom_bite",
+          "cast_chance": 30
         }
       ],
       "passives": [],
@@ -676,7 +597,7 @@
       "undead": false,
       "humanoid": false,
       "turn_resistance": 0,
-      "spells": [],
+      "abilities": [],
       "passives": [
         {
           "effect_id": "regen",
@@ -714,15 +635,10 @@
       "undead": true,
       "humanoid": true,
       "turn_resistance": 4,
-      "spells": [
+      "abilities": [
         {
-          "type": "sleep",
-          "name": "Hypnotic Gaze",
-          "range": 6,
-          "cast_chance": 30,
-          "save_dc": 15,
-          "duration": 3,
-          "max_target_hp": 60
+          "ability_id": "hypnotic_gaze",
+          "cast_chance": 30
         }
       ],
       "passives": [
@@ -768,17 +684,10 @@
       "undead": false,
       "humanoid": false,
       "turn_resistance": 0,
-      "spells": [
+      "abilities": [
         {
-          "type": "fireball",
-          "name": "Hellfire",
-          "fx_id": "hellfire",
-          "range": 6,
-          "cast_chance": 20,
-          "damage_dice": 3,
-          "damage_sides": 6,
-          "damage_bonus": 0,
-          "save_dc": 13
+          "ability_id": "hellfire",
+          "cast_chance": 20
         }
       ],
       "passives": [
@@ -820,17 +729,10 @@
       "undead": false,
       "humanoid": false,
       "turn_resistance": 0,
-      "spells": [
+      "abilities": [
         {
-          "type": "breath_fire",
-          "name": "Flame Burst",
-          "fx_id": "dragon_breath",
-          "range": 3,
-          "cast_chance": 30,
-          "damage_dice": 2,
-          "damage_sides": 6,
-          "damage_bonus": 0,
-          "save_dc": 13
+          "ability_id": "flame_burst",
+          "cast_chance": 30
         }
       ],
       "passives": [
@@ -872,7 +774,7 @@
       "undead": false,
       "humanoid": false,
       "turn_resistance": 0,
-      "spells": [],
+      "abilities": [],
       "passives": [
         {
           "effect_id": "fire_resistance"
@@ -919,7 +821,7 @@
       "undead": false,
       "humanoid": false,
       "turn_resistance": 0,
-      "spells": [],
+      "abilities": [],
       "passives": [
         {
           "effect_id": "poison_immunity"
@@ -956,16 +858,10 @@
       "undead": false,
       "humanoid": false,
       "turn_resistance": 0,
-      "spells": [
+      "abilities": [
         {
-          "type": "lightning_bolt",
-          "name": "Thunder Gust",
-          "fx_id": "lightning_strike",
-          "range": 6,
-          "cast_chance": 25,
-          "damage_dice": 2,
-          "damage_sides": 6,
-          "damage_bonus": 0
+          "ability_id": "thunder_gust",
+          "cast_chance": 25
         }
       ],
       "passives": [
@@ -1004,17 +900,10 @@
       "undead": false,
       "humanoid": false,
       "turn_resistance": 0,
-      "spells": [
+      "abilities": [
         {
-          "type": "breath_fire",
-          "name": "Fire Breath",
-          "fx_id": "dragon_breath",
-          "range": 6,
-          "cast_chance": 40,
-          "damage_dice": 6,
-          "damage_sides": 6,
-          "damage_bonus": 0,
-          "save_dc": 15
+          "ability_id": "fire_breath",
+          "cast_chance": 40
         }
       ],
       "passives": [

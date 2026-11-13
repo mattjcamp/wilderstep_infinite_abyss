@@ -8,7 +8,7 @@ Every named effect the game can play. An FX record bundles three things:
 2. **Tuning** for that visual — colours, size, timing, particle counts; only the knobs that visual supports.
 3. **Sounds** — one played when the effect starts (`cast_sfx`) and one on impact (`hit_sfx`).
 
-Spells, items, effects, abilities and monster spells point at an FX by `fx_id`, picked from a dropdown in their editors. Change an FX and it changes everywhere it's used. Several FX can share a visual: "Lightning Strike" and a hypothetical "Lich Bolt" can both draw `lightning_bolt`, tuned differently.
+Spells, items, effects, abilities and monster abilities point at an FX by `fx_id`, picked from a dropdown in their editors. Change an FX and it changes everywhere it's used. Several FX can share a visual: "Lightning Strike" and a hypothetical "Lich Bolt" can both draw `lightning_bolt`, tuned differently.
 
 FX replaced the older two-part setup (tuning-only `fx.json` + `animations.json` bundles referenced by `animation_id`). Everything that used `animation_id` now uses `fx_id`, with the same ids.
 
@@ -76,7 +76,7 @@ The authoritative list (names, ranges, defaults) is `FX_DEFS` in `web/src/vfx/fx
 | [Item](item.md) | `fx_id` | E.g. a relic ranged weapon's shot. Ranged weapons with no `fx_id` fall back to an FX picked by `damage_type` (lightning → Lightning Strike, fire → Fireball Burst, meteor → Meteor Strike, arcane → Magic Dart, ice / frost / light → Magic Arrow). |
 | [Effect](effect.md) | `fx_id` | Played when applied. |
 | [Ability](ability.md) | `fx_id` | Played on use. |
-| [Monster](monster.md) | `spells[].fx_id` | Per monster spell. Unset → a per-type default (see Monster). |
+| [Monster Ability](monster_ability.md) | `fx_id` | Played when a monster uses the ability. Unset → a per-behavior default (see Monster Ability). |
 
 Traps don't play FX yet — overworld trap triggers have no visual or sound playback.
 

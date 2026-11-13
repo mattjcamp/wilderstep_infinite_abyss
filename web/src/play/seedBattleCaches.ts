@@ -70,7 +70,7 @@ import {
   _setAbilitiesCache,
   type Ability,
 } from "@/battle/world/Abilities";
-import { _clearMonstersCache, loadMonsters } from "@/battle/data/monsters";
+import { _clearMonstersCache, loadMonsters, setMonsterAbilities } from "@/battle/data/monsters";
 import {
   _clearClassCaches,
   _setClassCatalog,
@@ -427,6 +427,7 @@ async function seedCombatCatalogs(
     characters,
     characterClasses,
     fx,
+    monsterAbilities,
   ] = await Promise.all([
     loadMergedModel(src, moduleId, "items"),
     loadMergedModel(src, moduleId, "spells"),
@@ -438,10 +439,14 @@ async function seedCombatCatalogs(
     loadMergedModel(src, moduleId, "characters"),
     loadMergedModel(src, moduleId, "character_classes"),
     loadMergedModel(src, moduleId, "fx"),
+    loadMergedModel(src, moduleId, "monster_abilities"),
   ]);
   // FX records (fx.json) → the FX catalog. Always reset so a
   // module without an fx.json plays the built-in defaults.
   setFxRecords(fx ?? []);
+  // Monster abilities must be installed before monsters are seeded —
+  // each monster's `abilities` links resolve against this catalog.
+  setMonsterAbilities(monsterAbilities ?? []);
 
   // Seed the URL-taking loaders via blob URLs. Each promise settles
   // independently — a malformed catalog won't block the others.

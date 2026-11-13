@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The monster catalog — every monster the game can spawn. Each record carries combat stats (HP, AC, attack and damage), visual identity (sprite path, battle scale), movement rules, and three optional arrays describing what the monster *does* in combat: `spells[]` (castable abilities), `on_hit_effects[]` (effects triggered on a successful melee hit), and `passives[]` (always-on traits).
+The monster catalog — every monster the game can spawn. Each record carries combat stats (HP, AC, attack and damage), visual identity (sprite path, battle scale), movement rules, and three optional arrays describing what the monster *does* in combat: `abilities[]` (special attacks, from the [Monster Ability](monster_ability.md) catalog), `on_hit_effects[]` (effects triggered on a successful melee hit), and `passives[]` (always-on traits).
 
 Ported from v1's `data/monsters.json` (see `_v1_reference/docs/data_dictionary/monsters.md`).
 
@@ -48,17 +48,28 @@ The "Used?" column reflects the v2 TypeScript implementation under `web/`. The c
 | `post_attack_move` | int | yes | Extra tiles allowed after a successful melee hit | TBD |
 | `battle_scale` | int (1 or 2) | yes | Sprite size multiplier in combat (1 = standard, 2 = oversized boss) | TBD |
 | `difficulty` | string | yes | Difficulty tier (`"easy"`, `"normal"`, `"hard"`, `"deadly"`, `"boss"` for placed-only) | TBD |
-| `spells` | object[] | no | Castable abilities; see *spells entry* below | TBD |
+| `abilities` | object[] | no | Special attacks — links into [Monster Abilities](monster_ability.md); see *abilities entry* below | Yes |
 | `on_hit_effects` | object[] | no | Effects that may trigger on a successful melee hit; see *on_hit_effects entry* | TBD |
 | `passives` | object[] | no | Always-on traits; see *passives entry* | TBD |
 
-## `spells[]` entry
+## `abilities[]` entry
 
-A polymorphic object discriminated by `type`. Stays inline (not yet linked to [Spell](spell.md) ids) because several monster spell types (`breath_fire`, `heal_self`, `heal_ally`, `poison`) don't have player-castable Spell records.
+Links a [Monster Ability](monster_ability.md) by id, with this monster's cast chance and optional overrides. Same pattern as `on_hit_effects[]` / `passives[]` → Effects. Order matters: on its turn the AI walks the list top to bottom and uses the first ability whose cast roll succeeds and that has a valid target.
 
-Common fields: `type` (string), `name` (string), `cast_chance` (int 0–100), `range` (int, omitted on `heal_self`). Optional `fx_id` (string) names the [FX](fx.md) played on cast; when unset a per-type default plays (`breath_fire` → Dragon Breath, `fireball` → Hellfire, `lightning_bolt` → Lightning Strike, `magic_dart` / `magic_arrow` → the same-named FX, `curse` → Curse Aura, `heal_self` / `heal_ally` → Healing Sparkles; `sleep` and `poison` play none).
+| Field | Type | Description |
+|---|---|---|
+| `ability_id` | string | Monster ability id (`"fire_breath"`, `"web"`, …) |
+| `cast_chance` | int (0–100) | Chance the monster uses it on its turn |
+| `...` | various | Any other key overrides the ability's value for this monster only (e.g. the Orc King's `"damage_bonus": 2` on Lightning Bolt, or a renamed `"name"`) |
 
-Variant types and extras: `sleep` (`save_dc`, `duration`, `max_target_hp`), `curse` (`duration`, `ac_penalty`, `attack_penalty`), `poison` (`save_dc`, `damage_per_turn`, `duration`), `magic_dart` / `magic_arrow` / `lightning_bolt` / `fireball` / `breath_fire` (damage dice + optional `save_dc`), `heal_self` / `heal_ally` (heal dice).
+```json
+"abilities": [
+  { "ability_id": "lightning_bolt", "cast_chance": 15, "damage_bonus": 2 },
+  { "ability_id": "magic_dart", "cast_chance": 25 }
+]
+```
+
+Edited in the Monsters editor with an ability picker, a cast % per row, up/down ordering, and an overrides box. The old inline `spells[]` array (full spell objects on the monster) is still read as a fallback when `abilities` is absent.
 
 ## `on_hit_effects[]` entry
 
@@ -121,7 +132,7 @@ References an [Effect](effect.md) id with optional overrides. Always-on traits a
 
 - **Dropped from v1 per the not-used rule:** `description` (parsed but never read), `spawn_weight` (TS uses `encounters.json` weights instead), the entire `ranged` sub-object (parsed but unread; would have driven a ranged-attack mode that never shipped), and the top-level `spawn_tables` object (replaced by `encounters.json`).
 - **Passives and on_hit_effects now reference Effect ids.** v1 used a `type` string (e.g. `"regen"`, `"fire_resistance"`) that doubled as the runtime handler key and matched no formal Effect record. v2 renames `type` → `effect_id` and resolves against `effects.json`. Per-monster overrides stay as flat keys alongside `effect_id`.
-- **Monster `spells[]` stay inline.** Many monster-only spell types (`breath_fire`, `heal_self`, `heal_ally`, `poison`) don't have player-castable Spell records, so flipping `type` → `spell_id` would require either adding monster-only Spells with a non-player `casting_type` (e.g. `"monster"`) or a separate monster-spell catalog. Decision deferred; the inline duplication is the cost for now.
+- **Monster special attacks moved to a catalog (Nov 2026).** The inline `spells[]` blocks became [monster_abilities.json](monster_ability.md) records referenced by `abilities[]`. They stay separate from player [Spells](spell.md): the combat engine resolves monster and player casts through different code, and most monster abilities (breath, heal ally, venom) have no player equivalent.
 - **`difficulty: "boss"` is not in the standard difficulty enum** (`easy`/`normal`/`hard`/`deadly`). v1 used it deliberately so bosses are excluded from rolled encounter pools (placement is intentional, not random). Carried forward; either add `"boss"` to the enum officially or document the convention.
 - **`sprite` paths are inconsistent.** Some records use `"game/monsters/<name>.png"` (path + extension), others `"monsters/<name>"` (no prefix, no extension). v1's loader normalized both; v2 carries the v1 strings as-is. Standardizing is a small future cleanup.
 - **Dropped fields (`color`, `terrain`) and rename (`tile` → `sprite`).** v1 carried an RGB `color` fallback used when no sprite was loaded; v2 always renders the sprite (placeholder marker if missing), so the fallback is dead. `terrain` ("land" / "sea") gated where a monster could spawn in v1; v2 surfaces spawn-eligibility through the [Encounter](encounter.md) `area` discriminator and per-cell [Spawn](spawn.md) bindings, so the field is redundant. `tile` was confusingly named (it had no relationship to [Map Tile](map_tile.md) ids); renamed to `sprite` to match the Character convention.

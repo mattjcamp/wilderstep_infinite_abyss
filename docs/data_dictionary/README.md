@@ -22,7 +22,9 @@ The v2 codebase is just being built. The **Used?** column is `TBD` everywhere fo
 | Recipe | [recipe.md](recipe.md) | Brew options as id + name + reagents-map; ported from v1 (DC/result deferred) |
 | Item | [item.md](item.md) | Weapons, armor, consumables, reagents, scrolls, keys, quest items; ported from v1 |
 | Counter | [counter.md](counter.md) | Shops and temples — stock lists or service menus; ported from v1 |
-| Monster | [monster.md](monster.md) | Monster catalog with stats, spells (inline), Effect-id passives + on-hit triggers; ported from v1 |
+| Monster | [monster.md](monster.md) | Monster catalog with stats, ability links, Effect-id passives + on-hit triggers; ported from v1 |
+| FX | [fx.md](fx.md) | Named effects — visual, tuning, cast / hit sounds — referenced by `fx_id` |
+| Monster Ability | [monster_ability.md](monster_ability.md) | Special attacks monsters use (breath, spells, bites, heals) — behavior, numbers, FX |
 | Race | [race.md](race.md) | Playable races — stat modifiers, optional XP override, racial ability Effect ids; ported from v1 |
 | Character Class | [character_class.md](character_class.md) | The eight playable classes — HP/MP growth, allowed races, MP source, non-spell class abilities; ported from v1 |
 | Character | [character.md](character.md) | Character catalog — class, race, base stats, starting gear; referenced by Party.roster by id |

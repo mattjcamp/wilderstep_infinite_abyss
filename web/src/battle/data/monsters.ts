@@ -15,13 +15,16 @@
  *     dropped both. The Combatant model still carries `color` as a
  *     sprite-missing fallback, so makeMonsterByName seeds it from a
  *     neutral default.
- *   - v1's `spells` / `passives` / `on_hit_effects` arrays aren't in
- *     v2's monsters.json yet. Their TypeScript shapes stay on the
- *     spec so v2 can layer them back in without code churn.
+ *   - Special attacks live in a separate catalog,
+ *     monster_abilities.json. A monster lists them in `abilities` as
+ *     `{ ability_id, cast_chance, ...overrides }`; the loader resolves
+ *     each link against the catalog into the runtime MonsterSpell the
+ *     combat engine reads (`spec.spells`). The old inline `spells`
+ *     array is still accepted as a fallback.
  */
 
 import type { Combatant } from "../types";
-import { modulePath } from "../world/Module";
+import { modulePath, withBase } from "../world/Module";
 import { spriteUrl } from "@/data_model/spriteUrl";
 
 export interface MonsterSpec {
@@ -77,9 +80,9 @@ export interface MonsterSpec {
   constitution?: number;
   intelligence?: number;
   wisdom?: number;
-  /** Spell-casting AI table. Each entry has a `cast_chance` (0-100)
-   *  the engine rolls against on the monster's turn. Reserved for v2
-   *  to layer back in; absent today. */
+  /** Special-attack AI table, resolved from the monster's `abilities`
+   *  links. Each entry has a `cast_chance` (0-100) the engine rolls
+   *  against on the monster's turn. */
   spells?: MonsterSpell[];
   /** Always-on effects — regen, fire/poison resistance. Reserved. */
   passives?: MonsterPassive[];
@@ -87,12 +90,11 @@ export interface MonsterSpec {
   on_hit_effects?: MonsterOnHit[];
 }
 
+/** Combat behavior of a monster ability. `damage` covers every
+ *  direct-damage attack (breath, bolts, darts); `damage_type` flavours
+ *  it for resistances. */
 export type MonsterSpellType =
-  | "breath_fire"
-  | "magic_dart"
-  | "magic_arrow"
-  | "fireball"
-  | "lightning_bolt"
+  | "damage"
   | "sleep"
   | "curse"
   | "poison"
@@ -107,6 +109,9 @@ export interface MonsterSpell {
   fx_id?: string | null;
   cast_chance: number;
   range?: number;
+  /** `damage` only: "fire", "lightning", "arcane", "physical", … —
+   *  matched by resistances (fire_resistance halves "fire"). */
+  damage_type?: string;
   damage_dice?: number;
   damage_sides?: number;
   damage_bonus?: number;
@@ -139,6 +144,7 @@ interface RawMonsterSpell {
   type?: string;
   name?: string;
   fx_id?: string | null;
+  damage_type?: string;
   cast_chance?: number;
   range?: number;
   damage_dice?: number;
@@ -204,23 +210,117 @@ interface RawMonster {
   constitution?: number;
   intelligence?: number;
   wisdom?: number;
+  /** Links into monster_abilities.json. */
+  abilities?: RawMonsterAbilityLink[] | null;
+  /** Legacy inline special attacks (pre-catalog). */
   spells?: RawMonsterSpell[] | null;
   passives?: RawMonsterPassive[] | null;
   on_hit_effects?: RawMonsterOnHit[] | null;
 }
 
+/** One monster's use of a catalog ability: which one, how often, and
+ *  any per-monster overrides (`damage_bonus`, `save_dc`, `name`, …). */
+export interface RawMonsterAbilityLink {
+  ability_id?: string;
+  cast_chance?: number;
+  [override: string]: unknown;
+}
+
+/** A monster_abilities.json record. `effect_type` picks the combat
+ *  behavior (a MonsterSpellType); every other field is a default the
+ *  monster's link can override. */
+export interface MonsterAbilityRecord {
+  id: string;
+  name?: string;
+  description?: string;
+  effect_type?: string;
+  fx_id?: string | null;
+  [field: string]: unknown;
+}
+
+let _abilities: Map<string, MonsterAbilityRecord> | null = null;
+
+/** Install the merged monster_abilities.json (`{ monster_abilities:
+ *  [...] }` or the bare array). Clears the monster cache so specs
+ *  re-resolve against the new catalog. */
+export function setMonsterAbilities(raw: unknown): void {
+  const list = Array.isArray(raw)
+    ? raw
+    : raw && typeof raw === "object"
+      ? ((raw as { monster_abilities?: unknown }).monster_abilities ?? [])
+      : [];
+  const m = new Map<string, MonsterAbilityRecord>();
+  if (Array.isArray(list)) {
+    for (const r of list) {
+      if (r && typeof r === "object" && typeof (r as MonsterAbilityRecord).id === "string") {
+        m.set((r as MonsterAbilityRecord).id, r as MonsterAbilityRecord);
+      }
+    }
+  }
+  _abilities = m;
+  _catalog = null;
+}
+
+export function getMonsterAbility(id: string): MonsterAbilityRecord | null {
+  return _abilities?.get(id) ?? null;
+}
+
+/** Fetch the catalog if nothing installed it. Tries the active
+ *  module, then the default module; never throws. */
+export async function loadMonsterAbilities(): Promise<void> {
+  if (_abilities) return;
+  for (const url of [
+    modulePath("monster_abilities.json"),
+    withBase("/modules/default/monster_abilities.json"),
+  ]) {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) continue;
+      setMonsterAbilities(await res.json());
+      return;
+    } catch {
+      /* try the next one */
+    }
+  }
+  _abilities = new Map();
+}
+
+/** Resolve one `abilities` link into the runtime MonsterSpell: the
+ *  catalog record's fields, then the link's overrides. Null when the
+ *  ability id is unknown or its effect_type isn't a known behavior. */
+export function abilityLinkToSpell(link: RawMonsterAbilityLink): MonsterSpell | null {
+  if (!link || typeof link.ability_id !== "string") return null;
+  const rec = _abilities?.get(link.ability_id);
+  if (!rec) return null;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { id: _id, description: _d, effect_type, ...defaults } = rec;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { ability_id: _a, ...overrides } = link;
+  return spellFromRaw({
+    ...defaults,
+    ...overrides,
+    type: effect_type,
+  } as RawMonsterSpell);
+}
+
 const KNOWN_SPELL_TYPES: ReadonlySet<string> = new Set([
-  "breath_fire",
-  "magic_dart",
-  "magic_arrow",
-  "fireball",
-  "lightning_bolt",
+  "damage",
   "sleep",
   "curse",
   "poison",
   "heal_self",
   "heal_ally",
 ]);
+
+/** Pre-merge damage behaviors → `damage` + the damage_type and FX they
+ *  implied, so older data (and inline `spells`) keeps working. */
+const LEGACY_DAMAGE_TYPES: Readonly<Record<string, { damage_type: string; fx_id: string }>> = {
+  breath_fire: { damage_type: "fire", fx_id: "dragon_breath" },
+  fireball: { damage_type: "fire", fx_id: "hellfire" },
+  lightning_bolt: { damage_type: "lightning", fx_id: "lightning_strike" },
+  magic_dart: { damage_type: "arcane", fx_id: "magic_dart" },
+  magic_arrow: { damage_type: "arcane", fx_id: "magic_arrow" },
+};
 
 /**
  * Validate the discriminator + carry every other RawMonsterSpell
@@ -230,7 +330,19 @@ const KNOWN_SPELL_TYPES: ReadonlySet<string> = new Set([
  * with no separate copy point here to remember.
  */
 function spellFromRaw(s: RawMonsterSpell): MonsterSpell | null {
-  if (!s.type || !KNOWN_SPELL_TYPES.has(s.type)) return null;
+  if (!s.type) return null;
+  const legacy = LEGACY_DAMAGE_TYPES[s.type];
+  if (legacy) {
+    return {
+      cast_chance: 0,
+      ...s,
+      type: "damage",
+      damage_type: s.damage_type || legacy.damage_type,
+      fx_id: s.fx_id || legacy.fx_id,
+      name: s.name ?? s.type,
+    };
+  }
+  if (!KNOWN_SPELL_TYPES.has(s.type)) return null;
   return {
     cast_chance: 0,
     ...s,
@@ -327,9 +439,11 @@ export function specFromRaw(raw: RawMonster): MonsterSpec | null {
     sprite: resolveSpriteUrl(raw.sprite),
     undead: !!raw.undead,
     humanoid: !!raw.humanoid,
-    spells: Array.isArray(raw.spells)
-      ? raw.spells.map(spellFromRaw).filter((x): x is MonsterSpell => x !== null)
-      : undefined,
+    spells: Array.isArray(raw.abilities)
+      ? raw.abilities.map(abilityLinkToSpell).filter((x): x is MonsterSpell => x !== null)
+      : Array.isArray(raw.spells)
+        ? raw.spells.map(spellFromRaw).filter((x): x is MonsterSpell => x !== null)
+        : undefined,
     passives: Array.isArray(raw.passives)
       ? raw.passives.map(passiveFromRaw).filter((x): x is MonsterPassive => x !== null)
       : undefined,
@@ -343,6 +457,7 @@ export async function loadMonsters(
   url = modulePath("monsters.json"),
 ): Promise<Map<string, MonsterSpec>> {
   if (_catalog) return _catalog;
+  await loadMonsterAbilities();
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed to load ${url}: ${res.status}`);
   const raw = (await res.json()) as { monsters?: RawMonster[] };

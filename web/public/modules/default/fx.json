@@ -1,5 +1,5 @@
 {
-  "_comment": "FX catalog — every named effect the game can play. Each record picks one built-in visual (`visual`, an id from FX_DEFS in web/src/vfx/fxCatalog.ts, or 'none' for sound-only), tunes it (`params`, only values that differ from the visual's defaults), and names the sounds played at the start (`cast_sfx`) and on impact (`hit_sfx`, names from web/src/battle/audio/Sfx.ts). Spells, items, effects, abilities and monster spells point at a record by `fx_id`. Module-inheritable. Edited in the editor's FX page. See docs/data_dictionary/fx.md.",
+  "_comment": "FX catalog — every named effect the game can play. Each record picks one built-in visual (`visual`, an id from FX_DEFS in web/src/vfx/fxCatalog.ts, or 'none' for sound-only), tunes it (`params`, only values that differ from the visual's defaults), and names the sounds played at the start (`cast_sfx`) and on impact (`hit_sfx`, names from web/src/battle/audio/Sfx.ts). Spells, items, effects, abilities and monster abilities point at a record by `fx_id`. Module-inheritable. Edited in the editor's FX page. See docs/data_dictionary/fx.md.",
   "fx": [
     {
       "id": "none",
@@ -160,8 +160,8 @@
       "description": "A roiling ball of flame hurled at the target, erupting on impact. Demon Hellfire / Lich Fireball.",
       "visual": "hellfire",
       "params": {},
-      "cast_sfx": "fireball",
-      "hit_sfx": "explosion"
+      "cast_sfx": "flamethrower",
+      "hit_sfx": "fire_explosion"
     },
     {
       "id": "dragon_breath",

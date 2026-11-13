@@ -567,18 +567,25 @@ function elementalShotFx(
   }
 }
 
-/** Default FX for a monster spell with no `fx_id` of its own. Types
- *  missing here (sleep, poison) play no FX — just the hit flash. */
+/** Default FX for a monster ability with no `fx_id` of its own: by
+ *  behavior, or for `damage` by its damage_type. Sleep and poison play
+ *  no FX — just the hit flash. */
 const MONSTER_SPELL_FX: Partial<Record<string, string>> = {
-  breath_fire: "dragon_breath",
-  fireball: "hellfire",
-  lightning_bolt: "lightning_strike",
-  magic_dart: "magic_dart",
-  magic_arrow: "magic_arrow",
   curse: "curse_aura",
   heal_self: "heal_sparkles",
   heal_ally: "heal_sparkles",
 };
+const MONSTER_DAMAGE_FX: Partial<Record<string, string>> = {
+  fire: "hellfire",
+  lightning: "lightning_strike",
+  arcane: "magic_dart",
+};
+function defaultMonsterFx(spell: { type: string; damage_type?: string }): string {
+  if (spell.type === "damage") {
+    return MONSTER_DAMAGE_FX[spell.damage_type ?? ""] ?? "generic_projectile";
+  }
+  return MONSTER_SPELL_FX[spell.type] ?? "";
+}
 
 /** How far (Chebyshev tiles) a targeted spell reaches: its `range`,
  *  or 6 when unset / 0. Shared by the gold reach grid and the target
@@ -6240,7 +6247,7 @@ export class CombatScene extends Phaser.Scene {
           //
           // Per-spell VFX branch: look up the spell from the actor's
           // table by index BEFORE resolving, so the scene knows what
-          // animation to play. Today only `breath_fire` has its own
+          // animation to play. Today only fire breath has its own
           // cone effect — every other spell continues to fall back
           // to the generic `animateHit` flash. The look-up is
           // tolerant of out-of-range indices (defensive against
@@ -6258,10 +6265,10 @@ export class CombatScene extends Phaser.Scene {
           // aimed at the caster (self-heal) play on the caster.
           await ensureFxRecords();
           const fxRec = getFxRecord(
-            spellDef?.fx_id || (spellDef ? MONSTER_SPELL_FX[spellDef.type] : ""),
+            spellDef?.fx_id || (spellDef ? defaultMonsterFx(spellDef) : ""),
           );
           if (fxRec) {
-            const fire = spellDef?.type === "breath_fire" || spellDef?.type === "fireball";
+            const fire = spellDef?.type === "damage" && spellDef.damage_type === "fire";
             if (fire) this.castGlowFor(caster, VFX_COLOURS.fire);
             if (fxRec.cast_sfx) Sfx.play(fxRec.cast_sfx);
             const key = fxVisualKey(fxRec);
@@ -6271,8 +6278,11 @@ export class CombatScene extends Phaser.Scene {
               await resolveProjectileEffect({ effect_type: key })(this, from, to);
             }
             if (fxRec.hit_sfx) Sfx.play(fxRec.hit_sfx);
-            if (spellDef?.type === "breath_fire") screenShake(this, 0.007, 220);
-            else if (spellDef?.type === "fireball") screenShake(this, 0.006, 200);
+            // Fire hits shake the screen — breath weapons harder.
+            if (fire) {
+              if ((fxRec.visual ?? fxRec.id) === "breath_of_fire") screenShake(this, 0.007, 220);
+              else screenShake(this, 0.006, 200);
+            }
           }
           await this.animateHit(target, {
             attackerId: this.combat.current.id, targetId: target.id,

@@ -49,6 +49,7 @@ import { KeyMapEditor } from "./KeyMapEditor";
 import { getKeyMapFieldConfig } from "./keyMapFields";
 import { NPC_BEHAVIORS } from "@/sim/npcBehavior";
 import { ParamsEditor } from "./ParamsEditor";
+import { MonsterAbilitiesEditor, isAbilityLinkList } from "./MonsterAbilitiesEditor";
 import { getParamsFieldConfig } from "./paramsFields";
 
 /** Models whose records carry a free-form `tags: string[]` for editor
@@ -66,6 +67,27 @@ const OPTIONAL_NUMBER_FIELDS: Record<string, readonly string[]> = {
   npcs: ["exploration_xp"],
 };
 
+/** Combat behaviors a monster ability can have (MonsterSpellType). */
+const MONSTER_ABILITY_BEHAVIORS: ReadonlyArray<{ value: string; label: string }> = [
+  { value: "damage", label: "Damage — dice at one target; save_dc = DEX save for half" },
+  { value: "sleep", label: "Sleep — WIS save vs save_dc or asleep" },
+  { value: "curse", label: "Curse — AC / attack penalties, no save" },
+  { value: "poison", label: "Poison — CON save vs save_dc or poisoned" },
+  { value: "heal_ally", label: "Heal an ally" },
+  { value: "heal_self", label: "Heal self" },
+];
+
+/** Damage flavours for `damage` monster abilities. Resistances match
+ *  on these (fire_resistance halves "fire"). */
+const MONSTER_DAMAGE_TYPES: ReadonlyArray<{ value: string; label: string }> = [
+  { value: "physical", label: "Physical" },
+  { value: "fire", label: "Fire" },
+  { value: "lightning", label: "Lightning" },
+  { value: "arcane", label: "Arcane" },
+  { value: "cold", label: "Cold" },
+  { value: "poison", label: "Poison" },
+];
+
 /** Fixed-choice string fields rendered as a dropdown, per model.
  *  The first option is the default; a record that hasn't set the
  *  field shows it selected and, if left untouched, stays unwritten
@@ -76,6 +98,10 @@ const CHOICE_FIELDS: Record<
 > = {
   npcs: { behavior: NPC_BEHAVIORS },
   log_events: { repeat: LOG_EVENT_REPEAT_CHOICES },
+  monster_abilities: {
+    effect_type: MONSTER_ABILITY_BEHAVIORS,
+    damage_type: MONSTER_DAMAGE_TYPES,
+  },
 };
 
 function getChoiceField(
@@ -500,6 +526,29 @@ function FieldRow({
           </div>
         );
       }
+    }
+  }
+  // A monster's special abilities ({ ability_id, cast_chance, … }[])
+  // render the MonsterAbilitiesEditor. Other shapes fall through.
+  if (modelKey === "monsters" && spec.key === "abilities") {
+    let parsed: unknown;
+    try {
+      parsed = value.trim() === "" ? [] : JSON.parse(value);
+      if (parsed === null) parsed = [];
+    } catch {
+      parsed = undefined;
+    }
+    if (isAbilityLinkList(parsed)) {
+      return (
+        <div className="flex items-start gap-3">
+          <span className={labelClasses}>{spec.key}</span>
+          <MonsterAbilitiesEditor
+            value={parsed}
+            moduleId={moduleId}
+            onChange={(next) => onChange(JSON.stringify(next, null, 1))}
+          />
+        </div>
+      );
     }
   }
   // Params fields render the ParamsEditor — typed rows from the
