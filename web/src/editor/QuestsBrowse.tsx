@@ -40,7 +40,8 @@ import { SpritePicker } from "./SpritePicker";
 import { ID_PATTERN, TagsPicker } from "./TagsPicker";
 import { usePublishServer } from "./usePublishServer";
 import { groupItemsByCategory } from "./itemTags";
-import { groupByTags } from "./mapTags";
+import { effectiveTagOrder } from "./mapTags";
+import { MapPickerField, MapTagOrderContext } from "./MapPickerDialog";
 
 const NPC_SPRITE_CONFIG = { category: "person", format: "path" } as const;
 
@@ -258,6 +259,7 @@ interface MapSummary {
   /** Organizational tags from maps.json — drive the picker's
    *  tag-grouped optgroups (same ordering as the maps browse tree). */
   tags?: string[];
+  description?: string;
   /** Grid size — lets the Travel reward flag an out-of-bounds cell. */
   width?: number;
   height?: number;
@@ -293,6 +295,8 @@ type LoadState =
       catalog: LibraryCatalogEntry[];
       items: ItemSummary[];
       maps: MapSummary[];
+      /** maps.json tag order — orders the map pickers' tag groups. */
+      mapTagOrder: string[];
       dungeons: DungeonSummary[];
       encounters: EncounterPickerEntry[];
       npcs: NpcSummary[];
@@ -387,6 +391,7 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
         id: m.id,
         name: m.name,
         tags: m.tags,
+        description: m.description,
         width: m.width,
         height: m.height,
         linkedFrom: linkedFrom.get(m.id)?.size ?? 0,
@@ -438,6 +443,7 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
         catalog,
         items,
         maps,
+        mapTagOrder: effectiveTagOrder(mapsMerged),
         dungeons,
         encounters,
         npcs,
@@ -718,6 +724,7 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
     });
 
   return (
+    <MapTagOrderContext.Provider value={state.mapTagOrder}>
     <div className="p-4">
       <header className="flex flex-wrap items-baseline justify-between gap-3">
         <div>
@@ -972,6 +979,7 @@ export function QuestsBrowse({ moduleId }: { moduleId: string }) {
         </section>
       ) : null}
     </div>
+    </MapTagOrderContext.Provider>
   );
 }
 
@@ -1819,27 +1827,14 @@ function TravelEditor({
         announcement with the giver&apos;s message and a Travel button.
       </p>
       <div className="mt-1 grid items-center gap-1 sm:grid-cols-[1fr_auto_auto]">
-        <select
+        <MapPickerField
+          title="Travel destination"
           value={travel.map}
-          onChange={(e) => patch({ map: e.target.value })}
-          className="rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-[13px] text-parchment/90"
-          title="Destination map"
-        >
-          {!dest && travel.map ? (
-            <option value={travel.map}>(missing) {travel.map}</option>
-          ) : null}
-          {!travel.map ? <option value="">— choose a map —</option> : null}
-          {groupByTags(maps).map(([tag, ms]) => (
-            <optgroup key={tag} label={tag}>
-              {ms.map((m) => (
-                <option key={`${tag}::${m.id}`} value={m.id}>
-                  {m.name ?? m.id} ({m.id})
-                  {m.linkedFrom === 0 ? " — hidden" : ""}
-                </option>
-              ))}
-            </optgroup>
-          ))}
-        </select>
+          maps={maps.map((m) =>
+            m.linkedFrom === 0 ? { ...m, note: "hidden — no links lead here" } : m,
+          )}
+          onChange={(id) => patch({ map: id })}
+        />
         <input
           type="number"
           min={0}
@@ -1966,31 +1961,12 @@ function TileOpsList({
                     : "sm:grid-cols-[1fr_auto_auto_auto]"
                 }`}
               >
-                <select
+                <MapPickerField
+                  title="Tile change map"
                   value={op.map}
-                  onChange={(e) => updateAt(i, { map: e.target.value })}
-                  className="rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-[13px] text-parchment/90"
-                >
-                  {!mapKnown && op.map ? (
-                    <option value={op.map}>(missing) {op.map}</option>
-                  ) : null}
-                  {!op.map ? (
-                    <option value="">— choose a map —</option>
-                  ) : null}
-                  {/* Grouped by tag (pinned order: overview, town,
-                      buildings, outside, then alphabetical, untagged
-                      last) — same shape as the maps browse tree and the
-                      Map Editor's Link picker. */}
-                  {groupByTags(maps).map(([tag, ms]) => (
-                    <optgroup key={tag} label={tag}>
-                      {ms.map((m) => (
-                        <option key={`${tag}::${m.id}`} value={m.id}>
-                          {m.name ?? m.id} ({m.id})
-                        </option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </select>
+                  maps={maps}
+                  onChange={(id) => updateAt(i, { map: id })}
+                />
                 <input
                   type="number"
                   value={op.col}
@@ -2505,26 +2481,14 @@ function StepRow({
                 <span className="text-xs uppercase tracking-wide text-parchment/65">
                   Map
                 </span>
-                <select
+                <MapPickerField
+                  className="mt-0.5"
+                  title="Quest step map"
                   value={step.map_id ?? ""}
-                  onChange={(e) =>
-                    onUpdate({ map_id: e.target.value || undefined })
-                  }
-                  className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-[13px] text-parchment/90"
-                >
-                  <option value="">(pick one…)</option>
-                  {/* Grouped by tag — same ordering as the maps browse
-                      tree and the Map Editor's Link picker. */}
-                  {groupByTags(maps).map(([tag, ms]) => (
-                    <optgroup key={tag} label={tag}>
-                      {ms.map((m) => (
-                        <option key={`${tag}::${m.id}`} value={m.id}>
-                          {m.name ?? m.id}
-                        </option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </select>
+                  maps={maps}
+                  placeholder="(pick one…)"
+                  onChange={(id) => onUpdate({ map_id: id || undefined })}
+                />
                 {step.map_id &&
                 !maps.some((m) => m.id === step.map_id) ? (
                   <p className="mt-1 text-[13px] text-ember/80">
@@ -2774,26 +2738,12 @@ function StartTriggersEditor({
                 </select>
                 <div className="min-w-0">
                   {t.kind === "enter_map" || t.kind === "leave_map" ? (
-                    <select
+                    <MapPickerField
+                      title={t.kind === "enter_map" ? "Start when entering map" : "Start when leaving map"}
                       value={t.map_id ?? ""}
-                      onChange={(e) => updateAt(i, { map_id: e.target.value })}
-                      className="w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-[13px] text-parchment/90"
-                      title="Map"
-                    >
-                      {!mapKnown && t.map_id ? (
-                        <option value={t.map_id}>(missing) {t.map_id}</option>
-                      ) : null}
-                      {!t.map_id ? <option value="">— choose a map —</option> : null}
-                      {groupByTags(maps).map(([tag, ms]) => (
-                        <optgroup key={tag} label={tag}>
-                          {ms.map((m) => (
-                            <option key={`${tag}::${m.id}`} value={m.id}>
-                              {m.name ?? m.id} ({m.id})
-                            </option>
-                          ))}
-                        </optgroup>
-                      ))}
-                    </select>
+                      maps={maps}
+                      onChange={(id) => updateAt(i, { map_id: id })}
+                    />
                   ) : t.kind === "read_lore" ? (
                     <LorePicker
                       value={t.lore_id ?? ""}

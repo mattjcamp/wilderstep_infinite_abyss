@@ -937,6 +937,7 @@ function FieldRow({
           <MapPicker
             value={value}
             onChange={onChange}
+            moduleId={moduleId}
             requiredTag={mapConfig.requiredTag}
           />
           {error ? <p className="mt-1 text-[13px] text-ember">{error}</p> : null}

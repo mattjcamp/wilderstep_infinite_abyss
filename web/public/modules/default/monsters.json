@@ -916,6 +916,782 @@
         }
       ],
       "on_hit_effects": []
+    },
+    {
+      "id": "bandit",
+      "name": "Bandit",
+      "sprite": "monster/bandit.png",
+      "theme": "humanoid",
+      "difficulty": "easy",
+      "tags": [
+        "Humans"
+      ],
+      "hp": 10,
+      "ac": 12,
+      "attack_bonus": 3,
+      "damage_dice": 1,
+      "damage_sides": 6,
+      "damage_bonus": 1,
+      "move_range": 5,
+      "post_attack_move": 0,
+      "battle_scale": 1,
+      "xp_reward": 20,
+      "gold_min": 5,
+      "gold_max": 20,
+      "strength": 11,
+      "dexterity": 12,
+      "constitution": 12,
+      "intelligence": 10,
+      "wisdom": 10,
+      "undead": false,
+      "humanoid": true,
+      "turn_resistance": 0,
+      "abilities": [],
+      "passives": [],
+      "on_hit_effects": []
+    },
+    {
+      "id": "cultist",
+      "name": "Cultist",
+      "sprite": "monster/cultist.png",
+      "theme": "humanoid",
+      "difficulty": "easy",
+      "tags": [
+        "Humans"
+      ],
+      "hp": 9,
+      "ac": 11,
+      "attack_bonus": 2,
+      "damage_dice": 1,
+      "damage_sides": 6,
+      "damage_bonus": 0,
+      "move_range": 5,
+      "post_attack_move": 0,
+      "battle_scale": 1,
+      "xp_reward": 25,
+      "gold_min": 2,
+      "gold_max": 15,
+      "strength": 10,
+      "dexterity": 10,
+      "constitution": 10,
+      "intelligence": 11,
+      "wisdom": 13,
+      "undead": false,
+      "humanoid": true,
+      "turn_resistance": 0,
+      "abilities": [
+        {
+          "ability_id": "hex",
+          "cast_chance": 20,
+          "name": "Profane Curse",
+          "description": "A muttered blasphemy that dulls armor and aim.",
+          "ac_penalty": 1,
+          "attack_penalty": 1,
+          "duration": 3
+        }
+      ],
+      "passives": [],
+      "on_hit_effects": []
+    },
+    {
+      "id": "kobold",
+      "name": "Kobold",
+      "sprite": "monster/kobold.png",
+      "theme": "humanoid",
+      "difficulty": "easy",
+      "tags": [
+        "Kobolds"
+      ],
+      "hp": 5,
+      "ac": 12,
+      "attack_bonus": 3,
+      "damage_dice": 1,
+      "damage_sides": 4,
+      "damage_bonus": 1,
+      "move_range": 6,
+      "post_attack_move": 2,
+      "battle_scale": 1,
+      "xp_reward": 10,
+      "gold_min": 1,
+      "gold_max": 6,
+      "strength": 7,
+      "dexterity": 15,
+      "constitution": 9,
+      "intelligence": 8,
+      "wisdom": 7,
+      "undead": false,
+      "humanoid": true,
+      "turn_resistance": 0,
+      "abilities": [],
+      "passives": [],
+      "on_hit_effects": []
+    },
+    {
+      "id": "wolf",
+      "name": "Wolf",
+      "sprite": "monster/wolf.png",
+      "theme": "animal",
+      "difficulty": "easy",
+      "tags": [
+        "Beasts"
+      ],
+      "hp": 11,
+      "ac": 13,
+      "attack_bonus": 3,
+      "damage_dice": 1,
+      "damage_sides": 6,
+      "damage_bonus": 1,
+      "move_range": 9,
+      "post_attack_move": 0,
+      "battle_scale": 1,
+      "xp_reward": 20,
+      "gold_min": 0,
+      "gold_max": 0,
+      "strength": 12,
+      "dexterity": 15,
+      "constitution": 12,
+      "intelligence": 3,
+      "wisdom": 12,
+      "undead": false,
+      "humanoid": false,
+      "turn_resistance": 0,
+      "abilities": [],
+      "passives": [],
+      "on_hit_effects": []
+    },
+    {
+      "id": "imp",
+      "name": "Imp",
+      "sprite": "monster/imp.png",
+      "theme": "devil",
+      "difficulty": "easy",
+      "tags": [
+        "Demons"
+      ],
+      "hp": 10,
+      "ac": 13,
+      "attack_bonus": 3,
+      "damage_dice": 1,
+      "damage_sides": 4,
+      "damage_bonus": 0,
+      "move_range": 8,
+      "post_attack_move": 3,
+      "battle_scale": 1,
+      "xp_reward": 30,
+      "gold_min": 0,
+      "gold_max": 10,
+      "strength": 6,
+      "dexterity": 17,
+      "constitution": 13,
+      "intelligence": 11,
+      "wisdom": 12,
+      "undead": false,
+      "humanoid": false,
+      "turn_resistance": 0,
+      "abilities": [
+        {
+          "ability_id": "magic_dart",
+          "cast_chance": 30,
+          "name": "Fire Bolt",
+          "description": "A spat mote of hellfire.",
+          "damage_type": "fire"
+        },
+        {
+          "ability_id": "venom_bite",
+          "cast_chance": 20,
+          "name": "Tail Sting",
+          "description": "A barbed tail jab that poisons unless the target saves.",
+          "save_dc": 11,
+          "damage_per_turn": 1,
+          "duration": 3
+        }
+      ],
+      "passives": [
+        {
+          "effect_id": "fire_resistance"
+        },
+        {
+          "effect_id": "poison_immunity"
+        }
+      ],
+      "on_hit_effects": []
+    },
+    {
+      "id": "hobgoblin",
+      "name": "Hobgoblin",
+      "sprite": "monster/hobgoblin.png",
+      "theme": "humanoid",
+      "difficulty": "normal",
+      "tags": [
+        "Goblinoids"
+      ],
+      "hp": 16,
+      "ac": 15,
+      "attack_bonus": 4,
+      "damage_dice": 1,
+      "damage_sides": 8,
+      "damage_bonus": 1,
+      "move_range": 5,
+      "post_attack_move": 0,
+      "battle_scale": 1,
+      "xp_reward": 40,
+      "gold_min": 5,
+      "gold_max": 20,
+      "strength": 13,
+      "dexterity": 12,
+      "constitution": 12,
+      "intelligence": 10,
+      "wisdom": 10,
+      "undead": false,
+      "humanoid": true,
+      "turn_resistance": 0,
+      "abilities": [],
+      "passives": [],
+      "on_hit_effects": []
+    },
+    {
+      "id": "gnoll",
+      "name": "Gnoll",
+      "sprite": "monster/gnoll.png",
+      "theme": "humanoid",
+      "difficulty": "normal",
+      "tags": [
+        "Gnolls"
+      ],
+      "hp": 20,
+      "ac": 13,
+      "attack_bonus": 4,
+      "damage_dice": 1,
+      "damage_sides": 8,
+      "damage_bonus": 2,
+      "move_range": 7,
+      "post_attack_move": 0,
+      "battle_scale": 1,
+      "xp_reward": 45,
+      "gold_min": 2,
+      "gold_max": 15,
+      "strength": 14,
+      "dexterity": 12,
+      "constitution": 11,
+      "intelligence": 6,
+      "wisdom": 10,
+      "undead": false,
+      "humanoid": true,
+      "turn_resistance": 0,
+      "abilities": [],
+      "passives": [],
+      "on_hit_effects": []
+    },
+    {
+      "id": "ogre",
+      "name": "Ogre",
+      "sprite": "monster/ogre.png",
+      "theme": "humanoid",
+      "difficulty": "normal",
+      "tags": [
+        "Giants"
+      ],
+      "hp": 45,
+      "ac": 11,
+      "attack_bonus": 5,
+      "damage_dice": 2,
+      "damage_sides": 6,
+      "damage_bonus": 3,
+      "move_range": 4,
+      "post_attack_move": 0,
+      "battle_scale": 1,
+      "xp_reward": 90,
+      "gold_min": 10,
+      "gold_max": 40,
+      "strength": 19,
+      "dexterity": 8,
+      "constitution": 16,
+      "intelligence": 5,
+      "wisdom": 7,
+      "undead": false,
+      "humanoid": false,
+      "turn_resistance": 0,
+      "abilities": [],
+      "passives": [],
+      "on_hit_effects": []
+    },
+    {
+      "id": "ghoul",
+      "name": "Ghoul",
+      "sprite": "monster/ghoul.png",
+      "theme": "undead",
+      "difficulty": "normal",
+      "tags": [
+        "Undead"
+      ],
+      "hp": 22,
+      "ac": 12,
+      "attack_bonus": 4,
+      "damage_dice": 1,
+      "damage_sides": 6,
+      "damage_bonus": 2,
+      "move_range": 6,
+      "post_attack_move": 0,
+      "battle_scale": 1,
+      "xp_reward": 50,
+      "gold_min": 0,
+      "gold_max": 5,
+      "strength": 13,
+      "dexterity": 15,
+      "constitution": 10,
+      "intelligence": 7,
+      "wisdom": 10,
+      "undead": true,
+      "humanoid": false,
+      "turn_resistance": 0,
+      "abilities": [
+        {
+          "ability_id": "web",
+          "cast_chance": 25,
+          "name": "Paralyzing Claws",
+          "description": "A raking claw whose filth locks the muscles (sleep) unless the target saves.",
+          "range": 1,
+          "save_dc": 11,
+          "duration": 1,
+          "max_target_hp": 30
+        }
+      ],
+      "passives": [
+        {
+          "effect_id": "poison_immunity"
+        }
+      ],
+      "on_hit_effects": []
+    },
+    {
+      "id": "mimic",
+      "name": "Mimic",
+      "sprite": "monster/mimic.png",
+      "theme": "cryptid",
+      "difficulty": "normal",
+      "tags": [
+        "Monstrosities"
+      ],
+      "hp": 38,
+      "ac": 12,
+      "attack_bonus": 4,
+      "damage_dice": 1,
+      "damage_sides": 8,
+      "damage_bonus": 2,
+      "move_range": 2,
+      "post_attack_move": 0,
+      "battle_scale": 1,
+      "xp_reward": 70,
+      "gold_min": 20,
+      "gold_max": 60,
+      "strength": 17,
+      "dexterity": 12,
+      "constitution": 15,
+      "intelligence": 5,
+      "wisdom": 13,
+      "undead": false,
+      "humanoid": false,
+      "turn_resistance": 0,
+      "abilities": [],
+      "passives": [
+        {
+          "effect_id": "poison_immunity"
+        }
+      ],
+      "on_hit_effects": [
+        {
+          "effect_id": "consumed",
+          "chance": 30,
+          "damage_per_turn": 2,
+          "save_dc": 12
+        }
+      ]
+    },
+    {
+      "id": "owlbear",
+      "name": "Owlbear",
+      "sprite": "monster/owlbear.png",
+      "theme": "cryptid",
+      "difficulty": "normal",
+      "tags": [
+        "Monstrosities"
+      ],
+      "hp": 40,
+      "ac": 13,
+      "attack_bonus": 5,
+      "damage_dice": 1,
+      "damage_sides": 10,
+      "damage_bonus": 3,
+      "move_range": 6,
+      "post_attack_move": 0,
+      "battle_scale": 1,
+      "xp_reward": 70,
+      "gold_min": 0,
+      "gold_max": 0,
+      "strength": 20,
+      "dexterity": 12,
+      "constitution": 17,
+      "intelligence": 3,
+      "wisdom": 12,
+      "undead": false,
+      "humanoid": false,
+      "turn_resistance": 0,
+      "abilities": [],
+      "passives": [],
+      "on_hit_effects": []
+    },
+    {
+      "id": "harpy",
+      "name": "Harpy",
+      "sprite": "monster/harpy.png",
+      "theme": "cryptid",
+      "difficulty": "normal",
+      "tags": [
+        "Monstrosities"
+      ],
+      "hp": 20,
+      "ac": 11,
+      "attack_bonus": 3,
+      "damage_dice": 1,
+      "damage_sides": 6,
+      "damage_bonus": 1,
+      "move_range": 8,
+      "post_attack_move": 3,
+      "battle_scale": 1,
+      "xp_reward": 50,
+      "gold_min": 2,
+      "gold_max": 12,
+      "strength": 12,
+      "dexterity": 13,
+      "constitution": 12,
+      "intelligence": 7,
+      "wisdom": 10,
+      "undead": false,
+      "humanoid": false,
+      "turn_resistance": 0,
+      "abilities": [
+        {
+          "ability_id": "hypnotic_gaze",
+          "cast_chance": 25,
+          "name": "Luring Song",
+          "description": "A haunting song lulls the listener (sleep) unless it saves.",
+          "save_dc": 12,
+          "duration": 2,
+          "max_target_hp": 30
+        }
+      ],
+      "passives": [],
+      "on_hit_effects": []
+    },
+    {
+      "id": "animated_armor",
+      "name": "Animated Armor",
+      "sprite": "monster/animated_armor.png",
+      "theme": "magical",
+      "difficulty": "normal",
+      "tags": [
+        "Constructs"
+      ],
+      "hp": 28,
+      "ac": 17,
+      "attack_bonus": 4,
+      "damage_dice": 1,
+      "damage_sides": 6,
+      "damage_bonus": 2,
+      "move_range": 4,
+      "post_attack_move": 0,
+      "battle_scale": 1,
+      "xp_reward": 55,
+      "gold_min": 0,
+      "gold_max": 0,
+      "strength": 14,
+      "dexterity": 11,
+      "constitution": 13,
+      "intelligence": 1,
+      "wisdom": 3,
+      "undead": false,
+      "humanoid": false,
+      "turn_resistance": 0,
+      "abilities": [],
+      "passives": [
+        {
+          "effect_id": "poison_immunity"
+        }
+      ],
+      "on_hit_effects": []
+    },
+    {
+      "id": "gargoyle",
+      "name": "Gargoyle",
+      "sprite": "monster/gargoyle.png",
+      "theme": "magical",
+      "difficulty": "normal",
+      "tags": [
+        "Constructs"
+      ],
+      "hp": 32,
+      "ac": 15,
+      "attack_bonus": 4,
+      "damage_dice": 1,
+      "damage_sides": 6,
+      "damage_bonus": 2,
+      "move_range": 7,
+      "post_attack_move": 2,
+      "battle_scale": 1,
+      "xp_reward": 60,
+      "gold_min": 0,
+      "gold_max": 10,
+      "strength": 15,
+      "dexterity": 11,
+      "constitution": 16,
+      "intelligence": 6,
+      "wisdom": 11,
+      "undead": false,
+      "humanoid": false,
+      "turn_resistance": 0,
+      "abilities": [],
+      "passives": [
+        {
+          "effect_id": "poison_immunity"
+        }
+      ],
+      "on_hit_effects": []
+    },
+    {
+      "id": "minotaur",
+      "name": "Minotaur",
+      "sprite": "monster/minotaur.png",
+      "theme": "cryptid",
+      "difficulty": "hard",
+      "tags": [
+        "Monstrosities"
+      ],
+      "hp": 55,
+      "ac": 14,
+      "attack_bonus": 6,
+      "damage_dice": 2,
+      "damage_sides": 6,
+      "damage_bonus": 4,
+      "move_range": 6,
+      "post_attack_move": 0,
+      "battle_scale": 1,
+      "xp_reward": 200,
+      "gold_min": 10,
+      "gold_max": 40,
+      "strength": 18,
+      "dexterity": 11,
+      "constitution": 16,
+      "intelligence": 6,
+      "wisdom": 16,
+      "undead": false,
+      "humanoid": false,
+      "turn_resistance": 0,
+      "abilities": [],
+      "passives": [],
+      "on_hit_effects": []
+    },
+    {
+      "id": "werewolf",
+      "name": "Werewolf",
+      "sprite": "monster/werewolf.png",
+      "theme": "cryptid",
+      "difficulty": "hard",
+      "tags": [
+        "Lycanthropes"
+      ],
+      "hp": 45,
+      "ac": 13,
+      "attack_bonus": 5,
+      "damage_dice": 1,
+      "damage_sides": 8,
+      "damage_bonus": 3,
+      "move_range": 8,
+      "post_attack_move": 2,
+      "battle_scale": 1,
+      "xp_reward": 180,
+      "gold_min": 5,
+      "gold_max": 30,
+      "strength": 15,
+      "dexterity": 14,
+      "constitution": 14,
+      "intelligence": 10,
+      "wisdom": 11,
+      "undead": false,
+      "humanoid": false,
+      "turn_resistance": 0,
+      "abilities": [],
+      "passives": [
+        {
+          "effect_id": "regen",
+          "amount": 3
+        }
+      ],
+      "on_hit_effects": []
+    },
+    {
+      "id": "wraith",
+      "name": "Wraith",
+      "sprite": "monster/wraith.png",
+      "theme": "undead",
+      "difficulty": "hard",
+      "tags": [
+        "Undead"
+      ],
+      "hp": 40,
+      "ac": 13,
+      "attack_bonus": 5,
+      "damage_dice": 1,
+      "damage_sides": 8,
+      "damage_bonus": 3,
+      "move_range": 6,
+      "post_attack_move": 0,
+      "battle_scale": 1,
+      "xp_reward": 180,
+      "gold_min": 10,
+      "gold_max": 40,
+      "strength": 6,
+      "dexterity": 16,
+      "constitution": 16,
+      "intelligence": 12,
+      "wisdom": 14,
+      "undead": true,
+      "humanoid": false,
+      "turn_resistance": 2,
+      "abilities": [],
+      "passives": [
+        {
+          "effect_id": "poison_immunity"
+        }
+      ],
+      "on_hit_effects": [
+        {
+          "effect_id": "drain",
+          "chance": 40,
+          "amount": 4
+        }
+      ]
+    },
+    {
+      "id": "wyvern",
+      "name": "Wyvern",
+      "sprite": "monster/wyvern.png",
+      "theme": "magical",
+      "difficulty": "hard",
+      "tags": [
+        "Dragons"
+      ],
+      "hp": 60,
+      "ac": 13,
+      "attack_bonus": 6,
+      "damage_dice": 2,
+      "damage_sides": 6,
+      "damage_bonus": 3,
+      "move_range": 9,
+      "post_attack_move": 3,
+      "battle_scale": 1,
+      "xp_reward": 220,
+      "gold_min": 20,
+      "gold_max": 80,
+      "strength": 19,
+      "dexterity": 10,
+      "constitution": 16,
+      "intelligence": 5,
+      "wisdom": 12,
+      "undead": false,
+      "humanoid": false,
+      "turn_resistance": 0,
+      "abilities": [
+        {
+          "ability_id": "venom_bite",
+          "cast_chance": 35,
+          "name": "Tail Stinger",
+          "description": "A venomous stinger strike that poisons unless the target saves.",
+          "range": 2,
+          "save_dc": 14,
+          "damage_per_turn": 5,
+          "duration": 3
+        }
+      ],
+      "passives": [],
+      "on_hit_effects": []
+    },
+    {
+      "id": "stone_golem",
+      "name": "Stone Golem",
+      "sprite": "monster/stone_golem.png",
+      "theme": "magical",
+      "difficulty": "hard",
+      "tags": [
+        "Constructs"
+      ],
+      "hp": 75,
+      "ac": 17,
+      "attack_bonus": 6,
+      "damage_dice": 2,
+      "damage_sides": 8,
+      "damage_bonus": 4,
+      "move_range": 3,
+      "post_attack_move": 0,
+      "battle_scale": 1,
+      "xp_reward": 250,
+      "gold_min": 0,
+      "gold_max": 0,
+      "strength": 22,
+      "dexterity": 9,
+      "constitution": 20,
+      "intelligence": 3,
+      "wisdom": 11,
+      "undead": false,
+      "humanoid": false,
+      "turn_resistance": 0,
+      "abilities": [],
+      "passives": [
+        {
+          "effect_id": "fire_resistance"
+        },
+        {
+          "effect_id": "poison_immunity"
+        }
+      ],
+      "on_hit_effects": []
+    },
+    {
+      "id": "hydra",
+      "name": "Hydra",
+      "sprite": "monster/hydra.png",
+      "theme": "cryptid",
+      "difficulty": "deadly",
+      "tags": [
+        "Monstrosities"
+      ],
+      "hp": 100,
+      "ac": 15,
+      "attack_bonus": 7,
+      "damage_dice": 3,
+      "damage_sides": 6,
+      "damage_bonus": 3,
+      "move_range": 5,
+      "post_attack_move": 0,
+      "battle_scale": 2,
+      "xp_reward": 700,
+      "gold_min": 50,
+      "gold_max": 200,
+      "strength": 20,
+      "dexterity": 12,
+      "constitution": 20,
+      "intelligence": 2,
+      "wisdom": 10,
+      "undead": false,
+      "humanoid": false,
+      "turn_resistance": 0,
+      "abilities": [],
+      "passives": [
+        {
+          "effect_id": "regen",
+          "amount": 6
+        }
+      ],
+      "on_hit_effects": []
     }
   ]
 }

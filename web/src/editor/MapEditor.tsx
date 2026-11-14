@@ -90,7 +90,8 @@ import { SpritePicker } from "./SpritePicker";
 import { LootEditor, type LootStash } from "./LootEditor";
 import { EncounterPicker } from "./EncounterPicker";
 import { anchorCell, nextCellSelection } from "./cellSelection";
-import { groupByTags } from "./mapTags";
+import { effectiveTagOrder, tagLabel } from "./mapTags";
+import { MapPickerField, type PickableMap } from "./MapPickerDialog";
 import { PlayLoreOverlay } from "@/play/LoreOverlay";
 import { normalizeLore, type LoreRecord } from "@/play/lore";
 import { groupItemsByCategory } from "./itemTags";
@@ -428,7 +429,11 @@ type LoadState =
        *  can dropdown to a target map rather than typing the id by
        *  hand. Just `{id, name}` pairs — the full record isn't
        *  needed here. */
-      availableMaps: Array<{ id: string; name: string; tags?: string[] }>;
+      availableMaps: PickableMap[];
+      /** The module's map tag order (maps.json `tag_order`, or the
+       *  default) — orders the Link picker's optgroups to match the
+       *  Maps browse tree. */
+      mapTagOrder: string[];
       /** Every dungeon and quest in the module — feeds the cell
        *  inspector's Dungeon / Quest dropdowns so authors pick from
        *  the catalog instead of typing ids by hand. Quests carry the
@@ -1384,7 +1389,14 @@ export function MapEditor({
         // id+name+tags — tags so the Link editor can group its picker
         // by tag the same way the maps browse tree does.
         const availableMaps = allMaps
-          .map((m) => ({ id: m.id, name: m.name ?? m.id, tags: m.tags }))
+          .map((m) => ({
+            id: m.id,
+            name: m.name ?? m.id,
+            tags: m.tags,
+            width: m.width,
+            height: m.height,
+            description: m.description,
+          }))
           .sort((a, b) => a.name.localeCompare(b.name));
 
         // Same shape for the dungeons / quests pickers in the cell
@@ -1449,6 +1461,7 @@ export function MapEditor({
           ownFile: ownEffective ?? null,
           isDraft: hasDraft(moduleId, MODEL_KEY),
           availableMaps,
+          mapTagOrder: effectiveTagOrder(mapsMerged),
           availableDungeons,
           availableQuests,
           availableTraps,
@@ -4760,10 +4773,10 @@ normalizeNpcBehavior(npc?.behavior) === "dance"
               <Link
                 key={t}
                 href={editorModelHref(moduleId, "maps", { tag: t })}
-                title={`Browse maps tagged "${t}".`}
+                title={`Browse maps tagged "${tagLabel(t)}".`}
                 className="rounded border border-parchment/20 bg-ink/40 px-1.5 py-0.5 text-[12px] text-parchment/80 hover:border-parchment/50 hover:bg-ink/60 hover:text-parchment"
               >
-                {t}
+                {tagLabel(t)}
               </Link>
             ))}
           </span>
@@ -5196,6 +5209,7 @@ normalizeNpcBehavior(npc?.behavior) === "dance"
             items={state.items}
             npcs={state.npcs}
             availableMaps={state.availableMaps}
+            mapTagOrder={state.mapTagOrder}
             availableDungeons={state.availableDungeons}
             availableQuests={state.availableQuests}
             availableTraps={state.availableTraps}
@@ -5812,6 +5826,7 @@ function Inspector({
   items,
   npcs,
   availableMaps,
+  mapTagOrder,
   availableDungeons,
   availableQuests,
   availableTraps,
@@ -5838,7 +5853,9 @@ function Inspector({
   npcs: NpcRecord[];
   /** Every map in the module — fed to the Link editor's map_id picker
    *  (tags drive that picker's optgroup grouping). */
-  availableMaps: Array<{ id: string; name: string; tags?: string[] }>;
+  availableMaps: PickableMap[];
+  /** Module tag order — orders those optgroups like the Maps tree. */
+  mapTagOrder: string[];
   /** Every dungeon and quest in the module — fed to the cell-inspector's
    *  Dungeon and Quest dropdowns. Quests carry the full record (used
    *  by the on-map quest-giver sprite + glow logic). */
@@ -6408,6 +6425,7 @@ function Inspector({
             }
             canReset={!!base}
             availableMaps={availableMaps}
+            mapTagOrder={mapTagOrder}
             onChange={(v) => onUpdate({ link: v })}
             onReset={() => onUpdate({ link: undefined })}
           />
@@ -6422,6 +6440,7 @@ function Inspector({
             }
             canReset={!!base}
             availableMaps={availableMaps}
+            mapTagOrder={mapTagOrder}
             palette={palette}
             onChange={(v) => onUpdate({ pressure_plate: v })}
             onReset={() => onUpdate({ pressure_plate: undefined })}
@@ -6944,6 +6963,7 @@ function PressurePlateEditor({
   isModified,
   canReset,
   availableMaps,
+  mapTagOrder,
   palette,
   onChange,
   onReset,
@@ -6960,7 +6980,8 @@ function PressurePlateEditor({
   } | null;
   isModified: boolean;
   canReset: boolean;
-  availableMaps: Array<{ id: string; name: string; tags?: string[] }>;
+  availableMaps: PickableMap[];
+  mapTagOrder: string[];
   /** Tile Palette — feeds the replace-tile picker. */
   palette: TileType[];
   onChange: (
@@ -7013,26 +7034,14 @@ function PressurePlateEditor({
                 className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-[13px] text-parchment/90 focus:border-parchment/60 focus:outline-none"
               />
             ) : (
-              <select
+              <MapPickerField
+                className="mt-0.5"
+                title="Pressure plate target map"
                 value={value.map_id}
-                onChange={(e) =>
-                  onChange({ ...value, map_id: e.target.value })
-                }
-                className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-[13px] text-parchment/90 focus:border-parchment/60 focus:outline-none"
-              >
-                {!value.map_id ? (
-                  <option value="">— choose a map —</option>
-                ) : null}
-                {groupByTags(availableMaps).map(([tag, maps]) => (
-                  <optgroup key={tag} label={tag}>
-                    {maps.map((m) => (
-                      <option key={`${tag}::${m.id}`} value={m.id}>
-                        {m.name} ({m.id})
-                      </option>
-                    ))}
-                  </optgroup>
-                ))}
-              </select>
+                maps={availableMaps}
+                tagOrder={mapTagOrder}
+                onChange={(id) => onChange({ ...value, map_id: id })}
+              />
             )}
             {mapIsOrphan ? (
               <span className="mt-0.5 block text-xs text-ember/80">
@@ -7129,6 +7138,7 @@ function LinkEditor({
   isModified,
   canReset,
   availableMaps,
+  mapTagOrder,
   onChange,
   onReset,
 }: {
@@ -7138,7 +7148,8 @@ function LinkEditor({
   canReset: boolean;
   /** All maps in the module — feeds the map_id dropdown, grouped by
    *  tag (same pinned ordering as the maps browse tree). */
-  availableMaps: Array<{ id: string; name: string; tags?: string[] }>;
+  availableMaps: PickableMap[];
+  mapTagOrder: string[];
   onChange: (
     v: { map_id: string; x: number; y: number } | null,
   ) => void;
@@ -7194,32 +7205,14 @@ function LinkEditor({
                 className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-[13px] text-parchment/90 focus:border-parchment/60 focus:outline-none"
               />
             ) : (
-              <select
+              <MapPickerField
+                className="mt-0.5"
+                title="Link target map"
                 value={value.map_id}
-                onChange={(e) =>
-                  onChange({ ...value, map_id: e.target.value })
-                }
-                className="mt-0.5 w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 font-mono text-[13px] text-parchment/90 focus:border-parchment/60 focus:outline-none"
-              >
-                {!value.map_id ? (
-                  <option value="">— choose a map —</option>
-                ) : null}
-                {/* Grouped by tag (pinned order: overview, town,
-                    buildings, outside, then alphabetical, untagged
-                    last) — same shape as the maps browse tree. A map
-                    with several tags appears under each, so it's
-                    findable under whichever tag the author thinks of
-                    first; picking any copy writes the same id. */}
-                {groupByTags(availableMaps).map(([tag, maps]) => (
-                  <optgroup key={tag} label={tag}>
-                    {maps.map((m) => (
-                      <option key={`${tag}::${m.id}`} value={m.id}>
-                        {m.name} ({m.id})
-                      </option>
-                    ))}
-                  </optgroup>
-                ))}
-              </select>
+                maps={availableMaps}
+                tagOrder={mapTagOrder}
+                onChange={(id) => onChange({ ...value, map_id: id })}
+              />
             )}
             {valueIsOrphan ? (
               <span className="mt-0.5 block text-xs text-ember/80">

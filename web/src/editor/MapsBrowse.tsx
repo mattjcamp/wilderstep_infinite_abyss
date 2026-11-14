@@ -7,7 +7,10 @@
  *
  *   - A tag-tree grouping in the list (not a flat table) — maps with
  *     multiple tags appear under each tag they carry; maps with no
- *     tags fall into an "(untagged)" bucket.
+ *     tags fall into an "(untagged)" bucket. Tags nest on ":" like the
+ *     Tile Palette ("Hallowmere: House" → Hallowmere › House).
+ *   - A per-module tag order (`tag_order` in maps.json): pin a tag
+ *     group to float it to the top of its level, ▲/▼ to reorder pins.
  *   - A custom New Map form that auto-generates the grid from
  *     width × height (no raw-JSON grid input), with a chip-style
  *     multi-select for tags that suggests existing tags and lets you
@@ -48,7 +51,24 @@ import {
 import type { DungeonRecord } from "@/sim/dungeon/types";
 import { bakeDungeon } from "./dungeonBake";
 import { GenerateDungeonDialog } from "./GenerateDungeonDialog";
-import { compareTags, nextCopyId, planTagDelete, UNTAGGED } from "./mapTags";
+import {
+  buildTagTree,
+  collectTagPaths,
+  effectiveTagOrder,
+  groupByTags,
+  isTagPinned,
+  moveTagPin,
+  nextCopyId,
+  normalizeTag,
+  planTagDelete,
+  setTagPinned,
+  tagAncestors,
+  tagLabel,
+  tagNodeRecords,
+  tagSegments,
+  UNTAGGED,
+  type TagNode,
+} from "./mapTags";
 import { ID_PATTERN, TagsPicker } from "./TagsPicker";
 import { usePublishServer } from "./usePublishServer";
 
@@ -94,29 +114,22 @@ type LoadState =
        *  and Buildings"). Not auto-merged — surfaced for explicit
        *  import, mirroring the generic ModelView. */
       catalog: LibraryCatalogEntry[];
+      /** Pinned tag paths, in display order (maps.json `tag_order`,
+       *  or the PINNED_TAGS default when the file doesn't set one). */
+      tagOrder: string[];
       ownFile: Record<string, unknown> | null;
       isDraft: boolean;
     }
   | { kind: "error"; message: string };
 
-/** Group maps by tag for the library-import view. A map carrying
- *  several tags appears under each (so a shared "shop" map shows up in
- *  both the building it belongs to and any cross-cutting tag); untagged
- *  maps fall into the "(untagged)" bucket. Returns entries sorted
- *  alphabetically with "(untagged)" last — same ordering as the main
- *  tree. */
-function groupRecordsByTag(records: MapRecord[]): [string, MapRecord[]][] {
-  const groups = new Map<string, MapRecord[]>();
-  for (const m of records) {
-    const tags =
-      Array.isArray(m.tags) && m.tags.length > 0 ? m.tags : [UNTAGGED];
-    for (const tag of tags) {
-      if (!groups.has(tag)) groups.set(tag, []);
-      groups.get(tag)!.push(m);
-    }
-  }
-  const keys = [...groups.keys()].sort(compareTags);
-  return keys.map((k) => [k, groups.get(k)!]);
+/** Group maps by (full, possibly nested) tag for the library-import
+ *  view. A map carrying several tags appears under each; untagged maps
+ *  fall into the "(untagged)" bucket. Same ordering as the main tree. */
+function groupRecordsByTag(
+  records: MapRecord[],
+  order: ReadonlyArray<string>,
+): [string, MapRecord[]][] {
+  return groupByTags(records, order);
 }
 
 export function MapsBrowse({ moduleId }: { moduleId: string }) {
@@ -134,19 +147,26 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
   // renders collapsed so the screen opens as a compact tag index —
   // EXCEPT a deep-linked tag, which starts open so the related maps
   // are visible the moment the page loads.
+  // Keys are lower-cased normalized tag paths; a nested deep-link
+  // opens every ancestor so the target group is actually visible.
   const [openTags, setOpenTags] = useState<Set<string>>(() =>
-    focusTag ? new Set([focusTag]) : new Set(),
+    focusTag
+      ? new Set(tagAncestors(focusTag).map((p) => p.toLowerCase()))
+      : new Set(),
   );
   // Scroll the deep-linked group into view once the maps have loaded
   // (the group's <section> only exists after the list renders). One-
   // shot via the ref so later expands/collapses don't yank the page.
   const didScrollToTagRef = useRef(false);
 
-  const toggleTag = (tag: string) =>
+  const tagKey = (path: string) => path.toLowerCase();
+  const isOpen = (path: string) => openTags.has(tagKey(path));
+  const toggleTag = (path: string) =>
     setOpenTags((prev) => {
       const next = new Set(prev);
-      if (next.has(tag)) next.delete(tag);
-      else next.add(tag);
+      const k = tagKey(path);
+      if (next.has(k)) next.delete(k);
+      else next.add(k);
       return next;
     });
 
@@ -182,6 +202,7 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
         palette,
         maps,
         catalog,
+        tagOrder: effectiveTagOrder(mapsMerged),
         ownFile: ownEffective ?? null,
         isDraft: hasDraft(moduleId, MODEL_KEY),
       });
@@ -204,29 +225,20 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
     if (state.kind !== "ok") return [];
     const s = new Set<string>();
     for (const m of state.maps) {
-      for (const t of m.tags ?? []) s.add(t);
+      for (const t of m.tags ?? []) {
+        const n = normalizeTag(t);
+        if (n) s.add(n);
+      }
     }
     return [...s].sort();
   }, [state]);
 
-  // ── Group maps by tag for the tree view ────────────────────────
-  const groupedByTag = useMemo(() => {
-    if (state.kind !== "ok") return new Map<string, MapRecord[]>();
-    const groups = new Map<string, MapRecord[]>();
-    for (const m of state.maps) {
-      const tags =
-        Array.isArray(m.tags) && m.tags.length > 0 ? m.tags : [UNTAGGED];
-      for (const tag of tags) {
-        if (!groups.has(tag)) groups.set(tag, []);
-        groups.get(tag)!.push(m);
-      }
-    }
-    // Stable sort: pinned tags first (overview, town, buildings,
-    // outside), then alphabetical, untagged last.
-    const sorted = new Map<string, MapRecord[]>();
-    const keys = [...groups.keys()].sort(compareTags);
-    for (const k of keys) sorted.set(k, groups.get(k)!);
-    return sorted;
+  // ── Nested tag tree for the list ───────────────────────────────
+  // Tags split on ":" into a tree (Hallowmere › House). Siblings sort
+  // pinned-first per the module's tag order, then A–Z, untagged last.
+  const tagTree = useMemo<TagNode<MapRecord>[]>(() => {
+    if (state.kind !== "ok") return [];
+    return buildTagTree(state.maps, state.tagOrder);
   }, [state]);
 
   // Deep-link scroll: when arriving via `?tag=`, bring that group's
@@ -234,7 +246,9 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
   useEffect(() => {
     if (!focusTag || didScrollToTagRef.current) return;
     if (state.kind !== "ok") return;
-    const el = document.getElementById(`maptag-${encodeURIComponent(focusTag)}`);
+    const el = document.getElementById(
+      `maptag-${encodeURIComponent(normalizeTag(focusTag).toLowerCase())}`,
+    );
     if (el) {
       el.scrollIntoView({ behavior: "smooth", block: "start" });
       didScrollToTagRef.current = true;
@@ -260,19 +274,39 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
    * can tailor their success message; throws if neither save path
    * succeeds.
    */
-  const persistMaps = async (
-    updatedMaps: MapRecord[],
-  ): Promise<{ publishedDirectly: boolean }> => {
+  const persistMaps = (updatedMaps: MapRecord[]) =>
+    persistFile({ maps: updatedMaps });
+
+  /** Save the module's tag order (pins) to maps.json `tag_order`. */
+  const persistTagOrder = async (order: string[]) => {
+    try {
+      await persistFile({ tag_order: order });
+    } catch (e) {
+      window.alert(
+        `Couldn't save tag order: ${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
+  };
+
+  /** Patch top-level fields of this module's maps file (`maps`,
+   *  `tag_order`) and persist via the draft → direct-publish path
+   *  described on persistMaps. */
+  const persistFile = async (patch: {
+    maps?: MapRecord[];
+    tag_order?: string[];
+  }): Promise<{ publishedDirectly: boolean }> => {
     if (state.kind !== "ok") return { publishedDirectly: false };
     const baseFile: Record<string, unknown> = state.ownFile
       ? { ...state.ownFile }
       : { maps: [] };
-    baseFile.maps = updatedMaps;
+    if (patch.maps) baseFile.maps = patch.maps;
+    if (patch.tag_order) baseFile.tag_order = patch.tag_order;
     try {
       await saveDraft(moduleId, MODEL_KEY, baseFile);
       setState({
         ...state,
-        maps: updatedMaps,
+        maps: patch.maps ?? state.maps,
+        tagOrder: patch.tag_order ?? state.tagOrder,
         ownFile: baseFile,
         isDraft: true,
       });
@@ -542,7 +576,12 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
       ? (state.ownFile!.maps as MapRecord[])
       : [];
     const plan = planTagDelete(tag, state.maps, own);
-    const label = tag === UNTAGGED ? "untagged" : `tagged "${tag}"`;
+    const label =
+      tag === UNTAGGED
+        ? "untagged"
+        : `tagged "${tagLabel(tag)}"${
+            tagSegments(tag).length > 0 ? " (or nested beneath it)" : ""
+          }`;
     if (plan.toDelete.length === 0) {
       window.alert(
         plan.inherited.length > 0
@@ -557,13 +596,21 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
     lines.push(`Delete all ${n} map${n === 1 ? "" : "s"} ${label}?`);
     lines.push("");
     for (const m of plan.toDelete.slice(0, MAX_LISTED)) {
-      const others = (m.tags ?? []).filter((t) => t !== tag);
+      const others = (m.tags ?? []).filter(
+        (t) => normalizeTag(t).toLowerCase() !== tag.toLowerCase(),
+      );
       lines.push(
         `  · ${m.name} (${m.id})${others.length ? ` — also tagged ${others.join(", ")}` : ""}`,
       );
     }
     if (n > MAX_LISTED) lines.push(`  · …and ${n - MAX_LISTED} more`);
-    if (plan.toDelete.some((m) => (m.tags ?? []).some((t) => t !== tag))) {
+    if (
+      plan.toDelete.some((m) =>
+        (m.tags ?? []).some(
+          (t) => normalizeTag(t).toLowerCase() !== tag.toLowerCase(),
+        ),
+      )
+    ) {
       lines.push("");
       lines.push("Maps that also carry other tags are deleted completely, not just untagged.");
     }
@@ -601,7 +648,7 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
     }
     setOpenTags((prev) => {
       const next = new Set(prev);
-      next.delete(tag);
+      next.delete(tagKey(tag));
       return next;
     });
   };
@@ -836,92 +883,49 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
         </div>
       ) : null}
 
-      {/* Tree-by-tag. Groups are collapsible and start collapsed, so
-          the screen opens as a compact index of tags; expand the ones
-          you're working in. */}
-      <div className="mt-6 space-y-3">
-        {[...groupedByTag.entries()].map(([tag, maps]) => (
-          <section
-            key={tag}
-            id={`maptag-${encodeURIComponent(tag)}`}
-            className="scroll-mt-4"
+      {/* Nested tag tree. Groups are collapsible and start collapsed,
+          so the screen opens as a compact index of tags; expand the
+          ones you're working in. 📌 pins a group to the top of its
+          level; ▲/▼ reorder pinned siblings. */}
+      {tagTree.length > 0 ? (
+        <div className="mt-6 flex items-center gap-2 text-[13px] text-parchment/70">
+          <button
+            type="button"
+            onClick={() =>
+              setOpenTags(new Set(collectTagPaths(tagTree).map(tagKey)))
+            }
+            className="rounded border border-parchment/20 px-2 py-0.5 hover:bg-ink/40"
           >
-            <h2 className="flex items-center gap-2 text-[13px] uppercase tracking-wide text-parchment/65">
-              <button
-                type="button"
-                onClick={() => toggleTag(tag)}
-                className="flex min-w-0 flex-1 items-center gap-2 rounded px-1 py-1 text-left uppercase tracking-wide hover:bg-ink/30 hover:text-parchment/85"
-                title={openTags.has(tag) ? "Collapse this tag group." : "Expand this tag group."}
-              >
-                <span className="text-parchment/75">
-                  {openTags.has(tag) ? "▾" : "▸"}
-                </span>
-                {tag}
-                <span className="text-parchment/55 normal-case tracking-normal">
-                  ({maps.length})
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={() => onDeleteTag(tag)}
-                className="shrink-0 rounded border border-parchment/20 px-2 py-0.5 text-[13px] normal-case tracking-normal text-parchment/70 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
-                title={`Delete every map ${tag === UNTAGGED ? "with no tags" : `tagged "${tag}"`} from this module's maps file. Asks first.`}
-              >
-                Delete all ({maps.length})
-              </button>
-            </h2>
-            {openTags.has(tag) ? (
-            <ul className="mt-1 divide-y divide-parchment/5 rounded border border-parchment/10 bg-ink/20">
-              {maps.map((m) => (
-                <li key={`${tag}::${m.id}`}>
-                  <div className="flex items-center justify-between gap-3 px-3 py-2">
-                    <Link
-                      href={editorMapHref(moduleId, m.id)}
-                      className="min-w-0 flex-1 truncate text-sm text-parchment hover:text-parchment/100"
-                    >
-                      <span className="font-display">{m.name}</span>
-                      <span className="ml-2 font-mono text-[13px] text-parchment/65">
-                        {m.id}
-                      </span>
-                      <span className="ml-2 text-[13px] text-parchment/60">
-                        {m.width}×{m.height}
-                      </span>
-                      {Array.isArray(m.tags) && m.tags.length > 1 ? (
-                        <span className="ml-2 text-[13px] text-parchment/60">
-                          also: {m.tags.filter((t) => t !== tag).join(", ")}
-                        </span>
-                      ) : null}
-                    </Link>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        onDuplicate(m);
-                      }}
-                      className="rounded border border-parchment/20 px-2 py-0.5 text-[13px] text-parchment/80 hover:border-parchment/50 hover:bg-ink/50 hover:text-parchment"
-                      title="Duplicate this map into a new copy and open it in the editor."
-                    >
-                      Copy
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        onDelete(m.id);
-                      }}
-                      className="rounded border border-parchment/20 px-2 py-0.5 text-[13px] text-parchment/80 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
-                      title="Delete this map from the module's maps file."
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-            ) : null}
-          </section>
+            Expand all
+          </button>
+          <button
+            type="button"
+            onClick={() => setOpenTags(new Set())}
+            className="rounded border border-parchment/20 px-2 py-0.5 hover:bg-ink/40"
+          >
+            Collapse all
+          </button>
+          <span className="text-parchment/55">
+            Nest tags with “:” (e.g. <span className="font-mono">Hallowmere: House</span>).
+          </span>
+        </div>
+      ) : null}
+      <div className="mt-3 space-y-2">
+        {tagTree.map((node) => (
+          <TagGroup
+            key={node.path}
+            node={node}
+            depth={0}
+            siblings={tagTree}
+            moduleId={moduleId}
+            tagOrder={state.tagOrder}
+            isOpen={isOpen}
+            onToggle={toggleTag}
+            onDeleteTag={onDeleteTag}
+            onSetTagOrder={persistTagOrder}
+            onDuplicate={onDuplicate}
+            onDelete={onDelete}
+          />
         ))}
         {state.maps.length === 0 ? (
           <p className="text-sm text-parchment/75">
@@ -970,11 +974,11 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
                   </span>
                 </div>
                 <div className="divide-y divide-parchment/10">
-                  {groupRecordsByTag(entry.records).map(([tag, maps]) => (
+                  {groupRecordsByTag(entry.records, state.tagOrder).map(([tag, maps]) => (
                     <div key={`${entry.libraryId}::tag::${tag}`}>
                       <div className="flex items-center justify-between gap-3 bg-ink/30 px-3 py-1.5">
                         <h3 className="text-[13px] uppercase tracking-wide text-parchment/75">
-                          {tag}
+                          {tagLabel(tag)}
                           <span className="ml-2 normal-case tracking-normal text-parchment/55">
                             ({maps.length})
                           </span>
@@ -984,7 +988,7 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
                             type="button"
                             onClick={() => onImportMaps(maps)}
                             className="shrink-0 rounded border border-ember/60 bg-ember/30 px-2 py-0.5 text-[13px] text-parchment hover:bg-ember/50"
-                            title={`Import all ${maps.length} maps tagged "${tag}" — the whole building/area, links preserved.`}
+                            title={`Import all ${maps.length} maps tagged "${tagLabel(tag)}" — the whole building/area, links preserved.`}
                           >
                             + Import all ({maps.length})
                           </button>
@@ -1009,7 +1013,11 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
                               ) : null}
                               {Array.isArray(m.tags) && m.tags.length > 1 ? (
                                 <span className="ml-2 text-[13px] text-parchment/60">
-                                  also: {m.tags.filter((t) => t !== tag).join(", ")}
+                                  also:{" "}
+                                  {m.tags
+                                    .filter((t) => normalizeTag(t) !== tag)
+                                    .map(tagLabel)
+                                    .join(", ")}
                                 </span>
                               ) : null}
                             </div>
@@ -1043,6 +1051,254 @@ export function MapsBrowse({ moduleId }: { moduleId: string }) {
         />
       ) : null}
     </div>
+  );
+}
+
+// ── Tag tree group ──────────────────────────────────────────────────
+
+/** Small square icon button used for the pin / ▲ / ▼ controls. */
+function IconButton({
+  onClick,
+  title,
+  disabled,
+  active,
+  children,
+}: {
+  onClick: () => void;
+  title: string;
+  disabled?: boolean;
+  active?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onClick();
+      }}
+      disabled={disabled}
+      title={title}
+      className={`shrink-0 rounded border px-1.5 py-0.5 text-[12px] normal-case tracking-normal disabled:cursor-not-allowed disabled:opacity-30 ${
+        active
+          ? "border-ember/60 bg-ember/25 text-parchment"
+          : "border-parchment/20 text-parchment/70 hover:border-parchment/50 hover:bg-ink/50 hover:text-parchment"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+/** One collapsible node of the nested map tag tree: header (toggle,
+ *  pin, reorder, delete-all), then child tag groups, then the maps
+ *  filed directly at this level. */
+function TagGroup({
+  node,
+  depth,
+  siblings,
+  moduleId,
+  tagOrder,
+  isOpen,
+  onToggle,
+  onDeleteTag,
+  onSetTagOrder,
+  onDuplicate,
+  onDelete,
+}: {
+  node: TagNode<MapRecord>;
+  depth: number;
+  siblings: TagNode<MapRecord>[];
+  moduleId: string;
+  tagOrder: string[];
+  isOpen: (path: string) => boolean;
+  onToggle: (path: string) => void;
+  onDeleteTag: (path: string) => void;
+  onSetTagOrder: (order: string[]) => void;
+  onDuplicate: (m: MapRecord) => void;
+  onDelete: (id: string) => void;
+}) {
+  const open = isOpen(node.path);
+  const isUntagged = node.path === UNTAGGED;
+  const pinned = !isUntagged && isTagPinned(tagOrder, node.path);
+  // Pinned siblings in display order — drives ▲/▼ enablement.
+  const pinnedSiblings = siblings.filter(
+    (s) => s.path !== UNTAGGED && isTagPinned(tagOrder, s.path),
+  );
+  const pinPos = pinnedSiblings.findIndex((s) => s.path === node.path);
+  const total = tagNodeRecords(node).length;
+  const label = isUntagged ? "untagged" : `"${tagLabel(node.path)}"`;
+  return (
+    <section
+      id={`maptag-${encodeURIComponent(node.path.toLowerCase())}`}
+      className="scroll-mt-4"
+    >
+      <h2
+        className="flex items-center gap-1.5 text-[13px] uppercase tracking-wide text-parchment/65"
+        style={{ paddingLeft: depth * 16 }}
+      >
+        <button
+          type="button"
+          onClick={() => onToggle(node.path)}
+          className="flex min-w-0 flex-1 items-center gap-2 rounded px-1 py-1 text-left uppercase tracking-wide hover:bg-ink/30 hover:text-parchment/85"
+          title={open ? "Collapse this tag group." : "Expand this tag group."}
+        >
+          <span className="text-parchment/75">{open ? "▾" : "▸"}</span>
+          {pinned ? (
+            <span className="text-ember/90" aria-label="pinned">
+              📌
+            </span>
+          ) : null}
+          <span className="truncate">{node.label}</span>
+          <span className="text-parchment/55 normal-case tracking-normal">
+            ({total})
+          </span>
+        </button>
+        {!isUntagged ? (
+          <>
+            {pinned ? (
+              <>
+                <IconButton
+                  onClick={() => onSetTagOrder(moveTagPin(tagOrder, node.path, -1))}
+                  disabled={pinPos <= 0}
+                  title="Move this pinned group up."
+                >
+                  ▲
+                </IconButton>
+                <IconButton
+                  onClick={() => onSetTagOrder(moveTagPin(tagOrder, node.path, 1))}
+                  disabled={pinPos === -1 || pinPos >= pinnedSiblings.length - 1}
+                  title="Move this pinned group down."
+                >
+                  ▼
+                </IconButton>
+              </>
+            ) : null}
+            <IconButton
+              onClick={() =>
+                onSetTagOrder(setTagPinned(tagOrder, node.path, !pinned))
+              }
+              active={pinned}
+              title={
+                pinned
+                  ? "Unpin — this group goes back to A–Z order."
+                  : "Pin this group to the top of its level (saved to maps.json tag_order)."
+              }
+            >
+              {pinned ? "Unpin" : "Pin"}
+            </IconButton>
+          </>
+        ) : null}
+        <button
+          type="button"
+          onClick={() => onDeleteTag(node.path)}
+          className="shrink-0 rounded border border-parchment/20 px-2 py-0.5 text-[13px] normal-case tracking-normal text-parchment/70 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
+          title={`Delete every map ${isUntagged ? "with no tags" : `tagged ${label} or nested beneath it`} from this module's maps file. Asks first.`}
+        >
+          Delete all ({total})
+        </button>
+      </h2>
+      {open ? (
+        <div className="mt-1 space-y-2" style={{ paddingLeft: depth * 16 }}>
+          {node.children.map((child) => (
+            <TagGroup
+              key={child.path}
+              node={child}
+              depth={1}
+              siblings={node.children}
+              moduleId={moduleId}
+              tagOrder={tagOrder}
+              isOpen={isOpen}
+              onToggle={onToggle}
+              onDeleteTag={onDeleteTag}
+              onSetTagOrder={onSetTagOrder}
+              onDuplicate={onDuplicate}
+              onDelete={onDelete}
+            />
+          ))}
+          {node.records.length > 0 ? (
+            <ul className="divide-y divide-parchment/5 rounded border border-parchment/10 bg-ink/20">
+              {node.records.map((m) => (
+                <MapRow
+                  key={`${node.path}::${m.id}`}
+                  map={m}
+                  groupPath={node.path}
+                  moduleId={moduleId}
+                  onDuplicate={onDuplicate}
+                  onDelete={onDelete}
+                />
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function MapRow({
+  map: m,
+  groupPath,
+  moduleId,
+  onDuplicate,
+  onDelete,
+}: {
+  map: MapRecord;
+  groupPath: string;
+  moduleId: string;
+  onDuplicate: (m: MapRecord) => void;
+  onDelete: (id: string) => void;
+}) {
+  const others = (m.tags ?? [])
+    .map(normalizeTag)
+    .filter((t) => t && t.toLowerCase() !== groupPath.toLowerCase());
+  return (
+    <li>
+      <div className="flex items-center justify-between gap-3 px-3 py-2">
+        <Link
+          href={editorMapHref(moduleId, m.id)}
+          className="min-w-0 flex-1 truncate text-sm text-parchment hover:text-parchment/100"
+        >
+          <span className="font-display">{m.name}</span>
+          <span className="ml-2 font-mono text-[13px] text-parchment/65">
+            {m.id}
+          </span>
+          <span className="ml-2 text-[13px] text-parchment/60">
+            {m.width}×{m.height}
+          </span>
+          {others.length > 0 ? (
+            <span className="ml-2 text-[13px] text-parchment/60">
+              also: {others.map(tagLabel).join(", ")}
+            </span>
+          ) : null}
+        </Link>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onDuplicate(m);
+          }}
+          className="rounded border border-parchment/20 px-2 py-0.5 text-[13px] text-parchment/80 hover:border-parchment/50 hover:bg-ink/50 hover:text-parchment"
+          title="Duplicate this map into a new copy and open it in the editor."
+        >
+          Copy
+        </button>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onDelete(m.id);
+          }}
+          className="rounded border border-parchment/20 px-2 py-0.5 text-[13px] text-parchment/80 hover:border-ember/60 hover:bg-ember/30 hover:text-parchment"
+          title="Delete this map from the module's maps file."
+        >
+          Delete
+        </button>
+      </div>
+    </li>
   );
 }
 
@@ -1190,6 +1446,7 @@ function NewMapForm({
             tags={tags}
             existing={existingTags}
             onChange={setTags}
+            placeholder="new tag… (nest with “:”, e.g. Hallowmere: House)"
           />
         </div>
 

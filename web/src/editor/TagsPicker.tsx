@@ -19,14 +19,22 @@ export function TagsPicker({
   tags,
   existing,
   onChange,
+  placeholder = "new tag…",
 }: {
   tags: string[];
   existing: string[];
   onChange: (tags: string[]) => void;
+  placeholder?: string;
 }) {
   const [draft, setDraft] = useState("");
   const remainingSuggestions = existing.filter((t) => !tags.includes(t));
-  const trimmed = draft.trim();
+  // Collapse whitespace around ":" so nested tags ("Hallowmere:House",
+  // "Hallowmere : House") all normalize to "Hallowmere: House".
+  const trimmed = draft
+    .split(":")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .join(": ");
   const canAddNew = trimmed.length > 0 && !tags.includes(trimmed);
 
   const add = (t: string) => {
@@ -88,7 +96,7 @@ export function TagsPicker({
               }
             }
           }}
-          placeholder="new tag…"
+          placeholder={placeholder}
           className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
         />
         <button

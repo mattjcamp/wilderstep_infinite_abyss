@@ -34,6 +34,7 @@ import {
   PartyAttributesEditor,
   type PartyMapRef,
 } from "./PartyAttributesEditor";
+import { effectiveTagOrder } from "./mapTags";
 import {
   PartyScreen,
   type PartyAbilityRef,
@@ -61,6 +62,8 @@ type LoadState =
       items: PartyItemRef[];
       spells: PartySpellRef[];
       maps: PartyMapRef[];
+      /** maps.json tag order — orders the start-map picker's groups. */
+      mapTagOrder: string[];
     }
   | { kind: "error"; message: string };
 
@@ -244,7 +247,11 @@ export function PartyBrowse({ moduleId }: { moduleId: string }) {
           tags: m.tags,
           width: m.width,
           height: m.height,
+          description: m.description,
         }));
+        const mapTagOrder = effectiveTagOrder(
+          mergeModel("maps", mapsLayers.inherited, mapsLayers.ownFile),
+        );
 
         setState({
           kind: "ok",
@@ -257,6 +264,7 @@ export function PartyBrowse({ moduleId }: { moduleId: string }) {
           items: list<PartyItemRef>("items", itemsLayers),
           spells: list<PartySpellRef>("spells", spellsLayers),
           maps,
+          mapTagOrder,
         });
         setActiveEffectIds(
           effectiveParty(inherited, own).party_effects ?? [],
@@ -342,6 +350,7 @@ export function PartyBrowse({ moduleId }: { moduleId: string }) {
               ownKeys={ownKeys}
               hasParent={state.inherited !== null}
               maps={state.maps}
+              mapTagOrder={state.mapTagOrder}
               abilities={state.abilities}
               onSet={onSetAttribute}
               onReset={onResetAttribute}

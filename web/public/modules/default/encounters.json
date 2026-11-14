@@ -671,6 +671,393 @@
       ],
       "custom_map": "dungeon_battle_screen_1",
       "darkness": true
+    },
+    {
+      "id": "bandit_ambush",
+      "name": "Bandit Ambush",
+      "description": "Hooded figures step out of the shadows, blades already drawn. “Your coin or your lives.”",
+      "area": "dungeon",
+      "theme": "humanoid",
+      "tags": [
+        "Humans"
+      ],
+      "level": 1,
+      "weight": 25,
+      "monster_party_tile": "monster/bandit.png",
+      "monsters": [
+        "bandit",
+        "bandit",
+        "bandit"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "kobold_pack",
+      "name": "Kobold Pack",
+      "description": "Yipping and hissing, a pack of kobolds scrambles out of a narrow side tunnel.",
+      "area": "dungeon",
+      "theme": "humanoid",
+      "tags": [
+        "Kobolds"
+      ],
+      "level": 1,
+      "weight": 25,
+      "monster_party_tile": "monster/kobold.png",
+      "monsters": [
+        "kobold",
+        "kobold",
+        "kobold",
+        "kobold"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "wolf_pack",
+      "name": "Wolf Pack",
+      "description": "Yellow eyes glint in the dark. A pack of wolves circles, hackles raised.",
+      "area": "dungeon",
+      "theme": "animal",
+      "tags": [
+        "Beasts"
+      ],
+      "level": 1,
+      "weight": 25,
+      "monster_party_tile": "monster/wolf.png",
+      "monsters": [
+        "wolf",
+        "wolf",
+        "wolf"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "cult_gathering",
+      "name": "Cult Gathering",
+      "description": "The chanting stops mid-verse. Robed cultists turn toward you while their summoned imp cackles overhead.",
+      "area": "dungeon",
+      "theme": "humanoid",
+      "tags": [
+        "Humans"
+      ],
+      "level": 2,
+      "weight": 20,
+      "monster_party_tile": "monster/cultist.png",
+      "monsters": [
+        "cultist",
+        "cultist",
+        "imp"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "imps",
+      "name": "Imps",
+      "description": "Tiny red fiends dart through the air, flinging sparks and insults in equal measure.",
+      "area": "dungeon",
+      "theme": "devil",
+      "tags": [
+        "Demons"
+      ],
+      "level": 2,
+      "weight": 15,
+      "monster_party_tile": "monster/imp.png",
+      "monsters": [
+        "imp",
+        "imp",
+        "imp"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "hobgoblin_patrol",
+      "name": "Hobgoblin Patrol",
+      "description": "A disciplined hobgoblin patrol marches into view, goblin skirmishers fanning out ahead.",
+      "area": "dungeon",
+      "theme": "humanoid",
+      "tags": [
+        "Goblinoids"
+      ],
+      "level": 3,
+      "weight": 20,
+      "monster_party_tile": "monster/hobgoblin.png",
+      "monsters": [
+        "hobgoblin",
+        "hobgoblin",
+        "goblin",
+        "goblin"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "gnoll_hunting_party",
+      "name": "Gnoll Hunting Party",
+      "description": "Cackling laughter echoes off the stone. Gnolls — and the beast they hunt with.",
+      "area": "dungeon",
+      "theme": "humanoid",
+      "tags": [
+        "Gnolls"
+      ],
+      "level": 3,
+      "weight": 20,
+      "monster_party_tile": "monster/gnoll.png",
+      "monsters": [
+        "gnoll",
+        "gnoll",
+        "wolf"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "ghouls",
+      "name": "Ghouls",
+      "description": "Hunched figures look up from a grisly meal, red eyes catching your light.",
+      "area": "dungeon",
+      "theme": "undead",
+      "tags": [
+        "Undead"
+      ],
+      "level": 3,
+      "weight": 20,
+      "monster_party_tile": "monster/ghoul.png",
+      "monsters": [
+        "ghoul",
+        "ghoul",
+        "zombie"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "mimic",
+      "name": "Mimic",
+      "description": "A treasure chest sits alone in the corridor. Its lid creaks open — and keeps opening.",
+      "area": "dungeon",
+      "theme": "cryptid",
+      "tags": [
+        "Monstrosities"
+      ],
+      "level": 3,
+      "weight": 10,
+      "monster_party_tile": "monster/mimic.png",
+      "monsters": [
+        "mimic"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "harpy_roost",
+      "name": "Harpy Roost",
+      "description": "A sweet song drifts down from above. Then the singers dive, talons first.",
+      "area": "dungeon",
+      "theme": "cryptid",
+      "tags": [
+        "Monstrosities"
+      ],
+      "level": 3,
+      "weight": 15,
+      "monster_party_tile": "monster/harpy.png",
+      "monsters": [
+        "harpy",
+        "harpy",
+        "harpy"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "haunted_armory",
+      "name": "Haunted Armory",
+      "description": "Suits of armor along the walls step down from their stands in perfect unison.",
+      "area": "dungeon",
+      "theme": "magical",
+      "tags": [
+        "Constructs"
+      ],
+      "level": 3,
+      "weight": 15,
+      "monster_party_tile": "monster/animated_armor.png",
+      "monsters": [
+        "animated_armor",
+        "animated_armor"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "ogre_and_minders",
+      "name": "Ogre",
+      "description": "An ogre lumbers forward, club dragging behind it, its goblin minders egging it on.",
+      "area": "dungeon",
+      "theme": "humanoid",
+      "tags": [
+        "Giants"
+      ],
+      "level": 4,
+      "weight": 15,
+      "monster_party_tile": "monster/ogre.png",
+      "monsters": [
+        "ogre",
+        "goblin",
+        "goblin"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "owlbear",
+      "name": "Owlbear",
+      "description": "A shrieking hoot shakes the chamber. Feathers, fur and claws come charging.",
+      "area": "dungeon",
+      "theme": "cryptid",
+      "tags": [
+        "Monstrosities"
+      ],
+      "level": 4,
+      "weight": 15,
+      "monster_party_tile": "monster/owlbear.png",
+      "monsters": [
+        "owlbear"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "gargoyles",
+      "name": "Gargoyles",
+      "description": "The statues flanking the archway were not there a moment ago.",
+      "area": "dungeon",
+      "theme": "magical",
+      "tags": [
+        "Constructs"
+      ],
+      "level": 4,
+      "weight": 15,
+      "monster_party_tile": "monster/gargoyle.png",
+      "monsters": [
+        "gargoyle",
+        "gargoyle"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "minotaur",
+      "name": "Minotaur",
+      "description": "Heavy hooves scrape on stone. The labyrinth's master lowers its horns.",
+      "area": "dungeon",
+      "theme": "cryptid",
+      "tags": [
+        "Monstrosities"
+      ],
+      "level": 5,
+      "weight": 12,
+      "monster_party_tile": "monster/minotaur.png",
+      "monsters": [
+        "minotaur"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "werewolf",
+      "name": "Werewolf",
+      "description": "A howl answers your torchlight. Something among the wolves walks upright.",
+      "area": "dungeon",
+      "theme": "animal",
+      "tags": [
+        "Lycanthropes"
+      ],
+      "level": 5,
+      "weight": 12,
+      "monster_party_tile": "monster/werewolf.png",
+      "monsters": [
+        "werewolf",
+        "wolf",
+        "wolf"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "wraiths",
+      "name": "Wraiths",
+      "description": "The air turns bitterly cold. Two hooded shapes drift through the wall, hungry for warmth and life.",
+      "area": "dungeon",
+      "theme": "undead",
+      "tags": [
+        "Undead"
+      ],
+      "level": 5,
+      "weight": 12,
+      "monster_party_tile": "monster/wraith.png",
+      "monsters": [
+        "wraith",
+        "wraith"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "wyvern",
+      "name": "Wyvern",
+      "description": "Leathery wings unfold in the cavern's dark, and a venomous stinger arches overhead.",
+      "area": "dungeon",
+      "theme": "magical",
+      "tags": [
+        "Dragons"
+      ],
+      "level": 6,
+      "weight": 10,
+      "monster_party_tile": "monster/wyvern.png",
+      "monsters": [
+        "wyvern"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "stone_golem",
+      "name": "Stone Golem",
+      "description": "Runes flare to life across a hulking figure of carved stone. It takes one grinding step forward.",
+      "area": "dungeon",
+      "theme": "magical",
+      "tags": [
+        "Constructs"
+      ],
+      "level": 6,
+      "weight": 10,
+      "monster_party_tile": "monster/stone_golem.png",
+      "monsters": [
+        "stone_golem"
+      ],
+      "custom_map": null,
+      "darkness": false
+    },
+    {
+      "id": "hydra",
+      "name": "Hydra",
+      "description": "Three heads rise from the dark water, and every one of them is watching you.",
+      "area": "dungeon",
+      "theme": "cryptid",
+      "tags": [
+        "Monstrosities"
+      ],
+      "level": 7,
+      "weight": 8,
+      "monster_party_tile": "monster/hydra.png",
+      "monsters": [
+        "hydra"
+      ],
+      "custom_map": null,
+      "darkness": false
     }
   ]
 }

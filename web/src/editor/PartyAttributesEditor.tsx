@@ -21,7 +21,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { SpritePicker } from "./SpritePicker";
-import { groupByTags } from "./mapTags";
+import { MapPickerField } from "./MapPickerDialog";
 import type { PartyAbilityRef, PartyRecord } from "./PartyScreen";
 
 export interface PartyMapRef {
@@ -30,6 +30,7 @@ export interface PartyMapRef {
   tags?: string[];
   width?: number;
   height?: number;
+  description?: string;
 }
 
 interface StartPosition {
@@ -45,6 +46,7 @@ export function PartyAttributesEditor({
   ownKeys,
   hasParent,
   maps,
+  mapTagOrder,
   abilities,
   onSet,
   onReset,
@@ -57,6 +59,8 @@ export function PartyAttributesEditor({
    *  inherited / overridden badges and "Use inherited". */
   hasParent: boolean;
   maps: ReadonlyArray<PartyMapRef>;
+  /** maps.json tag order — pinned tag groups first in the picker. */
+  mapTagOrder?: ReadonlyArray<string>;
   abilities: ReadonlyArray<PartyAbilityRef>;
   onSet: (key: string, value: unknown) => void;
   onReset: (key: string) => void;
@@ -99,26 +103,14 @@ export function PartyAttributesEditor({
           "start_position",
           "Start position",
           <div className="flex flex-wrap items-center gap-1">
-            <select
+            <MapPickerField
+              className="min-w-0 flex-1"
+              title="Party start map"
               value={start.map_id ?? ""}
-              onChange={(e) => setStart({ map_id: e.target.value })}
-              aria-label="Start map"
-              className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
-            >
-              {!start.map_id ? <option value="">— choose a map —</option> : null}
-              {start.map_id && !startMap ? (
-                <option value={start.map_id}>(missing) {start.map_id}</option>
-              ) : null}
-              {groupByTags(maps).map(([tag, ms]) => (
-                <optgroup key={tag} label={tag}>
-                  {ms.map((m) => (
-                    <option key={`${tag}::${m.id}`} value={m.id}>
-                      {m.name ?? m.id}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
+              maps={maps}
+              tagOrder={mapTagOrder}
+              onChange={(id) => setStart({ map_id: id })}
+            />
             <NumberInput
               label="Start column"
               placeholder="col"

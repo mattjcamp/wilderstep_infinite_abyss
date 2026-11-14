@@ -1,0 +1,1 @@
+The Varn: Before the beginning of the World, there was a great war between the The Varn and The Dark. By the end of the last battle of time, The Varn had destroyed The Dark and themselves in the process. The Varn collapsed into the World that you see around you. We live in the corpse of a dead god, this is why we call this world is called "Varnfell".
