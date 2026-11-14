@@ -2465,16 +2465,24 @@ export class CombatScene extends Phaser.Scene {
   }
 
   /** Redraw the visible combatant cards when the roster, the scroll
-   *  position or the turn changed. On a new turn the list scrolls so
-   *  the acting combatant is in view (`follow`). */
+   *  position or the turn changed. On a new turn (`follow`) a party
+   *  turn snaps the list back to the top (the party); an enemy turn
+   *  scrolls just enough to show the acting enemy. */
   private refreshRoster(follow = true): void {
     if (!this.combat || this.rosterArea.h === 0) return;
     const list = this.rosterOrder();
     const turn = this.combat.turnNumber;
     if (follow && turn !== this.rosterTurn) {
       this.rosterTurn = turn;
-      const idx = list.findIndex((c) => c.id === this.combat.current?.id);
-      if (idx >= 0 && (idx < this.rosterScroll || idx >= this.rosterScroll + ROSTER_ROWS)) {
+      const cur = this.combat.current;
+      const idx = list.findIndex((c) => c.id === cur?.id);
+      if (cur && cur.side !== "enemies" && idx >= 0 && idx < ROSTER_ROWS) {
+        // A party turn: back to the top, so the player sees the whole
+        // party's stats (the party is listed first).
+        this.rosterScroll = 0;
+      } else if (idx >= 0 && (idx < this.rosterScroll || idx >= this.rosterScroll + ROSTER_ROWS)) {
+        // Enemy turn (or a party member below the first page, e.g. a
+        // late summon): scroll just enough to bring them into view.
         this.rosterScroll = Math.max(0, Math.min(idx, list.length - ROSTER_ROWS));
       }
     }

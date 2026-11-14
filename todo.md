@@ -1,9 +1,4 @@
 
-## Fine Tune
-- Audit and test how monster special abilities work
-- The Lick Lighting Bolt should look like the spell lighting bolt
-
-
 ## Varnfell Lore
 - races
 - gods: 
