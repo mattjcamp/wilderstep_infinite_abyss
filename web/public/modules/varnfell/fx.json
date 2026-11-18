@@ -1,0 +1,4 @@
+{
+  "_comment": "FX catalog — every named effect the game can play. Each record picks one built-in visual (`visual`, or 'none' for sound-only), tunes it (`params`, only values that differ from the visual's defaults), and names the sounds played at the start (`cast_sfx`) and on impact (`hit_sfx`). Spells, items, effects, abilities and monster abilities point at a record by `fx_id`. Edited in the editor's FX page. See docs/data_dictionary/fx.md.",
+  "fx": []
+}

@@ -2,19 +2,21 @@
 
 /**
  * FX preview — a small Phaser stage that plays one FX from the catalog
- * between a caster (left) and a target (right), using the params the
+ * between a caster (left) and a target (right), using the values the
  * author is editing right now (not the saved ones), so every change is
- * visible immediately.
+ * visible immediately. It plays through `playFxParts`, the same code
+ * the game uses — main visual, then the impact visual + shake — so the
+ * preview matches play.
  *
  * The parent bumps `playKey` (or changes `params`) to replay. With
  * `loop` on, the effect replays on its own after a short pause.
  * `castSfx` / `hitSfx` play at the start and on impact — on the first
- * play of each trigger only, so a looping preview doesn't drone. A
- * null `def` is a sound-only FX.
+ * play of each trigger only, so a looping preview doesn't drone. Parts
+ * that draw nothing are a sound-only FX.
  */
 
 import { useEffect, useRef } from "react";
-import type { FxDef, FxParams } from "@/vfx/fxCatalog";
+import { fxPartsVisible, playFxParts, type FxParts } from "@/vfx/fxCatalog";
 import { Sfx } from "@/battle/audio/Sfx";
 import { spriteUrl } from "@/data_model/spriteUrl";
 
@@ -26,20 +28,18 @@ const CASTER = { x: 64, y: 62 };
 const TARGET = { x: 256, y: 62 };
 
 interface StageApi {
-  play: (def: FxDef, params: FxParams) => Promise<void>;
+  play: (parts: FxParts) => Promise<void>;
 }
 
 export function FxPreview({
-  def,
-  params,
+  parts,
   playKey,
   loop,
   castSfx = "",
   hitSfx = "",
   sound = true,
 }: {
-  def: FxDef | null;
-  params: FxParams;
+  parts: FxParts;
   playKey: number;
   loop: boolean;
   castSfx?: string;
@@ -88,7 +88,7 @@ export function FxPreview({
             actor("caster", CASTER, 0x6b7fa8);
             actor("target", TARGET, 0xa84b4b);
             stageRef.current = {
-              play: (d, p) => d.play(this, CASTER, TARGET, p),
+              play: (parts) => playFxParts(this, CASTER, TARGET, parts),
             };
             resolve();
           }
@@ -112,6 +112,8 @@ export function FxPreview({
     };
   }, []);
 
+  const visible = fxPartsVisible(parts);
+
   // Play on selection / param change / Replay; loop if asked.
   useEffect(() => {
     let stop = false;
@@ -124,13 +126,15 @@ export function FxPreview({
       first = false;
       try {
         if (withSound && castSfx) Sfx.play(castSfx);
-        if (def) await stageRef.current.play(def, params);
+        if (visible) await stageRef.current.play(parts);
         else await new Promise<void>((r) => setTimeout(r, 180));
         if (withSound && hitSfx && !stop) Sfx.play(hitSfx);
       } catch {
         /* stage torn down mid-play */
       }
-      if (!stop && loop && def) timer = setTimeout(run, 700);
+      // Leave room for the impact visual (it keeps playing after
+      // playFxParts resolves at the moment of impact).
+      if (!stop && loop && visible) timer = setTimeout(run, parts.impactDef ? 1100 : 700);
     };
     // Small debounce so dragging a slider doesn't stack dozens of plays.
     timer = setTimeout(run, 120);
@@ -138,7 +142,7 @@ export function FxPreview({
       stop = true;
       if (timer) clearTimeout(timer);
     };
-  }, [def, params, playKey, loop, castSfx, hitSfx, sound]);
+  }, [parts, visible, playKey, loop, castSfx, hitSfx, sound]);
 
   return (
     <div

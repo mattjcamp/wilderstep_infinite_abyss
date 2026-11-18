@@ -29861,7 +29861,8 @@
       "name": "Inn",
       "description": "A modest inn, a place for travels to meet and drink and sometimes find their next adventure.",
       "tags": [
-        "Shop"
+        "Shop",
+        "Willowbrook"
       ],
       "width": 8,
       "height": 8,
@@ -30007,6 +30008,7 @@
         [
           {
             "boat": false,
+            "background_sprite": "shop/floor_planks.png",
             "id": "shop_wall_left",
             "name": "Shop Wall, Left",
             "walkable": false,
@@ -30019,11 +30021,11 @@
             "encounter": null,
             "spawn": null,
             "sprite": "shop/wall_left.png",
-            "tag": "shop",
-            "background_sprite": "shop/floor_planks.png"
+            "tag": "shop"
           },
           {
             "boat": false,
+            "background_sprite": "shop/floor_planks.png",
             "id": "shop_table_h_left",
             "name": "Shop Table, Left End",
             "walkable": false,
@@ -30036,11 +30038,11 @@
             "encounter": null,
             "spawn": null,
             "sprite": "shop/table_h_left.png",
-            "tag": "shop",
-            "background_sprite": "shop/floor_planks.png"
+            "tag": "shop"
           },
           {
             "boat": false,
+            "background_sprite": "shop/floor_planks.png",
             "id": "shop_table_h_right",
             "name": "Shop Table, Right End",
             "walkable": false,
@@ -30053,23 +30055,6 @@
             "encounter": null,
             "spawn": null,
             "sprite": "shop/table_h_right.png",
-            "tag": "shop",
-            "background_sprite": "shop/floor_planks.png"
-          },
-          {
-            "boat": false,
-            "id": "shop_floor_planks",
-            "name": "Shop Floor",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "shop/floor_planks.png",
             "tag": "shop"
           },
           {
@@ -30122,6 +30107,23 @@
           },
           {
             "boat": false,
+            "id": "shop_floor_planks",
+            "name": "Shop Floor",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "shop/floor_planks.png",
+            "tag": "shop"
+          },
+          {
+            "boat": false,
+            "background_sprite": "shop/floor_planks.png",
             "id": "shop_wall_right",
             "name": "Shop Wall, Right",
             "walkable": false,
@@ -30135,13 +30137,13 @@
             "spawn": null,
             "sprite": "shop/wall_right.png",
             "tag": "shop",
-            "background_sprite": "shop/floor_planks.png",
             "npc": "ola"
           }
         ],
         [
           {
             "boat": false,
+            "background_sprite": "shop/floor_planks.png",
             "id": "shop_wall_left",
             "name": "Shop Wall, Left",
             "walkable": false,
@@ -30154,8 +30156,7 @@
             "encounter": null,
             "spawn": null,
             "sprite": "shop/wall_left.png",
-            "tag": "shop",
-            "background_sprite": "shop/floor_planks.png"
+            "tag": "shop"
           },
           {
             "boat": false,
@@ -30257,6 +30258,7 @@
           },
           {
             "boat": false,
+            "background_sprite": "shop/floor_planks.png",
             "id": "shop_wall_right",
             "name": "Shop Wall, Right",
             "walkable": false,
@@ -30270,13 +30272,13 @@
             "spawn": null,
             "sprite": "shop/wall_right.png",
             "tag": "shop",
-            "background_sprite": "shop/floor_planks.png",
             "npc": "benoit"
           }
         ],
         [
           {
             "boat": false,
+            "background_sprite": "shop/floor_planks.png",
             "id": "shop_wall_left",
             "name": "Shop Wall, Left",
             "walkable": false,
@@ -30289,8 +30291,7 @@
             "encounter": null,
             "spawn": null,
             "sprite": "shop/wall_left.png",
-            "tag": "shop",
-            "background_sprite": "shop/floor_planks.png"
+            "tag": "shop"
           },
           {
             "boat": false,
@@ -30391,6 +30392,7 @@
           },
           {
             "boat": false,
+            "background_sprite": "shop/floor_planks.png",
             "id": "shop_wall_right",
             "name": "Shop Wall, Right",
             "walkable": false,
@@ -30404,13 +30406,13 @@
             "spawn": null,
             "sprite": "shop/wall_right.png",
             "tag": "shop",
-            "background_sprite": "shop/floor_planks.png",
             "npc": "frida"
           }
         ],
         [
           {
             "boat": false,
+            "background_sprite": "shop/floor_planks.png",
             "id": "shop_wall_left",
             "name": "Shop Wall, Left",
             "walkable": false,
@@ -30423,23 +30425,6 @@
             "encounter": null,
             "spawn": null,
             "sprite": "shop/wall_left.png",
-            "tag": "shop",
-            "background_sprite": "shop/floor_planks.png"
-          },
-          {
-            "boat": false,
-            "id": "shop_floor_planks",
-            "name": "Shop Floor",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "shop/floor_planks.png",
             "tag": "shop"
           },
           {
@@ -30524,6 +30509,23 @@
           },
           {
             "boat": false,
+            "id": "shop_floor_planks",
+            "name": "Shop Floor",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "shop/floor_planks.png",
+            "tag": "shop"
+          },
+          {
+            "boat": false,
+            "background_sprite": "shop/floor_planks.png",
             "id": "shop_wall_right",
             "name": "Shop Wall, Right",
             "walkable": false,
@@ -30536,13 +30538,13 @@
             "encounter": null,
             "spawn": null,
             "sprite": "shop/wall_right.png",
-            "tag": "shop",
-            "background_sprite": "shop/floor_planks.png"
+            "tag": "shop"
           }
         ],
         [
           {
             "boat": false,
+            "background_sprite": "shop/floor_planks.png",
             "id": "shop_wall_left",
             "name": "Shop Wall, Left",
             "walkable": false,
@@ -30555,23 +30557,6 @@
             "encounter": null,
             "spawn": null,
             "sprite": "shop/wall_left.png",
-            "tag": "shop",
-            "background_sprite": "shop/floor_planks.png"
-          },
-          {
-            "boat": false,
-            "id": "shop_floor_planks",
-            "name": "Shop Floor",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "shop/floor_planks.png",
             "tag": "shop"
           },
           {
@@ -30656,6 +30641,23 @@
           },
           {
             "boat": false,
+            "id": "shop_floor_planks",
+            "name": "Shop Floor",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "shop/floor_planks.png",
+            "tag": "shop"
+          },
+          {
+            "boat": false,
+            "background_sprite": "shop/floor_planks.png",
             "id": "shop_wall_right",
             "name": "Shop Wall, Right",
             "walkable": false,
@@ -30668,13 +30670,13 @@
             "encounter": null,
             "spawn": null,
             "sprite": "shop/wall_right.png",
-            "tag": "shop",
-            "background_sprite": "shop/floor_planks.png"
+            "tag": "shop"
           }
         ],
         [
           {
             "boat": false,
+            "background_sprite": "shop/floor_planks.png",
             "id": "shop_wall_left",
             "name": "Shop Wall, Left",
             "walkable": false,
@@ -30687,23 +30689,6 @@
             "encounter": null,
             "spawn": null,
             "sprite": "shop/wall_left.png",
-            "tag": "shop",
-            "background_sprite": "shop/floor_planks.png"
-          },
-          {
-            "boat": false,
-            "id": "shop_floor_planks",
-            "name": "Shop Floor",
-            "walkable": true,
-            "obstructs": false,
-            "locked": false,
-            "light_source": false,
-            "light_range": 0,
-            "animation": "none",
-            "counter": null,
-            "encounter": null,
-            "spawn": null,
-            "sprite": "shop/floor_planks.png",
             "tag": "shop"
           },
           {
@@ -30788,6 +30773,23 @@
           },
           {
             "boat": false,
+            "id": "shop_floor_planks",
+            "name": "Shop Floor",
+            "walkable": true,
+            "obstructs": false,
+            "locked": false,
+            "light_source": false,
+            "light_range": 0,
+            "animation": "none",
+            "counter": null,
+            "encounter": null,
+            "spawn": null,
+            "sprite": "shop/floor_planks.png",
+            "tag": "shop"
+          },
+          {
+            "boat": false,
+            "background_sprite": "shop/floor_planks.png",
             "id": "shop_wall_right",
             "name": "Shop Wall, Right",
             "walkable": false,
@@ -30800,8 +30802,7 @@
             "encounter": null,
             "spawn": null,
             "sprite": "shop/wall_right.png",
-            "tag": "shop",
-            "background_sprite": "shop/floor_planks.png"
+            "tag": "shop"
           }
         ],
         [
@@ -30914,6 +30915,7 @@
           },
           {
             "boat": false,
+            "background_sprite": "shop/wall_top.png",
             "id": "shop_notice_board",
             "name": "Shop Notice Board",
             "walkable": true,
@@ -30926,8 +30928,7 @@
             "encounter": null,
             "spawn": null,
             "sprite": "objects/shop_notice_board.png",
-            "tag": "shop",
-            "background_sprite": "shop/wall_top.png"
+            "tag": "shop"
           },
           {
             "boat": false,
@@ -30959,10 +30960,6 @@
         "/audio/Sound of Silence.mp3",
         "/audio/Taketh A Chance On Me.mp3"
       ],
-      "fog_style": {
-        "twilight": "dark_cloud",
-        "night": "darkness"
-      },
       "passive_regen": {
         "hp": 1,
         "mp": 1
@@ -109618,7 +109615,8 @@
       "name": "The Deep Ones Shrine",
       "description": "A small shrine dedicated to the only gods left, The Deep Ones",
       "tags": [
-        "Shrine"
+        "Shop",
+        "Willowbrook"
       ],
       "width": 16,
       "height": 12,
@@ -112781,14 +112779,12 @@
       "lighting": "darkness",
       "fog_style": {
         "day": "darkness",
-        "twilight": "darkness",
-        "night": "darkness"
+        "twilight": "darkness"
       }
     },
     {
       "id": "dungeon_battle_screen_1",
       "name": "Dungeon Battle Screen 1",
-      "description": "",
       "tags": [
         "battle_screen_arena"
       ],
@@ -121074,7 +121070,15 @@
             "tag": "map"
           }
         ]
-      ]
+      ],
+      "lighting": "darkness"
     }
+  ],
+  "tag_order": [
+    "overview",
+    "town",
+    "buildings",
+    "outside",
+    "Willowbrook"
   ]
 }

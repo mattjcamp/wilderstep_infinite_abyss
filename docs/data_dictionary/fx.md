@@ -45,7 +45,11 @@ Edited in the editor under **Module data → FX**: pick an FX to watch it play w
 | `visual` | string | no | Built-in visual id (table below) or `"none"`. Defaults to `id`, so an old tuning-only record (`{ "id": "hellfire", "params": {…} }`) still works. |
 | `params` | object | no | Tuning for the visual. Only values that differ from the visual's defaults are stored. Colours are `"#rrggbb"`; numbers are clamped to the visual's range; unknown keys are ignored. |
 | `cast_sfx` | string | no | Sound played at the start. A name from `web/src/battle/audio/Sfx.ts`; `""` = silent. |
-| `hit_sfx` | string | no | Sound played on impact. Same rules. |
+| `hit_sfx` | string | no | Sound played on impact. Same rules. When an AOE spell's FX has a hit sound, combat doesn't add per-victim hurt sounds on top of it. |
+| `impact` | object | no | A second visual played **on the target** the moment the main visual lands: `{ "visual": "<burst visual id>", "params": {…} }` (params stored like `params` above). Fireball's explosion lives here. Absent / `"none"` = nothing. |
+| `shake` | object | no | Camera shake when the main visual lands: `{ "intensity": 0.008, "duration_ms": 240 }`. Absent or intensity 0 = none. |
+
+The FX page's preview plays the main visual, then the impact visual + shake, through the same code combat uses — what it shows is what the game shows. Combat adds nothing to an AOE spell's look beyond its FX (the caster's cast glow aside).
 
 ## Built-in visuals and their settings
 

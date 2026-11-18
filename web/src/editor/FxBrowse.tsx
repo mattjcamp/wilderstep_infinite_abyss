@@ -30,12 +30,15 @@ import { clearFxPickerCache } from "./FxPicker";
 import { SFX_NAMES } from "@/battle/audio/Sfx";
 import {
   FX_DEFS,
+  SHAKE_PARAMS,
   cleanFxParams,
   fxDefaults,
-  fxRecordParams,
+  fxImpactDef,
+  fxRecordParts,
   fxVisualDef,
   type FxParamDef,
   type FxParams,
+  type FxParts,
   type FxRecord,
 } from "@/vfx/fxCatalog";
 
@@ -155,10 +158,21 @@ export function FxBrowse({ moduleId }: { moduleId: string }) {
 
   const current = records.find((r) => r.id === selectedId) ?? records[0] ?? null;
   const def = fxVisualDef(current);
-  const params = useMemo<FxParams>(
-    () => (current ? fxRecordParams(current) : {}),
+  const impactDef = fxImpactDef(current);
+  /** Everything the FX draws, resolved exactly as the game resolves it. */
+  const parts = useMemo<FxParts>(
+    () =>
+      current
+        ? fxRecordParts(current)
+        : { def: null, params: {}, impactDef: null, impactParams: {}, shake: null },
     [current],
   );
+  const params = parts.params;
+  const impactParams = parts.impactParams;
+  const shakeValues: FxParams = {
+    intensity: Number(current?.shake?.intensity) || 0,
+    duration_ms: Number(current?.shake?.duration_ms) || 240,
+  };
 
   const ownIds = new Set(state.kind === "ok" ? state.own.map((r) => r.id) : []);
   const isOwn = (id: string) => ownIds.has(id);
@@ -201,6 +215,24 @@ export function FxBrowse({ moduleId }: { moduleId: string }) {
       if (next[p.key] !== undefined && next[p.key] !== defs[p.key]) diff[p.key] = next[p.key];
     }
     putRecord({ ...current, params: diff });
+  };
+
+  /** Impact visual's params — again only what differs from defaults. */
+  const writeImpactParams = (next: FxParams) => {
+    if (!current || !impactDef) return;
+    const defs = fxDefaults(impactDef);
+    const diff: Record<string, unknown> = {};
+    for (const p of impactDef.params) {
+      if (next[p.key] !== undefined && next[p.key] !== defs[p.key]) diff[p.key] = next[p.key];
+    }
+    update({ impact: { visual: impactDef.id, params: diff } });
+  };
+
+  const writeShake = (next: FxParams) => {
+    const intensity = Number(next.intensity) || 0;
+    update({
+      shake: intensity > 0 ? { intensity, duration_ms: Number(next.duration_ms) || 240 } : null,
+    });
   };
 
   const uniqueId = (base: string) => {
@@ -424,8 +456,7 @@ export function FxBrowse({ moduleId }: { moduleId: string }) {
 
             <div className="mt-3">
               <FxPreview
-                def={def}
-                params={params}
+                parts={parts}
                 playKey={playKey}
                 loop={loop}
                 sound={sound}
@@ -498,6 +529,53 @@ export function FxBrowse({ moduleId }: { moduleId: string }) {
                 </div>
               </>
             ) : null}
+
+            {/* On impact: what plays on the target when the visual lands */}
+            <div className="mt-6">
+              <h3 className="text-[13px] uppercase tracking-wide text-parchment/75">On impact</h3>
+              <p className="mt-1 text-xs text-parchment/55">
+                Plays on the target the moment the visual above lands (with the hit sound) — e.g.
+                Fireball&apos;s explosion. In battle nothing else is added on top.
+              </p>
+              <div className="mt-2 grid gap-3 sm:grid-cols-2">
+                <SelectRow
+                  label="Impact visual"
+                  value={impactDef?.id ?? "none"}
+                  options={[
+                    { value: "none", label: "None" },
+                    ...FX_DEFS.filter((d) => d.kind === "burst").map((d) => ({
+                      value: d.id,
+                      label: `${d.name} (${d.id})`,
+                    })),
+                  ]}
+                  help={impactDef?.description}
+                  onChange={(v) => update({ impact: v === "none" ? null : { visual: v, params: {} } })}
+                />
+                <div />
+                {impactDef
+                  ? impactDef.params.map((p) => (
+                      <ParamRow
+                        key={`impact-${p.key}`}
+                        p={p}
+                        value={impactParams[p.key]}
+                        changed={impactParams[p.key] !== p.default}
+                        onChange={(v) => writeImpactParams({ ...impactParams, [p.key]: v })}
+                        onReset={() => writeImpactParams({ ...impactParams, [p.key]: p.default })}
+                      />
+                    ))
+                  : null}
+                {SHAKE_PARAMS.map((p) => (
+                  <ParamRow
+                    key={`shake-${p.key}`}
+                    p={p}
+                    value={shakeValues[p.key]}
+                    changed={shakeValues[p.key] !== p.default}
+                    onChange={(v) => writeShake({ ...shakeValues, [p.key]: v })}
+                    onReset={() => writeShake({ ...shakeValues, [p.key]: p.default })}
+                  />
+                ))}
+              </div>
+            </div>
           </section>
         ) : (
           <p className="text-parchment/70">No FX yet — click + New.</p>

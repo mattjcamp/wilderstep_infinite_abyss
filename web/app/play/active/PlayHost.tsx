@@ -677,12 +677,9 @@ import type { SimSpawn } from "@/sim/spawn";
 import type { CharacterRecord } from "@/editor/CharacterSheet";
 import {
   RENDER_SCALE,
-  WORLD_ZOOM_STEPS,
   nativeWorldZoom,
   installHiDpiText,
   installWorldAndUiCameras,
-  loadWorldZoomIdx,
-  saveWorldZoomIdx,
   swapTexture,
   LOGICAL_HEIGHT,
   LOGICAL_WIDTH,
@@ -3241,10 +3238,11 @@ export function PlayHost() {
       class PlayScene extends Phaser.Scene {
         world: WorldRenderer | null = null;
         /** World zoom on top of RENDER_SCALE — how physically big a
-         *  tile is on screen. Cycled with Z: 100% → 50% → 25%
-         *  (see WORLD_ZOOM_STEPS). */
+         *  tile is on screen. Normally "native" (NATIVE_TILE_CSS_PX per
+         *  tile); while Z is held it drops so the whole map fits. */
         worldZoom = 1;
-        worldZoomIdx = 0;
+        /** True while Z is held (see setZoomOverview). */
+        zoomOverview = false;
         /** Faint frame drawn around maps that fit the view; shown /
          *  hidden as world zoom changes what "fits" means. */
         mapFrame: Phaser.GameObjects.Rectangle | null = null;
@@ -3336,8 +3334,7 @@ export function PlayHost() {
           }
         }
         create() {
-          this.worldZoomIdx = loadWorldZoomIdx();
-          this.worldZoom = this.effectiveWorldZoom(this.worldZoomIdx);
+          this.worldZoom = this.effectiveWorldZoom();
           installWorldAndUiCameras(this, this.worldZoom);
           // FIT scaling changes how big the canvas is on screen when
           // the window resizes; re-derive the zoom so tiles stay at
@@ -3348,7 +3345,7 @@ export function PlayHost() {
           // the camera re-centred against the new view every time.
           this.scale.on("resize", () => {
             this.layoutScreenUi();
-            const z = this.effectiveWorldZoom(this.worldZoomIdx);
+            const z = this.effectiveWorldZoom();
             if (Math.abs(z - this.worldZoom) >= 1e-6) {
               this.worldZoom = z;
               this.cameras.main.setZoom(RENDER_SCALE * this.worldZoom);
@@ -3980,14 +3977,31 @@ export function PlayHost() {
               .setVisible(this.mapFitsView());
           }
 
-          // Z cycles world zoom (physical tile size on screen). The UI
-          // camera keeps the log strip / painted overlays unchanged.
+          // Hold Z to zoom out until the whole map fits; release to snap
+          // back. The UI camera keeps the log strip / painted overlays
+          // unchanged. Gated by overlaysOpenRef so Z pressed in combat
+          // (this game stays mounted, hidden, underneath the battle) or
+          // in a dialog doesn't touch the map's zoom. Key-repeat
+          // keydowns while held are harmless (idempotent).
           this.input.keyboard?.on("keydown", (e: KeyboardEvent) => {
             if (e.key !== "z" && e.key !== "Z") return;
             if (e.metaKey || e.ctrlKey || e.altKey) return;
             const t = e.target as HTMLElement | null;
             if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
-            this.setWorldZoomIdx((this.worldZoomIdx + 1) % WORLD_ZOOM_STEPS.length);
+            if (overlaysOpenRef.current) return;
+            this.setZoomOverview(true);
+          });
+          // Release is never gated: letting go of Z must always end the
+          // overview, even if a dialog opened while it was held.
+          this.input.keyboard?.on("keyup", (e: KeyboardEvent) => {
+            if (e.key !== "z" && e.key !== "Z") return;
+            this.setZoomOverview(false);
+          });
+          // A Z released while the tab is unfocused never sends keyup.
+          const endOverview = () => this.setZoomOverview(false);
+          this.game.events.on(Phaser.Core.Events.BLUR, endOverview);
+          this.events.once("shutdown", () => {
+            this.game.events.off(Phaser.Core.Events.BLUR, endOverview);
           });
 
           // Install the bottom log strip — mirrors v1's
@@ -4156,18 +4170,38 @@ export function PlayHost() {
           return mapPixelWidth <= viewW && mapPixelHeight <= usableH;
         }
 
-        /** World zoom for a Z step: the step times "native" (each tile
-         *  shown at NATIVE_TILE_CSS_PX CSS px whatever size FIT gives the canvas). */
-        effectiveWorldZoom(idx: number): number {
-          const shown = this.scale.displaySize?.width || this.scale.width;
+        /** World zoom for the current state: "native" (each tile shown
+         *  at NATIVE_TILE_CSS_PX CSS px whatever size FIT gives the
+         *  canvas), or — while Z is held — small enough that the whole
+         *  map fits above the log strip (never zooming IN for a map
+         *  that already fits). */
+        effectiveWorldZoom(): number {
+          const shown = this.scale.displaySize?.width ?? 0;
+          // The canvas is display:none during combat, which gives FIT a
+          // zero-size parent. Deriving a zoom from that measures the
+          // tiles as tiny and the map comes back zoomed out — keep the
+          // last good zoom until the canvas is visible again.
+          if (!(shown > 0)) return this.worldZoom;
           const displayScale = shown / this.scale.width;
-          return nativeWorldZoom(displayScale, TILE_SIZE, WORLD_ZOOM_STEPS[idx]);
+          const native = nativeWorldZoom(displayScale, TILE_SIZE);
+          if (!this.zoomOverview) return native;
+          const fit = Math.min(
+            PLAY_CANVAS_WIDTH / mapPixelWidth,
+            (PLAY_CANVAS_HEIGHT - PLAY_LOG_HEIGHT) / mapPixelHeight,
+          );
+          return Math.min(native, fit);
         }
 
-        setWorldZoomIdx(idx: number): void {
-          this.worldZoomIdx = idx;
-          this.worldZoom = this.effectiveWorldZoom(idx);
-          saveWorldZoomIdx(idx);
+        /** Enter / leave the hold-Z whole-map view. Snaps zoom + scroll. */
+        setZoomOverview(on: boolean): void {
+          if (this.zoomOverview === on) return;
+          this.zoomOverview = on;
+          this.applyWorldZoom();
+        }
+
+        /** Re-derive the world zoom and snap the camera to it. */
+        applyWorldZoom(): void {
+          this.worldZoom = this.effectiveWorldZoom();
           this.cameras.main.setZoom(RENDER_SCALE * this.worldZoom);
           this.mapFrame?.setVisible(this.mapFitsView());
           this.recenterCamera(true);

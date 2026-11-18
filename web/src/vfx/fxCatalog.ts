@@ -10,9 +10,11 @@
  *
  * At runtime `effectRegistry` plays every FX through `playFx`, which
  * merges defaults ⊕ the module overrides (seeded by
- * `setFxOverrides`) ⊕ any per-call knobs from the caller. The editor
- * preview calls `def.play` with the unsaved form values directly, so
- * edits show up immediately.
+ * `setFxOverrides`) ⊕ any per-call knobs from the caller. A record can
+ * also carry an `impact` visual and a `shake`, played when the main
+ * visual lands. The game and the editor preview both play through
+ * `playFxParts`, the preview with the unsaved form values, so what the
+ * editor shows is what the game shows.
  *
  * Colours are stored as "#rrggbb" strings (what a colour input gives
  * back); numbers are plain numbers.
@@ -30,6 +32,7 @@ import {
   meteorStrike,
   projectileLine,
   radialBurst,
+  screenShake,
   voidOrb,
   VFX_COLOURS,
 } from "./Vfx";
@@ -418,7 +421,31 @@ export interface FxRecord {
   cast_sfx?: string;
   /** Sfx name played on impact. "" = silent. */
   hit_sfx?: string;
+  /** Optional second visual played ON the target when the main visual
+   *  lands (e.g. Fireball's explosion) — a burst-kind visual id plus
+   *  its own tuning. Absent / visual "none" = no impact visual. */
+  impact?: FxImpact | null;
+  /** Optional camera shake when the main visual lands. Absent or
+   *  intensity 0 = no shake. */
+  shake?: FxShake | null;
 }
+
+export interface FxImpact {
+  visual?: string;
+  params?: Record<string, unknown>;
+}
+
+export interface FxShake {
+  intensity?: number;
+  duration_ms?: number;
+}
+
+/** Editable shake settings (same shape as a visual's params so the
+ *  editor can reuse its param rows). */
+export const SHAKE_PARAMS: ReadonlyArray<FxParamDef> = [
+  { key: "intensity", label: "Shake strength", type: "number", default: 0, min: 0, max: 0.03, step: 0.001 },
+  { key: "duration_ms", label: "Shake length", type: "number", default: 240, min: 40, max: 1500, step: 10, unit: "ms" },
+];
 
 const RECORDS = new Map<string, FxRecord>();
 let _seeded = false;
@@ -499,7 +526,7 @@ export function fxVisualDef(rec: FxRecord | null | undefined): FxDef | null {
 /** Key to hand the projectile registry for a record: its id when it
  *  has a visual, "" when it is sound-only or missing. */
 export function fxVisualKey(rec: FxRecord | null | undefined): string {
-  return rec && fxVisualDef(rec) ? rec.id : "";
+  return rec && fxPartsVisible(fxRecordParts(rec)) ? rec.id : "";
 }
 
 /** Defaults ⊕ record params for a record, against its visual. */
@@ -515,8 +542,76 @@ export function fxParams(id: string): FxParams {
   return rec ? fxRecordParams(rec) : {};
 }
 
+/** The impact visual a record plays on the target (null = none). */
+export function fxImpactDef(rec: FxRecord | null | undefined): FxDef | null {
+  const v = (rec?.impact?.visual ?? "").trim();
+  if (!v || v === "none") return null;
+  return getFxDef(v) ?? null;
+}
+
+/** Defaults ⊕ the record's impact params, against its impact visual. */
+export function fxImpactParams(rec: FxRecord): FxParams {
+  const def = fxImpactDef(rec);
+  if (!def) return {};
+  return { ...fxDefaults(def), ...cleanFxParams(def, rec.impact?.params) };
+}
+
+/** The record's shake, or null when it has none. */
+export function fxShake(
+  rec: FxRecord | null | undefined,
+): { intensity: number; durationMs: number } | null {
+  const i = Number(rec?.shake?.intensity);
+  if (!(i > 0)) return null;
+  const d = Number(rec?.shake?.duration_ms);
+  return { intensity: Math.min(i, 0.03), durationMs: d > 0 ? d : 240 };
+}
+
+/** Everything one FX draws, resolved: main visual, impact visual,
+ *  shake. The game (playFx) and the editor preview both play an FX
+ *  through these parts, so the preview matches play exactly. */
+export interface FxParts {
+  def: FxDef | null;
+  params: FxParams;
+  impactDef: FxDef | null;
+  impactParams: FxParams;
+  shake: { intensity: number; durationMs: number } | null;
+}
+
+export function fxRecordParts(rec: FxRecord): FxParts {
+  return {
+    def: fxVisualDef(rec),
+    params: fxRecordParams(rec),
+    impactDef: fxImpactDef(rec),
+    impactParams: fxImpactParams(rec),
+    shake: fxShake(rec),
+  };
+}
+
+/** True when the parts draw anything at all. */
+export function fxPartsVisible(parts: FxParts): boolean {
+  return !!(parts.def || parts.impactDef || parts.shake);
+}
+
+/** Play resolved FX parts: the main visual (awaited), then — the
+ *  moment it lands — the shake and the impact visual on the target.
+ *  Resolves at the moment of impact (the impact visual keeps playing),
+ *  so the caller's hit sound / damage numbers land in sync with it. */
+export async function playFxParts(
+  scene: Phaser.Scene,
+  from: Pt,
+  to: Pt,
+  parts: FxParts,
+): Promise<void> {
+  if (parts.def) await parts.def.play(scene, from, to, parts.params);
+  if (parts.shake) screenShake(scene, parts.shake.intensity, parts.shake.durationMs);
+  if (parts.impactDef) {
+    void parts.impactDef.play(scene, to, to, parts.impactParams).catch(() => undefined);
+  }
+}
+
 /** Play an FX (by record id or built-in visual id) with its tuning,
- *  plus any per-call knobs. Visual only — sounds are the caller's. */
+ *  plus any per-call knobs. Visual only — sounds are the caller's.
+ *  Resolves at the moment of impact (see playFxParts). */
 export function playFx(
   id: string,
   scene: Phaser.Scene,
@@ -525,15 +620,19 @@ export function playFx(
   call: FxCallConfig = {},
 ): Promise<void> {
   const rec = getFxRecord(id);
-  const def = fxVisualDef(rec);
-  if (!rec || !def) return Promise.resolve();
-  const p = fxRecordParams(rec);
-  if (call.color !== undefined && def.colorKey) p[def.colorKey] = numToHex(call.color);
-  if (call.durationMs !== undefined && def.durationKey) p[def.durationKey] = call.durationMs;
-  if (call.segments !== undefined && def.params.some((x) => x.key === "segments")) {
-    p.segments = call.segments;
+  if (!rec) return Promise.resolve();
+  const parts = fxRecordParts(rec);
+  if (!fxPartsVisible(parts)) return Promise.resolve();
+  const def = parts.def;
+  const p = parts.params;
+  if (def) {
+    if (call.color !== undefined && def.colorKey) p[def.colorKey] = numToHex(call.color);
+    if (call.durationMs !== undefined && def.durationKey) p[def.durationKey] = call.durationMs;
+    if (call.segments !== undefined && def.params.some((x) => x.key === "segments")) {
+      p.segments = call.segments;
+    }
   }
-  return def.play(scene, from, to, p);
+  return playFxParts(scene, from, to, parts);
 }
 
 /** Test-only — forget installed records. */

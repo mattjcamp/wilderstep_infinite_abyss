@@ -40,11 +40,23 @@
     {
       "id": "fireball_burst",
       "name": "Fireball Burst",
-      "description": "Bowed orange projectile to the target, with an explosion sound on impact. Pair with an AOE on the destination.",
-      "visual": "fire_projectile",
-      "params": {},
-      "cast_sfx": "fireball",
-      "hit_sfx": "explosion"
+      "description": "A roaring ball of flame (the Hellfire visual, a little bigger) hurled at the target, then a wide fiery blast roughly the size of the 3-tile area, with a heavy screen shake. Flamethrower roar on cast, fire explosion on impact. Used by the Sorcerer's Fireball.",
+      "visual": "hellfire",
+      "params": {
+        "size": 1.4
+      },
+      "cast_sfx": "flamethrower",
+      "hit_sfx": "fire_explosion",
+      "impact": {
+        "visual": "explosion_burst",
+        "params": {
+          "radius": 104
+        }
+      },
+      "shake": {
+        "intensity": 0.01,
+        "duration_ms": 320
+      }
     },
     {
       "id": "meteor_strike",

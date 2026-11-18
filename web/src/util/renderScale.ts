@@ -69,8 +69,10 @@ export function pointerLogical(p: { x: number; y: number }): { x: number; y: num
 /** Selectable world-zoom steps. 1 = ~30×22 tiles in view, 1.5 = ~20×15,
  *  2 = ~15×11. Cycled in play with the Z key. */
 /** Z-key steps, as multiples of the standard on-screen tile size
- *  ({@link NATIVE_TILE_CSS_PX} CSS px per tile — see {@link nativeWorldZoom}). Z cycles
- *  100% → 50% → 25% → 100%, on the map and in combat (shared setting). */
+ *  ({@link NATIVE_TILE_CSS_PX} CSS px per tile — see {@link nativeWorldZoom}).
+ *  No longer cycled in play: on the map screen and in combat Z is now
+ *  hold-to-see-everything (PlayScene.setZoomOverview,
+ *  CombatScene.setArenaOverview). Kept for the tests / any future use. */
 export const WORLD_ZOOM_STEPS = [1, 0.5, 0.25] as const;
 
 /** Label for a zoom step, e.g. "50%". */

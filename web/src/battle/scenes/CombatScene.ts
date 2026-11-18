@@ -82,11 +82,8 @@ import {
   applyRenderScale,
   LOGICAL_HEIGHT,
   LOGICAL_WIDTH,
-  loadWorldZoomIdx,
   nativeWorldZoom,
   RENDER_SCALE,
-  saveWorldZoomIdx,
-  WORLD_ZOOM_STEPS,
 } from "@/util/renderScale";
 import { MAP_BACKDROP_COLOR } from "@/sim/scene/WorldRenderer";
 import {
@@ -722,8 +719,13 @@ export class CombatScene extends Phaser.Scene {
    *  and scrolled to follow the action; `overlayCam` draws dialogs and
    *  banners (depth >= OVERLAY_DEPTH) on top, unzoomed. */
   private arenaCam: Phaser.Cameras.Scene2D.Camera | null = null;
-  /** Z-key zoom step for the arena view (shared with the map screen). */
-  private arenaZoomIdx = 0;
+  /** True while Z is held: the arena view zooms out to show the whole
+   *  battlefield (see setArenaOverview). */
+  private arenaOverview = false;
+  /** While set, the arena camera looks here instead of at the active
+   *  combatant: the target of the player's action being resolved (see
+   *  beginActionFocus). */
+  private focusHold: { x: number; y: number } | null = null;
   private overlayCam: Phaser.Cameras.Scene2D.Camera | null = null;
   private selRings = new Map<string, Phaser.GameObjects.Rectangle>();
   /** Soft halos drawn around the active combatant's ring on the arena
@@ -2696,12 +2698,21 @@ export class CombatScene extends Phaser.Scene {
     // can flare an empty / dark cell instead of a creature. No-op
     // in every other mode.
     k.on("keydown-T", () => this.onTileAimKey());
-    // [Z] — zoom the arena view: 100% → 50% → 25% (the same setting as
-    // the map screen's Z). Zooming out stops once the whole battlefield
-    // is in view.
+    // [Z] (hold) — temporarily zoom the arena out so the whole
+    // battlefield fits the view; releasing Z snaps back to the normal
+    // close-up. Unlike the map screen, Z doesn't cycle a saved zoom
+    // step here: the normal battle view always fills its window.
+    // Key-repeat keydowns while held are harmless (idempotent).
     k.on("keydown-Z", (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
-      this.cycleArenaZoom();
+      this.setArenaOverview(true);
+    });
+    k.on("keyup-Z", () => this.setArenaOverview(false));
+    // A Z released while the tab is unfocused never sends keyup — drop
+    // the overview on blur so the view can't get stuck zoomed out.
+    this.game.events.on(Phaser.Core.Events.BLUR, this.endArenaOverview, this);
+    this.events.once("shutdown", () => {
+      this.game.events.off(Phaser.Core.Events.BLUR, this.endArenaOverview, this);
     });
     // [P] — open / close the read-only combatant inspector: a
     // scrollable roster of every party member and monster with their
@@ -3332,6 +3343,12 @@ export class CombatScene extends Phaser.Scene {
     this.clearTileCursor();
     this.clearPicker();
     this.clearMoveHints();
+    // Keep the camera on the target cell while the shot plays (and a
+    // moment after, if it's far from the actor).
+    const linger = this.beginActionFocus({
+      x: this.tileX(target.col),
+      y: this.tileY(target.row),
+    });
     try {
       // Bow whistle + ember-trail projectile from shooter → cell.
       Sfx.play("arrow");
@@ -3396,11 +3413,14 @@ export class CombatScene extends Phaser.Scene {
           ? `${ammoName} ignites ${occupant.name}'s tile — fire spreads!`
           : `The ${ammoName} catches the ground at (${target.col}, ${target.row}) on fire.`,
       );
+      await linger();
+      this.endActionFocus();
       this.combat.movePoints = 0;
       this.refreshAll();
       if (this.combat.isOver) return this.endEncounter();
       this.endActorTurn();
     } finally {
+      this.endActionFocus();
       this.busy = false;
     }
   }
@@ -4561,6 +4581,12 @@ export class CombatScene extends Phaser.Scene {
     // top of arrows, magic darts, and AOE bursts and washes them out.
     this.clearMoveHints();
     this.mode = "default";
+    // Keep the camera on the target while the shot / spell plays (and
+    // a moment after, if it's far from the actor).
+    const linger = this.beginActionFocus({
+      x: this.tileX(target.position.col),
+      y: this.tileY(target.position.row),
+    });
     try {
       if (action.kind === "throw") {
         const result = resolveThrow(me, target, action.item, defaultRng);
@@ -4919,12 +4945,15 @@ export class CombatScene extends Phaser.Scene {
           await runVisual(this.bodyXY(target), this.bodyXY(target));
         }
       }
+      await linger();
+      this.endActionFocus();
       // Throw / cast each consume the rest of the turn.
       this.combat.movePoints = 0;
       this.refreshAll();
       if (this.combat.isOver) return this.endEncounter();
       this.endActorTurn();
     } finally {
+      this.endActionFocus();
       this.pendingAction = null;
       this.busy = false;
     }
@@ -5751,6 +5780,12 @@ export class CombatScene extends Phaser.Scene {
     const animation = getFxRecord(spell.fx_id);
     if (animation?.cast_sfx) Sfx.play(animation.cast_sfx);
     this.castGlowFor(me, this.colorForSpell(spell.effect_type));
+    // Keep the camera on the targeted tile while the spell plays (and
+    // a moment after, if it's far from the caster).
+    const linger = this.beginActionFocus({
+      x: this.tileX(this.tileCursorPos.col),
+      y: this.tileY(this.tileCursorPos.row),
+    });
     try {
       const e = spell.effect_type;
       if (e === "aoe_damage") {
@@ -5789,11 +5824,14 @@ export class CombatScene extends Phaser.Scene {
           `${me.name} casts ${spell.name} on a tile — no effect yet.`
         );
       }
+      await linger();
+      this.endActionFocus();
       this.combat.movePoints = 0;
       this.refreshAll();
       if (this.combat.isOver) return this.endEncounter();
       this.endActorTurn();
     } finally {
+      this.endActionFocus();
       this.busy = false;
     }
   }
@@ -5887,6 +5925,12 @@ export class CombatScene extends Phaser.Scene {
     this.clearTileCursor();
     this.clearPicker();
     this.clearMoveHints();
+    // Keep the camera on the target cell while the shot plays (and a
+    // moment after, if it's far from the actor).
+    const linger = this.beginActionFocus({
+      x: this.tileX(target.col),
+      y: this.tileY(target.row),
+    });
     try {
       // Throw whoosh + visible projectile arc from caster → target cell.
       Sfx.play("chirp");
@@ -5913,11 +5957,14 @@ export class CombatScene extends Phaser.Scene {
       this.combat.log.push(
         `The ${item.name} catches the ground at (${target.col}, ${target.row}) on fire.`,
       );
+      await linger();
+      this.endActionFocus();
       this.combat.movePoints = 0;
       this.refreshAll();
       if (this.combat.isOver) return this.endEncounter();
       this.endActorTurn();
     } finally {
+      this.endActionFocus();
       this.busy = false;
     }
   }
@@ -5942,11 +5989,10 @@ export class CombatScene extends Phaser.Scene {
                Math.abs(c.position.row - centre.row),
              ) <= radius
     );
-    // Aim the animation's projectile at the centre tile (visual key
-    // is fire_projectile for fireball_burst). When the spell carries
-    // a non-projectile or "none" animation the flight is skipped —
-    // the AOE detonation below still plays as it's the mechanic's
-    // intrinsic feedback, not the spell's "look".
+    // The spell's FX is the whole look: its visual flies to the centre
+    // tile, then its impact visual (Fireball's explosion) and shake
+    // play there — all authored in the FX editor, which previews the
+    // same thing. No built-in detonation is layered on top.
     const burstAt = { x: this.tileX(centre.col), y: this.tileY(centre.row) };
     const casterAt = {
       x: this.tileX(caster.position.col),
@@ -5954,16 +6000,14 @@ export class CombatScene extends Phaser.Scene {
     };
     const animation = getFxRecord(spell.fx_id);
     const animVisual = fxVisualKey(animation);
-    if (animVisual && animVisual !== "none") {
+    if (animVisual) {
       const fn = resolveProjectileEffect({ effect_type: animVisual });
       await fn(this, casterAt, burstAt);
     }
     if (animation?.hit_sfx) Sfx.play(animation.hit_sfx);
-    // AOE detonation — fixed feedback for any tile-target damage
-    // spell. Not animation-driven because it's tied to the AOE
-    // mechanic, not the spell's chosen visual.
-    screenShake(this, 0.008, 240);
-    void radialBurst(this, burstAt, VFX_COLOURS.fire, VFX_COLOURS.ember, 64);
+    // The FX's hit sound IS the blast's sound — don't stack a hurt
+    // sound per victim on top of it.
+    const quietHits = !!animation?.hit_sfx;
     if (victims.length === 0) {
       this.combat.log.push(
         `${caster.name} casts ${spell.name} at (${centre.col},${centre.row}) — caught nothing.`
@@ -5977,7 +6021,7 @@ export class CombatScene extends Phaser.Scene {
       total += r.damage;
       if (v.side === caster.side) allies += 1;
       this.refreshHp(v);
-      void this.animateHit(v, r);
+      void this.animateHit(v, r, { silent: quietHits });
     }
     const enemies = victims.length - allies;
     const parts = [`${enemies} foe${enemies === 1 ? "" : "s"}`];
@@ -6383,6 +6427,9 @@ export class CombatScene extends Phaser.Scene {
           const result = this.combat.attack(intent.targetId);
           this.combat.movePoints = 0;
           const target = this.combat.byId(result.targetId);
+          // A ranged attack on someone far away: show the victim, and
+          // stay there a moment so the player sees the hit land.
+          const linger = this.beginActionFocus(this.bodyXY(target), { onlyIfFar: true });
           await this.animateBump(this.combat.current, this.combat.current.position, target.position);
           await this.animateHit(target, result);
           this.refreshHp(target);
@@ -6394,6 +6441,8 @@ export class CombatScene extends Phaser.Scene {
             this.applyArmorDurability(target.id);
           }
           this.refreshLog();
+          await linger();
+          this.endActionFocus();
           break;
         }
         if (intent.kind === "spell") {
@@ -6415,6 +6464,9 @@ export class CombatScene extends Phaser.Scene {
           const result = this.combat.castMonsterSpell(intent.spellIndex, intent.targetId);
           this.combat.movePoints = 0;
           const target = this.combat.byId(result.targetId);
+          // Far-away victim: the camera follows the spell there and
+          // lingers so the player sees it land (self-casts stay put).
+          const linger = this.beginActionFocus(this.bodyXY(target), { onlyIfFar: true });
           // The spell's FX (fx.json): its own `fx_id`, else the
           // per-type default — so a Lich's Lightning Bolt plays the
           // same "Lightning Strike" FX as the party's spell. Spells
@@ -6448,6 +6500,8 @@ export class CombatScene extends Phaser.Scene {
           });
           this.refreshHp(target);
           this.refreshLog();
+          await linger();
+          this.endActionFocus();
           break;
         }
         const actor = this.combat.current;
@@ -6483,6 +6537,7 @@ export class CombatScene extends Phaser.Scene {
         this.refreshLog();
       }
     } finally {
+      this.endActionFocus();
       this.busy = false;
     }
     if (this.combat.isOver) return this.endEncounter();
@@ -6877,7 +6932,16 @@ export class CombatScene extends Phaser.Scene {
     });
   }
 
-  private animateHit(target: Combatant, result: AttackResult): Promise<void> {
+  /** `silent`: skip the hit / miss SFX (visuals unchanged) — used when
+   *  the attack's FX already played its own hit sound, e.g. an AOE. */
+  private animateHit(
+    target: Combatant,
+    result: AttackResult,
+    opts: { silent?: boolean } = {},
+  ): Promise<void> {
+    const sfx = (name: string) => {
+      if (!opts.silent) Sfx.play(name);
+    };
     return new Promise((resolve) => {
       const body = this.bodies.get(target.id);
       if (!body) return resolve();
@@ -6931,10 +6995,10 @@ export class CombatScene extends Phaser.Scene {
         // nat-20 crit even when the underlying d20 wasn't a crit —
         // the doubled damage IS the moment, so audio should match.
         if (result.critical || isSmite) {
-          Sfx.play("critical");
+          sfx("critical");
           screenShake(this, 0.006, 220);
         } else {
-          Sfx.play(target.side === "party" ? "player_hurt" : "monster_hit");
+          sfx(target.side === "party" ? "player_hurt" : "monster_hit");
         }
         // Backstab swaps the blood-red flash for the curse-violet
         // tone + adds a small radial burst — the visual cue the
@@ -6970,7 +7034,7 @@ export class CombatScene extends Phaser.Scene {
           flashTarget(this, body, VFX_COLOURS.blood);
         }
       } else {
-        Sfx.play("miss");
+        sfx("miss");
         floatingX(this, { x: body.x, y: body.y });
       }
       // BACKSTAB / SMITE success labels are larger and bolder than
@@ -7043,7 +7107,7 @@ export class CombatScene extends Phaser.Scene {
               { x: ARENA_X, y: ARENA_Y, width: VIEW_W, height: VIEW_H },
               target.name,
             );
-            Sfx.play("defeat");
+            sfx("defeat");
           });
         }
       }
@@ -8712,26 +8776,85 @@ export class CombatScene extends Phaser.Scene {
 
   // ── Native-resolution arena camera ───────────────────────────────
   /** Arena camera zoom: tiles at NATIVE_TILE_CSS_PX CSS px for the
-   *  canvas's current on-screen size, never smaller than the whole
-   *  arena filling its window. */
+   *  canvas's current on-screen size, but never so far out that the
+   *  battlefield stops covering its window. The window (892×512) is
+   *  wider than the arena (576×512), so "cover" means fitting the
+   *  WIDTH — the view then shows ~10 of 16 rows and update() scrolls
+   *  vertically to follow the action. (Fitting the height instead left
+   *  a black band down the right side on large windows / Z-zoomed out.) */
   private arenaZoom(): number {
+    // Z held: the whole battlefield fits the view (bands on the sides,
+    // since the window is wider than the arena).
+    if (this.arenaOverview) {
+      return RENDER_SCALE * Math.min(VIEW_W / ARENA_W, VIEW_H / ARENA_H);
+    }
     const shown = this.scale.displaySize?.width || this.scale.width;
     const displayScale = shown / this.scale.width;
-    const step = WORLD_ZOOM_STEPS[this.arenaZoomIdx] ?? 1;
-    // Never zoom out further than the whole battlefield fitting the view.
-    const fit = Math.min(VIEW_W / ARENA_W, VIEW_H / ARENA_H);
-    return RENDER_SCALE * Math.max(fit, nativeWorldZoom(displayScale, TILE, step));
+    // Never zoom out past the battlefield covering the whole view.
+    const fit = Math.max(VIEW_W / ARENA_W, VIEW_H / ARENA_H);
+    return RENDER_SCALE * Math.max(fit, nativeWorldZoom(displayScale, TILE));
   }
 
-  private cycleArenaZoom(): void {
-    this.arenaZoomIdx = (this.arenaZoomIdx + 1) % WORLD_ZOOM_STEPS.length;
-    saveWorldZoomIdx(this.arenaZoomIdx);
-    this.arenaCam?.setZoom(this.arenaZoom());
+  /** How long the camera stays on a far-away action's target after
+   *  its effect lands, before heading back to the actor. */
+  private static readonly FOCUS_LINGER_MS = 1000;
+
+  /** Point the arena camera at `pt` (the target of the action about to
+   *  resolve) for the duration of the action. Returns `linger`: await
+   *  it after the effect has played — if showing the target meant
+   *  scrolling away from the actor, it holds the view there for
+   *  FOCUS_LINGER_MS so the player sees what happened; otherwise it
+   *  resolves at once. The caller clears the hold (endActionFocus) in
+   *  its `finally`. With `onlyIfFar`, a nearby target doesn't move the
+   *  camera at all. */
+  private beginActionFocus(
+    pt: { x: number; y: number },
+    opts: { onlyIfFar?: boolean } = {},
+  ): () => Promise<void> {
+    const cur = this.combat?.current;
+    const body = cur ? this.bodies.get(cur.id) : undefined;
+    const actorPt = body
+      ? { x: body.x, y: body.y }
+      : cur
+        ? { x: this.tileX(cur.position.col), y: this.tileY(cur.position.row) }
+        : null;
+    const a = actorPt ? this.scrollTargetFor(actorPt) : null;
+    const b = this.scrollTargetFor(pt);
+    // "Far" = the camera has to move more than about a tile to show it.
+    const far = !!(a && b && Math.hypot(a.x - b.x, a.y - b.y) > TILE);
+    // Monster turns pass onlyIfFar: a melee swing at a neighbour keeps
+    // the camera on the monster instead of nudging it a tile over.
+    if (far || !opts.onlyIfFar) this.focusHold = pt;
+    return () =>
+      far
+        ? new Promise<void>((resolve) =>
+            this.time.delayedCall(CombatScene.FOCUS_LINGER_MS, () => resolve()),
+          )
+        : Promise.resolve();
+  }
+
+  private endActionFocus(): void {
+    this.focusHold = null;
+  }
+
+  /** Enter / leave the hold-Z overview. Snaps the zoom (and the scroll,
+   *  so the view doesn't slide in from the old framing). */
+  private setArenaOverview(on: boolean): void {
+    if (this.arenaOverview === on) return;
+    this.arenaOverview = on;
+    const cam = this.arenaCam;
+    if (!cam) return;
+    cam.setZoom(this.arenaZoom());
+    const target = this.arenaScrollTarget();
+    if (target) cam.setScroll(target.x, target.y);
+  }
+
+  private endArenaOverview(): void {
+    this.setArenaOverview(false);
   }
 
   private installArenaCamera(): void {
     const R = RENDER_SCALE;
-    this.arenaZoomIdx = loadWorldZoomIdx();
     if (this.arenaCam) this.cameras.remove(this.arenaCam);
     if (this.overlayCam) this.cameras.remove(this.overlayCam);
     const arena = this.cameras
@@ -8840,6 +8963,7 @@ export class CombatScene extends Phaser.Scene {
    *  otherwise whoever is acting (their sprite, so moves are tracked
    *  mid-tween). */
   private arenaFocus(): { x: number; y: number } | null {
+    if (this.focusHold) return this.focusHold;
     if (this.mode === "pick-tile") {
       return { x: this.tileX(this.tileCursorPos.col), y: this.tileY(this.tileCursorPos.row) };
     }
@@ -8867,25 +8991,38 @@ export class CombatScene extends Phaser.Scene {
     }
     const cam = this.arenaCam;
     if (!cam) return;
+    const target = this.arenaScrollTarget();
+    if (!target) return;
+    cam.scrollX += (target.x - cam.scrollX) * 0.2;
+    cam.scrollY += (target.y - cam.scrollY) * 0.2;
+  }
+
+  /** Where the arena camera wants to scroll: centred on the action,
+   *  kept inside the arena. Null before combat is set up. */
+  private arenaScrollTarget(): { x: number; y: number } | null {
     let f: { x: number; y: number } | null = null;
     try {
       f = this.arenaFocus();
     } catch {
       f = null;   // combat not set up yet (async create)
     }
-    if (!f) return;
+    return f ? this.scrollTargetFor(f) : null;
+  }
+
+  /** The clamped camera scroll that centres `f` in the arena view. */
+  private scrollTargetFor(f: { x: number; y: number }): { x: number; y: number } | null {
+    const cam = this.arenaCam;
+    if (!cam) return null;
     const viewW = cam.width / cam.zoom;
     const viewH = cam.height / cam.zoom;
-    const tx = f.x - viewW / 2;
-    const ty = f.y - viewH / 2;
     // Keep the view inside the arena (clamped by hand: Phaser's camera
     // bounds assume a centred origin, this camera is top-left anchored).
-    // A battlefield smaller than the view (zoomed out) is centred in it.
+    // A battlefield smaller than the view (Z overview) is centred in it.
     const clamp = (v: number, lo: number, span: number, view: number) =>
       view >= span ? lo - (view - span) / 2 : Math.min(Math.max(v, lo), lo + span - view);
-    const cx = clamp(tx, ARENA_X, ARENA_W, viewW);
-    const cy = clamp(ty, ARENA_Y, ARENA_H, viewH);
-    cam.scrollX += (cx - cam.scrollX) * 0.2;
-    cam.scrollY += (cy - cam.scrollY) * 0.2;
+    return {
+      x: clamp(f.x - viewW / 2, ARENA_X, ARENA_W, viewW),
+      y: clamp(f.y - viewH / 2, ARENA_Y, ARENA_H, viewH),
+    };
   }
 }
