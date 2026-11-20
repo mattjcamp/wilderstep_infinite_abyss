@@ -2,6 +2,37 @@ import { describe, it, expect } from "vitest";
 import { Sfx, SFX_NAMES } from "./Sfx";
 
 describe("Sfx catalog — registered generators", () => {
+  it("knows the Meteor Strike fall + impact cues", () => {
+    // Named by the meteor_strike FX record (fx.json) and the meteor
+    // weapon paths in CombatScene.
+    expect(Sfx.has("meteor_fall")).toBe(true);
+    expect(Sfx.has("meteor_impact")).toBe(true);
+  });
+
+  it("knows the small_explosion cue", () => {
+    // Named by the explosion FX record (fx.json).
+    expect(Sfx.has("small_explosion")).toBe(true);
+  });
+
+  it("knows the Void Orb cast + hit cues", () => {
+    // Named by the void_orb FX record (fx.json).
+    expect(Sfx.has("void_hum")).toBe(true);
+    expect(Sfx.has("void_burst")).toBe(true);
+  });
+
+  it("knows the Dragon Breath cast + hit cues", () => {
+    // Named by the dragon_breath FX record (fx.json).
+    expect(Sfx.has("breath_roar")).toBe(true);
+    expect(Sfx.has("fire_engulf")).toBe(true);
+  });
+
+  it("knows the Lightning Bolt cast + hit cues", () => {
+    // The lightning_strike FX record (fx.json) names these; a dropped
+    // registration would leave the bolt silent.
+    expect(Sfx.has("electric_zap")).toBe(true);
+    expect(Sfx.has("thunder_crack")).toBe(true);
+  });
+
   it("knows the temple-counter heal cue", () => {
     // The counter overlay calls `Sfx.play("heal")` on every applied
     // service; a missing entry would silently no-op (the player

@@ -206,115 +206,640 @@ export function spriteProjectile(
   });
 }
 
-/**
- * Lightning bolt: a jagged poly-line drawn instantly, then faded out.
- * `segments` randomises the kink count for non-determinism between
- * casts.
- */
-export function lightningZigzag(
-  scene: Phaser.Scene,
-  from: Pt, to: Pt,
-  segments = 6,
-  opts: { color?: number; width?: number; jitter?: number; fadeMs?: number } = {},
-): Promise<void> {
-  const jitter = opts.jitter ?? 14;
-  return new Promise((resolve) => {
-    const g = scene.add.graphics().setDepth(70);
-    g.lineStyle(opts.width ?? 3, opts.color ?? COLOURS.lightning, 1);
-    g.beginPath();
-    g.moveTo(from.x, from.y);
-    for (let i = 1; i < segments; i++) {
-      const t = i / segments;
-      const x = lerp(from.x, to.x, t);
-      const y = lerp(from.y, to.y, t);
-      const jx = (Math.random() - 0.5) * jitter;
-      const jy = (Math.random() - 0.5) * jitter;
-      g.lineTo(x + jx, y + jy);
+// Phaser.BlendModes.ADD as a literal — this file only imports Phaser's
+// types (SSR safety), so the enum's runtime value isn't available.
+const BLEND_ADD = 1;
+
+/** A jagged path from `a` to `b`: `kinks` main joints pushed across the
+ *  axis, each span split again with finer offsets so the line reads as
+ *  a forking, fractal bolt rather than a stiff polyline. */
+function boltPath(a: Pt, b: Pt, kinks: number, jitter: number): Pt[] {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const len = Math.hypot(dx, dy) || 1;
+  const nx = -dy / len;
+  const ny = dx / len;
+  const main: Pt[] = [a];
+  for (let i = 1; i < kinks; i++) {
+    const t = (i + (Math.random() - 0.5) * 0.5) / kinks;
+    const off = (Math.random() - 0.5) * jitter * 1.6;
+    main.push({ x: lerp(a.x, b.x, t) + nx * off, y: lerp(a.y, b.y, t) + ny * off });
+  }
+  main.push(b);
+  const out: Pt[] = [a];
+  for (let i = 1; i < main.length; i++) {
+    const p = main[i - 1];
+    const q = main[i];
+    for (const t of [1 / 3, 2 / 3]) {
+      const off = (Math.random() - 0.5) * jitter * 0.45;
+      out.push({ x: lerp(p.x, q.x, t) + nx * off, y: lerp(p.y, q.y, t) + ny * off });
     }
-    g.lineTo(to.x, to.y);
+    out.push(q);
+  }
+  return out;
+}
+
+/** Stroke a path as plasma: wide haze → glow → body → white-hot core.
+ *  Draw into an ADD-blended Graphics so overlaps bloom toward white. */
+function strokePlasma(
+  g: Phaser.GameObjects.Graphics,
+  pts: Pt[],
+  width: number,
+  glow: number,
+  body: number,
+  core: number,
+  alpha = 1,
+): void {
+  const pass = (w: number, c: number, a: number) => {
+    g.lineStyle(w, c, Math.min(1, a));
+    g.beginPath();
+    g.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) g.lineTo(pts[i].x, pts[i].y);
     g.strokePath();
-    scene.tweens.add({
-      targets: g, alpha: 0,
-      duration: opts.fadeMs ?? 280,
-      onComplete: () => { g.destroy(); resolve(); },
-    });
+  };
+  pass(width * 6, glow, 0.14 * alpha);
+  pass(width * 3, glow, 0.35 * alpha);
+  pass(width * 1.5, body, 0.9 * alpha);
+  pass(Math.max(1, width * 0.55), core, alpha);
+}
+
+/** Short forks splitting off a bolt path at random angles. */
+function forkPaths(main: Pt[], count: number, jitter: number, reach: number): Pt[][] {
+  const out: Pt[][] = [];
+  for (let i = 0; i < count; i++) {
+    const idx = Math.floor((main.length - 1) * (0.15 + Math.random() * 0.7));
+    const p = main[idx];
+    const q = main[idx + 1];
+    const ang = Math.atan2(q.y - p.y, q.x - p.x)
+      + (Math.random() < 0.5 ? -1 : 1) * (0.35 + Math.random() * 0.6);
+    const len = reach * (0.5 + Math.random() * 0.6);
+    out.push(boltPath(p, { x: p.x + Math.cos(ang) * len, y: p.y + Math.sin(ang) * len }, 3, jitter * 0.6));
+  }
+  return out;
+}
+
+/** Little arcs snapping off a plasma ball at `at`, re-drawn on a fresh
+ *  random path every ~40ms for `durationMs`, then faded out. */
+function plasmaArcs(
+  scene: Phaser.Scene,
+  at: Pt,
+  radius: number,
+  count: number,
+  durationMs: number,
+  glow: number,
+  body: number,
+  core: number,
+  width: number,
+): void {
+  const g = scene.add.graphics().setDepth(71).setBlendMode(BLEND_ADD);
+  const draw = () => {
+    g.clear();
+    for (let i = 0; i < count; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const b = a + (Math.random() - 0.5) * 0.9;
+      const r = radius * (0.6 + Math.random() * 0.7);
+      const start = { x: at.x + Math.cos(a) * radius * 0.25, y: at.y + Math.sin(a) * radius * 0.25 };
+      const end = { x: at.x + Math.cos(b) * r, y: at.y + Math.sin(b) * r };
+      strokePlasma(g, boltPath(start, end, 3, radius * 0.5), width, glow, body, core, 0.6 + Math.random() * 0.4);
+    }
+  };
+  draw();
+  const ev = scene.time.addEvent({
+    delay: 40,
+    repeat: Math.max(0, Math.floor(durationMs / 40) - 1),
+    callback: draw,
+  });
+  scene.time.delayedCall(durationMs, () => {
+    ev.remove();
+    scene.tweens.add({ targets: g, alpha: 0, duration: 90, onComplete: () => g.destroy() });
   });
 }
 
 /**
- * Meteor Strike: a blazing mote that falls from high above and to one
- * side of the target, accelerating downward into a fiery impact burst.
- * Unlike the other projectiles it IGNORES the `from` (caster) point —
- * the meteor comes "from the sky," so the descent always starts above
- * the target regardless of where the slinger stands. Pairs with a
- * fiery trail + a radial ember burst on landing.
+ * Lightning bolt — a crackling plasma arc from caster to target, in
+ * four beats:
  *
- * Used for `damage_type: "meteor"` ranged weapons (the Starfall Sling).
+ *   1. CHARGE: a violet plasma ball swells at the caster, small arcs
+ *      snapping off it.
+ *   2. LEADER: the ball races along a jagged path to the target,
+ *      leaving a thin flickering trail.
+ *   3. STRIKE: the full bolt, a fractal zigzag stroked in additive
+ *      layers (violet haze → glow → pale-blue body → white core) with
+ *      forks. It re-strikes `strikes` times on a fresh path, dimming
+ *      between flashes, so it flickers like a live arc, and sheds
+ *      glowing plasma motes along its length.
+ *   4. IMPACT: a white flash, a churning plasma sphere with arcs
+ *      crawling off it, a shock ring and a spray of sparks.
+ *
+ * Resolves the moment the bolt connects (beat 3) so the caller's hit
+ * sound, shake and damage numbers land with it; the flicker and impact
+ * keep playing on their own. Same signature as the old single-stroke
+ * zigzag; the new looks are optional `opts`.
+ */
+export function lightningZigzag(
+  scene: Phaser.Scene,
+  from: Pt, to: Pt,
+  segments = 8,
+  opts: {
+    color?: number;
+    width?: number;
+    jitter?: number;
+    fadeMs?: number;
+    /** Outer plasma haze colour. */
+    glow?: number;
+    /** White-hot centre colour. */
+    core?: number;
+    /** Forks split off the main bolt per strike. */
+    branches?: number;
+    /** How many times the bolt flickers / re-strikes. */
+    strikes?: number;
+    /** Charge-up time at the caster before the bolt flies (0 = none). */
+    chargeMs?: number;
+    /** Size multiplier for the charge ball and the impact. */
+    size?: number;
+  } = {},
+): Promise<void> {
+  const BODY = opts.color ?? COLOURS.lightning;
+  const GLOW = opts.glow ?? 0x7b6cff;
+  const CORE = opts.core ?? COLOURS.white;
+  const W = Math.max(1, opts.width ?? 3);
+  const jitter = opts.jitter ?? 18;
+  const kinks = Math.max(2, Math.round(segments));
+  const branches = Math.max(0, Math.round(opts.branches ?? 3));
+  const strikes = Math.max(1, Math.round(opts.strikes ?? 3));
+  const chargeMs = Math.max(0, opts.chargeMs ?? 120);
+  const fadeMs = opts.fadeMs ?? 280;
+  const K = Math.max(0.3, opts.size ?? 1);
+  const dist = distBetween(from.x, from.y, to.x, to.y);
+  const leaderMs = Math.max(50, Math.min(140, dist * 0.35));
+  const reach = Math.max(14, Math.min(70, dist * 0.28));
+  const STRIKE_GAP = 55;
+
+  return new Promise((resolve) => {
+    const path = boltPath(from, to, kinks, jitter);
+
+    // The plasma ball — three additive layers that flicker in size.
+    const haze = scene.add.circle(from.x, from.y, 4 * K, GLOW, 0.35).setDepth(69).setBlendMode(BLEND_ADD);
+    const orb = scene.add.circle(from.x, from.y, 2 * K, BODY, 0.8).setDepth(70).setBlendMode(BLEND_ADD);
+    const hot = scene.add.circle(from.x, from.y, 1 * K, CORE, 1).setDepth(71);
+    const pulse = (s: number) => {
+      haze.setRadius((6 + 10 * s + Math.random() * 4) * K);
+      orb.setRadius((3 + 5 * s + Math.random() * 2) * K);
+      hot.setRadius((1.5 + 2.5 * s + Math.random()) * K);
+    };
+    const moveBall = (p: Pt) => {
+      haze.setPosition(p.x, p.y);
+      orb.setPosition(p.x, p.y);
+      hot.setPosition(p.x, p.y);
+    };
+
+    const mote = (p: Pt) => {
+      const m = scene.add
+        .circle(p.x, p.y, (2 + Math.random() * 2.5) * K, Math.random() < 0.5 ? GLOW : BODY, 0.8)
+        .setDepth(69)
+        .setBlendMode(BLEND_ADD);
+      scene.tweens.add({
+        targets: m,
+        x: p.x + (Math.random() - 0.5) * 14,
+        y: p.y + (Math.random() - 0.5) * 14 - 4,
+        radius: (6 + Math.random() * 4) * K,
+        alpha: 0,
+        duration: 260 + Math.random() * 200,
+        ease: "Quad.Out",
+        onComplete: () => m.destroy(),
+      });
+    };
+
+    // ── 4. Impact ────────────────────────────────────────────────
+    const impact = () => {
+      const flash = scene.add.circle(to.x, to.y, 6 * K, CORE, 1).setDepth(72).setBlendMode(BLEND_ADD);
+      scene.tweens.add({
+        targets: flash, radius: 24 * K, alpha: 0, duration: 180,
+        onComplete: () => flash.destroy(),
+      });
+      const ring = scene.add.circle(to.x, to.y, 8 * K).setDepth(71).setBlendMode(BLEND_ADD);
+      ring.setStrokeStyle(2, BODY, 0.9);
+      scene.tweens.add({
+        targets: ring, radius: 40 * K, alpha: 0, duration: 320, ease: "Cubic.Out",
+        onComplete: () => ring.destroy(),
+      });
+      const sHaze = scene.add.circle(to.x, to.y, 14 * K, GLOW, 0.45).setDepth(69).setBlendMode(BLEND_ADD);
+      const sBody = scene.add.circle(to.x, to.y, 8 * K, BODY, 0.75).setDepth(70).setBlendMode(BLEND_ADD);
+      scene.tweens.addCounter({
+        from: 0, to: 1, duration: 420,
+        onUpdate: (tw) => {
+          const t = tw.getValue() ?? 0;
+          const shrink = 1 - t * 0.6;
+          sHaze.setRadius((12 + Math.random() * 6) * K * shrink).setAlpha(0.45 * (1 - t));
+          sBody
+            .setPosition(to.x + (Math.random() - 0.5) * 3, to.y + (Math.random() - 0.5) * 3)
+            .setRadius((6 + Math.random() * 4) * K * shrink)
+            .setAlpha(0.75 * (1 - t));
+        },
+        onComplete: () => { sHaze.destroy(); sBody.destroy(); },
+      });
+      plasmaArcs(scene, to, 26 * K, 4, 320, GLOW, BODY, CORE, Math.max(1, W * 0.45));
+      for (let i = 0; i < 12; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const d = (20 + Math.random() * 26) * K;
+        const spark = scene.add
+          .circle(to.x, to.y, 1.2 + Math.random() * 0.9, Math.random() < 0.5 ? CORE : BODY, 1)
+          .setDepth(72)
+          .setBlendMode(BLEND_ADD);
+        scene.tweens.add({
+          targets: spark,
+          x: to.x + Math.cos(a) * d,
+          y: to.y + Math.sin(a) * d + 6,
+          alpha: 0,
+          duration: 300 + Math.random() * 220,
+          ease: "Quad.Out",
+          onComplete: () => spark.destroy(),
+        });
+      }
+    };
+
+    // ── 3. Strike ────────────────────────────────────────────────
+    const strike = () => {
+      const bolt = scene.add.graphics().setDepth(70).setBlendMode(BLEND_ADD);
+      let current = path;
+      const draw = (fresh: boolean, intensity: number) => {
+        if (fresh) current = boltPath(from, to, kinks, jitter);
+        bolt.clear().setAlpha(1);
+        strokePlasma(bolt, current, W, GLOW, BODY, CORE, intensity);
+        for (const f of forkPaths(current, branches, jitter, reach)) {
+          strokePlasma(bolt, f, Math.max(1, W * 0.5), GLOW, BODY, CORE, intensity * 0.75);
+        }
+        for (let i = 0; i < 3; i++) mote(current[Math.floor(Math.random() * current.length)]);
+      };
+      draw(false, 1);
+      const cast = scene.add.circle(from.x, from.y, 4 * K, CORE, 1).setDepth(72).setBlendMode(BLEND_ADD);
+      scene.tweens.add({
+        targets: cast, radius: 14 * K, alpha: 0, duration: 160,
+        onComplete: () => cast.destroy(),
+      });
+      impact();
+      resolve();
+      for (let i = 1; i < strikes; i++) {
+        // Dim between flashes so the re-strikes read as flicker.
+        scene.time.delayedCall(i * STRIKE_GAP - 22, () => bolt.setAlpha(0.3));
+        scene.time.delayedCall(i * STRIKE_GAP, () => draw(true, 0.65 + Math.random() * 0.35));
+      }
+      scene.time.delayedCall((strikes - 1) * STRIKE_GAP + 40, () => {
+        scene.tweens.add({
+          targets: bolt, alpha: 0, duration: fadeMs,
+          onComplete: () => bolt.destroy(),
+        });
+      });
+    };
+
+    // ── 2. Leader ────────────────────────────────────────────────
+    const leader = () => {
+      const trail = scene.add.graphics().setDepth(70).setBlendMode(BLEND_ADD);
+      scene.tweens.addCounter({
+        from: 0, to: 1, duration: leaderMs, ease: "Quad.In",
+        onUpdate: (tw) => {
+          const f = (tw.getValue() ?? 0) * (path.length - 1);
+          const i0 = Math.min(path.length - 1, Math.floor(f));
+          const i1 = Math.min(path.length - 1, i0 + 1);
+          const u = f - i0;
+          const head = { x: lerp(path[i0].x, path[i1].x, u), y: lerp(path[i0].y, path[i1].y, u) };
+          const seg = path.slice(0, i1 + 1);
+          seg[seg.length - 1] = head;
+          trail.clear();
+          strokePlasma(trail, seg, Math.max(1, W * 0.45), GLOW, BODY, CORE, 0.55 + Math.random() * 0.35);
+          moveBall(head);
+          pulse(0.7);
+        },
+        onComplete: () => {
+          trail.destroy();
+          haze.destroy();
+          orb.destroy();
+          hot.destroy();
+          strike();
+        },
+      });
+    };
+
+    // ── 1. Charge ────────────────────────────────────────────────
+    if (chargeMs > 0) {
+      plasmaArcs(scene, from, 16 * K, 3, chargeMs, GLOW, BODY, CORE, Math.max(1, W * 0.4));
+    }
+    scene.tweens.addCounter({
+      from: 0, to: 1, duration: Math.max(1, chargeMs),
+      onUpdate: (tw) => pulse(tw.getValue() ?? 0),
+      onComplete: leader,
+    });
+  });
+}
+
+/** Event a falling-from-the-sky effect emits on its scene so the host
+ *  (CombatScene) can frame the target AND the sky above it. Payload:
+ *  { x, y, sky, ms }: the landing point, how far above it the fall
+ *  starts, and how long until it lands. Hosts that don't listen (the
+ *  editor preview) are unaffected. */
+export const SKY_FOCUS_EVENT = "vfx:sky-focus";
+
+/** Mark an object as arena content. The combat scene routes objects to
+ *  its cameras by position, and a rock that starts above the top row
+ *  would otherwise be handed to the HUD camera. */
+function arenaObj<T>(o: T): T {
+  (o as unknown as { __arena?: boolean }).__arena = true;
+  return o;
+}
+
+function arCircle(
+  scene: Phaser.Scene, x: number, y: number, r: number, color?: number, alpha?: number,
+): Phaser.GameObjects.Arc {
+  return arenaObj(scene.add.circle(x, y, r, color, alpha));
+}
+
+function arEllipse(
+  scene: Phaser.Scene, x: number, y: number, w: number, h: number, color?: number, alpha?: number,
+): Phaser.GameObjects.Ellipse {
+  return arenaObj(scene.add.ellipse(x, y, w, h, color, alpha));
+}
+
+/** Draw a jagged rock centred on the Graphics' own origin, so the
+ *  Graphics can be positioned and spun freely. Dark body, molten rim,
+ *  and a hot glowing face on the leading (lower-left) side. */
+function drawRock(
+  g: Phaser.GameObjects.Graphics,
+  r: number,
+  body: number,
+  rim: number,
+  hot: number,
+): void {
+  const n = 7 + Math.floor(Math.random() * 3);
+  const pts: Pt[] = [];
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2 + (Math.random() - 0.5) * 0.5;
+    const rr = r * (0.7 + Math.random() * 0.4);
+    pts.push({ x: Math.cos(a) * rr, y: Math.sin(a) * rr });
+  }
+  // Phaser types these as Vector2[], but only reads x / y.
+  const poly = pts as unknown as Phaser.Math.Vector2[];
+  g.fillStyle(body, 1);
+  g.fillPoints(poly, true);
+  g.fillStyle(hot, 0.85);
+  g.fillCircle(-r * 0.25, r * 0.25, r * 0.4);
+  g.lineStyle(Math.max(1, r * 0.22), rim, 0.95);
+  g.strokePoints(poly, true, true);
+}
+
+/** One flaming rock falling from `start` onto `land`. Leaves a fire and
+ *  smoke trail and spins as it drops. Resolves on landing. */
+function fallingRock(
+  scene: Phaser.Scene,
+  start: Pt,
+  land: Pt,
+  r: number,
+  durationMs: number,
+  c: { body: number; rim: number; hot: number; fire: number; ember: number; smoke: number },
+): Promise<void> {
+  return new Promise((resolve) => {
+    const glow = arCircle(scene, start.x, start.y, r * 2.1, c.fire, 0.35).setDepth(69).setBlendMode(1);
+    const rock = scene.add.graphics().setDepth(71).setPosition(start.x, start.y);
+    drawRock(rock, r, c.body, c.rim, c.hot);
+    const angle = Math.atan2(land.y - start.y, land.x - start.x);
+    const spin = (Math.random() < 0.5 ? -1 : 1) * (4 + Math.random() * 4);
+    let frame = 0;
+    scene.tweens.addCounter({
+      from: 0,
+      to: 1,
+      duration: durationMs,
+      ease: "Quad.In", // accelerate as it plummets
+      onUpdate: (tw) => {
+        const t = tw.getValue() ?? 0;
+        const x = lerp(start.x, land.x, t);
+        const y = lerp(start.y, land.y, t);
+        rock.setPosition(x, y).setRotation(t * spin);
+        glow.setPosition(x, y).setRadius(r * (1.9 + Math.random() * 0.5));
+        frame++;
+        // Flame licks streaming back up the fall line.
+        const lick = arEllipse(scene, x, y, r * (3 + Math.random() * 2), r * 1.3, Math.random() < 0.5 ? c.fire : c.ember, 0.75)
+          .setDepth(68)
+          .setBlendMode(1);
+        lick.rotation = angle;
+        scene.tweens.add({
+          targets: lick,
+          x: x - Math.cos(angle) * r * 2.5,
+          y: y - Math.sin(angle) * r * 2.5,
+          scaleX: 0.3,
+          scaleY: 0.3,
+          alpha: 0,
+          duration: 180 + Math.random() * 120,
+          onComplete: () => lick.destroy(),
+        });
+        // Smoke left hanging in the sky behind it.
+        if (frame % 3 === 0) {
+          const puff = arCircle(scene, x, y, r * 0.9, c.smoke, 0.32)
+            .setDepth(67);
+          scene.tweens.add({
+            targets: puff,
+            x: puff.x + (Math.random() - 0.5) * 8,
+            y: puff.y - 6 - Math.random() * 6,
+            radius: r * (2 + Math.random()),
+            alpha: 0,
+            duration: 500 + Math.random() * 300,
+            onComplete: () => puff.destroy(),
+          });
+        }
+      },
+      onComplete: () => {
+        rock.destroy();
+        glow.destroy();
+        resolve();
+      },
+    });
+  });
+}
+
+/** Rock chips thrown up from an impact on ballistic arcs, spinning,
+ *  bouncing off the ground and fading. */
+function rockDebris(
+  scene: Phaser.Scene,
+  at: Pt,
+  count: number,
+  K: number,
+  c: { body: number; rim: number; hot: number },
+): void {
+  for (let i = 0; i < count; i++) {
+    const g = scene.add.graphics().setDepth(72).setPosition(at.x, at.y);
+    const r = (1.6 + Math.random() * 2) * K;
+    drawRock(g, r, c.body, Math.random() < 0.5 ? c.rim : c.body, c.hot);
+    const vx = (Math.random() - 0.5) * 90 * K;
+    const up = (24 + Math.random() * 30) * K;
+    const spin = (Math.random() - 0.5) * 14;
+    const dur = 420 + Math.random() * 260;
+    scene.tweens.addCounter({
+      from: 0,
+      to: 1,
+      duration: dur,
+      onUpdate: (tw) => {
+        const t = tw.getValue() ?? 0;
+        // Parabola: rises to `up` at t=0.5 and lands back on the ground.
+        g.setPosition(at.x + vx * t, at.y + 4 - up * 4 * t * (1 - t));
+        g.setRotation(spin * t);
+        if (t > 0.75) g.setAlpha(1 - (t - 0.75) / 0.25);
+      },
+      onComplete: () => g.destroy(),
+    });
+  }
+}
+
+/** Dust billowing out low along the ground from an impact point. */
+function dustCloud(scene: Phaser.Scene, at: Pt, count: number, K: number, dust: number): void {
+  for (let i = 0; i < count; i++) {
+    const side = i % 2 === 0 ? -1 : 1;
+    const puff = arCircle(scene, at.x + (Math.random() - 0.5) * 8, at.y + 4, (4 + Math.random() * 3) * K, dust, 0.55)
+      .setDepth(66);
+    scene.tweens.add({
+      targets: puff,
+      x: at.x + side * (12 + Math.random() * 30) * K,
+      y: at.y + 2 - (4 + Math.random() * 16) * K,
+      radius: (10 + Math.random() * 7) * K,
+      alpha: 0,
+      delay: Math.random() * 60,
+      duration: 600 + Math.random() * 350,
+      ease: "Quad.Out",
+      onComplete: () => puff.destroy(),
+    });
+  }
+}
+
+/**
+ * Meteor Strike: flaming rocks falling from the sky onto the target.
+ * Ignores the `from` (caster) point: the meteor comes "from the sky",
+ * so the fall always starts high above and to one side of the target.
+ *
+ *   1. THE FALL: a jagged, spinning rock with a molten rim and a
+ *      glowing hot face, wrapped in fire, streaming flame licks and a
+ *      smoke trail. A few smaller chunks (`rocks`) fall alongside on
+ *      their own staggered paths and land around the target.
+ *   2. IMPACT: a white-hot flash and a burst of fire, a shock ring
+ *      flattened along the ground, a scorched crater, dust billowing
+ *      out low, and rock chips thrown up on arcs that bounce and fade.
+ *      Each smaller chunk lands with its own puff of dust and chips.
+ *
+ * Resolves the moment the main rock lands, so the caller's hit sound
+ * and damage land with it; the dust and debris settle afterwards.
+ *
+ * Used by Meteor Shower, the Starfall Sling and the Meteorfall Mace.
  */
 export function meteorStrike(
   scene: Phaser.Scene,
   _from: Pt,
   to: Pt,
   color = COLOURS.fire,
-  durationMs = 360,
+  durationMs = 420,
+  opts: {
+    /** Molten rim / hot face colour. */
+    ember?: number;
+    rock?: number;
+    dust?: number;
+    smoke?: number;
+    /** Extra smaller rocks falling alongside the main one. */
+    rocks?: number;
+    /** Size multiplier for the rocks and the impact. */
+    size?: number;
+  } = {},
 ): Promise<void> {
-  return new Promise((resolve) => {
-    // Begin high above + offset to the side so the arc reads as a
-    // falling star, not a flat shot. The offset stays on-screen for
-    // the standard arena viewport.
-    const start: Pt = { x: to.x + 84, y: to.y - 220 };
-    const head = scene.add.circle(start.x, start.y, 6, COLOURS.white, 1).setDepth(71);
-    const glow = scene.add.circle(start.x, start.y, 13, color, 0.5).setDepth(70);
+  const K = Math.max(0.3, opts.size ?? 1);
+  const c = {
+    body: opts.rock ?? 0x4a3a30,
+    rim: opts.ember ?? COLOURS.ember,
+    hot: 0xfff1c2,
+    fire: color,
+    ember: opts.ember ?? COLOURS.ember,
+    smoke: opts.smoke ?? 0x2b2124,
+  };
+  const DUST = opts.dust ?? 0x8a7560;
+  const extra = Math.max(0, Math.round(opts.rocks ?? 3));
+  const side = Math.random() < 0.5 ? -1 : 1;
 
-    // Fiery tail: ember motes dropped along the descent, each fading
-    // in place so the meteor leaves a streak behind it.
-    const trailCount = 10;
-    const interval = durationMs / trailCount;
-    for (let i = 0; i < trailCount; i++) {
-      scene.time.delayedCall(i * interval, () => {
-        const t = (i + 0.5) / trailCount;
-        const sx = lerp(start.x, to.x, t);
-        const sy = lerp(start.y, to.y, t);
-        const spark = scene.add
-          .circle(sx, sy, 3 + Math.random() * 2, i % 2 ? COLOURS.ember : color, 0.85)
-          .setDepth(69);
-        scene.tweens.add({
-          targets: spark,
-          alpha: 0,
-          radius: 0.5,
-          duration: 300,
-          onComplete: () => spark.destroy(),
-        });
+  return new Promise((resolve) => {
+    // Ask the host to frame the target and the sky the rocks fall from.
+    scene.events.emit(SKY_FOCUS_EVENT, { x: to.x, y: to.y, sky: 240, ms: durationMs });
+    // Smaller chunks: offset starts, landing scattered around the
+    // target, some ahead of the main rock and some just after it.
+    for (let i = 0; i < extra; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const d = (14 + Math.random() * 16) * K;
+      const land = { x: to.x + Math.cos(a) * d, y: to.y + Math.sin(a) * d * 0.5 + 4 };
+      const start = {
+        x: land.x + side * (70 + Math.random() * 40),
+        y: land.y - 200 - Math.random() * 60,
+      };
+      const delay = (Math.random() - 0.3) * durationMs * 0.35;
+      scene.time.delayedCall(Math.max(0, delay + durationMs * 0.12), () => {
+        void fallingRock(scene, start, land, (2.5 + Math.random() * 2) * K, durationMs * (0.8 + Math.random() * 0.3), c)
+          .then(() => {
+            const pop = arCircle(scene, land.x, land.y, 3 * K, c.ember, 0.9).setDepth(72).setBlendMode(1);
+            scene.tweens.add({ targets: pop, radius: 10 * K, alpha: 0, duration: 160, onComplete: () => pop.destroy() });
+            dustCloud(scene, land, 3, K * 0.55, DUST);
+            rockDebris(scene, land, 3, K * 0.6, c);
+          });
       });
     }
 
-    scene.tweens.add({
-      targets: [head, glow],
-      x: to.x,
-      y: to.y,
-      duration: durationMs,
-      ease: "Quad.In", // accelerate as it plummets
-      onComplete: () => {
-        head.destroy();
-        glow.destroy();
-        // Fiery impact: white flash + expanding ring + ember scatter.
-        const flash = scene.add.circle(to.x, to.y, 6, COLOURS.white, 1).setDepth(73);
-        const ring = scene.add
-          .circle(to.x, to.y, 8, color, 0)
-          .setDepth(72)
-          .setStrokeStyle(3, color, 0.9);
+    // The main rock.
+    const start: Pt = { x: to.x + side * 84, y: to.y - 220 };
+    void fallingRock(scene, start, to, 7 * K, durationMs, c).then(() => {
+      // Scorched crater, left a moment then faded. Low depth so it
+      // sits on the ground under the combatants.
+      const crater = arEllipse(scene, to.x, to.y + 8, 30 * K, 11 * K, 0x1a1210, 0.55)
+        .setDepth(1);
+      scene.tweens.add({
+        targets: crater, alpha: 0, delay: 500, duration: 700,
+        onComplete: () => crater.destroy(),
+      });
+      // White-hot flash.
+      const flash = arCircle(scene, to.x, to.y, 8 * K, COLOURS.white, 1).setDepth(73).setBlendMode(1);
+      scene.tweens.add({
+        targets: flash, radius: 30 * K, alpha: 0, duration: 200,
+        onComplete: () => flash.destroy(),
+      });
+      // Burst of fire.
+      for (let i = 0; i < 7; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const d = Math.random() * 16 * K;
+        const blob = arCircle(scene, to.x, to.y, (4 + Math.random() * 3) * K, i % 3 === 0 ? c.ember : color, 0.9)
+          .setDepth(70)
+          .setBlendMode(1);
         scene.tweens.add({
-          targets: flash, radius: 20, alpha: 0,
-          duration: 240,
-          onComplete: () => flash.destroy(),
+          targets: blob,
+          x: to.x + Math.cos(a) * d,
+          y: to.y + Math.sin(a) * d * 0.6 - 8 * K,
+          radius: (10 + Math.random() * 6) * K,
+          alpha: 0,
+          duration: 300 + Math.random() * 160,
+          ease: "Quad.Out",
+          onComplete: () => blob.destroy(),
         });
+      }
+      // Shock ring, squashed flat so it reads as running along the ground.
+      const ring = arEllipse(scene, to.x, to.y + 6, 20 * K, 8 * K).setDepth(69);
+      ring.setStrokeStyle(3, c.ember, 0.9);
+      scene.tweens.add({
+        targets: ring, scaleX: 3.4, scaleY: 3.4, alpha: 0, duration: 380, ease: "Cubic.Out",
+        onComplete: () => ring.destroy(),
+      });
+      dustCloud(scene, to, 9, K, DUST);
+      rockDebris(scene, to, 10, K, c);
+      // Embers drifting up out of the strike.
+      for (let i = 0; i < 8; i++) {
+        const e = arCircle(scene, to.x + (Math.random() - 0.5) * 16 * K, to.y, 1.2 + Math.random(), c.ember, 1)
+          .setDepth(72);
         scene.tweens.add({
-          targets: ring, radius: 34, alpha: 0,
-          duration: 320,
-          onComplete: () => { ring.destroy(); resolve(); },
+          targets: e,
+          x: e.x + (Math.random() - 0.5) * 20,
+          y: to.y - (20 + Math.random() * 26) * K,
+          alpha: 0,
+          duration: 500 + Math.random() * 300,
+          onComplete: () => e.destroy(),
         });
-        void radialBurst(scene, to, color, COLOURS.ember, 42);
-      },
+      }
+      resolve();
     });
   });
 }
@@ -467,6 +992,9 @@ export function voidOrb(
           duration: 90,
           onComplete: () => {
             shells.forEach((s) => s.destroy());
+            // Resolve at the eruption so the caller's hit sound and
+            // damage land with the flash; the rings play on.
+            resolve();
             // ...then erupt: white flash + twin multi-coloured rings.
             const flash = scene.add.circle(to.x, to.y, 6, COLOURS.white, 1).setDepth(64);
             scene.tweens.add({
@@ -482,10 +1010,7 @@ export function voidOrb(
               scene.tweens.add({
                 targets: ring, radius: 40 + idx * 12, alpha: 0,
                 duration: 360 + idx * 90,
-                onComplete: () => {
-                  ring.destroy();
-                  if (idx === 1) resolve();
-                },
+                onComplete: () => ring.destroy(),
               });
             });
             void radialBurst(scene, to, palette[1], palette[3], 60);

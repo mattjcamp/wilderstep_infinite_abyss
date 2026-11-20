@@ -13,11 +13,15 @@
     {
       "id": "lightning_strike",
       "name": "Lightning Strike",
-      "description": "Jagged blue-white zigzag drawn from caster to target, fading out over ~280ms. Cast roar + crackling impact.",
+      "description": "A crackling plasma ball charges at the caster, races to the target and erupts into a forked, flickering plasma arc that re-strikes a few times, ending in a plasma burst with sparks and a light screen shake. Electric arc buzz on cast, thunder crack on impact. Used by the Sorcerer's Lightning Bolt and monster lightning attacks.",
       "visual": "lightning_bolt",
       "params": {},
-      "cast_sfx": "fireball",
-      "hit_sfx": "explosion"
+      "cast_sfx": "electric_zap",
+      "hit_sfx": "thunder_crack",
+      "shake": {
+        "intensity": 0.006,
+        "duration_ms": 220
+      }
     },
     {
       "id": "magic_dart",
@@ -61,20 +65,24 @@
     {
       "id": "meteor_strike",
       "name": "Meteor Strike",
-      "description": "A blazing meteor falls from the sky onto the target, trailing embers into a fiery impact burst. Same effect the Meteorfall Mace / Starfall Sling use; on an auto-monster spell one meteor drops on each foe.",
+      "description": "Flaming rocks fall from the sky onto the target: a big spinning meteor with fire and smoke trails plus smaller chunks, landing in a flash, ground shock ring, crater, billowing dust and flying rock chips. A falling whistle-roar on cast, a heavy rock-slam impact with rumble and clattering debris on landing. Same effect the Meteorfall Mace / Starfall Sling use; on an auto-monster spell one meteor drops on each foe.",
       "visual": "meteor_strike",
       "params": {},
-      "cast_sfx": "fireball",
-      "hit_sfx": "explosion"
+      "cast_sfx": "meteor_fall",
+      "hit_sfx": "meteor_impact",
+      "shake": {
+        "intensity": 0.006,
+        "duration_ms": 240
+      }
     },
     {
       "id": "void_orb",
       "name": "Void Orb",
-      "description": "A large glowing multi-coloured sphere streaks from the caster to the target, churning through a violet/magenta/cyan void palette with a spark trail, then implodes and erupts in a shockwave. For high-tier single-target void spells.",
+      "description": "A large glowing multi-coloured sphere streaks from the caster to the target, churning through a violet/magenta/cyan void palette with a spark trail, then implodes and erupts in a shockwave. For high-tier single-target void spells. A warped, wobbling drone with glassy shimmer that sucks into the implosion on cast; a plunging sub-bass, resonant sweep and echoing alien chime on the burst.",
       "visual": "void_orb",
       "params": {},
-      "cast_sfx": "magic_burst",
-      "hit_sfx": "explosion"
+      "cast_sfx": "void_hum",
+      "hit_sfx": "void_burst"
     },
     {
       "id": "generic_projectile",
@@ -178,20 +186,20 @@
     {
       "id": "dragon_breath",
       "name": "Dragon Breath",
-      "description": "A cone of fire pouring from the caster to the target. Dragon fire breath.",
+      "description": "A cone of fire pouring from the caster to the target. Dragon fire breath. A roaring growl under a swelling torrent of flame on cast; the target catching fire on impact.",
       "visual": "breath_of_fire",
       "params": {},
-      "cast_sfx": "fireball",
-      "hit_sfx": "explosion"
+      "cast_sfx": "breath_roar",
+      "hit_sfx": "fire_engulf"
     },
     {
       "id": "explosion",
       "name": "Explosion",
-      "description": "A big fire-coloured radial burst on the target — fireball-style impacts.",
+      "description": "A big fire-coloured radial burst on the target — fireball-style impacts. A small explosion (pop, thump, blast and falling debris) plays as the burst appears.",
       "visual": "explosion_burst",
       "params": {},
-      "cast_sfx": "fireball",
-      "hit_sfx": "explosion"
+      "cast_sfx": "small_explosion",
+      "hit_sfx": ""
     }
   ]
 }

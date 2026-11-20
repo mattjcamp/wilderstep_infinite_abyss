@@ -125,6 +125,7 @@ import {
   partyDeathSlump,
   partyDeathBanner,
   VFX_COLOURS,
+  SKY_FOCUS_EVENT,
 } from "@/vfx/Vfx";
 import { resolveProjectileEffect } from "@/vfx/effectRegistry";
 import { cureStatus, MAP_STEPS_PER_ROUND } from "@/battle/combat/effects/statusEffects";
@@ -135,7 +136,7 @@ import {
   statusBadgesFor,
   type StatusBadge,
 } from "@/battle/combat/effects/statusDisplay";
-import { ensureFxRecords, fxVisualKey, getFxRecord } from "@/vfx/fxCatalog";
+import { ensureFxRecords, fxVisualDef, fxVisualKey, getFxRecord } from "@/vfx/fxCatalog";
 import { setEffectCatalogDefaults } from "@/battle/combat/effects/EffectRuntime";
 import { loadEffects } from "@/battle/world/Effects";
 import {
@@ -558,7 +559,7 @@ function elementalShotFx(
     case "lightning":
       return { visual: "lightning_strike", color: VFX_COLOURS.lightning, sfx: "explosion" };
     case "meteor":
-      return { visual: "meteor_strike", color: VFX_COLOURS.fire, sfx: "explosion" };
+      return { visual: "meteor_strike", color: VFX_COLOURS.fire, sfx: "meteor_impact" };
     case "fire":
       return { visual: "fireball_burst", color: VFX_COLOURS.fire, sfx: "explosion" };
     case "arcane":
@@ -726,6 +727,13 @@ export class CombatScene extends Phaser.Scene {
    *  combatant: the target of the player's action being resolved (see
    *  beginActionFocus). */
   private focusHold: { x: number; y: number } | null = null;
+  /** While set, the arena camera frames effects falling from the sky
+   *  (Meteor Strike): every landing point plus the sky above it,
+   *  zoomed out if needed so the whole fall is on screen. Takes
+   *  priority over focusHold. See onSkyFocus. */
+  private skyFrame: {
+    left: number; right: number; top: number; bottom: number; until: number;
+  } | null = null;
   private overlayCam: Phaser.Cameras.Scene2D.Camera | null = null;
   private selRings = new Map<string, Phaser.GameObjects.Rectangle>();
   /** Soft halos drawn around the active combatant's ring on the arena
@@ -1943,8 +1951,8 @@ export class CombatScene extends Phaser.Scene {
         // Starfall Sling's falling-star visual so the mace's "fallen
         // star" flavour reads at the point of impact.
         const fx = resolveProjectileEffect({ effect_type: "meteor_strike" });
-        void fx(this, at, at);
-        Sfx.play("explosion");
+        // Sound on landing, not when the rock starts to fall.
+        void fx(this, at, at).then(() => Sfx.play("meteor_impact"));
         break;
       }
       case "lightning":
@@ -4113,8 +4121,19 @@ export class CombatScene extends Phaser.Scene {
       // afterthought instead of the cause. Staggered ~90ms apart so the
       // meteors cascade rather than flashing all at once.
       const impacts: Promise<void>[] = [];
-      for (const foe of this.combat.combatants) {
-        if (foe.side !== "enemies" || foe.hp <= 0) continue;
+      // Frame every target (and the sky above them) before the first
+      // rock drops, so the whole shower is on screen. A meteor visual
+      // re-announces itself as it falls; this just gets the camera
+      // moving early.
+      const foes = this.combat.combatants.filter((c) => c.side === "enemies" && c.hp > 0);
+      if (hasVisual && fxVisualDef(animation)?.id === "meteor_strike") {
+        for (const foe of foes) {
+          const p = this.bodyXY(foe);
+          this.onSkyFocus({ x: p.x, y: p.y, ms: 400 + foes.length * 90 });
+        }
+        await new Promise<void>((r) => this.time.delayedCall(260, () => r()));
+      }
+      for (const foe of foes) {
         const r = resolveDamageSpell(me, foe, spell, defaultRng);
         total += r.damage;
         const foeRef = foe;
@@ -4127,6 +4146,8 @@ export class CombatScene extends Phaser.Scene {
                 // Wait for the meteor to descend + impact, THEN reveal
                 // the damage / death and layer a fiery burst on top.
                 await playVisualAt(foePos);
+                // Each meteor's own impact sound as it lands.
+                if (hitSfx) Sfx.play(hitSfx);
                 void radialBurst(this, foePos, VFX_COLOURS.fire, VFX_COLOURS.ember, 44);
                 this.refreshHp(foeRef);
                 resolve();
@@ -8833,6 +8854,43 @@ export class CombatScene extends Phaser.Scene {
         : Promise.resolve();
   }
 
+  /** How long the camera keeps framing a fall after it lands, so the
+   *  dust and debris can be seen settling. */
+  private static readonly SKY_LINGER_MS = 700;
+
+  /** A falling effect (Meteor Strike) announced itself: widen the sky
+   *  frame to include its landing point and the sky above it. Several
+   *  meteors in a row (Meteor Shower) merge into one frame. */
+  private onSkyFocus(e: { x: number; y: number; sky?: number; ms?: number }): void {
+    const sky = e.sky ?? 240;
+    const until = this.time.now + (e.ms ?? 400) + CombatScene.SKY_LINGER_MS;
+    // Rocks fall in from one side; leave room for that.
+    const margin = TILE * 3;
+    const f = this.skyFrame && this.time.now < this.skyFrame.until ? this.skyFrame : null;
+    this.skyFrame = {
+      left: Math.min(f?.left ?? Infinity, e.x - margin),
+      right: Math.max(f?.right ?? -Infinity, e.x + margin),
+      top: Math.min(f?.top ?? Infinity, e.y - sky),
+      bottom: Math.max(f?.bottom ?? -Infinity, e.y + TILE),
+      until: Math.max(f?.until ?? 0, until),
+    };
+  }
+
+  /** The zoom the arena camera should be at right now: zoomed out just
+   *  enough to fit an active sky frame (never past the whole-arena
+   *  overview, never closer than usual), otherwise the normal zoom. */
+  private desiredArenaZoom(): number {
+    const normal = this.arenaZoom();
+    const f = this.skyFrame;
+    if (!f || this.arenaOverview) return normal;
+    // Only the part of the frame inside the battlefield can be shown.
+    const w = Math.min(ARENA_W, f.right - f.left);
+    const h = Math.min(ARENA_H, f.bottom - Math.max(ARENA_Y, f.top));
+    const fit = RENDER_SCALE * Math.min(VIEW_W / Math.max(1, w), VIEW_H / Math.max(1, h));
+    const overview = RENDER_SCALE * Math.min(VIEW_W / ARENA_W, VIEW_H / ARENA_H);
+    return Math.max(overview, Math.min(normal, fit));
+  }
+
   private endActionFocus(): void {
     this.focusHold = null;
   }
@@ -8869,6 +8927,8 @@ export class CombatScene extends Phaser.Scene {
       .setZoom(R);
     this.arenaCam = arena;
     this.overlayCam = overlay;
+    this.events.off(SKY_FOCUS_EVENT, this.onSkyFocus, this);
+    this.events.on(SKY_FOCUS_EVENT, this.onSkyFocus, this);
     const mainId = this.cameras.main.id;
     const arenaId = arena.id;
     const overlayId = overlay.id;
@@ -8880,6 +8940,7 @@ export class CombatScene extends Phaser.Scene {
     this.scale.off("resize", this.onArenaResize, this);
     this.scale.on("resize", this.onArenaResize, this);
     this.events.once("shutdown", () => {
+      this.events.off(SKY_FOCUS_EVENT, this.onSkyFocus, this);
       this.events.off("prerender", this.routeCameras, this);
       this.scale.off("resize", this.onArenaResize, this);
     });
@@ -8963,6 +9024,13 @@ export class CombatScene extends Phaser.Scene {
    *  otherwise whoever is acting (their sprite, so moves are tracked
    *  mid-tween). */
   private arenaFocus(): { x: number; y: number } | null {
+    const sky = this.skyFrame;
+    if (sky) {
+      if (this.time.now < sky.until) {
+        return { x: (sky.left + sky.right) / 2, y: (Math.max(ARENA_Y, sky.top) + sky.bottom) / 2 };
+      }
+      this.skyFrame = null;
+    }
     if (this.focusHold) return this.focusHold;
     if (this.mode === "pick-tile") {
       return { x: this.tileX(this.tileCursorPos.col), y: this.tileY(this.tileCursorPos.row) };
@@ -8991,6 +9059,12 @@ export class CombatScene extends Phaser.Scene {
     }
     const cam = this.arenaCam;
     if (!cam) return;
+    // Ease the zoom when a sky frame widens or ends (otherwise this is
+    // already the normal zoom and nothing changes).
+    if (this.skyFrame || Math.abs(cam.zoom - this.arenaZoom()) > 0.0005) {
+      const z = this.desiredArenaZoom();
+      if (Math.abs(z - cam.zoom) > 0.0005) cam.setZoom(cam.zoom + (z - cam.zoom) * 0.15);
+    }
     const target = this.arenaScrollTarget();
     if (!target) return;
     cam.scrollX += (target.x - cam.scrollX) * 0.2;
