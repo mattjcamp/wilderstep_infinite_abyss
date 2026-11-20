@@ -39,6 +39,11 @@ describe("effectRegistry", () => {
       "explosion_burst",
       "hellfire",
       "breath_of_fire",
+      "holy_smite",
+      "shield_dome",
+      "ground_rift",
+      "enchant_spiral",
+      "teleport_blink",
     ];
     expect(listRegisteredProjectileEffects().sort()).toEqual(expected.sort());
   });

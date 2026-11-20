@@ -1266,6 +1266,1067 @@ function genMeteorImpact(ac: AudioContext, out: AudioNode, t0: number): void {
   }
 }
 
+/** A cathedral-ish reverb: a convolver loaded with a decaying stereo
+ *  noise burst. Built per play (cheap) and fed into `out`. */
+function cathedralReverb(ac: AudioContext, out: AudioNode, seconds = 3, wet = 0.5): AudioNode {
+  const n = Math.floor(ac.sampleRate * seconds);
+  const buf = ac.createBuffer(2, n, ac.sampleRate);
+  for (let ch = 0; ch < 2; ch++) {
+    const d = buf.getChannelData(ch);
+    for (let i = 0; i < n; i++) {
+      d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 3.2);
+    }
+  }
+  const conv = ac.createConvolver();
+  conv.buffer = buf;
+  const g = ac.createGain();
+  g.gain.value = wet;
+  conv.connect(g).connect(out);
+  return conv;
+}
+
+/** One sustained choir chord ("aah"), sung by `notes` (one voice each).
+ *  Each voice is three slightly detuned sawtooths with a shared slow
+ *  vibrato, all pushed through a vowel formant bank ("ah": F1 ~700Hz,
+ *  F2 ~1.2kHz, F3 ~2.6kHz; "oo": ~330Hz / 870Hz / 2.3kHz), so the
+ *  result reads as voices, not synths. */
+function choirChord(
+  ac: AudioContext,
+  dry: AudioNode,
+  verb: AudioNode,
+  notes: string[],
+  start: number,
+  end: number,
+  level: number,
+  attack = 0.3,
+  release = 0.5,
+  vowel: "ah" | "oo" = "ah",
+): void {
+  const sum = ac.createGain();
+  sum.gain.value = 1;
+  const vib = ac.createOscillator();
+  vib.frequency.value = 5.2;
+  const vibDepth = ac.createGain();
+  vibDepth.gain.setValueAtTime(0, start);
+  vibDepth.gain.linearRampToValueAtTime(14, start + attack + 0.2);
+  vib.connect(vibDepth);
+  for (const note of notes) {
+    const f = noteHz(note);
+    for (const det of [-9, 0, 8]) {
+      const o = ac.createOscillator();
+      o.type = "sawtooth";
+      o.frequency.value = f;
+      o.detune.value = det + (Math.random() - 0.5) * 4;
+      vibDepth.connect(o.detune);
+      o.connect(sum);
+      o.start(start);
+      o.stop(end + release + 0.05);
+    }
+  }
+  vib.start(start);
+  vib.stop(end + release + 0.05);
+
+  const env = ac.createGain();
+  env.gain.setValueAtTime(0.0001, start);
+  env.gain.exponentialRampToValueAtTime(level, start + attack);
+  env.gain.setValueAtTime(level, end);
+  env.gain.exponentialRampToValueAtTime(0.0001, end + release);
+  // Formant bank: "ah" (open, bright) or "oo" (soft, rounded).
+  const formants: ReadonlyArray<readonly [number, number, number]> =
+    vowel === "oo"
+      ? [[330, 4, 1], [870, 9, 0.45], [2300, 14, 0.18]]
+      : [[700, 6, 1], [1220, 10, 0.55], [2600, 14, 0.3]];
+  for (const [fq, q, g] of formants) {
+    const bp = ac.createBiquadFilter();
+    bp.type = "bandpass";
+    bp.frequency.value = fq;
+    bp.Q.value = q;
+    const fg = ac.createGain();
+    fg.gain.value = g;
+    sum.connect(bp).connect(fg).connect(env);
+  }
+  env.connect(dry);
+  env.connect(verb);
+}
+
+/** A struck church bell: inharmonic sine partials with long, staggered
+ *  decays (the higher the partial, the faster it dies). */
+function bell(ac: AudioContext, dry: AudioNode, verb: AudioNode, freq: number, at: number, level: number): void {
+  const partials: [number, number, number][] = [
+    [0.5, 0.5, 3.2],   // hum
+    [1, 1, 2.6],       // strike
+    [1.2, 0.45, 2.0],  // minor third
+    [2, 0.5, 1.6],
+    [2.76, 0.35, 1.1],
+    [5.4, 0.18, 0.6],
+  ];
+  for (const [ratio, amp, decay] of partials) {
+    const o = ac.createOscillator();
+    o.type = "sine";
+    o.frequency.value = freq * ratio;
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, at);
+    g.gain.exponentialRampToValueAtTime(level * amp, at + 0.004);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + decay);
+    o.connect(g);
+    g.connect(dry);
+    g.connect(verb);
+    o.start(at);
+    o.stop(at + decay + 0.05);
+  }
+}
+
+function genHolyChoir(ac: AudioContext, out: AudioNode, t0: number): void {
+  // Turn Undead's sacred cue, ~4.5s with the reverb tail. Lines up
+  // with the visual: the caster channels for ~0.9s, the shockwave
+  // releases, then pillars of light smite each undead.
+  //   1. Choir, three chords through a cathedral reverb:
+  //      D minor (hushed, swelling as the light gathers) → Bb major
+  //      (rising) → a huge D major on the release, the "Picardy third"
+  //      that turns the minor opening into triumph, sopranos on top.
+  //   2. Bells: a low bell tolls at the start; a bright pair rings out
+  //      as the power is released.
+  //   3. Shimmer: a rising glissando of glassy high sines into the
+  //      release, the light breaking through.
+  //   4. Release swell: a soft low "whoom" of air under the big chord.
+  const verb = cathedralReverb(ac, out, 3.2, 0.55);
+  const dry = ac.createGain();
+  dry.gain.value = 0.8;
+  dry.connect(out);
+
+  // 1. Choir.
+  choirChord(ac, dry, verb, ["D3", "A3", "D4", "F4"], t0, t0 + 0.55, 0.22, 0.35, 0.35);
+  choirChord(ac, dry, verb, ["Bb2", "F3", "D4", "Bb4"], t0 + 0.5, t0 + 0.9, 0.26, 0.15, 0.25);
+  choirChord(ac, dry, verb, ["D3", "A3", "F#4", "A4", "D5"], t0 + 0.88, t0 + 2.9, 0.34, 0.08, 1.1);
+
+  // 2. Bells.
+  bell(ac, dry, verb, noteHz("D3"), t0, 0.16);
+  bell(ac, dry, verb, noteHz("D5"), t0 + 0.9, 0.12);
+  bell(ac, dry, verb, noteHz("A5"), t0 + 1.02, 0.08);
+
+  // 3. Shimmer.
+  {
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t0 + 0.3);
+    g.gain.exponentialRampToValueAtTime(0.05, t0 + 0.88);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.8);
+    g.connect(dry);
+    g.connect(verb);
+    for (const [a, b] of [[1175, 2349], [1480, 2960], [1760, 3520]] as const) {
+      const o = ac.createOscillator();
+      o.type = "sine";
+      o.frequency.setValueAtTime(a, t0 + 0.3);
+      o.frequency.exponentialRampToValueAtTime(b, t0 + 0.9);
+      o.connect(g);
+      o.start(t0 + 0.3);
+      o.stop(t0 + 1.85);
+    }
+  }
+
+  // 4. Release swell.
+  {
+    const src = noiseSource(ac, 1.2, true);
+    const lp = ac.createBiquadFilter();
+    lp.type = "lowpass";
+    lp.frequency.value = 300;
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t0 + 0.85);
+    g.gain.exponentialRampToValueAtTime(0.4, t0 + 0.92);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 2.0);
+    src.connect(lp).connect(g);
+    g.connect(dry);
+    g.connect(verb);
+    src.start(t0 + 0.85);
+    src.stop(t0 + 2.05);
+  }
+}
+
+function genHolySmite(ac: AudioContext, out: AudioNode, t0: number): void {
+  // One pillar of light striking, ~1s. Kept lighter than the choir it
+  // plays over (several can land in a row):
+  //   1. Strike: a short, bright noise "tsss" opening and closing, the
+  //      beam hitting.
+  //   2. Chime: a high bell partial cluster ringing out.
+  //   3. Thump: a soft low sine drop for weight.
+  //   4. Sear: a quiet high sizzle, the undead burning.
+  const verb = cathedralReverb(ac, out, 1.6, 0.35);
+
+  // 1. Strike.
+  {
+    const src = noiseSource(ac, 0.18);
+    const bp = ac.createBiquadFilter();
+    bp.type = "bandpass";
+    bp.Q.value = 1.5;
+    bp.frequency.setValueAtTime(7000, t0);
+    bp.frequency.exponentialRampToValueAtTime(2500, t0 + 0.18);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(0.22, t0 + 0.004);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.18);
+    src.connect(bp).connect(g).connect(out);
+    src.start(t0);
+    src.stop(t0 + 0.2);
+  }
+
+  // 2. Chime.
+  bell(ac, out, verb, noteHz("A5") * (0.98 + Math.random() * 0.04), t0, 0.07);
+
+  // 3. Thump.
+  {
+    const o = ac.createOscillator();
+    o.type = "sine";
+    o.frequency.setValueAtTime(140, t0);
+    o.frequency.exponentialRampToValueAtTime(55, t0 + 0.25);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(0.28, t0 + 0.006);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.3);
+    o.connect(g).connect(out);
+    o.start(t0);
+    o.stop(t0 + 0.32);
+  }
+
+  // 4. Sear.
+  {
+    const src = noiseSource(ac, 0.6);
+    const hp = ac.createBiquadFilter();
+    hp.type = "highpass";
+    hp.frequency.value = 5000;
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t0 + 0.05);
+    g.gain.exponentialRampToValueAtTime(0.035, t0 + 0.12);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.65);
+    src.connect(hp).connect(g).connect(out);
+    src.start(t0 + 0.05);
+    src.stop(t0 + 0.66);
+  }
+}
+
+function genCurseHex(ac: AudioContext, out: AudioNode, t0: number): void {
+  // A curse being laid, ~2.4s with its tail. The visual builds for
+  // ~0.8s, then the curse takes:
+  //   1. Drone: sawtooths a semitone apart (A1 against Bb1) with a
+  //      tritone above, slowly opening through a low-pass. The clash
+  //      beats and grinds: dread.
+  //   2. Whispers: band-passed noise in short, syllable-like bursts
+  //      with sweeping "mouth" filters, scattered left and right, many
+  //      voices muttering the hex.
+  //   3. Inrush: noise swelling into the moment the curse takes, then
+  //      cut dead.
+  //   4. Groan: a demonic "hhuoo", a distorted low sawtooth through
+  //      "oh" vowel formants, sagging in pitch, as the curse takes.
+  //   5. Sour bell: a low bell with a clashing partial, tolling into a
+  //      dark reverb.
+  const hit = 0.8;
+  const verb = cathedralReverb(ac, out, 2.6, 0.5);
+  const darkVerbIn = ac.createBiquadFilter();
+  darkVerbIn.type = "lowpass";
+  darkVerbIn.frequency.value = 1800;
+  darkVerbIn.connect(verb);
+  const dry = ac.createGain();
+  dry.gain.value = 0.85;
+  dry.connect(out);
+
+  // 1. Drone.
+  {
+    const lp = ac.createBiquadFilter();
+    lp.type = "lowpass";
+    lp.Q.value = 3;
+    lp.frequency.setValueAtTime(140, t0);
+    lp.frequency.exponentialRampToValueAtTime(700, t0 + hit);
+    lp.frequency.exponentialRampToValueAtTime(160, t0 + 2.0);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(0.3, t0 + 0.35);
+    g.gain.setValueAtTime(0.3, t0 + hit);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 2.1);
+    lp.connect(g);
+    g.connect(dry);
+    g.connect(darkVerbIn);
+    for (const [f, lvl] of [[55, 0.5], [58.27, 0.5], [77.78, 0.3]] as const) {
+      const o = ac.createOscillator();
+      o.type = "sawtooth";
+      o.frequency.setValueAtTime(f, t0);
+      o.frequency.exponentialRampToValueAtTime(f * 0.94, t0 + 2.1);
+      const og = ac.createGain();
+      og.gain.value = lvl;
+      o.connect(og).connect(lp);
+      o.start(t0);
+      o.stop(t0 + 2.15);
+    }
+  }
+
+  // 2. Whispers.
+  for (let i = 0; i < 22; i++) {
+    const at = t0 + Math.random() * (hit - 0.05);
+    const len = 0.06 + Math.random() * 0.12;
+    const src = noiseSource(ac, len);
+    const bp1 = ac.createBiquadFilter();
+    bp1.type = "bandpass";
+    bp1.Q.value = 6;
+    const f = 900 + Math.random() * 1800;
+    bp1.frequency.setValueAtTime(f, at);
+    bp1.frequency.exponentialRampToValueAtTime(f * (0.6 + Math.random() * 0.9), at + len);
+    const hp = ac.createBiquadFilter();
+    hp.type = "highpass";
+    hp.frequency.value = 600;
+    const g = ac.createGain();
+    // Louder as the curse nears.
+    const v = (0.05 + Math.random() * 0.07) * (0.5 + (at - t0) / hit);
+    g.gain.setValueAtTime(0.0001, at);
+    g.gain.exponentialRampToValueAtTime(v, at + len * 0.3);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + len);
+    const pan = ac.createStereoPanner();
+    pan.pan.value = Math.random() * 1.6 - 0.8;
+    src.connect(bp1).connect(hp).connect(g).connect(pan);
+    pan.connect(dry);
+    pan.connect(verb);
+    src.start(at);
+    src.stop(at + len + 0.01);
+  }
+
+  // 3. Inrush.
+  {
+    const src = noiseSource(ac, hit);
+    const bp = ac.createBiquadFilter();
+    bp.type = "bandpass";
+    bp.Q.value = 2;
+    bp.frequency.setValueAtTime(400, t0);
+    bp.frequency.exponentialRampToValueAtTime(2200, t0 + hit);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t0 + 0.2);
+    g.gain.exponentialRampToValueAtTime(0.18, t0 + hit - 0.01);
+    g.gain.linearRampToValueAtTime(0, t0 + hit);
+    src.connect(bp).connect(g).connect(dry);
+    src.start(t0 + 0.2);
+    src.stop(t0 + hit + 0.01);
+  }
+
+  // 4. Groan.
+  {
+    const at = t0 + hit;
+    const end = at + 0.9;
+    const o = ac.createOscillator();
+    o.type = "sawtooth";
+    o.frequency.setValueAtTime(92, at);
+    o.frequency.exponentialRampToValueAtTime(48, end);
+    const o2 = ac.createOscillator();
+    o2.type = "sawtooth";
+    o2.frequency.setValueAtTime(92 * 1.012, at);
+    o2.frequency.exponentialRampToValueAtTime(48 * 1.02, end);
+    const mix = ac.createGain();
+    mix.gain.value = 0.7;
+    o.connect(mix);
+    o2.connect(mix);
+    const shaper = ac.createWaveShaper();
+    shaper.curve = clipCurve(3);
+    mix.connect(shaper);
+    const env = ac.createGain();
+    env.gain.setValueAtTime(0.0001, at);
+    env.gain.exponentialRampToValueAtTime(0.75, at + 0.05);
+    env.gain.exponentialRampToValueAtTime(0.0001, end);
+    for (const [fq, q, gain] of [[420, 5, 1], [820, 8, 0.5]] as const) {
+      const bp = ac.createBiquadFilter();
+      bp.type = "bandpass";
+      bp.frequency.setValueAtTime(fq, at);
+      bp.frequency.exponentialRampToValueAtTime(fq * 0.75, end);
+      bp.Q.value = q;
+      const fg = ac.createGain();
+      fg.gain.value = gain;
+      shaper.connect(bp).connect(fg).connect(env);
+    }
+    env.connect(dry);
+    env.connect(darkVerbIn);
+    for (const x of [o, o2]) {
+      x.start(at);
+      x.stop(end + 0.02);
+    }
+  }
+
+  // 5. Sour bell: a low bell plus a partial a semitone off.
+  bell(ac, dry, darkVerbIn, noteHz("C3"), t0 + hit, 0.14);
+  bell(ac, dry, darkVerbIn, noteHz("C#4"), t0 + hit, 0.05);
+}
+
+function genArcaneArrowCast(ac: AudioContext, out: AudioNode, t0: number): void {
+  // Magic Arrow loosed, ~0.6s. The visual conjures for ~0.12s, then
+  // flies for ~0.28s:
+  //   1. Conjure: a quick rising sparkle arpeggio (E6 B6 E7 G#7), the
+  //      arrow forming out of light.
+  //   2. Twang: a magic bowstring, a sine and a bright harmonic bending
+  //      down, plus a short noise "thwip" as the arrow is released.
+  //   3. Flight: a whistling resonant whoosh rising in pitch, the
+  //      arrow streaking away.
+  const verb = cathedralReverb(ac, out, 1.2, 0.3);
+  const rel = t0 + 0.12;
+
+  // 1. Conjure.
+  ["E6", "B6", "E7", "G#7"].forEach((n, i) => {
+    const at = t0 + i * 0.025;
+    const o = ac.createOscillator();
+    o.type = "triangle";
+    o.frequency.value = noteHz(n);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, at);
+    g.gain.exponentialRampToValueAtTime(0.07, at + 0.004);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + 0.14);
+    o.connect(g);
+    g.connect(out);
+    g.connect(verb);
+    o.start(at);
+    o.stop(at + 0.16);
+  });
+
+  // 2. Twang + thwip.
+  for (const [f, lvl] of [[330, 0.22], [990, 0.07]] as const) {
+    const o = ac.createOscillator();
+    o.type = "sine";
+    o.frequency.setValueAtTime(f * 1.06, rel);
+    o.frequency.exponentialRampToValueAtTime(f * 0.92, rel + 0.15);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, rel);
+    g.gain.exponentialRampToValueAtTime(lvl, rel + 0.003);
+    g.gain.exponentialRampToValueAtTime(0.0001, rel + 0.18);
+    o.connect(g);
+    g.connect(out);
+    g.connect(verb);
+    o.start(rel);
+    o.stop(rel + 0.2);
+  }
+  {
+    const src = noiseSource(ac, 0.06);
+    const bp = ac.createBiquadFilter();
+    bp.type = "bandpass";
+    bp.Q.value = 2;
+    bp.frequency.setValueAtTime(2500, rel);
+    bp.frequency.exponentialRampToValueAtTime(900, rel + 0.06);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, rel);
+    g.gain.exponentialRampToValueAtTime(0.25, rel + 0.003);
+    g.gain.exponentialRampToValueAtTime(0.0001, rel + 0.06);
+    src.connect(bp).connect(g).connect(out);
+    src.start(rel);
+    src.stop(rel + 0.07);
+  }
+
+  // 3. Flight.
+  {
+    const dur = 0.32;
+    const src = noiseSource(ac, dur);
+    const bp = ac.createBiquadFilter();
+    bp.type = "bandpass";
+    bp.Q.value = 9;
+    bp.frequency.setValueAtTime(900, rel);
+    bp.frequency.exponentialRampToValueAtTime(3200, rel + dur);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, rel);
+    g.gain.exponentialRampToValueAtTime(0.3, rel + 0.08);
+    g.gain.exponentialRampToValueAtTime(0.0001, rel + dur);
+    src.connect(bp).connect(g);
+    g.connect(out);
+    g.connect(verb);
+    src.start(rel);
+    src.stop(rel + dur + 0.01);
+  }
+}
+
+function genArcaneArrowHit(ac: AudioContext, out: AudioNode, t0: number): void {
+  // Magic Arrow striking, ~0.9s:
+  //   1. Thunk: a short low thud and click, the arrow hitting home.
+  //   2. Shatter: glassy pings at random high pitches plus a hiss, the
+  //      arrow bursting into shards of light.
+  //   3. Bloom: a shimmering two-note chord (E6 + B6) with tremolo,
+  //      ringing out through a short reverb.
+  const verb = cathedralReverb(ac, out, 1.4, 0.35);
+
+  // 1. Thunk.
+  {
+    const o = ac.createOscillator();
+    o.type = "sine";
+    o.frequency.setValueAtTime(170, t0);
+    o.frequency.exponentialRampToValueAtTime(60, t0 + 0.08);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(0.4, t0 + 0.003);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.1);
+    o.connect(g).connect(out);
+    o.start(t0);
+    o.stop(t0 + 0.12);
+    const src = noiseSource(ac, 0.015);
+    const hp = ac.createBiquadFilter();
+    hp.type = "highpass";
+    hp.frequency.value = 2000;
+    const cg = ac.createGain();
+    cg.gain.setValueAtTime(0.0001, t0);
+    cg.gain.exponentialRampToValueAtTime(0.3, t0 + 0.001);
+    cg.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.015);
+    src.connect(hp).connect(cg).connect(out);
+    src.start(t0);
+    src.stop(t0 + 0.02);
+  }
+
+  // 2. Shatter.
+  for (let i = 0; i < 7; i++) {
+    const at = t0 + 0.01 + Math.random() * 0.12;
+    const o = ac.createOscillator();
+    o.type = "sine";
+    o.frequency.value = 2200 + Math.random() * 3200;
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, at);
+    g.gain.exponentialRampToValueAtTime(0.05 + Math.random() * 0.04, at + 0.002);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + 0.08 + Math.random() * 0.1);
+    o.connect(g);
+    g.connect(out);
+    g.connect(verb);
+    o.start(at);
+    o.stop(at + 0.2);
+  }
+  {
+    const src = noiseSource(ac, 0.2);
+    const hp = ac.createBiquadFilter();
+    hp.type = "highpass";
+    hp.frequency.value = 4000;
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(0.1, t0 + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.2);
+    src.connect(hp).connect(g).connect(out);
+    src.start(t0);
+    src.stop(t0 + 0.21);
+  }
+
+  // 3. Bloom.
+  {
+    const trem = ac.createGain();
+    trem.gain.value = 0.6;
+    const lfo = ac.createOscillator();
+    lfo.frequency.value = 11;
+    const depth = ac.createGain();
+    depth.gain.value = 0.4;
+    lfo.connect(depth).connect(trem.gain);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t0 + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.09, t0 + 0.05);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.8);
+    trem.connect(g);
+    g.connect(out);
+    g.connect(verb);
+    for (const n of ["E6", "B6"]) {
+      const o = ac.createOscillator();
+      o.type = "sine";
+      o.frequency.value = noteHz(n);
+      o.connect(trem);
+      o.start(t0 + 0.02);
+      o.stop(t0 + 0.82);
+    }
+    lfo.start(t0 + 0.02);
+    lfo.stop(t0 + 0.82);
+  }
+}
+
+function genHealChoir(ac: AudioContext, out: AudioNode, t0: number): void {
+  // Healing Sparkles, ~2.2s with the reverb tail. Gentle and warm
+  // rather than triumphant (Turn Undead's choir is the big one):
+  //   1. Choir: high voices on a soft "ooh", an open G major (add9)
+  //      chord that blooms into C major (add9) as the sparkles rise,
+  //      a plagal "amen" lift.
+  //   2. Harp: a quick plucked arpeggio rising underneath, the
+  //      sparkles drifting up.
+  //   3. Chime: a soft high bell as the heal lands.
+  const verb = cathedralReverb(ac, out, 2.4, 0.5);
+  const dry = ac.createGain();
+  dry.gain.value = 0.75;
+  dry.connect(out);
+
+  // 1. Choir.
+  choirChord(ac, dry, verb, ["G3", "D4", "A4", "B4"], t0, t0 + 0.55, 0.18, 0.18, 0.35, "oo");
+  choirChord(ac, dry, verb, ["C4", "G4", "D5", "E5"], t0 + 0.5, t0 + 1.3, 0.22, 0.12, 0.7, "oo");
+
+  // 2. Harp.
+  ["G4", "B4", "D5", "G5", "B5", "D6"].forEach((n, i) => {
+    const at = t0 + 0.05 + i * 0.07;
+    const o = ac.createOscillator();
+    o.type = "triangle";
+    o.frequency.value = noteHz(n);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, at);
+    g.gain.exponentialRampToValueAtTime(0.08, at + 0.004);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + 0.5);
+    o.connect(g);
+    g.connect(dry);
+    g.connect(verb);
+    o.start(at);
+    o.stop(at + 0.52);
+  });
+
+  // 3. Chime.
+  bell(ac, dry, verb, noteHz("E6"), t0 + 0.5, 0.05);
+}
+
+function genShieldUp(ac: AudioContext, out: AudioNode, t0: number): void {
+  // A magical barrier going up, ~1.6s with its tail. The visual raises
+  // the dome for ~0.55s, then it locks:
+  //   1. Charge: a warm detuned sawtooth pad (C3 G3 C4) through a
+  //      low-pass sweeping open 250Hz → 3kHz, with a fast shimmering
+  //      tremolo, energy gathering into the dome.
+  //   2. Lock: a solid low "thoom" plus a crystalline chime chord
+  //      (C6 G6 C7) as the barrier seals.
+  //   3. Hum: two slightly detuned glassy sines beating slowly,
+  //      ringing out through a reverb, the dome humming with power.
+  const lock = 0.55;
+  const verb = cathedralReverb(ac, out, 1.8, 0.4);
+  const dry = ac.createGain();
+  dry.gain.value = 0.85;
+  dry.connect(out);
+
+  // 1. Charge.
+  {
+    const lp = ac.createBiquadFilter();
+    lp.type = "lowpass";
+    lp.Q.value = 4;
+    lp.frequency.setValueAtTime(250, t0);
+    lp.frequency.exponentialRampToValueAtTime(3000, t0 + lock);
+    const trem = ac.createGain();
+    trem.gain.value = 0.7;
+    const lfo = ac.createOscillator();
+    lfo.frequency.setValueAtTime(12, t0);
+    lfo.frequency.linearRampToValueAtTime(26, t0 + lock);
+    const depth = ac.createGain();
+    depth.gain.value = 0.3;
+    lfo.connect(depth).connect(trem.gain);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(0.16, t0 + lock - 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + lock + 0.12);
+    lp.connect(trem).connect(g);
+    g.connect(dry);
+    g.connect(verb);
+    for (const n of ["C3", "G3", "C4"]) {
+      for (const det of [-7, 7]) {
+        const o = ac.createOscillator();
+        o.type = "sawtooth";
+        o.frequency.setValueAtTime(noteHz(n), t0);
+        o.frequency.exponentialRampToValueAtTime(noteHz(n) * 1.06, t0 + lock);
+        o.detune.value = det;
+        o.connect(lp);
+        o.start(t0);
+        o.stop(t0 + lock + 0.15);
+      }
+    }
+    lfo.start(t0);
+    lfo.stop(t0 + lock + 0.15);
+  }
+
+  // 2. Lock.
+  {
+    const at = t0 + lock;
+    const o = ac.createOscillator();
+    o.type = "sine";
+    o.frequency.setValueAtTime(130, at);
+    o.frequency.exponentialRampToValueAtTime(75, at + 0.25);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, at);
+    g.gain.exponentialRampToValueAtTime(0.4, at + 0.006);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + 0.3);
+    o.connect(g).connect(dry);
+    o.start(at);
+    o.stop(at + 0.32);
+    bell(ac, dry, verb, noteHz("C6"), at, 0.07);
+    bell(ac, dry, verb, noteHz("G6"), at + 0.01, 0.05);
+    bell(ac, dry, verb, noteHz("C7"), at + 0.02, 0.035);
+  }
+
+  // 3. Hum.
+  {
+    const at = t0 + lock;
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, at);
+    g.gain.exponentialRampToValueAtTime(0.06, at + 0.05);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + 1.0);
+    g.connect(dry);
+    g.connect(verb);
+    for (const f of [noteHz("G5"), noteHz("G5") * 1.008]) {
+      const o = ac.createOscillator();
+      o.type = "sine";
+      o.frequency.value = f;
+      o.connect(g);
+      o.start(at);
+      o.stop(at + 1.02);
+    }
+  }
+}
+
+function genGroundRift(ac: AudioContext, out: AudioNode, t0: number): void {
+  // The ground tearing open for a summoning, ~2.2s with the tail. The
+  // visual cracks for ~0.6s, then the pit opens and the creature rises:
+  //   1. Rumble: deep brown noise and a trembling 42Hz sine, building
+  //      as the cracks spread.
+  //   2. Cracking: sharp, gritty snaps getting closer together, with a
+  //      stone-grinding layer under them, the earth splitting.
+  //   3. Opening: a deep "whumf" and a rush of air out of the pit.
+  //   4. Moan: two ghostly voices on a soft "oo", gliding up a minor
+  //      third with a slow wobble, rising out of the pit into reverb.
+  //   5. Rattle: hollow bone-like knocks as the creature claws free.
+  const open = 0.6;
+  const verb = cathedralReverb(ac, out, 2.4, 0.45);
+  const dry = ac.createGain();
+  dry.gain.value = 0.85;
+  dry.connect(out);
+
+  // 1. Rumble.
+  {
+    const src = noiseSource(ac, open + 0.5, true);
+    const lp = ac.createBiquadFilter();
+    lp.type = "lowpass";
+    lp.frequency.value = 140;
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(0.7, t0 + open);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + open + 0.5);
+    src.connect(lp).connect(g).connect(dry);
+    src.start(t0);
+    src.stop(t0 + open + 0.52);
+    const o = ac.createOscillator();
+    o.type = "sine";
+    o.frequency.value = 42;
+    const am = ac.createGain();
+    am.gain.value = 0.5;
+    const lfo = ac.createOscillator();
+    lfo.frequency.value = 9;
+    const lfoD = ac.createGain();
+    lfoD.gain.value = 0.5;
+    lfo.connect(lfoD).connect(am.gain);
+    const og = ac.createGain();
+    og.gain.setValueAtTime(0.0001, t0);
+    og.gain.exponentialRampToValueAtTime(0.35, t0 + open);
+    og.gain.exponentialRampToValueAtTime(0.0001, t0 + open + 0.3);
+    o.connect(am).connect(og).connect(dry);
+    for (const x of [o, lfo]) {
+      x.start(t0);
+      x.stop(t0 + open + 0.32);
+    }
+  }
+
+  // 2. Cracking: snaps bunching up toward the opening.
+  for (let i = 0; i < 16; i++) {
+    const at = t0 + 0.04 + Math.pow(Math.random(), 0.6) * (open - 0.06);
+    const len = 0.015 + Math.random() * 0.02;
+    const src = noiseSource(ac, len);
+    const shaper = ac.createWaveShaper();
+    shaper.curve = clipCurve(4);
+    const bp = ac.createBiquadFilter();
+    bp.type = "bandpass";
+    bp.Q.value = 1.5;
+    bp.frequency.value = 900 + Math.random() * 2200;
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, at);
+    g.gain.exponentialRampToValueAtTime(0.12 + Math.random() * 0.18, at + 0.001);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + len);
+    src.connect(shaper).connect(bp).connect(g).connect(dry);
+    src.start(at);
+    src.stop(at + len + 0.01);
+  }
+  {
+    const src = noiseSource(ac, open);
+    const lp = ac.createBiquadFilter();
+    lp.type = "lowpass";
+    lp.frequency.value = 450;
+    lp.Q.value = 2;
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t0 + 0.1);
+    g.gain.exponentialRampToValueAtTime(0.2, t0 + open - 0.05);
+    for (let t = 0.15; t < open - 0.05; t += 0.03 + Math.random() * 0.03) {
+      g.gain.setValueAtTime(0.06 + Math.random() * 0.16, t0 + t);
+    }
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + open + 0.05);
+    src.connect(lp).connect(g).connect(dry);
+    src.start(t0 + 0.1);
+    src.stop(t0 + open + 0.06);
+  }
+
+  // 3. Opening.
+  {
+    const at = t0 + open;
+    const o = ac.createOscillator();
+    o.type = "sine";
+    o.frequency.setValueAtTime(110, at);
+    o.frequency.exponentialRampToValueAtTime(38, at + 0.4);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, at);
+    g.gain.exponentialRampToValueAtTime(0.55, at + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + 0.45);
+    o.connect(g).connect(dry);
+    o.start(at);
+    o.stop(at + 0.47);
+    const src = noiseSource(ac, 0.6);
+    const bp = ac.createBiquadFilter();
+    bp.type = "bandpass";
+    bp.Q.value = 1;
+    bp.frequency.setValueAtTime(300, at);
+    bp.frequency.exponentialRampToValueAtTime(1600, at + 0.5);
+    const ng = ac.createGain();
+    ng.gain.setValueAtTime(0.0001, at);
+    ng.gain.exponentialRampToValueAtTime(0.28, at + 0.05);
+    ng.gain.exponentialRampToValueAtTime(0.0001, at + 0.6);
+    src.connect(bp).connect(ng);
+    ng.connect(dry);
+    ng.connect(verb);
+    src.start(at);
+    src.stop(at + 0.62);
+  }
+
+  // 4. Moan: two ghostly voices.
+  {
+    const at = t0 + open + 0.05;
+    const end = at + 1.1;
+    for (const [from, to, det] of [["A3", "C4", -10], ["E4", "G4", 12]] as const) {
+      const o = ac.createOscillator();
+      o.type = "triangle";
+      o.frequency.setValueAtTime(noteHz(from), at);
+      o.frequency.exponentialRampToValueAtTime(noteHz(to), at + 0.5);
+      o.frequency.exponentialRampToValueAtTime(noteHz(to) * 0.94, end);
+      o.detune.value = det;
+      const vib = ac.createOscillator();
+      vib.frequency.value = 4.5;
+      const vd = ac.createGain();
+      vd.gain.value = 22;
+      vib.connect(vd).connect(o.detune);
+      const bp = ac.createBiquadFilter();
+      bp.type = "bandpass";
+      bp.frequency.value = 520;
+      bp.Q.value = 1.4;
+      const g = ac.createGain();
+      g.gain.setValueAtTime(0.0001, at);
+      g.gain.exponentialRampToValueAtTime(0.16, at + 0.25);
+      g.gain.exponentialRampToValueAtTime(0.0001, end);
+      o.connect(bp).connect(g);
+      g.connect(dry);
+      g.connect(verb);
+      for (const x of [o, vib]) {
+        x.start(at);
+        x.stop(end + 0.02);
+      }
+    }
+  }
+
+  // 5. Rattle: hollow, bone-like knocks.
+  for (let i = 0; i < 12; i++) {
+    const at = t0 + open + 0.15 + Math.random() * 0.7;
+    const len = 0.03;
+    const src = noiseSource(ac, len);
+    const bp = ac.createBiquadFilter();
+    bp.type = "bandpass";
+    bp.Q.value = 9;
+    bp.frequency.value = 1100 + Math.random() * 1400;
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, at);
+    g.gain.exponentialRampToValueAtTime(0.18 + Math.random() * 0.14, at + 0.001);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + len);
+    src.connect(bp).connect(g).connect(dry);
+    src.start(at);
+    src.stop(at + len + 0.01);
+  }
+}
+
+function genEnchantSpell(ac: AudioContext, out: AudioNode, t0: number): void {
+  // An enchantment taking hold, ~2.3s with the tail. The visual
+  // spirals in for ~0.7s, then blooms:
+  //   1. Glissando: a harp-like run sweeping up a dreamy Lydian scale
+  //      (with the raised fourth, F#), quickening as the orbits close.
+  //   2. Voices: a soft choir swelling on a floating, unresolved chord
+  //      (C, G, B, F#): mysterious rather than heroic.
+  //   3. Swirl: an airy whoosh panning left and right faster and
+  //      faster, the orbits circling the target.
+  //   4. Bloom: a soft low pulse and a bright bell chord as the spell
+  //      takes hold, ringing into the reverb.
+  const bloom = 0.7;
+  const verb = cathedralReverb(ac, out, 2.6, 0.55);
+  const dry = ac.createGain();
+  dry.gain.value = 0.75;
+  dry.connect(out);
+
+  // 1. Glissando: notes get closer together toward the bloom.
+  const scale = ["C5", "D5", "E5", "F#5", "G5", "A5", "B5", "C6", "D6", "E6", "F#6", "G6"];
+  scale.forEach((n, i) => {
+    const u = i / (scale.length - 1);
+    const at = t0 + bloom * (1 - Math.pow(1 - u, 0.6)) * 0.95;
+    const o = ac.createOscillator();
+    o.type = "triangle";
+    o.frequency.value = noteHz(n);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, at);
+    g.gain.exponentialRampToValueAtTime(0.06 + u * 0.03, at + 0.004);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + 0.45);
+    o.connect(g);
+    g.connect(dry);
+    g.connect(verb);
+    o.start(at);
+    o.stop(at + 0.47);
+  });
+
+  // 2. Voices.
+  choirChord(ac, dry, verb, ["C4", "G4", "B4", "F#5"], t0, t0 + bloom + 0.6, 0.16, bloom * 0.8, 0.9);
+
+  // 3. Swirl.
+  {
+    const src = noiseSource(ac, bloom + 0.1);
+    const bp = ac.createBiquadFilter();
+    bp.type = "bandpass";
+    bp.Q.value = 3;
+    bp.frequency.setValueAtTime(700, t0);
+    bp.frequency.exponentialRampToValueAtTime(2800, t0 + bloom);
+    const pan = ac.createStereoPanner();
+    const lfo = ac.createOscillator();
+    lfo.frequency.setValueAtTime(2, t0);
+    lfo.frequency.exponentialRampToValueAtTime(9, t0 + bloom);
+    const depth = ac.createGain();
+    depth.gain.value = 0.8;
+    lfo.connect(depth).connect(pan.pan);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(0.14, t0 + bloom - 0.05);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + bloom + 0.1);
+    src.connect(bp).connect(g).connect(pan);
+    pan.connect(dry);
+    pan.connect(verb);
+    for (const x of [src, lfo]) {
+      x.start(t0);
+      x.stop(t0 + bloom + 0.12);
+    }
+  }
+
+  // 4. Bloom.
+  {
+    const at = t0 + bloom;
+    const o = ac.createOscillator();
+    o.type = "sine";
+    o.frequency.setValueAtTime(110, at);
+    o.frequency.exponentialRampToValueAtTime(65, at + 0.3);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, at);
+    g.gain.exponentialRampToValueAtTime(0.3, at + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + 0.35);
+    o.connect(g).connect(dry);
+    o.start(at);
+    o.stop(at + 0.37);
+    bell(ac, dry, verb, noteHz("G5"), at, 0.06);
+    bell(ac, dry, verb, noteHz("B5"), at + 0.015, 0.045);
+    bell(ac, dry, verb, noteHz("F#6"), at + 0.03, 0.035);
+  }
+}
+
+function genTeleportBlink(ac: AudioContext, out: AudioNode, t0: number): void {
+  // A teleport, ~1.3s with the tail. Matches the visual: the caster is
+  // pulled into a portal for ~0.22s, streaks across for ~0.22s, then
+  // bursts out of a second portal:
+  //   1. Suck-in: noise rising in pitch into a hard cut, with an upward
+  //      sine "fwoop" as the portal swallows the caster.
+  //   2. Zip: a whooshing streak plus a gliding tone that sweeps from
+  //      one ear to the other as the light crosses the battlefield.
+  //   3. Arrival: a bright "shwing" (a noise burst and a bell pair) over
+  //      a soft thump, shimmering into a short reverb.
+  const zip = 0.22;
+  const land = 0.44;
+  const verb = cathedralReverb(ac, out, 1.6, 0.4);
+  const dry = ac.createGain();
+  dry.gain.value = 0.85;
+  dry.connect(out);
+
+  // 1. Suck-in.
+  {
+    const src = noiseSource(ac, zip);
+    const bp = ac.createBiquadFilter();
+    bp.type = "bandpass";
+    bp.Q.value = 2;
+    bp.frequency.setValueAtTime(400, t0);
+    bp.frequency.exponentialRampToValueAtTime(4000, t0 + zip);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(0.25, t0 + zip - 0.01);
+    g.gain.linearRampToValueAtTime(0, t0 + zip);
+    src.connect(bp).connect(g).connect(dry);
+    src.start(t0);
+    src.stop(t0 + zip + 0.01);
+    const o = ac.createOscillator();
+    o.type = "sine";
+    o.frequency.setValueAtTime(200, t0 + 0.06);
+    o.frequency.exponentialRampToValueAtTime(1600, t0 + zip);
+    const og = ac.createGain();
+    og.gain.setValueAtTime(0.0001, t0 + 0.06);
+    og.gain.exponentialRampToValueAtTime(0.18, t0 + zip - 0.01);
+    og.gain.linearRampToValueAtTime(0, t0 + zip);
+    o.connect(og).connect(dry);
+    o.start(t0 + 0.06);
+    o.stop(t0 + zip + 0.01);
+  }
+
+  // 2. Zip, panned left → right.
+  {
+    const at = t0 + zip;
+    const pan = ac.createStereoPanner();
+    pan.pan.setValueAtTime(-0.8, at);
+    pan.pan.linearRampToValueAtTime(0.8, at + land - zip);
+    pan.connect(dry);
+    pan.connect(verb);
+    const src = noiseSource(ac, land - zip + 0.05);
+    const bp = ac.createBiquadFilter();
+    bp.type = "bandpass";
+    bp.Q.value = 6;
+    bp.frequency.setValueAtTime(3200, at);
+    bp.frequency.exponentialRampToValueAtTime(1200, at + land - zip);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, at);
+    g.gain.exponentialRampToValueAtTime(0.3, at + 0.05);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + land - zip + 0.04);
+    src.connect(bp).connect(g).connect(pan);
+    src.start(at);
+    src.stop(at + land - zip + 0.05);
+    const o = ac.createOscillator();
+    o.type = "sine";
+    o.frequency.setValueAtTime(2400, at);
+    o.frequency.exponentialRampToValueAtTime(800, at + land - zip);
+    const og = ac.createGain();
+    og.gain.setValueAtTime(0.0001, at);
+    og.gain.exponentialRampToValueAtTime(0.08, at + 0.03);
+    og.gain.exponentialRampToValueAtTime(0.0001, at + land - zip);
+    o.connect(og).connect(pan);
+    o.start(at);
+    o.stop(at + land - zip + 0.02);
+  }
+
+  // 3. Arrival.
+  {
+    const at = t0 + land;
+    const src = noiseSource(ac, 0.25);
+    const hp = ac.createBiquadFilter();
+    hp.type = "highpass";
+    hp.frequency.setValueAtTime(6000, at);
+    hp.frequency.exponentialRampToValueAtTime(2500, at + 0.25);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, at);
+    g.gain.exponentialRampToValueAtTime(0.22, at + 0.004);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + 0.25);
+    src.connect(hp).connect(g);
+    g.connect(dry);
+    g.connect(verb);
+    src.start(at);
+    src.stop(at + 0.26);
+    const o = ac.createOscillator();
+    o.type = "sine";
+    o.frequency.setValueAtTime(150, at);
+    o.frequency.exponentialRampToValueAtTime(60, at + 0.2);
+    const og = ac.createGain();
+    og.gain.setValueAtTime(0.0001, at);
+    og.gain.exponentialRampToValueAtTime(0.3, at + 0.006);
+    og.gain.exponentialRampToValueAtTime(0.0001, at + 0.25);
+    o.connect(og).connect(dry);
+    o.start(at);
+    o.stop(at + 0.27);
+    bell(ac, dry, verb, noteHz("E6"), at, 0.06);
+    bell(ac, dry, verb, noteHz("B6"), at + 0.02, 0.04);
+  }
+}
+
 function genHeal(ac: AudioContext, out: AudioNode, t0: number): void {
   // Gentle ascending arpeggio: C5 → E5 → G5 → C6 (square 25% duty).
   const seq = ["C5", "E5", "G5", "C6"];
@@ -1517,6 +2578,16 @@ const GENERATORS: Record<string, Generator> = {
   small_explosion:    genSmallExplosion,
   meteor_fall:        genMeteorFall,
   meteor_impact:      genMeteorImpact,
+  holy_choir:         genHolyChoir,
+  holy_smite:         genHolySmite,
+  curse_hex:          genCurseHex,
+  arcane_arrow_cast:  genArcaneArrowCast,
+  arcane_arrow_hit:   genArcaneArrowHit,
+  heal_choir:         genHealChoir,
+  shield_up:          genShieldUp,
+  ground_rift:        genGroundRift,
+  enchant_spell:      genEnchantSpell,
+  teleport_blink:     genTeleportBlink,
   heal:               genHeal,
   shield:             genShield,
   turn_undead:        genTurnUndead,

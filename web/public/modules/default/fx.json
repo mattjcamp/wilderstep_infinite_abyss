@@ -35,11 +35,11 @@
     {
       "id": "magic_arrow",
       "name": "Magic Arrow",
-      "description": "Glowing shaft with a bright tip, sparkle trail, and a fragmenting impact. Reads as 'magic, not mundane' on aimed shots.",
+      "description": "The arrow sprite conjured from light and loosed dead-straight at the target, wrapped in a flickering arcane glow with afterimages and twinkling sparkles, bursting into a ring, cross glint and glowing shards on impact. A sparkle arpeggio, magic bowstring twang and whistling flight on cast; a thunk, glassy shatter and shimmering chord on hit.",
       "visual": "magic_arrow",
       "params": {},
-      "cast_sfx": "magic_burst",
-      "hit_sfx": "magic_burst"
+      "cast_sfx": "arcane_arrow_cast",
+      "hit_sfx": "arcane_arrow_hit"
     },
     {
       "id": "fireball_burst",
@@ -96,65 +96,69 @@
     {
       "id": "heal_sparkles",
       "name": "Healing Sparkles",
-      "description": "Rising green sparkles below the target. Use for any positive-restoration spell.",
+      "description": "Rising green sparkles below the target, with a gentle choir (soft \"ooh\" voices lifting from G to C major), a rising harp and a soft chime. Use for any positive-restoration spell.",
       "visual": "heal_sparkles",
       "params": {},
-      "cast_sfx": "heal",
+      "cast_sfx": "heal_choir",
       "hit_sfx": ""
     },
     {
       "id": "shield_aura",
       "name": "Shield Aura",
-      "description": "Soft expanding gold ring around the target with a crystalline chime. Use for AC buffs / protective effects.",
-      "visual": "buff_aura",
+      "description": "A golden ward opens under the target and a honeycombed barrier dome rises around it, then locks in with a flash, a ground ring and sparkles. An energy hum charging up, a solid seal with a crystalline chime, and a glassy ringing hum. Use for AC buffs / protective effects.",
+      "visual": "shield_dome",
       "params": {},
-      "cast_sfx": "shield",
+      "cast_sfx": "shield_up",
       "hit_sfx": ""
     },
     {
       "id": "status_aura",
       "name": "Status Aura",
-      "description": "General gold ring + cast chime — covers neutral status applies like sleep, charm, push, light.",
-      "visual": "buff_aura",
+      "description": "Three tilted rings of light orbit the target, spiralling in and speeding up, then bloom in a flash with rings, a star glint and sparkles. A rising Lydian harp run, a mysterious choir swell and a swirling whoosh, blooming into a bell chord. Covers neutral status applies like sleep, charm, push, light.",
+      "visual": "enchant_spiral",
       "params": {},
-      "cast_sfx": "shield",
+      "cast_sfx": "enchant_spell",
       "hit_sfx": ""
     },
     {
       "id": "curse_aura",
       "name": "Curse Aura",
-      "description": "Soft expanding purple ring with a chime. Use for hex / curse / debuff spells.",
+      "description": "A purple summoning sigil opens under the target, shadow tendrils claw up, dark smoke swirls in and sickly eyes open above, then the curse takes with a collapsing ring and a shadow pulse. A grinding low drone, whispering voices, a demonic groan and a sour bell in a dark reverb. Use for hex / curse / debuff spells.",
       "visual": "curse_aura",
       "params": {},
-      "cast_sfx": "shield",
+      "cast_sfx": "curse_hex",
       "hit_sfx": ""
     },
     {
       "id": "turn_undead",
       "name": "Turn Undead",
-      "description": "Bright radial burst with a holy chord cast sound. Reserved for radiant / undead-bane abilities.",
-      "visual": "radial_burst",
+      "description": "The caster channels radiant light (golden rays, halo, rising motes) and releases a holy shockwave across the battlefield; then a pillar of light crashes down on each undead in turn, with halo rings, a cross glint and ash burning off. A synthesized choir (D minor → Bb → triumphant D major) with cathedral reverb and bells on cast; a bright chime-strike per pillar.",
+      "visual": "holy_smite",
       "params": {},
-      "cast_sfx": "turn_undead",
-      "hit_sfx": ""
+      "cast_sfx": "holy_choir",
+      "hit_sfx": "holy_smite"
     },
     {
       "id": "teleport_blink",
       "name": "Teleport Blink",
-      "description": "Soft arcane burst at the destination with a chime — pairs with the actor sprite snapping to the new tile.",
-      "visual": "radial_burst",
+      "description": "A portal rips open and swallows the caster, a streak of light arcs across the battlefield, and a second portal bursts open at the destination as the caster steps out. A rising suck-in, a whooshing streak sweeping left to right, and a bright shwing on arrival.",
+      "visual": "teleport_blink",
       "params": {},
-      "cast_sfx": "shield",
+      "cast_sfx": "teleport_blink",
       "hit_sfx": ""
     },
     {
       "id": "summon_burst",
       "name": "Summon Burst",
-      "description": "Radial burst at the spawn tile + chime. Use for animate_dead / summon spells.",
-      "visual": "radial_burst",
+      "description": "The ground cracks with glowing fissures and tears open into a dark pit; ghostly light, wisps, dirt and bone chips burst out and the summoned creature rises out of the pit before it closes. A building rumble and cracking earth, a deep whumf, a ghostly moan and rattling bones. Use for animate_dead / summon spells.",
+      "visual": "ground_rift",
       "params": {},
-      "cast_sfx": "shield",
-      "hit_sfx": ""
+      "cast_sfx": "ground_rift",
+      "hit_sfx": "",
+      "shake": {
+        "intensity": 0.004,
+        "duration_ms": 300
+      }
     },
     {
       "id": "utility_clack",

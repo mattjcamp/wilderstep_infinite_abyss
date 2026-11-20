@@ -1154,8 +1154,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/walls/room_walls/wall_top.png",
-      "tag": "dungeon:walls:room walls"
+      "sprite": "dungeon/walls/wall_top.png",
+      "tag": "dungeon:walls"
     },
     {
       "boat": false,
@@ -1170,8 +1170,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/walls/room_walls/wall_left.png",
-      "tag": "dungeon:walls:room walls"
+      "sprite": "dungeon/walls/wall_left.png",
+      "tag": "dungeon:walls"
     },
     {
       "boat": false,
@@ -1186,8 +1186,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/walls/room_walls/wall_right.png",
-      "tag": "dungeon:walls:room walls"
+      "sprite": "dungeon/walls/wall_right.png",
+      "tag": "dungeon:walls"
     },
     {
       "boat": false,
@@ -1202,8 +1202,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/walls/junctions/wall_corner_tl.png",
-      "tag": "dungeon:walls:junctions"
+      "sprite": "dungeon/walls/wall_corner_tl.png",
+      "tag": "dungeon:walls"
     },
     {
       "boat": false,
@@ -1218,40 +1218,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/walls/junctions/wall_corner_tr.png",
-      "tag": "dungeon:walls:junctions"
-    },
-    {
-      "boat": false,
-      "id": "dungeon_wall_corner_bl",
-      "name": "Dungeon Wall, Corner Bottom Left",
-      "walkable": false,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "dungeon/walls/junctions/wall_corner_bl.png",
-      "tag": "dungeon:walls:junctions"
-    },
-    {
-      "boat": false,
-      "id": "dungeon_wall_corner_br",
-      "name": "Dungeon Wall, Corner Bottom Right",
-      "walkable": false,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "dungeon/walls/junctions/wall_corner_br.png",
-      "tag": "dungeon:walls:junctions"
+      "sprite": "dungeon/walls/wall_corner_tr.png",
+      "tag": "dungeon:walls"
     },
     {
       "boat": false,
@@ -1266,8 +1234,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/walls/room_walls/wall_window.png",
-      "tag": "dungeon:walls:room walls"
+      "sprite": "dungeon/walls/wall_window.png",
+      "tag": "dungeon:walls"
     },
     {
       "boat": false,
@@ -1282,8 +1250,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/walls/room_walls/wall_banner.png",
-      "tag": "dungeon:walls:room walls"
+      "sprite": "dungeon/walls/wall_banner.png",
+      "tag": "dungeon:walls"
     },
     {
       "boat": false,
@@ -1298,8 +1266,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/walls/room_walls/wall_archway.png",
-      "tag": "dungeon:walls:room walls"
+      "sprite": "dungeon/walls/wall_archway.png",
+      "tag": "dungeon:walls"
     },
     {
       "boat": false,
@@ -1314,104 +1282,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/walls/room_walls/wall_portcullis.png",
-      "tag": "dungeon:walls:room walls"
-    },
-    {
-      "boat": false,
-      "id": "dungeon_wall_divider",
-      "name": "Dungeon Wall, Divider",
-      "walkable": false,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "dungeon/walls/junctions/wall_divider.png",
-      "tag": "dungeon:walls:junctions"
-    },
-    {
-      "boat": false,
-      "id": "dungeon_wall_divider_top",
-      "name": "Dungeon Wall, Divider, Top End",
-      "walkable": false,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "dungeon/walls/junctions/wall_divider_top.png",
-      "tag": "dungeon:walls:junctions"
-    },
-    {
-      "boat": false,
-      "id": "dungeon_wall_divider_end",
-      "name": "Dungeon Wall, Divider, Bottom End",
-      "walkable": false,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "dungeon/walls/junctions/wall_divider_end.png",
-      "tag": "dungeon:walls:junctions"
-    },
-    {
-      "boat": false,
-      "id": "dungeon_wall_t_down",
-      "name": "Dungeon Wall, T (down)",
-      "walkable": false,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "dungeon/walls/junctions/wall_t_down.png",
-      "tag": "dungeon:walls:junctions"
-    },
-    {
-      "boat": false,
-      "id": "dungeon_wall_t_up",
-      "name": "Dungeon Wall, T (up)",
-      "walkable": false,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "dungeon/walls/junctions/wall_t_up.png",
-      "tag": "dungeon:walls:junctions"
-    },
-    {
-      "boat": false,
-      "id": "dungeon_wall_cross",
-      "name": "Dungeon Wall, Cross",
-      "walkable": false,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "dungeon/walls/junctions/wall_cross.png",
-      "tag": "dungeon:walls:junctions"
+      "sprite": "dungeon/walls/wall_portcullis.png",
+      "tag": "dungeon:walls"
     },
     {
       "boat": false,
@@ -1507,22 +1379,6 @@
       "encounter": null,
       "spawn": null,
       "sprite": "dungeon/water_and_pits/pit.png",
-      "tag": "dungeon:water & pits"
-    },
-    {
-      "boat": false,
-      "id": "dungeon_pit_edge",
-      "name": "Dungeon Pit, Edge",
-      "walkable": false,
-      "obstructs": false,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "dungeon/water_and_pits/pit_edge.png",
       "tag": "dungeon:water & pits"
     },
     {
@@ -1851,8 +1707,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "manor/walls/room_walls/wall_top.png",
-      "tag": "manor:walls:room walls"
+      "sprite": "manor/walls/wall_top.png",
+      "tag": "manor:walls"
     },
     {
       "boat": false,
@@ -1867,8 +1723,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "manor/walls/room_walls/wall_left.png",
-      "tag": "manor:walls:room walls",
+      "sprite": "manor/walls/wall_left.png",
+      "tag": "manor:walls",
       "background_sprite": "manor/floors/floor_parquet.png"
     },
     {
@@ -1884,8 +1740,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "manor/walls/room_walls/wall_right.png",
-      "tag": "manor:walls:room walls",
+      "sprite": "manor/walls/wall_right.png",
+      "tag": "manor:walls",
       "background_sprite": "manor/floors/floor_parquet.png"
     },
     {
@@ -1901,8 +1757,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "manor/walls/junctions/wall_corner_tl.png",
-      "tag": "manor:walls:junctions"
+      "sprite": "manor/walls/wall_corner_tl.png",
+      "tag": "manor:walls"
     },
     {
       "boat": false,
@@ -1917,40 +1773,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "manor/walls/junctions/wall_corner_tr.png",
-      "tag": "manor:walls:junctions"
-    },
-    {
-      "boat": false,
-      "id": "manor_wall_corner_bl",
-      "name": "Manor Wall, Corner Bottom Left",
-      "walkable": false,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "manor/walls/junctions/wall_corner_bl.png",
-      "tag": "manor:walls:junctions"
-    },
-    {
-      "boat": false,
-      "id": "manor_wall_corner_br",
-      "name": "Manor Wall, Corner Bottom Right",
-      "walkable": false,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "manor/walls/junctions/wall_corner_br.png",
-      "tag": "manor:walls:junctions"
+      "sprite": "manor/walls/wall_corner_tr.png",
+      "tag": "manor:walls"
     },
     {
       "boat": false,
@@ -1965,8 +1789,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "manor/walls/room_walls/wall_window.png",
-      "tag": "manor:walls:room walls"
+      "sprite": "manor/walls/wall_window.png",
+      "tag": "manor:walls"
     },
     {
       "boat": false,
@@ -1981,8 +1805,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "manor/walls/room_walls/wall_tapestry.png",
-      "tag": "manor:walls:room walls"
+      "sprite": "manor/walls/wall_tapestry.png",
+      "tag": "manor:walls"
     },
     {
       "boat": false,
@@ -2015,105 +1839,6 @@
       "spawn": null,
       "sprite": "manor/doors_and_stairs/wall_gate.png",
       "tag": "manor:doors & stairs"
-    },
-    {
-      "boat": false,
-      "id": "manor_wall_divider",
-      "name": "Manor Wall, Divider",
-      "walkable": false,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "manor/walls/junctions/wall_divider.png",
-      "tag": "manor:walls:junctions",
-      "background_sprite": "manor/floors/floor_parquet.png"
-    },
-    {
-      "boat": false,
-      "id": "manor_wall_divider_top",
-      "name": "Manor Wall, Divider, Top End",
-      "walkable": false,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "manor/walls/junctions/wall_divider_top.png",
-      "tag": "manor:walls:junctions",
-      "background_sprite": "manor/floors/floor_parquet.png"
-    },
-    {
-      "boat": false,
-      "id": "manor_wall_divider_end",
-      "name": "Manor Wall, Divider, Bottom End",
-      "walkable": false,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "manor/walls/junctions/wall_divider_end.png",
-      "tag": "manor:walls:junctions",
-      "background_sprite": "manor/floors/floor_parquet.png"
-    },
-    {
-      "boat": false,
-      "id": "manor_wall_t_down",
-      "name": "Manor Wall, T (down)",
-      "walkable": false,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "manor/walls/junctions/wall_t_down.png",
-      "tag": "manor:walls:junctions"
-    },
-    {
-      "boat": false,
-      "id": "manor_wall_t_up",
-      "name": "Manor Wall, T (up)",
-      "walkable": false,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "manor/walls/junctions/wall_t_up.png",
-      "tag": "manor:walls:junctions"
-    },
-    {
-      "boat": false,
-      "id": "manor_wall_cross",
-      "name": "Manor Wall, Cross",
-      "walkable": false,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "manor/walls/junctions/wall_cross.png",
-      "tag": "manor:walls:junctions"
     },
     {
       "boat": false,
@@ -2558,8 +2283,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/walls/room_walls/wall_top.png",
-      "tag": "cave:walls:room walls"
+      "sprite": "cave/walls/wall_top.png",
+      "tag": "cave:walls"
     },
     {
       "boat": false,
@@ -2574,8 +2299,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/walls/room_walls/wall_left.png",
-      "tag": "cave:walls:room walls"
+      "sprite": "cave/walls/wall_left.png",
+      "tag": "cave:walls"
     },
     {
       "boat": false,
@@ -2590,40 +2315,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/walls/room_walls/wall_right.png",
-      "tag": "cave:walls:room walls"
-    },
-    {
-      "boat": false,
-      "id": "cave_wall_corner_tl",
-      "name": "Cave Wall, Corner Top Left",
-      "walkable": false,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "cave/walls/junctions/wall_corner_tl.png",
-      "tag": "cave:walls:junctions"
-    },
-    {
-      "boat": false,
-      "id": "cave_wall_corner_tr",
-      "name": "Cave Wall, Corner Top Right",
-      "walkable": false,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "cave/walls/junctions/wall_corner_tr.png",
-      "tag": "cave:walls:junctions"
+      "sprite": "cave/walls/wall_right.png",
+      "tag": "cave:walls"
     },
     {
       "boat": false,
@@ -2638,8 +2331,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/walls/room_walls/wall_crack.png",
-      "tag": "cave:walls:room walls"
+      "sprite": "cave/walls/wall_crack.png",
+      "tag": "cave:walls"
     },
     {
       "boat": false,
@@ -2654,8 +2347,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/walls/room_walls/wall_crystals.png",
-      "tag": "cave:walls:room walls"
+      "sprite": "cave/walls/wall_crystals.png",
+      "tag": "cave:walls"
     },
     {
       "boat": false,
@@ -2686,88 +2379,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/walls/room_walls/wall_webs.png",
-      "tag": "cave:walls:room walls"
-    },
-    {
-      "boat": false,
-      "id": "cave_wall_divider",
-      "name": "Cave Wall, Divider",
-      "walkable": false,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "cave/walls/junctions/wall_divider.png",
-      "tag": "cave:walls:junctions"
-    },
-    {
-      "boat": false,
-      "id": "cave_wall_divider_top",
-      "name": "Cave Wall, Divider, Top End",
-      "walkable": false,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "cave/walls/junctions/wall_divider_top.png",
-      "tag": "cave:walls:junctions"
-    },
-    {
-      "boat": false,
-      "id": "cave_wall_divider_end",
-      "name": "Cave Wall, Divider, Bottom End",
-      "walkable": false,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "cave/walls/junctions/wall_divider_end.png",
-      "tag": "cave:walls:junctions"
-    },
-    {
-      "boat": false,
-      "id": "cave_wall_t_down",
-      "name": "Cave Wall, T (down)",
-      "walkable": false,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "cave/walls/junctions/wall_t_down.png",
-      "tag": "cave:walls:junctions"
-    },
-    {
-      "boat": false,
-      "id": "cave_wall_t_up",
-      "name": "Cave Wall, T (up)",
-      "walkable": false,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "cave/walls/junctions/wall_t_up.png",
-      "tag": "cave:walls:junctions"
+      "sprite": "cave/walls/wall_webs.png",
+      "tag": "cave:walls"
     },
     {
       "boat": false,
@@ -2863,22 +2476,6 @@
       "encounter": null,
       "spawn": null,
       "sprite": "cave/water_and_pits/pit.png",
-      "tag": "cave:water & pits"
-    },
-    {
-      "boat": false,
-      "id": "cave_pit_edge",
-      "name": "Cave Chasm, Edge",
-      "walkable": false,
-      "obstructs": false,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "cave/water_and_pits/pit_edge.png",
       "tag": "cave:water & pits"
     },
     {
@@ -4201,38 +3798,6 @@
       "spawn": null,
       "sprite": "objects/book_closed.png",
       "tag": "objects"
-    },
-    {
-      "boat": false,
-      "id": "town_dock_gate_r0c0",
-      "name": "Town Dock Gate (top)",
-      "walkable": false,
-      "obstructs": false,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "town/dock_gate/dock_gate_r0c0.png",
-      "tag": "town:dock gate"
-    },
-    {
-      "boat": false,
-      "id": "town_dock_gate_r1c0",
-      "name": "Town Dock Gate (bottom)",
-      "walkable": false,
-      "obstructs": false,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "town/dock_gate/dock_gate_r1c0.png",
-      "tag": "town:dock gate"
     },
     {
       "boat": false,

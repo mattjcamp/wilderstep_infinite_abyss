@@ -539,6 +539,19 @@ export function lightningZigzag(
  *  editor preview) are unaffected. */
 export const SKY_FOCUS_EVENT = "vfx:sky-focus";
 
+/** Event an effect emits on its scene with a game object that lies
+ *  flat on the ground (a crater, a scorch mark). A host that listens
+ *  (CombatScene) slots it under the combatants but above the floor
+ *  tiles; elsewhere it just draws at depth 0. */
+export const GROUND_EVENT = "vfx:ground";
+
+/** Put `o` on the ground layer (see GROUND_EVENT). */
+function onGround<T extends Phaser.GameObjects.GameObject>(scene: Phaser.Scene, o: T): T {
+  (o as unknown as Phaser.GameObjects.Components.Depth).setDepth(0);
+  scene.events.emit(GROUND_EVENT, o);
+  return o;
+}
+
 /** Mark an object as arena content. The combat scene routes objects to
  *  its cameras by position, and a rock that starts above the top row
  *  would otherwise be handed to the HUD camera. */
@@ -785,10 +798,9 @@ export function meteorStrike(
     // The main rock.
     const start: Pt = { x: to.x + side * 84, y: to.y - 220 };
     void fallingRock(scene, start, to, 7 * K, durationMs, c).then(() => {
-      // Scorched crater, left a moment then faded. Low depth so it
-      // sits on the ground under the combatants.
-      const crater = arEllipse(scene, to.x, to.y + 8, 30 * K, 11 * K, 0x1a1210, 0.55)
-        .setDepth(1);
+      // Scorched crater, left a moment then faded. On the ground
+      // layer, so it sits under the combatants.
+      const crater = onGround(scene, arEllipse(scene, to.x, to.y + 8, 30 * K, 11 * K, 0x1a1210, 0.55));
       scene.tweens.add({
         targets: crater, alpha: 0, delay: 500, duration: 700,
         onComplete: () => crater.destroy(),
@@ -840,6 +852,412 @@ export function meteorStrike(
         });
       }
       resolve();
+    });
+  });
+}
+
+/** Mark any game object as arena content (see arenaObj). */
+function arRect(
+  scene: Phaser.Scene, x: number, y: number, w: number, h: number, color: number, alpha: number,
+): Phaser.GameObjects.Rectangle {
+  return arenaObj(scene.add.rectangle(x, y, w, h, color, alpha));
+}
+
+/**
+ * Holy channel: the caster calls on their god. Golden rays fan out and
+ * slowly turn around the caster, a halo swells and motes of light
+ * spiral upward; then the power is released as a wide shockwave of
+ * light rolling out across the battlefield.
+ *
+ * Resolves the moment the shockwave is released (~`durationMs`), so the
+ * caller can start the smites while the wave is still rolling.
+ * Used by Turn Undead (CombatScene drives it before the per-target
+ * `holySmite` pillars).
+ */
+export function holyChannel(
+  scene: Phaser.Scene,
+  at: Pt,
+  opts: { color?: number; core?: number; durationMs?: number; waveRadius?: number } = {},
+): Promise<void> {
+  const GOLD = opts.color ?? COLOURS.buff;
+  const CORE = opts.core ?? COLOURS.white;
+  const dur = opts.durationMs ?? 900;
+  const waveR = opts.waveRadius ?? 320;
+  return new Promise((resolve) => {
+    // Rays: thin bars pivoting on the caster.
+    const RAYS = 12;
+    const rays: Phaser.GameObjects.Rectangle[] = [];
+    for (let i = 0; i < RAYS; i++) {
+      const r = arRect(scene, at.x, at.y, 2, 3, i % 2 ? GOLD : CORE, 0)
+        .setOrigin(0.5, 1)
+        .setDepth(58)
+        .setBlendMode(BLEND_ADD);
+      r.rotation = (i / RAYS) * Math.PI * 2;
+      rays.push(r);
+    }
+    const halo = arCircle(scene, at.x, at.y, 6, GOLD, 0.25).setDepth(57).setBlendMode(BLEND_ADD);
+    const glow = arCircle(scene, at.x, at.y, 4, CORE, 0.6).setDepth(59).setBlendMode(BLEND_ADD);
+    const spin = 0.6;
+    scene.tweens.addCounter({
+      from: 0, to: 1, duration: dur, ease: "Sine.In",
+      onUpdate: (tw) => {
+        const t = tw.getValue() ?? 0;
+        rays.forEach((r, i) => {
+          const flick = 0.75 + Math.random() * 0.25;
+          r.rotation = (i / RAYS) * Math.PI * 2 + t * spin;
+          r.setSize(2 + t * 2.5, (8 + 44 * t) * (i % 2 ? 0.7 : 1) * flick);
+          r.setAlpha((0.25 + 0.55 * t) * flick);
+        });
+        halo.setRadius(10 + 22 * t + Math.random() * 2).setAlpha(0.15 + 0.25 * t);
+        glow.setRadius(5 + 7 * t + Math.random() * 1.5);
+        // Motes of light spiralling up around the caster.
+        if (Math.random() < 0.55) {
+          const a = Math.random() * Math.PI * 2;
+          const d = 10 + Math.random() * 16;
+          const m = arCircle(scene, at.x + Math.cos(a) * d, at.y + 6 + Math.sin(a) * d * 0.4, 1 + Math.random() * 1.3, Math.random() < 0.5 ? GOLD : CORE, 1)
+            .setDepth(60)
+            .setBlendMode(BLEND_ADD);
+          scene.tweens.add({
+            targets: m,
+            x: m.x + Math.cos(a + 1.2) * 8,
+            y: m.y - 26 - Math.random() * 20,
+            alpha: 0,
+            duration: 520 + Math.random() * 300,
+            onComplete: () => m.destroy(),
+          });
+        }
+      },
+      onComplete: () => {
+        // Release: rays flare out, flash, and the wave rolls outward.
+        rays.forEach((r) => {
+          scene.tweens.add({
+            targets: r, scaleY: 2.2, alpha: 0, duration: 320, ease: "Quad.Out",
+            onComplete: () => r.destroy(),
+          });
+        });
+        scene.tweens.add({ targets: halo, radius: 50, alpha: 0, duration: 420, onComplete: () => halo.destroy() });
+        scene.tweens.add({ targets: glow, radius: 30, alpha: 0, duration: 260, onComplete: () => glow.destroy() });
+        const wash = arCircle(scene, at.x, at.y, 10, GOLD, 0.16).setDepth(56).setBlendMode(BLEND_ADD);
+        scene.tweens.add({
+          targets: wash, radius: waveR, alpha: 0, duration: 700, ease: "Cubic.Out",
+          onComplete: () => wash.destroy(),
+        });
+        [0, 110].forEach((delay, k) => {
+          const ring = arCircle(scene, at.x, at.y, 10).setDepth(57).setBlendMode(BLEND_ADD);
+          ring.setStrokeStyle(k === 0 ? 4 : 2, k === 0 ? GOLD : CORE, 0.9);
+          scene.tweens.add({
+            targets: ring, radius: waveR * (k === 0 ? 1 : 0.8), alpha: 0,
+            delay, duration: 720, ease: "Cubic.Out",
+            onComplete: () => ring.destroy(),
+          });
+        });
+        resolve();
+      },
+    });
+  });
+}
+
+/**
+ * Holy smite: a pillar of light crashes down from the sky onto the
+ * target. Ignores `from`.
+ *
+ *   1. The beam drops from high above in an instant: a white core
+ *      inside pale-gold and gold glow, all additive.
+ *   2. On landing: a white flash, a cross-shaped lens glint, two halo
+ *      rings rolling out flat along the ground, and the beam swelling
+ *      wide before it fades.
+ *   3. Motes of light rise through the column while dark ash drifts up
+ *      off the target, the undead burning away.
+ *
+ * Announces itself with SKY_FOCUS_EVENT so the battle camera frames
+ * the column. Resolves when the beam lands.
+ */
+export function holySmite(
+  scene: Phaser.Scene,
+  _from: Pt,
+  to: Pt,
+  opts: { color?: number; core?: number; ash?: number; size?: number; dropMs?: number } = {},
+): Promise<void> {
+  const GOLD = opts.color ?? COLOURS.buff;
+  const CORE = opts.core ?? COLOURS.white;
+  const ASH = opts.ash ?? 0x3b3640;
+  const K = Math.max(0.3, opts.size ?? 1);
+  const drop = Math.max(40, opts.dropMs ?? 160);
+  const H = 260;
+  const top = to.y - H;
+  scene.events.emit(SKY_FOCUS_EVENT, { x: to.x, y: to.y, sky: 170, ms: drop });
+
+  return new Promise((resolve) => {
+    // The column, three layers, anchored at the top and grown down.
+    const layers = [
+      { w: 34 * K, c: GOLD, a: 0.2 },
+      { w: 16 * K, c: 0xfff3c4, a: 0.5 },
+      { w: 5 * K, c: CORE, a: 1 },
+    ].map((l, i) =>
+      arRect(scene, to.x, top, l.w, H + 6, l.c, l.a)
+        .setOrigin(0.5, 0)
+        .setDepth(66 + i)
+        .setBlendMode(BLEND_ADD)
+        .setScale(0.6, 0),
+    );
+    scene.tweens.add({
+      targets: layers, scaleY: 1, scaleX: 1, duration: drop, ease: "Quad.In",
+      onComplete: () => {
+        // ── Landing ───────────────────────────────────────────────
+        // Beam swells, flickers and fades.
+        layers.forEach((l, i) => {
+          scene.tweens.add({
+            targets: l, scaleX: 1.9 - i * 0.3, alpha: 0,
+            delay: 90, duration: 520 + i * 60, ease: "Quad.In",
+            onComplete: () => l.destroy(),
+          });
+        });
+        const flash = arCircle(scene, to.x, to.y, 8 * K, CORE, 1).setDepth(70).setBlendMode(BLEND_ADD);
+        scene.tweens.add({
+          targets: flash, radius: 30 * K, alpha: 0, duration: 260,
+          onComplete: () => flash.destroy(),
+        });
+        // Lens glint: a horizontal and a vertical streak.
+        [0, Math.PI / 2].forEach((rot, k) => {
+          const g = arEllipse(scene, to.x, to.y, 70 * K, 3 * K, CORE, 0.95).setDepth(71).setBlendMode(BLEND_ADD);
+          g.rotation = rot;
+          g.setScale(0.2, 1);
+          scene.tweens.add({
+            targets: g, scaleX: k === 0 ? 1.3 : 0.9, alpha: 0, duration: 360, ease: "Quad.Out",
+            onComplete: () => g.destroy(),
+          });
+        });
+        // Halo rings, flattened onto the ground.
+        [0, 90].forEach((delay, k) => {
+          const ring = arEllipse(scene, to.x, to.y + 8, 18 * K, 7 * K).setDepth(65).setBlendMode(BLEND_ADD);
+          ring.setStrokeStyle(k === 0 ? 3 : 2, k === 0 ? GOLD : CORE, 0.95);
+          scene.tweens.add({
+            targets: ring, scaleX: 3.4, scaleY: 3.4, alpha: 0, delay, duration: 520, ease: "Cubic.Out",
+            onComplete: () => ring.destroy(),
+          });
+        });
+        // Motes rising through the column.
+        for (let i = 0; i < 14; i++) {
+          const m = arCircle(scene, to.x + (Math.random() - 0.5) * 22 * K, to.y + 6, 1 + Math.random() * 1.4, Math.random() < 0.5 ? GOLD : CORE, 1)
+            .setDepth(72)
+            .setBlendMode(BLEND_ADD);
+          scene.tweens.add({
+            targets: m,
+            x: m.x + (Math.random() - 0.5) * 10,
+            y: to.y - (30 + Math.random() * 50) * K,
+            alpha: 0,
+            delay: Math.random() * 200,
+            duration: 600 + Math.random() * 400,
+            onComplete: () => m.destroy(),
+          });
+        }
+        // Ash: the undead burning away.
+        for (let i = 0; i < 8; i++) {
+          const a = arCircle(scene, to.x + (Math.random() - 0.5) * 16 * K, to.y - Math.random() * 10, 1.5 + Math.random() * 1.5, ASH, 0.8)
+            .setDepth(64);
+          scene.tweens.add({
+            targets: a,
+            x: a.x + (Math.random() - 0.5) * 18,
+            y: a.y - (24 + Math.random() * 30) * K,
+            radius: 3 + Math.random() * 2,
+            alpha: 0,
+            delay: 120 + Math.random() * 200,
+            duration: 800 + Math.random() * 400,
+            onComplete: () => a.destroy(),
+          });
+        }
+        resolve();
+      },
+    });
+  });
+}
+
+/**
+ * Curse: a hex is laid on the target, ~1.1s.
+ *
+ *   1. SIGIL: a glowing purple summoning circle opens on the ground
+ *      under the target, drawn in perspective (flattened) and turning:
+ *      two rings, a seven-pointed star and rune ticks.
+ *   2. SHADOWS: wavy black-violet tendrils claw up out of the sigil
+ *      around the target while dark smoke swirls inward, drawn to it.
+ *   3. EYES: a pair of sickly glowing eyes opens in the dark above the
+ *      target, then narrows and vanishes.
+ *   4. THE CURSE TAKES: the sigil flares, a dark ring collapses into the
+ *      target, a shadow pulse darkens it, and sickly motes drift down
+ *      (a curse drags down, not up).
+ *
+ * Resolves as the curse takes (~0.8s), so the caller's status /
+ * damage lands with it; the shadows dissipate afterwards.
+ */
+export function curseHex(
+  scene: Phaser.Scene,
+  at: Pt,
+  opts: {
+    color?: number;
+    shadow?: number;
+    accent?: number;
+    size?: number;
+    durationMs?: number;
+  } = {},
+): Promise<void> {
+  const GLOW = opts.color ?? COLOURS.curse;
+  const SHADOW = opts.shadow ?? 0x14081f;
+  const SICK = opts.accent ?? 0x8cff5a;
+  const K = Math.max(0.3, opts.size ?? 1);
+  const dur = Math.max(300, opts.durationMs ?? 800);
+  const R = 22 * K;
+  const FLAT = 0.42;
+  const gy = at.y + 8; // the ground under the target
+
+  return new Promise((resolve) => {
+    // ── 1. Sigil ────────────────────────────────────────────────
+    const sigil = scene.add.graphics().setDepth(44).setBlendMode(BLEND_ADD);
+    const drawSigil = (rot: number, scale: number, alpha: number) => {
+      sigil.clear();
+      const r = R * scale;
+      const P = (a: number, rr: number) => ({ x: at.x + Math.cos(a) * rr, y: gy + Math.sin(a) * rr * FLAT });
+      const ring = (rr: number, w: number) => {
+        sigil.lineStyle(w, GLOW, alpha);
+        sigil.strokeEllipse(at.x, gy, rr * 2, rr * 2 * FLAT);
+      };
+      ring(r, 2);
+      ring(r * 0.8, 1);
+      // Seven-pointed star {7/3}.
+      sigil.lineStyle(1.5, GLOW, alpha * 0.9);
+      sigil.beginPath();
+      for (let i = 0; i <= 7; i++) {
+        const p = P(rot + ((i * 3) % 7) * ((Math.PI * 2) / 7), r * 0.8);
+        if (i === 0) sigil.moveTo(p.x, p.y);
+        else sigil.lineTo(p.x, p.y);
+      }
+      sigil.strokePath();
+      // Rune ticks between the rings.
+      sigil.lineStyle(1, SICK, alpha * 0.7);
+      for (let i = 0; i < 14; i++) {
+        const a = -rot * 1.5 + (i / 14) * Math.PI * 2;
+        const p1 = P(a, r * 0.84);
+        const p2 = P(a + 0.12, r * 0.96);
+        sigil.lineBetween(p1.x, p1.y, p2.x, p2.y);
+      }
+    };
+
+    // ── 2. Tendrils ─────────────────────────────────────────────
+    const tendrils = scene.add.graphics().setDepth(46);
+    const T = 6;
+    const seeds = Array.from({ length: T }, (_, i) => ({
+      a: (i / T) * Math.PI * 2 + Math.random() * 0.4,
+      h: (26 + Math.random() * 16) * K,
+      phase: Math.random() * Math.PI * 2,
+    }));
+    const drawTendrils = (grow: number, curl: number, alpha: number, time: number) => {
+      tendrils.clear();
+      for (const s of seeds) {
+        const base = { x: at.x + Math.cos(s.a) * R * 0.8, y: gy + Math.sin(s.a) * R * 0.8 * FLAT };
+        const STEPS = 9;
+        let prev = base;
+        for (let k = 1; k <= STEPS; k++) {
+          const u = (k / STEPS) * grow;
+          // Rise, sway, and curl inward toward the target as `curl` grows.
+          const sway = Math.sin(time * 9 + s.phase + u * 6) * 4 * K * (1 - curl * 0.5);
+          const inward = curl * u;
+          const x = lerp(base.x, at.x, inward * 0.85) + sway;
+          const y = base.y - s.h * u + inward * 6;
+          tendrils.lineStyle(Math.max(1, (4.5 - k * 0.4) * K), k < 4 ? SHADOW : 0x3a1352, alpha);
+          tendrils.lineBetween(prev.x, prev.y, x, y);
+          prev = { x, y };
+        }
+      }
+    };
+
+    // ── 3. Eyes ─────────────────────────────────────────────────
+    const eyeY = at.y - 22 * K;
+    const cloud = arCircle(scene, at.x, eyeY, 12 * K, SHADOW, 0).setDepth(47);
+    const eyes = [-1, 1].map((sx) =>
+      arEllipse(scene, at.x + sx * 5 * K, eyeY, 4 * K, 0.5, SICK, 0).setDepth(48).setBlendMode(BLEND_ADD),
+    );
+
+    let lastSmoke = 0;
+    scene.tweens.addCounter({
+      from: 0, to: 1, duration: dur,
+      onUpdate: (tw) => {
+        const t = tw.getValue() ?? 0;
+        const now = t * dur;
+        drawSigil(t * 1.6, Math.min(1, t * 3), Math.min(1, t * 2.5) * (0.75 + Math.random() * 0.25));
+        drawTendrils(Math.min(1, t * 1.6), Math.max(0, (t - 0.45) / 0.55), 0.9, now / 1000);
+        // Eyes open in the middle third, then narrow.
+        const e = t < 0.3 ? 0 : t < 0.55 ? (t - 0.3) / 0.25 : 1 - Math.max(0, (t - 0.85) / 0.15);
+        cloud.setAlpha(0.55 * e).setRadius((11 + Math.random() * 2) * K);
+        eyes.forEach((eye) => eye.setAlpha(e).setSize(4 * K, Math.max(0.5, 2.6 * K * e * (t > 0.75 ? 0.5 : 1))));
+        // Dark smoke spiralling inward.
+        if (now - lastSmoke > 35) {
+          lastSmoke = now;
+          const a = Math.random() * Math.PI * 2;
+          const d = (34 + Math.random() * 14) * K;
+          const puff = arCircle(scene, at.x + Math.cos(a) * d, at.y + Math.sin(a) * d * 0.6, (4 + Math.random() * 3) * K, Math.random() < 0.7 ? SHADOW : 0x3a1352, 0)
+            .setDepth(45);
+          scene.tweens.add({
+            targets: puff,
+            x: at.x + Math.cos(a + 1.4) * 4,
+            y: at.y + Math.sin(a + 1.4) * 3,
+            radius: 1.5 * K,
+            alpha: { from: 0.55, to: 0 },
+            duration: 420 + Math.random() * 180,
+            ease: "Quad.In",
+            onComplete: () => puff.destroy(),
+          });
+        }
+      },
+      onComplete: () => {
+        // ── 4. The curse takes ─────────────────────────────────────
+        cloud.destroy();
+        eyes.forEach((e) => e.destroy());
+        // Sigil flares and fades.
+        let flare = 0;
+        scene.tweens.addCounter({
+          from: 0, to: 1, duration: 420,
+          onUpdate: (tw) => {
+            const t = tw.getValue() ?? 0;
+            drawSigil(1.6 + t * 0.6, 1 + t * 0.15, (1 - t) * (flare++ < 3 ? 1 : 0.8));
+            drawTendrils(1 - t, 1, 0.9 * (1 - t), (dur + t * 420) / 1000);
+          },
+          onComplete: () => { sigil.destroy(); tendrils.destroy(); },
+        });
+        // Dark ring collapsing into the target.
+        const ring = arCircle(scene, at.x, at.y, 34 * K).setDepth(49).setBlendMode(BLEND_ADD);
+        ring.setStrokeStyle(3, GLOW, 1);
+        scene.tweens.add({
+          targets: ring, radius: 2, alpha: 0.2, duration: 180, ease: "Quad.In",
+          onComplete: () => ring.destroy(),
+        });
+        // Shadow pulse darkening the target.
+        const pulse = arCircle(scene, at.x, at.y, 6 * K, SHADOW, 0.75).setDepth(50);
+        scene.tweens.add({
+          targets: pulse, radius: 22 * K, alpha: 0, delay: 150, duration: 520, ease: "Quad.Out",
+          onComplete: () => pulse.destroy(),
+        });
+        const glint = arCircle(scene, at.x, at.y, 3 * K, GLOW, 1).setDepth(51).setBlendMode(BLEND_ADD);
+        scene.tweens.add({
+          targets: glint, radius: 18 * K, alpha: 0, delay: 150, duration: 300,
+          onComplete: () => glint.destroy(),
+        });
+        // Sickly motes drifting down.
+        for (let i = 0; i < 12; i++) {
+          const m = arCircle(scene, at.x + (Math.random() - 0.5) * 26 * K, at.y - (10 + Math.random() * 16) * K, 1 + Math.random() * 1.2, Math.random() < 0.6 ? SICK : GLOW, 1)
+            .setDepth(52)
+            .setBlendMode(BLEND_ADD);
+          scene.tweens.add({
+            targets: m,
+            x: m.x + (Math.random() - 0.5) * 8,
+            y: gy + Math.random() * 4,
+            alpha: 0,
+            delay: 150 + Math.random() * 200,
+            duration: 600 + Math.random() * 400,
+            ease: "Sine.In",
+            onComplete: () => m.destroy(),
+          });
+        }
+        scene.time.delayedCall(170, () => resolve());
+      },
     });
   });
 }
@@ -1021,66 +1439,897 @@ export function voidOrb(
   });
 }
 
+/** Make sure an image texture (keyed by its URL) is loaded, loading it
+ *  on the fly if needed. Resolves false if it can't be loaded. */
+function ensureTexture(scene: Phaser.Scene, key: string | undefined): Promise<boolean> {
+  if (!key) return Promise.resolve(false);
+  if (scene.textures.exists(key)) return Promise.resolve(true);
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = (ok: boolean) => {
+      if (done) return;
+      done = true;
+      resolve(ok && scene.textures.exists(key));
+    };
+    scene.load.once(`filecomplete-image-${key}`, () => finish(true));
+    scene.load.once("loaderror", () => finish(false));
+    scene.load.once("complete", () => finish(true));
+    scene.load.image(key, key);
+    scene.load.start();
+    // Never hold up the effect for long.
+    scene.time.delayedCall(400, () => finish(false));
+  });
+}
+
+/** A four-point twinkle (two crossed thin bars), additive. */
+function twinkle(scene: Phaser.Scene, x: number, y: number, size: number, color: number, depth: number): Phaser.GameObjects.Rectangle[] {
+  return [0, Math.PI / 2].map((rot) => {
+    const r = arRect(scene, x, y, size, Math.max(1, size * 0.18), color, 1).setDepth(depth).setBlendMode(BLEND_ADD);
+    r.rotation = rot + Math.PI / 4;
+    return r;
+  });
+}
+
 /**
- * Magic Arrow: an elongated glowing shaft with a brighter tip and a
- * sparkle trail. Aimed at a specific target (no arc, fast linear
- * flight) — visually distinct from a regular bow shot so casters
- * reading the arena can tell magic from mundane.
+ * Magic Arrow: the game's arrow sprite, conjured from light and loosed
+ * at the target.
+ *
+ *   1. CONJURE (~120ms): sparkles converge on the caster and the arrow
+ *      fades in out of a glow.
+ *   2. FLIGHT: a fast, dead-straight shot (magic doesn't arc). The real
+ *      arrow sprite, tinted pale, wrapped in two additive glow copies
+ *      that flicker, a bright halo at the head, and afterimage ghosts
+ *      plus twinkling sparkles streaming behind it.
+ *   3. IMPACT: the arrow strikes, flashes white and bursts into light:
+ *      a ring, a cross glint, glowing shards fanning out and sparkles.
+ *
+ * Resolves at impact. Falls back to a drawn shaft if the arrow texture
+ * can't be loaded. `color` is the glow (what recolouring callers such
+ * as ice / holy ammo change).
  */
 export function magicArrow(
   scene: Phaser.Scene,
   from: Pt, to: Pt,
-  color = COLOURS.lightning,
+  color = COLOURS.arcane,
   durationMs = 280,
+  opts: {
+    /** Texture key / URL of the arrow sprite (tip drawn up-left). */
+    texture?: string;
+    /** Pale tint for the arrow itself and the hot centre of the glow. */
+    core?: number;
+    /** Sparkle colour. */
+    sparkle?: number;
+    size?: number;
+  } = {},
 ): Promise<void> {
-  return new Promise((resolve) => {
-    const angle = Math.atan2(to.y - from.y, to.x - from.x);
-    const shaft = scene.add.rectangle(from.x, from.y, 18, 3, color, 1).setDepth(60);
-    shaft.rotation = angle;
-    const tip = scene.add.circle(from.x, from.y, 3.5, COLOURS.white, 1).setDepth(61);
+  const GLOW = color;
+  const CORE = opts.core ?? 0xf3e9ff;
+  const SPARK = opts.sparkle ?? 0xff9ad5;
+  const K = Math.max(0.4, opts.size ?? 1);
+  const SIZE = 32 * K;
+  const SPRITE_ANGLE = -0.75 * Math.PI; // the art points up-left
+  const angle = Math.atan2(to.y - from.y, to.x - from.x);
+  const CONJURE = 120;
 
-    const trailCount = 7;
-    const interval = durationMs / trailCount;
-    for (let i = 0; i < trailCount; i++) {
-      scene.time.delayedCall(i * interval, () => {
-        const t = (i + 0.5) / trailCount;
-        const sx = from.x + (to.x - from.x) * t;
-        const sy = from.y + (to.y - from.y) * t;
-        const spark = scene.add
-          .circle(sx, sy, 2, color, 0.85)
-          .setDepth(58);
-        scene.tweens.add({
-          targets: spark, alpha: 0,
-          duration: 360,
-          onComplete: () => spark.destroy(),
-        });
+  return ensureTexture(scene, opts.texture).then((hasTex) => new Promise<void>((resolve) => {
+    // ── The arrow: sprite + two glow copies, or a drawn fallback ───
+    const parts: Phaser.GameObjects.Components.Transform[] = [];
+    const glows: Phaser.GameObjects.Image[] = [];
+    let arrow: Phaser.GameObjects.Image | null = null;
+    if (hasTex && opts.texture) {
+      for (const [scale, alpha] of [[1.7, 0.3], [1.3, 0.55]] as const) {
+        const g = arenaObj(scene.add.image(from.x, from.y, opts.texture))
+          .setDisplaySize(SIZE * scale, SIZE * scale)
+          .setTint(GLOW)
+          .setAlpha(0)
+          .setBlendMode(BLEND_ADD)
+          .setDepth(60);
+        g.setData("alpha", alpha);
+        glows.push(g);
+        parts.push(g);
+      }
+      arrow = arenaObj(scene.add.image(from.x, from.y, opts.texture))
+        .setDisplaySize(SIZE, SIZE)
+        .setTint(CORE)
+        .setAlpha(0)
+        .setDepth(61);
+      parts.push(arrow);
+    } else {
+      const shaft = arRect(scene, from.x, from.y, 20 * K, 3 * K, GLOW, 1).setDepth(61).setAlpha(0);
+      parts.push(shaft);
+    }
+    const halo = arCircle(scene, from.x, from.y, 7 * K, GLOW, 0).setDepth(59).setBlendMode(BLEND_ADD);
+    const head = arCircle(scene, from.x, from.y, 2.5 * K, COLOURS.white, 0).setDepth(62).setBlendMode(BLEND_ADD);
+    const place = (x: number, y: number) => {
+      for (const p of parts) {
+        p.setPosition(x, y);
+        p.rotation = arrow || glows.length ? angle - SPRITE_ANGLE : angle;
+      }
+      // Halo and head sit at the arrow's tip.
+      const tx = x + Math.cos(angle) * SIZE * 0.42;
+      const ty = y + Math.sin(angle) * SIZE * 0.42;
+      halo.setPosition(tx, ty);
+      head.setPosition(tx, ty);
+    };
+    place(from.x, from.y);
+
+    // ── 1. Conjure ──────────────────────────────────────────────
+    for (let i = 0; i < 8; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const d = 14 + Math.random() * 10;
+      const m = arCircle(scene, from.x + Math.cos(a) * d, from.y + Math.sin(a) * d, 1.2, i % 2 ? SPARK : CORE, 1)
+        .setDepth(62)
+        .setBlendMode(BLEND_ADD);
+      scene.tweens.add({
+        targets: m, x: from.x, y: from.y, alpha: 0.2, duration: CONJURE, ease: "Quad.In",
+        onComplete: () => m.destroy(),
+      });
+    }
+    scene.tweens.addCounter({
+      from: 0, to: 1, duration: CONJURE,
+      onUpdate: (tw) => {
+        const t = tw.getValue() ?? 0;
+        for (const p of parts) (p as unknown as Phaser.GameObjects.Components.Alpha).setAlpha(t);
+        glows.forEach((g) => g.setAlpha((g.getData("alpha") as number) * t));
+        halo.setAlpha(0.45 * t);
+        head.setAlpha(t);
+      },
+      onComplete: fly,
+    });
+
+    // ── 2. Flight ───────────────────────────────────────────────
+    function fly(): void {
+      let lastGhost = 0;
+      scene.tweens.addCounter({
+        from: 0, to: 1, duration: durationMs, ease: "Sine.In",
+        onUpdate: (tw) => {
+          const t = tw.getValue() ?? 0;
+          const x = lerp(from.x, to.x, t);
+          const y = lerp(from.y, to.y, t);
+          place(x, y);
+          glows.forEach((g) => g.setAlpha((g.getData("alpha") as number) * (0.7 + Math.random() * 0.5)));
+          halo.setRadius((6 + Math.random() * 3) * K);
+          const now = t * durationMs;
+          if (now - lastGhost < 22) return;
+          lastGhost = now;
+          // Afterimage ghost of the arrow.
+          if (hasTex && opts.texture) {
+            const ghost = arenaObj(scene.add.image(x, y, opts.texture))
+              .setDisplaySize(SIZE * 1.1, SIZE * 1.1)
+              .setTint(GLOW)
+              .setAlpha(0.45)
+              .setBlendMode(BLEND_ADD)
+              .setDepth(58);
+            ghost.rotation = angle - SPRITE_ANGLE;
+            scene.tweens.add({
+              targets: ghost, alpha: 0, duration: 200,
+              onComplete: () => ghost.destroy(),
+            });
+          }
+          // Twinkling sparkles shed off the tail.
+          const back = SIZE * 0.4;
+          const sx = x - Math.cos(angle) * back + (Math.random() - 0.5) * 8;
+          const sy = y - Math.sin(angle) * back + (Math.random() - 0.5) * 8;
+          const tw4 = twinkle(scene, sx, sy, (4 + Math.random() * 3) * K, Math.random() < 0.5 ? SPARK : CORE, 57);
+          scene.tweens.add({
+            targets: tw4,
+            y: sy + 4 + Math.random() * 6,
+            scaleX: 0.2,
+            alpha: 0,
+            duration: 300 + Math.random() * 200,
+            onComplete: () => tw4.forEach((r) => r.destroy()),
+          });
+        },
+        onComplete: impact,
       });
     }
 
-    scene.tweens.add({
-      targets: [shaft, tip],
-      x: to.x, y: to.y,
-      duration: durationMs,
-      ease: "Quad.In",
-      onComplete: () => {
-        shaft.destroy();
-        tip.destroy();
-        // Impact: 6 spark fragments fanning outward + a centre flash.
-        const sparks = 6;
-        for (let i = 0; i < sparks; i++) {
-          const a = (i / sparks) * Math.PI * 2;
-          const tx = to.x + Math.cos(a) * 14;
-          const ty = to.y + Math.sin(a) * 14;
-          const frag = scene.add.rectangle(to.x, to.y, 3, 3, COLOURS.white, 1).setDepth(62);
+    // ── 3. Impact ───────────────────────────────────────────────
+    function impact(): void {
+      // The arrow flashes white and dissolves.
+      if (arrow) {
+        arrow.setTint(COLOURS.white).setBlendMode(BLEND_ADD);
+        scene.tweens.add({
+          targets: [arrow, ...glows], alpha: 0, scale: arrow.scale * 1.25, duration: 160,
+          onComplete: () => { arrow?.destroy(); glows.forEach((g) => g.destroy()); },
+        });
+      } else {
+        parts.forEach((p) => (p as unknown as Phaser.GameObjects.GameObject).destroy());
+      }
+      halo.destroy();
+      head.destroy();
+      const flash = arCircle(scene, to.x, to.y, 5 * K, COLOURS.white, 1).setDepth(64).setBlendMode(BLEND_ADD);
+      scene.tweens.add({ targets: flash, radius: 20 * K, alpha: 0, duration: 200, onComplete: () => flash.destroy() });
+      const ring = arCircle(scene, to.x, to.y, 6 * K).setDepth(63).setBlendMode(BLEND_ADD);
+      ring.setStrokeStyle(2, GLOW, 1);
+      scene.tweens.add({ targets: ring, radius: 28 * K, alpha: 0, duration: 340, ease: "Cubic.Out", onComplete: () => ring.destroy() });
+      const glint = twinkle(scene, to.x, to.y, 40 * K, CORE, 65);
+      scene.tweens.add({ targets: glint, scaleX: 0.1, alpha: 0, duration: 300, ease: "Quad.Out", onComplete: () => glint.forEach((r) => r.destroy()) });
+      // Glowing shards fanning out along the line of flight.
+      for (let i = 0; i < 9; i++) {
+        const a = angle + (Math.random() - 0.5) * 2.2;
+        const d = (14 + Math.random() * 18) * K;
+        const shard = arRect(scene, to.x, to.y, (4 + Math.random() * 3) * K, 1.6 * K, i % 3 === 0 ? SPARK : GLOW, 1)
+          .setDepth(63)
+          .setBlendMode(BLEND_ADD);
+        shard.rotation = a;
+        scene.tweens.add({
+          targets: shard,
+          x: to.x + Math.cos(a) * d,
+          y: to.y + Math.sin(a) * d,
+          alpha: 0,
+          duration: 260 + Math.random() * 160,
+          ease: "Quad.Out",
+          onComplete: () => shard.destroy(),
+        });
+      }
+      for (let i = 0; i < 6; i++) {
+        const tw4 = twinkle(scene, to.x + (Math.random() - 0.5) * 24 * K, to.y + (Math.random() - 0.5) * 20 * K, (3 + Math.random() * 3) * K, i % 2 ? SPARK : CORE, 64);
+        tw4.forEach((r) => r.setScale(0.1));
+        scene.tweens.add({
+          targets: tw4, scale: 1, alpha: 0, delay: Math.random() * 180, duration: 320, yoyo: false,
+          onComplete: () => tw4.forEach((r) => r.destroy()),
+        });
+      }
+      resolve();
+    }
+  }));
+}
+
+/**
+ * Shield dome: a magical barrier forms around the target and locks in.
+ *
+ *   1. WARD: a golden rune circle opens on the ground under the target,
+ *      in perspective, turning, with hexagonal tick marks.
+ *   2. RAISE: a glowing dome rises out of it bottom-up, a honeycomb of
+ *      hex cells across its face, a bright band of light sweeping over
+ *      it as it forms.
+ *   3. LOCK: the dome flashes and pulses outward, a ring rolls off along
+ *      the ground and sparkles scatter; then the dome fades (the
+ *      lasting shield glow is the status aura's job).
+ *
+ * Resolves at the lock (~`durationMs`), when the buff takes effect.
+ */
+export function shieldDome(
+  scene: Phaser.Scene,
+  at: Pt,
+  opts: { color?: number; core?: number; size?: number; durationMs?: number } = {},
+): Promise<void> {
+  const GOLD = opts.color ?? COLOURS.buff;
+  const CORE = opts.core ?? 0xfff8dc;
+  const K = Math.max(0.3, opts.size ?? 1);
+  const dur = Math.max(200, opts.durationMs ?? 550);
+  const R = 20 * K;
+  const FLAT = 0.4;
+  const gy = at.y + 8;
+  // Dome: centre and radii (a little taller than wide).
+  const cx = at.x;
+  const cy = at.y - 2;
+  const rx = R;
+  const ry = R * 1.12;
+
+  // Honeycomb cell centres inside the dome.
+  const cells: Pt[] = [];
+  const hs = 6 * K;
+  for (let row = -6; row <= 6; row++) {
+    for (let col = -6; col <= 6; col++) {
+      const x = cx + col * hs * 1.5;
+      const y = cy + row * hs * 1.732 + (col % 2 ? hs * 0.866 : 0);
+      const nx = (x - cx) / rx;
+      const ny = (y - cy) / ry;
+      if (nx * nx + ny * ny < 0.82) cells.push({ x, y });
+    }
+  }
+  const hex = (g: Phaser.GameObjects.Graphics, c: Pt, r: number) => {
+    g.beginPath();
+    for (let i = 0; i <= 6; i++) {
+      const a = (i / 6) * Math.PI * 2;
+      const x = c.x + Math.cos(a) * r;
+      const y = c.y + Math.sin(a) * r;
+      if (i === 0) g.moveTo(x, y);
+      else g.lineTo(x, y);
+    }
+    g.strokePath();
+  };
+
+  return new Promise((resolve) => {
+    const ward = scene.add.graphics().setDepth(44).setBlendMode(BLEND_ADD);
+    const dome = scene.add.graphics().setDepth(62).setBlendMode(BLEND_ADD);
+
+    const drawWard = (rot: number, scale: number, alpha: number) => {
+      ward.clear();
+      const r = R * 1.15 * scale;
+      ward.lineStyle(2, GOLD, alpha);
+      ward.strokeEllipse(at.x, gy, r * 2, r * 2 * FLAT);
+      ward.lineStyle(1, CORE, alpha * 0.7);
+      ward.strokeEllipse(at.x, gy, r * 1.7, r * 1.7 * FLAT);
+      ward.lineStyle(1.5, GOLD, alpha * 0.9);
+      for (let i = 0; i < 6; i++) {
+        const a = rot + (i / 6) * Math.PI * 2;
+        const a2 = rot + ((i + 1) / 6) * Math.PI * 2;
+        ward.lineBetween(
+          at.x + Math.cos(a) * r * 0.85, gy + Math.sin(a) * r * 0.85 * FLAT,
+          at.x + Math.cos(a2) * r * 0.85, gy + Math.sin(a2) * r * 0.85 * FLAT,
+        );
+      }
+    };
+
+    /** `rise` 0..1: how much of the dome (from the bottom) exists.
+     *  `sweep` -1..2: where the light band is (in dome-heights from top). */
+    const drawDome = (rise: number, sweep: number, alpha: number) => {
+      dome.clear();
+      const cutY = cy + ry - rise * ry * 2; // only draw below this line
+      // Soft fill, as bands, so it can rise.
+      const BANDS = 14;
+      for (let b = 0; b < BANDS; b++) {
+        const y0 = cy - ry + (b / BANDS) * ry * 2;
+        const y1 = y0 + (ry * 2) / BANDS;
+        if (y1 < cutY) continue;
+        const ym = (y0 + y1) / 2;
+        const ny = (ym - cy) / ry;
+        const half = rx * Math.sqrt(Math.max(0, 1 - ny * ny));
+        const band = 1 - Math.min(1, Math.abs((ym - (cy - ry)) / (ry * 2) - sweep) * 5);
+        dome.fillStyle(band > 0 ? CORE : GOLD, alpha * (0.08 + 0.25 * Math.max(0, band)));
+        dome.fillRect(cx - half, Math.max(y0, cutY), half * 2, y1 - Math.max(y0, cutY));
+      }
+      // Honeycomb.
+      for (const c of cells) {
+        if (c.y < cutY) continue;
+        const band = 1 - Math.min(1, Math.abs((c.y - (cy - ry)) / (ry * 2) - sweep) * 4);
+        dome.lineStyle(1, band > 0.3 ? CORE : GOLD, alpha * (0.25 + 0.6 * Math.max(0, band)));
+        hex(dome, c, hs * 0.92);
+      }
+      // Rim.
+      dome.lineStyle(2, GOLD, alpha * 0.95);
+      dome.beginPath();
+      let started = false;
+      for (let i = 0; i <= 48; i++) {
+        const a = (i / 48) * Math.PI * 2;
+        const x = cx + Math.cos(a) * rx;
+        const y = cy + Math.sin(a) * ry;
+        if (y < cutY) { started = false; continue; }
+        if (!started) { dome.moveTo(x, y); started = true; } else dome.lineTo(x, y);
+      }
+      dome.strokePath();
+    };
+
+    // ── 1 + 2. Ward and raise ───────────────────────────────────
+    scene.tweens.addCounter({
+      from: 0, to: 1, duration: dur, ease: "Sine.InOut",
+      onUpdate: (tw) => {
+        const t = tw.getValue() ?? 0;
+        drawWard(t * 1.2, Math.min(1, t * 2.5), Math.min(1, t * 3));
+        drawDome(Math.max(0, (t - 0.15) / 0.85), 1.2 - t * 1.6, 0.9);
+        // Motes drawn up the dome's face.
+        if (Math.random() < 0.5) {
+          const a = Math.PI + Math.random() * Math.PI;
+          const m = arCircle(scene, cx + Math.cos(a) * rx * 0.9, gy, 1.1, Math.random() < 0.5 ? GOLD : CORE, 1)
+            .setDepth(63)
+            .setBlendMode(BLEND_ADD);
           scene.tweens.add({
-            targets: frag, x: tx, y: ty, alpha: 0,
-            duration: 280,
-            onComplete: () => frag.destroy(),
+            targets: m, y: cy + Math.sin(a) * ry, x: cx + Math.cos(a) * rx * 0.5, alpha: 0,
+            duration: 380 + Math.random() * 200, onComplete: () => m.destroy(),
           });
         }
-        scene.time.delayedCall(280, () => resolve());
+      },
+      onComplete: () => {
+        // ── 3. Lock ───────────────────────────────────────────────
+        let k = 0;
+        scene.tweens.addCounter({
+          from: 0, to: 1, duration: 520, ease: "Quad.In",
+          onUpdate: (tw) => {
+            const t = tw.getValue() ?? 0;
+            // A bright flash on the first frames, then fade.
+            const a = k++ < 3 ? 1.4 : 1 - t;
+            drawDome(1, -1, Math.min(1, a));
+            drawWard(1.2 + t * 0.5, 1, 1 - t);
+            dome.setScale(1 + t * 0.12);
+            dome.setPosition(-cx * t * 0.12, -cy * t * 0.12);
+          },
+          onComplete: () => { dome.destroy(); ward.destroy(); },
+        });
+        const ring = arEllipse(scene, at.x, gy, R * 2.3, R * 2.3 * FLAT).setDepth(45).setBlendMode(BLEND_ADD);
+        ring.setStrokeStyle(2, GOLD, 1);
+        scene.tweens.add({
+          targets: ring, scaleX: 2, scaleY: 2, alpha: 0, duration: 420, ease: "Cubic.Out",
+          onComplete: () => ring.destroy(),
+        });
+        for (let i = 0; i < 10; i++) {
+          const a = Math.random() * Math.PI * 2;
+          const sx = cx + Math.cos(a) * rx;
+          const sy = cy + Math.sin(a) * ry;
+          const tw4 = twinkle(scene, sx, sy, (3 + Math.random() * 3) * K, i % 2 ? GOLD : CORE, 64);
+          scene.tweens.add({
+            targets: tw4,
+            x: sx + Math.cos(a) * 10,
+            y: sy + Math.sin(a) * 10,
+            alpha: 0,
+            duration: 360 + Math.random() * 200,
+            onComplete: () => tw4.forEach((r) => r.destroy()),
+          });
+        }
+        resolve();
       },
     });
+  });
+}
+
+/**
+ * Ground rift: the earth cracks and tears open, for a summoning.
+ *
+ *   1. CRACKS: jagged fissures race outward from the spot along the
+ *      ground (in perspective), glowing an eerie green from below,
+ *      kicking up dust and hopping pebbles.
+ *   2. OPENING: the ground splits into a dark pit with a glowing rim
+ *      and a churning light inside, chunks of earth tumbling in.
+ *   3. ERUPTION (when the pit is fully open): a column of ghostly light
+ *      bursts up, wisps spiral out of the pit and dirt and bone chips
+ *      are thrown up. Resolves here, so the caller can bring the
+ *      creature up out of the pit.
+ *   4. CLOSE: after `holdMs` the pit shrinks shut and the cracks fade.
+ *
+ * The pit and cracks sit at depth 1, so a body raised to depth 1 and
+ * brought to the top after this starts will draw over them (see
+ * CombatScene.resolveSummonSkeleton).
+ */
+export function groundRift(
+  scene: Phaser.Scene,
+  at: Pt,
+  opts: {
+    color?: number;
+    accent?: number;
+    soil?: number;
+    size?: number;
+    durationMs?: number;
+    holdMs?: number;
+  } = {},
+): Promise<void> {
+  const GLOW = opts.color ?? 0x6dffb0;
+  const WISP = opts.accent ?? 0xb48cff;
+  const SOIL = opts.soil ?? 0x3a2a1e;
+  const DARK = 0x07040a;
+  const K = Math.max(0.3, opts.size ?? 1);
+  const dur = Math.max(200, opts.durationMs ?? 600);
+  const hold = opts.holdMs ?? 900;
+  const FLAT = 0.45;
+  const gy = at.y + 8;
+  const PIT = 15 * K;
+
+  // Crack paths: a few main fissures with a branch each.
+  const cracks: Pt[][] = [];
+  const N = 6;
+  for (let i = 0; i < N; i++) {
+    const a = (i / N) * Math.PI * 2 + (Math.random() - 0.5) * 0.6;
+    const len = (26 + Math.random() * 16) * K;
+    const pts: Pt[] = [{ x: at.x, y: gy }];
+    const STEPS = 5;
+    for (let s = 1; s <= STEPS; s++) {
+      const d = (s / STEPS) * len;
+      const wob = (Math.random() - 0.5) * 0.7;
+      pts.push({ x: at.x + Math.cos(a + wob) * d, y: gy + Math.sin(a + wob) * d * FLAT });
+    }
+    cracks.push(pts);
+    const from = pts[2 + Math.floor(Math.random() * 2)];
+    const b = a + (Math.random() < 0.5 ? -1 : 1) * (0.5 + Math.random() * 0.5);
+    const bl = len * 0.35;
+    cracks.push([from, { x: from.x + Math.cos(b) * bl, y: from.y + Math.sin(b) * bl * FLAT }]);
+  }
+
+  return new Promise((resolve) => {
+    // Everything that lies on the ground is created now, at depth 1, so
+    // a creature raised after this can sit on top of it.
+    const crackG = scene.add.graphics().setDepth(1);
+    const crackGlow = scene.add.graphics().setDepth(1).setBlendMode(BLEND_ADD);
+    const pit = arEllipse(scene, at.x, gy, 2, 2 * FLAT, DARK, 0.95).setDepth(1);
+    const inner = arEllipse(scene, at.x, gy, 2, 2 * FLAT, GLOW, 0).setDepth(1).setBlendMode(BLEND_ADD);
+    const rim = arEllipse(scene, at.x, gy, 2, 2 * FLAT).setDepth(1).setBlendMode(BLEND_ADD);
+    rim.setStrokeStyle(2, GLOW, 0);
+
+    const drawCracks = (grow: number, alpha: number) => {
+      crackG.clear();
+      crackGlow.clear();
+      cracks.forEach((pts, ci) => {
+        const main = ci % 2 === 0;
+        // Branches start once the main crack is halfway.
+        const g = main ? grow : Math.max(0, (grow - 0.5) * 2);
+        if (g <= 0) return;
+        const n = (pts.length - 1) * g;
+        const draw = (gfx: Phaser.GameObjects.Graphics, w: number, c: number, a: number) => {
+          gfx.lineStyle(w, c, a);
+          gfx.beginPath();
+          gfx.moveTo(pts[0].x, pts[0].y);
+          for (let i = 1; i <= Math.ceil(n); i++) {
+            const u = Math.min(1, n - (i - 1));
+            gfx.lineTo(lerp(pts[i - 1].x, pts[i].x, u), lerp(pts[i - 1].y, pts[i].y, u));
+          }
+          gfx.strokePath();
+        };
+        draw(crackG, (main ? 3 : 2) * K, DARK, alpha);
+        draw(crackGlow, 1, GLOW, alpha * (0.6 + Math.random() * 0.4));
+      });
+    };
+
+    const puff = (x: number, y: number) => {
+      const d = arCircle(scene, x, y, 2.5 * K, 0x8a7560, 0.5).setDepth(66);
+      scene.tweens.add({
+        targets: d, y: y - 6 - Math.random() * 6, radius: (6 + Math.random() * 4) * K, alpha: 0,
+        duration: 420 + Math.random() * 200, onComplete: () => d.destroy(),
+      });
+    };
+
+    // ── 1 + 2. Crack and open ───────────────────────────────────
+    let lastFx = 0;
+    scene.tweens.addCounter({
+      from: 0, to: 1, duration: dur,
+      onUpdate: (tw) => {
+        const t = tw.getValue() ?? 0;
+        drawCracks(Math.min(1, t * 1.8), 1);
+        const open = Math.max(0, (t - 0.4) / 0.6);
+        const w = Math.max(2, PIT * 2 * open);
+        pit.setSize(w, w * FLAT);
+        inner.setSize(w * 0.75, w * 0.75 * FLAT).setAlpha(open * (0.25 + Math.random() * 0.2));
+        rim.setSize(w, w * FLAT).setStrokeStyle(2, GLOW, open * 0.9);
+        const now = t * dur;
+        if (now - lastFx > 45) {
+          lastFx = now;
+          // Dust along the cracks; chunks tumbling in once it opens.
+          const c = cracks[Math.floor(Math.random() * cracks.length)];
+          const p = c[Math.min(c.length - 1, 1 + Math.floor(Math.random() * (c.length - 1)))];
+          puff(p.x, p.y);
+          if (open > 0.1) {
+            const a = Math.random() * Math.PI * 2;
+            const chunk = arRect(scene, at.x + Math.cos(a) * PIT * 1.2, gy + Math.sin(a) * PIT * 1.2 * FLAT, 3 * K, 2.5 * K, SOIL, 1)
+              .setDepth(1);
+            scene.tweens.add({
+              targets: chunk, x: at.x, y: gy + 2, scale: 0.2, angle: 180, alpha: 0,
+              duration: 300, ease: "Quad.In", onComplete: () => chunk.destroy(),
+            });
+          }
+        }
+      },
+      onComplete: () => {
+        // ── 3. Eruption ──────────────────────────────────────────
+        const beam = arRect(scene, at.x, gy, PIT * 1.4, 70 * K, GLOW, 0.4)
+          .setOrigin(0.5, 1)
+          .setDepth(65)
+          .setBlendMode(BLEND_ADD)
+          .setScale(1, 0.1);
+        scene.tweens.add({
+          targets: beam, scaleY: 1, scaleX: 0.3, alpha: 0, duration: 520, ease: "Quad.Out",
+          onComplete: () => beam.destroy(),
+        });
+        const flash = arEllipse(scene, at.x, gy, PIT * 2, PIT * 2 * FLAT, GLOW, 0.8).setDepth(65).setBlendMode(BLEND_ADD);
+        scene.tweens.add({
+          targets: flash, scaleX: 1.8, scaleY: 1.8, alpha: 0, duration: 300,
+          onComplete: () => flash.destroy(),
+        });
+        for (let i = 0; i < 10; i++) {
+          const w = arCircle(scene, at.x + (Math.random() - 0.5) * PIT, gy, (2 + Math.random() * 2) * K, i % 3 === 0 ? WISP : GLOW, 0.75)
+            .setDepth(66)
+            .setBlendMode(BLEND_ADD);
+          const sway = (Math.random() - 0.5) * 30;
+          scene.tweens.add({
+            targets: w,
+            x: w.x + sway,
+            y: gy - (30 + Math.random() * 40) * K,
+            radius: 0.5,
+            alpha: 0,
+            delay: Math.random() * 250,
+            duration: 700 + Math.random() * 400,
+            ease: "Sine.Out",
+            onComplete: () => w.destroy(),
+          });
+        }
+        rockDebris(scene, { x: at.x, y: gy - 4 }, 8, K * 0.8, { body: SOIL, rim: 0x5a4632, hot: 0xd8d0c0 });
+        dustCloud(scene, { x: at.x, y: gy - 4 }, 6, K * 0.8, 0x8a7560);
+        resolve();
+
+        // ── 4. Close ─────────────────────────────────────────────
+        scene.time.delayedCall(hold, () => {
+          scene.tweens.add({
+            targets: [pit, inner, rim], scaleX: 0.1, scaleY: 0.1, alpha: 0, duration: 380, ease: "Quad.In",
+            onComplete: () => { pit.destroy(); inner.destroy(); rim.destroy(); },
+          });
+          scene.tweens.addCounter({
+            from: 1, to: 0, duration: 650,
+            onUpdate: (tw) => drawCracks(1, tw.getValue() ?? 0),
+            onComplete: () => { crackG.destroy(); crackGlow.destroy(); },
+          });
+        });
+      },
+    });
+  });
+}
+
+/**
+ * Enchantment spiral: a spell of influence wraps the target.
+ *
+ *   1. ORBITS: three rings of light at different tilts circle the
+ *      target, each with a bright comet racing around it and a fading
+ *      arc behind. They spiral inward and speed up while sparkles rise
+ *      and a soft glow gathers.
+ *   2. BLOOM: the orbits collapse into the target: a bright flash, a
+ *      ring pulsing out along the ground and an upright one, a star
+ *      glint, a burst of sparkles, then motes drifting gently down.
+ *
+ * Resolves at the bloom (~`durationMs`), when the status takes hold.
+ * Sleep, Charm, Light, Push, Daylight.
+ */
+export function enchantSpiral(
+  scene: Phaser.Scene,
+  at: Pt,
+  opts: { color?: number; accent?: number; core?: number; size?: number; durationMs?: number } = {},
+): Promise<void> {
+  const MAIN = opts.color ?? COLOURS.buff;
+  const ACCENT = opts.accent ?? 0xb9a4ff;
+  const CORE = opts.core ?? COLOURS.white;
+  const K = Math.max(0.3, opts.size ?? 1);
+  const dur = Math.max(250, opts.durationMs ?? 700);
+  const R0 = 30 * K;
+  const orbits = [
+    { tilt: 0.0, squash: 0.35, speed: 1.0, col: MAIN, phase: 0 },
+    { tilt: 0.9, squash: 0.3, speed: -1.25, col: ACCENT, phase: 2.1 },
+    { tilt: -0.9, squash: 0.3, speed: 1.15, col: CORE, phase: 4.2 },
+  ];
+  // A point on a tilted elliptical orbit.
+  const orbitPt = (o: typeof orbits[number], a: number, r: number): Pt => {
+    const ex = Math.cos(a) * r;
+    const ey = Math.sin(a) * r * o.squash;
+    return {
+      x: at.x + ex * Math.cos(o.tilt) - ey * Math.sin(o.tilt),
+      y: at.y + ex * Math.sin(o.tilt) + ey * Math.cos(o.tilt),
+    };
+  };
+
+  return new Promise((resolve) => {
+    const g = scene.add.graphics().setDepth(62).setBlendMode(BLEND_ADD);
+    const glow = arCircle(scene, at.x, at.y, 6 * K, MAIN, 0).setDepth(61).setBlendMode(BLEND_ADD);
+    let lastSpark = 0;
+    scene.tweens.addCounter({
+      from: 0, to: 1, duration: dur, ease: "Sine.In",
+      onUpdate: (tw) => {
+        const t = tw.getValue() ?? 0;
+        const r = R0 * (1 - t * 0.75);
+        const spin = (t * 2 + t * t * 4) * Math.PI * 2;
+        g.clear();
+        for (const o of orbits) {
+          const head = o.phase + spin * o.speed;
+          // The faint full ring.
+          g.lineStyle(1, o.col, 0.18 + 0.2 * t);
+          g.beginPath();
+          for (let i = 0; i <= 40; i++) {
+            const p = orbitPt(o, (i / 40) * Math.PI * 2, r);
+            if (i === 0) g.moveTo(p.x, p.y);
+            else g.lineTo(p.x, p.y);
+          }
+          g.strokePath();
+          // The comet's trail: an arc fading out behind the head.
+          const TRAIL = 14;
+          for (let i = 0; i < TRAIL; i++) {
+            const a1 = head - Math.sign(o.speed) * (i / TRAIL) * 2.2;
+            const a2 = head - Math.sign(o.speed) * ((i + 1) / TRAIL) * 2.2;
+            const p1 = orbitPt(o, a1, r);
+            const p2 = orbitPt(o, a2, r);
+            g.lineStyle(Math.max(1, 3 * K * (1 - i / TRAIL)), o.col, 0.9 * (1 - i / TRAIL));
+            g.lineBetween(p1.x, p1.y, p2.x, p2.y);
+          }
+          const h = orbitPt(o, head, r);
+          g.fillStyle(CORE, 1);
+          g.fillCircle(h.x, h.y, 2.2 * K);
+          g.fillStyle(o.col, 0.4);
+          g.fillCircle(h.x, h.y, 4.5 * K);
+        }
+        glow.setRadius((8 + 10 * t + Math.random() * 2) * K).setAlpha(0.12 + 0.3 * t);
+        // Sparkles rising around the target.
+        const now = t * dur;
+        if (now - lastSpark > 40) {
+          lastSpark = now;
+          const a = Math.random() * Math.PI * 2;
+          const sx = at.x + Math.cos(a) * R0 * 0.8;
+          const sy = at.y + 6 + Math.sin(a) * R0 * 0.25;
+          const tw4 = twinkle(scene, sx, sy, (3 + Math.random() * 2) * K, Math.random() < 0.5 ? ACCENT : MAIN, 63);
+          scene.tweens.add({
+            targets: tw4, y: sy - 18 - Math.random() * 14, alpha: 0, duration: 520,
+            onComplete: () => tw4.forEach((x) => x.destroy()),
+          });
+        }
+      },
+      onComplete: () => {
+        g.destroy();
+        // ── Bloom ──────────────────────────────────────────────────
+        scene.tweens.add({ targets: glow, radius: 30 * K, alpha: 0, duration: 380, onComplete: () => glow.destroy() });
+        const flash = arCircle(scene, at.x, at.y, 6 * K, CORE, 1).setDepth(66).setBlendMode(BLEND_ADD);
+        scene.tweens.add({ targets: flash, radius: 24 * K, alpha: 0, duration: 220, onComplete: () => flash.destroy() });
+        const ground = arEllipse(scene, at.x, at.y + 8, 20 * K, 8 * K).setDepth(60).setBlendMode(BLEND_ADD);
+        ground.setStrokeStyle(2, MAIN, 1);
+        scene.tweens.add({ targets: ground, scaleX: 3, scaleY: 3, alpha: 0, duration: 460, ease: "Cubic.Out", onComplete: () => ground.destroy() });
+        const upright = arCircle(scene, at.x, at.y, 8 * K).setDepth(65).setBlendMode(BLEND_ADD);
+        upright.setStrokeStyle(2, ACCENT, 1);
+        scene.tweens.add({ targets: upright, radius: 34 * K, alpha: 0, duration: 400, ease: "Cubic.Out", onComplete: () => upright.destroy() });
+        const glint = twinkle(scene, at.x, at.y, 46 * K, CORE, 67);
+        scene.tweens.add({ targets: glint, scaleX: 0.1, alpha: 0, duration: 340, ease: "Quad.Out", onComplete: () => glint.forEach((x) => x.destroy()) });
+        for (let i = 0; i < 12; i++) {
+          const a = (i / 12) * Math.PI * 2;
+          const d = (22 + Math.random() * 12) * K;
+          const s = arCircle(scene, at.x, at.y, 1.4 * K, i % 3 === 0 ? ACCENT : i % 3 === 1 ? MAIN : CORE, 1)
+            .setDepth(66)
+            .setBlendMode(BLEND_ADD);
+          scene.tweens.add({
+            targets: s, x: at.x + Math.cos(a) * d, y: at.y + Math.sin(a) * d * 0.7, alpha: 0,
+            duration: 380 + Math.random() * 120, ease: "Quad.Out", onComplete: () => s.destroy(),
+          });
+        }
+        for (let i = 0; i < 8; i++) {
+          const m = arCircle(scene, at.x + (Math.random() - 0.5) * 30 * K, at.y - (14 + Math.random() * 14) * K, 1.1, i % 2 ? ACCENT : MAIN, 1)
+            .setDepth(64)
+            .setBlendMode(BLEND_ADD);
+          scene.tweens.add({
+            targets: m, x: m.x + Math.sin(i) * 8, y: at.y + 6, alpha: 0,
+            delay: 150 + Math.random() * 200, duration: 800 + Math.random() * 300, ease: "Sine.InOut",
+            onComplete: () => m.destroy(),
+          });
+        }
+        resolve();
+      },
+    });
+  });
+}
+
+/**
+ * Teleport blink: the caster is pulled through a portal and flung to
+ * the destination as a streak of light.
+ *
+ *   1. DEPART (at `from`, ~`implodeMs`): an upright portal rips open,
+ *      sparkles are sucked into it and a ring on the ground contracts;
+ *      then it snaps shut into a thin line of light and a flash.
+ *   2. STREAK: a comet of light arcs from the old spot to the new one,
+ *      shedding a glowing ribbon and twinkles.
+ *   3. ARRIVE (at `to`): a portal bursts open with a flash, a ring
+ *      rolls out along the ground, another expands upright and
+ *      sparkles fly out; it closes a moment later.
+ *
+ * Announces both ends with SKY_FOCUS_EVENT so the battle camera frames
+ * the jump. Resolves when the arrival portal opens, which is when the
+ * caller should bring the caster's sprite out of it.
+ */
+export function teleportBlink(
+  scene: Phaser.Scene,
+  from: Pt,
+  to: Pt,
+  opts: {
+    color?: number;
+    accent?: number;
+    core?: number;
+    size?: number;
+    implodeMs?: number;
+    streakMs?: number;
+  } = {},
+): Promise<void> {
+  const MAIN = opts.color ?? COLOURS.arcane;
+  const ACCENT = opts.accent ?? 0x7fe8ff;
+  const CORE = opts.core ?? COLOURS.white;
+  const VOID = 0x1b0f33;
+  const K = Math.max(0.3, opts.size ?? 1);
+  const implode = Math.max(80, opts.implodeMs ?? 220);
+  const streak = Math.max(60, opts.streakMs ?? 220);
+  const total = implode + streak;
+  scene.events.emit(SKY_FOCUS_EVENT, { x: from.x, y: from.y, sky: 24, ms: total });
+  scene.events.emit(SKY_FOCUS_EVENT, { x: to.x, y: to.y, sky: 24, ms: total });
+
+  /** An upright portal: dark core, glowing rim, inner shimmer. */
+  const portal = (at: Pt) => {
+    const PW = 22 * K;
+    const PH = 40 * K;
+    const core = arEllipse(scene, at.x, at.y, PW, PH, VOID, 0.85).setDepth(58).setScale(0, 1);
+    const shimmer = arEllipse(scene, at.x, at.y, PW * 0.7, PH * 0.85, MAIN, 0.35).setDepth(59).setBlendMode(BLEND_ADD).setScale(0, 1);
+    const rim = arEllipse(scene, at.x, at.y, PW, PH).setDepth(60).setBlendMode(BLEND_ADD).setScale(0, 1);
+    rim.setStrokeStyle(2, ACCENT, 1);
+    return [core, shimmer, rim];
+  };
+
+  return new Promise((resolve) => {
+    // ── 1. Depart ───────────────────────────────────────────────
+    const p1 = portal(from);
+    scene.tweens.add({ targets: p1, scaleX: 1, duration: implode * 0.45, ease: "Back.Out" });
+    const groundRing = arEllipse(scene, from.x, from.y + 8, 52 * K, 20 * K).setDepth(57).setBlendMode(BLEND_ADD);
+    groundRing.setStrokeStyle(2, MAIN, 0.9);
+    scene.tweens.add({ targets: groundRing, scaleX: 0.2, scaleY: 0.2, alpha: 0.2, duration: implode, ease: "Quad.In", onComplete: () => groundRing.destroy() });
+    for (let i = 0; i < 14; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const d = (24 + Math.random() * 14) * K;
+      const m = arCircle(scene, from.x + Math.cos(a) * d, from.y + Math.sin(a) * d, 1.3 * K, i % 2 ? ACCENT : CORE, 1)
+        .setDepth(61)
+        .setBlendMode(BLEND_ADD);
+      scene.tweens.add({
+        targets: m, x: from.x, y: from.y, alpha: 0.3,
+        delay: Math.random() * implode * 0.3, duration: implode * 0.7, ease: "Quad.In",
+        onComplete: () => m.destroy(),
+      });
+    }
+    scene.time.delayedCall(implode * 0.7, () => {
+      // Snap shut into a vertical line of light.
+      scene.tweens.add({ targets: p1, scaleX: 0, duration: implode * 0.3, ease: "Quad.In", onComplete: () => p1.forEach((o) => o.destroy()) });
+    });
+    scene.time.delayedCall(implode, () => {
+      const line = arRect(scene, from.x, from.y, 3 * K, 46 * K, CORE, 1).setDepth(62).setBlendMode(BLEND_ADD);
+      scene.tweens.add({ targets: line, scaleY: 0, scaleX: 0.3, alpha: 0, duration: 200, ease: "Quad.In", onComplete: () => line.destroy() });
+      const flash = arCircle(scene, from.x, from.y, 4 * K, CORE, 1).setDepth(62).setBlendMode(BLEND_ADD);
+      scene.tweens.add({ targets: flash, radius: 16 * K, alpha: 0, duration: 180, onComplete: () => flash.destroy() });
+      fly();
+    });
+
+    // ── 2. Streak ───────────────────────────────────────────────
+    function fly(): void {
+      const dist = distBetween(from.x, from.y, to.x, to.y);
+      const cx = (from.x + to.x) / 2;
+      const cy = (from.y + to.y) / 2 - Math.min(40, dist * 0.25);
+      const at = (t: number): Pt => {
+        const u = 1 - t;
+        return {
+          x: u * u * from.x + 2 * u * t * cx + t * t * to.x,
+          y: u * u * from.y + 2 * u * t * cy + t * t * to.y,
+        };
+      };
+      const ribbon = scene.add.graphics().setDepth(61).setBlendMode(BLEND_ADD);
+      const halo = arCircle(scene, from.x, from.y, 7 * K, MAIN, 0.55).setDepth(62).setBlendMode(BLEND_ADD);
+      const head = arCircle(scene, from.x, from.y, 3 * K, CORE, 1).setDepth(63).setBlendMode(BLEND_ADD);
+      const hist: Pt[] = [];
+      scene.tweens.addCounter({
+        from: 0, to: 1, duration: streak, ease: "Sine.InOut",
+        onUpdate: (tw) => {
+          const p = at(tw.getValue() ?? 0);
+          head.setPosition(p.x, p.y);
+          halo.setPosition(p.x, p.y).setRadius((6 + Math.random() * 3) * K);
+          hist.push(p);
+          if (hist.length > 12) hist.shift();
+          ribbon.clear();
+          for (let i = 1; i < hist.length; i++) {
+            const f = i / hist.length;
+            ribbon.lineStyle(Math.max(1, 5 * K * f), i % 2 ? MAIN : ACCENT, 0.8 * f);
+            ribbon.lineBetween(hist[i - 1].x, hist[i - 1].y, hist[i].x, hist[i].y);
+          }
+          if (Math.random() < 0.6) {
+            const tw4 = twinkle(scene, p.x + (Math.random() - 0.5) * 8, p.y + (Math.random() - 0.5) * 8, (3 + Math.random() * 3) * K, Math.random() < 0.5 ? ACCENT : CORE, 60);
+            scene.tweens.add({ targets: tw4, alpha: 0, scaleX: 0.2, duration: 320, onComplete: () => tw4.forEach((r) => r.destroy()) });
+          }
+        },
+        onComplete: () => {
+          head.destroy();
+          halo.destroy();
+          scene.tweens.add({ targets: ribbon, alpha: 0, duration: 160, onComplete: () => ribbon.destroy() });
+          arrive();
+        },
+      });
+    }
+
+    // ── 3. Arrive ───────────────────────────────────────────────
+    function arrive(): void {
+      const p2 = portal(to);
+      scene.tweens.add({ targets: p2, scaleX: 1, duration: 90, ease: "Back.Out" });
+      scene.time.delayedCall(320, () => {
+        scene.tweens.add({ targets: p2, scaleX: 0, alpha: 0, duration: 200, ease: "Quad.In", onComplete: () => p2.forEach((o) => o.destroy()) });
+      });
+      const flash = arCircle(scene, to.x, to.y, 6 * K, CORE, 1).setDepth(64).setBlendMode(BLEND_ADD);
+      scene.tweens.add({ targets: flash, radius: 26 * K, alpha: 0, duration: 220, onComplete: () => flash.destroy() });
+      const ground = arEllipse(scene, to.x, to.y + 8, 18 * K, 7 * K).setDepth(57).setBlendMode(BLEND_ADD);
+      ground.setStrokeStyle(2, MAIN, 1);
+      scene.tweens.add({ targets: ground, scaleX: 3.2, scaleY: 3.2, alpha: 0, duration: 440, ease: "Cubic.Out", onComplete: () => ground.destroy() });
+      const upright = arCircle(scene, to.x, to.y, 8 * K).setDepth(63).setBlendMode(BLEND_ADD);
+      upright.setStrokeStyle(2, ACCENT, 1);
+      scene.tweens.add({ targets: upright, radius: 32 * K, alpha: 0, duration: 380, ease: "Cubic.Out", onComplete: () => upright.destroy() });
+      for (let i = 0; i < 14; i++) {
+        const a = (i / 14) * Math.PI * 2 + Math.random() * 0.3;
+        const d = (20 + Math.random() * 16) * K;
+        const s = arCircle(scene, to.x, to.y, 1.4 * K, i % 3 === 0 ? ACCENT : i % 3 === 1 ? MAIN : CORE, 1)
+          .setDepth(64)
+          .setBlendMode(BLEND_ADD);
+        scene.tweens.add({
+          targets: s, x: to.x + Math.cos(a) * d, y: to.y + Math.sin(a) * d * 0.8, alpha: 0,
+          duration: 360 + Math.random() * 160, ease: "Quad.Out", onComplete: () => s.destroy(),
+        });
+      }
+      resolve();
+    }
   });
 }
 

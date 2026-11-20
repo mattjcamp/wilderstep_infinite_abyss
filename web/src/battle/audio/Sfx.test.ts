@@ -2,6 +2,48 @@ import { describe, it, expect } from "vitest";
 import { Sfx, SFX_NAMES } from "./Sfx";
 
 describe("Sfx catalog — registered generators", () => {
+  it("knows the Teleport Blink cue", () => {
+    // Named by the teleport_blink FX record (fx.json).
+    expect(Sfx.has("teleport_blink")).toBe(true);
+  });
+
+  it("knows the Status Aura cue", () => {
+    // Named by the status_aura FX record (fx.json).
+    expect(Sfx.has("enchant_spell")).toBe(true);
+  });
+
+  it("knows the Summon Burst cue", () => {
+    // Named by the summon_burst FX record (fx.json).
+    expect(Sfx.has("ground_rift")).toBe(true);
+  });
+
+  it("knows the Shield Aura cue", () => {
+    // Named by the shield_aura FX record (fx.json).
+    expect(Sfx.has("shield_up")).toBe(true);
+  });
+
+  it("knows the Healing Sparkles choir cue", () => {
+    // Named by the heal_sparkles FX record (fx.json).
+    expect(Sfx.has("heal_choir")).toBe(true);
+  });
+
+  it("knows the Magic Arrow cast + hit cues", () => {
+    // Named by the magic_arrow FX record (fx.json).
+    expect(Sfx.has("arcane_arrow_cast")).toBe(true);
+    expect(Sfx.has("arcane_arrow_hit")).toBe(true);
+  });
+
+  it("knows the Curse Aura cue", () => {
+    // Named by the curse_aura FX record (fx.json).
+    expect(Sfx.has("curse_hex")).toBe(true);
+  });
+
+  it("knows the Turn Undead choir + smite cues", () => {
+    // Named by the turn_undead FX record (fx.json).
+    expect(Sfx.has("holy_choir")).toBe(true);
+    expect(Sfx.has("holy_smite")).toBe(true);
+  });
+
   it("knows the Meteor Strike fall + impact cues", () => {
     // Named by the meteor_strike FX record (fx.json) and the meteor
     // weapon paths in CombatScene.

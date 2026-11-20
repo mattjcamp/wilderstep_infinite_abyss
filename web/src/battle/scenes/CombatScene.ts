@@ -126,6 +126,8 @@ import {
   partyDeathBanner,
   VFX_COLOURS,
   SKY_FOCUS_EVENT,
+  GROUND_EVENT,
+  holyChannel,
 } from "@/vfx/Vfx";
 import { resolveProjectileEffect } from "@/vfx/effectRegistry";
 import { cureStatus, MAP_STEPS_PER_ROUND } from "@/battle/combat/effects/statusEffects";
@@ -4366,14 +4368,11 @@ export class CombatScene extends Phaser.Scene {
       await fn(this, point, point);
     };
     if (castSfx) Sfx.play(castSfx);
-    // Buff-toned caster glow — same colour the previous spell-path
-    // used for Turn Undead so the visual reads identically.
     this.castGlowFor(me, VFX_COLOURS.buff);
     const enemies = this.combat.combatants.filter((c) => c.side === "enemies");
     const wisMod = abilityMod(member.wisdom);
     const result = resolveTurnUndead(enemies, ability.params, wisMod, defaultRng);
     this.combat.log.push(`${me.name} channels ${ability.name}!`);
-    let i = 0;
     for (const o of result.outcomes) {
       const target = this.combat.byId(o.targetId);
       this.combat.log.push(
@@ -4383,18 +4382,50 @@ export class CombatScene extends Phaser.Scene {
             ? `${target.name} is seared for ${o.damage} damage and TURNED for ${o.turnedTurns} ${o.turnedTurns === 1 ? "turn" : "turns"}!`
             : `${target.name} is DESTROYED!`,
       );
-      const body = this.bodies.get(target.id);
-      if (body) {
-        const at = { x: body.x, y: body.y };
-        this.time.delayedCall(i * 80, () => {
-          flashTarget(this, body, VFX_COLOURS.buff);
-          void playVisualAt(at);
-        });
-      }
-      i += 1;
-      this.refreshHp(target);
     }
-    if (hitSfx) Sfx.play(hitSfx);
+    this.refreshLog();
+
+    // The sequence: the caster channels (~0.9s, in time with the
+    // choir swelling), a holy shockwave rolls out, then a pillar of
+    // light smites each undead in turn. Each foe's HP bar / death is
+    // held back until its own pillar lands, so the light reads as the
+    // cause. Input stays locked until the last pillar has landed.
+    this.busy = true;
+    const STAGGER = 170;
+    const casterPt = this.bodyXY(me);
+    const hold = 900 + result.outcomes.length * STAGGER + 300;
+    // Frame the caster and every target (plus the sky the pillars fall
+    // from) for the whole sequence.
+    this.onSkyFocus({ x: casterPt.x, y: casterPt.y, sky: 60, ms: hold });
+    for (const o of result.outcomes) {
+      const p = this.bodyXY(this.combat.byId(o.targetId));
+      this.onSkyFocus({ x: p.x, y: p.y, sky: 170, ms: hold });
+    }
+    await holyChannel(this, casterPt, { durationMs: 900 });
+    this.arenaCam?.flash(260, 255, 244, 200);
+    await Promise.all(
+      result.outcomes.map(
+        (o, i) =>
+          new Promise<void>((resolve) => {
+            this.time.delayedCall(i * STAGGER, () => {
+              void (async () => {
+                const target = this.combat.byId(o.targetId);
+                const body = this.bodies.get(target.id);
+                if (body) {
+                  await playVisualAt({ x: body.x, y: body.y });
+                  if (hitSfx) Sfx.play(hitSfx);
+                  flashTarget(this, body, VFX_COLOURS.buff);
+                }
+                this.refreshHp(target);
+                resolve();
+              })();
+            });
+          }),
+      ),
+    );
+    // Let the last pillar's light fade before the turn moves on.
+    await new Promise<void>((r) => this.time.delayedCall(450, () => r()));
+    this.busy = false;
     // Burn the rest of the move budget — Turn Undead ends the turn.
     this.combat.movePoints = 0;
     this.refreshAll();
@@ -6078,27 +6109,30 @@ export class CombatScene extends Phaser.Scene {
     const y = this.tileY(dest.row);
     const animation = getFxRecord(spell.fx_id);
     const animVisual = fxVisualKey(animation);
-    const playBurstAt = (point: { x: number; y: number }) => {
-      if (!animVisual || animVisual === "none") return;
-      const fn = resolveProjectileEffect({ effect_type: animVisual });
-      void fn(this, point, point);
-    };
+    const hasVisual = !!animVisual && animVisual !== "none";
     if (body) {
-      playBurstAt({ x: body.x, y: body.y });
-      await new Promise<void>((res) => {
-        this.tweens.add({
-          targets: body, alpha: 0,
-          duration: 140,
-          onComplete: () => res(),
-        });
+      const from = { x: body.x, y: body.y };
+      const restX = body.scaleX;
+      const restY = body.scaleY;
+      // The visual runs the whole jump (portal → streak → portal) and
+      // resolves as the arrival portal opens.
+      const jump = hasVisual
+        ? resolveProjectileEffect({ effect_type: animVisual })(this, from, { x, y })
+        : Promise.resolve();
+      // Pulled into the portal: squeezed thin and tall, then gone.
+      this.tweens.add({
+        targets: body, scaleX: restX * 0.1, scaleY: restY * 1.5, alpha: 0,
+        duration: 200, ease: "Quad.In",
       });
+      await jump;
       body.x = x; body.y = y;
       if (ring) { ring.x = x; ring.y = y; }
-      playBurstAt({ x, y });
+      // Out of the arrival portal: thin and tall, springing back.
+      body.setScale(restX * 0.1, restY * 1.5);
       await new Promise<void>((res) => {
         this.tweens.add({
-          targets: body, alpha: 1,
-          duration: 140,
+          targets: body, scaleX: restX, scaleY: restY, alpha: 1,
+          duration: 280, ease: "Back.Out",
           onComplete: () => res(),
         });
       });
@@ -6175,7 +6209,11 @@ export class CombatScene extends Phaser.Scene {
         const sprite = this.add
           .image(x, y, url)
           .setDisplaySize(TILE, TILE)
-          .setDepth(body.depth);
+          .setDepth(body.depth)
+          // Keep the placeholder's state mid-summon (hidden until the
+          // creature rises out of the rift, or partway up).
+          .setAlpha(body.alpha)
+          .setY(body.y);
         body.destroy();
         this.bodies.set(id, sprite);
       });
@@ -6188,23 +6226,40 @@ export class CombatScene extends Phaser.Scene {
     }
     this.bodies.set(id, body);
 
-    // "Claws its way out of the ground" VFX — runs the spell's
-    // animation visual at the spawn tile, then scales the body up so
-    // the entry reads as a summoning rather than a warp-in.
+    // "Claws its way out of the ground": the spell's visual (Ground
+    // Rift) cracks the earth open at the spawn tile; once the pit is
+    // open the creature rises up out of it. The body waits hidden
+    // until then, drawn over the pit (depth 1, brought to the top).
+    const restX = body.scaleX;
+    const restY = body.scaleY;
+    body.setAlpha(0).setDepth(1);
     const animation = getFxRecord(spell.fx_id);
     const animVisual = fxVisualKey(animation);
     if (animVisual && animVisual !== "none") {
       const fn = resolveProjectileEffect({ effect_type: animVisual });
-      void fn(this, { x, y }, { x, y });
+      const opening = fn(this, { x, y }, { x, y });
+      this.children.bringToTop(body);
+      await opening;
     }
-    // Grow from 20% to the body's resting scale (which isn't 1 when
-    // the texture is larger/smaller than the tile).
-    const restX = body.scaleX;
-    const restY = body.scaleY;
-    body.setScale(restX * 0.2, restY * 0.2);
-    this.tweens.add({
-      targets: body, scaleX: restX, scaleY: restY,
-      duration: 320, ease: "Back.Out",
+    // A lazy-loaded sprite may have replaced the placeholder meanwhile.
+    const risen = this.bodies.get(id) ?? body;
+    this.children.bringToTop(risen);
+    risen.setDepth(1);
+    if (risen !== body) {
+      // Freshly swapped image: start it hidden too.
+      risen.setAlpha(0);
+    }
+    const rx = risen.scaleX === body.scaleX ? restX : risen.scaleX;
+    const ry = risen.scaleY === body.scaleY ? restY : risen.scaleY;
+    // Rise: up from just below the tile, unsquashing as it climbs out.
+    risen.setPosition(x, y + 12).setScale(rx * 0.85, ry * 0.3);
+    this.tweens.add({ targets: risen, alpha: 1, duration: 120 });
+    await new Promise<void>((resolve) => {
+      this.tweens.add({
+        targets: risen, y, scaleX: rx, scaleY: ry,
+        duration: 460, ease: "Back.Out",
+        onComplete: () => resolve(),
+      });
     });
 
     this.combat.log.push(
@@ -8876,6 +8931,24 @@ export class CombatScene extends Phaser.Scene {
     };
   }
 
+  /** An effect put something flat on the ground (a crater): slot it
+   *  just below the earliest combatant in the display list, so it draws
+   *  over the floor tiles (same depth, created earlier) but under every
+   *  combatant. */
+  private onGroundEffect(obj: Phaser.GameObjects.GameObject): void {
+    const list = this.children.list;
+    let first: Phaser.GameObjects.GameObject | null = null;
+    let firstIdx = Infinity;
+    for (const b of this.bodies.values()) {
+      const i = list.indexOf(b);
+      if (i >= 0 && i < firstIdx) {
+        firstIdx = i;
+        first = b;
+      }
+    }
+    if (first) this.children.moveBelow(obj, first);
+  }
+
   /** The zoom the arena camera should be at right now: zoomed out just
    *  enough to fit an active sky frame (never past the whole-arena
    *  overview, never closer than usual), otherwise the normal zoom. */
@@ -8929,6 +9002,8 @@ export class CombatScene extends Phaser.Scene {
     this.overlayCam = overlay;
     this.events.off(SKY_FOCUS_EVENT, this.onSkyFocus, this);
     this.events.on(SKY_FOCUS_EVENT, this.onSkyFocus, this);
+    this.events.off(GROUND_EVENT, this.onGroundEffect, this);
+    this.events.on(GROUND_EVENT, this.onGroundEffect, this);
     const mainId = this.cameras.main.id;
     const arenaId = arena.id;
     const overlayId = overlay.id;
@@ -8941,6 +9016,7 @@ export class CombatScene extends Phaser.Scene {
     this.scale.on("resize", this.onArenaResize, this);
     this.events.once("shutdown", () => {
       this.events.off(SKY_FOCUS_EVENT, this.onSkyFocus, this);
+      this.events.off(GROUND_EVENT, this.onGroundEffect, this);
       this.events.off("prerender", this.routeCameras, this);
       this.scale.off("resize", this.onArenaResize, this);
     });
