@@ -148,6 +148,8 @@ export interface SpriteChainEntry {
   id: string;
   extends?: string;
   theme?: string;
+  /** Library modules this module uses — their art layers in too. */
+  uses?: string[];
 }
 
 /** The module's `extends` chain, nearest first, read from the static
@@ -166,9 +168,12 @@ async function staticModuleChain(moduleId: string): Promise<SpriteChainEntry[]> 
         cache: "no-store",
       });
       if (!res.ok) break;
-      const meta = (await res.json()) as { extends?: unknown; theme?: unknown };
+      const meta = (await res.json()) as { extends?: unknown; theme?: unknown; uses?: unknown };
       if (typeof meta.theme === "string" && meta.theme.trim()) {
         entry.theme = meta.theme.trim();
+      }
+      if (Array.isArray(meta.uses)) {
+        entry.uses = meta.uses.filter((u): u is string => typeof u === "string" && !!u);
       }
       current =
         typeof meta.extends === "string" && meta.extends
@@ -202,8 +207,9 @@ function chainFromSummaries(
 
 /** Module ids whose `sprites/` folders a module draws from, nearest
  *  first: the module itself, its art theme (the nearest theme declared
- *  along the chain), each parent, then Default. Pure — exported for
- *  tests. */
+ *  along the chain), the libraries it uses (a later-declared library
+ *  first, matching the data merge order), each parent, then Default.
+ *  Pure — exported for tests. */
 export function spriteLayerOrder(chain: ReadonlyArray<SpriteChainEntry>): string[] {
   const out: string[] = [];
   const add = (id: string | undefined) => {
@@ -211,6 +217,11 @@ export function spriteLayerOrder(chain: ReadonlyArray<SpriteChainEntry>): string
   };
   add(chain[0]?.id);
   add(chain.find((c) => c.theme)?.theme);
+  // Libraries: the module's own `uses` first (nearest), then its
+  // parents'; within one list, the later library wins.
+  for (const c of chain) {
+    for (const lib of [...(c.uses ?? [])].reverse()) add(lib);
+  }
   for (const c of chain.slice(1)) add(c.id);
   add(BASE_SPRITE_MODULE);
   return out;

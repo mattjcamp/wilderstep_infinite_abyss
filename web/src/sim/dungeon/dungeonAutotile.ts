@@ -30,6 +30,10 @@
  * `wall_right` → `corner_tr`, `divider` → `t_down`); a face with a
  * divider above becomes `t_up`.
  *
+ * A palette may leave out the junction pieces (divider, corners, tees);
+ * those cells then use the closest piece it has — a side strip for a
+ * divider, the plain face for a corner or tee (see PIECE_FALLBACK).
+ *
  * Only cells the converter marks as walls are touched; their
  * walkable / obstructs / light / animation fields are preserved (a
  * wall torch stays a lit, animated wall — it just gets the right
@@ -49,13 +53,17 @@ type Piece =
   | "faceTop" | "left" | "right" | "divider"
   | "cornerTl" | "cornerTr" | "tDown" | "tUp" | "rock";
 
-/** Palette ids for one tileset's wall pieces. The Dungeon and Cave
- *  tilesets share piece names under their own prefix
- *  (`dungeon_wall_top` / `cave_wall_top`, …), so one set of rules
- *  autotiles both. */
-export function tilesetWallIds(prefix: "dungeon" | "cave"): Record<Piece, string> {
+/** Tilesets the autotiler can paint with (palette-id prefixes). */
+export type WallTileset = "dungeon" | "cave" | "deep_ones_hall";
+
+/** Palette ids for one tileset's wall pieces. The tilesets share piece
+ *  names under their own prefix (`dungeon_wall_top` / `cave_wall_top`,
+ *  …), so one set of rules autotiles all of them. The one exception is
+ *  the Deep Ones Hall face: its plain brick is `deep_ones_hall_wall`
+ *  (its `wall_top` is a carved glyph panel, used as decoration). */
+export function tilesetWallIds(prefix: WallTileset): Record<Piece, string> {
   return {
-    faceTop: `${prefix}_wall_top`,
+    faceTop: prefix === "deep_ones_hall" ? "deep_ones_hall_wall" : `${prefix}_wall_top`,
     left: `${prefix}_wall_left`,
     right: `${prefix}_wall_right`,
     divider: `${prefix}_wall_divider`,
@@ -71,6 +79,8 @@ export function tilesetWallIds(prefix: "dungeon" | "cave"): Record<Piece, string
 export const DUNGEON_TILESET_WALL_IDS = tilesetWallIds("dungeon");
 /** …and for the Cave Tileset. */
 export const CAVE_TILESET_WALL_IDS = tilesetWallIds("cave");
+/** …and for the Deep Ones Hall tileset. */
+export const DEEP_ONES_HALL_WALL_IDS = tilesetWallIds("deep_ones_hall");
 
 const PIECE_LABELS: Record<Piece, string> = {
   faceTop: "Wall, Top",
@@ -85,6 +95,18 @@ const PIECE_LABELS: Record<Piece, string> = {
 };
 
 const STRIPS: ReadonlySet<Piece> = new Set(["left", "right", "divider"]);
+
+/** What to paint when a tileset's palette doesn't carry a piece (the
+ *  module trimmed it): the closest piece it does have. A divider (floor
+ *  both sides) becomes a side strip; corners and tees become the plain
+ *  face. Followed until a piece the palette has (or nothing to try). */
+const PIECE_FALLBACK: Partial<Record<Piece, Piece>> = {
+  divider: "left",
+  cornerTl: "faceTop",
+  cornerTr: "faceTop",
+  tDown: "faceTop",
+  tUp: "faceTop",
+};
 const FACES: ReadonlySet<Piece> = new Set(["faceTop"]);
 
 /** Pick the wall piece for every cell where `isWall(cell)` holds.
@@ -101,13 +123,13 @@ export function autotileDungeonWalls<C extends AutotileCell>(
      *  piece's palette id. */
     keepId?: (cell: C) => boolean;
     /** Which tileset's pieces to paint with. Default: Dungeon. */
-    tileset?: "dungeon" | "cave";
+    tileset?: WallTileset;
   },
 ): void {
   const ids = tilesetWallIds(opts.tileset ?? "dungeon");
   const label = (p: Piece) =>
     p === "rock" ? PIECE_LABELS.rock
-      : `${opts.tileset === "cave" ? "Cave" : "Dungeon"} ${PIECE_LABELS[p]}`;
+      : `${opts.tileset === "cave" ? "Cave" : opts.tileset === "deep_ones_hall" ? "Deep Ones Hall" : "Dungeon"} ${PIECE_LABELS[p]}`;
   const h = grid.length;
   const at = (r: number, c: number): C | undefined => grid[r]?.[c];
   const open = (r: number, c: number): boolean => {
@@ -163,11 +185,25 @@ export function autotileDungeonWalls<C extends AutotileCell>(
     }
   }
 
+  // Substitute pieces the palette doesn't have (see PIECE_FALLBACK).
+  // Without a sprite map (tests, headless) every piece counts as present.
+  const has = (p: Piece) => !opts.sprites || opts.sprites.has(ids[p]);
+  const available = (p: Piece): Piece => {
+    let q = p;
+    for (let i = 0; i < 4 && !has(q); i++) {
+      const next = PIECE_FALLBACK[q];
+      if (!next) break;
+      q = next;
+    }
+    return q;
+  };
+
   // Paint.
   for (let r = 0; r < h; r++) {
     for (let c = 0; c < grid[r].length; c++) {
-      const p = piece[r][c];
-      if (!p) continue;
+      const raw = piece[r][c];
+      if (!raw) continue;
+      const p = available(raw);
       const cell = grid[r][c];
       const paletteId = ids[p];
       const sprite = opts.sprites?.get(paletteId);

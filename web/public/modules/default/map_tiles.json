@@ -594,427 +594,6 @@
     },
     {
       "boat": false,
-      "id": "shrine_wall",
-      "name": "Shrine Wall",
-      "walkable": false,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "shrine/wall.png",
-      "tag": "shrine"
-    },
-    {
-      "boat": false,
-      "background_sprite": "shrine/wall.png",
-      "id": "shrine_wall_top",
-      "name": "Shrine Wall, Top",
-      "walkable": false,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "shrine/wall_top.png",
-      "tag": "shrine"
-    },
-    {
-      "boat": false,
-      "background_sprite": "shrine/wall.png",
-      "id": "shrine_wall_bottom",
-      "name": "Shrine Wall, Bottom",
-      "walkable": false,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "shrine/wall_bottom.png",
-      "tag": "shrine"
-    },
-    {
-      "boat": false,
-      "id": "shrine_wall_left",
-      "name": "Shrine Wall, Left",
-      "walkable": false,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "shrine/wall_left.png",
-      "tag": "shrine",
-      "background_sprite": "shrine/floor_plain.png"
-    },
-    {
-      "boat": false,
-      "id": "shrine_wall_right",
-      "name": "Shrine Wall, Right",
-      "walkable": false,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "shrine/wall_right.png",
-      "tag": "shrine",
-      "background_sprite": "shrine/floor_plain.png"
-    },
-    {
-      "boat": false,
-      "id": "shrine_wall_corner_tl",
-      "name": "Shrine Wall Corner, Top Left",
-      "walkable": false,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "shrine/wall_corner_tl.png",
-      "tag": "shrine",
-      "background_sprite": "shrine/floor_plain.png"
-    },
-    {
-      "boat": false,
-      "id": "shrine_wall_corner_tr",
-      "name": "Shrine Wall Corner, Top Right",
-      "walkable": false,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "shrine/wall_corner_tr.png",
-      "tag": "shrine",
-      "background_sprite": "shrine/floor_plain.png"
-    },
-    {
-      "boat": false,
-      "id": "shrine_wall_corner_bl",
-      "name": "Shrine Wall Corner, Bottom Left",
-      "walkable": false,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "shrine/wall_corner_bl.png",
-      "tag": "shrine",
-      "background_sprite": "shrine/floor_plain.png"
-    },
-    {
-      "boat": false,
-      "id": "shrine_wall_corner_br",
-      "name": "Shrine Wall Corner, Bottom Right",
-      "walkable": false,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "shrine/wall_corner_br.png",
-      "tag": "shrine",
-      "background_sprite": "shrine/floor_plain.png"
-    },
-    {
-      "boat": false,
-      "id": "shrine_floor",
-      "name": "Shrine Floor",
-      "walkable": true,
-      "obstructs": false,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "shrine/floor.png",
-      "tag": "shrine"
-    },
-    {
-      "boat": false,
-      "id": "shrine_floor_alt",
-      "name": "Shrine Floor, Alt",
-      "walkable": true,
-      "obstructs": false,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "shrine/floor_alt.png",
-      "tag": "shrine"
-    },
-    {
-      "boat": false,
-      "id": "shrine_floor_plain",
-      "name": "Shrine Floor, Plain",
-      "walkable": true,
-      "obstructs": false,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "shrine/floor_plain.png",
-      "tag": "shrine"
-    },
-    {
-      "boat": false,
-      "id": "shrine_table_h_left",
-      "name": "Shrine Table, Left End",
-      "walkable": false,
-      "obstructs": false,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "shrine/table_h_left.png",
-      "tag": "shrine",
-      "background_sprite": "shrine/floor_plain.png"
-    },
-    {
-      "boat": false,
-      "id": "shrine_table_h_mid",
-      "name": "Shrine Table, Middle (Horizontal)",
-      "walkable": false,
-      "obstructs": false,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "shrine/table_h_mid.png",
-      "tag": "shrine",
-      "background_sprite": "shrine/floor_plain.png"
-    },
-    {
-      "boat": false,
-      "id": "shrine_table_h_right",
-      "name": "Shrine Table, Right End",
-      "walkable": false,
-      "obstructs": false,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "shrine/table_h_right.png",
-      "tag": "shrine",
-      "background_sprite": "shrine/floor_plain.png"
-    },
-    {
-      "boat": false,
-      "id": "shrine_table_v_top",
-      "name": "Shrine Table, Top End",
-      "walkable": false,
-      "obstructs": false,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "shrine/table_v_top.png",
-      "tag": "shrine",
-      "background_sprite": "shrine/floor_plain.png"
-    },
-    {
-      "boat": false,
-      "id": "shrine_table_v_mid",
-      "name": "Shrine Table, Middle (Vertical)",
-      "walkable": false,
-      "obstructs": false,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "shrine/table_v_mid.png",
-      "tag": "shrine",
-      "background_sprite": "shrine/floor_plain.png"
-    },
-    {
-      "boat": false,
-      "id": "shrine_table_v_bottom",
-      "name": "Shrine Table, Bottom End",
-      "walkable": false,
-      "obstructs": false,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "shrine/table_v_bottom.png",
-      "tag": "shrine",
-      "background_sprite": "shrine/floor_plain.png"
-    },
-    {
-      "boat": false,
-      "id": "shrine_table_single",
-      "name": "Shrine Table, Small",
-      "walkable": false,
-      "obstructs": false,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "shrine/table_single.png",
-      "tag": "shrine",
-      "background_sprite": "shrine/floor_plain.png"
-    },
-    {
-      "boat": false,
-      "id": "shrine_window_left",
-      "name": "Shrine Window, Left",
-      "walkable": false,
-      "obstructs": false,
-      "locked": false,
-      "light_source": true,
-      "light_range": 5,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "shrine/window_left.png",
-      "tag": "shrine",
-      "background_sprite": "shrine/wall_bottom.png"
-    },
-    {
-      "boat": false,
-      "id": "shrine_window_right",
-      "name": "Shrine Window, Right",
-      "walkable": false,
-      "obstructs": false,
-      "locked": false,
-      "light_source": true,
-      "light_range": 5,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "shrine/window_right.png",
-      "tag": "shrine",
-      "background_sprite": "shrine/wall_bottom.png"
-    },
-    {
-      "boat": false,
-      "id": "shrine_window_single",
-      "name": "Shrine Window",
-      "walkable": false,
-      "obstructs": false,
-      "locked": false,
-      "light_source": true,
-      "light_range": 5,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "shrine/window_single.png",
-      "tag": "shrine",
-      "background_sprite": "shrine/wall_bottom.png"
-    },
-    {
-      "boat": false,
-      "id": "shrine_notice_board",
-      "name": "Shrine Notice Board",
-      "walkable": false,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "shrine/notice_board.png",
-      "tag": "shrine",
-      "background_sprite": "shrine/floor_plain.png"
-    },
-    {
-      "boat": false,
-      "id": "shrine_fireplace",
-      "name": "Shrine Fireplace",
-      "walkable": false,
-      "obstructs": true,
-      "locked": false,
-      "light_source": true,
-      "light_range": 10,
-      "animation": "fire",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "shrine/fireplace.png",
-      "tag": "shrine",
-      "background_sprite": "shrine/floor_plain.png"
-    },
-    {
-      "boat": false,
-      "id": "shrine_door",
-      "name": "Shrine Door",
-      "walkable": true,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "shrine/shrine_door.png",
-      "tag": "shrine",
-      "background_sprite": "shrine/wall_bottom.png"
-    },
-    {
-      "boat": false,
       "id": "object_lantern",
       "name": "Lantern",
       "walkable": false,
@@ -1042,8 +621,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/floors/floor_cobble.png",
-      "tag": "dungeon:floors"
+      "sprite": "dungeons/dungeon/floors/floor_cobble.png",
+      "tag": "Dungeons:dungeon:floors"
     },
     {
       "boat": false,
@@ -1058,8 +637,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/floors/floor_flagstone.png",
-      "tag": "dungeon:floors"
+      "sprite": "dungeons/dungeon/floors/floor_flagstone.png",
+      "tag": "Dungeons:dungeon:floors"
     },
     {
       "boat": false,
@@ -1074,8 +653,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/floors/floor_smooth.png",
-      "tag": "dungeon:floors"
+      "sprite": "dungeons/dungeon/floors/floor_smooth.png",
+      "tag": "Dungeons:dungeon:floors"
     },
     {
       "boat": false,
@@ -1090,8 +669,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/floors/floor_pebbles.png",
-      "tag": "dungeon:floors"
+      "sprite": "dungeons/dungeon/floors/floor_pebbles.png",
+      "tag": "Dungeons:dungeon:floors"
     },
     {
       "boat": false,
@@ -1106,8 +685,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/floors/floor_brick.png",
-      "tag": "dungeon:floors"
+      "sprite": "dungeons/dungeon/floors/floor_brick.png",
+      "tag": "Dungeons:dungeon:floors"
     },
     {
       "boat": false,
@@ -1122,8 +701,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/floors/floor_planks.png",
-      "tag": "dungeon:floors"
+      "sprite": "dungeons/dungeon/floors/floor_planks.png",
+      "tag": "Dungeons:dungeon:floors"
     },
     {
       "boat": false,
@@ -1138,8 +717,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/floors/floor_grate.png",
-      "tag": "dungeon:floors"
+      "sprite": "dungeons/dungeon/floors/floor_grate.png",
+      "tag": "Dungeons:dungeon:floors"
     },
     {
       "boat": false,
@@ -1154,8 +733,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/walls/wall_top.png",
-      "tag": "dungeon:walls"
+      "sprite": "dungeons/dungeon/walls/wall_top.png",
+      "tag": "Dungeons:dungeon:walls"
     },
     {
       "boat": false,
@@ -1170,8 +749,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/walls/wall_left.png",
-      "tag": "dungeon:walls"
+      "sprite": "dungeons/dungeon/walls/wall_left.png",
+      "tag": "Dungeons:dungeon:walls"
     },
     {
       "boat": false,
@@ -1186,8 +765,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/walls/wall_right.png",
-      "tag": "dungeon:walls"
+      "sprite": "dungeons/dungeon/walls/wall_right.png",
+      "tag": "Dungeons:dungeon:walls"
     },
     {
       "boat": false,
@@ -1202,8 +781,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/walls/wall_corner_tl.png",
-      "tag": "dungeon:walls"
+      "sprite": "dungeons/dungeon/walls/wall_corner_tl.png",
+      "tag": "Dungeons:dungeon:walls"
     },
     {
       "boat": false,
@@ -1218,8 +797,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/walls/wall_corner_tr.png",
-      "tag": "dungeon:walls"
+      "sprite": "dungeons/dungeon/walls/wall_corner_tr.png",
+      "tag": "Dungeons:dungeon:walls"
     },
     {
       "boat": false,
@@ -1234,8 +813,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/walls/wall_window.png",
-      "tag": "dungeon:walls"
+      "sprite": "dungeons/dungeon/walls/wall_window.png",
+      "tag": "Dungeons:dungeon:walls"
     },
     {
       "boat": false,
@@ -1250,8 +829,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/walls/wall_banner.png",
-      "tag": "dungeon:walls"
+      "sprite": "dungeons/dungeon/walls/wall_banner.png",
+      "tag": "Dungeons:dungeon:walls"
     },
     {
       "boat": false,
@@ -1266,8 +845,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/walls/wall_archway.png",
-      "tag": "dungeon:walls"
+      "sprite": "dungeons/dungeon/doors_and_stairs/wall_archway.png",
+      "tag": "Dungeons:dungeon:doors & stairs"
     },
     {
       "boat": false,
@@ -1282,8 +861,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/walls/wall_portcullis.png",
-      "tag": "dungeon:walls"
+      "sprite": "dungeons/dungeon/doors_and_stairs/wall_portcullis.png",
+      "tag": "Dungeons:dungeon:doors & stairs"
     },
     {
       "boat": false,
@@ -1298,8 +877,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/doors_and_stairs/door.png",
-      "tag": "dungeon:doors & stairs"
+      "sprite": "dungeons/dungeon/doors_and_stairs/door.png",
+      "tag": "Dungeons:dungeon:doors & stairs"
     },
     {
       "boat": false,
@@ -1314,8 +893,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/doors_and_stairs/stairs.png",
-      "tag": "dungeon:doors & stairs"
+      "sprite": "dungeons/dungeon/doors_and_stairs/stairs.png",
+      "tag": "Dungeons:dungeon:doors & stairs"
     },
     {
       "boat": false,
@@ -1330,8 +909,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/doors_and_stairs/stairs_up.png",
-      "tag": "dungeon:doors & stairs"
+      "sprite": "dungeons/dungeon/doors_and_stairs/stairs_up.png",
+      "tag": "Dungeons:dungeon:doors & stairs"
     },
     {
       "boat": false,
@@ -1346,8 +925,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/doors_and_stairs/ladder_down.png",
-      "tag": "dungeon:doors & stairs"
+      "sprite": "dungeons/dungeon/doors_and_stairs/ladder_down.png",
+      "tag": "Dungeons:dungeon:doors & stairs"
     },
     {
       "boat": false,
@@ -1362,8 +941,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/doors_and_stairs/ladder_up.png",
-      "tag": "dungeon:doors & stairs"
+      "sprite": "dungeons/dungeon/doors_and_stairs/ladder_up.png",
+      "tag": "Dungeons:dungeon:doors & stairs"
     },
     {
       "boat": false,
@@ -1378,12 +957,12 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/water_and_pits/pit.png",
-      "tag": "dungeon:water & pits"
+      "sprite": "dungeons/dungeon/water_and_pits/pit.png",
+      "tag": "Dungeons:dungeon:water & pits"
     },
     {
       "boat": false,
-      "background_sprite": "dungeon/water_and_pits/pit_centre.png",
+      "background_sprite": "dungeons/dungeon/water_and_pits/pit_centre.png",
       "id": "dungeon_pit_top",
       "name": "Dungeon Pit, Top Edge",
       "walkable": false,
@@ -1395,12 +974,12 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/water_and_pits/pit_top.png",
-      "tag": "dungeon:water & pits"
+      "sprite": "dungeons/dungeon/water_and_pits/pit_top.png",
+      "tag": "Dungeons:dungeon:water & pits"
     },
     {
       "boat": false,
-      "background_sprite": "dungeon/water_and_pits/pit_centre.png",
+      "background_sprite": "dungeons/dungeon/water_and_pits/pit_centre.png",
       "id": "dungeon_pit_bottom",
       "name": "Dungeon Pit, Bottom Edge",
       "walkable": false,
@@ -1412,12 +991,12 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/water_and_pits/pit_bottom.png",
-      "tag": "dungeon:water & pits"
+      "sprite": "dungeons/dungeon/water_and_pits/pit_bottom.png",
+      "tag": "Dungeons:dungeon:water & pits"
     },
     {
       "boat": false,
-      "background_sprite": "dungeon/water_and_pits/pit_centre.png",
+      "background_sprite": "dungeons/dungeon/water_and_pits/pit_centre.png",
       "id": "dungeon_pit_left",
       "name": "Dungeon Pit, Left Edge",
       "walkable": false,
@@ -1429,12 +1008,12 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/water_and_pits/pit_left.png",
-      "tag": "dungeon:water & pits"
+      "sprite": "dungeons/dungeon/water_and_pits/pit_left.png",
+      "tag": "Dungeons:dungeon:water & pits"
     },
     {
       "boat": false,
-      "background_sprite": "dungeon/water_and_pits/pit_centre.png",
+      "background_sprite": "dungeons/dungeon/water_and_pits/pit_centre.png",
       "id": "dungeon_pit_right",
       "name": "Dungeon Pit, Right Edge",
       "walkable": false,
@@ -1446,12 +1025,12 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/water_and_pits/pit_right.png",
-      "tag": "dungeon:water & pits"
+      "sprite": "dungeons/dungeon/water_and_pits/pit_right.png",
+      "tag": "Dungeons:dungeon:water & pits"
     },
     {
       "boat": false,
-      "background_sprite": "dungeon/water_and_pits/pit_centre.png",
+      "background_sprite": "dungeons/dungeon/water_and_pits/pit_centre.png",
       "id": "dungeon_pit_corner_tl",
       "name": "Dungeon Pit, Corner Top Left",
       "walkable": false,
@@ -1463,12 +1042,12 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/water_and_pits/pit_corner_tl.png",
-      "tag": "dungeon:water & pits"
+      "sprite": "dungeons/dungeon/water_and_pits/pit_corner_tl.png",
+      "tag": "Dungeons:dungeon:water & pits"
     },
     {
       "boat": false,
-      "background_sprite": "dungeon/water_and_pits/pit_centre.png",
+      "background_sprite": "dungeons/dungeon/water_and_pits/pit_centre.png",
       "id": "dungeon_pit_corner_tr",
       "name": "Dungeon Pit, Corner Top Right",
       "walkable": false,
@@ -1480,12 +1059,12 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/water_and_pits/pit_corner_tr.png",
-      "tag": "dungeon:water & pits"
+      "sprite": "dungeons/dungeon/water_and_pits/pit_corner_tr.png",
+      "tag": "Dungeons:dungeon:water & pits"
     },
     {
       "boat": false,
-      "background_sprite": "dungeon/water_and_pits/pit_centre.png",
+      "background_sprite": "dungeons/dungeon/water_and_pits/pit_centre.png",
       "id": "dungeon_pit_corner_bl",
       "name": "Dungeon Pit, Corner Bottom Left",
       "walkable": false,
@@ -1497,12 +1076,12 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/water_and_pits/pit_corner_bl.png",
-      "tag": "dungeon:water & pits"
+      "sprite": "dungeons/dungeon/water_and_pits/pit_corner_bl.png",
+      "tag": "Dungeons:dungeon:water & pits"
     },
     {
       "boat": false,
-      "background_sprite": "cave/water_and_pits/pit_centre.png",
+      "background_sprite": "dungeons/cave/water_and_pits/pit_centre.png",
       "id": "dungeon_pit_corner_br",
       "name": "Dungeon Pit, Corner Bottom Right",
       "walkable": false,
@@ -1514,8 +1093,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/water_and_pits/pit_corner_br.png",
-      "tag": "dungeon:water & pits"
+      "sprite": "dungeons/dungeon/water_and_pits/pit_corner_br.png",
+      "tag": "Dungeons:dungeon:water & pits"
     },
     {
       "boat": false,
@@ -1530,8 +1109,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/water_and_pits/pit_centre.png",
-      "tag": "dungeon:water & pits"
+      "sprite": "dungeons/dungeon/water_and_pits/pit_centre.png",
+      "tag": "Dungeons:dungeon:water & pits"
     },
     {
       "boat": false,
@@ -1546,8 +1125,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/features/pillar.png",
-      "tag": "dungeon:features"
+      "sprite": "dungeons/dungeon/features/pillar.png",
+      "tag": "Dungeons:dungeon:features"
     },
     {
       "boat": false,
@@ -1562,8 +1141,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/features/rubble.png",
-      "tag": "dungeon:features"
+      "sprite": "dungeons/dungeon/features/rubble.png",
+      "tag": "Dungeons:dungeon:features"
     },
     {
       "boat": false,
@@ -1578,9 +1157,9 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/features/throne.png",
-      "background_sprite": "dungeon/floors/floor_cobble.png",
-      "tag": "dungeon:features"
+      "sprite": "dungeons/dungeon/features/throne.png",
+      "background_sprite": "dungeons/dungeon/floors/floor_cobble.png",
+      "tag": "Dungeons:dungeon:features"
     },
     {
       "boat": false,
@@ -2171,8 +1750,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/floors/floor_rock.png",
-      "tag": "cave:floors"
+      "sprite": "dungeons/cave/floors/floor_rock.png",
+      "tag": "Dungeons:cave:floors"
     },
     {
       "boat": false,
@@ -2187,8 +1766,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/floors/floor_slab.png",
-      "tag": "cave:floors"
+      "sprite": "dungeons/cave/floors/floor_slab.png",
+      "tag": "Dungeons:cave:floors"
     },
     {
       "boat": false,
@@ -2203,8 +1782,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/floors/floor_dirt.png",
-      "tag": "cave:floors"
+      "sprite": "dungeons/cave/floors/floor_dirt.png",
+      "tag": "Dungeons:cave:floors"
     },
     {
       "boat": false,
@@ -2219,8 +1798,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/floors/floor_gravel.png",
-      "tag": "cave:floors"
+      "sprite": "dungeons/cave/floors/floor_gravel.png",
+      "tag": "Dungeons:cave:floors"
     },
     {
       "boat": false,
@@ -2235,8 +1814,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/floors/floor_moss.png",
-      "tag": "cave:floors"
+      "sprite": "dungeons/cave/floors/floor_moss.png",
+      "tag": "Dungeons:cave:floors"
     },
     {
       "boat": false,
@@ -2251,8 +1830,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/floors/floor_sand.png",
-      "tag": "cave:floors"
+      "sprite": "dungeons/cave/floors/floor_sand.png",
+      "tag": "Dungeons:cave:floors"
     },
     {
       "boat": false,
@@ -2267,8 +1846,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/floors/floor_crystal.png",
-      "tag": "cave:floors"
+      "sprite": "dungeons/cave/floors/floor_crystal.png",
+      "tag": "Dungeons:cave:floors"
     },
     {
       "boat": false,
@@ -2283,8 +1862,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/walls/wall_top.png",
-      "tag": "cave:walls"
+      "sprite": "dungeons/cave/walls/wall_top.png",
+      "tag": "Dungeons:cave:walls"
     },
     {
       "boat": false,
@@ -2299,8 +1878,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/walls/wall_left.png",
-      "tag": "cave:walls"
+      "sprite": "dungeons/cave/walls/wall_left.png",
+      "tag": "Dungeons:cave:walls"
     },
     {
       "boat": false,
@@ -2315,8 +1894,40 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/walls/wall_right.png",
-      "tag": "cave:walls"
+      "sprite": "dungeons/cave/walls/wall_right.png",
+      "tag": "Dungeons:cave:walls"
+    },
+    {
+      "boat": false,
+      "id": "cave_wall_corner_tl",
+      "name": "Cave Wall, Corner Top Left",
+      "walkable": false,
+      "obstructs": true,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/cave/walls/wall_corner_tl.png",
+      "tag": "Dungeons:cave:walls"
+    },
+    {
+      "boat": false,
+      "id": "cave_wall_corner_tr",
+      "name": "Cave Wall, Corner Top Right",
+      "walkable": false,
+      "obstructs": true,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/cave/walls/wall_corner_tr.png",
+      "tag": "Dungeons:cave:walls"
     },
     {
       "boat": false,
@@ -2331,8 +1942,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/walls/wall_crack.png",
-      "tag": "cave:walls"
+      "sprite": "dungeons/cave/walls/wall_crack.png",
+      "tag": "Dungeons:cave:walls"
     },
     {
       "boat": false,
@@ -2347,8 +1958,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/walls/wall_crystals.png",
-      "tag": "cave:walls"
+      "sprite": "dungeons/cave/walls/wall_crystals.png",
+      "tag": "Dungeons:cave:walls"
     },
     {
       "boat": false,
@@ -2363,8 +1974,24 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/doors_and_stairs/wall_tunnel.png",
-      "tag": "cave:doors & stairs"
+      "sprite": "dungeons/cave/doors_and_stairs/wall_tunnel.png",
+      "tag": "Dungeons:cave:doors & stairs"
+    },
+    {
+      "boat": false,
+      "id": "cave_wall_portcullis",
+      "name": "Cave Portcullis",
+      "walkable": false,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/cave/doors_and_stairs/wall_portcullis.png",
+      "tag": "Dungeons:cave:doors & stairs"
     },
     {
       "boat": false,
@@ -2379,8 +2006,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/walls/wall_webs.png",
-      "tag": "cave:walls"
+      "sprite": "dungeons/cave/walls/wall_webs.png",
+      "tag": "Dungeons:cave:walls"
     },
     {
       "boat": false,
@@ -2395,8 +2022,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/doors_and_stairs/door.png",
-      "tag": "cave:doors & stairs"
+      "sprite": "dungeons/cave/doors_and_stairs/door.png",
+      "tag": "Dungeons:cave:doors & stairs"
     },
     {
       "boat": false,
@@ -2411,8 +2038,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/doors_and_stairs/stairs.png",
-      "tag": "cave:doors & stairs"
+      "sprite": "dungeons/cave/doors_and_stairs/stairs.png",
+      "tag": "Dungeons:cave:doors & stairs"
     },
     {
       "boat": false,
@@ -2427,8 +2054,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/doors_and_stairs/stairs_up.png",
-      "tag": "cave:doors & stairs"
+      "sprite": "dungeons/cave/doors_and_stairs/stairs_up.png",
+      "tag": "Dungeons:cave:doors & stairs"
     },
     {
       "boat": false,
@@ -2443,8 +2070,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/doors_and_stairs/ladder_down.png",
-      "tag": "cave:doors & stairs"
+      "sprite": "dungeons/cave/doors_and_stairs/ladder_down.png",
+      "tag": "Dungeons:cave:doors & stairs"
     },
     {
       "boat": false,
@@ -2459,8 +2086,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/doors_and_stairs/ladder_up.png",
-      "tag": "cave:doors & stairs"
+      "sprite": "dungeons/cave/doors_and_stairs/ladder_up.png",
+      "tag": "Dungeons:cave:doors & stairs"
     },
     {
       "boat": false,
@@ -2475,8 +2102,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/water_and_pits/pit.png",
-      "tag": "cave:water & pits"
+      "sprite": "dungeons/cave/water_and_pits/pit.png",
+      "tag": "Dungeons:cave:water & pits"
     },
     {
       "boat": false,
@@ -2491,9 +2118,9 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/water_and_pits/pit_top.png",
-      "tag": "cave:water & pits",
-      "background_sprite": "cave/floors/floor_dirt.png"
+      "sprite": "dungeons/cave/water_and_pits/pit_top.png",
+      "tag": "Dungeons:cave:water & pits",
+      "background_sprite": "dungeons/cave/floors/floor_dirt.png"
     },
     {
       "boat": false,
@@ -2508,9 +2135,9 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/water_and_pits/pit_bottom.png",
-      "tag": "cave:water & pits",
-      "background_sprite": "cave/floors/floor_dirt.png"
+      "sprite": "dungeons/cave/water_and_pits/pit_bottom.png",
+      "tag": "Dungeons:cave:water & pits",
+      "background_sprite": "dungeons/cave/floors/floor_dirt.png"
     },
     {
       "boat": false,
@@ -2525,9 +2152,9 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/water_and_pits/pit_left.png",
-      "tag": "cave:water & pits",
-      "background_sprite": "cave/floors/floor_dirt.png"
+      "sprite": "dungeons/cave/water_and_pits/pit_left.png",
+      "tag": "Dungeons:cave:water & pits",
+      "background_sprite": "dungeons/cave/floors/floor_dirt.png"
     },
     {
       "boat": false,
@@ -2542,9 +2169,9 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/water_and_pits/pit_right.png",
-      "tag": "cave:water & pits",
-      "background_sprite": "cave/floors/floor_dirt.png"
+      "sprite": "dungeons/cave/water_and_pits/pit_right.png",
+      "tag": "Dungeons:cave:water & pits",
+      "background_sprite": "dungeons/cave/floors/floor_dirt.png"
     },
     {
       "boat": false,
@@ -2559,9 +2186,9 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/water_and_pits/pit_corner_tl.png",
-      "tag": "cave:water & pits",
-      "background_sprite": "cave/floors/floor_dirt.png"
+      "sprite": "dungeons/cave/water_and_pits/pit_corner_tl.png",
+      "tag": "Dungeons:cave:water & pits",
+      "background_sprite": "dungeons/cave/floors/floor_dirt.png"
     },
     {
       "boat": false,
@@ -2576,9 +2203,9 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/water_and_pits/pit_corner_tr.png",
-      "tag": "cave:water & pits",
-      "background_sprite": "cave/floors/floor_dirt.png"
+      "sprite": "dungeons/cave/water_and_pits/pit_corner_tr.png",
+      "tag": "Dungeons:cave:water & pits",
+      "background_sprite": "dungeons/cave/floors/floor_dirt.png"
     },
     {
       "boat": false,
@@ -2593,9 +2220,9 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/water_and_pits/pit_corner_bl.png",
-      "tag": "cave:water & pits",
-      "background_sprite": "cave/floors/floor_dirt.png"
+      "sprite": "dungeons/cave/water_and_pits/pit_corner_bl.png",
+      "tag": "Dungeons:cave:water & pits",
+      "background_sprite": "dungeons/cave/floors/floor_dirt.png"
     },
     {
       "boat": false,
@@ -2610,9 +2237,9 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/water_and_pits/pit_corner_br.png",
-      "tag": "cave:water & pits",
-      "background_sprite": "cave/floors/floor_dirt.png"
+      "sprite": "dungeons/cave/water_and_pits/pit_corner_br.png",
+      "tag": "Dungeons:cave:water & pits",
+      "background_sprite": "dungeons/cave/floors/floor_dirt.png"
     },
     {
       "boat": false,
@@ -2627,8 +2254,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/water_and_pits/pit_centre.png",
-      "tag": "cave:water & pits"
+      "sprite": "dungeons/cave/water_and_pits/pit_centre.png",
+      "tag": "Dungeons:cave:water & pits"
     },
     {
       "boat": false,
@@ -2643,8 +2270,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/features/stalagmite.png",
-      "tag": "cave:features"
+      "sprite": "dungeons/cave/features/stalagmite.png",
+      "tag": "Dungeons:cave:features"
     },
     {
       "boat": false,
@@ -2659,8 +2286,704 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "cave/features/rubble.png",
-      "tag": "cave:features"
+      "sprite": "dungeons/cave/features/rubble.png",
+      "tag": "Dungeons:cave:features"
+    },
+    {
+      "boat": false,
+      "id": "cave_throne",
+      "name": "Cave Throne",
+      "walkable": false,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/cave/features/throne.png",
+      "background_sprite": "dungeons/cave/floors/floor_dirt.png",
+      "tag": "Dungeons:cave:features"
+    },
+    {
+      "boat": false,
+      "id": "deep_ones_hall_door",
+      "name": "Deep Ones Hall Door",
+      "walkable": true,
+      "obstructs": true,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/deep_ones_hall/doors_and_stairs/door.png",
+      "tag": "Dungeons:deep ones hall:doors & stairs",
+      "background_sprite": "dungeons/deep_ones_hall/walls/wall_bottom.png"
+    },
+    {
+      "boat": false,
+      "id": "deep_ones_hall_ladder_down",
+      "name": "Deep Ones Hall Ladder, Down",
+      "walkable": true,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/deep_ones_hall/doors_and_stairs/ladder_down.png",
+      "tag": "Dungeons:deep ones hall:doors & stairs"
+    },
+    {
+      "boat": false,
+      "id": "deep_ones_hall_ladder_up",
+      "name": "Deep Ones Hall Ladder, Up",
+      "walkable": true,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/deep_ones_hall/doors_and_stairs/ladder_up.png",
+      "tag": "Dungeons:deep ones hall:doors & stairs"
+    },
+    {
+      "boat": false,
+      "id": "deep_ones_hall_stairs",
+      "name": "Deep Ones Hall Stairs, Down",
+      "walkable": true,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/deep_ones_hall/doors_and_stairs/stairs.png",
+      "tag": "Dungeons:deep ones hall:doors & stairs"
+    },
+    {
+      "boat": false,
+      "id": "deep_ones_hall_stairs_up",
+      "name": "Deep Ones Hall Stairs, Up",
+      "walkable": true,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/deep_ones_hall/doors_and_stairs/stairs_up.png",
+      "tag": "Dungeons:deep ones hall:doors & stairs"
+    },
+    {
+      "boat": false,
+      "id": "deep_ones_hall_wall_archway",
+      "name": "Deep Ones Hall Wall, Archway",
+      "walkable": true,
+      "obstructs": true,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/deep_ones_hall/doors_and_stairs/wall_archway.png",
+      "tag": "Dungeons:deep ones hall:doors & stairs"
+    },
+    {
+      "boat": false,
+      "id": "deep_ones_hall_wall_portcullis",
+      "name": "Deep Ones Hall Portcullis",
+      "walkable": false,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/deep_ones_hall/doors_and_stairs/wall_portcullis.png",
+      "tag": "Dungeons:deep ones hall:doors & stairs"
+    },
+    {
+      "boat": false,
+      "id": "deep_ones_hall_notice_board",
+      "name": "Deep Ones Hall Notice Board",
+      "walkable": false,
+      "obstructs": true,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/deep_ones_hall/features/notice_board.png",
+      "tag": "Dungeons:deep ones hall:features",
+      "background_sprite": "dungeons/deep_ones_hall/floors/floor_plain.png"
+    },
+    {
+      "boat": false,
+      "id": "deep_ones_hall_fireplace",
+      "name": "Deep Ones Hall Fireplace",
+      "walkable": false,
+      "obstructs": true,
+      "locked": false,
+      "light_source": true,
+      "light_range": 10,
+      "animation": "fire",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/deep_ones_hall/features/fireplace.png",
+      "tag": "Dungeons:deep ones hall:features",
+      "background_sprite": "dungeons/deep_ones_hall/floors/floor_plain.png"
+    },
+    {
+      "boat": false,
+      "id": "deep_ones_hall_pillar",
+      "name": "Deep Ones Hall Pillar",
+      "walkable": false,
+      "obstructs": true,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/deep_ones_hall/features/pillar.png",
+      "tag": "Dungeons:deep ones hall:features"
+    },
+    {
+      "boat": false,
+      "id": "deep_ones_hall_rubble",
+      "name": "Deep Ones Hall Rubble",
+      "walkable": false,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/deep_ones_hall/features/rubble.png",
+      "tag": "Dungeons:deep ones hall:features"
+    },
+    {
+      "boat": false,
+      "id": "deep_ones_hall_throne",
+      "name": "Deep Ones Hall Throne",
+      "walkable": false,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/deep_ones_hall/features/throne.png",
+      "background_sprite": "dungeons/deep_ones_hall/floors/floor_plain.png",
+      "tag": "Dungeons:deep ones hall:features"
+    },
+    {
+      "boat": false,
+      "id": "deep_ones_hall_floor",
+      "name": "Deep Ones Hall Floor",
+      "walkable": true,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/deep_ones_hall/floors/floor.png",
+      "tag": "Dungeons:deep ones hall:floors"
+    },
+    {
+      "boat": false,
+      "id": "deep_ones_hall_floor_alt",
+      "name": "Deep Ones Hall Floor, Alt",
+      "walkable": true,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/deep_ones_hall/floors/floor_alt.png",
+      "tag": "Dungeons:deep ones hall:floors"
+    },
+    {
+      "boat": false,
+      "id": "deep_ones_hall_floor_plain",
+      "name": "Deep Ones Hall Floor, Plain",
+      "walkable": true,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/deep_ones_hall/floors/floor_plain.png",
+      "tag": "Dungeons:deep ones hall:floors"
+    },
+    {
+      "boat": false,
+      "id": "deep_ones_hall_floor_brick",
+      "name": "Deep Ones Hall Floor, Brick",
+      "walkable": true,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/deep_ones_hall/floors/floor_brick.png",
+      "tag": "Dungeons:deep ones hall:floors"
+    },
+    {
+      "boat": false,
+      "id": "deep_ones_hall_floor_cobble",
+      "name": "Deep Ones Hall Floor, Cobble",
+      "walkable": true,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/deep_ones_hall/floors/floor_cobble.png",
+      "tag": "Dungeons:deep ones hall:floors"
+    },
+    {
+      "boat": false,
+      "id": "deep_ones_hall_floor_grate",
+      "name": "Deep Ones Hall Floor, Grate",
+      "walkable": true,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/deep_ones_hall/floors/floor_grate.png",
+      "tag": "Dungeons:deep ones hall:floors"
+    },
+    {
+      "boat": false,
+      "id": "deep_ones_hall_floor_pebbles",
+      "name": "Deep Ones Hall Floor, Pebbles",
+      "walkable": true,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/deep_ones_hall/floors/floor_pebbles.png",
+      "tag": "Dungeons:deep ones hall:floors"
+    },
+    {
+      "boat": false,
+      "id": "deep_ones_hall_wall",
+      "name": "Deep Ones Hall Wall",
+      "walkable": false,
+      "obstructs": true,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/deep_ones_hall/walls/wall.png",
+      "tag": "Dungeons:deep ones hall:walls"
+    },
+    {
+      "boat": false,
+      "background_sprite": "dungeons/deep_ones_hall/walls/wall.png",
+      "id": "deep_ones_hall_wall_top",
+      "name": "Deep Ones Hall Wall, Top",
+      "walkable": false,
+      "obstructs": true,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/deep_ones_hall/walls/wall_top.png",
+      "tag": "Dungeons:deep ones hall:walls"
+    },
+    {
+      "boat": false,
+      "background_sprite": "dungeons/deep_ones_hall/walls/wall.png",
+      "id": "deep_ones_hall_wall_bottom",
+      "name": "Deep Ones Hall Wall, Bottom",
+      "walkable": false,
+      "obstructs": true,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/deep_ones_hall/walls/wall_bottom.png",
+      "tag": "Dungeons:deep ones hall:walls"
+    },
+    {
+      "boat": false,
+      "id": "deep_ones_hall_wall_left",
+      "name": "Deep Ones Hall Wall, Left",
+      "walkable": false,
+      "obstructs": true,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/deep_ones_hall/walls/wall_left.png",
+      "tag": "Dungeons:deep ones hall:walls",
+      "background_sprite": "dungeons/deep_ones_hall/floors/floor_plain.png"
+    },
+    {
+      "boat": false,
+      "id": "deep_ones_hall_wall_right",
+      "name": "Deep Ones Hall Wall, Right",
+      "walkable": false,
+      "obstructs": true,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/deep_ones_hall/walls/wall_right.png",
+      "tag": "Dungeons:deep ones hall:walls",
+      "background_sprite": "dungeons/deep_ones_hall/floors/floor_plain.png"
+    },
+    {
+      "boat": false,
+      "id": "deep_ones_hall_wall_corner_tl",
+      "name": "Deep Ones Hall Wall Corner, Top Left",
+      "walkable": false,
+      "obstructs": true,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/deep_ones_hall/walls/wall_corner_tl.png",
+      "tag": "Dungeons:deep ones hall:walls",
+      "background_sprite": "dungeons/deep_ones_hall/floors/floor_plain.png"
+    },
+    {
+      "boat": false,
+      "id": "deep_ones_hall_wall_corner_tr",
+      "name": "Deep Ones Hall Wall Corner, Top Right",
+      "walkable": false,
+      "obstructs": true,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/deep_ones_hall/walls/wall_corner_tr.png",
+      "tag": "Dungeons:deep ones hall:walls",
+      "background_sprite": "dungeons/deep_ones_hall/floors/floor_plain.png"
+    },
+    {
+      "boat": false,
+      "id": "deep_ones_hall_wall_corner_bl",
+      "name": "Deep Ones Hall Wall Corner, Bottom Left",
+      "walkable": false,
+      "obstructs": true,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/deep_ones_hall/walls/wall_corner_bl.png",
+      "tag": "Dungeons:deep ones hall:walls",
+      "background_sprite": "dungeons/deep_ones_hall/floors/floor_plain.png"
+    },
+    {
+      "boat": false,
+      "id": "deep_ones_hall_wall_corner_br",
+      "name": "Deep Ones Hall Wall Corner, Bottom Right",
+      "walkable": false,
+      "obstructs": true,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/deep_ones_hall/walls/wall_corner_br.png",
+      "tag": "Dungeons:deep ones hall:walls",
+      "background_sprite": "dungeons/deep_ones_hall/floors/floor_plain.png"
+    },
+    {
+      "boat": false,
+      "id": "deep_ones_hall_window_left",
+      "name": "Deep Ones Hall Window, Left",
+      "walkable": false,
+      "obstructs": false,
+      "locked": false,
+      "light_source": true,
+      "light_range": 5,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/deep_ones_hall/walls/window_left.png",
+      "tag": "Dungeons:deep ones hall:walls",
+      "background_sprite": "dungeons/deep_ones_hall/walls/wall_bottom.png"
+    },
+    {
+      "boat": false,
+      "id": "deep_ones_hall_window_right",
+      "name": "Deep Ones Hall Window, Right",
+      "walkable": false,
+      "obstructs": false,
+      "locked": false,
+      "light_source": true,
+      "light_range": 5,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/deep_ones_hall/walls/window_right.png",
+      "tag": "Dungeons:deep ones hall:walls",
+      "background_sprite": "dungeons/deep_ones_hall/walls/wall_bottom.png"
+    },
+    {
+      "boat": false,
+      "id": "deep_ones_hall_window_single",
+      "name": "Deep Ones Hall Window",
+      "walkable": false,
+      "obstructs": false,
+      "locked": false,
+      "light_source": true,
+      "light_range": 5,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/deep_ones_hall/walls/window_single.png",
+      "tag": "Dungeons:deep ones hall:walls",
+      "background_sprite": "dungeons/deep_ones_hall/walls/wall_bottom.png"
+    },
+    {
+      "boat": false,
+      "id": "deep_ones_hall_pit",
+      "name": "Deep Ones Hall Pit",
+      "walkable": false,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/deep_ones_hall/water_and_pits/pit.png",
+      "tag": "Dungeons:deep ones hall:water & pits"
+    },
+    {
+      "boat": false,
+      "background_sprite": "dungeons/deep_ones_hall/floors/floor_plain.png",
+      "id": "deep_ones_hall_pit_bottom",
+      "name": "Deep Ones Hall Pit, Bottom Edge",
+      "walkable": false,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/deep_ones_hall/water_and_pits/pit_bottom.png",
+      "tag": "Dungeons:deep ones hall:water & pits"
+    },
+    {
+      "boat": false,
+      "id": "deep_ones_hall_pit_centre",
+      "name": "Deep Ones Hall Pit, Centre",
+      "walkable": false,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/deep_ones_hall/water_and_pits/pit_centre.png",
+      "tag": "Dungeons:deep ones hall:water & pits"
+    },
+    {
+      "boat": false,
+      "background_sprite": "dungeons/deep_ones_hall/floors/floor_plain.png",
+      "id": "deep_ones_hall_pit_corner_bl",
+      "name": "Deep Ones Hall Pit, Corner Bottom Left",
+      "walkable": false,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/deep_ones_hall/water_and_pits/pit_corner_bl.png",
+      "tag": "Dungeons:deep ones hall:water & pits"
+    },
+    {
+      "boat": false,
+      "background_sprite": "dungeons/deep_ones_hall/floors/floor_plain.png",
+      "id": "deep_ones_hall_pit_corner_br",
+      "name": "Deep Ones Hall Pit, Corner Bottom Right",
+      "walkable": false,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/deep_ones_hall/water_and_pits/pit_corner_br.png",
+      "tag": "Dungeons:deep ones hall:water & pits"
+    },
+    {
+      "boat": false,
+      "background_sprite": "dungeons/deep_ones_hall/floors/floor_plain.png",
+      "id": "deep_ones_hall_pit_corner_tl",
+      "name": "Deep Ones Hall Pit, Corner Top Left",
+      "walkable": false,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/deep_ones_hall/water_and_pits/pit_corner_tl.png",
+      "tag": "Dungeons:deep ones hall:water & pits"
+    },
+    {
+      "boat": false,
+      "background_sprite": "dungeons/deep_ones_hall/floors/floor_plain.png",
+      "id": "deep_ones_hall_pit_corner_tr",
+      "name": "Deep Ones Hall Pit, Corner Top Right",
+      "walkable": false,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/deep_ones_hall/water_and_pits/pit_corner_tr.png",
+      "tag": "Dungeons:deep ones hall:water & pits"
+    },
+    {
+      "boat": false,
+      "background_sprite": "dungeons/deep_ones_hall/floors/floor_plain.png",
+      "id": "deep_ones_hall_pit_left",
+      "name": "Deep Ones Hall Pit, Left Edge",
+      "walkable": false,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/deep_ones_hall/water_and_pits/pit_left.png",
+      "tag": "Dungeons:deep ones hall:water & pits"
+    },
+    {
+      "boat": false,
+      "background_sprite": "dungeons/deep_ones_hall/floors/floor_plain.png",
+      "id": "deep_ones_hall_pit_right",
+      "name": "Deep Ones Hall Pit, Right Edge",
+      "walkable": false,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/deep_ones_hall/water_and_pits/pit_right.png",
+      "tag": "Dungeons:deep ones hall:water & pits"
+    },
+    {
+      "boat": false,
+      "background_sprite": "dungeons/deep_ones_hall/floors/floor_plain.png",
+      "id": "deep_ones_hall_pit_top",
+      "name": "Deep Ones Hall Pit, Top Edge",
+      "walkable": false,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/deep_ones_hall/water_and_pits/pit_top.png",
+      "tag": "Dungeons:deep ones hall:water & pits"
     },
     {
       "boat": false,
@@ -2719,7 +3042,7 @@
       "locked": false,
       "light_source": true,
       "light_range": 4,
-      "animation": "none",
+      "animation": "torch",
       "counter": null,
       "encounter": null,
       "spawn": null,
@@ -3718,38 +4041,6 @@
       "spawn": null,
       "sprite": "objects/cart/cart_r0c1.png",
       "tag": "objects:cart"
-    },
-    {
-      "boat": false,
-      "id": "object_lamp_post_r0c0",
-      "name": "Lamp Post (top)",
-      "walkable": false,
-      "obstructs": false,
-      "locked": false,
-      "light_source": true,
-      "light_range": 4,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "objects/lamp_post/lamp_post_r0c0.png",
-      "tag": "objects:lamp post"
-    },
-    {
-      "boat": false,
-      "id": "object_lamp_post_r1c0",
-      "name": "Lamp Post (bottom)",
-      "walkable": false,
-      "obstructs": false,
-      "locked": false,
-      "light_source": true,
-      "light_range": 4,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "objects/lamp_post/lamp_post_r1c0.png",
-      "tag": "objects:lamp post"
     },
     {
       "boat": false,
@@ -5235,23 +5526,6 @@
       "encounter": null,
       "spawn": null,
       "sprite": "map/hills_and_mountains/mountain_high.png",
-      "tag": "map:hills & mountains",
-      "background_sprite": "map/grass.png"
-    },
-    {
-      "boat": false,
-      "id": "overworld_mountain_range",
-      "name": "Mountain Range",
-      "walkable": false,
-      "obstructs": true,
-      "locked": false,
-      "light_source": false,
-      "light_range": 0,
-      "animation": "none",
-      "counter": null,
-      "encounter": null,
-      "spawn": null,
-      "sprite": "map/hills_and_mountains/mountain_range.png",
       "tag": "map:hills & mountains",
       "background_sprite": "map/grass.png"
     },

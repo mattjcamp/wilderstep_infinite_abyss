@@ -13,8 +13,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "dungeon/walls/wall_portcullis.png",
-      "tag": "dungeon:walls"
+      "sprite": "dungeons/dungeon/doors_and_stairs/wall_portcullis.png",
+      "tag": "Dungeons:dungeon:doors & stairs"
     }
   ]
 }

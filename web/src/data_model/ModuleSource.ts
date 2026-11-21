@@ -46,12 +46,11 @@ export interface ModuleSummary {
    *  records in the parent by id; missing files fall through to the
    *  parent. Omit on the root module. */
   extends?: string;
-  /** Library modules whose content should be available to this module
-   *  as an import palette. `uses` does NOT compose library records
-   *  into your resolved view — instead, the editor surfaces each
-   *  library's records as a catalog, and the author imports records
-   *  they want into the module's own file (where they become regular
-   *  "new" records, decoupled from the library going forward).
+  /** Library modules whose content is part of this module — live
+   *  layers merged after the extends chain and before the module's own
+   *  file. All of a library's records appear in the module (no
+   *  per-record imports) and later edits to the library flow through;
+   *  the module overrides a library record by id in its own file.
    *  `uses` declarations are inherited via the extends chain so a
    *  child picks up its parent's library list automatically. */
   uses?: string[];
@@ -90,10 +89,8 @@ export interface LoadedModule {
 }
 
 /** Two-layer view of a single model for one module: what's inherited
- *  from the extends chain (already merged root-first) and what this
- *  module's own file declares. Library content from `uses` is NOT
- *  included here — it's surfaced separately via listLibraryRecords
- *  so the editor can present it as an import palette.
+ *  (the extends chain merged root-first, then the libraries from
+ *  `uses` — live layers) and what this module's own file declares.
  *  Returned by ModuleSource.loadModelLayers — the editor uses this
  *  to show per-row provenance and to write copy-on-write overrides
  *  into the module's own file. */
@@ -108,8 +105,8 @@ export interface ModelLayers {
    *  labels like "inherits from <parent>". */
   parentId?: string;
   /** Library ids declared via `uses` (deduped, also gathered from
-   *  the extends chain). Used by the editor to label the catalog
-   *  source and to know which libraries to query. */
+   *  the extends chain). Their content is part of `inherited`; the
+   *  editor uses the list to label where content comes from. */
   usedLibraryIds: string[];
 }
 
@@ -130,7 +127,7 @@ export interface ModuleSource {
   list(): Promise<ModuleSummary[]>;
 
   /** Load a single module's resolved data by id, walking the extends
-   *  chain and merging records. Library `uses` are NOT auto-merged;
-   *  they're only an import palette. */
+   *  chain, then merging the libraries it `uses` (live), then its own
+   *  records. */
   load(moduleId: string): Promise<LoadedModule>;
 }

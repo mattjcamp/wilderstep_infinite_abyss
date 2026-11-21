@@ -19,7 +19,7 @@
  * render it without a code branch.
  */
 
-import { autotileDungeonWalls } from "./dungeonAutotile";
+import { autotileDungeonWalls, tilesetWallIds } from "./dungeonAutotile";
 import { TILE_WALL_TORCH } from "@/battle/world/Tiles";
 import {
   TILE_CHEST,
@@ -38,9 +38,12 @@ import {
   CHEST_PALETTE_ID,
   DUNGEON_TILESET_FLOOR_ID,
   CAVE_TILESET_FLOOR_ID,
+  DEEP_ONES_HALL_FLOOR_ID,
   PIT_PIECES,
   resolveDungeonSprite,
+  tilesetPrefix,
   type DungeonTilePrototype,
+  type TilesetPrefix,
 } from "./tileMapping";
 
 /** A dungeon-level cell. Compatible with the editor's `TileType` and
@@ -134,8 +137,8 @@ export function dungeonLevelToMap(
       const isExit =
         tileId === TILE_STAIRS && !!level.overworldExits?.has(`${c},${r}`);
       if (isExit && level.exitAppearance === "ladder") {
-        base.paletteId = style === "cavern" ? "cave_ladder_up" : "dungeon_ladder_up";
-        base.name = style === "cavern" ? "Cave Ladder, Up" : "Dungeon Ladder, Up";
+        base.paletteId = `${tilesetPrefix(style)}_ladder_up`;
+        base.name = `${TILESET_LABEL[tilesetPrefix(style)]} Ladder, Up`;
       }
       // Art comes from the module's tile palette, never from a path
       // baked into the engine (see tileMapping.ts).
@@ -407,7 +410,7 @@ function patchDecoration(
  *  single cells, so that fallback is just a safety net. */
 function paintPits(
   grid: DungeonMapCell[][],
-  prefix: "dungeon" | "cave",
+  prefix: TilesetPrefix,
   sprites: ReadonlyMap<string, string> | undefined,
 ): void {
   const pitId = `${prefix}_pit`;
@@ -498,8 +501,24 @@ const CAVE_PATCH_FLOORS: Array<[string, number]> = [
   ["cave_floor_slab", 1],
   ["cave_floor_crystal", 1],
 ];
+/** Room floors for the Deep Ones Hall: sigil and carved floors mixed
+ *  with the plain stone ones. */
+const DEEP_ONES_HALL_ROOM_FLOORS: Array<[string, number]> = [
+  ["deep_ones_hall_floor", 3],
+  ["deep_ones_hall_floor_alt", 2],
+  ["deep_ones_hall_floor_cobble", 2],
+  ["deep_ones_hall_floor_brick", 2],
+  ["deep_ones_hall_floor_pebbles", 1],
+  ["deep_ones_hall_floor_grate", 1],
+];
+/** Display name of each tileset. */
+const TILESET_LABEL: Record<TilesetPrefix, string> = {
+  dungeon: "Dungeon",
+  cave: "Cave",
+  deep_ones_hall: "Deep Ones Hall",
+};
 /** Wall-face decorations per tileset — [palette id, weight, glows]. */
-const WALL_DECOR: Record<"dungeon" | "cave", Array<[string, number, boolean]>> = {
+const WALL_DECOR: Record<TilesetPrefix, Array<[string, number, boolean]>> = {
   dungeon: [
     ["dungeon_wall_banner", 2, false],
     ["dungeon_wall_window", 1, false],
@@ -508,6 +527,12 @@ const WALL_DECOR: Record<"dungeon" | "cave", Array<[string, number, boolean]>> =
     ["cave_wall_crack", 1, true],
     ["cave_wall_crystals", 1, false],
     ["cave_wall_webs", 1, false],
+  ],
+  // Carved glyph panels, and a glowing window now and then.
+  deep_ones_hall: [
+    ["deep_ones_hall_wall_top", 3, false],
+    ["deep_ones_hall_wall_bottom", 2, false],
+    ["deep_ones_hall_window_single", 1, true],
   ],
 };
 
@@ -545,10 +570,14 @@ function applyTilesetStyle(
 ): void {
   const seed = `${where.dungeonId}:${where.floorIdx}`;
   const cave = style === "cavern";
-  const prefix = cave ? "cave" : "dungeon";
-  const baseFloorId = cave ? CAVE_TILESET_FLOOR_ID : DUNGEON_TILESET_FLOOR_ID;
+  const prefix = tilesetPrefix(style);
+  const baseFloorId =
+    cave ? CAVE_TILESET_FLOOR_ID
+      : prefix === "deep_ones_hall" ? DEEP_ONES_HALL_FLOOR_ID
+        : DUNGEON_TILESET_FLOOR_ID;
   const floorSprite = resolveDungeonSprite(baseFloorId, sprites);
-  const wallId = cave ? "cave_wall" : "dungeon_wall";
+  const wallId = (prototypeForTileId(TILE_DWALL, style) ?? FALLBACK_WALL).id;
+  const roomFloors = prefix === "deep_ones_hall" ? DEEP_ONES_HALL_ROOM_FLOORS : DUNGEON_ROOM_FLOORS;
   const variety = Math.min(1, Math.max(0, level.floorVariety ?? 0));
 
   // ── 1. Floor variety ───────────────────────────────────────────
@@ -557,7 +586,7 @@ function applyTilesetStyle(
   const roomFloor: Array<string | null> = (level.rooms ?? []).map((_, i) => {
     if (cave || variety <= 0) return null;
     if (hash01(seed + ":room", i, 0) >= variety) return null;
-    return weighted(DUNGEON_ROOM_FLOORS, hash01(seed + ":roomfloor", i, 0))[0];
+    return weighted(roomFloors, hash01(seed + ":roomfloor", i, 0))[0];
   });
   const floorAt = (c: number, r: number): string => {
     if (cave) {
@@ -616,7 +645,7 @@ function applyTilesetStyle(
     sprites,
     floorSprite,
     keepId: (cell) => cell.id === "wall_torch",
-    tileset: cave ? "cave" : "dungeon",
+    tileset: prefix,
   });
   // Strips are drawn over the floor beside them — use that cell's
   // (possibly variant) floor rather than the base one.
@@ -633,7 +662,7 @@ function applyTilesetStyle(
   // ── 4. Wall decorations ────────────────────────────────────────
   const decor = Math.min(1, Math.max(0, level.wallDecor ?? 0));
   if (decor > 0) {
-    const face = `${prefix}_wall_top`;
+    const face = tilesetWallIds(prefix).faceTop;
     const isDoorish = (cell: DungeonMapCell | undefined) =>
       !!cell && (cell.id === `${prefix}_door` || cell.id === "door_locked");
     const decorated = new Set<string>();
@@ -648,7 +677,7 @@ function applyTilesetStyle(
         if (isDoorish(grid[r][c - 1]) || isDoorish(grid[r][c + 1])) continue;
         if (decorated.has(`${c - 1},${r}`)) continue;
         if (hash01(seed + ":decor", c, r) >= 0.3 * decor) continue;
-        const [id, , glows] = weighted(WALL_DECOR[cave ? "cave" : "dungeon"], hash01(seed + ":decorkind", c, r));
+        const [id, , glows] = weighted(WALL_DECOR[prefix], hash01(seed + ":decorkind", c, r));
         const sprite = resolveDungeonSprite(id, sprites);
         if (!sprite) continue;
         cell.id = id;

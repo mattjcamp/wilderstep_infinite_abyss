@@ -202,3 +202,41 @@ describe("cavern style — full generated floor", () => {
     }
   });
 });
+
+describe("autotile — trimmed palettes", () => {
+  it("uses the closest available piece when a junction piece is missing", async () => {
+    const { autotileDungeonWalls } = await import("./dungeonAutotile");
+    // Two rooms side by side separated by a one-wide wall column with a
+    // face above it: classic divider + T-down. The palette has only the
+    // slim set (top / left / right / rock).
+    const F = { id: "floor", name: "f", sprite: "floor.png", walkable: true };
+    const W = () => ({ id: "w", name: "w", sprite: "", walkable: false });
+    const grid = [
+      [W(), W(), W(), W(), W()],
+      [W(), { ...F }, W(), { ...F }, W()],
+      [W(), { ...F }, W(), { ...F }, W()],
+      [W(), W(), W(), W(), W()],
+    ];
+    const sprites = new Map([
+      ["dungeon_wall_top", "top.png"],
+      ["dungeon_wall_left", "left.png"],
+      ["dungeon_wall_right", "right.png"],
+      ["dungeon_pit_centre", "rock.png"],
+    ]);
+    autotileDungeonWalls(grid, {
+      isWall: (c) => !c.walkable,
+      sprites,
+      floorSprite: "floor.png",
+    });
+    // Every wall cell resolves to a palette id the palette actually has.
+    for (const row of grid) {
+      for (const cell of row) {
+        if (cell.walkable) continue;
+        expect(sprites.has(cell.id), cell.id).toBe(true);
+        expect(cell.sprite).not.toBe("");
+      }
+    }
+    // The column between the rooms is a strip, not a full face.
+    expect(grid[2][2].id).toBe("dungeon_wall_left");
+  });
+});

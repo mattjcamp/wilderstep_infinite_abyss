@@ -112,6 +112,15 @@ describe("module sprite layers", () => {
 });
 
 describe("spriteLayerOrder (art themes)", () => {
+  it("libraries the module uses layer in after its own art, before its parents", () => {
+    expect(
+      spriteLayerOrder([
+        { id: "adventure", extends: "default", uses: ["world", "monsters-pack"] },
+        { id: "default" },
+      ]),
+    ).toEqual(["adventure", "monsters-pack", "world", "default"]);
+  });
+
   it("module's own art, then its theme, then parents, then Default", () => {
     expect(
       spriteLayerOrder([

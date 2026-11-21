@@ -7,18 +7,22 @@
  *
  * The list of modules lives in /modules/index.json. Each module
  * declares its own metadata in /modules/<id>/module.json, including
- * optional `extends` (single parent — your base) and `uses` (an
- * import palette of library modules).
+ * optional `extends` (single parent — your base) and `uses` (library
+ * modules whose content is layered in live).
  *
  * Resolution layers the data in this order:
  *   1. extends chain, root-first (default → ... → parent)
- *   2. the requested module's own file
+ *   2. libraries from `uses`, in declaration order (each with any of
+ *      its own ancestors the chain hasn't already applied)
+ *   3. the requested module's own file
  *
- * Library content from `uses` is NOT in the resolved view — it's
- * surfaced separately via listLibraryRecords as a catalog. The
- * editor renders an Import button per library record; importing
- * copies the record into the module's own file as a regular new
- * record, decoupled from the library.
+ * Libraries are LIVE layers, just like the parent: adding a library
+ * brings in all of its content at once, and later edits to the library
+ * show up in every module that uses it. A module overrides a library
+ * record by editing it (copy-on-write into its own file), exactly as
+ * it overrides an inherited record. (Libraries used to be an import
+ * palette that copied records one at a time, decoupled from the
+ * library; listLibraryRecords now returns nothing.)
  *
  * Merge semantics:
  *   - collections (records under a collectionKey, addressed by id)
@@ -139,6 +143,10 @@ async function loadModuleManifest(
   ) as Promise<(Partial<ModuleSummary> & { id?: string }) | null>;
 }
 
+/** Libraries (`uses`) merge into the resolved view as live layers.
+ *  The per-record import catalog is retired. */
+const LIBRARIES_ARE_LIVE = true;
+
 function toSummary(
   meta: Partial<ModuleSummary> & {
     id?: string;
@@ -224,6 +232,38 @@ function collectUsedLibraryIds(chain: ModuleSummary[]): string[] {
       if (chain.some((c) => moduleIdsEqual(c.id, libId))) continue;
       seen.add(libId);
       out.push(libId);
+    }
+  }
+  return out;
+}
+
+/** Module ids to apply for the libraries a chain `uses`, in merge
+ *  order (lowest priority first). Each library contributes its own
+ *  extends chain root-first, minus any module the main chain or an
+ *  earlier library already applied — so a library that (like most)
+ *  extends Default doesn't re-apply Default on top of the module's
+ *  parents. A library that can't be resolved is skipped. */
+async function libraryLayerIds(
+  chain: ModuleSummary[],
+  locator: ModuleFileLocator,
+  preferDrafts: boolean,
+): Promise<string[]> {
+  const applied = new Set(chain.map((c) => moduleStorageSegment(c.id)));
+  const out: string[] = [];
+  for (const libId of collectUsedLibraryIds(chain)) {
+    let libChain: ModuleSummary[];
+    try {
+      libChain = await walkExtendsChain(libId, locator, preferDrafts);
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn(`Library ${libId} could not be resolved:`, e);
+      continue;
+    }
+    for (let i = libChain.length - 1; i >= 0; i--) {
+      const key = moduleStorageSegment(libChain[i].id);
+      if (applied.has(key)) continue;
+      applied.add(key);
+      out.push(libChain[i].id);
     }
   }
   return out;
@@ -323,16 +363,17 @@ export class StaticModuleSource implements ModuleSource {
     const summary = chain[0];
 
     const data: Record<string, unknown> = {};
-    // Apply ancestors root-first; the requested module's own file is
-    // applied last. Library content (from `uses`) is intentionally
-    // NOT merged here — it's surfaced via listLibraryRecords instead
-    // so authors can opt records in explicitly.
-    for (let i = chain.length - 1; i >= 1; i--) {
-      const s = chain[i];
+    // Apply ancestors root-first, then the libraries this module uses
+    // (live), then the requested module's own file last.
+    const below = [
+      ...chain.slice(1).reverse().map((s) => s.id),
+      ...(await libraryLayerIds(chain, this.locator, this.preferDrafts)),
+    ];
+    for (const layerId of below) {
       for (const key of ALL_MODEL_KEYS) {
         const def = MODELS[key];
         const levelData = await tryFetchJson(
-          this.locator.moduleFile(s.id, def.fileName),
+          this.locator.moduleFile(layerId, def.fileName),
           editorFetchInit(this.preferDrafts),
         );
         if (levelData === null) continue;
@@ -361,12 +402,12 @@ export class StaticModuleSource implements ModuleSource {
     return mergeModel(MODELS[key].collectionKey, layers.inherited, layers.ownFile);
   }
 
-  /** Layered loader: returns the inherited data (extends chain only)
-   *  and the current module's own file separately. The editor uses
-   *  this to compute per-row provenance (inherited vs overridden vs
-   *  new), to support copy-on-write editing, and to export just the
-   *  overlay rather than the resolved view. Library content lives
-   *  in the catalog returned by listLibraryRecords, not here. */
+  /** Layered loader: returns the inherited data (the extends chain
+   *  plus the libraries this module uses — everything below the
+   *  module) and the current module's own file separately. The editor
+   *  uses this to compute per-row provenance (inherited vs overridden
+   *  vs new), to support copy-on-write editing, and to export just the
+   *  overlay rather than the resolved view. */
   async loadModelLayers(
     moduleId: string,
     key: ModelKey,
@@ -375,10 +416,14 @@ export class StaticModuleSource implements ModuleSource {
     const chain = await walkExtendsChain(moduleId, this.locator, this.preferDrafts);
     const usedLibraryIds = collectUsedLibraryIds(chain);
 
-    // Inherited = the extends chain above this module, root-first.
+    // Inherited = the extends chain above this module, root-first,
+    // then the libraries it uses (live layers).
     let inherited: unknown = null;
-    for (let i = chain.length - 1; i >= 1; i--) {
-      const id = chain[i].id;
+    const below = [
+      ...chain.slice(1).reverse().map((s) => s.id),
+      ...(await libraryLayerIds(chain, this.locator, this.preferDrafts)),
+    ];
+    for (const id of below) {
       const levelData = await tryFetchJson(
         this.locator.moduleFile(id, def.fileName),
         editorFetchInit(this.preferDrafts),
@@ -506,7 +551,8 @@ export class StaticModuleSource implements ModuleSource {
     return withExplorationDefaults(out);
   }
 
-  /** Catalog of records available for import from the libraries this
+  /** RETIRED (libraries are live layers — see LIBRARIES_ARE_LIVE):
+   *  returns nothing. Formerly: catalog of records available for import from the libraries this
    *  module `uses`. Each entry is one library + the records it
    *  declares in its own file. Singletons (collectionKey === null)
    *  return an empty catalog — they can't be opted-in piecewise.
@@ -516,6 +562,10 @@ export class StaticModuleSource implements ModuleSource {
     moduleId: string,
     key: ModelKey,
   ): Promise<LibraryCatalogEntry[]> {
+    // Libraries are live layers now — every library record is already
+    // in the module's resolved (inherited) view, so there is nothing
+    // left to import. Kept for API compatibility with callers.
+    if (LIBRARIES_ARE_LIVE) return [];
     const def = MODELS[key];
     if (def.collectionKey === null) return [];
     const chain = await walkExtendsChain(moduleId, this.locator, this.preferDrafts);

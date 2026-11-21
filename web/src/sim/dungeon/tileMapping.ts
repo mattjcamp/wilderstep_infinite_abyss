@@ -5,8 +5,9 @@
  * numeric tile ids (TILE_DFLOOR = 20, TILE_DWALL = 21, …). v2 paints
  * with string-keyed cells that carry their own sprite + walkability.
  * This module is the bridge: it returns a v2-shaped cell prototype
- * for any tile id the generator can emit, in either dungeon style
- * (`"dungeon"` → Dungeon Tileset, `"cavern"` → Cave Tileset).
+ * for any tile id the generator can emit, in each dungeon style
+ * (`"dungeon"` → Dungeon Tileset, `"cavern"` → Cave Tileset,
+ * `"deep_ones_hall"` → Deep Ones Hall tileset).
  *
  * Each prototype carries the minimum fields the editor's `TileType`
  * and the simulator's `SimCell` both consume. Callers (the
@@ -187,10 +188,16 @@ const ARTIFACT_PROTO = proto({
 /** Pit / chasm base. Blocks movement but not sight (you can look
  *  across a chasm). The converter's pit pass swaps in the right rim
  *  piece per cell; `paletteId` here is the solid-centre fallback. */
-function pitProto(prefix: "dungeon" | "cave"): DungeonTilePrototype {
+/** Palette-id prefix of each style's tileset. */
+export type TilesetPrefix = "dungeon" | "cave" | "deep_ones_hall";
+export function tilesetPrefix(style: DungeonStyle): TilesetPrefix {
+  return style === "cavern" ? "cave" : style === "deep_ones_hall" ? "deep_ones_hall" : "dungeon";
+}
+
+function pitProto(prefix: TilesetPrefix): DungeonTilePrototype {
   return proto({
     id: `${prefix}_pit`,
-    name: prefix === "cave" ? "Cave Chasm" : "Dungeon Pit",
+    name: prefix === "cave" ? "Cave Chasm" : prefix === "deep_ones_hall" ? "Deep Ones Hall Abyss" : "Dungeon Pit",
     walkable: false,
     obstructs: false,
     pit: true,
@@ -199,6 +206,7 @@ function pitProto(prefix: "dungeon" | "cave"): DungeonTilePrototype {
 }
 const DT_PIT_PROTO = pitProto("dungeon");
 const CV_PIT_PROTO = pitProto("cave");
+const DH_PIT_PROTO = pitProto("deep_ones_hall");
 
 /** Room objects. Pillars and stalagmites are tall — they block sight
  *  like a column; rubble and the throne are low. */
@@ -210,6 +218,10 @@ const DT_RUBBLE_PROTO = objectProto("dungeon_rubble", "Dungeon Rubble", false);
 const DT_THRONE_PROTO = objectProto("dungeon_throne", "Dungeon Throne", false);
 const CV_STALAGMITE_PROTO = objectProto("cave_stalagmite", "Cave Stalagmite", true);
 const CV_RUBBLE_PROTO = objectProto("cave_rubble", "Cave Rubble", false);
+const CV_THRONE_PROTO = objectProto("cave_throne", "Cave Throne", false);
+const DH_PILLAR_PROTO = objectProto("deep_ones_hall_pillar", "Deep Ones Hall Pillar", true);
+const DH_RUBBLE_PROTO = objectProto("deep_ones_hall_rubble", "Deep Ones Hall Rubble", false);
+const DH_THRONE_PROTO = objectProto("deep_ones_hall_throne", "Deep Ones Hall Throne", false);
 
 const WALL_TORCH_PROTO = proto({
   id: "wall_torch",
@@ -329,8 +341,72 @@ function cavernTilesetProto(tileId: number): DungeonTilePrototype | null {
     case TILE_RUBBLE:
       return CV_RUBBLE_PROTO;
     case TILE_THRONE:
-      // The Cave Tileset has no throne; the dungeon one stands in.
-      return DT_THRONE_PROTO;
+      return CV_THRONE_PROTO;
+  }
+  return null;
+}
+
+/** ── Deep Ones Hall style ("deep_ones_hall") ───────────────────
+ *  Built halls like the Dungeon Tileset style, in the Hall's grey
+ *  stone with teal glyphs: plain stone floor (the converter gives
+ *  rooms sigil / stone variants), the Hall's door, stairs and pits.
+ *  Walls autotile from the generic "deep_ones_hall_wall"; the plain
+ *  brick face is the palette's `deep_ones_hall_wall` (the carved
+ *  glyph panels are wall decorations — see the converter). */
+export const DEEP_ONES_HALL_FLOOR_ID = "deep_ones_hall_floor_plain";
+export const DEEP_ONES_HALL_FACE_ID = "deep_ones_hall_wall";
+
+const DH_FLOOR_PROTO = proto({
+  id: DEEP_ONES_HALL_FLOOR_ID,
+  name: "Deep Ones Hall Floor, Plain",
+  paletteId: DEEP_ONES_HALL_FLOOR_ID,
+});
+const DH_WALL_PROTO = proto({
+  id: "deep_ones_hall_wall_generic",
+  name: "Deep Ones Hall Wall",
+  walkable: false,
+  obstructs: true,
+  paletteId: DEEP_ONES_HALL_FACE_ID,
+});
+const DH_STAIRS_UP_PROTO = proto({ id: "stairs_up", name: "Deep Ones Hall Stairs, Up", paletteId: "deep_ones_hall_stairs_up" });
+const DH_STAIRS_DOWN_PROTO = proto({ id: "stairs_down", name: "Deep Ones Hall Stairs, Down", paletteId: "deep_ones_hall_stairs" });
+const DH_DOOR_PROTO = proto({ id: "deep_ones_hall_door", name: "Deep Ones Hall Door", paletteId: "deep_ones_hall_door" });
+const DH_LOCKED_DOOR_PROTO = proto({
+  id: "door_locked",
+  name: "Locked Door",
+  walkable: false,
+  obstructs: false,
+  locked: true,
+  paletteId: "deep_ones_hall_door",
+});
+const DH_WALL_TORCH_PROTO = proto({ ...WALL_TORCH_PROTO, paletteId: DEEP_ONES_HALL_FACE_ID });
+
+function deepOnesHallProto(tileId: number): DungeonTilePrototype | null {
+  switch (tileId) {
+    case TILE_DFLOOR:
+      return DH_FLOOR_PROTO;
+    case TILE_DWALL:
+      return DH_WALL_PROTO;
+    case TILE_STAIRS:
+      return DH_STAIRS_UP_PROTO;
+    case TILE_STAIRS_DOWN:
+      return DH_STAIRS_DOWN_PROTO;
+    case TILE_DDOOR:
+      return DH_DOOR_PROTO;
+    case TILE_LOCKED_DOOR:
+      return DH_LOCKED_DOOR_PROTO;
+    case TILE_WALL_TORCH:
+      return DH_WALL_TORCH_PROTO;
+    case TILE_TRAP:
+      return { ...TRAP_PROTO, paletteId: DEEP_ONES_HALL_FLOOR_ID };
+    case TILE_PIT:
+      return DH_PIT_PROTO;
+    case TILE_PILLAR:
+      return DH_PILLAR_PROTO;
+    case TILE_RUBBLE:
+      return DH_RUBBLE_PROTO;
+    case TILE_THRONE:
+      return DH_THRONE_PROTO;
   }
   return null;
 }
@@ -376,7 +452,11 @@ export function prototypeForTileId(
   // Each tileset has its own floor / walls / stairs / doors; chests +
   // artifacts fall through to the shared furniture.
   const p =
-    style === "cavern" ? cavernTilesetProto(tileId) : dungeonTilesetProto(tileId);
+    style === "cavern"
+      ? cavernTilesetProto(tileId)
+      : style === "deep_ones_hall"
+        ? deepOnesHallProto(tileId)
+        : dungeonTilesetProto(tileId);
   if (p) return p;
   switch (tileId) {
     case TILE_CHEST:
@@ -458,9 +538,36 @@ export const DUNGEON_PALETTE_IDS: readonly string[] = [
   "dungeon_pillar",
   "dungeon_rubble",
   "dungeon_throne",
+  "cave_throne",
+  // Deep Ones Hall style.
+  DEEP_ONES_HALL_FLOOR_ID,
+  "deep_ones_hall_floor",
+  "deep_ones_hall_floor_alt",
+  "deep_ones_hall_floor_cobble",
+  "deep_ones_hall_floor_pebbles",
+  "deep_ones_hall_floor_brick",
+  "deep_ones_hall_floor_grate",
+  "deep_ones_hall_stairs_up",
+  "deep_ones_hall_stairs",
+  "deep_ones_hall_ladder_up",
+  "deep_ones_hall_door",
+  DEEP_ONES_HALL_FACE_ID,
+  "deep_ones_hall_wall_left",
+  "deep_ones_hall_wall_right",
+  "deep_ones_hall_wall_corner_tl",
+  "deep_ones_hall_wall_corner_tr",
+  "deep_ones_hall_wall_top",
+  "deep_ones_hall_wall_bottom",
+  "deep_ones_hall_window_single",
+  "deep_ones_hall_pillar",
+  "deep_ones_hall_rubble",
+  "deep_ones_hall_throne",
+  "cave_ladder_up",
+  "dungeon_ladder_up",
   // Pit rims — every piece the pit pass can pick, both tilesets.
   ...PIT_PIECES.map((p) => `dungeon_${p}`),
   ...PIT_PIECES.map((p) => `cave_${p}`),
+  ...PIT_PIECES.map((p) => `deep_ones_hall_${p}`),
 ];
 
 /** Palette id → sprite lookup for a prototype's `paletteId`. Returns

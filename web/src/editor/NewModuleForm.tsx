@@ -268,7 +268,7 @@ export function NewModuleForm({
               />
               Library
               <span className="text-[13px] text-parchment/65">
-                — content available for import in other modules
+                — content other modules use (live, kept in sync)
               </span>
             </label>
             <label className="flex items-center gap-2 text-sm text-parchment/85">

@@ -65,19 +65,33 @@ describe("room objects", () => {
     expect(placed).toBeGreaterThan(50);
   });
 
-  it("boss dungeon floors get a throne against the back wall; caverns don't", () => {
-    let thrones = 0;
-    for (let seed = 1; seed <= 30; seed++) {
-      const l = gen("dungeon", seed, { difficulty: "boss" });
-      l.tiles.forEach((row, r) => row.forEach((t, c) => {
-        if (t !== TILE_THRONE) return;
-        thrones++;
-        expect(l.tiles[r - 1][c]).toBe(TILE_DWALL);
-      }));
-      expect(gen("cavern", seed, { difficulty: "boss" }).tiles.flat()).not.toContain(TILE_THRONE);
-      expect(gen("dungeon", seed).tiles.flat()).not.toContain(TILE_THRONE);
+  it("boss floors of both styles get a throne against the back wall; normal floors don't", () => {
+    for (const style of ["dungeon", "cavern"] as const) {
+      let thrones = 0;
+      for (let seed = 1; seed <= 30; seed++) {
+        const l = gen(style, seed, { difficulty: "boss" });
+        l.tiles.forEach((row, r) => row.forEach((t, c) => {
+          if (t !== TILE_THRONE) return;
+          thrones++;
+          expect(l.tiles[r - 1][c]).toBe(TILE_DWALL);
+        }));
+        expect(gen(style, seed).tiles.flat()).not.toContain(TILE_THRONE);
+      }
+      expect(thrones, style).toBeGreaterThan(10);
     }
-    expect(thrones).toBeGreaterThan(10);
+  });
+
+  it("each style paints its own throne", () => {
+    const find = (style: "dungeon" | "cavern") => {
+      for (let seed = 1; seed <= 30; seed++) {
+        const m = dungeonLevelToMap(gen(style, seed, { difficulty: "boss" }), { dungeonId: "d", floorIdx: 0, totalFloors: 1, paletteSprites: palette });
+        const t = m.grid.flat().find((x) => x.id.endsWith("_throne"));
+        if (t) return t.id;
+      }
+      return null;
+    };
+    expect(find("dungeon")).toBe("dungeon_throne");
+    expect(find("cavern")).toBe("cave_throne");
   });
 
   it("converter paints objects per style over the floor beneath", () => {

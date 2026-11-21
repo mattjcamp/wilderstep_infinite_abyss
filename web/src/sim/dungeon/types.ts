@@ -244,6 +244,10 @@ export const STYLE_DEFAULTS: Record<
 > = {
   dungeon: { objects: 0, floor_variety: 0, wall_decor: 0 },
   cavern: { objects: 0.5, floor_variety: 0.6, wall_decor: 0 },
+  // A new style, so it gets a fully dressed look out of the box:
+  // carved glyph panels and glowing windows on the walls, sigil and
+  // stone floors in the rooms, a few pillars.
+  deep_ones_hall: { objects: 0.25, floor_variety: 0.6, wall_decor: 0.5 },
 };
 
 /** Smallest / largest floor the generator will build. Below the

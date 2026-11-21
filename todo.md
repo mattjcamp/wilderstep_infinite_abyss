@@ -1,5 +1,8 @@
 # TODO
-- Go through and make the FX more dramatic
+- Work on random dungeon refinements.
+
+# Varnfell
+- keep iterating on the world itself
 
 # Notes
 

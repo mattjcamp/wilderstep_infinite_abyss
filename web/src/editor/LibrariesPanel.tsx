@@ -3,11 +3,13 @@
 /**
  * Libraries panel on the module landing page.
  *
- * Manages the `uses` array on this module's manifest. Add a library
- * from the picker → it shows up in the per-model catalog across every
- * model view. Remove a library → it stops showing in catalogs (but
- * any records you already imported remain in your overlay — they're
- * yours now).
+ * Manages the `uses` array on this module's manifest. Libraries are
+ * live layers: add one and ALL of its content appears in this module
+ * (as inherited records, like the parent's), and later edits to the
+ * library show up here too. Edit a library record in this module to
+ * override it (copy-on-write, like any inherited record). Remove a
+ * library → its content drops out, except records this module already
+ * overrides (those live in this module's own files).
  *
  * Edits accumulate as a localStorage manifest draft. Export downloads
  * the new module.json so the author can drop it into the repo and
@@ -200,10 +202,12 @@ export function LibrariesPanel({ moduleId }: { moduleId: string }) {
             Libraries
           </h2>
           <p className="mt-1 text-sm text-parchment/75">
-            Make library content available for import in this module&apos;s
-            per-model catalogs. Adding a library doesn&apos;t pull anything
-            in automatically — open a model view and click Import on the
-            records you want.
+            Everything in a library you add here is part of this module
+            right away — maps, NPCs, dungeons and the rest — and stays in
+            step with the library: edits made to the library show up here
+            too. To change a library record just for this module, edit it
+            in this module (that saves your own copy, like overriding an
+            inherited record).
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -247,8 +251,7 @@ export function LibrariesPanel({ moduleId }: { moduleId: string }) {
         {ownUses.length === 0 ? (
           <p className="text-sm text-parchment/75">
             No libraries in <code className="text-parchment/75">uses</code>{" "}
-            yet. Pick one below to make its content browsable in the
-            per-model catalogs.
+            yet. Pick one below to bring in all of its content.
           </p>
         ) : (
           <ul className="space-y-1">
@@ -274,7 +277,7 @@ export function LibrariesPanel({ moduleId }: { moduleId: string }) {
                     type="button"
                     onClick={() => onRemove(libId)}
                     className="rounded border border-parchment/20 px-2 py-0.5 text-[13px] text-parchment/85 hover:bg-ink/40"
-                    title="Remove from uses. Records you already imported into this module stay — they're yours."
+                    title="Remove from uses. The library's content drops out of this module; records you've edited in this module stay — they're yours."
                   >
                     Remove
                   </button>

@@ -19,6 +19,8 @@
  *   - `"dungeon"` — Dungeon Tileset, walls autotiled by neighbour.
  *   - `"cavern"`  — same, but roughened into natural rock
  *                   (`roughenCavern`) and painted with the Cave Tileset.
+ *   - `"deep_ones_hall"` — built halls like `"dungeon"`, painted with
+ *                   the Deep Ones Hall tileset (grey stone, teal glyphs).
  *
  * **Persistence.** Generation is deterministic on a `seed` integer.
  * Callers seed with `(name, overworldCol, overworldRow) + level` so a
@@ -79,17 +81,19 @@ const WALL_TILES: ReadonlySet<number> = new Set([TILE_DWALL]);
  *     sim/dungeon/dungeonAutotile.ts).
  *   - `"cavern"` — rooms-and-corridors roughened into a cave (see
  *     `roughenCavern`) and painted with the Cave Tileset (autotiled
- *     like "dungeon"). */
-export type DungeonStyle = "dungeon" | "cavern";
+ *     like "dungeon").
+ *   - `"deep_ones_hall"` — rooms-and-corridors like "dungeon" (built,
+ *     not roughened), painted with the Deep Ones Hall tileset. */
+export type DungeonStyle = "dungeon" | "cavern" | "deep_ones_hall";
 
 /** Every supported style, in editor display order. */
-export const DUNGEON_STYLES: readonly DungeonStyle[] = ["dungeon", "cavern"];
+export const DUNGEON_STYLES: readonly DungeonStyle[] = ["dungeon", "cavern", "deep_ones_hall"];
 
 /** Narrow an on-disk style value to a supported style. Anything else —
  *  including the retired legacy styles ("caves", "ruins", "forest",
  *  "custom") — falls back to `"dungeon"`. */
 export function normalizeDungeonStyle(v: unknown): DungeonStyle {
-  return v === "cavern" ? "cavern" : "dungeon";
+  return v === "cavern" || v === "deep_ones_hall" ? v : "dungeon";
 }
 
 export type Difficulty = "easy" | "normal" | "hard" | "deadly" | "boss";
@@ -1502,7 +1506,8 @@ export function generateDungeonLevel(opts: GenerateLevelOptions): DungeonLevel {
   placePits(grid, rooms, opts.pitProbability ?? 0, occupied, rng);
 
   // ── Room objects, then a boss floor's throne ──
-  if (difficulty === "boss" && style === "dungeon" && rooms.length >= 2) {
+  // Both tilesets carry a throne (Dungeon: stone, Cave: rock-hewn).
+  if (difficulty === "boss" && rooms.length >= 2) {
     placeThrone(grid, rooms[rooms.length - 1], occupied);
   }
   placeObjects(grid, opts.objectProbability ?? 0, occupied, rng);
