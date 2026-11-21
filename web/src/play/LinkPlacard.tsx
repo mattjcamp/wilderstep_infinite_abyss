@@ -34,6 +34,7 @@ export function LinkPlacard({
   explored,
   questTargets,
   cleared = false,
+  leavesArea = false,
   onConfirm,
   onCancel,
 }: {
@@ -55,6 +56,9 @@ export function LinkPlacard({
    *  foe on every floor defeated). Adds a green ✓ Cleared chip and a
    *  context line, like the quest treatment does for quests. */
   cleared?: boolean;
+  /** Generated-dungeon way out (`bottom_exit`): asks to leave the area
+   *  ("Leave") instead of just climbing. */
+  leavesArea?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 }) {
@@ -95,7 +99,9 @@ export function LinkPlacard({
   const isStairs = placeKind === "stairs-up" || placeKind === "stairs-down";
 
   const confirmLabel =
-    placeKind === "stairs-up"
+    leavesArea
+      ? "Leave"
+      : placeKind === "stairs-up"
       ? "Climb Up"
       : placeKind === "stairs-down"
         ? "Climb Down"
@@ -103,7 +109,9 @@ export function LinkPlacard({
           ? "Descend"
           : "Travel";
   const prompt =
-    placeKind === "stairs-up"
+    leavesArea
+      ? "Climb out and leave the area?"
+      : placeKind === "stairs-up"
       ? "Climb up the stairs?"
       : placeKind === "stairs-down"
         ? "Climb down the stairs?"

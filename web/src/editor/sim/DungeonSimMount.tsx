@@ -618,6 +618,8 @@ export function DungeonSimMount({
                   dungeonName: dungeonId,
                   totalFloors: levels.length,
                   floorName: (i) => levels[i]?.name,
+                  fromFloorIdx: floorIdx,
+                  exitAppearance: levels[floorIdx]?.exitAppearance,
                 }),
                 link: ev.link,
               });
@@ -753,6 +755,7 @@ export function DungeonSimMount({
           name={stairsPlacard.name}
           description={stairsPlacard.description}
           explored
+          leavesArea={stairsPlacard.leavesArea}
           onConfirm={() => {
             const link = stairsPlacard.link;
             setStairsPlacard(null);

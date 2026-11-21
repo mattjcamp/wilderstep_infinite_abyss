@@ -1,40 +1,7 @@
 {
   "start_position": {
-    "map_id": "test_1",
-    "col": 4,
-    "row": 4
-  },
-  "avatar": "person/person_female_ranger.png",
-  "gold": 50,
-  "roster": [
-    "fighter",
-    "ranger",
-    "wizard",
-    "cleric"
-  ],
-  "party_effects": [],
-  "inventory": [
-    {
-      "item": "torch",
-      "charges": 2
-    },
-    {
-      "item": "rock",
-      "charges": 10
-    },
-    {
-      "item": "lockpick",
-      "charges": 2
-    },
-    {
-      "item": "camping_supplies",
-      "charges": 2
-    },
-    {
-      "item": "arrows",
-      "charges": 50
-    }
-  ],
-  "torch_steps": 0,
-  "party": []
+    "map_id": "varnfell",
+    "col": 5,
+    "row": 75
+  }
 }

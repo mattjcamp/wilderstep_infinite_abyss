@@ -1098,6 +1098,8 @@ export function PlayHost() {
     name: string;
     description?: string;
     explored: boolean;
+    /** A generated dungeon's way out — the placard asks to leave. */
+    leavesArea?: boolean;
     /** Active quests with an incomplete step at the destination —
      *  drives the placard's gold quest treatment. */
     questTargets?: QuestPlacardTarget[];
@@ -5216,6 +5218,8 @@ export function PlayHost() {
                   dungeonName: rec?.name ?? dNow.dungeonId,
                   totalFloors: dNow.levels.length,
                   floorName: (i) => dNow.levels[i]?.name,
+                  fromFloorIdx: dNow.floorIdx,
+                  exitAppearance: dNow.levels[dNow.floorIdx]?.exitAppearance,
                 });
                 const link = ev.link;
                 pendingPlaceActionRef.current = () => handleLinked(link);
@@ -5224,6 +5228,7 @@ export function PlayHost() {
                   name: text.name,
                   description: text.description,
                   explored: true,
+                  leavesArea: text.leavesArea,
                 });
               } else if (ev.placeKind === "link") {
                 const dest = catalog.allMaps.find(
@@ -8220,6 +8225,7 @@ export function PlayHost() {
           explored={placard.explored}
           questTargets={placard.questTargets}
           cleared={placard.cleared}
+          leavesArea={placard.leavesArea}
           onConfirm={() => {
             const act = pendingPlaceActionRef.current;
             pendingPlaceActionRef.current = null;

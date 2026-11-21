@@ -12,14 +12,14 @@
       "role": "playable"
     },
     {
-      "id": "test",
-      "title": "Test",
-      "role": "playable"
-    },
-    {
       "id": "varnfell",
       "title": "Varnfell",
       "role": "library"
+    },
+    {
+      "id": "test",
+      "title": "test",
+      "role": "playable"
     }
   ]
 }

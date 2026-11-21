@@ -1,52 +1,16 @@
 {
   "npcs": [
     {
-      "id": "magic_cat",
-      "name": "Magic Cat",
-      "sprite": "person/animal_cat.png",
-      "counter": null,
-      "personal_history": null,
-      "dialogs": [],
-      "behavior": "wander",
-      "exploration_xp": 0
-    },
-    {
-      "id": "bird",
-      "name": "Birdie",
-      "sprite": "person/animal_bird.png",
-      "counter": null,
-      "personal_history": "The birds are a lie",
-      "dialogs": [
-        {
-          "id": "dialog_1",
-          "title": "Chirp",
-          "text": "Chirp"
-        }
-      ],
-      "behavior": "wander",
-      "exploration_xp": 25
-    },
-    {
-      "id": "cat_orange",
-      "name": "Somie",
-      "sprite": "person/animal_cat.png",
-      "counter": null,
-      "personal_history": "Meow",
-      "dialogs": [],
-      "behavior": "wander",
-      "exploration_xp": 25
-    },
-    {
-      "id": "villager_halfling",
+      "id": "male_villager",
       "name": "Villager",
-      "sprite": "person/halfling_female.png",
+      "sprite": "person/person_male_villager_normal.png",
       "counter": null,
-      "personal_history": "A halfling villager who resettled here from the countryside",
+      "personal_history": "A commoner has no history",
       "dialogs": [
         {
           "id": "dialog_1",
-          "title": "Hello!",
-          "text": "Hi there, any news of my kin in the countryside?"
+          "title": "Hello",
+          "text": "Hail proud adventurer"
         }
       ],
       "behavior": "wander",
@@ -69,16 +33,42 @@
       "exploration_xp": 25
     },
     {
-      "id": "male_villager",
+      "id": "villager_halfling",
       "name": "Villager",
-      "sprite": "person/person_male_villager_normal.png",
+      "sprite": "person/halfling_female.png",
       "counter": null,
-      "personal_history": "A commoner has no history",
+      "personal_history": "A halfling villager who resettled here from the countryside",
       "dialogs": [
         {
           "id": "dialog_1",
-          "title": "Hello",
-          "text": "Hail proud adventurer"
+          "title": "Hello!",
+          "text": "Hi there, any news of my kin in the countryside?"
+        }
+      ],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "cat_orange",
+      "name": "Somie",
+      "sprite": "person/animal_cat.png",
+      "counter": null,
+      "personal_history": "Meow",
+      "dialogs": [],
+      "behavior": "wander",
+      "exploration_xp": 25
+    },
+    {
+      "id": "bird",
+      "name": "Birdie",
+      "sprite": "person/animal_bird.png",
+      "counter": null,
+      "personal_history": "The birds are a lie",
+      "dialogs": [
+        {
+          "id": "dialog_1",
+          "title": "Chirp",
+          "text": "Chirp"
         }
       ],
       "behavior": "wander",

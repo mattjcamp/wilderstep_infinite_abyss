@@ -43,6 +43,7 @@ import { TILE_DFLOOR } from "@/battle/world/Tiles";
 import {
   clampDungeonSize,
   DUNGEON_DEFAULTS,
+  resolveBottomExit,
   STYLE_DEFAULTS,
   type DungeonLevelRecord,
   type DungeonRecord,
@@ -127,6 +128,9 @@ export function generateDungeonFromRecord(
       edgeTransitions: resolved.edgeTransitions,
       // Pit frequency — 0 (the default) places none.
       pitProbability: resolved.pitFrequency,
+      // Bottom-floor way out (stairs / ladder straight out of the
+      // dungeon). Only ever set on the last floor.
+      overworldExit: resolved.bottomExit || undefined,
       // Room clutter + the converter's cosmetic dials.
       objectProbability: resolved.objectFrequency,
       floorVariety: resolved.floorVariety,
@@ -263,6 +267,9 @@ export function resolveLevelOptions(
   level: DungeonLevelRecord,
   floorIdx: number,
 ): ResolvedLevelOptions {
+  // The way out only goes on the bottom floor.
+  const isBottom = floorIdx === (parent.levels?.length ?? 0) - 1;
+  const bottomExit = isBottom ? resolveBottomExit(parent.bottom_exit) : "";
   // Unknown / retired legacy styles ("caves", "ruins", "forest",
   // "custom") on older records fall back to "dungeon".
   const style = normalizeDungeonStyle(
@@ -333,6 +340,7 @@ export function resolveLevelOptions(
     edgeTransitions,
     pitFrequency,
     pitFalls,
+    bottomExit,
     objectFrequency,
     floorVariety,
     wallDecor,

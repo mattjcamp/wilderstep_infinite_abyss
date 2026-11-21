@@ -1,6 +1,51 @@
 {
   "dungeons": [
     {
+      "id": "hidden_grotto",
+      "name": "Hidden Grotto",
+      "description": "An old forgotten grotto hidden deep in the mountain",
+      "tags": [],
+      "style": "cavern",
+      "difficulty": "normal",
+      "size": {
+        "width": 32,
+        "height": 32
+      },
+      "torch_density": 0.15,
+      "locked_doors": 0.1,
+      "levels": [
+        {
+          "id": "hidden_grotto_l1",
+          "name": "Level 1",
+          "depth": 1
+        },
+        {
+          "id": "hidden_grotto_l2",
+          "name": "Level 2",
+          "depth": 2
+        },
+        {
+          "id": "hidden_grotto_l3",
+          "name": "Level 3",
+          "depth": 3
+        },
+        {
+          "id": "hidden_grotto_l4",
+          "name": "Level 4",
+          "depth": 4
+        }
+      ],
+      "loot": {
+        "chest_item": "treasure_chest",
+        "chest_frequency": 0.3
+      },
+      "wall_decor": 0.5,
+      "pits": 0.3,
+      "floor_variety": 0,
+      "doors": 0.1,
+      "pit_falls": true
+    },
+    {
       "id": "stone_halls",
       "name": "Stone Halls",
       "description": "Torch-lit halls of fitted stone, built by hands long gone.",
@@ -74,7 +119,61 @@
       "loot": {
         "chest_item": "treasure_chest"
       },
-      "floor_variety": 0
+      "floor_variety": 0,
+      "bottom_exit": "ladder"
+    },
+    {
+      "id": "dwarven_halls",
+      "name": "Dwarven Halls",
+      "description": "An ornate gate opens into a hidden underground dwarven city",
+      "tags": [],
+      "style": "dungeon",
+      "difficulty": "hard",
+      "size": {
+        "width": 32,
+        "height": 32
+      },
+      "torch_density": 0.15,
+      "locked_doors": 0.25,
+      "levels": [
+        {
+          "id": "dwarven_halls_l1",
+          "name": "Level 1",
+          "depth": 1,
+          "size": {
+            "width": 64,
+            "height": 64
+          }
+        },
+        {
+          "id": "dwarven_halls_l2",
+          "name": "Level 2",
+          "depth": 2
+        },
+        {
+          "id": "dwarven_halls_l3",
+          "name": "Level 3",
+          "depth": 3,
+          "size": {
+            "width": 16,
+            "height": 32
+          }
+        },
+        {
+          "id": "dwarven_halls_l4",
+          "name": "Level 4",
+          "depth": 4
+        }
+      ],
+      "objects": 0.2,
+      "wall_decor": 0.5,
+      "loot": {
+        "chest_item": "treasure_chest"
+      },
+      "soundtrack": [
+        "/audio/Lost in the Labyrinth.mp3"
+      ],
+      "bottom_exit": "ladder"
     }
   ]
 }

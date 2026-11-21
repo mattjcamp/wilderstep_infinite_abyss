@@ -10,6 +10,9 @@ export interface StairsPlacardText {
   placeKind: "stairs-up" | "stairs-down";
   name: string;
   description: string;
+  /** True for the bottom floor's way out: the placard asks to leave
+   *  the area rather than just climb. */
+  leavesArea?: boolean;
 }
 
 export function stairsPlacardText(args: {
@@ -21,6 +24,12 @@ export function stairsPlacardText(args: {
   totalFloors: number;
   /** Display name of a floor by 0-based index, when known. */
   floorName?: (floorIdx: number) => string | undefined;
+  /** 0-based floor the party is standing on. An exit link on a floor
+   *  below the first is the bottom floor's way out (`bottom_exit`),
+   *  worded so the player knows it leaves the whole area. */
+  fromFloorIdx?: number;
+  /** How that way out looks (`DungeonLevel.exitAppearance`). */
+  exitAppearance?: "stairs" | "ladder";
 }): StairsPlacardText {
   const { stairs, linkMapId, dungeonName, totalFloors } = args;
   const dir = stairs === "up" ? "up" : "down";
@@ -30,6 +39,18 @@ export function stairsPlacardText(args: {
   };
   const where = dungeonName.trim() || "the dungeon";
   if (linkMapId === EXIT_TO_OVERWORLD_MAP_ID) {
+    if ((args.fromFloorIdx ?? 0) > 0 && stairs === "up") {
+      // The bottom floor's way out — a shortcut past every floor above.
+      const ladder = args.exitAppearance === "ladder";
+      return {
+        ...base,
+        name: ladder ? "Way Out — Ladder" : "Way Out — Stairs",
+        leavesArea: true,
+        description: ladder
+          ? `This ladder climbs straight out of ${where}. Taking it leaves the area and returns you to the surface.`
+          : `These stairs climb straight out of ${where}. Taking them leaves the area and returns you to the surface.`,
+      };
+    }
     return { ...base, description: `These stairs lead ${dir} and out of ${where}.` };
   }
   const m = linkMapId.match(/_f(\d+)__$/);

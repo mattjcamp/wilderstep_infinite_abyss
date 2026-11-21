@@ -163,6 +163,9 @@ interface DungeonRecord {
   /** Entrance/exit placement: edge of map (true) vs interior rooms
    *  (false). Absent → interior rooms. All styles. */
   edge_transitions?: boolean;
+  /** A way straight out on the bottom floor: "stairs" / "ladder";
+   *  absent / "none" = leave by the entrance stairs. */
+  bottom_exit?: "none" | "stairs" | "ladder";
   loot?: DungeonLoot;
   levels: DungeonLevel[];
   /** Per-dungeon background-music playlist override. Each entry is
@@ -885,6 +888,32 @@ function DungeonEditor({
         // Dungeon side is required — no clear/inherit affordance.
         allowInherit={false}
       />
+
+      {/* Bottom-floor way out — dungeon-wide (only the bottom floor
+          gets it), so it lives here rather than in the per-level
+          generator fields. */}
+      <label className="mt-2 block">
+        <span className="text-xs uppercase tracking-wide text-parchment/65">
+          Exit on bottom floor
+        </span>
+        <select
+          value={dungeon.bottom_exit ?? "none"}
+          onChange={(e) => {
+            const v = e.target.value as "none" | "stairs" | "ladder";
+            onUpdate({ bottom_exit: v === "none" ? undefined : v });
+          }}
+          className="mt-0.5 block w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
+        >
+          <option value="none">None — leave by climbing back up</option>
+          <option value="stairs">Stairs out</option>
+          <option value="ladder">Ladder out</option>
+        </select>
+        <span className="mt-1 block text-xs text-parchment/65">
+          Adds a way straight out of the dungeon in the bottom floor&apos;s
+          last room (or on a map edge with edge transitions). Stepping on it
+          tells the player it leaves the area and asks before leaving.
+        </span>
+      </label>
 
       {/* Levels list */}
       <h3 className="mt-4 text-[13px] uppercase tracking-wide text-parchment/75">

@@ -149681,7 +149681,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/settlements/cave_entrance.png",
-            "tag": "map:settlements"
+            "tag": "map:settlements",
+            "dungeon": "dwarven_halls"
           },
           {
             "boat": false,
@@ -166304,7 +166305,8 @@
             "encounter": null,
             "spawn": null,
             "sprite": "map/settlements/cave_entrance.png",
-            "tag": "map:settlements"
+            "tag": "map:settlements",
+            "dungeon": "dwarven_halls"
           },
           {
             "boat": false,
@@ -535309,7 +535311,12 @@
             "spawn": null,
             "sprite": "town/fences/wood/fence_wood_gate_h.png",
             "tag": "town:fences:wood",
-            "background_sprite": "map/grass.png"
+            "background_sprite": "map/grass.png",
+            "link": {
+              "map_id": "varnfell",
+              "x": 43,
+              "y": 54
+            }
           },
           {
             "boat": false,
@@ -535326,7 +535333,12 @@
             "spawn": null,
             "sprite": "town/fences/wood/fence_wood_gate_h.png",
             "tag": "town:fences:wood",
-            "background_sprite": "map/grass.png"
+            "background_sprite": "map/grass.png",
+            "link": {
+              "map_id": "varnfell",
+              "x": 43,
+              "y": 54
+            }
           },
           {
             "boat": false,

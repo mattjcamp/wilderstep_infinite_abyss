@@ -518,3 +518,61 @@ describe("torchProfileFromProbability", () => {
     expect(torchProfileFromProbability(1).minSpacing).toBeGreaterThanOrEqual(2);
   });
 });
+
+describe("bottom_exit — a way out on the bottom floor", () => {
+  const threeFloors = [
+    { id: "f0", name: "Area 1", depth: 1 },
+    { id: "f1", name: "Area 2", depth: 2 },
+    { id: "f2", name: "Area 3", depth: 3 },
+  ];
+
+  it("places no exit by default", () => {
+    const floors = generateDungeonFromRecord(makeRecord({ levels: threeFloors }), { seed: 7 });
+    for (const f of floors) expect(f.overworldExits.size).toBe(0);
+  });
+
+  it("only resolves the exit for the bottom floor", () => {
+    const record = makeRecord({ levels: threeFloors, bottom_exit: "ladder" });
+    expect(resolveLevelOptions(record, threeFloors[0], 0).bottomExit).toBe("");
+    expect(resolveLevelOptions(record, threeFloors[1], 1).bottomExit).toBe("");
+    expect(resolveLevelOptions(record, threeFloors[2], 2).bottomExit).toBe("ladder");
+    expect(
+      resolveLevelOptions(makeRecord({ levels: threeFloors, bottom_exit: "none" }), threeFloors[2], 2).bottomExit,
+    ).toBe("");
+  });
+
+  it("puts exactly one way out on the bottom floor, on an up-stair cell, never on a pit / monster / the entrance", () => {
+    const cases: Array<{ style: DungeonRecord["style"]; edge: boolean }> = [
+      { style: "dungeon", edge: false },
+      { style: "dungeon", edge: true },
+      { style: "cavern", edge: false },
+      { style: "cavern", edge: true },
+    ];
+    for (const c of cases) {
+      for (let seed = 1; seed <= 20; seed++) {
+        const record = makeRecord({
+          style: c.style,
+          edge_transitions: c.edge,
+          size: { width: 36, height: 28 },
+          pits: 0.6,
+          bottom_exit: "stairs",
+          levels: threeFloors,
+        });
+        const floors = generateDungeonFromRecord(record, { seed });
+        const label = `style=${c.style} edge=${c.edge} seed=${seed}`;
+        expect(floors[0].overworldExits.size, label).toBe(0);
+        expect(floors[1].overworldExits.size, label).toBe(0);
+        const bottom = floors[2];
+        expect(bottom.overworldExits.size, label).toBe(1);
+        expect(bottom.exitAppearance, label).toBe("stairs");
+        const [key] = [...bottom.overworldExits];
+        const [col, row] = key.split(",").map(Number);
+        expect(bottom.tiles[row][col], label).toBe(TILE_STAIRS);
+        expect(`${col},${row}`, label).not.toBe(`${bottom.entryCol},${bottom.entryRow}`);
+        expect(bottom.monsters.some((m) => m.col === col && m.row === row), label).toBe(false);
+        // Still no way further down on the bottom floor.
+        expect(countTile(bottom, TILE_STAIRS_DOWN), label).toBe(0);
+      }
+    }
+  });
+});

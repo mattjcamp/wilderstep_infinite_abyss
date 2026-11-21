@@ -129,6 +129,14 @@ export function dungeonLevelToMap(
       const base: DungeonMapCell = proto
         ? cloneProto(proto)
         : cloneProto(prototypeForTileId(TILE_DWALL, style) ?? FALLBACK_WALL);
+      // The bottom floor's way out (see DungeonLevel.overworldExits): an
+      // up-stair that leaves the dungeon. Optionally drawn as a ladder.
+      const isExit =
+        tileId === TILE_STAIRS && !!level.overworldExits?.has(`${c},${r}`);
+      if (isExit && level.exitAppearance === "ladder") {
+        base.paletteId = style === "cavern" ? "cave_ladder_up" : "dungeon_ladder_up";
+        base.name = style === "cavern" ? "Cave Ladder, Up" : "Dungeon Ladder, Up";
+      }
       // Art comes from the module's tile palette, never from a path
       // baked into the engine (see tileMapping.ts).
       base.sprite = resolveDungeonSprite(base.paletteId, opts.paletteSprites);
@@ -158,7 +166,7 @@ export function dungeonLevelToMap(
         // overlay exactly as before.
         if (level.chestItem) base.item = level.chestItem;
       }
-      patchStairsLink(base, tileId, dungeonId, floorIdx, totalFloors);
+      patchStairsLink(base, tileId, dungeonId, floorIdx, totalFloors, isExit);
       patchTileProperties(base, level, c, r);
       patchDecoration(base, level, c, r, style);
       row.push(base);
@@ -307,15 +315,18 @@ function patchStairsLink(
   dungeonId: string,
   floorIdx: number,
   totalFloors: number,
+  /** The cell is the floor's way out (DungeonLevel.overworldExits). */
+  isExit = false,
 ): void {
   // Stairs ask before moving the party (placard: up / down, where to).
   if (tileId === TILE_STAIRS || tileId === TILE_STAIRS_DOWN) {
     cell.stairs = tileId === TILE_STAIRS ? "up" : "down";
     cell.show_link_placard = true;
   }
-  // Up — exit to previous floor, or to overworld at floor 0.
+  // Up — exit to previous floor, or to overworld at floor 0 (and from
+  // a deeper floor's way out).
   if (tileId === TILE_STAIRS) {
-    if (floorIdx === 0) {
+    if (floorIdx === 0 || isExit) {
       cell.link = { map_id: EXIT_TO_OVERWORLD_MAP_ID, x: 0, y: 0 };
     } else {
       cell.link = {

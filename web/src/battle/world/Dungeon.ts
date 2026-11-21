@@ -227,6 +227,9 @@ export interface DungeonLevel {
    *  rather than ascending one level (set on the bottom floor of
    *  multi-level dungeons). */
   overworldExits: Set<string>;
+  /** How the `overworldExits` cells look: up-stairs (`"stairs"`) or a
+   *  ladder (`"ladder"`). Absent → stairs. */
+  exitAppearance?: "stairs" | "ladder";
   /** Quest collect-item placements keyed by "col,row". Populated by
    *  DungeonScene on entry when an active quest's collect step
    *  targets this dungeon — the scene paints a TILE_ARTIFACT at the
@@ -1045,6 +1048,11 @@ export interface GenerateLevelOptions {
   /** Place the entrance + exit stairs at the map EDGE (`true`, carving
    *  a trail inward) or in interior rooms (`false`). Absent → `false`. */
   edgeTransitions?: boolean;
+  /** Build a way straight out of the dungeon on this floor (meant for
+   *  the bottom floor, which has no stairs down): an up-stair cell
+   *  recorded in `overworldExits` that the converter links to the
+   *  overworld. `"stairs"` or `"ladder"` picks its look. Absent → none. */
+  overworldExit?: "stairs" | "ladder";
   /** Probability (0..1) per eligible wall that a torch is placed.
    *  Drives the three internal knobs (spacing, count multiplier,
    *  whether to consider corridor walls). Matches v2's
@@ -1448,26 +1456,48 @@ export function generateDungeonLevel(opts: GenerateLevelOptions): DungeonLevel {
   // ── Decorations (overlay layer) ──
   placeDecorations(grid, rooms, opts.torchProbability, floorTile, rng);
 
-  // ── Overworld exit ──
-  // We used to drop an extra stairs-UP tile mid-floor on the bottom
-  // level as a supposed "overworld exit." But a stairs-up on any
-  // floor below the top links UPWARD one level (see
-  // dungeonLevelToMap.patchStairsLink — TILE_STAIRS at floorIdx > 0
-  // → previous floor, only floor 0's links to the overworld). So on
-  // the bottom floor it was just a SECOND stairs-up to the same place
-  // as the entrance stairs — redundant and confusing, never an actual
-  // overworld shortcut. Removed: the party leaves a multi-level
-  // dungeon by ascending the entrance stairs floor by floor, exactly
-  // as the single remaining stairs-up on each floor already does.
-  // `overworldExits` stays in the level shape (it round-trips through
-  // the save serialiser) but is always empty now.
+  // ── Overworld exit (bottom floor) ──
+  // An optional way straight out of the dungeon, so the party doesn't
+  // have to climb back through every floor. It's an up-stair cell
+  // (TILE_STAIRS) recorded in `overworldExits`; the converter links
+  // those cells to the overworld instead of to the floor above, and
+  // the stairs placard says they lead out. (An older version dropped a
+  // plain stairs-up here that the converter linked one floor UP: a
+  // pointless second entrance. Recording the cell is what makes it an
+  // exit.) Placement: a free map edge when `edgeTransitions` is on,
+  // else the centre of the room farthest along the carve order (the
+  // bottom floor's equivalent of the stairs-down room), skipping any
+  // centre a chest or monster already took.
   const overworldExits = new Set<string>();
+  if (opts.overworldExit && !opts.placeStairsDown) {
+    let exit: { col: number; row: number } | null = null;
+    if (edgeTransitions) {
+      const edges: Array<"north" | "south" | "east" | "west"> = ["north", "east", "south", "west"];
+      const remaining = edges.filter((e) => e !== entranceEdge);
+      shuffleInPlace(rng, remaining);
+      for (const e of remaining) {
+        exit = placeEdgeStairs(grid, e, TILE_STAIRS, floorTile, wallTile, rng, height - 1);
+        if (exit) break;
+      }
+    }
+    if (!exit) {
+      const monsterAt = new Set(monsters.map((m) => `${m.col},${m.row}`));
+      for (let i = rooms.length - 1; i >= 1 && !exit; i--) {
+        const [cc, cr] = rooms[i].center;
+        if (cc === stairsCol && cr === stairsRow) continue;
+        if (grid.tiles[cr]?.[cc] !== floorTile || monsterAt.has(`${cc},${cr}`)) continue;
+        setTile(grid, cc, cr, TILE_STAIRS);
+        exit = { col: cc, row: cr };
+      }
+    }
+    if (exit) overworldExits.add(`${exit.col},${exit.row}`);
+  }
 
   // ── Cavern post-process: rough, irregular rock walls ──
   if (style === "cavern") roughenCavern(grid, rng);
 
   // ── Pits — last, so they can only take plain, unoccupied floor ──
-  const occupied = new Set<string>([`${stairsCol},${stairsRow}`]);
+  const occupied = new Set<string>([`${stairsCol},${stairsRow}`, ...overworldExits]);
   for (const m of monsters) occupied.add(`${m.col},${m.row}`);
   placePits(grid, rooms, opts.pitProbability ?? 0, occupied, rng);
 
@@ -1493,6 +1523,7 @@ export function generateDungeonLevel(opts: GenerateLevelOptions): DungeonLevel {
     detectedTraps: new Set<string>(),
     exploredTiles: new Set<string>(),
     overworldExits,
+    ...(overworldExits.size > 0 && opts.overworldExit ? { exitAppearance: opts.overworldExit } : {}),
     questArtifacts: {},
     chestItem: chestItemId,
     rooms: rooms.map((rm) => ({ x: rm.x, y: rm.y, w: rm.w, h: rm.h })),

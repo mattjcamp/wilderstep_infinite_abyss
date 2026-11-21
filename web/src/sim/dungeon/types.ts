@@ -22,6 +22,18 @@ export type DungeonStyle = V1DungeonStyle;
 /** Difficulty tier — shared with Monster's difficulty enum. */
 export type DungeonDifficulty = V1Difficulty;
 
+/** How the bottom floor's way out looks — see DungeonRecord.bottom_exit. */
+export type BottomExitStyle = "none" | "stairs" | "ladder";
+
+/** Coerce an authored `bottom_exit` to the exit to build on the bottom
+ *  floor: `"stairs"` / `"ladder"`, or `""` for none. `true` (a hand-edit)
+ *  reads as stairs. */
+export function resolveBottomExit(v: unknown): "" | "stairs" | "ladder" {
+  if (v === "stairs" || v === true) return "stairs";
+  if (v === "ladder") return "ladder";
+  return "";
+}
+
 /** Authored dimensions — freeform width/height per the v2 schema.
  *  No "band" quantisation; the generator runs against whatever the
  *  author painted. */
@@ -153,6 +165,13 @@ export interface DungeonRecord {
    *  interior rooms (`false`). Applies to every style; Levels override
    *  per-floor. Absent → interior rooms. */
   edge_transitions?: boolean;
+  /** A way out on the bottom floor: an extra up-stair (`"stairs"`) or
+   *  ladder (`"ladder"`) that leads straight back out of the dungeon,
+   *  so the party doesn't have to climb back through every floor.
+   *  Absent / `"none"` = no exit (leave by the entrance stairs). Placed
+   *  in the last room, or on a map edge when `edge_transitions` is on.
+   *  Dungeon-wide only (it only ever applies to the bottom floor). */
+  bottom_exit?: BottomExitStyle;
   /** Default loot for every floor (Levels override per-floor). Absent
    *  → no procedural chests anywhere in the dungeon unless a Level
    *  sets its own `loot.chest_item`. */
@@ -205,6 +224,9 @@ export interface ResolvedLevelOptions {
   /** 0–1 chance each room past the entrance gets a pit. Defaults to
    *  {@link DUNGEON_DEFAULTS.pits} (`0`). */
   pitFrequency: number;
+  /** The way out to build on this floor: `"stairs"` / `"ladder"` on the
+   *  bottom floor of a dungeon with `bottom_exit` set, else `""`. */
+  bottomExit: "" | "stairs" | "ladder";
   /** Whether pits drop through to the floor below. */
   pitFalls: boolean;
   /** Resolved 0–1 dials (level → parent → style default). */
