@@ -114,8 +114,18 @@ const NOTABLE: ReadonlyArray<[LogCategory, RegExp]> = [
   ["combat", / ambushes the party!$/],
   ["combat", /^A roaming .+ catches up!$/],
   ["combat", /^Approach Lair:/],
-  // Traps.
+  // Traps (wording from src/play/traps.ts + the PlayHost fallback):
+  // "Dart Trap! Aldric takes 6 piercing damage (HP 12 → 6).", saves,
+  // afflictions, knock-outs, teleports and fizzles.
   ["trap", /^Trap! /],
+  ["trap", /! .+ (takes \d+ |twists aside)/],
+  ["trap", /\(HP \d+ → \d+\)\.$/],
+  ["trap", / is afflicted: .+\.$/],
+  ["trap", / is knocked out!$/],
+  ["trap", /! The world lurches/],
+  ["trap", / sputters and fails\. \(/],
+  ["trap", / flickers, but there is nowhere to send the party\.$/],
+  ["trap", /! .+ (shakes off the |is caught by it\.$)/],
   // Lock attempts (rolls included) and keys.
   ["lock", /\(d20:\d+/],
   ["lock", / turns in the lock\b/],

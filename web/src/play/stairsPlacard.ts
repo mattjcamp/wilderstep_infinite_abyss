@@ -28,8 +28,9 @@ export function stairsPlacardText(args: {
    *  below the first is the bottom floor's way out (`bottom_exit`),
    *  worded so the player knows it leaves the whole area. */
   fromFloorIdx?: number;
-  /** How that way out looks (`DungeonLevel.exitAppearance`). */
-  exitAppearance?: "stairs" | "ladder";
+  /** How that way out looks (`DungeonLevel.exitAppearance`). Every
+   *  value now draws the wall opening; kept for older saved levels. */
+  exitAppearance?: "opening" | "stairs" | "ladder";
 }): StairsPlacardText {
   const { stairs, linkMapId, dungeonName, totalFloors } = args;
   const dir = stairs === "up" ? "up" : "down";
@@ -40,15 +41,13 @@ export function stairsPlacardText(args: {
   const where = dungeonName.trim() || "the dungeon";
   if (linkMapId === EXIT_TO_OVERWORLD_MAP_ID) {
     if ((args.fromFloorIdx ?? 0) > 0 && stairs === "up") {
-      // The bottom floor's way out — a shortcut past every floor above.
-      const ladder = args.exitAppearance === "ladder";
+      // The bottom floor's way out — a shortcut past every floor above:
+      // a broken opening in the wall with daylight beyond.
       return {
         ...base,
-        name: ladder ? "Way Out — Ladder" : "Way Out — Stairs",
+        name: "Way Out",
         leavesArea: true,
-        description: ladder
-          ? `This ladder climbs straight out of ${where}. Taking it leaves the area and returns you to the surface.`
-          : `These stairs climb straight out of ${where}. Taking them leaves the area and returns you to the surface.`,
+        description: `You have found a way out! Daylight spills through a gap in the wall — the passage beyond leads straight out of ${where}. Taking it leaves the area and returns you to the surface.`,
       };
     }
     return { ...base, description: `These stairs lead ${dir} and out of ${where}.` };

@@ -90,8 +90,8 @@
       "style": "dungeon",
       "difficulty": "normal",
       "size": {
-        "width": 50,
-        "height": 50
+        "width": 32,
+        "height": 32
       },
       "torch_density": 0.1,
       "locked_doors": 0.1,
@@ -106,7 +106,7 @@
         "chest_item": "treasure_chest",
         "chest_frequency": 0.25
       },
-      "bottom_exit": "ladder",
+      "bottom_exit": "opening",
       "levels": [
         {
           "id": "test2_l1",
@@ -116,16 +116,20 @@
             {
               "trap_id": "dart_trap",
               "weight": 1
-            },
+            }
+          ]
+        },
+        {
+          "id": "test2_l2",
+          "name": "Level 2",
+          "depth": 2,
+          "trap_types": [
             {
               "trap_id": "fire_trap",
               "weight": 1
-            },
-            {
-              "trap_id": "teleport_trap",
-              "weight": 1
             }
-          ]
+          ],
+          "style": "deep_ones_hall"
         }
       ],
       "trap_types": [
@@ -135,10 +139,6 @@
         },
         {
           "trap_id": "fire_trap",
-          "weight": 1
-        },
-        {
-          "trap_id": "teleport_trap",
           "weight": 1
         }
       ]

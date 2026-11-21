@@ -177,7 +177,7 @@ interface TileType {
   text: string;
   /** Visual animation overlay played on cells painted with this tile.
    *  "none" disables. Configs live in ANIMATION_CONFIGS in MapEditor. */
-  animation: "none" | "torch" | "fire" | "fairy" | "smoke";
+  animation: "none" | "torch" | "fire" | "fairy" | "smoke" | "daylight";
   /** Counter (shop/service) id from counters.json that this tile
    *  fronts. Empty string means none. */
   counter: string;
@@ -6102,6 +6102,7 @@ function Inspector({
               { value: "fire", label: "Fire" },
               { value: "fairy", label: "Fairy lights" },
               { value: "smoke", label: "Smoke" },
+              { value: "daylight", label: "Daylight glow" },
             ]}
             isModified={
               !!base && fieldDiffersFromPalette(instance, palette, "animation")

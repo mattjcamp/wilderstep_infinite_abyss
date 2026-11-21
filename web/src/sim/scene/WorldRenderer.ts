@@ -59,7 +59,7 @@ import {
   type LightingResult,
   type LightingMode,
 } from "@/sim/lighting";
-import { ANIMATION_CONFIGS } from "@/sim/tileAnimations";
+import { ANIMATION_CONFIGS, ANIMATION_EXTRA_LAYERS } from "@/sim/tileAnimations";
 import { QUEST_GLOW } from "@/sim/questGlow";
 import {
   type FogStyleByMode,
@@ -695,6 +695,20 @@ export class WorldRenderer {
         );
         emitter.setDepth(160);
         this.emitters.set(`${c},${r}`, emitter);
+        // Stacked layers (e.g. daylight's breathing halo) sit just
+        // under the main emitter. Keyed "c,r,n" so the LOS pass still
+        // reads the cell from the first two parts.
+        const extra = ANIMATION_EXTRA_LAYERS[animation] ?? [];
+        extra.forEach((layer, i) => {
+          const e = this.scene.add.particles(
+            x,
+            y,
+            PARTICLE_TEX,
+            layer as unknown as Phaser.Types.GameObjects.Particles.ParticleEmitterConfig,
+          );
+          e.setDepth(159);
+          this.emitters.set(`${c},${r},${i + 1}`, e);
+        });
       }
     }
   }

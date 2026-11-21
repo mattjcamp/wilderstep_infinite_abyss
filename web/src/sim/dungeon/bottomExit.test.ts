@@ -23,9 +23,13 @@ function record(over: Partial<DungeonRecord> = {}): DungeonRecord {
 
 const palette = new Map<string, string>([
   ["dungeon_stairs_up", "dungeon/doors_and_stairs/stairs_up.png"],
-  ["dungeon_ladder_up", "dungeon/doors_and_stairs/ladder_up.png"],
+  ["dungeon_wall_top", "dungeon/walls/wall_top.png"],
+  ["dungeon_wall_exit", "dungeon/walls/wall_exit.png"],
   ["cave_stairs_up", "cave/doors_and_stairs/stairs_up.png"],
-  ["cave_ladder_up", "cave/doors_and_stairs/ladder_up.png"],
+  ["cave_wall_top", "cave/walls/wall_top.png"],
+  ["cave_wall_exit", "cave/walls/wall_exit.png"],
+  ["manor_wall_exit", "manor/walls/wall_exit.png"],
+  ["deep_ones_hall_wall_exit", "deep_ones_hall/walls/wall_exit.png"],
 ]);
 
 describe("bottom-floor exit → map cells", () => {
@@ -38,21 +42,42 @@ describe("bottom-floor exit → map cells", () => {
     expect(exit.link?.map_id).toBe(EXIT_TO_OVERWORLD_MAP_ID);
     expect(exit.stairs).toBe("up");
     expect(exit.show_link_placard).toBe(true);
-    expect(exit.sprite).toContain("stairs_up");
+    expect(exit.sprite).toBe("dungeon/walls/wall_exit.png");
     const entry = map.grid[bottom.entryRow][bottom.entryCol];
     expect(entry.link?.map_id).toBe(floorMapId("exit_test", 0));
   });
 
-  it("draws the way out as a ladder in either style when asked", () => {
-    for (const style of ["dungeon", "cavern"] as const) {
-      const floors = generateDungeonFromRecord(record({ style, bottom_exit: "ladder" }), { seed: 11 });
-      const bottom = floors[1];
-      const map = dungeonLevelToMap(bottom, { dungeonId: "exit_test", floorIdx: 1, totalFloors: 2, paletteSprites: palette });
-      const [ec, er] = [...bottom.overworldExits][0].split(",").map(Number);
-      const exit = map.grid[er][ec];
-      expect(exit.sprite).toBe(style === "cavern" ? "cave/doors_and_stairs/ladder_up.png" : "dungeon/doors_and_stairs/ladder_up.png");
-      expect(exit.link?.map_id).toBe(EXIT_TO_OVERWORLD_MAP_ID);
+  it("draws the way out as the style's glowing wall opening, set into the wall", () => {
+    const folder = { dungeon: "dungeon", cavern: "cave", deep_ones_hall: "deep_ones_hall", manor: "manor" } as const;
+    for (const style of ["dungeon", "cavern", "deep_ones_hall", "manor"] as const) {
+      // Legacy "ladder" still means the opening.
+      for (const bottom_exit of ["opening", "ladder"] as const) {
+        const floors = generateDungeonFromRecord(record({ style, bottom_exit }), { seed: 11 });
+        const bottom = floors[1];
+        const map = dungeonLevelToMap(bottom, { dungeonId: "exit_test", floorIdx: 1, totalFloors: 2, paletteSprites: palette });
+        const [ec, er] = [...bottom.overworldExits][0].split(",").map(Number);
+        const exit = map.grid[er][ec];
+        expect(exit.id).toBe(`${folder[style]}_wall_exit`);
+        expect(exit.sprite).toBe(`${folder[style]}/walls/wall_exit.png`);
+        expect(exit.walkable).toBe(true);
+        expect(exit.light_source).toBe(true);
+        expect(exit.animation).toBe("daylight");
+        expect(exit.link?.map_id).toBe(EXIT_TO_OVERWORLD_MAP_ID);
+        // Walls either side, the room's floor in front.
+        expect(map.grid[er][ec - 1].walkable).toBe(false);
+        expect(map.grid[er][ec + 1].walkable).toBe(false);
+        expect(map.grid[er + 1][ec].walkable).toBe(true);
+      }
     }
+  });
+
+  it("falls back to the stairs art when the palette has no opening", () => {
+    const floors = generateDungeonFromRecord(record({ bottom_exit: "opening" }), { seed: 3 });
+    const bottom = floors[1];
+    const bare = new Map([["dungeon_stairs_up", "dungeon/doors_and_stairs/stairs_up.png"]]);
+    const map = dungeonLevelToMap(bottom, { dungeonId: "exit_test", floorIdx: 1, totalFloors: 2, paletteSprites: bare });
+    const [ec, er] = [...bottom.overworldExits][0].split(",").map(Number);
+    expect(map.grid[er][ec].sprite).toBe("dungeon/doors_and_stairs/stairs_up.png");
   });
 });
 
@@ -64,10 +89,11 @@ describe("stairs placard — way out", () => {
       dungeonName: "Hidden Grotto",
       totalFloors: 4,
       fromFloorIdx: 3,
-      exitAppearance: "ladder",
+      exitAppearance: "opening",
     });
     expect(t.leavesArea).toBe(true);
     expect(t.name).toMatch(/Way Out/);
+    expect(t.description).toMatch(/[Dd]aylight/);
     expect(t.description).toMatch(/out of Hidden Grotto/);
     expect(t.description).toMatch(/leaves the area/);
   });

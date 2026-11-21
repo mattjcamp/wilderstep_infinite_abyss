@@ -427,6 +427,23 @@
     },
     {
       "boat": false,
+      "id": "dungeon_wall_exit",
+      "name": "Dungeon Wall Opening, Way Out",
+      "description": "A broken gap in the wall with daylight spilling through — the way out of the dungeon. Placed by the generator as the bottom floor's exit.",
+      "walkable": true,
+      "obstructs": false,
+      "locked": false,
+      "light_source": true,
+      "light_range": 3,
+      "animation": "daylight",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/dungeon/walls/wall_exit.png",
+      "tag": "Dungeons:dungeon:walls"
+    },
+    {
+      "boat": false,
       "id": "dungeon_wall_archway",
       "name": "Dungeon Wall, Archway",
       "walkable": true,
@@ -978,6 +995,23 @@
       "encounter": null,
       "spawn": null,
       "sprite": "dungeons/manor/walls/wall_tapestry.png",
+      "tag": "Dungeons:manor:walls"
+    },
+    {
+      "boat": false,
+      "id": "manor_wall_exit",
+      "name": "Manor Wall Opening, Way Out",
+      "description": "A broken gap in the wall with daylight spilling through — the way out of the dungeon. Placed by the generator as the bottom floor's exit.",
+      "walkable": true,
+      "obstructs": false,
+      "locked": false,
+      "light_source": true,
+      "light_range": 3,
+      "animation": "daylight",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/manor/walls/wall_exit.png",
       "tag": "Dungeons:manor:walls"
     },
     {
@@ -1768,6 +1802,23 @@
       "encounter": null,
       "spawn": null,
       "sprite": "dungeons/cave/walls/wall_webs.png",
+      "tag": "Dungeons:cave:walls"
+    },
+    {
+      "boat": false,
+      "id": "cave_wall_exit",
+      "name": "Cave Wall Opening, Way Out",
+      "description": "A broken gap in the wall with daylight spilling through — the way out of the dungeon. Placed by the generator as the bottom floor's exit.",
+      "walkable": true,
+      "obstructs": false,
+      "locked": false,
+      "light_source": true,
+      "light_range": 3,
+      "animation": "daylight",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/cave/walls/wall_exit.png",
       "tag": "Dungeons:cave:walls"
     },
     {
@@ -2577,6 +2628,23 @@
       "sprite": "dungeons/deep_ones_hall/walls/window_single.png",
       "tag": "Dungeons:deep ones hall:walls",
       "background_sprite": "dungeons/deep_ones_hall/walls/wall_bottom.png"
+    },
+    {
+      "boat": false,
+      "id": "deep_ones_hall_wall_exit",
+      "name": "Deep Ones Hall Wall Opening, Way Out",
+      "description": "A broken gap in the wall with daylight spilling through — the way out of the dungeon. Placed by the generator as the bottom floor's exit.",
+      "walkable": true,
+      "obstructs": false,
+      "locked": false,
+      "light_source": true,
+      "light_range": 3,
+      "animation": "daylight",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/deep_ones_hall/walls/wall_exit.png",
+      "tag": "Dungeons:deep ones hall:walls"
     },
     {
       "boat": false,
@@ -3395,6 +3463,23 @@
       "sprite": "dungeons/shop/walls/window_top_single.png",
       "tag": "Dungeons:shop:walls",
       "background_sprite": "dungeons/shop/walls/wall_top.png"
+    },
+    {
+      "boat": false,
+      "id": "shop_wall_exit",
+      "name": "Shop Wall Opening, Way Out",
+      "description": "A broken gap in the wall with daylight spilling through — the way out of the dungeon. Placed by the generator as the bottom floor's exit.",
+      "walkable": true,
+      "obstructs": false,
+      "locked": false,
+      "light_source": true,
+      "light_range": 3,
+      "animation": "daylight",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/shop/walls/wall_exit.png",
+      "tag": "Dungeons:shop:walls"
     },
     {
       "boat": false,

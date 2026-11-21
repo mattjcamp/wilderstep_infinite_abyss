@@ -411,6 +411,17 @@ export async function seedBattleCachesFromCatalog(
  * play seeder and the catalog-driven simulator seeder. Returns the
  * merged `characters` model so the caller can build the party.
  */
+/** Install just the module's merged fx.json into the FX catalog — for
+ *  effects played outside combat (traps on the map). Never throws. */
+export async function seedFxRecords(moduleId: string): Promise<void> {
+  try {
+    const fx = await loadMergedModel(getModuleSource(), moduleId, "fx");
+    setFxRecords(fx ?? []);
+  } catch {
+    /* keep whatever is installed */
+  }
+}
+
 async function seedCombatCatalogs(
   src: StaticModuleSource,
   moduleId: string,

@@ -54,6 +54,7 @@ const USER_MODELS: Array<{ key: ModelKey; label: string }> = [
   { key: "effects", label: "Effect" },
   { key: "abilities", label: "Ability" },
   { key: "monster_abilities", label: "Monster ability" },
+  { key: "traps", label: "Trap" },
 ];
 
 type LoadState =

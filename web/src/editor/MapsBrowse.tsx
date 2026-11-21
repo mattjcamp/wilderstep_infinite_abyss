@@ -85,7 +85,7 @@ interface TileType {
   locked: boolean;
   light_source: boolean;
   light_range: number;
-  animation: "none" | "torch" | "fire" | "fairy" | "smoke";
+  animation: "none" | "torch" | "fire" | "fairy" | "smoke" | "daylight";
   counter: string;
   encounter: string;
   spawn: string;

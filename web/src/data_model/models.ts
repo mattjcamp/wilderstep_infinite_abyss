@@ -386,6 +386,7 @@ const DEFS: Record<ModelKey, ModelDef> = {
         },
       },
       { field: "effect", label: "Effect", format: asString },
+      { field: "fx_id", label: "FX", format: asString },
     ],
   },
   log_events: {

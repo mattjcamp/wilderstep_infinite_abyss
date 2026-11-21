@@ -110,7 +110,7 @@ export function LinkPlacard({
           : "Travel";
   const prompt =
     leavesArea
-      ? "Climb out and leave the area?"
+      ? "Take the way out and leave the area?"
       : placeKind === "stairs-up"
       ? "Climb up the stairs?"
       : placeKind === "stairs-down"
@@ -157,7 +157,14 @@ export function LinkPlacard({
                 ✓ Cleared
               </span>
             ) : null}
-            {isStairs ? (
+            {leavesArea ? (
+              <span
+                className="rounded border border-amber-300/50 bg-amber-300/10 px-2 py-0.5 text-[10px] uppercase tracking-wide text-amber-200"
+                title="This leads out of the dungeon."
+              >
+                ☀ Way Out
+              </span>
+            ) : isStairs ? (
               <span
                 className="rounded border border-parchment/25 px-2 py-0.5 text-[10px] uppercase tracking-wide text-parchment/70"
                 title={placeKind === "stairs-up" ? "These stairs lead up." : "These stairs lead down."}

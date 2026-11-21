@@ -254,6 +254,10 @@ const TRAP_VFX_DEFAULT: [number, number] = [
   VFX_COLOURS.fire,
   VFX_COLOURS.ember,
 ];
+/** Show the trap card dialog when a trap goes off. Off: traps report
+ *  in the adventure log only. */
+const SHOW_TRAP_CARD = false;
+
 const TRAP_VFX_BY_DAMAGE_TYPE: Record<string, [number, number]> = {
   fire: [VFX_COLOURS.fire, VFX_COLOURS.ember],
   poison: [VFX_COLOURS.heal, VFX_COLOURS.curse],
@@ -645,6 +649,10 @@ import {
   type TrapVictim,
 } from "@/play/traps";
 import { PlayTrapOverlay } from "@/play/TrapOverlay";
+import { trapFxId, trapFxOrigin } from "@/play/trapFx";
+import { playTrapFx } from "@/play/playTrapFx";
+import { getFxRecord } from "@/vfx/fxCatalog";
+import { seedFxRecords } from "@/play/seedBattleCaches";
 import { applyPassiveRegen, regenHasEffect } from "@/play/passiveRegen";
 import {
   completedStepIds,
@@ -2687,6 +2695,8 @@ export function PlayHost() {
         // module's custom uploads at the worker. No-op off remote.
         await seedSpriteRouting(save.moduleId);
         if (cancelled) return;
+        // The module's FX catalog, for effects played on the map (traps).
+        void seedFxRecords(save.moduleId);
         const baseCatalog = await loadCatalog(save);
         if (cancelled) return;
         // Backfill max_hp / max_mp on save members from the catalog
@@ -5366,16 +5376,38 @@ export function PlayHost() {
 
               // Feedback first — fire-and-forget VFX/SFX so the
               // player gets immediate cues independent of how the
-              // resolution below lands. Burst colour keys off the
-              // record's damage_type (green for poison, violet for
-              // magic, …); the legacy fire-orange is the default.
+              // resolution below lands. The trap's FX (fx.json, picked
+              // in the Trap editor; defaults by damage_type): darts and
+              // flame jets fly in from the nearest wall. Teleport traps
+              // play theirs once the landing spot is known (below).
+              // No FX → the old burst coloured by damage_type.
               const r = rendererRef.current;
-              try {
-                Sfx.play("explosion");
-              } catch {
-                /* audio context not ready — skip */
+              const trapFx = getFxRecord(trapFxId(record));
+              const trapPt = (col: number, row: number) => ({
+                x: col * TILE_SIZE + TILE_SIZE / 2,
+                y: row * TILE_SIZE + TILE_SIZE / 2,
+              });
+              if (trapFx) {
+                if (r && record?.trap_type !== "teleport") {
+                  try {
+                    const o = trapFxOrigin(
+                      cat?.map?.grid as never,
+                      ev.pos.col,
+                      ev.pos.row,
+                    );
+                    playTrapFx(r.scene, trapFx, trapPt(o.col, o.row), trapPt(ev.pos.col, ev.pos.row));
+                  } catch {
+                    /* scene disposed mid-step — skip */
+                  }
+                }
+              } else {
+                try {
+                  Sfx.play("explosion");
+                } catch {
+                  /* audio context not ready — skip */
+                }
               }
-              if (r) {
+              if (r && !trapFx) {
                 try {
                   const px = ev.pos.col * TILE_SIZE + TILE_SIZE / 2;
                   const py = ev.pos.row * TILE_SIZE + TILE_SIZE / 2;
@@ -5532,8 +5564,11 @@ export function PlayHost() {
                 }
               }
 
-              // The trap card: what went off and who it hurt.
-              if (outcome) {
+              // The trap card: what went off and who it hurt. Off for
+              // now — traps report in the adventure log only (with the
+              // trap's FX and sound). Flip SHOW_TRAP_CARD to bring the
+              // dialog back.
+              if (outcome && SHOW_TRAP_CARD) {
                 const sprites = new Map(
                   (cat?.characters ?? []).map((c) => [c.id, c.sprite]),
                 );
@@ -5613,14 +5648,23 @@ export function PlayHost() {
               // jump (no destination authored) works anywhere.
               if (randomDest) {
                 const dest = randomDest;
-                try {
-                  Sfx.play("teleport_blink");
-                } catch {
-                  /* audio context not ready — skip */
+                const rr = rendererRef.current;
+                if (trapFx && rr) {
+                  // The trap's FX from the plate to where the party lands.
+                  try {
+                    playTrapFx(rr.scene, trapFx, trapPt(ev.pos.col, ev.pos.row), trapPt(dest.col, dest.row));
+                  } catch {
+                    /* scene disposed mid-step — skip */
+                  }
+                } else {
+                  try {
+                    Sfx.play("teleport_blink");
+                  } catch {
+                    /* audio context not ready — skip */
+                  }
                 }
                 sim?.teleport(dest.col, dest.row);
-                const rr = rendererRef.current;
-                if (rr) {
+                if (rr && !trapFx) {
                   try {
                     const [main, accent] = TRAP_VFX_BY_DAMAGE_TYPE.magic;
                     void radialBurst(
@@ -5654,6 +5698,14 @@ export function PlayHost() {
                 }
               } else if (teleportTo && !dStateNow && cat) {
                 if (teleportTo.map_id === cat.map.id) {
+                  const rt = rendererRef.current;
+                  if (trapFx && rt) {
+                    try {
+                      playTrapFx(rt.scene, trapFx, trapPt(ev.pos.col, ev.pos.row), trapPt(teleportTo.col, teleportTo.row));
+                    } catch {
+                      /* scene disposed mid-step — skip */
+                    }
+                  }
                   sim?.teleport(teleportTo.col, teleportTo.row);
                   // Mirror the new position into the save so a
                   // reload before the next checkpoint doesn't snap

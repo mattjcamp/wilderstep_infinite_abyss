@@ -188,9 +188,10 @@ interface DungeonRecord {
   /** Entrance/exit placement: edge of map (true) vs interior rooms
    *  (false). Absent → interior rooms. All styles. */
   edge_transitions?: boolean;
-  /** A way straight out on the bottom floor: "stairs" / "ladder";
-   *  absent / "none" = leave by the entrance stairs. */
-  bottom_exit?: "none" | "stairs" | "ladder";
+  /** A way straight out on the bottom floor: "opening" (a broken wall
+   *  with daylight beyond); absent / "none" = leave by the entrance
+   *  stairs. "stairs" / "ladder" are older names for the same thing. */
+  bottom_exit?: "none" | "opening" | "stairs" | "ladder";
   loot?: DungeonLoot;
   levels: DungeonLevel[];
   /** Per-dungeon background-music playlist override. Each entry is
@@ -241,7 +242,7 @@ const DEFAULTS = {
   floor_variety: 0,
   wall_decor: 0.25,
   loot: { chest_item: "treasure_chest", chest_frequency: 0.25 },
-  bottom_exit: "ladder" as const,
+  bottom_exit: "opening" as const,
 } as const;
 
 export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
@@ -950,21 +951,20 @@ function DungeonEditor({
           Exit on bottom floor
         </span>
         <select
-          value={dungeon.bottom_exit ?? "none"}
+          value={!dungeon.bottom_exit || dungeon.bottom_exit === "none" ? "none" : "opening"}
           onChange={(e) => {
-            const v = e.target.value as "none" | "stairs" | "ladder";
+            const v = e.target.value as "none" | "opening";
             onUpdate({ bottom_exit: v === "none" ? undefined : v });
           }}
           className="mt-0.5 block w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
         >
           <option value="none">None — leave by climbing back up</option>
-          <option value="stairs">Stairs out</option>
-          <option value="ladder">Ladder out</option>
+          <option value="opening">Opening to daylight</option>
         </select>
         <span className="mt-1 block text-xs text-parchment/65">
-          Adds a way straight out of the dungeon in the bottom floor&apos;s
-          last room (or on a map edge with edge transitions). Stepping on it
-          tells the player it leaves the area and asks before leaving.
+          Cuts a broken opening with daylight beyond into the top wall of
+          the bottom floor&apos;s last room. Stepping into it tells the
+          player it leaves the area and asks before leaving.
         </span>
       </label>
 
@@ -1967,8 +1967,8 @@ function NewDungeonForm({
         <code>{DEFAULTS.torch_density}</code>, traps{" "}
         <code>{DEFAULTS.traps}</code> per room, objects and wall decor{" "}
         <code>{DEFAULTS.objects}</code>, Treasure Chests at{" "}
-        <code>{DEFAULTS.loot.chest_frequency}</code> per room, and a ladder
-        out of the bottom floor) — tweak after creation. Add levels inline
+        <code>{DEFAULTS.loot.chest_frequency}</code> per room, and a daylit
+        opening out of the bottom floor) — tweak after creation. Add levels inline
         once it opens.
       </p>
       <div className="mt-4 grid gap-3 sm:grid-cols-2">

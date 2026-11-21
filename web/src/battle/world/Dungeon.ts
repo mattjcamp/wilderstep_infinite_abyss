@@ -235,9 +235,11 @@ export interface DungeonLevel {
    *  rather than ascending one level (set on the bottom floor of
    *  multi-level dungeons). */
   overworldExits: Set<string>;
-  /** How the `overworldExits` cells look: up-stairs (`"stairs"`) or a
-   *  ladder (`"ladder"`). Absent → stairs. */
-  exitAppearance?: "stairs" | "ladder";
+  /** How the `overworldExits` cells look. `"opening"`: the tileset's
+   *  broken wall opening with daylight beyond. `"stairs"` / `"ladder"`
+   *  only appear on levels saved before the opening existed (they
+   *  render as the opening too). */
+  exitAppearance?: "opening" | "stairs" | "ladder";
   /** Quest collect-item placements keyed by "col,row". Populated by
    *  DungeonScene on entry when an active quest's collect step
    *  targets this dungeon — the scene paints a TILE_ARTIFACT at the
@@ -989,6 +991,65 @@ function placePits(
  * next to doors (a notch beside a door would let the party walk
  * around it).
  */
+/**
+ * Cut the bottom floor's way out into a wall: a cell in a room's TOP
+ * wall with that room's floor directly in front (south) of it, solid
+ * wall on both sides (so it isn't beside a doorway or corridor) and
+ * wall or the map edge behind it (so it doesn't open into another
+ * room). Tries rooms from last-carved back toward the entrance (room 0
+ * is skipped), preferring spots near the middle of the wall. The cell
+ * becomes TILE_STAIRS; returns it, or null when no wall fits.
+ */
+function placeWallExit(
+  g: Grid,
+  rooms: Room[],
+  wallTile: number,
+  floorTile: number,
+  monsterAt: ReadonlySet<string>,
+  rng: RNG,
+): { col: number; row: number } | null {
+  const isWall = (c: number, r: number) => getTile(g, c, r) === wallTile;
+  for (let i = rooms.length - 1; i >= 1; i--) {
+    const room = rooms[i];
+    const y = room.y - 1;
+    const spots: Array<{ col: number; row: number; d: number }> = [];
+    for (let x = room.x + 1; x <= room.x + room.w - 2; x++) {
+      if (!isWall(x, y) || g.decorations[`${x},${y}`] !== undefined) continue;
+      if (!isWall(x - 1, y) || !isWall(x + 1, y)) continue;
+      if (getTile(g, x, y - 1) !== wallTile && getTile(g, x, y - 1) !== -1) continue;
+      if (getTile(g, x, y + 1) !== floorTile || monsterAt.has(`${x},${y + 1}`)) continue;
+      spots.push({ col: x, row: y, d: Math.abs(x - (room.x + (room.w - 1) / 2)) });
+    }
+    if (spots.length === 0) continue;
+    // Middle third of the wall when possible, else anywhere on it.
+    const best = Math.min(...spots.map((s) => s.d));
+    const near = spots.filter((s) => s.d <= best + Math.max(1, room.w / 6));
+    const pick = near[Math.floor(rng() * near.length)];
+    setTile(g, pick.col, pick.row, TILE_STAIRS);
+    return { col: pick.col, row: pick.row };
+  }
+  // No room's top wall fits (common in caverns, whose walls are
+  // notched): take any wall face on the floor that meets the same
+  // rules, the one farthest from the entrance room.
+  const [ex, ey] = rooms[0]?.center ?? [0, 0];
+  let best: { col: number; row: number; d: number } | null = null;
+  for (let y = 0; y < g.height; y++) {
+    for (let x = 0; x < g.width; x++) {
+      if (!isWall(x, y) || g.decorations[`${x},${y}`] !== undefined) continue;
+      if (!isWall(x - 1, y) || !isWall(x + 1, y)) continue;
+      if (getTile(g, x, y - 1) !== wallTile && getTile(g, x, y - 1) !== -1) continue;
+      if (getTile(g, x, y + 1) !== floorTile || monsterAt.has(`${x},${y + 1}`)) continue;
+      const d = Math.abs(x - ex) + Math.abs(y - ey);
+      if (!best || d > best.d) best = { col: x, row: y, d };
+    }
+  }
+  if (best) {
+    setTile(g, best.col, best.row, TILE_STAIRS);
+    return { col: best.col, row: best.row };
+  }
+  return null;
+}
+
 function roughenCavern(g: Grid, rng: RNG): void {
   const isDoor = (c: number, r: number) => {
     const t = getTile(g, c, r);
@@ -1069,8 +1130,10 @@ export interface GenerateLevelOptions {
   /** Build a way straight out of the dungeon on this floor (meant for
    *  the bottom floor, which has no stairs down): an up-stair cell
    *  recorded in `overworldExits` that the converter links to the
-   *  overworld. `"stairs"` or `"ladder"` picks its look. Absent → none. */
-  overworldExit?: "stairs" | "ladder";
+   *  overworld, drawn as a broken wall opening with daylight beyond.
+   *  Any value turns it on (`"stairs"` / `"ladder"` are legacy names).
+   *  Absent → none. */
+  overworldExit?: "opening" | "stairs" | "ladder";
   /** Probability (0..1) per eligible wall that a torch is placed.
    *  Drives the three internal knobs (spacing, count multiplier,
    *  whether to consider corridor walls). Matches v2's
@@ -1493,32 +1556,26 @@ export function generateDungeonLevel(opts: GenerateLevelOptions): DungeonLevel {
   // ── Decorations (overlay layer) ──
   placeDecorations(grid, rooms, opts.torchProbability, floorTile, rng);
 
-  // ── Overworld exit (bottom floor) ──
-  // An optional way straight out of the dungeon, so the party doesn't
-  // have to climb back through every floor. It's an up-stair cell
-  // (TILE_STAIRS) recorded in `overworldExits`; the converter links
-  // those cells to the overworld instead of to the floor above, and
-  // the stairs placard says they lead out. (An older version dropped a
-  // plain stairs-up here that the converter linked one floor UP: a
-  // pointless second entrance. Recording the cell is what makes it an
-  // exit.) Placement: a free map edge when `edgeTransitions` is on,
-  // else the centre of the room farthest along the carve order (the
-  // bottom floor's equivalent of the stairs-down room), skipping any
-  // centre a chest or monster already took.
+  // ── Cavern post-process: rough, irregular rock walls ──
+  if (style === "cavern") roughenCavern(grid, rng);
+
+  // ── Bottom floor's way out ──
+  // A broken opening in a wall with daylight beyond: a TILE_STAIRS cell
+  // recorded in `overworldExits` that the converter draws as the
+  // tileset's wall opening and links to the overworld (the stairs
+  // placard says it leaves the area). It goes in the top wall of the
+  // room farthest along the carve order — a wall face with the room's
+  // floor in front of it — so it reads as part of the wall. Placed
+  // after the cavern roughening so the wall it's cut into is final.
+  // Falls back to the old spot (that room's centre) if no wall fits.
   const overworldExits = new Set<string>();
+  const exitApproach: string[] = [];
   if (opts.overworldExit && !opts.placeStairsDown) {
-    let exit: { col: number; row: number } | null = null;
-    if (edgeTransitions) {
-      const edges: Array<"north" | "south" | "east" | "west"> = ["north", "east", "south", "west"];
-      const remaining = edges.filter((e) => e !== entranceEdge);
-      shuffleInPlace(rng, remaining);
-      for (const e of remaining) {
-        exit = placeEdgeStairs(grid, e, TILE_STAIRS, floorTile, wallTile, rng, height - 1);
-        if (exit) break;
-      }
-    }
-    if (!exit) {
-      const monsterAt = new Set(monsters.map((m) => `${m.col},${m.row}`));
+    const monsterAt = new Set(monsters.map((m) => `${m.col},${m.row}`));
+    let exit = placeWallExit(grid, rooms, wallTile, floorTile, monsterAt, rng);
+    if (exit) {
+      exitApproach.push(`${exit.col},${exit.row + 1}`);
+    } else {
       for (let i = rooms.length - 1; i >= 1 && !exit; i--) {
         const [cc, cr] = rooms[i].center;
         if (cc === stairsCol && cr === stairsRow) continue;
@@ -1530,11 +1587,13 @@ export function generateDungeonLevel(opts: GenerateLevelOptions): DungeonLevel {
     if (exit) overworldExits.add(`${exit.col},${exit.row}`);
   }
 
-  // ── Cavern post-process: rough, irregular rock walls ──
-  if (style === "cavern") roughenCavern(grid, rng);
-
   // ── Pits — last, so they can only take plain, unoccupied floor ──
-  const occupied = new Set<string>([`${stairsCol},${stairsRow}`, ...overworldExits]);
+  const occupied = new Set<string>([
+    `${stairsCol},${stairsRow}`,
+    ...overworldExits,
+    // Keep the floor in front of a wall opening clear (no pit / pillar).
+    ...exitApproach,
+  ]);
   for (const m of monsters) occupied.add(`${m.col},${m.row}`);
   placePits(grid, rooms, opts.pitProbability ?? 0, occupied, rng);
 
@@ -1561,7 +1620,7 @@ export function generateDungeonLevel(opts: GenerateLevelOptions): DungeonLevel {
     detectedTraps: new Set<string>(),
     exploredTiles: new Set<string>(),
     overworldExits,
-    ...(overworldExits.size > 0 && opts.overworldExit ? { exitAppearance: opts.overworldExit } : {}),
+    ...(overworldExits.size > 0 && opts.overworldExit ? { exitAppearance: "opening" as const } : {}),
     questArtifacts: {},
     chestItem: chestItemId,
     ...(Object.keys(trapIds).length > 0 ? { trapIds } : {}),

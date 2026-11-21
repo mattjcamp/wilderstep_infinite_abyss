@@ -27,7 +27,7 @@ function generate(style: DungeonStyle, seed: number, over: Partial<DungeonRecord
     torch_density: 0.2,
     locked_doors: 0.3,
     pits: 0.6,
-    bottom_exit: "ladder",
+    bottom_exit: "opening",
     loot: { chest_item: "treasure_chest", chest_frequency: 0.5 },
     levels: [
       { id: "a", name: "A", depth: 1 },
@@ -48,7 +48,7 @@ const CASES: Array<{ style: DungeonStyle; prefix: string; folder: string; mustSe
     mustSee: [
       "walls/wall.png", "walls/wall_left.png", "walls/wall_right.png", "walls/wall_top.png",
       "floors/floor_plain.png", "floors/floor.png", "water_and_pits/pit_centre.png",
-      "doors_and_stairs/stairs_up.png", "doors_and_stairs/stairs.png", "doors_and_stairs/ladder_up.png",
+      "doors_and_stairs/stairs_up.png", "doors_and_stairs/stairs.png", "walls/wall_exit.png",
       "features/throne.png",
     ],
   },
@@ -59,7 +59,7 @@ const CASES: Array<{ style: DungeonStyle; prefix: string; folder: string; mustSe
     mustSee: [
       "walls/wall_top.png", "walls/wall_left.png", "walls/wall_right.png", "walls/wall_tapestry.png",
       "floors/floor_planks.png", "floors/floor_parquet.png", "water_and_pits/pit_centre.png",
-      "doors_and_stairs/stairs_up.png", "doors_and_stairs/stairs.png", "doors_and_stairs/ladder_up.png",
+      "doors_and_stairs/stairs_up.png", "doors_and_stairs/stairs.png", "walls/wall_exit.png",
       "features/grand_chair.png", "features/column.png",
     ],
   },

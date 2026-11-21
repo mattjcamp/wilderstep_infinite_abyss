@@ -22,15 +22,16 @@ export type DungeonStyle = V1DungeonStyle;
 /** Difficulty tier — shared with Monster's difficulty enum. */
 export type DungeonDifficulty = V1Difficulty;
 
-/** How the bottom floor's way out looks — see DungeonRecord.bottom_exit. */
-export type BottomExitStyle = "none" | "stairs" | "ladder";
+/** The bottom floor's way out — see DungeonRecord.bottom_exit.
+ *  `"stairs"` / `"ladder"` are older names; they now build the same
+ *  wall opening as `"opening"`. */
+export type BottomExitStyle = "none" | "opening" | "stairs" | "ladder";
 
 /** Coerce an authored `bottom_exit` to the exit to build on the bottom
- *  floor: `"stairs"` / `"ladder"`, or `""` for none. `true` (a hand-edit)
- *  reads as stairs. */
-export function resolveBottomExit(v: unknown): "" | "stairs" | "ladder" {
-  if (v === "stairs" || v === true) return "stairs";
-  if (v === "ladder") return "ladder";
+ *  floor: `"opening"`, or `""` for none. The legacy `"stairs"` /
+ *  `"ladder"` values and `true` (a hand-edit) all mean the opening. */
+export function resolveBottomExit(v: unknown): "" | "opening" {
+  if (v === "opening" || v === "stairs" || v === "ladder" || v === true) return "opening";
   return "";
 }
 
@@ -261,9 +262,9 @@ export interface ResolvedLevelOptions {
   /** 0–1 chance each room past the entrance gets a pit. Defaults to
    *  {@link DUNGEON_DEFAULTS.pits} (`0`). */
   pitFrequency: number;
-  /** The way out to build on this floor: `"stairs"` / `"ladder"` on the
-   *  bottom floor of a dungeon with `bottom_exit` set, else `""`. */
-  bottomExit: "" | "stairs" | "ladder";
+  /** The way out to build on this floor: `"opening"` on the bottom
+   *  floor of a dungeon with `bottom_exit` set, else `""`. */
+  bottomExit: "" | "opening";
   /** Whether pits drop through to the floor below. */
   pitFalls: boolean;
   /** 0–1 chance each room past the entrance gets a trap. */

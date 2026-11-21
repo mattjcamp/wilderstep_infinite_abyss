@@ -18,7 +18,7 @@
 
 /** Closed set of supported per-tile animations. Mirrors the
  *  editor's `TileType.animation` discriminator. */
-export type AnimationKind = "torch" | "fire" | "fairy" | "smoke";
+export type AnimationKind = "torch" | "fire" | "fairy" | "smoke" | "daylight";
 
 export const ANIMATION_CONFIGS = {
   torch: {
@@ -60,4 +60,39 @@ export const ANIMATION_CONFIGS = {
     frequency: 130,
     tint: [0x555555, 0x777777, 0x444444],
   },
+  // Daylight spilling through an opening (the dungeon's way out): a few
+  // slow, warm dust motes drifting out into the room. The breathing
+  // glow behind them is an extra layer — see ANIMATION_EXTRA_LAYERS.
+  daylight: {
+    speedX: { min: -7, max: 7 },
+    speedY: { min: 4, max: 14 },
+    lifespan: { min: 1800, max: 2800 },
+    scale: { start: 0.2, end: 0.05 },
+    alpha: { start: 0.75, end: 0 },
+    frequency: 260,
+    tint: [0xfff4d0, 0xffe9a8, 0xffffff],
+    blendMode: "ADD" as const,
+  },
 } as const;
+
+/** Extra emitters some animations stack under their main one. The map
+ *  renderer adds these; anywhere that only reads ANIMATION_CONFIGS (the
+ *  combat arena) just gets the main layer. */
+export const ANIMATION_EXTRA_LAYERS: Partial<
+  Record<AnimationKind, ReadonlyArray<Record<string, unknown>>>
+> = {
+  // A soft, slowly pulsing halo of daylight: big faint particles that
+  // swell and fade, overlapping so the glow breathes rather than blinks.
+  daylight: [
+    {
+      speedX: 0,
+      speedY: 0,
+      lifespan: 2600,
+      scale: { start: 1.3, end: 2.1 },
+      alpha: { start: 0.24, end: 0 },
+      frequency: 1300,
+      tint: 0xfff0c4,
+      blendMode: "ADD",
+    },
+  ],
+};

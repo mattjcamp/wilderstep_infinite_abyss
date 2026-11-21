@@ -30,6 +30,7 @@ Legacy boolean trap cells (`trap: true`) and procedural dungeon traps (the `TILE
 | `damage_type` | string | no | Flavour + VFX driver: `"fire"`, `"poison"`, `"piercing"`, `"magic"`, … Picks the burst colour and log wording. Reserved for future resistances (e.g. the `fire_resistance` effect). |
 | `damage_range` | `{ min, max }` | for `damage` | Uniform damage roll per victim. Null for effect / teleport traps. |
 | `effect` | string | no | [Effect](effect.md) id applied to each victim that fails the save (or every victim when no save is authored). Rides along on `damage` traps too — a poison dart deals damage AND poisons. |
+| `fx_id` | string | no | [FX](fx.md) record played when the trap goes off — picked with the FX picker in the Trap editor. Projectile visuals (darts, a jet of flame) fly in from the nearest wall within 4 cells (the hidden dart slot or flame vent) and land on the trap; burst visuals play on the trap. Teleport traps play it from the trap to where the party lands. The FX's `cast_sfx` plays as it starts and its `hit_sfx` as it lands. Empty → a default by `damage_type` (`piercing` → `trap_darts`, `fire` → `trap_fire`, teleport traps → `teleport_blink`), else the plain burst coloured by `damage_type`. `"none"` = no FX. Default module: Dart Trap → `trap_darts`, Fire Trap → `trap_fire`, Teleport Trap → `teleport_blink`. |
 | `params` | object | no | Per-trap knobs, see below. Null = defaults. |
 
 ## `params` sub-object
@@ -50,6 +51,7 @@ Legacy boolean trap cells (`trap: true`) and procedural dungeon traps (the `TILE
 ## Cross-references to other models
 
 - `effect` → [Effect](effect.md) id
+- `fx_id` → [FX](fx.md) id
 - `params.teleport.map_id` → [Map](map.md) id
 - Placed by painted cells via `tile.trap_id` (see [Map](map.md) cell fields)
 

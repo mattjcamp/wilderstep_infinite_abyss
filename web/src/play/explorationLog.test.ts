@@ -73,3 +73,34 @@ describe("stampLog — rewound buffer (area transition)", () => {
     ).toEqual([1, 2, 3, 9]);
   });
 });
+
+describe("notableCategory — every trap line reaches the Log", () => {
+  it("files each line the trap resolver writes as a trap", async () => {
+    const { resolveTrapOutcome } = await import("./traps");
+    const party = [
+      { index: 0, id: "a", name: "Aldric", hp: 3, stats: { dexterity: 8 } },
+      { index: 1, id: "s", name: "Selina", hp: 20, stats: { dexterity: 18 } },
+    ];
+    const traps = [
+      { id: "dart", name: "Dart Trap", trap_type: "damage", damage_type: "piercing", damage_range: { min: 4, max: 9 } },
+      { id: "fire", name: "Fire Trap", trap_type: "damage", damage_type: "fire", damage_range: { min: 6, max: 12 }, effect: "burning", params: { targets: "all", save_stat: "dexterity", save_dc: 13 } },
+      { id: "sleep", name: "Sleep Glyph", trap_type: "effect", effect: "sleep", params: { targets: "all", save_stat: "wisdom", save_dc: 12 } },
+      { id: "tp", name: "Teleport Trap", trap_type: "teleport" },
+      { id: "bad", name: "Broken Trap", trap_type: "damage" },
+    ];
+    const lines: string[] = [];
+    for (const t of traps) {
+      for (const seed of [0.01, 0.5, 0.99]) {
+        lines.push(...resolveTrapOutcome(t, party, () => seed).lines);
+      }
+    }
+    lines.push("Teleport Trap flickers, but there is nowhere to send the party.");
+    lines.push("Trap! Aldric takes 5 damage (HP 9 → 4).");
+    for (const l of lines) expect(notableCategory(l), l).toBe("trap");
+  });
+
+  it("doesn't pull in routine feedback", () => {
+    expect(notableCategory("Edge of the map.")).toBeNull();
+    expect(notableCategory("The door is locked.")).toBeNull();
+  });
+});

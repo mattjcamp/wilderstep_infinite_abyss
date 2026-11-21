@@ -134,12 +134,21 @@ export function dungeonLevelToMap(
         ? cloneProto(proto)
         : cloneProto(prototypeForTileId(TILE_DWALL, style) ?? FALLBACK_WALL);
       // The bottom floor's way out (see DungeonLevel.overworldExits): an
-      // up-stair that leaves the dungeon. Optionally drawn as a ladder.
+      // up-link that leaves the dungeon, drawn as the tileset's broken
+      // wall opening with daylight beyond (a softly glowing light
+      // source). It's cut into a wall, so the wall pass treats it as
+      // wall when piecing its neighbours, then puts this art back.
       const isExit =
         tileId === TILE_STAIRS && !!level.overworldExits?.has(`${c},${r}`);
-      if (isExit && level.exitAppearance === "ladder") {
-        base.paletteId = `${tilesetPrefix(style)}_ladder_up`;
-        base.name = `${TILESET_LABEL[tilesetPrefix(style)]} Ladder, Up`;
+      if (isExit) {
+        const exitId = wallExitId(tilesetPrefix(style));
+        base.id = exitId;
+        base.paletteId = exitId;
+        base.name = `${TILESET_LABEL[tilesetPrefix(style)]} Wall Opening, Way Out`;
+        base.obstructs = false;
+        base.light_source = true;
+        base.light_range = 3;
+        base.animation = "daylight";
       }
       // Art comes from the module's tile palette, never from a path
       // baked into the engine (see tileMapping.ts).
@@ -532,6 +541,12 @@ const TILESET_LABEL: Record<TilesetPrefix, string> = {
   manor: "Manor",
 };
 /** Wall-face decorations per tileset — [palette id, weight, glows]. */
+/** Palette id of a tileset's wall opening — the bottom floor's way
+ *  out (`<prefix>_wall_exit`, filed with the tileset's walls). */
+export function wallExitId(prefix: TilesetPrefix): string {
+  return `${prefix}_wall_exit`;
+}
+
 const WALL_DECOR: Record<TilesetPrefix, Array<[string, number, boolean]>> = {
   dungeon: [
     ["dungeon_wall_banner", 2, false],
@@ -662,13 +677,27 @@ function applyTilesetStyle(
   }
 
   // ── 3. Walls ───────────────────────────────────────────────────
+  const exitId = wallExitId(prefix);
   autotileDungeonWalls(grid, {
-    isWall: (cell) => cell.id === wallId || cell.id === "wall_torch",
+    isWall: (cell) =>
+      cell.id === wallId || cell.id === "wall_torch" || cell.id === exitId,
     sprites,
     floorSprite,
-    keepId: (cell) => cell.id === "wall_torch",
+    keepId: (cell) => cell.id === "wall_torch" || cell.id === exitId,
     tileset: prefix,
   });
+  // The way out keeps its own art (the autotiler painted a wall piece
+  // over it). A palette without the opening falls back to stairs.
+  const exitSprite =
+    resolveDungeonSprite(exitId, sprites) ||
+    resolveDungeonSprite(`${prefix}_stairs_up`, sprites);
+  for (const row of grid) {
+    for (const cell of row) {
+      if (cell.id !== exitId) continue;
+      if (exitSprite) cell.sprite = exitSprite;
+      delete cell.background_sprite;
+    }
+  }
   // Strips are drawn over the floor beside them — use that cell's
   // (possibly variant) floor rather than the base one.
   const leftStrip = `${prefix}_wall_left`;

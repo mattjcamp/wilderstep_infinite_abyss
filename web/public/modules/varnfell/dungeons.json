@@ -120,7 +120,7 @@
         "chest_item": "treasure_chest"
       },
       "floor_variety": 0,
-      "bottom_exit": "ladder"
+      "bottom_exit": "opening"
     },
     {
       "id": "dwarven_halls",
@@ -173,7 +173,7 @@
       "soundtrack": [
         "/audio/Lost in the Labyrinth.mp3"
       ],
-      "bottom_exit": "ladder"
+      "bottom_exit": "opening"
     },
     {
       "id": "small_cave",
@@ -219,7 +219,7 @@
       "loot": {
         "chest_item": "treasure_chest"
       },
-      "bottom_exit": "ladder",
+      "bottom_exit": "opening",
       "floor_variety": 0
     }
   ]

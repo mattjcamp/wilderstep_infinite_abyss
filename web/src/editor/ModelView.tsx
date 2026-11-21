@@ -167,6 +167,9 @@ const EXTRA_FIELD_DEFAULTS: Partial<Record<ModelKey, Record<string, unknown>>> =
   // Items: `lore` makes an item readable (a book, scroll or letter) —
   // blank on every item until an author picks a Lore record.
   items: { lore: "" },
+  // Traps: `fx_id` — the effect (fx.json) played when the trap goes
+  // off. Surfaced on every trap so the FX picker always shows.
+  traps: { fx_id: "" },
   // Tile Palette: `boat` marks a tile that should render as a boat
   // by default when painted onto a map (water-spanning movement,
   // boarding mechanics). One tile in the default module already

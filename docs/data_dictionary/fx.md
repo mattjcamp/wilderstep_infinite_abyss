@@ -8,7 +8,7 @@ Every named effect the game can play. An FX record bundles three things:
 2. **Tuning** for that visual — colours, size, timing, particle counts; only the knobs that visual supports.
 3. **Sounds** — one played when the effect starts (`cast_sfx`) and one on impact (`hit_sfx`).
 
-Spells, items, effects, abilities and monster abilities point at an FX by `fx_id`, picked from a dropdown in their editors. Change an FX and it changes everywhere it's used. Several FX can share a visual: "Lightning Strike" and a hypothetical "Lich Bolt" can both draw `lightning_bolt`, tuned differently.
+Spells, items, effects, abilities, monster abilities and traps point at an FX by `fx_id`, picked from a dropdown in their editors. Change an FX and it changes everywhere it's used. Several FX can share a visual: "Lightning Strike" and a hypothetical "Lich Bolt" can both draw `lightning_bolt`, tuned differently.
 
 FX replaced the older two-part setup (tuning-only `fx.json` + `animations.json` bundles referenced by `animation_id`). Everything that used `animation_id` now uses `fx_id`, with the same ids.
 

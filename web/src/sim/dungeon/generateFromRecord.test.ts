@@ -6,6 +6,8 @@ import {
 import {
   torchProfileFromProbability,
   TILE_STAIRS,
+  TILE_DWALL,
+  TILE_PIT,
   TILE_STAIRS_DOWN,
   TILE_CHEST,
 } from "@/battle/world/Dungeon";
@@ -533,9 +535,10 @@ describe("bottom_exit — a way out on the bottom floor", () => {
 
   it("only resolves the exit for the bottom floor", () => {
     const record = makeRecord({ levels: threeFloors, bottom_exit: "ladder" });
+    // "ladder" / "stairs" are legacy names for the opening.
     expect(resolveLevelOptions(record, threeFloors[0], 0).bottomExit).toBe("");
     expect(resolveLevelOptions(record, threeFloors[1], 1).bottomExit).toBe("");
-    expect(resolveLevelOptions(record, threeFloors[2], 2).bottomExit).toBe("ladder");
+    expect(resolveLevelOptions(record, threeFloors[2], 2).bottomExit).toBe("opening");
     expect(
       resolveLevelOptions(makeRecord({ levels: threeFloors, bottom_exit: "none" }), threeFloors[2], 2).bottomExit,
     ).toBe("");
@@ -564,10 +567,18 @@ describe("bottom_exit — a way out on the bottom floor", () => {
         expect(floors[1].overworldExits.size, label).toBe(0);
         const bottom = floors[2];
         expect(bottom.overworldExits.size, label).toBe(1);
-        expect(bottom.exitAppearance, label).toBe("stairs");
+        expect(bottom.exitAppearance, label).toBe("opening");
         const [key] = [...bottom.overworldExits];
         const [col, row] = key.split(",").map(Number);
         expect(bottom.tiles[row][col], label).toBe(TILE_STAIRS);
+        // Cut into a room's top wall: wall either side, open floor in
+        // front of it (never a pit), wall or the map edge behind it.
+        const t = (c: number, r: number) => bottom.tiles[r]?.[c] ?? -1;
+        expect(t(col - 1, row), label).toBe(TILE_DWALL);
+        expect(t(col + 1, row), label).toBe(TILE_DWALL);
+        expect([TILE_DWALL, -1], label).toContain(t(col, row - 1));
+        expect(t(col, row + 1), label).not.toBe(TILE_PIT);
+        expect([TILE_DWALL, TILE_STAIRS, TILE_STAIRS_DOWN, TILE_PIT], label).not.toContain(t(col, row + 1));
         expect(`${col},${row}`, label).not.toBe(`${bottom.entryCol},${bottom.entryRow}`);
         expect(bottom.monsters.some((m) => m.col === col && m.row === row), label).toBe(false);
         // Still no way further down on the bottom floor.

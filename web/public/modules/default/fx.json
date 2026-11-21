@@ -204,6 +204,43 @@
       "params": {},
       "cast_sfx": "small_explosion",
       "hit_sfx": ""
+    },
+    {
+      "id": "trap_darts",
+      "name": "Trap Darts",
+      "description": "A plain iron dart flicks out of a hidden slot in the wall and strikes the victim — barely a glint of light on the shaft. Dart traps. A sharp bowstring snap and hiss on cast; a meaty thunk on hit.",
+      "visual": "magic_arrow",
+      "params": {
+        "color": "#6e5d46",
+        "core": "#d9ccb2",
+        "sparkle": "#8c7a5e",
+        "size": 0.75,
+        "duration_ms": 150
+      },
+      "cast_sfx": "arrow",
+      "hit_sfx": "melee_hit"
+    },
+    {
+      "id": "trap_fire",
+      "name": "Trap Fire Jet",
+      "description": "A jet of flame roars out of a vent in the wall and engulfs the trap's victims, bursting into fire where it lands. Fire traps. A gushing torrent of flame on cast; the target catching fire on impact.",
+      "visual": "breath_of_fire",
+      "params": {
+        "width": 34,
+        "duration_ms": 460
+      },
+      "cast_sfx": "flamethrower",
+      "hit_sfx": "fire_engulf",
+      "impact": {
+        "visual": "explosion_burst",
+        "params": {
+          "radius": 40
+        }
+      },
+      "shake": {
+        "intensity": 0.004,
+        "duration_ms": 200
+      }
     }
   ]
 }

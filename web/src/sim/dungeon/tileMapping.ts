@@ -76,7 +76,7 @@ export interface DungeonTilePrototype {
   water?: boolean;
   locked: boolean;
   text: string;
-  animation: "none" | "torch" | "fire" | "fairy" | "smoke";
+  animation: "none" | "torch" | "fire" | "fairy" | "smoke" | "daylight";
   counter: string;
   encounter: string;
   spawn: string;
@@ -661,6 +661,11 @@ export const DUNGEON_PALETTE_IDS: readonly string[] = [
   "manor_column",
   "manor_potted_plant",
   "manor_grand_chair",
+  // The bottom floor's way out — each tileset's wall opening.
+  "dungeon_wall_exit",
+  "cave_wall_exit",
+  "deep_ones_hall_wall_exit",
+  "manor_wall_exit",
   // Pit rims — every piece the pit pass can pick, both tilesets.
   ...PIT_PIECES.map((p) => `dungeon_${p}`),
   ...PIT_PIECES.map((p) => `cave_${p}`),
