@@ -1174,8 +1174,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "manor/floors/floor_planks.png",
-      "tag": "manor:floors"
+      "sprite": "dungeons/manor/floors/floor_planks.png",
+      "tag": "Dungeons:manor:floors"
     },
     {
       "boat": false,
@@ -1190,8 +1190,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "manor/floors/floor_parquet.png",
-      "tag": "manor:floors"
+      "sprite": "dungeons/manor/floors/floor_parquet.png",
+      "tag": "Dungeons:manor:floors"
     },
     {
       "boat": false,
@@ -1206,8 +1206,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "manor/floors/floor_herringbone.png",
-      "tag": "manor:floors"
+      "sprite": "dungeons/manor/floors/floor_herringbone.png",
+      "tag": "Dungeons:manor:floors"
     },
     {
       "boat": false,
@@ -1222,8 +1222,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "manor/floors/floor_checker.png",
-      "tag": "manor:floors"
+      "sprite": "dungeons/manor/floors/floor_checker.png",
+      "tag": "Dungeons:manor:floors"
     },
     {
       "boat": false,
@@ -1238,8 +1238,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "manor/floors/floor_marble.png",
-      "tag": "manor:floors"
+      "sprite": "dungeons/manor/floors/floor_marble.png",
+      "tag": "Dungeons:manor:floors"
     },
     {
       "boat": false,
@@ -1254,8 +1254,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "manor/floors/floor_carpet.png",
-      "tag": "manor:floors"
+      "sprite": "dungeons/manor/floors/floor_carpet.png",
+      "tag": "Dungeons:manor:floors"
     },
     {
       "boat": false,
@@ -1270,8 +1270,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "manor/floors/floor_tiles.png",
-      "tag": "manor:floors"
+      "sprite": "dungeons/manor/floors/floor_tiles.png",
+      "tag": "Dungeons:manor:floors"
     },
     {
       "boat": false,
@@ -1286,8 +1286,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "manor/walls/wall_top.png",
-      "tag": "manor:walls"
+      "sprite": "dungeons/manor/walls/wall_top.png",
+      "tag": "Dungeons:manor:walls"
     },
     {
       "boat": false,
@@ -1302,9 +1302,9 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "manor/walls/wall_left.png",
-      "tag": "manor:walls",
-      "background_sprite": "manor/floors/floor_parquet.png"
+      "sprite": "dungeons/manor/walls/wall_left.png",
+      "tag": "Dungeons:manor:walls",
+      "background_sprite": "dungeons/manor/floors/floor_parquet.png"
     },
     {
       "boat": false,
@@ -1319,9 +1319,9 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "manor/walls/wall_right.png",
-      "tag": "manor:walls",
-      "background_sprite": "manor/floors/floor_parquet.png"
+      "sprite": "dungeons/manor/walls/wall_right.png",
+      "tag": "Dungeons:manor:walls",
+      "background_sprite": "dungeons/manor/floors/floor_parquet.png"
     },
     {
       "boat": false,
@@ -1336,8 +1336,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "manor/walls/wall_corner_tl.png",
-      "tag": "manor:walls"
+      "sprite": "dungeons/manor/walls/wall_corner_tl.png",
+      "tag": "Dungeons:manor:walls"
     },
     {
       "boat": false,
@@ -1352,8 +1352,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "manor/walls/wall_corner_tr.png",
-      "tag": "manor:walls"
+      "sprite": "dungeons/manor/walls/wall_corner_tr.png",
+      "tag": "Dungeons:manor:walls"
     },
     {
       "boat": false,
@@ -1368,8 +1368,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "manor/walls/wall_window.png",
-      "tag": "manor:walls"
+      "sprite": "dungeons/manor/walls/wall_window.png",
+      "tag": "Dungeons:manor:walls"
     },
     {
       "boat": false,
@@ -1384,8 +1384,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "manor/walls/wall_tapestry.png",
-      "tag": "manor:walls"
+      "sprite": "dungeons/manor/walls/wall_tapestry.png",
+      "tag": "Dungeons:manor:walls"
     },
     {
       "boat": false,
@@ -1400,8 +1400,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "manor/doors_and_stairs/wall_archway.png",
-      "tag": "manor:doors & stairs"
+      "sprite": "dungeons/manor/doors_and_stairs/wall_archway.png",
+      "tag": "Dungeons:manor:doors & stairs"
     },
     {
       "boat": false,
@@ -1416,8 +1416,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "manor/doors_and_stairs/wall_gate.png",
-      "tag": "manor:doors & stairs"
+      "sprite": "dungeons/manor/doors_and_stairs/wall_gate.png",
+      "tag": "Dungeons:manor:doors & stairs"
     },
     {
       "boat": false,
@@ -1432,8 +1432,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "manor/doors_and_stairs/door.png",
-      "tag": "manor:doors & stairs"
+      "sprite": "dungeons/manor/doors_and_stairs/door.png",
+      "tag": "Dungeons:manor:doors & stairs"
     },
     {
       "boat": false,
@@ -1448,8 +1448,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "manor/doors_and_stairs/stairs.png",
-      "tag": "manor:doors & stairs"
+      "sprite": "dungeons/manor/doors_and_stairs/stairs.png",
+      "tag": "Dungeons:manor:doors & stairs"
     },
     {
       "boat": false,
@@ -1464,8 +1464,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "manor/doors_and_stairs/stairs_up.png",
-      "tag": "manor:doors & stairs"
+      "sprite": "dungeons/manor/doors_and_stairs/stairs_up.png",
+      "tag": "Dungeons:manor:doors & stairs"
     },
     {
       "boat": false,
@@ -1480,8 +1480,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "manor/doors_and_stairs/ladder_down.png",
-      "tag": "manor:doors & stairs"
+      "sprite": "dungeons/manor/doors_and_stairs/ladder_down.png",
+      "tag": "Dungeons:manor:doors & stairs"
     },
     {
       "boat": false,
@@ -1496,8 +1496,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "manor/doors_and_stairs/ladder_up.png",
-      "tag": "manor:doors & stairs"
+      "sprite": "dungeons/manor/doors_and_stairs/ladder_up.png",
+      "tag": "Dungeons:manor:doors & stairs"
     },
     {
       "boat": false,
@@ -1512,9 +1512,9 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "manor/rugs/rug.png",
-      "tag": "manor:rugs",
-      "background_sprite": "manor/floors/floor_parquet.png"
+      "sprite": "dungeons/manor/rugs/rug.png",
+      "tag": "Dungeons:manor:rugs",
+      "background_sprite": "dungeons/manor/floors/floor_parquet.png"
     },
     {
       "boat": false,
@@ -1529,9 +1529,9 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "manor/rugs/rug_corner_tl.png",
-      "tag": "manor:rugs",
-      "background_sprite": "manor/floors/floor_parquet.png"
+      "sprite": "dungeons/manor/rugs/rug_corner_tl.png",
+      "tag": "Dungeons:manor:rugs",
+      "background_sprite": "dungeons/manor/floors/floor_parquet.png"
     },
     {
       "boat": false,
@@ -1546,9 +1546,9 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "manor/rugs/rug_top.png",
-      "tag": "manor:rugs",
-      "background_sprite": "manor/floors/floor_parquet.png"
+      "sprite": "dungeons/manor/rugs/rug_top.png",
+      "tag": "Dungeons:manor:rugs",
+      "background_sprite": "dungeons/manor/floors/floor_parquet.png"
     },
     {
       "boat": false,
@@ -1563,9 +1563,9 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "manor/rugs/rug_corner_tr.png",
-      "tag": "manor:rugs",
-      "background_sprite": "manor/floors/floor_parquet.png"
+      "sprite": "dungeons/manor/rugs/rug_corner_tr.png",
+      "tag": "Dungeons:manor:rugs",
+      "background_sprite": "dungeons/manor/floors/floor_parquet.png"
     },
     {
       "boat": false,
@@ -1580,9 +1580,9 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "manor/rugs/rug_left.png",
-      "tag": "manor:rugs",
-      "background_sprite": "manor/floors/floor_parquet.png"
+      "sprite": "dungeons/manor/rugs/rug_left.png",
+      "tag": "Dungeons:manor:rugs",
+      "background_sprite": "dungeons/manor/floors/floor_parquet.png"
     },
     {
       "boat": false,
@@ -1597,9 +1597,9 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "manor/rugs/rug_centre.png",
-      "tag": "manor:rugs",
-      "background_sprite": "manor/floors/floor_parquet.png"
+      "sprite": "dungeons/manor/rugs/rug_centre.png",
+      "tag": "Dungeons:manor:rugs",
+      "background_sprite": "dungeons/manor/floors/floor_parquet.png"
     },
     {
       "boat": false,
@@ -1614,9 +1614,9 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "manor/rugs/rug_right.png",
-      "tag": "manor:rugs",
-      "background_sprite": "manor/floors/floor_parquet.png"
+      "sprite": "dungeons/manor/rugs/rug_right.png",
+      "tag": "Dungeons:manor:rugs",
+      "background_sprite": "dungeons/manor/floors/floor_parquet.png"
     },
     {
       "boat": false,
@@ -1631,9 +1631,9 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "manor/rugs/rug_corner_bl.png",
-      "tag": "manor:rugs",
-      "background_sprite": "manor/floors/floor_parquet.png"
+      "sprite": "dungeons/manor/rugs/rug_corner_bl.png",
+      "tag": "Dungeons:manor:rugs",
+      "background_sprite": "dungeons/manor/floors/floor_parquet.png"
     },
     {
       "boat": false,
@@ -1648,9 +1648,9 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "manor/rugs/rug_bottom.png",
-      "tag": "manor:rugs",
-      "background_sprite": "manor/floors/floor_parquet.png"
+      "sprite": "dungeons/manor/rugs/rug_bottom.png",
+      "tag": "Dungeons:manor:rugs",
+      "background_sprite": "dungeons/manor/floors/floor_parquet.png"
     },
     {
       "boat": false,
@@ -1665,9 +1665,9 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "manor/rugs/rug_corner_br.png",
-      "tag": "manor:rugs",
-      "background_sprite": "manor/floors/floor_parquet.png"
+      "sprite": "dungeons/manor/rugs/rug_corner_br.png",
+      "tag": "Dungeons:manor:rugs",
+      "background_sprite": "dungeons/manor/floors/floor_parquet.png"
     },
     {
       "boat": false,
@@ -1682,9 +1682,9 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "manor/rugs/rug_runner.png",
-      "tag": "manor:rugs",
-      "background_sprite": "manor/floors/floor_parquet.png"
+      "sprite": "dungeons/manor/rugs/rug_runner.png",
+      "tag": "Dungeons:manor:rugs",
+      "background_sprite": "dungeons/manor/floors/floor_parquet.png"
     },
     {
       "boat": false,
@@ -1700,8 +1700,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "manor/features/column.png",
-      "tag": "manor:features"
+      "sprite": "dungeons/manor/features/column.png",
+      "tag": "Dungeons:manor:features"
     },
     {
       "boat": false,
@@ -1717,8 +1717,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "manor/features/potted_plant.png",
-      "tag": "manor:features"
+      "sprite": "dungeons/manor/features/potted_plant.png",
+      "tag": "Dungeons:manor:features"
     },
     {
       "boat": false,
@@ -1733,9 +1733,177 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "manor/features/grand_chair.png",
-      "tag": "manor:features",
-      "background_sprite": "manor/floors/floor_parquet.png"
+      "sprite": "dungeons/manor/features/grand_chair.png",
+      "tag": "Dungeons:manor:features",
+      "background_sprite": "dungeons/manor/floors/floor_parquet.png"
+    },
+    {
+      "boat": false,
+      "id": "manor_pit",
+      "name": "Manor Pit",
+      "walkable": false,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/manor/water_and_pits/pit.png",
+      "tag": "Dungeons:manor:water & pits"
+    },
+    {
+      "boat": false,
+      "background_sprite": "dungeons/manor/water_and_pits/pit_centre.png",
+      "id": "manor_pit_top",
+      "name": "Manor Pit, Top Edge",
+      "walkable": false,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/manor/water_and_pits/pit_top.png",
+      "tag": "Dungeons:manor:water & pits"
+    },
+    {
+      "boat": false,
+      "background_sprite": "dungeons/manor/water_and_pits/pit_centre.png",
+      "id": "manor_pit_bottom",
+      "name": "Manor Pit, Bottom Edge",
+      "walkable": false,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/manor/water_and_pits/pit_bottom.png",
+      "tag": "Dungeons:manor:water & pits"
+    },
+    {
+      "boat": false,
+      "background_sprite": "dungeons/manor/water_and_pits/pit_centre.png",
+      "id": "manor_pit_left",
+      "name": "Manor Pit, Left Edge",
+      "walkable": false,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/manor/water_and_pits/pit_left.png",
+      "tag": "Dungeons:manor:water & pits"
+    },
+    {
+      "boat": false,
+      "background_sprite": "dungeons/manor/water_and_pits/pit_centre.png",
+      "id": "manor_pit_right",
+      "name": "Manor Pit, Right Edge",
+      "walkable": false,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/manor/water_and_pits/pit_right.png",
+      "tag": "Dungeons:manor:water & pits"
+    },
+    {
+      "boat": false,
+      "background_sprite": "dungeons/manor/water_and_pits/pit_centre.png",
+      "id": "manor_pit_corner_tl",
+      "name": "Manor Pit, Corner Top Left",
+      "walkable": false,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/manor/water_and_pits/pit_corner_tl.png",
+      "tag": "Dungeons:manor:water & pits"
+    },
+    {
+      "boat": false,
+      "background_sprite": "dungeons/manor/water_and_pits/pit_centre.png",
+      "id": "manor_pit_corner_tr",
+      "name": "Manor Pit, Corner Top Right",
+      "walkable": false,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/manor/water_and_pits/pit_corner_tr.png",
+      "tag": "Dungeons:manor:water & pits"
+    },
+    {
+      "boat": false,
+      "background_sprite": "dungeons/manor/water_and_pits/pit_centre.png",
+      "id": "manor_pit_corner_bl",
+      "name": "Manor Pit, Corner Bottom Left",
+      "walkable": false,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/manor/water_and_pits/pit_corner_bl.png",
+      "tag": "Dungeons:manor:water & pits"
+    },
+    {
+      "boat": false,
+      "background_sprite": "dungeons/manor/water_and_pits/pit_centre.png",
+      "id": "manor_pit_corner_br",
+      "name": "Manor Pit, Corner Bottom Right",
+      "walkable": false,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/manor/water_and_pits/pit_corner_br.png",
+      "tag": "Dungeons:manor:water & pits"
+    },
+    {
+      "boat": false,
+      "id": "manor_pit_centre",
+      "name": "Manor Pit, Centre",
+      "walkable": false,
+      "obstructs": false,
+      "locked": false,
+      "light_source": false,
+      "light_range": 0,
+      "animation": "none",
+      "counter": null,
+      "encounter": null,
+      "spawn": null,
+      "sprite": "dungeons/manor/water_and_pits/pit_centre.png",
+      "tag": "Dungeons:manor:water & pits"
     },
     {
       "boat": false,
@@ -3094,8 +3262,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/fences/wood/fence_wood_straight_h.png",
-      "tag": "town:fences:wood",
+      "sprite": "fences/wood/fence_wood_straight_h.png",
+      "tag": "Fences:wood",
       "background_sprite": "map/grass.png"
     },
     {
@@ -3111,8 +3279,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/fences/wood/fence_wood_straight_v.png",
-      "tag": "town:fences:wood",
+      "sprite": "fences/wood/fence_wood_straight_v.png",
+      "tag": "Fences:wood",
       "background_sprite": "map/grass.png"
     },
     {
@@ -3128,8 +3296,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/fences/wood/fence_wood_bend_tl.png",
-      "tag": "town:fences:wood",
+      "sprite": "fences/wood/fence_wood_bend_tl.png",
+      "tag": "Fences:wood",
       "background_sprite": "map/grass.png"
     },
     {
@@ -3145,8 +3313,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/fences/wood/fence_wood_bend_tr.png",
-      "tag": "town:fences:wood",
+      "sprite": "fences/wood/fence_wood_bend_tr.png",
+      "tag": "Fences:wood",
       "background_sprite": "map/grass.png"
     },
     {
@@ -3162,8 +3330,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/fences/wood/fence_wood_bend_bl.png",
-      "tag": "town:fences:wood",
+      "sprite": "fences/wood/fence_wood_bend_bl.png",
+      "tag": "Fences:wood",
       "background_sprite": "map/grass.png"
     },
     {
@@ -3179,8 +3347,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/fences/wood/fence_wood_bend_br.png",
-      "tag": "town:fences:wood",
+      "sprite": "fences/wood/fence_wood_bend_br.png",
+      "tag": "Fences:wood",
       "background_sprite": "map/grass.png"
     },
     {
@@ -3196,8 +3364,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/fences/wood/fence_wood_gate_h.png",
-      "tag": "town:fences:wood",
+      "sprite": "fences/wood/fence_wood_gate_h.png",
+      "tag": "Fences:wood",
       "background_sprite": "map/grass.png"
     },
     {
@@ -3213,8 +3381,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/fences/wood/fence_wood_gate_v.png",
-      "tag": "town:fences:wood",
+      "sprite": "fences/wood/fence_wood_gate_v.png",
+      "tag": "Fences:wood",
       "background_sprite": "map/grass.png"
     },
     {
@@ -3230,8 +3398,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/fences/stone/fence_stone_straight_h.png",
-      "tag": "town:fences:stone",
+      "sprite": "fences/stone/fence_stone_straight_h.png",
+      "tag": "Fences:stone",
       "background_sprite": "map/grass.png"
     },
     {
@@ -3247,8 +3415,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/fences/stone/fence_stone_straight_v.png",
-      "tag": "town:fences:stone",
+      "sprite": "fences/stone/fence_stone_straight_v.png",
+      "tag": "Fences:stone",
       "background_sprite": "map/grass.png"
     },
     {
@@ -3264,8 +3432,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/fences/stone/fence_stone_bend_tl.png",
-      "tag": "town:fences:stone",
+      "sprite": "fences/stone/fence_stone_bend_tl.png",
+      "tag": "Fences:stone",
       "background_sprite": "map/grass.png"
     },
     {
@@ -3281,8 +3449,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/fences/stone/fence_stone_bend_tr.png",
-      "tag": "town:fences:stone",
+      "sprite": "fences/stone/fence_stone_bend_tr.png",
+      "tag": "Fences:stone",
       "background_sprite": "map/grass.png"
     },
     {
@@ -3298,8 +3466,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/fences/stone/fence_stone_bend_bl.png",
-      "tag": "town:fences:stone",
+      "sprite": "fences/stone/fence_stone_bend_bl.png",
+      "tag": "Fences:stone",
       "background_sprite": "map/grass.png"
     },
     {
@@ -3315,8 +3483,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/fences/stone/fence_stone_bend_br.png",
-      "tag": "town:fences:stone",
+      "sprite": "fences/stone/fence_stone_bend_br.png",
+      "tag": "Fences:stone",
       "background_sprite": "map/grass.png"
     },
     {
@@ -3332,8 +3500,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/fences/stone/fence_stone_gate_h.png",
-      "tag": "town:fences:stone",
+      "sprite": "fences/stone/fence_stone_gate_h.png",
+      "tag": "Fences:stone",
       "background_sprite": "map/grass.png"
     },
     {
@@ -3349,8 +3517,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/fences/stone/fence_stone_gate_v.png",
-      "tag": "town:fences:stone",
+      "sprite": "fences/stone/fence_stone_gate_v.png",
+      "tag": "Fences:stone",
       "background_sprite": "map/grass.png"
     },
     {
@@ -3366,8 +3534,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/fences/stone/fence_stone_archway.png",
-      "tag": "town:fences:stone",
+      "sprite": "fences/stone/fence_stone_archway.png",
+      "tag": "Fences:stone",
       "background_sprite": "map/grass.png"
     },
     {
@@ -3383,8 +3551,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/fences/stone/fence_stone_portcullis.png",
-      "tag": "town:fences:stone",
+      "sprite": "fences/stone/fence_stone_portcullis.png",
+      "tag": "Fences:stone",
       "background_sprite": "map/grass.png"
     },
     {
@@ -3400,8 +3568,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/fences/stone/bridge/fence_stone_bridge_r0c0.png",
-      "tag": "town:fences:stone:bridge",
+      "sprite": "fences/stone/bridge/fence_stone_bridge_r0c0.png",
+      "tag": "Fences:stone:bridge",
       "background_sprite": "map/grass.png"
     },
     {
@@ -3417,8 +3585,8 @@
       "counter": null,
       "encounter": null,
       "spawn": null,
-      "sprite": "town/fences/stone/bridge/fence_stone_bridge_r0c1.png",
-      "tag": "town:fences:stone:bridge",
+      "sprite": "fences/stone/bridge/fence_stone_bridge_r0c1.png",
+      "tag": "Fences:stone:bridge",
       "background_sprite": "map/grass.png"
     },
     {

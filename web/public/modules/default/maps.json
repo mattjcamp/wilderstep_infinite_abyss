@@ -40413,8 +40413,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_bend_tl.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_bend_tl.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -40430,8 +40430,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -40447,8 +40447,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -40464,8 +40464,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -40481,8 +40481,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -40498,8 +40498,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -40515,8 +40515,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -40532,8 +40532,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -40549,8 +40549,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -40566,8 +40566,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -40583,8 +40583,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -40600,8 +40600,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -40617,8 +40617,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -40634,8 +40634,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -40651,8 +40651,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -40668,8 +40668,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -40685,8 +40685,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -40702,8 +40702,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -40719,8 +40719,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -40736,8 +40736,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -40753,8 +40753,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -40770,8 +40770,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -40787,8 +40787,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -40804,8 +40804,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_bend_tr.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_bend_tr.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           }
         ],
@@ -40823,8 +40823,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_v.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_v.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -40840,8 +40840,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/stone/fence_stone_bend_tl.png",
-            "tag": "town:fences:stone",
+            "sprite": "fences/stone/fence_stone_bend_tl.png",
+            "tag": "Fences:stone",
             "background_sprite": "map/grass.png"
           },
           {
@@ -40857,8 +40857,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/stone/fence_stone_straight_h.png",
-            "tag": "town:fences:stone",
+            "sprite": "fences/stone/fence_stone_straight_h.png",
+            "tag": "Fences:stone",
             "background_sprite": "map/grass.png"
           },
           {
@@ -40874,8 +40874,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/stone/fence_stone_straight_h.png",
-            "tag": "town:fences:stone",
+            "sprite": "fences/stone/fence_stone_straight_h.png",
+            "tag": "Fences:stone",
             "background_sprite": "map/grass.png"
           },
           {
@@ -40891,8 +40891,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/stone/fence_stone_straight_h.png",
-            "tag": "town:fences:stone",
+            "sprite": "fences/stone/fence_stone_straight_h.png",
+            "tag": "Fences:stone",
             "background_sprite": "map/grass.png"
           },
           {
@@ -40908,8 +40908,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/stone/fence_stone_bend_tr.png",
-            "tag": "town:fences:stone",
+            "sprite": "fences/stone/fence_stone_bend_tr.png",
+            "tag": "Fences:stone",
             "background_sprite": "map/grass.png"
           },
           {
@@ -41198,8 +41198,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_v.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_v.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           }
         ],
@@ -41217,8 +41217,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_v.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_v.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -41234,8 +41234,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/stone/fence_stone_straight_v.png",
-            "tag": "town:fences:stone",
+            "sprite": "fences/stone/fence_stone_straight_v.png",
+            "tag": "Fences:stone",
             "background_sprite": "map/grass.png"
           },
           {
@@ -41301,8 +41301,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/stone/fence_stone_straight_v.png",
-            "tag": "town:fences:stone",
+            "sprite": "fences/stone/fence_stone_straight_v.png",
+            "tag": "Fences:stone",
             "background_sprite": "map/grass.png"
           },
           {
@@ -41596,8 +41596,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_v.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_v.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           }
         ],
@@ -41615,8 +41615,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_v.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_v.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -41632,8 +41632,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/stone/fence_stone_straight_v.png",
-            "tag": "town:fences:stone",
+            "sprite": "fences/stone/fence_stone_straight_v.png",
+            "tag": "Fences:stone",
             "background_sprite": "map/grass.png"
           },
           {
@@ -41697,8 +41697,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/stone/fence_stone_straight_v.png",
-            "tag": "town:fences:stone",
+            "sprite": "fences/stone/fence_stone_straight_v.png",
+            "tag": "Fences:stone",
             "background_sprite": "map/grass.png"
           },
           {
@@ -42001,8 +42001,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_v.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_v.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           }
         ],
@@ -42020,8 +42020,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_v.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_v.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -42037,8 +42037,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/stone/fence_stone_bend_bl.png",
-            "tag": "town:fences:stone",
+            "sprite": "fences/stone/fence_stone_bend_bl.png",
+            "tag": "Fences:stone",
             "background_sprite": "map/grass.png"
           },
           {
@@ -42054,8 +42054,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/stone/fence_stone_straight_h.png",
-            "tag": "town:fences:stone",
+            "sprite": "fences/stone/fence_stone_straight_h.png",
+            "tag": "Fences:stone",
             "background_sprite": "map/grass.png"
           },
           {
@@ -42071,8 +42071,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/stone/fence_stone_gate_h.png",
-            "tag": "town:fences:stone",
+            "sprite": "fences/stone/fence_stone_gate_h.png",
+            "tag": "Fences:stone",
             "background_sprite": "map/grass.png"
           },
           {
@@ -42088,8 +42088,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/stone/fence_stone_straight_h.png",
-            "tag": "town:fences:stone",
+            "sprite": "fences/stone/fence_stone_straight_h.png",
+            "tag": "Fences:stone",
             "background_sprite": "map/grass.png"
           },
           {
@@ -42105,8 +42105,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/stone/fence_stone_bend_br.png",
-            "tag": "town:fences:stone",
+            "sprite": "fences/stone/fence_stone_bend_br.png",
+            "tag": "Fences:stone",
             "background_sprite": "map/grass.png"
           },
           {
@@ -42397,8 +42397,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_v.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_v.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           }
         ],
@@ -42416,8 +42416,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_v.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_v.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -42798,8 +42798,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_v.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_v.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           }
         ],
@@ -42817,8 +42817,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_v.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_v.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -43188,8 +43188,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_v.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_v.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           }
         ],
@@ -43207,8 +43207,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_v.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_v.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -43583,8 +43583,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_v.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_v.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           }
         ],
@@ -43602,8 +43602,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_v.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_v.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -43976,8 +43976,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_v.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_v.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           }
         ],
@@ -43995,8 +43995,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_v.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_v.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -44368,8 +44368,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_v.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_v.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           }
         ],
@@ -44387,8 +44387,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_v.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_v.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -44761,8 +44761,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_v.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_v.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           }
         ],
@@ -44780,8 +44780,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_v.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_v.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -45160,8 +45160,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_v.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_v.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           }
         ],
@@ -45179,8 +45179,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_v.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_v.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -45557,8 +45557,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_v.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_v.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           }
         ],
@@ -45576,8 +45576,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_v.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_v.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -45959,8 +45959,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_v.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_v.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           }
         ],
@@ -45978,8 +45978,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_v.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_v.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -46359,8 +46359,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_v.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_v.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           }
         ],
@@ -46378,8 +46378,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_v.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_v.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -46757,8 +46757,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_v.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_v.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           }
         ],
@@ -46776,8 +46776,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_v.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_v.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -47150,8 +47150,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_v.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_v.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           }
         ],
@@ -47169,8 +47169,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_v.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_v.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -47541,8 +47541,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_v.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_v.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           }
         ],
@@ -47560,8 +47560,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_v.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_v.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -47625,8 +47625,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_bend_tl.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_bend_tl.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -47642,8 +47642,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -47659,8 +47659,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -47676,8 +47676,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -47693,8 +47693,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_bend_tr.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_bend_tr.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -47936,8 +47936,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_v.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_v.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           }
         ],
@@ -47955,8 +47955,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_v.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_v.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -48020,8 +48020,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_v.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_v.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -48087,8 +48087,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_v.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_v.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -48332,8 +48332,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_v.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_v.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           }
         ],
@@ -48351,8 +48351,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_v.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_v.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -48418,8 +48418,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_v.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_v.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -48484,8 +48484,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_v.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_v.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -48745,8 +48745,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_v.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_v.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           }
         ],
@@ -48764,8 +48764,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_v.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_v.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -48831,8 +48831,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_bend_bl.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_bend_bl.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -48848,8 +48848,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -48865,8 +48865,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -48882,8 +48882,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -48899,8 +48899,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_bend_br.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_bend_br.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -49153,8 +49153,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_v.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_v.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           }
         ],
@@ -49172,8 +49172,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_v.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_v.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -49571,8 +49571,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_v.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_v.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           }
         ],
@@ -49590,8 +49590,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_bend_bl.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_bend_bl.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -49607,8 +49607,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -49624,8 +49624,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -49641,8 +49641,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -49658,8 +49658,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -49675,8 +49675,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -49692,8 +49692,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -49709,8 +49709,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -49726,8 +49726,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -49743,8 +49743,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -49760,8 +49760,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -49777,8 +49777,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_gate_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_gate_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "paths/dirt/path_end_down.png",
             "link": {
               "map_id": "overview_1",
@@ -49799,8 +49799,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -49816,8 +49816,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -49833,8 +49833,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -49850,8 +49850,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -49867,8 +49867,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -49884,8 +49884,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -49901,8 +49901,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -49918,8 +49918,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -49935,8 +49935,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -49952,8 +49952,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -49969,8 +49969,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_straight_h.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_straight_h.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           },
           {
@@ -49986,8 +49986,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "town/fences/wood/fence_wood_bend_br.png",
-            "tag": "town:fences:wood",
+            "sprite": "fences/wood/fence_wood_bend_br.png",
+            "tag": "Fences:wood",
             "background_sprite": "map/grass.png"
           }
         ]

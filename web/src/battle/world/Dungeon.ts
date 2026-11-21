@@ -21,6 +21,8 @@
  *                   (`roughenCavern`) and painted with the Cave Tileset.
  *   - `"deep_ones_hall"` — built halls like `"dungeon"`, painted with
  *                   the Deep Ones Hall tileset (grey stone, teal glyphs).
+ *   - `"manor"`   — built rooms like `"dungeon"`, painted with the
+ *                   Manor tileset (wallpaper, wood and marble floors).
  *
  * **Persistence.** Generation is deterministic on a `seed` integer.
  * Callers seed with `(name, overworldCol, overworldRow) + level` so a
@@ -83,17 +85,19 @@ const WALL_TILES: ReadonlySet<number> = new Set([TILE_DWALL]);
  *     `roughenCavern`) and painted with the Cave Tileset (autotiled
  *     like "dungeon").
  *   - `"deep_ones_hall"` — rooms-and-corridors like "dungeon" (built,
- *     not roughened), painted with the Deep Ones Hall tileset. */
-export type DungeonStyle = "dungeon" | "cavern" | "deep_ones_hall";
+ *     not roughened), painted with the Deep Ones Hall tileset.
+ *   - `"manor"` — rooms-and-corridors like "dungeon", painted with the
+ *     Manor tileset. */
+export type DungeonStyle = "dungeon" | "cavern" | "deep_ones_hall" | "manor";
 
 /** Every supported style, in editor display order. */
-export const DUNGEON_STYLES: readonly DungeonStyle[] = ["dungeon", "cavern", "deep_ones_hall"];
+export const DUNGEON_STYLES: readonly DungeonStyle[] = ["dungeon", "cavern", "deep_ones_hall", "manor"];
 
 /** Narrow an on-disk style value to a supported style. Anything else —
  *  including the retired legacy styles ("caves", "ruins", "forest",
  *  "custom") — falls back to `"dungeon"`. */
 export function normalizeDungeonStyle(v: unknown): DungeonStyle {
-  return v === "cavern" || v === "deep_ones_hall" ? v : "dungeon";
+  return v === "cavern" || v === "deep_ones_hall" || v === "manor" ? v : "dungeon";
 }
 
 export type Difficulty = "easy" | "normal" | "hard" | "deadly" | "boss";

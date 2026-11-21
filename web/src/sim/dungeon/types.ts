@@ -248,6 +248,9 @@ export const STYLE_DEFAULTS: Record<
   // carved glyph panels and glowing windows on the walls, sigil and
   // stone floors in the rooms, a few pillars.
   deep_ones_hall: { objects: 0.25, floor_variety: 0.6, wall_decor: 0.5 },
+  // Furnished rooms: a different floor in most rooms, tapestries and
+  // windows on the walls, columns and potted plants about.
+  manor: { objects: 0.2, floor_variety: 0.7, wall_decor: 0.4 },
 };
 
 /** Smallest / largest floor the generator will build. Below the

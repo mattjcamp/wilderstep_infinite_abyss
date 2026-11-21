@@ -39,6 +39,7 @@ import {
   DUNGEON_TILESET_FLOOR_ID,
   CAVE_TILESET_FLOOR_ID,
   DEEP_ONES_HALL_FLOOR_ID,
+  MANOR_FLOOR_ID,
   PIT_PIECES,
   resolveDungeonSprite,
   tilesetPrefix,
@@ -511,11 +512,21 @@ const DEEP_ONES_HALL_ROOM_FLOORS: Array<[string, number]> = [
   ["deep_ones_hall_floor_pebbles", 1],
   ["deep_ones_hall_floor_grate", 1],
 ];
+/** Room floors for the Manor: a different finish in most rooms. */
+const MANOR_ROOM_FLOORS: Array<[string, number]> = [
+  ["manor_floor_parquet", 3],
+  ["manor_floor_herringbone", 2],
+  ["manor_floor_carpet", 2],
+  ["manor_floor_checker", 2],
+  ["manor_floor_marble", 1],
+  ["manor_floor_tiles", 1],
+];
 /** Display name of each tileset. */
 const TILESET_LABEL: Record<TilesetPrefix, string> = {
   dungeon: "Dungeon",
   cave: "Cave",
   deep_ones_hall: "Deep Ones Hall",
+  manor: "Manor",
 };
 /** Wall-face decorations per tileset — [palette id, weight, glows]. */
 const WALL_DECOR: Record<TilesetPrefix, Array<[string, number, boolean]>> = {
@@ -533,6 +544,10 @@ const WALL_DECOR: Record<TilesetPrefix, Array<[string, number, boolean]>> = {
     ["deep_ones_hall_wall_top", 3, false],
     ["deep_ones_hall_wall_bottom", 2, false],
     ["deep_ones_hall_window_single", 1, true],
+  ],
+  manor: [
+    ["manor_wall_tapestry", 2, false],
+    ["manor_wall_window", 1, false],
   ],
 };
 
@@ -574,10 +589,14 @@ function applyTilesetStyle(
   const baseFloorId =
     cave ? CAVE_TILESET_FLOOR_ID
       : prefix === "deep_ones_hall" ? DEEP_ONES_HALL_FLOOR_ID
-        : DUNGEON_TILESET_FLOOR_ID;
+        : prefix === "manor" ? MANOR_FLOOR_ID
+          : DUNGEON_TILESET_FLOOR_ID;
   const floorSprite = resolveDungeonSprite(baseFloorId, sprites);
   const wallId = (prototypeForTileId(TILE_DWALL, style) ?? FALLBACK_WALL).id;
-  const roomFloors = prefix === "deep_ones_hall" ? DEEP_ONES_HALL_ROOM_FLOORS : DUNGEON_ROOM_FLOORS;
+  const roomFloors =
+    prefix === "deep_ones_hall" ? DEEP_ONES_HALL_ROOM_FLOORS
+      : prefix === "manor" ? MANOR_ROOM_FLOORS
+        : DUNGEON_ROOM_FLOORS;
   const variety = Math.min(1, Math.max(0, level.floorVariety ?? 0));
 
   // ── 1. Floor variety ───────────────────────────────────────────

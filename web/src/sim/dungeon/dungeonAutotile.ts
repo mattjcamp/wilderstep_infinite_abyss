@@ -54,7 +54,7 @@ type Piece =
   | "cornerTl" | "cornerTr" | "tDown" | "tUp" | "rock";
 
 /** Tilesets the autotiler can paint with (palette-id prefixes). */
-export type WallTileset = "dungeon" | "cave" | "deep_ones_hall";
+export type WallTileset = "dungeon" | "cave" | "deep_ones_hall" | "manor";
 
 /** Palette ids for one tileset's wall pieces. The tilesets share piece
  *  names under their own prefix (`dungeon_wall_top` / `cave_wall_top`,
@@ -94,6 +94,13 @@ const PIECE_LABELS: Record<Piece, string> = {
   rock: "Solid Rock",
 };
 
+const TILESET_NAMES: Record<WallTileset, string> = {
+  dungeon: "Dungeon",
+  cave: "Cave",
+  deep_ones_hall: "Deep Ones Hall",
+  manor: "Manor",
+};
+
 const STRIPS: ReadonlySet<Piece> = new Set(["left", "right", "divider"]);
 
 /** What to paint when a tileset's palette doesn't carry a piece (the
@@ -129,7 +136,7 @@ export function autotileDungeonWalls<C extends AutotileCell>(
   const ids = tilesetWallIds(opts.tileset ?? "dungeon");
   const label = (p: Piece) =>
     p === "rock" ? PIECE_LABELS.rock
-      : `${opts.tileset === "cave" ? "Cave" : opts.tileset === "deep_ones_hall" ? "Deep Ones Hall" : "Dungeon"} ${PIECE_LABELS[p]}`;
+      : `${TILESET_NAMES[opts.tileset ?? "dungeon"]} ${PIECE_LABELS[p]}`;
   const h = grid.length;
   const at = (r: number, c: number): C | undefined => grid[r]?.[c];
   const open = (r: number, c: number): boolean => {

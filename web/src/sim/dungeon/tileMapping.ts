@@ -7,7 +7,7 @@
  * This module is the bridge: it returns a v2-shaped cell prototype
  * for any tile id the generator can emit, in each dungeon style
  * (`"dungeon"` → Dungeon Tileset, `"cavern"` → Cave Tileset,
- * `"deep_ones_hall"` → Deep Ones Hall tileset).
+ * `"deep_ones_hall"` → Deep Ones Hall tileset, `"manor"` → Manor tileset).
  *
  * Each prototype carries the minimum fields the editor's `TileType`
  * and the simulator's `SimCell` both consume. Callers (the
@@ -189,15 +189,21 @@ const ARTIFACT_PROTO = proto({
  *  across a chasm). The converter's pit pass swaps in the right rim
  *  piece per cell; `paletteId` here is the solid-centre fallback. */
 /** Palette-id prefix of each style's tileset. */
-export type TilesetPrefix = "dungeon" | "cave" | "deep_ones_hall";
+export type TilesetPrefix = "dungeon" | "cave" | "deep_ones_hall" | "manor";
 export function tilesetPrefix(style: DungeonStyle): TilesetPrefix {
-  return style === "cavern" ? "cave" : style === "deep_ones_hall" ? "deep_ones_hall" : "dungeon";
+  return style === "cavern" ? "cave"
+    : style === "deep_ones_hall" ? "deep_ones_hall"
+      : style === "manor" ? "manor"
+        : "dungeon";
 }
 
 function pitProto(prefix: TilesetPrefix): DungeonTilePrototype {
   return proto({
     id: `${prefix}_pit`,
-    name: prefix === "cave" ? "Cave Chasm" : prefix === "deep_ones_hall" ? "Deep Ones Hall Abyss" : "Dungeon Pit",
+    name: prefix === "cave" ? "Cave Chasm"
+      : prefix === "deep_ones_hall" ? "Deep Ones Hall Abyss"
+        : prefix === "manor" ? "Manor Pit"
+          : "Dungeon Pit",
     walkable: false,
     obstructs: false,
     pit: true,
@@ -207,6 +213,7 @@ function pitProto(prefix: TilesetPrefix): DungeonTilePrototype {
 const DT_PIT_PROTO = pitProto("dungeon");
 const CV_PIT_PROTO = pitProto("cave");
 const DH_PIT_PROTO = pitProto("deep_ones_hall");
+const MN_PIT_PROTO = pitProto("manor");
 
 /** Room objects. Pillars and stalagmites are tall — they block sight
  *  like a column; rubble and the throne are low. */
@@ -222,6 +229,11 @@ const CV_THRONE_PROTO = objectProto("cave_throne", "Cave Throne", false);
 const DH_PILLAR_PROTO = objectProto("deep_ones_hall_pillar", "Deep Ones Hall Pillar", true);
 const DH_RUBBLE_PROTO = objectProto("deep_ones_hall_rubble", "Deep Ones Hall Rubble", false);
 const DH_THRONE_PROTO = objectProto("deep_ones_hall_throne", "Deep Ones Hall Throne", false);
+// Manor furniture fills the same roles: a column (tall, blocks sight),
+// potted plants (low clutter) and the grand chair on boss floors.
+const MN_PILLAR_PROTO = objectProto("manor_column", "Manor Column", true);
+const MN_RUBBLE_PROTO = objectProto("manor_potted_plant", "Manor Potted Plant", false);
+const MN_THRONE_PROTO = objectProto("manor_grand_chair", "Manor Grand Chair", false);
 
 const WALL_TORCH_PROTO = proto({
   id: "wall_torch",
@@ -411,6 +423,63 @@ function deepOnesHallProto(tileId: number): DungeonTilePrototype | null {
   return null;
 }
 
+/** ── Manor style ("manor") ─────────────────────────────────────
+ *  Built rooms in the Manor tileset: plank floors (rooms get parquet,
+ *  marble, carpet…), wallpapered walls autotiled from the generic
+ *  "manor_wall", the Manor door, stairs and broken-floorboard pits. */
+export const MANOR_FLOOR_ID = "manor_floor_planks";
+
+const MN_FLOOR_PROTO = proto({ id: MANOR_FLOOR_ID, name: "Manor Floor, Planks", paletteId: MANOR_FLOOR_ID });
+const MN_WALL_PROTO = proto({
+  id: "manor_wall",
+  name: "Manor Wall",
+  walkable: false,
+  obstructs: true,
+  paletteId: "manor_wall_top",
+});
+const MN_STAIRS_UP_PROTO = proto({ id: "stairs_up", name: "Manor Stairs, Up", paletteId: "manor_stairs_up" });
+const MN_STAIRS_DOWN_PROTO = proto({ id: "stairs_down", name: "Manor Stairs, Down", paletteId: "manor_stairs" });
+const MN_DOOR_PROTO = proto({ id: "manor_door", name: "Manor Door", paletteId: "manor_door" });
+const MN_LOCKED_DOOR_PROTO = proto({
+  id: "door_locked",
+  name: "Locked Door",
+  walkable: false,
+  obstructs: false,
+  locked: true,
+  paletteId: "manor_door",
+});
+const MN_WALL_TORCH_PROTO = proto({ ...WALL_TORCH_PROTO, paletteId: "manor_wall_top" });
+
+function manorProto(tileId: number): DungeonTilePrototype | null {
+  switch (tileId) {
+    case TILE_DFLOOR:
+      return MN_FLOOR_PROTO;
+    case TILE_DWALL:
+      return MN_WALL_PROTO;
+    case TILE_STAIRS:
+      return MN_STAIRS_UP_PROTO;
+    case TILE_STAIRS_DOWN:
+      return MN_STAIRS_DOWN_PROTO;
+    case TILE_DDOOR:
+      return MN_DOOR_PROTO;
+    case TILE_LOCKED_DOOR:
+      return MN_LOCKED_DOOR_PROTO;
+    case TILE_WALL_TORCH:
+      return MN_WALL_TORCH_PROTO;
+    case TILE_TRAP:
+      return { ...TRAP_PROTO, paletteId: MANOR_FLOOR_ID };
+    case TILE_PIT:
+      return MN_PIT_PROTO;
+    case TILE_PILLAR:
+      return MN_PILLAR_PROTO;
+    case TILE_RUBBLE:
+      return MN_RUBBLE_PROTO;
+    case TILE_THRONE:
+      return MN_THRONE_PROTO;
+  }
+  return null;
+}
+
 function dungeonTilesetProto(tileId: number): DungeonTilePrototype | null {
   switch (tileId) {
     case TILE_DFLOOR:
@@ -456,7 +525,9 @@ export function prototypeForTileId(
       ? cavernTilesetProto(tileId)
       : style === "deep_ones_hall"
         ? deepOnesHallProto(tileId)
-        : dungeonTilesetProto(tileId);
+        : style === "manor"
+          ? manorProto(tileId)
+          : dungeonTilesetProto(tileId);
   if (p) return p;
   switch (tileId) {
     case TILE_CHEST:
@@ -564,10 +635,33 @@ export const DUNGEON_PALETTE_IDS: readonly string[] = [
   "deep_ones_hall_throne",
   "cave_ladder_up",
   "dungeon_ladder_up",
+  // Manor style.
+  MANOR_FLOOR_ID,
+  "manor_floor_parquet",
+  "manor_floor_herringbone",
+  "manor_floor_checker",
+  "manor_floor_marble",
+  "manor_floor_carpet",
+  "manor_floor_tiles",
+  "manor_stairs_up",
+  "manor_stairs",
+  "manor_ladder_up",
+  "manor_door",
+  "manor_wall_top",
+  "manor_wall_left",
+  "manor_wall_right",
+  "manor_wall_corner_tl",
+  "manor_wall_corner_tr",
+  "manor_wall_window",
+  "manor_wall_tapestry",
+  "manor_column",
+  "manor_potted_plant",
+  "manor_grand_chair",
   // Pit rims — every piece the pit pass can pick, both tilesets.
   ...PIT_PIECES.map((p) => `dungeon_${p}`),
   ...PIT_PIECES.map((p) => `cave_${p}`),
   ...PIT_PIECES.map((p) => `deep_ones_hall_${p}`),
+  ...PIT_PIECES.map((p) => `manor_${p}`),
 ];
 
 /** Palette id → sprite lookup for a prototype's `paletteId`. Returns
