@@ -51,6 +51,10 @@ import { NPC_BEHAVIORS } from "@/sim/npcBehavior";
 import { ParamsEditor } from "./ParamsEditor";
 import { MonsterAbilitiesEditor, isAbilityLinkList } from "./MonsterAbilitiesEditor";
 import { getParamsFieldConfig } from "./paramsFields";
+import {
+  SPAWN_MOON_PHASE_CHOICES,
+  SPAWN_TIME_OF_DAY_CHOICES,
+} from "@/sim/spawn";
 
 /** Models whose records carry a free-form `tags: string[]` for editor
  *  organization. The form injects the field (even when a record hasn't
@@ -104,6 +108,32 @@ const CHOICE_FIELDS: Record<
   },
 };
 
+/** Fixed-choice string-ARRAY fields rendered as a row of toggle
+ *  chips, per model. Stored as a JSON string[]; nothing selected =
+ *  empty array (which, for the spawn gates, means "always"). */
+const MULTI_CHOICE_FIELDS: Record<
+  string,
+  Record<
+    string,
+    { options: ReadonlyArray<{ value: string; label: string }>; help?: string }
+  >
+> = {
+  spawns: {
+    active_time_of_day: {
+      options: SPAWN_TIME_OF_DAY_CHOICES,
+      help: "Lair only spawns during these hours. None selected = any time.",
+    },
+    active_moon_phases: {
+      options: SPAWN_MOON_PHASE_CHOICES,
+      help: "Lair only spawns during these moon phases (each lasts 3.5 days). None selected = any phase.",
+    },
+  },
+};
+
+function getMultiChoiceField(key: string, modelKey?: string) {
+  return (modelKey && MULTI_CHOICE_FIELDS[modelKey]?.[key]) || null;
+}
+
 function getChoiceField(
   key: string,
   modelKey?: string,
@@ -137,6 +167,8 @@ function inferKind(
   // `tags` is always a string[] — never infer it from a value, or a
   // record whose tags were saved as a string would keep saving one.
   if (key === "tags") return "json";
+  // Multi-choice fields are always string[] (JSON).
+  if (getMultiChoiceField(key, modelKey) !== null) return "json";
   // Known sprite-typed fields are always strings, so the picker can
   // render even when the field is currently null/empty (e.g., a
   // freshly-added `avatar` on Party).
@@ -423,6 +455,69 @@ function FieldRow({
   const labelClasses =
     "min-w-[10rem] shrink-0 pt-1 text-sm text-parchment/85 font-mono";
 
+  // Multi-choice fields (spawn time / moon gates) render toggle chips.
+  // Draft stays a JSON string[]. Unparseable values fall through to
+  // the textarea so a bad hand-edit is still fixable.
+  {
+    const multi = getMultiChoiceField(spec.key, modelKey);
+    if (multi) {
+      let picked: string[] | null = null;
+      try {
+        const parsed = value.trim() === "" ? [] : JSON.parse(value);
+        if (parsed === null) picked = [];
+        else if (
+          Array.isArray(parsed) &&
+          parsed.every((x) => typeof x === "string")
+        ) {
+          picked = parsed as string[];
+        }
+      } catch {
+        picked = null;
+      }
+      if (picked !== null) {
+        const sel = new Set(picked);
+        const toggle = (v: string) => {
+          // Keep the saved order matching the option order.
+          const next = multi.options
+            .map((o) => o.value)
+            .filter((x) => (x === v ? !sel.has(x) : sel.has(x)));
+          onChange(JSON.stringify(next));
+        };
+        return (
+          <div className="flex items-start gap-3">
+            <span className={labelClasses}>{spec.key}</span>
+            <div className="flex-1">
+              <div className="flex flex-wrap gap-1.5">
+                {multi.options.map((o) => {
+                  const on = sel.has(o.value);
+                  return (
+                    <button
+                      key={o.value}
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() => toggle(o.value)}
+                      className={
+                        "rounded border px-2 py-0.5 text-[13px] " +
+                        (on
+                          ? "border-ember/70 bg-ember/30 text-parchment"
+                          : "border-parchment/20 text-parchment/70 hover:bg-ink/40")
+                      }
+                    >
+                      {o.label}
+                    </button>
+                  );
+                })}
+              </div>
+              {multi.help ? (
+                <p className="mt-1 text-xs text-parchment/60">{multi.help}</p>
+              ) : null}
+              {error ? <p className="mt-1 text-[13px] text-ember">{error}</p> : null}
+            </div>
+          </div>
+        );
+      }
+    }
+  }
   // Id-list fields (encounter rosters, spawn lists, race abilities,
   // item slots, …) render the IdListPicker — chips + a filterable
   // catalog panel — instead of a raw JSON textarea. Draft stays a

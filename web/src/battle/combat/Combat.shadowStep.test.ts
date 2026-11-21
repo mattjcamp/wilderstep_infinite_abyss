@@ -18,7 +18,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { Combat } from "./Combat";
+import { Combat, SHADOW_STEP_DC } from "./Combat";
 import { mulberry32 } from "../rng";
 import type { Combatant } from "../types";
 
@@ -76,6 +76,7 @@ function fightFixture(opts: {
     dexMod: 5, // wins initiative
     attackBonus: 20, // guaranteed hit
     damage: { dice: 1, sides: 1, bonus: 0 }, // 1 damage per swing
+    dexterity: 40, // +15 DEX mod — the Shadow Step save always passes
     ...opts.attackerOver,
   });
   const enemy = makeCombatant({
@@ -173,5 +174,32 @@ describe("Combat — shadowStepped flag", () => {
     expect(combat.movePoints).toBe(6);
     combat.tryMove("e");
     expect(combat.movePoints).toBe(6);
+  });
+
+  it("fails the DEX save → no Shadow Step, turn ends", () => {
+    // DEX −20 → −15 mod: even a natural 20 totals 5 < DC 12.
+    const { combat } = fightFixture({
+      attackerOver: { dexterity: -20 },
+      enemyHp: 50,
+    });
+    const result = combat.tryMove("e");
+    expect(result.kind).toBe("attacked");
+    if (result.kind !== "attacked") return;
+    expect(result.result.shadowStepped).toBeFalsy();
+    expect(combat.movePoints).toBe(0);
+    expect(combat.log.some((l) => l.includes("fails to Shadow Step"))).toBe(true);
+  });
+
+  it("a failed save still allows a Nimble (postAttackMove) dart-back", () => {
+    const { combat } = fightFixture({
+      attackerOver: { dexterity: -20, postAttackMove: 2 },
+      enemyHp: 50,
+    });
+    combat.tryMove("e");
+    expect(combat.movePoints).toBe(2);
+  });
+
+  it("rolls the save against DC 12 with the DEX modifier", () => {
+    expect(SHADOW_STEP_DC).toBe(12);
   });
 });

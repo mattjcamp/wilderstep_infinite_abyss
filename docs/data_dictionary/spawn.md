@@ -41,6 +41,8 @@ v1 keyed spawn records by stringified tile id; v2 flattens to an array (uniform 
 | `gold_reward` | int | yes | Gold awarded for clearing the lair | TBD |
 | `loot` | string[] | yes | [Item](item.md) `id` strings dropped on clear. Duplicates drop multiple copies. | TBD |
 | `custom_map` | string \| null | no | Optional [Map](map.md) `id`. When set, the lair's boss fight loads this authored map as the battle arena; `null` falls back to the default arena. The editor renders a Map picker for this field. | TBD |
+| `active_time_of_day` | string[] | no | Time-of-day gate. Any of `"day"` (6 AM–11 PM), `"dusk"` (11 PM–12 AM), `"night"` (12–4 AM), `"dawn"` (4–6 AM). The lair only spawns roamers during the listed phases; when its window closes, its live roamers withdraw. Empty/omitted = any time. Editor renders toggle chips. | Yes |
+| `active_moon_phases` | string[] | no | Lunar gate. Any of `"new_moon"`, `"waxing_crescent"`, `"first_quarter"`, `"waxing_gibbous"`, `"full_moon"`, `"waning_gibbous"`, `"last_quarter"`, `"waning_crescent"` (each lasts 3.5 days of the 28-day month). ANDed with `active_time_of_day`. Empty/omitted = any phase. | Yes |
 
 ## Cross-references to other models
 
@@ -67,6 +69,14 @@ v1 keyed spawn records by stringified tile id; v2 flattens to an array (uniform 
   "custom_map": null
 }
 ```
+
+## Time / moon gating
+
+Gates only affect roamer spawning (and withdrawal). The lair tile itself stays on the map and its boss fight can still be triggered at any hour. The editor's map sim has no game clock, so gated lairs always spawn there; only `/play` applies the schedule. Examples:
+
+- Werewolves: `"active_time_of_day": ["night"], "active_moon_phases": ["full_moon"]`
+- Undead: `"active_time_of_day": ["dusk", "night", "dawn"]`
+- Animals: `"active_time_of_day": ["day"]`
 
 ## Notes and open questions
 

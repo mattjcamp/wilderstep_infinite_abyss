@@ -1948,3 +1948,77 @@ describe("MapSimulation — show_link_placard confirm", () => {
     expect(kinds(events)).not.toContain("place_encountered");
   });
 });
+
+describe("MapSimulation — time-gated lairs", () => {
+  const NOON = 0;
+  const MIDNIGHT = 12 * 60;
+
+  function makeLairSim(getClock: () => number | null) {
+    const grid: SimGrid = Array.from({ length: 9 }, () =>
+      Array.from({ length: 9 }, () => cell()),
+    );
+    grid[8][8] = cell({ spawn: "undead" });
+    const bridge = fakeBridge();
+    const sim = new MapSimulation({
+      grid,
+      party: makeParty(),
+      catalog: {
+        characters: [],
+        races: [],
+        effects: [],
+        spawns: [
+          {
+            id: "undead",
+            name: "Old Graves",
+            spawn_monsters: ["skeleton"],
+            spawn_chance: 100,
+            spawn_radius: 5,
+            max_spawned: 1,
+            boss_monsters: [],
+            xp_reward: 0,
+            gold_reward: 0,
+            loot: [],
+            active_time_of_day: ["night"],
+          },
+        ],
+      },
+      classNameById: new Map(),
+      bridge,
+      getClockMinutes: getClock,
+    });
+    const roamerCounts = () => {
+      const calls = (bridge.setRoamerPositions as ReturnType<typeof vi.fn>).mock.calls;
+      return (calls[calls.length - 1]?.[0] as unknown[] | undefined)?.length ?? 0;
+    };
+    return { sim, roamerCounts };
+  }
+
+  it("does not spawn outside the lair's hours", () => {
+    const { sim, roamerCounts } = makeLairSim(() => NOON);
+    sim.waitTurn();
+    sim.waitTurn();
+    expect(roamerCounts()).toBe(0);
+  });
+
+  it("spawns inside the window and withdraws roamers when it closes", () => {
+    let clock = MIDNIGHT;
+    const { sim, roamerCounts } = makeLairSim(() => clock);
+    sim.waitTurn();
+    expect(roamerCounts()).toBe(1);
+    clock = NOON;
+    const events = captureEvents(sim);
+    sim.waitTurn();
+    expect(roamerCounts()).toBe(0);
+    expect(
+      events.some(
+        (e) => e.kind === "log" && e.message.includes("Old Graves") && e.message.includes("withdraw"),
+      ),
+    ).toBe(true);
+  });
+
+  it("ignores the schedule when no clock is wired (editor sim)", () => {
+    const { sim, roamerCounts } = makeLairSim(() => null);
+    sim.waitTurn();
+    expect(roamerCounts()).toBe(1);
+  });
+});

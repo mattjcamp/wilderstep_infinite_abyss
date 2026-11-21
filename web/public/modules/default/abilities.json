@@ -44,9 +44,12 @@
       "icon": "shadow_step",
       "fx_id": null,
       "type": "class",
-      "description": "Move after attacking — true hit-and-run play.",
+      "description": "Move after attacking on a successful DEX save (d20 + DEX mod vs DC 12) — true hit-and-run play.",
       "duration": "permanent",
-      "params": null
+      "params": {
+        "dc": 12,
+        "save_stat": "dexterity"
+      }
     },
     {
       "id": "turn_undead",

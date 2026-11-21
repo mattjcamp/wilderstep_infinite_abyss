@@ -129,8 +129,15 @@ export function canBackstab(c: Combatant): boolean {
   return c.weaponName.toLowerCase() === "dagger";
 }
 
-/** True when a bump-attack should leave the attacker's remaining
- *  movement intact (Thief Shadow Step). Level 7+ Thieves only —
+/** DC for the Shadow Step DEX save (d20 + DEX mod). Matches the
+ *  Backstab / Pick Locks DC so the thief's three DEX checks share a
+ *  difficulty. */
+export const SHADOW_STEP_DC = 12;
+
+/** True when a bump-attack is ELIGIBLE to leave the attacker's
+ *  remaining movement intact (Thief Shadow Step). Eligibility only —
+ *  `Combat.tryMove` then rolls a DEX save vs {@link SHADOW_STEP_DC}
+ *  and the step happens only on a success. Level 7+ Thieves only —
  *  Python required the same gate. Fires on hit, miss, OR kill: the
  *  ability is a hit-and-run mobility tool, not a finisher bonus.
  *  The kill-only gate that used to live alongside this predicate
@@ -652,8 +659,10 @@ export class Combat {
       // remaining moves so the turn ends after the swing. Two
       // overrides, in priority order:
       //
-      //   1. Thief Shadow Step (level 7+) — keeps ALL remaining
-      //      movement after ANY bump-attack (hit, miss, or kill).
+      //   1. Thief Shadow Step (level 7+) — on a successful DEX
+      //      save (d20 + DEX mod vs SHADOW_STEP_DC), keeps ALL
+      //      remaining movement after ANY bump-attack (hit, miss, or
+      //      kill). A failed save falls through to the rules below.
       //      The point of the ability is hit-and-run mobility: the
       //      thief darts in, swings, and slips back out of reach
       //      whether or not the strike landed. Strictly the most
@@ -675,7 +684,22 @@ export class Combat {
       // every bump-attack path (Shadow Step, postAttackMove, default
       // zero-out) consumes the actor's one swing for the turn.
       this.attackedThisTurn = true;
+      // Shadow Step DEX save — rolled only when the thief is eligible
+      // and the fight continues, so non-thieves don't consume RNG.
+      let shadowStepSaved = false;
       if (canShadowStep(actor) && !this.isOver) {
+        const roll = rollD20(this.rng);
+        const mod = getModifier(actor.dexterity ?? 10);
+        const total = roll + mod;
+        shadowStepSaved = total >= SHADOW_STEP_DC;
+        if (!shadowStepSaved) {
+          const sign = mod >= 0 ? "+" : "";
+          this.log.push(
+            `${actor.name} fails to Shadow Step. (d20:${roll}${sign}${mod}=${total} vs DC ${SHADOW_STEP_DC})`,
+          );
+        }
+      }
+      if (shadowStepSaved) {
         // Mutate the result so the scene's player-step handler can
         // start the "shadow step active" pulse on the thief's body
         // without re-deriving the gate from the actor + result. The

@@ -13,6 +13,11 @@ import {
   findQuestPlacedEncounters,
   QUEST_TARGET_TINT,
   roamerCollidesWithParty,
+  hasSpawnSchedule,
+  isSpawnActive,
+  SPAWN_MOON_PHASE_CHOICES,
+  SPAWN_TIME_OF_DAY_CHOICES,
+  timeOfDayPhase,
   type SimSpawn,
   type SimRoamer,
   type SpawnCellInfo,
@@ -638,5 +643,70 @@ describe("findQuestPlacedEncounters", () => {
     expect([out[0].col, out[0].row]).toEqual([7, 7]);
     // Remaining two copies are pulled from the random pool.
     expect(walkable).toHaveLength(0);
+  });
+});
+
+describe("isSpawnActive — time-of-day / moon gating", () => {
+  // Epoch minute 0 = 12:00 PM on day 1 of the lunar cycle (new moon).
+  const NOON = 0;
+  const MIDNIGHT = 12 * 60; // 12:00 AM → "night"
+  const DAY = 24 * 60;
+  const FULL_MOON_NOON = 14 * DAY; // phase 4 of 8
+  const FULL_MOON_MIDNIGHT = FULL_MOON_NOON + 12 * 60;
+
+  it("has stable choice ids", () => {
+    expect(SPAWN_TIME_OF_DAY_CHOICES.map((c) => c.value)).toEqual([
+      "day", "dusk", "night", "dawn",
+    ]);
+    expect(SPAWN_MOON_PHASE_CHOICES.map((c) => c.value)).toContain("full_moon");
+    expect(SPAWN_MOON_PHASE_CHOICES).toHaveLength(8);
+  });
+
+  it("classifies the clock into the four phases", () => {
+    expect(timeOfDayPhase({ totalMinutes: NOON })).toBe("day");
+    expect(timeOfDayPhase({ totalMinutes: MIDNIGHT })).toBe("night");
+    expect(timeOfDayPhase({ totalMinutes: MIDNIGHT - 30 })).toBe("dusk");
+    expect(timeOfDayPhase({ totalMinutes: MIDNIGHT + 5 * 60 })).toBe("dawn");
+  });
+
+  it("treats an unscheduled spawn as always active", () => {
+    const sp = makeSpawn();
+    expect(hasSpawnSchedule(sp)).toBe(false);
+    expect(isSpawnActive(sp, NOON)).toBe(true);
+    expect(isSpawnActive(sp, MIDNIGHT)).toBe(true);
+    expect(isSpawnActive(makeSpawn({ active_time_of_day: [] }), MIDNIGHT)).toBe(true);
+  });
+
+  it("treats a missing clock as active (editor sim)", () => {
+    const sp = makeSpawn({ active_time_of_day: ["night"] });
+    expect(isSpawnActive(sp, null)).toBe(true);
+    expect(isSpawnActive(sp, undefined)).toBe(true);
+  });
+
+  it("gates on time of day", () => {
+    const undead = makeSpawn({ active_time_of_day: ["dusk", "night", "dawn"] });
+    expect(isSpawnActive(undead, NOON)).toBe(false);
+    expect(isSpawnActive(undead, MIDNIGHT)).toBe(true);
+    const animals = makeSpawn({ active_time_of_day: ["day"] });
+    expect(isSpawnActive(animals, NOON)).toBe(true);
+    expect(isSpawnActive(animals, MIDNIGHT)).toBe(false);
+  });
+
+  it("gates on moon phase", () => {
+    const sp = makeSpawn({ active_moon_phases: ["full_moon"] });
+    expect(isSpawnActive(sp, NOON)).toBe(false);
+    expect(isSpawnActive(sp, FULL_MOON_NOON)).toBe(true);
+    // Full moon lasts 3.5 days, then waning gibbous.
+    expect(isSpawnActive(sp, FULL_MOON_NOON + 4 * DAY)).toBe(false);
+  });
+
+  it("ANDs the two gates (werewolves: full moon AND night)", () => {
+    const wolves = makeSpawn({
+      active_time_of_day: ["night"],
+      active_moon_phases: ["full_moon"],
+    });
+    expect(isSpawnActive(wolves, FULL_MOON_MIDNIGHT)).toBe(true);
+    expect(isSpawnActive(wolves, FULL_MOON_NOON)).toBe(false);
+    expect(isSpawnActive(wolves, MIDNIGHT)).toBe(false);
   });
 });

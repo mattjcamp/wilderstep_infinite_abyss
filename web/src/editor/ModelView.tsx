@@ -127,6 +127,8 @@ const SPAWN_FIELDS: Record<string, unknown> = {
   gold_reward: 0,
   loot: [],
   custom_map: "",
+  active_time_of_day: [],
+  active_moon_phases: [],
 };
 
 /** Every encounter field the game reads (src/battle/world/Encounters.ts

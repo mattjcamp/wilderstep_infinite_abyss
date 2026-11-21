@@ -12,7 +12,7 @@
         "width": 32,
         "height": 32
       },
-      "torch_density": 0.15,
+      "torch_density": 0.1,
       "locked_doors": 0.1,
       "levels": [
         {
@@ -23,17 +23,16 @@
         {
           "id": "hidden_grotto_l2",
           "name": "Level 2",
-          "depth": 2
+          "depth": 2,
+          "size": {
+            "width": 16,
+            "height": 16
+          }
         },
         {
           "id": "hidden_grotto_l3",
           "name": "Level 3",
           "depth": 3
-        },
-        {
-          "id": "hidden_grotto_l4",
-          "name": "Level 4",
-          "depth": 4
         }
       ],
       "loot": {
@@ -45,7 +44,17 @@
       "floor_variety": 0,
       "doors": 0.1,
       "pit_falls": true,
-      "vault_key": "iron_key"
+      "trap_types": [
+        {
+          "trap_id": "dart_trap",
+          "weight": 1
+        },
+        {
+          "trap_id": "fire_trap",
+          "weight": 1
+        }
+      ],
+      "bottom_exit": "opening"
     },
     {
       "id": "stone_halls",
@@ -83,7 +92,24 @@
       "wall_decor": 0.5,
       "pits": 0.5,
       "doors": 0.5,
-      "vault_key": "iron_key"
+      "vault_key": "iron_key",
+      "trap_types": [
+        {
+          "trap_id": "dart_trap",
+          "weight": 1
+        },
+        {
+          "trap_id": "fire_trap",
+          "weight": 1
+        },
+        {
+          "trap_id": "teleport_trap",
+          "weight": 1
+        }
+      ],
+      "bottom_exit": "opening",
+      "prisoner_npc": "bjorn",
+      "prisoner_reward": "healing_potion"
     }
   ]
 }

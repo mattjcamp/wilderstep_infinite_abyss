@@ -101,18 +101,66 @@
         {
           "id": "deep_caves_l1",
           "name": "Level 1",
-          "depth": 1
+          "depth": 1,
+          "size": {
+            "width": 16,
+            "height": 16
+          },
+          "trap_types": [
+            {
+              "trap_id": "dart_trap",
+              "weight": 1
+            }
+          ]
         },
         {
           "id": "deep_caves_l2",
           "name": "Level 2",
-          "depth": 2
+          "depth": 2,
+          "trap_types": [
+            {
+              "trap_id": "dart_trap",
+              "weight": 1
+            }
+          ]
         },
         {
           "id": "deep_caves_l3",
           "name": "Level 3",
           "depth": 3,
-          "difficulty": "hard"
+          "size": {
+            "width": 45,
+            "height": 50
+          },
+          "trap_types": [
+            {
+              "trap_id": "fire_trap",
+              "weight": 1
+            }
+          ]
+        },
+        {
+          "id": "deep_caves_l4",
+          "name": "Level 4",
+          "depth": 4,
+          "size": {
+            "width": 45,
+            "height": 20
+          },
+          "trap_types": [
+            {
+              "trap_id": "dart_trap",
+              "weight": 1
+            },
+            {
+              "trap_id": "fire_trap",
+              "weight": 1
+            },
+            {
+              "trap_id": "teleport_trap",
+              "weight": 1
+            }
+          ]
         }
       ],
       "wall_decor": 0.3,
@@ -123,7 +171,15 @@
       },
       "floor_variety": 0,
       "bottom_exit": "opening",
-      "vault_key": "iron_key"
+      "vault_key": "iron_key",
+      "trap_types": [
+        {
+          "trap_id": "dart_trap",
+          "weight": 1
+        }
+      ],
+      "pit_falls": true,
+      "trader_npc": "olga_shopkeeper"
     },
     {
       "id": "dwarven_halls",
@@ -173,11 +229,11 @@
       "loot": {
         "chest_item": "treasure_chest"
       },
-      "soundtrack": [
-        "/audio/Lost in the Labyrinth.mp3"
-      ],
       "bottom_exit": "opening",
-      "vault_key": "iron_key"
+      "vault_key": "iron_key",
+      "prisoner_npc": "villager_female_noble",
+      "prisoner_reward": "long_bow",
+      "trader_npc": "cybil"
     },
     {
       "id": "small_cave",
@@ -197,25 +253,12 @@
           "id": "small_cave_l1",
           "name": "Level 1",
           "depth": 1,
-          "style": "cavern",
-          "size": {
-            "width": 12,
-            "height": 12
-          },
-          "doors": 0.5,
-          "torch_density": 0.5,
-          "locked_doors": 0.5
-        },
-        {
-          "id": "small_cave_l2",
-          "name": "Level 2",
-          "depth": 2,
-          "doors": 0.5,
-          "wall_decor": 0.5,
-          "torch_density": 0.1,
-          "locked_doors": 0.1,
-          "style": "dungeon",
-          "difficulty": "normal"
+          "trap_types": [
+            {
+              "trap_id": "dart_trap",
+              "weight": 1
+            }
+          ]
         }
       ],
       "pits": 0.5,
@@ -223,9 +266,122 @@
       "loot": {
         "chest_item": "treasure_chest"
       },
-      "bottom_exit": "opening",
       "floor_variety": 0,
-      "vault_key": "iron_key"
+      "trap_types": [
+        {
+          "trap_id": "dart_trap",
+          "weight": 1
+        }
+      ]
+    },
+    {
+      "id": "deep_one_shrine",
+      "name": "Deep Ones Shrine",
+      "description": "A forbidding building decorated with the artifacts of The Deep Ones. This is the only place in Varnfell to get powerful healing, but it comes at a great cost and requires even ordinary people to descend to the buried grottos where The Deep Ones magic is powerful.",
+      "tags": [],
+      "style": "manor",
+      "difficulty": "normal",
+      "size": {
+        "width": 16,
+        "height": 16
+      },
+      "torch_density": 0.1,
+      "locked_doors": 0.1,
+      "doors": 0.1,
+      "pits": 0.1,
+      "pit_falls": true,
+      "traps": 0.35,
+      "objects": 0.25,
+      "floor_variety": 0,
+      "wall_decor": 0.25,
+      "loot": {
+        "chest_item": "treasure_chest",
+        "chest_frequency": 0.25
+      },
+      "bottom_exit": "opening",
+      "vault_key": "iron_key",
+      "levels": [
+        {
+          "id": "deep_one_shrine_l1",
+          "name": "Level 1",
+          "depth": 1,
+          "style": "manor",
+          "size": {
+            "width": 16,
+            "height": 20
+          }
+        },
+        {
+          "id": "deep_one_shrine_l2",
+          "name": "Level 2",
+          "depth": 2,
+          "trap_types": [
+            {
+              "trap_id": "dart_trap",
+              "weight": 1
+            },
+            {
+              "trap_id": "fire_trap",
+              "weight": 1
+            },
+            {
+              "trap_id": "teleport_trap",
+              "weight": 1
+            }
+          ],
+          "style": "cavern"
+        },
+        {
+          "id": "deep_one_shrine_l3",
+          "name": "Level 3",
+          "depth": 3,
+          "trap_types": [
+            {
+              "trap_id": "dart_trap",
+              "weight": 1
+            },
+            {
+              "trap_id": "fire_trap",
+              "weight": 1
+            }
+          ],
+          "size": {
+            "width": 16,
+            "height": 64
+          },
+          "style": "cavern"
+        },
+        {
+          "id": "deep_one_shrine_l4",
+          "name": "Level 4",
+          "depth": 4,
+          "style": "deep_ones_hall",
+          "size": {
+            "width": 16,
+            "height": 32
+          },
+          "trap_types": [
+            {
+              "trap_id": "dart_trap",
+              "weight": 1
+            },
+            {
+              "trap_id": "fire_trap",
+              "weight": 1
+            },
+            {
+              "trap_id": "teleport_trap",
+              "weight": 1
+            }
+          ]
+        }
+      ],
+      "lore": [
+        "the_deep_ones"
+      ],
+      "prisoner_npc": "frida",
+      "prisoner_reward": "mana_potion",
+      "trader_npc": "cybil"
     }
   ]
 }

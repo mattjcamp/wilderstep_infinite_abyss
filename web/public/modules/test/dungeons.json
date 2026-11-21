@@ -83,55 +83,6 @@
       "pits": 0.5,
       "doors": 0.5,
       "vault_key": "iron_key"
-    },
-    {
-      "id": "test3",
-      "name": "Test3",
-      "description": "test3",
-      "tags": [],
-      "style": "dungeon",
-      "difficulty": "normal",
-      "size": {
-        "width": 50,
-        "height": 50
-      },
-      "torch_density": 0.1,
-      "locked_doors": 0.1,
-      "doors": 0.1,
-      "pits": 0.1,
-      "pit_falls": true,
-      "traps": 0.35,
-      "objects": 0.25,
-      "floor_variety": 0,
-      "wall_decor": 0.25,
-      "loot": {
-        "chest_item": "treasure_chest",
-        "chest_frequency": 0.25
-      },
-      "bottom_exit": "opening",
-      "vault_key": "iron_key",
-      "levels": [
-        {
-          "id": "test3_l1",
-          "name": "Level 1",
-          "depth": 1,
-          "size": {
-            "width": 32,
-            "height": 32
-          }
-        },
-        {
-          "id": "test3_l2",
-          "name": "Level 2",
-          "depth": 2,
-          "size": {
-            "width": 16,
-            "height": 16
-          }
-        }
-      ],
-      "prisoner_npc": "agnetha",
-      "prisoner_reward": "stoneguard_plate"
     }
   ]
 }

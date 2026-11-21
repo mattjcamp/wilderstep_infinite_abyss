@@ -138760,7 +138760,7 @@
             "spawn": null,
             "sprite": "map/settlements/cave_entrance.png",
             "tag": "map:settlements",
-            "dungeon": "deep_caves"
+            "dungeon": "stone_halls"
           },
           {
             "boat": false,
@@ -142397,7 +142397,9 @@
             "spawn": null,
             "sprite": "map/settlements/shrine.png",
             "tag": "map:settlements",
-            "background_sprite": "map/grass.png"
+            "background_sprite": "map/grass.png",
+            "dungeon": "deep_one_shrine",
+            "show_link_placard": true
           },
           {
             "boat": false,
@@ -158368,7 +158370,7 @@
             "animation": "none",
             "counter": null,
             "encounter": null,
-            "spawn": null,
+            "spawn": "ghosts",
             "sprite": "map/grass.png",
             "tag": "map"
           },
@@ -162201,7 +162203,7 @@
             "animation": "none",
             "counter": null,
             "encounter": null,
-            "spawn": null,
+            "spawn": "ghosts",
             "sprite": "map/grass.png",
             "tag": "map"
           },
@@ -177597,7 +177599,7 @@
             "animation": "none",
             "counter": null,
             "encounter": null,
-            "spawn": null,
+            "spawn": "werewolf",
             "sprite": "map/grass.png",
             "tag": "map"
           },
@@ -181057,7 +181059,7 @@
             "animation": "none",
             "counter": null,
             "encounter": null,
-            "spawn": null,
+            "spawn": "werewolf",
             "sprite": "map/grass.png",
             "tag": "map"
           },
@@ -184121,7 +184123,7 @@
             "animation": "none",
             "counter": null,
             "encounter": null,
-            "spawn": null,
+            "spawn": "ghosts",
             "sprite": "map/grass.png",
             "tag": "map"
           },
@@ -186041,7 +186043,7 @@
             "animation": "none",
             "counter": null,
             "encounter": null,
-            "spawn": null,
+            "spawn": "ghosts",
             "sprite": "map/grass.png",
             "tag": "map"
           },
@@ -203957,7 +203959,7 @@
             "animation": "none",
             "counter": null,
             "encounter": null,
-            "spawn": null,
+            "spawn": "werewolf",
             "sprite": "map/grass.png",
             "tag": "map"
           },
@@ -206566,7 +206568,7 @@
             "spawn": null,
             "sprite": "map/settlements/cave_entrance.png",
             "tag": "map:settlements",
-            "dungeon": "hidden_grotto"
+            "dungeon": "deep_caves"
           },
           {
             "boat": false,
@@ -206761,7 +206763,7 @@
             "animation": "none",
             "counter": null,
             "encounter": null,
-            "spawn": null,
+            "spawn": "orc_goblin",
             "sprite": "map/grass.png",
             "tag": "map"
           },
@@ -207498,7 +207500,9 @@
             "spawn": null,
             "sprite": "map/settlements/shrine.png",
             "tag": "map:settlements",
-            "background_sprite": "map/grass.png"
+            "background_sprite": "map/grass.png",
+            "show_link_placard": true,
+            "dungeon": "deep_one_shrine"
           },
           {
             "boat": false,
@@ -209829,7 +209833,7 @@
             "spawn": null,
             "sprite": "map/settlements/cave_entrance.png",
             "tag": "map:settlements",
-            "dungeon": "hidden_grotto"
+            "dungeon": "small_cave"
           },
           {
             "boat": false,
@@ -211457,7 +211461,7 @@
             "animation": "none",
             "counter": null,
             "encounter": null,
-            "spawn": null,
+            "spawn": "ghosts",
             "sprite": "map/grass.png",
             "tag": "map"
           },
@@ -231355,7 +231359,7 @@
             "animation": "none",
             "counter": null,
             "encounter": null,
-            "spawn": null,
+            "spawn": "bats",
             "sprite": "map/trees_and_forests/dense_forest.png",
             "tag": "map:trees & forests",
             "background_sprite": "map/grass.png"
@@ -250921,7 +250925,7 @@
             "animation": "none",
             "counter": null,
             "encounter": null,
-            "spawn": null,
+            "spawn": "goblin_spawn",
             "sprite": "map/trees_and_forests/forest.png",
             "tag": "map:trees & forests",
             "background_sprite": "map/grass.png"

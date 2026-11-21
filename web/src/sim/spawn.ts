@@ -22,6 +22,15 @@
  */
 
 import type { Position, SimEncounterRef } from "./types";
+import {
+  isDawn,
+  isDay,
+  isDusk,
+  isNight,
+  LUNAR_PHASES,
+  lunarPhaseIndex,
+  type GameClock,
+} from "@/battle/world/GameTime";
 
 /** Catalog entry from spawns.json. Same shape v1 used (snake_case
  *  matches the JSON on disk so callers can pass raw merged records
@@ -56,6 +65,17 @@ export interface SimSpawn {
    *  back to the generic green-field arena. Authored via the editor's
    *  MapPicker on the `custom_map` field. */
   custom_map?: string | null;
+  /** Optional time-of-day gate. When non-empty, the lair only
+   *  produces roamers while the game clock is in one of these phases
+   *  ("day" | "dusk" | "night" | "dawn" — see GameTime's phase
+   *  windows). Empty / omitted = active around the clock. */
+  active_time_of_day?: string[];
+  /** Optional lunar gate. When non-empty, the lair only produces
+   *  roamers while the moon is in one of these phases (snake_case of
+   *  GameTime.LUNAR_PHASES, e.g. "full_moon"). Empty / omitted =
+   *  active every night of the month. Combined with
+   *  `active_time_of_day` as AND: both must match. */
+  active_moon_phases?: string[];
 }
 
 /** A live roamer on the map — a monster that one of the lairs spat
@@ -639,4 +659,73 @@ export function findQuestPlacedEncounters(
     }
   }
   return out;
+}
+
+// ── Time / moon gating ─────────────────────────────────────────────
+
+/** Time-of-day phases a spawn can be gated to. Values match the four
+ *  mutually-exclusive windows in GameTime (isDay / isDusk / isNight /
+ *  isDawn). Labels carry the hours so authors know "night" is the
+ *  short small-hours window, not every dark-ish hour. */
+export const SPAWN_TIME_OF_DAY_CHOICES: ReadonlyArray<{
+  value: string;
+  label: string;
+}> = [
+  { value: "day", label: "Day (6 AM – 11 PM)" },
+  { value: "dusk", label: "Dusk (11 PM – 12 AM)" },
+  { value: "night", label: "Night (12 AM – 4 AM)" },
+  { value: "dawn", label: "Dawn (4 AM – 6 AM)" },
+];
+
+/** snake_case id for a lunar phase name ("Full Moon" → "full_moon"). */
+export function moonPhaseId(name: string): string {
+  return name.toLowerCase().replace(/\s+/g, "_");
+}
+
+/** Moon phases a spawn can be gated to, in cycle order. Each phase
+ *  lasts 3.5 days of the 28-day month. */
+export const SPAWN_MOON_PHASE_CHOICES: ReadonlyArray<{
+  value: string;
+  label: string;
+}> = LUNAR_PHASES.map((name) => ({ value: moonPhaseId(name), label: name }));
+
+/** Which time-of-day phase the clock is in. */
+export function timeOfDayPhase(c: GameClock): "day" | "dusk" | "night" | "dawn" {
+  if (isDay(c)) return "day";
+  if (isDusk(c)) return "dusk";
+  if (isNight(c)) return "night";
+  if (isDawn(c)) return "dawn";
+  return "night";
+}
+
+/** True when the spawn has any time / moon restriction at all. */
+export function hasSpawnSchedule(
+  spawn: Pick<SimSpawn, "active_time_of_day" | "active_moon_phases">,
+): boolean {
+  return (
+    (spawn.active_time_of_day?.length ?? 0) > 0 ||
+    (spawn.active_moon_phases?.length ?? 0) > 0
+  );
+}
+
+/**
+ * Is this lair "awake" at `clockMinutes`? Both gates must pass; an
+ * empty / missing gate always passes. A `null` clock (e.g. the editor
+ * sim, which has no game clock) treats every lair as active so
+ * test-playing a map still shows its spawns.
+ */
+export function isSpawnActive(
+  spawn: Pick<SimSpawn, "active_time_of_day" | "active_moon_phases">,
+  clockMinutes: number | null | undefined,
+): boolean {
+  if (clockMinutes === null || clockMinutes === undefined) return true;
+  const c: GameClock = { totalMinutes: clockMinutes };
+  const times = spawn.active_time_of_day ?? [];
+  if (times.length > 0 && !times.includes(timeOfDayPhase(c))) return false;
+  const moons = spawn.active_moon_phases ?? [];
+  if (moons.length > 0) {
+    const phase = moonPhaseId(LUNAR_PHASES[lunarPhaseIndex(c)]);
+    if (!moons.includes(phase)) return false;
+  }
+  return true;
 }

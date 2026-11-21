@@ -35,6 +35,7 @@ import {
   findPlacedEncounters,
   findQuestPlacedEncounters,
   IDLE_WANDER_CHANCE,
+  isSpawnActive,
   randomRoamStep,
   roamStep,
   roamerCollidesWithParty,
@@ -775,6 +776,11 @@ export interface MapSimulationOptions {
    *  ("dance" / "still"). Omitted → every NPC wanders. Quest-only
    *  giver cells (no `npc` id) always wander, as before. */
   npcCanWander?: (npcId: string) => boolean;
+  /** Live game-clock reader (total minutes since epoch). Gates lairs
+   *  that set `active_time_of_day` / `active_moon_phases`: an inactive
+   *  lair stops spawning and its roamers slink away. Omitted (editor
+   *  sim, tests) or returning null → every lair counts as active. */
+  getClockMinutes?: () => number | null;
 }
 
 /** The simulation controller. One per active sim session; mounted by
@@ -915,6 +921,8 @@ export class MapSimulation {
    *  construction; not mutable mid-run. */
   private readonly npcWanderEnabled: boolean;
   private readonly npcCanWander?: (npcId: string) => boolean;
+  /** See {@link MapSimulationOptions.getClockMinutes}. */
+  private readonly getClockMinutes?: () => number | null;
   private disposed = false;
 
   constructor(opts: MapSimulationOptions) {
@@ -963,6 +971,7 @@ export class MapSimulation {
     this.groundTile = opts.catalog.groundTile;
     this.npcWanderEnabled = opts.enableNpcWander ?? false;
     this.npcCanWander = opts.npcCanWander;
+    this.getClockMinutes = opts.getClockMinutes;
     // Mutation state — seeded from per-session options so a host
     // remounting the same grid (e.g. dungeon floor revisits)
     // resumes where it left off. Cloned into new Sets so the
@@ -2240,8 +2249,36 @@ export class MapSimulation {
       >,
       this.spawnCatalog,
     );
+    const clock = this.getClockMinutes?.() ?? null;
+    // Scheduled lairs (active_time_of_day / active_moon_phases) that
+    // are out of their window this step: they spawn nothing, and any
+    // roamers they already put out withdraw — undead melt away at
+    // dawn, werewolves when the full moon wanes. Roamers whose
+    // encounter overlay is already open are left alone.
+    const sleeping = new Map<string, SimSpawn>();
+    for (const { col, row, spawn } of lairs) {
+      if (!isSpawnActive(spawn, clock)) sleeping.set(`${col},${row}`, spawn);
+    }
+    if (sleeping.size > 0 && this.roamers.length > 0) {
+      const engaged = this.pendingSpawn?.roamerId ?? null;
+      const withdrawn = new Map<string, SimSpawn>();
+      this.roamers = this.roamers.filter((r) => {
+        const sp = sleeping.get(r.sourceKey);
+        if (!sp || r.id === engaged) return true;
+        withdrawn.set(r.sourceKey, sp);
+        this.calmed.delete(`r:${r.id}`);
+        return false;
+      });
+      for (const sp of withdrawn.values()) {
+        this.emit({
+          kind: "log",
+          message: `The creatures of ${sp.name} withdraw.`,
+        });
+      }
+    }
     for (const { col, row, spawn } of lairs) {
       if (this.destroyedLairs.has(`${col},${row}`)) continue;
+      if (sleeping.has(`${col},${row}`)) continue;
       const roamer = trySpawnRoamer({
         lair: { col, row },
         spawn,

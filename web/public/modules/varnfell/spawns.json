@@ -1,0 +1,29 @@
+{
+  "spawns": [
+    {
+      "id": "werewolf",
+      "name": "Werewolves",
+      "description": "A pack of snarling wolves, lead by a half man, half wolf creature.",
+      "spawn_monsters": [
+        "werewolf",
+        "werewolf",
+        "dire_wolf",
+        "wolf",
+        "wolf",
+        "wolf"
+      ],
+      "spawn_chance": 5,
+      "spawn_radius": 5,
+      "max_spawned": 2,
+      "boss_monsters": [],
+      "xp_reward": 0,
+      "gold_reward": 0,
+      "loot": [],
+      "custom_map": null,
+      "active_time_of_day": [],
+      "active_moon_phases": [
+        "full_moon"
+      ]
+    }
+  ]
+}

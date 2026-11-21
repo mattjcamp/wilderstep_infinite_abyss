@@ -20,6 +20,9 @@
       "gold_reward": 50,
       "loot": [
         "camping_supplies"
+      ],
+      "active_time_of_day": [
+        "day"
       ]
     },
     {
@@ -38,7 +41,11 @@
       "xp_reward": 200,
       "gold_reward": 200,
       "loot": [],
-      "custom_map": null
+      "custom_map": null,
+      "active_time_of_day": [
+        "dusk",
+        "night"
+      ]
     },
     {
       "id": "bats",
@@ -55,7 +62,11 @@
       "xp_reward": 100,
       "gold_reward": 100,
       "loot": [],
-      "custom_map": null
+      "custom_map": null,
+      "active_time_of_day": [
+        "dusk",
+        "dawn"
+      ]
     },
     {
       "id": "orc_goblin",
@@ -76,7 +87,11 @@
       "loot": [
         "healing_potion"
       ],
-      "custom_map": "dungeon_battle_screen_1"
+      "custom_map": "dungeon_battle_screen_1",
+      "active_time_of_day": [
+        "day",
+        "dawn"
+      ]
     }
   ]
 }

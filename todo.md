@@ -5,6 +5,7 @@
 - keep iterating on the world itself
 - Make a version of the varnfell overview that is primarily random (try random town, random shrine)
 - Consider re-rolling random elements on a schedule based on the game calendar
+- Add option for spawns to only be active at certain times of the day or month
 
 # Notes
 

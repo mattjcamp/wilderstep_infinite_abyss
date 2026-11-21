@@ -4876,6 +4876,9 @@ export function PlayHost() {
             // play scene wants the ambient motion so towns don't
             // feel static.
             enableNpcWander: true,
+            // Live clock for time / moon-gated lairs (spawns with
+            // active_time_of_day / active_moon_phases).
+            getClockMinutes: () => clockRef.current,
             npcCanWander: (() => {
               const behaviorById = new Map<string, unknown>();
               for (const n of catalog.npcs) behaviorById.set(n.id, n.behavior);
