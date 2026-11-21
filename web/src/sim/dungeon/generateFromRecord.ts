@@ -42,6 +42,7 @@ import type { EncounterTemplate } from "@/battle/world/Encounters";
 import { TILE_DFLOOR } from "@/battle/world/Tiles";
 import {
   clampDungeonSize,
+  cleanTrapPicks,
   DUNGEON_DEFAULTS,
   resolveBottomExit,
   STYLE_DEFAULTS,
@@ -128,6 +129,9 @@ export function generateDungeonFromRecord(
       edgeTransitions: resolved.edgeTransitions,
       // Pit frequency — 0 (the default) places none.
       pitProbability: resolved.pitFrequency,
+      // Traps — chance per room + which traps.json records they use.
+      trapProbability: resolved.trapFrequency,
+      trapTypes: resolved.trapTypes,
       // Bottom-floor way out (stairs / ladder straight out of the
       // dungeon). Only ever set on the last floor.
       overworldExit: resolved.bottomExit || undefined,
@@ -312,6 +316,20 @@ export function resolveLevelOptions(
   const pitFrequency = level.pits ?? parent.pits ?? DUNGEON_DEFAULTS.pits;
   const pitFalls =
     level.pit_falls ?? parent.pit_falls ?? DUNGEON_DEFAULTS.pit_falls;
+  // Traps: frequency inherits level→parent→default (0.35), clamped.
+  // The trap mix is replaced, not merged — a Level that sets its own
+  // list uses only that list.
+  const trapRaw = level.traps ?? parent.traps;
+  const trapFrequency = Math.min(
+    1,
+    Math.max(
+      0,
+      typeof trapRaw === "number" && Number.isFinite(trapRaw)
+        ? trapRaw
+        : DUNGEON_DEFAULTS.traps,
+    ),
+  );
+  const trapTypes = cleanTrapPicks(level.trap_types ?? parent.trap_types);
   // Cosmetic dials: level → parent → the resolved style's default,
   // clamped to 0–1.
   const styleDefaults = STYLE_DEFAULTS[style];
@@ -340,6 +358,8 @@ export function resolveLevelOptions(
     edgeTransitions,
     pitFrequency,
     pitFalls,
+    trapFrequency,
+    trapTypes,
     bottomExit,
     objectFrequency,
     floorVariety,

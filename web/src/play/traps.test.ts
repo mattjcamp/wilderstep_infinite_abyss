@@ -15,6 +15,7 @@ import {
   DEFAULT_TRAP_ID,
   resolveTrapOutcome,
   resolveTrapRecord,
+  trapCard,
   type TrapRecord,
   type TrapVictim,
 } from "./traps";
@@ -114,9 +115,9 @@ describe("damage traps", () => {
     );
     const out = resolveTrapOutcome(trap, PARTY, rng);
     expect(out.hits).toEqual([
-      { index: 0, damage: 4, saved: true, effect: null },
-      { index: 1, damage: 9, saved: false, effect: "poisoned" },
-      { index: 2, damage: 2, saved: true, effect: null },
+      { index: 0, damage: 4, saved: true, effect: null, saveTotal: 12 },
+      { index: 1, damage: 9, saved: false, effect: "poisoned", saveTotal: 11 },
+      { index: 2, damage: 2, saved: true, effect: null, saveTotal: 12 },
     ]);
     // Failed save carries the affliction line.
     expect(out.lines.some((l) => l.includes("Aldric is afflicted"))).toBe(
@@ -160,9 +161,9 @@ describe("effect traps", () => {
     );
     expect(out.kind).toBe("effect");
     expect(out.hits).toEqual([
-      { index: 0, damage: 0, saved: true, effect: null },
-      { index: 1, damage: 0, saved: false, effect: "sleep" },
-      { index: 2, damage: 0, saved: false, effect: "sleep" },
+      { index: 0, damage: 0, saved: true, effect: null, saveTotal: 20 },
+      { index: 1, damage: 0, saved: false, effect: "sleep", saveTotal: 1 },
+      { index: 2, damage: 0, saved: false, effect: "sleep", saveTotal: 1 },
     ]);
   });
 
@@ -190,15 +191,20 @@ describe("teleport traps", () => {
     expect(out.hits).toEqual([]);
   });
 
-  it("fizzles on a malformed destination", () => {
+  it("falls back to a random jump on a missing or malformed destination", () => {
     const bad: TrapRecord = {
       id: "t",
       trap_type: "teleport",
       params: { teleport: { map_id: "", col: 1, row: 1 } },
     };
-    expect(resolveTrapOutcome(bad, PARTY, seq()).kind).toBe("fizzle");
+    const outBad = resolveTrapOutcome(bad, PARTY, seq());
+    expect(outBad.kind).toBe("teleport");
+    expect(outBad.teleport).toBeNull();
+    expect(outBad.randomTeleport).toBe(true);
     const none: TrapRecord = { id: "t", trap_type: "teleport" };
-    expect(resolveTrapOutcome(none, PARTY, seq()).kind).toBe("fizzle");
+    const outNone = resolveTrapOutcome(none, PARTY, seq());
+    expect(outNone.kind).toBe("teleport");
+    expect(outNone.randomTeleport).toBe(true);
   });
 });
 
@@ -221,5 +227,55 @@ describe("misauthored records", () => {
     );
     expect(out.kind).toBe("damage");
     expect(out.hits[0].damage).toBe(2);
+  });
+});
+
+describe("trapCard", () => {
+  const before = [
+    { id: "selina", hp: 10, max_hp: 10 },
+    { id: "aldric", hp: 5, max_hp: 12 },
+    { id: "mira", hp: 0, max_hp: 6 },
+  ];
+  const names: Record<string, string> = { selina: "Selina", aldric: "Aldric", mira: "Mira" };
+  const info = (id: string) => ({ name: names[id] });
+
+  it("names the trap, the victim and the damage; marks knock-outs", () => {
+    const out = resolveTrapOutcome(DART, PARTY.slice(0, 2), seq(0.5, 0.999));
+    const hit = out.hits[0];
+    const after = before.map((m, i) =>
+      i === hit.index ? { ...m, hp: Math.max(0, m.hp - hit.damage) } : m,
+    );
+    const card = trapCard(DART, out, before, after, info);
+    expect(card.trapName).toBe("Dart Trap");
+    const row = card.lines[hit.index];
+    expect(row.targeted).toBe(true);
+    expect(row.damage).toBe(hit.damage);
+    expect(row.knockedOut).toBe(after[hit.index].hp === 0);
+    expect(card.summary).toContain(names[before[hit.index].id]);
+    expect(card.lines[2].fallen).toBe(true);
+    expect(card.lines.filter((l) => l.targeted)).toHaveLength(1);
+  });
+
+  it("reports the save and effect names", () => {
+    const trap: TrapRecord = {
+      ...DART,
+      effect: "poisoned",
+      params: { targets: "all", save_stat: "dexterity", save_dc: 12 },
+    };
+    const out = resolveTrapOutcome(trap, PARTY.slice(0, 2), seq(d20(9), 0, d20(1), 0));
+    const after = before.map((m, i) => {
+      const h = out.hits.find((x) => x.index === i);
+      return h ? { ...m, hp: Math.max(0, m.hp - h.damage) } : m;
+    });
+    const card = trapCard(trap, out, before, after, info, () => "Poisoned");
+    expect(card.save).toEqual({ stat: "dexterity", dc: 12 });
+    expect(card.lines[0].saved).toBe(true);
+    expect(card.lines[1].effect).toBe("Poisoned");
+    expect(card.summary).toContain("whole party");
+  });
+
+  it("log lines carry the HP change", () => {
+    const out = resolveTrapOutcome(DART, PARTY, seq(0.5, 0));
+    expect(out.lines[0]).toMatch(/HP 12 → \d+/);
   });
 });

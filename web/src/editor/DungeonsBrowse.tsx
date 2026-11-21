@@ -27,7 +27,7 @@ import {
   deleteRecordConfirmMessage,
   discardDraftConfirmMessage,
 } from "./editorShell";
-import { useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import {
   discardDraft,
   downloadJson,
@@ -44,6 +44,7 @@ import { ID_PATTERN, TagsPicker } from "./TagsPicker";
 import { usePublishServer } from "./usePublishServer";
 import {
   clampDungeonSize,
+  DUNGEON_DEFAULTS,
   DUNGEON_SIZE_MAX,
   DUNGEON_SIZE_MIN,
   STYLE_DEFAULTS,
@@ -58,6 +59,20 @@ const UNTAGGED = "(untagged)";
 /** Chest-eligible item as surfaced to the chest pickers — id + name
  *  plus the organizational tags that drive "Category › Type"
  *  optgroups. */
+/** A traps.json record offered by the trap-mix picker. */
+type TrapChoice = { id: string; name: string };
+/** Trap records visible to this module — read by GeneratorFields so
+ *  the picker doesn't need threading through every row component. */
+const TrapChoicesContext = createContext<TrapChoice[]>([]);
+/** The record generated traps use when no trap mix is set. */
+const DEFAULT_TRAP_ID = "dart_trap";
+
+/** One weighted entry in a dungeon's trap mix. */
+interface TrapPick {
+  trap_id: string;
+  weight?: number;
+}
+
 type ChestItem = {
   id: string;
   name: string;
@@ -127,6 +142,8 @@ interface DungeonLevel {
   pits?: number;
   /** Dungeon-dressing dials — see `Dials`. All inherit. */
   pit_falls?: boolean;
+  traps?: number;
+  trap_types?: TrapPick[];
   objects?: number;
   floor_variety?: number;
   wall_decor?: number;
@@ -157,6 +174,12 @@ interface DungeonRecord {
   pits?: number;
   /** Pits drop to the floor below (default true). */
   pit_falls?: boolean;
+  /** 0–1 chance each room past the entrance gets a hidden trap.
+   *  Default 0.35. Levels override per-floor. */
+  traps?: number;
+  /** Weighted traps.json records generated traps use. Absent / empty →
+   *  every trap is the default (Dart Trap). */
+  trap_types?: TrapPick[];
   /** 0–1 room clutter, floor variety, wall decorations. Absent → the
    *  style's default (`STYLE_DEFAULTS`). */
   objects?: number;
@@ -192,21 +215,33 @@ type LoadState =
       /** Items flagged `is_chest: true` in the resolved items model —
        *  the choices for the loot chest picker. */
       chestItems: Array<ChestItem>;
+      /** traps.json records — the choices for the trap-mix picker. */
+      trapChoices: TrapChoice[];
       ownFile: Record<string, unknown> | null;
       isDraft: boolean;
     }
   | { kind: "error"; message: string };
 
-/** Default values used for a freshly-created Dungeon. Authors can
- *  tweak post-create; these are deliberately middle-of-the-road. */
+/** Values a freshly-created Dungeon starts with (the author's chosen
+ *  house defaults). Authors tweak post-create. Entrance / exit
+ *  placement is left unset (the generator's default: in rooms). */
 const DEFAULTS = {
   style: "dungeon" as Style,
   difficulty: "normal" as Difficulty,
   /** Empty = any theme (no encounter-theme restriction). */
   theme: "",
-  size: { width: 32, height: 32 },
-  torch_density: 0.15,
-  locked_doors: 0.25,
+  size: { width: 16, height: 16 },
+  torch_density: 0.1,
+  locked_doors: 0.1,
+  doors: 0.1,
+  pits: 0.1,
+  pit_falls: true,
+  traps: 0.35,
+  objects: 0.25,
+  floor_variety: 0,
+  wall_decor: 0.25,
+  loot: { chest_item: "treasure_chest", chest_frequency: 0.25 },
+  bottom_exit: "ladder" as const,
 } as const;
 
 export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
@@ -220,7 +255,7 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
   const refresh = async () => {
     try {
       const src = getEditorModuleSource();
-      const [layers, catalog, itemLayers] = await Promise.all([
+      const [layers, catalog, itemLayers, trapLayers] = await Promise.all([
         src.loadModelLayers(moduleId, "dungeons"),
         // Dungeons offered by `uses` libraries. Not part of the
         // resolved view — the import section below copies them in.
@@ -228,6 +263,8 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
         // Items model — resolved so the loot picker can offer every
         // chest item visible to this module (inherited + own).
         src.loadModelLayers(moduleId, "items"),
+        // Traps model — the choices for the trap-mix picker.
+        src.loadModelLayers(moduleId, "traps"),
       ]);
       const draft = await loadDraft<Record<string, unknown>>(moduleId, MODEL_KEY);
       const ownEffective =
@@ -253,11 +290,23 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
           item_type: it.item_type != null ? String(it.item_type) : undefined,
         }))
         .filter((it) => it.id !== "");
+      const trapsMerged = mergeModel(
+        "traps",
+        trapLayers.inherited,
+        trapLayers.ownFile as Record<string, unknown> | null,
+      ) as { traps?: Array<Record<string, unknown>> } | null;
+      const trapChoices = (trapsMerged?.traps ?? [])
+        .map((t) => ({
+          id: String(t.id ?? ""),
+          name: String(t.name ?? t.id ?? ""),
+        }))
+        .filter((t) => t.id !== "");
       setState({
         kind: "ok",
         dungeons,
         catalog,
         chestItems,
+        trapChoices,
         ownFile: ownEffective ?? null,
         isDraft: hasDraft(moduleId, MODEL_KEY),
       });
@@ -601,6 +650,7 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
         </div>
       ) : null}
 
+      <TrapChoicesContext.Provider value={state.trapChoices}>
       <div className="mt-6 space-y-5">
         {[...groupedByTag.entries()].map(([tag, dungeons]) => (
           <section key={tag}>
@@ -675,6 +725,7 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
           </p>
         ) : null}
       </div>
+      </TrapChoicesContext.Provider>
 
       {/* Available from libraries (uses) — explicit import, not
           auto-merged. Each dungeon is a self-contained record, so the
@@ -1481,6 +1532,39 @@ function GeneratorFields({
         </div>
       </label>
 
+      {/* Traps — 0–1 chance per room past the entrance of one hidden
+          trap near the room's centre. Default 0.35. */}
+      <label className="block" title="Chance each room past the entrance gets one hidden trap. 0 = no traps.">
+        <span className="text-xs uppercase tracking-wide text-parchment/65">
+          Traps (0–1)
+        </span>
+        <div className="mt-0.5 flex items-center gap-1">
+          <input
+            type="number"
+            step={0.05}
+            min={0}
+            max={1}
+            value={dials.traps ?? ""}
+            placeholder={String(parentDials?.traps ?? DUNGEON_DEFAULTS.traps)}
+            onChange={(e) => {
+              const v = e.target.value === "" ? NaN : Number(e.target.value);
+              onDial("traps", Number.isFinite(v) ? v : undefined);
+            }}
+            className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
+          />
+          {allowInherit && dials.traps !== undefined ? (
+            <InheritButton onClick={() => onDial("traps", undefined)} />
+          ) : null}
+        </div>
+      </label>
+
+      <TrapMixField
+        own={dials.trap_types}
+        parent={parentDials?.trap_types}
+        allowInherit={allowInherit}
+        onChange={(v) => onDial("trap_types", v)}
+      />
+
       {/* Dressing dials — clutter, floor variety, wall decorations.
           Blank inherits the parent, else the style's default. */}
       {(
@@ -1643,9 +1727,15 @@ interface Dials {
   objects?: number;
   floor_variety?: number;
   wall_decor?: number;
+  /** 0–1 trap chance per room; undefined = inherit / default 0.35. */
+  traps?: number;
+  /** Weighted trap mix; undefined = inherit / default trap. */
+  trap_types?: TrapPick[];
 }
 function dialsOf(r: Dials): Dials {
   return {
+    traps: r.traps,
+    trap_types: r.trap_types,
     pit_falls: r.pit_falls,
     objects: r.objects,
     floor_variety: r.floor_variety,
@@ -1688,6 +1778,104 @@ function mergeLoot(
   return next.chest_item == null && next.chest_frequency == null
     ? undefined
     : next;
+}
+
+/** Weighted trap-mix editor: one row per traps.json record with a
+ *  relative weight. Empty on a Level inherits the parent's mix; empty
+ *  on the Dungeon means every trap is the default (Dart Trap). */
+function TrapMixField({
+  own,
+  parent,
+  allowInherit,
+  onChange,
+}: {
+  own: TrapPick[] | undefined;
+  parent: TrapPick[] | undefined;
+  allowInherit: boolean;
+  onChange: (v: TrapPick[] | undefined) => void;
+}) {
+  const choices = useContext(TrapChoicesContext);
+  const label = (id: string) => choices.find((c) => c.id === id)?.name ?? id;
+  const describe = (list: TrapPick[] | undefined) =>
+    list && list.length > 0
+      ? list.map((p) => `${label(p.trap_id)} ×${p.weight ?? 1}`).join(", ")
+      : label(DEFAULT_TRAP_ID);
+  const rows = own ?? [];
+  const set = (next: TrapPick[]) => onChange(next.length > 0 ? next : undefined);
+  const firstUnused =
+    choices.find((c) => !rows.some((p) => p.trap_id === c.id))?.id ??
+    choices[0]?.id ??
+    DEFAULT_TRAP_ID;
+  return (
+    <div className="block sm:col-span-2">
+      <span className="text-xs uppercase tracking-wide text-parchment/65">
+        Trap types (weighted)
+      </span>
+      <div className="mt-0.5 space-y-1">
+        {rows.length === 0 ? (
+          <p className="text-[13px] text-parchment/60">
+            ({allowInherit ? "inherit" : "default"} — {describe(allowInherit ? parent : undefined)})
+          </p>
+        ) : null}
+        {rows.map((p, i) => (
+          <div key={i} className="flex items-center gap-1">
+            <select
+              value={p.trap_id}
+              onChange={(e) =>
+                set(rows.map((q, j) => (j === i ? { ...q, trap_id: e.target.value } : q)))
+              }
+              className="min-w-0 flex-1 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
+            >
+              {choices.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+              {!choices.some((c) => c.id === p.trap_id) ? (
+                <option value={p.trap_id}>{p.trap_id} (missing)</option>
+              ) : null}
+            </select>
+            <input
+              type="number"
+              step={1}
+              min={0}
+              value={p.weight ?? 1}
+              title="Relative weight — a trap with weight 3 turns up three times as often as one with weight 1."
+              onChange={(e) => {
+                const v = Number(e.target.value);
+                set(
+                  rows.map((q, j) =>
+                    j === i ? { ...q, weight: Number.isFinite(v) ? v : 1 } : q,
+                  ),
+                );
+              }}
+              className="w-16 rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
+            />
+            <button
+              type="button"
+              onClick={() => set(rows.filter((_, j) => j !== i))}
+              title="Remove this trap type."
+              className="rounded border border-parchment/20 px-1.5 text-[13px] text-parchment/75 hover:border-ember/60 hover:text-parchment"
+            >
+              ×
+            </button>
+          </div>
+        ))}
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => set([...rows, { trap_id: firstUnused, weight: 1 }])}
+            className="rounded border border-parchment/20 px-2 py-0.5 text-[13px] text-parchment/80 hover:border-parchment/40 hover:text-parchment"
+          >
+            + Add trap type
+          </button>
+          {allowInherit && own !== undefined ? (
+            <InheritButton onClick={() => onChange(undefined)} />
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function InheritButton({ onClick }: { onClick: () => void }) {
@@ -1748,6 +1936,15 @@ function NewDungeonForm({
       size: { ...DEFAULTS.size },
       torch_density: DEFAULTS.torch_density,
       locked_doors: DEFAULTS.locked_doors,
+      doors: DEFAULTS.doors,
+      pits: DEFAULTS.pits,
+      pit_falls: DEFAULTS.pit_falls,
+      traps: DEFAULTS.traps,
+      objects: DEFAULTS.objects,
+      floor_variety: DEFAULTS.floor_variety,
+      wall_decor: DEFAULTS.wall_decor,
+      loot: { ...DEFAULTS.loot },
+      bottom_exit: DEFAULTS.bottom_exit,
       levels: [],
     };
     onCreate(rec);
@@ -1760,16 +1957,19 @@ function NewDungeonForm({
     >
       <h2 className="font-display text-lg text-parchment">New Dungeon</h2>
       <p className="mt-1 text-sm text-parchment/75">
-        Procedural dungeon. Style values are <code>dungeon</code> or{" "}
-        <code>cavern</code> — the defaults (style:{" "}
-        <code>{DEFAULTS.style}</code>,
-        difficulty: <code>{DEFAULTS.difficulty}</code>, size:{" "}
+        Procedural dungeon. It starts with the standard settings (style{" "}
+        <code>{DEFAULTS.style}</code>, difficulty{" "}
+        <code>{DEFAULTS.difficulty}</code>, size{" "}
         <code>
           {DEFAULTS.size.width}×{DEFAULTS.size.height}
         </code>
-        , torch density: <code>{DEFAULTS.torch_density}</code>, locked doors:{" "}
-        <code>{DEFAULTS.locked_doors}</code>) are filled in for you — tweak
-        after creation. Add levels inline once it opens.
+        , torches / locked doors / doors / pits{" "}
+        <code>{DEFAULTS.torch_density}</code>, traps{" "}
+        <code>{DEFAULTS.traps}</code> per room, objects and wall decor{" "}
+        <code>{DEFAULTS.objects}</code>, Treasure Chests at{" "}
+        <code>{DEFAULTS.loot.chest_frequency}</code> per room, and a ladder
+        out of the bottom floor) — tweak after creation. Add levels inline
+        once it opens.
       </p>
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <label className="block">

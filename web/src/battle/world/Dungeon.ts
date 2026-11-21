@@ -261,6 +261,10 @@ export interface DungeonLevel {
    *  an entry here is a solid chasm. Filled by the record wrapper,
    *  which can see the next floor. */
   pitLandings?: Record<string, [number, number]>;
+  /** traps.json record per generated trap, keyed "col,row". Only
+   *  present when the dungeon configures `trap_types`; a trap cell with
+   *  no entry resolves to the default trap. */
+  trapIds?: Record<string, string>;
   /** Cosmetic dials the converter reads (0–1). `floorVariety`: how much
    *  of the floor uses the tileset's alternate floors. `wallDecor`:
    *  how many brick faces carry a decoration. Absent → 0. */
@@ -1045,6 +1049,12 @@ export interface GenerateLevelOptions {
   /** Probability (0..1) that each room past the entrance gets a pit.
    *  Absent / 0 → no pits (the historical layout). See `placePits`. */
   pitProbability?: number;
+  /** Probability (0..1) that each room past the entrance gets a hidden
+   *  trap near its centre. Absent → 0.35 (the historical rate). */
+  trapProbability?: number;
+  /** Weighted traps.json records to assign to placed traps. Absent /
+   *  empty → no ids recorded (every trap is the default record). */
+  trapTypes?: Array<{ trap_id: string; weight: number }>;
   /** Clutter: chance (×10%) that each open floor cell with open floor
    *  all around it gets a room object (pillar / stalagmite / rubble).
    *  `0` = none. See `placeObjects`. */
@@ -1269,13 +1279,32 @@ export function generateDungeonLevel(opts: GenerateLevelOptions): DungeonLevel {
   }
 
   // ── Traps near the centre of non-entrance rooms ──
+  // One roll per room whatever the probability, so changing the trap
+  // rate never shifts the rest of the layout (encounters etc.). Trap
+  // types are drawn from a separate stream for the same reason.
+  const trapProb = Math.min(1, Math.max(0, opts.trapProbability ?? 0.35));
+  const trapTypes = (opts.trapTypes ?? []).filter((t) => t.trap_id && t.weight > 0);
+  const trapTotal = trapTypes.reduce((a, t) => a + t.weight, 0);
+  const trapRng = mulberry32((opts.seed ^ 0x7a9b17) >>> 0);
+  const trapIds: Record<string, string> = {};
   for (let i = 1; i < rooms.length; i++) {
-    if (rng() < 0.35) {
+    if (rng() < trapProb) {
       const room = rooms[i];
       let [tx, ty] = room.center;
       tx += randInt(rng, -1, 1);
       ty += randInt(rng, -1, 1);
-      if (getTile(grid, tx, ty) === floorTile) setTile(grid, tx, ty, TILE_TRAP);
+      if (getTile(grid, tx, ty) === floorTile) {
+        setTile(grid, tx, ty, TILE_TRAP);
+        if (trapTotal > 0) {
+          let roll = trapRng() * trapTotal;
+          let pick = trapTypes[trapTypes.length - 1].trap_id;
+          for (const t of trapTypes) {
+            roll -= t.weight;
+            if (roll < 0) { pick = t.trap_id; break; }
+          }
+          trapIds[`${tx},${ty}`] = pick;
+        }
+      }
     }
   }
 
@@ -1535,6 +1564,7 @@ export function generateDungeonLevel(opts: GenerateLevelOptions): DungeonLevel {
     ...(overworldExits.size > 0 && opts.overworldExit ? { exitAppearance: opts.overworldExit } : {}),
     questArtifacts: {},
     chestItem: chestItemId,
+    ...(Object.keys(trapIds).length > 0 ? { trapIds } : {}),
     rooms: rooms.map((rm) => ({ x: rm.x, y: rm.y, w: rm.w, h: rm.h })),
     floorVariety: opts.floorVariety ?? 0,
     wallDecor: opts.wallDecor ?? 0,

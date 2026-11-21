@@ -88,6 +88,10 @@ export interface DungeonTilePrototype {
    *  handler to fire a `trap_triggered` event. Cleared once the
    *  trap goes off so a single tile is one-shot. */
   trap: boolean;
+  /** traps.json record this trap resolves to. Absent → the default
+   *  record (dart_trap). Stamped by the converter from the level's
+   *  `trapIds` when the dungeon configures `trap_types`. */
+  trap_id?: string;
   flags?: Record<string, unknown>;
   link?: { map_id: string; x: number; y: number; fall?: boolean } | null;
   /** Staircase direction on generated-dungeon stairs cells. Paired

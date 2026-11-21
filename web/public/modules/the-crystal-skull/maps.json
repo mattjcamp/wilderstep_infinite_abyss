@@ -29879,9 +29879,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/wall_corner_tl.png",
-            "tag": "shop",
-            "background_sprite": "shop/wall.png"
+            "sprite": "dungeons/shop/walls/wall_corner_tl.png",
+            "tag": "Dungeons:shop:walls",
+            "background_sprite": "dungeons/shop/walls/wall.png"
           },
           {
             "boat": false,
@@ -29896,13 +29896,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/window_single.png",
-            "tag": "shop",
-            "background_sprite": "shop/wall_top.png"
+            "sprite": "dungeons/shop/walls/window_single.png",
+            "tag": "Dungeons:shop:walls",
+            "background_sprite": "dungeons/shop/walls/wall_top.png"
           },
           {
             "boat": false,
-            "background_sprite": "shop/wall.png",
+            "background_sprite": "dungeons/shop/walls/wall.png",
             "id": "shop_wall_top",
             "name": "Shop Wall, Top",
             "walkable": false,
@@ -29914,12 +29914,12 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/wall_top.png",
-            "tag": "shop"
+            "sprite": "dungeons/shop/walls/wall_top.png",
+            "tag": "Dungeons:shop:walls"
           },
           {
             "boat": false,
-            "background_sprite": "shop/wall.png",
+            "background_sprite": "dungeons/shop/walls/wall.png",
             "id": "shop_wall_top",
             "name": "Shop Wall, Top",
             "walkable": false,
@@ -29931,8 +29931,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/wall_top.png",
-            "tag": "shop"
+            "sprite": "dungeons/shop/walls/wall_top.png",
+            "tag": "Dungeons:shop:walls"
           },
           {
             "boat": false,
@@ -29947,13 +29947,13 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/fireplace.png",
-            "tag": "shop",
-            "background_sprite": "shop/floor_planks.png"
+            "sprite": "dungeons/shop/features/fireplace.png",
+            "tag": "Dungeons:shop:features",
+            "background_sprite": "dungeons/shop/floors/floor_planks.png"
           },
           {
             "boat": false,
-            "background_sprite": "shop/wall.png",
+            "background_sprite": "dungeons/shop/walls/wall.png",
             "id": "shop_wall_top",
             "name": "Shop Wall, Top",
             "walkable": false,
@@ -29965,12 +29965,12 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/wall_top.png",
-            "tag": "shop"
+            "sprite": "dungeons/shop/walls/wall_top.png",
+            "tag": "Dungeons:shop:walls"
           },
           {
             "boat": false,
-            "background_sprite": "shop/wall.png",
+            "background_sprite": "dungeons/shop/walls/wall.png",
             "id": "shop_wall_top",
             "name": "Shop Wall, Top",
             "walkable": false,
@@ -29982,8 +29982,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/wall_top.png",
-            "tag": "shop"
+            "sprite": "dungeons/shop/walls/wall_top.png",
+            "tag": "Dungeons:shop:walls"
           },
           {
             "boat": false,
@@ -29998,9 +29998,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/wall_corner_tr.png",
-            "tag": "shop",
-            "background_sprite": "shop/wall.png"
+            "sprite": "dungeons/shop/walls/wall_corner_tr.png",
+            "tag": "Dungeons:shop:walls",
+            "background_sprite": "dungeons/shop/walls/wall.png"
           }
         ],
         [
@@ -30017,9 +30017,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/wall_left.png",
-            "tag": "shop",
-            "background_sprite": "shop/floor_planks.png"
+            "sprite": "dungeons/shop/walls/wall_left.png",
+            "tag": "Dungeons:shop:walls",
+            "background_sprite": "dungeons/shop/floors/floor_planks.png"
           },
           {
             "boat": false,
@@ -30034,9 +30034,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_left.png",
-            "tag": "shop",
-            "background_sprite": "shop/floor_planks.png"
+            "sprite": "dungeons/shop/features/table_h_left.png",
+            "tag": "Dungeons:shop:features",
+            "background_sprite": "dungeons/shop/floors/floor_planks.png"
           },
           {
             "boat": false,
@@ -30051,9 +30051,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_right.png",
-            "tag": "shop",
-            "background_sprite": "shop/floor_planks.png"
+            "sprite": "dungeons/shop/features/table_h_right.png",
+            "tag": "Dungeons:shop:features",
+            "background_sprite": "dungeons/shop/floors/floor_planks.png"
           },
           {
             "boat": false,
@@ -30068,8 +30068,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/floor_planks.png",
-            "tag": "shop"
+            "sprite": "dungeons/shop/floors/floor_planks.png",
+            "tag": "Dungeons:shop:floors"
           },
           {
             "boat": false,
@@ -30084,8 +30084,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/floor_planks.png",
-            "tag": "shop"
+            "sprite": "dungeons/shop/floors/floor_planks.png",
+            "tag": "Dungeons:shop:floors"
           },
           {
             "boat": false,
@@ -30100,8 +30100,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/floor_planks.png",
-            "tag": "shop"
+            "sprite": "dungeons/shop/floors/floor_planks.png",
+            "tag": "Dungeons:shop:floors"
           },
           {
             "boat": false,
@@ -30116,8 +30116,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/floor_planks.png",
-            "tag": "shop"
+            "sprite": "dungeons/shop/floors/floor_planks.png",
+            "tag": "Dungeons:shop:floors"
           },
           {
             "boat": false,
@@ -30132,9 +30132,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/wall_right.png",
-            "tag": "shop",
-            "background_sprite": "shop/floor_planks.png",
+            "sprite": "dungeons/shop/walls/wall_right.png",
+            "tag": "Dungeons:shop:walls",
+            "background_sprite": "dungeons/shop/floors/floor_planks.png",
             "npc": "ola"
           }
         ],
@@ -30152,9 +30152,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/wall_left.png",
-            "tag": "shop",
-            "background_sprite": "shop/floor_planks.png"
+            "sprite": "dungeons/shop/walls/wall_left.png",
+            "tag": "Dungeons:shop:walls",
+            "background_sprite": "dungeons/shop/floors/floor_planks.png"
           },
           {
             "boat": false,
@@ -30169,8 +30169,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/floor_planks.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/floors/floor_planks.png",
+            "tag": "Dungeons:shop:floors",
             "npc": "olga_shopkeeper"
           },
           {
@@ -30186,8 +30186,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/floor_planks.png",
-            "tag": "shop"
+            "sprite": "dungeons/shop/floors/floor_planks.png",
+            "tag": "Dungeons:shop:floors"
           },
           {
             "boat": false,
@@ -30202,8 +30202,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/floor_planks.png",
-            "tag": "shop"
+            "sprite": "dungeons/shop/floors/floor_planks.png",
+            "tag": "Dungeons:shop:floors"
           },
           {
             "boat": false,
@@ -30218,8 +30218,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/floor_planks.png",
-            "tag": "shop"
+            "sprite": "dungeons/shop/floors/floor_planks.png",
+            "tag": "Dungeons:shop:floors"
           },
           {
             "boat": false,
@@ -30234,8 +30234,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/floor_planks.png",
-            "tag": "shop"
+            "sprite": "dungeons/shop/floors/floor_planks.png",
+            "tag": "Dungeons:shop:floors"
           },
           {
             "boat": false,
@@ -30250,8 +30250,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/floor_planks.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/floors/floor_planks.png",
+            "tag": "Dungeons:shop:floors",
             "npc": "bjorn"
           },
           {
@@ -30267,9 +30267,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/wall_right.png",
-            "tag": "shop",
-            "background_sprite": "shop/floor_planks.png",
+            "sprite": "dungeons/shop/walls/wall_right.png",
+            "tag": "Dungeons:shop:walls",
+            "background_sprite": "dungeons/shop/floors/floor_planks.png",
             "npc": "benoit"
           }
         ],
@@ -30287,9 +30287,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/wall_left.png",
-            "tag": "shop",
-            "background_sprite": "shop/floor_planks.png"
+            "sprite": "dungeons/shop/walls/wall_left.png",
+            "tag": "Dungeons:shop:walls",
+            "background_sprite": "dungeons/shop/floors/floor_planks.png"
           },
           {
             "boat": false,
@@ -30304,8 +30304,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/floor_planks.png",
-            "tag": "shop"
+            "sprite": "dungeons/shop/floors/floor_planks.png",
+            "tag": "Dungeons:shop:floors"
           },
           {
             "boat": false,
@@ -30320,8 +30320,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/floor_planks.png",
-            "tag": "shop"
+            "sprite": "dungeons/shop/floors/floor_planks.png",
+            "tag": "Dungeons:shop:floors"
           },
           {
             "boat": false,
@@ -30336,8 +30336,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/floor_planks.png",
-            "tag": "shop"
+            "sprite": "dungeons/shop/floors/floor_planks.png",
+            "tag": "Dungeons:shop:floors"
           },
           {
             "boat": false,
@@ -30352,8 +30352,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/floor_planks.png",
-            "tag": "shop"
+            "sprite": "dungeons/shop/floors/floor_planks.png",
+            "tag": "Dungeons:shop:floors"
           },
           {
             "boat": false,
@@ -30368,8 +30368,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/floor_planks.png",
-            "tag": "shop"
+            "sprite": "dungeons/shop/floors/floor_planks.png",
+            "tag": "Dungeons:shop:floors"
           },
           {
             "boat": false,
@@ -30384,8 +30384,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/floor_planks.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/floors/floor_planks.png",
+            "tag": "Dungeons:shop:floors",
             "npc": "agnetha"
           },
           {
@@ -30401,9 +30401,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/wall_right.png",
-            "tag": "shop",
-            "background_sprite": "shop/floor_planks.png",
+            "sprite": "dungeons/shop/walls/wall_right.png",
+            "tag": "Dungeons:shop:walls",
+            "background_sprite": "dungeons/shop/floors/floor_planks.png",
             "npc": "frida"
           }
         ],
@@ -30421,9 +30421,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/wall_left.png",
-            "tag": "shop",
-            "background_sprite": "shop/floor_planks.png"
+            "sprite": "dungeons/shop/walls/wall_left.png",
+            "tag": "Dungeons:shop:walls",
+            "background_sprite": "dungeons/shop/floors/floor_planks.png"
           },
           {
             "boat": false,
@@ -30438,8 +30438,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/floor_planks.png",
-            "tag": "shop"
+            "sprite": "dungeons/shop/floors/floor_planks.png",
+            "tag": "Dungeons:shop:floors"
           },
           {
             "boat": false,
@@ -30454,8 +30454,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/floor_planks.png",
-            "tag": "shop"
+            "sprite": "dungeons/shop/floors/floor_planks.png",
+            "tag": "Dungeons:shop:floors"
           },
           {
             "boat": false,
@@ -30470,8 +30470,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/floor_planks.png",
-            "tag": "shop"
+            "sprite": "dungeons/shop/floors/floor_planks.png",
+            "tag": "Dungeons:shop:floors"
           },
           {
             "boat": false,
@@ -30486,8 +30486,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/floor_planks.png",
-            "tag": "shop"
+            "sprite": "dungeons/shop/floors/floor_planks.png",
+            "tag": "Dungeons:shop:floors"
           },
           {
             "boat": false,
@@ -30502,8 +30502,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/floor_planks.png",
-            "tag": "shop"
+            "sprite": "dungeons/shop/floors/floor_planks.png",
+            "tag": "Dungeons:shop:floors"
           },
           {
             "boat": false,
@@ -30518,8 +30518,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/floor_planks.png",
-            "tag": "shop"
+            "sprite": "dungeons/shop/floors/floor_planks.png",
+            "tag": "Dungeons:shop:floors"
           },
           {
             "boat": false,
@@ -30534,9 +30534,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/wall_right.png",
-            "tag": "shop",
-            "background_sprite": "shop/floor_planks.png"
+            "sprite": "dungeons/shop/walls/wall_right.png",
+            "tag": "Dungeons:shop:walls",
+            "background_sprite": "dungeons/shop/floors/floor_planks.png"
           }
         ],
         [
@@ -30553,9 +30553,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/wall_left.png",
-            "tag": "shop",
-            "background_sprite": "shop/floor_planks.png"
+            "sprite": "dungeons/shop/walls/wall_left.png",
+            "tag": "Dungeons:shop:walls",
+            "background_sprite": "dungeons/shop/floors/floor_planks.png"
           },
           {
             "boat": false,
@@ -30570,8 +30570,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/floor_planks.png",
-            "tag": "shop"
+            "sprite": "dungeons/shop/floors/floor_planks.png",
+            "tag": "Dungeons:shop:floors"
           },
           {
             "boat": false,
@@ -30586,8 +30586,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/floor_planks.png",
-            "tag": "shop"
+            "sprite": "dungeons/shop/floors/floor_planks.png",
+            "tag": "Dungeons:shop:floors"
           },
           {
             "boat": false,
@@ -30602,8 +30602,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/floor_planks.png",
-            "tag": "shop"
+            "sprite": "dungeons/shop/floors/floor_planks.png",
+            "tag": "Dungeons:shop:floors"
           },
           {
             "boat": false,
@@ -30618,8 +30618,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/floor_planks.png",
-            "tag": "shop"
+            "sprite": "dungeons/shop/floors/floor_planks.png",
+            "tag": "Dungeons:shop:floors"
           },
           {
             "boat": false,
@@ -30634,8 +30634,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/floor_planks.png",
-            "tag": "shop"
+            "sprite": "dungeons/shop/floors/floor_planks.png",
+            "tag": "Dungeons:shop:floors"
           },
           {
             "boat": false,
@@ -30650,8 +30650,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/floor_planks.png",
-            "tag": "shop"
+            "sprite": "dungeons/shop/floors/floor_planks.png",
+            "tag": "Dungeons:shop:floors"
           },
           {
             "boat": false,
@@ -30666,9 +30666,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/wall_right.png",
-            "tag": "shop",
-            "background_sprite": "shop/floor_planks.png"
+            "sprite": "dungeons/shop/walls/wall_right.png",
+            "tag": "Dungeons:shop:walls",
+            "background_sprite": "dungeons/shop/floors/floor_planks.png"
           }
         ],
         [
@@ -30685,9 +30685,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/wall_left.png",
-            "tag": "shop",
-            "background_sprite": "shop/floor_planks.png"
+            "sprite": "dungeons/shop/walls/wall_left.png",
+            "tag": "Dungeons:shop:walls",
+            "background_sprite": "dungeons/shop/floors/floor_planks.png"
           },
           {
             "boat": false,
@@ -30702,8 +30702,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/floor_planks.png",
-            "tag": "shop"
+            "sprite": "dungeons/shop/floors/floor_planks.png",
+            "tag": "Dungeons:shop:floors"
           },
           {
             "boat": false,
@@ -30718,8 +30718,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/floor_planks.png",
-            "tag": "shop"
+            "sprite": "dungeons/shop/floors/floor_planks.png",
+            "tag": "Dungeons:shop:floors"
           },
           {
             "boat": false,
@@ -30734,8 +30734,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/floor_planks.png",
-            "tag": "shop"
+            "sprite": "dungeons/shop/floors/floor_planks.png",
+            "tag": "Dungeons:shop:floors"
           },
           {
             "boat": false,
@@ -30750,8 +30750,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/floor_planks.png",
-            "tag": "shop"
+            "sprite": "dungeons/shop/floors/floor_planks.png",
+            "tag": "Dungeons:shop:floors"
           },
           {
             "boat": false,
@@ -30766,8 +30766,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/floor_planks.png",
-            "tag": "shop"
+            "sprite": "dungeons/shop/floors/floor_planks.png",
+            "tag": "Dungeons:shop:floors"
           },
           {
             "boat": false,
@@ -30782,8 +30782,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/floor_planks.png",
-            "tag": "shop"
+            "sprite": "dungeons/shop/floors/floor_planks.png",
+            "tag": "Dungeons:shop:floors"
           },
           {
             "boat": false,
@@ -30798,15 +30798,15 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/wall_right.png",
-            "tag": "shop",
-            "background_sprite": "shop/floor_planks.png"
+            "sprite": "dungeons/shop/walls/wall_right.png",
+            "tag": "Dungeons:shop:walls",
+            "background_sprite": "dungeons/shop/floors/floor_planks.png"
           }
         ],
         [
           {
             "boat": false,
-            "background_sprite": "shop/wall.png",
+            "background_sprite": "dungeons/shop/walls/wall.png",
             "id": "shop_wall_top",
             "name": "Shop Wall, Top",
             "walkable": false,
@@ -30818,8 +30818,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/wall_top.png",
-            "tag": "shop"
+            "sprite": "dungeons/shop/walls/wall_top.png",
+            "tag": "Dungeons:shop:walls"
           },
           {
             "boat": false,
@@ -30834,9 +30834,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/shop_door.png",
-            "tag": "shop",
-            "background_sprite": "shop/wall_top.png",
+            "sprite": "dungeons/shop/doors_and_stairs/door.png",
+            "tag": "Dungeons:shop:doors & stairs",
+            "background_sprite": "dungeons/shop/walls/wall_top.png",
             "link": {
               "map_id": "town_1",
               "x": 18,
@@ -30845,7 +30845,7 @@
           },
           {
             "boat": false,
-            "background_sprite": "shop/wall.png",
+            "background_sprite": "dungeons/shop/walls/wall.png",
             "id": "shop_wall_top",
             "name": "Shop Wall, Top",
             "walkable": false,
@@ -30857,12 +30857,12 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/wall_top.png",
-            "tag": "shop"
+            "sprite": "dungeons/shop/walls/wall_top.png",
+            "tag": "Dungeons:shop:walls"
           },
           {
             "boat": false,
-            "background_sprite": "shop/wall.png",
+            "background_sprite": "dungeons/shop/walls/wall.png",
             "id": "shop_wall_top",
             "name": "Shop Wall, Top",
             "walkable": false,
@@ -30874,8 +30874,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/wall_top.png",
-            "tag": "shop"
+            "sprite": "dungeons/shop/walls/wall_top.png",
+            "tag": "Dungeons:shop:walls"
           },
           {
             "boat": false,
@@ -30890,9 +30890,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/window_left.png",
-            "tag": "shop",
-            "background_sprite": "shop/wall_top.png"
+            "sprite": "dungeons/shop/walls/window_left.png",
+            "tag": "Dungeons:shop:walls",
+            "background_sprite": "dungeons/shop/walls/wall_top.png"
           },
           {
             "boat": false,
@@ -30907,9 +30907,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/window_right.png",
-            "tag": "shop",
-            "background_sprite": "shop/wall_top.png"
+            "sprite": "dungeons/shop/walls/window_right.png",
+            "tag": "Dungeons:shop:walls",
+            "background_sprite": "dungeons/shop/walls/wall_top.png"
           },
           {
             "boat": false,
@@ -30925,12 +30925,12 @@
             "encounter": null,
             "spawn": null,
             "sprite": "objects/shop_notice_board.png",
-            "tag": "shop",
-            "background_sprite": "shop/wall_top.png"
+            "tag": "objects",
+            "background_sprite": "dungeons/shop/walls/wall_top.png"
           },
           {
             "boat": false,
-            "background_sprite": "shop/wall.png",
+            "background_sprite": "dungeons/shop/walls/wall.png",
             "id": "shop_wall_top",
             "name": "Shop Wall, Top",
             "walkable": false,
@@ -30942,8 +30942,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/wall_top.png",
-            "tag": "shop"
+            "sprite": "dungeons/shop/walls/wall_top.png",
+            "tag": "Dungeons:shop:walls"
           }
         ]
       ],
@@ -35040,9 +35040,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/fireplace.png",
-            "tag": "shop",
-            "background_sprite": "shop/floor_planks.png"
+            "sprite": "dungeons/shop/features/fireplace.png",
+            "tag": "Dungeons:shop:features",
+            "background_sprite": "dungeons/shop/floors/floor_planks.png"
           },
           {
             "boat": false,
@@ -35057,9 +35057,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/fireplace.png",
-            "tag": "shop",
-            "background_sprite": "shop/floor_planks.png"
+            "sprite": "dungeons/shop/features/fireplace.png",
+            "tag": "Dungeons:shop:features",
+            "background_sprite": "dungeons/shop/floors/floor_planks.png"
           },
           {
             "boat": false,
@@ -35074,9 +35074,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/fireplace.png",
-            "tag": "shop",
-            "background_sprite": "shop/floor_planks.png"
+            "sprite": "dungeons/shop/features/fireplace.png",
+            "tag": "Dungeons:shop:features",
+            "background_sprite": "dungeons/shop/floors/floor_planks.png"
           },
           {
             "boat": false,
@@ -35091,9 +35091,9 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/fireplace.png",
-            "tag": "shop",
-            "background_sprite": "shop/floor_planks.png"
+            "sprite": "dungeons/shop/features/fireplace.png",
+            "tag": "Dungeons:shop:features",
+            "background_sprite": "dungeons/shop/floors/floor_planks.png"
           },
           {
             "boat": false,
@@ -36113,8 +36113,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_v_top.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_v_top.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_planks.png"
           },
           {
@@ -36146,8 +36146,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_v_top.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_v_top.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_planks.png"
           },
           {
@@ -36475,8 +36475,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_left.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_left.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_cobble.png"
           },
           {
@@ -36492,8 +36492,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_mid.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_mid.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_cobble.png"
           },
           {
@@ -36509,8 +36509,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_mid.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_mid.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_cobble.png"
           },
           {
@@ -36526,8 +36526,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_mid.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_mid.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_cobble.png"
           },
           {
@@ -36543,8 +36543,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_mid.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_mid.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_cobble.png"
           },
           {
@@ -36560,8 +36560,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_right.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_right.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_cobble.png"
           },
           {
@@ -36610,8 +36610,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_single.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_single.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_planks.png"
           },
           {
@@ -36643,8 +36643,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_v_mid.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_v_mid.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_planks.png"
           },
           {
@@ -36676,8 +36676,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_v_mid.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_v_mid.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_planks.png"
           },
           {
@@ -37164,8 +37164,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_v_mid.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_v_mid.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_planks.png"
           },
           {
@@ -37197,8 +37197,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_v_mid.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_v_mid.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_planks.png"
           },
           {
@@ -37685,8 +37685,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_v_bottom.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_v_bottom.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_planks.png"
           },
           {
@@ -37718,8 +37718,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_v_bottom.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_v_bottom.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_planks.png"
           },
           {
@@ -38045,8 +38045,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_left.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_left.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_cobble.png"
           },
           {
@@ -38062,8 +38062,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_mid.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_mid.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_cobble.png"
           },
           {
@@ -38079,8 +38079,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_mid.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_mid.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_cobble.png"
           },
           {
@@ -38096,8 +38096,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_mid.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_mid.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_cobble.png"
           },
           {
@@ -38113,8 +38113,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_mid.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_mid.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_cobble.png"
           },
           {
@@ -38130,8 +38130,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_right.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_right.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_cobble.png"
           },
           {
@@ -38180,8 +38180,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_single.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_single.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_planks.png"
           },
           {
@@ -38735,8 +38735,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_v_top.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_v_top.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_planks.png"
           },
           {
@@ -38768,8 +38768,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_v_top.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_v_top.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_planks.png"
           },
           {
@@ -39258,8 +39258,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_v_mid.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_v_mid.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_planks.png"
           },
           {
@@ -39291,8 +39291,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_v_mid.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_v_mid.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_planks.png"
           },
           {
@@ -39618,8 +39618,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_left.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_left.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_cobble.png"
           },
           {
@@ -39635,8 +39635,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_mid.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_mid.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_cobble.png"
           },
           {
@@ -39652,8 +39652,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_mid.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_mid.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_cobble.png"
           },
           {
@@ -39669,8 +39669,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_mid.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_mid.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_cobble.png"
           },
           {
@@ -39686,8 +39686,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_mid.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_mid.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_cobble.png"
           },
           {
@@ -39703,8 +39703,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_right.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_right.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_cobble.png"
           },
           {
@@ -39753,8 +39753,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_single.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_single.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_planks.png"
           },
           {
@@ -39786,8 +39786,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_v_mid.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_v_mid.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_planks.png"
           },
           {
@@ -39819,8 +39819,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_v_mid.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_v_mid.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_planks.png"
           },
           {
@@ -40309,8 +40309,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_v_mid.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_v_mid.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_planks.png"
           },
           {
@@ -40342,8 +40342,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_v_mid.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_v_mid.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_planks.png"
           },
           {
@@ -40831,8 +40831,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_v_bottom.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_v_bottom.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_planks.png"
           },
           {
@@ -40864,8 +40864,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_v_bottom.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_v_bottom.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_planks.png"
           },
           {
@@ -41191,8 +41191,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_left.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_left.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_cobble.png"
           },
           {
@@ -41208,8 +41208,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_mid.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_mid.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_cobble.png"
           },
           {
@@ -41225,8 +41225,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_mid.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_mid.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_cobble.png"
           },
           {
@@ -41242,8 +41242,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_mid.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_mid.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_cobble.png"
           },
           {
@@ -41259,8 +41259,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_mid.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_mid.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_cobble.png"
           },
           {
@@ -41276,8 +41276,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_right.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_right.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_cobble.png"
           },
           {
@@ -41326,8 +41326,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_single.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_single.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_planks.png"
           },
           {
@@ -41878,8 +41878,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_v_top.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_v_top.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_planks.png"
           },
           {
@@ -41911,8 +41911,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_v_top.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_v_top.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_planks.png"
           },
           {
@@ -42399,8 +42399,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_v_mid.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_v_mid.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_planks.png"
           },
           {
@@ -42432,8 +42432,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_v_mid.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_v_mid.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_planks.png"
           },
           {
@@ -42763,8 +42763,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_left.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_left.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_cobble.png"
           },
           {
@@ -42780,8 +42780,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_mid.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_mid.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_cobble.png"
           },
           {
@@ -42797,8 +42797,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_mid.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_mid.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_cobble.png"
           },
           {
@@ -42814,8 +42814,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_mid.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_mid.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_cobble.png"
           },
           {
@@ -42831,8 +42831,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_mid.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_mid.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_cobble.png"
           },
           {
@@ -42848,8 +42848,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_right.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_right.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_cobble.png"
           },
           {
@@ -42930,8 +42930,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_v_bottom.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_v_bottom.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_planks.png"
           },
           {
@@ -42963,8 +42963,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_v_bottom.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_v_bottom.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_planks.png"
           },
           {
@@ -56327,8 +56327,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_left.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_left.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_brick.png"
           },
           {
@@ -56344,8 +56344,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_mid.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_mid.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_brick.png"
           },
           {
@@ -56361,8 +56361,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_mid.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_mid.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_brick.png"
           },
           {
@@ -56378,8 +56378,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_mid.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_mid.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_brick.png"
           },
           {
@@ -56395,8 +56395,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_mid.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_mid.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_brick.png"
           },
           {
@@ -56412,8 +56412,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_mid.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_mid.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_brick.png"
           },
           {
@@ -56429,8 +56429,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_mid.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_mid.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_brick.png"
           },
           {
@@ -56446,8 +56446,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_mid.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_mid.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_brick.png"
           },
           {
@@ -56463,8 +56463,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_mid.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_mid.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_brick.png"
           },
           {
@@ -56480,8 +56480,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_right.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_right.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_brick.png"
           },
           {
@@ -58901,8 +58901,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_left.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_left.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_brick.png"
           },
           {
@@ -58918,8 +58918,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_mid.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_mid.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_brick.png"
           },
           {
@@ -58935,8 +58935,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_right.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_right.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_brick.png"
           },
           {
@@ -59495,8 +59495,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_single.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_single.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_brick.png"
           },
           {
@@ -59626,8 +59626,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_single.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_single.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_brick.png"
           },
           {
@@ -64916,8 +64916,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_left.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_left.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_brick.png"
           },
           {
@@ -64933,8 +64933,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_mid.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_mid.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_brick.png"
           },
           {
@@ -64950,8 +64950,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_right.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_right.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_brick.png"
           },
           {
@@ -65340,8 +65340,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_single.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_single.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_planks.png"
           },
           {
@@ -65357,8 +65357,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_single.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_single.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_planks.png"
           },
           {
@@ -66751,8 +66751,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/fireplace.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/fireplace.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_flagstone.png"
           },
           {
@@ -66768,8 +66768,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/fireplace.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/fireplace.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_flagstone.png"
           },
           {
@@ -68447,8 +68447,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_left.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_left.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_flagstone.png"
           },
           {
@@ -68464,8 +68464,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_mid.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_mid.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_flagstone.png"
           },
           {
@@ -68481,8 +68481,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_right.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_right.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_flagstone.png"
           },
           {
@@ -74936,8 +74936,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_v_top.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_v_top.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_brick.png"
           },
           {
@@ -75020,8 +75020,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_v_top.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_v_top.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_brick.png"
           },
           {
@@ -75096,8 +75096,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_v_top.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_v_top.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_brick.png"
           },
           {
@@ -75501,8 +75501,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_v_mid.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_v_mid.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_brick.png"
           },
           {
@@ -75566,8 +75566,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_v_mid.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_v_mid.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_brick.png"
           },
           {
@@ -75631,8 +75631,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_v_mid.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_v_mid.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_brick.png"
           },
           {
@@ -76036,8 +76036,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_v_bottom.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_v_bottom.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_brick.png"
           },
           {
@@ -76101,8 +76101,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_v_bottom.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_v_bottom.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_brick.png"
           },
           {
@@ -76166,8 +76166,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_v_bottom.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_v_bottom.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_brick.png"
           },
           {
@@ -76329,8 +76329,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_left.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_left.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_planks.png"
           },
           {
@@ -76346,8 +76346,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_mid.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_mid.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_planks.png"
           },
           {
@@ -76363,8 +76363,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_right.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_right.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_planks.png"
           },
           {
@@ -76428,8 +76428,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_left.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_left.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_planks.png"
           },
           {
@@ -76445,8 +76445,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_mid.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_mid.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_planks.png"
           },
           {
@@ -76462,8 +76462,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_h_right.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_h_right.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_planks.png"
           },
           {
@@ -77433,8 +77433,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_single.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_single.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_planks.png"
           },
           {
@@ -80473,8 +80473,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/table_single.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/table_single.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_pebbles.png"
           },
           {
@@ -83342,8 +83342,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/fireplace.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/fireplace.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_cobble.png"
           },
           {
@@ -83359,8 +83359,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/fireplace.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/fireplace.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_cobble.png"
           },
           {
@@ -83440,8 +83440,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/fireplace.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/fireplace.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_flagstone.png"
           },
           {
@@ -83457,8 +83457,8 @@
             "counter": null,
             "encounter": null,
             "spawn": null,
-            "sprite": "shop/fireplace.png",
-            "tag": "shop",
+            "sprite": "dungeons/shop/features/fireplace.png",
+            "tag": "Dungeons:shop:features",
             "background_sprite": "dungeons/dungeon/floors/floor_flagstone.png"
           },
           {

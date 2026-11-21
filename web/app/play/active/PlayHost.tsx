@@ -115,7 +115,8 @@ import {
   serialiseDungeonLevels,
   writeFloorMutations,
 } from "@/sim/dungeon/dungeonSession";
-import { applyPitFall } from "@/play/pitFall";
+import { applyPitFall, pitFallReport, type PitFallLine } from "@/play/pitFall";
+import { PlayPitFallOverlay } from "@/play/PitFallOverlay";
 import { reconcilePartyEffects } from "@/play/partyEffects";
 import type { DungeonRecord } from "@/sim/dungeon/types";
 import type { DungeonLevel } from "@/battle/world/Dungeon";
@@ -637,9 +638,13 @@ import {
 import {
   resolveTrapOutcome,
   resolveTrapRecord,
+  trapCard,
+  type TrapCard,
+  type TrapOutcome,
   type TrapRecord,
   type TrapVictim,
 } from "@/play/traps";
+import { PlayTrapOverlay } from "@/play/TrapOverlay";
 import { applyPassiveRegen, regenHasEffect } from "@/play/passiveRegen";
 import {
   completedStepIds,
@@ -1075,6 +1080,16 @@ export function PlayHost() {
    *  cell). The overlay lists the quests posted there that are still
    *  available; taking one starts it. */
   const [noticeBoard, setNoticeBoard] = useState<string | null>(null);
+  /** Pit fall: `pitFalling` holds input while the party drops and the
+   *  floor below loads; `pitFall` is the card shown once they land. */
+  const [pitFalling, setPitFalling] = useState(false);
+  const [pitFall, setPitFall] = useState<{ floorName: string; lines: PitFallLine[] } | null>(null);
+  /** Trap card — what the trap was and who it hurt. */
+  const [trapReport, setTrapReport] = useState<TrapCard | null>(null);
+  /** Where the party will land, picked up by the next map mount to
+   *  play the landing (thud, dust, shake) — then the card shows. */
+  const pendingLandingRef = useRef<{ col: number; row: number } | null>(null);
+  const pendingPitCardRef = useRef<{ floorName: string; lines: PitFallLine[] } | null>(null);
   /** Camp dialog — set after a Camping Supplies rest; lists the HP /
    *  MP each member got back. */
   const [campReport, setCampReport] = useState<CampRestReport | null>(null);
@@ -2184,6 +2199,9 @@ export function PlayHost() {
       loreReading !== null ||
       noticeBoard !== null ||
       campReport !== null ||
+      pitFalling ||
+      pitFall !== null ||
+      trapReport !== null ||
       finale !== null;
   }, [
     lockEncounter,
@@ -2205,6 +2223,9 @@ export function PlayHost() {
     loreReading,
     noticeBoard,
     campReport,
+    pitFalling,
+    pitFall,
+    trapReport,
     finale,
   ]);
   useEffect(() => {
@@ -4810,6 +4831,47 @@ export function PlayHost() {
             })(),
           });
           simRef.current = sim;
+          // Landing after a pit fall: the party drops in from above
+          // with a thud, a burst of dust and a shake, then the fall
+          // card says what happened.
+          if (pendingLandingRef.current) {
+            const at = pendingLandingRef.current;
+            pendingLandingRef.current = null;
+            const world = this.world;
+            window.setTimeout(() => {
+              try {
+                Sfx.play("pit_land");
+              } catch {
+                /* audio not ready — skip */
+              }
+              try {
+                const px = at.col * TILE_SIZE + TILE_SIZE / 2;
+                const py = at.row * TILE_SIZE + TILE_SIZE / 2;
+                const sprite = world.partySprite;
+                if (sprite) {
+                  const sy = sprite.scaleY;
+                  sprite.setY(py - TILE_SIZE * 1.5).setScale(sprite.scaleX, sy * 1.2);
+                  world.scene.tweens.add({
+                    targets: sprite,
+                    y: py,
+                    scaleY: sy,
+                    duration: 260,
+                    ease: "Bounce.Out",
+                  });
+                }
+                void radialBurst(world.scene, { x: px, y: py + 6 }, 0x8a7560, 0x5a4a3a, 40);
+                screenShake(world.scene, 0.012, 320);
+              } catch {
+                /* scene disposed — skip */
+              }
+              window.setTimeout(() => {
+                const card = pendingPitCardRef.current;
+                pendingPitCardRef.current = null;
+                setPitFalling(false);
+                if (card) setPitFall(card);
+              }, 700);
+            }, 150);
+          }
           // Quest travel rewards: the placard's Travel button routes
           // here. Registered now that the sim is live (cleared on
           // teardown), and any trip left pending in the save — e.g.
@@ -5379,6 +5441,7 @@ export function PlayHost() {
 
               // ── Resolve ──────────────────────────────────────────
               let lines: string[] = [];
+              let outcome: TrapOutcome | null = null;
               let nextMembers = cur.party.members;
               let teleportTo: {
                 map_id: string;
@@ -5386,7 +5449,7 @@ export function PlayHost() {
                 row: number;
               } | null = null;
               if (record) {
-                const outcome = resolveTrapOutcome(record, victims);
+                outcome = resolveTrapOutcome(record, victims);
                 lines = outcome.lines;
                 teleportTo = outcome.teleport;
                 if (outcome.hits.length > 0) {
@@ -5436,7 +5499,68 @@ export function PlayHost() {
                     ? { ...m, hp: Math.max(0, m.hp - damage) }
                     : m,
                 );
-                lines = [`Trap! ${v.id} takes ${damage} damage.`];
+                const after = Math.max(0, v.hp - damage);
+                lines = [
+                  `Trap! ${v.name || v.id} takes ${damage} damage (HP ${v.hp} → ${after}).`,
+                  ...(after === 0 ? [`${v.name || v.id} is knocked out!`] : []),
+                ];
+                outcome = {
+                  kind: "damage",
+                  hits: [{ index: v.index, damage, saved: false, effect: null }],
+                  teleport: null,
+                  lines,
+                };
+              }
+
+              // Teleport trap with no authored destination: pick a random
+              // cell the party could walk to on THIS map (works on
+              // dungeon floors too). Nowhere reachable → it fizzles.
+              let randomDest: { col: number; row: number } | null = null;
+              // On a generated dungeon floor an authored destination
+              // can't be used (floors are built on the fly), so it
+              // becomes a random jump on the floor instead.
+              if (outcome?.kind === "teleport" && teleportTo && dStateNow) {
+                outcome = { ...outcome, randomTeleport: true };
+                teleportTo = null;
+              }
+              if (outcome?.randomTeleport) {
+                randomDest = sim?.randomReachableCell() ?? null;
+                if (!randomDest) {
+                  const name = record?.name || record?.id || "The trap";
+                  lines = [`${name} flickers, but there is nowhere to send the party.`];
+                  outcome = { ...outcome, kind: "fizzle", randomTeleport: false, lines };
+                }
+              }
+
+              // The trap card: what went off and who it hurt.
+              if (outcome) {
+                const sprites = new Map(
+                  (cat?.characters ?? []).map((c) => [c.id, c.sprite]),
+                );
+                const effectNames = new Map(
+                  (cat?.effects ?? []).map((e) => [e.id, e.name]),
+                );
+                const memberById = new Map(cur.party.members.map((m) => [m.id, m]));
+                setTrapReport(
+                  trapCard(
+                    record,
+                    outcome,
+                    cur.party.members,
+                    nextMembers,
+                    (id) => {
+                      const m = memberById.get(id);
+                      const custom = m?.custom as
+                        | { name?: string; sprite?: string }
+                        | null
+                        | undefined;
+                      return {
+                        name: custom?.name ?? charsById.get(id)?.name,
+                        sprite: custom?.sprite ?? sprites.get(id),
+                      };
+                    },
+                    (id) => effectNames.get(id) ?? id.replace(/_/g, " "),
+                  ),
+                );
               }
 
               // ── Persist ──────────────────────────────────────────
@@ -5485,9 +5609,50 @@ export function PlayHost() {
               // Same-map targets shift the party in place via the
               // kernel; cross-map targets ride the link-traversal
               // path (save position + remount at the destination).
-              // Procedural dungeon floors never author teleport
-              // traps, so the in-dungeon case is a no-op.
-              if (teleportTo && !dStateNow && cat) {
+              // Authored destinations are overworld-only; the random
+              // jump (no destination authored) works anywhere.
+              if (randomDest) {
+                const dest = randomDest;
+                try {
+                  Sfx.play("teleport_blink");
+                } catch {
+                  /* audio context not ready — skip */
+                }
+                sim?.teleport(dest.col, dest.row);
+                const rr = rendererRef.current;
+                if (rr) {
+                  try {
+                    const [main, accent] = TRAP_VFX_BY_DAMAGE_TYPE.magic;
+                    void radialBurst(
+                      rr.scene,
+                      {
+                        x: dest.col * TILE_SIZE + TILE_SIZE / 2,
+                        y: dest.row * TILE_SIZE + TILE_SIZE / 2,
+                      },
+                      main,
+                      accent,
+                      56,
+                    );
+                  } catch {
+                    /* scene disposed mid-step — skip */
+                  }
+                }
+                if (!dStateNow) {
+                  const snapNow = sim?.snapshot();
+                  if (snapNow) {
+                    const tpSave: WorldSave = {
+                      ...nextSave,
+                      party: {
+                        ...nextSave.party,
+                        col: snapNow.pos.col,
+                        row: snapNow.pos.row,
+                      },
+                    };
+                    saveRef.current = tpSave;
+                    saveWorld(tpSave);
+                  }
+                }
+              } else if (teleportTo && !dStateNow && cat) {
                 if (teleportTo.map_id === cat.map.id) {
                   sim?.teleport(teleportTo.col, teleportTo.row);
                   // Mirror the new position into the save so a
@@ -6442,9 +6607,47 @@ export function PlayHost() {
     /** Handle a link event from the kernel. Saves the current map's
      *  mutations + party position FIRST, then either teleports (same
      *  map) or bumps the reload key (cross-map). */
-    function handleLinked(link: { map_id: string; x: number; y: number; fall?: boolean }) {
+    function handleLinked(
+      link: { map_id: string; x: number; y: number; fall?: boolean },
+      /** Set when re-entered after the fall animation has played. */
+      afterFall = false,
+    ) {
       const save = saveRef.current;
       if (!save) return;
+      // ── Pit fall: the party drops first, then the floor changes ────
+      // Sound + the party sprite tumbling (spinning, shrinking, fading)
+      // into the hole with a puff of dust, input held, then re-enter to
+      // change floors. The landing plays on the new floor's mount.
+      if (link.fall && !afterFall && dungeonStateRef.current) {
+        setPitFalling(true);
+        try {
+          Sfx.play("pit_fall");
+        } catch {
+          /* audio not ready — skip */
+        }
+        const r = rendererRef.current;
+        const sprite = r?.partySprite;
+        if (r && sprite) {
+          try {
+            const sx = sprite.scaleX;
+            const sy = sprite.scaleY;
+            void radialBurst(r.scene, { x: sprite.x, y: sprite.y }, 0x6b5a48, 0x3a2d22, 30);
+            r.scene.tweens.add({
+              targets: sprite,
+              scaleX: sx * 0.15,
+              scaleY: sy * 0.15,
+              angle: sprite.angle + 540,
+              alpha: 0.15,
+              duration: 450,
+              ease: "Quad.In",
+            });
+          } catch {
+            /* scene disposed mid-step — skip */
+          }
+        }
+        window.setTimeout(() => handleLinked(link, true), 480);
+        return;
+      }
       // ── Dungeon link handling ──────────────────────────────────────
       // Stairs cells in a generated dungeon link to synthetic map
       // ids (see `dungeonLevelToMap`). Recognise those before the
@@ -6542,6 +6745,38 @@ export function PlayHost() {
                   m.id,
                 )
               : null;
+            if (fall) {
+              const sprites = new Map(
+                (catalogRef.current?.characters ?? []).map((c) => [c.id, c.sprite]),
+              );
+              const named = `Floor ${targetFloor + 1}`;
+              const lvlName = lvl.name?.trim();
+              pendingPitCardRef.current = {
+                floorName: lvlName && lvlName !== named ? `${lvlName} (${named})` : named,
+                lines: pitFallReport(save.party.members, fall.members, (id) => {
+                  const m = save.party.members.find((x) => x.id === id);
+                  return {
+                    name:
+                      (m?.custom as { name?: string } | null | undefined)?.name ??
+                      charNames.get(id),
+                    sprite:
+                      (m?.custom as { sprite?: string } | null | undefined)?.sprite ??
+                      sprites.get(id),
+                  };
+                }),
+              };
+              pendingLandingRef.current = landing;
+              // Safety net: if the new floor never mounts a renderer,
+              // still show the card.
+              window.setTimeout(() => {
+                const card = pendingPitCardRef.current;
+                if (!card) return;
+                pendingPitCardRef.current = null;
+                pendingLandingRef.current = null;
+                setPitFalling(false);
+                setPitFall(card);
+              }, 2500);
+            }
             if (fall && fall.lines.length > 0) {
               setLogMessages((prev) => {
                 const nextLog = [...prev, ...fall.lines];
@@ -7929,6 +8164,16 @@ export function PlayHost() {
             setLoreReading(null);
             runQuestTriggers({ kind: "read_lore", loreId });
           }}
+        />
+      ) : null}
+      {trapReport ? (
+        <PlayTrapOverlay card={trapReport} onClose={() => setTrapReport(null)} />
+      ) : null}
+      {pitFall ? (
+        <PlayPitFallOverlay
+          floorName={pitFall.floorName}
+          lines={pitFall.lines}
+          onClose={() => setPitFall(null)}
         />
       ) : null}
       {campReport ? (

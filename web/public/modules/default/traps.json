@@ -39,13 +39,7 @@
       "damage_type": "magic",
       "damage_range": null,
       "effect": null,
-      "params": {
-        "teleport": {
-          "map_id": "overview_island",
-          "col": 5,
-          "row": 5
-        }
-      }
+      "params": {}
     }
   ]
 }

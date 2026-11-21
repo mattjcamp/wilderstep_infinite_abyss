@@ -2,6 +2,12 @@ import { describe, it, expect } from "vitest";
 import { Sfx, SFX_NAMES } from "./Sfx";
 
 describe("Sfx catalog — registered generators", () => {
+  it("knows the pit fall + landing cues", () => {
+    // Played by the play host when the party drops through a pit.
+    expect(Sfx.has("pit_fall")).toBe(true);
+    expect(Sfx.has("pit_land")).toBe(true);
+  });
+
   it("knows the Teleport Blink cue", () => {
     // Named by the teleport_blink FX record (fx.json).
     expect(Sfx.has("teleport_blink")).toBe(true);

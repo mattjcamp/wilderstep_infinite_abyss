@@ -58,6 +58,28 @@ export interface DungeonLoot {
   chest_frequency?: number;
 }
 
+/** One weighted entry in a dungeon's trap mix. `trap_id` names a
+ *  traps.json record; `weight` (default 1) is its relative share. */
+export interface DungeonTrapPick {
+  trap_id: string;
+  weight?: number;
+}
+
+/** Drop picks with no id or a non-positive weight; returns the cleaned
+ *  list with weights resolved (default 1). */
+export function cleanTrapPicks(
+  picks: DungeonTrapPick[] | undefined,
+): Array<{ trap_id: string; weight: number }> {
+  const out: Array<{ trap_id: string; weight: number }> = [];
+  for (const p of picks ?? []) {
+    const id = typeof p?.trap_id === "string" ? p.trap_id.trim() : "";
+    const w =
+      typeof p?.weight === "number" && Number.isFinite(p.weight) ? p.weight : 1;
+    if (id && w > 0) out.push({ trap_id: id, weight: w });
+  }
+  return out;
+}
+
 /** One floor in a parent Dungeon's `levels[]`. Required fields
  *  (`id`, `name`, `depth`) carry identity; everything else is an
  *  optional override of the parent Dungeon's same-named field.
@@ -92,6 +114,12 @@ export interface DungeonLevelRecord {
   pits?: number;
   /** Pits drop the party to the floor below. Inherits; default `true`. */
   pit_falls?: boolean;
+  /** 0–1 chance each room past the entrance gets a hidden trap.
+   *  Inherits the parent's value (default 0.35). */
+  traps?: number;
+  /** Weighted trap mix for this floor. Inherits the parent's list when
+   *  absent; an empty / absent list everywhere → the default trap. */
+  trap_types?: DungeonTrapPick[];
   /** 0–1 room clutter (pillars / stalagmites / rubble). Inherits;
    *  default is the style's (see {@link STYLE_DEFAULTS}). */
   objects?: number;
@@ -148,6 +176,15 @@ export interface DungeonRecord {
    *  the floor below (light fall damage). `false` = solid chasms. Pits
    *  on the bottom floor are always solid. */
   pit_falls?: boolean;
+  /** 0–1 chance each room past the entrance gets a hidden trap (one
+   *  per room, near its centre). Default 0.35 — the historical rate.
+   *  `0` = no traps. Levels override per-floor. */
+  traps?: number;
+  /** Which traps.json records generated traps use, with relative
+   *  weights (e.g. 3× dart_trap, 1× fire_trap). Absent / empty → every
+   *  trap is the default record (dart_trap). Levels override per-floor
+   *  (a Level's list replaces the parent's, it doesn't merge). */
+  trap_types?: DungeonTrapPick[];
   /** 0–1 room clutter: pillars + rubble (dungeon), stalagmites +
    *  rubble (cavern). At 1 about one open cell in ten gets an object.
    *  Never blocks a route. Default: style's (cavern 0.5, dungeon 0). */
@@ -229,6 +266,10 @@ export interface ResolvedLevelOptions {
   bottomExit: "" | "stairs" | "ladder";
   /** Whether pits drop through to the floor below. */
   pitFalls: boolean;
+  /** 0–1 chance each room past the entrance gets a trap. */
+  trapFrequency: number;
+  /** Cleaned weighted trap mix; empty → the default trap. */
+  trapTypes: Array<{ trap_id: string; weight: number }>;
   /** Resolved 0–1 dials (level → parent → style default). */
   objectFrequency: number;
   floorVariety: number;
@@ -297,6 +338,9 @@ export const DUNGEON_DEFAULTS = {
   pits: 0,
   /** Pits drop through to the floor below unless turned off. */
   pit_falls: true,
+  /** Trap frequency defaults to 0.35 — the rate the generator always
+   *  used — so existing dungeons keep their traps. */
+  traps: 0.35,
   /** Loot defaults. `chest_item` is empty by design — chests are
    *  opt-in, so a brand-new dungeon places none until the author
    *  picks a chest item. `chest_frequency` is the fallback rate used

@@ -24,6 +24,7 @@
 
 import { editorMapHref } from "../moduleRoutes";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Sfx } from "@/battle/audio/Sfx";
 import { useRouter } from "next/navigation";
 import { loadSpriteDraft } from "@/data_model/spriteDraft";
 import {
@@ -136,6 +137,15 @@ export function DungeonSimMount({
       const next = Number.parseInt(match[1], 10);
       if (Number.isFinite(next)) {
         fallLandingRef.current = link.fall ? { col: link.x, row: link.y } : null;
+        if (link.fall) {
+          // Same cues as in game: the drop, then the landing on the new floor.
+          try {
+            Sfx.play("pit_fall");
+            window.setTimeout(() => Sfx.play("pit_land"), 600);
+          } catch {
+            /* audio not ready — skip */
+          }
+        }
         setFloorIdx(next);
       }
     }

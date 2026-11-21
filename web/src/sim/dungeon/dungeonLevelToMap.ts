@@ -150,6 +150,9 @@ export function dungeonLevelToMap(
       // we only need to clear the `trap` flag.
       if (base.trap && level.triggeredTraps.has(`${c},${r}`)) {
         base.trap = false;
+      } else if (base.trap && level.trapIds?.[`${c},${r}`]) {
+        // Configured trap mix: bind the cell to its traps.json record.
+        base.trap_id = level.trapIds[`${c},${r}`];
       }
       if (isChest) {
         // Identity bits carry over so the rest of the system can

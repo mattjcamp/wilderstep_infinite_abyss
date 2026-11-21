@@ -19,6 +19,7 @@
  *     (editor or /play) wires the same five callbacks.
  */
 
+import { randomReachableCell } from "./randomTeleport";
 import {
   cellAt,
   deltaFor,
@@ -2550,6 +2551,21 @@ export class MapSimulation {
    *    - party timer tick
    *    - lighting re-pass
    *    - emits `moved` + `state`. */
+  /** A random cell the party could walk to from where it stands (see
+   *  `randomReachableCell`) — the landing for a teleport trap with no
+   *  authored destination. Null when nowhere is reachable. */
+  randomReachableCell(rng: () => number = Math.random): Position | null {
+    const occupied = new Set<string>();
+    for (const r of this.roamers) occupied.add(`${r.col},${r.row}`);
+    for (const p of this.placedEncounters) occupied.add(`${p.col},${p.row}`);
+    return randomReachableCell(
+      this.grid,
+      this.pos,
+      (c, r) => occupied.has(`${c},${r}`),
+      rng,
+    );
+  }
+
   teleport(col: number, row: number): void {
     if (this.disposed) return;
     if (col < 0 || row < 0) return;

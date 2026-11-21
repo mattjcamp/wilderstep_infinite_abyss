@@ -2327,6 +2327,109 @@ function genTeleportBlink(ac: AudioContext, out: AudioNode, t0: number): void {
   }
 }
 
+function genPitFall(ac: AudioContext, out: AudioNode, t0: number): void {
+  // The floor giving way and the party dropping, ~0.55s (the fall
+  // animation plays for ~0.45s before the floor changes):
+  //   1. Crack: splintering boards / crumbling stone, a few sharp
+  //      gritty snaps.
+  //   2. Drop: a whistle falling 900Hz → 140Hz, the party plunging.
+  //   3. Rush: noise through a band-pass sweeping down, air rushing
+  //      past as they fall.
+  const end = 0.55;
+  for (let i = 0; i < 6; i++) {
+    const at = t0 + Math.random() * 0.12;
+    const len = 0.02 + Math.random() * 0.02;
+    const src = noiseSource(ac, len);
+    const bp = ac.createBiquadFilter();
+    bp.type = "bandpass";
+    bp.Q.value = 2;
+    bp.frequency.value = 700 + Math.random() * 1800;
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, at);
+    g.gain.exponentialRampToValueAtTime(0.18 + Math.random() * 0.15, at + 0.002);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + len);
+    src.connect(bp).connect(g).connect(out);
+    src.start(at);
+    src.stop(at + len + 0.01);
+  }
+  {
+    const o = ac.createOscillator();
+    o.type = "triangle";
+    o.frequency.setValueAtTime(900, t0 + 0.05);
+    o.frequency.exponentialRampToValueAtTime(140, t0 + end);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t0 + 0.05);
+    g.gain.exponentialRampToValueAtTime(0.13, t0 + 0.12);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + end);
+    o.connect(g).connect(out);
+    o.start(t0 + 0.05);
+    o.stop(t0 + end + 0.02);
+  }
+  {
+    const src = noiseSource(ac, end);
+    const bp = ac.createBiquadFilter();
+    bp.type = "bandpass";
+    bp.Q.value = 1.2;
+    bp.frequency.setValueAtTime(2200, t0);
+    bp.frequency.exponentialRampToValueAtTime(350, t0 + end);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(0.22, t0 + 0.15);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + end);
+    src.connect(bp).connect(g).connect(out);
+    src.start(t0);
+    src.stop(t0 + end + 0.01);
+  }
+}
+
+function genPitLand(ac: AudioContext, out: AudioNode, t0: number): void {
+  // The party hitting the floor below, ~0.8s: a heavy body thud, a
+  // gear-and-grit clatter, and dust and pebbles settling.
+  {
+    const o = ac.createOscillator();
+    o.type = "sine";
+    o.frequency.setValueAtTime(120, t0);
+    o.frequency.exponentialRampToValueAtTime(40, t0 + 0.22);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(0.6, t0 + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.28);
+    o.connect(g).connect(out);
+    o.start(t0);
+    o.stop(t0 + 0.3);
+  }
+  {
+    const src = noiseSource(ac, 0.18);
+    const lp = ac.createBiquadFilter();
+    lp.type = "lowpass";
+    lp.frequency.setValueAtTime(2200, t0);
+    lp.frequency.exponentialRampToValueAtTime(300, t0 + 0.18);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(0.4, t0 + 0.004);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.18);
+    src.connect(lp).connect(g).connect(out);
+    src.start(t0);
+    src.stop(t0 + 0.2);
+  }
+  for (let i = 0; i < 10; i++) {
+    const at = t0 + 0.06 + Math.pow(Math.random(), 1.3) * 0.6;
+    const len = 0.012 + Math.random() * 0.012;
+    const src = noiseSource(ac, len);
+    const bp = ac.createBiquadFilter();
+    bp.type = "bandpass";
+    bp.Q.value = 4;
+    bp.frequency.value = 600 + Math.random() * 2400;
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, at);
+    g.gain.exponentialRampToValueAtTime((0.06 + Math.random() * 0.1) * (1 - (at - t0) / 0.8), at + 0.001);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + len);
+    src.connect(bp).connect(g).connect(out);
+    src.start(at);
+    src.stop(at + len + 0.01);
+  }
+}
+
 function genHeal(ac: AudioContext, out: AudioNode, t0: number): void {
   // Gentle ascending arpeggio: C5 → E5 → G5 → C6 (square 25% duty).
   const seq = ["C5", "E5", "G5", "C6"];
@@ -2588,6 +2691,8 @@ const GENERATORS: Record<string, Generator> = {
   ground_rift:        genGroundRift,
   enchant_spell:      genEnchantSpell,
   teleport_blink:     genTeleportBlink,
+  pit_fall:           genPitFall,
+  pit_land:           genPitLand,
   heal:               genHeal,
   shield:             genShield,
   turn_undead:        genTurnUndead,

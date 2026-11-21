@@ -29,3 +29,39 @@ export function applyPitFall<M extends PitFallMember>(
   });
   return { members: next, lines };
 }
+
+/** One roster line on the fall card. */
+export interface PitFallLine {
+  id: string;
+  name: string;
+  sprite?: string;
+  /** HP lost to the fall (0 for a member already at 1 HP or down). */
+  taken: number;
+  hp: number;
+  maxHp?: number;
+  /** Already down before the fall — the fall doesn't touch them. */
+  fallen: boolean;
+}
+
+/** What the fall card shows: per-member damage, diffed from the roster
+ *  before and after {@link applyPitFall}. Pure; members match by id. */
+export function pitFallReport<M extends PitFallMember & { max_hp?: number }>(
+  before: readonly M[],
+  after: readonly M[],
+  info: (id: string) => { name?: string; sprite?: string } | undefined,
+): PitFallLine[] {
+  const prev = new Map(before.map((m) => [m.id, m]));
+  return after.map((m) => {
+    const b = prev.get(m.id) ?? m;
+    const meta = info(m.id);
+    return {
+      id: m.id,
+      name: meta?.name || m.id,
+      sprite: meta?.sprite,
+      taken: Math.max(0, b.hp - m.hp),
+      hp: m.hp,
+      maxHp: m.max_hp,
+      fallen: b.hp <= 0,
+    };
+  });
+}
