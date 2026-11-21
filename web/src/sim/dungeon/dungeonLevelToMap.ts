@@ -26,7 +26,10 @@ import {
   TILE_DWALL,
   TILE_STAIRS,
   TILE_STAIRS_DOWN,
+  TILE_PROP,
 } from "@/battle/world/Dungeon";
+import { WALKABLE_PROPS } from "@/battle/world/dungeonRooms";
+import { PROP_INFO } from "./roomProps";
 import { TILE_DFLOOR } from "@/battle/world/Tiles";
 import {
   normalizeDungeonStyle,
@@ -125,7 +128,9 @@ export function dungeonLevelToMap(
       // other "placed" things could follow this same pattern
       // later; today only chests get it.
       const isChest = tileId === TILE_CHEST;
-      const lookupId = isChest ? TILE_DFLOOR : tileId;
+      // Room furnishings start as floor; the props pass in
+      // applyTilesetStyle paints them (see level.props).
+      const lookupId = isChest || tileId === TILE_PROP ? TILE_DFLOOR : tileId;
       const proto = prototypeForTileId(lookupId, style);
       // Fallback to a wall when the generator emitted an unmapped
       // tile id — safer than a walkable floor since we don't know
@@ -662,6 +667,47 @@ function applyTilesetStyle(
         cell.paletteId = id;
       }
     }
+  }
+
+  // ── 1b. Room furnishings ───────────────────────────────────────
+  // Props from the room-roles pass, drawn over the floor they stand on.
+  // A palette without a prop's tile leaves plain (walkable) floor, so a
+  // module missing the art never gets invisible obstacles.
+  for (const [key, kind] of Object.entries(level.props ?? {})) {
+    const [c, r] = key.split(",").map(Number);
+    const cell = grid[r]?.[c];
+    const info = PROP_INFO[kind];
+    if (!cell || !info) continue;
+    const sprite = resolveDungeonSprite(info.paletteId, sprites);
+    if (!sprite) {
+      cell.walkable = true;
+      continue;
+    }
+    cell.id = info.paletteId;
+    cell.paletteId = info.paletteId;
+    cell.name = info.name;
+    cell.sprite = sprite;
+    cell.background_sprite = floorSpriteAt(c, r);
+    cell.walkable = WALKABLE_PROPS.has(kind);
+    cell.obstructs = !!info.obstructs;
+    if (info.light) {
+      cell.light_source = true;
+      cell.light_range = info.light;
+    }
+    if (info.animation) cell.animation = info.animation;
+  }
+  // Readable furnishings (a library book, a shrine statue): bumping one
+  // opens its Lore.
+  for (const [key, loreId] of Object.entries(level.propLore ?? {})) {
+    const [c, r] = key.split(",").map(Number);
+    const cell = grid[r]?.[c];
+    if (cell) (cell as DungeonMapCell & { lore?: string }).lore = loreId;
+  }
+  // Items on the floor (a sealed vault's key) — picked up on step.
+  for (const [key, itemId] of Object.entries(level.items ?? {})) {
+    const [c, r] = key.split(",").map(Number);
+    const cell = grid[r]?.[c];
+    if (cell?.walkable) (cell as DungeonMapCell & { item?: string }).item = itemId;
   }
 
   // ── 2. Pits ────────────────────────────────────────────────────

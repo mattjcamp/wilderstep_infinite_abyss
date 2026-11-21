@@ -128,6 +128,12 @@ export interface DungeonLevelRecord {
   floor_variety?: number;
   /** 0–1 share of brick faces carrying a decoration. */
   wall_decor?: number;
+  /** 0–1 extra corridors looping nearby rooms together. Inherits;
+   *  default is the style's (see {@link STYLE_DEFAULTS}). */
+  loops?: number;
+  /** 0–1 chance each room is furnished with a role (storeroom,
+   *  library, shrine…). Inherits; default is the style's. */
+  room_roles?: number;
   /** When `true`, the floor's entrance + exit transitions are placed at
    *  the map EDGE (carving a short trail inward); when `false` they're
    *  dropped in the interior rooms. Absent inherits the parent, which
@@ -199,6 +205,15 @@ export interface DungeonRecord {
    *  windows (dungeon), glowing cracks / crystal veins / webs (cavern).
    *  Default 0. */
   wall_decor?: number;
+  /** 0–1 loops: extra corridors joining nearby rooms so a floor has
+   *  circuits instead of one chain of dead ends. At 1 about 40% as many
+   *  extra links as rooms. Default: style's (0.35). */
+  loops?: number;
+  /** 0–1 chance each room past the entrance (4×4 or bigger) gets a
+   *  role and is furnished for it — storeroom, library, mess hall,
+   *  shrine, crypt, guard post, treasure vault (only with a chest
+   *  item), parlour (manor), camp (cavern). Default: style's (0.4). */
+  room_roles?: number;
   /** Place entrance + exit transitions at the map edge (`true`) or in
    *  interior rooms (`false`). Applies to every style; Levels override
    *  per-floor. Absent → interior rooms. */
@@ -210,6 +225,15 @@ export interface DungeonRecord {
    *  in the last room, or on a map edge when `edge_transitions` is on.
    *  Dungeon-wide only (it only ever applies to the bottom floor). */
   bottom_exit?: BottomExitStyle;
+  /** Item id (a `key`-type item) dropped elsewhere on a floor as the
+   *  key to that floor's sealed treasure vault — in a guard post when
+   *  there is one. Absent → vaults are still locked, but with no key
+   *  (pick the lock or cast Knock). Dungeon-wide. */
+  vault_key?: string;
+  /** Lore ids made readable in furnished rooms: each library's book
+   *  and each shrine's statue, in floor order, takes the next entry
+   *  (each used once). Dungeon-wide. */
+  lore?: string[];
   /** Default loot for every floor (Levels override per-floor). Absent
    *  → no procedural chests anywhere in the dungeon unless a Level
    *  sets its own `loot.chest_item`. */
@@ -275,6 +299,8 @@ export interface ResolvedLevelOptions {
   objectFrequency: number;
   floorVariety: number;
   wallDecor: number;
+  loops: number;
+  roomRoles: number;
 }
 
 /** Per-style defaults for the cosmetic dials, used when neither the
@@ -282,17 +308,17 @@ export interface ResolvedLevelOptions {
  *  floors and a scatter of stalagmites; these keep that look. */
 export const STYLE_DEFAULTS: Record<
   DungeonStyle,
-  { objects: number; floor_variety: number; wall_decor: number }
+  { objects: number; floor_variety: number; wall_decor: number; loops: number; room_roles: number }
 > = {
-  dungeon: { objects: 0, floor_variety: 0, wall_decor: 0 },
-  cavern: { objects: 0.5, floor_variety: 0.6, wall_decor: 0 },
+  dungeon: { objects: 0, floor_variety: 0, wall_decor: 0, loops: 0.35, room_roles: 0.4 },
+  cavern: { objects: 0.5, floor_variety: 0.6, wall_decor: 0, loops: 0.35, room_roles: 0.4 },
   // A new style, so it gets a fully dressed look out of the box:
   // carved glyph panels and glowing windows on the walls, sigil and
   // stone floors in the rooms, a few pillars.
-  deep_ones_hall: { objects: 0.25, floor_variety: 0.6, wall_decor: 0.5 },
+  deep_ones_hall: { objects: 0.25, floor_variety: 0.6, wall_decor: 0.5, loops: 0.35, room_roles: 0.4 },
   // Furnished rooms: a different floor in most rooms, tapestries and
   // windows on the walls, columns and potted plants about.
-  manor: { objects: 0.2, floor_variety: 0.7, wall_decor: 0.4 },
+  manor: { objects: 0.2, floor_variety: 0.7, wall_decor: 0.4, loops: 0.35, room_roles: 0.5 },
 };
 
 /** Smallest / largest floor the generator will build. Below the

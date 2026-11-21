@@ -137,6 +137,9 @@ export function generateDungeonFromRecord(
       overworldExit: resolved.bottomExit || undefined,
       // Room clutter + the converter's cosmetic dials.
       objectProbability: resolved.objectFrequency,
+      // Layout + dressing: loops between rooms, furnished room roles.
+      loops: resolved.loops,
+      roomRoles: resolved.roomRoles,
       floorVariety: resolved.floorVariety,
       wallDecor: resolved.wallDecor,
       // Encounters table + monster-difficulty lookup — when both
@@ -151,6 +154,8 @@ export function generateDungeonFromRecord(
       encounterTheme: resolved.theme,
       monsterDifficulty: opts.monsterDifficulty,
       requiredMonsterIds: opts.requiredMonstersByFloor?.get(floorIdx),
+      // A sealed vault's key, dropped elsewhere on the floor.
+      vaultKeyItem: (record.vault_key ?? "").trim() || undefined,
       seed,
     });
     out.push(normaliseAuthoredHeight(raw, resolved.size.height));
@@ -162,7 +167,42 @@ export function generateDungeonFromRecord(
     const landings = pitLandingsFor(out[i], out[i + 1]);
     if (Object.keys(landings).length > 0) out[i].pitLandings = landings;
   }
+  assignPropLore(out, record.lore);
   return out;
+}
+
+/**
+ * Make furnishings readable: each library's book and each shrine's
+ * statue, floor by floor and room by room, takes the next Lore id from
+ * the dungeon's `lore` list (each used once; extra rooms stay plain).
+ */
+export function assignPropLore(
+  floors: DungeonLevel[],
+  lore: ReadonlyArray<string> | undefined,
+): void {
+  const queue = (lore ?? []).map((s) => s.trim()).filter(Boolean);
+  if (queue.length === 0) return;
+  for (const f of floors) {
+    if (!f.roomRoles || !f.props || !f.rooms) continue;
+    for (const { room: ri, role } of f.roomRoles) {
+      if (queue.length === 0) return;
+      const want =
+        role === "library" ? ["book", "book_closed"]
+          : role === "shrine" ? ["statue_top"]
+            : null;
+      if (!want) continue;
+      const rm = f.rooms[ri];
+      const cell = Object.entries(f.props)
+        .filter(([k, kind]) => {
+          const [c, r] = k.split(",").map(Number);
+          return want.includes(kind) && c >= rm.x && c < rm.x + rm.w && r >= rm.y && r < rm.y + rm.h;
+        })
+        .map(([k]) => k)
+        .sort()[0];
+      if (!cell) continue;
+      f.propLore = { ...(f.propLore ?? {}), [cell]: queue.shift()! };
+    }
+  }
 }
 
 /**
@@ -341,6 +381,8 @@ export function resolveLevelOptions(
     styleDefaults.floor_variety,
   );
   const wallDecor = dial(level.wall_decor ?? parent.wall_decor, styleDefaults.wall_decor);
+  const loops = dial(level.loops ?? parent.loops, styleDefaults.loops);
+  const roomRoles = dial(level.room_roles ?? parent.room_roles, styleDefaults.room_roles);
   return {
     name: level.name,
     id: level.id,
@@ -364,6 +406,8 @@ export function resolveLevelOptions(
     objectFrequency,
     floorVariety,
     wallDecor,
+    loops,
+    roomRoles,
   };
 }
 

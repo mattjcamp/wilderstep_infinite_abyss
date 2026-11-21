@@ -44,7 +44,8 @@
       "pits": 0.3,
       "floor_variety": 0,
       "doors": 0.1,
-      "pit_falls": true
+      "pit_falls": true,
+      "vault_key": "iron_key"
     },
     {
       "id": "stone_halls",
@@ -81,7 +82,8 @@
       },
       "wall_decor": 0.5,
       "pits": 0.5,
-      "doors": 0.5
+      "doors": 0.5,
+      "vault_key": "iron_key"
     }
   ]
 }

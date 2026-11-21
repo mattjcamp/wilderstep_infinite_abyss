@@ -13331,7 +13331,7 @@
             "sprite": "map/cave_entrance.png",
             "tag": "map",
             "background_sprite": "map/grass.png",
-            "dungeon": "test2",
+            "dungeon": "test3",
             "show_link_placard": true
           },
           {

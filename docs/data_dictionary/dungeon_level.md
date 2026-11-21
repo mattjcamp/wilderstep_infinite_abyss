@@ -34,6 +34,8 @@ Each entry in a parent Dungeon's `levels[]` is an object with the fields below.
 | `doors` | number (0–1) | no | Override the parent Dungeon's `doors` (per-opening door placement chance; parent defaults to `1`). Set `0` for an open floor with no doorframes. Omit to inherit. | TBD |
 | `pits` | number (0–1) | no | Override the parent Dungeon's `pits` (per-room pit chance; parent defaults to `0`). Omit to inherit. | TBD |
 | `pit_falls` | boolean | no | Override the parent Dungeon's `pit_falls`. Omit to inherit. | TBD |
+| `loops` | number (0–1) | no | Override the parent Dungeon's `loops` (extra corridors between rooms; default `0.35`). Omit to inherit. | TBD |
+| `room_roles` | number (0–1) | no | Override the parent Dungeon's `room_roles` (chance each room is furnished; default `0.4`, manor `0.5`). Omit to inherit. | TBD |
 | `traps` | number (0–1) | no | Override the parent Dungeon's `traps` (per-room trap chance; parent defaults to `0.35`). Omit to inherit. | TBD |
 | `trap_types` | array of `{ trap_id, weight? }` | no | Override the parent Dungeon's trap mix. Replaces the parent's list entirely. Omit to inherit. | TBD |
 | `objects` | number (0–1) | no | Override the parent Dungeon's `objects`. Omit to inherit (then the style default). | TBD |

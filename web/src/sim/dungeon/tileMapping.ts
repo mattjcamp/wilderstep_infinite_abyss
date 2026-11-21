@@ -24,6 +24,7 @@
  * module may not ship.
  */
 
+import { PROP_PALETTE_IDS } from "./roomProps";
 import {
   TILE_DFLOOR,
   TILE_DDOOR,
@@ -661,6 +662,8 @@ export const DUNGEON_PALETTE_IDS: readonly string[] = [
   "manor_column",
   "manor_potted_plant",
   "manor_grand_chair",
+  // Room furnishings (room-roles pass) — shared art for every style.
+  ...PROP_PALETTE_IDS,
   // The bottom floor's way out — each tileset's wall opening.
   "dungeon_wall_exit",
   "cave_wall_exit",

@@ -3,6 +3,7 @@
  * and "manor": generated floors are painted entirely from their own
  * tileset in the Default palette, with the dressing actually showing.
  */
+import { PROP_INFO } from "./roomProps";
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { normalizeDungeonStyle, DUNGEON_STYLES, type DungeonStyle } from "@/battle/world/Dungeon";
@@ -14,6 +15,7 @@ import type { DungeonRecord } from "./types";
 const tiles = JSON.parse(
   readFileSync("public/modules/default/map_tiles.json", "utf8"),
 ).map_tiles as Array<{ id: string; sprite: string }>;
+const PROP_IDS = new Set(Object.values(PROP_INFO).map((p) => p.paletteId));
 const palette = new Map(tiles.map((t) => [t.id, t.sprite]));
 const knownSprites = new Set(tiles.map((t) => t.sprite));
 
@@ -86,8 +88,9 @@ describe.each(CASES)("$style dungeon style", ({ style, prefix, folder, mustSee }
             for (const cell of row) {
               expect(cell.sprite, `${cell.id} seed=${seed}`).not.toBe("");
               expect(knownSprites.has(cell.sprite), cell.sprite).toBe(true);
-              // Tileset art only (chests and torches are shared).
-              if (cell.id !== "chest" && cell.id !== "wall_torch") {
+              // Tileset art only (chests, torches and room furnishings
+              // are shared).
+              if (cell.id !== "chest" && cell.id !== "wall_torch" && !PROP_IDS.has(cell.id)) {
                 expect(cell.sprite.startsWith(folder), `${cell.id} ${cell.sprite}`).toBe(true);
               }
               seen.add(cell.sprite.replace(folder, ""));

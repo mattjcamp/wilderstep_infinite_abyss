@@ -43,7 +43,8 @@
       "pits": 0.3,
       "floor_variety": 0,
       "doors": 0.1,
-      "pit_falls": true
+      "pit_falls": true,
+      "vault_key": "iron_key"
     },
     {
       "id": "stone_halls",
@@ -80,25 +81,26 @@
       },
       "wall_decor": 0.5,
       "pits": 0.5,
-      "doors": 0.5
+      "doors": 0.5,
+      "vault_key": "iron_key"
     },
     {
-      "id": "test2",
-      "name": "TEST2",
-      "description": "test",
+      "id": "test3",
+      "name": "Test3",
+      "description": "test3",
       "tags": [],
       "style": "dungeon",
       "difficulty": "normal",
       "size": {
-        "width": 32,
-        "height": 32
+        "width": 16,
+        "height": 16
       },
       "torch_density": 0.1,
       "locked_doors": 0.1,
       "doors": 0.1,
       "pits": 0.1,
       "pit_falls": true,
-      "traps": 1,
+      "traps": 0.35,
       "objects": 0.25,
       "floor_variety": 0,
       "wall_decor": 0.25,
@@ -107,40 +109,21 @@
         "chest_frequency": 0.25
       },
       "bottom_exit": "opening",
+      "vault_key": "iron_key",
       "levels": [
         {
-          "id": "test2_l1",
+          "id": "test3_l1",
           "name": "Level 1",
-          "depth": 1,
-          "trap_types": [
-            {
-              "trap_id": "dart_trap",
-              "weight": 1
-            }
-          ]
+          "depth": 1
         },
         {
-          "id": "test2_l2",
+          "id": "test3_l2",
           "name": "Level 2",
-          "depth": 2,
-          "trap_types": [
-            {
-              "trap_id": "fire_trap",
-              "weight": 1
-            }
-          ],
-          "style": "deep_ones_hall"
+          "depth": 2
         }
       ],
-      "trap_types": [
-        {
-          "trap_id": "dart_trap",
-          "weight": 1
-        },
-        {
-          "trap_id": "fire_trap",
-          "weight": 1
-        }
+      "lore": [
+        "eight_keys_of_shadow"
       ]
     }
   ]

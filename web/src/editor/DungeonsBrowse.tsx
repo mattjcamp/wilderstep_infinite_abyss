@@ -51,6 +51,7 @@ import {
 } from "@/sim/dungeon/types";
 import { normalizeDungeonStyle } from "@/battle/world/Dungeon";
 import { groupItemsByCategory } from "./itemTags";
+import { LorePicker } from "./LorePicker";
 
 const MODEL_KEY = "dungeons";
 const FILE_NAME = "dungeons.json";
@@ -64,6 +65,13 @@ type TrapChoice = { id: string; name: string };
 /** Trap records visible to this module — read by GeneratorFields so
  *  the picker doesn't need threading through every row component. */
 const TrapChoicesContext = createContext<TrapChoice[]>([]);
+/** Module id + key-type items, for the room-role fields (vault key,
+ *  readable Lore) without threading props through every row. */
+const RoomRoleContext = createContext<{
+  moduleId: string;
+  keyItems: Array<{ id: string; name: string }>;
+}>({ moduleId: "", keyItems: [] });
+
 /** The record generated traps use when no trap mix is set. */
 const DEFAULT_TRAP_ID = "dart_trap";
 
@@ -147,6 +155,8 @@ interface DungeonLevel {
   objects?: number;
   floor_variety?: number;
   wall_decor?: number;
+  loops?: number;
+  room_roles?: number;
   /** Entrance/exit placement: edge of map (true) vs interior rooms. */
   edge_transitions?: boolean;
   loot?: DungeonLoot;
@@ -185,9 +195,18 @@ interface DungeonRecord {
   objects?: number;
   floor_variety?: number;
   wall_decor?: number;
+  /** 0–1 loops between rooms; 0–1 furnished room roles. Absent → the
+   *  style's default (`STYLE_DEFAULTS`). */
+  loops?: number;
+  room_roles?: number;
   /** Entrance/exit placement: edge of map (true) vs interior rooms
    *  (false). Absent → interior rooms. All styles. */
   edge_transitions?: boolean;
+  /** Key-type item dropped on a floor as its sealed vault's key. */
+  vault_key?: string;
+  /** Lore ids made readable in libraries (a book) and shrines (the
+   *  statue), in floor order. */
+  lore?: string[];
   /** A way straight out on the bottom floor: "opening" (a broken wall
    *  with daylight beyond); absent / "none" = leave by the entrance
    *  stairs. "stairs" / "ladder" are older names for the same thing. */
@@ -218,6 +237,8 @@ type LoadState =
       chestItems: Array<ChestItem>;
       /** traps.json records — the choices for the trap-mix picker. */
       trapChoices: TrapChoice[];
+      /** Items with item_type "key" — the vault-key picker. */
+      keyItems: Array<{ id: string; name: string }>;
       ownFile: Record<string, unknown> | null;
       isDraft: boolean;
     }
@@ -243,6 +264,7 @@ const DEFAULTS = {
   wall_decor: 0.25,
   loot: { chest_item: "treasure_chest", chest_frequency: 0.25 },
   bottom_exit: "opening" as const,
+  vault_key: "iron_key",
 } as const;
 
 export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
@@ -302,12 +324,17 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
           name: String(t.name ?? t.id ?? ""),
         }))
         .filter((t) => t.id !== "");
+      const keyItems = (itemsMerged?.items ?? [])
+        .filter((it) => it.item_type === "key")
+        .map((it) => ({ id: String(it.id ?? ""), name: String(it.name ?? it.id ?? "") }))
+        .filter((it) => it.id !== "");
       setState({
         kind: "ok",
         dungeons,
         catalog,
         chestItems,
         trapChoices,
+        keyItems,
         ownFile: ownEffective ?? null,
         isDraft: hasDraft(moduleId, MODEL_KEY),
       });
@@ -651,6 +678,7 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
         </div>
       ) : null}
 
+      <RoomRoleContext.Provider value={{ moduleId, keyItems: state.keyItems }}>
       <TrapChoicesContext.Provider value={state.trapChoices}>
       <div className="mt-6 space-y-5">
         {[...groupedByTag.entries()].map(([tag, dungeons]) => (
@@ -727,6 +755,7 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
         ) : null}
       </div>
       </TrapChoicesContext.Provider>
+      </RoomRoleContext.Provider>
 
       {/* Available from libraries (uses) — explicit import, not
           auto-merged. Each dungeon is a self-contained record, so the
@@ -967,6 +996,8 @@ function DungeonEditor({
           player it leaves the area and asks before leaving.
         </span>
       </label>
+
+      <RoomRoleFields dungeon={dungeon} onUpdate={onUpdate} />
 
       {/* Levels list */}
       <h3 className="mt-4 text-[13px] uppercase tracking-wide text-parchment/75">
@@ -1572,6 +1603,8 @@ function GeneratorFields({
           ["objects", "Objects (0–1)", "Pillars / stalagmites / rubble in rooms. Never blocks a route."],
           ["floor_variety", "Floor variety (0–1)", "Alternate floors: per room (dungeon) or patches (cavern)."],
           ["wall_decor", "Wall decor (0–1)", "Banners, windows / glowing cracks, crystals, webs on wall faces."],
+          ["loops", "Loops (0–1)", "Extra corridors joining nearby rooms, so floors have circuits instead of dead ends."],
+          ["room_roles", "Room roles (0–1)", "Chance each room is furnished as a storeroom, library, mess hall, shrine, crypt, guard post, vault, parlour or camp."],
         ] as const
       ).map(([key, label, hint]) => {
         const own = dials[key];
@@ -1727,6 +1760,8 @@ interface Dials {
   objects?: number;
   floor_variety?: number;
   wall_decor?: number;
+  loops?: number;
+  room_roles?: number;
   /** 0–1 trap chance per room; undefined = inherit / default 0.35. */
   traps?: number;
   /** Weighted trap mix; undefined = inherit / default trap. */
@@ -1740,6 +1775,8 @@ function dialsOf(r: Dials): Dials {
     objects: r.objects,
     floor_variety: r.floor_variety,
     wall_decor: r.wall_decor,
+    loops: r.loops,
+    room_roles: r.room_roles,
   };
 }
 
@@ -1778,6 +1815,90 @@ function mergeLoot(
   return next.chest_item == null && next.chest_frequency == null
     ? undefined
     : next;
+}
+
+/** Dungeon-wide settings for furnished rooms' gameplay: the key to a
+ *  sealed treasure vault, and the Lore that libraries and shrines make
+ *  readable. */
+function RoomRoleFields({
+  dungeon,
+  onUpdate,
+}: {
+  dungeon: DungeonRecord;
+  onUpdate: (patch: Partial<DungeonRecord>) => void;
+}) {
+  const { moduleId, keyItems } = useContext(RoomRoleContext);
+  const key = dungeon.vault_key ?? "";
+  const lore = dungeon.lore ?? [];
+  const setLore = (next: string[]) => onUpdate({ lore: next.length > 0 ? next : undefined });
+  return (
+    <div className="mt-3 grid gap-3 sm:grid-cols-2">
+      <label className="block">
+        <span className="text-xs uppercase tracking-wide text-parchment/65">
+          Vault key
+        </span>
+        <select
+          value={key}
+          onChange={(e) => onUpdate({ vault_key: e.target.value || undefined })}
+          className="mt-0.5 block w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
+        >
+          <option value="">(no key — pick the lock or cast Knock)</option>
+          {keyItems.map((k) => (
+            <option key={k.id} value={k.id}>
+              {k.name}
+            </option>
+          ))}
+          {key && !keyItems.some((k) => k.id === key) ? (
+            <option value={key}>{key} (missing)</option>
+          ) : null}
+        </select>
+        <span className="mt-1 block text-xs text-parchment/65">
+          A treasure vault (a furnished room) is a dead-end room behind a
+          locked door with a chest inside. Its key lies elsewhere on the
+          floor — in a guard post when there is one.
+        </span>
+      </label>
+      <div>
+        <span className="text-xs uppercase tracking-wide text-parchment/65">
+          Readable lore
+        </span>
+        <div className="mt-0.5 space-y-1">
+          {lore.map((id, i) => (
+            <div key={i} className="flex items-start gap-1">
+              <div className="min-w-0 flex-1">
+                <LorePicker
+                  value={id}
+                  moduleId={moduleId}
+                  noneLabel="(choose lore)"
+                  help=""
+                  onChange={(v) => setLore(lore.map((x, j) => (j === i ? v : x)).filter(Boolean))}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => setLore(lore.filter((_, j) => j !== i))}
+                title="Remove"
+                className="rounded border border-parchment/20 px-1.5 py-0.5 text-[13px] text-parchment/75 hover:border-ember/60 hover:text-parchment"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => setLore([...lore, ""])}
+            className="rounded border border-parchment/20 px-2 py-0.5 text-[13px] text-parchment/80 hover:border-parchment/40 hover:text-parchment"
+          >
+            + Add lore
+          </button>
+        </div>
+        <span className="mt-1 block text-xs text-parchment/65">
+          Each library&apos;s book and each shrine&apos;s statue becomes
+          readable, taking the next entry in floor order (each used once).
+        </span>
+      </div>
+    </div>
+  );
 }
 
 /** Weighted trap-mix editor: one row per traps.json record with a
@@ -1945,6 +2066,7 @@ function NewDungeonForm({
       wall_decor: DEFAULTS.wall_decor,
       loot: { ...DEFAULTS.loot },
       bottom_exit: DEFAULTS.bottom_exit,
+      vault_key: DEFAULTS.vault_key,
       levels: [],
     };
     onCreate(rec);

@@ -41,6 +41,13 @@ import {
   TILE_WALL_TORCH,
 } from "./Tiles";
 import { sampleEncounter, type EncounterTemplate } from "./Encounters";
+import {
+  addLoops,
+  carveVault,
+  placeRoomRoles,
+  type PropKind,
+  type RoomRole,
+} from "./dungeonRooms";
 
 // ── Tile id constants used only by the generator ─────────────────
 // These mirror src/settings.py ids that aren't already exported by
@@ -62,6 +69,9 @@ export const TILE_PIT = 28;
 export const TILE_PILLAR = 30;
 export const TILE_RUBBLE = 31;
 export const TILE_THRONE = 35;
+/** A blocking room furnishing (crate, table, statue…) placed by the
+ *  room-roles pass; which one is in `DungeonLevel.props`. */
+export const TILE_PROP = 38;
 const TILE_PUDDLE = 32;
 const TILE_MOSS = 33;
 
@@ -267,6 +277,19 @@ export interface DungeonLevel {
    *  present when the dungeon configures `trap_types`; a trap cell with
    *  no entry resolves to the default trap. */
   trapIds?: Record<string, string>;
+  /** Room furnishings by cell ("col,row" → kind) from the room-roles
+   *  pass. Blocking ones sit on TILE_PROP cells; walkable ones (rugs,
+   *  books, bones) on plain floor. Absent when no room was furnished. */
+  props?: Record<string, PropKind>;
+  /** Which rooms (index into `rooms`) were given which role. */
+  roomRoles?: Array<{ room: number; role: RoomRole }>;
+  /** Items lying on the floor ("col,row" → item id) — a sealed vault's
+   *  key. Picked up like any map item. */
+  items?: Record<string, string>;
+  /** Readable furnishings ("col,row" → Lore id): a library book or a
+   *  shrine statue. Filled by the record wrapper from the dungeon's
+   *  `lore` list. */
+  propLore?: Record<string, string>;
   /** Cosmetic dials the converter reads (0–1). `floorVariety`: how much
    *  of the floor uses the tileset's alternate floors. `wallDecor`:
    *  how many brick faces carry a decoration. Absent → 0. */
@@ -854,6 +877,14 @@ function placeEdgeStairs(
 /** Floor cells an object may sit next to (its 8 neighbours must all be
  *  one of these): open floor and floor-level furniture. Doors are
  *  excluded so nothing crowds a doorway. */
+/** What the party can cross when the room-roles pass checks that a
+ *  furnishing doesn't cut anything off (locked doors can be opened). */
+const ROLE_PASSABLE: ReadonlySet<number> = new Set([
+  TILE_DFLOOR,
+  TILE_STAIRS, TILE_STAIRS_DOWN, TILE_CHEST, TILE_TRAP, TILE_ARTIFACT, TILE_DDOOR,
+  TILE_LOCKED_DOOR,
+]);
+
 const OBJECT_NEIGHBOUR_OK: ReadonlySet<number> = new Set([
   TILE_DFLOOR, TILE_TRAP, TILE_CHEST, TILE_STAIRS, TILE_STAIRS_DOWN, TILE_ARTIFACT,
 ]);
@@ -984,14 +1015,6 @@ function placePits(
 }
 
 /**
- * Cavern post-process — bites random notches out of the walls that
- * border open floor so rooms and corridors read as natural rock, not
- * cut stone. CARVE-ONLY (wall → floor), so it can never disconnect a
- * path or wall in a door. Skips the map border, torches, and walls
- * next to doors (a notch beside a door would let the party walk
- * around it).
- */
-/**
  * Cut the bottom floor's way out into a wall: a cell in a room's TOP
  * wall with that room's floor directly in front (south) of it, solid
  * wall on both sides (so it isn't beside a doorway or corridor) and
@@ -1050,6 +1073,14 @@ function placeWallExit(
   return null;
 }
 
+/**
+ * Cavern post-process — bites random notches out of the walls that
+ * border open floor so rooms and corridors read as natural rock, not
+ * cut stone. CARVE-ONLY (wall → floor), so it can never disconnect a
+ * path or wall in a door. Skips the map border, torches, and walls
+ * next to doors (a notch beside a door would let the party walk
+ * around it).
+ */
 function roughenCavern(g: Grid, rng: RNG): void {
   const isDoor = (c: number, r: number) => {
     const t = getTile(g, c, r);
@@ -1116,6 +1147,17 @@ export interface GenerateLevelOptions {
   /** Weighted traps.json records to assign to placed traps. Absent /
    *  empty → no ids recorded (every trap is the default record). */
   trapTypes?: Array<{ trap_id: string; weight: number }>;
+  /** 0..1 — extra corridors joining nearby rooms into circuits (see
+   *  `addLoops`). Absent / 0 → the plain chain of rooms. */
+  loops?: number;
+  /** Item id dropped on the floor as the key to a sealed vault (a
+   *  `key`-type item opens any locked door). Absent → vaults are
+   *  locked with no key (pick the lock or cast Knock). */
+  vaultKeyItem?: string;
+  /** 0..1 — chance each room past the entrance is furnished with a
+   *  role (storeroom, library, shrine…; see `placeRoomRoles`). Absent
+   *  / 0 → none. */
+  roomRoles?: number;
   /** Clutter: chance (×10%) that each open floor cell with open floor
    *  all around it gets a room object (pillar / stalagmite / rubble).
    *  `0` = none. See `placeObjects`. */
@@ -1282,6 +1324,13 @@ export function generateDungeonLevel(opts: GenerateLevelOptions): DungeonLevel {
     carveRoom(grid, fallback, floorTile);
     rooms.push(fallback);
   }
+
+  // ── Loops: extra corridors between nearby rooms ──
+  // Own random stream, so the dial doesn't shift the rest of the rolls.
+  const loopRng = mulberry32((opts.seed ^ 0x51f00b) >>> 0);
+  addLoops(rooms, opts.loops ?? 0, loopRng, (a, b) =>
+    connectRooms(grid, rooms[a], rooms[b], loopRng, floorTile),
+  );
 
   // ── Entrance + exit transition placement ──
   // `edgeTransitions` decides WHERE transitions go: the map edge
@@ -1595,12 +1644,156 @@ export function generateDungeonLevel(opts: GenerateLevelOptions): DungeonLevel {
     ...exitApproach,
   ]);
   for (const m of monsters) occupied.add(`${m.col},${m.row}`);
+
+  // A boss floor's throne room — fixed before a vault is carved, which
+  // is added as an extra (last) room.
+  const throneRoom = rooms[rooms.length - 1];
+
+  // ── Treasure vault: a small chamber carved behind a locked door ──
+  // Only when the floor has chests and furnishes rooms; the chance
+  // follows the room-roles dial.
+  const forcedRoles = new Map<number, RoomRole>();
+  const chestsOn = !!chestItemId && (opts.chestProbability ?? 0) > 0;
+  if (chestsOn && (opts.roomRoles ?? 0) > 0) {
+    const vrng = mulberry32((opts.seed ^ 0x7e117) >>> 0);
+    if (vrng() < Math.min(1, (opts.roomRoles ?? 0) * 1.5)) {
+      const v = carveVault(grid, rooms, { floor: floorTile, wall: wallTile }, occupied, vrng, height);
+      if (v) {
+        rooms.push(new Room(v.x, v.y, v.w, v.h));
+        forcedRoles.set(rooms.length - 1, "vault");
+      }
+    }
+  }
+
+  // ── Room roles: furnish some rooms (storeroom, library, shrine…) ──
+  // Before pits and clutter, which then leave furnished rooms alone.
+  // A boss floor's last room is the throne room — not furnished.
+  const furnished = placeRoomRoles(grid, rooms, {
+    style,
+    chance: opts.roomRoles ?? 0,
+    tiles: {
+      floor: floorTile,
+      wall: wallTile,
+      prop: TILE_PROP,
+      chest: TILE_CHEST,
+      doors: new Set([TILE_DDOOR, TILE_LOCKED_DOOR]),
+      lockedDoor: TILE_LOCKED_DOOR,
+      passable: ROLE_PASSABLE,
+    },
+    occupied,
+    entry: { col: stairsCol, row: stairsRow },
+    // A vault only when chests are on (an item and a non-zero rate).
+    hasChestItem: chestsOn,
+    skip: difficulty === "boss" ? new Set([rooms.indexOf(throneRoom)]) : undefined,
+    forced: forcedRoles,
+    height,
+    rng: mulberry32((opts.seed ^ 0x2b0e5) >>> 0),
+  });
+  // What stood on the floor before furnishing (stairs, monsters, the
+  // entry…) — the gameplay hooks below place into furnished rooms, so
+  // they check this rather than `occupied`, which now holds every cell
+  // of every furnished room.
+  const takenBeforeRoles = new Set(occupied);
+  for (const k of furnished.claimed) occupied.add(k);
+
+  // ── Room-role gameplay ──
+  const hookRng = mulberry32((opts.seed ^ 0x9a7d3) >>> 0);
+  const roomCells = (room: Room): Array<[number, number]> => {
+    const out: Array<[number, number]> = [];
+    for (let r = room.y; r < room.y2; r++) {
+      for (let c = room.x; c < room.x2; c++) out.push([c, r]);
+    }
+    return out;
+  };
+  /** Plain floor in `room` nothing stands on, nearest its centre first. */
+  const openCells = (room: Room): Array<[number, number]> => {
+    const [rcx, rcy] = room.center;
+    return roomCells(room)
+      .filter(([c, r]) =>
+        getTile(grid, c, r) === floorTile &&
+        !takenBeforeRoles.has(`${c},${r}`) &&
+        !(`${c},${r}` in furnished.props) &&
+        !monsters.some((m) => m.col === c && m.row === r),
+      )
+      .sort((a, b) =>
+        Math.abs(a[0] - rcx) + Math.abs(a[1] - rcy) - (Math.abs(b[0] - rcx) + Math.abs(b[1] - rcy)),
+      );
+  };
+
+  // A guard post is never empty: it holds a fight even when the room's
+  // encounter roll missed.
+  if (opts.encounters) {
+    for (const { room: ri, role } of furnished.roles) {
+      if (role !== "guard_post") continue;
+      const room = rooms[ri];
+      const inside = monsters.some(
+        (m) => m.col >= room.x && m.col < room.x2 && m.row >= room.y && m.row < room.y2,
+      );
+      if (inside) continue;
+      const spot = openCells(room)[0];
+      if (!spot) continue;
+      const enc = sampleEncounter(opts.encounters, opts.encounterArea ?? "dungeon", {
+        minLevel: profile.encMin,
+        maxLevel: profile.encMax,
+        rng: hookRng,
+        allowedDifficulties: new Set([opts.difficulty]),
+        monsterDifficulty: opts.monsterDifficulty,
+        theme: opts.encounterTheme,
+      });
+      if (!enc) continue;
+      monsters.push({
+        id: `m-${opts.seed}-guard-${ri}`,
+        col: spot[0],
+        row: spot[1],
+        name: enc.monsterPartyTile,
+        encounterNames: enc.monsters,
+        encounterName: enc.name,
+        encounterId: enc.id,
+      });
+      occupied.add(`${spot[0]},${spot[1]}`);
+      takenBeforeRoles.add(`${spot[0]},${spot[1]}`);
+    }
+  }
+
+  // A sealed vault's key lies elsewhere on the floor: in a guard post
+  // when there is one (take it from the guards), else in the room
+  // farthest from the vault.
+  const floorItems: Record<string, string> = {};
+  const keyItem = (opts.vaultKeyItem ?? "").trim();
+  if (keyItem) {
+    for (const vault of furnished.vaults) {
+      const vroom = rooms[vault.room];
+      const [vx, vy] = vroom.center;
+      const guardRooms = furnished.roles
+        .filter((x) => x.role === "guard_post")
+        .map((x) => x.room);
+      const others = rooms
+        .map((_, i) => i)
+        .filter((i) => i !== vault.room && !furnished.vaults.some((v) => v.room === i))
+        .sort((a, b) => {
+          const [ax, ay] = rooms[a].center;
+          const [bx, by] = rooms[b].center;
+          return Math.abs(bx - vx) + Math.abs(by - vy) - (Math.abs(ax - vx) + Math.abs(ay - vy));
+        });
+      const order = [...guardRooms.filter((i) => others.includes(i)), ...others];
+      for (const i of order) {
+        const cells = openCells(rooms[i]);
+        if (cells.length === 0) continue;
+        const [kc, kr] = cells[Math.floor(hookRng() * Math.min(cells.length, 6))];
+        floorItems[`${kc},${kr}`] = keyItem;
+        occupied.add(`${kc},${kr}`);
+        takenBeforeRoles.add(`${kc},${kr}`);
+        break;
+      }
+    }
+  }
+
   placePits(grid, rooms, opts.pitProbability ?? 0, occupied, rng);
 
   // ── Room objects, then a boss floor's throne ──
   // Both tilesets carry a throne (Dungeon: stone, Cave: rock-hewn).
   if (difficulty === "boss" && rooms.length >= 2) {
-    placeThrone(grid, rooms[rooms.length - 1], occupied);
+    placeThrone(grid, throneRoom, occupied);
   }
   placeObjects(grid, opts.objectProbability ?? 0, occupied, rng);
 
@@ -1624,6 +1817,10 @@ export function generateDungeonLevel(opts: GenerateLevelOptions): DungeonLevel {
     questArtifacts: {},
     chestItem: chestItemId,
     ...(Object.keys(trapIds).length > 0 ? { trapIds } : {}),
+    ...(furnished.roles.length > 0
+      ? { props: furnished.props, roomRoles: furnished.roles }
+      : {}),
+    ...(Object.keys(floorItems).length > 0 ? { items: floorItems } : {}),
     rooms: rooms.map((rm) => ({ x: rm.x, y: rm.y, w: rm.w, h: rm.h })),
     floorVariety: opts.floorVariety ?? 0,
     wallDecor: opts.wallDecor ?? 0,
