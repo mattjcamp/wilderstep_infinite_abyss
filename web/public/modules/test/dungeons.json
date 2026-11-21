@@ -92,8 +92,8 @@
       "style": "dungeon",
       "difficulty": "normal",
       "size": {
-        "width": 16,
-        "height": 16
+        "width": 50,
+        "height": 50
       },
       "torch_density": 0.1,
       "locked_doors": 0.1,
@@ -114,17 +114,24 @@
         {
           "id": "test3_l1",
           "name": "Level 1",
-          "depth": 1
+          "depth": 1,
+          "size": {
+            "width": 32,
+            "height": 32
+          }
         },
         {
           "id": "test3_l2",
           "name": "Level 2",
-          "depth": 2
+          "depth": 2,
+          "size": {
+            "width": 16,
+            "height": 16
+          }
         }
       ],
-      "lore": [
-        "eight_keys_of_shadow"
-      ]
+      "prisoner_npc": "agnetha",
+      "prisoner_reward": "stoneguard_plate"
     }
   ]
 }

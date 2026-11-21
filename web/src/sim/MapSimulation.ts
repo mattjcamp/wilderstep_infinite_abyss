@@ -605,6 +605,10 @@ export type SimEvent =
       npcId?: string;
       questId?: string;
     }
+  /** An NPC left the map (e.g. a freed prisoner heading for the
+   *  surface) — see {@link MapSimulation.removeNpc}. The host drops the
+   *  NPC's overlay sprite at `pos`. */
+  | { kind: "npc_removed"; npcId: string; pos: Position }
   /** Fired when the party passes a turn in place via {@link MapSimulation.waitTurn}
    *  (Space). A move emits `moved`; a wait emits this so the host can run
    *  per-turn effects (e.g. passive HP/MP regen on restful maps) for both
@@ -1889,6 +1893,22 @@ export class MapSimulation {
    * the player "there's nowhere for them to go." Emits `npc_moved`
    * (the host repositions the sprite) + `state`.
    */
+  /** Take an NPC off the map: clears the first cell carrying `npcId`
+   *  and emits `npc_removed`. False when no cell has them. */
+  removeNpc(npcId: string): boolean {
+    for (let r = 0; r < this.grid.length; r++) {
+      const row = this.grid[r];
+      for (let c = 0; c < (row?.length ?? 0); c++) {
+        const cell = row[c] as SimCell | undefined;
+        if (cell?.npc !== npcId) continue;
+        cell.npc = undefined;
+        this.emit({ kind: "npc_removed", npcId, pos: { col: c, row: r } });
+        return true;
+      }
+    }
+    return false;
+  }
+
   requestNpcMove(npcId: string): boolean {
     return this.requestCellActorMove(
       (cell) => cell.npc === npcId,

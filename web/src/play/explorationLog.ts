@@ -132,6 +132,9 @@ const NOTABLE: ReadonlyArray<[LogCategory, RegExp]> = [
   // Items picked up and chests opened.
   ["loot", /^Picked up /],
   ["loot", /^Opened .+(: |— it's empty\.$)/],
+  // A dungeon prisoner freed, and their thanks.
+  ["quest", /^Freed .+ from the cell!$/],
+  ["loot", /^.+ gives you .+\.$/],
   // Pickpocketing.
   ["loot", / pilfers \d+ gold\.$/],
   ["loot", / swipes an? /],

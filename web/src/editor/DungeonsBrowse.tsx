@@ -70,7 +70,11 @@ const TrapChoicesContext = createContext<TrapChoice[]>([]);
 const RoomRoleContext = createContext<{
   moduleId: string;
   keyItems: Array<{ id: string; name: string }>;
-}>({ moduleId: "", keyItems: [] });
+  /** NPCs (with their shop, if any) — trader / prisoner pickers. */
+  npcs: Array<{ id: string; name: string; counter?: string }>;
+  /** Every item — the prisoner's reward picker. */
+  allItems: Array<ChestItem>;
+}>({ moduleId: "", keyItems: [], npcs: [], allItems: [] });
 
 /** The record generated traps use when no trap mix is set. */
 const DEFAULT_TRAP_ID = "dart_trap";
@@ -204,6 +208,11 @@ interface DungeonRecord {
   edge_transitions?: boolean;
   /** Key-type item dropped on a floor as its sealed vault's key. */
   vault_key?: string;
+  /** Shopkeeper NPC camping on the middle floor. */
+  trader_npc?: string;
+  /** NPC held prisoner on the bottom floor, and what freeing them gives. */
+  prisoner_npc?: string;
+  prisoner_reward?: string;
   /** Lore ids made readable in libraries (a book) and shrines (the
    *  statue), in floor order. */
   lore?: string[];
@@ -239,6 +248,8 @@ type LoadState =
       trapChoices: TrapChoice[];
       /** Items with item_type "key" — the vault-key picker. */
       keyItems: Array<{ id: string; name: string }>;
+      npcs: Array<{ id: string; name: string; counter?: string }>;
+      allItems: Array<ChestItem>;
       ownFile: Record<string, unknown> | null;
       isDraft: boolean;
     }
@@ -278,7 +289,7 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
   const refresh = async () => {
     try {
       const src = getEditorModuleSource();
-      const [layers, catalog, itemLayers, trapLayers] = await Promise.all([
+      const [layers, catalog, itemLayers, trapLayers, npcLayers] = await Promise.all([
         src.loadModelLayers(moduleId, "dungeons"),
         // Dungeons offered by `uses` libraries. Not part of the
         // resolved view — the import section below copies them in.
@@ -288,6 +299,8 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
         src.loadModelLayers(moduleId, "items"),
         // Traps model — the choices for the trap-mix picker.
         src.loadModelLayers(moduleId, "traps"),
+        // NPCs — the trader / prisoner pickers.
+        src.loadModelLayers(moduleId, "npcs"),
       ]);
       const draft = await loadDraft<Record<string, unknown>>(moduleId, MODEL_KEY);
       const ownEffective =
@@ -328,6 +341,27 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
         .filter((it) => it.item_type === "key")
         .map((it) => ({ id: String(it.id ?? ""), name: String(it.name ?? it.id ?? "") }))
         .filter((it) => it.id !== "");
+      const npcsMerged = mergeModel(
+        "npcs",
+        npcLayers.inherited,
+        npcLayers.ownFile as Record<string, unknown> | null,
+      ) as { npcs?: Array<Record<string, unknown>> } | null;
+      const npcs = (npcsMerged?.npcs ?? [])
+        .map((n) => ({
+          id: String(n.id ?? ""),
+          name: String(n.name ?? n.id ?? ""),
+          counter: typeof n.counter === "string" && n.counter ? n.counter : undefined,
+        }))
+        .filter((n) => n.id !== "")
+        .sort((a, b) => a.name.localeCompare(b.name));
+      const allItems = (itemsMerged?.items ?? [])
+        .map((it) => ({
+          id: String(it.id ?? ""),
+          name: String(it.name ?? it.id ?? ""),
+          category: it.category != null ? String(it.category) : undefined,
+          item_type: it.item_type != null ? String(it.item_type) : undefined,
+        }))
+        .filter((it) => it.id !== "");
       setState({
         kind: "ok",
         dungeons,
@@ -335,6 +369,8 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
         chestItems,
         trapChoices,
         keyItems,
+        npcs,
+        allItems,
         ownFile: ownEffective ?? null,
         isDraft: hasDraft(moduleId, MODEL_KEY),
       });
@@ -678,7 +714,9 @@ export function DungeonsBrowse({ moduleId }: { moduleId: string }) {
         </div>
       ) : null}
 
-      <RoomRoleContext.Provider value={{ moduleId, keyItems: state.keyItems }}>
+      <RoomRoleContext.Provider
+        value={{ moduleId, keyItems: state.keyItems, npcs: state.npcs, allItems: state.allItems }}
+      >
       <TrapChoicesContext.Provider value={state.trapChoices}>
       <div className="mt-6 space-y-5">
         {[...groupedByTag.entries()].map(([tag, dungeons]) => (
@@ -1827,7 +1865,10 @@ function RoomRoleFields({
   dungeon: DungeonRecord;
   onUpdate: (patch: Partial<DungeonRecord>) => void;
 }) {
-  const { moduleId, keyItems } = useContext(RoomRoleContext);
+  const { moduleId, keyItems, npcs, allItems } = useContext(RoomRoleContext);
+  const traders = npcs.filter((n) => n.counter);
+  const npcOption = (id: string | undefined, list: typeof npcs) =>
+    id && !list.some((n) => n.id === id) ? <option value={id}>{id} (missing)</option> : null;
   const key = dungeon.vault_key ?? "";
   const lore = dungeon.lore ?? [];
   const setLore = (next: string[]) => onUpdate({ lore: next.length > 0 ? next : undefined });
@@ -1895,6 +1936,78 @@ function RoomRoleFields({
         <span className="mt-1 block text-xs text-parchment/65">
           Each library&apos;s book and each shrine&apos;s statue becomes
           readable, taking the next entry in floor order (each used once).
+        </span>
+      </div>
+
+      {/* Reasons to go deeper: a trader mid-dungeon, a prisoner at the
+          bottom. */}
+      <label className="block">
+        <span className="text-xs uppercase tracking-wide text-parchment/65">
+          Trader (middle floor)
+        </span>
+        <select
+          value={dungeon.trader_npc ?? ""}
+          onChange={(e) => onUpdate({ trader_npc: e.target.value || undefined })}
+          className="mt-0.5 block w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
+        >
+          <option value="">(none)</option>
+          {traders.map((n) => (
+            <option key={n.id} value={n.id}>
+              {n.name} — {n.counter}
+            </option>
+          ))}
+          {npcOption(dungeon.trader_npc, traders)}
+        </select>
+        <span className="mt-1 block text-xs text-parchment/65">
+          A shopkeeper NPC (one with a shop) camps in a quiet room on the
+          middle floor, so the party can buy and sell mid-run.
+        </span>
+      </label>
+      <div className="grid gap-2 sm:grid-cols-2">
+        <label className="block">
+          <span className="text-xs uppercase tracking-wide text-parchment/65">
+            Prisoner (bottom floor)
+          </span>
+          <select
+            value={dungeon.prisoner_npc ?? ""}
+            onChange={(e) => onUpdate({ prisoner_npc: e.target.value || undefined })}
+            className="mt-0.5 block w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90"
+          >
+            <option value="">(none)</option>
+            {npcs.map((n) => (
+              <option key={n.id} value={n.id}>
+                {n.name}
+              </option>
+            ))}
+            {npcOption(dungeon.prisoner_npc, npcs)}
+          </select>
+        </label>
+        <label className="block">
+          <span className="text-xs uppercase tracking-wide text-parchment/65">
+            Reward for freeing them
+          </span>
+          <select
+            value={dungeon.prisoner_reward ?? ""}
+            onChange={(e) => onUpdate({ prisoner_reward: e.target.value || undefined })}
+            disabled={!dungeon.prisoner_npc}
+            className="mt-0.5 block w-full rounded border border-parchment/20 bg-ink/50 px-2 py-1 text-[13px] text-parchment/90 disabled:opacity-50"
+          >
+            <option value="">(no item — just their XP)</option>
+            {groupItemsByCategory(allItems).map((g) => (
+              <optgroup key={g.label} label={g.label}>
+                {g.items.map((it) => (
+                  <option key={it.id} value={it.id}>
+                    {it.name}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+        </label>
+        <span className="block text-xs text-parchment/65 sm:col-span-2">
+          Held in a locked cell on the bottom floor (its key lies elsewhere
+          on the floor, like a vault&apos;s). The first talk frees them: their
+          meeting XP plus this item, then they leave for good.
         </span>
       </div>
     </div>

@@ -703,6 +703,12 @@ function applyTilesetStyle(
     const cell = grid[r]?.[c];
     if (cell) (cell as DungeonMapCell & { lore?: string }).lore = loreId;
   }
+  // People (a prisoner, a trader): bumping one opens their dialog.
+  for (const [key, npcId] of Object.entries(level.npcs ?? {})) {
+    const [c, r] = key.split(",").map(Number);
+    const cell = grid[r]?.[c];
+    if (cell && npcId) (cell as DungeonMapCell & { npc?: string }).npc = npcId;
+  }
   // Items on the floor (a sealed vault's key) — picked up on step.
   for (const [key, itemId] of Object.entries(level.items ?? {})) {
     const [c, r] = key.split(",").map(Number);

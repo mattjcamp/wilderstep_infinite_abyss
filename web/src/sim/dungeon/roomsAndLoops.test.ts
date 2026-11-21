@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
-import { generateDungeonFromRecord, resolveLevelOptions } from "./generateFromRecord";
+import { generateDungeonFromRecord, resolveLevelOptions, traderFloor } from "./generateFromRecord";
 import { dungeonLevelToMap } from "./dungeonLevelToMap";
 import { TILE_PROP, TILE_STAIRS_DOWN, TILE_CHEST } from "@/battle/world/Dungeon";
 import { addLoops, WALKABLE_PROPS } from "@/battle/world/dungeonRooms";
@@ -308,5 +308,119 @@ describe("room-role gameplay", () => {
     for (const f of generateDungeonFromRecord(record({ style: "deep_ones_hall", room_roles: 1 }), { seed: 4 })) {
       expect(f.propLore).toBeUndefined();
     }
+  });
+});
+
+describe("reasons to go deeper — trader and prisoner", () => {
+  const encounters = {
+    dungeon: [
+      { id: "rats", area: "dungeon", name: "Rats", level: 3, weight: 1, monsterPartyTile: "rat", monsters: ["rat"], tags: [] },
+    ],
+  } as never;
+  const styles = ["dungeon", "cavern", "deep_ones_hall", "manor"] as const;
+  const threeFloors = [
+    { id: "a", name: "A", depth: 1 },
+    { id: "b", name: "B", depth: 2 },
+    { id: "c", name: "C", depth: 3 },
+  ];
+
+  it("the trader camps on the middle floor", () => {
+    expect([1, 2, 3, 4, 5].map(traderFloor)).toEqual([0, 1, 1, 2, 2]);
+  });
+
+  it("puts the trader in a quiet, reachable room on the middle floor only", () => {
+    let placed = 0;
+    for (const style of styles) {
+      for (let seed = 1; seed <= 12; seed++) {
+        const rec = record({ style, levels: threeFloors, trader_npc: "olga", room_roles: 0.4 });
+        const floors = generateDungeonFromRecord(rec, { seed, encounters });
+        floors.forEach((f, i) => {
+          const traders = Object.entries(f.npcs ?? {}).filter(([, id]) => id === "olga");
+          if (i !== 1) {
+            expect(traders.length, `${style} floor ${i}`).toBe(0);
+            return;
+          }
+          if (traders.length === 0) return;
+          placed++;
+          expect(traders.length).toBe(1);
+          const [c, r] = traders[0][0].split(",").map(Number);
+          const camp = (f.roomRoles ?? []).find((x) => x.role === "trader_camp")!;
+          const rm = f.rooms![camp.room];
+          expect(c >= rm.x && c < rm.x + rm.w && r >= rm.y && r < rm.y + rm.h).toBe(true);
+          expect(f.monsters.some((m) => m.col >= rm.x && m.col < rm.x + rm.w && m.row >= rm.y && m.row < rm.y + rm.h)).toBe(false);
+          const map = dungeonLevelToMap(f, { dungeonId: "rr", floorIdx: i, totalFloors: floors.length, paletteSprites: palette });
+          expect((map.grid[r][c] as { npc?: string }).npc).toBe("olga");
+          // The party can walk up to the trader: a neighbour is reachable.
+          const seen = new Set<string>([`${f.entryCol},${f.entryRow}`]);
+          const q: Array<[number, number]> = [[f.entryCol, f.entryRow]];
+          for (let k = 0; k < q.length; k++) {
+            const [qc, qr] = q[k];
+            for (const [dc, dr] of [[0, -1], [0, 1], [-1, 0], [1, 0]] as const) {
+              const cell = map.grid[qr + dr]?.[qc + dc];
+              const key = `${qc + dc},${qr + dr}`;
+              if (!cell || seen.has(key) || (cell as { npc?: string }).npc) continue;
+              if (!(cell.walkable || cell.locked || cell.link)) continue;
+              seen.add(key);
+              q.push([qc + dc, qr + dr]);
+            }
+          }
+          const next = [[c + 1, r], [c - 1, r], [c, r + 1], [c, r - 1]].some(([x, y]) => seen.has(`${x},${y}`));
+          expect(next, `${style} seed=${seed}`).toBe(true);
+        });
+      }
+    }
+    expect(placed).toBeGreaterThan(30);
+  });
+
+  it("holds the prisoner in a locked cell on the bottom floor, with the key elsewhere", () => {
+    let celled = 0;
+    let held = 0;
+    for (const style of styles) {
+      for (let seed = 1; seed <= 12; seed++) {
+        const rec = record({
+          style,
+          levels: threeFloors,
+          prisoner_npc: "brom",
+          prisoner_reward: "potion",
+          vault_key: "iron_key",
+          size: { width: 32, height: 28 },
+        });
+        const floors = generateDungeonFromRecord(rec, { seed, encounters });
+        floors.forEach((f, i) => {
+          const at = Object.entries(f.npcs ?? {}).filter(([, id]) => id === "brom");
+          if (i !== floors.length - 1) {
+            expect(at.length).toBe(0);
+            expect(f.prisoner).toBeUndefined();
+            return;
+          }
+          if (at.length === 0) return;
+          held++;
+          expect(f.prisoner).toEqual({ npc: "brom", reward: "potion" });
+          const sealed = (f.roomRoles ?? []).find((x) => x.role === "prison");
+          if (!sealed) return;
+          const rm = f.rooms![sealed.room];
+          const [c, r] = at[0][0].split(",").map(Number);
+          expect(c >= rm.x && c < rm.x + rm.w && r >= rm.y && r < rm.y + rm.h).toBe(true);
+          const map = dungeonLevelToMap(f, { dungeonId: "rr", floorIdx: i, totalFloors: floors.length, paletteSprites: palette });
+          // A carved cell (3×3) is locked in, and its key lies outside.
+          if (rm.w === 3 && rm.h === 3) {
+            celled++;
+            let locked = 0;
+            for (let y = rm.y - 1; y <= rm.y + rm.h; y++) {
+              for (let x = rm.x - 1; x <= rm.x + rm.w; x++) if (map.grid[y]?.[x]?.locked) locked++;
+            }
+            expect(locked, `${style} seed=${seed}`).toBeGreaterThan(0);
+            const keys = Object.entries(f.items ?? {}).filter(([, id]) => id === "iron_key");
+            expect(keys.length).toBeGreaterThan(0);
+            for (const [k] of keys) {
+              const [kc, kr] = k.split(",").map(Number);
+              expect(kc >= rm.x && kc < rm.x + rm.w && kr >= rm.y && kr < rm.y + rm.h).toBe(false);
+            }
+          }
+        });
+      }
+    }
+    expect(held).toBeGreaterThan(30);
+    expect(celled).toBeGreaterThan(20);
   });
 });

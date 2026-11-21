@@ -373,6 +373,10 @@ export interface WorldSave {
   schemaVersion: number;
   /** ISO timestamp of the most recent write. */
   savedAt: string;
+  /** Generated-dungeon prisoners the party has freed, keyed
+   *  `"<dungeonId>:<npcId>"` — each gives their reward once, then
+   *  never appears in that dungeon again. Absent on older saves. */
+  rescuedPrisoners?: ReadonlyArray<string>;
   /** Module id this save belongs to. Save is locked to one module —
    *  starting a new game in a different module overwrites. */
   moduleId: string;

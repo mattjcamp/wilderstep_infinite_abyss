@@ -649,6 +649,10 @@ import {
   type TrapVictim,
 } from "@/play/traps";
 import { PlayTrapOverlay } from "@/play/TrapOverlay";
+import {
+  PlayPrisonerFreedOverlay,
+  type PrisonerFreedInfo,
+} from "@/play/PrisonerFreedOverlay";
 import { trapFxId, trapFxOrigin } from "@/play/trapFx";
 import { playTrapFx } from "@/play/playTrapFx";
 import { getFxRecord } from "@/vfx/fxCatalog";
@@ -1198,6 +1202,23 @@ export function PlayHost() {
    *  NPC has a counter, exposes a Visit Counter button that hands
    *  off to the shop overlay. */
   const [npcDialogId, setNpcDialogId] = useState<string | null>(null);
+  /** A freed dungeon prisoner who leaves (heads for the surface) once
+   *  their dialog closes. */
+  const prisonerLeavingRef = useRef<{ npcId: string; name: string } | null>(null);
+  /** The Prisoner Freed card (who, their thanks, the rewards). */
+  const [prisonerFreed, setPrisonerFreed] = useState<PrisonerFreedInfo | null>(null);
+  useEffect(() => {
+    if (npcDialogId !== null || prisonerFreed !== null) return;
+    const leaving = prisonerLeavingRef.current;
+    if (!leaving) return;
+    prisonerLeavingRef.current = null;
+    if (simRef.current?.removeNpc(leaving.npcId)) {
+      setLogMessages((prev) => {
+        const next = [...prev, `${leaving.name} slips away toward the surface.`];
+        return next.length > MAX_LOG ? next.slice(next.length - MAX_LOG) : next;
+      });
+    }
+  }, [npcDialogId, prisonerFreed]);
   /** Lines a "meet person" quest step adds to the front of the NPC's
    *  dialog for the conversation that credited it. Keyed by NPC id
    *  and replaced on every NPC encounter, so the line shows once —
@@ -1419,12 +1440,13 @@ export function PlayHost() {
    *  `metNpcs`. Reads + writes through saveRef so it's safe to call
    *  from the Phaser event closures. */
   const grantMeetXp = useCallback(
-    (key: string, name: string, override: unknown) => {
+    (key: string, name: string, override: unknown): { xp: number; levelUps: string[] } => {
+      const none = { xp: 0, levelUps: [] as string[] };
       const save = saveRef.current;
       const catalog = catalogRef.current;
-      if (!save || !catalog) return;
+      if (!save || !catalog) return none;
       const mark = markFirstTime(save.party.metNpcs, key);
-      if (!mark.firstTime) return;
+      if (!mark.firstTime) return none;
       const xp = explorationRewardFor(override, catalog.explorationXp.npc);
       const award = applyExplorationXp(
         { ...save, party: { ...save.party, metNpcs: mark.next } },
@@ -1433,7 +1455,7 @@ export function PlayHost() {
       );
       saveRef.current = award.save;
       saveWorld(award.save);
-      if (xp <= 0) return;
+      if (xp <= 0) return none;
       setLogMessages((prev) => {
         const next = [
           ...prev,
@@ -1442,6 +1464,7 @@ export function PlayHost() {
         ];
         return next.length > MAX_LOG ? next.slice(next.length - MAX_LOG) : next;
       });
+      return { xp, levelUps: award.levelUps.map((ev) => ev.message) };
     },
     [],
   );
@@ -2210,6 +2233,7 @@ export function PlayHost() {
       pitFalling ||
       pitFall !== null ||
       trapReport !== null ||
+      prisonerFreed !== null ||
       finale !== null;
   }, [
     lockEncounter,
@@ -2234,6 +2258,7 @@ export function PlayHost() {
     pitFalling,
     pitFall,
     trapReport,
+    prisonerFreed,
     finale,
   ]);
   useEffect(() => {
@@ -3692,6 +3717,23 @@ export function PlayHost() {
           // clears in its constructor for snapshot consistency, but
           // both passes here run before mount so they're needed at
           // the host level too.
+          // A dungeon prisoner the party already freed is gone for good.
+          {
+            const dNowP = dungeonStateRef.current;
+            const held = dNowP?.levels[dNowP.floorIdx]?.prisoner;
+            if (
+              dNowP && held &&
+              (save.rescuedPrisoners ?? []).includes(`${dNowP.dungeonId}:${held.npc}`)
+            ) {
+              for (const row of catalog.map.grid) {
+                for (const cell of row) {
+                  if ((cell as { npc?: string }).npc === held.npc) {
+                    (cell as { npc?: string }).npc = "";
+                  }
+                }
+              }
+            }
+          }
           {
             // In a dungeon the picked set lives on the floor's
             // mutation state (per instance + floor), NOT in
@@ -4837,7 +4879,14 @@ export function PlayHost() {
             npcCanWander: (() => {
               const behaviorById = new Map<string, unknown>();
               for (const n of catalog.npcs) behaviorById.set(n.id, n.behavior);
-              return (npcId: string) => npcBehaviorWanders(behaviorById.get(npcId));
+              // A generated dungeon's people (a trader at their camp, a
+              // prisoner in their cell) stay where they were placed.
+              const dHere = dungeonStateRef.current;
+              const placed = new Set(
+                Object.values(dHere?.levels[dHere.floorIdx]?.npcs ?? {}),
+              );
+              return (npcId: string) =>
+                !placed.has(npcId) && npcBehaviorWanders(behaviorById.get(npcId));
             })(),
           });
           simRef.current = sim;
@@ -6323,6 +6372,66 @@ export function PlayHost() {
                 );
                 return;
               }
+              // A generated dungeon's prisoner: the first talk frees
+              // them. Instead of their usual dialog, the Prisoner Freed
+              // card says who they are and reports the rewards (meeting
+              // XP + their reward item); they leave once it closes,
+              // never to return.
+              {
+                const dHere = dungeonStateRef.current;
+                const held = dHere?.levels[dHere.floorIdx]?.prisoner;
+                const cur = saveRef.current;
+                const rescueKey = dHere ? `${dHere.dungeonId}:${npc.id}` : "";
+                if (
+                  dHere && cur && held?.npc === npc.id &&
+                  !(cur.rescuedPrisoners ?? []).includes(rescueKey)
+                ) {
+                  const who = npc.name ?? npc.id;
+                  setLogMessages((prev) => {
+                    const next = [...prev, `Freed ${who} from the cell!`];
+                    return next.length > MAX_LOG ? next.slice(next.length - MAX_LOG) : next;
+                  });
+                  const meet = grantMeetXp(npcMeetKey(npc.id), who, npc.exploration_xp);
+                  // grantMeetXp wrote the XP into saveRef — build on it.
+                  const afterXp = saveRef.current ?? cur;
+                  let inventory = afterXp.party.inventory;
+                  let item: { name: string; icon?: string } | undefined;
+                  if (held.reward) {
+                    const items = catalogRef.current?.items ?? [];
+                    inventory = addToInventory(
+                      inventory.map((e) => ({ ...e })),
+                      held.reward,
+                      items,
+                      1,
+                    );
+                    const rec = items.find((i) => i.id === held.reward);
+                    item = { name: rec?.name ?? held.reward, icon: rec?.icon };
+                    setLogMessages((prev) => {
+                      const next = [...prev, `${who} gives you ${item!.name}.`];
+                      return next.length > MAX_LOG ? next.slice(next.length - MAX_LOG) : next;
+                    });
+                  }
+                  const nextSave: WorldSave = {
+                    ...afterXp,
+                    party: { ...afterXp.party, inventory },
+                    rescuedPrisoners: [...(afterXp.rescuedPrisoners ?? []), rescueKey],
+                  };
+                  saveRef.current = nextSave;
+                  saveWorld(nextSave);
+                  creditMeetStepsRef.current(npc.id, who);
+                  prisonerLeavingRef.current = { npcId: npc.id, name: who };
+                  const thanks = ((npc.dialogs ?? []) as Array<{ text?: string }>).find((d) => d?.text)?.text;
+                  setPrisonerFreed({
+                    name: who,
+                    sprite: npc.sprite,
+                    thanks,
+                    xp: meet.xp,
+                    item,
+                    levelUps: meet.levelUps,
+                  });
+                  return;
+                }
+              }
               grantMeetXp(
                 npcMeetKey(npc.id),
                 npc.name ?? npc.id,
@@ -6337,6 +6446,17 @@ export function PlayHost() {
               );
               setNpcMeetLines({ npcId: npc.id, lines: meetLines });
               setNpcDialogId(ev.npcId);
+              return;
+            }
+            if (ev.kind === "npc_removed") {
+              // An NPC left the map (a freed prisoner) — drop their
+              // sprite.
+              const k = `${ev.pos.col},${ev.pos.row}`;
+              const img = this.npcOverlays.get(k);
+              if (img) {
+                img.destroy();
+                this.npcOverlays.delete(k);
+              }
               return;
             }
             if (ev.kind === "npc_moved") {
@@ -8217,6 +8337,9 @@ export function PlayHost() {
             runQuestTriggers({ kind: "read_lore", loreId });
           }}
         />
+      ) : null}
+      {prisonerFreed ? (
+        <PlayPrisonerFreedOverlay info={prisonerFreed} onClose={() => setPrisonerFreed(null)} />
       ) : null}
       {trapReport ? (
         <PlayTrapOverlay card={trapReport} onClose={() => setTrapReport(null)} />

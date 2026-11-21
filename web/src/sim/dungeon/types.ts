@@ -230,6 +230,17 @@ export interface DungeonRecord {
    *  there is one. Absent → vaults are still locked, but with no key
    *  (pick the lock or cast Knock). Dungeon-wide. */
   vault_key?: string;
+  /** NPC id (one with a `counter` shop) who sets up a trader's camp on
+   *  the dungeon's middle floor (floor ⌊n/2⌋+1 of n; floor 1 of 1), in
+   *  a quiet room with no monsters, traps or stairs. Dungeon-wide. */
+  trader_npc?: string;
+  /** NPC id held prisoner on the bottom floor, in a locked cell carved
+   *  into the rock (its key lies on the floor like a vault's). Freeing
+   *  and talking to them grants their meeting XP and `prisoner_reward`
+   *  once; then they leave. Dungeon-wide. */
+  prisoner_npc?: string;
+  /** Item id the freed prisoner gives the party. Optional. */
+  prisoner_reward?: string;
   /** Lore ids made readable in furnished rooms: each library's book
    *  and each shrine's statue, in floor order, takes the next entry
    *  (each used once). Dungeon-wide. */

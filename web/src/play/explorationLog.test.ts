@@ -104,3 +104,10 @@ describe("notableCategory — every trap line reaches the Log", () => {
     expect(notableCategory("The door is locked.")).toBeNull();
   });
 });
+
+describe("notableCategory — freed prisoners", () => {
+  it("keeps the rescue and the reward", () => {
+    expect(notableCategory("Freed Brom from the cell!")).toBe("quest");
+    expect(notableCategory("Brom gives you Healing Potion.")).toBe("loot");
+  });
+});

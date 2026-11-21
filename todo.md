@@ -1,8 +1,10 @@
 # TODO
-- Work on random dungeon refinements.
+- implement something with random shrines
 
 # Varnfell
 - keep iterating on the world itself
+- Make a version of the varnfell overview that is primarily random (try random town, random shrine)
+- Consider re-rolling random elements on a schedule based on the game calendar
 
 # Notes
 

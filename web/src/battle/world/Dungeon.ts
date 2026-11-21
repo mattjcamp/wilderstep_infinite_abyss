@@ -286,6 +286,11 @@ export interface DungeonLevel {
   /** Items lying on the floor ("col,row" → item id) — a sealed vault's
    *  key. Picked up like any map item. */
   items?: Record<string, string>;
+  /** People on the floor ("col,row" → NPC id): a prisoner, a trader. */
+  npcs?: Record<string, string>;
+  /** The prisoner on this floor and what freeing them gives (set by
+   *  the record wrapper from the dungeon's `prisoner_*` fields). */
+  prisoner?: { npc: string; reward?: string };
   /** Readable furnishings ("col,row" → Lore id): a library book or a
    *  shrine statue. Filled by the record wrapper from the dungeon's
    *  `lore` list. */
@@ -1150,6 +1155,12 @@ export interface GenerateLevelOptions {
   /** 0..1 — extra corridors joining nearby rooms into circuits (see
    *  `addLoops`). Absent / 0 → the plain chain of rooms. */
   loops?: number;
+  /** NPC id held prisoner on this floor, in a locked cell carved into
+   *  the rock (or, with no room for one, in an ordinary room). */
+  prisonerNpc?: string;
+  /** NPC id (a shopkeeper) who sets up a trader's camp on this floor,
+   *  in a quiet room with no monsters, traps or stairs. */
+  traderNpc?: string;
   /** Item id dropped on the floor as the key to a sealed vault (a
    *  `key`-type item opens any locked door). Absent → vaults are
    *  locked with no key (pick the lock or cast Knock). */
@@ -1649,11 +1660,64 @@ export function generateDungeonLevel(opts: GenerateLevelOptions): DungeonLevel {
   // is added as an extra (last) room.
   const throneRoom = rooms[rooms.length - 1];
 
+  /** A quiet room for a person: past the entrance, at least 4×4, not
+   *  the boss's throne room, and with no monster, trap, chest or stairs
+   *  in it. Prefers the bigger rooms. -1 when none qualifies. */
+  const pickQuietRoom = (
+    list: Room[],
+    throne: Room,
+    boss: boolean,
+    taken?: ReadonlyMap<number, RoomRole>,
+  ): number => {
+    const ok: number[] = [];
+    for (let i = 1; i < list.length; i++) {
+      const rm = list[i];
+      if (taken?.has(i) || (boss && rm === throne)) continue;
+      if (rm.w < 4 || rm.h < 4) continue;
+      let clear = true;
+      for (let r = rm.y; r < rm.y2 && clear; r++) {
+        for (let c = rm.x; c < rm.x2 && clear; c++) {
+          if (getTile(grid, c, r) !== floorTile) clear = false;
+          else if (monsters.some((m) => m.col === c && m.row === r)) clear = false;
+        }
+      }
+      if (clear) ok.push(i);
+    }
+    if (ok.length === 0) return -1;
+    ok.sort((a, b) => list[b].w * list[b].h - list[a].w * list[a].h);
+    const qrng = mulberry32((opts.seed ^ 0x4b1d) >>> 0);
+    return ok[Math.floor(qrng() * Math.min(3, ok.length))];
+  };
+
   // ── Treasure vault: a small chamber carved behind a locked door ──
   // Only when the floor has chests and furnishes rooms; the chance
   // follows the room-roles dial.
   const forcedRoles = new Map<number, RoomRole>();
   const chestsOn = !!chestItemId && (opts.chestProbability ?? 0) > 0;
+
+  // ── A prisoner: a cell carved into the rock behind a locked door ──
+  // Carved before the vault so a tight floor gives the prisoner the
+  // space. No room for a cell → the prisoner is held in an ordinary
+  // room instead (not locked in).
+  const prisonerNpc = (opts.prisonerNpc ?? "").trim();
+  if (prisonerNpc) {
+    const prng = mulberry32((opts.seed ^ 0x9215e) >>> 0);
+    const cell = carveVault(grid, rooms, { floor: floorTile, wall: wallTile }, occupied, prng, height);
+    if (cell) {
+      rooms.push(new Room(cell.x, cell.y, cell.w, cell.h));
+      forcedRoles.set(rooms.length - 1, "prison");
+    } else {
+      const pick = pickQuietRoom(rooms, throneRoom, difficulty === "boss");
+      if (pick >= 0) forcedRoles.set(pick, "prison");
+    }
+  }
+
+  // ── A trader's camp in a quiet room ──
+  const traderNpc = (opts.traderNpc ?? "").trim();
+  if (traderNpc) {
+    const pick = pickQuietRoom(rooms, throneRoom, difficulty === "boss", forcedRoles);
+    if (pick >= 0) forcedRoles.set(pick, "trader_camp");
+  }
   if (chestsOn && (opts.roomRoles ?? 0) > 0) {
     const vrng = mulberry32((opts.seed ^ 0x7e117) >>> 0);
     if (vrng() < Math.min(1, (opts.roomRoles ?? 0) * 1.5)) {
@@ -1755,9 +1819,9 @@ export function generateDungeonLevel(opts: GenerateLevelOptions): DungeonLevel {
     }
   }
 
-  // A sealed vault's key lies elsewhere on the floor: in a guard post
-  // when there is one (take it from the guards), else in the room
-  // farthest from the vault.
+  // A sealed room's key (vault or prison cell) lies elsewhere on the
+  // floor: in a guard post when there is one (take it from the guards),
+  // else in the room farthest from it.
   const floorItems: Record<string, string> = {};
   const keyItem = (opts.vaultKeyItem ?? "").trim();
   if (keyItem) {
@@ -1821,6 +1885,16 @@ export function generateDungeonLevel(opts: GenerateLevelOptions): DungeonLevel {
       ? { props: furnished.props, roomRoles: furnished.roles }
       : {}),
     ...(Object.keys(floorItems).length > 0 ? { items: floorItems } : {}),
+    ...(furnished.people.length > 0
+      ? {
+          npcs: Object.fromEntries(
+            furnished.people.map((p) => [
+              `${p.col},${p.row}`,
+              p.role === "prison" ? prisonerNpc : traderNpc,
+            ]),
+          ),
+        }
+      : {}),
     rooms: rooms.map((rm) => ({ x: rm.x, y: rm.y, w: rm.w, h: rm.h })),
     floorVariety: opts.floorVariety ?? 0,
     wallDecor: opts.wallDecor ?? 0,

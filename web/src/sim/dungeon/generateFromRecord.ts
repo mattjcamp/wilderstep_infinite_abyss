@@ -156,6 +156,12 @@ export function generateDungeonFromRecord(
       requiredMonsterIds: opts.requiredMonstersByFloor?.get(floorIdx),
       // A sealed vault's key, dropped elsewhere on the floor.
       vaultKeyItem: (record.vault_key ?? "").trim() || undefined,
+      // People: the trader on the middle floor, the prisoner on the
+      // bottom floor.
+      traderNpc:
+        floorIdx === traderFloor(totalFloors) ? (record.trader_npc ?? "").trim() || undefined : undefined,
+      prisonerNpc:
+        floorIdx === totalFloors - 1 ? (record.prisoner_npc ?? "").trim() || undefined : undefined,
       seed,
     });
     out.push(normaliseAuthoredHeight(raw, resolved.size.height));
@@ -168,7 +174,25 @@ export function generateDungeonFromRecord(
     if (Object.keys(landings).length > 0) out[i].pitLandings = landings;
   }
   assignPropLore(out, record.lore);
+  // The prisoner's floor remembers who they are and what freeing them
+  // gives (the play host grants it once, on the first talk).
+  const prisoner = (record.prisoner_npc ?? "").trim();
+  if (prisoner) {
+    for (const f of out) {
+      if (Object.values(f.npcs ?? {}).includes(prisoner)) {
+        const reward = (record.prisoner_reward ?? "").trim();
+        f.prisoner = { npc: prisoner, ...(reward ? { reward } : {}) };
+      }
+    }
+  }
   return out;
+}
+
+/** The floor (0-based) a dungeon's trader camps on: the middle one —
+ *  floor 2 of 2 or 3, floor 3 of 4 or 5, floor 1 of 1. */
+export function traderFloor(totalFloors: number): number {
+  if (totalFloors <= 1) return 0;
+  return Math.min(totalFloors - 1, Math.floor(totalFloors / 2));
 }
 
 /**

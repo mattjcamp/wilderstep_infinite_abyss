@@ -51,7 +51,11 @@ export type RoomRole =
   | "guard_post"
   | "vault"
   | "parlour"
-  | "camp";
+  | "camp"
+  /** A locked cell holding a prisoner (placed, never rolled). */
+  | "prison"
+  /** A trader's camp: a safe room where a shopkeeper NPC sets up. */
+  | "trader_camp";
 
 /** A furnishing, by kind — the converter picks the palette tile. */
 export type PropKind =
@@ -167,8 +171,13 @@ export interface RoomRolesResult {
   /** Every cell of every furnished room — later passes (pits, clutter)
    *  leave these rooms alone. */
   claimed: Set<string>;
-  /** Sealed vaults: the room and its now-locked doorways. */
-  vaults: Array<{ room: number; doors: string[] }>;
+  /** Sealed rooms (vaults and prison cells): the room, its role and
+   *  its now-locked doorways. */
+  vaults: Array<{ room: number; doors: string[]; role: RoomRole }>;
+  /** Where people stand: a prisoner in a prison cell, a trader in a
+   *  trader's camp. Their cells are `tiles.prop` on the grid (nothing
+   *  else lands there) but carry no prop. */
+  people: Array<{ room: number; role: RoomRole; col: number; row: number }>;
 }
 
 /**
@@ -201,7 +210,7 @@ export function placeRoomRoles(
   },
 ): RoomRolesResult {
   const { tiles, occupied, rng } = opts;
-  const result: RoomRolesResult = { props: {}, roles: [], claimed: new Set(), vaults: [] };
+  const result: RoomRolesResult = { props: {}, roles: [], claimed: new Set(), vaults: [], people: [] };
   const chance = Math.min(1, Math.max(0, opts.chance));
   if (chance <= 0 && !opts.forced?.size) return result;
   // One vault per floor: a carved vault (forced) rules out another.
@@ -304,9 +313,10 @@ export function placeRoomRoles(
       if (room.w < 4 || room.h < 4) continue;
       if (rng() >= chance) continue;
     }
-    // A vault needs a room that can be sealed off.
+    // A vault (or prison cell) needs a room that can be sealed off.
     const sealDoors =
-      forcedRole === "vault" || (!forcedRole && table.some(([r]) => r === "vault"))
+      forcedRole === "vault" || forcedRole === "prison" ||
+      (!forcedRole && table.some(([r]) => r === "vault"))
         ? vaultDoors(room)
         : null;
     if (forcedRole === "vault" && !sealDoors) continue;
@@ -332,13 +342,13 @@ export function placeRoomRoles(
     }
 
     // Seal a vault first, so its doorways count as doors below.
-    if (role === "vault" && sealDoors) {
+    if ((role === "vault" || role === "prison") && sealDoors) {
       for (const k of sealDoors) {
         const [c, r] = k.split(",").map(Number);
         g.tiles[r][c] = tiles.lockedDoor;
         delete g.decorations[k];
       }
-      result.vaults.push({ room: i, doors: sealDoors });
+      result.vaults.push({ room: i, doors: sealDoors, role });
     }
 
     // Cells just inside the room's openings stay clear.
@@ -387,6 +397,30 @@ export function placeRoomRoles(
       result.props[key(c, r)] = kind;
       placed++;
       return true;
+    };
+    /** Stand a person (prisoner / trader) on the first spot that keeps
+     *  every route open, nearest the room's centre first. */
+    const placePerson = (): boolean => {
+      const spots: Array<[number, number]> = [];
+      for (let r = y0; r <= y1; r++) for (let c = x0; c <= x1; c++) spots.push([c, r]);
+      spots.sort((a, b) =>
+        Math.abs(a[0] - cx) + Math.abs(a[1] - cy) - (Math.abs(b[0] - cx) + Math.abs(b[1] - cy)),
+      );
+      for (const [c, r] of spots) {
+        if (!free(c, r)) continue;
+        g.tiles[r][c] = tiles.prop;
+        const after = countReachable();
+        if (after !== reach - 1) {
+          g.tiles[r][c] = tiles.floor;
+          continue;
+        }
+        reach = after;
+        delete g.decorations[key(c, r)];
+        result.people.push({ room: i, role, col: c, row: r });
+        placed++;
+        return true;
+      }
+      return false;
     };
     /** A run of props that only stays if every piece fits. */
     const putAll = (cells: Array<[number, number, PropKind]>): boolean => {
@@ -562,6 +596,21 @@ export function placeRoomRoles(
         put(cx, y0, "armchair");
         break;
       }
+      case "prison": {
+        // The prisoner in the middle, a few bones and a slop pot.
+        placePerson();
+        scatter(["bones"], 1, interior());
+        scatter(["pots", "barrel_small"], 1, wallCells());
+        break;
+      }
+      case "trader_camp": {
+        // The trader by a fire, goods stacked about.
+        placePerson();
+        put(cx + 1, cy - 1, "brazier") || put(cx - 1, cy - 1, "brazier");
+        put(cx - 1, cy + 1, "table") || put(cx + 1, cy + 1, "table");
+        scatter(["crate", "crates_stack", "barrel", "barrel_small", "pots"], Math.max(3, Math.round(wallCells().length * 0.2)), wallCells());
+        break;
+      }
       case "camp": {
         // A fire in the middle, seats and gear around it.
         if (put(cx, cy, "brazier")) {
@@ -575,7 +624,7 @@ export function placeRoomRoles(
     }
 
     // A sealed vault counts even if nothing else fitted in it.
-    if (placed === 0 && role !== "vault") continue;
+    if (placed === 0 && role !== "vault" && role !== "prison") continue;
     used.set(role, (used.get(role) ?? 0) + 1);
     result.roles.push({ room: i, role });
     for (let r = y0; r <= y1; r++) for (let c = x0; c <= x1; c++) result.claimed.add(key(c, r));
